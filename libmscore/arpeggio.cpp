@@ -28,15 +28,15 @@ namespace Ms {
 //---------------------------------------------------------
 
 Arpeggio::Arpeggio(Score* s)
-  : Element(s)
+  : Element(s, ElementFlag::MOVABLE)
       {
-      setFlags(ElementFlag::MOVABLE | ElementFlag::SELECTABLE);
       _arpeggioType = ArpeggioType::NORMAL;
       setHeight(spatium() * 4);      // for use in palettes
       _span     = 1;
       _userLen1 = 0.0;
       _userLen2 = 0.0;
       _playArpeggio = true;
+      _stretch = 1.0;
       }
 
 //---------------------------------------------------------
@@ -56,9 +56,9 @@ void Arpeggio::write(XmlWriter& xml) const
       {
       if (!xml.canWrite(this))
             return;
-      xml.stag("Arpeggio");
+      xml.stag(this);
       Element::writeProperties(xml);
-      xml.tag("subtype", int(_arpeggioType));
+      writeProperty(xml, Pid::ARPEGGIO_TYPE);
       if (_userLen1 != 0.0)
             xml.tag("userLen1", _userLen1 / spatium());
       if (_userLen2 != 0.0)
@@ -66,6 +66,7 @@ void Arpeggio::write(XmlWriter& xml) const
       if (_span != 1)
             xml.tag("span", _span);
       writeProperty(xml, Pid::PLAY);
+      writeProperty(xml, Pid::TIME_STRETCH);
       xml.etag();
       }
 
@@ -87,6 +88,8 @@ void Arpeggio::read(XmlReader& e)
                   _span = e.readInt();
             else if (tag == "play")
                  _playArpeggio = e.readBool();
+            else if (tag == "timeStretch")
+                  _stretch = e.readDouble();
             else if (!Element::readProperties(e))
                   e.unknown();
             }
@@ -261,15 +264,15 @@ void Arpeggio::draw(QPainter* p) const
       }
 
 //---------------------------------------------------------
-//   updateGrips
+//   gripsPositions
 //---------------------------------------------------------
 
-void Arpeggio::updateGrips(EditData& ed) const
+std::vector<QPointF> Arpeggio::gripsPositions(const EditData&) const
       {
+      const QPointF pp(pagePos());
       QPointF p1(0.0, -_userLen1);
       QPointF p2(0.0, _height + _userLen2);
-      ed.grip[0].translate(pagePos() + p1);
-      ed.grip[1].translate(pagePos() + p2);
+      return { p1 + pp, p2 + pp };
       }
 
 //---------------------------------------------------------
@@ -327,10 +330,9 @@ QPointF Arpeggio::gripAnchor(Grip n) const
 void Arpeggio::startEdit(EditData& ed)
       {
       Element::startEdit(ed);
-      ed.grips   = 2;
-      ed.curGrip = Grip::END;
-      undoPushProperty(Pid::ARP_USER_LEN1);
-      undoPushProperty(Pid::ARP_USER_LEN2);
+      ElementEditData* eed = ed.getData(this);
+      eed->pushProperty(Pid::ARP_USER_LEN1);
+      eed->pushProperty(Pid::ARP_USER_LEN2);
       }
 
 //---------------------------------------------------------
@@ -381,7 +383,7 @@ void Arpeggio::spatiumChanged(qreal oldValue, qreal newValue)
 
 bool Arpeggio::acceptDrop(EditData& data) const
       {
-      return data.element->type() == ElementType::ARPEGGIO;
+      return data.dropElement->type() == ElementType::ARPEGGIO;
       }
 
 //---------------------------------------------------------
@@ -390,7 +392,7 @@ bool Arpeggio::acceptDrop(EditData& data) const
 
 Element* Arpeggio::drop(EditData& data)
       {
-      Element* e = data.element;
+      Element* e = data.dropElement;
       switch(e->type()) {
             case ElementType::ARPEGGIO:
                   {
@@ -410,12 +412,27 @@ Element* Arpeggio::drop(EditData& data)
       }
 
 //---------------------------------------------------------
+//   reset
+//---------------------------------------------------------
+
+void Arpeggio::reset()
+      {
+      undoChangeProperty(Pid::ARP_USER_LEN1, 0.0);
+      undoChangeProperty(Pid::ARP_USER_LEN2, 0.0);
+      Element::reset();
+      }
+
+//---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
 QVariant Arpeggio::getProperty(Pid propertyId) const
       {
       switch(propertyId) {
+            case Pid::ARPEGGIO_TYPE:
+                  return int(_arpeggioType);
+            case Pid::TIME_STRETCH:
+                  return Stretch();
             case Pid::ARP_USER_LEN1:
                   return userLen1();
             case Pid::ARP_USER_LEN2:
@@ -435,6 +452,12 @@ QVariant Arpeggio::getProperty(Pid propertyId) const
 bool Arpeggio::setProperty(Pid propertyId, const QVariant& val)
       {
       switch(propertyId) {
+            case Pid::ARPEGGIO_TYPE:
+                  setArpeggioType(ArpeggioType(val.toInt()));
+                  break;
+            case Pid::TIME_STRETCH:
+                  setStretch(val.toDouble());
+                  break;
             case Pid::ARP_USER_LEN1:
                   setUserLen1(val.toDouble());
                   break;
@@ -464,12 +487,25 @@ QVariant Arpeggio::propertyDefault(Pid propertyId) const
                   return 0.0;
             case Pid::ARP_USER_LEN2:
                   return 0.0;
+            case Pid::TIME_STRETCH:
+                  return 1.0;
             case Pid::PLAY:
                   return true;
             default:
                   break;
             }
       return Element::propertyDefault(propertyId);
+      }
+
+//---------------------------------------------------------
+//   propertyId
+//---------------------------------------------------------
+
+Pid Arpeggio::propertyId(const QStringRef& name) const
+      {
+      if (name == "subtype")
+            return Pid::ARPEGGIO_TYPE;
+      return Element::propertyId(name);
       }
 }
 

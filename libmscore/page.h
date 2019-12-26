@@ -54,7 +54,6 @@ class Page final : public Element {
 
       virtual void write(XmlWriter&) const;
       virtual void read(XmlReader&);
-      virtual void styleChanged() override;
 
       void appendSystem(System* s);
 
@@ -75,7 +74,7 @@ class Page final : public Element {
       QPointF pagePos() const { return QPointF(); }     ///< position in page coordinates
       QList<Element*> elements();               ///< list of visible elements
       QRectF tbbox();                           // tight bounding box, excluding white space
-      int endTick() const;
+      Fraction endTick() const;
       };
 
 

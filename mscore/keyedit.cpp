@@ -1,7 +1,6 @@
 //=============================================================================
 //  MuseScore
 //  Linux Music Score Editor
-//  $Id:$
 //
 //  Copyright (C) 2009-2011 Werner Schweer and others
 //
@@ -35,6 +34,8 @@ extern bool useFactorySettings;
 extern Palette* newAccidentalsPalette();
 extern Palette* newKeySigPalette();
 
+static const qreal editScale = 1.0;
+
 //---------------------------------------------------------
 //   KeyCanvas
 //---------------------------------------------------------
@@ -43,7 +44,7 @@ KeyCanvas::KeyCanvas(QWidget* parent)
    : QFrame(parent)
       {
       setAcceptDrops(true);
-      extraMag   = 2.0;
+      extraMag   = editScale * guiScaling;
       qreal mag  = PALETTE_SPATIUM * extraMag / gscore->spatium();
       _matrix    = QTransform(mag, 0.0, 0.0, mag, 0.0, 0.0);
       imatrix    = _matrix.inverted();
@@ -190,9 +191,9 @@ void KeyCanvas::mouseReleaseEvent(QMouseEvent*)
 
 void KeyCanvas::dragEnterEvent(QDragEnterEvent* event)
       {
-      const QMimeData* data = event->mimeData();
-      if (data->hasFormat(mimeSymbolFormat)) {
-            QByteArray a = data->data(mimeSymbolFormat);
+      const QMimeData* dta = event->mimeData();
+      if (dta->hasFormat(mimeSymbolFormat)) {
+            QByteArray a = dta->data(mimeSymbolFormat);
 
             XmlReader e(a);
 
@@ -275,7 +276,7 @@ KeyEditor::KeyEditor(QWidget* parent)
       l->setContentsMargins(0, 0, 0, 0);
       frame->setLayout(l);
 
-      sp = MuseScore::newKeySigPalette(PaletteType::MASTER);
+      sp = MuseScore::newKeySigPalette();
       sp->setReadOnly(false);
 
       _keyPalette = new PaletteScrollArea(sp);
@@ -290,7 +291,10 @@ KeyEditor::KeyEditor(QWidget* parent)
       l = new QVBoxLayout();
       l->setContentsMargins(0, 0, 0, 0);
       frame_3->setLayout(l);
-      sp1 = MuseScore::newAccidentalsPalette(PaletteType::MASTER);
+      sp1 = MuseScore::newAccidentalsPalette();
+      qreal adj = sp1->mag();
+      sp1->setGrid(sp1->gridWidth() * editScale / adj, sp1->gridHeight() * editScale / adj);
+      sp1->setMag(editScale);
       PaletteScrollArea* accPalette = new PaletteScrollArea(sp1);
       QSizePolicy policy1(QSizePolicy::Expanding, QSizePolicy::Expanding);
       accPalette->setSizePolicy(policy1);
@@ -349,6 +353,7 @@ void KeyEditor::addClicked()
       ks->setKeySigEvent(e);
       sp->append(ks, "custom");
       _dirty = true;
+      emit keySigAdded(ks);
       }
 
 //---------------------------------------------------------
@@ -358,6 +363,15 @@ void KeyEditor::addClicked()
 void KeyEditor::clearClicked()
       {
       canvas->clear();
+      }
+
+//---------------------------------------------------------
+//   showKeyPalette
+//---------------------------------------------------------
+
+void KeyEditor::showKeyPalette(bool val)
+      {
+      _keyPalette->setVisible(val);
       }
 
 //---------------------------------------------------------

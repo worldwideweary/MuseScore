@@ -23,6 +23,10 @@
 
 namespace Ms {
 
+static const ElementStyle timesigStyle {
+      { Sid::timesigScale,                       Pid::SCALE                   },
+      };
+
 //---------------------------------------------------------
 //   TimeSig
 //    Constructs an invalid time signature element.
@@ -32,12 +36,11 @@ namespace Ms {
 //---------------------------------------------------------
 
 TimeSig::TimeSig(Score* s)
-  : Element(s)
+  : Element(s, ElementFlag::ON_STAFF | ElementFlag::MOVABLE)
       {
-      setFlags(ElementFlag::SELECTABLE | ElementFlag::ON_STAFF | ElementFlag::MOVABLE);
+      initElementStyle(&timesigStyle);
+
       _showCourtesySig = true;
-      scaleStyle       = PropertyFlags::STYLED;
-      setProperty(Pid::SCALE, propertyDefault(Pid::SCALE));
       _stretch.set(1, 1);
       _sig.set(0, 1);               // initialize to invalid
       _timeSigType      = TimeSigType::NORMAL;
@@ -73,7 +76,7 @@ void TimeSig::setSig(const Fraction& f, TimeSigType st)
 
 bool TimeSig::acceptDrop(EditData& data) const
       {
-      return data.element->isTimeSig();
+      return data.dropElement->isTimeSig();
       }
 
 //---------------------------------------------------------
@@ -82,7 +85,7 @@ bool TimeSig::acceptDrop(EditData& data) const
 
 Element* TimeSig::drop(EditData& data)
       {
-      Element* e = data.element;
+      Element* e = data.dropElement;
       if (e->isTimeSig()) {
             // change timesig applies to all staves, can't simply set subtype
             // for this one only
@@ -122,7 +125,7 @@ void TimeSig::setDenominatorString(const QString& a)
 
 void TimeSig::write(XmlWriter& xml) const
       {
-      xml.stag("TimeSig");
+      xml.stag(this);
       writeProperty(xml, Pid::TIMESIG_TYPE);
       Element::writeProperties(xml);
 
@@ -203,10 +206,8 @@ void TimeSig::read(XmlReader& e)
                   setDenominatorString(e.readElementText());
             else if (tag == "Groups")
                   _groups.read(e);
-            else if (tag == "scale") {
-                  _scale = e.readSize();
-                  scaleStyle = PropertyFlags::UNSTYLED;
-                  }
+            else if (readStyledProperty(e, tag))
+                  ;
             else if (!Element::readProperties(e))
                   e.unknown();
             }
@@ -214,6 +215,23 @@ void TimeSig::read(XmlReader& e)
             _sig.set(z1+z2+z3+z4, n);
             }
       _stretch.reduce();
+      }
+
+//---------------------------------------------------------
+//   propertyId
+//---------------------------------------------------------
+
+Pid TimeSig::propertyId(const QStringRef& name) const
+      {
+      if (name == "subtype")
+            return Pid::TIMESIG_TYPE;
+      if (name == "sigN" || name == "sigD")
+            return Pid::TIMESIG;
+      if (name == "stretchN" || name == "stretchD")
+            return Pid::TIMESIG_STRETCH;
+      if (name == "Groups")
+            return Pid::GROUPS;
+      return Element::propertyId(name);
       }
 
 //---------------------------------------------------------
@@ -234,7 +252,7 @@ void TimeSig::layout()
       qreal lineDist;
       int   numOfLines;
       TimeSigType sigType = timeSigType();
-      Staff* _staff       = staff();
+      const Staff* _staff       = staff();
 
       if (_staff) {
             // if staff is without time sig, format as if no text at all
@@ -329,12 +347,32 @@ void TimeSig::layout()
       }
 
 //---------------------------------------------------------
+//   shape
+//---------------------------------------------------------
+
+Shape TimeSig::shape() const
+      {
+      QRectF box(bbox());
+      const Staff* st = staff();
+      if (st && addToSkyline()) {
+            // Extend time signature shape up and down to
+            // the first ledger line height to ensure that
+            // no notes will be too close to the timesig.
+            const qreal sp = spatium();
+            const qreal y = pos().y();
+            box.setTop(std::min(-sp - y, box.top()));
+            box.setBottom(std::max(st->height() - y + sp, box.bottom()));
+            }
+      return Shape(box);
+      }
+
+//---------------------------------------------------------
 //   draw
 //---------------------------------------------------------
 
 void TimeSig::draw(QPainter* painter) const
       {
-      if (staff() && !staff()->staffType(tick())->genTimesig())
+      if (staff() && !const_cast<const Staff*>(staff())->staffType(tick())->genTimesig())
             return;
       painter->setPen(curColor());
 
@@ -453,7 +491,7 @@ bool TimeSig::setProperty(Pid propertyId, const QVariant& v)
                         return false;
                   break;
             }
-      score()->setLayoutAll();      // TODO
+      triggerLayoutAll();      // TODO
       setGenerated(false);
       return true;
       }
@@ -482,47 +520,6 @@ QVariant TimeSig::propertyDefault(Pid id) const
             default:
                   return Element::propertyDefault(id);
             }
-      }
-
-//---------------------------------------------------------
-//   getPropertyStyle
-//---------------------------------------------------------
-
-Sid TimeSig::getPropertyStyle(Pid id) const
-      {
-      switch (id) {
-            case Pid::SCALE:
-                  return Sid::timesigScale;
-            default:
-                  break;
-            }
-      return Element::getPropertyStyle(id);
-      }
-
-//---------------------------------------------------------
-//   propertyStyle
-//---------------------------------------------------------
-
-PropertyFlags& TimeSig::propertyFlags(Pid id)
-      {
-      switch (id) {
-            case Pid::SCALE:
-                  return scaleStyle;
-            default:
-                  return Element::propertyFlags(id);
-            }
-      }
-
-//---------------------------------------------------------
-//   styleChanged
-//    reset all styled values to actual style
-//---------------------------------------------------------
-
-void TimeSig::styleChanged()
-      {
-      if (scaleStyle == PropertyFlags::STYLED)
-            setScale(score()->styleV(Sid::timesigScale).toSizeF());
-      Element::styleChanged();
       }
 
 //---------------------------------------------------------

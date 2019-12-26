@@ -1,7 +1,6 @@
 //=============================================================================
 //  MuseScore
 //  Music Composition & Notation
-//  $Id:$
 //
 //  Copyright (C) 2011 Werner Schweer
 //
@@ -18,6 +17,7 @@
 #include "libmscore/utils.h"
 #include "libmscore/undo.h"
 #include "libmscore/part.h"
+#include "tourhandler.h"
 
 namespace Ms {
 
@@ -29,7 +29,7 @@ void ScoreView::startDrag()
       {
       editData.grips = 0;
       editData.clearData();
-      editData.startMove  -= editData.element->userOff();
+      editData.startMove  -= editData.element->offset();
 
       _score->startCmd();
 
@@ -45,19 +45,29 @@ void ScoreView::doDragElement(QMouseEvent* ev)
       {
       QPointF delta = toLogical(ev->pos()) - editData.startMove;
 
+      TourHandler::startTour("autoplace-tour");
+
       QPointF pt(delta);
       if (qApp->keyboardModifiers() == Qt::ShiftModifier)
-            pt.setX(editData.element->userOff().x());
+            pt.setX(editData.element->offset().x());
       else if (qApp->keyboardModifiers() == Qt::ControlModifier)
-            pt.setY(editData.element->userOff().y());
+            pt.setY(editData.element->offset().y());
 
+      editData.lastPos = editData.pos;
       editData.hRaster = mscore->hRaster();
       editData.vRaster = mscore->vRaster();
       editData.delta   = pt;
       editData.pos     = toLogical(ev->pos());
 
-      for (Element* e : _score->selection().elements())
+      const Selection& sel = _score->selection();
+      const bool filterType = sel.isRange();
+      const ElementType type = editData.element->type();
+
+      for (Element* e : sel.elements()) {
+            if (filterType && type != e->type())
+                  continue;
             _score->addRefresh(e->drag(editData));
+            }
 
       Element* e = _score->getSelectedElement();
       if (e) {
@@ -88,6 +98,8 @@ void ScoreView::endDrag()
             }
       setDropTarget(0); // this also resets dropAnchor
       _score->endCmd();
+      if (editData.element->normalModeEditBehavior() == Element::EditBehavior::Edit && _score->selection().element() == editData.element)
+            startEdit(/* editMode */ false);
       }
 }
 

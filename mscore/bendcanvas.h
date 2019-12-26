@@ -1,7 +1,6 @@
 //=============================================================================
 //  MusE Score
 //  Linux Music Score Editor
-//  $Id:$
 //
 //  Copyright (C) 2010 Werner Schweer and others
 //
@@ -41,6 +40,9 @@ class BendCanvas : public QFrame {
       const QList<PitchValue>& points() const { return _points; }
       QList<PitchValue>& points()             { return _points; }
       void setPoints(const QList<PitchValue>& p) { _points = p; }
+
+   signals:
+      void bendCanvasChanged();
       };
 
 

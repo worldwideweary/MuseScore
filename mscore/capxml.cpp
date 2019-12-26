@@ -165,7 +165,7 @@ void CapExplicitBarline::readCapx(XmlReader& e)
       else if (type == "end") _type = BarLineType::END;
       else if (type == "repEnd") _type = BarLineType::END_REPEAT;
       else if (type == "repBegin") _type = BarLineType::START_REPEAT;
-//TODO      else if (type == "repEndBegin") _type = BarLineType::END_START_REPEAT;
+      else if (type == "repEndBegin") _type = BarLineType::END_START_REPEAT;
       else if (type == "dashed") _type = BarLineType::BROKEN;
       else _type = BarLineType::NORMAL; // default
       _barMode = 0;
@@ -934,10 +934,10 @@ void Capella::readCapxStaveLayout(XmlReader& e, CapStaffLayout* sl, int /*idx*/)
                   sl->abbrev = e.attribute("abbrev");
                   // elements name and abbrev overrule attributes name and abbrev
                   while (e.readNextStartElement()) {
-                        const QStringRef& tag(e.name());
-                        if (tag == "name")
+                        const QStringRef& t(e.name());
+                        if (t == "name")
                               sl->name = e.readElementText();
-                        else if (tag == "abbrev")
+                        else if (t == "abbrev")
                               sl->abbrev = e.readElementText();
                         else
                               e.unknown();

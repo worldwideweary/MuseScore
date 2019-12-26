@@ -1,7 +1,6 @@
 #=============================================================================
 #  MuseScore
 #  Music Composition & Notation
-#  $Id:$
 #
 #  Copyright (C) 2011 Werner Schweer
 #
@@ -13,5 +12,6 @@
 
 set(TARGET tst_scripting)
 
-include(${PROJECT_SOURCE_DIR}/mtest/cmake.inc)
+set(MTEST_LINK_MSCOREAPP TRUE)
 
+include(${PROJECT_SOURCE_DIR}/mtest/cmake.inc)

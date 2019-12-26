@@ -84,6 +84,8 @@ class InstrumentTemplate {
 
       bool extended;          // belongs to extended instrument set if true
 
+      bool singleNoteDynamics;
+
       InstrumentTemplate();
       InstrumentTemplate(const InstrumentTemplate&);
       ~InstrumentTemplate();
@@ -111,6 +113,7 @@ struct InstrumentGroup {
       bool extended;          // belongs to extended instruments set if true
       QList<InstrumentTemplate*> instrumentTemplates;
       void read(XmlReader&);
+      void clear();
 
       InstrumentGroup() { extended = false; }
       };
@@ -118,6 +121,7 @@ struct InstrumentGroup {
 extern QList<InstrumentGenre *> instrumentGenres;
 extern QList<MidiArticulation> articulation;
 extern QList<InstrumentGroup*> instrumentGroups;
+extern void clearInstrumentTemplates();
 extern bool loadInstrumentTemplates(const QString& instrTemplates);
 extern bool saveInstrumentTemplates(const QString& instrTemplates);
 extern InstrumentTemplate* searchTemplate(const QString& name);

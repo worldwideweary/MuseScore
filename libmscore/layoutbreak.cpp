@@ -18,18 +18,28 @@
 namespace Ms {
 
 //---------------------------------------------------------
+//   sectionBreakStyle
+//---------------------------------------------------------
+
+static const ElementStyle sectionBreakStyle {
+      { Sid::SectionPause, Pid::PAUSE }
+      };
+
+//---------------------------------------------------------
 //   LayoutBreak
 //---------------------------------------------------------
 
 LayoutBreak::LayoutBreak(Score* score)
-   : Element(score)
+   : Element(score, ElementFlag::SYSTEM | ElementFlag::HAS_TAG)
       {
-      _layoutBreakType     = Type(propertyDefault(Pid::LAYOUT_BREAK).toInt());
-      _pause               = score->styleD(Sid::SectionPause);
-      _startWithLongNames  = true;
-      _startWithMeasureOne = true;
-      lw                   = spatium() * 0.3;
-      setFlag(ElementFlag::HAS_TAG, true);
+      _layoutBreakType = Type(propertyDefault(Pid::LAYOUT_BREAK).toInt());
+
+      initElementStyle(&sectionBreakStyle);
+
+      resetProperty(Pid::PAUSE);
+      resetProperty(Pid::START_WITH_LONG_NAMES);
+      resetProperty(Pid::START_WITH_MEASURE_ONE);
+      lw = spatium() * 0.3;
       }
 
 LayoutBreak::LayoutBreak(const LayoutBreak& lb)
@@ -49,16 +59,12 @@ LayoutBreak::LayoutBreak(const LayoutBreak& lb)
 
 void LayoutBreak::write(XmlWriter& xml) const
       {
-      xml.stag(name());
+      xml.stag(this);
       Element::writeProperties(xml);
 
-      writeProperty(xml, Pid::LAYOUT_BREAK);
-      writeProperty(xml, Pid::PAUSE);
+      for (auto id : { Pid::LAYOUT_BREAK, Pid::PAUSE, Pid::START_WITH_LONG_NAMES, Pid::START_WITH_MEASURE_ONE })
+            writeProperty(xml, id);
 
-      if (!_startWithLongNames)
-            xml.tag("startWithLongNames", _startWithLongNames);
-      if (!_startWithMeasureOne)
-            xml.tag("startWithMeasureOne", _startWithMeasureOne);
       xml.etag();
       }
 
@@ -71,13 +77,13 @@ void LayoutBreak::read(XmlReader& e)
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
             if (tag == "subtype")
-                  setLayoutBreakType(Type(Ms::getProperty(Pid::LAYOUT_BREAK, e).toInt()));
+                  readProperty(e, Pid::LAYOUT_BREAK);
             else if (tag == "pause")
-                  _pause = e.readDouble();
+                  readProperty(e, Pid::PAUSE);
             else if (tag == "startWithLongNames")
-                  _startWithLongNames = e.readInt();
+                  readProperty(e, Pid::START_WITH_LONG_NAMES);
             else if (tag == "startWithMeasureOne")
-                  _startWithMeasureOne = e.readInt();
+                  readProperty(e, Pid::START_WITH_MEASURE_ONE);
             else if (!Element::readProperties(e))
                   e.unknown();
             }
@@ -212,8 +218,8 @@ void LayoutBreak::spatiumChanged(qreal, qreal)
 
 bool LayoutBreak::acceptDrop(EditData& data) const
       {
-      return data.element->type() == ElementType::LAYOUT_BREAK
-         && toLayoutBreak(data.element)->layoutBreakType() != layoutBreakType();
+      return data.dropElement->type() == ElementType::LAYOUT_BREAK
+         && toLayoutBreak(data.dropElement)->layoutBreakType() != layoutBreakType();
       }
 
 //---------------------------------------------------------
@@ -222,7 +228,7 @@ bool LayoutBreak::acceptDrop(EditData& data) const
 
 Element* LayoutBreak::drop(EditData& data)
       {
-      Element* e = data.element;
+      Element* e = data.dropElement;
       score()->undoChangeElement(this, e);
       return e;
       }
@@ -233,11 +239,15 @@ Element* LayoutBreak::drop(EditData& data)
 
 QVariant LayoutBreak::getProperty(Pid propertyId) const
       {
-      switch(propertyId) {
+      switch (propertyId) {
             case Pid::LAYOUT_BREAK:
                   return int(_layoutBreakType);
             case Pid::PAUSE:
                   return _pause;
+            case Pid::START_WITH_LONG_NAMES:
+                  return _startWithLongNames;
+            case Pid::START_WITH_MEASURE_ONE:
+                  return _startWithMeasureOne;
             default:
                   return Element::getProperty(propertyId);
             }
@@ -249,19 +259,25 @@ QVariant LayoutBreak::getProperty(Pid propertyId) const
 
 bool LayoutBreak::setProperty(Pid propertyId, const QVariant& v)
       {
-      switch(propertyId) {
+      switch (propertyId) {
             case Pid::LAYOUT_BREAK:
                   setLayoutBreakType(Type(v.toInt()));
                   break;
             case Pid::PAUSE:
                   setPause(v.toDouble());
                   break;
+            case Pid::START_WITH_LONG_NAMES:
+                  setStartWithLongNames(v.toBool());
+                  break;
+            case Pid::START_WITH_MEASURE_ONE:
+                  setStartWithMeasureOne(v.toBool());
+                  break;
             default:
                   if (!Element::setProperty(propertyId, v))
                         return false;
                   break;
             }
-      score()->setLayoutAll();
+      triggerLayoutAll();
       setGenerated(false);
       return true;
       }
@@ -272,24 +288,29 @@ bool LayoutBreak::setProperty(Pid propertyId, const QVariant& v)
 
 QVariant LayoutBreak::propertyDefault(Pid id) const
       {
-      switch(id) {
+      switch (id) {
             case Pid::LAYOUT_BREAK:
                   return QVariant(); // LAYOUT_BREAK_LINE;
             case Pid::PAUSE:
                   return score()->styleD(Sid::SectionPause);
+            case Pid::START_WITH_LONG_NAMES:
+                  return true;
+            case Pid::START_WITH_MEASURE_ONE:
+                  return true;
             default:
                   return Element::propertyDefault(id);
             }
       }
 
 //---------------------------------------------------------
-//   undoLayoutBreakType
+//   propertyId
 //---------------------------------------------------------
 
-void LayoutBreak::undoSetLayoutBreakType(Type t)
+Pid LayoutBreak::propertyId(const QStringRef& name) const
       {
-      undoChangeProperty(Pid::LAYOUT_BREAK, int(t));
+      if (name == propertyName(Pid::LAYOUT_BREAK))
+            return Pid::LAYOUT_BREAK;
+      return Element::propertyId(name);
       }
-
 }
 

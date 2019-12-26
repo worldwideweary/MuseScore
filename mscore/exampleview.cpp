@@ -85,8 +85,7 @@ void ExampleView::resetMatrix()
       double mag = 0.9 * guiScaling * (DPI_DISPLAY / DPI);  // 90% of nominal
       qreal _spatium = SPATIUM20 * mag;
       // example would normally be 10sp from top of page; this leaves 3sp margin above
-//      _matrix  = QTransform(mag, 0.0, 0.0, mag, _spatium, -_spatium * 7.0);
-      _matrix  = QTransform(mag, 0.0, 0.0, mag, _spatium, -_spatium * 10.0);
+      _matrix  = QTransform(mag, 0.0, 0.0, mag, _spatium, -_spatium * 7.0);
       imatrix  = _matrix.inverted();
       }
 
@@ -117,6 +116,8 @@ void ExampleView::setScore(Score* s)
       _score = s;
       _score->addViewer(this);
       _score->setLayoutMode(LayoutMode::LINE);
+
+      ScoreLoad sl;
       _score->doLayout();
       update();
       }
@@ -138,24 +139,11 @@ void ExampleView::setCursor(const QCursor&)
       {
       }
 
-int ExampleView::gripCount() const
-      {
-      return 0;
-      }
-
 void ExampleView::setDropRectangle(const QRectF&)
       {
       }
 
 void ExampleView::cmdAddSlur(Note* /*firstNote*/, Note* /*lastNote*/)
-      {
-      }
-
-void ExampleView::startEdit()
-      {
-      }
-
-void ExampleView::startEdit(Element*, Grip /*startGrip*/)
       {
       }
 
@@ -221,11 +209,11 @@ void ExampleView::paintEvent(QPaintEvent* ev)
 
 void ExampleView::dragEnterEvent(QDragEnterEvent* event)
       {
-      const QMimeData* data = event->mimeData();
-      if (data->hasFormat(mimeSymbolFormat)) {
+      const QMimeData* d = event->mimeData();
+      if (d->hasFormat(mimeSymbolFormat)) {
             event->acceptProposedAction();
 
-            QByteArray a = data->data(mimeSymbolFormat);
+            QByteArray a = d->data(mimeSymbolFormat);
 
 // qDebug("ExampleView::dragEnterEvent Symbol: <%s>", a.data());
 
@@ -474,7 +462,7 @@ void ExampleView::constraintCanvas (int* dxx)
 
       Q_ASSERT(_score->pages().front()->system(0)); // should exist if doLayout ran
 
-      // form rectangle bounding the the system with a spatium margin and translate relative to view space
+      // form rectangle bounding the system with a spatium margin and translate relative to view space
       qreal xstart = _score->pages().front()->system(0)->bbox().left() - SPATIUM20;
       qreal xend = _score->pages().front()->system(0)->bbox().right() + 2.0 * SPATIUM20;
       QRectF systemScaledViewRect(xstart * _matrix.m11(), 0, xend * _matrix.m11(), 0);

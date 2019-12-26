@@ -493,7 +493,7 @@ void PowerTab::readPosition(int staff, int voice, ptSection& sec)
       beat->accent = data2 & 0x04;
       beat->staccato = data2 & 0x02;
 
-      for (int i = sec.beats.size(); i < staff + 1; ++i) {
+      for (int i = int(sec.beats.size()); i < staff + 1; ++i) {
             sec.beats.push_back({});
             }
       if (add) {
@@ -520,7 +520,7 @@ std::vector<int> PowerTab::getStaffMap(ptSection& sec)
                   if (first.rhytmSlash) {
                         for (unsigned int i = 0; i < curTrack->infos.size(); ++i) {
                               if ((i << 1) & first.rhytmSlash) {
-                                    slash.push_back(-i - 1);
+                                    slash.push_back(-1 - i);
                                     }
                               }
                         }
@@ -569,7 +569,7 @@ void PowerTab::addPalmMute(Chord* chord)
             //
             // extend the current palm mute or start a new one
             //
-            int tick = chord->segment()->tick();
+            Fraction tick = chord->segment()->tick();
 		if (pm->tick2() < tick)
                   _palmMutes[track] = 0;
             else {
@@ -582,7 +582,7 @@ void PowerTab::addPalmMute(Chord* chord)
 		PalmMute* pm = new PalmMute(score);
 		_palmMutes[track] = pm;
             Segment* segment = chord->segment();
-            int tick = segment->tick();
+            Fraction tick = segment->tick();
 
 		pm->setTick(tick);
 		pm->setTick2(tick + chord->actualTicks());
@@ -598,8 +598,8 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
       {
       Tuplet* tuple = nullptr;
       int tupleBeatCounter{ 0 };
-      int tick = measure->tick();
-      int endtick = measure->endTick();
+      Fraction tick = measure->tick();
+      Fraction endtick = measure->endTick();
       Chord*      hammer{ nullptr };
 
       while (elist.size() && tick < endtick) {
@@ -609,10 +609,10 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
             int dots = beat->dotted ? (beat->doubleDotted ? 2 : 1) : (beat->doubleDotted ? 2 : 0);
             switch (dots) {
                   case 1:
-                        l = l + (l / 2);
+                        l = l + (l * Fraction(1,2));
                         break;
                   case 2:
-                        l = l + (l / 2) + (l / 4);
+                        l = l + (l * Fraction(3,4));
                         break;
                   }
 
@@ -620,18 +620,18 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
             d.setDots(dots);
 
             if (beat->tuplet || tupleBeatCounter) {
-                  auto nt = (l / 3) * 2;
-                  tick += nt.ticks();
+                  Fraction nt = (l * Fraction(1,3) * Fraction(2,1));
+                  tick += nt;
                   }
             else {
-                  tick += l.ticks();
+                  tick += l;
                   }
             ChordRest* cr;
             if (beat->notes.empty()) {
                   auto rest = new Rest(score);
                   cr = rest;
                   rest->setTrack(staff * VOICES);
-                  rest->setDuration(l);
+                  rest->setTicks(l);
                   rest->setDurationType(d);
                   segment->add(rest);
 
@@ -640,7 +640,7 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
                   Chord* chord = new Chord(score);
                   cr = chord;
                   chord->setTrack(staff * VOICES);
-                  chord->setDuration(l);
+                  chord->setTicks(l);
                   chord->setDurationType(d);
                   segment->add(chord);
 
@@ -684,7 +684,7 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
                               }
 
                         if (false && n.slide) {
-                              Text* st = new Text(SubStyleId::HARMONY, score);
+                              Text* st = new Text(score, Tid::HARMONY_A);
                               st->setXmlText(QString("SLIDE %1").arg(n.slide));
                               st->setTrack(staff * VOICES);
                               chord->notes().front()->add(st);
@@ -694,7 +694,7 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
                         note->setFret(n.value);
                         note->setString(n.str);
                         const StringData* sd = score->staff(staff)->part()->instrument()->stringData();
-                        int k     = curTrack->infos[staff].strings.size() - n.str - 1;
+                        int k     = int(curTrack->infos[staff].strings.size()) - n.str - 1;
                         int pitch = sd->stringList().at(k).pitch + n.value; //getPitch(n.str, n.value, 0);
                         note->setPitch(pitch);
                         note->setTpcFromPitch();
@@ -714,7 +714,7 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
                         slur->setTrack2(staff  * VOICES);
                         score->addElement(slur);
 
-                        Text* st = new Text(SubStyleId::HARMONY, score);
+                        Text* st = new Text(score, Tid::HARMONY_A);
                         st->setXmlText("H");
                         st->setTrack(staff * VOICES);
                         cr1->notes().front()->add(st);
@@ -736,7 +736,7 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
                   tuple->setTrack(cr->track());
                   tuple->setBaseLen(l);
                   tuple->setRatio(Fraction(3, 2));
-                  tuple->setDuration(l * tuple->ratio().denominator());
+                  tuple->setTicks(l * tuple->ratio().denominator());
                   cr->setTuplet(tuple);
                   tuple->add(cr);
                   tupleBeatCounter = 2;
@@ -748,7 +748,7 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
             auto rest = new Rest(score);
             rest->setTrack(staff * VOICES);
             auto ts = measure->timesig();
-            rest->setDuration(ts);
+            rest->setTicks(ts);
             rest->setDurationType(TDuration(ts));
             measure->getSegment(SegmentType::ChordRest, tick)->add(rest);
             }
@@ -758,7 +758,7 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
 void PowerTab::addToScore(ptSection& sec)
       {
       cur_section = &sec;
-      int tick = score->lastMeasure() ? score->lastMeasure()->endTick() : 0;
+      Fraction tick = score->lastMeasure() ? score->lastMeasure()->endTick() : Fraction(0,1);
 
       Fraction lastTS(-1, -1);
       bool firstMeasure = true;
@@ -775,13 +775,13 @@ void PowerTab::addToScore(ptSection& sec)
                   part->insertStaff(s, -1);
                   auto info = &curTrack->infos[i];
                   std::string ss = info->name;
-                  part->setPartName(QString::fromStdString(ss));
-                  part->setPlainLongName(QString::fromStdString(ss));
+                  part->setPartName(QString::fromUtf8(ss.data(), int(ss.size())));
+                  part->setPlainLongName(QString::fromUtf8(ss.data(), int(ss.size())));
 
                   std::vector<int> reverseStr;
                   for (auto it = info->strings.rbegin(); it != info->strings.rend(); ++it)
                         reverseStr.push_back(*it);
-                  StringData stringData(32, info->strings.size(), reverseStr.data());
+                  StringData stringData(32, int(info->strings.size()), reverseStr.data());
                   part->instrument()->setStringData(stringData);
 
                   part->setMidiProgram(info->instrument);
@@ -790,24 +790,24 @@ void PowerTab::addToScore(ptSection& sec)
                   score->appendPart(part);
                   }
             }
-      auto bar = sec.bars.front();
-      while (bar->denominator == 0) {
+      auto bar1 = sec.bars.front();
+      while (bar1->denominator == 0) {
             if (sec.bars.size() == 1)
                   break;
             sec.bars.pop_front();
-            bar = sec.bars.front();
+            bar1 = sec.bars.front();
             }
-      if (bar->denominator == 0) {
-            bar->denominator = 4;
-            bar->numerator = 4;
+      if (bar1->denominator == 0) {
+            bar1->denominator = 4;
+            bar1->numerator = 4;
             }
-      auto measure = createMeasure(bar.get(), tick);
+      auto measure = createMeasure(bar1.get(), tick);
       if (repeatCount) {
             measure->setRepeatEnd(true);
             measure->setRepeatCount(repeatCount);
             }
-      repeatCount = bar->repeatClose;
-      if (bar->repeatStart) {
+      repeatCount = bar1->repeatClose;
+      if (bar1->repeatStart) {
             measure->setRepeatStart(true);
             }
       if (sec.bars.size() > 1) {
@@ -825,15 +825,15 @@ void PowerTab::addToScore(ptSection& sec)
       if (!sec.partName.empty() && lastPart != sec.partMarker) {
             lastPart = sec.partMarker;
             RehearsalMark* t = new RehearsalMark(score);
-            t->setHasFrame(true);
+            t->setFrameType(FrameType::SQUARE);
             t->setPlainText(QString(sec.partMarker));
             t->setTrack(0);
             auto seg = measure->getSegment(SegmentType::ChordRest, measure->tick());
             seg->add(t);
 
             t = new RehearsalMark(score);
-            t->setHasFrame(false);
-            t->setPlainText(QString::fromStdString(sec.partName));
+            t->setFrameType(FrameType::NO_FRAME);
+            t->setPlainText(QString::fromUtf8(sec.partName.data(), int(sec.partName.size())));
             t->setOffset(QPointF(10.0, 0.0));
             t->setTrack(0);
             seg->add(t);
@@ -851,7 +851,7 @@ void PowerTab::addToScore(ptSection& sec)
                   auto clef = new Clef(score);
                   clef->setTrack(staffIdx * VOICES);
                   clef->setClefType(clefId);
-                  s = measure->getSegment(SegmentType::HeaderClef, 0);
+                  s = measure->getSegment(SegmentType::HeaderClef, Fraction(0,1));
                   s->add(clef);
                   }
 
@@ -877,7 +877,7 @@ void PowerTab::addToScore(ptSection& sec)
                   lastTS = measure->timesig();
                   for (int staffIdx = 0; staffIdx < staves; ++staffIdx) {
                         Staff* staff = score->staff(staffIdx);
-                        auto staffType = staff->staffType(0);
+                        auto staffType = staff->staffType(Fraction(0,1));
                         if (staffType->genTimesig()) {
                               auto t = new TimeSig(score);
                               t->setTrack(staffIdx * VOICES);
@@ -930,7 +930,7 @@ void PowerTab::addToScore(ptSection& sec)
 
 void PowerTab::ptSection::copyTracks(ptTrack* track)
       {
-      //if not found GuitarIn in section or all tracks are readed -> return
+      //if not found GuitarIn in section or all tracks are read -> return
       if (staffs == int(staffMap.size())) {
             return;
             }
@@ -1137,14 +1137,14 @@ std::string crTS(int strings, int tuning[])
       }
 
 
-Measure* PowerTab::createMeasure(ptBar* bar, int tick)
+Measure* PowerTab::createMeasure(ptBar* bar, const Fraction& tick)
       {
       auto measure = new Measure(score);
       Fraction nts(bar->numerator, bar->denominator);
 
       measure->setTick(tick);
       measure->setTimesig(nts);
-      measure->setLen(nts);
+      measure->setTicks(nts);
 
       score->measures()->add(measure);
 
@@ -1210,11 +1210,11 @@ Score::FileError PowerTab::read()
 
       readSongInfo(song.info);
       readDataInstruments(song.track1);
-      staffInc = song.track1.infos.size();
+      staffInc = int(song.track1.infos.size());
       lastStaffMap.clear();
       readDataInstruments(song.track1);
 
-      staves = song.track1.infos.size();
+      staves = int(song.track1.infos.size());
 
       std::vector<tBeatList> parts(staves);
       for (int i = staffInc; i < staves; ++i) {
@@ -1243,14 +1243,14 @@ Score::FileError PowerTab::read()
       MeasureBase* m;
       if (!score->measures()->first()) {
             m = new VBox(score);
-            m->setTick(0);
+            m->setTick(Fraction(0,1));
             score->addMeasure(m, 0);
             }
       else  {
             m = score->measures()->first();
             if (!m->isVBox()) {
                   MeasureBase* mb = new VBox(score);
-                  mb->setTick(0);
+                  mb->setTick(Fraction(0,1));
                   score->addMeasure(mb, m);
                   m = mb;
                   }
@@ -1258,8 +1258,8 @@ Score::FileError PowerTab::read()
       // create title
       std::string name = song.info.name;
       if (!name.empty()) {
-            Text* s = new Text(SubStyleId::TITLE, score);
-            s->setPlainText(QString::fromStdString(name));
+            Text* s = new Text(score, Tid::TITLE);
+            s->setPlainText(QString::fromUtf8(name.data(), int(name.size())));
             m->add(s);
             }
 
@@ -1289,8 +1289,8 @@ Score::FileError PowerTab::read()
 
             Staff* s = new Staff(pscore);
             s->setPart(p);
-            StaffType* st = staff->staffType(0);
-            s->setStaffType(0, st);
+            const StaffType* st = staff->staffType(Fraction(0,1));
+            s->setStaffType(Fraction(0,1), *st);
 
             s->linkTo(staff);
             p->staves()->append(s);
@@ -1310,7 +1310,8 @@ Score::FileError PowerTab::read()
 
             Excerpt::cloneStaves(score, pscore, stavesMap, tracks);
 
-            if (staff->part()->instrument()->stringData()->strings() > 0 && part->staves()->front()->staffType(0)->group() == StaffGroup::STANDARD) {
+            if (staff->part()->instrument()->stringData()->strings() > 0
+               && part->staves()->front()->staffType(Fraction(0,1))->group() == StaffGroup::STANDARD) {
                   p->setStaves(2);
                   Staff* s1 = p->staff(1);
 
@@ -1318,9 +1319,9 @@ Score::FileError PowerTab::read()
                   StaffTypes sts = StaffTypes::TAB_DEFAULT;
                   if (lines == 4)
                         sts = StaffTypes::TAB_4COMMON;
-                  StaffType st = *StaffType::preset(sts);
-                  s1->setStaffType(0, &st);
-                  s1->setLines(0, lines);
+                  StaffType st1 = *StaffType::preset(sts);
+                  s1->setStaffType(Fraction(0,1), st1);
+                  s1->setLines(Fraction(0,1), lines);
                   Excerpt::cloneStaff(s, s1);
                   BracketItem* bi = new BracketItem(pscore, BracketType::NORMAL, 2);
                   p->staves()->front()->addBracket(bi);
@@ -1333,11 +1334,11 @@ Score::FileError PowerTab::read()
             MeasureBase* measure = pscore->first();
             if (!measure || (measure->type() != ElementType::VBOX)) {
                   MeasureBase* mb = new VBox(pscore);
-                  mb->setTick(0);
+                  mb->setTick(Fraction(0,1));
                   pscore->addMeasure(mb, measure);
                   measure = mb;
                   }
-            Text* txt = new Text(SubStyleId::INSTRUMENT_EXCERPT, pscore);
+            Text* txt = new Text(pscore, Tid::INSTRUMENT_EXCERPT);
             txt->setPlainText(part->longName());
             measure->add(txt);
 

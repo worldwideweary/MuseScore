@@ -23,19 +23,6 @@ Note* Tie::editStartNote;
 Note* Tie::editEndNote;
 
 //---------------------------------------------------------
-//   updateGrips
-//    return grip rectangles in page coordinates
-//---------------------------------------------------------
-
-void TieSegment::updateGrips(EditData& ed) const
-      {
-      QPointF p(pagePos());
-      p -= QPointF(0.0, system()->staff(staffIdx())->y());   // ??
-      for (int i = 0; i < int(Grip::GRIPS); ++i)
-            ed.grip[i].translate(_ups[i].p + _ups[i].off + p);
-      }
-
-//---------------------------------------------------------
 //   draw
 //---------------------------------------------------------
 
@@ -46,26 +33,27 @@ void TieSegment::draw(QPainter* painter) const
             return;
 
       QPen pen(curColor());
+      qreal mag = staff() ? staff()->mag(tie()->tick()) : 1.0;
       switch (slurTie()->lineType()) {
             case 0:
                   painter->setBrush(QBrush(pen.color()));
                   pen.setCapStyle(Qt::RoundCap);
                   pen.setJoinStyle(Qt::RoundJoin);
-                  pen.setWidthF(score()->styleP(Sid::SlurEndWidth));
+                  pen.setWidthF(score()->styleP(Sid::SlurEndWidth) * mag);
                   break;
             case 1:
                   painter->setBrush(Qt::NoBrush);
-                  pen.setWidthF(score()->styleP(Sid::SlurDottedWidth));
+                  pen.setWidthF(score()->styleP(Sid::SlurDottedWidth) * mag);
                   pen.setStyle(Qt::DotLine);
                   break;
             case 2:
                   painter->setBrush(Qt::NoBrush);
-                  pen.setWidthF(score()->styleP(Sid::SlurDottedWidth));
+                  pen.setWidthF(score()->styleP(Sid::SlurDottedWidth) * mag);
                   pen.setStyle(Qt::DashLine);
                   break;
             case 3:
                   painter->setBrush(Qt::NoBrush);
-                  pen.setWidthF(score()->styleP(Sid::SlurDottedWidth));
+                  pen.setWidthF(score()->styleP(Sid::SlurDottedWidth) * mag);
                   pen.setStyle(Qt::CustomDashLine);
                   QVector<qreal> dashes { 5.0, 5.0 };
                   pen.setDashPattern(dashes);
@@ -123,17 +111,17 @@ void TieSegment::changeAnchor(EditData& ed, Element* element)
                   }
             }
 
-      int segments  = spanner()->spannerSegments().size();
+      const size_t segments  = spanner()->spannerSegments().size();
       ups(ed.curGrip).off = QPointF();
       spanner()->layout();
       if (spanner()->spannerSegments().size() != segments) {
-            QList<SpannerSegment*>& ss = spanner()->spannerSegments();
+            const std::vector<SpannerSegment*>& ss = spanner()->spannerSegments();
 
             TieSegment* newSegment = toTieSegment(ed.curGrip == Grip::END ? ss.back() : ss.front());
             score()->endCmd();
             score()->startCmd();
             ed.view->startEdit(newSegment, ed.curGrip);
-            score()->setLayoutAll();
+            triggerLayoutAll();
             }
       }
 
@@ -180,7 +168,7 @@ void TieSegment::editDrag(EditData& ed)
             }
       else if (g == Grip::DRAG) {
             ups(Grip::DRAG).off = QPointF();
-            setUserOff(userOff() + ed.delta);
+            roffset() += ed.delta;
             }
 
       // if this SlurSegment was automatically adjusted to avoid collision
@@ -189,9 +177,8 @@ void TieSegment::editDrag(EditData& ed)
       QPointF offset = getAutoAdjust();
       if (!offset.isNull()) {
             setAutoAdjust(0.0, 0.0);
-            setUserOff(userOff() + offset);
+            roffset() += offset;
             }
-      undoChangeProperty(Pid::AUTOPLACE, false);
       }
 
 //---------------------------------------------------------
@@ -250,6 +237,8 @@ void TieSegment::computeBezier(QPointF p6o)
       QPointF p4(c2, -shoulderH);
 
       qreal w = score()->styleP(Sid::SlurMidWidth) - score()->styleP(Sid::SlurEndWidth);
+      if (staff())
+            w *= staff()->mag(tie()->tick());
       QPointF th(0.0, w);    // thickness of slur
 
       QPointF p3o = p6o + t.map(ups(Grip::BEZIER1).off);
@@ -288,8 +277,12 @@ void TieSegment::computeBezier(QPointF p6o)
       shapePath.cubicTo(p4 +p4o + th, p3 + p3o + th, QPointF());
 
       // translate back
+      double y = pp1.y();
+      const double offsetFactor = 0.2;
+      if (staff()->isTabStaff(slurTie()->tick()))
+          y += (_spatium * (slurTie()->up() ? -offsetFactor : offsetFactor));
       t.reset();
-      t.translate(pp1.x(), pp1.y());
+      t.translate(pp1.x(), y);
       t.rotateRadians(sinb);
       path                  = t.map(path);
       shapePath             = t.map(shapePath);
@@ -306,24 +299,20 @@ void TieSegment::computeBezier(QPointF p6o)
 //      path.translate(staffOffset);
 //      shapePath.translate(staffOffset);
 
-      QPainterPath p;
-      p.moveTo(QPointF());
-//      p.cubicTo(p3 + p3o - th, p4 + p4o - th, p2);
-      p.cubicTo(p3 + p3o, p4 + p4o, p2);
       _shape.clear();
       QPointF start;
       start = t.map(start);
 
       qreal minH = qAbs(3.0 * w);
       int nbShapes = 15;
+      const CubicBezier b(pp1, ups(Grip::BEZIER1).pos(), ups(Grip::BEZIER2).pos(), ups(Grip::END).pos());
       for (int i = 1; i <= nbShapes; i++) {
-            QPointF point = t.map(p.pointAtPercent(i/float(nbShapes)));
+            const QPointF point = b.pointAtPercent(i/float(nbShapes));
             QRectF re = QRectF(start, point).normalized();
             if (re.height() < minH) {
-                  qreal d = (minH - re.height()) * .5;
+                  d = (minH - re.height()) * .5;
                   re.adjust(0.0, -d, 0.0, d);
                   }
-//            re.translate(staffOffset);
             _shape.add(re);
             start = point;
             }
@@ -336,10 +325,7 @@ void TieSegment::computeBezier(QPointF p6o)
 
 void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       {
-      if (autoplace()) {
-            for (UP& up : _ups)
-                  up.off = QPointF();
-            }
+      setPos(QPointF());
       ups(Grip::START).p = p1;
       ups(Grip::END).p   = p2;
       computeBezier();
@@ -362,7 +348,7 @@ void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
             // for two-note chords, it looks better to have notes on spaces tied outside the lines
 
             if (sc) {
-                  int notes = sc->notes().size();
+                  size_t notes = sc->notes().size();
                   bool onLine = !(sn->line() & 1);
                   if ((onLine && notes > 1) || (!onLine && notes > 2))
                         reverseAdjust = true;
@@ -390,20 +376,11 @@ void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
                               else
                                     offY = (lineY + minDistance) - bottomY;
                               setAutoAdjust(0.0, offY * sp);
-                              bbox = path.boundingRect();
                               }
                         }
                   }
             }
-
-      setbbox(bbox);
-      if ((staffIdx() > 0) && score()->mscVersion() < 206 && !readPos().isNull()) {
-            QPointF staffOffset;
-            if (system() && track() >= 0)
-                  staffOffset = QPointF(0.0, system()->staff(staffIdx())->y());
-            setReadPos(readPos() + staffOffset);
-            }
-      adjustReadPos();
+      setbbox(path.boundingRect());
       }
 
 //---------------------------------------------------------
@@ -445,7 +422,7 @@ bool TieSegment::isEdited() const
 void Tie::slurPos(SlurPos* sp)
       {
       bool useTablature = staff() && staff()->isTabStaff(tick());
-      StaffType* stt    = useTablature ? staff()->staffType(tick()) : 0;
+      const StaffType* stt = useTablature ? staff()->staffType(tick()) : 0;
       qreal _spatium    = spatium();
       qreal hw          = startNote()->tabHeadWidth(stt);   // if stt == 0, defaults to headWidth()
       qreal __up        = _up ? -1.0 : 1.0;
@@ -454,7 +431,7 @@ void Tie::slurPos(SlurPos* sp)
       // Outside: Tab: uses font size and may be asymmetric placed above/below line (frets ON or ABOVE line)
       //          Std: assumes notehead is 1 sp high, 1/2 sp above and 1/2 below line; add 1/4 sp to it
       // Inside:  Tab: 1/2 of Outside offset
-      //          Std: use a fixed pecentage of note width
+      //          Std: use a fixed percentage of note width
       qreal yOffOutside = useTablature
             ? (_up ? stt->fretBoxY() : stt->fretBoxY() + stt->fretBoxH()) * magS()
             : 0.75 * _spatium * __up;
@@ -500,14 +477,36 @@ void Tie::slurPos(SlurPos* sp)
       sp->p2    = ec->pos() + ec->segment()->pos() + ec->measure()->pos();
       sp->system2 = ec->measure()->system();
 
+      // force tie to be horizontal except for cross-staff or if there is a difference of line (tpc, clef, tpc)
+      bool horizontal = startNote()->line() == endNote()->line() && sc->vStaffIdx() == ec->vStaffIdx();
+
       hw = endNote()->tabHeadWidth(stt);
-      if ((ec->notes().size() > 1) || (ec->stem() && !ec->up() && !_up))
+      if ((ec->notes().size() > 1) || (ec->stem() && !ec->up() && !_up)) {
             xo = endNote()->x() - hw * 0.12;
-      else if (shortStart)
+            if (!horizontal)
+                  yo = endNote()->pos().y() + yOffInside;
+            }
+      else if (shortStart) {
             xo = endNote()->x() + hw * 0.15;
-      else
+            if (!horizontal)
+                  yo = endNote()->pos().y() + yOffOutside;
+            }
+      else {
             xo = endNote()->x() + hw * 0.35;
+            if (!horizontal)
+                  yo = endNote()->pos().y() + yOffOutside;
+            }
       sp->p2 += QPointF(xo, yo);
+
+      // adjust for cross-staff
+      if (sc->vStaffIdx() != vStaffIdx() && sp->system1) {
+            qreal diff = sp->system1->staff(sc->vStaffIdx())->y() - sp->system1->staff(vStaffIdx())->y();
+            sp->p1.ry() += diff;
+            }
+      if (ec->vStaffIdx() != vStaffIdx() && sp->system2) {
+            qreal diff = sp->system2->staff(ec->vStaffIdx())->y() - sp->system2->staff(vStaffIdx())->y();
+            sp->p2.ry() += diff;
+            }
       }
 
 //---------------------------------------------------------
@@ -526,35 +525,9 @@ Tie::Tie(Score* s)
 
 void Tie::write(XmlWriter& xml) const
       {
-      xml.stag(QString("Tie id=\"%1\"").arg(xml.spannerId(this)));
+      xml.stag(this);
       SlurTie::writeProperties(xml);
       xml.etag();
-      }
-
-//---------------------------------------------------------
-//   read
-//---------------------------------------------------------
-
-void Tie::read(XmlReader& e)
-      {
-      e.addSpanner(e.intAttribute("id"), this);
-      while (e.readNextStartElement()) {
-            if (SlurTie::readProperties(e))
-                  ;
-            else
-                  e.unknown();
-            }
-      if (score()->mscVersion() <= 114 && spannerSegments().size() == 1) {
-            // ignore manual adjustments to single-segment ties in older scores
-            TieSegment* ss = frontSegment();
-            QPointF zeroP;
-            ss->ups(Grip::START).off     = zeroP;
-            ss->ups(Grip::BEZIER1).off   = zeroP;
-            ss->ups(Grip::BEZIER2).off   = zeroP;
-            ss->ups(Grip::END).off       = zeroP;
-            ss->setUserOff(zeroP);
-            ss->setUserOff2(zeroP);
-            }
       }
 
 //---------------------------------------------------------
@@ -570,7 +543,7 @@ void Tie::calculateDirection()
 
       if (_slurDirection == Direction::AUTO) {
             std::vector<Note*> notes = c1->notes();
-            int n = notes.size();
+            size_t n = notes.size();
             if (m1->hasVoices(c1->staffIdx()) || m2->hasVoices(c2->staffIdx())) {
                   // in polyphonic passage, ties go on the stem side
                   _up = c1->up();
@@ -593,12 +566,12 @@ void Tie::calculateDirection()
                   QList<int> ties;
                   int idx = 0;
                   int noteIdx = -1;
-                  for (int i = 0; i < n; ++i) {
+                  for (size_t i = 0; i < n; ++i) {
                         if (notes[i]->tieFor()) {
                               ties.append(notes[i]->line());
                               if (notes[i] == startNote()) {
                                     idx = ties.size() - 1;
-                                    noteIdx = i;
+                                    noteIdx = int(i);
                                     }
                               }
                         }
@@ -627,15 +600,22 @@ void Tie::calculateDirection()
 //    layout the first SpannerSegment of a slur
 //---------------------------------------------------------
 
-void Tie::layoutFor(System* system)
+TieSegment* Tie::layoutFor(System* system)
       {
+      // do not layout ties in tablature if not showing back-tied fret marks
+      StaffType* st = staff()->staffType(startNote() ? startNote()->tick() : Fraction(0, 1));
+      if (st && st->isTabStaff() && !st->showBackTied()) {
+            if (!segmentsEmpty())
+                  eraseSpannerSegments();
+            return nullptr;
+            }
       //
       //    show short bow
       //
       if (startNote() == 0 || endNote() == 0) {
             if (startNote() == 0) {
                   qDebug("no start note");
-                  return;
+                  return 0;
                   }
             Chord* c1 = startNote()->chord();
             if (_slurDirection == Direction::AUTO) {
@@ -655,7 +635,7 @@ void Tie::layoutFor(System* system)
             SlurPos sPos;
             slurPos(&sPos);
             segment->layoutSegment(sPos.p1, sPos.p2);
-            return;
+            return segment;
             }
       calculateDirection();
 
@@ -677,6 +657,7 @@ void Tie::layoutFor(System* system)
       segment->setSystem(system); // Needed to populate System.spannerSegments
       segment->layoutSegment(sPos.p1, sPos.p2);
       segment->setSpannerSegmentType(sPos.system1 != sPos.system2 ? SpannerSegmentType::BEGIN : SpannerSegmentType::SINGLE);
+      return segment;
       }
 
 //---------------------------------------------------------
@@ -684,8 +665,16 @@ void Tie::layoutFor(System* system)
 //    layout the second SpannerSegment of a split slur
 //---------------------------------------------------------
 
-void Tie::layoutBack(System* system)
+TieSegment* Tie::layoutBack(System* system)
       {
+      // do not layout ties in tablature if not showing back-tied fret marks
+      StaffType* st = staff()->staffType(startNote() ? startNote()->tick() : Fraction(0, 1));
+      if (st->isTabStaff() && !st->showBackTied()) {
+            if (!segmentsEmpty())
+                  eraseSpannerSegments();
+            return nullptr;
+            }
+
       SlurPos sPos;
       slurPos(&sPos);
 
@@ -694,7 +683,7 @@ void Tie::layoutBack(System* system)
       segment->setSystem(system);
 
       qreal x;
-      Segment* seg = endNote()->chord()->segment()->prev();
+      Segment* seg = endNote()->chord()->segment()->prevActive();
       if (seg) {
             // find maximum width
             qreal width = 0.0;
@@ -703,8 +692,8 @@ void Tie::layoutBack(System* system)
                   if (!system->staff(i)->show())
                         continue;
                   Element* e = seg->element(i * VOICES);
-                  if (e)
-                        width = qMax(width, e->width());
+                  if (e && e->addToSkyline())
+                        width = qMax(width, e->pos().x() + e->bbox().right());
                   }
             x = seg->measure()->pos().x() + seg->pos().x() + width;
             }
@@ -713,6 +702,7 @@ void Tie::layoutBack(System* system)
 
       segment->layoutSegment(QPointF(x, sPos.p2.y()), sPos.p2);
       segment->setSpannerSegmentType(SpannerSegmentType::END);
+      return segment;
       }
 
 #if 0
@@ -722,7 +712,7 @@ void Tie::layoutBack(System* system)
 
 void Tie::startEdit(EditData& ed)
       {
-      printf("tie start edit %p %p\n", editStartNote, editEndNote);
+printf("tie start edit %p %p\n", editStartNote, editEndNote);
       editStartNote = startNote();
       editEndNote   = endNote();
       SlurTie::startEdit(ed);
@@ -734,7 +724,7 @@ void Tie::startEdit(EditData& ed)
 
 void Tie::endEdit(EditData& ed)
       {
-      printf("tie::endEdit\n");
+//printf("tie::endEdit\n");
 //      if (editStartNote != startNote() || editEndNote != endNote()) {
 //            score()->undoStack()->push1(new ChangeSpannerElements(this, editStartNote, editEndNote));
 //            }
@@ -770,30 +760,5 @@ Note* Tie::endNote() const
       {
       return toNote(endElement());
       }
-
-//---------------------------------------------------------
-//   readProperties
-//---------------------------------------------------------
-
-bool Tie::readProperties(XmlReader& e)
-      {
-      const QStringRef& tag(e.name());
-
-      if (tag == "SlurSegment") {
-            int idx = e.intAttribute("no", 0);
-            int n = spannerSegments().size();
-            for (int i = n; i < idx; ++i)
-                  add(new TieSegment(score()));
-            TieSegment* segment = new TieSegment(score());
-            segment->setAutoplace(false);
-            segment->read(e);
-            add(segment);
-            }
-      else if (!SlurTie::readProperties(e))
-            return false;
-      return true;
-      }
-
-
 }
 

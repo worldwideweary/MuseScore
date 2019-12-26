@@ -24,13 +24,16 @@
 
 namespace Ms {
 
+//---------------------------------------------------------
+//   vibratoTable
+//    must be in sync with Vibrato::Type
+//---------------------------------------------------------
 
-// must be in sync with Vibrato::Type
 const VibratoTableItem vibratoTable[] = {
-      { Vibrato::Type::GUITAR_VIBRATO,         "guitarVibrato",         QT_TRANSLATE_NOOP("vibratoType", "Guitar vibrato")          },
-      { Vibrato::Type::GUITAR_VIBRATO_WIDE,    "guitarVibratoWide",     QT_TRANSLATE_NOOP("vibratoType", "Guitar vibrato wide")     },
-      { Vibrato::Type::VIBRATO_SAWTOOTH,         "vibratoSawtooth",       QT_TRANSLATE_NOOP("vibratoType", "Vibrato sawtooth")        },
-      { Vibrato::Type::VIBRATO_SAWTOOTH_WIDE,    "vibratoSawtoothWide",   QT_TRANSLATE_NOOP("vibratoType", "tremolo sawtooth wide")   }
+      { Vibrato::Type::GUITAR_VIBRATO,        "guitarVibrato",       QT_TRANSLATE_NOOP("vibratoType", "Guitar vibrato")        },
+      { Vibrato::Type::GUITAR_VIBRATO_WIDE,   "guitarVibratoWide",   QT_TRANSLATE_NOOP("vibratoType", "Guitar vibrato wide")   },
+      { Vibrato::Type::VIBRATO_SAWTOOTH,      "vibratoSawtooth",     QT_TRANSLATE_NOOP("vibratoType", "Vibrato sawtooth")      },
+      { Vibrato::Type::VIBRATO_SAWTOOTH_WIDE, "vibratoSawtoothWide", QT_TRANSLATE_NOOP("vibratoType", "Tremolo sawtooth wide") }
       };
 
 int vibratoTableSize() {
@@ -97,11 +100,11 @@ void VibratoSegment::symbolLine(SymId start, SymId fill, SymId end)
 
 void VibratoSegment::layout()
       {
-      if (autoplace())
-            setUserOff(QPointF());
-
       if (staff())
             setMag(staff()->mag(tick()));
+      if (spanner()->placeBelow())
+            rypos() = staff() ? staff()->height() : 0.0;
+
       if (isSingleType() || isBeginType()) {
             switch (vibrato()->vibratoType()) {
                   case Vibrato::Type::GUITAR_VIBRATO:
@@ -120,27 +123,10 @@ void VibratoSegment::layout()
             }
       else
             symbolLine(SymId::wiggleVibrato, SymId::wiggleVibrato);
+      if (isStyled(Pid::OFFSET))
+            roffset() = vibrato()->propertyDefault(Pid::OFFSET).toPointF();
 
-      if (parent()) {
-            qreal yo = score()->styleP(vibrato()->placeBelow() ? Sid::vibratoPosBelow : Sid::vibratoPosAbove);
-            rypos() = yo;
-            if (autoplace()) {
-                  qreal minDistance = spatium();
-                  Shape s1 = shape().translated(pos());
-                  if (vibrato()->placeAbove()) {
-                        qreal d  = system()->topDistance(staffIdx(), s1);
-                        if (d > -minDistance)
-                              rUserYoffset() = -d - minDistance;
-                        }
-                  else {
-                        qreal d  = system()->bottomDistance(staffIdx(), s1);
-                        if (d > -minDistance)
-                              rUserYoffset() = d + minDistance;
-                        }
-                  }
-            else
-                  adjustReadPos();
-            }
+      autoplaceSpannerSegment();
       }
 
 //---------------------------------------------------------
@@ -153,55 +139,24 @@ Shape VibratoSegment::shape() const
       }
 
 //---------------------------------------------------------
-//   getProperty
+//   propertyDelegate
 //---------------------------------------------------------
 
-QVariant VibratoSegment::getProperty(Pid id) const
+Element* VibratoSegment::propertyDelegate(Pid pid)
       {
-      switch (id) {
-            case Pid::VIBRATO_TYPE:
-            case Pid::ORNAMENT_STYLE:
-            case Pid::PLACEMENT:
-            case Pid::PLAY:
-                  return vibrato()->getProperty(id);
-            default:
-                  return LineSegment::getProperty(id);
-            }
+      if (pid == Pid::VIBRATO_TYPE || pid == Pid::PLACEMENT || pid == Pid::PLAY)
+            return spanner();
+      return LineSegment::propertyDelegate(pid);
       }
 
 //---------------------------------------------------------
-//   setProperty
+//   vibratoStyle
 //---------------------------------------------------------
 
-bool VibratoSegment::setProperty(Pid id, const QVariant& v)
-      {
-      switch (id) {
-            case Pid::VIBRATO_TYPE:
-            case Pid::ORNAMENT_STYLE:
-            case Pid::PLACEMENT:
-            case Pid::PLAY:
-                  return vibrato()->setProperty(id, v);
-            default:
-                  return LineSegment::setProperty(id, v);
-            }
-      }
-
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
-QVariant VibratoSegment::propertyDefault(Pid id) const
-      {
-      switch (id) {
-            case Pid::VIBRATO_TYPE:
-            case Pid::ORNAMENT_STYLE:
-            case Pid::PLACEMENT:
-            case Pid::PLAY:
-                  return vibrato()->propertyDefault(id);
-            default:
-                  return LineSegment::propertyDefault(id);
-            }
-      }
+static const ElementStyle vibratoStyle {
+      { Sid::vibratoPlacement,      Pid::PLACEMENT    },
+      { Sid::vibratoPosAbove,       Pid::OFFSET       },
+      };
 
 //---------------------------------------------------------
 //   Vibrato
@@ -210,9 +165,9 @@ QVariant VibratoSegment::propertyDefault(Pid id) const
 Vibrato::Vibrato(Score* s)
   : SLine(s)
       {
+      initElementStyle(&vibratoStyle);
       _vibratoType = Type::GUITAR_VIBRATO;
       setPlayArticulation(true);
-      setPlacement(Placement::ABOVE);
       }
 
 Vibrato::~Vibrato()
@@ -234,15 +189,21 @@ void Vibrato::layout()
             }
       }
 
+static const ElementStyle vibratoSegmentStyle {
+      { Sid::vibratoPosAbove,       Pid::OFFSET       },
+      { Sid::vibratoMinDistance,    Pid::MIN_DISTANCE },
+      };
+
 //---------------------------------------------------------
 //   createLineSegment
 //---------------------------------------------------------
 
 LineSegment* Vibrato::createLineSegment()
       {
-      VibratoSegment* seg = new VibratoSegment(score());
+      VibratoSegment* seg = new VibratoSegment(this, score());
       seg->setTrack(track());
       seg->setColor(color());
+      seg->initElementStyle(&vibratoSegmentStyle);
       return seg;
       }
 
@@ -254,9 +215,11 @@ void Vibrato::write(XmlWriter& xml) const
       {
       if (!xml.canWrite(this))
             return;
-      xml.stag(QString("%1 id=\"%2\"").arg(name()).arg(xml.spannerId(this)));
+      xml.stag(this);
       xml.tag("subtype", vibratoTypeName());
       writeProperty(xml, Pid::PLAY);
+      for (const StyledProperty& spp : *styledProperties())
+            writeProperty(xml, spp.pid);
       SLine::writeProperties(xml);
       xml.etag();
       }
@@ -267,10 +230,8 @@ void Vibrato::write(XmlWriter& xml) const
 
 void Vibrato::read(XmlReader& e)
       {
-      qDeleteAll(spannerSegments());
-      spannerSegments().clear();
+      eraseSpannerSegments();
 
-      e.addSpanner(e.intAttribute("id", -1), this);
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
             if (tag == "subtype")
@@ -298,17 +259,26 @@ void Vibrato::setVibratoType(const QString& s)
       }
 
 //---------------------------------------------------------
+//   type2name
+//---------------------------------------------------------
+
+QString Vibrato::type2name(Vibrato::Type t)
+      {
+      for (VibratoTableItem i : vibratoTable) {
+            if (i.type == t)
+                  return i.name;
+            }
+      qDebug("unknown Vibrato subtype %d", int(t));
+            return "?";
+      }
+
+//---------------------------------------------------------
 //   vibratoTypeName
 //---------------------------------------------------------
 
 QString Vibrato::vibratoTypeName() const
       {
-      for (VibratoTableItem i : vibratoTable) {
-            if (i.type == vibratoType())
-                  return i.name;
-            }
-      qDebug("unknown Vibrato subtype %d", int(vibratoType()));
-            return "?";
+      return type2name(vibratoType());
       }
 
 //---------------------------------------------------------
@@ -318,6 +288,24 @@ QString Vibrato::vibratoTypeName() const
 QString Vibrato::vibratoTypeUserName() const
       {
       return qApp->translate("vibratoType", vibratoTable[static_cast<int>(vibratoType())].userName.toUtf8().constData());
+      }
+
+//---------------------------------------------------------
+//   getPropertyStyle
+//---------------------------------------------------------
+
+Sid VibratoSegment::getPropertyStyle(Pid pid) const
+      {
+      if (pid == Pid::OFFSET)
+            return spanner()->placeAbove() ? Sid::vibratoPosAbove : Sid::vibratoPosBelow;
+      return LineSegment::getPropertyStyle(pid);
+      }
+
+Sid Vibrato::getPropertyStyle(Pid pid) const
+      {
+      if (pid == Pid::OFFSET)
+            return placeAbove() ? Sid::vibratoPosAbove : Sid::vibratoPosBelow;
+      return SLine::getPropertyStyle(pid);
       }
 
 //---------------------------------------------------------
@@ -355,7 +343,7 @@ bool Vibrato::setProperty(Pid propertyId, const QVariant& val)
                         return false;
                   break;
             }
-      score()->setLayoutAll();
+      triggerLayoutAll();
       return true;
       }
 
@@ -371,11 +359,21 @@ QVariant Vibrato::propertyDefault(Pid propertyId) const
             case Pid::PLAY:
                   return true;
             case Pid::PLACEMENT:
-                  return int(Placement::ABOVE);
+                  return score()->styleV(Sid::vibratoPlacement);
             default:
                   return SLine::propertyDefault(propertyId);
             }
-      return QVariant();
+      }
+
+//---------------------------------------------------------
+//   propertyId
+//---------------------------------------------------------
+
+Pid Vibrato::propertyId(const QStringRef& name) const
+      {
+      if (name == "subtype")
+            return Pid::VIBRATO_TYPE;
+      return SLine::propertyId(name);
       }
 
 //---------------------------------------------------------
@@ -385,15 +383,6 @@ QVariant Vibrato::propertyDefault(Pid propertyId) const
 void Vibrato::undoSetVibratoType(Type val)
       {
       undoChangeProperty(Pid::VIBRATO_TYPE, int(val));
-      }
-
-//---------------------------------------------------------
-//   setYoff
-//---------------------------------------------------------
-
-void Vibrato::setYoff(qreal val)
-      {
-      rUserYoffset() += val * spatium() - score()->styleP(Sid::vibratoPosAbove);
       }
 
 //---------------------------------------------------------

@@ -21,15 +21,21 @@
 namespace Ms {
 
 //---------------------------------------------------------
+//   tremoloBarStyle
+//---------------------------------------------------------
+
+static const ElementStyle tremoloBarStyle {
+      { Sid::tremoloBarLineWidth,  Pid::LINE_WIDTH  },
+      };
+
+//---------------------------------------------------------
 //   TremoloBar
 //---------------------------------------------------------
 
 TremoloBar::TremoloBar(Score* s)
-   : Element(s)
+   : Element(s, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
       {
-      setFlags(ElementFlag::MOVABLE | ElementFlag::SELECTABLE | ElementFlag::ON_STAFF);
-      setLineWidth(score()->styleS(Sid::tremoloBarLineWidth));
-      lineWidthStyle = PropertyFlags::STYLED;
+      initElementStyle(&tremoloBarStyle);
       }
 
 //---------------------------------------------------------
@@ -59,7 +65,7 @@ void TremoloBar::layout()
       for (auto v : _points)
             polygon << QPointF(v.time * timeFactor, v.pitch * pitchFactor);
 
-      qreal w = _lw.val() * _spatium;
+      qreal w = _lw.val();
       setbbox(polygon.boundingRect().adjusted(-w, -w, w, w));
       }
 
@@ -69,7 +75,7 @@ void TremoloBar::layout()
 
 void TremoloBar::draw(QPainter* painter) const
       {
-      QPen pen(curColor(), _lw.val() * spatium(), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+      QPen pen(curColor(), _lw.val(), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
       painter->setPen(pen);
       painter->drawPolyline(polygon);
       }
@@ -80,7 +86,7 @@ void TremoloBar::draw(QPainter* painter) const
 
 void TremoloBar::write(XmlWriter& xml) const
       {
-      xml.stag("TremoloBar");
+      xml.stag(this);
       writeProperty(xml, Pid::MAG);
       writeProperty(xml, Pid::LINE_WIDTH);
       writeProperty(xml, Pid::PLAY);
@@ -109,40 +115,15 @@ void TremoloBar::read(XmlReader& e)
                   }
             else if (tag == "mag")
                   _userMag = e.readDouble(0.1, 10.0);
-            else if (tag == "lineWidth")
-                  setLineWidth(Spatium(e.readDouble()));
+            else if (readStyledProperty(e, tag))
+                  ;
             else if (tag == "play")
                   setPlay(e.readInt());
+            else if (readProperty(tag, e, Pid::LINE_WIDTH))
+                  ;
             else
                   e.unknown();
             }
-      }
-
-//---------------------------------------------------------
-//   undoSetUserMag
-//---------------------------------------------------------
-
-void TremoloBar::undoSetUserMag(qreal val)
-      {
-      undoChangeProperty(Pid::MAG, val);
-      }
-
-//---------------------------------------------------------
-//   undoSetLineWidth
-//---------------------------------------------------------
-
-void TremoloBar::undoSetLineWidth(Spatium val)
-      {
-      undoChangeProperty(Pid::LINE_WIDTH, val);
-      }
-
-//---------------------------------------------------------
-//   undoSetPlay
-//---------------------------------------------------------
-
-void TremoloBar::undoSetPlay(bool val)
-      {
-      undoChangeProperty(Pid::PLAY, val);
       }
 
 //---------------------------------------------------------
@@ -164,24 +145,6 @@ QVariant TremoloBar::getProperty(Pid propertyId) const
       }
 
 //---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
-QVariant TremoloBar::propertyDefault(Pid propertyId) const
-      {
-      switch (propertyId) {
-            case Pid::LINE_WIDTH:
-                  return score()->styleV(Sid::voltaLineWidth);
-            case Pid::MAG:
-                  return 1.0;
-            case Pid::PLAY:
-                  return true;
-            default:
-                  return Element::propertyDefault(propertyId);
-            }
-      }
-
-//---------------------------------------------------------
 //   setProperty
 //---------------------------------------------------------
 
@@ -189,7 +152,6 @@ bool TremoloBar::setProperty(Pid propertyId, const QVariant& v)
       {
       switch (propertyId) {
             case Pid::LINE_WIDTH:
-                  lineWidthStyle = PropertyFlags::UNSTYLED;
                   setLineWidth(v.value<Spatium>());
                   break;
             case Pid::MAG:
@@ -202,72 +164,31 @@ bool TremoloBar::setProperty(Pid propertyId, const QVariant& v)
             default:
                   return Element::setProperty(propertyId, v);
             }
-      score()->setLayoutAll();
+      triggerLayout();
       return true;
       }
 
 //---------------------------------------------------------
-//   propertyStyle
+//   propertyDefault
 //---------------------------------------------------------
 
-PropertyFlags& TremoloBar::propertyFlags(Pid id)
+QVariant TremoloBar::propertyDefault(Pid pid) const
       {
-      switch (id) {
-            case Pid::LINE_WIDTH:
-                  return lineWidthStyle;
-
+      switch (pid) {
+            case Pid::MAG:
+                  return 1.0;
+            case Pid::PLAY:
+                  return true;
             default:
-                  return Element::propertyFlags(id);
+                  for (const StyledProperty& p : *styledProperties()) {
+                        if (p.pid == pid) {
+                              if (propertyType(pid) == P_TYPE::SP_REAL)
+                                    return score()->styleP(p.sid);
+                              return score()->styleV(p.sid);
+                              }
+                        }
+                  return Element::propertyDefault(pid);
             }
-      }
-
-//---------------------------------------------------------
-//   resetProperty
-//---------------------------------------------------------
-
-void TremoloBar::resetProperty(Pid id)
-      {
-      switch (id) {
-            case Pid::LINE_WIDTH:
-                  setProperty(id, propertyDefault(id));
-                  lineWidthStyle = PropertyFlags::STYLED;
-                  break;
-
-            default:
-                  return Element::resetProperty(id);
-            }
-      }
-
-//---------------------------------------------------------
-//   styleChanged
-//    reset all styled values to actual style
-//---------------------------------------------------------
-
-void TremoloBar::styleChanged()
-      {
-      if (lineWidthStyle == PropertyFlags::STYLED)
-            setLineWidth(score()->styleS(Sid::voltaLineWidth));
-      }
-
-//---------------------------------------------------------
-//   reset
-//---------------------------------------------------------
-
-void TremoloBar::reset()
-      {
-      if (lineWidthStyle == PropertyFlags::UNSTYLED)
-            undoChangeProperty(Pid::LINE_WIDTH, propertyDefault(Pid::LINE_WIDTH), PropertyFlags::STYLED);
-      Element::reset();
-      }
-
-//---------------------------------------------------------
-//   spatiumChanged
-//---------------------------------------------------------
-
-void TremoloBar::spatiumChanged(qreal oldValue, qreal newValue)
-      {
-      _lw *= (newValue / oldValue);
-      Element::spatiumChanged(oldValue, newValue);
       }
 
 }

@@ -23,6 +23,9 @@ class ChordRest;
 class MuseScoreView;
 class Chord;
 class System;
+class Skyline;
+
+enum class IconType : signed char;
 enum class SpannerSegmentType;
 
 struct BeamFragment;
@@ -32,6 +35,7 @@ struct BeamFragment;
 //---------------------------------------------------------
 
 class Beam final : public Element {
+      Q_GADGET
       QVector<ChordRest*> _elements;        // must be sorted by tick
       QVector<QLineF*> beamSegments;
       Direction _direction;
@@ -67,9 +71,11 @@ class Beam final : public Element {
 
    public:
       enum class Mode : signed char {
+            ///.\{
             AUTO, BEGIN, MID, END, NONE, BEGIN32, BEGIN64, INVALID = -1
+            ///\}
             };
-      Q_ENUMS(Mode)
+      Q_ENUM(Mode);
 
       Beam(Score* = 0);
       Beam(const Beam&);
@@ -83,10 +89,9 @@ class Beam final : public Element {
       virtual void startEdit(EditData&) override;
       virtual void endEdit(EditData&) override;
       virtual void editDrag(EditData&) override;
-      virtual void updateGrips(EditData&) const override;
 
-      virtual int tick() const override;
-      virtual int rtick() const override;
+      virtual Fraction tick() const override;
+      virtual Fraction rtick() const override;
 
       virtual void write(XmlWriter& xml) const override;
       virtual void read(XmlReader&) override;
@@ -94,7 +99,7 @@ class Beam final : public Element {
 
       virtual void reset() override;
 
-      System* system() const { return (System*)parent(); }
+      System* system() const { return toSystem(parent()); }
 
       void layout1();
       void layoutGraceNotes();
@@ -103,6 +108,7 @@ class Beam final : public Element {
       const QVector<ChordRest*>& elements() { return _elements;  }
       void clear()                        { _elements.clear(); }
       bool empty() const                { return _elements.empty(); }
+      bool contains(const ChordRest* cr) const { return std::find(_elements.begin(), _elements.end(), cr) != _elements.end(); }
 
       virtual void add(Element*) override;
       virtual void remove(Element*) override;
@@ -145,14 +151,20 @@ class Beam final : public Element {
 
       bool isGrace() const { return _isGrace; }  // for debugger
       bool cross() const   { return _cross; }
-      virtual Shape shape() const override;
+
+      void addSkyline(Skyline&);
+
       virtual void triggerLayout() const override;
+
+      EditBehavior normalModeEditBehavior() const override { return EditBehavior::Edit; }
+      int gripsCount() const override { return 2; }
+      Grip initialEditModeGrip() const override { return Grip::END; }
+      Grip defaultGrip() const override { return Grip::START; }
+      std::vector<QPointF> gripsPositions(const EditData&) const override;
+
+      static IconType iconType(Mode);
       };
 
 
 }     // namespace Ms
-
-Q_DECLARE_METATYPE(Ms::Beam::Mode);
-
 #endif
-

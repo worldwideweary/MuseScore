@@ -73,9 +73,11 @@ static Fraction calculateFraction(const QString& type, const int dots, const Fra
       Fraction f = noteTypeToFraction(type);
       if (f.isValid()) {
             // dot(s)
-            Fraction f_no_dots = f;
-            for (int i = 0; i < dots; ++i)
-                  f += (f_no_dots / (2 << i));
+            Fraction ff = f;
+            for (int i = 0; i < dots; ++i) {
+                  ff = ff * Fraction(1,2);
+                  f += ff;
+                  }
             // tuplet
             if (timeMod.isValid())
                   f *= timeMod;
@@ -131,7 +133,7 @@ QString mxmlNoteDuration::checkTiming(const QString& type, const bool rest, cons
                   // Detect this by comparing the actual duration with the expected duration
                   // based on note type. If actual is 2/3 of expected, the rest is part
                   // of a tuplet.
-                  if (rest && !_timeMod.isValid()) {
+                  if (rest) {
                         if (2 * calcDura.ticks() == 3 * _dura.ticks()) {
                               _timeMod = Fraction(2, 3);
                               errorStr += " -> assuming triplet";

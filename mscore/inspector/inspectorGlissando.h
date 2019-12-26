@@ -1,7 +1,6 @@
 //=============================================================================
 //  MuseScore
 //  Music Composition & Notation
-//  $Id:$
 //
 //  Copyright (C) 2013 Werner Schweer and others
 //
@@ -31,6 +30,7 @@ class InspectorGlissando : public InspectorElementBase {
 
    public:
       InspectorGlissando(QWidget* parent);
+      virtual void setElement() override;
       };
 
 

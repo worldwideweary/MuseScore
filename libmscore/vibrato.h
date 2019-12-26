@@ -29,20 +29,20 @@ class VibratoSegment final : public LineSegment {
 
       void symbolLine(SymId start, SymId fill);
       void symbolLine(SymId start, SymId fill, SymId end);
+      virtual Sid getPropertyStyle(Pid) const override;
 
    protected:
    public:
-      VibratoSegment(Score* s) : LineSegment(s)      {}
+      VibratoSegment(Spanner* sp, Score* s) : LineSegment(sp, s, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)      {}
       Vibrato* vibrato() const                       { return toVibrato(spanner()); }
       virtual ElementType type() const override      { return ElementType::VIBRATO_SEGMENT; }
       virtual VibratoSegment* clone() const override { return new VibratoSegment(*this); }
       virtual void draw(QPainter*) const override;
       virtual void layout() override;
-      virtual QVariant getProperty(Pid propertyId) const override;
-      virtual bool setProperty(Pid propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(Pid) const override;
-      Shape shape() const override;
 
+      virtual Element* propertyDelegate(Pid) override;
+
+      Shape shape() const override;
       std::vector<SymId> symbols() const           { return _symbols; }
       void setSymbols(const std::vector<SymId>& s) { _symbols = s; }
       };
@@ -52,6 +52,9 @@ class VibratoSegment final : public LineSegment {
 //---------------------------------------------------------
 
 class Vibrato final : public SLine {
+
+      virtual Sid getPropertyStyle(Pid) const override;
+
    public:
       enum class Type : char {
             GUITAR_VIBRATO, GUITAR_VIBRATO_WIDE, VIBRATO_SAWTOOTH, VIBRATO_SAWTOOTH_WIDE
@@ -77,6 +80,7 @@ class Vibrato final : public SLine {
       Type vibratoType() const              { return _vibratoType; }
       void setPlayArticulation(bool val)  { _playArticulation = val;}
       bool playArticulation() const       { return _playArticulation; }
+      static QString type2name(Vibrato::Type t);
       QString vibratoTypeName() const;
       QString vibratoTypeUserName() const;
 
@@ -85,10 +89,13 @@ class Vibrato final : public SLine {
       virtual QVariant getProperty(Pid propertyId) const override;
       virtual bool setProperty(Pid propertyId, const QVariant&) override;
       virtual QVariant propertyDefault(Pid) const override;
-      virtual void setYoff(qreal) override;
-
+      virtual Pid propertyId(const QStringRef& xmlName) const override;
       virtual QString accessibleInfo() const override;
       };
+
+//---------------------------------------------------------
+//   VibratoTableItem
+//---------------------------------------------------------
 
 struct VibratoTableItem {
       Vibrato::Type type;

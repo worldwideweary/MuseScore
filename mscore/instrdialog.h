@@ -35,9 +35,11 @@ class InstrumentsDialog : public QDialog, public Ui::InstrumentsDialog {
 
    public:
       InstrumentsDialog(QWidget* parent = 0);
+      void init();
       void writeSettings();
       void genPartList(Score*);
       QTreeWidget* partiturList();
+      void buildInstrumentsList();
       };
 
 } // namespace Ms

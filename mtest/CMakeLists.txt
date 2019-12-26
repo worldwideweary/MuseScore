@@ -1,7 +1,6 @@
 #=============================================================================
 #  MuseScore
 #  Music Composition & Notation
-#  $Id:$
 #
 #  Copyright (C) 2011-2016 Werner Schweer
 #
@@ -17,12 +16,22 @@ enable_testing()
 include_directories(
       ${PROJECT_BINARY_DIR}
       ${PROJECT_SOURCE_DIR}
-      ${PROJECT_SOURCE_DIR}/thirdparty/freetype/include
+      ${PROJECT_SOURCE_DIR}/thirdparty
       )
+
+if (USE_SYSTEM_FREETYPE)
+      include_directories(${FREETYPE_INCLUDE_DIRS})
+else (USE_SYSTEM_FREETYPE)
+      include_directories(${PROJECT_SOURCE_DIR}/thirdparty/freetype/include)
+endif (USE_SYSTEM_FREETYPE)
 
 if (OMR)
 set(OMR_SRC ${PROJECT_SOURCE_DIR}/omr/importpdf.cpp)
 endif (OMR)
+
+if (MSVC)
+   set(_all_h_file "${PROJECT_SOURCE_DIR}/all.h")
+endif (MSVC)
 
 QT5_ADD_RESOURCES(qrc_files ${PROJECT_SOURCE_DIR}/mtest/mtest.qrc
             ${PROJECT_SOURCE_DIR}/mscore/musescorefonts-MScore.qrc
@@ -37,10 +46,9 @@ add_library (testResources STATIC
       ${qrc_files}
       )
 
-add_library(
-      testutils STATIC
+set (SOURCE_LIB
       testutils.cpp
-      ${PROJECT_SOURCE_DIR}/libmscore/mcursor.cpp
+      mtestglobals.cpp
       ${PROJECT_SOURCE_DIR}/mscore/bb.cpp
       ${PROJECT_SOURCE_DIR}/mscore/capella.cpp
       ${PROJECT_SOURCE_DIR}/mscore/capxml.cpp
@@ -89,7 +97,6 @@ add_library(
       ${PROJECT_SOURCE_DIR}/mscore/importxmlfirstpass.cpp
       ${PROJECT_SOURCE_DIR}/mscore/musicxmlfonthandler.cpp
       ${PROJECT_SOURCE_DIR}/mscore/musicxmlsupport.cpp
-      ${PROJECT_SOURCE_DIR}/mscore/qmlplugin.cpp
       ${PROJECT_SOURCE_DIR}/mscore/preferences.cpp
       ${PROJECT_SOURCE_DIR}/mscore/shortcut.cpp
       ${PROJECT_SOURCE_DIR}/mscore/stringutils.cpp
@@ -101,9 +108,39 @@ add_library(
       ${PROJECT_SOURCE_DIR}/thirdparty/beatroot/AgentList.cpp       # Required by importmidi.cpp
       ${PROJECT_SOURCE_DIR}/thirdparty/beatroot/BeatTracker.cpp     # Required by importmidi.cpp
       ${PROJECT_SOURCE_DIR}/thirdparty/beatroot/Induction.cpp       # Required by importmidi.cpp
+      ${PROJECT_SOURCE_DIR}/mscore/extension.cpp # required by zerberus tests
       ${OMR_SRC}
       omr
+	)
+
+if (MSVC)
+	add_library(
+      testutils STATIC
+	  ${_all_h_file}
+	  ${PCH}
+	  ${SOURCE_LIB}
+	  )
+else (MSVC)
+	add_library(
+      testutils STATIC
+	  ${SOURCE_LIB}
+	  )
+endif (MSVC)
+
+# testutils version that is linked to a full mscoreapp target
+add_library(testutils_mscoreapp STATIC
+      testutils.cpp
+      mscoreappresources.cpp
       )
+
+if (MSVC)
+      target_sources(testutils_mscoreapp PRIVATE
+            ${_all_h_file}
+            ${PCH}
+            )
+endif (MSVC)
+
+target_link_libraries(testutils_mscoreapp mscoreapp)
 
 add_executable(
       mtest
@@ -113,28 +150,31 @@ add_executable(
 target_link_libraries(
       mtest
       ${QT_LIBRARIES}
-      mscore_freetype
       )
+
+if (USE_SYSTEM_FREETYPE)
+      target_link_libraries(mtest freetype)
+else (USE_SYSTEM_FREETYPE)
+      target_link_libraries(mtest mscore_freetype)
+endif (USE_SYSTEM_FREETYPE)
 
 set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
 
 string(REPLACE ";" ";-I" INC "${QT_INCLUDES}")
 
 if (APPLE AND (CMAKE_VERSION VERSION_LESS "3.5.0"))
-set_target_properties (
-      testutils
-      PROPERTIES
-      COMPILE_FLAGS "-include all.h -D TESTROOT=\\\\\"${PROJECT_SOURCE_DIR}\\\\\" -g -Wall -Wextra"
-      )
+      set(TESTUTILS_COMPILE_FLAGS "-include all.h -D TESTROOT=\\\\\"${PROJECT_SOURCE_DIR}\\\\\" -g -Wall -Wextra")
 else (APPLE AND (CMAKE_VERSION VERSION_LESS "3.5.0"))
-set_target_properties (
-      testutils
-      PROPERTIES
-      COMPILE_FLAGS "-include all.h -D TESTROOT=\\\"${PROJECT_SOURCE_DIR}\\\" -g -Wall -Wextra"
-      )
+      if (MSVC)
+            set(TESTUTILS_COMPILE_FLAGS "${PCH_INCLUDE}  /D TESTROOT=\\\"${PROJECT_SOURCE_DIR}\\\"")
+      else (MSVC)
+            set(TESTUTILS_COMPILE_FLAGS "-include all.h -D TESTROOT=\\\"${PROJECT_SOURCE_DIR}\\\" -g -Wall -Wextra")
+      endif (MSVC)
 endif (APPLE AND (CMAKE_VERSION VERSION_LESS "3.5.0"))
 
-#      COMPILE_FLAGS "-include all.h -I ${INC} -D TESTROOT=\\\"${PROJECT_SOURCE_DIR}\\\" -g -Wall -Wextra"
+set_target_properties(testutils PROPERTIES COMPILE_FLAGS "${TESTUTILS_COMPILE_FLAGS}")
+set_target_properties(testutils_mscoreapp PROPERTIES COMPILE_FLAGS "${TESTUTILS_COMPILE_FLAGS}")
+
 
 add_custom_target(report
       COMMAND ant -f ${PROJECT_SOURCE_DIR}/mtest/build.xml -Droot.dir=${PROJECT_BINARY_DIR}/mtest report
@@ -147,12 +187,13 @@ add_custom_target(reporthtml
       )
 
 subdirs (
-#        libmscore/compat114
+        libmscore/compat114
         libmscore/compat206
 #        libmscore/album            # obsolete
         libmscore/barline
         libmscore/beam
         libmscore/breath
+        libmscore/box
         libmscore/chordsymbol
         libmscore/clef
         libmscore/clef_courtesy
@@ -170,16 +211,20 @@ subdirs (
         libmscore/join
         libmscore/keysig
         libmscore/layout
+        libmscore/layout_elements
         libmscore/links
         libmscore/parts
         libmscore/measure
         libmscore/midi                 # one disabled
-#        libmscore/midimapping
+#        libmscore/midimapping # TODO: compiles but mostly fails
         libmscore/note
+        libmscore/readwriteundoreset
+        libmscore/remove
         libmscore/repeat
         libmscore/rhythmicGrouping
         libmscore/selectionfilter
         libmscore/selectionrangedelete
+        libmscore/unrollrepeats
         libmscore/spanners
         libmscore/split
         libmscore/splitstaff
@@ -188,6 +233,8 @@ subdirs (
         libmscore/transpose
         libmscore/tuplet
 #        libmscore/text        work in progress...
+        libmscore/utils
+        mscore/workspaces
         importmidi
         capella
         biab
@@ -203,6 +250,7 @@ subdirs (
         zerberus/opcodeparse
         zerberus/inputControls
         zerberus/loop
+        testscript
         )
 
 

@@ -28,6 +28,7 @@ enum class BracketType : signed char;
 
 class Bracket final : public Element {
       BracketItem* _bi;
+      qreal ay1;
       qreal h2;
 
       int _firstStaff;
@@ -40,6 +41,7 @@ class Bracket final : public Element {
       // horizontal scaling factor for brace symbol. Cannot be equal to magY or depend on h
       // because layout needs width of brace before knowing height of system...
       qreal _magx;
+      Measure* _measure = nullptr;
 
    public:
       Bracket(Score*);
@@ -51,17 +53,21 @@ class Bracket final : public Element {
       BracketItem* bracketItem() const          { return _bi;          }
 
       BracketType bracketType() const           { return _bi->bracketType(); }
+      static const char* bracketTypeName(BracketType type);
 
       int firstStaff() const                    { return _firstStaff; }
-      void setFirstStaff(int val)               { _firstStaff = val;  }
-
       int lastStaff() const                     { return _lastStaff; }
-      void setLastStaff(int val)                { _lastStaff = val;  }
+      void setStaffSpan(int a, int b);
 
+      SymId braceSymbol() const                 { return _braceSymbol; }
       int column() const                        { return _bi->column();  }
       int span() const                          { return _bi->bracketSpan();    }
+      qreal magx() const                        { return _magx;                 }
 
       System* system() const                    { return (System*)parent(); }
+
+      Measure* measure() const                  { return _measure; }
+      void setMeasure(Measure* measure)         { _measure = measure; }
 
       virtual void setHeight(qreal) override;
       virtual qreal width() const override;
@@ -80,7 +86,6 @@ class Bracket final : public Element {
       virtual void endEdit(EditData&) override;
       virtual void editDrag(EditData&) override;
       virtual void endEditDrag(EditData&) override;
-      virtual void updateGrips(EditData&) const override;
 
       virtual bool acceptDrop(EditData&) const override;
       virtual Element* drop(EditData&) override;
@@ -88,6 +93,16 @@ class Bracket final : public Element {
       virtual QVariant getProperty(Pid propertyId) const override;
       virtual bool setProperty(Pid propertyId, const QVariant&) override;
       virtual QVariant propertyDefault(Pid) const override;
+
+      void undoChangeProperty(Pid id, const QVariant& v, PropertyFlags ps) override;
+      using ScoreElement::undoChangeProperty;
+
+      // TODO: single click behavior?
+      int gripsCount() const override { return 1; }
+      Grip initialEditModeGrip() const override { return Grip::START; }
+      Grip defaultGrip() const override { return Grip::START; }
+      std::vector<QPointF> gripsPositions(const EditData&) const override;
+
       virtual void setSelected(bool f) override;
       };
 

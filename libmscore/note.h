@@ -23,7 +23,6 @@
 #include "noteevent.h"
 #include "pitchspelling.h"
 #include "shape.h"
-#include "tremolo.h"
 #include "key.h"
 
 namespace Ms {
@@ -41,6 +40,7 @@ class Accidental;
 class NoteDot;
 class Spanner;
 class StaffType;
+class NoteEditData;
 enum class SymId;
 enum class AccidentalType : char;
 
@@ -51,8 +51,10 @@ static const int MAX_DOTS = 4;
 //---------------------------------------------------------
 
 class NoteHead final : public Symbol {
+      Q_GADGET
    public:
       enum class Group : signed char {
+            ///.\{
             HEAD_NORMAL = 0,
             HEAD_CROSS,
             HEAD_PLUS,
@@ -119,17 +121,24 @@ class NoteHead final : public Symbol {
             HEAD_H,
             HEAD_H_SHARP,
 
+            HEAD_CUSTOM,
             HEAD_GROUPS,
             HEAD_INVALID = -1
+            ///\}
             };
       enum class Type : signed char {
+            ///.\{
             HEAD_AUTO    = -1,
             HEAD_WHOLE   = 0,
             HEAD_HALF    = 1,
             HEAD_QUARTER = 2,
             HEAD_BREVIS  = 3,
             HEAD_TYPES
+            ///\}
             };
+
+      Q_ENUM(Group);
+      Q_ENUM(Type);
 
       NoteHead(Score* s = 0) : Symbol(s) {}
       NoteHead &operator=(const NoteHead&) = delete;
@@ -148,7 +157,8 @@ class NoteHead final : public Symbol {
 
 //---------------------------------------------------------
 //   NoteVal
-//    helper structure
+///    helper structure
+///   \cond PLUGIN_API \private \endcond
 //---------------------------------------------------------
 
 struct NoteVal {
@@ -200,8 +210,10 @@ static const int INVALID_LINE = -10000;
 //---------------------------------------------------------------------------------------
 
 class Note final : public Element {
+      Q_GADGET
    public:
       enum class ValueType : char { OFFSET_VAL, USER_VAL };
+      Q_ENUM(ValueType);
 
    private:
       bool _ghost         { false };      ///< ghost note (guitar: death note)
@@ -256,12 +268,15 @@ class Note final : public Element {
       SymId _cachedSymNull; // additional symbol for some transparent notehead
 
       QString _fretString;
-      bool _fretHidden = false;
 
-      virtual void startDrag(EditData&) override;
-      virtual QRectF drag(EditData&) override;
-      virtual void endDrag(EditData&) override;
-      void endEdit(EditData&);
+      void startDrag(EditData&) override;
+      QRectF drag(EditData&ed) override;
+      void endDrag(EditData&) override;
+      void editDrag(EditData &editData) override;
+
+      void verticalDrag(EditData& ed);
+      void horizontalDrag(EditData& ed);
+
       void addSpanner(Spanner*);
       void removeSpanner(Spanner*);
       int concertPitchIdx() const;
@@ -269,7 +284,9 @@ class Note final : public Element {
       bool isNoteName() const;
       SymId noteHead() const;
 
-   public:
+      void normalizeLeftDragDelta(Segment* seg, EditData &ed, NoteEditData* ned);
+
+public:
       Note(Score* s = 0);
       Note(const Note&, bool link = false);
       ~Note();
@@ -278,10 +295,14 @@ class Note final : public Element {
       virtual Note* clone() const override  { return new Note(*this, false); }
       ElementType type() const override   { return ElementType::NOTE; }
 
+      virtual void undoUnlink() override;
+
       virtual qreal mag() const override;
 
       void layout();
       void layout2();
+      //setter is used only in drumset tools to setup the notehead preview in the drumset editor and the palette
+      void setCachedNoteheadSym(SymId i) { _cachedNoteheadSym = i; };
       void scanElements(void* data, void (*func)(void*, Element*), bool all=true);
       void setTrack(int val);
 
@@ -289,10 +310,14 @@ class Note final : public Element {
 
       qreal headWidth() const;
       qreal headHeight() const;
-      qreal tabHeadWidth(StaffType* tab = 0) const;
-      qreal tabHeadHeight(StaffType* tab = 0) const;
+      qreal tabHeadWidth(const StaffType* tab = 0) const;
+      qreal tabHeadHeight(const StaffType* tab = 0) const;
       QPointF stemDownNW() const;
       QPointF stemUpSE() const;
+      qreal bboxXShift() const;
+      qreal noteheadCenterX() const;
+      qreal bboxRightPos() const;
+      qreal headBodyWidth() const;
 
       NoteHead::Group headGroup() const   { return _headGroup; }
       NoteHead::Type headType() const     { return _headType;  }
@@ -303,7 +328,6 @@ class Note final : public Element {
       virtual QString subtypeName() const override;
 
       void setPitch(int val);
-      void undoSetPitch(int val);
       void setPitch(int pitch, int tpc1, int tpc2);
       int pitch() const                   { return _pitch;    }
       int ppitch() const;           ///< playback pitch
@@ -367,6 +391,10 @@ class Note final : public Element {
       void setTieBack(Tie* t)         { _tieBack = t;    }
       Note* firstTiedNote() const;
       const Note* lastTiedNote() const;
+      Note* lastTiedNote()            { return const_cast<Note*>(static_cast<const Note*>(this)->lastTiedNote()); }
+      int unisonIndex() const;
+      void disconnectTiedNotes();
+      void connectTiedNotes();
 
       Chord* chord() const            { return (Chord*)parent(); }
       void setChord(Chord* a)         { setParent((Element*)a);  }
@@ -374,6 +402,7 @@ class Note final : public Element {
 
       virtual void read(XmlReader&) override;
       virtual bool readProperties(XmlReader&) override;
+      virtual void readAddConnector(ConnectorInfoReader* info, bool pasteMode) override;
       virtual void write(XmlWriter&) const override;
 
       bool acceptDrop(EditData&) const override;
@@ -418,7 +447,7 @@ class Note final : public Element {
       int qmlDotsCount();
       void updateAccidental(AccidentalState*);
       void updateLine();
-      void setNval(const NoteVal&, int tick = -1);
+      void setNval(const NoteVal&, Fraction = { -1, 1} );
       NoteEventList& playEvents()                { return _playEvents; }
       const NoteEventList& playEvents() const    { return _playEvents; }
       NoteEvent* noteEvent(int idx)              { return &_playEvents[idx]; }
@@ -434,25 +463,12 @@ class Note final : public Element {
 
       void transposeDiatonic(int interval, bool keepAlterations, bool useDoubleAccidentals);
 
-      void undoSetFret(int);
-      void undoSetString(int);
-      void undoSetGhost(bool);
-      void undoSetMirror(bool);
-      void undoSetSmall(bool);
-      void undoSetPlay(bool);
-      void undoSetTuning(qreal);
-      void undoSetVeloType(ValueType);
-      void undoSetVeloOffset(int);
-      void undoSetOnTimeUserOffset(int);
-      void undoSetOffTimeUserOffset(int);
-      void undoSetUserMirror(MScore::DirectionH);
-      void undoSetUserDotPosition(Direction);
-      void undoSetHeadGroup(NoteHead::Group);
-      void undoSetHeadType(NoteHead::Type);
-
+      virtual void localSpatiumChanged(qreal oldValue, qreal newValue) override;
       virtual QVariant getProperty(Pid propertyId) const override;
       virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      void undoChangeDotsVisible(bool v);
       virtual QVariant propertyDefault(Pid) const override;
+      virtual QString propertyUserValue(Pid) const override;
 
       bool mark() const               { return _mark;   }
       void setMark(bool v) const      { _mark = v;   }
@@ -487,10 +503,4 @@ class Note final : public Element {
       };
 
 }     // namespace Ms
-
-Q_DECLARE_METATYPE(Ms::NoteHead::Group);
-Q_DECLARE_METATYPE(Ms::NoteHead::Type);
-Q_DECLARE_METATYPE(Ms::Note::ValueType);
-
 #endif
-

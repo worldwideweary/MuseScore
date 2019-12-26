@@ -35,33 +35,33 @@ class DurationElement : public Element {
       Fraction _duration;
       Tuplet* _tuplet;
 
-#ifdef SCRIPT_INTERFACE
-      void setDurationW(FractionWrapper* f)  { _duration = f->fraction(); }
-      FractionWrapper* durationW() const     { return new FractionWrapper(_duration); }
-      FractionWrapper* globalDurW() const    { return new FractionWrapper(globalDuration()); }
-#endif
+// #ifdef SCRIPT_INTERFACE
+//       void setDurationW(FractionWrapper* f)  { _duration = f->fraction(); }
+//       FractionWrapper* durationW() const     { return new FractionWrapper(_duration); }
+//       FractionWrapper* globalDurW() const    { return new FractionWrapper(globalDuration()); }
+// #endif
 
    public:
-      DurationElement(Score* = 0, ElementFlags = ElementFlag::NOTHING);
+      DurationElement(Score* = 0, ElementFlags = ElementFlag::MOVABLE | ElementFlag::ON_STAFF);
       DurationElement(const DurationElement& e);
       ~DurationElement();
 
       virtual Measure* measure() const    { return (Measure*)(parent()); }
 
-      virtual bool readProperties(XmlReader& e);
-      virtual void writeProperties(XmlWriter& xml) const;
-      void writeTuplet(XmlWriter& xml);
+      void readAddTuplet(Tuplet* t);
+      void writeTupletStart(XmlWriter& xml) const;
+      void writeTupletEnd(XmlWriter& xml) const;
 
       void setTuplet(Tuplet* t)           { _tuplet = t;      }
       Tuplet* tuplet() const              { return _tuplet;   }
       Tuplet* topTuplet() const;
       virtual Beam* beam() const          { return 0;         }
-      int actualTicks() const;
-      Fraction actualFraction() const;
 
-      virtual Fraction duration() const   { return _duration; }
-      Fraction globalDuration() const;
-      void setDuration(const Fraction& f) { _duration = f;    }
+      Fraction actualTicks() const;
+
+      virtual Fraction ticks() const { return _duration; }
+      Fraction globalTicks() const;
+      void setTicks(const Fraction& f) { _duration = f;    }
 
       virtual QVariant getProperty(Pid propertyId) const override;
       virtual bool setProperty(Pid propertyId, const QVariant&) override;

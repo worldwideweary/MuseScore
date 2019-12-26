@@ -24,13 +24,13 @@ enum class Sid : int;
 //
 //    usage example:
 //    class Text : public Element {
-//          M_PROPERTY(bool, bold, setBold)
+//          M_PROPERTY(QColor, color, setColor)
 //          ...
 //          };
 //    this defines:
-//          bool _bold;
-//          const bool& bold() const { return _bold; }
-//          void setBold(const a& val) { _bold = val; }
+//          QColor _color;
+//          const QColor& color() const { return _color; }
+//          void setColor(const QColor& val) { _color = val; }
 //---------------------------------------------------------
 
 #define M_PROPERTY(a,b,c)                                      \
@@ -68,6 +68,7 @@ enum class Pid {
       Z,
       SMALL,
       SHOW_COURTESY,
+      KEYSIG_MODE,
       LINE_TYPE,
       PITCH,
 
@@ -97,7 +98,7 @@ enum class Pid {
       BARLINE_SPAN,
       BARLINE_SPAN_FROM,
       BARLINE_SPAN_TO,
-      USER_OFF,
+      OFFSET,
       FRET,
       STRING,
       GHOST,
@@ -141,6 +142,7 @@ enum class Pid {
       TEMPO,
       TEMPO_FOLLOW_TEXT,
       ACCIDENTAL_BRACKET,
+      ACCIDENTAL_TYPE,
       NUMERATOR_STRING,
       DENOMINATOR_STRING,
       FBPREFIX,             // used for FiguredBassItem
@@ -153,7 +155,6 @@ enum class Pid {
       FBPARENTHESIS3,       //    "           "
       FBPARENTHESIS4,       //    "           "
       FBPARENTHESIS5,       //    "           "
-//      VOLTA_TYPE,
       OTTAVA_TYPE,
       NUMBERS_ONLY,
       TRILL_TYPE,
@@ -164,13 +165,17 @@ enum class Pid {
       HAIRPIN_HEIGHT,
       HAIRPIN_CONT_HEIGHT,
       VELO_CHANGE,
+      VELO_CHANGE_METHOD,
+      VELO_CHANGE_SPEED,
+      DYNAMIC_TYPE,
       DYNAMIC_RANGE,
+      SINGLE_NOTE_DYNAMICS,
+//100
       PLACEMENT,
       VELOCITY,
       JUMP_TO,
       PLAY_UNTIL,
       CONTINUE_AT,
-//100
       LABEL,
       MARKER_TYPE,
       ARP_USER_LEN1,
@@ -186,7 +191,6 @@ enum class Pid {
       DIAGONAL,
       GROUPS,
       LINE_STYLE,
-      LINE_COLOR,
       LINE_WIDTH,
       LASSO_POS,
       LASSO_SIZE,
@@ -200,13 +204,10 @@ enum class Pid {
       SPANNER_TICK,
       SPANNER_TICKS,
       SPANNER_TRACK2,
-      USER_OFF2,
-      BEGIN_TEXT_STYLE,
-      CONTINUE_TEXT_STYLE,
-
-      END_TEXT_STYLE,
+      OFFSET2,
       BREAK_MMR,
       REPEAT_COUNT,
+
       USER_STRETCH,
       NO_OFFSET,
       IRREGULAR,
@@ -214,32 +215,28 @@ enum class Pid {
       SLUR_UOFF1,
       SLUR_UOFF2,
       SLUR_UOFF3,
-
       SLUR_UOFF4,
       STAFF_MOVE,
       VERSE,
+
       SYLLABIC,
       LYRIC_TICKS,
       VOLTA_ENDING,
       LINE_VISIBLE,
       MAG,
       USE_DRUMSET,
-      PART_VOLUME,
-
-      PART_MUTE,
-      PART_PAN,
-      PART_REVERB,
-      PART_CHORUS,
       DURATION,
       DURATION_TYPE,
       ROLE,
       TRACK,
+
       GLISSANDO_STYLE,
       FRET_STRINGS,
-
       FRET_FRETS,
-      FRET_BARRE,
+      FRET_NUT,
       FRET_OFFSET,
+      FRET_NUM_POS,
+
       SYSTEM_BRACKET,
       GAP,
       AUTOPLACE,
@@ -247,9 +244,9 @@ enum class Pid {
       DASH_GAP_LEN,
       TICK,
       PLAYBACK_VOICE1,
-
       PLAYBACK_VOICE2,
       PLAYBACK_VOICE3,
+
       PLAYBACK_VOICE4,
       SYMBOL,
       PLAY_REPEATS,
@@ -258,9 +255,9 @@ enum class Pid {
       LINE_DISTANCE,
       STEP_OFFSET,
       STAFF_SHOW_BARLINES,
-
       STAFF_SHOW_LEDGERLINES,
-      STAFF_SLASH_STYLE,
+      STAFF_STEMLESS,
+
       STAFF_NOTEHEAD_SCHEME,
       STAFF_GEN_CLEF,
       STAFF_GEN_TIMESIG,
@@ -269,72 +266,88 @@ enum class Pid {
       STAFF_USERDIST,
       STAFF_BARLINE_SPAN,
       STAFF_BARLINE_SPAN_FROM,
-
       STAFF_BARLINE_SPAN_TO,
       BRACKET_SPAN,
+
       BRACKET_COLUMN,
       INAME_LAYOUT_POSITION,
       SUB_STYLE,
+
       FONT_FACE,
       FONT_SIZE,
-      FONT_BOLD,
-      FONT_ITALIC,
-      FONT_UNDERLINE,
-      FRAME,
-//200
-      FRAME_SQUARE,
-      FRAME_CIRCLE,
+      FONT_STYLE,
+
+      FRAME_TYPE,
       FRAME_WIDTH,
       FRAME_PADDING,
       FRAME_ROUND,
       FRAME_FG_COLOR,
+//200
       FRAME_BG_COLOR,
-      FONT_SPATIUM_DEPENDENT,
+      SIZE_SPATIUM_DEPENDENT,
       ALIGN,
-      OFFSET,
-//210
-      OFFSET_TYPE,
       SYSTEM_FLAG,
       BEGIN_TEXT,
+
       BEGIN_TEXT_ALIGN,
       BEGIN_TEXT_PLACE,
       BEGIN_HOOK_TYPE,
       BEGIN_HOOK_HEIGHT,
       BEGIN_FONT_FACE,
       BEGIN_FONT_SIZE,
-      BEGIN_FONT_BOLD,
-//220
-      BEGIN_FONT_ITALIC,
-      BEGIN_FONT_UNDERLINE,
+      BEGIN_FONT_STYLE,
       BEGIN_TEXT_OFFSET,
+
       CONTINUE_TEXT,
       CONTINUE_TEXT_ALIGN,
       CONTINUE_TEXT_PLACE,
       CONTINUE_FONT_FACE,
       CONTINUE_FONT_SIZE,
-      CONTINUE_FONT_BOLD,
-
-      CONTINUE_FONT_ITALIC,
-      CONTINUE_FONT_UNDERLINE,
+      CONTINUE_FONT_STYLE,
       CONTINUE_TEXT_OFFSET,
       END_TEXT,
+
       END_TEXT_ALIGN,
       END_TEXT_PLACE,
       END_HOOK_TYPE,
       END_HOOK_HEIGHT,
       END_FONT_FACE,
       END_FONT_SIZE,
-
-      END_FONT_BOLD,
-      END_FONT_ITALIC,
-      END_FONT_UNDERLINE,
+      END_FONT_STYLE,
       END_TEXT_OFFSET,
+
+      POS_ABOVE,
+
+      LOCATION_STAVES,
+      LOCATION_VOICES,
+      LOCATION_MEASURES,
+      LOCATION_FRACTIONS,
+      LOCATION_GRACE,
+      LOCATION_NOTE,
+
+      VOICE,
+      POSITION,
+
+      CLEF_TYPE_CONCERT,
+      CLEF_TYPE_TRANSPOSING,
+      KEY,
+      ACTION, // for Icon
+      MIN_DISTANCE,
+
+      ARPEGGIO_TYPE,
+      CHORD_LINE_TYPE,
+      CHORD_LINE_STRAIGHT,
+      TREMOLO_TYPE,
+      TREMOLO_PLACEMENT,
+      HARMONY_TYPE,
+
+      START_WITH_LONG_NAMES,
+      START_WITH_MEASURE_ONE,
 
       END
       };
 
 enum class P_TYPE : char {
-      SUBTYPE,
       BOOL,
       INT,
       REAL,
@@ -342,8 +355,9 @@ enum class P_TYPE : char {
       SP_REAL,          // real (point) value saved in (score) spatium units
       FRACTION,
       POINT,
-      POINT_SP,         // point units values saved in (score) spatium units
+      POINT_SP,         // point units, value saved in (score) spatium units
       POINT_MM,
+      POINT_SP_MM,      // point units, value saved as mm or spatium depending on Element->sizeIsSpatiumDependent()
       SIZE,
       SIZE_MM,
       STRING,
@@ -357,27 +371,35 @@ enum class P_TYPE : char {
       VALUE_TYPE,
       BEAM_MODE,
       PLACEMENT,
+      TEXT_PLACE,
       TEMPO,
       GROUPS,
       SYMID,
-      TEXT_STYLE,
       INT_LIST,
       GLISSANDO_STYLE,
       BARLINE_TYPE,
-      HEAD_TYPE,         // enum class Notehead::Type
+      HEAD_TYPE,        // enum class Notehead::Type
       HEAD_GROUP,       // enum class Notehead::Group
       ZERO_INT,         // displayed with offset +1
       FONT,
       SUB_STYLE,
       ALIGN,
+      CHANGE_METHOD,    // enum class VeloChangeMethod (for single notedynamics)
+      CHANGE_SPEED,     // enum class Dynamic::Speed
+      CLEF_TYPE,        // enum class ClefType
+      DYNAMIC_TYPE,     // enum class Dynamic::Type
+      KEYMODE,          // enum class KeyMode
       };
 
-extern QVariant getProperty(Pid type, XmlReader& e);
+extern QVariant readProperty(Pid type, XmlReader& e);
+extern QVariant propertyFromString(Pid type, QString value);
+extern QString propertyToString(Pid, QVariant value, bool mscx);
 extern P_TYPE propertyType(Pid);
 extern const char* propertyName(Pid);
-extern const char* propertyQmlName(Pid);
 extern bool propertyLink(Pid id);
-extern Pid propertyId(const QString&);
+extern Pid propertyId(const QString& name);
+extern Pid propertyId(const QStringRef& name);
+extern QString propertyUserName(Pid);
 
 }     // namespace Ms
 #endif

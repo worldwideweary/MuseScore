@@ -1,7 +1,6 @@
 //=============================================================================
 //  MuseScore
 //  Linux Music Score Editor
-//  $Id: excerptsdialog.cpp 5497 2012-03-26 10:59:16Z lasconic $
 //
 //  Copyright (C) 2008 Werner Schweer and others
 //
@@ -118,8 +117,8 @@ ExcerptsDialog::ExcerptsDialog(MasterScore* s, QWidget* parent)
             instrumentList->addItem(item);
             }
 
-      connect(newButton, SIGNAL(clicked()), SLOT(newClicked()));
-      connect(newAllButton, SIGNAL(clicked()), SLOT(newAllClicked()));
+      connect(singlePartButton, SIGNAL(clicked()), SLOT(singlePartClicked()));
+      connect(allPartsButton, SIGNAL(clicked()), SLOT(allPartsClicked()));
       connect(deleteButton, SIGNAL(clicked()), SLOT(deleteClicked()));
       connect(moveUpButton, SIGNAL(clicked()), SLOT(moveUpClicked()));
       connect(moveDownButton, SIGNAL(clicked()), SLOT(moveDownClicked()));
@@ -135,6 +134,9 @@ ExcerptsDialog::ExcerptsDialog(MasterScore* s, QWidget* parent)
               SLOT(addButtonClicked()));
       connect(title, SIGNAL(textChanged(const QString&)), SLOT(titleChanged(const QString&)));
 
+      moveUpButton->setIcon(*icons[int(Icons::arrowUp_ICON)]);
+      moveDownButton->setIcon(*icons[int(Icons::arrowDown_ICON)]);
+      
       for (int i = 1; i <= VOICES; i++) {
             //partList->model()->setHeaderData(i, Qt::Horizontal, MScore::selectColor[i-1], Qt::BackgroundRole);
             partList->header()->resizeSection(i, 30);
@@ -166,10 +168,10 @@ void MuseScore::startExcerptsDialog()
       }
 
 //---------------------------------------------------------
-//   newClicked
+//   singlePartClicked
 //---------------------------------------------------------
 
-void ExcerptsDialog::newClicked()
+void ExcerptsDialog::singlePartClicked()
       {
       QString name = createName("Part");
       Excerpt* e   = new Excerpt(score);
@@ -179,23 +181,23 @@ void ExcerptsDialog::newClicked()
       excerptList->selectionModel()->clearSelection();
       excerptList->setCurrentItem(ei, QItemSelectionModel::SelectCurrent);
       for (int i = 0; i < excerptList->count(); ++i) {
-            ExcerptItem* e = (ExcerptItem*)excerptList->item(i);
-            if (e->excerpt()->title() != e->text()) {
+            ExcerptItem* eii = (ExcerptItem*)excerptList->item(i);
+            if (eii->excerpt()->title() != eii->text()) {
                   // if except score not created yet, change the UI title
                   // if already created, change back(see createName) the excerpt title
-                  if (!e->excerpt()->partScore())
-                        e->setText(e->excerpt()->title());
+                  if (!eii->excerpt()->partScore())
+                        eii->setText(eii->excerpt()->title());
                   else
-                        e->excerpt()->setTitle(e->text());
+                        eii->excerpt()->setTitle(eii->text());
                   }
             }
       }
 
 //---------------------------------------------------------
-//   newAllClicked
+//   allPartsClicked
 //---------------------------------------------------------
 
-void ExcerptsDialog::newAllClicked()
+void ExcerptsDialog::allPartsClicked()
       {
       QList<Excerpt*> excerpts = Excerpt::createAllExcerpt(score);
       ExcerptItem* ei = 0;
@@ -269,7 +271,7 @@ void ExcerptsDialog::addButtonClicked()
 
       Excerpt* cur = ((ExcerptItem*)(excerptList->currentItem()))->excerpt();
 
-      foreach(QListWidgetItem* i, instrumentList->selectedItems()) {
+      for (QListWidgetItem* i : instrumentList->selectedItems()) {
             InstrumentItem* item = static_cast<InstrumentItem*>(i);
             const PartItem* it   = item->partItem();
             if (it == 0)
@@ -281,8 +283,8 @@ void ExcerptsDialog::addButtonClicked()
             for (Staff* s : *pi->part()->staves()) {
                   StaffItem* sli = new StaffItem(pi);
                   sli->setStaff(s);
-                  for (int i = 0; i < VOICES; i++)
-                        sli->setCheckState(i + 1, Qt::Checked);
+                  for (int j = 0; j < VOICES; j++)
+                        sli->setCheckState(j + 1, Qt::Checked);
                   }
             pi->setText(0, pi->part()->partName());
             }
@@ -406,6 +408,7 @@ void ExcerptsDialog::titleChanged(const QString& s)
       ExcerptItem* cur = static_cast<ExcerptItem*>(excerptList->currentItem());
       if (cur == 0)
             return;
+      cur->excerpt()->setTitle(s);
       cur->setText(s);
       }
 
@@ -580,8 +583,8 @@ void ExcerptsDialog::accept()
       // Update the score parts order following excerpList widget
       // The reference is the excerpt list. So we iterate following it and swap parts in the score accordingly
 
-      for (int i = 0; i < excerptList->count(); ++i) {
-            excerptList->setCurrentRow(i);
+      for (int j = 0; j < excerptList->count(); ++j) {
+            excerptList->setCurrentRow(j);
             QListWidgetItem* cur = excerptList->currentItem();
             if (cur == 0)
                   continue;
@@ -597,8 +600,8 @@ void ExcerptsDialog::accept()
                         }
                   position++;
                   }
-            if ((found) && (position != i))
-                  score->undo(new SwapExcerpt(score, i, position));
+            if ((found) && (position != j))
+                  score->undo(new SwapExcerpt(score, j, position));
             }
       score->endCmd();
       QDialog::accept();

@@ -36,6 +36,8 @@ class Arpeggio final : public Element {
       std::vector<SymId> symbols;
       bool _playArpeggio;
 
+      qreal _stretch;
+
       bool _hidden = false; // set in layout, will skip draw if true
 
       void symbolLine(SymId start, SymId fill);
@@ -62,11 +64,11 @@ class Arpeggio final : public Element {
       virtual void draw(QPainter*) const override;
       virtual bool isEditable() const override { return true; }
       virtual void editDrag(EditData&) override;
-      virtual void updateGrips(EditData&) const override;
       virtual bool edit(EditData&) override;
 
       virtual void read(XmlReader& e) override;
       virtual void write(XmlWriter& xml) const override;
+      virtual void reset() override;
 
       int span() const      { return _span; }
       void setSpan(int val) { _span = val; }
@@ -80,9 +82,20 @@ class Arpeggio final : public Element {
       bool playArpeggio()       { return _playArpeggio; }
       void setPlayArpeggio(bool p) { _playArpeggio = p; }
 
+      qreal Stretch() const             { return _stretch; }
+      void setStretch(qreal val)        { _stretch = val;  }
+
       virtual QVariant getProperty(Pid propertyId) const override;
       virtual bool setProperty(Pid propertyId, const QVariant&) override;
       virtual QVariant propertyDefault(Pid propertyId) const override;
+      virtual Pid propertyId(const QStringRef& xmlName) const override;
+
+      // TODO: add a grip for moving the entire arpeggio
+      EditBehavior normalModeEditBehavior() const override { return EditBehavior::Edit; }
+      int gripsCount() const override { return 2; }
+      Grip initialEditModeGrip() const override { return Grip::END; }
+      Grip defaultGrip() const override { return Grip::START; }
+      std::vector<QPointF> gripsPositions(const EditData&) const override;
       };
 
 

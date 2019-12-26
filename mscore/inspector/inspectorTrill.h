@@ -1,7 +1,6 @@
 //=============================================================================
 //  MuseScore
 //  Music Composition & Notation
-//  $Id:$
 //
 //  Copyright (C) 2012 Werner Schweer and others
 //
@@ -28,11 +27,11 @@ namespace Ms {
 class InspectorTrill : public InspectorElementBase {
       Q_OBJECT
 
-      Ui::InspectorLine l;
       Ui::InspectorTrill t;
 
    public:
       InspectorTrill(QWidget* parent);
+      virtual void setElement() override;
       };
 
 

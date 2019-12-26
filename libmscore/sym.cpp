@@ -40,7 +40,7 @@ QVector<ScoreFont> ScoreFont::_scoreFonts {
       ScoreFont("MuseJazz",   "MuseJazz",     ":/fonts/musejazz/", "MuseJazz.otf" ),
       };
 
-QJsonObject ScoreFont::_glyphnamesJson;
+std::array<uint, size_t(SymId::lastSym)+1> ScoreFont::_mainSymCodeTable { {0} };
 
 //---------------------------------------------------------
 //   table of symbol names
@@ -2920,8 +2920,7 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       QT_TRANSLATE_NOOP("symUserNames", "Push"),
       QT_TRANSLATE_NOOP("symUserNames", "Right hand, 3 ranks, 8' stop + upper tremolo 8' stop + 16' stop (accordion)"),
       QT_TRANSLATE_NOOP("symUserNames", "Right hand, 3 ranks, lower tremolo 8' stop + 8' stop + upper tremolo 8' stop (authentic musette)"),
-      //QT_TRANSLATE_NOOP("symUserNames", "Right hand, 3 ranks, 8' stop + 16' stop (bandone\\u00f3n)"),
-      QT_TRANSLATE_NOOP("symUserNames", "Right hand, 3 ranks, 8' stop + 16' stop (bandoneón)"), // workaround for Qt lupdate bug https://bugreports.qt.io/browse/QTBUG-35164
+      QT_TRANSLATE_NOOP("symUserNames", "Right hand, 3 ranks, 8' stop + 16' stop (bandone\u00f3n)"),
       QT_TRANSLATE_NOOP("symUserNames", "Right hand, 3 ranks, 16' stop (bassoon)"),
       QT_TRANSLATE_NOOP("symUserNames", "Right hand, 3 ranks, 8' stop (clarinet)"),
       QT_TRANSLATE_NOOP("symUserNames", "Right hand, 3 ranks, lower tremolo 8' stop + 8' stop + upper tremolo 8' stop + 16' stop"),
@@ -2970,10 +2969,10 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "Bakiye (sharp)",
       "Accidental bracket, left",
       "Accidental bracket, right",
-      //QT_TRANSLATE_NOOP("symUserNames", "B\u00fcy\u00fck m\u00fccenneb (flat)"),
-      QT_TRANSLATE_NOOP("symUserNames", "Büyük mücenneb (flat)"),  // workaround for Qt lupdate bug https://bugreports.qt.io/browse/QTBUG-35164
+      //(QT_TRANSLATE_NOOP("symUserNames", "B\u00fcy\u00fck m\u00fccenneb (flat)"),
+      QT_TRANSLATE_NOOP("symUserNames", "B\u00fcy\u00fck mücenneb (flat)"),
       //QT_TRANSLATE_NOOP("symUserNames", "B\u00fcy\u00fck m\u00fccenneb (sharp)"),
-      QT_TRANSLATE_NOOP("symUserNames", "Büyük mücenneb (sharp)"), // workaround for Qt lupdate bug https://bugreports.qt.io/browse/QTBUG-35164
+      QT_TRANSLATE_NOOP("symUserNames", "B\u00fcy\u00fck mücenneb (sharp)"),
       "Combining close curly brace",
       "Combining lower by one 17-limit schisma",
       "Combining lower by one 19-limit schisma",
@@ -2990,24 +2989,24 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "Syntonic/Didymus comma (80:81) up (Bosanquet)",
       QT_TRANSLATE_NOOP("symUserNames", "Double flat"),
       "Arabic double flat",
-      "Double flat equal tempered semitone",
-      "Double flat lowered by one syntonic comma",
-      "Double flat raised by one syntonic comma",
+      QT_TRANSLATE_NOOP("symUserNames", "Double flat equal tempered semitone"),
+      QT_TRANSLATE_NOOP("symUserNames", "Double flat lowered by one syntonic comma"),
+      QT_TRANSLATE_NOOP("symUserNames", "Double flat raised by one syntonic comma"),
       "Reversed double flat",
-      "Double flat lowered by three syntonic commas",
-      "Double flat raised by three syntonic commas",
+      QT_TRANSLATE_NOOP("symUserNames", "Double flat lowered by three syntonic commas"),
+      QT_TRANSLATE_NOOP("symUserNames", "Double flat raised by three syntonic commas"),
       "Turned double flat",
-      "Double flat lowered by two syntonic commas",
-      "Double flat raised by two syntonic commas",
+      QT_TRANSLATE_NOOP("symUserNames", "Double flat lowered by two syntonic commas"),
+      QT_TRANSLATE_NOOP("symUserNames", "Double flat raised by two syntonic commas"),
       QT_TRANSLATE_NOOP("symUserNames", "Double sharp"),
       "Arabic double sharp",
-      "Double sharp equal tempered semitone",
-      "Double sharp lowered by one syntonic comma",
-      "Double sharp raised by one syntonic comma",
-      "Double sharp lowered by three syntonic commas",
-      "Double sharp raised by three syntonic commas",
-      "Double sharp lowered by two syntonic commas",
-      "Double sharp raised by two syntonic commas",
+      QT_TRANSLATE_NOOP("symUserNames", "Double sharp equal tempered semitone"),
+      QT_TRANSLATE_NOOP("symUserNames", "Double sharp lowered by one syntonic comma"),
+      QT_TRANSLATE_NOOP("symUserNames", "Double sharp raised by one syntonic comma"),
+      QT_TRANSLATE_NOOP("symUserNames", "Double sharp lowered by three syntonic commas"),
+      QT_TRANSLATE_NOOP("symUserNames", "Double sharp raised by three syntonic commas"),
+      QT_TRANSLATE_NOOP("symUserNames", "Double sharp lowered by two syntonic commas"),
+      QT_TRANSLATE_NOOP("symUserNames", "Double sharp raised by two syntonic commas"),
       "Enharmonically reinterpret accidental almost equal to",
       "Enharmonically reinterpret accidental equals",
       "Enharmonically reinterpret accidental tilde",
@@ -3020,18 +3019,18 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       QT_TRANSLATE_NOOP("symUserNames", "Five-quarter-tones sharp"),
       QT_TRANSLATE_NOOP("symUserNames", "Flat"),
       "Arabic half-tone flat",
-      "Flat equal tempered semitone",
+      QT_TRANSLATE_NOOP("symUserNames", "Flat equal tempered semitone"),
       "Lowered flat (Stockhausen)",
-      "Flat lowered by one syntonic comma",
-      "Flat raised by one syntonic comma",
+      QT_TRANSLATE_NOOP("symUserNames", "Flat lowered by one syntonic comma"),
+      QT_TRANSLATE_NOOP("symUserNames", "Flat raised by one syntonic comma"),
       "Raised flat (Stockhausen)",
       "Repeated flat, note on line (Stockhausen)",
       "Repeated flat, note in space (Stockhausen)",
-      "Flat lowered by three syntonic commas",
-      "Flat raised by three syntonic commas",
+      QT_TRANSLATE_NOOP("symUserNames", "Flat lowered by three syntonic commas"),
+      QT_TRANSLATE_NOOP("symUserNames", "Flat raised by three syntonic commas"),
       "Turned flat",
-      "Flat lowered by two syntonic commas",
-      "Flat raised by two syntonic commas",
+      QT_TRANSLATE_NOOP("symUserNames", "Flat lowered by two syntonic commas"),
+      QT_TRANSLATE_NOOP("symUserNames", "Flat raised by two syntonic commas"),
       "Half sharp with arrow down",
       "Half sharp with arrow up",
       "Thirteen (raise by 65:64)",
@@ -3047,29 +3046,29 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       QT_TRANSLATE_NOOP("symUserNames", "Koron (quarter tone flat)"),
       "K\u00fc\u00e7\u00fck m\u00fccenneb (flat)",
       //QT_TRANSLATE_NOOP("symUserNames", "K\u00fc\u00e7\u00fck m\u00fccenneb (sharp)"),
-      QT_TRANSLATE_NOOP("symUserNames", "Küçük mücenneb (sharp)"), // workaround for Qt lupdate bug https://bugreports.qt.io/browse/QTBUG-35164
+      QT_TRANSLATE_NOOP("symUserNames", "K\u00fc\u00e7\u00fck mücenneb (sharp)"),
       "Large double sharp",
-      "Lower by one septimal comma",
-      "Lower by one tridecimal quartertone",
-      "Lower by one undecimal quartertone",
-      "Lower by two septimal commas",
+      QT_TRANSLATE_NOOP("symUserNames", "Lower by one septimal comma"),
+      QT_TRANSLATE_NOOP("symUserNames", "Lower by one tridecimal quartertone"),
+      QT_TRANSLATE_NOOP("symUserNames", "Lower by one undecimal quartertone"),
+      QT_TRANSLATE_NOOP("symUserNames", "Lower by two septimal commas"),
       "Lowered (Stockhausen)",
       "Narrow reversed flat(quarter-tone flat)",
       "Narrow reversed flat and flat(three-quarter-tones flat)",
       QT_TRANSLATE_NOOP("symUserNames", "Natural"),
       "Arabic natural",
-      "Natural equal tempered semitone",
+      QT_TRANSLATE_NOOP("symUserNames", "Natural equal tempered semitone"),
       QT_TRANSLATE_NOOP("symUserNames", "Natural flat"),
       "Lowered natural (Stockhausen)",
-      "Natural lowered by one syntonic comma",
-      "Natural raised by one syntonic comma",
+      QT_TRANSLATE_NOOP("symUserNames", "Natural lowered by one syntonic comma"),
+      QT_TRANSLATE_NOOP("symUserNames", "Natural raised by one syntonic comma"),
       "Raised natural (Stockhausen)",
       "Reversed natural",
       QT_TRANSLATE_NOOP("symUserNames", "Natural sharp"),
-      "Natural lowered by three syntonic commas",
-      "Natural raised by three syntonic commas",
-      "Natural lowered by two syntonic commas",
-      "Natural raised by two syntonic commas",
+      QT_TRANSLATE_NOOP("symUserNames", "Natural lowered by three syntonic commas"),
+      QT_TRANSLATE_NOOP("symUserNames", "Natural raised by three syntonic commas"),
+      QT_TRANSLATE_NOOP("symUserNames", "Natural lowered by two syntonic commas"),
+      QT_TRANSLATE_NOOP("symUserNames", "Natural raised by two syntonic commas"),
       "One and a half sharps with arrow down",
       "One and a half sharps with arrow up",
       "One-quarter-tone flat (Ferneyhough)",
@@ -3080,8 +3079,8 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "One-third-tone sharp (Ferneyhough)",
       "Accidental parenthesis, left",
       "Accidental parenthesis, right",
-      "Lower by one equal tempered quarter-tone",
-      "Raise by one equal tempered quarter tone",
+      QT_TRANSLATE_NOOP("symUserNames", "Lower by one equal tempered quarter-tone"),
+      QT_TRANSLATE_NOOP("symUserNames", "Raise by one equal tempered quarter tone"),
       "Quarter-tone flat",
       "Arabic quarter-tone flat",
       QT_TRANSLATE_NOOP("symUserNames", "Quarter-tone flat"),
@@ -3097,10 +3096,10 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       QT_TRANSLATE_NOOP("symUserNames", "Quarter-tone sharp"),
       QT_TRANSLATE_NOOP("symUserNames", "Half sharp (quarter-tone sharp) (Stein)"),
       "Quarter tone sharp with wiggly tail",
-      "Raise by one septimal comma",
-      "Raise by one tridecimal quartertone",
-      "Raise by one undecimal quartertone",
-      "Raise by two septimal commas",
+      QT_TRANSLATE_NOOP("symUserNames", "Raise by one septimal comma"),
+      QT_TRANSLATE_NOOP("symUserNames", "Raise by one tridecimal quartertone"),
+      QT_TRANSLATE_NOOP("symUserNames", "Raise by one undecimal quartertone"),
+      QT_TRANSLATE_NOOP("symUserNames", "Raise by two septimal commas"),
       "Raised (Stockhausen)",
       "Reversed flat and flat with arrow down",
       "Reversed flat and flat with arrow up",
@@ -3108,20 +3107,20 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "Reversed flat with arrow up",
       QT_TRANSLATE_NOOP("symUserNames", "Sharp"),
       "Arabic half-tone sharp",
-      "Sharp equal tempered semitone",
+      QT_TRANSLATE_NOOP("symUserNames", "Sharp equal tempered semitone"),
       "Lowered sharp (Stockhausen)",
-      "Sharp lowered by one syntonic comma",
-      "Sharp raised by one syntonic comma",
+      QT_TRANSLATE_NOOP("symUserNames", "Sharp lowered by one syntonic comma"),
+      QT_TRANSLATE_NOOP("symUserNames", "Sharp raised by one syntonic comma"),
       "One or three quarter tones sharp",
       "Raised sharp (Stockhausen)",
       "Repeated sharp, note on line (Stockhausen)",
       "Repeated sharp, note in space (Stockhausen)",
       "Reversed sharp",
       QT_TRANSLATE_NOOP("symUserNames", "Sharp sharp"),
-      "Sharp lowered by three syntonic commas",
-      "Sharp raised by three syntonic commas",
-      "Sharp lowered by two syntonic commas",
-      "Sharp raised by two syntonic commas",
+      QT_TRANSLATE_NOOP("symUserNames", "Sharp lowered by three syntonic commas"),
+      QT_TRANSLATE_NOOP("symUserNames", "Sharp raised by three syntonic commas"),
+      QT_TRANSLATE_NOOP("symUserNames", "Sharp lowered by two syntonic commas"),
+      QT_TRANSLATE_NOOP("symUserNames", "Sharp raised by two syntonic commas"),
       "1/12 tone low",
       "1/12 tone high",
       "1/4 tone low",
@@ -3270,10 +3269,8 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       QT_TRANSLATE_NOOP("symUserNames", "Tenuto-accent above"),
       QT_TRANSLATE_NOOP("symUserNames", "Tenuto-accent below"),
       QT_TRANSLATE_NOOP("symUserNames", "Tenuto below"),
-      //QT_TRANSLATE_NOOP("symUserNames", "Lour\\u00e9 (tenuto-staccato) above"),
-      QT_TRANSLATE_NOOP("symUserNames", "Louré (tenuto-staccato) above"), // workaround for Qt lupdate bug https://bugreports.qt.io/browse/QTBUG-35164
-      //QT_TRANSLATE_NOOP("symUserNames", "Lour\\u00e9 (tenuto-staccato) below"),
-      QT_TRANSLATE_NOOP("symUserNames", "Louré (tenuto-staccato) below"), // workaround for Qt lupdate bug https://bugreports.qt.io/browse/QTBUG-35164
+      QT_TRANSLATE_NOOP("symUserNames", "Lour\u00e9 (tenuto-staccato) above"),
+      QT_TRANSLATE_NOOP("symUserNames", "Lour\u00e9 (tenuto-staccato) below"),
       QT_TRANSLATE_NOOP("symUserNames", "Unstress above"),
       QT_TRANSLATE_NOOP("symUserNames", "Unstress below"),
       "Augmentation dot",
@@ -3345,7 +3342,7 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       QT_TRANSLATE_NOOP("symUserNames", "Breath mark (upbow-like)"),
       "Bridge clef",
       "Buzz roll",
-      "C clef",
+      QT_TRANSLATE_NOOP("symUserNames", "C clef"),
       "C clef ottava bassa",
       "C clef, arrow down",
       "C clef, arrow up",
@@ -3427,8 +3424,8 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "15 for clefs",
       "8 for clefs",
       "Combining clef change",
-      "Coda",
-      "Square coda",
+      QT_TRANSLATE_NOOP("symUserNames", "Coda"),
+      QT_TRANSLATE_NOOP("symUserNames", "Square coda"),
       "Beat 2, compound time",
       "Beat 2, simple time",
       "Beat 3, compound time",
@@ -3490,7 +3487,7 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "ffff",
       "fffff",
       "ffffff",
-      "Forte",
+      QT_TRANSLATE_NOOP("symUserNames", "Forte"),
       "Forte-piano",
       "Forzando",
       "Left bracket (for hairpins)",
@@ -3500,8 +3497,8 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "mf",
       "mp",
       "Messa di voce",
-      "Mezzo",
-      "Niente",
+      QT_TRANSLATE_NOOP("symUserNames", "Mezzo"),
+      QT_TRANSLATE_NOOP("symUserNames", "Niente"),
       "Niente (for hairpins)",
       "pf",
       "pp",
@@ -3509,18 +3506,18 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "pppp",
       "ppppp",
       "pppppp",
-      "Piano",
-      "Rinforzando",
+      QT_TRANSLATE_NOOP("symUserNames", "Piano"),
+      QT_TRANSLATE_NOOP("symUserNames", "Rinforzando"),
       "Rinforzando 1",
       "Rinforzando 2",
-      "Sforzando",
+      QT_TRANSLATE_NOOP("symUserNames", "Sforzando"),
       "Sforzando 1",
       "Sforzando-pianissimo",
       "Sforzando-piano",
       "Sforzato",
       "Sforzatissimo",
       "Sforzato-piano",
-      "Z",
+      QT_TRANSLATE_NOOP("symUserNames", "Z"),
       "Eight channels (7.1 surround)",
       "Five channels",
       "Four channels",
@@ -3586,7 +3583,7 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "Volume level 40%",
       "Volume level 60%",
       "Volume level 80%",
-      "F clef",
+      QT_TRANSLATE_NOOP("symUserNames", "F clef"),
       "F clef quindicesima alta",
       "F clef quindicesima bassa",
       "F clef ottava alta",
@@ -3744,7 +3741,7 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "Function theory v",
       "Function theory V",
       "Function theory 0",
-      "G clef",
+      QT_TRANSLATE_NOOP("symUserNames", "G clef"),
       "G clef quindicesima alta",
       "G clef quindicesima bassa",
       "G clef ottava alta",
@@ -4005,9 +4002,9 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "Lute tablature staff, 6 courses",
       "Lute tablature staff, 6 courses (narrow)",
       "Lute tablature staff, 6 courses (wide)",
-      "Elision",
-      "Narrow elision",
-      "Wide elision",
+      QT_TRANSLATE_NOOP("symUserNames", "Elision"),
+      QT_TRANSLATE_NOOP("symUserNames", "Narrow elision"),
+      QT_TRANSLATE_NOOP("symUserNames", "Wide elision"),
       "Baseline hyphen",
       "Non-breaking baseline hyphen",
       "Flat, hard b (mi)",
@@ -4166,30 +4163,30 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "White mensural maxima",
       "White mensural minima",
       "White mensural semiminima",
-      "Augmentation dot",
+      QT_TRANSLATE_NOOP("symUserNames", "Augmentation dot"),
       "1024th note (semihemidemisemihemidemisemiquaver) stem down",
       "1024th note (semihemidemisemihemidemisemiquaver) stem up",
       "128th note (semihemidemisemiquaver) stem down",
-      "128th note (semihemidemisemiquaver) stem up",
+      QT_TRANSLATE_NOOP("symUserNames", "128th note (semihemidemisemiquaver) stem up"),
       "16th note (semiquaver) stem down",
-      "16th note (semiquaver) stem up",
+      QT_TRANSLATE_NOOP("symUserNames", "16th note (semiquaver) stem up"),
       "256th note (demisemihemidemisemiquaver) stem down",
       "256th note (demisemihemidemisemiquaver) stem up",
       "32nd note (demisemiquaver) stem down",
-      "32nd note (demisemiquaver) stem up",
+      QT_TRANSLATE_NOOP("symUserNames", "32nd note (demisemiquaver) stem up"),
       "512th note (hemidemisemihemidemisemiquaver) stem down",
       "512th note (hemidemisemihemidemisemiquaver) stem up",
       "64th note (hemidemisemiquaver) stem down",
-      "64th note (hemidemisemiquaver) stem up",
+      QT_TRANSLATE_NOOP("symUserNames", "64th note (hemidemisemiquaver) stem up"),
       "Eighth note (quaver) stem down",
-      "Eighth note (quaver) stem up",
+      QT_TRANSLATE_NOOP("symUserNames", "Eighth note (quaver) stem up"),
       "Double whole note (breve)",
       "Double whole note (square)",
       "Half note (minim) stem down",
-      "Half note (minim) stem up",
+      QT_TRANSLATE_NOOP("symUserNames", "Half note (minim) stem up"),
       "Quarter note (crotchet) stem down",
-      "Quarter note (crotchet) stem up",
-      "Whole note (semibreve)",
+      QT_TRANSLATE_NOOP("symUserNames", "Quarter note (crotchet) stem up"),
+      QT_TRANSLATE_NOOP("symUserNames", "Whole note (semibreve)"),
       "Left-pointing arrow for metric modulation",
       "Right-pointing arrow for metric modulation",
       "Do not copy",
@@ -4574,7 +4571,7 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "Double cadence with upper prefix and turn",
       "Inverted mordent with upper prefix",
       "Mordent with release",
-      "Mordent with upper prefix",
+      QT_TRANSLATE_NOOP("symUserNames", "Mordent with upper prefix"),
       "Pre-beat port de voix follwed by multiple mordent (Dandrieu)",
       QT_TRANSLATE_NOOP("symUserNames", "Slide"),
       "Slide-trill with two-note suffix (J.S. Bach)",
@@ -4906,22 +4903,22 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "Quindicesima alta",
       "Quindicesima bassa",
       "Quindicesima bassa (mb)",
-      "Repeat last bar",
-      "Repeat last two bars",
-      "Repeat last four bars",
+      QT_TRANSLATE_NOOP("symUserNames", "Repeat last bar"),
+      QT_TRANSLATE_NOOP("symUserNames", "Repeat last two bars"),
+      QT_TRANSLATE_NOOP("symUserNames", "Repeat last four bars"),
       "Single repeat dot",
       "Repeat dots",
       "Left (start) repeat sign",
       "Right (end) repeat sign",
       "Right and left repeat sign",
       "1024th rest",
-      "128th (semihemidemisemiquaver) rest",
-      "16th (semiquaver) rest",
+      QT_TRANSLATE_NOOP("symUserNames", "128th (semihemidemisemiquaver) rest"),
+      QT_TRANSLATE_NOOP("symUserNames", "16th (semiquaver) rest"),
       "256th rest",
-      "32nd (demisemiquaver) rest",
+      QT_TRANSLATE_NOOP("symUserNames", "32nd (demisemiquaver) rest"),
       "512th rest",
-      "64th (hemidemisemiquaver) rest",
-      "Eighth (quaver) rest",
+      QT_TRANSLATE_NOOP("symUserNames", "64th (hemidemisemiquaver) rest"),
+      QT_TRANSLATE_NOOP("symUserNames", "Eighth (quaver) rest"),
       "Double whole (breve) rest",
       "Double whole rest on leger lines",
       "Multiple measure rest",
@@ -4929,14 +4926,14 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "H-bar, middle",
       "H-bar, right half",
       "Half (minim) rest",
-      "Half rest on leger line",
+      QT_TRANSLATE_NOOP("symUserNames", "Half rest on leger line"),
       "Longa rest",
       "Maxima rest",
-      "Quarter (crotchet) rest",
+      QT_TRANSLATE_NOOP("symUserNames", "Quarter (crotchet) rest"),
       "Old-style quarter (crotchet) rest",
       "Z-style quarter (crotchet) rest",
       "Whole (semibreve) rest",
-      "Whole rest on leger line",
+      QT_TRANSLATE_NOOP("symUserNames", "Whole rest on leger line"),
       "Reversed brace",
       "Reversed bracket bottom",
       "Reversed bracket top",
@@ -4945,8 +4942,8 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "Sch\u00e4ffer F clef to G clef change",
       "Sch\u00e4ffer G clef to F clef change",
       "Sch\u00e4ffer previous clef",
-      "Segno",
-      "Segno (serpent)",
+      QT_TRANSLATE_NOOP("symUserNames", "Segno"),
+      QT_TRANSLATE_NOOP("symUserNames", "Segno (serpent)"),
       "Segno (serpent with vertical lines)",
       "Semi-pitched percussion clef 1",
       "Semi-pitched percussion clef 2",
@@ -5043,9 +5040,9 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       QT_TRANSLATE_NOOP("symUserNames", "Up bow"),
       "Turned up bow",
       "Vibrato pulse accent (Saunders) for stem",
-      "System divider",
-      "Extra long system divider",
-      "Long system divider",
+      QT_TRANSLATE_NOOP("symUserNames", "System divider"),
+      QT_TRANSLATE_NOOP("symUserNames", "Extra long system divider"),
+      QT_TRANSLATE_NOOP("symUserNames", "Long system divider"),
       "Augmentation dot",
       "Black note, fractional 16th beam, long stem",
       "Black note, fractional 16th beam, short stem",
@@ -5302,7 +5299,7 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       QT_TRANSLATE_NOOP("symUserNames", "Up prall"),
       QT_TRANSLATE_NOOP("symUserNames", "Up mordent"),
       QT_TRANSLATE_NOOP("symUserNames", "Prall down"),
-      QT_TRANSLATE_NOOP("symUserNames", "Down prall"),
+//      QT_TRANSLATE_NOOP("symUserNames", "Down prall"),
       QT_TRANSLATE_NOOP("symUserNames", "Down mordent"),
       QT_TRANSLATE_NOOP("symUserNames", "Prall up"),
       QT_TRANSLATE_NOOP("symUserNames", "Line prall"),
@@ -5313,7 +5310,7 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symUserNames = { {
       "noteLongaDown",
       "noteLongaSquareUp",
       "noteLongaSquareDown",
-      "Space"
+      QT_TRANSLATE_NOOP("symUserNames", "Space")
       } };
 
 //---------------------------------------------------------
@@ -5587,6 +5584,57 @@ QVector<oldName> oldNames = {
 };
 
 //---------------------------------------------------------
+//   commonScoreSymbols
+//    subset for use in text palette, possible translations, etc
+//---------------------------------------------------------
+
+const QVector<SymId> Sym::commonScoreSymbols = {
+      SymId::accidentalFlat,
+      SymId::accidentalNatural,
+      SymId::accidentalSharp,
+      SymId::accidentalDoubleFlat,
+      SymId::accidentalDoubleSharp,
+      SymId::metNoteWhole,
+      SymId::metNoteHalfUp,
+      SymId::metNoteQuarterUp,
+      SymId::metNote8thUp,
+      SymId::metNote16thUp,
+      SymId::metNote32ndUp,
+      SymId::metNote64thUp,
+      SymId::metNote128thUp,
+      SymId::metAugmentationDot,
+      SymId::restWholeLegerLine,
+      SymId::restHalfLegerLine,
+      SymId::restQuarter,
+      SymId::rest8th,
+      SymId::rest16th,
+      SymId::rest32nd,
+      SymId::rest64th,
+      SymId::rest128th,
+      SymId::segno,
+      SymId::coda,
+      SymId::segnoSerpent1,
+      SymId::codaSquare,
+      SymId::repeat1Bar,
+      SymId::repeat2Bars,
+      SymId::repeat4Bars,
+      SymId::gClef,
+      SymId::fClef,
+      SymId::cClef,
+      SymId::lyricsElisionNarrow,
+      SymId::lyricsElision,
+      SymId::lyricsElisionWide,
+      SymId::dynamicPiano,
+      SymId::dynamicMezzo,
+      SymId::dynamicForte,
+      SymId::dynamicNiente,
+      SymId::dynamicRinforzando,
+      SymId::dynamicSforzando,
+      SymId::dynamicZ,
+      SymId::space
+      };
+
+//---------------------------------------------------------
 //   userName2id
 //---------------------------------------------------------
 
@@ -5663,9 +5711,9 @@ void ScoreFont::draw(SymId id, QPainter* painter, const QSizeF& mag, const QPoin
                   font->setFamily(_family);
                   font->setStyleStrategy(QFont::NoFontMerging);
                   font->setHintingPreference(QFont::PreferVerticalHinting);
-                  qreal size = 20.0 * MScore::pixelRatio;
-                  font->setPointSize(size);
                   }
+            qreal size = 20.0 * MScore::pixelRatio;
+            font->setPointSize(size);
             QSizeF imag = QSizeF(1.0 / mag.width(), 1.0 / mag.height());
             painter->scale(mag.width(), mag.height());
             painter->setFont(*font);
@@ -5706,7 +5754,7 @@ void ScoreFont::draw(SymId id, QPainter* painter, const QSizeF& mag, const QPoin
             FT_Bitmap* bm     = &gb->bitmap;
 
             if (bm->width == 0 || bm->rows == 0) {
-                  qDebug("zero glyph");
+                  qDebug("zero glyph, id %d", int(id));
                   return;
                   }
             QImage img(QSize(bm->width, bm->rows), QImage::Format_ARGB32);
@@ -5787,13 +5835,22 @@ const char* Sym::id2name(SymId id)
 
 void initScoreFonts()
       {
-      ScoreFont::initGlyphNamesJson();
+      QJsonObject glyphNamesJson(ScoreFont::initGlyphNamesJson());
+      if (glyphNamesJson.empty())
+            qFatal("initGlyphNamesJson failed");
       int error = FT_Init_FreeType(&ftlib);
       if (!ftlib || error)
             qFatal("init freetype library failed");
-      int index = 0;
-      for (auto i : Sym::symNames)
-            Sym::lnhash.insert(i, SymId(index++));
+      for (size_t i = 0; i < Sym::symNames.size(); ++i) {
+            const char* name = Sym::symNames[i];
+            Sym::lnhash.insert(name, SymId(i));
+            bool ok;
+            uint code = glyphNamesJson.value(name).toObject().value("codepoint").toString().mid(2).toUInt(&ok, 16);
+            if (ok)
+                  ScoreFont::_mainSymCodeTable[i] = code;
+            else if (MScore::debugMode)
+                  qDebug("codepoint not recognized for glyph %s", qPrintable(name));
+            }
       for (oldName i : oldNames)
             Sym::lonhash.insert(i.name, SymId(i.symId));
       QFont::insertSubstitution("MScore Text",    "Bravura Text");
@@ -5807,16 +5864,9 @@ void initScoreFonts()
 //   codeToString
 //---------------------------------------------------------
 
-static QString codeToString(int code)
+static QString codeToString(uint code)
       {
-      QString s;
-      if (code & 0xffff0000) {
-            s = QChar(QChar::highSurrogate(code));
-            s += QChar(QChar::lowSurrogate(code));
-            }
-      else
-            s = QChar(code);
-      return s;
+      return QString::fromUcs4(&code, 1);
       }
 
 //---------------------------------------------------------
@@ -5825,7 +5875,15 @@ static QString codeToString(int code)
 
 QString ScoreFont::toString(SymId id) const
       {
-      return codeToString(sym(id).code());
+      const Sym& s = sym(id);
+      int code;
+      if (s.isValid())
+            code = s.code();
+      else {
+            // fallback: search in the common SMuFL table
+            code = _mainSymCodeTable[size_t(id)];
+            }
+      return codeToString(code);
       }
 
 //---------------------------------------------------------
@@ -5878,18 +5936,13 @@ void ScoreFont::load()
       qreal pixelSize = 200.0;
       FT_Set_Pixel_Sizes(face, 0, int(pixelSize+.5));
 
-      for (auto i : ScoreFont::glyphNamesJson().keys()) {
-            bool ok;
-            int code = ScoreFont::glyphNamesJson().value(i).toObject().value("codepoint").toString().mid(2).toInt(&ok, 16);
-            if (!ok)
-                  qDebug("codepoint not recognized for glyph %s", qPrintable(i));
-            if (Sym::lnhash.contains(i)) {
-                  SymId symId = Sym::lnhash.value(i);
-                  Sym* sym    = &_symbols[int(symId)];
-                  computeMetrics(sym, code);
-                  }
-            else
-                  qDebug("unknown glyph: %s", qPrintable(i));
+      for (size_t id = 0; id < _mainSymCodeTable.size(); ++id) {
+            uint code = _mainSymCodeTable[id];
+            if (code == 0)
+                  continue;
+            SymId symId = SymId(id);
+            Sym* sym    = &_symbols[int(symId)];
+            computeMetrics(sym, code);
             }
 
       QJsonParseError error;
@@ -5913,35 +5966,35 @@ void ScoreFont::load()
                   continue;
                   }
             Sym* sym = &_symbols[int(symId)];
-            for (auto i : ooo.keys()) {
-                  if (i == "stemDownNW") {
-                        qreal x = ooo.value(i).toArray().at(0).toDouble();
-                        qreal y = ooo.value(i).toArray().at(1).toDouble();
+            for (auto j : ooo.keys()) {
+                  if (j == "stemDownNW") {
+                        qreal x = ooo.value(j).toArray().at(0).toDouble();
+                        qreal y = ooo.value(j).toArray().at(1).toDouble();
                         sym->setStemDownNW(QPointF(4.0 * DPI_F * x, 4.0 * DPI_F * -y));
                         }
-                  else if (i == "stemUpSE") {
-                        qreal x = ooo.value(i).toArray().at(0).toDouble();
-                        qreal y = ooo.value(i).toArray().at(1).toDouble();
+                  else if (j == "stemUpSE") {
+                        qreal x = ooo.value(j).toArray().at(0).toDouble();
+                        qreal y = ooo.value(j).toArray().at(1).toDouble();
                         sym->setStemUpSE(QPointF(4.0 * DPI_F * x, 4.0 * DPI_F * -y));
                         }
-                  else if (i == "cutOutNE") {
-                        qreal x = ooo.value(i).toArray().at(0).toDouble() * scale;
-                        qreal y = ooo.value(i).toArray().at(1).toDouble() * scale;
+                  else if (j == "cutOutNE") {
+                        qreal x = ooo.value(j).toArray().at(0).toDouble() * scale;
+                        qreal y = ooo.value(j).toArray().at(1).toDouble() * scale;
                         sym->setCutOutNE(QPointF(x, -y));
                         }
-                  else if (i == "cutOutNW") {
-                        qreal x = ooo.value(i).toArray().at(0).toDouble() * scale;
-                        qreal y = ooo.value(i).toArray().at(1).toDouble() * scale;
+                  else if (j == "cutOutNW") {
+                        qreal x = ooo.value(j).toArray().at(0).toDouble() * scale;
+                        qreal y = ooo.value(j).toArray().at(1).toDouble() * scale;
                         sym->setCutOutNW(QPointF(x, -y));
                         }
-                  else if (i == "cutOutSE") {
-                        qreal x = ooo.value(i).toArray().at(0).toDouble() * scale;
-                        qreal y = ooo.value(i).toArray().at(1).toDouble() * scale;
+                  else if (j == "cutOutSE") {
+                        qreal x = ooo.value(j).toArray().at(0).toDouble() * scale;
+                        qreal y = ooo.value(j).toArray().at(1).toDouble() * scale;
                         sym->setCutOutSE(QPointF(x, -y));
                         }
-                  else if (i == "cutOutSW") {
-                        qreal x = ooo.value(i).toArray().at(0).toDouble() * scale;
-                        qreal y = ooo.value(i).toArray().at(1).toDouble() * scale;
+                  else if (j == "cutOutSW") {
+                        qreal x = ooo.value(j).toArray().at(0).toDouble() * scale;
+                        qreal y = ooo.value(j).toArray().at(1).toDouble() * scale;
                         sym->setCutOutSW(QPointF(x, -y));
                         }
                   }
@@ -6222,22 +6275,22 @@ const char* ScoreFont::fallbackTextFont()
 //   initGlyphNamesJson
 //---------------------------------------------------------
 
-bool ScoreFont::initGlyphNamesJson()
+QJsonObject ScoreFont::initGlyphNamesJson()
       {
       QFile fi(":fonts/smufl/glyphnames.json");
       if (!fi.open(QIODevice::ReadOnly)) {
             qDebug("ScoreFont: open glyph names file <%s> failed", qPrintable(fi.fileName()));
-            return false;
+            return QJsonObject();
             }
       QJsonParseError error;
-      _glyphnamesJson = QJsonDocument::fromJson(fi.readAll(), &error).object();
+      QJsonObject glyphNamesJson = QJsonDocument::fromJson(fi.readAll(), &error).object();
       if (error.error != QJsonParseError::NoError) {
             qDebug("Json parse error in <%s>(offset: %d): %s", qPrintable(fi.fileName()),
                error.offset, qPrintable(error.errorString()));
-            return false;
+            return QJsonObject();
             }
       fi.close();
-      return true;
+      return glyphNamesJson;
       }
 
 //---------------------------------------------------------

@@ -240,7 +240,7 @@ class Channel {
       /* The values of the generators, set by NRPN messages, or by
        * fluid_synth_set_gen(), are cached in the channel so they can be
        * applied to future notes. They are copied to a voice's generators
-       * in fluid_voice_init(), wihich calls fluid_gen_init().  */
+       * in fluid_voice_init(), which calls fluid_gen_init().  */
 
       float gen[GEN_LAST];
 
@@ -308,8 +308,14 @@ class Fluid : public Synthesizer {
       float _masterTuning;                // usually 440.0
       double _tuning[128];                // the pitch of every key, in cents
 
+      int _loadProgress = 0;
+      bool _loadWasCanceled = false;
+
       QMutex mutex;
       void updatePatchList();
+
+      //the variable is used to stop loading samples from the sf files
+      bool _globalTerminate = false;
 
    protected:
       int _state;                         // the synthesizer state
@@ -343,6 +349,11 @@ class Fluid : public Synthesizer {
       virtual void allSoundsOff(int);
       virtual void allNotesOff(int);
 
+      int loadProgress()            { return _loadProgress; }
+      void setLoadProgress(int val) { _loadProgress = val; }
+      bool loadWasCanceled()        { return _loadWasCanceled; }
+      void setLoadWasCanceled(bool status)     { _loadWasCanceled = status; }
+
       Preset* get_preset(unsigned int sfontnum, unsigned int banknum, unsigned int prognum);
       Preset* find_preset(unsigned int banknum, unsigned int prognum);
       void modulate_voices(int chan, bool is_cc, int ctrl);
@@ -371,7 +382,8 @@ class Fluid : public Synthesizer {
       virtual bool loadSoundFonts(const QStringList& s);
       virtual bool addSoundFont(const QString& s);
       virtual bool removeSoundFont(const QString& s);
-      virtual QStringList soundFonts() const;
+      QStringList soundFonts() const;
+      std::vector<SoundFontInfo> soundFontsInfo() const override;
 
       void start_voice(Voice* voice);
       Voice* alloc_voice(unsigned id, Sample* sample, int chan, int key, int vel, double vt);
@@ -404,6 +416,9 @@ class Fluid : public Synthesizer {
       virtual SynthesizerGui* gui();
 
       static QFileInfoList sfFiles();
+
+      bool globalTerminate() { return _globalTerminate; }
+      void setGlobalTerminate(bool terminate = true) { _globalTerminate = terminate; }
 
       friend class Voice;
       friend class Preset;

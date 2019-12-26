@@ -1,7 +1,6 @@
 //=============================================================================
 //  Awl
 //  Audio Widget Library
-//  $Id:$
 //
 //  Copyright (C) 2002-2007 by Werner Schweer and others
 //
@@ -27,18 +26,20 @@ namespace Awl {
 //   ColorLabel
 //---------------------------------------------------------
 
-class ColorLabel : public QFrame {
+class ColorLabel : public QPushButton {
       Q_OBJECT
       Q_PROPERTY(QColor color READ color WRITE setColor)
 
-      QColor _color;
-      QPixmap* _pixmap;
+      QColor _color = Qt::blue;
+      QPixmap* _pixmap = nullptr;
 
       virtual void paintEvent(QPaintEvent*);
-      virtual void mousePressEvent(QMouseEvent*);
-
+      
    signals:
       void colorChanged(QColor);
+      
+   public slots:
+      void colorButtonClicked(bool);
 
    public:
       ColorLabel(QWidget* parent = 0);

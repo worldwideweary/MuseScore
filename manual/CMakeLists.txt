@@ -1,7 +1,6 @@
 #=============================================================================
 #  MuseScore
 #  Music Composition & Notation
-#  $Id:$
 #
 #  Copyright (C) 2011 Werner Schweer
 #
@@ -11,49 +10,16 @@
 #  the file LICENSE.GPL
 #=============================================================================
 
-include_directories(
-      ${PROJECT_BINARY_DIR}
-      ${PROJECT_SOURCE_DIR}
-      )
+include (${PROJECT_SOURCE_DIR}/build/functions.cmake)
 
-if (APPLE)
-        file(GLOB_RECURSE INCS "*.h")
-else (APPLE)
-        set(INCS "")
-endif (APPLE)
+set(MANUAL_DEST "${PROJECT_BINARY_DIR}/share/manual/plugins/plugins3.html")
 
-add_executable(
-      genManual
-      ${INCS}
-      genManual.cpp
+fn__copy_during_build(
+      "${CMAKE_CURRENT_SOURCE_DIR}/plugins3.html"
+      "${MANUAL_DEST}"
       )
-target_link_libraries(
-      genManual
-      ${QT_LIBRARIES}
-      )
-
-if(APPLE)
-set_target_properties (
-      genManual
-      PROPERTIES
-      COMPILE_FLAGS "-include all.h -D TESTROOT=\\\\\"${PROJECT_SOURCE_DIR}\\\\\" -g -Wall -Wextra"
-      )
-else(APPLE)
-set_target_properties (
-      genManual
-      PROPERTIES
-      COMPILE_FLAGS "-include all.h -D TESTROOT=\\\"${PROJECT_SOURCE_DIR}\\\" -g -Wall -Wextra"
-      )
-endif(APPLE)
-
-ADD_DEPENDENCIES(genManual mops1)
 
 add_custom_target(pluginDocumentation
       ALL
-      DEPENDS genManual
-      )
-
-add_custom_command(TARGET pluginDocumentation
-      POST_BUILD
-      COMMAND ${PROJECT_BINARY_DIR}/manual/${CMAKE_CFG_INTDIR}/genManual ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR}/share/manual
+      DEPENDS "${MANUAL_DEST}"
       )

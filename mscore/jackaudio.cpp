@@ -1,7 +1,6 @@
 //=============================================================================
 //  MusE Score
 //  Linux Music Score Editor
-//  $Id: jackaudio.cpp 5660 2012-05-22 14:17:39Z wschweer $
 //
 //  Copyright (C) 2002-2010 Werner Schweer and others
 //
@@ -18,15 +17,23 @@
 //  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 //=============================================================================
 
+#if (defined (_MSCVER) || defined (_MSC_VER))
+// Include stdint.h and #define _STDINT_H to prevent <systemdeps.h> from redefining types
+// #undef UNICODE to force LoadLibrary to use the char-based implementation instead of the wchar_t one.
+#include <stdint.h>
+#define _STDINT_H 1
+#endif
+
 #include "jackaudio.h"
 #include "musescore.h"
 #include "libmscore/mscore.h"
+#include "libmscore/sig.h"
 #include "preferences.h"
 // #include "msynth/synti.h"
 #include "seq.h"
 #include "libmscore/score.h"
 #include "libmscore/repeatlist.h"
-#include "mscore/playpanel.h"
+#include "playpanel.h"
 #include <jack/midiport.h>
 
 // Prevent killing sequencer with wrong data
@@ -134,15 +141,16 @@ void JackAudio::unregisterPort(jack_port_t* port)
 
 QList<QString> JackAudio::inputPorts()
       {
-      const char** ports = jack_get_ports(client, 0, 0, 0);
+      const char** prts = jack_get_ports(client, 0, 0, 0);
       QList<QString> clientList;
-      for (const char** p = ports; p && *p; ++p) {
+      for (const char** p = prts; p && *p; ++p) {
             jack_port_t* port = jack_port_by_name(client, *p);
             int flags = jack_port_flags(port);
             if (!(flags & JackPortIsInput))
                   continue;
             char buffer[128];
-            strncpy(buffer, *p, 128);
+            strncpy(buffer, *p, sizeof(buffer) - 1);
+            buffer[sizeof(buffer) - 1] = 0;
             if (strncmp(buffer, "Mscore", 6) == 0)
                   continue;
             clientList.append(QString(buffer));
@@ -314,11 +322,11 @@ void JackAudio::timebase(jack_transport_state_t state, jack_nframes_t /*nframes*
                   audio->stopTransport();
             }
       else if (audio->seq->isRunning()) {
-            if (!audio->seq->score()->repeatList() || !audio->seq->score()->sigmap())
+            if (!audio->seq->score()->masterScore())
                   return;
 
             pos->valid = JackPositionBBT;
-            int curTick = audio->seq->score()->repeatList()->utick2tick(audio->seq->getCurTick());
+            int curTick = audio->seq->score()->repeatList().utick2tick(audio->seq->getCurTick());
             int bar,beat,tick;
             audio->seq->score()->sigmap()->tickValues(curTick, &bar, &beat, &tick);
             // Providing the final tempo
@@ -371,10 +379,9 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
                         jack_nframes_t n = jack_midi_get_event_count(portBuffer);
                         for (jack_nframes_t i = 0; i < n; ++i) {
                               jack_midi_event_t event;
-                              int r = jack_midi_event_get(&event, portBuffer, i);
-                              if (r != 0)
+                              if (jack_midi_event_get(&event, portBuffer, i) != 0)
                                     continue;
-                              int nn = event.size;
+                              size_t nn = event.size;
                               int type = event.buffer[0];
                               if (nn && (type == ME_CLOCK || type == ME_SENSE))
                                     continue;
@@ -397,7 +404,14 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
                   }
             }
       if (l && r) {
-            float buffer[frames * 2];
+#if (!defined (_MSCVER) && !defined (_MSC_VER))
+         float buffer[frames * 2];
+#else
+         // MSVC does not support VLA. Replace with std::vector. If profiling determines that the
+         //    heap allocation is slow, an optimization might be used.
+         std::vector<float> vBuffer(frames * 2);
+         float* buffer = vBuffer.data();
+#endif
             audio->seq->process((unsigned)frames, buffer);
             float* sp = buffer;
             for (unsigned i = 0; i < frames; ++i) {
@@ -407,7 +421,14 @@ int JackAudio::processAudio(jack_nframes_t frames, void* p)
             }
       else {
             // JACK MIDI only
-            float buffer[frames * 2];
+#if (!defined (_MSCVER) && !defined (_MSC_VER))
+         float buffer[frames * 2];
+#else
+            // MSVC does not support VLA. Replace with std::vector. If profiling determines that the
+            //    heap allocation is slow, an optimization might be used.
+         std::vector<float> vBuffer(frames * 2);
+         float* buffer = vBuffer.data();
+#endif
             audio->seq->process((unsigned)frames, buffer);
             }
       return 0;
@@ -811,9 +832,9 @@ void JackAudio::restoreAudioConnections()
       // Connecting to saved ports
       int nPorts = ports.size();
       for (int i = 0; i < nPorts; ++i) {
-            int n = settings.value(QString("audio-%1-connections").arg(i), 0).toInt();
+            int j = settings.value(QString("audio-%1-connections").arg(i), 0).toInt();
             const char* src = jack_port_name(ports[i]);
-            for (int k = 0; k < n; ++k) {
+            for (int k = 0; k < j; ++k) {
                   QString dst = settings.value(QString("audio-%1-%2").arg(i).arg(k), "").toString();
                   if (!dst.isEmpty()) {
                         if (jack_port_connected_to(ports[i], qPrintable(dst)))

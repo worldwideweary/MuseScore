@@ -2,20 +2,28 @@
 clone_folder: C:\MuseScore
 
 # set clone depth
-clone_depth: 3                      # clone entire repository history if not defined
+clone_depth: 50                      # clone entire repository history if not defined
+
+image: Visual Studio 2017
+
+branches:
+  only:
+  - master
 
 # build cache to preserve files/folders between builds
 cache:
   - dependencies.7z
-  - C:\Qt\Tools\mingw530_32\lib
-  - C:\Qt\Tools\mingw530_32\i686-w64-mingw32
+  - qt598_msvc2017_64.7z # if not using AppVeyor's built-in Qt in before_build.bat
+  - qt598_msvc2015.7z # if not using AppVeyor's built-in Qt in before_build.bat
   - C:\Program Files (x86)\Jack
   - C:\MuseScore\build.release\thirdparty
   - C:\ccache
 
 # build platform, i.e. x86, x64, Any CPU. This setting is optional.
 platform:
-  - x86
+#use for releases only
+#  - x86
+  - x64
 
 #environment:
 
@@ -25,7 +33,13 @@ configuration: Release
 # Stop Appveyor from "Discovering Tests"
 test: off
 
+matrix:
+  fast_finish: true # stop all jobs if any job fails
+  #allow_failures: # list jobs allowed to fail without stopping the rest
+
 install:
+  - cd %APPVEYOR_BUILD_FOLDER%
+  - git submodule update --init --recursive
   - IF DEFINED ENCRYPT_SECRET_SSH (
     nuget install secure-file -ExcludeVersion &&
     secure-file\tools\secure-file -decrypt C:\MuseScore\build\appveyor\resources\osuosl_nighlies_rsa_nopp.enc -secret %ENCRYPT_SECRET_SSH%
@@ -45,6 +59,12 @@ build_script:
 after_build:
   - cmd: C:\MuseScore\build\appveyor\after_build.bat
 
-artifacts:
-  - path: $(ARTIFACT_NAME)
-
+on_success:
+  - ps: |
+        if ($env:APPVEYOR_PULL_REQUEST_NUMBER -eq $null -or ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null -and $env:APPVEYOR_REPO_COMMIT_MESSAGE -like "*collect_artifacts*"))
+        {
+            Push-AppveyorArtifact $env:ARTIFACT_NAME -deploymentname musescore-binary
+            Push-AppveyorArtifact $env:DEBUG_SYMS_FILE -deploymentname musescore-dbg-info.sym
+            Push-AppveyorArtifact update_win_nightly.xml
+            Push-AppveyorArtifact appcast.xml
+        }

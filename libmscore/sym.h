@@ -20,7 +20,6 @@
 
 namespace Ms {
 
-class TextStyle;
 enum class Sid;
 
 //---------------------------------------------------------
@@ -2727,6 +2726,7 @@ class Sym {
 
       static const std::array<const char*, int (SymId::lastSym)+1> symNames;
       static const std::array<const char*, int(SymId::lastSym)+1> symUserNames;
+      static const QVector<SymId> commonScoreSymbols;
 
       static QHash<QString, SymId> lnhash;
       static QHash<QString, SymId> lonhash;
@@ -2779,7 +2779,7 @@ class ScoreFont {
       mutable QFont* font { 0 };
 
       static QVector<ScoreFont> _scoreFonts;
-      static QJsonObject _glyphnamesJson;
+      static std::array<uint, size_t(SymId::lastSym)+1> _mainSymCodeTable;
       void load();
       void computeMetrics(Sym* sym, int code);
 
@@ -2803,8 +2803,7 @@ class ScoreFont {
       static ScoreFont* fallbackFont();
       static const char* fallbackTextFont();
       static const QVector<ScoreFont>& scoreFonts() { return _scoreFonts; }
-      static bool initGlyphNamesJson();
-      static const QJsonObject& glyphNamesJson() { return _glyphnamesJson; }
+      static QJsonObject initGlyphNamesJson();
 
       QString toString(SymId) const;
       QPixmap sym2pixmap(SymId, qreal) { return QPixmap(); }      // TODOxxxx
@@ -2839,6 +2838,8 @@ class ScoreFont {
       bool useFallbackFont(SymId id) const;
 
       const Sym& sym(SymId id) const { return _symbols[int(id)]; }
+
+      friend void initScoreFonts();
       };
 
 extern void initScoreFonts();

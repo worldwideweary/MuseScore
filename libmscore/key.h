@@ -41,10 +41,10 @@ enum class Key {
       B,
       F_S,
       C_S,
-      MIN              = Key::C_B,
-      MAX              = Key::C_S,
-      INVALID          = Key::MIN - 1,
-      NUM_OF           = Key::MAX - Key::MIN + 1,
+      MIN     = Key::C_B,
+      MAX     = Key::C_S,
+      INVALID = Key::MIN - 1,
+      NUM_OF  = Key::MAX - Key::MIN + 1,
       DELTA_ENHARMONIC = 12
       };
 
@@ -56,17 +56,24 @@ enum class KeyMode {
       UNKNOWN = -1,
       NONE,
       MAJOR,
-      MINOR
+      MINOR,
+      DORIAN,
+      PHRYGIAN,
+      LYDIAN,
+      MIXOLYDIAN,
+      AEOLIAN,
+      IONIAN,
+      LOCRIAN
       };
 
-static inline bool operator<  (Key a, Key b) { return int(a) < int(b); }
-static inline bool operator>  (Key a, Key b) { return int(a) > int(b); }
-static inline bool operator>  (Key a, int b) { return int(a) > b; }
-static inline bool operator<  (Key a, int b) { return int(a) < b; }
-static inline bool operator== (Key a, Key b) { return int(a) == int(b); }
-static inline bool operator!= (Key a, Key b) { return int(a) != int(b); }
-static inline Key  operator+= (Key& a, const Key& b) { return a = Key(int(a) + int(b)); }
-static inline Key  operator-= (Key& a, const Key& b) { return a = Key(int(a) - int(b)); }
+static inline bool operator< (Key a, Key b) { return static_cast<int>(a) < static_cast<int>(b); }
+static inline bool operator> (Key a, Key b) { return static_cast<int>(a) > static_cast<int>(b); }
+static inline bool operator> (Key a, int b) { return static_cast<int>(a) > b; }
+static inline bool operator< (Key a, int b) { return static_cast<int>(a) < b; }
+static inline bool operator== (const Key a, const Key b) { return int(a) == int(b); }  
+static inline bool operator!= (const Key a, const Key b) { return static_cast<int>(a) != static_cast<int>(b); }
+static inline Key operator+= (Key& a, const Key& b) { return a = Key(static_cast<int>(a) + static_cast<int>(b)); }
+static inline Key operator-= (Key& a, const Key& b) { return a = Key(static_cast<int>(a) - static_cast<int>(b)); }
 
 enum class SymId;
 
@@ -98,6 +105,7 @@ class KeySigEvent {
       KeySigEvent(const KeySigEvent&);
 
       bool operator==(const KeySigEvent& e) const;
+      bool operator!=(const KeySigEvent& e) const { return !(*this == e); }
 
       void setKey(Key v);
       void print() const;

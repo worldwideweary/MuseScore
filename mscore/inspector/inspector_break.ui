@@ -6,19 +6,16 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>75</width>
-    <height>25</height>
+    <width>148</width>
+    <height>34</height>
    </rect>
   </property>
   <property name="accessibleName">
-   <string>Element Inspector</string>
+   <string>Layout Break Inspector</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="spacing">
     <number>0</number>
-   </property>
-   <property name="sizeConstraint">
-    <enum>QLayout::SetNoConstraint</enum>
    </property>
    <property name="leftMargin">
     <number>0</number>
@@ -33,7 +30,23 @@
     <number>0</number>
    </property>
    <item>
-    <widget class="QLabel" name="elementName">
+    <widget class="QFrame" name="frame">
+     <property name="frameShape">
+      <enum>QFrame::HLine</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Sunken</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QToolButton" name="title">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="font">
       <font>
        <weight>75</weight>
@@ -43,37 +56,27 @@
      <property name="text">
       <string>Layout Break</string>
      </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QFrame" name="frame">
-     <property name="frameShape">
-      <enum>QFrame::HLine</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Raised</enum>
-     </property>
-     <property name="lineWidth">
-      <number>2</number>
-     </property>
     </widget>
    </item>
    <item>
     <layout class="QGridLayout" name="gridLayout">
+     <property name="sizeConstraint">
+      <enum>QLayout::SetDefaultConstraint</enum>
+     </property>
      <property name="leftMargin">
+      <number>3</number>
+     </property>
+     <property name="topMargin">
       <number>3</number>
      </property>
      <property name="rightMargin">
       <number>3</number>
      </property>
-     <property name="horizontalSpacing">
+     <property name="bottomMargin">
       <number>3</number>
      </property>
-     <property name="verticalSpacing">
-      <number>0</number>
+     <property name="spacing">
+      <number>3</number>
      </property>
     </layout>
    </item>

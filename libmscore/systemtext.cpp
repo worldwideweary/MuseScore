@@ -15,19 +15,22 @@
 namespace Ms {
 
 //---------------------------------------------------------
+//   systemStyle
+//---------------------------------------------------------
+
+static const ElementStyle systemStyle {
+      { Sid::systemTextPlacement,                Pid::PLACEMENT              },
+      { Sid::systemTextMinDistance,              Pid::MIN_DISTANCE           },
+      };
+
+//---------------------------------------------------------
 //   SystemText
 //---------------------------------------------------------
 
-SystemText::SystemText(Score* s)
-   : TextBase(s, ElementFlag::SYSTEM)
+SystemText::SystemText(Score* s, Tid tid)
+   : StaffTextBase(s, tid, ElementFlag::SYSTEM | ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
       {
-      initSubStyle(SubStyleId::SYSTEM);
-      }
-
-SystemText::SystemText(SubStyleId ss, Score* s)
-   : TextBase(s, ElementFlag::SYSTEM)
-      {
-      initSubStyle(ss);
+      initElementStyle(&systemStyle);
       }
 
 //---------------------------------------------------------
@@ -38,23 +41,31 @@ QVariant SystemText::propertyDefault(Pid id) const
       {
       switch (id) {
             case Pid::SUB_STYLE:
-                  return int(SubStyleId::SYSTEM);
+                  return int(Tid::SYSTEM);
             default:
                   return TextBase::propertyDefault(id);
             }
       }
 
 //---------------------------------------------------------
-//   write
+//   layout
 //---------------------------------------------------------
 
-void SystemText::write(XmlWriter& xml) const
+void SystemText::layout()
       {
-      if (!xml.canWrite(this))
-            return;
-      xml.stag(name());
-      TextBase::writeProperties(xml);
-      xml.etag();
+      TextBase::layout();
+      autoplaceSegmentElement();
+      }
+
+//---------------------------------------------------------
+//   getPropertyStyle
+//---------------------------------------------------------
+
+Sid SystemText::getPropertyStyle(Pid pid) const
+      {
+      if (pid == Pid::OFFSET)
+            return placeAbove() ? Sid::systemTextPosAbove : Sid::systemTextPosBelow;
+      return TextBase::getPropertyStyle(pid);
       }
 
 } // namespace Ms

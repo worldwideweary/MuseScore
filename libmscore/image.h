@@ -48,11 +48,9 @@ class Image final : public BSymbol {
       mutable bool _dirty;
 
       virtual bool isEditable() const override { return true; }
-      virtual void startEdit(EditData&) override;
-      virtual void startDrag(EditData&) override;
+      virtual void startEditDrag(EditData&) override;
       virtual void editDrag(EditData& ed) override;
       virtual void endEditDrag(EditData&) override;
-      virtual void updateGrips(EditData&) const override;
       virtual QPointF gripAnchor(Grip) const override { return QPointF(); }
 
    public:
@@ -85,7 +83,14 @@ class Image final : public BSymbol {
       QSizeF imageSize() const;
 
       void setImageType(ImageType);
+      ImageType getImageType() const { return imageType; }
       bool isValid() const           { return rasterDoc || svgDoc; }
+
+      // TODO: single click behavior?
+      int gripsCount() const override { return 2; }
+      Grip initialEditModeGrip() const override { return Grip(1); }
+      Grip defaultGrip() const override { return Grip(1); } // TODO
+      std::vector<QPointF> gripsPositions(const EditData&) const override;
       };
 
 

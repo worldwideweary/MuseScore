@@ -1,7 +1,6 @@
 //=============================================================================
 //  MuseScore
 //  Music Composition & Notation
-//  $Id: score.cpp 5149 2011-12-29 08:38:43Z wschweer $
 //
 //  Copyright (C) 2012 Werner Schweer
 //
@@ -46,8 +45,16 @@ class MTest {
       bool saveCompareMimeData(QByteArray, const QString& saveName, const QString& compareWith);
       Ms::Element* writeReadElement(Ms::Element* element);
       void initMTest();
+
+   public:
+      static bool compareFilesFromPaths(const QString& f1, const QString& f2);
+      static void extractRootFile(const QString& zipFile, const QString& destination);
+
+      static QString rootPath();
       };
 }
+
+void initMuseScoreResources();
 
 #endif
 

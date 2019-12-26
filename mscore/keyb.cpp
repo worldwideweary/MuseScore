@@ -1,7 +1,6 @@
 //=============================================================================
 //  MuseScore
 //  Linux Music Score Editor
-//  $Id: keyb.cpp 5658 2012-05-21 18:40:58Z wschweer $
 //
 //  Copyright (C) 2002-2011 Werner Schweer and others
 //
@@ -69,6 +68,12 @@ void MuseScore::updateInputState(Score* score)
       {
       InputState& is = score->inputState();
       if (is.noteEntryMode()) {
+            if (is.usingNoteEntryMethod(NoteEntryMethod::REPITCH)) {
+                  TDuration d = is.cr() ? is.cr()->durationType() : TDuration::DurationType::V_QUARTER;
+                  if (!d.isValid() || d.isZero() || d.isMeasure())
+                        d = TDuration::DurationType::V_QUARTER;
+                  is.setDuration(d);
+                  }
             Staff* staff = score->staff(is.track() / VOICES);
             switch (staff->staffType(is.tick())->group()) {
                   case StaffGroup::STANDARD:
@@ -82,6 +87,8 @@ void MuseScore::updateInputState(Score* score)
                         break;
                   }
             }
+      else
+            is.update(score->selection());
 
       getAction("pad-rest")->setChecked(is.rest());
       getAction("pad-dot")->setChecked(is.duration().dots() == 1);
@@ -125,12 +132,33 @@ void MuseScore::updateInputState(Score* score)
       getAction("pad-note-64")->setChecked(is.duration() == TDuration::DurationType::V_64TH);
       getAction("pad-note-128")->setChecked(is.duration() == TDuration::DurationType::V_128TH);
 
+      getAction("sharp2")->setChecked(is.accidentalType() == AccidentalType::SHARP2);
+      getAction("sharp")->setChecked(is.accidentalType() == AccidentalType::SHARP);
+      getAction("nat")->setChecked(is.accidentalType() == AccidentalType::NATURAL);
+      getAction("flat")->setChecked(is.accidentalType() == AccidentalType::FLAT);
+      getAction("flat2")->setChecked(is.accidentalType() == AccidentalType::FLAT2);
+
       // uncheck all voices if multi-selection
       int voice = score->selection().isSingle() ? is.voice() : -1;
       getAction("voice-1")->setChecked(voice == 0);
       getAction("voice-2")->setChecked(voice == 1);
       getAction("voice-3")->setChecked(voice == 2);
       getAction("voice-4")->setChecked(voice == 3);
+
+      QAction* tieAction = getAction("tie");
+      if (is.noteEntryMode())
+            tieAction->setChecked(false);
+      else {
+            const std::vector<Note*> cmdTieNotes = Score::cmdTieNoteList(score->selection(), false);
+            bool onlyTiedNotes = !cmdTieNotes.empty();
+            for (Note* n : cmdTieNotes) {
+                  if (!n->tieFor()) {
+                        onlyTiedNotes = false;
+                        break;
+                        }
+                  }
+            tieAction->setChecked(onlyTiedNotes);
+            }
 
       getAction("acciaccatura")->setChecked(is.noteType() == NoteType::ACCIACCATURA);
       getAction("appoggiatura")->setChecked(is.noteType() == NoteType::APPOGGIATURA);

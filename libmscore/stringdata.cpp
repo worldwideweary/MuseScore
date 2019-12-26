@@ -99,7 +99,7 @@ void StringData::write(XmlWriter& xml) const
 //          from highest (0) to lowest (strings()-1)
 //---------------------------------------------------------
 
-bool StringData::convertPitch(int pitch, Staff* staff, int tick, int* string, int* fret) const
+bool StringData::convertPitch(int pitch, Staff* staff, const Fraction& tick, int* string, int* fret) const
       {
       return convertPitch(pitch, pitchOffsetAt(staff, tick), string, fret);
       }
@@ -112,7 +112,7 @@ bool StringData::convertPitch(int pitch, Staff* staff, int tick, int* string, in
 //    Note: frets above max fret are accepted.
 //---------------------------------------------------------
 
-int StringData::getPitch(int string, int fret, Staff* staff, int tick) const
+int StringData::getPitch(int string, int fret, Staff* staff, const Fraction& tick) const
       {
       return getPitch(string, fret, pitchOffsetAt(staff, tick));
       }
@@ -124,7 +124,7 @@ int StringData::getPitch(int string, int fret, Staff* staff, int tick) const
 //    Returns FRET_NONE if not possible
 //---------------------------------------------------------
 
-int StringData::fret(int pitch, int string, Staff* staff, int tick) const
+int StringData::fret(int pitch, int string, Staff* staff, const Fraction& tick) const
       {
       return fret(pitch, string, pitchOffsetAt(staff, tick));
       }
@@ -150,7 +150,13 @@ void StringData::fretChords(Chord * chord) const
       bFretting = true;
 
       // we need to keep track of string allocation
+#if (!defined (_MSCVER) && !defined (_MSC_VER))
       int bUsed[strings()];                    // initially all strings are available
+#else
+      // MSVC does not support VLA. Replace with std::vector. If profiling determines that the
+      //    heap allocation is slow, an optimization might be used.
+      std::vector<int> bUsed(strings());
+#endif
       for(nString=0; nString<strings(); nString++)
             bUsed[nString] = 0;
       // we also need the notes sorted in order of string (from highest to lowest) and then pitch
@@ -245,6 +251,22 @@ void StringData::fretChords(Chord * chord) const
       bFretting = false;
       }
 
+
+//---------------------------------------------------------
+//   frettedStrings
+//    Returns the number of fretted strings.
+//---------------------------------------------------------
+
+int StringData::frettedStrings() const
+      {
+      int num = 0;
+      for (auto s : stringTable)
+            if (!s.open)
+                  num++;
+      return num;
+      }
+
+
 //********************
 // STATIC METHODS
 //********************
@@ -256,7 +278,7 @@ void StringData::fretChords(Chord * chord) const
 //   For string data calculations, pitch offset may depend on transposition, capos and, possibly, ottavas.
 //---------------------------------------------------------
 
-int StringData::pitchOffsetAt(Staff* staff, int /*tick*/)
+int StringData::pitchOffsetAt(Staff* staff, const Fraction& /*tick*/)
       {
       int transp = staff ? staff->part()->instrument()->transpose().chromatic : 0;  // TODO: tick?
       return (/*staff->pitchOffset(tick)*/ - transp);

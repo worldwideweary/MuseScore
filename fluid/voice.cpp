@@ -41,7 +41,7 @@ namespace FluidS {
  * 16 bits => 96+4=100 dB dynamic range => 0.00001
  * 0.00001 * 2 is approximately 0.00003 :)
  */
-#define FLUID_NOISE_FLOOR 0.00003
+#define FLUID_NOISE_FLOOR 0.00003f
 
 /* these should be the absolute minimum that FluidSynth can deal with */
 #define FLUID_MIN_LOOP_SIZE 2
@@ -586,7 +586,7 @@ bool Voice::generateDataForDSPChain(unsigned framesBufCount)
                         b1 = b1_temp;
                         filter_coeff_incr_count = 0;
                         filter_startup = 0;
-                        //       printf("Setting initial filter coefficients.\n");
+//printf("Setting initial filter coefficients.\n");
                         }
                   else {
                         /* The filter frequency is changed.  Calculate an increment
@@ -644,7 +644,7 @@ void Voice::write(unsigned n, float* out, float* reverb, float* chorus)
       if (!PLAYING())
             return;
       if (!sample) {
-            printf("!sample\n");
+//printf("!sample\n");
             off();
             return;
             }
@@ -925,7 +925,7 @@ void Voice::update_param(int _gen)
       float y;
       unsigned int count;
       // Alternate attenuation scale used by EMU10K1 cards when setting the attenuation at the preset or instrument level within the SoundFont bank.
-      static const float ALT_ATTENUATION_SCALE = 0.4;
+      static const float ALT_ATTENUATION_SCALE = 0.4f;
 
       double gain = 1.0 / 32768.0f;
       switch (_gen) {
@@ -1359,6 +1359,15 @@ void Voice::update_param(int _gen)
 
 void Voice::modulate(bool _cc, int _ctrl)
       {
+      // For our purposes in MuseScore, we don't need to be able to control all
+      // modulators in the release phase. In fact, we don't want these modulators to
+      // have an effect, since it can lead to 'volume bumps' for single note
+      // dynamics, when there is a sudden change from quiet to loud sounds.
+      // So, if the voice is in release phase, don't apply these modulators.
+      if (volenv_section == FLUID_VOICE_ENVRELEASE && _cc &&
+            (_ctrl == BREATH_MSB || _ctrl == FOOT_MSB || _ctrl == EXPRESSION_MSB))
+            return;
+
       for (int i = 0; i < mod_count; i++) {
             Mod* m = &mod[i];
 
@@ -1444,8 +1453,8 @@ void Voice::noteoff()
                   */
                   if (volenv_val > 0) {
                         float lfo = modlfo_val * -modlfo_to_vol;
-                        float amp = volenv_val * pow (10.0, lfo / -200);
-                        float env_value = - ((-200 * log (amp) / log (10.0) - lfo) / 960.0 - 1);
+                        float ampl = volenv_val * pow (10.0, lfo / -200);
+                        float env_value = - ((-200 * log (ampl) / log (10.0) - lfo) / 960.0 - 1);
                         fluid_clip (env_value, 0.0, 1.0);
                         volenv_val = env_value;
                         }
@@ -1551,7 +1560,7 @@ void Voice::add_mod(const Mod* _mod, int mode)
             /* if identical modulator exists, add them */
             for (int i = 0; i < mod_count; i++) {
                   if (test_identity(&mod[i], _mod)) {
-                        //		printf("Adding modulator...\n");
+//printf("Adding modulator...\n");
                         mod[i].amount += _mod->amount;
                         return;
                         }
@@ -1561,7 +1570,7 @@ void Voice::add_mod(const Mod* _mod, int mode)
             /* if identical modulator exists, replace it (only the amount has to be changed) */
             for (int i = 0; i < mod_count; i++) {
                   if (test_identity(&mod[i], _mod)) {
-                        //  printf("Replacing modulator...amount is %f\n",mod->amount);
+//printf("Replacing modulator...amount is %f\n",mod->amount);
                         mod[i].amount = _mod->amount;
                         return;
                         }
@@ -1649,10 +1658,10 @@ void Voice::check_sample_sanity()
 	      return;
 
 #if 0
-      printf("Sample from %i to %i\n", sample->start, sample->end);
-      printf("Sample loop from %i %i\n", sample->loopstart, sample->loopend);
-      printf("Playback from %i to %i\n", start, end);
-      printf("Playback loop from %i to %i\n", loopstart, loopend);
+printf("Sample from %i to %i\n", sample->start, sample->end);
+printf("Sample loop from %i %i\n", sample->loopstart, sample->loopend);
+printf("Playback from %i to %i\n", start, end);
+printf("Playback loop from %i to %i\n", loopstart, loopend);
 #endif
 
       /* Keep the start point within the sample data */
@@ -1869,8 +1878,9 @@ void Voice::effects(int startBufIdx, int count, float* out, float* reverb, float
             /* Increment is added to each filter coefficient filter_coeff_incr_count times. */
             for (int i = startBufIdx; i < startBufIdx + count; i++) {
                   /* The filter is implemented in Direct-II form. */
-                  float dsp_centernode = dsp_buf[i] - a1 * hist1 - a2 * hist2;
-                  dsp_buf[i] = b02 * (dsp_centernode + hist2) + b1 * hist1;
+                  auto& dspValRef = dsp_buf[i];
+                  float dsp_centernode = dspValRef - a1 * hist1 - a2 * hist2;
+                  dspValRef = b02 * (dsp_centernode + hist2) + b1 * hist1;
                   hist2 = hist1;
                   hist1 = dsp_centernode;
 
@@ -1880,29 +1890,38 @@ void Voice::effects(int startBufIdx, int count, float* out, float* reverb, float
                         b02 += b02_incr;
                         b1  += b1_incr;
                         }
+
+                  //code duplication is needed to optimize using std::vector::operator[]
+                  float vv = dspValRef * amp_left;
+                  *out++ += vv;
+                  *reverb++ += vv * amp_reverb;
+                  *chorus++ += vv * amp_chorus;
+
+                  vv = dspValRef * amp_right;
+                  *out++ += vv;
+                  *reverb++ += vv * amp_reverb;
+                  *chorus++ += vv * amp_chorus;
                   }
             }
       else { /* The filter parameters are constant.  This is duplicated to save time. */
             for (int i = startBufIdx; i < startBufIdx + count; i++) {   // The filter is implemented in Direct-II form.
-                  float dsp_centernode = dsp_buf[i] - a1 * hist1 - a2 * hist2;
-                  dsp_buf[i]     = b02 * (dsp_centernode + hist2) + b1 * hist1;
+                  auto& dspValRef = dsp_buf[i];
+                  float dsp_centernode = dspValRef - a1 * hist1 - a2 * hist2;
+                  dspValRef      = b02 * (dsp_centernode + hist2) + b1 * hist1;
                   hist2          = hist1;
                   hist1          = dsp_centernode;
+
+                  //code duplication is needed to optimize using std::vector::operator[]
+                  float vv = dspValRef * amp_left;
+                  *out++ += vv;
+                  *reverb++ += vv * amp_reverb;
+                  *chorus++ += vv * amp_chorus;
+
+                  vv = dspValRef * amp_right;
+                  *out++ += vv;
+                  *reverb++ += vv * amp_reverb;
+                  *chorus++ += vv * amp_chorus;
                   }
-            }
-
-      for (int i = startBufIdx; i < startBufIdx + count; ++i) {
-            float v    = dsp_buf[i];
-
-            float vv   = v  * amp_left;
-            *out++     += vv;
-            *reverb++  += vv * amp_reverb;
-            *chorus++  += vv * amp_chorus;
-
-            vv         = v  * amp_right;
-            *out++     += vv;
-            *reverb++  += vv * amp_reverb;
-            *chorus++  += vv * amp_chorus;
             }
       }
 }

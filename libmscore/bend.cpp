@@ -30,6 +30,13 @@ static const char* label[] = {
       "2 1/4", "2 1/2", "2 3/4", "3"
       };
 
+static const ElementStyle bendStyle {
+      { Sid::bendFontFace,                       Pid::FONT_FACE              },
+      { Sid::bendFontSize,                       Pid::FONT_SIZE              },
+      { Sid::bendFontStyle,                      Pid::FONT_STYLE             },
+      { Sid::bendLineWidth,                      Pid::LINE_WIDTH             },
+      };
+
 //---------------------------------------------------------
 //   Bend
 //---------------------------------------------------------
@@ -37,7 +44,7 @@ static const char* label[] = {
 Bend::Bend(Score* s)
    : Element(s, ElementFlag::MOVABLE)
       {
-      initSubStyle(SubStyleId::BEND);
+      initElementStyle(&bendStyle);
       }
 
 //---------------------------------------------------------
@@ -47,9 +54,9 @@ Bend::Bend(Score* s)
 QFont Bend::font(qreal sp) const
       {
       QFont f(_fontFace);
-      f.setBold(_fontBold);
-      f.setItalic(_fontItalic);
-      f.setUnderline(_fontUnderline);
+      f.setBold(_fontStyle & FontStyle::Bold);
+      f.setItalic(_fontStyle & FontStyle::Italic);
+      f.setUnderline(_fontStyle & FontStyle::Underline);
       qreal m = _fontSize;
       m *= sp / SPATIUM20;
 
@@ -70,14 +77,13 @@ void Bend::layout()
       qreal _spatium = spatium();
 
       if (staff() && !staff()->isTabStaff(tick())) {
-            setbbox(QRectF());
             if (!parent()) {
                   noteWidth = -_spatium*2;
                   notePos   = QPointF(0.0, _spatium*3);
                   }
             }
 
-      qreal _lw = _lineWidth.val() * _spatium;
+      qreal _lw = _lineWidth;
       Note* note = toNote(parent());
       if (note == 0) {
             noteWidth = 0.0;
@@ -85,11 +91,12 @@ void Bend::layout()
             }
       else {
             notePos   = note->pos();
+            notePos.ry() = qMax(notePos.y(), 0.0);
             noteWidth = note->width();
             }
       QRectF bb;
 
-      QFontMetricsF fm(font(_spatium));
+      QFontMetricsF fm(font(_spatium), MScore::paintDevice());
 
       int n   = _points.size();
       qreal x = noteWidth;
@@ -137,12 +144,10 @@ void Bend::layout()
                   path.moveTo(x, y);
                   path.cubicTo(x+dx/2, y, x2, y+dy/4, x2, y2);
                   bb |= path.boundingRect();
-
                   bb |= arrowUp.translated(x2, y2 + _spatium * .2).boundingRect();
 
                   int idx = (_points[pt+1].pitch + 12)/25;
                   const char* l = label[idx];
-                  QRectF r;
                   bb |= fm.boundingRect(QRectF(x2, y2, 0, 0),
                      Qt::AlignHCenter | Qt::AlignBottom | Qt::TextDontClip, QString(l));
                   }
@@ -166,7 +171,6 @@ void Bend::layout()
       bb.adjust(-_lw, -_lw, _lw, _lw);
       setbbox(bb);
       setPos(0.0, 0.0);
-      adjustReadPos();
       }
 
 //---------------------------------------------------------
@@ -176,7 +180,7 @@ void Bend::layout()
 void Bend::draw(QPainter* painter) const
       {
       qreal _spatium = spatium();
-      qreal _lw = _lineWidth.val() * _spatium;
+      qreal _lw = _lineWidth;
 
       QPen pen(curColor(), _lw, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
       painter->setPen(pen);
@@ -184,7 +188,6 @@ void Bend::draw(QPainter* painter) const
 
       QFont f = font(_spatium * MScore::pixelRatio);
       painter->setFont(f);
-      QFontMetrics fm(f);
 
       qreal x  = noteWidth + _spatium * .2;
       qreal y  = -_spatium * .8;
@@ -210,9 +213,18 @@ void Bend::draw(QPainter* painter) const
                   int idx = (pitch + 12)/25;
                   const char* l = label[idx];
                   QString s(l);
+#if 1
+                  painter->drawText(QRectF(x2, y2, .0, .0), Qt::AlignHCenter | Qt::AlignBottom | Qt::TextDontClip, s);
+#else
+                  // this is the code used originally,
+                  // and it worked in 2.3.2, but fails currently - textWidth & textHeight are too large
+                  // presumably they would need to be scaled accoridng to pixelRatio, DPI, and/or SPATIUM20
+                  // now that the font & fontmetrics are also scaled
+                  QFontMetrics fm(f, MScore::paintDevice());
                   qreal textWidth = fm.width(s);
                   qreal textHeight = fm.height();
                   painter->drawText(QRectF(x2 - textWidth / 2, y2 - textHeight / 2, .0, .0), Qt::AlignVCenter|Qt::TextDontClip, s);
+#endif
 
                   y = y2;
                   }
@@ -272,7 +284,7 @@ void Bend::draw(QPainter* painter) const
 
 void Bend::write(XmlWriter& xml) const
       {
-      xml.stag("Bend");
+      xml.stag(this);
       for (const PitchValue& v : _points) {
             xml.tagE(QString("point time=\"%1\" pitch=\"%2\" vibrato=\"%3\"")
                .arg(v.time).arg(v.pitch).arg(v.vibrato));
@@ -320,12 +332,8 @@ QVariant Bend::getProperty(Pid id) const
                   return _fontFace;
             case Pid::FONT_SIZE:
                   return _fontSize;
-            case Pid::FONT_BOLD:
-                  return _fontBold;
-            case Pid::FONT_ITALIC:
-                  return _fontItalic;
-            case Pid::FONT_UNDERLINE:
-                  return _fontUnderline;
+            case Pid::FONT_STYLE:
+                  return int(_fontStyle);
             case Pid::PLAY:
                   return bool(playBend());
             case Pid::LINE_WIDTH:
@@ -348,20 +356,14 @@ bool Bend::setProperty(Pid id, const QVariant& v)
             case Pid::FONT_SIZE:
                   _fontSize = v.toReal();
                   break;
-            case Pid::FONT_BOLD:
-                  _fontBold = v.toBool();
-                  break;
-            case Pid::FONT_ITALIC:
-                  _fontItalic = v.toBool();
-                  break;
-            case Pid::FONT_UNDERLINE:
-                  _fontUnderline = v.toBool();
+            case Pid::FONT_STYLE:
+                  _fontStyle = FontStyle(v.toInt());
                   break;
             case Pid::PLAY:
                  setPlayBend(v.toBool());
                  break;
             case Pid::LINE_WIDTH:
-                  _lineWidth = v.value<Spatium>();
+                  _lineWidth = v.toReal();
                   break;
             default:
                   return Element::setProperty(id, v);

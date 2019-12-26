@@ -3,12 +3,12 @@
 <?include "cpack_variables.wxi"?>
 
 <?define ShortVersion="$(var.CPACK_PACKAGE_VERSION)" ?>
-<?define VShortVersion="2" ?>
+<?define VShortVersion="3" ?>
 <?define ProdName="$(var.CPACK_PACKAGE_NAME) $(var.VShortVersion)" ?>
 <?define ShortProdName="$(var.CPACK_PACKAGE_NAME)$(var.VShortVersion)" ?>
-<?define ExeName="$(var.CPACK_PACKAGE_NAME).exe" ?>
+<?define ExeName="$(var.ShortProdName).exe" ?>
 <?define ExeKey="$(var.ShortProdName).exe" ?>
-<?define ExeId="CM_FP_bin.$(var.CPACK_PACKAGE_NAME).exe" ?>
+<?define ExeId="CM_FP_bin.$(var.ShortProdName).exe" ?>
 <?define RegistryRoot="HKMU" ?> <!--HKCU / HKLM-->
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
@@ -31,6 +31,9 @@
 
         <WixVariable Id="WixUILicenseRtf" Value="$(var.CPACK_WIX_LICENSE_RTF)"/>
         <Property Id="WIXUI_INSTALLDIR" Value="INSTALL_ROOT"/>
+
+        <!-- See https://docs.microsoft.com/ru-ru/windows/win32/msi/reinstallmode that explains different modes -->
+        <Property Id='REINSTALLMODE' Value='dmus'/>
 
         <?ifdef CPACK_WIX_PRODUCT_ICON?>
         <Property Id="ARPPRODUCTICON">ProductIcon.ico</Property>
@@ -59,7 +62,7 @@
         </UI>
         <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch $(var.ProdName)"/>
         <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1"/>
-        <Property Id="WixShellExecTarget" Value="[#CM_FP_bin.$(var.CPACK_PACKAGE_NAME).exe]" />
+        <Property Id="WixShellExecTarget" Value="[#CM_FP_bin.$(var.ShortProdName).exe]" />
         <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
 
 

@@ -1,7 +1,6 @@
 //=============================================================================
 //  MuseScore
 //  Music Composition & Notation
-//  $Id: event.cpp 4926 2011-10-29 18:13:35Z wschweer $
 //
 //  Copyright (C) 2008-2011 Werner Schweer
 //
@@ -15,6 +14,9 @@
 #include "libmscore/note.h"
 #include "libmscore/sig.h"
 #include "event.h"
+#include "libmscore/staff.h"
+#include "libmscore/instrument.h"
+#include "libmscore/part.h"
 
 namespace Ms {
 
@@ -119,7 +121,7 @@ Event::Event(const Event& e)
       _voice      = e._voice;
       _notes      = e._notes;
       if (e._edata) {
-            _edata = new unsigned char[e._len + 1];  // dont forget trailing zero
+            _edata = new unsigned char[e._len + 1];  // don’t forget trailing zero
             memcpy(_edata, e._edata, e._len+1);
             }
       else
@@ -165,6 +167,23 @@ NPlayEvent::NPlayEvent(BeatType beatType)
       }
 
 //---------------------------------------------------------
+//   isMuted
+//---------------------------------------------------------
+
+bool NPlayEvent::isMuted() const
+      {
+      const Note* n = note();
+      if (n) {
+            MasterScore* cs = n->masterScore();
+            Staff* staff = n->staff();
+            Instrument* instr = staff->part()->instrument(n->tick());
+            const Channel* a = instr->playbackChannel(n->subchannel(), cs);
+            return a->mute() || a->soloMute() || !staff->playbackVoice(n->voice());
+            }
+      return false;
+      }
+
+//---------------------------------------------------------
 //   dump
 //---------------------------------------------------------
 
@@ -200,7 +219,9 @@ bool MidiCoreEvent::isChannelEvent() const
             default:
                   return false;
             }
-      return false;
+
+      // Prevent "unreachable code" warning.
+      // return false;
       }
 
 //---------------------------------------------------------
@@ -370,5 +391,52 @@ void EventList::insert(const Event& e)
             }
       append(e);
       }
-}
 
+//---------------------------------------------------------
+//   class EventMap::fixupMIDI
+//---------------------------------------------------------
+
+void EventMap::fixupMIDI()
+      {
+      /* track info for each of the 128 possible MIDI notes */
+      struct channelInfo {
+            /* which event the first ME_NOTEON came from */
+            NPlayEvent *event[128];
+            /* how often is the note on right now? */
+            unsigned short nowPlaying[128];
+            };
+
+      /* track info for each channel (on the heap, 0-initialised) */
+      struct channelInfo *info = (struct channelInfo *)calloc(_highestChannel + 1, sizeof(struct channelInfo));
+
+      auto it = begin();
+      while (it != end()) {
+            NPlayEvent& event = it->second;
+            /* ME_NOTEOFF is never emitted, no need to check for it */
+            if (event.type() == ME_NOTEON && !event.isMuted()) {
+                  unsigned short np = info[event.channel()].nowPlaying[event.pitch()];
+                  if (event.velo() == 0) {
+                        /* already off (should not happen) or still playing? */
+                        if (np == 0 || --np > 0)
+                              event.setDiscard(1);
+                        else {
+                              /* hoist NOTEOFF to same track as NOTEON */
+                              event.setOriginatingStaff(info[event.channel()].event[event.pitch()]->getOriginatingStaff());
+                              }
+                        }
+                  else {
+                        if (++np > 1)
+                              /* restrike, possibly on different track */
+                              event.setDiscard(info[event.channel()].event[event.pitch()]->getOriginatingStaff() + 1);
+                        info[event.channel()].event[event.pitch()] = &event;
+                        }
+                  info[event.channel()].nowPlaying[event.pitch()] = np;
+                  }
+
+            ++it;
+            }
+
+            free((void *)info);
+      }
+
+}
