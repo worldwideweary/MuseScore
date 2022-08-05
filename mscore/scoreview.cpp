@@ -4978,6 +4978,30 @@ void ScoreView::cmdRepeatSelection()
                         _score->endCmd();
                         }
                   }
+            if (el && el->type() == ElementType::REST) {
+                  auto prevCR = toChordRest(el);
+                  prevCR = prevChordRest(prevCR);
+                  while (el) {
+                        if (!prevCR || prevCR == prevChordRest(prevCR))
+                              return;
+                        if (!prevCR->isRest()) {
+                              el = prevCR;
+                              break;
+                              }
+                        prevCR = prevChordRest(prevCR);
+                        }
+                  if (!_score->inputState().endOfScore()) {
+                        _score->startCmd();
+                        bool addTo = false;
+                        auto c = toChord(prevCR);
+                        for (auto note : c->notes()) {
+                              auto noteVal = note->noteVal();
+                              _score->addPitch(noteVal, addTo);
+                              addTo = true;
+                              }
+                        _score->endCmd();
+                        }
+                  }
             return;
             }
       if (!selection.isRange()) {
