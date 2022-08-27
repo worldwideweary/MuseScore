@@ -406,6 +406,8 @@ class MScore {
       static bool currentSystemAlwaysTop;
       static bool omitAddingLinkedLines;
 
+      static bool bypassAltMenu;
+
       static bool cursorMoveByBeat;
       static bool cursorMoveByMeasure;
       static bool cursorDrawnBehindStaff;
