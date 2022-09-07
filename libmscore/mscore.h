@@ -352,6 +352,10 @@ class MScore {
       static bool disableMouseEntry;
       static int pedalEventsMinTicks;
 
+      static bool cursorMoveByBeat;
+      static bool cursorMoveByMeasure;
+      static bool cursorDrawnBehindStaff;
+
       static qreal systemBracketMultiplier;
 
       static bool harmonyPlayDisableCompatibility;
