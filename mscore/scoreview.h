@@ -216,6 +216,11 @@ class ScoreView : public QWidget, public MuseScoreView {
       Element* elementToSelect = nullptr;
       Selection originalSelection;
 
+      // Automatic foto-mode exporting (state retainment):
+      ChordRest* firstCRSelected = nullptr;
+      ChordRest* lastCRSelected  = nullptr;
+      Element* currentSelection = nullptr;
+
       // Loop In/Out marks in the score
       PositionCursor* _curLoopIn;
       PositionCursor* _curLoopOut;
@@ -497,7 +502,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       void fotoContextPopup(QContextMenuEvent*);
       bool fotoRectHit(const QPoint& p);
       void paintRect(bool printMode, QPainter& p, const QRectF& r, double mag);
-      bool saveFotoAs(bool printMode, const QRectF&);
+      bool saveFotoAs(bool printMode, const QRectF&, QString& providedFn, int index=0);
       void fotoDragDrop(QMouseEvent*);
       void changeEditElement(Element*) override;
 

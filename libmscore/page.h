@@ -77,7 +77,7 @@ class Page final : public Element {
       void rebuildBspTree()   { bspTreeValid = false; }
       QPointF pagePos() const override { return QPointF(); }     ///< position in page coordinates
       QList<Element*> elements();               ///< list of visible elements
-      QRectF tbbox();                           // tight bounding box, excluding white space
+      QRectF tbbox(MeasureBase* firstMeasure=nullptr, MeasureBase* lastMeasure=nullptr);
       Fraction endTick() const;
       };
 
