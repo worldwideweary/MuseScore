@@ -11,6 +11,7 @@
 //=============================================================================
 
 #include "fotomode.h"
+#include "icons.h"
 #include "musescore.h"
 #include "preferences.h"
 #include "scoreview.h"
@@ -18,10 +19,18 @@
 
 #include "inspector/inspector.h"
 
+#include "libmscore/box.h"
+#include "libmscore/chordrest.h"
+#include "libmscore/image.h"
+#include "inspector/inspector.h"
 #include "libmscore/lasso.h"
+#include "libmscore/measure.h"
 #include "libmscore/mscore.h"
 #include "libmscore/page.h"
 #include "libmscore/score.h"
+#include "libmscore/system.h"
+
+#include <QFileInfo>
 
 namespace Ms {
 
@@ -330,6 +339,15 @@ void ScoreView::fotoContextPopup(QContextMenuEvent* ev)
       a = new QAction(tr("Auto-resize to page"), this);
       a->setData("resizePage");
       popup->addAction(a);
+
+      a = new QAction(tr("Auto-resize to measure(s) in range"), this);
+      a->setData("resizeMeasures");
+      popup->addAction(a);
+
+      a = new QAction(tr("Auto-resize to system of element"), this);
+      a->setData("resizeSystem");
+      popup->addAction(a);
+
       for (int i = 0; i < 4; ++i) {
             a = new QAction(qApp->translate("fotomode", resizeEntry[i].text), this);
             a->setData(resizeEntry[i].label);
@@ -351,14 +369,84 @@ void ScoreView::fotoContextPopup(QContextMenuEvent* ev)
       a->setData("screenshot");
       popup->addAction(a);
 
+      popup->addSeparator();
+      a = new QAction(tr("Print All Measures (Save As…)"), this);
+      a->setData("print-measures");
+      popup->addAction(a);
+      a = new QAction(tr("Print All Systems (Save As…)"), this);
+      a->setData("print-systems");
+      popup->addAction(a);
+
       a = popup->exec(pos);
       if (a == 0)
             return;
       QString cmd(a->data().toString());
-      if (cmd == "print")
-            saveFotoAs(true, _foto->canvasBoundingRect());
-      else if (cmd == "screenshot")
-            saveFotoAs(false, _foto->canvasBoundingRect());
+      if (cmd == "print") {
+            QString filename;
+            saveFotoAs(true, _foto->canvasBoundingRect(), filename);
+            }
+      else if (cmd == "screenshot") {
+            QString filename;
+            saveFotoAs(false, _foto->canvasBoundingRect(), filename);
+            }
+      else if (cmd == "print-measures") {
+            QString fn;
+            Page* page = nullptr;
+            QRectF r;
+            int idx = 1;
+            MeasureBase* currentMeasure = score()->firstMeasure()->system()->measures().front();
+            MeasureBase* nextMeasure = currentMeasure;
+
+            while (currentMeasure) {
+                  page = point2page(currentMeasure->canvasPos());
+                  if (page) {
+                        r = page->tbbox(currentMeasure, currentMeasure).translated(page->canvasPos());
+                        if (saveFotoAs(true, r, fn, idx)) {
+                              nextMeasure = currentMeasure->next();
+                              if (!nextMeasure)
+                                    break;
+                              else if (nextMeasure == currentMeasure)
+                                    break;
+                              currentMeasure = nextMeasure;
+
+                              ++idx;
+                              }
+                        else {
+                              qDebug() << "Foto save failed at iteration " << idx;
+                              return;
+                              }
+                        }
+                  }
+            }
+      else if (cmd == "print-systems") {
+            QString fn;
+            Page* page = nullptr;
+            QRectF r;
+            int idx = 1;
+            MeasureBase* beginMeasure = score()->firstMeasure()->system()->measures().front();
+            MeasureBase* endMeasure   = score()->firstMeasure()->system()->measures().back();
+
+            while (beginMeasure && endMeasure) {
+                  page = point2page(beginMeasure->canvasPos());
+                  if (page) {
+                        r = page->tbbox(beginMeasure, endMeasure).translated(page->canvasPos());
+                        if (saveFotoAs(true, r, fn, idx)) {
+                              if (beginMeasure == score()->measures()->last())
+                                    break;
+                              beginMeasure = endMeasure->next();
+                              endMeasure = beginMeasure ? beginMeasure->system()->measures().back() : nullptr;
+                              if (!beginMeasure || !endMeasure)
+                                    break;
+
+                              ++idx;
+                              }
+                        else {
+                              qDebug() << "Foto save failed at iteration " << idx;
+                              return;
+                              }
+                        }
+                  }
+            }
       else if (cmd == "copy")
             ;
       else if (cmd == "copy-link")
@@ -384,6 +472,66 @@ void ScoreView::fotoContextPopup(QContextMenuEvent* ev)
                   r = page->tbbox().translated(page->canvasPos());
                   _foto->setbbox(r);
                   updateGrips();
+                  }
+            }
+      else if (cmd == "resizeMeasures") {
+            // Potential TODO: Option to limit amount of instruments ....
+            // Potential TODO: Instrument names when present on first measure of systems?
+
+            _foto->setOffset(0,0);
+            QRectF r = _foto->bbox();
+            Page* page = point2page(r.center());
+
+            if (page) {
+                  MeasureBase* firstMeasure = nullptr;
+                  MeasureBase* lastMeasure = nullptr;
+           
+                  if (currentSelection) {
+                        if (currentSelection->isMeasureBase()) {
+                              firstMeasure = toMeasureBase(currentSelection);
+                              lastMeasure = firstMeasure;
+                              }
+                        }
+                  else if (firstCRSelected) {
+                        firstMeasure = firstCRSelected->measure();
+                        lastMeasure  = lastCRSelected ? lastCRSelected->measure() : firstMeasure;
+                        }
+                  else {
+                        qDebug() << "Invalid selection";
+                        return;
+                        }
+                
+                  r = page->tbbox(firstMeasure, lastMeasure).translated(page->canvasPos());
+                  _foto->setbbox(r);
+                  updateGrips();
+                  }
+            }
+      else if (cmd == "resizeSystem") {
+            _foto->setOffset(0,0);
+            QRectF r = _foto->bbox();
+            Page* page = point2page(r.center());
+            
+            if (page) {
+                  MeasureBase* firstMeasure = nullptr;
+                  if (currentSelection) {
+                        if (currentSelection->isMeasureBase())
+                              firstMeasure = toMeasureBase(currentSelection);
+                        }
+                  else if (firstCRSelected)
+                        firstMeasure = firstCRSelected->measure();
+                  else {
+                        qDebug() << "Invalid selection";
+                        return;
+                        }
+                
+                  auto system = firstMeasure ? firstMeasure->system() : nullptr;
+                  if (system) {
+                        firstMeasure = system->measures().front();
+                        auto lastMeasure = system->measures().back();
+                        r = page->tbbox(firstMeasure, lastMeasure).translated(page->canvasPos());
+                        _foto->setbbox(r);
+                        updateGrips();
+                        }
                   }
             }
       else if (cmd.startsWith("resize")) {
@@ -488,18 +636,20 @@ bool ScoreView::fotoRectHit(const QPoint& pos)
 //    return true on success
 //---------------------------------------------------------
 
-bool ScoreView::saveFotoAs(bool printMode, const QRectF& r)
+bool ScoreView::saveFotoAs(bool printMode, const QRectF& r, QString& providedFn, int index)
       {
       QStringList fl;
+      fl.append(tr("Scalable Vector Graphics") + " (*.svg)");
       fl.append(tr("PNG Bitmap Graphic") + " (*.png)");
       fl.append(tr("PDF File") + " (*.pdf)");
-      fl.append(tr("Scalable Vector Graphics") + " (*.svg)");
 
       QString selectedFilter;
       QString filter = fl.join(";;");
-      QString fn = mscore->getFotoFilename(filter, &selectedFilter);
 
-      if (fn.isEmpty())
+      // Bypass getting the filename if argument is provided
+      QString fn = providedFn.isEmpty() ? mscore->getFotoFilename(filter, &selectedFilter) : providedFn;
+
+      if (fn.isEmpty() && providedFn.isEmpty())
             return false;
 
       QFileInfo fi(fn);
@@ -513,9 +663,9 @@ bool ScoreView::saveFotoAs(bool printMode, const QRectF& r)
             int idx = fl.indexOf(selectedFilter);
             if (idx != -1) {
                   static const char* extensions[] = {
+                        "svg",
                         "png",
-                        "pdf",
-                        "svg"
+                        "pdf"
                         };
                   ext = extensions[idx];
                   }
@@ -529,6 +679,22 @@ bool ScoreView::saveFotoAs(bool printMode, const QRectF& r)
       ext = ext.toLower();
       if (fi.suffix().toLower() != ext)
             fn += "." + ext;
+
+      if (providedFn.isEmpty())
+            if (index != 0)
+                  providedFn = fn;
+      if (index > 0 && !providedFn.isEmpty()) {
+            int padding = 4; // 0000x
+            fn = fi.absolutePath() 
+               + "/"
+               + fi.baseName()
+               + "-"
+               + QString::number(index).rightJustified(padding, '0')
+               + "."
+               + ext;
+          
+            qDebug() << "Saving automatically as: " << fn;
+            }
 
       bool transparent = preferences.getBool(PREF_EXPORT_PNG_USETRANSPARENCY);
       double convDpi   = preferences.getDouble(PREF_EXPORT_PNG_RESOLUTION);

@@ -1200,18 +1200,24 @@ void ScoreView::seqStopped()
 
 void ScoreView::changeState(ViewState s)
       {
-//      if (state == ViewState::EDIT && s == ViewState::EDIT) {
-//            startEdit();
-//            return;
-//            }
+      auto& selection = _score->selection();
+      if (!selection.isNone()) {
+            firstCRSelected = selection.firstChordRest();
+            currentSelection = selection.element();
+            lastCRSelected = selection.isRange() ? selection.lastChordRest() : nullptr;
+            }
+      else {
+            firstCRSelected  = nullptr;
+            lastCRSelected   = nullptr;
+            currentSelection = nullptr;
+            }
+
       if (s == ViewState::PLAY && !seq)
             return;
       if (s == state)
             return;
 
       qDebug("changeState %s  -> %s", stateName(state), stateName(s));
-
-      auto& selection = _score->selection();
 
       if (selection.hasTemporaryFilter()) {
             auto& sf = score()->selectionFilter();
