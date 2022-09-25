@@ -614,18 +614,57 @@ qreal Page::rm() const
 //---------------------------------------------------------
 //   tbbox
 //    calculates and returns smallest rectangle containing all (visible) page elements
+//    (tight-bounding box)
+//    Can limit this via a range of measures (so long as they are within the page)
+//    Vboxes/TextBoxes don't work here for now
 //---------------------------------------------------------
 
-QRectF Page::tbbox()
-      {
+QRectF Page::tbbox(MeasureBase* firstMeasure,  MeasureBase* lastMeasure)
+      {    
       qreal x1 = width();
       qreal x2 = 0.0;
       qreal y1 = height();
       qreal y2 = 0.0;
+      auto limited = false;
+
+      if ((firstMeasure && lastMeasure)
+      && (systems().contains(firstMeasure->system())
+      && systems().contains(lastMeasure->system()))) {
+            limited = true;
+
+            // init bounding box to measures without consideration of elements
+            x1 = firstMeasure->pageBoundingRect().left();
+            x2 = lastMeasure->pageBoundingRect().right();
+            y1 = firstMeasure->pageBoundingRect().top();
+            y2 = firstMeasure->pageBoundingRect().bottom();
+
+            // Include brackets if first measure is first measure of system:
+            if (firstMeasure == firstMeasure->system()->firstMeasure()) {
+                  auto brackets = firstMeasure->system()->brackets();
+                  for (auto bracket : brackets) {
+                        QRectF bbox = bracket->pageBoundingRect();
+                        if (bbox.left()   < x1) x1 = bbox.left();
+                        if (bbox.top()    < y1) y1 = bbox.top();
+                        if (bbox.bottom() > y2) y2 = bbox.bottom();
+                        }
+                  }
+            }
+
       const QList<Element*> el = elements();
       for (Element* e : el) {
-            if (e == this || !e->isPrintable())
+            // Observation: Shouldn't layout breaks be non-printable? They bypass the [!isPrintable] test...
+            if (e == this || !e->isPrintable() || e->isLayoutBreak())
                   continue;
+
+            if (limited) {
+                  if (e->findMeasureBase()) {
+                        auto mIdx = e->findMeasureBase()->index();
+                        // Skip out-of-range elements
+                        if (mIdx < firstMeasure->index() || mIdx > lastMeasure->index())
+                              continue;
+                        }
+                  else continue;
+                  }
             QRectF ebbox = e->pageBoundingRect();
             if (ebbox.left() < x1)
                   x1 = ebbox.left();
@@ -636,6 +675,37 @@ QRectF Page::tbbox()
             if (ebbox.bottom() > y2)
                   y2 = ebbox.bottom();
             }
+
+      // Update bounding box in relation to spanners, omitting horizontal span
+      if (limited) {
+            Fraction beginTick = firstMeasure->tick();
+            Fraction endTick = lastMeasure->endTick();
+
+            // Begin/End ticks seem to overlap for measures, hence [-1]
+            auto spanners = score()->spannerMap().findOverlapping(beginTick.ticks(), endTick.ticks() - 1);
+            for (auto interval : spanners) {
+                  Spanner* spanner = interval.value;
+                  auto spannerSegments = spanner->spannerSegments();
+                  for (auto spannerSegment : spannerSegments) {
+                        // Don't include segment which passes into another system:
+                        if (spannerSegment->spannerSegmentType() != SpannerSegmentType::SINGLE)
+                              continue;
+
+                        auto box = spannerSegment->pageBoundingRect();
+
+                        // Observation: Lines can have "spacious" bounding box due to "Above" setting of text-line
+                        // even when text is showing below (like volta). Changing to "Below" will fix this, but that
+                        // will go un-noticed by 99% of everyone.
+
+                        // Update Lasso, but don't go horizontally beyond measure or other elements
+                        if (spanner->endSegment()->tick() != beginTick) {
+                              if (box.top()   < y1) y1 = box.top();
+                              if (box.bottom()> y2) y2 = box.bottom();
+                              }
+                        }
+                  }
+            }
+
       if (x1 < x2 && y1 < y2)
             return QRectF(x1, y1, x2 - x1, y2 - y1);
       else
