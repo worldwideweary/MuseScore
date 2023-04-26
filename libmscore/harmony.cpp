@@ -1501,6 +1501,7 @@ void Harmony::draw(QPainter* painter) const
       painter->setPen(color);
       for (const TextSegment* ts : textList) {
             QFont f(ts->font);
+            f.setUnderline(false);
             f.setPointSizeF(f.pointSizeF() * MScore::pixelRatio);
 #ifndef Q_OS_MACOS
             TextBase::drawTextWorkaround(painter, f, ts->pos(), ts->text);
@@ -1509,6 +1510,30 @@ void Harmony::draw(QPainter* painter) const
             painter->drawText(ts->pos(), ts->text);
 #endif
             }
+
+      // Want consistent-base underline (esp for polychord look)
+      if (underline()) {
+            auto lineWidth = fontMetrics().lineWidth();
+            lineWidth *= 3;
+            QPen pen(textColor(), lineWidth, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin);
+            painter->setPen(pen);
+
+            auto ts = textList.first();
+            auto bboxFirstCharacter = ts->tightBoundingRect();
+
+            auto bottomLeft = bboxFirstCharacter.bottomLeft();
+            auto bottomRight = bboxFirstCharacter.bottomRight();
+
+            bottomLeft.rx() = this->bbox().bottomLeft().x();
+            bottomRight.rx() = this->bbox().bottomRight().x();
+
+            // A little extra space below
+            auto multiplier = 2.5;
+            bottomLeft.ry()  += lineWidth * multiplier;
+            bottomRight.ry() += lineWidth * multiplier;
+            painter->drawLine(bottomLeft, bottomRight);
+            }
+
       }
 
 //---------------------------------------------------------
