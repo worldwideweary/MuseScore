@@ -373,9 +373,16 @@ void Image::startEditDrag(EditData& data)
 
 void Image::editDrag(EditData& ed)
       {
+      auto cursorShape = ed.view->cursor().shape();
+      auto sz  = _size;
+      auto xOff = offset().x();
+      auto yOff = offset().y();
+
       qreal ratio = _size.width() / _size.height();
       qreal dx = ed.delta.x();
       qreal dy = ed.delta.y();
+      qreal dxOffset = dx;
+      qreal dyOffset = dy;
       if (_sizeIsSpatium) {
             qreal _spatium = spatium();
             dx /= _spatium;
@@ -385,16 +392,71 @@ void Image::editDrag(EditData& ed)
             dx /= DPMM;
             dy /= DPMM;
             }
-      if (ed.curGrip == Grip::START) {
+
+      // Note: the corner grips will bypass [lock aspect ratio]
+      switch (int(ed.curGrip)) {
+      case 0: // Top-Left
+            cursorShape = Qt::SizeFDiagCursor;
+            rxoffset() += dxOffset;
+            ryoffset() += dyOffset;
+            _size.setWidth(_size.width()   - dx);
+            _size.setHeight(_size.height() - dy);
+            break;
+      case 1: // Top-Right
+            cursorShape = Qt::SizeBDiagCursor;
+            ryoffset() += dyOffset;
+            _size.setWidth(_size.width()   + dx);
+            _size.setHeight(_size.height() - dy);
+            break;
+      case 2: // Bottom-Right
+            cursorShape = Qt::SizeFDiagCursor;
+            _size.setWidth(_size.width()   + dx);
+            _size.setHeight(_size.height() + dy);
+            break;
+      case 3: // Bottom-Left
+            cursorShape = Qt::SizeBDiagCursor;
+            rxoffset() += dxOffset;
+            _size.setWidth(_size.width()   - dx);
+            _size.setHeight(_size.height() + dy);
+            break;
+      case 4: // Top
+            cursorShape = Qt::SizeVerCursor;
+            ryoffset() += dyOffset;
+            _size.setHeight(_size.height() - dy);
+            if (_lockAspectRatio)
+                  _size.setWidth(_size.height() * ratio);
+            break;
+      case 5: // Right
+            cursorShape = Qt::SizeHorCursor;
             _size.setWidth(_size.width() + dx);
             if (_lockAspectRatio)
                   _size.setHeight(_size.width() / ratio);
-            }
-      else {
+            break;
+      case 6: // Bottom
+            cursorShape = Qt::SizeVerCursor;
             _size.setHeight(_size.height() + dy);
             if (_lockAspectRatio)
                   _size.setWidth(_size.height() * ratio);
+            break;
+      case 7: // Left
+            cursorShape = Qt::SizeHorCursor;
+            rxoffset() += dxOffset;
+            _size.setWidth(_size.width() - dx);
+            if (_lockAspectRatio)
+                  _size.setHeight(_size.width() / ratio);
+            break;
+      }
+
+      if (_size.width() < 0.1) {
+            rxoffset() = xOff;
+            _size = sz;
             }
+      if (_size.height() < 0.1) {
+            ryoffset() = yOff;
+            _size = sz;
+            }
+
+      ed.view->setCursor(QCursor(cursorShape));
       layout();
       }
 
@@ -406,8 +468,14 @@ std::vector<QPointF> Image::gripsPositions(const EditData&) const
       {
       QRectF r(pageBoundingRect());
       return {
-            QPointF(r.x() + r.width(), r.y() + r.height() * .5),
-            QPointF(r.x() + r.width() * .5, r.y() + r.height())
+            r.topLeft(),
+            r.topRight(),
+            r.bottomRight(),
+            r.bottomLeft(),
+            QPointF(r.x() + (r.width() * 0.5), r.top()),
+            QPointF(r.right(), r.y() + (r.height() * 0.5)),
+            QPointF(r.x() + (r.width() * 0.5), r.bottom()),
+            QPointF(r.left(), r.y() + (r.height() * 0.5))
             };
       }
 
