@@ -45,6 +45,8 @@ class Image final : public BSymbol {
       bool _lockAspectRatio;
       bool _autoScale;              ///< fill parent frame
       bool _sizeIsSpatium;
+      qreal _frameWidth;
+      QColor _frameColor;
       mutable bool _dirty;
       bool _used;
 
@@ -78,6 +80,11 @@ class Image final : public BSymbol {
       void setSizeIsSpatium(bool val)    { _sizeIsSpatium = val;  }
       bool isUsed() const                { return _used;          }
       void setUsed(bool val)             { _used = val;           }
+
+      void setFrameWidth(qreal val)      { _frameWidth = val;     }
+      qreal getFrameWidth() const        { return _frameWidth;    }
+      void setFrameColor(const QColor& c){ _frameColor = c;       }
+      QColor getFrameColor() const       { return _frameColor;    }
 
       QVariant getProperty(Pid ) const override;
       bool setProperty(Pid propertyId, const QVariant&) override;
