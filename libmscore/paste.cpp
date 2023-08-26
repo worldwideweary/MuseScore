@@ -868,7 +868,7 @@ void Score::pasteSymbols(XmlReader& e, ChordRest* dst)
                                     else
                                           undoAddElement(el);
                                     }
-                              else if (tag == "StaffText" || tag == "Sticking") {
+                              else if (tag == "StaffText" || tag == "Sticking" || tag == "Tempo") {
                                     Element* el = Element::name2Element(tag, this);
                                     el->read(e);
                                     el->setTrack(destTrack);
