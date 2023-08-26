@@ -50,6 +50,7 @@
 #include "stemslash.h"
 #include "sticking.h"
 #include "system.h"
+#include "tempotext.h"
 #include "tie.h"
 #include "tremolo.h"
 #include "tuplet.h"
@@ -1042,6 +1043,9 @@ Enabling copying of more element types requires enabling pasting in Score::paste
                         // fall through
                   case ElementType::HAIRPIN:
                         seg = toHairpin(e)->startSegment();
+                        break;
+                  case ElementType::TEMPO_TEXT:
+                        seg = toTempoText(e)->segment();
                         break;
                   default:
                         continue;
