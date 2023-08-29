@@ -454,9 +454,14 @@ void updateExternalValuesFromPreferences() {
       MScore::setHRaster(preferences.getInt(PREF_UI_APP_RASTER_HORIZONTAL));
       MScore::setVRaster(preferences.getInt(PREF_UI_APP_RASTER_VERTICAL));
 
-      MScore::setNudgeStep(.1);         // cursor key (default 0.1)
-      MScore::setNudgeStep10(1.0);      // Ctrl + cursor key (default 1.0)
-      MScore::setNudgeStep50(0.01);     // Alt  + cursor key (default 0.01)
+      // [Cursor] (Default: 0.1):
+      MScore::setNudgeStep(preferences.getDouble(PREF_UI_APP_NUDGESTEP_1));
+
+      // Ctrl + [Cursor] (Default: 1.0):
+      MScore::setNudgeStep10(preferences.getDouble(PREF_UI_APP_NUDGESTEP_10));
+
+      // Alt + [Cursor] (Default: 0.01):
+      MScore::setNudgeStep50(0.01);
 
       if (!preferences.getBool(PREF_APP_STARTUP_FIRSTSTART)) {
             //Create directories if they are missing
