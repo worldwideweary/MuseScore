@@ -52,7 +52,6 @@
      </property>
      <property name="font">
       <font>
-       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -248,7 +247,7 @@
          <double>0.010000000000000</double>
         </property>
         <property name="maximum">
-         <double>20.000000000000000</double>
+         <double>200.000000000000000</double>
         </property>
         <property name="singleStep">
          <double>0.250000000000000</double>
@@ -264,7 +263,7 @@
          <double>1.000000000000000</double>
         </property>
         <property name="maximum">
-         <double>20.000000000000000</double>
+         <double>200.000000000000000</double>
         </property>
         <property name="singleStep">
          <double>1.000000000000000</double>
