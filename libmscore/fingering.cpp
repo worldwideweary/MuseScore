@@ -106,8 +106,8 @@ void Fingering::layout()
       if (autoplace() && note()) {
             Note* n      = note();
             Chord* chord = n->chord();
-            bool voices  = chord->measure()->hasVoices(chord->staffIdx(), chord->tick(), chord->actualTicks());
-            bool tight   = voices && chord->notes().size() == 1 && !chord->beam() && tid() != Tid::STRING_NUMBER;
+            bool voices  = MScore::fingeringTextOmitVoicing ? false : chord->measure()->hasVoices(chord->staffIdx(), chord->tick(), chord->actualTicks());
+            bool tight   = MScore::fingeringTextOmitTightening ? false : voices && chord->notes().size() == 1 && !chord->beam() && tid() != Tid::STRING_NUMBER;
 
             qreal headWidth = n->bboxRightPos();
 
