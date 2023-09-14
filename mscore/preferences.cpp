@@ -269,6 +269,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_UI_SCORE_VOICE3_COLOR,                           new ColorPreference(QColor(0xC53F00))},
             {PREF_UI_SCORE_VOICE4_COLOR,                           new ColorPreference(QColor(0xC31989))},
             {PREF_UI_SCORE_CURSOR_COLOR,                           new ColorPreference(QColor(0x0065BF))},
+            {PREF_UI_SCORE_BRACKET_MULTIPLIER,                     new DoublePreference(0.25)},
             {PREF_UI_THEME_ICONWIDTH,                              new IntPreference(28, false)},
             {PREF_UI_THEME_ICONHEIGHT,                             new IntPreference(24, false)},
             {PREF_UI_THEME_FONTFAMILY,                             new StringPreference(QApplication::font().family(), false) },
