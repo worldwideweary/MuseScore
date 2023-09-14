@@ -24,6 +24,7 @@
 #include "libmscore/clef.h"
 #include "libmscore/element.h"
 #include "libmscore/fret.h"
+#include "libmscore/hairpin.h"
 #include "libmscore/icon.h"
 #include "libmscore/image.h"
 #include "libmscore/imageStore.h"
@@ -38,9 +39,11 @@
 #include "libmscore/staff.h"
 #include "libmscore/system.h"
 #include "libmscore/style.h"
+#include "libmscore/sym.h"
 #include "libmscore/symbol.h"
 #include "libmscore/textline.h"
 #include "libmscore/timesig.h"
+#include "libmscore/undo.h"
 #include "libmscore/xml.h"
 
 #include "script/recorderwidget.h"
@@ -501,6 +504,7 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
       if (score == 0)
             return false;
       const Selection sel = score->selection(); // make a copy of selection state before applying the operation.
+      auto& is = score->inputState();
       if (sel.isNone())
             return false;
 
@@ -557,7 +561,6 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                         addSingle = true;
                   }
             if (viewer->mscoreState() == STATE_NOTE_ENTRY_STAFF_DRUM && element->isChord()) {
-                  InputState& is = score->inputState();
                   Element* e = nullptr;
                   if (!(modifiers & Qt::ShiftModifier)) {
                         // shift+double-click: add note to "chord"
@@ -640,8 +643,26 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                   spanner->isVoiceSpecific();
                   }
             else {
+                  // If dynamic is placed while a hairpin is active within note entry,
+                  // finalize the hairpin to be just before the dynamic mark or after it
+                  // depending on whether the hairpin started at this position.
+                  if (element->isDynamic()) {
+                        auto hp = is.dynamicLine();
+                        if (score->noteEntryMode() && hp) {
+                              Element* start = hp->startElement();
+                              Element* end = hp->endElement();
+                              Element* next = end;
+                              if (next && !(cr1->tick() == start->tick())) {
+                                    hp->undoChangeProperty(Pid::SPANNER_TICKS, next->tick() - start->tick());
+                                    hp->score()->undo(new ChangeSpannerElements(hp, start, end));
+                                    is.dynamicLine()->setSelected(false);
+                                    is.setDynamicLine(nullptr);
+                                    }
+                              }
+                        }
                   for (Element* e : sel.elements())
                         applyDrop(score, viewer, e, element, modifiers);
+
                   }
             }
       else if (sel.isRange()) {

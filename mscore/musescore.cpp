@@ -3336,6 +3336,20 @@ void MuseScore::midiCtrlReceived(int controller, int value)
       {
       if (!isMidiInEnabled())
             return;
+
+      // Observation: [Sustain (>0 is ON)(=0 is OFF) is received twice for some reason thru PortMIDI...
+      if (controller == CTRL_SUSTAIN) {
+            if (value > 0 && !cv->score()->inputState().pedalLine()) {
+                  if (mscore->currentScore()->noteEntryMode()) {
+                        cv->cmdAddPedal(HookType::HOOK_90, HookType::HOOK_90);
+                        }
+                  }
+            else if (value == 0 && cv->score()->inputState().pedalLine()) {
+                  if (mscore->currentScore()->noteEntryMode()) {
+                        cv->cmdAddPedal(HookType::HOOK_90, HookType::HOOK_90);
+                        }
+                  }
+            }
       if (_midiRecordId != -1) {
             preferences.updateMidiRemote(_midiRecordId, MIDI_REMOTE_TYPE_CTRL, controller);
             _midiRecordId = -1;

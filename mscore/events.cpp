@@ -32,6 +32,8 @@
 #include "libmscore/repeatlist.h"
 #include "libmscore/select.h"
 #include "libmscore/staff.h"
+#include "libmscore/hairpin.h"
+#include "libmscore/pedal.h"
 
 namespace Ms {
 
@@ -1246,6 +1248,17 @@ void ScoreView::changeState(ViewState s)
                   break;
             }
 
+      // De-activate active lines (Hairpin/Pedal) after any change-state
+      if (_score->inputState().dynamicLine()) {
+            _score->inputState().dynamicLine()->setSelected(false);
+            _score->inputState().setDynamicLine(nullptr);
+            }
+      if ( _score->inputState().pedalLine() &&
+           (state == ViewState::EDIT || state == ViewState::NOTE_ENTRY) ) {
+            _score->inputState().pedalLine()->setColor(MScore::defaultColor);
+            _score->inputState().pedalLine()->setLineColor(MScore::defaultColor);
+            _score->inputState().setPedalLine(nullptr);
+            }
       state = s;
       mscore->changeState(mscoreState());
       if (mscoreState() & STATE_ALLTEXTUAL_EDIT)
