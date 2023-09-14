@@ -40,6 +40,7 @@
 #include "ottava.h"
 #include "page.h"
 #include "part.h"
+#include "pedal.h"
 #include "pitchspelling.h"
 #include "rehearsalmark.h"
 #include "repeat.h"
@@ -894,6 +895,30 @@ Segment* Score::setNoteRest(Segment* segment, int track, NoteVal nval, Fraction 
       if (tie)
             connectTies();
       if (nr) {
+            // Extend active hairpin
+            Hairpin* hp = is.dynamicLine();
+            if (hp) {
+                  Element* start = hp->startElement();
+                  Element* end = nr;
+                  if (start && end) {
+                        if (end->nextSegmentElement()) { 
+                              hp->undoChangeProperty(Pid::SPANNER_TICKS, (end->nextSegmentElement()->tick()) - hp->startElement()->tick());
+                              hp->score()->undo(new ChangeSpannerElements(hp, start, end));
+                              }
+                        }
+                  }
+            // Extend active pedal when placing note/rest
+            Pedal* pedal = is.pedalLine();
+            if (pedal) {
+                  Element* start = pedal->startElement();
+                  Element* end = nr;
+                  if (start && end) {
+                        if (end->nextSegmentElement()) {
+                              pedal->undoChangeProperty(Pid::SPANNER_TICKS, (end->nextSegmentElement()->tick()) - pedal->startElement()->tick());
+                              pedal->score()->undo(new ChangeSpannerElements(pedal, start, end));
+                              }
+                        }
+                  }
             if (is.slur() && nr->type() == ElementType::NOTE) {
                   // If the start element was the same as the end element when the slur was created,
                   // the end grip of the front slur segment was given an x-offset of 3.0 * spatium().
@@ -2399,8 +2424,7 @@ Element* Score::move(const QString& cmd)
             cr = selection().cr();
             if (cr && (cr->isGrace() || cmd == "next-chord" || cmd == "prev-chord"))
                   ;
-            else
-                  cr = inputState().cr();
+            else cr = inputState().cr() ? inputState().cr() : cr;
             }
       else if (selection().activeCR())
             cr = selection().activeCR();
@@ -2853,6 +2877,28 @@ void Score::cmdIncDecDuration(int nSteps, bool stepDotted)
       else
             changeCRlen(cr, d);
       _is.setDuration(d);
+      // Update an active hairpin in note-entry during inc/dec also
+      Hairpin* hp = _is.dynamicLine();
+      if (noteEntryMode() && hp) {
+            Element* start = hp->startElement();
+            Element* end = el;
+            Element* next = end->nextSegmentElement();
+            if (next) {
+                  hp->undoChangeProperty(Pid::SPANNER_TICKS, next->tick() - start->tick());
+                  hp->score()->undo(new ChangeSpannerElements(hp, start, end));
+                  }
+            }
+      // Update active pedal during Dec/Inc
+      Pedal* pedal = _is.pedalLine();
+      if (noteEntryMode() && pedal) {
+            Element* start = pedal->startElement();
+            Element* end = el;
+            Element* next = end->nextSegmentElement();
+            if (next) {
+                  pedal->undoChangeProperty(Pid::SPANNER_TICKS, next->tick() - start->tick());
+                  pedal->score()->undo(new ChangeSpannerElements(pedal, start, end));
+                  }
+            }
       nextInputPos(cr, false);
       }
 
