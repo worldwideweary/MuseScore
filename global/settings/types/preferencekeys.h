@@ -165,6 +165,7 @@
 #define PREF_UI_SCORE_VOICE2_COLOR                          "ui/score/voice2/color"
 #define PREF_UI_SCORE_VOICE3_COLOR                          "ui/score/voice3/color"
 #define PREF_UI_SCORE_VOICE4_COLOR                          "ui/score/voice4/color"
+#define PREF_UI_SCORE_BRACKET_MULTIPLIER                    "ui/score/bracket/multiplier"
 #define PREF_UI_THEME_ICONHEIGHT                            "ui/theme/iconHeight"
 #define PREF_UI_THEME_ICONWIDTH                             "ui/theme/iconWidth"
 #define PREF_UI_THEME_FONTFAMILY                            "ui/theme/fontFamily"
