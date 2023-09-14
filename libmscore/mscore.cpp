@@ -109,6 +109,8 @@ bool    MScore::cursorMoveByMeasure;
 bool    MScore::cursorDrawnBehindStaff;
 
 qreal   MScore::systemBracketMultiplier;
+bool    MScore::fingeringTextOmitVoicing;
+bool    MScore::fingeringTextOmitTightening;
 
 qreal   MScore::slurShoulderExtraMax;
 qreal   MScore::slurShoulderExtraMin;
