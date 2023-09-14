@@ -265,7 +265,8 @@ void Bracket::draw(QPainter* painter) const
                   qreal h        = 2 * h2;
                   qreal _spatium = spatium();
                   qreal w        = score()->styleP(Sid::bracketWidth);
-                  qreal bd       = (score()->styleSt(Sid::musicalSymbolFont) == "Leland") ? _spatium * .5 : _spatium * .25;
+                  qreal bd       = (score()->styleSt(Sid::musicalSymbolFont) == "Leland") ? _spatium * (MScore::systemBracketMultiplier + 0.25)
+                                                                                          : _spatium * (MScore::systemBracketMultiplier);
                   QPen pen(curColor(), w, Qt::SolidLine, Qt::FlatCap);
                   painter->setPen(pen);
                   painter->drawLine(QLineF(0.0, -bd - w * .5, 0.0, h + bd + w * .5));
