@@ -3350,18 +3350,21 @@ void MuseScore::midiNoteReceived(int channel, int pitch, int velo)
 
 void MuseScore::midiCtrlReceived(int controller, int value)
       {
-      if (!isMidiInEnabled())
+      if (!cv)
             return;
-
+      if (!isMidiInEnabled())
+            return;      
+      
+      auto score = cv->score();
       // Observation: [Sustain (>0 is ON)(=0 is OFF) is received twice for some reason thru PortMIDI...
-      if (controller == CTRL_SUSTAIN) {
-            if (value > 0 && !cv->score()->inputState().pedalLine()) {
-                  if (mscore->currentScore()->noteEntryMode()) {
+      if (score && controller == CTRL_SUSTAIN) {
+            if (value > 0 && !score->inputState().pedalLine()) {
+                  if (score->noteEntryMode()) {
                         cv->cmdAddPedal(HookType::HOOK_90, HookType::HOOK_90);
                         }
                   }
-            else if (value == 0 && cv->score()->inputState().pedalLine()) {
-                  if (mscore->currentScore()->noteEntryMode()) {
+            else if (value == 0 && score->inputState().pedalLine()) {
+                  if (score->noteEntryMode()) {
                         cv->cmdAddPedal(HookType::HOOK_90, HookType::HOOK_90);
                         }
                   }
