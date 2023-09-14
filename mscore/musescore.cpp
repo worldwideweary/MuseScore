@@ -477,6 +477,8 @@ void updateExternalValuesFromPreferences() {
       MScore::cursorDrawnBehindStaff = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_BACKGROUND);
 
       MScore::systemBracketMultiplier = preferences.getDouble(PREF_UI_SCORE_BRACKET_MULTIPLIER);
+      MScore::fingeringTextOmitVoicing = preferences.getBool(PREF_UI_SCORE_FINGERING_OMIT_VOICING);
+      MScore::fingeringTextOmitTightening = preferences.getBool(PREF_UI_SCORE_FINGERING_OMIT_TIGHTENING);
 
       MScore::highlightNotes  = preferences.getBool(PREF_SCORE_PLAYBACK_HIGHLIGHT_NOTES);
       MScore::highlightRests  = preferences.getBool(PREF_SCORE_PLAYBACK_HIGHLIGHT_RESTS);

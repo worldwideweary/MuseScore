@@ -370,6 +370,8 @@ class MScore {
       static bool cursorDrawnBehindStaff;
 
       static qreal systemBracketMultiplier;
+      static bool  fingeringTextOmitVoicing;
+      static bool  fingeringTextOmitTightening;
 
       static qreal slurShoulderExtraMax;
       static qreal slurShoulderExtraMin;
