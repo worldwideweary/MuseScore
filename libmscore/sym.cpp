@@ -21,7 +21,6 @@
 
 #include "mscore/preferences.h"
 
-
 #include FT_GLYPH_H
 #include FT_IMAGE_H
 #include FT_BBOX_H
@@ -6659,12 +6658,12 @@ void ScoreFont::scanUserFonts(const QString& path, bool system)
                   QByteArray name = fontName.toLocal8Bit();
                   QByteArray dp = fontDirPath.toLocal8Bit();
                   QByteArray fn = fontFilename.toLocal8Bit();
-                  userfonts << Ms::ScoreFont(name.data(), name.data(), dp.data(), fn.data());
+                  userfonts << Ms::ScoreFont(name.data(), name.data(), dp.data(), fn.data(), true);
                   }
             }
 
 
-      qDebug() << "Found" << userfonts.count() << (system ? "system" : "user") << "score font" << (userfonts.count() > 1? "s" : "") << " in" << path <<".";
+      // qDebug() << "Found" << userfonts.count() << (system ? "system" : "user") << "score font" << (userfonts.count() > 1? "s" : "") << " in" << path <<".";
 
       // TODO: Check for fonts that duplicate built-in fonts
       if (!system) // reset list when re-reading due to changed Preferences
@@ -7097,6 +7096,11 @@ void ScoreFont::load(bool system)
                   }
             }
 #endif
+      if (face) {
+            QString converted(face->family_name);
+            _family = converted;
+            }
+
       }
 
 //---------------------------------------------------------
@@ -7120,7 +7124,7 @@ ScoreFont* ScoreFont::fontFactory(QString s)
             return fallbackFont();
             }
 
-      if (!f->face)
+      if (!f->face || f->isExternal())
             f->load();
       return f;
       }
@@ -7294,6 +7298,7 @@ ScoreFont::ScoreFont(const ScoreFont& f)
       _family   = f._family;
       _fontPath = f._fontPath;
       _filename = f._filename;
+      _external = f._external;
 
       // fontImage;
       cache = 0;
