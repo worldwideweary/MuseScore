@@ -553,11 +553,13 @@ void TieSegment::adjustX()
                               }
 
                         // adjust for ledger lines
-                        for (LedgerLine* currLedger = chord->ledgerLines(); currLedger; currLedger = currLedger->next()) {
-                              // search through ledger lines and see if any are within .5sp of tie start
-                              if (qAbs(p1.y() - currLedger->y()) < spatium() * 0.5) {
-                                    xo = qMax(xo, (currLedger->x() + currLedger->len() + chordOffset));
-                                    break;
+                        if (MScore::tiesAdjustForLedgerLines) {
+                              for (LedgerLine* currLedger = chord->ledgerLines(); currLedger; currLedger = currLedger->next()) {
+                                    // search through ledger lines and see if any are within .5sp of tie start
+                                    if (qAbs(p1.y() - currLedger->y()) < (spatium() * 0.5)) {
+                                          xo = qMax(xo, (currLedger->x() + currLedger->len() + chordOffset));
+                                          break;
+                                          }
                                     }
                               }
 
@@ -600,10 +602,13 @@ void TieSegment::adjustX()
 
                   for (Chord* chord : chords) {
                         qreal chordOffset = (ec->x() + en->x()) - chord->x(); // en->x() for right-offset notes
-                        for (LedgerLine* currLedger = chord->ledgerLines(); currLedger; currLedger = currLedger->next()) {
-                              // search through ledger lines and see if any are within .5sp of tie end
-                              if (qAbs(p2.y() - currLedger->y()) < spatium() * 0.5)
-                                    xo = qMin(xo, currLedger->x() - chordOffset);
+
+                        if (MScore::tiesAdjustForLedgerLines) {
+                              for (LedgerLine* currLedger = chord->ledgerLines(); currLedger; currLedger = currLedger->next()) {
+                                    // search through ledger lines and see if any are within .5sp of tie end
+                                    if (qAbs(p2.y() - currLedger->y()) < (spatium() * 0.5))
+                                          xo = qMin(xo, currLedger->x() - chordOffset);
+                                    }
                               }
 
                         if (chord->stem() && chord->stem()->visible()) {
