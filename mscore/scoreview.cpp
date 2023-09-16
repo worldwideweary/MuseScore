@@ -4041,6 +4041,13 @@ void ScoreView::startNoteEntry()
             int track = is.track() == -1 ? 0 : (is.track() / VOICES) * VOICES;
             // try to find an appropriate measure to start in
             Fraction tick = el ? el->tick() : Fraction(0,1);
+            if (tick == Fraction(0, 1)) {
+                  if (_score->selection().isList()) {
+                        auto listEl = _score->selection().elements().front();
+                        tick = listEl->tick();
+                        track = listEl->track();
+                        }
+                  }
             el = _score->searchNote(tick, track);
             if (!el)
                   el = _score->searchNote(Fraction(0,1), track);
