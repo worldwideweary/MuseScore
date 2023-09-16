@@ -3425,24 +3425,43 @@ void Score::collectNoteMatch(void* data, Element* e)
 //   selectSimilar
 //---------------------------------------------------------
 
-void Score::selectSimilar(Element* e, bool sameStaff)
+void Score::selectSimilar(Element* e, bool sameStaff, bool sameSystem)
       {
       ElementType type = e->type();
+      auto subtype = e->subtype();
       Score* score = e->score();
+      System* currentSystem = nullptr;
+      if (auto p = e->parent()) {
+            if (p->isSystem())
+                  currentSystem = toSystem(p);
+            else if (auto m = e->findMeasure())
+                  currentSystem = m->system();
+            }
 
       ElementPattern pattern;
       pattern.type = int(type);
       pattern.subtype = 0;
       pattern.subtypeValid = false;
+
+      if (sameSystem && (subtype != -1)) {
+            // Subtypes to omit
+            if (type != ElementType::DYNAMIC) {
+                  pattern.subtype = subtype;
+                  pattern.subtypeValid = true;
+                  }
+            }
+
       if (type == ElementType::NOTE) {
             if (toNote(e)->chord()->isGrace())
                   pattern.subtype = -1; // hack
             else
-                  pattern.subtype = e->subtype();
+                  pattern.subtype = subtype;
             }
       pattern.staffStart = sameStaff ? e->staffIdx() : -1;
       pattern.staffEnd = sameStaff ? e->staffIdx() + 1 : -1;
       pattern.voice = -1;
+      pattern.system = sameSystem ? currentSystem : 0;
+      pattern.durationTicks = Fraction(-1,1);
 
       score->scanElements(&pattern, collectMatch);
 

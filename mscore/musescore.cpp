@@ -5762,10 +5762,10 @@ QNetworkAccessManager* MuseScore::networkManager()
 //   selectSimilar
 //---------------------------------------------------------
 
-void MuseScore::selectSimilar(Element* e, bool sameStaff)
+void MuseScore::selectSimilar(Element* e, bool sameStaff, bool sameSystem)
       {
       Score* score = e->score();
-      score->selectSimilar(e, sameStaff);
+      score->selectSimilar(e, sameStaff, sameSystem);
 
       if (score->selectionChanged()) {
             score->setSelectionChanged(false);

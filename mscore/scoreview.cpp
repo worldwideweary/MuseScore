@@ -357,9 +357,11 @@ void ScoreView::objectPopup(const QPoint& pos, Element* obj)
                   }
             }
       else if (cmd == "select-similar")
-            mscore->selectSimilar(obj, false);
+            mscore->selectSimilar(obj, false, false);
       else if (cmd == "select-similar-staff")
-            mscore->selectSimilar(obj, true);
+            mscore->selectSimilar(obj, true, false);
+      else if (cmd == "select-similar-staff-system")
+            mscore->selectSimilar(obj, true, true);
       else if (cmd == "select-similar-range")
             mscore->selectSimilarInRange(obj);
       else if (cmd == "select-dialog")
@@ -2320,13 +2322,20 @@ void ScoreView::cmd(const char* s)
             {{"select-similar"}, [](ScoreView* cv, const QByteArray&) {
                   if (cv->score()->selection().isSingle()) {
                         Element* e = cv->score()->selection().element();
-                        mscore->selectSimilar(e, false);
+                        mscore->selectSimilar(e, false, false);
                         }
                   }},
             {{"select-similar-staff"}, [](ScoreView* cv, const QByteArray&) {
                   if (cv->score()->selection().isSingle()) {
                         Element* e = cv->score()->selection().element();
-                        mscore->selectSimilar(e, true);
+                        mscore->selectSimilar(e, true, false);
+                        }
+                  }},
+            {{"select-similar-staff-system"}, [](ScoreView* cv, const QByteArray&) {
+                  if (cv->score()->selection().isSingle()) {
+                        Element* e = cv->score()->selection().element();
+                        mscore->selectSimilar(e, true, true);
+                        cv->updateAll();
                         }
                   }},
             {{"select-dialog"}, [](ScoreView* cv, const QByteArray&) {

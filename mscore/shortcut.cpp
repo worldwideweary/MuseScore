@@ -2848,6 +2848,13 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::SCORE_TAB,
          STATE_NORMAL | STATE_NOTE_ENTRY,
+         "select-similar-staff-system",
+         QT_TRANSLATE_NOOP("action","All Similar Elements in Same Staff & System"),
+         QT_TRANSLATE_NOOP("action","Select all similar elements in same staff & system")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "select-similar-range",
          QT_TRANSLATE_NOOP("action","All Similar Elements in Range Selection"),
          QT_TRANSLATE_NOOP("action","Select all similar elements in the range selection")
