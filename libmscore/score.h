@@ -523,6 +523,8 @@ class Score : public QObject, public ScoreElement {
       void cmdAddBraces();
       void resetUserStretch();
 
+      void cmdRangeToList(bool rests);
+
       void createMMRest(Measure*, Measure*, const Fraction&);
 
       void beamGraceNotes(Chord*, bool);
