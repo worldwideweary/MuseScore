@@ -55,6 +55,8 @@ EditStyle::EditStyle(Score* s, QWidget* parent)
       buttonApplyToAllParts = buttonBox->addButton(tr("Apply to all Parts"), QDialogButtonBox::ApplyRole);
       buttonTogglePagelist->setIcon(QIcon(*icons[int(Icons::goNext_ICON)]));
 
+      setModal(false);
+
       // create button groups for every set of radio button widgets
       // use this group widgets in list styleWidgets
       // This works for groups which represent an int enumeration.
@@ -754,11 +756,7 @@ void MuseScore::showStyleDialog(Element* e)
             _styleDlg->activateWindow();
             }
       else
-            // use `_styleDlg->show();` to show non-modally to allow
-            // user to scroll/zoom score while selecting style options;
-            // however, that must be properly implemented, otherwise it
-            // will cause problems.
-            _styleDlg->exec();
+            _styleDlg->show();
       }
 
 //---------------------------------------------------------
