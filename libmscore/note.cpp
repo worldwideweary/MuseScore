@@ -2562,8 +2562,10 @@ QRectF Note::drag(EditData& ed)
       bool isSingleNoteSelection = score()->getSelectedElement() == this;
       if (noteEditData->mode == NoteEditData::EditMode_AddSpacing && isSingleNoteSelection && !(ed.modifiers & Qt::ControlModifier))
             horizontalDrag(ed);
-      else if (noteEditData->mode == NoteEditData::EditMode_ChangePitch)
-            verticalDrag(ed);
+      else if (noteEditData->mode == NoteEditData::EditMode_ChangePitch) {
+            if (!MScore::disableVerticalMouseDragOfNotes)
+                  verticalDrag(ed);
+            }
 
       return QRectF();
       }
