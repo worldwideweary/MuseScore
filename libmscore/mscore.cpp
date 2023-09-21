@@ -76,6 +76,7 @@ QColor  MScore::cursorColor;
 QColor  MScore::defaultColor;
 
 bool    MScore::noteInputOctaveTendencyIsTopNote;
+bool    MScore::disableVerticalMouseDragOfNotes;
 
 QColor  MScore::layoutBreakColor;
 QColor  MScore::frameMarginColor;
