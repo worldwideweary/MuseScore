@@ -2561,8 +2561,10 @@ QRectF Note::drag(EditData& ed)
 
       if (noteEditData->mode == NoteEditData::EditMode_AddSpacing)
             horizontalDrag(ed);
-      else if (noteEditData->mode == NoteEditData::EditMode_ChangePitch)
-            verticalDrag(ed);
+      else if (noteEditData->mode == NoteEditData::EditMode_ChangePitch) {
+            if (!MScore::disableVerticalMouseDragOfNotes)
+                  verticalDrag(ed);
+            }
 
       return QRectF();
       }
