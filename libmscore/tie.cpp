@@ -555,8 +555,8 @@ void TieSegment::adjustX()
                         // adjust for ledger lines
                         if (MScore::tiesAdjustForLedgerLines) {
                               for (LedgerLine* currLedger = chord->ledgerLines(); currLedger; currLedger = currLedger->next()) {
-                                    // search through ledger lines and see if any are within .5sp of tie start
-                                    if (qAbs(p1.y() - currLedger->y()) < (spatium() * 0.5)) {
+                                    // search through ledger lines and see if any are within [Update: 0.33p] of tie start
+                                    if (qAbs(p1.y() - currLedger->y()) < (spatium() * 0.33)) {
                                           xo = qMax(xo, (currLedger->x() + currLedger->len() + chordOffset));
                                           break;
                                           }
@@ -605,8 +605,8 @@ void TieSegment::adjustX()
 
                         if (MScore::tiesAdjustForLedgerLines) {
                               for (LedgerLine* currLedger = chord->ledgerLines(); currLedger; currLedger = currLedger->next()) {
-                                    // search through ledger lines and see if any are within .5sp of tie end
-                                    if (qAbs(p2.y() - currLedger->y()) < (spatium() * 0.5))
+                                    // search through ledger lines and see if any are within [Update: 0.33p] of tie end
+                                    if (qAbs(p2.y() - currLedger->y()) < (spatium() * 0.33))
                                           xo = qMin(xo, currLedger->x() - chordOffset);
                                     }
                               }
