@@ -404,6 +404,7 @@ class MScore {
 
       static bool fadeFocus;
       static bool currentSystemAlwaysTop;
+      static bool omitAddingLinkedLines;
 
       static bool cursorMoveByBeat;
       static bool cursorMoveByMeasure;
