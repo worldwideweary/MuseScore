@@ -4746,7 +4746,7 @@ void Score::undoAddElement(Element* element)
                   }
             }
 
-      if (ostaff == 0 || (
+      if (!ostaff || (et == ElementType::TEXTLINE && MScore::omitAddingLinkedLines) || (
          et    != ElementType::ARTICULATION
          && et != ElementType::CHORDLINE
          && et != ElementType::LYRICS
