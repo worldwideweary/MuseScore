@@ -7888,7 +7888,7 @@ By default, they will be placed such as that their right end are at the same lev
              </item>
              <item>
               <property name="text">
-               <string>Dash-dot-dotted</string>
+               <string>Squared</string>
               </property>
              </item>
             </widget>
@@ -8336,7 +8336,7 @@ By default, they will be placed such as that their right end are at the same lev
              </item>
              <item>
               <property name="text">
-               <string>Dash-dot-dotted</string>
+               <string>Squared</string>
               </property>
              </item>
             </widget>
@@ -8432,7 +8432,7 @@ By default, they will be placed such as that their right end are at the same lev
              </item>
              <item>
               <property name="text">
-               <string>Dash-dot-dotted</string>
+               <string>Squared</string>
               </property>
              </item>
             </widget>
