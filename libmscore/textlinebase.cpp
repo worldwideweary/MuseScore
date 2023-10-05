@@ -150,7 +150,8 @@ void TextLineBaseSegment::draw(QPainter* painter) const
                 pen.setDashPattern(dashDotted);
                 break;
             case Qt::DashDotDotLine:
-                pen.setDashPattern(dashDotDotted);
+                // Square dots instead:
+                pen.setDashPattern(dotted);
                 break;
             case Qt::CustomDashLine:
                 pen.setDashPattern(customDashes);
