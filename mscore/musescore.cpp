@@ -472,6 +472,7 @@ void updateExternalValuesFromPreferences() {
       MScore::pedalEventsMinTicks = preferences.getInt(PREF_IO_MIDI_PEDAL_EVENTS_MIN_TICKS);
       MScore::fadeFocus = preferences.getBool(PREF_UI_SCORE_FADE_FOCUS);
       MScore::currentSystemAlwaysTop = preferences.getBool(PREF_UI_SCORE_CURRENT_SYS_ON_TOP);
+      MScore::omitAddingLinkedLines = preferences.getBool(PREF_UI_SCORE_OMIT_ADDING_LINKED_LINES);
             
       MScore::layoutBreakColor = preferences.getColor(PREF_UI_SCORE_LAYOUTBREAKCOLOR);
       MScore::frameMarginColor = preferences.getColor(PREF_UI_SCORE_FRAMEMARGINCOLOR);
