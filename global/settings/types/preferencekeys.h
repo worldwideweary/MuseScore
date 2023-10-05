@@ -131,6 +131,7 @@
 #define PREF_UI_SCORE_LASSO_WITHOUT_SHIFT                   "ui/score/mouse/behavior/enableLassoWithoutShift"
 #define PREF_UI_SCORE_FADE_FOCUS                            "ui/score/fadeFocusUsesInvisibleColor"
 #define PREF_UI_SCORE_CURRENT_SYS_ON_TOP                    "ui/score/currentSystemAlwaysOnTop"
+#define PREF_UI_SCORE_OMIT_ADDING_LINKED_LINES              "ui/score/lines/linked/omit"
 #define PREF_SCORE_NOTE_INPUT_OCTAVE_TENDENCY               "ui/score/noteEntry/octaveTendencyIsTopNote"
 #define PREF_SCORE_NOTE_INPUT_FIFTH_IS_UPWARD               "ui/score/noteEntry/octaveUpwardFifth"
 #define PREF_SCORE_NOTE_INPUT_RESET_PITCH_AT_SYSTEM         "ui/score/noteEntry/resetNoteEntryAtSystemOrCourtesy"
