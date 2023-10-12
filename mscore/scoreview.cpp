@@ -2753,7 +2753,11 @@ void ScoreView::cmd(const char* s)
                         }
                   }},
             {{"voice-1"}, [](ScoreView* cv, const QByteArray&) {
-                  cv->changeVoice(0);
+                  auto e = cv->score()->selection().element();
+                  if (e && e->isEditable() && !cv->popupActive && e->gripsCount() > 1) {
+                        cv->startEditMode(e);
+                        }
+                  else cv->changeVoice(0);
                   }},
             {{"voice-2"}, [](ScoreView* cv, const QByteArray&) {
                   cv->changeVoice(1);
