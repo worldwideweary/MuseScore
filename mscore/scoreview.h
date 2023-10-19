@@ -293,7 +293,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       void figuredBassTicksTab(const Fraction& ticks);
       void realtimeAdvance(bool allowRests);
       void cmdAddFret(int fret);
-      void cmdAddChordName(HarmonyType ht);
+      void cmdAddChordName(HarmonyType ht, bool poly=false);
       void cmdAddText(Tid tid, Tid customTid = Tid::DEFAULT, PropertyFlags pf = PropertyFlags::STYLED, Placement p = Placement::ABOVE);
       void cmdEnterRest(const TDuration&);
       void cmdEnterRest();
