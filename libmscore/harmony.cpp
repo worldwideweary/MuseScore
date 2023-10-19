@@ -1511,7 +1511,6 @@ void Harmony::draw(QPainter* painter) const
 #endif
             }
 
-      // Want consistent-base underline (esp for polychord look)
       if (underline()) {
             auto lineWidth = fontMetrics().lineWidth();
             lineWidth *= 3;
