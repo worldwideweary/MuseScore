@@ -51,7 +51,8 @@ bool ScoreView::event(QEvent* event)
                         break;
 
                   if (textEditMode()) {
-                        // block Tab/Backtab in text editing mode
+                        // Allow [tabbing] forward/backward in fingering-mode
+                        keyPressEvent(ke);
                         return true;
                         }
 
@@ -880,6 +881,13 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
       else if (editData.element->isSticking()) {
             if (editKeySticking())
                   return;
+            }
+      else if (editData.element->isFingering()) {
+            if (editData.key == Qt::Key_Tab || editData.key == Qt::Key_Backtab) {
+                  if (editData.element->edit(editData)) {
+                        return;
+                        }
+                  }
             }
 
       ScoreViewCmdContext cc(this, hasEditGrips());

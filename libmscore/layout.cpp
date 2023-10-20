@@ -4480,49 +4480,60 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
 
       for (Segment* s : sl) {
             std::set<int> recreateShapes;
-            for (Element* e : s->elist()) {
-                  if (!e || !e->isChordRest() || !score()->staff(e->staffIdx())->show())
-                        continue;
-                  ChordRest* cr = toChordRest(e);
 
-                  // add beam to skyline
-                  if (isTopBeam(cr)) {
-                        Beam* b = cr->beam();
-                        b->addSkyline(system->staff(b->staffIdx())->skyline());
-                        }
+            // Fingering should always be ordered top-down. Best would be by pitch, but by voice will suffice
+            for (int voice = 3; voice >= 0; voice--) {
+                  for (Element* e : s->elist()) {
+                        if (!e || !e->isChordRest() || !score()->staff(e->staffIdx())->show())
+                              continue;
 
-                  // layout chord-based fingerings
-                  if (e->isChord()) {
-                        Chord* c = toChord(e);
-                        std::list<Note*> notes;
-                        for (auto gc : c->graceNotes()) {
-                              for (auto n : gc->notes())
-                                    notes.push_back(n);
+                        ChordRest* cr = toChordRest(e);
+
+                        // add beam to skyline
+                        if (isTopBeam(cr)) {
+                              Beam* b = cr->beam();
+                              b->addSkyline(system->staff(b->staffIdx())->skyline());
                               }
-                        for (auto n : c->notes())
-                              notes.push_back(n);
-                        std::list<Fingering*> fingerings;
-                        for (Note* note : notes) {
-                              for (Element* el : note->el()) {
-                                    if (el->isFingering()) {
-                                          Fingering* f = toFingering(el);
-                                          if (f->layoutType() == ElementType::CHORD) {
-                                                if (f->placeAbove())
-                                                      fingerings.push_back(f);
-                                                else
-                                                      fingerings.push_front(f);
+
+                        // layout chord-based fingerings
+                        if (e->isChord()) {
+                              Chord* c = toChord(e);
+                              std::list<Note*> notes;
+                              for (auto gc : c->graceNotes()) {
+                                    for (auto n : gc->notes())
+                                          notes.push_back(n);
+                                    }
+                              for (auto n : c->notes())
+                                    notes.push_back(n);
+                              std::list<Fingering*> fingerings;
+                              for (Note* note : notes) {
+                                    for (Element* el : note->el()) {
+                                          if (el->isFingering()) {
+                                                Fingering* f = toFingering(el);
+                                                if (f->layoutType() == ElementType::CHORD) {
+                                                      if (f->placeAbove())
+                                                            fingerings.push_back(f);
+                                                      else
+                                                            fingerings.push_front(f);
+                                                      }
                                                 }
                                           }
                                     }
-                              }
-                        for (Fingering* f : fingerings) {
-                              f->layout();
-                              if (f->addToSkyline()) {
-                                    Note* n = f->note();
-                                    QRectF r = f->bbox().translated(f->pos() + n->pos() + n->chord()->pos() + s->pos() + s->measure()->pos());
-                                    system->staff(f->note()->chord()->vStaffIdx())->skyline().add(r);
+
+                              for (Fingering* f : fingerings) {
+                                    auto test = f->placeBelow() ? (3 - voice) : voice;
+                                    if (f->voice() != test)
+                                          continue;
+
+                                    f->layout();
+
+                                    if (f->addToSkyline()) {
+                                          Note* n = f->note();
+                                          QRectF r = f->bbox().translated(f->pos() + n->pos() + n->chord()->pos() + s->pos() + s->measure()->pos());
+                                          system->staff(f->note()->chord()->vStaffIdx())->skyline().add(r);
+                                          }
+                                    recreateShapes.insert(f->staffIdx());
                                     }
-                              recreateShapes.insert(f->staffIdx());
                               }
                         }
                   }

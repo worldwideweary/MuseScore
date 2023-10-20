@@ -3184,8 +3184,15 @@ void ScoreView::textTab(bool back)
       if (!editMode())
             return;
       Element* oe = editData.element;
+      auto cr = score()->selection().currentCR();
+      bool fMeasureSkip  = oe->isFingering() && (editData.key == Qt::Key_Tab || editData.key == Qt::Key_Backtab);
+      bool fChordSkip    = oe->isFingering() && (editData.key == Qt::Key_Space && (editData.modifiers & CONTROL_MODIFIER));
+      bool fingeringJump = fMeasureSkip || fChordSkip;
+
       if (!oe || !oe->isTextBase())
             return;
+
+      TextBase* ot = toTextBase(oe);
 
       if (oe->isHarmony()) {
             harmonyBeatsTab(true, back);
@@ -3200,19 +3207,51 @@ void ScoreView::textTab(bool back)
             lyricsTab(back, false, true);
             return;
             }
+      else if (fingeringJump) {
+            changeState(ViewState::NORMAL);
+            if (cr) {
+                  auto nm = back ? cr->measure()->prevMeasure() : cr->measure()->nextMeasure();
+                  auto ns = back ? cr->segment()->prev1(SegmentType::ChordRest) : cr->segment()->next1(SegmentType::ChordRest);
+                  ChordRest* ncr = ns ? ns->nextChordRest(trackZeroVoice(cr->track()), back) : nullptr;
+                  auto idx = ncr ? ncr->staffIdx() : cr->staffIdx();
+                  if (fMeasureSkip && nm) {
+                        score()->select(nm, SelectType::SINGLE, idx);
+                        cr = score()->selection().firstChordRest();
+                        }
+                  else if (fChordSkip && ncr) {
+                        cr = ncr;
+                        }
+                  else  {
+                        cr = score()->selection().currentCR();
+                        }
+                  }
+            }
 
       Element* op = oe->parent();
       if (!(op->isSegment() || op->isNote()))
             return;
 
-      TextBase* ot = toTextBase(oe);
-      Tid defaultTid = Tid(ot->propertyDefault(Pid::SUB_STYLE).toInt());
-      Tid tid = ot->tid();
-      ElementType type = ot->type();
-      int staffIdx = ot->staffIdx();
+      ElementType type;
+      int staffIdx;
+      Tid defaultTid;
+      Tid tid;
+      auto nextElement = back ? score()->prevElement() : score()->nextElement();
+      if (!fingeringJump) {
+            defaultTid = Tid(ot->propertyDefault(Pid::SUB_STYLE).toInt());
+            tid = ot->tid();
+            type = ot->type();
+            staffIdx = ot->staffIdx();
+            }
+      else  {
+            type = ElementType::FINGERING;
+            staffIdx = cr->staffIdx();
+            tid = toFingering(oe)->tid();
+            defaultTid = tid;
+            }
 
       // get prev/next element now, as current element may be deleted if empty
-      Element* el = back ? score()->prevElement() : score()->nextElement();
+      Element* el = fingeringJump ? cr : nextElement;
+
       // end edit mode
       changeState(ViewState::NORMAL);
 
@@ -3221,13 +3260,18 @@ void ScoreView::textTab(bool back)
       while (el) {
             if (el->isNote()) {
                   Note* n = toNote(el);
-                  if (op->isNote() && n != op)
-                        break;
-                  else if (op->isSegment() && n->chord()->segment() != op)
-                        break;
-                  else if (here)
-                        break;
-                  here = true;
+                  Chord* c = n->chord();
+                  if (fingeringJump && n != c->upNote())
+                        ; // continue searching for up-note when "jumping"
+                  else  {
+                        if (op->isNote() && n != op)
+                              break;
+                        else if (op->isSegment() && c->segment() != op)
+                              break;
+                        else if (here)
+                              break;
+                        here = true;
+                        }
                   }
             else if (el->isRest() && op->isSegment()) {
                   // skip rests, but still check for infinite loop
@@ -3298,8 +3342,18 @@ void ScoreView::textTab(bool back)
             // but it pre-fills the text
             // would be better to create empty tempo element
             if (type != ElementType::TEMPO_TEXT) {
-                  PropertyFlags pf = oe ? oe->propertyFlags(Pid::PLACEMENT) : PropertyFlags::STYLED;
-                  Placement oePlacement = oe ? oe->placement() : Placement::ABOVE;
+                  PropertyFlags pf;
+                  Placement oePlacement;
+                  if (fingeringJump) {
+                        // Observation: was getting invalid property flag calls here 
+                        // ...even though oe was valid - resorting to defaults:
+                        pf = PropertyFlags::STYLED;
+                        oePlacement = Placement::ABOVE;
+                        }
+                  else {
+                        pf = oe ? oe->propertyFlags(Pid::PLACEMENT) : PropertyFlags::STYLED;
+                        oePlacement = oe ? oe->placement() : Placement::ABOVE;
+                        }
                   cmdAddText(defaultTid, tid, pf, oePlacement);
                   }
             }
