@@ -77,6 +77,7 @@ QColor  MScore::defaultColor;
 
 bool    MScore::noteInputOctaveTendencyIsTopNote;
 bool    MScore::noteInputOctaveUpwardFifth;
+bool    MScore::fingerTextAutoForwardAlphaNumeric;
 
 bool    MScore::disableVerticalMouseDragOfNotes;
 
