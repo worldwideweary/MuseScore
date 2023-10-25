@@ -5210,9 +5210,23 @@ void ScoreView::cmdCreateTuplet(ChordRest* cr, Tuplet* tuplet)
       else if (ne > 1)
             el = cl[1];
       if (el) {
-            _score->select(el, SelectType::SINGLE, 0);
-            _score->inputState().setDuration(tuplet->baseLen());
-            changeState(ViewState::NOTE_ENTRY);
+            bool rhythmMode = _score->usingNoteEntryMethod(NoteEntryMethod::RHYTHM);
+            if (rhythmMode) {
+                  // Objective: place basic rhythm into tuplet, then prepare entry position after tuplet
+                  if (cl.back()->isChordRest()) {
+                        auto cr = toChordRest(cl.back());
+                        if (auto nextSeg = cr->nextSegmentAfterCR(SegmentType::ChordRest)) {
+                              cr = nextSeg->nextChordRest(cr->track());
+                              }
+                        _score->select(cr, SelectType::SINGLE, 0);
+                        changeState(ViewState::NOTE_ENTRY);
+                        }
+                  }
+            else {
+                  _score->select(el, SelectType::SINGLE, 0);
+                  _score->inputState().setDuration(tuplet->baseLen());
+                  changeState(ViewState::NOTE_ENTRY);
+                  }
             }
       }
 
@@ -5282,7 +5296,11 @@ void ScoreView::cmdTuplet(int n)
       _score->startCmd();
       if (noteEntryMode()) {
             _score->expandVoice();
-            ChordRest* cr = _score->inputState().cr();
+            bool rhythmEntry = _score->usingNoteEntryMethod(NoteEntryMethod::RHYTHM); 
+            ChordRest* cr = 
+                  rhythmEntry ? _score->selection().currentCR()
+                              : _score->inputState().cr();
+
             if (cr) {
                   _score->changeCRlen(cr, _score->inputState().duration());
                   cmdTuplet(n, cr);
