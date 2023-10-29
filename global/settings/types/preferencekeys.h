@@ -127,6 +127,7 @@
 #define PREF_UI_SCORE_DISABLE_NOTE_DRAG_VERTICAL            "ui/score/mouse/behavior/disableNoteDragVertical"
 #define PREF_SCORE_NOTE_INPUT_OCTAVE_TENDENCY               "ui/score/noteEntry/octaveTendencyIsTopNote"
 #define PREF_SCORE_NOTE_INPUT_FIFTH_IS_UPWARD               "ui/score/noteEntry/octaveUpwardFifth"
+#define PREF_SCORE_NOTE_INPUT_RESET_PITCH_AT_SYSTEM         "ui/score/noteEntry/resetNoteEntryAtSystemOrCourtesy"
 #define PREF_SCORE_NOTE_INPUT_RETAIN_AUG_RHYTHM_MODE        "ui/score/noteEntry/rhythmMode/retainAugmentation"
 #define PREF_SCORE_FINGERING_ALPHANUMERIC_AUTOFORWARD       "score/fingering/autoForwardWithAlphaNumerics"
 #define PREF_SCORE_STYLE_DEFAULTSTYLEFILE                   "score/style/defaultStyleFile"
