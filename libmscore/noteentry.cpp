@@ -127,7 +127,7 @@ NoteVal Score::noteValForPosition(Position pos, AccidentalType at, bool &error)
 //   addPitch
 //---------------------------------------------------------
 
-Note* Score::addPitch(NoteVal& nval, bool addFlag, InputState* externalInputState)
+Note* Score::addPitch(NoteVal& nval, bool addFlag, InputState* externalInputState, bool silent)
       {
       InputState& is = externalInputState ? (*externalInputState) : _is;
 
@@ -138,7 +138,7 @@ Note* Score::addPitch(NoteVal& nval, bool addFlag, InputState* externalInputStat
                   qDebug("Score::addPitch: cr %s", c ? c->name() : "zero");
                   return 0;
                   }
-            Note* note = addNote(toChord(c), nval, /* forceAccidental */ false, externalInputState);
+            Note* note = addNote(toChord(c), nval, /* forceAccidental */ false, externalInputState, silent);
             if (is.lastSegment() == is.segment()) {
                   NoteEntryMethod entryMethod = is.noteEntryMethod();
                   if (entryMethod != NoteEntryMethod::REALTIME_AUTO && entryMethod != NoteEntryMethod::REALTIME_MANUAL)
@@ -228,7 +228,7 @@ Note* Score::addPitch(NoteVal& nval, bool addFlag, InputState* externalInputStat
                   }
             // add new note to chord
             undoAddElement(note);
-            setPlayNote(true);
+            setPlayNote(!silent);
             // recreate tie forward if there is a note to tie to
             // one-sided ties will not be recreated
             if (firstTiedNote) {

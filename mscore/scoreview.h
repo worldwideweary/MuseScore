@@ -308,7 +308,6 @@ class ScoreView : public QWidget, public MuseScoreView {
       void cmdTuplet(int n, ChordRest*);
       void cmdTuplet(int);
       void cmdCreateTuplet(ChordRest* cr, Tuplet* tuplet);
-      void cmdRepeatSelection();
       void cmdChangeEnharmonic(bool);
 
       MeasureBase* insertMeasure(ElementType, MeasureBase*);
@@ -509,6 +508,8 @@ class ScoreView : public QWidget, public MuseScoreView {
 
       void cmdAppendMeasures(int, ElementType);
       void cmdInsertMeasures(int, ElementType);
+
+      void cmdRepeatSelection(bool silent = false);
 
       void cmdAddRemoveBreaks();
       void cmdCopyLyricsToClipboard();

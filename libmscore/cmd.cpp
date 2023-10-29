@@ -521,9 +521,12 @@ void Score::expandVoice()
 //   cmdAddInterval
 //---------------------------------------------------------
 
-void Score::cmdAddInterval(int val, const std::vector<Note*>& nl)
+Note* Score::cmdAddInterval(int val, const std::vector<Note*>& nl)
       {
+      auto inputSeg = _is.segment();
+      Note* ret = nullptr;      
       startCmd();
+
       // Prepare note selection in case there are not selected tied notes and sort them
       std::vector<Note*> tmpnl;
       std::vector<Note*> _nl = nl;
@@ -550,11 +553,13 @@ void Score::cmdAddInterval(int val, const std::vector<Note*>& nl)
                   deselect(n);
             }
 
-
       Note* prevTied = nullptr;
+      Chord* firstChord = nullptr;
       std::vector<Element*> notesToSelect;
       for (Note* on : tmpnl) {
             Chord* chord = on->chord();
+            if (!firstChord)
+                  firstChord = chord;
             int valTmp = val < 0 ? val+1 : val-1;
 
             int npitch;
@@ -564,7 +569,7 @@ void Score::cmdAddInterval(int val, const std::vector<Note*>& nl)
             bool forceAccidental = false;
             if (abs(valTmp) != 7 || accidental) {
                   int line      = on->line() - valTmp;
-                  Fraction tick      = chord->tick();
+                  Fraction tick = chord->tick();
                   Staff* estaff = staff(on->staffIdx() + chord->staffMove());
                   ClefType clef = estaff->clef(tick);
                   Key key       = estaff->key(tick);
@@ -582,7 +587,7 @@ void Score::cmdAddInterval(int val, const std::vector<Note*>& nl)
                         bool error = false;
                         AccidentalVal acci = chord->measure()->findAccidental(chord->segment(), estaff->idx(), line, error);
                         if (error)
-                              return;
+                              return ret;
 
                         npitch = step2pitch(step) + octave * 12 + int(acci);
                         ntpc = step2tpc(step % 7, acci);
@@ -654,6 +659,8 @@ void Score::cmdAddInterval(int val, const std::vector<Note*>& nl)
 
             if (selIsList && note)
                   notesToSelect.push_back(dynamic_cast<Element*>(note));
+
+            ret = note;
             }
       if (_is.noteEntryMode())
             _is.setAccidentalType(AccidentalType::NONE);
@@ -665,9 +672,14 @@ void Score::cmdAddInterval(int val, const std::vector<Note*>& nl)
                       select(noteToSelect, SelectType::ADD, 0);
                   }
             }
-      if (_is.cr() == toChordRest(_nl[0]->chord()) && selIsSingle)
+      if (_is.noteEntryMethod() == NoteEntryMethod::REPITCH) {
+            if (inputSeg)
+                  _is.setSegment(inputSeg);
+            }
+      else if (_is.cr() == toChordRest(_nl[0]->chord()) && selIsSingle)
             _is.moveToNextInputPos();
       endCmd();
+      return ret;
       }
 
 //---------------------------------------------------------
