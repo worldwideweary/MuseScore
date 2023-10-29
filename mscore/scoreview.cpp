@@ -3302,6 +3302,42 @@ void ScoreView::cmd(const char* s)
                         //      ;     // TODO: state    sm->postEvent(new CommandEvent("note-input"));
                         cv->score()->cmdAddInterval(n, nl);
                         }
+                  else  {
+                        auto score      = cv->score();
+                        auto selection  = score->selection();
+                        auto& is        = score->inputState();
+                        auto cr         = selection.currentCR();
+
+                        if (cv->noteEntryMode() && cr && cr->isRest()) {
+                              bool silent = true;
+                              cv->cmdRepeatSelection(silent); // TODO: silent makes no difference
+                              auto last = is.lastSegment();
+                              is.moveInputPos(last);
+                              cr = selection.currentCR();
+
+                              if (cr->isChord()) {
+                                    auto chord = toChord(cr);
+                                    // note list from selection is top most note, bottom will be bottom note.
+                                    std::vector<Note*> bottom;
+                                    bottom.emplace_back(chord->downNote());
+                                    nl = MScore::noteInputOctaveTendencyIsTopNote ? selection.noteList() : bottom;
+                                    Note* addedNote = score->cmdAddInterval(n, nl);
+                                    if (addedNote) {
+                                          // Erase all but the added note:
+                                          // TODO: Undo stack stores deletions. Without start/end commands, program halts
+                                          // due to assert of !empty note list
+                                          score->startCmd();
+                                          for (auto it = chord->notes().begin(); it != chord->notes().end(); ) {
+                                                if (*it != addedNote)
+                                                      score->deleteItem(*it);
+                                                else ++it;
+                                                }
+                                          is.moveToNextInputPos();
+                                          score->endCmd();
+                                          }
+                                    }
+                              }
+                        }
                   }},
             {{"tie"}, [](ScoreView* cv, const QByteArray&) {
                   if (cv->noteEntryMode()) {
@@ -6404,14 +6440,11 @@ void ScoreView::cmdRepeatSelection(bool silent)
                   auto c = usePrevChord ? toChord(prevCR) : static_cast<Note*>(el)->chord();
                   for (Note* note : c->notes()) {
                         NoteVal nval = note->noteVal();
-                        if (usePrevChord)
-                              _score->addPitch(nval, addTo, nullptr, silent);
-                        else
-                              _score->addPitch(nval, addTo);
+                        usePrevChord ? _score->addPitch(nval, addTo, nullptr, silent)
+                                     : _score->addPitch(nval, addTo);
                         addTo = true;
                         }
                   _score->endCmd();
-
                   }
 
             if (resetToRepitch) {
