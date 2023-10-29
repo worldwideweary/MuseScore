@@ -4317,7 +4317,7 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                                           bool isCourtesy  = (previousClef == clef->clefType());
                                           bool isBeginning = clef->tick().isZero();
                                           // check if it's an actual change or just a courtesy
-                                          if (!isCourtesy || isBeginning) {
+                                          if (!isCourtesy || isBeginning || MScore::resetNoteEntryAtSystemOrCourtesy) {
                                                 curPitch = line2pitch(4, clef->clefType(), Key::C); // C 72 for treble clef
                                                 break;
                                                 }
