@@ -4424,6 +4424,8 @@ void ScoreView::cmdAddHairpin(HairpinType type)
       auto noteEntry = noteEntryMode();
       // special case for two selected chordrests on same staff
       bool twoNotesSameStaff = false;
+      auto selectType = SelectType::SINGLE;
+
       if (selection.isList() && selection.elements().size() == 2) {
             ChordRest* cr1 = selection.firstChordRest();
             ChordRest* cr2 = selection.lastChordRest();
@@ -4483,13 +4485,23 @@ void ScoreView::cmdAddHairpin(HairpinType type)
 
       // add hairpin on each staff if possible
       if (selection.isRange() && selection.staffStart() != selection.staffEnd() - 1) {
+            Hairpin* hp = nullptr;
+            std::vector<Hairpin*> collection;
             _score->startCmd();
             for (int staffIdx = selection.staffStart() ; staffIdx < selection.staffEnd(); ++staffIdx) {
                   ChordRest* cr1 = selection.firstChordRest(staffIdx * VOICES);
                   ChordRest* cr2 = selection.lastChordRest(staffIdx * VOICES);
-                  _score->addHairpin(type, cr1, cr2, /* toCr2End */ true);
+                  hp = _score->addHairpin(type, cr1, cr2, /* toCr2End */ true);
+                  collection.emplace_back(hp);
                   }
             _score->endCmd();
+
+            for (auto hpx : collection) {
+                  if (hpx != collection.front()) {
+                        selectType = SelectType::ADD;
+                        }
+                  _score->select(hpx->frontSegment(), selectType);
+                  }
             }
       else if (selection.isRange() || selection.isSingle() || twoNotesSameStaff) {
             // for single staff range selection, or single selection,
@@ -4513,7 +4525,7 @@ void ScoreView::cmdAddHairpin(HairpinType type)
             const std::vector<SpannerSegment*>& el = pin->spannerSegments();
             if (!noteEntry) {
                   if (!el.empty()) {
-                        startEditMode(el.front());
+                        _score->select(pin->frontSegment(), selectType);
                         }
                   }
             else if (!selection.isRange()) {
