@@ -219,7 +219,7 @@ void TieSegment::computeBezier(QPointF shoulderOffset)
 
       double smallH = 0.38; // I don't know what this means currently
       qreal tieWidthInSp = tieEndNormalized.x() / _spatium;
-      shoulderH = tieWidthInSp * 0.4 * smallH;  // magic math?
+      shoulderH = tieWidthInSp * 0.55 * smallH;  // magic math?
       shoulderH = qBound(shoulderHeightMin, shoulderH, shoulderHeightMax);
       shoulderH *= _spatium;  // shoulderH is now canvas units
       shoulderW = .6;
@@ -322,8 +322,8 @@ void TieSegment::computeBezier(QPointF shoulderOffset)
 void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       {
       autoAdjustOffset = QPointF();
-      shoulderHeightMin = 0.4;
-      shoulderHeightMax = 1.3;
+      shoulderHeightMin = 0.6;
+      shoulderHeightMax = 2.2;
 
       setPos(QPointF());
       ups(Grip::START).p = p1;
@@ -567,7 +567,7 @@ void TieSegment::adjustX()
                              bool isUp = slurTie()->up();
                              for (LedgerLine* l = chord->ledgerLines(); l; l = l->next()) {
                                    // search through ledger lines and see if any are within [Update: 0.33p] of tie start
-                                   if (qAbs(p1.y() - l->y()) < (spatium() * 0.33)) {
+                                   if (qAbs(p1.y() - l->y()) < (spatium() * 0.20)) {
                                          qreal thickness = (l->lineWidth()) * 2;
                                          yo = isUp ? +thickness : -thickness;
                                          break;
@@ -636,6 +636,7 @@ void TieSegment::adjustX()
                   }
             xo = (beginGrace || endGrace ? 0.0 : xo) + offsetMargin;
             ups(Grip::START).p += QPointF(xo, yo);
+            ups(Grip::SHOULDER).p += QPointF(0.0, 50.0);
             }
 
       // ADJUST RIGHT GRIP ----------
@@ -644,7 +645,7 @@ void TieSegment::adjustX()
             // grips are in system coordinates, normalize to note position
             QPointF p2 = ups(Grip::END).p + QPointF(system()->pos().x() - en->canvasX(), 0);
             xo = 0;
-            if (tie()->isInside()) {
+            if (true) {
                   // for inter-voice collisions, we need a list of all notes from all voices
                   std::vector<Chord*> chords;
                   int strack = ec->staffIdx() * VOICES;
@@ -777,6 +778,7 @@ void Tie::slurPos(SlurPos* sp)
       const StaffType* stt = useTablature ? staff()->staffType(tick()) : 0;
       qreal _spatium    = spatium();
       qreal hw          = startNote()->tabHeadWidth(stt);   // if stt == 0, defaults to headWidth()
+      qreal hh          = startNote()->tabHeadHeight(stt);
       qreal __up        = _up ? -1.0 : 1.0;
       // y offset for ties inside chord margins (typically multi-note chords): lined up with note top or bottom margin
       //    or outside (typically single-note chord): overlaps note and is above/below it
@@ -787,7 +789,7 @@ void Tie::slurPos(SlurPos* sp)
       qreal yOffOutside = useTablature
             ? (_up ? stt->fretBoxY() : stt->fretBoxY() + stt->fretBoxH()) * magS()
             : 0.75 * _spatium * __up;
-      qreal yOffInside  = useTablature ? yOffOutside * 0.5 : hw * .3 * __up;
+      qreal yOffInside  = useTablature ? yOffOutside * 0.5 : hh * 0.20 * __up;
 
       Chord* sc = startNote()->chord();
       Chord* ec = endNote() ? endNote()->chord() : nullptr;
@@ -800,6 +802,14 @@ void Tie::slurPos(SlurPos* sp)
       qreal x1, y1;
       qreal x2, y2;
 
+      int tieCount = 0;
+      if (sc) {
+            for (auto n : sc->notes()) {
+                  if (n->tieFor())
+                        ++tieCount;
+                  }
+            }
+
       // determine attachment points
       // similar code is used in Chord::layoutPitched()
       // to allocate extra space to enforce minTieLength
@@ -811,9 +821,11 @@ void Tie::slurPos(SlurPos* sp)
       x1 = startNote()->pos().x() + hw;
       y1 = startNote()->pos().y();
       qreal xo = 0;
-      if (sc->notes().size() > 1 || (ec && ec->notes().size() > 1)) {
-            _isInside = true;
-            xo = 0;  // the offset for these will be decided in TieSegment::adjustX()
+      if (tieCount > 1) {
+            if (sc->notes().size() > 1 || (ec && ec->notes().size() > 1)) {
+                  _isInside = true;
+                  xo = 0;  // the offset for these will be decided in TieSegment::adjustX()
+                  }
             }
       else {
             _isInside = false;
@@ -826,8 +838,8 @@ void Tie::slurPos(SlurPos* sp)
             else {
                   // start in the middle of the notehead for outside notes
                   xo = -(hw / 2);
+                  }
             }
-      }
       y1 += isInside() ? yOffInside : yOffOutside;
       sp->p1 += QPointF(x1 + xo, y1);
 
