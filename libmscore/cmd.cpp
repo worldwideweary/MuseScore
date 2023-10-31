@@ -4162,7 +4162,7 @@ void Score::cmdPadNoteDecreaseTAB(const EditData& ed)
 //   cmdToggleLayoutBreak
 //---------------------------------------------------------
 
-void Score::cmdToggleLayoutBreak(LayoutBreak::Type type)
+void Score::cmdToggleLayoutBreak(LayoutBreak::Type type, bool before, bool all)
       {
       // find measure(s)
       QList<MeasureBase*> mbl;
@@ -4173,21 +4173,25 @@ void Score::cmdToggleLayoutBreak(LayoutBreak::Type type)
                   return;
             if (!startMeasure || !endMeasure)
                   return;
-#if 1
+
             // toggle break on the last measure of the range
             mbl.append(endMeasure);
-            // if more than one measure selected,
-            // also toggle break *before* the range (to try to fit selection on a single line)
-            if (startMeasure != endMeasure && startMeasure->prev())
-                  mbl.append(startMeasure->prev());
-#else
-            // toggle breaks throughout the selection
-            for (Measure* m = startMeasure; m; m = m->nextMeasure()) {
-                  mbl.append(m);
-                  if (m == endMeasure)
-                        break;
+            
+            // toggle break *before* a range consisting of more than one measure
+            // (to try to fit selection on a single line)
+            if (before) {
+                  if (startMeasure != endMeasure && startMeasure->prev())
+                        mbl.append(startMeasure->prev());
                   }
-#endif
+
+            // toggle breaks throughout the selection
+            if (all) {
+                  for (Measure* m = startMeasure; m; m = m->nextMeasure()) {
+                        mbl.append(m);
+                        if (m == endMeasure)
+                              break;
+                        }
+                  }
             }
       else {
             MeasureBase* mb = nullptr;

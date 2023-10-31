@@ -640,7 +640,7 @@ class Score : public QObject, public ScoreElement {
       void cmdHalfDuration()        { cmdIncDecDuration( 1, false); }
       void cmdIncDurationDotted()   { cmdIncDecDuration(-1, true); }
       void cmdDecDurationDotted()   { cmdIncDecDuration( 1, true); }
-      void cmdToggleLayoutBreak(LayoutBreak::Type);
+      void cmdToggleLayoutBreak(LayoutBreak::Type, bool before=false, bool all=false);
 
       void addRemoveBreaks(int interval, bool lock);
 
