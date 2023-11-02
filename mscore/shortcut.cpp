@@ -1451,6 +1451,16 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
+         "select-slur",
+         QT_TRANSLATE_NOOP("action","Selection (slur)"),
+         QT_TRANSLATE_NOOP("action","Select previous slur from position"),
+         0,
+         Icons::Invalid_ICON,
+         Qt::WindowShortcut
+         },
+      {
+         MsWidget::SCORE_TAB,
          STATE_NORMAL | STATE_NOTE_ENTRY,
          "add-8va",
          QT_TRANSLATE_NOOP("action","Ottava 8va alta"),
