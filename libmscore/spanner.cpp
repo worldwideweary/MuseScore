@@ -628,7 +628,7 @@ void Spanner::computeEndElement()
 
       switch (_anchor) {
             case Anchor::SEGMENT: {
-                  if (track2() == -1)
+                  if (track2() == -1 || isHairpin())
                         setTrack2(track());
                   if (ticks().isZero() && isTextLine() && parent())   // special case palette
                         setTicks(score()->lastSegment()->tick() - _tick);
@@ -654,7 +654,12 @@ void Spanner::computeEndElement()
                         }
                   else {
                         // find last cr on this staff that ends before tick2
-                        _endElement = score()->findCRinStaff(tick2(), track2() / VOICES);
+                        if (auto cr = score()->findCRinStaff(tick2(), track2() / VOICES)) {
+                              if (isHairpin()) {
+                                    // cr = (cr->track() != track()) ? cr->segment()->nextChordRest(track(), true) : cr;
+                                    }
+                              _endElement = cr;
+                              }
                         }
                   if (!_endElement) {
                         qDebug("%s no end element for tick %d", name(), tick2().ticks());

@@ -12,6 +12,8 @@
 
 #include "line.h"
 
+#include "hairpin.h"
+
 #include "barline.h"
 #include "chord.h"
 #include "lyrics.h"
@@ -800,6 +802,15 @@ QPointF SLine::linePos(Grip grip, System** sys) const
 //TODO                              else if (cr->spaceLw > 0.0)
 //                                    x = -cr->spaceLw;  // account for accidentals, etc
                               }
+                        if (isHairpin() && cr) {
+                              auto hp = toHairpin(this);
+                              if (hp->isPianoStyle() && cr->isChord()) {
+                                    auto c = toChord(cr);
+                                    if (c->up())
+                                          x += c->maxHeadWidth();
+                                    x += c->rxoffset();
+                                    }
+                              }
                         }
                   else {
                         cr = toChordRest(endElement());
@@ -891,7 +902,21 @@ QPointF SLine::linePos(Grip grip, System** sys) const
                                     else if (currentSeg->measure() == seg->measure()) {
                                           // next chordrest found in same measure;
                                           // end line 1sp to left
-                                          x2 = qMax(x2, seg->x() - sp);
+
+                                          // "Piano style" hairpin: start and end at stems of chords
+                                          if (isHairpin() && toHairpin(this)->isPianoStyle()) {
+                                                x2 = qMax(x2, seg->x());
+                                                auto next = cr->segment()->next();
+                                                auto nextCR = next ? next->nextChordRest(cr->track()) : nullptr;
+                                                if (nextCR && nextCR->isChord()) {
+                                                      if (auto c = toChord(nextCR)) {
+                                                            if (c->up())
+                                                                  x2 += c->maxHeadWidth();
+                                                            x2 += c->rxoffset();
+                                                            }
+                                                      }
+                                                }
+                                          else x2 = qMax(x2, seg->x() - sp);
                                           }
                                     else {
                                           // next chordrest is in next measure
