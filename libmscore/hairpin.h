@@ -82,6 +82,7 @@ class Hairpin final : public TextLineBase {
       HairpinType _hairpinType { HairpinType::INVALID };
       int _veloChange;
       bool  _hairpinCircledTip;
+      bool _hairpinPianoStyle;
       Dynamic::Range _dynRange;
       bool _singleNoteDynamics;
       ChangeMethod _veloChangeMethod;
@@ -106,6 +107,9 @@ class Hairpin final : public TextLineBase {
 
       bool hairpinCircledTip() const            { return _hairpinCircledTip; }
       void setHairpinCircledTip(bool val)       { _hairpinCircledTip = val; }
+
+      bool isPianoStyle() const                 { return _hairpinPianoStyle; }
+      void setPianoStyle(bool val)              { _hairpinPianoStyle = val; }
 
       int veloChange() const                    { return _veloChange; }
       void setVeloChange(int v)                 { _veloChange = v;    }
