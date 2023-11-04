@@ -51,6 +51,7 @@ static const ElementStyle hairpinStyle {
       { Sid::hairpinPlacement,                   Pid::PLACEMENT                  },
       { Sid::hairpinPosBelow,                    Pid::OFFSET                     },
       { Sid::hairpinLineStyle,                   Pid::LINE_STYLE                 },
+      { Sid::hairpinPianoStyle,                  Pid::HAIRPIN_PIANO_STYLE        },
       };
 
 //---------------------------------------------------------
@@ -496,6 +497,7 @@ Element* HairpinSegment::propertyDelegate(Pid pid)
          || pid == Pid::HAIRPIN_CONT_HEIGHT
          || pid == Pid::DYNAMIC_RANGE
          || pid == Pid::LINE_STYLE
+         || pid == Pid::HAIRPIN_PIANO_STYLE
             )
             return spanner();
       return TextLineBaseSegment::propertyDelegate(pid);
@@ -534,6 +536,8 @@ Sid HairpinSegment::getPropertyStyle(Pid pid) const
                   break;
             case Pid::LINE_STYLE:
                   return hairpin()->isLineType() ? Sid::hairpinLineLineStyle : Sid::hairpinLineStyle;
+            case Pid::HAIRPIN_PIANO_STYLE:
+                  return Sid::hairpinPianoStyle;
             default:
                   break;
             }
@@ -569,6 +573,8 @@ Sid Hairpin::getPropertyStyle(Pid pid) const
                   break;
             case Pid::LINE_STYLE:
                   return isLineType() ? Sid::hairpinLineLineStyle : Sid::hairpinLineStyle;
+            case Pid::HAIRPIN_PIANO_STYLE:
+                  return Sid::hairpinPianoStyle;
             default:
                   break;
             }
@@ -597,6 +603,7 @@ Hairpin::Hairpin(Score* s)
       _dynRange              = Dynamic::Range::PART;
       _singleNoteDynamics    = true;
       _veloChangeMethod      = ChangeMethod::NORMAL;
+      _hairpinPianoStyle     = true;
       }
 
 //---------------------------------------------------------
@@ -677,6 +684,7 @@ void Hairpin::write(XmlWriter& xml) const
       writeProperty(xml, Pid::SINGLE_NOTE_DYNAMICS);
       writeProperty(xml, Pid::VELO_CHANGE_METHOD);
       writeProperty(xml, Pid::PLACEMENT);
+      writeProperty(xml, Pid::HAIRPIN_PIANO_STYLE);
 
       TextLineBase::writeProperties(xml);
       xml.etag();
@@ -726,6 +734,8 @@ void Hairpin::read(XmlReader& e)
                   _singleNoteDynamics = e.readBool();
             else if (tag == "veloChangeMethod")
                   _veloChangeMethod = ChangeMap::nameToChangeMethod(e.readElementText());
+            else if (tag == "hairpinPianoStyle")
+                  _hairpinPianoStyle = e.readBool();
             else if (!TextLineBase::readProperties(e))
                   e.unknown();
             }
@@ -755,6 +765,8 @@ QVariant Hairpin::getProperty(Pid id) const
                   return _singleNoteDynamics;
             case Pid::VELO_CHANGE_METHOD:
                   return int(_veloChangeMethod);
+            case Pid::HAIRPIN_PIANO_STYLE:
+                  return _hairpinPianoStyle;
             default:
                   return TextLineBase::getProperty(id);
             }
@@ -790,6 +802,9 @@ bool Hairpin::setProperty(Pid id, const QVariant& v)
                   break;
             case Pid::VELO_CHANGE_METHOD:
                   _veloChangeMethod = ChangeMethod(v.toInt());
+                  break;
+            case Pid::HAIRPIN_PIANO_STYLE:
+                  _hairpinPianoStyle = v.toBool();
                   break;
             default:
                   return TextLineBase::setProperty(id, v);
@@ -866,6 +881,8 @@ QVariant Hairpin::propertyDefault(Pid id) const
 
             case Pid::PLACEMENT:
                   return score()->styleV(Sid::hairpinPlacement);
+            case Pid::HAIRPIN_PIANO_STYLE:
+                  return true;
 
             default:
                   return TextLineBase::propertyDefault(id);

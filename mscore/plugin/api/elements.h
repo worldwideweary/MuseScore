@@ -238,6 +238,7 @@ class Element : public Ms::PluginAPI::ScoreElement {
       API_PROPERTY( hairpinType,             HAIRPIN_TYPE              )
       API_PROPERTY( hairpinHeight,           HAIRPIN_HEIGHT            )
       API_PROPERTY( hairpinContHeight,       HAIRPIN_CONT_HEIGHT       )
+      API_PROPERTY( hairpinPianoStyle,       HAIRPIN_PIANO_STYLE       )
       API_PROPERTY( veloChange,              VELO_CHANGE               )
       API_PROPERTY( singleNoteDynamics,      SINGLE_NOTE_DYNAMICS      )
       API_PROPERTY( veloChangeMethod,        VELO_CHANGE_METHOD        )
