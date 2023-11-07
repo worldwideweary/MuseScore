@@ -2953,15 +2953,25 @@ void Score::colorItem(Element* element)
 
 void Score::cmdExchangeVoice(int s, int d)
       {
-      if (!selection().isRange()) {
+      Element* e = nullptr;
+      if (selection().isSingle())
+          e = selection().element();
+      if (!e && !selection().isRange()) {
             MScore::setError(NO_STAFF_SELECTED);
             return;
             }
-      Fraction t1 = selection().tickStart();
-      Fraction t2 = selection().tickEnd();
+
+      // Note: tickEnd is in next measure...
+      auto nm = e ? e->findMeasure()->nextMeasure() : nullptr;
+      Fraction t1 = e ? e->tick() : selection().tickStart();
+      Fraction t2 = nm ? nm->tick() : selection().tickEnd();
 
       Measure* m1 = tick2measure(t1);
       Measure* m2 = tick2measure(t2);
+
+      // Note: selection().staffEnd is at least +1 from staffStart, regardless of range-selection
+      int staffStart = e ? e->staffIdx() : selection().staffStart();
+      int staffEnd   = e ? staffStart + 1 : selection().staffEnd();
 
       if (selection().score()->excerpt())
             return;
@@ -2970,7 +2980,7 @@ void Score::cmdExchangeVoice(int s, int d)
             m2 = m2->nextMeasure();
 
       for (;;) {
-            undoExchangeVoice(m1, s, d, selection().staffStart(), selection().staffEnd());
+            undoExchangeVoice(m1, s, d, staffStart, staffEnd);
             m1 = m1->nextMeasure();
             if ((m1 == 0) || (m2 && (m1->tick() == m2->tick())))
                   break;
