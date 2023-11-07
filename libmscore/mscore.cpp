@@ -109,6 +109,9 @@ bool    MScore::cursorDrawnBehindStaff;
 
 qreal   MScore::systemBracketMultiplier;
 
+qreal   MScore::slurShoulderExtraMax;
+qreal   MScore::slurShoulderExtraMin;
+
 bool    MScore::harmonyPlayDisableCompatibility;
 bool    MScore::harmonyPlayDisableNew;
 bool    MScore::playRepeats;
