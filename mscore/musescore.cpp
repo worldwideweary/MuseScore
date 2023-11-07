@@ -482,6 +482,9 @@ void updateExternalValuesFromPreferences() {
       MScore::highlightMore   = preferences.getBool(PREF_SCORE_PLAYBACK_HIGHLIGHT_MORE);  
       MScore::highlightLyrics = preferences.getBool(PREF_SCORE_PLAYBACK_HIGHLIGHT_LYRICS);
 
+      MScore::slurShoulderExtraMax = preferences.getDouble(PREF_UI_SCORE_SLURS_MAX_SHOULDER_EXTRA);
+      MScore::slurShoulderExtraMin = preferences.getDouble(PREF_UI_SCORE_SLURS_MIN_SHOULDER_EXTRA);
+
       MScore::setHRaster(preferences.getInt(PREF_UI_APP_RASTER_HORIZONTAL));
       MScore::setVRaster(preferences.getInt(PREF_UI_APP_RASTER_VERTICAL));
 
