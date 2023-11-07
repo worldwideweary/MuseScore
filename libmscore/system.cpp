@@ -1702,7 +1702,7 @@ qreal System::firstNoteRestSegmentX(bool leading)
 
 qreal System::lastNoteRestSegmentX(bool trailing)
       {
-      qreal margin = score()->spatium() / 4;  // TODO: this can be parameterizable
+      qreal margin = 0.0;
       //for (const MeasureBase* mb : measures()) {
       for (auto measureBaseIter = measures().rbegin(); measureBaseIter != measures().rend(); measureBaseIter++) {
             if ((*measureBaseIter)->isMeasure()) {
