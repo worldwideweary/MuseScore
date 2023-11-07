@@ -272,20 +272,28 @@ void SlurSegment::computeBezier(QPointF p6o)
       double smallH = 0.5;
       qreal d = p2.x() / _spatium;
       if (d <= 2.0) {
-            shoulderH = d * 0.5 * smallH * _spatium;
+            shoulderH = (d * 0.5 * smallH * _spatium) * MScore::slurShoulderExtraMin;
             shoulderW = .6;
             }
       else {
-            qreal dd = log10(1.0 + (d - 2.0) * .5) * 2.0;
-            if (dd > 3.0)
-                  dd = 3.0;
+            qreal dd = log10(1.0 + (d - 2.0) * .5) * 2.0 * MScore::slurShoulderExtraMax;
             shoulderH = (dd + smallH) * _spatium + _extraHeight;
-            if (d > 18.0)
-                  shoulderW = 0.7; // 0.8;
+
+            if (d < 10)
+                  shoulderH *= 0.70;
+            else if (d < 20)
+                  shoulderH *= 0.75;
+            else if (d > 70)
+                  shoulderH *= 1.25;
+
+            if (d > 60)
+                  shoulderW = 0.8;
+            else if (d > 18.0)
+                  shoulderW = 0.7;
             else if (d > 10)
-                  shoulderW = 0.6; // 0.7;
+                  shoulderW = 0.6;
             else
-                  shoulderW = 0.5; // 0.6;
+                  shoulderW = 0.5;
             }
 
       shoulderH -= p6o.y();
