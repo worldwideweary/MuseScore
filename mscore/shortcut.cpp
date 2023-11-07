@@ -2703,7 +2703,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "voice-x12",
          QT_TRANSLATE_NOOP("action","Exchange Voice 1-2"),
          QT_TRANSLATE_NOOP("action","Exchange voice 1-2"),
@@ -2713,7 +2713,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "voice-x13",
          QT_TRANSLATE_NOOP("action","Exchange Voice 1-3"),
          QT_TRANSLATE_NOOP("action","Exchange voice 1-3"),
@@ -2723,7 +2723,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "voice-x14",
          QT_TRANSLATE_NOOP("action","Exchange Voice 1-4"),
          QT_TRANSLATE_NOOP("action","Exchange voice 1-4"),
@@ -2733,7 +2733,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "voice-x23",
          QT_TRANSLATE_NOOP("action","Exchange Voice 2-3"),
          QT_TRANSLATE_NOOP("action","Exchange voice 2-3"),
@@ -2743,7 +2743,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "voice-x24",
          QT_TRANSLATE_NOOP("action","Exchange Voice 2-4"),
          QT_TRANSLATE_NOOP("action","Exchange voice 2-4"),
@@ -2753,7 +2753,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "voice-x34",
          QT_TRANSLATE_NOOP("action","Exchange Voice 3-4"),
          QT_TRANSLATE_NOOP("action","Exchange voice 3-4"),
