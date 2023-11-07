@@ -1129,23 +1129,30 @@ SpannerSegment* Slur::layoutSystem(System* system)
 
       SlurPos sPos;
       slurPos(&sPos);
+      
+      qreal extraXMargin = (score()->styleP(Sid::slurEndWidth));
+
+      // TODO: yOffset when spanning slur across systems, based on p1/p2 positions
+      qreal yOffsetSystemSpan = spatium() * 1.66;
+      yOffsetSystemSpan *= (_up ? -1.0 : +1.0);
+      yOffsetSystemSpan = 0.0; // for now, do nothing
 
       switch (sst) {
             case SpannerSegmentType::SINGLE:
                   slurSegment->layoutSegment(sPos.p1, sPos.p2);
                   break;
             case SpannerSegmentType::BEGIN:
-                  slurSegment->layoutSegment(sPos.p1, QPointF(system->lastNoteRestSegmentX(true), sPos.p1.y()));
+                  slurSegment->layoutSegment(sPos.p1, QPointF(system->lastNoteRestSegmentX(true) + extraXMargin, sPos.p1.y() + yOffsetSystemSpan));
                   break;
             case SpannerSegmentType::MIDDLE: {
                   qreal x1 = system->firstNoteRestSegmentX(true);
-                  qreal x2 = system->lastNoteRestSegmentX(true);
+                  qreal x2 = system->lastNoteRestSegmentX(true) + extraXMargin;
                   qreal y  = staffIdx() > system->staves()->size() ? system->y() : system->staff(staffIdx())->y();
                   slurSegment->layoutSegment(QPointF(x1, y), QPointF(x2, y));
                   }
                   break;
             case SpannerSegmentType::END:
-                  slurSegment->layoutSegment(QPointF(system->firstNoteRestSegmentX(true), sPos.p2.y()), sPos.p2);
+                  slurSegment->layoutSegment(QPointF(system->firstNoteRestSegmentX(true), sPos.p2.y() + yOffsetSystemSpan), sPos.p2);
                   break;
             }
 
