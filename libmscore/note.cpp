@@ -2996,6 +2996,8 @@ bool Note::setProperty(Pid propertyId, const QVariant& v)
                   break;
             case Pid::VISIBLE: {
                   setVisible(v.toBool());
+                  if (auto acc = this->accidental())
+                      acc->setVisible(v.toBool());
                   if (m)
                         m->checkMultiVoices(chord()->staffIdx());
                   break;
