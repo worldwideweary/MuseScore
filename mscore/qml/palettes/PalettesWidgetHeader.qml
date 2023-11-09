@@ -145,6 +145,7 @@ Item {
             Keys.onDownPressed: paletteTree.focusFirstItem();
             Keys.onUpPressed: paletteTree.focusLastItem();
             Keys.onEscapePressed: stopPaletteSearch();
+            onAccepted: applyCurrentPaletteElement();
 
             StyledToolButton {
                 id: stopSearchButton
