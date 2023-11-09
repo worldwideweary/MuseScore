@@ -530,7 +530,6 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void leaveFeedback(QString medium);
       void openRecentMenu();
       void selectScore(QAction*);
-      void startPreferenceDialog();
       void preferencesChanged(bool fromWorkspace = false, bool changeUI = true);
       void seqStarted();
       void seqStopped();
@@ -614,6 +613,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void changeWorkspace(Workspace* p, bool first=false);
       void mixerPreferencesChanged(bool showMidiControls);
       void checkForUpdates();
+      void startPreferenceDialog();
       void restartAudioEngine();
 
    public:
