@@ -2254,6 +2254,9 @@ void ScoreView::cmd(const char* s)
             };
 
       static const std::vector<ScoreViewCmd> cmdList {
+            {{"start-preference-dialog"}, [](ScoreView* /*cv*/, const QByteArray&) {
+                  mscore->startPreferenceDialog();
+                  }},
             {{"escape"}, [](ScoreView* cv, const QByteArray&) {
                   cv->escapeCmd();
                   }},
