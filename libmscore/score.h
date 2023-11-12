@@ -486,6 +486,8 @@ class Score : public QObject, public ScoreElement {
       Audio* _audio { 0 };
       PlayMode _playMode { PlayMode::SYNTHESIZER };
 
+      bool _resetOctave = false;
+
       qreal _noteHeadWidth { 0.0 };       // cached value
       QString accInfo;                    ///< information about selected element(s) for use by screen-readers
       QString accMessage;                 ///< temporary status message for use by screen-readers
@@ -620,6 +622,9 @@ class Score : public QObject, public ScoreElement {
       void getNextMeasure(LayoutContext&);      // get next measure for layout
 
       void resetAllPositions();
+
+      void resetOctave(bool v) { _resetOctave = v;    }
+      bool resetOctave(void)   { return _resetOctave; }
 
       void cmdRemovePart(Part*);
       void cmdAddTie(bool addToChord = false);
