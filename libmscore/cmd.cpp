@@ -4282,10 +4282,17 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
             else {
                   int curPitch = 60;
                   if (is.segment()) {
+                        auto inputTick = is.segment()->tick();
                         Staff* staff = Score::staff(is.track() / VOICES);
                         Segment* seg = is.segment()->prev1(SegmentType::ChordRest | SegmentType::Clef | SegmentType::HeaderClef);
                         while (seg) {
-                              if (seg->isChordRestType()) {
+                              bool segAtInput = (seg->tick() == inputTick);
+                              if (resetOctave()) {
+                                    auto currentClefType = staff->clef(inputTick);
+                                    curPitch = line2pitch(4, currentClefType, Key::C);
+                                    break;
+                                    }
+                              else if (seg->isChordRestType()) {
                                     Element* p = seg->element(is.track());
                                     if (p && p->isChord()) {
                                           auto note = useUpNote ? toChord(p)->upNote() : toChord(p)->downNote();
@@ -4295,12 +4302,22 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                                           }
                                     }
                               else if (seg->isClefType() || seg->isHeaderClefType()) {
+                                    // MScore <= 3.6.2 sometimes finds a 'phantom HeaderClef'
+                                    // at exact tick of input and provides incorrect octave/position
+                                    if (segAtInput && seg->isHeaderClefType() && !inputAtStart) {
+                                          qDebug() << "cmdAddPitch: found clef/header but @ same input position...";
+                                          seg = seg->prev1MM(SegmentType::ChordRest | SegmentType::Clef | SegmentType::HeaderClef);
+                                          continue;
+                                          }
                                     Element* p = seg->element( (is.track() / VOICES) * VOICES); // clef on voice 1
                                     if (p && p->isClef()) {
                                           Clef* clef = toClef(p);
+
+                                          ClefType previousClef = staff->clef(clef->tick() - Fraction::fromTicks(1));
+                                          bool isCourtesy  = (previousClef == clef->clefType());
+                                          bool isBeginning = clef->tick().isZero();
                                           // check if it's an actual change or just a courtesy
-                                          ClefType ctb = staff->clef(clef->tick() - Fraction::fromTicks(1));
-                                          if (ctb != clef->clefType() || clef->tick().isZero()) {
+                                          if (!isCourtesy || isBeginning) {
                                                 curPitch = line2pitch(4, clef->clefType(), Key::C); // C 72 for treble clef
                                                 break;
                                                 }
@@ -4326,6 +4343,7 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                         ++octave;
                   }
             }
+      resetOctave(false);
       ed.view->startNoteEntryMode();
 
       int step = octave * 7 + note;
@@ -4522,7 +4540,7 @@ void Score::cmdApplyInputState()
 //         using this
 //---------------------------------------------------------
 
-void Score::cmdCycleVoiceFilter(int voice)
+void Score::cmdCycleVoiceFilter(int voice, bool octaveReset)
       {
       static int nextVoice  = 1;
       static bool failed    = false;
@@ -4530,6 +4548,8 @@ void Score::cmdCycleVoiceFilter(int voice)
       const int lastVoice   = 4;
 
       if (!selection().isRange()) {
+            if (octaveReset)
+                  resetOctave(true);
             return;
             }
 
@@ -4833,7 +4853,8 @@ void Score::cmd(const QAction* a, EditData& ed)
             { "toggle-autoplace",           [](Score* cs, EditData&){ cs->cmdToggleAutoplace(false);                                  }},
             { "autoplace-enabled",          [](Score* cs, EditData&){ cs->cmdToggleAutoplace(true);                                   }},
             { "apply-input-state",          [](Score* cs, EditData&){ cs->cmdApplyInputState();                                       }},
-            { "voice-selection-cycle",      [](Score* cs, EditData&){ cs->cmdCycleVoiceFilter();                                      }},
+            { "voice-selection-cycle",      [](Score* cs, EditData&){ cs->cmdCycleVoiceFilter(0, cs->noteEntryMode() ? true : false); }},
+            { "reset-input-octave",         [](Score* cs, EditData&){ cs->resetOctave(true);                                          }},
             };
 
       for (const auto& c : cmdList) {
