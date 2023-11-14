@@ -3900,6 +3900,7 @@ void ScoreView::startNoteEntry()
 
       is.setSegment(0);
       Note* note  = 0;
+      auto defaultDuration = TDuration(TDuration::DurationType::V_QUARTER);
 
       if (_score->selection().isNone()) {
             // no selection
@@ -4012,10 +4013,16 @@ void ScoreView::startNoteEntry()
             if (note == 0)
                   note = c->upNote();
             el = note;
+            defaultDuration = c->durationType();
+            }
+      else if (el->type() == ElementType::REST) {
+            Rest* r = toRest(el);
+            defaultDuration = r->durationType() == TDuration::DurationType::V_MEASURE ? defaultDuration : r->durationType();
             }
       TDuration d(is.duration());
+
       if (!d.isValid() || d.isZero() || d.type() == TDuration::DurationType::V_MEASURE)
-            is.setDuration(TDuration(TDuration::DurationType::V_QUARTER));
+            is.setDuration(defaultDuration);
       is.setAccidentalType(AccidentalType::NONE);
 
       _score->select(el, SelectType::SINGLE, 0);
