@@ -491,7 +491,7 @@ void TieSegment::adjustX()
 
       bool beginGrace = (sn && sn->noteType() != NoteType::NORMAL);
       bool endGrace = (en && en->noteType() != NoteType::NORMAL);
-      qreal offsetMargin = !(beginGrace || endGrace) ? spatium() * 0.25 : spatium() * 0.10;
+      qreal offsetMargin = !(beginGrace || endGrace) ? spatium() * 0.15 : spatium() * 0.10;
       qreal collisionYMargin = spatium() * 0.25;
 
       qreal xo;
