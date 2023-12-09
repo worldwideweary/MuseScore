@@ -2416,6 +2416,24 @@ Element* Score::move(const QString& cmd)
       {
       ChordRest* cr { nullptr };
       Box* box { nullptr };
+
+      bool isRange = selection().isRange();
+      ChordRest* firstCR = nullptr;
+      ChordRest* lastCR = nullptr;
+      if (isRange) {
+            auto track = -1;
+            if (!noteEntryMode()) {
+                  if (auto ccr = selection().currentCR()) {
+                        track = ccr->track();
+                        }
+                  }
+            else track = inputState().track();
+
+            firstCR = selection().firstChordRest(track);
+            lastCR  = selection().lastChordRest(track);
+            isRange = (firstCR && lastCR);
+            }
+
       if (noteEntryMode()) {
             // if selection exists and is grace note, use it
             // otherwise use chord/rest at input position
@@ -2430,6 +2448,10 @@ Element* Score::move(const QString& cmd)
             cr = selection().activeCR();
       else
             cr = selection().lastChordRest();
+
+      if (!cr && isRange) {
+            cr = cmd.startsWith("next-") ? lastCR : firstCR;
+            }
 
       // no chord/rest found? look for another type of element,
       // but commands [empty-trailing-measure] and [top-staff] don't
@@ -2509,6 +2531,9 @@ Element* Score::move(const QString& cmd)
             // if some chordrest found, continue with default processing
             }
 
+      lastCR  = lastCR  ? lastCR : cr;
+      firstCR = firstCR ? firstCR : cr;
+
       Element* el = 0;
       Segment* ois = noteEntryMode() ? _is.segment() : nullptr;
       Measure* oim = ois ? ois->measure() : nullptr;
@@ -2521,12 +2546,13 @@ Element* Score::move(const QString& cmd)
             // selection "cursor"
             // find next chordrest, which might be a grace note
             // this may override note input cursor
+            cr = lastCR;
             el = nextChordRest(cr);
 
             // Skip gap rests if we're not in note entry mode...
             while (!noteEntryMode() && el && el->isRest() && toRest(el)->isGap())
                   el = nextChordRest(toChordRest(el));
-            if (el && noteEntryMode()) {
+            if (el && noteEntryMode() && !isRange) {
                   // do not use if not in original or new measure (don't skip measures)
                   Measure* m = toChordRest(el)->measure();
                   Segment* nis = _is.segment();
@@ -2535,7 +2561,7 @@ Element* Score::move(const QString& cmd)
                         el = cr;
                   // do not use if new input segment is current cr
                   // this means input cursor just caught up to current selection
-                  else if (cr && nis == cr->segment())
+                  else if (cr && nis == cr->segment() && !isRange)
                         el = cr;
                   }
             else if (!el)
@@ -2565,6 +2591,7 @@ Element* Score::move(const QString& cmd)
             // selection "cursor"
             // find previous chordrest, which might be a grace note
             // this may override note input cursor
+            cr = firstCR;
             if (auto pcr = prevChordRest(cr)) {
                   el = (noteEntryPos && !pcr->isGrace()) ? el : pcr;
                   }
@@ -2588,7 +2615,9 @@ Element* Score::move(const QString& cmd)
 
             }
       else if (cmd == "next-measure") {
-            auto track = _is.track();
+            auto currentTrack = noteEntryMode() ? _is.track() : 0;
+            if (isRange)
+                  cr = lastCR;
             if (box && box->nextMeasure() && box->nextMeasure()->first())
                   el = box->nextMeasure()->first()->nextChordRest(0, false);
             if (cr) {
@@ -2598,26 +2627,20 @@ Element* Score::move(const QString& cmd)
                   }
 
             if (el) {
-                  if (noteEntryMode())
+                  if (noteEntryMode()) {
                         _is.moveInputPos(el);
-
-                  // Attempt to maintain current track
-                  auto desiredTrackCR = _is.noteEntryMode() ? (selection().isRange() ? _is.chordRest(el) : _is.segment()->nextChordRest(track))
-                                                            : el->findMeasure()->first()->nextChordRest(track);
-
-                  auto inputTick = _is.noteEntryMode() ? _is.tick() : el->tick();
-
-                  if (desiredTrackCR && desiredTrackCR->tick() <= inputTick) {
-                        auto note = desiredTrackCR->isChord() ? toChord(desiredTrackCR)->upNote() : nullptr;
-                        if (note)
-                              el = note;
-                        else
-                              el = desiredTrackCR;
+                        auto desiredTrackCR = _is.segment()->nextChordRest(currentTrack);
+                        auto inputTick = _is.tick();
+                        if (desiredTrackCR && desiredTrackCR->tick() <= inputTick) {
+                              auto note = desiredTrackCR->isChord() ? toChord(desiredTrackCR)->upNote() : nullptr;
+                              if (note) el = note; else el = desiredTrackCR;
+                              }
                         }
                   }
             }
       else if (cmd == "prev-measure") {
-            auto track = _is.track();
+            cr = firstCR ? firstCR : cr;
+            auto currentTrack = noteEntryMode() ? _is.track() : 0;
             if (box && box->prevMeasure() && box->prevMeasure()->first())
                   el = box->prevMeasure()->first()->nextChordRest(0, false);
             if (cr) {
@@ -2631,21 +2654,16 @@ Element* Score::move(const QString& cmd)
                   }
 
             if (el) {
-                  if (noteEntryMode())
+                  if (noteEntryMode()) {
                         _is.moveInputPos(el);
 
-                  // Attempt to maintain current track
-                  auto desiredTrackCR = _is.noteEntryMode() ? (selection().isRange() ? _is.chordRest(el) : _is.segment()->nextChordRest(track))
-                                                            : el->findMeasure()->first()->nextChordRest(track);
-
-                  auto inputTick = _is.noteEntryMode() ? _is.tick() : el->tick();
-
-                  if (desiredTrackCR && desiredTrackCR->tick() <= inputTick) {
-                        auto note = desiredTrackCR->isChord() ? toChord(desiredTrackCR)->upNote() : nullptr;
-                        if (note)
-                              el = note;
-                        else
-                              el = desiredTrackCR;
+                        // Attempt to maintain current track
+                        auto desiredTrackCR = _is.segment()->nextChordRest(currentTrack);
+                        auto inputTick = _is.tick();
+                        if (desiredTrackCR && desiredTrackCR->tick() <= inputTick) {
+                              auto note = desiredTrackCR->isChord() ? toChord(desiredTrackCR)->upNote() : nullptr;
+                              if (note) el = note; else el = desiredTrackCR;
+                              }
                         }
                   }
             }
