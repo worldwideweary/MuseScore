@@ -1131,6 +1131,13 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::SCORE_TAB,
          STATE_NORMAL | STATE_NOTE_ENTRY,
+         "prev-beat",
+         QT_TRANSLATE_NOOP("action","Previous Beat"),
+         QT_TRANSLATE_NOOP("action","Go to previous beat")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "prev-measure",
          QT_TRANSLATE_NOOP("action","Previous Measure"),
          QT_TRANSLATE_NOOP("action","Go to previous measure or move text left")
@@ -1183,6 +1190,13 @@ Shortcut Shortcut::_sc[] = {
          "next-chord",
          QT_TRANSLATE_NOOP("action","Next Chord"),
          QT_TRANSLATE_NOOP("action","Go to next chord or move text right")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         "next-beat",
+         QT_TRANSLATE_NOOP("action","Next Beat"),
+         QT_TRANSLATE_NOOP("action","Go to next beat")
          },
       {
          MsWidget::SCORE_TAB,
@@ -1271,6 +1285,13 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::SCORE_TAB,
          STATE_NORMAL | STATE_NOTE_ENTRY,
+         "select-prev-beat",
+         QT_TRANSLATE_NOOP("action","Add Previous Beat to Selection"),
+         QT_TRANSLATE_NOOP("action","Add previous beat to selection")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "select-prev-measure",
          QT_TRANSLATE_NOOP("action","Select to Beginning of Measure"),
          QT_TRANSLATE_NOOP("action","Select to beginning of measure")
@@ -1281,6 +1302,13 @@ Shortcut Shortcut::_sc[] = {
          "select-next-chord",
          QT_TRANSLATE_NOOP("action","Add Next Chord to Selection"),
          QT_TRANSLATE_NOOP("action","Add next chord to selection")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         "select-next-beat",
+         QT_TRANSLATE_NOOP("action","Add Next Beat to Selection"),
+         QT_TRANSLATE_NOOP("action","Add next beat to selection")
          },
       {
          MsWidget::SCORE_TAB,
