@@ -1226,6 +1226,44 @@ SpannerSegment* Slur::layoutSystem(System* system)
       }
 
 //---------------------------------------------------------
+//   layoutSystem
+//    Taking a slurSegment, this function is practically the
+//    same as above without needing to create any segments,
+//    for finalization of cross-staff slur placement
+//---------------------------------------------------------
+
+void Slur::layoutSystem(System* system, SlurSegment* slurSegment)
+      {
+      SlurPos sPos;
+      slurPos(&sPos);
+      qreal extraXMargin = (score()->styleP(Sid::slurEndWidth));
+
+      // TODO: yOffset when spanning slur across systems, based on p1/p2 positions
+      qreal yOffsetSystemSpan = spatium() * 1.66;
+      yOffsetSystemSpan *= (_up ? -1.0 : +1.0);
+      yOffsetSystemSpan = 0.0; // for now, do nothing
+
+      switch (slurSegment->spannerSegmentType()) {
+            case SpannerSegmentType::SINGLE:
+                  slurSegment->layoutSegment(sPos.p1, sPos.p2);
+                  break;
+            case SpannerSegmentType::BEGIN:
+                  slurSegment->layoutSegment(sPos.p1, QPointF(system->lastNoteRestSegmentX(true) + extraXMargin, sPos.p1.y() + yOffsetSystemSpan));
+                  break;
+            case SpannerSegmentType::MIDDLE: {
+                  qreal x1 = system->firstNoteRestSegmentX(true);
+                  qreal x2 = system->lastNoteRestSegmentX(true) + extraXMargin;
+                  qreal y  = staffIdx() > system->staves()->size() ? system->y() : system->staff(staffIdx())->y();
+                  slurSegment->layoutSegment(QPointF(x1, y), QPointF(x2, y));
+                  }
+                  break;
+            case SpannerSegmentType::END:
+                  slurSegment->layoutSegment(QPointF(system->firstNoteRestSegmentX(true), sPos.p2.y() + yOffsetSystemSpan), sPos.p2);
+                  break;
+            }
+      }
+
+//---------------------------------------------------------
 //   layout
 //---------------------------------------------------------
 

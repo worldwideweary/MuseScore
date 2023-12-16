@@ -67,6 +67,7 @@ class Slur final : public SlurTie {
       bool readProperties(XmlReader&) override;
       void layout() override;
       SpannerSegment* layoutSystem(System*) override;
+      void layoutSystem(System* system, SlurSegment* slurSegment);
       void setTrack(int val) override;
       void slurPos(SlurPos*) override;
 
