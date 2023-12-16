@@ -21,6 +21,7 @@
 #include "rest.h"
 #include "score.h"
 #include "segment.h"
+#include "slur.h"
 #include "sig.h"
 #include "spanner.h"
 #include "staff.h"
@@ -2047,6 +2048,8 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
                   qreal l       = y2 - (by + _pagePos.y());
                   stem->setLen(l);
 
+                  // Stem's main properties are now seemingly finalized
+
                   StemSlash* stemSlash = c->stemSlash();
                   if (stemSlash)
                         stemSlash->layout();
@@ -2054,6 +2057,22 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
                   if (tremolo)
                         tremolo->layout();
                   c->segment()->createShape(c->vStaffIdx());      // recreate shape
+
+                  // Cross-staff slurring re-layout
+                  if (c->beam() && c->beam()->cross()) {
+                        int tick  = c->tick().ticks();
+                        int track = c->track();
+                        auto overlappingSpanners = score()->spannerMap().findOverlapping(tick,tick);
+                        for (auto& i : overlappingSpanners) {
+                              auto s = i.value;
+                              if (s->isSlur() && s->track() == track) {
+                                    auto slur = toSlur(s);
+                                    if (auto m = c->measure())
+                                          if (auto s = m->system())
+                                                slur->layoutSystem(s, slur->frontSegment());
+                                    }
+                              }
+                        }
                   }
             }
       }
