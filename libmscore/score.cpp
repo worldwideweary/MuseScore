@@ -5474,8 +5474,16 @@ void MasterScore::setLayoutAll(int staff, const Element* e)
 
 void MasterScore::setLayout(const Fraction& t, int staff, const Element* e)
       {
-      if (t >= Fraction(0,1))
+      auto zero = Fraction(0,1);
+      if (t == zero) {
+            if (e) {
+                  if (e->findAncestor(ElementType::SYSTEM))
+                        _cmdState.setTick(t);
+                  }
+            }
+      else if (t > zero) {
             _cmdState.setTick(t);
+            }
 
       if (e && e->score() == this) {
             // TODO: map staff number properly
@@ -5486,9 +5494,18 @@ void MasterScore::setLayout(const Fraction& t, int staff, const Element* e)
 
 void MasterScore::setLayout(const Fraction& tick1, const Fraction& tick2, int staff1, int staff2, const Element* e)
       {
-      if (tick1 >= Fraction(0,1))
+      auto zero = Fraction(0,1);
+
+      // Debug testing:
+      if (tick1 == tick2) {
+            if ((tick1 == zero) && e) {
+                  qDebug() << "<%s>" << e->name() << "with both ticks @ [0/1]";
+                  }
+            }
+
+      if (tick1 >= zero)
             _cmdState.setTick(tick1);
-      if (tick2 >= Fraction(0,1))
+      if (tick2 >= zero && (tick2 > tick1))
             _cmdState.setTick(tick2);
 
       if (e && e->score() == this) {
