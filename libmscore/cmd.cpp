@@ -4920,7 +4920,6 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
 
       int step = octave * TPC_DELTA_SEMITONE + note;
       cmdAddPitch(step,  addFlag, insert);
-      ed.view->adjustCanvasPosition(is.cr(), false);
       }
 
 void Score::cmdAddPitch(int step, bool addFlag, bool insert)
