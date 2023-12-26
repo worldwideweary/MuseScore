@@ -2254,7 +2254,7 @@ bool Element::isUserModified() const
 void Element::triggerLayout() const
       {
       if (parent())
-            score()->setLayout(tick(), staffIdx(), this);
+            score()->setLayout(parent()->tick(), staffIdx(), this);
       }
 
 //----------------------------------------------------------------------
