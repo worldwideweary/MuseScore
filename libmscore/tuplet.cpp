@@ -610,6 +610,20 @@ void Tuplet::layout()
 
       // l2l l2r, mp, _p1, _p2 const
 
+      // Custom: Reset once again if there is a rest to get horizontal tuples
+      if (!cr1->isChord() && cr2->isChord()) {
+            if (p2.y() < p1.y())
+                  p1.setY(p2.y());
+            else
+                  p2.setY(p1.y());
+            }
+      else if (cr1->isChord() && !cr2->isChord()) {
+            if (p1.y() < p2.y())
+                  p2.setY(p1.y());
+            else
+                  p1.setY(p2.y());
+            }
+
       // center number
       qreal x3 = 0.0;
       qreal numberWidth = 0.0;
