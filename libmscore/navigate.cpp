@@ -635,21 +635,19 @@ ChordRest* Score::prevMeasure(ChordRest* element, bool mmRest)
       for (Segment* seg = startSeg; seg; seg = last ? seg->prev() : seg->next()) {
             if (score()->noteEntryMode() || selection().hasTemporaryFilter()) {
                   int track = element->track();
-                  if (auto pel = seg->element(track)) {
-                        if (pel->isChordRest()) {
-                              return toChordRest(pel);
-                              }
-                        }
+                  if (auto ncr = seg->nextChordRest(track))
+                        if (ncr->measure() == measure)
+                              return ncr;
                   }
-            else {
-                  int etrack = (staff+1) * VOICES;
-                  for (int track = staff * VOICES; track < etrack; ++track) {
-                        Element* pel = seg->element(track);
-                        if (pel && pel->isChordRest())
-                              return toChordRest(pel);
-                        }
+
+            int etrack = (staff+1) * VOICES;
+            for (int track = staff * VOICES; track < etrack; ++track) {
+                  Element* pel = seg->element(track);
+                  if (pel && pel->isChordRest())
+                        return toChordRest(pel);
                   }
             }
+
       return 0;
       }
 
