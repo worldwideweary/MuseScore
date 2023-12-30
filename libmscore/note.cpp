@@ -2181,6 +2181,7 @@ void Note::layout2()
             }
 
       // layout elements attached to note
+      qreal ledgerLen = score()->styleP(Sid::ledgerLineLength) - score()->styleP(Sid::ledgerLineWidth);
       for (Element* e : _el) {
             if (!score()->tagIsValid(e->tag()))
                   continue;
@@ -2195,10 +2196,22 @@ void Note::layout2()
                               const StaffType* tab = st->staffTypeForElement(this);
                               w = tabHeadWidth(tab);
                               }
-                        e->rxpos() += w;
+                        bool augmentationDots = !(this->dots().empty());
+                        if (augmentationDots) {
+                              auto dot = this->dots().constFirst();
+                              auto dotWidth = dot->width();
+                              auto notVerticallyCentered = dot->rypos();
+                              e->rxpos() = dot->pos().x();
+                              e->rxpos() += notVerticallyCentered ? dotWidth : (dotWidth * 0.5);
+                              }
+                        else {
+                              e->rxpos() += ledgerLen;
+                              e->rxpos() += w;
+                              }
                         }
                   else if (sym->sym() == SymId::noteheadParenthesisLeft) {
                         e->rxpos() -= symWidth(SymId::noteheadParenthesisLeft);
+                        e->rxpos() -= (ledgerLen * 1.5);
                         }
                   }
             else if (e->isFingering()) {
