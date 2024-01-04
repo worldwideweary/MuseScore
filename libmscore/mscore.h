@@ -343,6 +343,9 @@ class MScore {
       static bool   singleNoteSelectionColorEnabled;
       static QColor gripsColor;
 
+      static bool noteheadsBehindStaff;
+      static bool noteheadsBehindLedger; 
+
       static QColor overrideAllColor;
       static QColor overrideBarlinesColor;
       static QColor overrideBoxTextsColor;
