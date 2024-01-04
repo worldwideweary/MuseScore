@@ -509,6 +509,9 @@ void updateExternalValuesFromPreferences() {
       MScore::overrideStaffTextColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_STAFF_TEXT_COLOR);
       MScore::overrideTextLinesColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_TEXT_LINES_COLOR);
       MScore::overrideTiesColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_TIES_COLOR);
+
+      MScore::noteheadsBehindStaff = preferences.getBool(PREF_UI_SCORE_NOTEHEADS_BEHIND_STAFF_LINES);
+      MScore::noteheadsBehindLedger = preferences.getBool(PREF_UI_SCORE_NOTEHEADS_BEHIND_LEDGER_LINES);
       
       MScore::cursorMoveByBeat = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_MOVE_BY_BEAT);
       MScore::cursorMoveByMeasure = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_ENTIRE_MEASURE);
