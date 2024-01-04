@@ -1536,6 +1536,37 @@ void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* ed
       if (haveHover && hoverUnder)
             drawHoverHighlight(painter, *dropTarget);
 
+      // Option: Noteheads behind staff-lines
+      // Requires stem to be drawn before noteheads, and a multi-pass approach
+      // Alternatively could sort the element list first...
+      if (MScore::noteheadsBehindStaff) {
+            // Stems
+            for (const Element* e : el) {
+                  e->itemDiscovered = 0;
+                  if (!e->isStem())
+                        continue;
+                  if (!e->visible() && (score()->printing() || !score()->showInvisible()))
+                        continue;
+                  QPointF pos(e->pagePos());
+                  painter.translate(pos);
+                     e->draw(&painter);
+                  painter.translate(-pos);
+                  }
+            // Noteheads
+            for (const Element* e : el) {
+                  e->itemDiscovered = 0;
+                  if (!e->isNote())
+                        continue;
+                  if (!e->visible() && (score()->printing() || !score()->showInvisible()))
+                        continue;
+
+                  QPointF pos(e->pagePos());
+                  painter.translate(pos);
+                     e->draw(&painter);
+                  painter.translate(-pos);
+                  }
+            }
+
       for (const Element* e : el) {
             e->itemDiscovered = 0;
 
@@ -1543,7 +1574,10 @@ void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* ed
             // all normal draw(). Complete drawing is done in drawEditMode()
             if (e == editElement)
                   continue;
-
+            if (MScore::noteheadsBehindLedger && e->isLedgerLine())
+                  continue;
+            if (MScore::noteheadsBehindStaff && (e->isNote() || e->isStem()))
+                  continue;
             if (!e->visible() && (score()->printing() || !score()->showInvisible()))
                   continue;
             if (e->isRest() && toRest(e)->isGap())
@@ -1557,7 +1591,22 @@ void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* ed
                   drawDebugInfo(painter, e);
 #endif
             }
-   
+
+      if (MScore::noteheadsBehindLedger) {
+            for (const Element* e : el) {
+                  e->itemDiscovered = 0;
+                  if (!e->isLedgerLine())
+                        continue;
+                  if (!e->visible() && (score()->printing() || !score()->showInvisible()))
+                        continue;
+
+                  QPointF pos(e->pagePos());
+                  painter.translate(pos);
+                     e->draw(&painter);
+                  painter.translate(-pos);
+                  }
+            }
+
       if (haveHover && !hoverUnder)
             drawHoverHighlight(painter, *dropTarget);
       }

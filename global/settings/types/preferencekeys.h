@@ -174,6 +174,9 @@
 #define PREF_SCORE_PLAYBACK_HIGHLIGHT_MORE                  "ui/score/playback/highlightMore"
 #define PREF_SCORE_PLAYBACK_HIGHLIGHT_LYRICS                "ui/score/playback/highlightLyrics"
 
+#define PREF_UI_SCORE_NOTEHEADS_BEHIND_STAFF_LINES          "ui/score/elements/noteheads/behindStaff"
+#define PREF_UI_SCORE_NOTEHEADS_BEHIND_LEDGER_LINES         "ui/score/elements/noteheads/behindLedgerLines"
+
 #define PREF_SCORE_PLAYBACK_SELECT_POSITION_ON_STOP         "ui/score/playback/selectPlaybackPosition"
 #define PREF_SCORE_PLAYBACK_BRING_POSITION_TO_START         "ui/score/playback/resetToStart"
 #define PREF_UI_CANVAS_BG_USECOLOR                          "ui/canvas/background/useColor"
