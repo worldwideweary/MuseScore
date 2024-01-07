@@ -751,8 +751,8 @@ bool Score::saveFile(QIODevice* f, bool msczFormat, bool onlySelection)
       xml.header();
 
       xml.stag("museScore version=\"" MSC_VERSION "\"");
-
       if (!MScore::testMode) {
+            masterScore()->setMetaTag("lastSaved", QDate::currentDate().toString(Qt::ISODate) + " (" + QTime::currentTime().toString() + ")");
             xml.tag("programVersion", "3.6.3");
             xml.tag("programRevision", revision);
             }
