@@ -1912,6 +1912,12 @@ bool MuseScore::saveAs(Score* cs_, bool saveCopy, const QString& path, const QSt
             // to have it accessible to resources
             QFileInfo originalScoreFileInfo(*cs_->masterScore()->fileInfo());
             cs_->masterScore()->fileInfo()->setFile(fn);
+            if (!MScore::testMode) {                        
+                  if (!saveCopy) {
+                        cs_->masterScore()->setMetaTag("creationDate", QDate::currentDate().toString(Qt::ISODate) + " (" + QTime::currentTime().toString() + ")");
+                        }
+                  cs_->masterScore()->setMetaTag("lastSaved", QDate::currentDate().toString(Qt::ISODate) + " (" + QTime::currentTime().toString() + ")");
+                  }            
             if (!cs_->isMaster()) { // clone metaTags from masterScore
                   QMapIterator<QString, QString> j(cs_->masterScore()->metaTags());
                   while (j.hasNext()) {
