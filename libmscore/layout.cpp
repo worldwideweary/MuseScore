@@ -1295,12 +1295,47 @@ void Score::layoutChords3(std::vector<Note*>& notes, const Staff* staff, Segment
                   }
             }
 
+      const float tuck = 8.0;
       for (const AcEl& e : qAsConst(aclist)) {
             // even though we initially calculate accidental position relative to segment
             // we must record pos for accidental relative to note,
             // since pos is always interpreted relative to parent
             Note* note = e.note;
+            int lineOfAcc = note->line();
             qreal x    = e.x + lx - (note->x() + note->chord()->x());
+
+            bool secondAboveExists = false;
+            bool secondHasAcc = false;
+            for (const auto& n : notes) {
+                  auto l = n->line();
+                  if (l == (lineOfAcc - 1) && n->chord() != note->chord()) {
+                        secondAboveExists = true;
+                        if (n->accidentalType() != AccidentalType::NONE)
+                              secondHasAcc = true;
+                        }
+                  }
+            bool ledgerBelow = lineOfAcc > note->staff()->bottomLine(note->tick());
+            bool ledgerAbove = lineOfAcc <= -2;
+            bool accOnStaffSpace = lineOfAcc % 2;
+            if (ledgerBelow && secondAboveExists && !secondHasAcc && !accOnStaffSpace) {
+                  // Second above is on a staff-space
+                  x += tuck;
+                  }
+            else if (ledgerAbove && accOnStaffSpace) {
+                  if (!secondAboveExists) {
+                        if (note->accidentalType() == AccidentalType::FLAT ||
+                            note->accidentalType() == AccidentalType::FLAT2) {
+                              // -44 Magic number for recognizing alterations already existing, needing no extra tuck
+                              x += (x < -44) ? 0.0 : tuck;
+                              }
+                        }
+                  }
+            else if (lineOfAcc == -1 && secondAboveExists && !secondHasAcc) {
+                  // Corner case of accidental not taking into consideration ledger line when
+                  // its note is sitting on top of staff (-1 line) with a 2nd above it in another voice
+                  x -= (note->score()->styleS(Sid::ledgerLineLength).val() * sp);
+                  }
+
             note->accidental()->setPos(x, 0);
             }
       }
