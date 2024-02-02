@@ -256,6 +256,7 @@ class Note final : public Element {
                                           ///< except if only one note is dotted
       bool _fretConflict  { false };      ///< used by TAB staves to mark a fretting conflict:
                                           ///< two or more notes on the same string
+      bool _staffConflict { false };
       bool dragMode       { false };
       bool _mirror        { false };      ///< True if note is mirrored at stem.
       bool m_isSmall      { false };
@@ -409,6 +410,8 @@ class Note final : public Element {
       void setGhost(bool val)         { _ghost = val;   }
       bool fretConflict() const       { return _fretConflict; }
       void setFretConflict(bool val)  { _fretConflict = val; }
+      bool staffConflict() const      { return _staffConflict; }
+      void setStaffConflict(bool v)   { _staffConflict = v; }
 
       void add(Element*) override;
       void remove(Element*) override;

@@ -154,6 +154,8 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
       bool crossBeamFound = false;
       std::vector<Note*> upStemNotes;
       std::vector<Note*> downStemNotes;
+      std::vector<Note*> upStemNotesVisible;
+      std::vector<Note*> downStemNotesVisible;
       int upVoices       = 0;
       int downVoices     = 0;
       qreal nominalWidth = noteHeadWidth() * staff->mag(tick);
@@ -188,6 +190,12 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
                   if (chord->up()) {
                         ++upVoices;
                         upStemNotes.insert(upStemNotes.end(), chord->notes().begin(), chord->notes().end());
+
+                        std::copy_if(upStemNotes.begin(),
+                                     upStemNotes.end(),
+                                     std::back_inserter(upStemNotesVisible),
+                                     [](Note* n) { return n->visible(); });
+
                         upDots   = qMax(upDots, chord->dots());
                         maxUpMag = qMax(maxUpMag, chord->mag());
                         if (!upHooks)
@@ -198,6 +206,11 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
                   else {
                         ++downVoices;
                         downStemNotes.insert(downStemNotes.end(), chord->notes().begin(), chord->notes().end());
+                        std::copy_if(downStemNotes.begin(),
+                                     downStemNotes.end(),
+                                     std::back_inserter(downStemNotesVisible),
+                                     [](Note* n) { return (n->visible()); });
+
                         downDots = qMax(downDots, chord->dots());
                         maxDownMag = qMax(maxDownMag, chord->mag());
                         if (!downHooks)
@@ -309,6 +322,9 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
                   Note* bottomUpNote = upStemNotes.front();
                   Note* topDownNote  = downStemNotes.back();
                   int separation;
+
+                  bottomUpNote->setStaffConflict(false);
+                  topDownNote->setStaffConflict(false);
                   // TODO: handle conflicts for cross-staff notes and notes on cross-staff beams
                   // for now we simply treat these as though there is no conflict
                   if (bottomUpNote->chord()->staffMove() == topDownNote->chord()->staffMove() && !crossBeamFound)
@@ -329,19 +345,22 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
                         }
 
                   else if (separation < 1) {
-
                         // overlap (possibly unison)
 
                         // build list of overlapping notes
                         for (size_t i = 0, n = upStemNotes.size(); i < n; ++i) {
-                              if (upStemNotes[i]->line() >= topDownNote->line() - 1)
+                              if (upStemNotes[i]->line() >= topDownNote->line() - 1) {
                                     overlapNotes.append(upStemNotes[i]);
+                                    upStemNotes[i]->setStaffConflict(true);
+                                    }
                               else
                                     break;
                               }
                         for (size_t i = downStemNotes.size(); i > 0; --i) { // loop most probably needs to be in this reverse order
-                              if (downStemNotes[i-1]->line() <= bottomUpNote->line() + 1)
+                              if (downStemNotes[i-1]->line() <= bottomUpNote->line() + 1) {
                                     overlapNotes.append(downStemNotes[i-1]);
+                                    downStemNotes[i-1]->setStaffConflict(true);
+                                    }
                               else
                                     break;
                               }
