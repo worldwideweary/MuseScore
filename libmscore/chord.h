@@ -124,8 +124,8 @@ class Chord final : public ChordRest {
       const std::vector<Note*>& notes() const     { return _notes; }
 
       // Chord has at least one Note
-      Note* upNote() const;
-      Note* downNote() const;
+      Note* upNote(bool omitInvisible=false) const;
+      Note* downNote(bool omitInvisible=false) const;
       int upString() const;
       int downString() const;
 
@@ -156,6 +156,9 @@ class Chord final : public ChordRest {
 
       int upLine() const override;
       int downLine() const override;
+      int upLine(bool omitInvisible) const;
+      int downLine(bool omitInvisible) const;
+
       QPointF stemPos() const override;          ///< page coordinates
       QPointF stemPosBeam() const override;      ///< page coordinates
       qreal stemPosX() const override;
