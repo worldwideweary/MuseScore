@@ -49,8 +49,16 @@ StaffLines::StaffLines(Score* s)
 
 QPointF StaffLines::pagePos() const
       {
-      System* system = measure()->system();
-      return QPointF(measure()->x() + system->x(), system->staff(staffIdx())->y() + system->y());
+      auto m = measure();
+      auto s = m ? m->system() : nullptr;
+      qreal x = 0.0;
+      qreal y = 0.0;
+      if (m && s) {
+            auto staff = s->staff(staffIdx());
+            x += m->x() + s->x();
+            y += staff->y() + s->y();
+            }
+      return QPointF(x, y);
       }
 
 //---------------------------------------------------------
