@@ -43,7 +43,7 @@ class ExampleView : public QFrame, public MuseScoreView {
       QPointF startMove;
 
       void drawElements(QPainter& painter, const QList<Element*>& el);
-      void setDropTarget(const Element* el) override;
+      void setDropTarget(const Element* el);
 
       virtual void paintEvent(QPaintEvent*) override;
       virtual void dragEnterEvent(QDragEnterEvent*) override;

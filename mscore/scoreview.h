@@ -283,6 +283,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       void constraintCanvas(int *dxx, int *dyy);
 
       void setShadowNote(const QPointF&);
+      void drawHoverHighlight(QPainter&, const Element&);
       void drawElements(QPainter& p,QList<Element*>& el, Element* editElement);
       bool dragTimeAnchorElement(const QPointF& pos);
       bool dragMeasureAnchorElement(const QPointF& pos);
@@ -455,7 +456,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       bool fotoMode() const;
 
       virtual void setDropRectangle(const QRectF&) override;
-      virtual void setDropTarget(const Element*) override;
+      virtual void setDropTarget(const Element*, bool highlight=true) override;
       void setDropAnchorLines(const QVector<QLineF> &anchorList);
       const QTransform& matrix() const  { return _matrix; }
 
@@ -533,6 +534,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       void moveViewportToLastEdit();
 
       void updateShadowNotes();
+      void updateHover(const QPointF&);
 
       OmrView* omrView() const        { return _omrView; }
       void setOmrView(OmrView* v)     { _omrView = v;    }
