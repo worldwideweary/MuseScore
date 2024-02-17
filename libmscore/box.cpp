@@ -55,8 +55,30 @@ void Box::layout()
       {
       MeasureBase::layout();
       for (Element* e : el()) {
-            if (!e->isLayoutBreak())
+            if (!e->isLayoutBreak()) {
                   e->layout();
+                  auto _text = toText(e);
+                  if (_text->frameType() != FrameType::NO_FRAME) {
+                        qreal x = leftMargin() * DPMM;
+                        qreal y = topMargin() * DPMM;
+                        auto frame   = _text->frameWidth().val() * spatium();
+                        auto padding = _text->paddingWidth().val() * spatium();
+                        bool negY = (_text->align() & Align::BOTTOM);
+                        bool negX = (_text->align() & Align::RIGHT);
+                        if (!(_text->align() & Align::HCENTER)) {
+                              x += (negX ? -frame   : +frame);
+                              x += (negX ? -padding : +padding);
+                              }
+                        if (!(_text->align() & Align::VCENTER)) {
+                              if (!(_text->align() & Align::BASELINE)) {
+                                    y += (negY ? -frame   : +frame);
+                                    y += (negY ? -padding : +padding);
+                                    }
+                              }
+
+                        _text->setPos(x, y);
+                        }
+                  }
             }
       }
 
@@ -792,6 +814,32 @@ void VBox::layout()
       for (Element* e : el()) {
             if (!e->isLayoutBreak())
                   e->layout();
+
+            if (e->isText()) {
+                  auto _text = toText(e);
+                  if (_text->frameType() != FrameType::NO_FRAME) {
+                        qreal x = leftMargin() * DPMM;
+                        qreal y = topMargin() * DPMM;
+                        auto frame   = _text->frameWidth().val() * spatium();
+                        auto padding = _text->paddingWidth().val() * spatium();
+                        bool negY = (_text->align() & Align::BOTTOM);
+                        bool negX = (_text->align() & Align::RIGHT);
+
+                        if (!(_text->align() & Align::HCENTER)) {
+                              x += (negX ? -frame   : +frame);
+                              x += (negX ? -padding : +padding);
+                              }
+
+                        if (!(_text->align() & Align::VCENTER)) {
+                              if (!(_text->align() & Align::BASELINE)) {
+                                    y += (negY ? -frame   : +frame);
+                                    y += (negY ? -padding : +padding);
+                                    }
+                              }
+
+                        _text->setPos(x, y);
+                        }
+                  }
             }
 
       if (getProperty(Pid::BOX_AUTOSIZE).toBool()) {
