@@ -227,6 +227,8 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_SCORE_NOTE_WARNPITCHRANGE,                       new BoolPreference(true, false)},
             {PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT,            new BoolPreference(false, true)},
             {PREF_UI_SCORE_FADE_FOCUS,                             new BoolPreference(false, false)},
+            {PREF_SCORE_HOVER_COLOR,                               new ColorPreference(QColor(0,0,0,0), true)},
+            {PREF_SCORE_HOVER_COLOR_ENABLE,                        new BoolPreference(false, false)},
             {PREF_SCORE_NOTE_INPUT_OCTAVE_TENDENCY,                new BoolPreference(false, true)},
             {PREF_SCORE_NOTE_INPUT_FIFTH_IS_UPWARD,                new BoolPreference(false)},
             {PREF_SCORE_NOTE_INPUT_RETAIN_AUG_RHYTHM_MODE,         new BoolPreference(false)},

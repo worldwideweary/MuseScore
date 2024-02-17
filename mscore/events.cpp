@@ -247,6 +247,10 @@ void ScoreView::wheelEvent(QWheelEvent* event)
 
       scroll(dx, dy, QRect(0, 0, width(), height()));
       update (-10, 0, width() + 10, height());
+
+      QPointF mousePos(event->posF()); // P.S. posF() deprecated @ Qt 5.15 for position()
+      updateHover(mousePos);
+
       emit offsetChanged(_matrix.dx(), _matrix.dy());
       emit viewRectChanged();
       }
@@ -429,6 +433,8 @@ void ScoreView::mousePressEventNormal(QMouseEvent* ev)
       if (e) {
             if (keyState == (Qt::ShiftModifier | Qt::ControlModifier)) {
                   cloneElement(e);
+                  editData.buttons   = qApp->mouseButtons();
+                  editData.modifiers = qApp->keyboardModifiers();
                   return;
                   }
             if (e->isKeySig() && (keyState != Qt::ControlModifier) && st == SelectType::SINGLE) {
@@ -490,6 +496,7 @@ void ScoreView::mousePressEventNormal(QMouseEvent* ev)
                         }
                   }
             if (e) {
+                  setDropTarget(nullptr);
                   if (e->isNote() || e->isHarmony()) {
                         e->score()->updateCapo();
                         mscore->play(e);
@@ -590,7 +597,10 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                         toTextBase(editData.element)->setPrimed(false);
                         }
 
-                  setEditElement(elementNear(editData.startMove));
+                  auto en = elementNear(editData.startMove);
+                  if (en && (en->isStaffLines() || en->isStaff()))
+                        en = nullptr;
+                  setEditElement(en);
                   mousePressEventNormal(ev);
                   }
                   break;
@@ -617,7 +627,6 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                   if (ev->button() == Qt::RightButton)
                         _score->inputState().setRest(!restMode);
                   if (MScore::disableMouseEntry) {
-                        int track = _score->inputTrack();
                         if (auto el = elementAt(editData.pos)) {
                               if (!el->isStaffLines()) {
                                     _score->select(el);
@@ -636,7 +645,6 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                                                 _score->inputState().moveInputPos(cr);
                                                 // Default into a voice-1 measure selection when in Note Entry
                                                 // Alternatively, pass track for retaining current voice
-                                                (void) track;
                                                 _score->cmdCycleVoiceFilter();
                                                 }
                                           }
@@ -719,6 +727,9 @@ void ScoreView::adjustCursorForTextEditing(QMouseEvent* mouseEvent)
 
 void ScoreView::mouseMoveEvent(QMouseEvent* me)
       {
+      if (MScore::hoverColorEnabled && me->buttons() == Qt::NoButton)
+            updateHover(me->localPos());
+
       adjustCursorForTextEditing(me);
 
       if (state != ViewState::NOTE_ENTRY && editData.buttons == Qt::NoButton)
@@ -1098,6 +1109,10 @@ void ScoreView::contextMenuEvent(QContextMenuEvent* ev)
             e = score()->selection().element();
       else
             e = elementNear(editData.startMove);
+
+      if (e && e->isStaffLines())
+            e = nullptr;
+
       if (e) {
             if (!e->selected()) {
                   // bool control = (ev->modifiers() & Qt::ControlModifier) ? true : false;
@@ -1270,7 +1285,9 @@ void ScoreView::changeState(ViewState s)
                   seq->stop();
                   break;
             case ViewState::EDIT:
+                  #if 0
                   setMouseTracking(false);
+                  #endif
                   break;
             default:
                   break;
