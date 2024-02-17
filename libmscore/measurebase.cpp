@@ -318,6 +318,8 @@ void MeasureBase::layout()
                   }
             else if (element->isMarker() || element->isJump())
                   ;
+            else if (element->isText() && element->parent() && element->parent()->type() == ElementType::VBOX)
+                  ; // Layout already performed within VBOX::layout()
             else
                   element->layout();
             }

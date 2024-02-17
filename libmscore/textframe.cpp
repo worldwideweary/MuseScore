@@ -66,7 +66,6 @@ void TBox::layout()
             }
       else
             h = _text->height();
-      qreal y = topMargin() * DPMM;
 #if 0
       if (_text->align() & Align::BOTTOM)
             y += h;
@@ -75,7 +74,20 @@ void TBox::layout()
       else
             ; // y = 0;
 #endif
-      _text->setPos(leftMargin() * DPMM, y);
+      qreal x = leftMargin() * DPMM;
+      qreal y = topMargin() * DPMM;
+      auto frame   = _text->frameWidth().val() * spatium();
+      auto padding = _text->paddingWidth().val() * spatium();
+      bool negX = (_text->align() & Align::RIGHT);
+      if (_text->hasFrame()) {
+            if (!(_text->align() & Align::HCENTER)) {
+                  x += (negX ? -frame   : +frame);
+                  x += (negX ? -padding : +padding);
+                  }
+            y += _text->frameWidth().val() * spatium();
+            y += _text->paddingWidth().val() * spatium();
+            }
+      _text->setPos(x, y);
       h += topMargin() * DPMM + bottomMargin() * DPMM;
       bbox().setRect(0.0, 0.0, w, h);
 
