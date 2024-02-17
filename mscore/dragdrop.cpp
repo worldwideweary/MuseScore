@@ -34,7 +34,7 @@ namespace Ms {
 //   setDropTarget
 //---------------------------------------------------------
 
-void ScoreView::setDropTarget(const Element* el)
+void ScoreView::setDropTarget(const Element* el, bool highlight)
       {
       if (dropTarget != el) {
             if (dropTarget) {
@@ -43,7 +43,8 @@ void ScoreView::setDropTarget(const Element* el)
                   }
             dropTarget = el;
             if (dropTarget) {
-                  dropTarget->setDropTarget(true);
+                  if (highlight)
+                        dropTarget->setDropTarget(true);
                   }
             }
       if (!m_dropAnchorLines.isEmpty())
