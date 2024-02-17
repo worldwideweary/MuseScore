@@ -150,6 +150,8 @@ QColor  MScore::bgColor;
 QColor  MScore::dropColor;
 bool    MScore::warnPitchRange;
 bool    MScore::disableMouseEntry;
+QColor  MScore::hoverColor;
+bool    MScore::hoverColorEnabled;
 int     MScore::pedalEventsMinTicks;
 bool    MScore::fadeFocus;
 

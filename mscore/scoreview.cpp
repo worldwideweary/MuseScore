@@ -109,6 +109,7 @@ ScoreView::ScoreView(QWidget* parent)
       setObjectName("scoreview");
       setStatusTip("scoreview");
       setAcceptDrops(true);
+      setMouseTracking(true);
 #ifndef Q_OS_MAC
       setAttribute(Qt::WA_OpaquePaintEvent);
 #endif
@@ -1489,12 +1490,52 @@ static void drawDebugInfo(QPainter& p, const Element* _e)
 #endif
 
 //---------------------------------------------------------
+//   drawHoverHighlight
+//   Highlight the element "to be selected" with a little
+//   bounding box
+//---------------------------------------------------------
+
+void ScoreView::drawHoverHighlight(QPainter& p, const Element& el)
+      {
+      auto x = std::max(0.0, el.pagePos().x());
+      auto y = std::max(0.0, el.pagePos().y());
+      qreal adj = 5.0;
+      QPointF pos(x,y);
+      if (pos.isNull())
+            return;
+
+      p.translate(pos);
+
+      // Highlight box:
+      p.setBrush(QBrush(MScore::hoverColor));
+      p.setPen(Qt::NoPen);
+
+      // Alternatively only draw border:
+      //    p.setBrush(Qt::NoBrush);
+      //    p.setPen(QPen(Qt::blue, 0.0)););
+
+      if (el.isSlurTieSegment())
+            el.shape().paint(p, +adj);
+      else
+            p.drawRect(el.bbox().adjusted(-adj, -adj, +adj, +adj));
+
+      p.translate(-pos);
+      }
+
+//---------------------------------------------------------
 //   drawElements
 //---------------------------------------------------------
 
 void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* editElement)
       {
       std::stable_sort(el.begin(), el.end(), elementLessThan);
+      bool opaqueHoverColor = (MScore::hoverColor.alpha() == 255); 
+      bool hoverUnder = opaqueHoverColor;
+      bool haveHover = MScore::hoverColorEnabled && dropTarget; 
+      
+      if (haveHover && hoverUnder)
+            drawHoverHighlight(painter, *dropTarget);
+
       for (const Element* e : el) {
             e->itemDiscovered = 0;
 
@@ -1516,6 +1557,9 @@ void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* ed
                   drawDebugInfo(painter, e);
 #endif
             }
+   
+      if (haveHover && !hoverUnder)
+            drawHoverHighlight(painter, *dropTarget);
       }
 
 //---------------------------------------------------------
@@ -2028,6 +2072,38 @@ void ScoreView::constraintCanvas (int* dxx, int* dyy)
             }
       *dxx = dx;
       *dyy = dy;
+      }
+
+//---------------------------------------------------------
+//   updateHover
+//---------------------------------------------------------
+
+void ScoreView::updateHover(const QPointF& position)
+      {
+      QPoint point = position.toPoint();
+
+      auto selected     = score()->selection().element();
+      auto pastHover    = dropTarget;
+      auto presentHover = elementNear(toLogical(point));
+
+      auto logicalPos = toLogical(point);
+      editData.pos = logicalPos;
+      editData.startMove = logicalPos;
+
+      QRectF view;
+      if (pastHover != presentHover) {
+            if (presentHover && (presentHover != selected)) {
+                  view = presentHover->canvasBoundingRect();
+                  setDropTarget(presentHover, false /*no highlight*/);
+                  }
+            else if (pastHover) {
+                  view = pastHover->canvasBoundingRect();
+                  setDropTarget(nullptr);
+                  }
+            const int margin = 2;
+            update(toPhysical(view).adjusted(-margin, -margin, +margin, +margin));
+            update();
+            }
       }
 
 //---------------------------------------------------------
@@ -2873,10 +2949,30 @@ void ScoreView::cmd(const char* s)
             {{"sticking-text"}, [](ScoreView* cv, const QByteArray&) {
                   cv->cmdAddText(Tid::STICKING);
                   }},
-            {{"edit-element"}, [](ScoreView* cv, const QByteArray&) {
-                  Element* e = cv->score()->selection().element();
-                  if (e && e->isEditable() && !cv->popupActive) {
-                        cv->startEditMode(e);
+            {{"edit-element"}, [&](ScoreView* cv, const QByteArray&) {
+                  if (auto e = cv->score()->selection().element()) {
+                        if (e->isEditable() && !cv->popupActive)
+                              cv->startEditMode(e);
+                        }
+                  else if (dropTarget && MScore::hoverColorEnabled) {
+                        QRectF r = dropTarget->canvasBoundingRect();
+                        if (dropTarget->isEditable() && !cv->popupActive) {
+                              if (dropTarget->isStaff() || dropTarget->isStaffLines()) {;}
+                              else cv->startEditMode(const_cast<Element*>(dropTarget));
+                              }
+
+                        if (auto e = editData.element) {
+                              if (e->isTextBase()) {
+                                    toTextBase(e)->mousePress(editData);
+                                    }
+                              }
+
+                        // Remove highlight:
+                        setDropTarget(nullptr);
+
+                        const int margin = 2;
+                        update(toPhysical(r).adjusted(-margin, -margin, +margin, +margin));
+                        update();
                         }
                   }},
             {{"select-similar"}, [](ScoreView* cv, const QByteArray&) {
@@ -4191,7 +4287,9 @@ void ScoreView::endNoteEntry()
                   el.front()->setSelected(false);
             is.setSlur(0);
             }
+      #if 0
       setMouseTracking(false);
+      #endif
       shadowNote->setVisible(false);
       setCursorOn(false);
       _score->setUpdateAll();
@@ -4572,6 +4670,18 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       if (!mscore->panDuringPlayback())
             return;
 
+      setDropTarget(nullptr);
+
+      if (noteEntryMode() && el && el->isChordRest() && !score()->selection().isRange()) {
+            if (auto current = score()->selection().cr()) {
+                  auto cr = toChordRest(el);
+                  auto selectionSys = current->measure() ? current->measure()->system() : nullptr;
+                  auto questionableSys = cr->measure() ? cr->measure()->system() : nullptr;
+                  if (questionableSys != selectionSys)
+                        return;
+                  }
+            }
+
       if (score()->layoutMode() == LayoutMode::LINE) {
 
             if (!el)
@@ -4805,6 +4915,9 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             cx = (x < 0) ? x : cx + _matrix.dx();
             }
       setOffset(cx, y);
+
+      const QPoint mousePos = mapFromGlobal(QCursor::pos());
+      updateHover(QPointF(mousePos));
       update();
       }
 
@@ -6820,7 +6933,8 @@ QList<Element*> ScoreView::elementsNear(QPointF p)
       for (Element* e : qAsConst(el)) {
             e->itemDiscovered = 0;
             if (!e->selectable() || e->isPage())
-                  continue;
+                  if (!(e->isStaff() || e->isStaffLines()))
+                        continue;
             if (e->contains(p))
                   ll.append(e);
             }
