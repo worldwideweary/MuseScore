@@ -397,6 +397,8 @@ class MScore {
       static QColor bgColor;
       static bool warnPitchRange;
       static bool disableMouseEntry;
+      static QColor hoverColor;
+      static bool   hoverColorEnabled;
       static int pedalEventsMinTicks;
 
       static bool fadeFocus;
