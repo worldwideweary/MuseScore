@@ -284,6 +284,16 @@ void Shape::paint(QPainter& p) const
             p.drawRect(r);
       }
 
+//---------------------------------------------------------
+//   paint with adjustment on rectangle
+//---------------------------------------------------------
+
+void Shape::paint(QPainter& p, qreal adjust) const
+      {
+      for (const QRectF& r : *this)
+            p.drawRect(r.adjusted(-adjust, -adjust, adjust, adjust));
+      }
+
 #ifndef NDEBUG
 //---------------------------------------------------------
 //   dump

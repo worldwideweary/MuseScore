@@ -1044,6 +1044,8 @@ ChordRest* Score::searchNote(const Fraction& tick, int track) const
       {
       ChordRest* ipe = 0;
       SegmentType st = SegmentType::ChordRest;
+      if (track < 0)
+            track = 0;
       for (Segment* segment = firstSegment(st); segment; segment = segment->next1(st)) {
             ChordRest* cr = segment->cr(track);
             if (!cr)
