@@ -87,6 +87,7 @@ class Shape : public std::vector<ShapeElement> {
       bool intersects(const QRectF& rr) const;
       bool intersects(const Shape&) const;
       void paint(QPainter&) const;
+      void paint(QPainter&, qreal adjust) const;
 
 #ifndef NDEBUG
       void dump(const char*) const;
