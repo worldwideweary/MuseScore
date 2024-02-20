@@ -94,7 +94,7 @@ void ColorLabel::colorButtonClicked(bool)
       if (_pixmap)
             return;
       QColor c = QColorDialog::getColor(_color, this,
-         tr("Select Color"),
+         _title,
          QColorDialog::ShowAlphaChannel
          );
       if (c.isValid()) {

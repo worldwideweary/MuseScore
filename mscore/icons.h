@@ -26,6 +26,8 @@ extern void genIcons();
 
 // keep in sync with iconNames[] in icons.cpp
 enum class Icons : short { Invalid_ICON = -1,
+      empty_ICON,
+      options_ICON,
       longaUp_ICON, brevis_ICON, note_ICON, note2_ICON, note4_ICON, note8_ICON, note16_ICON,
       note32_ICON, note64_ICON, note128_ICON, note256_ICON, note512_ICON, note1024_ICON,
       natural_ICON, sharp_ICON, sharpsharp_ICON, flat_ICON, flatflat_ICON,
@@ -61,7 +63,43 @@ enum class Icons : short { Invalid_ICON = -1,
       mail_ICON, bug_ICON, bin_ICON,
       noteTimewise_ICON,
       arrowsMoveToTop_ICON, arrowsMoveToBottom_ICON,
+
+      // To be generated in genIcons:
       voice1_ICON, voice2_ICON, voice3_ICON, voice4_ICON,
+
+      overrideColorAll_ICON,
+      overrideColorNoteheads_ICON,
+      overrideColorStafflines_ICON,
+      overrideColorLedgerlines_ICON,
+      overrideColorDynamics_ICON,
+      overrideColorFingeringtext_ICON,
+      overrideColorStafftext_ICON,
+      overrideColorExpressiontext_ICON,
+      overrideColorHarmonytext_ICON,
+      overrideColorTextlines_ICON,
+      overrideColorBoxtext_ICON,
+      overrideColorSlurs_ICON,
+      overrideColorTies_ICON,
+      overrideColorLowerednoteheads_ICON,
+      overrideColorRaisednoteheads_ICON,
+      overrideColorHover_ICON,
+      overrideColorLasso_ICON,
+      overrideColorGrips_ICON,
+      overrideColorFramemargins_ICON,
+      overrideColorLayoutBreaks_ICON,
+      overrideColorInvisible_ICON,
+      overrideColorPianohighlight_ICON,
+      overrideColorPianoWhiteKeys_ICON,
+      overrideColorPianoBlackKeys_ICON,
+      overrideColorSingleSelection_ICON,
+      overrideColorCursor_ICON,
+      overrideColorBarlines_ICON,
+      overrideColorBrackets_ICON,
+      overrideColorVoice1_ICON,
+      overrideColorVoice2_ICON,
+      overrideColorVoice3_ICON,
+      overrideColorVoice4_ICON,
+
       ICONS
       };
 

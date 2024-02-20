@@ -71,6 +71,10 @@
 #include "utils.h"
 #include "volta.h"
 #include "xml.h"
+#include "mscore/preferences.h"
+
+#include <QColor>
+#include <QColorDialog>
 
 namespace Ms {
 
@@ -5062,6 +5066,251 @@ void Score::cmdToggleAutoplace(bool all)
                   e->undoChangeProperty(Pid::AUTOPLACE, !e->getProperty(Pid::AUTOPLACE).toBool(), pf);
                   }
             }
+      }
+
+//---------------------------------------------------------
+//   cmdOverrideColor
+//---------------------------------------------------------
+
+void Score::cmdOverrideColor(const char* what)
+      {
+      QColor currentColor;
+      QColor changedColor;
+      QString title;
+      auto flags = QColorDialog::ShowAlphaChannel;
+      if (strcmp(what, "all") == 0) {
+            title = "Select All Color";
+            currentColor = MScore::overrideAllColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideAllColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_ALL_ELEMENTS_COLOR, MScore::overrideAllColor);
+            }
+      else if (strcmp(what, "barlines") == 0) {
+            title = "Select Barlines Color";
+            currentColor = MScore::overrideBarlinesColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideBarlinesColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_BARLINES_COLOR, MScore::overrideBarlinesColor);
+            }
+      else if (strcmp(what, "boxtext") == 0) {
+            title = "Select Layout-Frames Text Color";
+            currentColor = MScore::overrideBoxTextsColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideBoxTextsColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_BOX_TEXT_COLOR, MScore::overrideBoxTextsColor);
+            }
+      else if (strcmp(what, "brackets") == 0) {
+            title = "Select Brackets Color";
+            currentColor = MScore::overrideBracketsColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideBracketsColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_BRACKETS_COLOR, MScore::overrideBracketsColor);
+            }
+      else if (strcmp(what, "cursor") == 0) {
+            title = "Select Cursor Color (Opaque draws behind)";
+            currentColor = MScore::cursorColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::cursorColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_CURSOR_COLOR, MScore::cursorColor);
+            }
+      else if (strcmp(what, "dynamics") == 0) {
+            title = "Select Dynamic Text Color";
+            currentColor = MScore::overrideDynamicsColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideDynamicsColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_DYNAMICS_COLOR, MScore::overrideDynamicsColor);
+            }
+      else if (strcmp(what, "even-staff") == 0) {
+            title = "Select Even Staff Elements Color (Experimental)";
+            currentColor = MScore::overrideEvenStaffElementsColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideEvenStaffElementsColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_EVEN_STAFF_ELEMENTS_COLOR, MScore::overrideEvenStaffElementsColor);
+            }
+      else if (strcmp(what, "expressiontext") == 0) {
+            title = "Select Expression Text Color";
+            currentColor = MScore::overrideExpressionTextColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideExpressionTextColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_EXPRESSION_TEXT_COLOR, MScore::overrideExpressionTextColor);
+            }
+      else if (strcmp(what, "fingeringtext") == 0) {
+            title = "Select Finger Text Color";
+            currentColor = MScore::overrideFingeringTextColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideFingeringTextColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_FINGERING_TEXT_COLOR, MScore::overrideFingeringTextColor);
+            }
+      else if (strcmp(what, "framemargins") == 0) {
+            title = "Select Frames Outline Color";
+            currentColor = MScore::frameMarginColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::frameMarginColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_FRAMEMARGINCOLOR, MScore::frameMarginColor);
+            }
+      else if (strcmp(what, "grips") == 0) {
+            title = "Select Edit Grips Color";
+            currentColor = MScore::gripsColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::gripsColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_SCORE_GRIPS_COLOR, MScore::gripsColor);
+            }
+      else if (strcmp(what, "harmonytext") == 0) {
+            title = "Select Chord Symbol Color";
+            currentColor = MScore::overrideHarmonyTextColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideHarmonyTextColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_HARMONY_TEXT_COLOR, MScore::overrideHarmonyTextColor);
+            }
+      else if (strcmp(what, "hover") == 0) {
+            title = "Select Hover Color";
+            currentColor = MScore::hoverColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::hoverColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_SCORE_HOVER_COLOR, MScore::hoverColor);
+            }
+      else if (strcmp(what, "invisible") == 0) {
+            title = "Select Invisible Elements Color";
+            currentColor = MScore::invisibleElementsColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::invisibleElementsColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_INVISIBLE_COLOR, MScore::invisibleElementsColor);
+            }
+      else if (strcmp(what, "lasso") == 0) {
+            title = "Select Lasso Color";
+            currentColor = MScore::lassoColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::lassoColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_LASSO_COLOR, MScore::lassoColor);
+            }
+      else if (strcmp(what, "layout-break") == 0) {
+            title = "Select Layout Breaks Color";
+            currentColor = MScore::layoutBreakColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::layoutBreakColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_LAYOUTBREAKCOLOR, MScore::layoutBreakColor);
+            }
+      else if (strcmp(what, "ledgerlines") == 0) {
+            title = "Select Ledger Line Color";
+            currentColor = MScore::overrideLedgerLinesColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideLedgerLinesColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_LEDGER_LINES_COLOR, MScore::overrideLedgerLinesColor);
+            }
+      else if (strcmp(what, "lowerednoteheads") == 0) {
+            title = "Select Flattened Noteheads Color";
+            currentColor = MScore::overrideNoteheadLoweredColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideNoteheadLoweredColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_NOTEHEAD_LOWERED_COLOR, MScore::overrideNoteheadLoweredColor);
+            }
+      else if (strcmp(what, "noteheads") == 0) {
+            title = "Select Noteheads Color";
+            currentColor = MScore::overrideNoteheadColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideNoteheadColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_NOTEHEAD_COLOR, MScore::overrideNoteheadColor);
+            }
+      else if (strcmp(what, "pianohighlight") == 0) {
+            title = "Select Piano Highlight Color";
+            currentColor = MScore::pianoHighlightColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::pianoHighlightColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_PIANO_HIGHLIGHTCOLOR, MScore::pianoHighlightColor);
+            }
+      else if (strcmp(what, "piano-black-keys") == 0) {
+            title = "Select Keyboard\'s Black Keys Color";
+            currentColor = MScore::pianoBlackKeysColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::pianoBlackKeysColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_PIANO_BLACK_KEYS_COLOR, MScore::pianoBlackKeysColor);
+            }
+      else if (strcmp(what, "piano-white-keys") == 0) {
+            title = "Select Keyboard\'s White Keys Color";
+            currentColor = MScore::pianoWhiteKeysColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::pianoWhiteKeysColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_PIANO_WHITE_KEYS_COLOR, MScore::pianoWhiteKeysColor);
+            }
+      else if (strcmp(what, "raisednoteheads") == 0) {
+            title = "Select Raised Noteheads Color";
+            currentColor = MScore::overrideNoteheadRaisedColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideNoteheadRaisedColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_NOTEHEAD_RAISED_COLOR, MScore::overrideNoteheadRaisedColor);
+            }
+      else if (strcmp(what, "single-note-selection") == 0) {
+            title = "Select Unified Selection Color";
+            currentColor = MScore::singleNoteSelectionColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::singleNoteSelectionColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_SCORE_SINGLE_SELECTION_COLOR, MScore::singleNoteSelectionColor);
+            }
+      else if (strcmp(what, "slurs") == 0) {
+            title = "Select Slurs Color";
+            currentColor = MScore::overrideSlursColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideSlursColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_SLURS_COLOR, MScore::overrideSlursColor);
+            }
+      else if (strcmp(what, "stafflines") == 0) {
+            title = "Select Lines of Staff Color";
+            currentColor = MScore::overrideStaffLinesColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideStaffLinesColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_STAFFLINES_COLOR, MScore::overrideStaffLinesColor);
+            }
+      else if (strcmp(what, "stafftext") == 0) {
+            title = "Select Staff Text Color";
+            currentColor = MScore::overrideStaffTextColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideStaffTextColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_STAFF_TEXT_COLOR, MScore::overrideStaffTextColor);
+            }
+      else if (strcmp(what, "textlines") == 0) {
+            title = "Select Text Lines Color";
+            currentColor = MScore::overrideTextLinesColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideTextLinesColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_TEXT_LINES_COLOR, MScore::overrideTextLinesColor);
+            }
+      else if (strcmp(what, "ties") == 0) {
+            title = "Select Ties Color";
+            currentColor = MScore::overrideTiesColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::overrideTiesColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_TIES_COLOR, MScore::overrideTiesColor);
+            }
+      else if (strcmp(what, "voice-1") == 0) {
+            title = "Select Voice-1 Color";
+            currentColor = MScore::selectColor[0];
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::selectColor[0] = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_VOICE1_COLOR, MScore::selectColor[0]);
+            }
+      else if (strcmp(what, "voice-2") == 0) {
+            title = "Select Voice-2 Color";
+            currentColor = MScore::selectColor[1];
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::selectColor[1] = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_VOICE1_COLOR, MScore::selectColor[0]);
+            }
+      else if (strcmp(what, "voice-3") == 0) {
+            title = "Select Voice-3 Color";
+            currentColor = MScore::selectColor[2];
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::selectColor[2] = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_VOICE1_COLOR, MScore::selectColor[0]);
+            }
+      else if (strcmp(what, "voice-4") == 0) {
+            title = "Select Voice-4 Color";
+            currentColor = MScore::selectColor[3];
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::selectColor[3] = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_UI_SCORE_VOICE1_COLOR, MScore::selectColor[0]);
+            }
+
+      else qDebug() << "Override color <%s> not implemented" << what;
       }
 
 //---------------------------------------------------------
