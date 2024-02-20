@@ -220,5 +220,27 @@
         <file>data/icons/png/dockwidget-float@2x.png</file>
         <file>data/icons/mouse-entry.svg</file>
         <file>data/icons/edit-playback.svg</file>
+        <file>data/icons/color_boxtext.svg</file>
+        <file>data/icons/color_dynamics.svg</file>
+        <file>data/icons/color_expressiontext.svg</file>
+        <file>data/icons/color_fingeringtext.svg</file>
+        <file>data/icons/color_framemargins.svg</file>
+        <file>data/icons/color_grips.svg</file>
+        <file>data/icons/color_harmonytext.svg</file>
+        <file>data/icons/color_hover.svg</file>
+        <file>data/icons/color_invisible.svg</file>
+        <file>data/icons/color_ledgerlines.svg</file>
+        <file>data/icons/color_noteheads.svg</file>
+        <file>data/icons/color_noteheads_lowered.svg</file>
+        <file>data/icons/color_noteheads_raised.svg</file>
+        <file>data/icons/color_pianohighlight.svg</file>
+        <file>data/icons/color_slurs.svg</file>
+        <file>data/icons/color_stafflines.svg</file>
+        <file>data/icons/color_stafftext.svg</file>
+        <file>data/icons/color_textlines.svg</file>
+        <file>data/icons/color_ties.svg</file>
+        <file>data/icons/color_all.svg</file>
+        <file>data/icons/empty.svg</file>
+        <file>data/icons/options.svg</file>
     </qresource>
 </RCC>
