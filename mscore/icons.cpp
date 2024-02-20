@@ -38,6 +38,8 @@ QIcon* icons[int(Icons::ICONS)];
 //---------------------------------------------------------
 
 static const char* iconNames[] = {
+      "empty.svg",
+      "options.svg",
       "note-longa.svg",
       "note-breve.svg",
       "note-1.svg",
@@ -171,6 +173,39 @@ static const char* iconNames[] = {
       "note_timewise.svg",
       "arrowsMoveToTop.svg",
       "arrowsMoveToBottom.svg",
+      "","","","", // voices
+      "color_all.svg",              // override color icons
+      "color_noteheads.svg",
+      "color_stafflines.svg",
+      "color_ledgerlines.svg",
+      "color_dynamics.svg",
+      "color_fingeringtext.svg",
+      "color_stafftext.svg",
+      "color_expressiontext.svg",
+      "color_harmonytext.svg",
+      "color_textlines.svg",
+      "color_boxtext.svg",
+      "color_slurs.svg",
+      "color_ties.svg",
+      "color_noteheads_lowered.svg",
+      "color_noteheads_raised.svg",
+      "color_hover.svg",
+      "color_hover.svg",            // Lasso
+      "color_grips.svg",
+      "color_framemargins.svg",
+      "empty.svg",                  // Layout breaks
+      "color_invisible.svg",
+      "color_pianohighlight.svg",   // Piano normal selection highlighting
+      "color_pianohighlight.svg",   // Piano white keys
+      "color_pianohighlight.svg",   // Piano black keys
+      "color_noteheads.svg",        // Single selection color
+      "color_hover.svg",            // Cursor color
+      "empty.svg",                  // Barlines color
+      "empty.svg",                  // Brackets color (being lazy not creating new icons)
+      "empty.svg",                  // Voice-1
+      "empty.svg",                  // Voice-2
+      "empty.svg",                  // Voice-3
+      "empty.svg",                  // Voice-4
       };
 
 //---------------------------------------------------------
@@ -212,6 +247,65 @@ void genIcons()
             painter.drawText(QRect(0, 0, iw, ih), Qt::AlignCenter, vtext[i]);
             painter.end();
             icons[int(Icons::voice1_ICON) + i]->addPixmap(image, QIcon::Normal, QIcon::On);
+            }
+
+      // Color Override Options:
+      iw = preferences.getInt(PREF_UI_THEME_ICONWIDTH);
+      ih = preferences.getInt(PREF_UI_THEME_ICONHEIGHT);
+      QColor c;
+      for (int i = static_cast<int>(Icons::overrideColorAll_ICON); i < static_cast<int>(Icons::ICONS); ++i) {
+            switch (static_cast<Icons>(i)) {
+            case Icons::overrideColorAll_ICON:              c = MScore::overrideAllColor;             break;
+            case Icons::overrideColorNoteheads_ICON:        c = MScore::overrideNoteheadColor;        break;
+            case Icons::overrideColorStafflines_ICON:       c = MScore::overrideStaffLinesColor;      break;
+            case Icons::overrideColorLedgerlines_ICON:      c = MScore::overrideLedgerLinesColor;     break;
+            case Icons::overrideColorDynamics_ICON:         c = MScore::overrideDynamicsColor;        break;
+            case Icons::overrideColorFingeringtext_ICON:    c = MScore::overrideFingeringTextColor;   break;
+            case Icons::overrideColorStafftext_ICON:        c = MScore::overrideStaffTextColor;       break;
+            case Icons::overrideColorExpressiontext_ICON:   c = MScore::overrideExpressionTextColor;  break;
+            case Icons::overrideColorHarmonytext_ICON:      c = MScore::overrideHarmonyTextColor;     break;
+            case Icons::overrideColorTextlines_ICON:        c = MScore::overrideTextLinesColor;       break;
+            case Icons::overrideColorBoxtext_ICON:          c = MScore::overrideBoxTextsColor;        break;
+            case Icons::overrideColorSlurs_ICON:            c = MScore::overrideSlursColor;           break;
+            case Icons::overrideColorTies_ICON:             c = MScore::overrideTiesColor;            break;
+            case Icons::overrideColorLowerednoteheads_ICON: c = MScore::overrideNoteheadLoweredColor; break;
+            case Icons::overrideColorRaisednoteheads_ICON:  c = MScore::overrideNoteheadRaisedColor;  break;
+            case Icons::overrideColorHover_ICON:            c = MScore::hoverColor;                   break;
+            case Icons::overrideColorLasso_ICON:            c = MScore::lassoColor;                   break;
+            case Icons::overrideColorGrips_ICON:            c = MScore::gripsColor;                   break;
+            case Icons::overrideColorFramemargins_ICON:     c = MScore::frameMarginColor;             break;
+            case Icons::overrideColorInvisible_ICON:        c = MScore::invisibleElementsColor;       break;
+            case Icons::overrideColorLayoutBreaks_ICON:     c = MScore::layoutBreakColor;             break;
+            case Icons::overrideColorPianohighlight_ICON:   c = MScore::pianoHighlightColor;          break;
+            case Icons::overrideColorPianoWhiteKeys_ICON:   c = MScore::pianoWhiteKeysColor;          break;
+            case Icons::overrideColorPianoBlackKeys_ICON:   c = MScore::pianoBlackKeysColor;          break;
+            case Icons::overrideColorSingleSelection_ICON:  c = MScore::singleNoteSelectionColor;     break;
+            case Icons::overrideColorCursor_ICON:           c = MScore::cursorColor;                  break;
+            case Icons::overrideColorBarlines_ICON:         c = MScore::overrideBarlinesColor;        break;
+            case Icons::overrideColorBrackets_ICON:         c = MScore::overrideBracketsColor;        break;
+            case Icons::overrideColorVoice1_ICON:           c = MScore::selectColor[0];               break;
+            case Icons::overrideColorVoice2_ICON:           c = MScore::selectColor[1];               break;
+            case Icons::overrideColorVoice3_ICON:           c = MScore::selectColor[2];               break;
+            case Icons::overrideColorVoice4_ICON:           c = MScore::selectColor[3];               break;
+
+            default:
+                  c = MScore::defaultColor;
+                  break;
+                  }
+
+            icons[i] = new QIcon();
+            QPixmap colorMap(iw, ih);
+            QPixmap iconMap(iconPath + iconNames[i]);
+            colorMap.fill(c);
+
+            QPainter painter(&colorMap);
+            QImage imageMap = iconMap.toImage();
+            if (c.lightness() <= 100)
+                  imageMap.invertPixels();
+            painter.drawImage(2,0, imageMap);
+            painter.end();
+
+            icons[i]->addPixmap(colorMap);
             }
       }
 }

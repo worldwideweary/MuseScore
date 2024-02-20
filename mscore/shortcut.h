@@ -63,6 +63,7 @@ Shortcuts marked with the STATE_NEVER state should NEVER used directly as shortc
 
 #include "icons.h"
 #include "globals.h"
+#include <QAction>
 namespace Ms {
 
 class XmlWriter;
@@ -171,6 +172,7 @@ class Shortcut {
       static void init();
       static void retranslate();
       static void refreshIcons();
+      void refreshIcon();
       static void load();
       static void loadFromNewFile(QString fileLocation);
       static void save();

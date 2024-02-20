@@ -214,6 +214,9 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       static const std::list<const char*> _allNoteInputMenuEntries;
       std::list<const char*> _noteInputMenuEntries { _allNoteInputMenuEntries };
 
+      static const std::list<const char*> _allColorControlMenuEntries;
+      std::list<const char*> _colorControlMenuEntries { _allColorControlMenuEntries };
+
       static const std::list<const char*> _allFileOperationEntries;
       std::list<const char*> _fileOperationEntries { _allFileOperationEntries };
 
@@ -257,9 +260,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       QToolBar* fileTools;
       QToolBar* transportTools;
       QToolBar* entryTools;
-#if 0
-      QToolBar* feedbackTools;
-#endif
+      QToolBar* colorTools;
       QToolBar* workspacesTools;
       TextTools* _textTools                { 0 };
       PianoTools* _pianoTools              { 0 };
@@ -930,6 +931,11 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       std::list<const char*>* noteInputMenuEntries()                 { return &_noteInputMenuEntries; }
       void setNoteInputMenuEntries(std::list<const char*> l)         { _noteInputMenuEntries = l; }
       void populateNoteInputMenu();
+
+      static const std::list<const char*>& allColorControlMenuEntries() { return _allColorControlMenuEntries; }
+      std::list<const char*>* colorControlMenuEntries()                 { return &_colorControlMenuEntries; }
+      void setColorControlMenuEntries(std::list<const char*> l)         { _colorControlMenuEntries = l; }
+      void populateColorControlMenu();
 
       static const std::list<const char*>& allFileOperationEntries() { return _allFileOperationEntries; }
       std::list<const char*>* fileOperationEntries()                 { return &_fileOperationEntries; }

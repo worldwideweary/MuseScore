@@ -2150,6 +2150,377 @@ Shortcut Shortcut::_sc[] = {
          Qt::WindowShortcut,
          ShortcutFlags::A_CHECKABLE
          },
+// Color Options
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-all",
+         QT_TRANSLATE_NOOP("action","Override Color: All Score Elements"),
+         QT_TRANSLATE_NOOP("action","Override Color: All Score Elements"),
+         0,
+         Icons::overrideColorAll_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-noteheads",
+         QT_TRANSLATE_NOOP("action","Override Color: Noteheads"),
+         QT_TRANSLATE_NOOP("action","Override Color: Noteheads"),
+         0,
+         Icons::overrideColorNoteheads_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-stafflines",
+         QT_TRANSLATE_NOOP("action","Override Color: Staff lines"),
+         QT_TRANSLATE_NOOP("action","Override Color: Staff lines"),
+         0,
+         Icons::overrideColorStafflines_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-ledgerlines",
+         QT_TRANSLATE_NOOP("action","Override Color: Ledger Lines"),
+         QT_TRANSLATE_NOOP("action","Override Color: Ledger Lines"),
+         0,
+         Icons::overrideColorLedgerlines_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-dynamics",
+         QT_TRANSLATE_NOOP("action","Override Color: Dynamics"),
+         QT_TRANSLATE_NOOP("action","Override Color: Dynamics"),
+         0,
+         Icons::overrideColorDynamics_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-fingeringtext",
+         QT_TRANSLATE_NOOP("action","Override Color: Fingering Text"),
+         QT_TRANSLATE_NOOP("action","Override Color: Fingering Text"),
+         0,
+         Icons::overrideColorFingeringtext_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-stafftext",
+         QT_TRANSLATE_NOOP("action","Override Color: Staff Text"),
+         QT_TRANSLATE_NOOP("action","Override Color: Staff Text"),
+         0,
+         Icons::overrideColorStafftext_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-expressiontext",
+         QT_TRANSLATE_NOOP("action","Override Color: Expression Text"),
+         QT_TRANSLATE_NOOP("action","Override Color: Expression Text"),
+         0,
+         Icons::overrideColorExpressiontext_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-harmonytext",
+         QT_TRANSLATE_NOOP("action","Override Color: Harmony Text"),
+         QT_TRANSLATE_NOOP("action","Override Color: Harmony Text"),
+         0,
+         Icons::overrideColorHarmonytext_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-textlines",
+         QT_TRANSLATE_NOOP("action","Override Color: Text Lines"),
+         QT_TRANSLATE_NOOP("action","Override Color: Text Lines"),
+         0,
+         Icons::overrideColorTextlines_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-boxtext",
+         QT_TRANSLATE_NOOP("action","Override Color: Text in Layout Frames"),
+         QT_TRANSLATE_NOOP("action","Override Color: Text in Layout Frames"),
+         0,
+         Icons::overrideColorBoxtext_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-slurs",
+         QT_TRANSLATE_NOOP("action","Override Color: Slurs"),
+         QT_TRANSLATE_NOOP("action","Override Color: Slurs"),
+         0,
+         Icons::overrideColorSlurs_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-ties",
+         QT_TRANSLATE_NOOP("action","Override Color: Ties"),
+         QT_TRANSLATE_NOOP("action","Override Color: Ties"),
+         0,
+         Icons::overrideColorTies_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-lowerednoteheads",
+         QT_TRANSLATE_NOOP("action","Override Color: Lowered/Flat Noteheads"),
+         QT_TRANSLATE_NOOP("action","Override Color: Lowered/Flat Noteheads"),
+         0,
+         Icons::overrideColorLowerednoteheads_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-raisednoteheads",
+         QT_TRANSLATE_NOOP("action","Override Color: Raised/Sharp Noteheads"),
+         QT_TRANSLATE_NOOP("action","Override Color: Raised/Sharp Noteheads"),
+         0,
+         Icons::overrideColorRaisednoteheads_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-hover",
+         QT_TRANSLATE_NOOP("action","Interaction Color: Mouse Hover"),
+         QT_TRANSLATE_NOOP("action","Interaction Color: Mouse Hover"),
+         0,
+         Icons::overrideColorHover_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-grips",
+         QT_TRANSLATE_NOOP("action","Interaction Color: Grips (Editing/Positioning)"),
+         QT_TRANSLATE_NOOP("action","Interaction Color: Grips (Editing/Positioning)"),
+         0,
+         Icons::overrideColorGrips_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-framemargins",
+         QT_TRANSLATE_NOOP("action","Interaction Color: Frame Margin Lines"),
+         QT_TRANSLATE_NOOP("action","Interaction Color: Frame Margin Lines"),
+         0,
+         Icons::overrideColorFramemargins_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-layout-break",
+         QT_TRANSLATE_NOOP("action","Interaction Color: Layout Breaks"),
+         QT_TRANSLATE_NOOP("action","Interaction Color: Layout Breaks"),
+         0,
+         Icons::overrideColorLayoutBreaks_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-invisible",
+         QT_TRANSLATE_NOOP("action","Interaction Color: Invisible Elements"),
+         QT_TRANSLATE_NOOP("action","Interaction Color: Invisible Elements"),
+         0,
+         Icons::overrideColorInvisible_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-pianohighlight",
+         QT_TRANSLATE_NOOP("action","Onscreen Keyboard Color: Active Piano Keys"),
+         QT_TRANSLATE_NOOP("action","Onscreen Keyboard Color: Active Piano Keys"),
+         0,
+         Icons::overrideColorPianohighlight_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-single-note-selection",
+         QT_TRANSLATE_NOOP("action","Interaction Color: Unified Selection Color for Notes"),
+         QT_TRANSLATE_NOOP("action","Interaction Color: Unified Selection Color for Notes"),
+         0,
+         Icons::overrideColorSingleSelection_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-cursor",
+         QT_TRANSLATE_NOOP("action","Interaction Color: Playback Cursor"),
+         QT_TRANSLATE_NOOP("action","Interaction Color: Playback Cursor"),
+         0,
+         Icons::overrideColorCursor_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-piano-white-keys",
+         QT_TRANSLATE_NOOP("action","Onscreen Keyboard Color: White Keys"),
+         QT_TRANSLATE_NOOP("action","Onscreen Keyboard Color: White Keys"),
+         0,
+         Icons::overrideColorPianoWhiteKeys_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-piano-black-keys",
+         QT_TRANSLATE_NOOP("action","Onscreen Keyboard Color: Black Keys"),
+         QT_TRANSLATE_NOOP("action","Onscreen Keyboard Color: Black Keys"),
+         0,
+         Icons::overrideColorPianoBlackKeys_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-lasso",
+         QT_TRANSLATE_NOOP("action","Interaction Color: Lasso"),
+         QT_TRANSLATE_NOOP("action","Interaction Color: Lasso"),
+         0,
+         Icons::overrideColorLasso_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-even-staff",
+         QT_TRANSLATE_NOOP("action","Override Color: Even Staff Elements"),
+         QT_TRANSLATE_NOOP("action","Override Color: Even Staff Elements"),
+         0,
+         Icons::overrideColorNoteheads_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-barlines",
+         QT_TRANSLATE_NOOP("action","Override Color: Barlines"),
+         QT_TRANSLATE_NOOP("action","Override Color: Barlines"),
+         0,
+         Icons::overrideColorBarlines_ICON,
+
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-brackets",
+         QT_TRANSLATE_NOOP("action","Override Color: Brackets"),
+         QT_TRANSLATE_NOOP("action","Override Color: Brackets"),
+         0,
+         Icons::overrideColorBrackets_ICON,
+
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-voice-1",
+         QT_TRANSLATE_NOOP("action","Interaction Color: Voice 1"),
+         QT_TRANSLATE_NOOP("action","Interaction Color: Voice 1"),
+         0,
+         Icons::overrideColorVoice1_ICON,
+
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-voice-2",
+         QT_TRANSLATE_NOOP("action","Interaction Color: Voice 2"),
+         QT_TRANSLATE_NOOP("action","Interaction Color: Voice 2"),
+         0,
+         Icons::overrideColorVoice2_ICON,
+
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-voice-3",
+         QT_TRANSLATE_NOOP("action","Interaction Color: Voice 3"),
+         QT_TRANSLATE_NOOP("action","Interaction Color: Voice 3"),
+         0,
+         Icons::overrideColorVoice3_ICON,
+
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-voice-4",
+         QT_TRANSLATE_NOOP("action","Interaction Color: Voice 4"),
+         QT_TRANSLATE_NOOP("action","Interaction Color: Voice 4"),
+         0,
+         Icons::overrideColorVoice4_ICON,
+
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+// End Color Options
       {
          MsWidget::SCORE_TAB,
          STATE_NORMAL | STATE_NOTE_ENTRY,
@@ -2366,15 +2737,13 @@ Shortcut Shortcut::_sc[] = {
          QT_TRANSLATE_NOOP("action","Note Input"),
          QT_TRANSLATE_NOOP("action","Toggle 'Note Input' toolbar")
          },
-#if 0
       {
          MsWidget::MAIN_WINDOW,
          STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT ,
-         "toggle-feedback",
-         QT_TRANSLATE_NOOP("action","Feedback"),
-         QT_TRANSLATE_NOOP("action","Toggle 'Feedback' toolbar"),
+         "toggle-colorcontrol",
+         QT_TRANSLATE_NOOP("action","Color Control"),
+         QT_TRANSLATE_NOOP("action","Toggle 'Color Control' toolbar")
          },
-#endif
       {
          MsWidget::MAIN_WINDOW,
          STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT ,
@@ -4712,6 +5081,10 @@ void Shortcut::retranslate()
             }
       }
 
+//---------------------------------------------------------
+//   refreshIcons
+//---------------------------------------------------------
+
 void Shortcut::refreshIcons()
       {
       for (Shortcut* s : qAsConst(_shortcuts)) {
@@ -4719,6 +5092,17 @@ void Shortcut::refreshIcons()
             if (a && s->icon() != Icons::Invalid_ICON) {
                   a->setIcon(*icons[int(s->icon())]);
                   }
+            }
+      }
+
+//---------------------------------------------------------
+//   refreshIcon: singular non-static version to access this*
+//---------------------------------------------------------
+
+void Shortcut::refreshIcon()
+      {
+      if (QAction* a = this->action()){
+            a->setIcon(*icons[int(this->icon())]);
             }
       }
 

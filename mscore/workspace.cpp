@@ -740,6 +740,7 @@ void Workspace::read(XmlReader& e)
       bool niToolbar = false;
       bool foToolbar = false;
       bool pcToolbar = false;
+      bool colorToolbar = false;
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
             if (tag == "name")
@@ -760,6 +761,8 @@ void Workspace::read(XmlReader& e)
                         toolbarEntries = mscore->allFileOperationEntries();
                   else if (name == "playbackControl")
                         toolbarEntries = mscore->allPlaybackControlEntries();
+                  else if (name == "colorControl")
+                        toolbarEntries = mscore->allColorControlMenuEntries();
                   else
                         qDebug() << "Error in loading workspace: " + name + " is not a toolbar";
 
@@ -792,6 +795,11 @@ void Workspace::read(XmlReader& e)
                         mscore->setPlaybackControlEntries(l);
                         mscore->populatePlaybackControls();
                         pcToolbar = true;
+                        }
+                  else if (name == "colorControl") {
+                        mscore->setColorControlMenuEntries(l);
+                        mscore->populateColorControlMenu();
+                        colorToolbar = true;
                         }
                   }
             else if (tag == "Preferences") {
@@ -889,6 +897,10 @@ void Workspace::read(XmlReader& e)
             if (!pcToolbar) {
                   mscore->setPlaybackControlEntries(mscore->allPlaybackControlEntries());
                   mscore->populatePlaybackControls();
+                  }
+            if (!colorToolbar) {
+                  mscore->setColorControlMenuEntries(mscore->allColorControlMenuEntries());
+                  mscore->populateColorControlMenu();
                   }
             }
       else {
@@ -1011,6 +1023,8 @@ void Workspace::readGlobalToolBar()
                                     toolbarEntries = mscore->allFileOperationEntries();
                               else if (name == "playbackControl")
                                     toolbarEntries = mscore->allPlaybackControlEntries();
+                              else if (name == "controlControl")
+                                    toolbarEntries = mscore->allColorControlMenuEntries();
                               else
                                     qDebug() << "Error in loading workspace: " + name + " is not a toolbar";
 
@@ -1040,6 +1054,10 @@ void Workspace::readGlobalToolBar()
                               else if (name == "playbackControl") {
                                     mscore->setPlaybackControlEntries(l);
                                     mscore->populatePlaybackControls();
+                                    }
+                              else if (name == "colorControl") {
+                                    mscore->setColorControlMenuEntries(l);
+                                    mscore->populateColorControlMenu();
                                     }
                               }
                         else
