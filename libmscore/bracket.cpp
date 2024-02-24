@@ -221,8 +221,8 @@ void Bracket::layout()
                   break;
             case BracketType::LINE: {
                   qreal _spatium = spatium();
-                  qreal w = 0.67 * score()->styleP(Sid::bracketWidth) * .5;
-                  qreal x = -w;
+                  qreal w = 0.50 * score()->styleP(Sid::bracketWidth);
+                  qreal x = -(0.25 * score()->styleP(Sid::bracketWidth));
                   qreal bd = _spatium * .25;
                   qreal y = -bd;
                   qreal h = (-y + h2) * 2;
