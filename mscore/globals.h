@@ -80,6 +80,7 @@ enum ScoreState {
       STATE_FOTO                                = 1 << 14,
       STATE_LOCK                                = 1 << 15,
       STATE_NOTE_ENTRY_METHOD_TIMEWISE          = 1 << 16,
+      STATE_HIDDEN                              = 1 << 17,
 
       STATE_NEVER                               = 1 << 31,
 
