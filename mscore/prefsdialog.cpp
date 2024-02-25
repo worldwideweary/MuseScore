@@ -805,6 +805,9 @@ void PreferenceDialog::updateSCListView()
       for (Shortcut*& s : localShortcuts) {
             if (!s)
                   continue;
+            if (s->state() & STATE_HIDDEN)
+                  continue;
+
             ShortcutItem* newItem = new ShortcutItem;
             newItem->setText(0, s->descr());
             if (s->icon() != Icons::Invalid_ICON)
