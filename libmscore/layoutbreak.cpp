@@ -291,9 +291,10 @@ bool LayoutBreak::setProperty(Pid propertyId, const QVariant& v)
                         return false;
                   break;
             }
-      triggerLayout();
-      if (parent() && measure()->next())
-            measure()->next()->triggerLayout();
+      if (auto s = score()) {
+            auto lastTick = s->measures()->last() ? s->measures()->last()->endTick() : tick();
+            score()->setLayout(tick(), lastTick, 0, 0);
+            }
       setGenerated(false);
       return true;
       }
