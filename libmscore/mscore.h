@@ -403,6 +403,7 @@ class MScore {
       static int pedalEventsMinTicks;
 
       static bool fadeFocus;
+      static bool currentSystemAlwaysTop;
 
       static bool cursorMoveByBeat;
       static bool cursorMoveByMeasure;
