@@ -686,6 +686,12 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                         if (auto e = elementNear(editData.startMove)) {
                               if (e->isNote())
                                     e = e->parent();
+                              else if (e->isStaffLines()) {
+                                    if (auto m = toStaffLines(e)->measure())
+                                          if (auto f = m->first())
+                                                if (auto cr = f->nextChordRest(e->track()))
+                                                      e = cr;
+                                    }
                               int tick = e->tick().ticks();
                               int uTick = seq->score()->repeatList().tick2utick(tick);
                               seq->seek(uTick, true);
