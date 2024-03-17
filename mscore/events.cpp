@@ -261,7 +261,9 @@ void ScoreView::resizeEvent(QResizeEvent* /*ev*/)
       if (this != mscore->currentScoreView())
             return;
 
-      setLogicalZoom(_zoomIndex, calculateLogicalZoomLevel(_zoomIndex, logicalZoomLevel()));
+      bool changed = setLogicalZoom(_zoomIndex, calculateLogicalZoomLevel(_zoomIndex, logicalZoomLevel()));
+      if (!changed)
+            return;
 
       emit sizeChanged();
 
