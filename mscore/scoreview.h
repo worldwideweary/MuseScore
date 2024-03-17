@@ -417,7 +417,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       virtual void setScore(Score* s) override;
       virtual void removeScore() override { _score = 0; }
 
-      void setPhysicalZoomLevel(qreal logicalLevel);
+      bool setPhysicalZoomLevel(qreal logicalLevel);
 
       bool navigatorVisible() const;
       void cmd(const QAction*);
@@ -425,7 +425,7 @@ class ScoreView : public QWidget, public MuseScoreView {
 
       void startUndoRedo(bool);
       void zoomBySteps(qreal numSteps, bool usingMouse = false, const QPointF& pos = QPointF());
-      void setLogicalZoom(ZoomIndex index, qreal logicalLevel, const QPointF& pos = QPointF());
+      bool setLogicalZoom(ZoomIndex index, qreal logicalLevel, const QPointF& pos = QPointF());
       qreal calculateLogicalZoomLevel(const ZoomIndex index, const qreal logicalFreeZoomLevel = 0.0) const;
       qreal calculatePhysicalZoomLevel(const ZoomIndex index, const qreal logicalFreeZoomLevel = 0.0) const;
       void contextPopup(QContextMenuEvent* ev);
@@ -463,7 +463,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       qreal logicalZoomLevel() const;
       qreal physicalZoomLevel() const;
       ZoomState logicalZoom() const { return { _zoomIndex, logicalZoomLevel() }; }
-      void setLogicalZoom(const ZoomState& logicalZoom) { setLogicalZoom(logicalZoom.index, logicalZoom.level); }
+      bool setLogicalZoom(const ZoomState& logicalZoom) { return setLogicalZoom(logicalZoom.index, logicalZoom.level); }
 
       ZoomIndex previousZoomIndex() const { return _previousLogicalZoom.index; }
       qreal previousLogicalZoomLevel() const { return _previousLogicalZoom.level; }

@@ -2026,12 +2026,13 @@ void ScoreView::constraintCanvas (int* dxx, int* dyy)
 //   setPhysicalZoomLevel
 //---------------------------------------------------------
 
-void ScoreView::setPhysicalZoomLevel(const qreal physicalLevel)
+bool ScoreView::setPhysicalZoomLevel(const qreal physicalLevel)
       {
       const qreal currentPhysicalLevel = _matrix.m11();
 
-      if (physicalLevel == currentPhysicalLevel)
-            return;
+      if (physicalLevel == currentPhysicalLevel) {
+            return false;
+            }
 
       const double deltaPhysicalLevel = physicalLevel / currentPhysicalLevel;
 
@@ -2049,14 +2050,16 @@ void ScoreView::setPhysicalZoomLevel(const qreal physicalLevel)
                   }
             }
       update();
+      return true;
       }
 
 //---------------------------------------------------------
 //   setLogicalZoom
 //    Sets the zoom type and logical zoom level. pos is optional and may be omitted to zoom relative to the top-left corner.
+//    Return false = didn't update (same zoom level)  true: zoom was updated
 //---------------------------------------------------------
 
-void ScoreView::setLogicalZoom(ZoomIndex index, qreal logicalLevel, const QPointF& pos/* = QPointF()*/)
+bool ScoreView::setLogicalZoom(ZoomIndex index, qreal logicalLevel, const QPointF& pos/* = QPointF()*/)
       {
       _zoomIndex = index;
 
@@ -2066,7 +2069,9 @@ void ScoreView::setLogicalZoom(ZoomIndex index, qreal logicalLevel, const QPoint
 
       const QPointF p1 = pos.isNull() ? pos : imatrix.map(pos);
 
-      setPhysicalZoomLevel(newPhysicalLevel);
+      bool changed = setPhysicalZoomLevel(newPhysicalLevel);
+      if (!changed)
+            return false;
 
       int dx = 0;
       int dy = 0;
@@ -2092,6 +2097,7 @@ void ScoreView::setLogicalZoom(ZoomIndex index, qreal logicalLevel, const QPoint
       update();
 
       mscore->updateZoomBox(index, newLogicalLevel);
+      return true;
       }
 
 //---------------------------------------------------------
