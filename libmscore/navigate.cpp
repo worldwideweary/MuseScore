@@ -562,7 +562,7 @@ ChordRest* Score::nextMeasure(ChordRest* element, bool selectBehavior, bool mmRe
             measure = element->measure()->nextMeasure();
 
       if (!measure)
-            return 0;
+            measure = element->measure();
 
       Fraction endTick = element->measure()->last()->nextChordRest(element->track(), true)->tick();
       bool last   = false;
