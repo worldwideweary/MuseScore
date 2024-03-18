@@ -270,6 +270,7 @@ void TextLineBaseSegment::layout()
       {
       npoints      = 0;
       TextLineBase* tl = textLineBase();
+      qreal lineStrokeWidth = tl->lineWidth();
       QColor textColor = tl->color();
       qreal _spatium = tl->spatium();
       bool isSingleOrBegin = isSingleBeginType();
@@ -309,6 +310,7 @@ void TextLineBaseSegment::layout()
       _text->setPlacement(Placement::ABOVE);
       _text->setTrack(track());
       _text->setColor(textColor);
+      _text->setVAlignOffset(lineStrokeWidth);
       _text->layout();
 
       if ((isSingleType() || isEndType())) {
@@ -324,6 +326,7 @@ void TextLineBaseSegment::layout()
             _endText->setPlacement(Placement::ABOVE);
             _endText->setTrack(track());
             _endText->setColor(textColor);
+            _endText->setVAlignOffset(lineStrokeWidth);
             _endText->layout();
             }
       else {
