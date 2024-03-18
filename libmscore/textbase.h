@@ -92,7 +92,7 @@ class CharFormat {
       QString fontFamily() const             { return _fontFamily;  }
       void setPreedit(bool val)              { _preedit     = val;  }
       void setValign(VerticalAlignment val)  { _valign      = val;  }
-      void setFontSize(qreal val)            { Q_ASSERT(val > 0.0); _fontSize = val; }
+      void setFontSize(qreal val)            { _fontSize    = val;  }
       void setTextLineSpacing(qreal val)     { _textLineSpacing = val; }
       void setFontFamily(const QString& val) { _fontFamily  = val;  }
 
@@ -258,9 +258,9 @@ class TextBase : public Element {
       bool _layoutToParentWidth     { false };
       bool _layoutRelativeToBottom  { false }; // used to keep footers inside page margins
 
-      int  hexState                 { -1    };
-      bool _primed                  { 0 };
-
+      int  hexState = -1;
+      bool _primed = false;
+      qreal _vAlignOffset = 0.0;
       void drawSelection(QPainter*, const QRectF&) const;
       void insert(TextCursor*, uint code);
       void genText() const;
@@ -390,6 +390,9 @@ class TextBase : public Element {
       bool hasFrame() const                      { return _frameType != FrameType::NO_FRAME; }
       bool circle() const                        { return _frameType == FrameType::CIRCLE; }
       bool square() const                        { return _frameType == FrameType::SQUARE; }
+
+      void setVAlignOffset(qreal v)              { _vAlignOffset = v;    }
+      qreal getVAlignOffset()                    { return _vAlignOffset; }
 
       Tid tid() const                            { return _tid; }
       void setTid(Tid id)                        { _tid = id; }

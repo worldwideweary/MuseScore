@@ -1829,6 +1829,10 @@ void TextBase::layout1()
       QRectF bb;
       qreal y = 0;
 
+      // TextLineBaseSegment::layout() provides this value as line-stroke width so that this current function
+      // can calculate an appropriate +/- vertical offset
+      auto lineStrokeWidth = getVAlignOffset();
+
       // adjust the bounding box for the text item
       for (int i = 0; i < rows(); ++i) {
             TextBlock* t = &_layout[i];
@@ -1873,15 +1877,32 @@ void TextBase::layout1()
       else
             setPos(QPointF());
 
-      if (align() & Align::BOTTOM)
+      if (align() & Align::BOTTOM) {
+            setVAlignOffset(-(lineStrokeWidth * 0.5));
             yoff += h - bb.bottom();
+            }
       else if (align() & Align::VCENTER) {
+            setVAlignOffset(0.0);
             yoff +=  (h - (bb.top() + bb.bottom())) * .5;
             }
-      else if (align() & Align::BASELINE)
-            yoff += h * .5 - _layout.front().lineSpacing();
-      else
+      else if (align() & Align::BASELINE) {
+            setVAlignOffset(-(lineStrokeWidth * 0.5));
+            if (isDynamic() || isLyrics() || isLineSegment()) {
+                  // Not a box:
+                  yoff += h * .5 - _layout.front().lineSpacing();
+                  }
+            else {
+                  // Box text (or something unaccounted for now)
+                  yoff += h - bb.bottom();
+                  auto bottom = fontMetrics().xHeight();
+                  //   bottom = fontMetrics().boundingRect(_text).bottom();   // alternatively
+                  yoff += bottom;
+                  }
+            }
+      else {
+            setVAlignOffset(+(lineStrokeWidth * 0.5));
             yoff += -bb.top();
+            }
 
       for (TextBlock& t : _layout)
             t.setY(t.y() + yoff);
