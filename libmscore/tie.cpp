@@ -1120,6 +1120,9 @@ TieSegment* Tie::layoutBack(System* system)
 
       qreal x = system->firstNoteRestSegmentX(true);
 
+      // Closer proximity to key-signature:
+      x -= (score()->styleP(Sid::systemHeaderDistance) / (0.25 * spatium()));
+
       segment->layoutSegment(QPointF(x, sPos.p2.y()), sPos.p2);
       segment->setSpannerSegmentType(SpannerSegmentType::END);
       segment->adjustX();
