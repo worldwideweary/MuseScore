@@ -1872,8 +1872,10 @@ void Score::toggleAccidental(AccidentalType at, const EditData& ed)
 
 void Score::changeAccidental(AccidentalType idx)
       {
-      foreach(Note* note, selection().noteList())
+      for (auto note : selection().noteList()) {
+            idx = (note->accidentalType() != idx) ? idx : AccidentalType::NONE;
             changeAccidental(note, idx);
+            }
       }
 
 //---------------------------------------------------------
