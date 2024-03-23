@@ -724,6 +724,10 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                   Measure* last = sel.endSegment() ? sel.endSegment()->measure() : nullptr;
                   bool onlyOneMeasure = (sel.startSegment()->measure() == last);
                   for (Measure* m = sel.startSegment()->measure(); m; m = m->nextMeasureMM()) {
+                        if ( (element->type() == ElementType::BAR_LINE)  ) {
+                              if (m != last)
+                                    continue;
+                              }
                         QRectF r = m->staffabbox(sel.staffStart());
                         QPointF pt(r.x() + r.width() * .5, r.y() + r.height() * .5);
                         pt += m->system()->page()->pos();
