@@ -1200,6 +1200,13 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_PLAY,
+         "play-at-selection",
+         QT_TRANSLATE_NOOP("action","Playback Cursor Position Reset"),
+         QT_TRANSLATE_NOOP("action","Start playback at current single-element selection"),
+         },
+      {
+         MsWidget::SCORE_TAB,
          STATE_NORMAL | STATE_NOTE_ENTRY,
          "empty-trailing-measure",
          QT_TRANSLATE_NOOP("action","First Empty Trailing Measure"),
