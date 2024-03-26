@@ -3033,6 +3033,16 @@ void ScoreView::cmd(const char* s)
                         cv->score()->cmdJoinMeasure(m1, m2);
                         }
                   }},
+            {{"measure-properties"}, [](ScoreView* cv, const QByteArray&) {
+                  if (auto m = cv->score()->selection().findMeasure()) {
+                        MeasureProperties im(m);
+                        im.exec();
+                        }
+                  else {
+                        QMessageBox::warning(0, "MuseScore",
+                                             tr("Measure Properties: No measure(s) selected\n"));
+                        }
+                  }},
             {{"next-lyric", "prev-lyric"}, [](ScoreView* cv, const QByteArray& cmd) {
                   cv->editCmd(cmd);
                   }},

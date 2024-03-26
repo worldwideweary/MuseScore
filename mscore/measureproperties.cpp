@@ -59,6 +59,8 @@ MeasureProperties::MeasureProperties(Measure* _m, QWidget* parent)
             horizontalLayout_2->insertWidget(0, nextButton);
             }
 
+      measureNumberOffset->setFocus();
+
       MuseScore::restoreGeometry(this);
       }
 

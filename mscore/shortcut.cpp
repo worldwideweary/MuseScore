@@ -3190,6 +3190,13 @@ Shortcut Shortcut::_sc[] = {
          QT_TRANSLATE_NOOP("action","Join selected measures")
          },
       {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         "measure-properties",
+         QT_TRANSLATE_NOOP("action","Open Measure Properties Dialogue"),
+         QT_TRANSLATE_NOOP("action","Open Measure Properties Dialogue")
+         },
+      {
          MsWidget::MAIN_WINDOW,
          STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT | STATE_PLAY | STATE_FOTO,
          "page-settings",
