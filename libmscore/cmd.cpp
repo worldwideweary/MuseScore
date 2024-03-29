@@ -394,10 +394,20 @@ void Score::cmdAddSpanner(Spanner* spanner, const QPointF& pos, bool firstStaffO
             spanner->setTick(m->tick());
             spanner->setTick2(m->endTick());
             }
-      spanner->eraseSpannerSegments();
+
+      bool isTextLineBase = spanner->isTextLineBase();
+      if (!isTextLineBase)
+            spanner->eraseSpannerSegments();
 
       undoAddElement(spanner);
-      select(spanner, SelectType::SINGLE, 0);
+      if (isTextLineBase) {
+            auto tlb = toTextLineBase(spanner);
+            if (!tlb->segmentsEmpty()) {
+                  auto seg = tlb->backSegment() ? tlb->backSegment() : tlb->frontSegment();
+                  select(seg, SelectType::SINGLE, 0);
+                  }
+            }
+      else select(spanner, SelectType::SINGLE, 0);
       }
 
 //---------------------------------------------------------
