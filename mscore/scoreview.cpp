@@ -1425,7 +1425,7 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                         if (editData.element->isLasso())
                               lassoToDraw = toLasso(editData.element);
                         else
-                              editData.element->drawEditMode(&p, editData);
+                              postponeEditMode = true;
 
                         if (editData.element->isHarmony())
                               editElement = editData.element;     // do not call paint() method
