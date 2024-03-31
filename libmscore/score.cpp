@@ -5245,7 +5245,6 @@ void Score::changeVoice(int voice)
             selection().clear();
       for (Element* e : el)
             select(e, SelectType::ADD, -1);
-      setLayoutAll();
       endCmd();
       }
 
