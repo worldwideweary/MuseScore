@@ -14,9 +14,11 @@
 #include "clef.h"
 #include "chord.h"
 #include "element.h"
+#include "harmony.h"
 #include "input.h"
 #include "navigate.h"
 #include "measure.h"
+#include "measurenumber.h"
 #include "note.h"
 #include "page.h"
 #include "rest.h"
@@ -661,6 +663,7 @@ Element* Score::nextElement()
       if (!e)
             return nullptr;
       int staffId = e->staffIdx();
+      bool fallthrough = false;
       while (e) {
             switch (e->type()) {
                   case ElementType::NOTE:
@@ -742,7 +745,7 @@ Element* Score::nextElement()
                               return next;
                         else
                               break;
-                       }
+                        }
                   case ElementType::SEGMENT: {
                         Segment* s = toSegment(e);
                         Element* next = s->nextElement(staffId);
@@ -759,20 +762,57 @@ Element* Score::nextElement()
                         else
                               break;
                         }
+                  case ElementType::MEASURE_NUMBER: {
+                        staffId = (staffId >= 0 ? staffId : 0);
+                        if (auto mNo = toMeasureNumber(e)) {
+                              if (auto m = mNo->measure()) {
+                                    bool beginningOfSystem = (m->system()->firstMeasure() == m);
+                                    if (beginningOfSystem) {
+                                          if (auto beginBarlineSeg = m->findFirstR(SegmentType::BeginBarLine, e->rtick())) {
+                                                if (auto barline = beginBarlineSeg->element(e->track())) {
+                                                      return barline;
+                                                      }
+                                                }
+                                          }
+                                    else if (auto seg = m->first()) {
+                                          // Note: m->endBarLine() won't give the appropriate selection...
+                                          e = seg->prevElement(mNo->staffIdx());
+                                          if (e)
+                                                return e;
+                                          }
+                                    }
+                              }
+                        }
+                        [[fallthrough]];
                   case ElementType::CLEF:
                   case ElementType::KEYSIG:
                   case ElementType::TIMESIG:
                   case ElementType::BAR_LINE: {
-                       for (; e && e->type() != ElementType::SEGMENT; e = e->parent()) {
-                             ;
-                             }
-                       Segment* s = toSegment(e);
-                       Element* next = s->nextElement(staffId);
-                       if (next)
-                             return next;
-                       else
-                             return score()->firstElement();
-                       }
+                        auto m = e->findMeasure();
+                        if (e->type() == ElementType::BAR_LINE && m) {
+                              auto bl = toBarLine(e);
+                              if (auto nsm = m->system()->lastMeasure()->nextMeasure()) {
+                                    if (bl->measure()->index() == (nsm->index() - 1)) {
+                                          if (auto mNo = nsm->noText(staffId)) {
+                                                return mNo;
+                                                }
+                                          }
+                                    }
+                              }
+
+                        if (!fallthrough) {
+                              for (; e && e->type() != ElementType::SEGMENT; e = e->parent()) {
+                                   ;
+                                   }
+                              }
+
+                        Segment* s = toSegment(e);
+                        Element* next = s->nextElement(staffId);
+                        if (next)
+                              return next;
+                        else
+                              return score()->firstElement();
+                        }
 #if 1
                   case ElementType::VOLTA_SEGMENT:
 #else
@@ -833,6 +873,12 @@ Element* Score::nextElement()
                         else if (mb->isMeasure()) {
                               ChordRest* cr = selection().currentCR();
                               int si = cr ? cr->staffIdx() : 0;
+                              if (auto m = toMeasure(mb)) {
+                                    staffId = (staffId >= 0) ? staffId : 0;
+                                    if (auto mnt = m->noText(staffId)) {
+                                          return mnt;
+                                          }
+                                    }
                               return toMeasure(mb)->nextElementStaff(si);
                               }
                         else {
@@ -842,6 +888,7 @@ Element* Score::nextElement()
                   case ElementType::LAYOUT_BREAK: {
                         staffId = 0; // otherwise it will equal -1, which breaks the navigation
                         }
+                        [[fallthrough]];
                   default:
                         break;
                   }
@@ -860,6 +907,7 @@ Element* Score::prevElement()
       if (!e)
             return nullptr;
       int staffId = e->staffIdx();
+      bool fallthrough = false;
       while (e) {
             switch (e->type()) {
                   case ElementType::NOTE:
@@ -884,10 +932,52 @@ Element* Score::prevElement()
                         Measure* m = toMeasure(e);
                         return m->prevElementStaff(staffId);
                         }
+                  case ElementType::MEASURE_NUMBER: {
+                        if (auto m = e->findMeasure()) {
+                              if (auto mb = m->prevMM()) {
+                                    if (mb->isBox()) {
+                                          return mb;
+                                          }
+                                    }
+                              if (auto pm = m->prevMeasure()) {
+                                    if (auto barline = pm->endBarLine()) {
+                                          if (m->system()->firstMeasure() == m) {
+                                                if (auto beginBarlineSeg = m->findFirstR(SegmentType::BeginBarLine, e->rtick())) {
+                                                      e = beginBarlineSeg->prevElement(e->staffIdx());
+                                                      if (e)
+                                                            return e;
+                                                      }
+                                                }
+                                          else {
+                                                e = barline;
+                                                fallthrough = true;
+                                                }
+                                          }
+                                    }
+                              }
+                        }
+                        [[fallthrough]];
                   case ElementType::CLEF:
                   case ElementType::KEYSIG:
                   case ElementType::TIMESIG:
                   case ElementType::BAR_LINE: {
+                        if (e->type() == ElementType::BAR_LINE && !fallthrough) {
+                              auto bLine = toBarLine(e);
+                              auto m = e->findMeasure();
+                              bool firstOfSystem = (bLine->rtick().numerator() == 0);
+                              bool lastOfSystem = (bLine->measure()->system()->lastMeasure() == m);
+                              if (!m) return nullptr;
+                              auto nm = m->nextMeasure();
+                              auto sIdx = staffId >= 0 ? staffId : 0;
+                              auto measureNumberText = firstOfSystem ? m->noText(sIdx) : (nm ? nm->noText(sIdx) : nullptr);
+
+                              if (lastOfSystem) {
+                                    }
+                              else if (measureNumberText) {
+                                    return measureNumberText;
+                                    }
+                              }
+
                         for (; e && e->type() != ElementType::SEGMENT; e = e->parent()) {
                               ;
                               }
