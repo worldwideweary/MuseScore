@@ -3891,6 +3891,25 @@ const BarLine* Measure::endBarLine() const
       }
 
 //---------------------------------------------------------
+//   endBarLine
+//      return the first one
+//---------------------------------------------------------
+
+BarLine* Measure::endBarLine()
+      {
+      // search barline segment:
+      Segment* s = last();
+      while (s && !s->isEndBarLineType())
+            s = s->prev();
+      // search first element
+      if (s) {
+            for (Element* e : s->elist())
+                  if (e) return toBarLine(e);
+            }
+      return nullptr;
+      }
+
+//---------------------------------------------------------
 //   endBarLineType
 //    Assume all barlines have same type if there is more
 //    than one.
