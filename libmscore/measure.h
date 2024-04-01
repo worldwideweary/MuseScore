@@ -273,6 +273,7 @@ class Measure final : public MeasureBase {
       void removeSystemHeader();
       void removeSystemTrailer();
 
+      BarLine* endBarLine();
       const BarLine* endBarLine() const;
       BarLineType endBarLineType() const;
       bool endBarLineVisible() const;

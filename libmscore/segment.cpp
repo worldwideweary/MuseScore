@@ -23,6 +23,7 @@
 #include "keysig.h"
 #include "mscore.h"
 #include "measure.h"
+#include "measurenumber.h"
 #include "note.h"
 #include "part.h"
 #include "repeat.h"
@@ -32,6 +33,7 @@
 #include "staff.h"
 #include "staffstate.h"
 #include "system.h"
+#include "text.h"
 #include "tuplet.h"
 #include "timesig.h"
 #include "undo.h"
@@ -1684,8 +1686,22 @@ Element* Segment::nextElement(int activeStaff)
                   Segment* nextSegment = this->next1MMenabled();
                   while (nextSegment) {
                         Element* nextEl = nextSegment->firstElementOfSegment(nextSegment, activeStaff);
-                        if (nextEl)
+                        if (nextEl) {
+                              // Handle MeasureNumbers
+                              if (nextEl->isBarLine()) {
+                                    if (auto m = nextEl->findMeasure()) {
+                                          if (auto nm = m->nextMeasure()) {
+                                                if (m->system()->lastMeasure() != m) {
+                                                      int idx = (e->staffIdx() > 0) ? e->staffIdx() : 0;
+                                                      if (auto noText = nm->noText(idx)) {
+                                                            nextEl = noText;
+                                                            }
+                                                      }
+                                                }
+                                          }
+                                    }
                               return nextEl;
+                              }
                         nextSegment = nextSegment->next1MMenabled();
                         }
                   break;
@@ -1760,8 +1776,22 @@ Element* Segment::nextElement(int activeStaff)
 
                   while (nextSegment) {
                         nextEl = nextSegment->firstElementOfSegment(nextSegment, activeStaff);
-                        if (nextEl)
+                        if (nextEl) {
+                              // Handle MeasureNumbers
+                              if (nextEl->isBarLine()) {
+                                    if (auto m = nextEl->findMeasure()) {
+                                          if (auto nm = m->nextMeasure()) {
+                                                if (m->system()->lastMeasure() != m) {
+                                                      int idx = (e->staffIdx() > 0) ? e->staffIdx() : 0;
+                                                      if (auto noText = nm->noText(idx)) {
+                                                            nextEl = noText;
+                                                            }
+                                                      }
+                                                }
+                                          }
+                                    }
                               return nextEl;
+                              }
                         nextSegment = nextSegment->next1MMenabled();
                         }
                   }
