@@ -81,10 +81,11 @@ class ScoreAccessibility : public QObject {
    public:
       ~ScoreAccessibility();
       void updateAccessibilityInfo();
+      void updateLabel(QString);
       void clearAccessibilityInfo();
       static void createInstance(QMainWindow* statusBar);
       static ScoreAccessibility* instance();
-      void currentInfoChanged();
+      void currentInfoChanged(Element* hover=nullptr);
       static void makeReadable(QString&);
 
    private slots:
