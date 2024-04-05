@@ -636,7 +636,8 @@ void TieSegment::adjustX()
                   }
             xo = (beginGrace || endGrace ? 0.0 : xo) + offsetMargin;
             ups(Grip::START).p += QPointF(xo, yo);
-            ups(Grip::SHOULDER).p += QPointF(0.0, 50.0);
+            qreal additionalMiddle = 0.0;
+            ups(Grip::SHOULDER).p += QPointF(0.0, additionalMiddle);
             }
 
       // ADJUST RIGHT GRIP ----------
@@ -645,7 +646,7 @@ void TieSegment::adjustX()
             // grips are in system coordinates, normalize to note position
             QPointF p2 = ups(Grip::END).p + QPointF(system()->pos().x() - en->canvasX(), 0);
             xo = 0;
-            if (true) {
+            if (tie()->isInside()) {
                   // for inter-voice collisions, we need a list of all notes from all voices
                   std::vector<Chord*> chords;
                   int strack = ec->staffIdx() * VOICES;
@@ -668,8 +669,11 @@ void TieSegment::adjustX()
                         }
 
                   for (Chord* chord : chords) {
-                        if (this->track() != chord->track())
+                        if ((this->track() != chord->track()) && (this->tick() == chord->tick())) {
+                              // Ties from one voice to another will act accordingly, only don't alter when
+                              // different voices @ same position
                               continue;
+                              }
                         qreal chordOffset = (ec->x() + en->x()) - chord->x(); // en->x() for right-offset notes
 
                         qreal leftMostNote = 0.0;
@@ -733,6 +737,42 @@ void TieSegment::adjustX()
                   }
             xo = (beginGrace || endGrace ? 0.0 : xo) - offsetMargin;
             ups(Grip::END).p += QPointF(xo, yo);
+            }
+      }
+
+//---------------------------------------------------------
+//   adjustY
+//     Mainly to offset augmentation dots for more uniform
+//     "look and feel" TM
+//---------------------------------------------------------
+
+void TieSegment::adjustY()
+      {
+      if (auto tie = this->tie()) {
+            if (auto note = tie->startNote()) {
+                  if (!note->dots().empty() && tie->isInside()) {
+                        auto dot                = note->dot(0);
+                        bool dotVisible         = dot->visible();
+                        bool dotUp              = note->dotIsUp();
+                        int noteLine            = note->line();
+                        int lines               = staff()->lines(tick());
+                        int bottomLine          = (lines - 1) * 2;
+                        int topLine             = 0;
+                        bool noteIsOnLine       = (noteLine % 2) == 0;
+                        bool noteIsBelowStaff   = (noteLine > bottomLine);
+                        bool noteIsAboveStaff   = (noteLine < topLine);
+                        bool noteOffStaff       = (noteIsBelowStaff || noteIsAboveStaff); (void) noteOffStaff;
+                        if (noteIsOnLine) {
+                              if (dotUp && dotVisible) {
+                                    qreal dy = dot->height() * 1.2;
+                                    this->ups(Grip::START).p -= QPointF(0.0, dy);
+                                    if (false /*Ms::tiesAugmentationSlant*/) {} // Kind of looks "cool" slightly slanted (weirdo TODO option?)
+                                    else this->ups(Grip::END).p -= QPointF(0.0, dy);
+                                    }
+                              else { /* ??? */ }
+                              }
+                        }
+                  }
             }
       }
 
@@ -1091,7 +1131,7 @@ TieSegment* Tie::layoutFor(System* system)
       segment->layoutSegment(sPos.p1, sPos.p2); // adjust vertically
       segment->setSpannerSegmentType(sPos.system1 != sPos.system2 ? SpannerSegmentType::BEGIN : SpannerSegmentType::SINGLE);
       segment->adjustX(); // adjust horizontally for inside-style ties
-
+      segment->adjustY(); // adjust vertically for augmentations
       segment->finalizeSegment(); // compute bezier and set bbox
       return segment;
       }
