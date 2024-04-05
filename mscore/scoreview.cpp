@@ -2095,14 +2095,27 @@ void ScoreView::updateHover(const QPointF& position)
             if (presentHover && (presentHover != selected)) {
                   view = presentHover->canvasBoundingRect();
                   setDropTarget(presentHover, false /*no highlight*/);
+                  ScoreAccessibility::instance()->currentInfoChanged(presentHover);
                   }
             else if (pastHover) {
                   view = pastHover->canvasBoundingRect();
                   setDropTarget(nullptr);
+                  ScoreAccessibility::instance()->updateAccessibilityInfo();
                   }
             const int margin = 2;
             update(toPhysical(view).adjusted(-margin, -margin, +margin, +margin));
             update();
+            }
+      if (!selected && !presentHover) {
+            if (Page* currentPage = point2page(editData.startMove)) {
+                  int currentPageNumber = currentPage->no() + 1;
+                  int totalPages = score()->npages();
+                  QString s = "Page: "
+                              + QString::number(currentPageNumber)
+                              + "/"
+                              + QString::number(totalPages);
+                  ScoreAccessibility::instance()->updateLabel(s);
+                  }
             }
       }
 
