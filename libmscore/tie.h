@@ -45,6 +45,7 @@ class TieSegment final : public SlurTieSegment {
 
       void layoutSegment(const QPointF& p1, const QPointF& p2);
       void adjustX();
+      void adjustY();
       void finalizeSegment();
 
       bool isEdited() const;
