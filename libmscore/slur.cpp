@@ -290,7 +290,38 @@ void SlurSegment::computeBezier(QPointF p6o)
 
       shoulderH -= p6o.y();
 
-      if (!slur()->up())
+      // Mid-point clamp for beam-side
+      auto scr = spanner()->startCR();
+      auto ecr = spanner()->endCR();
+      bool slurUp = slur()->up();
+      if (scr && ecr) {
+            bool sameChordDirection = scr->up() == ecr->up();
+            bool sameAsSlurDirection = scr->up() == slurUp;
+            if (sameChordDirection && sameAsSlurDirection) {
+                  // This method is obviously odd, but for now:
+                  // qDebug() << "Beamside slur distance =" << d;
+                  if (d < 4)
+                        shoulderH -= 0.0;
+                  else if (d < 8)
+                        shoulderH -= 5.0;
+                  else if (d < 10)
+                        shoulderH -= 10.0;
+                  else if (d < 15)
+                        shoulderH -= 20.0;
+                  else if (d < 20)
+                        shoulderH -= 35.0;
+                  else if (d < 30)
+                        shoulderH -= 50.0;
+                  else if (d < 40)
+                        shoulderH -= 55.0;
+                  else if (d < 55)
+                        shoulderH -= 55.0;
+                  else
+                        shoulderH -= 70;
+                  }
+            }
+
+      if (!slurUp)
             shoulderH = -shoulderH;
 
       qreal c    = p2.x();
