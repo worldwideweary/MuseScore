@@ -2061,6 +2061,33 @@ void Note::layout()
                   if (chord()->measure() != tieBack()->startNote()->chord()->measure() || el().size() > 0)
                         paren = true;
                   }
+
+            auto scoreElement = links() ? links()->mainElement() : nullptr;
+            if (scoreElement && scoreElement->isNote()) {
+                  if (auto n = toNote(scoreElement)) {
+                        int updatedString = _string;
+                        int updatedFret = _fret;
+                        for (auto& e : n->el()) {
+                              if (e->isFingering()) {
+                                    if (auto fingering = toFingering(e)) {
+                                          if (fingering->tid() == Tid::STRING_NUMBER) {
+                                                auto stringData = staff()->part()->instrument(tick())->stringData();
+                                                int whichString = fingering->plainText().toInt();
+                                                int maxStrings = stringData->strings();
+                                                if (whichString <= maxStrings && whichString >= 0) {
+                                                      updatedString = whichString;  // E.g: 1-6
+                                                      updatedString -= 1;           // E.g: 0-5 (internal representation)
+                                                      updatedFret = stringData->fret(pitch(), updatedString, staff(), chord()->tick());
+                                                      }
+                                                }
+                                          }
+                                    }
+                              }
+                        _string = updatedString;
+                        _fret   = updatedFret;
+                        }
+                  }
+
             // not complete but we need systems to be layouted to add parenthesis
             if (fixed())
                   _fretString = "/";
