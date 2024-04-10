@@ -3832,8 +3832,15 @@ void ScoreView::cmd(const char* s)
                         cv->score()->cmdCycleVoiceFilter(-1);
                         }
                   }},
-            };
+            {{"export-midi-automatic"}, [](ScoreView* cv, const QByteArray&) {
+                  QString results = cv->saveMIDIWithoutDialogue();
+                  QMessageBox msgBox;
+                  msgBox.setWindowTitle("Automatic MIDI Exported:");
+                  msgBox.setText(results);
+                  msgBox.exec();
+                  }},
 
+            }; // END COMMANDS
       auto c = std::find_if(cmdList.begin(), cmdList.end(), [cmd](const ScoreViewCmd& cc) {
             for (auto& name : cc.commands) {
                   if (cmd == name)
@@ -6276,6 +6283,78 @@ void ScoreView::midiNoteReceived(int pitch, bool chord, int velocity)
             triggerCmdRealtimeAdvance(); // also trigger once immediately
             }
 
+      }
+
+//---------------------------------------------------------
+//   saveMIDIWithoutDialogue
+//    A silent way to export parts to MIDI, automatically
+//    overwriting pre-existing files.
+//    Returns a string containing the resultant absolute
+//    filenames,
+//---------------------------------------------------------
+
+QString ScoreView::saveMIDIWithoutDialogue()
+      {
+      auto cs = score();
+      std::vector<Score*> scores;
+      scores.push_back(cs->masterScore()->score());
+      for (auto excerpt : cs->masterScore()->excerpts()) {
+            auto partScore = excerpt->partScore();
+            scores.push_back(partScore);
+            }
+      if (scores.empty())
+            return QString("Error: no open scores");
+
+      bool oneScore           = (scores.size() == 1);
+      QString saveFormat      = "mid";
+      QString saveDirectory   = cs->masterScore()->fileInfo()->exists()
+                              ? cs->masterScore()->fileInfo()->dir().path()
+                              : preferences.getString(PREF_APP_PATHS_MYSCORES);
+      if (saveDirectory.isEmpty())
+            saveDirectory = mscore->lastSaveCopyDirectory;
+
+      preferences.setPreference(PREF_IO_MIDI_EXPANDREPEATS, true);
+      preferences.setPreference(PREF_IO_MIDI_EXPORTRPNS, true);
+
+      QString name = QString("%1/%2").arg(saveDirectory, cs->masterScore()->fileInfo()->completeBaseName());
+      if (oneScore) {
+            Score* firstScore = scores.front();
+            name.append(QString("%1").arg(firstScore->isMaster() ? "" : "-" + mscore->saveFilename(firstScore->title())));
+            }
+
+      #ifdef Q_OS_WIN
+      if (QOperatingSystemVersion::current() > QOperatingSystemVersion(QOperatingSystemVersion::Windows, 5, 1))    // XP
+      #endif
+            name.append(QString(".%1").arg(saveFormat));
+
+      QString filename = name;
+      QFileInfo fileinfo(filename);
+      mscore->lastSaveCopyDirectory = fileinfo.absolutePath();
+      mscore->lastSaveCopyFormat    = fileinfo.suffix();
+      QString suffix = fileinfo.suffix();
+      QString results;
+      if (suffix.isEmpty())
+            results += "Error: empty suffix";
+      else if (oneScore) {
+            mscore->saveAs(scores.front(), true, filename, suffix);
+            results += filename;
+            }
+      else {
+            // Export parts as separate MIDI files
+            SaveReplacePolicy replacePolicy = SaveReplacePolicy::REPLACE_ALL;
+            for (Score* score : scores) {
+                  QString definitiveFilename = QString("%1/%2%3.%4").arg(
+                        fileinfo.absolutePath(),
+                        fileinfo.completeBaseName(),
+                        score->isMaster() ? "" : "-" + mscore->saveFilename(score->title()), suffix);
+                  mscore->saveAs(score, true, definitiveFilename, suffix, &replacePolicy);
+                  results += definitiveFilename + "\n";
+                  }
+            }
+      if (results.isEmpty())
+            results = "Error: nothing exported";
+
+      return results;
       }
 
 //---------------------------------------------------------
