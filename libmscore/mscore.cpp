@@ -94,6 +94,7 @@ QColor  MScore::defaultColor;
 bool    MScore::noteInputOctaveTendencyIsTopNote;
 bool    MScore::noteInputOctaveUpwardFifth;
 bool    MScore::resetNoteEntryAtSystemOrCourtesy;
+bool    MScore::noteInputForceVoice2BeneathVoice1;
 bool    MScore::retainAugmentationInRhythmEntry;
 
 bool    MScore::fingerTextAutoForwardAlphaNumeric;
