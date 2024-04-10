@@ -4281,7 +4281,38 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                   // Observation: this is partial in that it will only work for one element and not on a range
             else {
                   int curPitch = 60;
-                  if (is.segment()) {
+                  el = !el ? selection().firstChordRest() : el;
+                  if (!el)
+                        return;
+
+                  // Let voice-2 start entering notes below existing voice-1 chord when beginning entry:
+                  int firstTrackOfStaff = el->staff()->part()->startTrack();
+                  bool inVoice2 = (is.track() == firstTrackOfStaff + 1);
+                  bool inputJustBegan = !(el && is.tick() > el->tick());
+
+                  auto s = is.segment();
+                  if (!s && el && el->isChord())
+                        s = toChord(el)->segment();
+                  auto fcr = s ? s->nextChordRest(firstTrackOfStaff) : nullptr;
+                  auto firstTrackChord = fcr ? (fcr->isChord() ? toChord(fcr) : nullptr) : nullptr;
+
+                  bool beneath = false;
+                  if (firstTrackChord && inVoice2 && inputJustBegan) { // && Adv. Option to enable this?
+                        if (s) {
+                              if (auto e = s->element(firstTrackOfStaff)) {
+                                    if (e->isChord()) {
+                                          auto c = toChord(e);
+                                          auto n = c->downNote();
+                                          curPitch = n->epitch();
+                                          // omit alterations & key-sig adjustments:
+                                          curPitch -= static_cast<int>(tpc2alter(n->tpc()));
+                                          octave = curPitch / 12;
+                                          beneath = true;
+                                          }
+                                    }
+                              }
+                        }
+                  else if (is.segment()) {
                         auto inputTick = is.segment()->tick();
                         Staff* staff = Score::staff(is.track() / VOICES);
                         Segment* seg = is.segment()->prev1(SegmentType::ChordRest | SegmentType::Clef | SegmentType::HeaderClef);
@@ -4337,10 +4368,16 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                         ++upTendency;
                         downTendency += 2;
                         }
-                  if  (delta > upTendency)
-                        --octave;
-                  else if (delta < downTendency)
-                        ++octave;
+                  if (beneath) {
+                        if (delta >= 0)
+                              --octave;
+                        }
+                  else {
+                        if  (delta > upTendency)
+                              --octave;
+                        else if (delta < downTendency)
+                              ++octave;
+                        }
                   }
             }
       resetOctave(false);
