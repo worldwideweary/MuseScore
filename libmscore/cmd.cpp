@@ -4281,7 +4281,43 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                   // Observation: this is partial in that it will only work for one element and not on a range
             else {
                   int curPitch = 60;
+                  el = !el ? selection().firstChordRest() : el;
+                  if (!el)
+                        return;
+
+                  // Let voice-2 start entering notes below existing voice-1 chord when beginning entry:
+                  bool inVoice2 = (is.voice() == 1);
+                  bool inputAtStart = (is.tick() == Fraction(0,1));
+
+                  auto s = is.segment();
+                  if (!s && el && el->isChord())
+                        s = toChord(el)->segment();
+
+                  int aboveOctave = 0;
+                  int aboveNote = 0;
+                  bool forceBeneathFirstVoice = false;
                   if (is.segment()) {
+                        int firstTrackOfStaff = is.track() - 1; // proved after inVoice2 guarantee
+                        auto fcr = s ? s->nextChordRest(firstTrackOfStaff) : nullptr;
+                        auto firstTrackChord = fcr ? (fcr->isChord() ? toChord(fcr) : nullptr) : nullptr;
+                        if (MScore::noteInputForceVoice2BeneathVoice1 && inVoice2 && firstTrackChord) {
+                              if (auto e = s->element(firstTrackOfStaff)) {
+                                    if (e->isChord()) {
+                                          auto chord = toChord(e);
+                                          auto n = chord->downNote();
+                                          aboveOctave = n->epitch() / PITCH_DELTA_OCTAVE;
+                                          QChar c = n->tpcUserName().at(0);
+                                             if (c == 'C') aboveNote = 0; else
+                                             if (c == 'D') aboveNote = 1; else
+                                             if (c == 'E') aboveNote = 2; else
+                                             if (c == 'F') aboveNote = 3; else
+                                             if (c == 'G') aboveNote = 4; else
+                                             if (c == 'A') aboveNote = 5; else
+                                             if (c == 'B') aboveNote = 6;
+                                          forceBeneathFirstVoice = true;
+                                          }
+                                    }
+                              }
                         auto inputTick = is.segment()->tick();
                         Staff* staff = Score::staff(is.track() / VOICES);
                         Segment* seg = is.segment()->prev1(SegmentType::ChordRest | SegmentType::Clef | SegmentType::HeaderClef);
@@ -4305,14 +4341,12 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                                     // MScore <= 3.6.2 sometimes finds a 'phantom HeaderClef'
                                     // at exact tick of input and provides incorrect octave/position
                                     if (segAtInput && seg->isHeaderClefType() && !inputAtStart) {
-                                          qDebug() << "cmdAddPitch: found clef/header but @ same input position...";
                                           seg = seg->prev1MM(SegmentType::ChordRest | SegmentType::Clef | SegmentType::HeaderClef);
                                           continue;
                                           }
                                     Element* p = seg->element( (is.track() / VOICES) * VOICES); // clef on voice 1
                                     if (p && p->isClef()) {
                                           Clef* clef = toClef(p);
-
                                           ClefType previousClef = staff->clef(clef->tick() - Fraction::fromTicks(1));
                                           bool isCourtesy  = (previousClef == clef->clefType());
                                           bool isBeginning = clef->tick().isZero();
@@ -4325,28 +4359,38 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                                     }
                               seg = seg->prev1MM(SegmentType::ChordRest | SegmentType::Clef | SegmentType::HeaderClef);
                               }
-                        octave = curPitch / 12;
+                        octave = curPitch / PITCH_DELTA_OCTAVE;
                         }
 
-                  int delta = octave * 12 + tab[note] - curPitch;
-                  // Default: upward limit is interval of a fourth
-                  auto upTendency   = +6;
-                  auto downTendency = -6;
+                  int delta = octave * PITCH_DELTA_OCTAVE + tab[note] - curPitch;
+
+                  // By default, upward limit is a fourth interval
+                  int upTendency   = +6;
+                  int downTendency = -6;
                   if (MScore::noteInputOctaveUpwardFifth) {
-                        // Alternatively, upward limit is interval of a fifth, sixth/third is downward
-                        ++upTendency;
+                        // Alternatively, upward limit is fifth (therefore sixth/third is downward)
+                        upTendency   += 1;
                         downTendency += 2;
                         }
-                  if  (delta > upTendency)
+                  if (delta > upTendency)
                         --octave;
                   else if (delta < downTendency)
                         ++octave;
+
+                  if (forceBeneathFirstVoice) {
+                        while (octave >= aboveOctave) {
+                              if ((octave == aboveOctave) && (note < aboveNote)) {
+                                    break;
+                                    }
+                              --octave;
+                              }
+                        }
                   }
             }
       resetOctave(false);
       ed.view->startNoteEntryMode();
 
-      int step = octave * 7 + note;
+      int step = octave * TPC_DELTA_SEMITONE + note;
       cmdAddPitch(step,  addFlag, insert);
       ed.view->adjustCanvasPosition(is.cr(), false);
       }

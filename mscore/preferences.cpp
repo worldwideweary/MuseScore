@@ -228,6 +228,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_SCORE_NOTE_INPUT_FIFTH_IS_UPWARD,                new BoolPreference(false)},
             {PREF_SCORE_NOTE_INPUT_RETAIN_AUG_RHYTHM_MODE,         new BoolPreference(false)},
             {PREF_SCORE_NOTE_INPUT_RESET_PITCH_AT_SYSTEM,          new BoolPreference(false)},
+            {PREF_SCORE_NOTE_INPUT_FORCE_VOICE2_BELOW,             new BoolPreference(true)},
             {PREF_SCORE_FINGERING_ALPHANUMERIC_AUTOFORWARD,        new BoolPreference(false)},
             {PREF_UI_SCORE_DISABLE_NOTE_DRAG_VERTICAL,             new BoolPreference(false)},
             {PREF_SCORE_STYLE_DEFAULTSTYLEFILE,                    new StringPreference("", false)},
