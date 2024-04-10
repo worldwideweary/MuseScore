@@ -130,6 +130,17 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
+         "export-midi-automatic",
+         QT_TRANSLATE_NOOP("action","Export MIDI (Automatically)…"),
+         QT_TRANSLATE_NOOP("action","Export MIDI (Automatically)"),
+         QT_TRANSLATE_NOOP("action","Export MIDI (Automatically)"),
+         Icons::fileSave_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_SCORE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
          STATE_DISABLED | STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT | STATE_PLAY,
          "file-import-pdf",
          QT_TRANSLATE_NOOP("action","Import PDF…"),

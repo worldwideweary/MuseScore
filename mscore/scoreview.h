@@ -519,6 +519,8 @@ class ScoreView : public QWidget, public MuseScoreView {
       void showOmr(bool flag);
       void midiNoteReceived(int pitch, bool chord, int velocity);
 
+      QString saveMIDIWithoutDialogue();
+
       virtual void moveCursor() override;
 
       SmoothPanSettings& panSettings() { return _panSettings; }
