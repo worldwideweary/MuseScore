@@ -211,8 +211,9 @@ void ScoreView::wheelEvent(QWheelEvent* event)
       imatrix = _matrix.inverted();
 
       scroll(dx, dy, QRect(0, 0, width(), height()));
-      emit viewRectChanged();
+      update (-10, 0, width() + 10, height());
       emit offsetChanged(_matrix.dx(), _matrix.dy());
+      emit viewRectChanged();
       }
 
 //---------------------------------------------------------
