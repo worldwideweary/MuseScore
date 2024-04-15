@@ -179,7 +179,7 @@ void ExportDialog::loadValues()
                   customBackgroundRadioButton->setChecked(true);
                   break;
             }
-      customBackgroundColorLabel->setColor(preferences.getColor(PREF_EXPORT_BG_CUSTOM_COLOR));
+      customBackgroundColorLabel->setColor(preferences.getColor(PREF_UI_CANVAS_FG_COLOR));
 
       audioNormaliseCheckBox->setChecked(preferences.getBool(PREF_EXPORT_AUDIO_NORMALIZE));
       int audioSampleRateIndex = audioSampleRate->findData(preferences.getInt(PREF_EXPORT_AUDIO_SAMPLERATE));
