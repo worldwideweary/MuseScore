@@ -1392,8 +1392,7 @@ void ScoreView::paint(const QRect& r, QPainter& p)
       if (_fgPixmap == 0 || _fgPixmap->isNull())
             p.fillRect(r, _fgColor);
       else {
-            p.drawTiledPixmap(r, *_fgPixmap, r.topLeft()
-               - QPoint((int)lrint(_matrix.dx()), (int)lrint(_matrix.dy())));
+            p.drawTiledPixmap(r, *_fgPixmap, r.topLeft());
             }
 
       p.setTransform(_matrix);
@@ -1706,7 +1705,7 @@ void ScoreView::paint(const QRect& r, QPainter& p)
             if (_bgPixmap == 0 || _bgPixmap->isNull())
                   p.fillRect(r, _bgColor);
             else
-                  p.drawTiledPixmap(r, *_bgPixmap, r.topLeft() - QPoint(_matrix.m31(), _matrix.m32()));
+                  p.drawTiledPixmap(r, *_bgPixmap, r.topLeft());
             }
       p.restore();
       }
