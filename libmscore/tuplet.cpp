@@ -312,6 +312,7 @@ void Tuplet::layout()
       qreal stemRight     = score()->styleP(Sid::tupletStemRightDistance);
       qreal noteLeft      = score()->styleP(Sid::tupletNoteLeftDistance);
       qreal noteRight     = score()->styleP(Sid::tupletNoteRightDistance);
+      qreal staffLineWidth= score()->styleP(Sid::staffLineWidth);
 
       int move = 0;
       setTrack(cr1->staffIdx() * VOICES + voice());
@@ -343,6 +344,7 @@ void Tuplet::layout()
             else return ( (l + r) * 0.5 );
             };
 
+      vHeadDistance += _spatium;
       qreal l1  = this->hasBracket() ? score()->styleP(Sid::tupletBracketHookHeight) : 0.0;
       qreal l2l = vHeadDistance;    // left bracket vertical distance
       qreal l2r = vHeadDistance;    // right bracket vertical distance right
@@ -368,6 +370,7 @@ void Tuplet::layout()
             beamAdjust = point(score()->styleS(Sid::beamWidth)) * 0.5 * mag();
             }
 
+      qreal staffOffset = _hasBracket ? (staffLineWidth * 2.0) : 0.0;
       if (_isUp) {
             if (cr1->isChord()) {
                   const Chord* chord1 = toChord(cr1);
@@ -383,7 +386,7 @@ void Tuplet::layout()
                               else if (chord1->beam())
                                     p1.ry() = chord1->beam()->abbox().y();
                               else
-                                    p1.ry() = stem->abbox().y();
+                                    p1.ry() = stem->abbox().y() - staffOffset;
                               l2l = vStemDistance;
                               }
                         else {
@@ -406,7 +409,7 @@ void Tuplet::layout()
                         else if (chord2->beam() && !chord2->staffMove() && !chord2->beam()->cross())
                               p2.ry() = chord2->beam()->abbox().top();
                         else
-                              p2.ry() = stem->abbox().top();
+                              p2.ry() = stem->abbox().top() - staffOffset;
                         l2r = vStemDistance;
                         }
                   else {
@@ -430,17 +433,30 @@ void Tuplet::layout()
                         p1.setY(p2.y());
                   }
 
-            // outOfStaff
-            if (outOfStaff) {
-                  qreal min = cr1->measure()->staffabbox(cr1->staffIdx() + move).y();
-                  if (min < p1.y()) {
-                        p1.ry() = min;
+            if (outOfStaff) { // Up
+                  qreal topOfMeasure = cr1->measure()->staffabbox(cr1->staffIdx() + move).y();
+                  if (_hasBracket)
+                        topOfMeasure -= staffOffset;
+                  bool followCR = (p1.y() + (_hasBracket ? -staffLineWidth : staffLineWidth) < topOfMeasure);
+                  if (!followCR) {
+                        p1.ry() = topOfMeasure;
                         l2l = vStemDistance;
                         }
-                  min = cr2->measure()->staffabbox(cr2->staffIdx() + move).y();
-                  if (min < p2.y()) {
-                        p2.ry() = min;
+                  else p1.ry() -= (staffOffset - staffLineWidth);
+
+                  topOfMeasure = cr2->measure()->staffabbox(cr2->staffIdx() + move).y();
+                  if (_hasBracket)
+                        topOfMeasure -= staffOffset;
+                  followCR = (p2.y() + (_hasBracket ? -staffLineWidth : staffLineWidth) < topOfMeasure);
+                  if (!followCR) {
+                        p2.ry() = topOfMeasure;
                         l2r = vStemDistance;
+                        }
+                  else p2.ry() -= (staffOffset - staffLineWidth);
+
+                  if (!_hasBracket) {
+                        p1.ry() -= _spatium;
+                        p2.ry() -= _spatium;
                         }
                   }
 
@@ -542,17 +558,31 @@ void Tuplet::layout()
                   else
                         p1.setY(p2.y());
                   }
-            // outOfStaff
-            if (outOfStaff) {
-                  qreal max = cr1->measure()->staffabbox(cr1->staffIdx() + move).bottom();
-                  if (max > p1.y()) {
-                        p1.ry() = max;
+
+            if (outOfStaff) { // Down
+                  qreal bottomOfMeasure = cr1->measure()->staffabbox(cr1->staffIdx() + move).bottom();
+                  if (_hasBracket)
+                        bottomOfMeasure += staffOffset;
+                  bool followCR = (p1.y() - (_hasBracket ? -staffLineWidth : staffLineWidth) > bottomOfMeasure); // subtraction?
+                  if (!followCR) {
+                        p1.ry() = bottomOfMeasure;
                         l2l = vStemDistance;
                         }
-                  max = cr2->measure()->staffabbox(cr2->staffIdx() + move).bottom();
-                  if (max > p2.y()) {
-                        p2.ry() = max;
+                  else p1.ry() += (staffOffset - staffLineWidth);
+
+                  bottomOfMeasure = cr2->measure()->staffabbox(cr1->staffIdx() + move).bottom();
+                  if (_hasBracket)
+                        bottomOfMeasure += staffOffset;
+                  followCR = (p2.y() - (_hasBracket ? -staffLineWidth : staffLineWidth) > bottomOfMeasure); // subtraction?
+                  if (!followCR) {
+                        p2.ry() = bottomOfMeasure;
                         l2r = vStemDistance;
+                        }
+                  else p2.ry() += (staffOffset - staffLineWidth);
+
+                  if (!_hasBracket) {
+                        p1.ry() += _spatium;
+                        p2.ry() += _spatium;
                         }
                   }
             // check that slope is no more than max
@@ -722,9 +752,6 @@ void Tuplet::layout()
             r |= b;
             }
       setbbox(r);
-
-      if (outOfStaff && !cross())
-            autoplaceMeasureElement(_isUp, /* add to skyline */ true);
       }
 
 //---------------------------------------------------------
