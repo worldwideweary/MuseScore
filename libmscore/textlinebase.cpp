@@ -82,6 +82,11 @@ void TextLineBaseSegment::draw(QPainter* painter) const
       qreal strokeWidth = tl->lineWidth();
       qreal lineAngle = -(textLine.angle());
 
+      auto lineColorAlpha = lineColor.alpha();
+      bool transparentLine = (lineColorAlpha == 0);
+      QColor opaqueLineColor = lineColor;
+      opaqueLineColor.setAlpha(255);
+
       // Playback marked color:
       auto t1 = spanner()->tick();
       auto t2 = spanner()->tick2();
@@ -160,7 +165,6 @@ void TextLineBaseSegment::draw(QPainter* painter) const
             strokeWidth *= mag();
       QPen pen(lineColor, strokeWidth, tl->lineStyle());
       QPen solidPen(lineColor, strokeWidth, Qt::SolidLine);
-
 
       // Δ from 3.6.2: MiterJoined Polylines for each segment + round-capped single-lined hooks for pedals
       pen.setCapStyle(Qt::FlatCap);
@@ -352,57 +356,72 @@ void TextLineBaseSegment::draw(QPainter* painter) const
             painter->rotate(angle);
             painter->translate(-unangledTextLine.p1());
 
-            if (endHookLine.length() && !separateHooks) {
-                  if (tl->endHookType() == HookType::HOOK_45 || tl->endHookType() == HookType::HOOK_90)
-                        totalLine << endHookLine.p2();
-                  }
+            if (transparentLine && !qFuzzyCompare(strokeWidth, 0.0)) {
+                  QRectF r(0.0, -strokeWidth * 0.5, lineLength, strokeWidth);
+                  solidPen.setColor(opaqueLineColor);
+                  solidPen.setWidth(3);
+                  solidPen.setStyle(Qt::SolidLine);
+                  painter->setBrush(Qt::NoBrush);
+                  painter->setPen(solidPen);
 
-            if (centeredBrokenText) {
-                  totalLine << brokenPoints[3] << brokenPoints[2];
+                        painter->drawRect(r);
+
+                  painter->translate(+unangledTextLine.p1());
+                  painter->rotate(-angle);
+                  painter->translate(-unangledTextLine.p1());
+                  }
+            else {
+                  if (endHookLine.length() && !separateHooks) {
+                        if (tl->endHookType() == HookType::HOOK_45 || tl->endHookType() == HookType::HOOK_90)
+                              totalLine << endHookLine.p2();
+                        }
+
+                  if (centeredBrokenText) {
+                        totalLine << brokenPoints[3] << brokenPoints[2];
+
+                        painter->drawPolyline(totalLine);
+
+                        totalLine.clear();
+                        totalLine << brokenPoints[1] << brokenPoints[0];
+                        }
+                  else totalLine << unangledTextLine.p2() << unangledTextLine.p1();
+
+                  if (beginHookLine.length() && !separateHooks) {
+                        if (tl->beginHookType() == HookType::HOOK_45 || tl->beginHookType() == HookType::HOOK_90)
+                              totalLine << beginHookLine.p1();
+                        }
 
                   painter->drawPolyline(totalLine);
 
-                  totalLine.clear();
-                  totalLine << brokenPoints[1] << brokenPoints[0];
-                  }
-            else {
-                  totalLine << unangledTextLine.p2() << unangledTextLine.p1();
-                  }
+                  painter->translate(+unangledTextLine.p1());
+                  painter->rotate(-angle);
+                  painter->translate(-unangledTextLine.p1());
 
-            if (beginHookLine.length() && !separateHooks) {
-                  if (tl->beginHookType() == HookType::HOOK_45 || tl->beginHookType() == HookType::HOOK_90)
-                        totalLine << beginHookLine.p1();
-                        }
-
-            painter->drawPolyline(totalLine);
-
-            painter->translate(+unangledTextLine.p1());
-            painter->rotate(-angle);
-            painter->translate(-unangledTextLine.p1());
-
-            if (totalLine.isEmpty()) {
-                  // Left-over for non-joined polylines. 90T hooks and custom dash lined hooks were already drawn
-                  if (tl->endHookType() != HookType::NONE && tl->endHookType() != HookType::HOOK_90T && tl->lineStyle() != Qt::CustomDashLine) {
-                        if (endHookLine.length()) {
-                              painter->rotate(angle);
-                              painter->drawLine(endHookLine);
-                              painter->rotate(-angle);
+                  if (totalLine.isEmpty()) {
+                        // Left-over for non-joined polylines. 90T hooks and custom dash lined hooks were already drawn
+                        if (tl->endHookType() != HookType::NONE && tl->endHookType() != HookType::HOOK_90T && tl->lineStyle() != Qt::CustomDashLine) {
+                              if (endHookLine.length()) {
+                                    painter->rotate(angle);
+                                    painter->drawLine(endHookLine);
+                                    painter->rotate(-angle);
+                                    }
                               }
-                        }
-                  QLineF reverseLine(textLine.p2(), textLine.p1());
-                  if (tl->lineStyle() == Qt::DashDotDotLine || tl->lineStyle() == Qt::DotLine)
-                        painter->drawLine(reverseLine);
-                  else painter->drawLine(textLine);
-                  if (tl->beginHookType() != HookType::NONE && tl->beginHookType() != HookType::HOOK_90T && tl->lineStyle() != Qt::CustomDashLine) {
-                        if (beginHookLine.length()) {
-                              painter->rotate(angle);
-                              painter->drawLine(beginHookLine);
-                              painter->rotate(-angle);
+                        QLineF reverseLine(textLine.p2(), textLine.p1());
+                        if (tl->lineStyle() == Qt::DashDotDotLine || tl->lineStyle() == Qt::DotLine)
+                              painter->drawLine(reverseLine);
+                        else painter->drawLine(textLine);
+                        if (tl->beginHookType() != HookType::NONE && tl->beginHookType() != HookType::HOOK_90T && tl->lineStyle() != Qt::CustomDashLine) {
+                              if (beginHookLine.length()) {
+                                    painter->rotate(angle);
+                                    painter->drawLine(beginHookLine);
+                                    painter->rotate(-angle);
+                                    }
                               }
                         }
                   }
 
             }
+
       }
 
 //---------------------------------------------------------
