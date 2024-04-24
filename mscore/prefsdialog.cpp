@@ -271,6 +271,7 @@ PreferenceDialog::PreferenceDialog(QWidget* parent)
 #if !defined(Q_OS_MAC) && (!defined(Q_OS_WIN) || defined(FOR_WINSTORE)) || !0
       General->removeTab(General->indexOf(tabUpdate)); // updateTab not needed on Linux and not wanted in Windows Store
 #endif
+      buttonBox->button(QDialogButtonBox::Apply)->setText(tr("&Apply"));
       }
 
 //---------------------------------------------------------
@@ -1512,7 +1513,7 @@ void PreferenceDialog::apply()
       modifiedUiWidgets.clear();
       modifiedAudioWidgets.clear();
 
-      buttonBox->button(QDialogButtonBox::Apply)->setText(tr("Apply"));
+      buttonBox->button(QDialogButtonBox::Apply)->setText(tr("&Apply"));
       qDebug() << "Final: " << timer.elapsed();
       }
 
