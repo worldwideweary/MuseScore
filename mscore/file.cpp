@@ -2838,7 +2838,7 @@ void WallpaperPreview::setImage(const QString& path)
 QString MuseScore::getWallpaper(const QString& caption)
       {
       QString filter = tr("Images") + " (*.jpg *.jpeg *.png *.bmp *.tif *.tiff);;" + tr("All") + " (*)";
-      QString d = mscoreGlobalShare + "/wallpaper";
+      QString d = preferences.getString(PREF_APP_PATHS_MYIMAGES);
 
       if (preferences.getBool(PREF_UI_APP_USENATIVEDIALOGS)) {
             QString s = QFileDialog::getOpenFileName(
