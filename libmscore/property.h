@@ -131,6 +131,7 @@ enum class Pid {
       LOCK_ASPECT_RATIO,
       IMAGE_FRAME_WIDTH,
       IMAGE_FRAME_COLOR,
+      EN_PASSANT_MANIFEST,
       SIZE_IS_SPATIUM,
       TEXT,
       HTML_TEXT,

@@ -1890,6 +1890,7 @@ void Score::scanElementsInRange(void* data, void (*func)(void*, Element*), bool 
 void Score::setSelection(const Selection& s)
       {
       deselectAll();
+      setUpdateAll();
       _selection = s;
 
       for (Element* e : _selection.elements())
@@ -3422,8 +3423,9 @@ void Score::select(Element* e, SelectType type, int staffIdx)
 
 void Score::selectSingle(Element* e, int staffIdx)
       {
-      SelState selState;
-      deselectAll();
+      SelState selState = _selection.state();
+      if (selState != SelState::NONE)
+            deselectAll();
       if (e == 0) {
             selState = SelState::NONE;
             setUpdateAll();
