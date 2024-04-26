@@ -250,6 +250,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_SCORE_PLAYBACK_HIGHLIGHT_RESTS,                  new BoolPreference(true)},
             {PREF_SCORE_PLAYBACK_HIGHLIGHT_MORE,                   new BoolPreference(false)},
             {PREF_SCORE_PLAYBACK_HIGHLIGHT_LYRICS,                 new BoolPreference(false)},
+            {PREF_SCORE_PLAYBACK_HONOR_EN_PASSANT_VISIBLE,         new BoolPreference(true)},
 
             {PREF_UI_SCORE_NOTEHEADS_BEHIND_STAFF_LINES,           new BoolPreference(false)},
             {PREF_UI_SCORE_NOTEHEADS_BEHIND_LEDGER_LINES,          new BoolPreference(false)},

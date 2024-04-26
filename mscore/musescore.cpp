@@ -568,6 +568,7 @@ void updateExternalValuesFromPreferences() {
       MScore::highlightRests  = preferences.getBool(PREF_SCORE_PLAYBACK_HIGHLIGHT_RESTS);
       MScore::highlightMore   = preferences.getBool(PREF_SCORE_PLAYBACK_HIGHLIGHT_MORE);  
       MScore::highlightLyrics = preferences.getBool(PREF_SCORE_PLAYBACK_HIGHLIGHT_LYRICS);
+      MScore::honorEnPassantVisibility = preferences.getBool(PREF_SCORE_PLAYBACK_HONOR_EN_PASSANT_VISIBLE);
 
       MScore::slurShoulderExtraMax = preferences.getDouble(PREF_UI_SCORE_SLURS_MAX_SHOULDER_EXTRA);
       MScore::slurShoulderExtraMin = preferences.getDouble(PREF_UI_SCORE_SLURS_MIN_SHOULDER_EXTRA);
