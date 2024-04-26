@@ -176,6 +176,7 @@
 #define PREF_SCORE_PLAYBACK_HIGHLIGHT_RESTS                 "ui/score/playback/highlightRests"
 #define PREF_SCORE_PLAYBACK_HIGHLIGHT_MORE                  "ui/score/playback/highlightMore"
 #define PREF_SCORE_PLAYBACK_HIGHLIGHT_LYRICS                "ui/score/playback/highlightLyrics"
+#define PREF_SCORE_PLAYBACK_HONOR_EN_PASSANT_VISIBLE        "ui/score/playback/enPassantVisibility"
 
 #define PREF_UI_SCORE_NOTEHEADS_BEHIND_STAFF_LINES          "ui/score/elements/noteheads/behindStaff"
 #define PREF_UI_SCORE_NOTEHEADS_BEHIND_LEDGER_LINES         "ui/score/elements/noteheads/behindLedgerLines"

@@ -125,6 +125,8 @@ static constexpr PropertyMetaData propertyList[] = {
       { Pid::LOCK_ASPECT_RATIO,       false, "lockAspectRatio",       P_TYPE::BOOL,                DUMMY_QT_TRANSLATE_NOOP("propertyName", "aspect ratio locked") },
       { Pid::IMAGE_FRAME_WIDTH,       false, "imageFrameWidth",       P_TYPE::SP_REAL,             DUMMY_QT_TRANSLATE_NOOP("propertyName", "image frame size") },
       { Pid::IMAGE_FRAME_COLOR,       false, "imageFrameColor",       P_TYPE::COLOR,               DUMMY_QT_TRANSLATE_NOOP("propertyName", "image frame color")},
+      { Pid::EN_PASSANT_MANIFEST,     false, "enPassantManifest",     P_TYPE::BOOL,                DUMMY_QT_TRANSLATE_NOOP("propertyName", "temporarily make visible during playback")},
+
       { Pid::SIZE_IS_SPATIUM,         false, "sizeIsSpatium",         P_TYPE::BOOL,                DUMMY_QT_TRANSLATE_NOOP("propertyName", "size is spatium")  },
       { Pid::TEXT,                    true,  "text",                  P_TYPE::STRING,              DUMMY_QT_TRANSLATE_NOOP("propertyName", "text")             },
       { Pid::HTML_TEXT,               false, 0,                       P_TYPE::STRING,              ""                                                    },

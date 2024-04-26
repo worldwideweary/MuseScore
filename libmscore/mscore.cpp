@@ -130,6 +130,7 @@ bool    MScore::highlightNotes;
 bool    MScore::highlightRests;
 bool    MScore::highlightMore;
 bool    MScore::highlightLyrics;
+bool    MScore::honorEnPassantVisibility;
 
 bool    MScore::noteInputOctaveTendencyIsTopNote;
 bool    MScore::noteInputOctaveUpwardFifth;
