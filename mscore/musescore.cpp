@@ -481,6 +481,8 @@ void MuseScore::preferencesChanged(bool fromWorkspace, bool changeUI)
       getAction("midi-on")->setChecked(preferences.getBool(PREF_IO_MIDI_ENABLEINPUT));
       getAction("toggle-statusbar")->setChecked(preferences.getBool(PREF_UI_APP_SHOWSTATUSBAR));
       getAction("show-tours")->setChecked(preferences.getBool(PREF_UI_APP_STARTUP_SHOWTOURS));
+      getAction("toggle-mouse-entry")->setChecked(!preferences.getBool(PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT));
+
       _statusBar->setVisible(preferences.getBool(PREF_UI_APP_SHOWSTATUSBAR));
 
       if (!cs)
@@ -1335,6 +1337,8 @@ MuseScore::MuseScore()
       entryTools->setObjectName("entry-tools");
 
       populateNoteInputMenu();
+
+      getAction("toggle-mouse-entry")->setChecked(!preferences.getBool(PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT));
 
       //-------------------------------
       //    Workspaces Tool Bar
