@@ -3599,6 +3599,16 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::MAIN_WINDOW,
          STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-visible-en-passant",
+         QT_TRANSLATE_NOOP("action","Toggle Visibility Attribute of all En Passant Text Lines"),
+         QT_TRANSLATE_NOOP("action","Toggle Visibility Attribute of all En Passant Text Lines"),
+         0,
+         Icons::Invalid_ICON,
+         Qt::WindowShortcut,
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "show-unprintable",
          QT_TRANSLATE_NOOP("action","Show Unprintable"),
          QT_TRANSLATE_NOOP("action","Show unprintable"),
