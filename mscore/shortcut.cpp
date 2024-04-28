@@ -2891,6 +2891,16 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::MAIN_WINDOW,
          STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-fingering-visibility",
+         QT_TRANSLATE_NOOP("action","Toggle Visibility Attribute of all Fingering Texts"),
+         QT_TRANSLATE_NOOP("action","Toggle Visibility Attribute of all Fingering Texts"),
+         0,
+         Icons::Invalid_ICON,
+         Qt::WindowShortcut,
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "show-unprintable",
          QT_TRANSLATE_NOOP("action","Show Unprintable"),
          QT_TRANSLATE_NOOP("action","Show unprintable"),
