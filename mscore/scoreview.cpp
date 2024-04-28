@@ -2870,6 +2870,11 @@ void ScoreView::cmd(const char* s)
                   MScore::disableMouseEntry = !MScore::disableMouseEntry;
                   preferences.setPreference(PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT, MScore::disableMouseEntry);
                   }},
+            {{"toggle-edit-playback"}, [](ScoreView* /*cv*/, const QByteArray&) {
+
+                  bool value = preferences.getBool(PREF_SCORE_NOTE_PLAYONCLICK);
+                  preferences.setPreference(PREF_SCORE_NOTE_PLAYONCLICK, !value);
+                  }},
             };
 
       auto c = std::find_if(cmdList.begin(), cmdList.end(), [cmd](const ScoreViewCmd& cc) {
