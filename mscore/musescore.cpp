@@ -6827,6 +6827,24 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   cs->setShowInvisible(false);
                   }
             }
+      else if (cmd == "toggle-visible-en-passant") {
+            int begin = 0;
+            int end = cs->endTick().ticks();
+            auto spanners = cs->spannerMap().findOverlapping(begin, end);
+            for (auto i : spanners) {
+                  auto s = i.value;
+                  if (s->isTextLineBase()) {
+                        auto tlb = toTextLineBase(s);
+                        bool enPassant = tlb->enPassantManifest();
+                        if (enPassant) {
+                              bool toggle = !tlb->visible();
+                              tlb->setVisible(toggle);
+                              }
+                        }
+                  }
+            cs->setLayoutAll();
+            cs->update();
+            }
       else if (cmd == "show-unprintable") {
             cs->setShowUnprintable(a->isChecked());
             cs->update();
