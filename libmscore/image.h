@@ -95,6 +95,7 @@ class Image final : public BSymbol {
       void setImageType(ImageType);
       ImageType getImageType() const { return imageType; }
       bool isValid() const           { return rasterDoc || svgDoc; }
+      bool isEmpty() const;
 
       Element::EditBehavior normalModeEditBehavior() const override { return Element::EditBehavior::Edit; }
       int gripsCount() const override { return 8; }
