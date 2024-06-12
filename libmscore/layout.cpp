@@ -166,8 +166,6 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
       std::vector<Chord*> chords;
       std::vector<Note*> upStemNotes;
       std::vector<Note*> downStemNotes;
-      std::vector<Note*> upStemNotesVisible;
-      std::vector<Note*> downStemNotesVisible;
       int upVoices       = 0;
       int downVoices     = 0;
       double nominalWidth = noteHeadWidth() * staff->mag(tick);
@@ -655,9 +653,10 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
                   notes.insert(notes.end(), upStemNotes.begin(), upStemNotes.end());
             if (downVoices)
                   notes.insert(notes.end(), downStemNotes.begin(), downStemNotes.end());
-            if (upVoices + downVoices > 1)
+            if (upVoices + downVoices > 1) {
                   std::sort(notes.begin(), notes.end(),
                      [](Note* n1, const Note* n2) ->bool {return n1->line() > n2->line(); } );
+                  }
             layoutChords3(notes, staff, segment);
             }
 
