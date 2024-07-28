@@ -4892,7 +4892,15 @@ void ScoreView::cmdInsertMeasures(int n, ElementType type)
             _score->insertMeasure(type, mb);
       _score->endCmd();
 
-      if (mb->type() == ElementType::MEASURE) {
+      if (type == ElementType::TBOX || type == ElementType::VBOX || type == ElementType::HBOX) {
+            if (auto prev = mb->prevMM()) {
+                  _score->select(prev);
+                  if (type == ElementType::TBOX) {
+                        startEditMode(toTBox(prev));
+                        }
+                  }
+            }
+      else if (mb->type() == ElementType::MEASURE) {
             // re-select the original measure (which may now be covered by an mmrest)
             // do this after the layout so mmrests are updated
             Measure* m = _score->tick2measureMM(mb->tick());
