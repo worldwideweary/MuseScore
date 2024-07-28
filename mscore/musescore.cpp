@@ -6274,7 +6274,7 @@ void MuseScore::endCmd(bool undoRedo)
                   selectionChanged(ss);
                   }
 
-            if (cv)
+            if (cv && !undoRedo)
                   cv->moveViewportToLastEdit();
 
             getAction("concert-pitch")->setChecked(cs->styleB(Sid::concertPitch));
