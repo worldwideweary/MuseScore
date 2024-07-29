@@ -689,6 +689,26 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                               }
                         }
 
+                  // Note Entry + Apply Key Signature -> Apply keysig to entire part (e.g. a grand staff)
+                  if (element->isKeySig()) {
+                        if (score->noteEntryMode()) {
+                              if (auto part = cr1->part()) {
+                                    std::vector<ChordRest*> crs;
+                                    cr1->getChordRestsAtPosition(crs);
+                                    for (auto cr : crs) {
+                                          if (cr->part() == part) {
+                                                Element* target = cr;
+                                                if (cr->isChord()) {
+                                                      target = toChord(cr)->upNote();
+                                                      }
+                                                applyDrop(score, viewer, target, element, modifiers);
+                                                }
+                                          }
+                                    finished = true;
+                                    }
+                              }
+                        }
+
                   if (!finished) {
                         for (Element* e : sel.elements()) {
                               auto ee = e;
