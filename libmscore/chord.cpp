@@ -3586,6 +3586,20 @@ void Chord::layoutArticulations()
             qreal x = centerX();
             qreal y = 0.0;
 
+            const Note* note = up() ? upNote(true) : downNote(true);
+            qreal overlapMirror;
+            if (this->stem())
+                  overlapMirror = this->stem()->lineWidth();
+            else if (this->durationType().headType() == NoteHead::Type::HEAD_WHOLE)
+                  overlapMirror = styleP(Sid::stemWidth) * this->mag();
+            else
+                  overlapMirror = 0.0;
+            qreal dx = up() ? overlapMirror : -overlapMirror;
+            // Counter mirror from layoutChords3()
+            if (note->mirror()) {
+                  x += dx;
+                  }
+
             if (bottom) {
                   if (!headSide && stem()) {
                         y = upPos() + stem()->stemLen();
@@ -3668,7 +3682,19 @@ void Chord::layoutArticulations2()
       if (_articulations.empty())
             return;
       qreal _spatium  = spatium();
-      qreal x         = centerX();
+      qreal x = centerX();
+      const Note* note = up() ? upNote(true) : downNote(true);
+      qreal overlapMirror = 0.0;
+      if (stem())
+            overlapMirror = stem()->lineWidth();
+      else if (durationType().headType() == NoteHead::Type::HEAD_WHOLE)
+            overlapMirror = styleP(Sid::stemWidth) * this->mag();
+      qreal dx = up() ? overlapMirror : -overlapMirror;
+      // Counter mirror from layoutChords3()
+      if (note->mirror()) {
+            x += dx;
+            }
+
       qreal distance0 = score()->styleP(Sid::propertyDistance);
       qreal distance2 = score()->styleP(Sid::propertyDistanceStem);
 
