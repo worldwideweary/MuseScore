@@ -14,6 +14,7 @@
 #define __TEXTCURSOR_H__
 
 #include "libmscore/fraction.h"
+#include "libmscore/durationtype.h"
 
 namespace Ms {
 
@@ -58,6 +59,10 @@ class PositionCursor {
       void move(const Fraction& tick);
       void paint(QPainter*);
       QRectF bbox() const;
+
+      int dots = 0;
+      TDuration duration;
+      AccidentalType accidental;
       };
 
 }

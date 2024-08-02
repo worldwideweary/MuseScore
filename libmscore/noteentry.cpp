@@ -444,6 +444,7 @@ void Score::putNote(const Position& p, bool replace)
             }
       if (cr && !st->isTabStaff(cr->tick()))
             _is.moveToNextInputPos();
+      _is.updateLastPitch(nval.pitch);
       }
 
 //---------------------------------------------------------
@@ -580,6 +581,7 @@ void Score::repitchNote(const Position& p, bool replace)
             next = nextChordRest(next);
       if (next)
             _is.moveInputPos(next->segment());
+      _is.updateLastPitch(note->pitch());
       }
 
 //---------------------------------------------------------

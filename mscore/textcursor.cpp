@@ -24,6 +24,8 @@
 
 #include "scoreview.h"
 
+#include <QPainter>
+
 namespace Ms {
 
 //---------------------------------------------------------
@@ -55,8 +57,9 @@ void PositionCursor::paint(QPainter* p)
       {
       if (!visible())
             return;
+      Score* s = _sv->score();
       QPointF points[3];
-      qreal h = _sv->score()->spatium() * 2;
+      qreal h = s->spatium() * 2;
 
       qreal x = _rect.left();
       qreal y = _rect.top();
@@ -85,15 +88,16 @@ void PositionCursor::paint(QPainter* p)
                   break;
             default:                            // fill the rectangle and add TAB string marks, if required
                   p->fillRect(_rect, color());
-                  if (_sv->score()->noteEntryMode()) {
-                        int         track       = _sv->score()->inputTrack();
+                  if (s->noteEntryMode()) {
+                        int track = s->inputTrack();
                         if (track >= 0) {
-                              Staff*      staff       = _sv->score()->staff(track2staff(track));
-                              const StaffType*  staffType   = staff->staffType(Fraction(0,1));
-                              if (staffType && staffType->group() == StaffGroup::TAB)
-                                    staffType->drawInputStringMarks(p, _sv->score()->inputState().string(),
-                                       track2voice(track), _rect);
+                              Staff* staff = s->staff(track2staff(track));
+                              const StaffType* staffType = staff->staffType(Fraction(0,1));
+                              if (staffType && staffType->group() == StaffGroup::TAB) {
+                                    int voice = track2voice(track);
+                                    staffType->drawInputStringMarks(p, s->inputState().string(), voice, _rect);
                                     }
+                              }
                         }
                   break;
             }
