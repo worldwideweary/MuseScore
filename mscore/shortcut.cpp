@@ -2537,6 +2537,17 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::MAIN_WINDOW,
          STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "color-override-note-entry-status",
+         QT_TRANSLATE_NOOP("action","Override Color: Note Entry Status"),
+         QT_TRANSLATE_NOOP("action","Override Color: Note Entry Status"),
+         0,
+         Icons::overrideColorNoteEntryStatus_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
          "toggle-options-single-note-selection-color",
          QT_TRANSLATE_NOOP("action","Selection: One color for all (See Color Options)"),
          QT_TRANSLATE_NOOP("action","Selection: One color for all (See Color Options)"),

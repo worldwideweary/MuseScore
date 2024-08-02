@@ -206,6 +206,7 @@ static const char* iconNames[] = {
       "empty.svg",                  // Voice-2
       "empty.svg",                  // Voice-3
       "empty.svg",                  // Voice-4
+      "empty.svg",                  // Note Entry information
       };
 
 //---------------------------------------------------------
@@ -287,6 +288,7 @@ void genIcons()
             case Icons::overrideColorVoice2_ICON:           c = MScore::selectColor[1];               break;
             case Icons::overrideColorVoice3_ICON:           c = MScore::selectColor[2];               break;
             case Icons::overrideColorVoice4_ICON:           c = MScore::selectColor[3];               break;
+            case Icons::overrideColorNoteEntryStatus_ICON:  c = MScore::noteEntryInformationColor;    break;
 
             default:
                   c = MScore::defaultColor;
