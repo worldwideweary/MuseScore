@@ -382,6 +382,7 @@ class MScore {
       static bool   highlightLyrics;
       static bool   honorEnPassantVisibility;
 
+      static QColor noteEntryInformationColor;
       static bool noteInputOctaveTendencyIsTopNote;
       static bool noteInputOctaveUpwardFifth;
       static bool resetNoteEntryAtSystemOrCourtesy;
