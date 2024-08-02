@@ -57,6 +57,9 @@ class InputState {
       Hairpin* _dynamicLine    { nullptr }; // allow for a continuous 'slur-input-style' hairpin
       Pedal* _pedalLine        { nullptr }; // same for pedal mark
       bool _insertMode         { false };
+      int _lastInputPitch      { -1 };
+      int _lastInputPitchDiff  { 0 };
+      Direction _lastInputDirection { Direction::AUTO };
 
       Segment* nextInputPos() const;
 
@@ -126,6 +129,14 @@ class InputState {
       void moveInputPos(Element* e);
       void moveToNextInputPos();
       bool endOfScore() const;
+
+      void updateLastPitch(int p)         { _lastInputPitch = p;    }
+      int  getLastPitch()                 { return _lastInputPitch; }
+      void updateLastInputDirection(Direction d, int diff)
+                                          { _lastInputDirection = d;
+                                            _lastInputPitchDiff = diff; }
+      Direction getLastInputDirection()   { return _lastInputDirection; }
+      int getPitchDelta()                 { return _lastInputPitchDiff; }
 
       // TODO: unify with Selection::cr()?
       static Note* note(Element*);
