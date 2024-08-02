@@ -875,7 +875,11 @@ void ScoreView::moveCursor()
       int staffIdx = track / VOICES;
 
       QColor c(MScore::selectColor[voice]);
-      c.setAlpha(100);
+      c.setAlpha(77);
+
+      _cursor->dots         = is.duration().dots();
+      _cursor->duration     = is.duration();
+      _cursor->accidental   = is.accidentalType();
       _cursor->setColor(c);
       _cursor->setTick(segment->tick());
 
@@ -1523,6 +1527,137 @@ void ScoreView::drawHoverHighlight(QPainter& p, const Element& el)
       }
 
 //---------------------------------------------------------
+//   drawNoteEntryInformation
+//   Indicator manifests toggle information, along with 
+//   last add-pitch direction/interval
+//---------------------------------------------------------
+
+void ScoreView::drawNoteEntryInformation(QPainter& p, const QPointF& pt, int fontSz, bool showIntervals)
+      {
+      QPen pen;
+      pen.setColor(MScore::noteEntryInformationColor);
+      p.setPen(pen);
+      p.setBrush(Qt::NoBrush);
+      QFont font;
+      font.setFamily(ScoreFont::fallbackTextFont());
+      font.setPointSize(fontSz);
+      QFontMetrics fm(font);
+      p.setFont(font);
+
+      qreal toggleX = pt.x();
+      qreal toggleY = pt.y();
+
+      auto is = score()->inputState();
+      auto accidental = is.accidentalType();
+      auto duration = is.duration();
+      auto dots = duration.dots();
+      QString s;
+      if (is.noteEntryMode()) {
+            if (duration.type() != TDuration::DurationType::V_INVALID) {
+                  QPointF pos;
+                  qreal xOff;
+                  qreal yOff;
+                  QString noteWhole  ("");
+                  QString noteHalf   ("");
+                  QString noteQuarter("");
+                  QString note8th    ("");
+                  QString note16th   ("");
+                  QString note32nd   ("");
+                  QString note64th   ("");
+
+                  // Duration (Notehead with flag)
+                  bool flagNote = false;
+                  bool wholeNote = false;
+                  if      (duration == TDuration::DurationType::V_HALF)      s=noteHalf;
+                  else if (duration == TDuration::DurationType::V_QUARTER)   s=noteQuarter;
+                  else if (duration == TDuration::DurationType::V_EIGHTH)  { s=note8th;     flagNote=true;  }
+                  else if (duration == TDuration::DurationType::V_16TH)    { s=note16th;    flagNote=true;  }
+                  else if (duration == TDuration::DurationType::V_32ND)    { s=note32nd;    flagNote=true;  }
+                  else if (duration == TDuration::DurationType::V_64TH)    { s=note64th;    flagNote=true;  }
+                  else if (duration == TDuration::DurationType::V_WHOLE)   { s=noteWhole;   wholeNote=true; }
+
+                  int noteWidth = fm.charWidth(note16th, 0);
+                  pos = QPointF(toggleX - (wholeNote ? noteWidth * 0.10 : 0.0), toggleY);
+                  p.drawText(pos, s);
+
+                  // Augmentation dots
+                  if (dots > 0) {
+                        QString aug = " ";
+                        qreal percent = !flagNote ? 0.90 : 1.10;
+                        xOff = noteWidth * percent;
+                        s.clear();
+                        for (int i = 0; i < dots; ++i)
+                              s += aug;
+
+                        pos = QPointF(toggleX + xOff, toggleY);
+                        p.drawText(pos, s);
+                        }
+
+                  // Accidental
+                  if (accidental != AccidentalType::NONE) {
+                        xOff = (accidental == AccidentalType::FLAT2) ? (-noteWidth * 0.90) : (-noteWidth * 0.55);
+                        yOff = (fm.height() * 0.20);
+                        if (accidental == AccidentalType::FLAT)     s = "";
+                        if (accidental == AccidentalType::FLAT2)    s = "";
+                        if (accidental == AccidentalType::SHARP)    s = "";
+                        if (accidental == AccidentalType::SHARP2)   s = "";
+                        if (accidental == AccidentalType::NATURAL)  s = "";
+
+                        pos = QPointF(toggleX + xOff, toggleY + yOff);
+                        p.drawText(pos, s);
+                        }
+
+                  // Indicate last input to be above or below previous "basis" note
+                  auto lid = is.getLastInputDirection();
+                  if (lid != Direction::AUTO) {
+                        QString upArrow   = "";
+                        QString downArrow = "";
+                        s = (lid == Direction::DOWN ? downArrow : upArrow);
+                        xOff = noteWidth * 1.1;
+                        yOff = -fm.height() * 0.20;
+
+                        pos = QPointF(toggleX + xOff, toggleY + yOff);
+                        p.drawText(pos, s);
+                        }
+
+                  // Indicate octave tendency as top/bottom note (tip is direction)
+                  s = MScore::noteInputOctaveTendencyIsTopNote ? "" : "";
+                  yOff = -fm.height() * 0.45;
+
+                  pos = QPointF(toggleX, toggleY + yOff);
+                  p.drawText(pos, s);
+
+                  if (showIntervals) {
+                        int diff = is.getPitchDelta();
+                        s.clear();
+                        switch (diff) {
+                              case  0:           s = " =";  break;/*"="*/
+                              case  1: case  -1: s = "2";  break;/*"m2"*/ /*"min 2nd"*/
+                              case  2: case  -2: s = " 2";  break;/*"M2"*/ /*"maj"*/
+                              case  3: case  -3: s = "3"; break;/*"m3"*/ /*"min 3rd"*/
+                              case  4: case  -4: s = " 3";  break;/*"M3"*/ /*"maj 3rd"*/
+                              case  5: case  -5: s = " 4";  break;/*"P4"*/ /*"per 4th"*/
+                              case  6: case  -6: s = "4"; break;/*"TT"*/ /*"aug 4th"*/
+                              case  7: case  -7: s = " 5";  break;/*"P5"*/ /*"per 5th"*/
+                              case  8: case  -8: s = "6"; break;/*"m6"*/ /*"min 6th"*/
+                              case  9: case  -9: s = " 6";  break;/*"M6"*/ /*"maj 6th"*/
+                              case 10: case -10: s = "7"; break;/*"m7"*/ /*"min 7th"*/
+                              case 11: case -11: s = " 7";  break;/*"M7"*/ /*"maj 7th"*/
+                              case 12: case -12: s = " 8";  break;/*"P8"*/ /*"per oct"*/
+                              default: s = ""; break;
+                              }
+                        xOff = noteWidth * 1.0;
+                        yOff = -fm.height() * 0.66;
+                        font.setPointSize(int(fontSz/3));
+                        p.setFont(font);
+                        pos = QPointF(toggleX + xOff, toggleY + yOff);
+                        p.drawText(pos, s);
+                        }
+                  }
+            }
+      }
+
+//---------------------------------------------------------
 //   drawElements
 //---------------------------------------------------------
 
@@ -1985,6 +2120,10 @@ void ScoreView::paint(const QRect& r, QPainter& p)
       p.setWorldMatrixEnabled(false);
 
       p.restore();
+
+      // Center-bottom of ScoreView
+      QPointF noteEntryInfoPos(r.width() * 0.5, r.bottom() - 10);
+      drawNoteEntryInformation(p, noteEntryInfoPos,  72, true);
 
       if (MScore::fadeFocus && !hasFocus()) {
             auto w = width();
@@ -4351,6 +4490,8 @@ void ScoreView::endNoteEntry()
       {
       InputState& is = _score->inputState();
       is.setNoteEntryMode(false);
+      is.updateLastInputDirection(Direction::AUTO, 0);
+      is.updateLastPitch(-1);
       if (is.slur()) {
             const std::vector<SpannerSegment*>& el = is.slur()->spannerSegments();
             if (!el.empty())
