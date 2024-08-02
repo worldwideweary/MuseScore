@@ -135,6 +135,7 @@
 #define PREF_SCORE_NOTE_INPUT_RESET_PITCH_AT_SYSTEM         "ui/score/noteEntry/resetNoteEntryAtSystemOrCourtesy"
 #define PREF_SCORE_NOTE_INPUT_FORCE_VOICE2_BELOW            "ui/score/noteEntry/voice2/forceBeneathVoice1"
 #define PREF_SCORE_NOTE_INPUT_RETAIN_AUG_RHYTHM_MODE        "ui/score/noteEntry/rhythmMode/retainAugmentation"
+#define PREF_SCORE_NOTE_INPUT_ENTRY_STATUS_COLOR            "ui/score/noteEntry/toggleStatusColor"
 #define PREF_SCORE_FINGERING_ALPHANUMERIC_AUTOFORWARD       "score/fingering/autoForwardWithAlphaNumerics"
 #define PREF_SCORE_STYLE_DEFAULTSTYLEFILE                   "score/style/defaultStyleFile"
 #define PREF_SCORE_STYLE_PARTSTYLEFILE                      "score/style/partStyleFile"

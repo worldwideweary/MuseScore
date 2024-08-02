@@ -4733,6 +4733,14 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
             qDebug("cannot enter notes here (no chord rest at current position)");
             return;
             }
+
+      qreal previousPitch = -1;
+      if (auto e = selection().element()) {
+            if (e->isNote()) {
+                  previousPitch = toNote(e)->pitch();
+                  }
+            }
+
       is.setRest(false);
       const Drumset* ds = is.drumset();
       int octave = 4;
@@ -4794,6 +4802,7 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                               // TPC below: basis is current note selection
 
                               Note* n = below ? toNote(e) : chord->upNote();
+                              previousPitch = n->pitch();
                               int tpc = n->tpc();
                               octave = (n->epitch() - int(tpc2alter(tpc))) / PITCH_DELTA_OCTAVE;
                               if (note <= tpc2step(tpc) && !below)
@@ -4855,6 +4864,7 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                               if (resetOctave()) {
                                     auto currentClefType = staff->clef(inputTick);
                                     curPitch = line2pitch(4, currentClefType, Key::C);
+                                    previousPitch = -1;
                                     break;
                                     }
                               else if (seg->isChordRestType()) {
@@ -4882,6 +4892,7 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                                           // check if it's an actual change or just a courtesy
                                           if (!isCourtesy || isBeginning || MScore::resetNoteEntryAtSystemOrCourtesy) {
                                                 curPitch = line2pitch(4, clef->clefType(), Key::C); // C 72 for treble clef
+                                                previousPitch = -1;
                                                 break;
                                                 }
                                           }
@@ -4921,6 +4932,17 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
 
       int step = octave * TPC_DELTA_SEMITONE + note;
       cmdAddPitch(step,  addFlag, insert);
+
+      auto currentPitch = is.getLastPitch();
+      Direction result = Direction::AUTO;
+      if (previousPitch == -1)
+            ;
+      else if (currentPitch > previousPitch)
+            result = Direction::UP;
+      else if (currentPitch < previousPitch)
+            result = Direction::DOWN;
+      int pitchDelta = currentPitch - previousPitch;
+      is.updateLastInputDirection(result, pitchDelta);
       }
 
 void Score::cmdAddPitch(int step, bool addFlag, bool insert)
@@ -4948,6 +4970,7 @@ void Score::cmdAddPitch(int step, bool addFlag, bool insert)
                         }
                   addNote(chord, nval, forceAccidental);
                   _is.setAccidentalType(AccidentalType::NONE);
+                  _is.updateLastPitch(nval.pitch);
                   }
                   return;
             }
@@ -5318,6 +5341,13 @@ void Score::cmdOverrideColor(const char* what)
             changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
             MScore::selectColor[3] = changedColor.isValid() ? changedColor : currentColor;
             preferences.setPreference(PREF_UI_SCORE_VOICE1_COLOR, MScore::selectColor[0]);
+            }
+      else if (strcmp(what, "note-entry-status") == 0) {
+            title = "Select Note Entry Status Color";
+            currentColor = MScore::noteEntryInformationColor;
+            changedColor = QColorDialog::getColor(currentColor, nullptr, title, flags);
+            MScore::noteEntryInformationColor = changedColor.isValid() ? changedColor : currentColor;
+            preferences.setPreference(PREF_SCORE_NOTE_INPUT_ENTRY_STATUS_COLOR, MScore::noteEntryInformationColor);
             }
 
       else qDebug() << "Override color <%s> not implemented" << what;
