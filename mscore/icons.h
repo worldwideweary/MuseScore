@@ -99,6 +99,7 @@ enum class Icons : short { Invalid_ICON = -1,
       overrideColorVoice2_ICON,
       overrideColorVoice3_ICON,
       overrideColorVoice4_ICON,
+      overrideColorNoteEntryStatus_ICON,
 
       ICONS
       };
