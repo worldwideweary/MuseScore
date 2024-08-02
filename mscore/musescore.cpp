@@ -321,6 +321,7 @@ const std::list<const char*> MuseScore::_allColorControlMenuEntries {
             "color-override-voice-4",
             "color-override-hover", // Max Alpha: Hover "behind everything", else over everything
             "color-override-cursor",
+            "color-override-note-entry-status",
             };
 
 const std::list<const char*> MuseScore::_allToggleOptionsMenuEntries {
@@ -535,6 +536,8 @@ void updateExternalValuesFromPreferences() {
       MScore::noteInputForceVoice2BeneathVoice1 = preferences.getBool(PREF_SCORE_NOTE_INPUT_FORCE_VOICE2_BELOW);
       MScore::retainAugmentationInRhythmEntry = preferences.getBool(PREF_SCORE_NOTE_INPUT_RETAIN_AUG_RHYTHM_MODE);
       MScore::fingerTextAutoForwardAlphaNumeric = preferences.getBool(PREF_SCORE_FINGERING_ALPHANUMERIC_AUTOFORWARD);
+      MScore::noteEntryInformationColor = preferences.getColor(PREF_SCORE_NOTE_INPUT_ENTRY_STATUS_COLOR);
+
       MScore::defaultPlayDuration = preferences.getInt(PREF_SCORE_NOTE_DEFAULTPLAYDURATION);
       MScore::panPlayback = preferences.getBool(PREF_APP_PLAYBACK_PANPLAYBACK);
       MScore::harmonyPlayDisableCompatibility = preferences.getBool(PREF_SCORE_HARMONY_PLAY_DISABLE_COMPATIBILITY);

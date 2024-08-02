@@ -14,6 +14,7 @@
 #include "musescore.h"
 #include "scoreview.h"
 #include "seq.h"
+#include "textcursor.h"
 #include "texttools.h"
 #include "zoombox.h"
 
@@ -1366,6 +1367,10 @@ void ScoreView::changeState(ViewState s)
                   break;
             case ViewState::PLAY:
                   seq->start();
+                  if (_cursor) {
+                        _cursor->accidental = AccidentalType::NONE;
+                        _cursor->duration   = TDuration::DurationType::V_INVALID;
+                        }
                   break;
             case ViewState::ENTRY_PLAY:
                   break;
