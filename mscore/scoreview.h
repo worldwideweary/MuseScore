@@ -284,6 +284,7 @@ class ScoreView : public QWidget, public MuseScoreView {
 
       void setShadowNote(const QPointF&);
       void drawHoverHighlight(QPainter&, const Element&);
+      void drawNoteEntryInformation(QPainter& p, const QPointF& pt, int fontSz, bool showIntervals);
       void drawElements(QPainter& p,QList<Element*>& el, Element* editElement);
       bool dragTimeAnchorElement(const QPointF& pos);
       bool dragMeasureAnchorElement(const QPointF& pos);
