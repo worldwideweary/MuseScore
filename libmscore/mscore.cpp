@@ -92,6 +92,7 @@ QColor  MScore::overrideExpressionTextColor;
 QColor  MScore::overrideFingeringTextColor;
 QColor  MScore::overrideHarmonyTextColor;
 QColor  MScore::overrideLedgerLinesColor;
+bool    MScore::overrideOnlyAllColor;
 QColor  MScore::overrideSlursColor;
 QColor  MScore::overrideStaffLinesColor;
 QColor  MScore::overrideStaffTextColor;

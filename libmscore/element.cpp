@@ -424,7 +424,10 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
       
       QColor overrideColor = normalColor;
 
-      if (isBarLine())
+      if (MScore::overrideOnlyAllColor)
+            overrideColor = MScore::overrideAllColor;
+      
+      else if (isBarLine())
             overrideColor = MScore::overrideBarlinesColor;
 
       else if (isBracket() || isBracketItem())
@@ -517,7 +520,7 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
             overrideColor = MScore::overrideTiesColor;
 
       // Odd/Even staff differentiation:
-      if (isDefault) {
+      if (isDefault && !MScore::overrideOnlyAllColor) { 
             int currentStaff = staffIdx();
             if (isBeam()) {
                   // cross-staff beams don't have same staffIdx of first ChordRest

@@ -160,6 +160,7 @@
 #define PREF_UI_SCORE_OVERRIDE_NOTEHEAD_COLOR               "ui/score/elements/override/color/noteheads"
 #define PREF_UI_SCORE_OVERRIDE_NOTEHEAD_LOWERED_COLOR       "ui/score/elements/override/color/noteheads/lowered"
 #define PREF_UI_SCORE_OVERRIDE_NOTEHEAD_RAISED_COLOR        "ui/score/elements/override/color/noteheads/raised"
+#define PREF_UI_SCORE_OVERRIDE_ONLY_ALL_COLOR               "ui/score/elements/override/color/onlyAll"
 #define PREF_UI_SCORE_OVERRIDE_SLURS_COLOR                  "ui/score/elements/override/color/slurs"
 #define PREF_UI_SCORE_OVERRIDE_STAFF_TEXT_COLOR             "ui/score/elements/override/color/staffText"
 #define PREF_UI_SCORE_OVERRIDE_STAFFLINES_COLOR             "ui/score/elements/override/color/staffLines"

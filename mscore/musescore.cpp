@@ -501,6 +501,7 @@ void updateExternalValuesFromPreferences() {
       MScore::overrideNoteheadColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_NOTEHEAD_COLOR);
       MScore::overrideNoteheadLoweredColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_NOTEHEAD_LOWERED_COLOR);
       MScore::overrideNoteheadRaisedColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_NOTEHEAD_RAISED_COLOR);
+      MScore::overrideOnlyAllColor = preferences.getBool(PREF_UI_SCORE_OVERRIDE_ONLY_ALL_COLOR);      
       MScore::overrideSlursColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_SLURS_COLOR);
       MScore::overrideStaffLinesColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_STAFFLINES_COLOR);
       MScore::overrideStaffTextColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_STAFF_TEXT_COLOR);
