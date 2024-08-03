@@ -318,6 +318,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_UI_SCORE_OVERRIDE_NOTEHEAD_COLOR,                     new ColorPreference(QColor(Qt::black))},
             {PREF_UI_SCORE_OVERRIDE_NOTEHEAD_LOWERED_COLOR,             new ColorPreference(QColor(Qt::black))},
             {PREF_UI_SCORE_OVERRIDE_NOTEHEAD_RAISED_COLOR,              new ColorPreference(QColor(Qt::black))},
+            {PREF_UI_SCORE_OVERRIDE_ONLY_ALL_COLOR,                new BoolPreference(false)},            
             {PREF_UI_SCORE_OVERRIDE_SLURS_COLOR,                   new ColorPreference(QColor(Qt::black))},
             {PREF_UI_SCORE_OVERRIDE_STAFFLINES_COLOR,              new ColorPreference(QColor(Qt::black))},
             {PREF_UI_SCORE_OVERRIDE_STAFF_TEXT_COLOR,              new ColorPreference(QColor(Qt::black))},
