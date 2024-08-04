@@ -2654,15 +2654,38 @@ void Score::cmdFullMeasureRest()
       Rest* r         = nullptr;
 
       if (noteEntryMode()) {
+            track1 = inputState().track();
+            track2 = track1 + 1;
             s1 = inputState().segment();
+            Measure* m = s1->measure();
+            int mBegin = m->tick() .ticks();
+            int mEnd = m->endTick().ticks() - 1;
+            auto spanners = spannerMap().findOverlapping(mBegin, mEnd);
+            std::vector<Spanner*> toRemove;
+            for (auto i : spanners) {
+                  auto s = i.value;
+                  if (s->track() == track1) {
+                        // If spanner doesn't start AND end outside of the measure, keep it
+                        if (s->tick().ticks() < mBegin && s->tick2().ticks() > mEnd) {}
+                        else toRemove.emplace_back(s);
+                        }
+                  }
+            for (auto s : toRemove) {
+                  undoRemoveElement(s);
+                  }
+            for (auto& segment : m->segments()) {
+                  if (auto cr = segment.nextChordRest(track1)) {
+                        // Note: Spanners remain...
+                        if (cr->measure() == s1->measure())
+                              deleteItem(cr);
+                        }
+                  }
+            s1 = m->first();
             if (!s1 || s1->rtick().isNotZero())
                   return;
-            Measure* m = s1->measure();
             s2 = m->last();
             stick1 = s1->tick();
             stick2 = s2->tick();
-            track1 = inputState().track();
-            track2 = track1 + 1;
             }
       else if (selection().isRange()) {
             s1 = selection().startSegment();
