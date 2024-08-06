@@ -170,6 +170,7 @@
 #define PREF_UI_SCORE_OVERRIDE_TIES_COLOR                   "ui/score/elements/override/color/ties"
 
 #define PREF_UI_SCORE_BYPASS_ALT_MENU                       "ui/application/altMenu/bypass"
+#define PREF_UI_SCORE_IJKL_NUDGE_MOVEMENT                   "ui/application/nudge/ijkl"
 
 #define PREF_SCORE_PLAYBACK_HIGHLIGHT_NOTES                 "ui/score/playback/highlightNotes"
 #define PREF_SCORE_PLAYBACK_HIGHLIGHT_RESTS                 "ui/score/playback/highlightRests"
