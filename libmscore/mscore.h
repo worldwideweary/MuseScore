@@ -407,6 +407,7 @@ class MScore {
       static bool omitAddingLinkedLines;
 
       static bool bypassAltMenu;
+      static bool nudgeUsesIJKL;
 
       static bool cursorMoveByBeat;
       static bool cursorMoveByMeasure;

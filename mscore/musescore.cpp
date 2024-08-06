@@ -475,6 +475,7 @@ void updateExternalValuesFromPreferences() {
       MScore::omitAddingLinkedLines = preferences.getBool(PREF_UI_SCORE_OMIT_ADDING_LINKED_LINES);
 
       MScore::bypassAltMenu = preferences.getBool(PREF_UI_SCORE_BYPASS_ALT_MENU);
+      MScore::nudgeUsesIJKL = preferences.getBool(PREF_UI_SCORE_IJKL_NUDGE_MOVEMENT);
 
       MScore::layoutBreakColor = preferences.getColor(PREF_UI_SCORE_LAYOUTBREAKCOLOR);
       MScore::frameMarginColor = preferences.getColor(PREF_UI_SCORE_FRAMEMARGINCOLOR);
