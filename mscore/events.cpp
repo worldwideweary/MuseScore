@@ -95,10 +95,18 @@ bool ScoreView::event(QEvent* event)
             case QEvent::ShortcutOverride: {
                   QKeyEvent* ke = static_cast<QKeyEvent*>(event);
                   switch (ke->key()) {
-                        case Qt::Key_Left:
-                        case Qt::Key_Right:
-                        case Qt::Key_Up:
-                        case Qt::Key_Down: {
+                        case Qt::Key_Left  : case Qt::Key_J:
+                        case Qt::Key_Right : case Qt::Key_L:
+                        case Qt::Key_Up    : case Qt::Key_I:
+                        case Qt::Key_Down  : case Qt::Key_K:
+                              {
+                              if (!MScore::nudgeUsesIJKL) {
+                                    if (ke->key() == Qt::Key_I ||
+                                        ke->key() == Qt::Key_J ||
+                                        ke->key() == Qt::Key_K ||
+                                        ke->key() == Qt::Key_L)
+                                          break;
+                                    }
                               if (!hasEditGrips())
                                     break;
                               const auto m = ke->modifiers();
@@ -915,10 +923,17 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
             const bool shiftModifier = ev->modifiers() & Qt::ShiftModifier;
             if (hasEditGrips() && !(shiftModifier && ev->key() == Qt::Key_Backtab)) {
                   switch (ev->key()) {
-                        case Qt::Key_Left:
-                        case Qt::Key_Right:
-                        case Qt::Key_Up:
-                        case Qt::Key_Down:
+                        case Qt::Key_Left  : case Qt::Key_J:
+                        case Qt::Key_Right : case Qt::Key_L:
+                        case Qt::Key_Up    : case Qt::Key_I:
+                        case Qt::Key_Down  : case Qt::Key_K:
+                              if (!MScore::nudgeUsesIJKL) {
+                                    if (ev->key() == Qt::Key_I ||
+                                        ev->key() == Qt::Key_J ||
+                                        ev->key() == Qt::Key_K ||
+                                        ev->key() == Qt::Key_L)
+                                          break;
+                                    }
                               // Move focus to default grip if arrow keys are pressed and no grip is focused
                               if (editData.curGrip == Grip::NO_GRIP)
                                     editData.curGrip = editData.element->defaultGrip();
@@ -1049,15 +1064,19 @@ bool ScoreView::handleArrowKeyPress(const QKeyEvent* ev)
       // TODO: if raster, then xval/yval should be multiple of raster
 
       switch (ev->key()) {
+            case Qt::Key_J: if (!MScore::nudgeUsesIJKL) return false; // fallthrough
             case Qt::Key_Left:
                   delta = QPointF(-xval, 0);
                   break;
+            case Qt::Key_L: if (!MScore::nudgeUsesIJKL) return false; // fallthrough
             case Qt::Key_Right:
                   delta = QPointF(xval, 0);
                   break;
+            case Qt::Key_I: if (!MScore::nudgeUsesIJKL) return false; // fallthrough
             case Qt::Key_Up:
                   delta = QPointF(0, -yval);
                   break;
+            case Qt::Key_K: if (!MScore::nudgeUsesIJKL) return false; // fallthrough
             case Qt::Key_Down:
                   delta = QPointF(0, yval);
                   break;

@@ -124,17 +124,17 @@ bool SlurSegment::edit(EditData& ed)
             e1 = sl->startCR();
             }
 
-      if (ed.key == Qt::Key_Left)
+      if (ed.key == Qt::Key_Left || (ed.key == Qt::Key_J && MScore::nudgeUsesIJKL))
             cr = prevChordRest(e);
-      else if (ed.key == Qt::Key_Right)
+      else if (ed.key == Qt::Key_Right || (ed.key == Qt::Key_L && MScore::nudgeUsesIJKL))
             cr = nextChordRest(e);
-      else if (ed.key == Qt::Key_Up) {
+      else if (ed.key == Qt::Key_Up || (ed.key == Qt::Key_I && MScore::nudgeUsesIJKL)) {
             Part* part     = e->part();
             int startTrack = part->startTrack();
             int endTrack   = e->track();
             cr = searchCR(e->segment(), endTrack, startTrack);
             }
-      else if (ed.key == Qt::Key_Down) {
+      else if (ed.key == Qt::Key_Down || (ed.key == Qt::Key_K && MScore::nudgeUsesIJKL)) {
             int startTrack = e->track() + 1;
             Part* part     = e->part();
             int endTrack   = part->endTrack();

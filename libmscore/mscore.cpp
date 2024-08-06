@@ -145,6 +145,7 @@ bool    MScore::currentSystemAlwaysTop;
 bool    MScore::omitAddingLinkedLines;
 
 bool    MScore::bypassAltMenu;
+bool    MScore::nudgeUsesIJKL;
 
 bool    MScore::cursorMoveByBeat;
 bool    MScore::cursorMoveByMeasure;
