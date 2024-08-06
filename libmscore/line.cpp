@@ -237,13 +237,13 @@ bool LineSegment::edit(EditData& ed)
                         qDebug("LineSegment::edit: no start/end segment");
                         return true;
                         }
-                  if (ed.key == Qt::Key_Left) {
+                  if (ed.key == Qt::Key_Left || (ed.key == Qt::Key_J && MScore::nudgeUsesIJKL)) {
                         if (moveStart)
                               s1 = prevSeg1(s1, track);
                         else if (moveEnd)
                               s2 = prevSeg1(s2, track2);
                         }
-                  else if (ed.key == Qt::Key_Right) {
+                  else if (ed.key == Qt::Key_Right || (ed.key == Qt::Key_L && MScore::nudgeUsesIJKL)) {
                         if (moveStart)
                               s1 = nextSeg1(s1, track);
                         else if (moveEnd) {
@@ -272,25 +272,33 @@ bool LineSegment::edit(EditData& ed)
                         }
 
                   switch (ed.key) {
-                        case Qt::Key_Left:
+                        case Qt::Key_Left : case Qt::Key_J:
+                              if (ed.key == Qt::Key_J && !MScore::nudgeUsesIJKL)
+                                    return true;
                               if (moveStart)
                                     note1 = prevChordNote(note1);
                               else if (moveEnd)
                                     note2 = prevChordNote(note2);
                               break;
-                        case Qt::Key_Right:
+                        case Qt::Key_Right: case Qt::Key_L:
+                              if (ed.key == Qt::Key_L && !MScore::nudgeUsesIJKL)
+                                    return true;
                               if (moveStart)
                                     note1 = nextChordNote(note1);
                               else if (moveEnd)
                                     note2 = nextChordNote(note2);
                               break;
-                        case Qt::Key_Up:
+                        case Qt::Key_Up:  case Qt::Key_I:
+                              if (ed.key == Qt::Key_I && !MScore::nudgeUsesIJKL)
+                                    return true;
                               if (moveStart)
                                     note1 = toNote(score()->upAlt(note1));
                               else if (moveEnd)
                                     note2 = toNote(score()->upAlt(note2));
                               break;
-                        case Qt::Key_Down:
+                        case Qt::Key_Down:  case Qt::Key_K:
+                              if (ed.key == Qt::Key_K && !MScore::nudgeUsesIJKL)
+                                    return true;
                               if (moveStart)
                                     note1 = toNote(score()->downAlt(note1));
                               else if (moveEnd)
@@ -321,7 +329,7 @@ bool LineSegment::edit(EditData& ed)
                   Measure* m1 = l->startMeasure();
                   Measure* m2 = l->endMeasure();
 
-                  if (ed.key == Qt::Key_Left) {
+                  if (ed.key == Qt::Key_Left || (ed.key == Qt::Key_J && MScore::nudgeUsesIJKL)) {
                         if (moveStart) {
                               if (m1->prevMeasure())
                                     m1 = m1->prevMeasure();
@@ -332,7 +340,7 @@ bool LineSegment::edit(EditData& ed)
                                     m2 = m;
                               }
                         }
-                  else if (ed.key == Qt::Key_Right) {
+                  else if (ed.key == Qt::Key_Right || (ed.key == Qt::Key_L && MScore::nudgeUsesIJKL)) {
                         if (moveStart) {
                               if (m1->nextMeasure())
                                     m1 = m1->nextMeasure();
@@ -535,7 +543,9 @@ void LineSegment::rebaseAnchors(EditData& ed, Grip grip)
             return;
       // don't change anchors on keyboard adjustment or if Ctrl is pressed
       // (Ctrl+Left/Right is handled elsewhere!)
-      if (ed.key == Qt::Key_Left || ed.key == Qt::Key_Right || ed.modifiers & Qt::ControlModifier)
+      if (ed.key == Qt::Key_Left  || (ed.key == Qt::Key_J && MScore::nudgeUsesIJKL) ||
+          ed.key == Qt::Key_Right || (ed.key == Qt::Key_L && MScore::nudgeUsesIJKL) ||
+          ed.modifiers & Qt::ControlModifier)
             return;
 
       switch (grip) {
