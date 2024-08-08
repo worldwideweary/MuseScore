@@ -1820,8 +1820,13 @@ void Score::addArticulation(SymId attr)
       int numAdded = 0;
       int numRemoved = 0;
       for (Element* el : selection().elements()) {
+            if (!selection().isRange() && el->isArticulation()) {
+                  if (auto parent = el->parent()) {
+                        el = parent->isChord() ? toChord(parent) : el;
+                        }
+                  }
             if (el->isNote() || el->isChord()) {
-                  Chord* cr = 0;
+                  Chord* cr = nullptr;
                   // apply articulation on a given chord only once
                   if (el->isNote()) {
                         cr = toNote(el)->chord();
