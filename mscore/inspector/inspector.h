@@ -153,6 +153,7 @@ class InspectorArticulation : public InspectorElementBase {
    public:
       InspectorArticulation(QWidget* parent);
       virtual void setElement() override;
+      virtual void valueChanged(int idx) override;
       };
 
 //---------------------------------------------------------

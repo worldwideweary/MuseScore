@@ -569,7 +569,6 @@ class Score : public QObject, public ScoreElement {
       LayoutMode _layoutMode { LayoutMode::PAGE };
       SynthesizerState _synthesizerState;
 
-      void createPlayEvents(Chord*);
       void createGraceNotesPlayEvents(const Fraction& tick, Chord* chord, int& ontime, int& trailtime);
       void cmdPitchUp();
       void cmdPitchDown();
@@ -973,6 +972,7 @@ class Score : public QObject, public ScoreElement {
 
       void updateSwing();
       void createPlayEvents(Measure const * start = nullptr, Measure const * const end = nullptr);
+      void createPlayEvents(Chord*);
 
       void updateCapo();
       void updateVelo();

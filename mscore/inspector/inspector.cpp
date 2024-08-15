@@ -654,6 +654,9 @@ InspectorArticulation::InspectorArticulation(QWidget* parent)
             { Pid::ARTICULATION_ANCHOR, 0, ar.anchor,           ar.resetAnchor           },
             { Pid::DIRECTION,           0, ar.direction,        ar.resetDirection        },
             { Pid::TIME_STRETCH,        0, ar.timeStretch,      ar.resetTimeStretch      },
+            { Pid::GATE_TIME,           0, ar.gateTime,         ar.resetGateTime         },
+            { Pid::ON_TIME,             0, ar.onTime,           ar.resetOnTime           },
+            { Pid::VELOCITY_OFFSET,     0, ar.velocityOffset,   ar.resetVelocityOffset   },
             { Pid::ORNAMENT_STYLE,      0, ar.ornamentStyle,    ar.resetOrnamentStyle    },
             { Pid::PLAY,                0, ar.playArticulation, ar.resetPlayArticulation }
             };
@@ -685,6 +688,30 @@ void InspectorArticulation::setElement()
       InspectorElementBase::setElement();
       if (!ar.playArticulation->isChecked())
             ar.gridWidget->setEnabled(false);
+      }
+
+//---------------------------------------------------------
+//   valueChanged
+//---------------------------------------------------------
+
+void InspectorArticulation::valueChanged(int idx)
+      {
+      InspectorElementBase::valueChanged(idx);
+      // Update play-events now instead of requiring playback (P.R.E. will reflect property change)
+      if (Articulation* a = toArticulation(inspector->element())) {
+            Score* score = a->score();
+            if (Element* p = a->parent()) {
+                  if (p->isChord()) {
+                        Chord* c = toChord(p);
+                        if (Tremolo* t = c->tremolo()) {
+                              if (c->tremoloChordType() != TremoloChordType::TremoloSingle) {
+                                    c = t->chord();
+                                    }
+                              }
+                        score->createPlayEvents(c);
+                        }
+                  }
+            }
       }
 
 //---------------------------------------------------------
