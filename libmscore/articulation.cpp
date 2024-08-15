@@ -50,6 +50,7 @@ Articulation::Articulation(Score* s)
       _onTime         = 0;
       _veloOffset     = 0;
       _veloUserOffset = 0;
+      _veloStaff      = 0;
       _ornamentStyle  = MScore::OrnamentStyle::DEFAULT;
       setPlayArticulation(true);
       initElementStyle(&articulationStyle);
@@ -63,6 +64,7 @@ Articulation::Articulation(SymId id, Score* s)
       _onTime         = 0;
       _veloOffset     = 0;
       _veloUserOffset = 0;
+      _veloStaff      = 0;
       }
 
 //---------------------------------------------------------
