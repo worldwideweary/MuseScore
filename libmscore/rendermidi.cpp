@@ -1310,7 +1310,11 @@ const Drumset* getDrumset(const Chord* chord)
 //   renderTremolo
 //---------------------------------------------------------
 
-void renderTremolo(Chord* chord, QList<NoteEventList>& ell, int arpeggioDelta, int arpeggio2Delta, int gateTime1, int gateTime2, int vOff1, int vOff2)
+void renderTremolo(Chord* chord, QList<NoteEventList>& ell,
+                   int arpeggioDelta, int arpeggio2Delta,
+                   int onTime1, int onTime2,
+                   int gateTime1, int gateTime2,
+                   int vOff1, int vOff2)
       {
       size_t firstChordNoteCount = chord->notes().size();
       Tremolo* tremolo = chord->tremolo();
@@ -1348,8 +1352,18 @@ void renderTremolo(Chord* chord, QList<NoteEventList>& ell, int arpeggioDelta, i
 
                   int totalTicks = 2 * chord->ticks().ticks();
                   int n  = (totalTicks / t);
+                  int div = n;
                       n /= 2;
                   int l  = (2000 * t) / totalTicks;
+
+                  // Second onTime didn't get accumulations through createPlayEvents since it's
+                  // synthetically applied through the first chord
+                  onTime2 *= 10;
+                  onTime1 /= n;
+                  onTime2 /= n;
+
+                  arpeggioDelta  /= (onTime1 != 0) ? div : 1;
+                  arpeggio2Delta /= (onTime2 != 0) ? div : 1;
 
                   int firstChordIdx   = chord1ArpDown ? firstChordNoteCount  - 1 : 0;
                   int secondChordIdx  = chord2ArpDown ? secondChordNoteCount - 1 : 0;
@@ -1373,9 +1387,10 @@ void renderTremolo(Chord* chord, QList<NoteEventList>& ell, int arpeggioDelta, i
                               }
 
                         int firstArpDelta
-                              = arpeggioDelta  * startFirstChord  + (firstChordStep * arpeggioDelta * k);
+                              = onTime1 + (arpeggioDelta  * startFirstChord)  + (firstChordStep * arpeggioDelta * k);
                         int secondArpDelta
-                              = arpeggio2Delta * startSecondChord + (secondChordStep * arpeggio2Delta * k);
+                              = onTime2 + (arpeggio2Delta * startSecondChord) + (secondChordStep * arpeggio2Delta * k);
+
                         if (k < firstChordNoteCount && k < secondChordNoteCount) {
                               // both chords have note
                               int p1 = chord->notes()[k]->pitch();
@@ -2078,13 +2093,14 @@ bool graceNotesMerged(Chord* chord)
 //   renderChordArticulation
 //---------------------------------------------------------
 
-void renderChordArticulation(Chord* chord, QList<NoteEventList>& ell, int& gateTime, int& velocityOffset)
+void renderChordArticulation(Chord* chord, QList<NoteEventList>& ell, int& onTime, int& gateTime, int& velocityOffset)
       {
       Segment* seg = chord->segment();
       Instrument* instr = chord->part()->instrument(seg->tick());
       int channel  = 0;  // note->subchannel();
       std::vector<Articulation*> articulationsRendered;
       signed int gateSum = 0;
+      signed int onSum = 0;
       for (unsigned k = 0; k < chord->notes().size(); ++k) {
             NoteEventList* events = &ell[k];
             Note *note = chord->notes()[k];
@@ -2117,6 +2133,7 @@ void renderChordArticulation(Chord* chord, QList<NoteEventList>& ell, int& gateT
                               Fraction noteTick       = chord->tick();
                               qreal velocityMultiplier = instr->getVelocityMultiplier(a->articulationName());
 
+                              int storedOnTime                 = a->getOnTime();
                               int storedGateTime               = a->getGateTime();
                               int storedArticulationDelta      = a->getVelocityOffset();
                               int storedUserVelocityDelta      = a->getVelocityUserOffset();
@@ -2138,6 +2155,7 @@ void renderChordArticulation(Chord* chord, QList<NoteEventList>& ell, int& gateT
                                     }
 
                               gateSum += (-100 + gateTime);
+                              onSum += storedOnTime;
 
                               //  _  _  ____  __    _____  ___  ____  ____  _  _
                               // ( \/ )( ___)(  )  (  _  )/ __)(_  _)(_  _)( \/ )
@@ -2182,6 +2200,8 @@ void renderChordArticulation(Chord* chord, QList<NoteEventList>& ell, int& gateT
                         }
                   }
             }
+      // Accumulate ontime
+      onTime += onSum;
       }
 
 //---------------------------------------------------------
@@ -2231,15 +2251,18 @@ static QList<NoteEventList> renderChord(Chord* chord, int gateTime, int ontime, 
       int velocityOffset2 = 0;
       bool hasArticulations = !chord->articulations().isEmpty();
 
-      renderChordArticulation(chord, ell, gateTime, velocityOffset1);
+      int articulationOnTime1 = ontime;
+      int articulationOnTime2 = 0;
+
+      renderChordArticulation(chord, ell, articulationOnTime1, gateTime, velocityOffset1);
+      Tremolo* tremolo = chord->tremolo();
+      bool twoChordTremolo = tremolo && (chord->tremoloChordType() != TremoloChordType::TremoloSingle);
+      bool firstOfTremolo = (chord->tremoloChordType() == TremoloChordType::TremoloFirstNote);
 
       if (arpeggio) {
             arpeggioDelta = renderArpeggio(chord, ell, ontime);
             }
 
-      Tremolo* tremolo = chord->tremolo();
-      bool twoChordTremolo = tremolo && (chord->tremoloChordType() != TremoloChordType::TremoloSingle);
-      bool firstOfTremolo = (chord->tremoloChordType() == TremoloChordType::TremoloFirstNote);
       if (tremolo) {
             if (firstOfTremolo) {
                   if (Chord* secondChord = tremolo->chord2()) {
@@ -2249,11 +2272,11 @@ static QList<NoteEventList> renderChord(Chord* chord, int gateTime, int ontime, 
                                     ell2.append(NoteEventList());
                                     }
                               // Obtain gate/velocity from articulation
-                              renderChordArticulation(secondChord, ell2, gateTime2, velocityOffset2);
+                              renderChordArticulation(secondChord, ell2, articulationOnTime2, gateTime2, velocityOffset2);
 
                               if (secondChord->arpeggio() && secondChord->arpeggio()->playArpeggio()) {
                                     // Obtain arpeggio delta
-                                    arpeggio2Delta = renderArpeggio(secondChord, ell2, ontime);
+                                    arpeggio2Delta = renderArpeggio(secondChord, ell2, articulationOnTime2);
                                     }
                               }
                         }
@@ -2261,6 +2284,7 @@ static QList<NoteEventList> renderChord(Chord* chord, int gateTime, int ontime, 
 
             renderTremolo(chord, ell,
                           arpeggioDelta, arpeggio2Delta,
+                          articulationOnTime1, articulationOnTime2,
                           gateTime, gateTime2,
                           velocityOffset1, velocityOffset2);
             }
