@@ -313,6 +313,7 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
             return;
 
       Chord* chord = note->chord();
+      bool isGrace = false;
 
       int staffIdx = staff->idx();
       int ticks;
@@ -320,6 +321,7 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
       if (chord->isGrace()) {
             Q_ASSERT( !graceNotesMerged(chord)); // this function should not be called on a grace note if grace notes are merged
             chord = toChord(chord->parent());
+            isGrace = true;
             }
 
       ticks = chord->actualTicks().ticks(); // ticks of the actual note
@@ -378,8 +380,9 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
 
             // Get the velocity used for this note from the staff
             // This allows correct playback of tremolos even without SND enabled.
-            int velo = 0;
             Fraction nonUnwoundTick = Fraction::fromTicks(on - tickOffset);
+            const int staffVelocity = staff->velocities().val(nonUnwoundTick);
+            int velo = 0;
             int articulationVelocity = 0;
             if (config.useSND) {
                   switch (config.method) {
@@ -388,12 +391,12 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
                               break;
                         case DynamicsRenderMethod::SEG_START:
                         default:
-                              velo = staff->velocities().val(nonUnwoundTick);
+                              velo = staffVelocity;
                               break;
                         }
                   }
             else {
-                  velo = staff->velocities().val(nonUnwoundTick);
+                  velo = staffVelocity;
                   for (Articulation* a : chord->articulations()) {
                         bool rendered
                               = std::find(articulationsRendered.begin(),
@@ -415,6 +418,12 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
             int veloDelta = !doubleChordTrem ? articulationVelocity : e.veloOff();
             velo += veloDelta;
             velo += note->veloOffset();
+
+            if (isGrace) {
+                  // Use grace note's velocity from [Score::createGraceNotesPlayEvents] rather than
+                  // the above calculation of parent chord
+                  velo = staffVelocity + e.veloOff();
+                  }
 
             // Velocity offset per-note is applied within playNote:
             playNote(events, note, channel, p, qBound(1, velo, 127), on, off, staffIdx);
@@ -2362,9 +2371,13 @@ void Score::createGraceNotesPlayEvents(const Fraction& tick, Chord* chord, int& 
             QList<NoteEventList> el;
             Chord* gc = gnb.at(i);
             size_t nn = gc->notes().size();
+            int velocityOffset = 0;
+            for (Articulation* a : gc->articulations()) {
+                  velocityOffset += a->getVelocityOffset();
+                  }
             for (unsigned ii = 0; ii < nn; ++ii) {
                   NoteEventList nel;
-                  nel.append(NoteEvent(0, on, graceDuration));
+                  nel.append(NoteEvent(0, on, graceDuration, velocityOffset));
                   el.append(nel);
                   }
 
