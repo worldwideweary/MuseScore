@@ -567,8 +567,7 @@ class Score : public QObject, public ScoreElement {
       void createGraceNotesPlayEvents(const Fraction& tick, Chord* chord, int& ontime, int& trailtime);
       void cmdPitchUp();
       void cmdPitchDown();
-      void cmdPitchUpOctave();
-      void cmdPitchDownOctave();
+      void cmdPitchUpDownOctave(Direction dir, bool noteEntry);
       void cmdPadNoteIncreaseTAB(const EditData& ed);
       void cmdPadNoteDecreaseTAB(const EditData& ed);
       void cmdToggleMmrest();
@@ -715,7 +714,7 @@ class Score : public QObject, public ScoreElement {
       std::vector<Rest*> setRests(const Fraction& tick, int track, const Fraction&, bool useDots, Tuplet* tuplet,
                                   bool useFullMeasureRest = true);
 
-      void upDown(bool up, UpDownMode);
+      void upDown(bool up, UpDownMode, bool noteEntry=false);
       void upDownDelta(int pitchDelta);
       ChordRest* searchNote(const Fraction& tick, int track) const;
 

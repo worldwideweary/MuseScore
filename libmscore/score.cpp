@@ -2935,8 +2935,10 @@ void Score::padToggle(Pad p, const EditData& ed)
                   }
             }
 
-      if (noteEntryMode())
+      if (noteEntryMode()) {
+            setPlayNote(false);
             return;
+            }
 
       std::vector<ChordRest*> crs;
       std::list<Element*> elementsToSelect;
