@@ -289,38 +289,6 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
             delete b;
 
       //---------------------------------------------------
-      //  layout  SysStaff and StaffLines
-      //---------------------------------------------------
-
-      _leftMargin = xoff2;
-
-      qreal bd = score()->styleP(Sid::bracketDistance);
-      if (!_brackets.empty()) {
-            for (int w : bracketWidth)
-                  _leftMargin += w + bd;
-            }
-
-      for (int staffIdx = 0; staffIdx < nstaves; ++staffIdx) {
-            SysStaff* s  = _staves[staffIdx];
-            Staff* staff = score()->staff(staffIdx);
-            if (!staff->show() || !s->show()) {
-                  s->setbbox(QRectF());
-                  continue;
-                  }
-            qreal staffMag = staff->mag(Fraction(0,1));     // ??? TODO
-            int staffLines = staff->lines(Fraction(0,1));
-            if (staffLines <= 1) {
-                  qreal h = staff->lineDistance(Fraction(0,1)) * staffMag * spatium();
-                  s->bbox().setRect(_leftMargin + xo1, -h, 0.0, 2 * h);
-                  }
-            else {
-                  qreal h = (staffLines - 1) * staff->lineDistance(Fraction(0,1));
-                  h = h * staffMag * spatium();
-                  s->bbox().setRect(_leftMargin + xo1, 0.0, 0.0, h);
-                  }
-            }
-
-      //---------------------------------------------------
       //  layout brackets
       //---------------------------------------------------
 
@@ -332,6 +300,7 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
       //     be hidden, so layout all instrument names
       //---------------------------------------------------
 
+      bool hasShowingNames = false;
       for (SysStaff* s : qAsConst(_staves)) {
             for (InstrumentName* t : qAsConst(s->instrumentNames)) {
                   switch (int(t->align()) & int(Align::HMASK)) {
@@ -346,6 +315,43 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
                               t->rxpos() = xoff2 - point(instrumentNameOffset) + xo1;
                               break;
                         }
+                  hasShowingNames = true;
+                  }
+            }
+
+      //---------------------------------------------------
+      //  layout SysStaff and StaffLines
+      //---------------------------------------------------
+      _leftMargin = xoff2;
+      auto extraIndentation = _leftMargin;
+
+      qreal bd = score()->styleP(Sid::bracketDistance);
+      if (!_brackets.empty()) {
+            for (int w : bracketWidth)
+                  extraIndentation += w + bd;
+            }
+
+      _leftMargin = hasShowingNames ? extraIndentation : _leftMargin;
+
+      int nVisible = 0;
+      for (int staffIdx = 0; staffIdx < nstaves; ++staffIdx) {
+            SysStaff* s  = _staves[staffIdx];
+            Staff* staff = score()->staff(staffIdx);
+            if (!staff->show() || !s->show()) {
+                  s->setbbox(QRectF());
+                  continue;
+                  }
+            ++nVisible;
+            qreal staffMag = staff->mag(Fraction(0,1));     // ??? TODO
+            int staffLines = staff->lines(Fraction(0,1));
+            if (staffLines <= 1) {
+                  qreal h = staff->lineDistance(Fraction(0,1)) * staffMag * spatium();
+                  s->bbox().setRect(_leftMargin + xo1, -h, 0.0, 2 * h);
+                  }
+            else {
+                  qreal h = (staffLines - 1) * staff->lineDistance(Fraction(0,1));
+                  h = h * staffMag * spatium();
+                  s->bbox().setRect(_leftMargin + xo1, 0.0, 0.0, h);
                   }
             }
       }
