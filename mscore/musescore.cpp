@@ -477,6 +477,9 @@ void updateExternalValuesFromPreferences() {
       MScore::cursorColor    = preferences.getColor(PREF_UI_SCORE_CURSOR_COLOR);
       MScore::invisibleElementsColor = preferences.getColor(PREF_UI_SCORE_INVISIBLE_COLOR);
 
+      MScore::lassoColor = preferences.getColor(PREF_UI_SCORE_LASSO_COLOR);
+      MScore::lassoBorderEnabled = preferences.getBool(PREF_UI_SCORE_LASSO_BORDER_ENABLED);
+
       MScore::cursorMoveByBeat = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_MOVE_BY_BEAT);
       MScore::cursorMoveByMeasure = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_ENTIRE_MEASURE);
       MScore::cursorDrawnBehindStaff = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_BACKGROUND);
