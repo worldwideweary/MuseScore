@@ -335,6 +335,8 @@ class MScore {
 
       static QColor selectColor[VOICES];
       static QColor cursorColor;
+      static QColor lassoColor;
+      static bool   lassoBorderEnabled;
       static QColor defaultColor;
       static QColor invisibleElementsColor;
       static bool   cursorResetToStart;
