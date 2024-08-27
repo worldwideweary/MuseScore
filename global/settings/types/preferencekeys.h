@@ -192,6 +192,8 @@
 #define PREF_UI_SCORE_VOICE3_COLOR                          "ui/score/voice3/color"
 #define PREF_UI_SCORE_VOICE4_COLOR                          "ui/score/voice4/color"
 #define PREF_UI_SCORE_INVISIBLE_COLOR                       "ui/score/elements/override/color/invisible"
+#define PREF_UI_SCORE_LASSO_COLOR                           "ui/score/lassoSelection/color"
+#define PREF_UI_SCORE_LASSO_BORDER_ENABLED                  "ui/score/lassoSelection/borderEnabled"
 #define PREF_UI_SCORE_BRACKET_MULTIPLIER                    "ui/score/bracket/multiplier"
 #define PREF_UI_SCORE_SLURS_MAX_SHOULDER_EXTRA              "ui/score/slurs/shoulder/extraHeight"
 #define PREF_UI_SCORE_SLURS_MIN_SHOULDER_EXTRA              "ui/score/slurs/shoulder/extraHeightSmall"
