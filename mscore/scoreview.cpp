@@ -4450,7 +4450,7 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             constraintCanvas(&cx, &cy);
             cx = (x < 0) ? x : cx + _matrix.dx();
             }
-      setOffset(cx, cy);
+      setOffset(cx, y);
       update();
       }
 
