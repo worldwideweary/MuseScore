@@ -1179,6 +1179,7 @@ class Score : public QObject, public ScoreElement {
       Note* upAltCtrl(Note*) const;
       Element* downAlt(Element*);
       Note* downAltCtrl(Note*) const;
+      Element* moveAlt(Element*, Direction);
 
       Element* firstElement(bool frame = true);
       Element* lastElement(bool frame = true);
