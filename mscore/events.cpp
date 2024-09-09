@@ -684,15 +684,19 @@ void ScoreView::mouseMoveEvent(QMouseEvent* me)
             return;
 
       // start some drag operations after a minimum of movement:
-      bool drag = (me->pos() - editData.startMovePixel).manhattanLength() > 4;
+      bool lmb = (editData.buttons == Qt::LeftButton);
+      bool drag = ((me->pos() - editData.startMovePixel).manhattanLength() > 4) && lmb;
+      bool haveShift = (me->modifiers() & Qt::ShiftModifier);
 
       switch (state) {
             case ViewState::NORMAL:
                   if (!drag)
                         return;
-                  if (!editData.element && (me->modifiers() & Qt::ShiftModifier)) {
-                        changeState(ViewState::LASSO);
-                        break;
+                  if (!editData.element) {
+                        if (MScore::lassoWithoutShift || haveShift) {
+                              changeState(ViewState::LASSO);
+                              break;
+                              }
                         }
                   if (editData.element) {
                         if (editData.element->normalModeEditBehavior() == Element::EditBehavior::Edit && editData.curGrip != Grip::NO_GRIP) {
