@@ -102,6 +102,7 @@ bool    MScore::retainAugmentationInRhythmEntry;
 bool    MScore::fingerTextAutoForwardAlphaNumeric;
 
 bool    MScore::disableVerticalMouseDragOfNotes;
+bool    MScore::lassoWithoutShift;
 
 bool    MScore::palettesHideWhenApplied;
 
