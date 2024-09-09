@@ -348,6 +348,7 @@ class MScore {
       static bool fingerTextAutoForwardAlphaNumeric;
 
       static bool disableVerticalMouseDragOfNotes;
+      static bool lassoWithoutShift;
 
       static bool palettesHideWhenApplied;
 
