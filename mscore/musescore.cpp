@@ -445,6 +445,7 @@ void updateExternalValuesFromPreferences() {
       MScore::palettesHideWhenApplied = preferences.getBool(PREF_UI_APP_AUTOHIDE_PALETTES);
 
       MScore::disableVerticalMouseDragOfNotes = preferences.getBool(PREF_UI_SCORE_DISABLE_NOTE_DRAG_VERTICAL);
+      MScore::lassoWithoutShift = preferences.getBool(PREF_UI_SCORE_LASSO_WITHOUT_SHIFT);
       MScore::noteInputOctaveTendencyIsTopNote = preferences.getBool(PREF_SCORE_NOTE_INPUT_OCTAVE_TENDENCY);
       MScore::noteInputOctaveUpwardFifth = preferences.getBool(PREF_SCORE_NOTE_INPUT_FIFTH_IS_UPWARD);
       MScore::resetNoteEntryAtSystemOrCourtesy = preferences.getBool(PREF_SCORE_NOTE_INPUT_RESET_PITCH_AT_SYSTEM);
