@@ -2232,12 +2232,28 @@ void ScoreView::cmd(const char* s)
             {{"mag"}, /*[](ScoreView* cv, const QByteArray&)*/ {
                   // ??
                   }},
-            {{"play"}, [](ScoreView* cv, const QByteArray&) {
+            {{"play"}, [&](ScoreView* cv, const QByteArray&) {
                   if (seq && seq->canStart()) {
-                        if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY)
+                        auto cvScore = cv->score();
+                        auto cvSel = cvScore->selection();
+                        if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY) {
+                              if (!cvSel.isNone()) {
+                                    originalSelection = cvScore->selection();
+                                    cvScore->deselectAll();
+                                    }
                               cv->changeState(ViewState::PLAY);
-                        else if (cv->state == ViewState::PLAY)
+                              }
+                        else if (cv->state == ViewState::PLAY) {
+                              if (!cvSel.isNone()) {
+                                    cv->deselectAll();
+                                    }
                               cv->changeState(ViewState::NORMAL);
+
+                              bool validOriginalSelection = originalSelection.score();
+                              if (validOriginalSelection) {
+                                    cvScore->setSelection(originalSelection);
+                                    }
+                              }
                         }
                   else
                         getAction("play")->setChecked(false);
