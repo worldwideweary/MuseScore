@@ -20,6 +20,7 @@
 #include "measureproperties.h"
 #include "musescore.h"
 #include "navigator.h"
+#include "pianotools.h"
 #include "preferences.h"
 #include "scoreaccessibility.h"
 #include "scoretab.h"
@@ -2323,12 +2324,41 @@ void ScoreView::cmd(const char* s)
             {{"mag"}, /*[](ScoreView* cv, const QByteArray&)*/ {
                   // ??
                   }},
-            {{"play"}, [](ScoreView* cv, const QByteArray&) {
+            {{"play"}, [&](ScoreView* cv, const QByteArray&) {
                   if (seq && seq->canStart()) {
-                        if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY)
+                        auto _score = cv->score();
+                        auto _selection = _score->selection();
+                        if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY) {
+                              // Start:
+                              if (!_selection.isNone()) {
+                                    _score->deselectAll();
+                                    // Clear on-screen keyboard:
+                                    if (auto piano = mscore->pianoTools()) {
+                                          piano->changeSelection(_score->selection());
+                                          }
+                                    }
                               cv->changeState(ViewState::PLAY);
-                        else if (cv->state == ViewState::PLAY)
+                              }
+                        else if (cv->state == ViewState::PLAY) {
+                              // Stop:
                               cv->changeState(ViewState::NORMAL);
+
+                              bool validOriginalSelection = (originalSelection.score() == _score);
+                              if (validOriginalSelection) {
+                                    if (/*TODO*/ true) {
+                                          // Resetting to original selection should be contingent upon
+                                          // user-preference of following cursor position at stop.
+                                          _score->setSelection(originalSelection);
+                                          }
+                                    if (auto piano = mscore->pianoTools()) {
+                                          if (/*TODO*/ true ) {
+                                                // Restoring on-screen piano state after stopping 
+                                                // should also be contingent upon user preference                                    
+                                                piano->changeSelection(originalSelection);
+                                                }
+                                          }
+                                    }
+                              }
                         }
                   else
                         getAction("play")->setChecked(false);
