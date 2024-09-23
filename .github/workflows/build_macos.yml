@@ -3,10 +3,10 @@ name: 'Build: macOS'
 on:
   push:
     branches:
-    - 3.x
+    - 3.x-worldwideweary
   pull_request:
     branches:
-    - 3.x
+    - 3.x-worldwideweary
 
   schedule:
     - cron: '0 4 */1 * *' # At 04:00 on every day-of-month
@@ -34,7 +34,7 @@ on:
         required: false
 
 env:
-  CURRENT_RELEASE_BRANCH: 3.x
+  CURRENT_RELEASE_BRANCH: 3.x-worldwideweary
   DEVELOPER_DIR: /Applications/Xcode_13.1.app/Contents/Developer
 
 jobs:
