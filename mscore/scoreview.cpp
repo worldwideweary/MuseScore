@@ -2239,8 +2239,13 @@ void ScoreView::cmd(const char* s)
                         if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY) {
                               if (!cvSel.isNone()) {
                                     originalSelection = cvScore->selection();
+                                    // Clear score + onscreen keyboard
                                     cvScore->deselectAll();
+                                    if (auto piano = mscore->pianoTools()) {
+                                          piano->changeSelection(cvScore->selection());
+                                          }
                                     }
+
                               cv->changeState(ViewState::PLAY);
                               }
                         else if (cv->state == ViewState::PLAY) {
@@ -2251,7 +2256,11 @@ void ScoreView::cmd(const char* s)
 
                               bool validOriginalSelection = originalSelection.score();
                               if (validOriginalSelection) {
+                                    // Restore score + onscreen keyboard selection
                                     cvScore->setSelection(originalSelection);
+                                    if (auto piano = mscore->pianoTools()) {
+                                          piano->changeSelection(originalSelection);
+                                          }
                                     }
                               }
                         }
