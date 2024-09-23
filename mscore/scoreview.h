@@ -24,6 +24,7 @@
 #include "libmscore/mscoreview.h"
 #include "libmscore/pos.h"
 #include "libmscore/property.h"
+#include "libmscore/select.h"
 
 namespace Ms {
 
@@ -210,6 +211,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       bool popupActive = false;
       bool modifySelection = false;
       Element* elementToSelect = nullptr;
+      Selection originalSelection;
 
       // Loop In/Out marks in the score
       PositionCursor* _curLoopIn;
