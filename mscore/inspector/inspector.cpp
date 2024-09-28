@@ -202,9 +202,8 @@ void Inspector::update(Score* s)
                         sameSubtypes = false;
                   }
             }
-      if (oe != element() ||
-          (oSameTypes != sameTypes) ||
-          (oSameSubtypes != sameSubtypes)) {
+      bool differentElement = oe != element() || (oSameTypes != sameTypes) || (oSameSubtypes != sameSubtypes);
+      if (differentElement) {
             ie  = 0;
             oe  = element();
             oSameTypes = sameTypes;
@@ -435,7 +434,7 @@ void Inspector::update(Score* s)
                         }
                   }
             }
-      if (ie)
+      if (ie && differentElement)
             ie->setElement();
       }
 
