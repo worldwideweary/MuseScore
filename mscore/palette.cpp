@@ -513,6 +513,17 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
       if (element->isSpanner())
             TourHandler::startTour("spanner-drop-apply");
 
+      bool isFrame  = false;
+      auto iconType = element->isIcon() ? toIcon(element)->iconType() : IconType::NONE;
+      switch (iconType) { // fallthroughs
+            case IconType::MEASURE:
+            case IconType::TFRAME:
+            case IconType::VFRAME:
+            case IconType::HFRAME:
+                  isFrame = true;
+            default: break;
+            }
+
 #ifdef MSCORE_UNSTABLE
       if (ScriptRecorder* rec = mscore->getScriptRecorder()) {
             if (modifiers == 0)
@@ -591,6 +602,24 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                   }
             else if (element->isSlur()) {
                   viewer->cmdAddSlur(toSlur(element));
+                  }
+            else if (isFrame) {
+                  auto icon = toIcon(element);
+                  auto type = icon->iconType();
+                  auto et = ElementType::INVALID;
+                  switch (type) {
+                        case IconType::MEASURE: et = ElementType::MEASURE;
+                              break;
+                        case IconType::TFRAME: et = ElementType::TBOX;
+                              break;
+                        case IconType::VFRAME: et = ElementType::VBOX;
+                              break;
+                        case IconType::HFRAME: et = ElementType::HBOX;
+                        default: break;
+                        }
+
+                  if (et != ElementType::INVALID)
+                        viewer->cmdInsertMeasures(1, et);
                   }
             else if (element->isSLine() && !element->isGlissando() && addSingle) {
                   Segment* startSegment = cr1->segment();
