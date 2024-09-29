@@ -603,7 +603,10 @@ void Score::cmdAddInterval(int val, const std::vector<Note*>& nl)
                               }
                         }
                   }
-            else { //special case for octave
+            else {
+                  // Special case for Octave:
+                  // Apply accidental when already explicitly existing on current note
+                  forceAccidental = (on->accidentalType() != AccidentalType::NONE);
                   Interval interval(7, 12);
                   if (val < 0)
                         interval.flip();
