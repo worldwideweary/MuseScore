@@ -86,6 +86,7 @@
             <durationType>quarter</durationType>
             <Note>
               <Accidental>
+                <role>1</role>
                 <subtype>accidentalSharp</subtype>
                 </Accidental>
               <pitch>56</pitch>
@@ -103,6 +104,7 @@
             <durationType>quarter</durationType>
             <Note>
               <Accidental>
+                <role>1</role>
                 <subtype>accidentalSharp</subtype>
                 </Accidental>
               <pitch>58</pitch>
@@ -124,6 +126,7 @@
             <durationType>quarter</durationType>
             <Note>
               <Accidental>
+                <role>1</role>
                 <subtype>accidentalSharp</subtype>
                 </Accidental>
               <pitch>60</pitch>
@@ -141,6 +144,7 @@
             <durationType>quarter</durationType>
             <Note>
               <Accidental>
+                <role>1</role>
                 <subtype>accidentalSharp</subtype>
                 </Accidental>
               <pitch>61</pitch>
@@ -162,6 +166,7 @@
             <durationType>quarter</durationType>
             <Note>
               <Accidental>
+                <role>1</role>
                 <subtype>accidentalSharp</subtype>
                 </Accidental>
               <pitch>63</pitch>
@@ -179,6 +184,7 @@
             <durationType>quarter</durationType>
             <Note>
               <Accidental>
+                <role>1</role>
                 <subtype>accidentalSharp</subtype>
                 </Accidental>
               <pitch>65</pitch>
@@ -200,6 +206,7 @@
             <durationType>quarter</durationType>
             <Note>
               <Accidental>
+                <role>1</role>
                 <subtype>accidentalSharp</subtype>
                 </Accidental>
               <pitch>66</pitch>
@@ -238,6 +245,7 @@
             <durationType>quarter</durationType>
             <Note>
               <Accidental>
+                <role>1</role>
                 <subtype>accidentalFlat</subtype>
                 </Accidental>
               <pitch>54</pitch>
@@ -255,6 +263,7 @@
             <durationType>quarter</durationType>
             <Note>
               <Accidental>
+                <role>1</role>
                 <subtype>accidentalFlat</subtype>
                 </Accidental>
               <pitch>52</pitch>
@@ -276,6 +285,7 @@
             <durationType>quarter</durationType>
             <Note>
               <Accidental>
+                <role>1</role>
                 <subtype>accidentalFlat</subtype>
                 </Accidental>
               <pitch>51</pitch>
@@ -293,6 +303,7 @@
             <durationType>quarter</durationType>
             <Note>
               <Accidental>
+                <role>1</role>
                 <subtype>accidentalFlat</subtype>
                 </Accidental>
               <pitch>49</pitch>
@@ -314,6 +325,7 @@
             <durationType>quarter</durationType>
             <Note>
               <Accidental>
+                <role>1</role>
                 <subtype>accidentalFlat</subtype>
                 </Accidental>
               <pitch>47</pitch>
@@ -331,6 +343,7 @@
             <durationType>quarter</durationType>
             <Note>
               <Accidental>
+                <role>1</role>
                 <subtype>accidentalFlat</subtype>
                 </Accidental>
               <pitch>46</pitch>
@@ -352,6 +365,7 @@
             <durationType>quarter</durationType>
             <Note>
               <Accidental>
+                <role>1</role>
                 <subtype>accidentalFlat</subtype>
                 </Accidental>
               <pitch>44</pitch>
