@@ -568,17 +568,23 @@ void Score::cmdAddInterval(int val, const std::vector<Note*>& nl)
                   ClefType clef = estaff->clef(tick);
                   Key key       = estaff->key(tick);
                   int ntpc;
+                  int step = absStep(line, clef);
+                  int octave = step / 7;
                   if (accidental) {
                         AccidentalVal acci = Accidental::subtype2value(_is.accidentalType());
-                        int step = absStep(line, clef);
-                        int octave = step / 7;
                         npitch = step2pitch(step) + octave * 12 + int(acci);
                         forceAccidental = (npitch == line2pitch(line, clef, key));
                         ntpc = step2tpc(step % 7, acci);
                         }
                   else {
-                        npitch = line2pitch(line, clef, key);
-                        ntpc = pitch2tpc(npitch, key, Prefer::NEAREST);
+                        // Apply alteration if existing within current measure's octave
+                        bool error = false;
+                        AccidentalVal acci = chord->measure()->findAccidental(chord->segment(), estaff->idx(), line, error);
+                        if (error)
+                              return;
+
+                        npitch = step2pitch(step) + octave * 12 + int(acci);
+                        ntpc = step2tpc(step % 7, acci);
                         }
 
                   Interval v = on->part()->instrument(tick)->transpose();
