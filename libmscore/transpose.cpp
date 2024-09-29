@@ -303,20 +303,27 @@ bool Score::transpose(TransposeMode mode, TransposeDirection direction, Key trKe
             if (direction == TransposeDirection::DOWN)
                   transposeInterval *= -1;
             }
-
+      std::vector<Note*> alreadyTransposed;
       if (_selection.isList()) {
-            foreach (Element* e, _selection.uniqueElements()) {
+            for (auto e : _selection.uniqueElements()) {
                   if (!e->staff() || e->staff()->staffType(e->tick())->group() == StaffGroup::PERCUSSION)
                         continue;
                   if (e->isNote()) {
                         Note* note = toNote(e);
-                        if (mode == TransposeMode::DIATONICALLY)
-                              note->transposeDiatonic(transposeInterval, trKeys, useDoubleSharpsFlats);
-                        else {
-                              if (!transpose(note, interval, useDoubleSharpsFlats)) {
-                                    result = false;
-                                    continue;
+                        if (mode == TransposeMode::DIATONICALLY) {
+                              bool haveTies = note->tiedNotes().size() > 1;
+                              if (haveTies) {
+                                    auto first = note->tiedNotes().front();
+                                    auto oldNews = std::find(alreadyTransposed.begin(), alreadyTransposed.end(), first) != alreadyTransposed.end();
+                                    if (oldNews)
+                                          continue;
+                                    else alreadyTransposed.push_back(note);
                                     }
+                              note->transposeDiatonic(transposeInterval, trKeys, useDoubleSharpsFlats);
+                              }
+                        else if (!transpose(note, interval, useDoubleSharpsFlats)) {
+                              result = false;
+                              continue;
                               }
                         }
                   else if (e->isHarmony() && transposeChordNames) {
@@ -359,6 +366,7 @@ bool Score::transpose(TransposeMode mode, TransposeDirection direction, Key trKe
       // process range selection
       //--------------------------
 
+      alreadyTransposed.clear();
       QList<Staff*> sl;
       for (int staffIdx = _selection.staffStart(); staffIdx < _selection.staffEnd(); ++staffIdx) {
             Staff* s = staff(staffIdx);
@@ -409,9 +417,18 @@ bool Score::transpose(TransposeMode mode, TransposeDirection direction, Key trKe
                         Chord* chord = toChord(e);
                         std::vector<Note*> nl = chord->notes();
                         for (Note* n : nl) {
-                              if (mode == TransposeMode::DIATONICALLY)
+                              if (mode == TransposeMode::DIATONICALLY) {
+                                    bool haveTies = n->tiedNotes().size() > 1;
+                                    if (haveTies) {
+                                          auto first = n->tiedNotes().front();
+                                          auto oldNews = std::find(alreadyTransposed.begin(), alreadyTransposed.end(), first) != alreadyTransposed.end();
+                                          if (oldNews)
+                                                continue;
+                                          else alreadyTransposed.push_back(n);
+                                          }
                                     n->transposeDiatonic(transposeInterval, trKeys, useDoubleSharpsFlats);
-                              else {
+                                    }
+                              else  {
                                     if (!transpose(n, interval, useDoubleSharpsFlats)) {
                                           result = false;
                                           continue;
@@ -645,6 +662,14 @@ void Note::transposeDiatonic(int interval, bool keepAlterations, bool useDoubleA
       int alter;
       Fraction tick = chord()->segment()->tick();
       Key key       = staff() ? staff()->key(tick) : Key::C;
+
+      // Situation: keepAlterations ought to be 'facetious' for note-entry purposes and not for key-signature conformity.
+      // E.g., a [natural accidental] shouldn't appear when transposing with an existing active key-signature - the note
+      // should merely retain it's accidental/non-accidental status when moving to the above/below staff position.
+      auto originalAccidental = accidentalType();
+      if (originalAccidental == AccidentalType::NONE && firstTiedNote())
+            originalAccidental = firstTiedNote()->accidentalType();
+
       int absStep   = pitch2absStepByKey(epitch(), tpc(), key, alter);
 
       // get pitch and tcp corresponding to unaltered degree for this key
@@ -652,15 +677,15 @@ void Note::transposeDiatonic(int interval, bool keepAlterations, bool useDoubleA
       int newTpc   = step2tpcByKey((absStep + interval) % STEP_DELTA_OCTAVE, key);
 
       // if required, transfer original degree alteration to new pitch and tpc
-      if (keepAlterations) {
+      if (keepAlterations && (originalAccidental != AccidentalType::NONE)) {
             newPitch += alter;
-            newTpc  += alter * TPC_DELTA_SEMITONE;
+            newTpc += alter * TPC_DELTA_SEMITONE;
             }
 
       // transpose appropriately
       int newTpc1 = TPC_INVALID;
       int newTpc2 = TPC_INVALID;
-      Interval v   = staff() ? staff()->part()->instrument(tick)->transpose() : Interval(0);
+      Interval v = staff() ? staff()->part()->instrument(tick)->transpose() : Interval(0);
       if (concertPitch()) {
             v.flip();
             newTpc1 = newTpc;
@@ -698,8 +723,10 @@ void Note::transposeDiatonic(int interval, bool keepAlterations, bool useDoubleA
                   newTpc2 += TPC_DELTA_ENHARMONIC;
             }
 
-      // store new data
-      score()->undoChangePitch(this, newPitch, newTpc1, newTpc2);
+      auto firstNote = (tiedNotes().size() > 1) ? tiedNotes().front() : this;
+      score()->undoChangePitch(firstNote, newPitch, newTpc1, newTpc2);
+      firstNote->updateLine();
+      firstNote->setAccidentalType(originalAccidental);
       }
 
 //---------------------------------------------------------
