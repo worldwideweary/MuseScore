@@ -447,6 +447,8 @@ void updateExternalValuesFromPreferences() {
       MScore::selectColor[3] = preferences.getColor(PREF_UI_SCORE_VOICE4_COLOR);
       MScore::cursorColor    = preferences.getColor(PREF_UI_SCORE_CURSOR_COLOR);
 
+      MScore::systemBracketMultiplier = preferences.getDouble(PREF_UI_SCORE_BRACKET_MULTIPLIER);
+
       MScore::setHRaster(preferences.getInt(PREF_UI_APP_RASTER_HORIZONTAL));
       MScore::setVRaster(preferences.getInt(PREF_UI_APP_RASTER_VERTICAL));
 
