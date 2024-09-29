@@ -2453,6 +2453,12 @@ void ScoreView::cmd(const char* s)
             {{"pitch-down-diatonic"}, [](ScoreView* cv, const QByteArray&) {
                   cv->score()->upDown(false, UpDownMode::DIATONIC);
                   }},
+            {{"pitch-up-diatonic-alterations"}, [](ScoreView* cv, const QByteArray&) {
+                  cv->score()->transposeDiatonicAlterations(TransposeDirection::UP);
+                  }},
+            {{"pitch-down-diatonic-alterations"}, [](ScoreView* cv, const QByteArray&) {
+                  cv->score()->transposeDiatonicAlterations(TransposeDirection::DOWN);
+                  }},
             {{"move-up"}, [](ScoreView* cv, const QByteArray) {
                   std::list<Element*> el = cv->score()->selection().uniqueElements();
                   for (Element* e : el) {
