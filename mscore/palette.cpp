@@ -513,6 +513,17 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
       if (element->isSpanner())
             TourHandler::startTour("spanner-drop-apply");
 
+      bool isFrame  = false;
+      auto iconType = element->isIcon() ? toIcon(element)->iconType() : IconType::NONE;
+      switch (iconType) { // fallthroughs
+            case IconType::MEASURE:
+            case IconType::TFRAME:
+            case IconType::VFRAME:
+            case IconType::HFRAME:
+                  isFrame = true;
+            default: break;
+            }
+
 #ifdef MSCORE_UNSTABLE
       if (ScriptRecorder* rec = mscore->getScriptRecorder()) {
             if (modifiers == 0)
@@ -592,6 +603,24 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
             else if (element->isSlur()) {
                   viewer->cmdAddSlur(toSlur(element));
                   }
+            else if (isFrame) {
+                  auto icon = toIcon(element);
+                  auto type = icon->iconType();
+                  auto et = ElementType::INVALID;
+                  switch (type) {
+                        case IconType::MEASURE: et = ElementType::MEASURE;
+                              break;
+                        case IconType::TFRAME: et = ElementType::TBOX;
+                              break;
+                        case IconType::VFRAME: et = ElementType::VBOX;
+                              break;
+                        case IconType::HFRAME: et = ElementType::HBOX;
+                        default: break;
+                        }
+
+                  if (et != ElementType::INVALID)
+                        viewer->cmdInsertMeasures(1, et);
+                  }
             else if (element->isSLine() && !element->isGlissando() && addSingle) {
                   Segment* startSegment = cr1->segment();
                   Segment* endSegment = cr2->segment();
@@ -633,11 +662,25 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                         || toIcon(element)->iconType() == IconType::MEASURE
                         || toIcon(element)->iconType() == IconType::BRACKETS))) {
                   Measure* last = sel.endSegment() ? sel.endSegment()->measure() : nullptr;
+                  bool onlyOneMeasure = (sel.startSegment()->measure() == last);
                   for (Measure* m = sel.startSegment()->measure(); m; m = m->nextMeasureMM()) {
                         QRectF r = m->staffabbox(sel.staffStart());
                         QPointF pt(r.x() + r.width() * .5, r.y() + r.height() * .5);
                         pt += m->system()->page()->pos();
-                        applyDrop(score, viewer, m, element, modifiers, pt);
+
+                        if (onlyOneMeasure && isFrame) {
+                              auto et = ElementType::INVALID;
+                              switch (iconType) {
+                                    case IconType::TFRAME:  et = ElementType::TBOX; break;
+                                    case IconType::VFRAME:  et = ElementType::VBOX; break;
+                                    case IconType::HFRAME:  et = ElementType::HBOX; break;
+                                    case IconType::MEASURE: et = ElementType::MEASURE;
+                                    default: break;
+                                    }
+                              if (et != ElementType::INVALID)
+                                    viewer->cmdInsertMeasures(1, et);
+                              }
+                        else applyDrop(score, viewer, m, element, modifiers, pt);
                         if (m == last)
                               break;
                         }
