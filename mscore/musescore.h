@@ -731,7 +731,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void disableCommands(bool val) { inChordEditor = val; }
 
       Tuplet* tupletDialog();
-      void selectSimilar(Element*, bool);
+      void selectSimilar(Element*, bool, bool);
       void selectSimilarInRange(Element* e);
       void selectElementDialog(Element* e);
       void transpose();

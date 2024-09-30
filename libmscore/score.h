@@ -825,7 +825,7 @@ class Score : public QObject, public ScoreElement {
       void getSelectedChordRest2(ChordRest** cr1, ChordRest** cr2) const;
 
       void select(Element* obj, SelectType = SelectType::SINGLE, int staff = 0);
-      void selectSimilar(Element* e, bool sameStaff);
+      void selectSimilar(Element* e, bool sameStaff, bool sameSystem = false);
       void selectSimilarInRange(Element* e);
       static void collectMatch(void* data, Element* e);
       static void collectNoteMatch(void* data, Element* e);
