@@ -862,6 +862,16 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         "pitch-up-octave-quick",
+         QT_TRANSLATE_NOOP("action","Up Octave (disregard previous alterations)"),
+         QT_TRANSLATE_NOOP("action","Pitch up octave (disregard previous alterations)"),
+         QT_TRANSLATE_NOOP("action","Pitch up by an octave (disregard previous alterations) or move text or articulation up"),
+         Icons::Invalid_ICON,
+         Qt::WindowShortcut
+         },
+      {
+         MsWidget::SCORE_TAB,
          STATE_NORMAL | STATE_NOTE_ENTRY_STAFF_PITCHED | STATE_NOTE_ENTRY_STAFF_DRUM,
          "up-chord",
          QT_TRANSLATE_NOOP("action","Up Note in Chord"),
@@ -933,6 +943,16 @@ Shortcut Shortcut::_sc[] = {
          Icons::Invalid_ICON,
          Qt::WindowShortcut,
          ShortcutFlags::A_CMD
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         "pitch-down-octave-quick",
+         QT_TRANSLATE_NOOP("action","Down Octave (disregard previous alterations)"),
+         QT_TRANSLATE_NOOP("action","Pitch down octave (disregard previous alterations)"),
+         QT_TRANSLATE_NOOP("action","Pitch down by an octave (disregard previous alterations) or move text or articulation down"),
+         Icons::Invalid_ICON,
+         Qt::WindowShortcut
          },
       {
          MsWidget::SCORE_TAB,

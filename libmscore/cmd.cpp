@@ -603,8 +603,10 @@ void Score::cmdAddInterval(int val, const std::vector<Note*>& nl)
                               }
                         }
                   }
-            else { // octave:
-                  forceAccidental = true;
+            else {
+                  // Special case for Octave -
+                  // Guarantee an accidental when explicitly existing on current note (including natural signs)
+                  forceAccidental = (on->accidentalType() != AccidentalType::NONE);
                   Interval interval(7, 12);
                   if (val < 0)
                         interval.flip();
@@ -1579,6 +1581,9 @@ void Score::upDown(bool up, UpDownMode mode)
             int newPitch = pitch;     // default to unchanged
             int string   = oNote->string();
             int fret     = oNote->fret();
+            auto accidentalType = oNote->accidentalType();
+            bool hasTie = (oNote->tieBack() || oNote->tieFor());
+            bool manuallyAppliedAccidental = false;
 
             StaffGroup staffGroup = staff->staffType(oNote->chord()->tick())->group();
             // if not tab, check for instrument instead of staffType (for pitched to unpitched instrument changes) 
@@ -1600,7 +1605,8 @@ void Score::upDown(bool up, UpDownMode mode)
                         {
                         const StringData* stringData = part->instrument(tick)->stringData();
                         switch (mode) {
-                              case UpDownMode::OCTAVE:          // move same note to next string, if possible
+                              case UpDownMode::OCTAVE:       // fallthrough
+                              case UpDownMode::OCTAVE_QUICK: // move same note to next string, if possible
                                     {
                                     const StaffType* stt = staff->staffType(tick);
                                     string = stt->physStringToVisual(string);
@@ -1649,7 +1655,8 @@ void Score::upDown(bool up, UpDownMode mode)
                         break;
                   case StaffGroup::STANDARD:
                         switch (mode) {
-                              case UpDownMode::OCTAVE:
+                              case UpDownMode::OCTAVE: // fallthrough
+                              case UpDownMode::OCTAVE_QUICK:
                                     if (up) {
                                           if (pitch < 116)
                                                 newPitch = pitch + 12;
@@ -1708,7 +1715,7 @@ void Score::upDown(bool up, UpDownMode mode)
                   // unless it's an octave change
                   // in this case courtesy accidentals are preserved
                   // because they're now harder to be re-entered due to the revised note-input workflow
-                  if (mode != UpDownMode::OCTAVE) {
+                  if (mode != UpDownMode::OCTAVE && mode != UpDownMode::OCTAVE_QUICK) {
                         auto l = oNote->linkList();
                         for (ScoreElement* e : qAsConst(l)) {
                               Note* ln = toNote(e);
@@ -1716,7 +1723,20 @@ void Score::upDown(bool up, UpDownMode mode)
                                     undo(new RemoveElement(ln->accidental()));
                               }
                         }
-                  undoChangePitch(oNote, newPitch, newTpc1, newTpc2);
+                  if (mode == UpDownMode::OCTAVE_QUICK && !hasTie && !selection().isRange()) {
+                        // This style of octave-shifting will guarantee the exact explicit accidental-type
+                        // as it was before shifting - useful for transcribing in note-entry.
+                        startCmd();
+                            setPlayNote(false);
+                            undoChangePitch(oNote, newPitch, newTpc1, newTpc2);
+                        endCmd();
+                        startCmd();
+                            changeAccidental(oNote, accidentalType);
+                        endCmd();
+                        manuallyAppliedAccidental = true;
+                        }
+                  // Chromatic / Diatonic / Standard Octave:
+                  else undoChangePitch(oNote, newPitch, newTpc1, newTpc2);
                   }
 
             // store fret change only if undoChangePitch has not been called,
@@ -1738,7 +1758,8 @@ void Score::upDown(bool up, UpDownMode mode)
                   }
 
             // play new note with velocity 80 for 0.3 sec:
-            setPlayNote(true);
+            if (!manuallyAppliedAccidental)
+                  setPlayNote(true);
             }
       setSelectionChanged(true);
       }
@@ -1817,6 +1838,7 @@ void Score::toggleAccidental(AccidentalType at, const EditData& ed)
       if (noteEntryMode()) {
             _is.setAccidentalType(at);
             _is.setRest(false);
+            setPlayNote(false);
             }
       else {
             if (selection().isNone()) {
@@ -3791,29 +3813,22 @@ void Score::cmdTimeDelete()
       }
 
 //---------------------------------------------------------
-//   cmdPitchUpOctave
+//   cmdPitchUpDownOctave
 //---------------------------------------------------------
 
-void Score::cmdPitchUpOctave()
+void Score::cmdPitchUpDownOctave(Direction dir, bool noteEntry)
       {
+      signed int sign = (dir == Direction::DOWN ? +1 : -1);
       Element* el = selection().element();
+      auto x = 0.0;
+      auto y = sign * MScore::nudgeStep10 * el->spatium();
+      bool up = (dir == Direction::UP);
       if (el && (el->isArticulation() || el->isTextBase()))
-            el->undoChangeProperty(Pid::OFFSET, el->offset() + QPointF(0.0, -MScore::nudgeStep10 * el->spatium()), PropertyFlags::UNSTYLED);
-      else
-            upDown(true, UpDownMode::OCTAVE);
-      }
-
-//---------------------------------------------------------
-//   cmdPitchDownOctave
-//---------------------------------------------------------
-
-void Score::cmdPitchDownOctave()
-      {
-      Element* el = selection().element();
-      if (el && (el->isArticulation() || el->isTextBase()))
-            el->undoChangeProperty(Pid::OFFSET, el->offset() + QPointF(0.0, MScore::nudgeStep10 * el->spatium()), PropertyFlags::UNSTYLED);
-      else
-            upDown(false, UpDownMode::OCTAVE);
+            el->undoChangeProperty(Pid::OFFSET, el->offset() + QPointF(x, y), PropertyFlags::UNSTYLED);
+      else {
+            auto octaveMode = noteEntry ? UpDownMode::OCTAVE_QUICK : UpDownMode::OCTAVE;
+            upDown(up, octaveMode);
+            }
       }
 
 //---------------------------------------------------------
@@ -4633,8 +4648,10 @@ void Score::cmd(const QAction* a, EditData& ed)
             { "pitch-up",                   [](Score* cs, EditData&){ cs->cmdPitchUp();                                               }},
             { "pitch-down",                 [](Score* cs, EditData&){ cs->cmdPitchDown();                                             }},
             { "time-delete",                [](Score* cs, EditData&){ cs->cmdTimeDelete();                                            }},
-            { "pitch-up-octave",            [](Score* cs, EditData&){ cs->cmdPitchUpOctave();                                         }},
-            { "pitch-down-octave",          [](Score* cs, EditData&){ cs->cmdPitchDownOctave();                                       }},
+            { "pitch-up-octave",            [](Score* cs, EditData&){ cs->cmdPitchUpDownOctave(Direction::UP,   false);               }},
+            { "pitch-down-octave",          [](Score* cs, EditData&){ cs->cmdPitchUpDownOctave(Direction::DOWN, false);               }},
+            { "pitch-up-octave-quick",      [](Score* cs, EditData&){ cs->cmdPitchUpDownOctave(Direction::UP,   true);                }},
+            { "pitch-down-octave-quick",    [](Score* cs, EditData&){ cs->cmdPitchUpDownOctave(Direction::DOWN, true);                }},
             { "pad-note-increase",          [](Score* cs, EditData& ed){ cs->cmdPadNoteIncreaseTAB(ed);                               }},
             { "pad-note-decrease",          [](Score* cs, EditData& ed){ cs->cmdPadNoteDecreaseTAB(ed);                               }},
             { "pad-note-increase-TAB",      [](Score* cs, EditData& ed){ cs->cmdPadNoteIncreaseTAB(ed);                               }},
