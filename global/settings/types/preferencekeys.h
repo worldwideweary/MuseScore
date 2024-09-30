@@ -142,6 +142,8 @@
 #define PREF_UI_CANVAS_MISC_SELECTIONPROXIMITY              "ui/canvas/misc/selectionProximity"
 #define PREF_UI_CANVAS_SCROLL_VERTICALORIENTATION           "ui/canvas/scroll/verticalOrientation"
 #define PREF_UI_CANVAS_SCROLL_LIMITSCROLLAREA               "ui/canvas/scroll/limitScrollArea"
+#define PREF_UI_APP_NUDGESTEP_10                            "ui/score/nudgeStepCtrl"
+#define PREF_UI_APP_NUDGESTEP_1                             "ui/score/nudgeStep"
 #define PREF_UI_APP_STARTUP_CHECKUPDATE                     "ui/application/startup/checkUpdate"
 #define PREF_UI_APP_STARTUP_CHECK_EXTENSIONS_UPDATE         "ui/application/startup/checkExtensionsUpdate"
 #define PREF_UI_APP_STARTUP_SHOWNAVIGATOR                   "ui/application/startup/showNavigator"
