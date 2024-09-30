@@ -2716,10 +2716,21 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::MAIN_WINDOW,
-         STATE_NORMAL | STATE_NOTE_ENTRY,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_PLAY,
          "show-invisible",
          QT_TRANSLATE_NOOP("action","Show Invisible"),
          QT_TRANSLATE_NOOP("action","Show invisible"),
+         0,
+         Icons::Invalid_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_SCORE | ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_PLAY,
+         "toggle-all-unprintable",
+         QT_TRANSLATE_NOOP("action","Show All Invisible and Unprintable Elements"),
+         QT_TRANSLATE_NOOP("action","Show all invisible and unprintable elements"),
          0,
          Icons::Invalid_ICON,
          Qt::WindowShortcut,

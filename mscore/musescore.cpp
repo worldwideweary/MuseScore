@@ -6496,6 +6496,15 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             cs->setShowInvisible(a->isChecked());
             cs->update();
             }
+      else if (cmd == "toggle-all-unprintable") {
+            // Master toggle command to show/unshow all invisible and unprintable elements:
+            cs->setShowInvisible(a->isChecked());
+            cs->setShowUnprintable(a->isChecked());
+            cs->setShowFrames(a->isChecked());
+            cs->setShowPageborders(a->isChecked());
+            cs->setMarkIrregularMeasures(a->isChecked());
+            cs->update();
+            }
       else if (cmd == "show-unprintable") {
             cs->setShowUnprintable(a->isChecked());
             cs->update();
