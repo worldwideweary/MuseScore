@@ -4047,7 +4047,7 @@ void Score::cmdUnsetVisible()
 //    c d e f g a b entered:
 //---------------------------------------------------------
 
-void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert)
+void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert, bool useUpNote, bool below)
       {
       InputState& is = inputState();
       if (is.track() == -1)          // invalid state
@@ -4095,16 +4095,23 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert)
       else {
             static const int tab[] = { 0, 2, 4, 5, 7, 9, 11 };
 
-            // if adding notes, add above the upNote of the current chord
             Element* el = selection().element();
             if (addFlag && el && el->isNote()) {
                   Chord* chord = toNote(el)->chord();
-                  Note* n      = chord->upNote();
+
+                  // if adding notes, add above the upNote of the current chord
+                  // alternatively, if adding tpc downward, base position will be current selected note
+                  (void) useUpNote;
+                  Note* n = below ? toNote(el) : chord->upNote();
+
                   int tpc = n->tpc();
                   octave = (n->epitch() - int(tpc2alter(tpc))) / PITCH_DELTA_OCTAVE;
-                  if (note <= tpc2step(tpc))
+                  if (note <= tpc2step(tpc) && !below)
                         octave++;
+                  else if (note >= tpc2step(tpc) && below)
+                        octave--;
                   }
+                  // Observation: this is partial in that it will only work for one element and not on a range
             else {
                   int curPitch = 60;
                   if (is.segment()) {
@@ -4490,6 +4497,13 @@ void Score::cmd(const QAction* a, EditData& ed)
             { "chord-g",                    [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 4, true, false);                         }},
             { "chord-a",                    [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 5, true, false);                         }},
             { "chord-b",                    [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 6, true, false);                         }},
+            { "chord-c-below",              [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 0, true, false, false, true);            }},
+            { "chord-d-below",              [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 1, true, false, false, true);            }},
+            { "chord-e-below",              [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 2, true, false, false, true);            }},
+            { "chord-f-below",              [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 3, true, false, false, true);            }},
+            { "chord-g-below",              [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 4, true, false, false, true);            }},
+            { "chord-a-below",              [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 5, true, false, false, true);            }},
+            { "chord-b-below",              [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 6, true, false, false, true);            }},
             { "insert-c",                   [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 0, false, true);                         }},
             { "insert-d",                   [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 1, false, true);                         }},
             { "insert-e",                   [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 2, false, true);                         }},

@@ -15,7 +15,6 @@
 #include "icons.h"
 #include "libmscore/xml.h"
 
-
 namespace Ms {
 
 bool Shortcut::dirty = false;
@@ -555,6 +554,56 @@ Shortcut Shortcut::_sc[] = {
          "chord-g",
          QT_TRANSLATE_NOOP("action","Add G to Chord"),
          QT_TRANSLATE_NOOP("action","Add note G to chord")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY_STAFF_PITCHED | STATE_NOTE_ENTRY_STAFF_DRUM,
+         "chord-a-below",
+         QT_TRANSLATE_NOOP("action","Add A to Chord (below)"),
+         QT_TRANSLATE_NOOP("action","Add note A to chord (below)")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY_STAFF_PITCHED | STATE_NOTE_ENTRY_STAFF_DRUM,
+         "chord-b-below",
+         QT_TRANSLATE_NOOP("action","Add B to Chord (below)"),
+         QT_TRANSLATE_NOOP("action","Add note B to chord (below)")
+         },
+
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY_STAFF_PITCHED | STATE_NOTE_ENTRY_STAFF_DRUM,
+         "chord-c-below",
+         QT_TRANSLATE_NOOP("action","Add C to Chord (below)"),
+         QT_TRANSLATE_NOOP("action","Add note C to chord (below)")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY_STAFF_PITCHED | STATE_NOTE_ENTRY_STAFF_DRUM,
+         "chord-d-below",
+         QT_TRANSLATE_NOOP("action","Add D to Chord (below)"),
+         QT_TRANSLATE_NOOP("action","Add note D to chord (below)")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY_STAFF_PITCHED | STATE_NOTE_ENTRY_STAFF_DRUM,
+         "chord-e-below",
+         QT_TRANSLATE_NOOP("action","Add E to Chord (below)"),
+         QT_TRANSLATE_NOOP("action","Add note E to chord (below)")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY_STAFF_PITCHED | STATE_NOTE_ENTRY_STAFF_DRUM,
+         "chord-f-below",
+         QT_TRANSLATE_NOOP("action","Add F to Chord (below)"),
+         QT_TRANSLATE_NOOP("action","Add note F to chord (below)")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY_STAFF_PITCHED | STATE_NOTE_ENTRY_STAFF_DRUM,
+         "chord-g-below",
+         QT_TRANSLATE_NOOP("action","Add G to Chord (below)"),
+         QT_TRANSLATE_NOOP("action","Add note G to chord (below)")
          },
       {
          MsWidget::SCORE_TAB,

@@ -540,7 +540,7 @@ class Score : public QObject, public ScoreElement {
       void selectAdd(Element* e);
       void selectRange(Element* e, int staffIdx);
 
-      void cmdAddPitch(const EditData&, int note, bool addFlag, bool insert);
+      void cmdAddPitch(const EditData&, int note, bool addFlag, bool insert, bool useUpNote=false, bool below=false);
       void cmdAddFret(int fret);
       void cmdToggleVisible();
 
