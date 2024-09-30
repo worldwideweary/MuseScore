@@ -1556,7 +1556,7 @@ static void setTpc(Note* oNote, int tpc, int& newTpc1, int& newTpc2)
 ///   Increment/decrement pitch of note by one or by an octave.
 //---------------------------------------------------------
 
-void Score::upDown(bool up, UpDownMode mode, bool noteEntry)
+void Score::upDown(bool up, UpDownMode mode)
       {
       std::list<Note*> el = selection().uniqueNotes();
 
@@ -3825,8 +3825,10 @@ void Score::cmdPitchUpDownOctave(Direction dir, bool noteEntry)
       bool up = (dir == Direction::UP);
       if (el && (el->isArticulation() || el->isTextBase()))
             el->undoChangeProperty(Pid::OFFSET, el->offset() + QPointF(x, y), PropertyFlags::UNSTYLED);
-      else
-            upDown(up, UpDownMode::OCTAVE, noteEntry);
+      else {
+            auto octaveMode = noteEntry ? UpDownMode::OCTAVE_QUICK : UpDownMode::OCTAVE;
+            upDown(up, octaveMode);
+            }
       }
 
 //---------------------------------------------------------

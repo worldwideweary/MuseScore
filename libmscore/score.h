@@ -714,7 +714,7 @@ class Score : public QObject, public ScoreElement {
       std::vector<Rest*> setRests(const Fraction& tick, int track, const Fraction&, bool useDots, Tuplet* tuplet,
                                   bool useFullMeasureRest = true);
 
-      void upDown(bool up, UpDownMode, bool noteEntry=false);
+      void upDown(bool up, UpDownMode);
       void upDownDelta(int pitchDelta);
       ChordRest* searchNote(const Fraction& tick, int track) const;
 
