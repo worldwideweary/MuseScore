@@ -127,6 +127,7 @@
 #define PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT           "ui/score/noteEntry/disableMouseEntry"
 #define PREF_UI_SCORE_DISABLE_NOTE_DRAG_VERTICAL            "ui/score/mouse/behavior/disableNoteDragVertical"
 #define PREF_SCORE_NOTE_INPUT_OCTAVE_TENDENCY               "ui/score/noteEntry/octaveTendencyIsTopNote"
+#define PREF_SCORE_NOTE_INPUT_FIFTH_IS_UPWARD               "ui/score/noteEntry/octaveUpwardFifth"
 #define PREF_SCORE_STYLE_DEFAULTSTYLEFILE                   "score/style/defaultStyleFile"
 #define PREF_SCORE_STYLE_PARTSTYLEFILE                      "score/style/partStyleFile"
 #define PREF_SCORE_COMPARISON_SELECTION_COLOR               "ui/score/selection/comparison/color"
