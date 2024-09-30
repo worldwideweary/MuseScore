@@ -431,6 +431,7 @@ void updateExternalValuesFromPreferences() {
 
       MScore::disableVerticalMouseDragOfNotes = preferences.getBool(PREF_UI_SCORE_DISABLE_NOTE_DRAG_VERTICAL);
       MScore::noteInputOctaveTendencyIsTopNote = preferences.getBool(PREF_SCORE_NOTE_INPUT_OCTAVE_TENDENCY);
+      MScore::noteInputOctaveUpwardFifth = preferences.getBool(PREF_SCORE_NOTE_INPUT_FIFTH_IS_UPWARD);
       MScore::defaultPlayDuration = preferences.getInt(PREF_SCORE_NOTE_DEFAULTPLAYDURATION);
       MScore::panPlayback = preferences.getBool(PREF_APP_PLAYBACK_PANPLAYBACK);
       MScore::harmonyPlayDisableCompatibility = preferences.getBool(PREF_SCORE_HARMONY_PLAY_DISABLE_COMPATIBILITY);
