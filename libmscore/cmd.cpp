@@ -4121,9 +4121,9 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                               if (seg->isChordRestType()) {
                                     Element* p = seg->element(is.track());
                                     if (p && p->isChord()) {
-                                          Note* n = toChord(p)->downNote();
+                                          auto note = useUpNote ? toChord(p)->upNote() : toChord(p)->downNote();
                                           // forget any accidental and/or adjustment due to key signature
-                                          curPitch = n->epitch() - static_cast<int>(tpc2alter(n->tpc()));
+                                          curPitch = note->epitch() - static_cast<int>(tpc2alter(note->tpc()));
                                           break;
                                           }
                                     }
@@ -4483,13 +4483,13 @@ void Score::cmd(const QAction* a, EditData& ed)
             };
 
       static const std::vector<ScoreCmd> cmdList {
-            { "note-c",                     [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 0, false, false);                        }},
-            { "note-d",                     [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 1, false, false);                        }},
-            { "note-e",                     [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 2, false, false);                        }},
-            { "note-f",                     [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 3, false, false);                        }},
-            { "note-g",                     [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 4, false, false);                        }},
-            { "note-a",                     [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 5, false, false);                        }},
-            { "note-b",                     [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 6, false, false);                        }},
+            { "note-c",                     [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 0, false, false, MScore::noteInputOctaveTendencyIsTopNote);  }},
+            { "note-d",                     [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 1, false, false, MScore::noteInputOctaveTendencyIsTopNote);  }},
+            { "note-e",                     [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 2, false, false, MScore::noteInputOctaveTendencyIsTopNote);  }},
+            { "note-f",                     [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 3, false, false, MScore::noteInputOctaveTendencyIsTopNote);  }},
+            { "note-g",                     [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 4, false, false, MScore::noteInputOctaveTendencyIsTopNote);  }},
+            { "note-a",                     [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 5, false, false, MScore::noteInputOctaveTendencyIsTopNote);  }},
+            { "note-b",                     [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 6, false, false, MScore::noteInputOctaveTendencyIsTopNote);  }},
             { "chord-c",                    [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 0, true, false);                         }},
             { "chord-d",                    [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 1, true, false);                         }},
             { "chord-e",                    [](Score* cs, EditData& ed){ cs->cmdAddPitch(ed, 2, true, false);                         }},
