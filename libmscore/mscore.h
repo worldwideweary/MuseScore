@@ -340,6 +340,8 @@ class MScore {
       static bool noteInputOctaveTendencyIsTopNote;
       static bool disableVerticalMouseDragOfNotes;
 
+      static bool palettesHideWhenApplied;
+
       static QColor dropColor;
       static QColor layoutBreakColor;
       static QColor frameMarginColor;

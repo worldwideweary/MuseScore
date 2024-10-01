@@ -94,6 +94,8 @@ QColor  MScore::defaultColor;
 bool    MScore::noteInputOctaveTendencyIsTopNote;
 bool    MScore::disableVerticalMouseDragOfNotes;
 
+bool    MScore::palettesHideWhenApplied;
+
 QColor  MScore::layoutBreakColor;
 QColor  MScore::frameMarginColor;
 QColor  MScore::bgColor;
