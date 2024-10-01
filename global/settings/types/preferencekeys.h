@@ -159,6 +159,7 @@
 #define PREF_UI_APP_RASTER_VERTICAL                         "ui/application/raster/vertical"
 #define PREF_UI_APP_SHOWSTATUSBAR                           "ui/application/showStatusBar"
 #define PREF_UI_APP_USENATIVEDIALOGS                        "ui/application/useNativeDialogs"
+#define PREF_UI_APP_AUTOHIDE_PALETTES                       "ui/application/palette/applyAutoHides"
 #define PREF_UI_PIANO_HIGHLIGHTCOLOR                        "ui/piano/highlightColor"
 #define PREF_UI_PIANO_SHOWPITCHHELP                         "ui/piano/showPitchHelp"
 #define PREF_UI_SCORE_NOTE_DROPCOLOR                        "ui/score/note/dropColor"
