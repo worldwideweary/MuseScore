@@ -2518,6 +2518,8 @@ void ScoreView::cmd(const char* s)
               "prev-chord",
               "next-track",
               "prev-track",
+              "next-staff",
+              "prev-staff",
               "next-measure",
               "prev-measure",
               "next-system",
