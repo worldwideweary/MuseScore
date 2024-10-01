@@ -4507,23 +4507,49 @@ void ScoreView::changeVoice(int voice)
       {
       InputState* is = &score()->inputState();
       int track = (is->track() / VOICES) * VOICES + voice;
-
+      int desiredVoice = voice;
+      auto inputTick = is->tick();
       if (is->noteEntryMode()) {
-            is->setTrack(track);
-            if (is->segment()) { // can be null for eg repeatMeasure
-                  is->setSegment(is->segment()->measure()->first(SegmentType::ChordRest));
-                  moveCursor();
-                  score()->setUpdateAll();
-                  score()->update();
-                  mscore->setPos(is->segment()->tick());
+            if (is->voice() == desiredVoice) {
+                  if (desiredVoice == 0 || desiredVoice == 2)
+                        ++track;
                   }
+            is->setTrack(track);
+
+            if (is->segment()) {
+                  auto desiredTrackCR = is->segment()->nextChordRest(track);
+                  if (!(desiredTrackCR && desiredTrackCR->tick() <= inputTick)) {
+                        is->setSegment(is->segment()->measure()->first(SegmentType::ChordRest));
+                        desiredTrackCR = is->segment()->nextChordRest(track);
+                        }
+                  if (desiredTrackCR && desiredTrackCR->tick() <= inputTick) {
+                        auto note = desiredTrackCR->isChord() ? toChord(desiredTrackCR)->upNote() : nullptr;
+                        if (note)
+                              score()->select(note);
+                        else
+                              score()->select(desiredTrackCR);
+                        }
+                  }
+            else is->setSegment(is->segment()->measure()->first(SegmentType::ChordRest));
+
+            moveCursor();
+            score()->setUpdateAll();
+            score()->update();
+            mscore->setPos(is->segment()->tick());
             }
       else {
-            // treat as command to move notes to another voice
-            score()->changeVoice(voice);
+            // Normal State: command moves selection to another voice:
+            int currentVoice = score()->inputState().voice();
+            if (desiredVoice == currentVoice) {
+                  if (desiredVoice == 0 || desiredVoice == 2) {
+                        ++desiredVoice;
+                        ++track;
+                        }
+                  }
+            score()->changeVoice(desiredVoice);
             // modify the input state only if the command was successful
             for (ChordRest* cr : score()->getSelectedChordRests())
-                  if (cr->voice() == voice) {
+                  if (cr->voice() == desiredVoice) {
                         is->setTrack(track);
                         break;
                         }
