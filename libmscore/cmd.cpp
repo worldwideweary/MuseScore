@@ -4160,9 +4160,17 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                         }
 
                   int delta = octave * 12 + tab[note] - curPitch;
-                  if (delta > 6)
+                  // Default: upward limit is interval of a fourth
+                  auto upTendency   = +6;
+                  auto downTendency = -6;
+                  if (MScore::noteInputOctaveUpwardFifth) {
+                        // Alternatively, upward limit is interval of a fifth, sixth/third is downward
+                        ++upTendency;
+                        downTendency += 2;
+                        }
+                  if  (delta > upTendency)
                         --octave;
-                  else if (delta < -6)
+                  else if (delta < downTendency)
                         ++octave;
                   }
             }
