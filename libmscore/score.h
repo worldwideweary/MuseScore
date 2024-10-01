@@ -501,8 +501,8 @@ class Score : public QObject, public ScoreElement {
       Note* getSelectedNote();
       ChordRest* upStaff(ChordRest* cr);
       ChordRest* downStaff(ChordRest* cr);
-      ChordRest* nextTrack(ChordRest* cr);
-      ChordRest* prevTrack(ChordRest* cr);
+      ChordRest* nextTrack(ChordRest* cr, bool skipVoices=false);
+      ChordRest* prevTrack(ChordRest* cr, bool skipVoices=false);
 
       void padToggle(Pad p, const EditData& ed);
       void addTempo();
