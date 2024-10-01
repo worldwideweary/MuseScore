@@ -93,6 +93,13 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
+         "start-preference-dialog",
+         QT_TRANSLATE_NOOP("action","Start Preferences Dialog…"),
+         QT_TRANSLATE_NOOP("action","start preferences dialog")
+         },
+      {
+         MsWidget::MAIN_WINDOW,
          STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT | STATE_PLAY,
          "file-save-a-copy",
          QT_TRANSLATE_NOOP("action","Save a Copy…"),
