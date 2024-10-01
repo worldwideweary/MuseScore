@@ -1138,6 +1138,13 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::SCORE_TAB,
          STATE_NORMAL | STATE_NOTE_ENTRY,
+         "prev-staff",
+         QT_TRANSLATE_NOOP("action","Previous Staff"),
+         QT_TRANSLATE_NOOP("action","Previous staff")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "next-chord",
          QT_TRANSLATE_NOOP("action","Next Chord"),
          QT_TRANSLATE_NOOP("action","Go to next chord or move text right")
@@ -1197,6 +1204,13 @@ Shortcut Shortcut::_sc[] = {
          "next-track",
          QT_TRANSLATE_NOOP("action","Next Staff or Voice"),
          QT_TRANSLATE_NOOP("action","Next staff or voice")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         "next-staff",
+         QT_TRANSLATE_NOOP("action","Next Staff"),
+         QT_TRANSLATE_NOOP("action","Next staff")
          },
       {
          MsWidget::SCORE_TAB,

@@ -439,7 +439,7 @@ ChordRest* Score::downStaff(ChordRest* cr)
 //    that contains such an element
 //---------------------------------------------------------
 
-ChordRest* Score::nextTrack(ChordRest* cr)
+ChordRest* Score::nextTrack(ChordRest* cr, bool skipVoices)
       {
       if (!cr)
             return 0;
@@ -452,9 +452,16 @@ ChordRest* Score::nextTrack(ChordRest* cr)
       while (!el) {
             // find next non-empty track
             while (++track < tracks) {
-                  if (measure->hasVoice(track))
+                  if (skipVoices) {
+                        // Disregard voices and directly refer to next staff
+                        if ((track % 4) != 0)
+                              continue;
+                        break;
+                        }
+                  else if (measure->hasVoice(track))
                         break;
                   }
+
             // no more tracks, return original element
             if (track == tracks)
                   return cr;
@@ -475,7 +482,7 @@ ChordRest* Score::nextTrack(ChordRest* cr)
 //    that contains such an element
 //---------------------------------------------------------
 
-ChordRest* Score::prevTrack(ChordRest* cr)
+ChordRest* Score::prevTrack(ChordRest* cr, bool skipVoices)
       {
       if (!cr)
             return 0;
@@ -486,8 +493,14 @@ ChordRest* Score::prevTrack(ChordRest* cr)
 
       while (!el) {
             // find next non-empty track
-            while (--track >= 0){
-                  if (measure->hasVoice(track))
+            while (--track >= 0) {
+                  if (skipVoices) {
+                        // Disregard voices and directly refer to previous staff
+                        if ((track % 4) != 0)
+                              continue;
+                        break;
+                        }
+                  else if (measure->hasVoice(track))
                         break;
                   }
             // no more tracks, return original element
