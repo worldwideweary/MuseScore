@@ -2616,6 +2616,16 @@ Element* Score::move(const QString& cmd)
             if (noteEntryMode())
                   _is.moveInputPos(el);
             }
+      else if (cmd == "next-staff" && cr) {
+            el = nextTrack(cr, true);
+            if (noteEntryMode())
+                  _is.moveInputPos(el);
+            }
+      else if (cmd == "prev-staff" && cr) {
+            el = prevTrack(cr, true);
+            if (noteEntryMode())
+                  _is.moveInputPos(el);
+            }
       else if (cmd == "top-staff") {
             el = cr ? cmdTopStaff(cr) : cmdTopStaff();
             if (noteEntryMode())
