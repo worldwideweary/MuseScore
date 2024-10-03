@@ -27,26 +27,27 @@ namespace Ms {
 //   cmdSplitMeasure
 //---------------------------------------------------------
 
-void Score::cmdSplitMeasure(ChordRest* cr)
+ChordRest* Score::cmdSplitMeasure(ChordRest* cr)
       {
       startCmd();
-      splitMeasure(cr->segment());
+      Segment* newSeg = splitMeasure(cr->segment());
       endCmd();
+      return newSeg ? newSeg->nextChordRest(cr->track()) : nullptr;
       }
 
 //---------------------------------------------------------
 //   splitMeasure
 //---------------------------------------------------------
 
-void Score::splitMeasure(Segment* segment)
+Segment* Score::splitMeasure(Segment* segment)
       {
       if (segment->rtick().isZero()) {
             MScore::setError(CANNOT_SPLIT_MEASURE_FIRST_BEAT);
-            return;
+            return nullptr;
             }
       if (segment->splitsTuplet()) {
             MScore::setError(CANNOT_SPLIT_MEASURE_TUPLET);
-            return;
+            return nullptr;
             }
       Measure* measure = segment->measure();
 
@@ -124,7 +125,7 @@ void Score::splitMeasure(Segment* segment)
             }
       if (ticks1.denominator() > 128 || ticks2.denominator() > 128) {
             MScore::setError(CANNOT_SPLIT_MEASURE_TOO_SHORT);
-            return;
+            return nullptr;
             }
       m1->adjustToLen(ticks1, false);
       m2->adjustToLen(ticks2, false);
@@ -145,6 +146,7 @@ void Score::splitMeasure(Segment* segment)
             if (s->ticks() != ticks)
                   s->undoChangeProperty(Pid::SPANNER_TICKS, ticks);
             }
+      return m2->first();
       }
 }
 
