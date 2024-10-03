@@ -504,13 +504,9 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
       if (score == 0)
             return false;
       const Selection sel = score->selection(); // make a copy of selection state before applying the operation.
-      auto& is = score->inputState();
       if (sel.isNone())
             return false;
 
-//       Element* element = 0;
-//       if (cell)
-//             element = cell->element.get();
       if (element == 0)
             return false;
 
