@@ -2485,12 +2485,20 @@ std::vector<ChordRest*> Score::deleteRange(Segment* s1, Segment* s2, int track1,
 
 void Score::cmdDeleteSelection()
       {
-      std::vector<ChordRest*> crsSelectedAfterDeletion;            // select something after deleting notes
+      std::vector<ChordRest*> crsSelectedAfterDeletion;
 
-      if (selection().isRange()) {
-            crsSelectedAfterDeletion = deleteRange(selection().startSegment(), selection().endSegment(),
-                                                   staff2track(selection().staffStart()), staff2track(selection().staffEnd()),
-                                                   selectionFilter());
+      // For note-entry changes:
+      int iTrack = _is.track();
+      auto iTick = _is.tick();
+      auto iSeg  = _is.segment();
+      bool isRange = selection().isRange();
+      Segment* s1 = nullptr;
+      Segment* s2 = nullptr;
+      if (isRange) {
+            s1 = selection().startSegment();
+            s2 = selection().endSegment();
+            crsSelectedAfterDeletion = deleteRange(s1, s2, staff2track(selection().staffStart()),
+                                                   staff2track(selection().staffEnd()), selectionFilter());
             }
       else {
             // deleteItem modifies selection().elements() list,
@@ -2567,16 +2575,51 @@ void Score::cmdDeleteSelection()
             }
 
       deselectAll();
+
       // make new selection if appropriate
       if (noteEntryMode()) {
-            if (!crsSelectedAfterDeletion.empty())
-                  _is.setSegment(crsSelectedAfterDeletion[0]->segment());
-            else
-                  crsSelectedAfterDeletion.push_back(_is.cr());
+            Part* part = selection().firstChordRest() ? selection().firstChordRest()->part() : nullptr;
+            if (!isRange) {
+                  if (s1 && s1->tick() < iTick) {
+                        _is.moveInputPos(s1->nextChordRest(iTrack));
+                        }
+                  else if (s2 && s2->tick() >= iTick) {
+                        _is.moveInputPos(s2->nextChordRest(iTrack));
+                        }
+                  }
+            else if (iSeg) {
+                  // Keep note entry position for range-based note-entries after deletion
+                  bool atStart = (iSeg->tick() == s1->tick());
+                  auto nextSegment = iSeg;
+                  auto el = nextSegment->element(iTrack);
+                  if (!el) {
+                        nextSegment = atStart ? s1 : s2;
+                        bool goBack = !atStart;
+                        el = nextSegment->nextChordRest(iTrack, goBack);
+                        int endPos = s2->measure()->index();
+                        int newPos = el ? el->findMeasure()->index() : -1;
+                        // Safeguard against invalid note-entry position:
+                        if (!el || (newPos > endPos)) {
+                              int startTrack = part ? part->startTrack() : 0;
+                              if (auto measure = s1->measure()) {
+                                    el = measure->first()->nextChordRest(startTrack);
+                                    _is.setTrack(startTrack);
+                                    }
+                              }
+                        }
+                  _is.moveInputPos(el);
+                  _is.setTrack(iTrack);
+                  }
+            if (auto cr = _is.cr()) {
+                  if (cr->isChord())
+                        select(toChord(cr)->upNote(), SelectType::SINGLE);
+                  else
+                        select(cr, SelectType::SINGLE);
+                  }
             }
-      if (!crsSelectedAfterDeletion.empty()) {
+      else if (!crsSelectedAfterDeletion.empty()) {
             std::vector<Element*> elementsToSelect;
-            for (ChordRest* cr : crsSelectedAfterDeletion) {
+            for (auto cr : crsSelectedAfterDeletion) {
                   if (cr) {
                         if (cr->isChord())
                               elementsToSelect.push_back(dynamic_cast<Element*>(toChord(cr)->upNote()));
@@ -2584,8 +2627,8 @@ void Score::cmdDeleteSelection()
                               elementsToSelect.push_back(dynamic_cast<Element*>(cr));
                         }
                   }
-            for (Element* element : elementsToSelect)
-                  select(element, SelectType::ADD, 0);
+            for (auto el : elementsToSelect)
+                  select(el, SelectType::ADD, 0);
             }
       }
 
@@ -3341,6 +3384,9 @@ void Score::localTimeDelete()
       {
       Segment* startSegment;
       Segment* endSegment;
+      ChordRest* nextCR = nullptr;
+      bool wasNoteEntry = false;
+      int  track = 0;
 
       if (selection().state() != SelState::RANGE) {
             Element* el = selection().element();
@@ -3356,11 +3402,22 @@ void Score::localTimeDelete()
             startSegment     = cr->segment();
             Fraction endTick = startSegment->tick() + cr->actualTicks();
             endSegment       = tick2measure(endTick)->findSegment(CR_TYPE, endTick);
+            track = el->track();
             }
-      else {
+      else { 
+            // Range:
             startSegment = selection().startSegment();
             endSegment   = selection().endSegment();
+            track = selection().activeTrack();
+            if (_is.noteEntryMode()) {
+                  wasNoteEntry = true;
+                  // Prepare removal by getting out of Note-Entry
+                  setNoteEntryMode(false);
+                  }
             }
+
+      // Prepare for updating selection:
+      nextCR = endSegment->nextChordRest(track);
 
       if (!checkTimeDelete(startSegment, endSegment))
             return;
@@ -3402,6 +3459,25 @@ void Score::localTimeDelete()
             break;
             };
 
+      if (!nextCR) {
+      if (auto lm = lastMeasure()) {
+      if (auto fe = lm->firstEnabled()) {
+            nextCR = fe->nextChordRest(track);
+            }}}
+
+      if (wasNoteEntry) {
+            // Get back into Note Entry with a valid selection:
+            if (nextCR) {
+                  if (nextCR->isChord())
+                        select(toChord(nextCR)->upNote(), SelectType::SINGLE);
+                  else select(nextCR, SelectType::SINGLE);
+
+                  setNoteEntryMode(true);
+                  }
+
+            return;
+            }
+
       if (noteEntryMode()) {
             Segment* currentSegment = endSegment;
             ChordRest* cr = nullptr;
@@ -3433,8 +3509,13 @@ void Score::localTimeDelete()
                   deselectAll();
                   }
             }
-      else {
-            deselectAll();
+      else { // Code re-use of [wasNoteEntry + Range]:
+            if (nextCR) {
+                  if (nextCR->isChord())
+                        select(toChord(nextCR)->upNote(), SelectType::SINGLE);
+                  else select(nextCR, SelectType::SINGLE);
+                  }
+            else deselectAll();
             }
       }
 
