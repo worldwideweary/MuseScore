@@ -2588,20 +2588,66 @@ Element* Score::move(const QString& cmd)
 
             }
       else if (cmd == "next-measure") {
+            auto track = _is.track();
             if (box && box->nextMeasure() && box->nextMeasure()->first())
                   el = box->nextMeasure()->first()->nextChordRest(0, false);
-            if (cr)
+            if (cr) {
+                  if (selection().cr() && (cr->tick() != selection().cr()->tick()))
+                        cr = selection().cr();
                   el = nextMeasure(cr);
-            if (el && noteEntryMode())
-                  _is.moveInputPos(el);
+                  }
+
+            if (el) {
+                  if (noteEntryMode())
+                        _is.moveInputPos(el);
+
+                  // Attempt to maintain current track
+                  auto desiredTrackCR = _is.noteEntryMode() ? (selection().isRange() ? _is.chordRest(el) : _is.segment()->nextChordRest(track))
+                                                            : el->findMeasure()->first()->nextChordRest(track);
+
+                  auto inputTick = _is.noteEntryMode() ? _is.tick() : el->tick();
+
+                  if (desiredTrackCR && desiredTrackCR->tick() <= inputTick) {
+                        auto note = desiredTrackCR->isChord() ? toChord(desiredTrackCR)->upNote() : nullptr;
+                        if (note)
+                              el = note;
+                        else
+                              el = desiredTrackCR;
+                        }
+                  }
             }
       else if (cmd == "prev-measure") {
+            auto track = _is.track();
             if (box && box->prevMeasure() && box->prevMeasure()->first())
                   el = box->prevMeasure()->first()->nextChordRest(0, false);
-            if (cr)
+            if (cr) {
+                  if (selection().cr() && (cr->tick() != selection().cr()->tick())) {
+                        cr = selection().cr();
+                        }
+                  if (selection().isRange()) {
+                        cr = selection().firstChordRest();
+                        }
                   el = prevMeasure(cr);
-            if (el && noteEntryMode())
-                  _is.moveInputPos(el);
+                  }
+
+            if (el) {
+                  if (noteEntryMode())
+                        _is.moveInputPos(el);
+
+                  // Attempt to maintain current track
+                  auto desiredTrackCR = _is.noteEntryMode() ? (selection().isRange() ? _is.chordRest(el) : _is.segment()->nextChordRest(track))
+                                                            : el->findMeasure()->first()->nextChordRest(track);
+
+                  auto inputTick = _is.noteEntryMode() ? _is.tick() : el->tick();
+
+                  if (desiredTrackCR && desiredTrackCR->tick() <= inputTick) {
+                        auto note = desiredTrackCR->isChord() ? toChord(desiredTrackCR)->upNote() : nullptr;
+                        if (note)
+                              el = note;
+                        else
+                              el = desiredTrackCR;
+                        }
+                  }
             }
       else if (cmd == "next-system" && cr) {
             el = cmdNextPrevSystem(cr, true);
