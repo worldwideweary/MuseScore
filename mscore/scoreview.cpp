@@ -2927,14 +2927,23 @@ void ScoreView::cmd(const char* s)
                   }},
       #endif
             {{"split-measure"}, [](ScoreView* cv, const QByteArray&) {
+                  bool NEM = cv->noteEntryMode();
                   Element* e = cv->score()->selection().element();
                   if (!(e && (e->isNote() || e->isRest())))
                         MScore::setError(NO_CHORD_REST_SELECTED);
                   else {
                         if (e->isNote())
                               e = toNote(e)->chord();
-                        ChordRest* cr = toChordRest(e);
-                        cv->score()->cmdSplitMeasure(cr);
+                        auto cr = NEM ? cv->score()->inputState().cr() : toChordRest(e);
+                        auto newCR = cv->score()->cmdSplitMeasure(cr);
+                        if (newCR && newCR->isChord())
+                              cv->score()->select(toChord(newCR)->upNote(), SelectType::SINGLE);
+                        else cv->score()->select(newCR, SelectType::SINGLE);
+                        if (NEM) {
+                            // Hack: Toggle Note Entry to eradicate a potential "mid-way" error after split:
+                            cv->changeState(ViewState::NORMAL);
+                            cv->changeState(ViewState::NOTE_ENTRY);
+                            }
                         }
                   }},
             {{"join-measures"}, [](ScoreView* cv, const QByteArray&) {
