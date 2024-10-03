@@ -2452,9 +2452,21 @@ void ScoreView::cmd(const char* s)
                         cv->score()->endCmd();
                         }
                   else {
-                        Element* ele = cv->score()->move(cmd);
+                        auto score = cv->score();
+                        Element* ele = score->move(cmd);
                         if (cmd == "empty-trailing-measure")
                               cv->changeState(ViewState::NOTE_ENTRY);
+
+                        // Active slur will de-activate if move command is larger than per-chord:
+                        if (score->noteEntryMode() && cmd != "next-chord" && cmd != "prev-chord") {
+                              if (auto slur = score->inputState().slur()) {
+                                    auto &el = slur->spannerSegments();
+                                    if (!el.empty())
+                                          el.front()->setSelected(false);
+                                    
+                                    score->inputState().setSlur(nullptr);
+                                    }
+                              }
                         if (ele)
                               cv->adjustCanvasPosition(ele, false);
                         cv->score()->setPlayChord(true);
