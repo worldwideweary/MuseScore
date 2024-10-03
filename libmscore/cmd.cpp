@@ -2699,21 +2699,44 @@ Element* Score::move(const QString& cmd)
 
 Element* Score::selectMove(const QString& cmd)
       {
-      ChordRest* cr;
-      if (selection().activeCR())
-            cr = selection().activeCR();
-      else
-            cr = selection().lastChordRest();
-      if (!cr && noteEntryMode())
-            cr = inputState().cr();
-      if (!cr)
-            return 0;
+      ChordRest* cr = nullptr;
+      auto icr = inputState().cr();
+      auto itrack = inputState().track();
+      auto singleElement = selection().element();
+      bool noteEntryMode = inputState().noteEntryMode();
 
-      ChordRest* el = 0;
-      if (cmd == "select-next-chord")
-            el = nextChordRest(cr, true);
-      else if (cmd == "select-prev-chord")
-            el = prevChordRest(cr, true);
+      if (noteEntryMode && !icr && singleElement && singleElement->track() != itrack) {
+            return nullptr;
+            }
+
+      cr = selection().activeCR() ? selection().activeCR() : selection().lastChordRest();
+
+      if (noteEntryMode && !cr) {
+            cr = inputState().cr();
+            }
+
+      if (!cr) {
+            return nullptr;
+            }
+
+      bool selectSelf = noteEntryMode && !selection().isRange();
+      ChordRest* el = nullptr;
+      if (cmd == "select-next-chord") {
+            if (!selectSelf && !cr->nextSegmentAfterCR(SegmentType::ChordRest)) {
+                  selectSelf = true;
+                  }
+            el = selectSelf ? cr : nextChordRest(cr, true);
+            }
+      else if (cmd == "select-prev-chord") {
+            if (!selectSelf) {
+                  if (auto ps = cr->segment()->prev()) {
+                  if (auto pcr = ps->nextChordRest(cr->track())) {
+                  if (pcr == cr && !selection().isRange()) {
+                        selectSelf = true;
+                        }}}
+                   }
+            el = selectSelf ? cr : prevChordRest(cr, true);
+            }
       else if (cmd == "select-next-measure")
             el = nextMeasure(cr, true, true);
       else if (cmd == "select-prev-measure")
@@ -2743,9 +2766,9 @@ Element* Score::selectMove(const QString& cmd)
             el = measure->last()->nextChordRest(cr->track(), true);
             }
       else if (cmd == "select-staff-above")
-            el = upStaff(cr);
+            el = selectSelf ? cr : upStaff(cr);
       else if (cmd == "select-staff-below")
-            el = downStaff(cr);
+            el = selectSelf ? cr : downStaff(cr);
       if (el)
             select(el, SelectType::RANGE, el->staffIdx());
       return el;
@@ -4609,10 +4632,6 @@ void Score::cmd(const QAction* a, EditData& ed)
             { "toggle-visible",             [](Score* cs, EditData&){ cs->cmdToggleVisible();                                         }},
             { "reset-stretch",              [](Score* cs, EditData&){ cs->resetUserStretch();                                         }},
             { "mirror-note",                [](Score* cs, EditData&){ cs->cmdMirrorNoteHead();                                        }},
-            { "double-duration",            [](Score* cs, EditData&){ cs->cmdDoubleDuration();                                        }},
-            { "half-duration",              [](Score* cs, EditData&){ cs->cmdHalfDuration();                                          }},
-            { "inc-duration-dotted",        [](Score* cs, EditData&){ cs->cmdIncDurationDotted();                                     }},
-            { "dec-duration-dotted",        [](Score* cs, EditData&){ cs->cmdDecDurationDotted();                                     }},
             { "add-staccato",               [](Score* cs, EditData&){ cs->addArticulation(SymId::articStaccatoAbove);                 }},
             { "add-tenuto",                 [](Score* cs, EditData&){ cs->addArticulation(SymId::articTenutoAbove);                   }},
             { "add-marcato",                [](Score* cs, EditData&){ cs->addArticulation(SymId::articMarcatoAbove);                  }},
@@ -4708,7 +4727,6 @@ void Score::cmd(const QAction* a, EditData& ed)
             { "add-audio",                  [](Score* cs, EditData&){ cs->addAudioTrack();                                            }},
             { "transpose-up",               [](Score* cs, EditData&){ cs->transposeSemitone(1);                                       }},
             { "transpose-down",             [](Score* cs, EditData&){ cs->transposeSemitone(-1);                                      }},
-            { "delete",                     [](Score* cs, EditData&){ cs->cmdDeleteSelection();                                       }},
             { "full-measure-rest",          [](Score* cs, EditData&){ cs->cmdFullMeasureRest();                                       }},
             { "pitch-up",                   [](Score* cs, EditData&){ cs->cmdPitchUp();                                               }},
             { "pitch-down",                 [](Score* cs, EditData&){ cs->cmdPitchDown();                                             }},

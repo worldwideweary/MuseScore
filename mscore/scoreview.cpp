@@ -2182,19 +2182,19 @@ void ScoreView::cmd(const char* s)
             {{"copy"}, [](ScoreView* cv, const QByteArray&) {
                   if (cv->fotoMode())
                         cv->fotoModeCopy();
-                  else if (cv->state == ViewState::NORMAL)
+                  else if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY)
                         cv->normalCopy();
                   else if (cv->state == ViewState::EDIT)
                         cv->editCopy();
                   }},
             {{"cut"}, [](ScoreView* cv, const QByteArray&) {
-                  if (cv->state == ViewState::NORMAL)
+                  if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY)
                         cv->normalCut();
                   else if (cv->state == ViewState::EDIT)
                         cv->editCut();
                   }},
             {{"paste"}, [](ScoreView* cv, const QByteArray&) {
-                  if (cv->state == ViewState::NORMAL)
+                  if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY)
                         cv->normalPaste();
                   else if (cv->state == ViewState::EDIT)
                         cv->editPaste();
@@ -2215,10 +2215,58 @@ void ScoreView::cmd(const char* s)
                   cv->normalPaste(scale);
                   }},
             {{"swap"}, [](ScoreView* cv, const QByteArray&) {
-                  if (cv->state == ViewState::NORMAL)
+                  if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY)
                         cv->normalSwap();
                   else if (cv->state == ViewState::EDIT)
                         cv->editSwap();
+                  }},
+            {{"double-duration"}, [](ScoreView* cv, const QByteArray&) {
+                  cv->score()->startCmd();
+                     cv->score()->cmdDoubleDuration();
+                  cv->score()->endCmd();
+
+                  if (cv->state == ViewState::NOTE_ENTRY) {
+                        auto selection = cv->score()->selection();
+                        auto end = selection.lastChordRest();
+                        if (end)
+                             cv->score()->nextInputPos(end, false);
+                        }
+                  }},
+            {{"half-duration"}, [](ScoreView* cv, const QByteArray&) {
+                  cv->score()->startCmd();
+                     cv->score()->cmdHalfDuration();
+                  cv->score()->endCmd();
+
+                  if (cv->state == ViewState::NOTE_ENTRY) {
+                        auto selection = cv->score()->selection();
+                        auto end = selection.lastChordRest();
+                        if (end)
+                             cv->score()->nextInputPos(end, false);
+                        }
+                  }},
+            {{"inc-duration-dotted"}, [](ScoreView* cv, const QByteArray&) {
+                  cv->score()->startCmd();
+                     cv->score()->cmdIncDurationDotted();
+                  cv->score()->endCmd();
+
+                  if (cv->state == ViewState::NOTE_ENTRY) {
+                        auto selection = cv->score()->selection();
+                        auto end = selection.lastChordRest();
+                        if (end)
+                             cv->score()->nextInputPos(end, false);
+                        }
+                  }},
+            {{"dec-duration-dotted"}, [](ScoreView* cv, const QByteArray&) {
+                  cv->score()->startCmd();
+                     cv->score()->cmdDecDurationDotted();
+                  cv->score()->endCmd();
+
+                  if (cv->state == ViewState::NOTE_ENTRY) {
+                        auto selection = cv->score()->selection();
+                        auto end = selection.lastChordRest();
+                        if (end)
+                             cv->score()->nextInputPos(end, false);
+                        }
                   }},
             {{"lyrics"}, [](ScoreView* cv, const QByteArray&) {
                   cv->score()->startCmd();
@@ -2879,14 +2927,23 @@ void ScoreView::cmd(const char* s)
                   }},
       #endif
             {{"split-measure"}, [](ScoreView* cv, const QByteArray&) {
+                  bool NEM = cv->noteEntryMode();
                   Element* e = cv->score()->selection().element();
                   if (!(e && (e->isNote() || e->isRest())))
                         MScore::setError(NO_CHORD_REST_SELECTED);
                   else {
                         if (e->isNote())
                               e = toNote(e)->chord();
-                        ChordRest* cr = toChordRest(e);
-                        cv->score()->cmdSplitMeasure(cr);
+                        auto cr = NEM ? cv->score()->inputState().cr() : toChordRest(e);
+                        auto newCR = cv->score()->cmdSplitMeasure(cr);
+                        if (newCR && newCR->isChord())
+                              cv->score()->select(toChord(newCR)->upNote(), SelectType::SINGLE);
+                        else cv->score()->select(newCR, SelectType::SINGLE);
+                        if (NEM) {
+                            // Hack: Toggle Note Entry to eradicate a potential "mid-way" error after split:
+                            cv->changeState(ViewState::NORMAL);
+                            cv->changeState(ViewState::NOTE_ENTRY);
+                            }
                         }
                   }},
             {{"join-measures"}, [](ScoreView* cv, const QByteArray&) {
@@ -3011,6 +3068,32 @@ void ScoreView::cmd(const char* s)
 
                   bool value = preferences.getBool(PREF_SCORE_NOTE_PLAYONCLICK);
                   preferences.setPreference(PREF_SCORE_NOTE_PLAYONCLICK, !value);
+                  }},
+            {{"delete"}, [](ScoreView* cv, const QByteArray&) {
+                  auto& is = cv->score()->inputState();
+                  int inputTrack = is.track();
+                  int idxStaff = track2staff(inputTrack);
+
+                  cv->setDropTarget(nullptr);
+                  cv->score()->startCmd();
+                  cv->score()->cmdDeleteSelection();
+                  cv->score()->endCmd();
+
+                  if (is.noteEntryMode()) {
+                        if (!is.cr()) {
+                              auto zeroVoice = idxStaff * VOICES;
+                              auto m = cv->score()->tick2measure(is.tick());
+                              auto seg = m->findFirstR(SegmentType::ChordRest, m->tick());
+                              auto firstEl = seg->element(zeroVoice);
+                              cv->score()->select(firstEl->isChord() ? toChord(firstEl)->upNote() : firstEl);
+                              is.moveInputPos(seg);
+                              is.setTrack(inputTrack);
+                              }
+                        }
+                  else if (cv->score()->selection().elements().size() < 2) {
+                        cv->changeState(ViewState::NOTE_ENTRY);
+                        cv->changeState(ViewState::NORMAL);
+                        }
                   }},
             };
 
