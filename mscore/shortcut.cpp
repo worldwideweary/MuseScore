@@ -212,7 +212,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "paste-half",
          QT_TRANSLATE_NOOP("action","Paste Half Duration"),
          QT_TRANSLATE_NOOP("action","Paste half duration"),
@@ -222,7 +222,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "paste-double",
          QT_TRANSLATE_NOOP("action","Paste Double Duration"),
          QT_TRANSLATE_NOOP("action","Paste double duration"),
@@ -996,7 +996,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL | STATE_TEXT_EDIT | STATE_HARMONY_FIGBASS_EDIT,
+         STATE_NORMAL | STATE_TEXT_EDIT | STATE_HARMONY_FIGBASS_EDIT | STATE_NOTE_ENTRY,
          "next-element",
          QT_TRANSLATE_NOOP("action","Next Element"),
          QT_TRANSLATE_NOOP("action","Accessibility: Next element"),
@@ -1007,7 +1007,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL | STATE_TEXT_EDIT | STATE_HARMONY_FIGBASS_EDIT,
+         STATE_NORMAL | STATE_TEXT_EDIT | STATE_HARMONY_FIGBASS_EDIT | STATE_NOTE_ENTRY,
          "prev-element",
          QT_TRANSLATE_NOOP("action","Previous Element"),
          QT_TRANSLATE_NOOP("action","Accessibility: Previous element"),
@@ -1221,14 +1221,14 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "select-prev-measure",
          QT_TRANSLATE_NOOP("action","Select to Beginning of Measure"),
          QT_TRANSLATE_NOOP("action","Select to beginning of measure")
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "select-next-chord",
          QT_TRANSLATE_NOOP("action","Add Next Chord to Selection"),
          QT_TRANSLATE_NOOP("action","Add next chord to selection")
@@ -1256,35 +1256,35 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "select-next-measure",
          QT_TRANSLATE_NOOP("action","Select to End of Measure"),
          QT_TRANSLATE_NOOP("action","Select to end of measure")
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "select-begin-line",
          QT_TRANSLATE_NOOP("action","Select to Beginning of Line"),
          QT_TRANSLATE_NOOP("action","Select to beginning of line")
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "select-end-line",
          QT_TRANSLATE_NOOP("action","Select to End of Line"),
          QT_TRANSLATE_NOOP("action","Select to end of line")
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "select-begin-score",
          QT_TRANSLATE_NOOP("action","Select to Beginning of Score"),
          QT_TRANSLATE_NOOP("action","Select to beginning of score")
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "select-end-score",
          QT_TRANSLATE_NOOP("action","Select to End of Score"),
          QT_TRANSLATE_NOOP("action","Select to end of score")
@@ -2726,7 +2726,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "edit-element",
          QT_TRANSLATE_NOOP("action","Edit Element"),
          QT_TRANSLATE_NOOP("action","Edit element")
@@ -3160,7 +3160,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "split-measure",
          QT_TRANSLATE_NOOP("action","Split Measure Before Selected Note/Rest"),
          QT_TRANSLATE_NOOP("action","Split measure before selected note/rest")
@@ -3410,7 +3410,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::MAIN_WINDOW,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "viewmode",
          QT_TRANSLATE_NOOP("action","Toggle View Mode"),
          QT_TRANSLATE_NOOP("action","Toggle 'View Mode'"),
