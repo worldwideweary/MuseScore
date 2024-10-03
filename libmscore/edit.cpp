@@ -1379,8 +1379,6 @@ void Score::cmdAddTie(bool addToChord)
                         }
                   }
             }
-      if (lastAddedChord)
-            nextInputPos(lastAddedChord, false);
       endCmd();
       }
 
