@@ -397,7 +397,18 @@ ChordRest* Score::upStaff(ChordRest* cr)
             return cr;
 
       for (int track = (cr->staffIdx() - 1) * VOICES; track >= 0; --track) {
-            Element* el = segment->element(track);
+            Element* el = nullptr;
+            while (!el) {
+                  el = segment->element(track);
+                  if (el) {
+                        break;
+                        }
+                  segment = segment->prev();
+                  bool sameMeasure = (segment->measure() == cr->measure());
+                  if (!segment || !sameMeasure) {
+                        return nullptr;
+                        }
+                  }
             if (!el)
                   continue;
             if (el->isNote())
@@ -421,9 +432,18 @@ ChordRest* Score::downStaff(ChordRest* cr)
             return cr;
 
       for (int track = (cr->staffIdx() + 1) * VOICES; track < tracks; --track) {
-            Element* el = segment->element(track);
-            if (!el)
-                  continue;
+            Element* el = nullptr;
+            while (!el) {
+                  el = segment->element(track);
+                  if (el) {
+                        break;
+                        }
+                  segment = segment->prev();
+                  bool sameMeasure = (segment->measure() == cr->measure());
+                  if (!segment || !sameMeasure) {
+                        return nullptr;
+                        }
+                  }
             if (el->isNote())
                   el = toNote(el)->chord();
             if (el->isChordRest())
