@@ -739,6 +739,10 @@ bool Score::rewriteMeasures(Measure* fm, const Fraction& ns, int staffIdx)
 
 void Score::cmdAddTimeSig(Measure* fm, int staffIdx, TimeSig* ts, bool local)
       {
+      auto el = score()->selection().firstChordRest();
+      auto selectTrack = el ? el->track() : 0;
+      auto selectTick = el ? el->tick() : Fraction(0,1);
+
       deselectAll();
 
       if (fm->isMMRest())
@@ -911,6 +915,17 @@ void Score::cmdAddTimeSig(Measure* fm, int staffIdx, TimeSig* ts, bool local)
                   }
             }
       delete ts;
+
+      // Attempt valid selection afterward:
+      if (el) {
+      if (auto msr = score()->tick2measure(selectTick)) {
+      if (auto first = msr->first()) {
+      if (auto cr = first->nextChordRest(selectTrack)) {
+            if (cr->isChord())
+                  score()->select(toChord(cr)->upNote());
+            else
+                  score()->select(cr);
+            }}}}
       }
 
 //---------------------------------------------------------
