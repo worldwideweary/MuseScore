@@ -3085,7 +3085,7 @@ void ScoreView::cmd(const char* s)
                               auto m = cv->score()->tick2measure(is.tick());
                               auto seg = m->findFirstR(SegmentType::ChordRest, m->tick());
                               auto firstEl = seg->element(zeroVoice);
-                              cv->score()->select(firstEl->isChord() ? toChord(firstEl)->upNote() : firstnEl);
+                              cv->score()->select(firstEl->isChord() ? toChord(firstEl)->upNote() : firstEl);
                               is.moveInputPos(seg);
                               is.setTrack(inputTrack);
                               }
