@@ -538,6 +538,7 @@ ChordRest* Score::nextMeasure(ChordRest* element, bool selectBehavior, bool mmRe
       bool last   = false;
 
       if (selection().isRange()) {
+            measure = selection().lastChordRest()->measure()->nextMeasure();
             if (element->tick() != endTick && selection().tickEnd() <= endTick) {
                   measure = element->measure();
                   last = true;
