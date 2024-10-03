@@ -1092,8 +1092,8 @@ class Score : public QObject, public ScoreElement {
       //@ sets the metatag named 'tag' to 'val'
       void setMetaTag(const QString& tag, const QString& val);
 
-      void cmdSplitMeasure(ChordRest*);
-      void splitMeasure(Segment*);
+      ChordRest* cmdSplitMeasure(ChordRest*);
+      Segment* splitMeasure(Segment*);
       void cmdJoinMeasure(Measure*, Measure*);
       int pageNumberOffset() const          { return _pageNumberOffset; }
       void setPageNumberOffset(int v)       { _pageNumberOffset = v; }
