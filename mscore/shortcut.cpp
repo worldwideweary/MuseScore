@@ -1348,7 +1348,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL | STATE_NOTE_ENTRY,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
          "add-hairpin",
          QT_TRANSLATE_NOOP("action","Crescendo"),
          QT_TRANSLATE_NOOP("action","Add crescendo"),
@@ -1358,10 +1358,20 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL | STATE_NOTE_ENTRY,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
          "add-hairpin-reverse",
          QT_TRANSLATE_NOOP("action","Decrescendo"),
          QT_TRANSLATE_NOOP("action","Add decrescendo"),
+         0,
+         Icons::Invalid_ICON,
+         Qt::WindowShortcut
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
+         "add-pedal",
+         QT_TRANSLATE_NOOP("action","Pedal"),
+         QT_TRANSLATE_NOOP("action","Add pedal"),
          0,
          Icons::Invalid_ICON,
          Qt::WindowShortcut

@@ -20,11 +20,13 @@
 #include "libmscore/durationtype.h"
 #include "libmscore/element.h"
 #include "libmscore/elementgroup.h"
+#include "libmscore/harmony.h"
 #include "libmscore/mscore.h"
 #include "libmscore/mscoreview.h"
 #include "libmscore/pos.h"
 #include "libmscore/property.h"
 #include "libmscore/select.h"
+#include "libmscore/textline.h"
 
 namespace Ms {
 
@@ -428,6 +430,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       void cmdAddSlur(const Slur* slurTemplate = nullptr);
       void addSlur(ChordRest*, ChordRest*, const Slur*) override;
       virtual void cmdAddHairpin(HairpinType);
+      virtual void cmdAddPedal(HookType, HookType);
       void cmdAddNoteLine();
 
       void setEditElement(Element*);

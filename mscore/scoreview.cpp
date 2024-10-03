@@ -57,6 +57,7 @@
 #include "libmscore/noteline.h"
 #include "libmscore/page.h"
 #include "libmscore/part.h"
+#include "libmscore/pedal.h"
 #include "libmscore/pitchspelling.h"
 #include "libmscore/rehearsalmark.h"
 #include "libmscore/repeatlist.h"
@@ -2288,6 +2289,12 @@ void ScoreView::cmd(const char* s)
             {{"add-hairpin-reverse"}, [](ScoreView* cv, const QByteArray&) {
                   cv->cmdAddHairpin(HairpinType::DECRESC_HAIRPIN);
                   }},
+            {{"add-pedal"}, [](ScoreView* cv, const QByteArray&) {
+                  if (cv->score()->selection().isRange())
+                        cv->cmdAddPedal(HookType::NONE, HookType::NONE);
+                  else
+                        cv->cmdAddPedal(HookType::HOOK_90, HookType::HOOK_90);
+                  }},
             {{"add-noteline"}, [](ScoreView* cv, const QByteArray&) {
                   cv->cmdAddNoteLine();
                   }},
@@ -4188,7 +4195,7 @@ void ScoreView::addSlur(ChordRest* cr1, ChordRest* cr2, const Slur* slurTemplate
             ss->setSlurOffset(Grip::END, QPointF(3.0 * cr1->score()->spatium(), 0.0));
       slur->add(ss);
 
-      if (noteEntryMode()) {
+      if (noteEntryMode() && !_score->selection().isRange()) {
             _score->inputState().setSlur(slur);
             ss->setSelected(true);
             }
@@ -4204,7 +4211,10 @@ void ScoreView::addSlur(ChordRest* cr1, ChordRest* cr2, const Slur* slurTemplate
 
 void ScoreView::cmdAddHairpin(HairpinType type)
       {
+      InputState* is = &score()->inputState();
       const Selection& selection = _score->selection();
+      auto singleElement = selection.element() ? selection.element() : editData.element;
+      auto noteEntry = noteEntryMode();
       // special case for two selected chordrests on same staff
       bool twoNotesSameStaff = false;
       if (selection.isList() && selection.elements().size() == 2) {
@@ -4213,6 +4223,57 @@ void ScoreView::cmdAddHairpin(HairpinType type)
             if (cr1 && cr2 && cr1 != cr2 && cr1->staffIdx() == cr2->staffIdx())
                   twoNotesSameStaff = true;
             }
+
+      // [Style cycling]:
+      // [<]  to [circled tip <] to [text-line] to [text-line with invisible line]
+      if (!noteEntry && singleElement && (singleElement->isHairpinSegment() || singleElement->type() == ElementType::HAIRPIN_SEGMENT)) {
+            auto seg = (editData.element->type() == ElementType::HAIRPIN_SEGMENT) ? toHairpinSegment(editData.element)
+                                                                                  : toHairpinSegment(singleElement);
+            auto selectedHairpin = seg->hairpin();
+            auto sh = selectedHairpin;
+            auto sht = sh->hairpinType();
+
+            bool switcheroo = (type == HairpinType::CRESC_HAIRPIN && sht != HairpinType::CRESC_HAIRPIN && sht != HairpinType::CRESC_LINE)
+                              || (type == HairpinType::DECRESC_HAIRPIN && sht != HairpinType::DECRESC_HAIRPIN && sht != HairpinType::DECRESC_LINE);
+            if (switcheroo) {
+                  auto newType = (type == HairpinType::CRESC_HAIRPIN) ? HairpinType::CRESC_HAIRPIN : HairpinType::DECRESC_HAIRPIN;
+                  sh->setHairpinType(newType);
+                  }
+            else if ((sht == HairpinType::CRESC_HAIRPIN) || (sht == HairpinType::DECRESC_HAIRPIN)) {
+                  if (!sh->hairpinCircledTip()) {
+                        sh->setHairpinCircledTip(true);
+                        }
+                  else {
+                        if (sh->isCrescendo())
+                              sh->setHairpinType(HairpinType::CRESC_LINE);
+                        else
+                              sh->setHairpinType(HairpinType::DECRESC_LINE);
+                        sh->setContinueText("");
+                        sh->setProperty(Pid::CONTINUE_TEXT, QString(""));
+                        sh->setPropertyFlags(Pid::CONTINUE_TEXT, PropertyFlags::UNSTYLED);
+                        sh->setHairpinCircledTip(false);
+                        }
+                  }
+            else {
+                  if (sh->lineVisible())
+                        sh->setLineVisible(false);
+                  else {
+                        sh->setLineVisible(true);
+                        if (sht == HairpinType::CRESC_LINE)
+                              sh->setHairpinType(HairpinType::CRESC_HAIRPIN);
+                        else sh->setHairpinType(HairpinType::DECRESC_HAIRPIN);
+                        }
+                  }
+
+            // Update layout and exit
+            score()->startCmd();
+               sh->layout();
+               mscore->currentScoreView()->updateGrips();
+            score()->endCmd();
+            score()->doLayout();
+            return;
+            }
+
       // add hairpin on each staff if possible
       if (selection.isRange() && selection.staffStart() != selection.staffEnd() - 1) {
             _score->startCmd();
@@ -4228,6 +4289,13 @@ void ScoreView::cmdAddHairpin(HairpinType type)
             // find start & end elements elements
             ChordRest* cr1;
             ChordRest* cr2;
+            // Note Entry: Finalize active hairpin if command is enacted while already active
+            if (noteEntry && is->dynamicLine() && !selection.isRange()) {
+                  is->dynamicLine()->setSelected(false);
+                  is->setDynamicLine(nullptr);
+                  update();
+                  return;
+                  }
             _score->getSelectedChordRest2(&cr1, &cr2);
             _score->startCmd();
             Hairpin* pin = _score->addHairpin(type, cr1, cr2, /* toCr2End */ !twoNotesSameStaff);
@@ -4236,10 +4304,19 @@ void ScoreView::cmdAddHairpin(HairpinType type)
                   return;
 
             const std::vector<SpannerSegment*>& el = pin->spannerSegments();
-            if (!noteEntryMode()) {
+            if (!noteEntry) {
                   if (!el.empty()) {
                         startEditMode(el.front());
                         }
+                  }
+            else if (!selection.isRange()) {
+                  // Initialize an 'active' hairpin while in note-entry
+                  is->setDynamicLine(pin);
+                  is->dynamicLine()->setSelected(true);
+                  // The following are probably not necessary:
+                  is->dynamicLine()->setTick(cr1->tick());
+                  is->dynamicLine()->setTrack(cr1->track());
+                  is->dynamicLine()->setStartElement(cr1);
                   }
             }
       else {
@@ -4248,6 +4325,430 @@ void ScoreView::cmdAddHairpin(HairpinType type)
             return;
             }
       }
+
+//---------------------------------------------------------
+//   cmdAddPedal
+//    Similar functionality as with cmdAddHairpin.
+//    Can continually connect _/\_ style during Note Entry
+//    Can also do this outside of note entry so long as pedal is added by this function first:
+//          If not, style-cycling occurs.
+//    Can replace pedals that exist when a range-selection encompasses them (still only multi-staff though)
+//    Can cycle through styles: Beginning style is cycled when invokation performed upon default selection.
+//          End hook styles are cycled by tabbing into end-node grip first while NOT having an [active pedal] (post placement selection)
+//          since that will perform an [add pedal]. If want to alter end hook without having to deselect/reselect,
+//          user can [tab] into the middle connector. Sounds unintuitive, but that's the hackishness since the end
+//          node is reserved for a new pedal line when active, and begin is for start style cycling. This allows
+//          for never using the mouse when placing and changing style.
+
+//    Both Note Entry and regular score view perform [push-back] style for connecting.
+
+
+/// Problem: Sometimes [active pedal] is still active when it shouldn't due to ways user can exit edit mode strangely
+//           and then upon activating a new pedal, it continues at this "supposed" active spot instead of on score...
+//           must find specifics to disable it when it occurs, but it is rare so not a "show stopper"
+
+// Check: Undo/Redo is a little funny here afterwards [Range+Multistaff]
+
+// TODO: (tricky) [List] >2 elements (evens = start/end) -- odd man out = end of measure
+
+// Note: this is triggered during NoteEntry with MIDI Sustain device or by shortcut command
+//--------------
+
+void ScoreView::cmdAddPedal(HookType beginHook, HookType endHook)
+{
+      InputState* is = &score()->inputState();
+      const Selection& selection = _score->selection();
+      auto activePedal = is->pedalLine();
+
+      // Safeguard:
+      if (activePedal && selection.isNone()) {
+            is->setPedalLine(nullptr);
+            activePedal = nullptr;
+            }
+
+      // Pedal Style Cycling
+      // -------------------
+      bool editElementIsPedalSeg = (editData.element && editData.element->type() == ElementType::PEDAL_SEGMENT);
+      if (selection.isSingle() && (selection.element()->isPedalSegment() || editElementIsPedalSeg)) {
+            auto pseg = editElementIsPedalSeg ? toPedalSegment(editData.element)
+                                              : toPedalSegment(selection.element());
+            if (!pseg) return;
+            auto pedal = pseg->pedal();
+            auto endGripSelected = editData.curGrip == Grip::END;
+            auto startGripSelected = editData.curGrip == Grip::START;
+            auto middleGripSelected = editData.curGrip == Grip::MIDDLE;
+            auto nothingSelected = !endGripSelected && !startGripSelected && !middleGripSelected;
+
+            // [Cycle End Hook] - [If active pedal], will apply additional pedal-line
+            // Alt: If mid-grip is active, allow end-style cycling while [active pedal].
+            if ((endGripSelected && !activePedal) || (middleGripSelected && activePedal)) {
+                  auto height = pedal->endHookHeight();
+                  // Cycle through hook types, then change height +/-
+                  if (pedal->endHookType() == HookType::HOOK_90)
+                        pedal->setEndHookType(HookType::HOOK_45);
+                  else if (pedal->endHookType() == HookType::HOOK_45)
+                        pedal->setEndHookType(HookType::HOOK_90T);
+                  else if (pedal->endHookType() == HookType::HOOK_90T) {
+                        // Flip height polarity when nothing attached at end.
+                        height -= (height*2);
+                        pedal->setEndHookHeight(height);
+                        pedal->setEndHookType(HookType::NONE);
+                        }
+                  else pedal->setEndHookType(HookType::HOOK_90);
+                  }
+
+            // [Cycle Start Style] - Start or just selected without edit mode
+            else if ((startGripSelected && !endGripSelected && !middleGripSelected) || nothingSelected) {
+                  // S: |__  or  \__ or |---   to   Ped___
+                  if ((pedal->beginHookType() != HookType::NONE) || (!activePedal && pedal->beginHookType() != HookType::NONE)) {
+                        // First allow |___   to become   \__
+                        if (pedal->beginHookType() == HookType::HOOK_90) {
+                              pedal->setBeginHookType(HookType::HOOK_45);
+                              }
+                        // Then \__   to   Ped____
+                        else if (pedal->beginHookType() == HookType::HOOK_45) {
+                              pedal->setBeginHookType(HookType::NONE);
+                              pedal->layout();
+                              pedal->setBeginText("<sym>keyboardPedalPed</sym>");
+                              }
+                        }
+                  // S: Ped___
+                  else if (pedal->beginHookType() == HookType::NONE) {
+                        // Ped___|   to   Ped   * (with invisible line)
+                        if (pedal->endHookType() != HookType::NONE) {
+                              pedal->setEndHookType(HookType::NONE);
+                              pedal->setEndText("<sym>keyboardPedalUp</sym>");
+                              pedal->setLineVisible(false);
+                              }
+                        else if (pedal->endText() == "<sym>keyboardPedalUp</sym>") {
+                              // Ped   *   to   Ped____ (invisible line)
+                              pedal->setEndText("");
+                              }
+                        else  {
+                              // Ped   *   to   |___/ (visible line)
+                              pedal->setEndText("");
+                              pedal->setBeginText("");
+                              pedal->setBeginHookType(HookType::HOOK_90);
+                              pedal->setEndHookType(HookType::HOOK_45);
+                              pedal->setLineVisible(true);
+                              }
+                        }
+                  }
+
+            score()->startCmd();
+               pedal->layout();
+               mscore->currentScoreView()->updateGrips();
+            score()->endCmd();
+            score()->doLayout();
+
+            // When altering start-style only, finalize function
+            // Or when altering end-style during middle-selection
+            if ((startGripSelected || middleGripSelected) && activePedal)
+                  return;
+
+            } // End "style" cycle
+
+      if (!selection.firstChordRest())
+            return;
+
+      // Initialize Pedal
+      auto newPedal = new Pedal(_score);
+
+      // Prepare new pedal style
+      if (beginHook == HookType::NONE && endHook == HookType::NONE) {
+            newPedal->setBeginText("<sym>keyboardPedalPed</sym>");
+            newPedal->setContinueText("(<sym>keyboardPedalPed</sym>)");
+            newPedal->setEndText("<sym>keyboardPedalUp</sym>");
+            newPedal->setLineVisible(false);
+            }
+      else {
+            newPedal->setBeginHookType(beginHook);
+            newPedal->setEndHookType(endHook);
+            newPedal->setLineVisible(true); // default
+            }
+
+      if (activePedal) {
+            // Quote-unquote [deselect]
+            activePedal->setColor(MScore::defaultColor);
+            activePedal->setLineColor(MScore::defaultColor);
+            if (noteEntryMode()) {
+                  // finalize and return
+                  is->setPedalLine(nullptr);
+                  update();
+                  return;
+                  }
+            }
+
+      // Retrieve two chord rests from score selection:
+      auto cr1 = selection.firstChordRest();
+      auto cr2 = selection.lastChordRest();
+      if (!cr1 && !activePedal)
+            return;
+
+      bool onlyOne = false;
+      if (!cr2 || (cr1 == cr2)) {
+            onlyOne = true;
+            cr2 = cr1;
+            }
+      auto startSegment = cr1->segment();
+      auto endSegment   = cr2->segment();
+      auto track        = cr1->track();
+      auto nextSegment  = endSegment->nextCR(track, true);
+      auto staffIdx     = cr1->staffIdx();
+
+      if (nextSegment) {
+            // Will be jumping to next measure later, so pull back if already ahead of beginning measure:
+            auto nextSegmentIsInAnotherMeasure = nextSegment->measure() != endSegment->measure();
+            if (nextSegmentIsInAnotherMeasure) {
+                  nextSegment = endSegment;
+                  }
+            }
+
+      if (startSegment != endSegment) {
+            endSegment  = endSegment->nextCR(cr2->track());
+            }
+
+      const std::vector<SpannerSegment*>& el = newPedal->spannerSegments();
+
+      // Two selected ChordRests on same staff?
+      bool twoNotesSameStaff = false;
+      if (selection.isList() && selection.elements().size() == 2) {
+            if (cr1 && cr2 && !onlyOne && staffIdx == cr2->staffIdx()) {
+                  twoNotesSameStaff = true;
+                  }
+            }
+
+      // [Range: Multi-staff]
+      if (selection.isRange()) {
+            // Decision: Add pedal onto each staff not of the same instrument. Apply to lowest-staff of part if multiple.
+            // Will traverse backwards in order to affect only the last staff of an instrument: its lower-most staff in selection
+
+            _score->startCmd();
+
+            Part* prevPart = nullptr;
+            auto haveNewPedal = true;
+
+            // This handles [single-range] via >= instead of >. Not 101% tested but seems fine in order to remove
+            // code from other section
+            for (int staffIdx = selection.staffEnd()-1; staffIdx >= selection.staffStart(); prevPart = _score->staff(staffIdx)->part(), --staffIdx) {
+                  auto part = _score->staff(staffIdx)->part();
+
+                  // Skip if still on same instrument after first pass
+                  if (prevPart && part == prevPart)
+                        continue;
+
+                  cr1 = selection.firstChordRest();
+                  cr2 = selection.lastChordRest();
+                  if (!cr1) {
+                        qDebug() << "error: cmdAddPedal - invalid selection";
+                        return;
+                        }
+                  if (!cr2) {
+                        cr2 = cr1;
+                        onlyOne = true;
+                        }
+
+                  auto startSegment = cr1->segment();
+                  auto endSegment = cr2->segment();
+
+                  // Not sure why the design is such, but seems necessary to get appropriate segment span:
+                  if (auto ncr = endSegment->nextCR(cr2->track())) {
+                        if (startSegment != endSegment) {
+                              endSegment = ncr;
+                              }
+                        }
+
+                  // Range selection that [entirely contains] a pedal-line will be removed when applying new line
+                  auto spanners = score()->spannerMap().findContained(startSegment->tick().ticks(), endSegment->tick().ticks());
+                  for (auto interval : spanners) {
+                        auto spanner = interval.value;
+                        if (spanner->isPedal() && (spanner->staffIdx() == staffIdx)) {
+                              _score->removeSpanner(spanner);
+                              }
+                        }
+
+                  // Once placed, need yet another new pedal while looping
+                  if (!haveNewPedal) {
+                        newPedal = newPedal->clone();
+                        }
+
+                  _score->cmdAddSpanner(newPedal, staffIdx, startSegment, endSegment);
+                  haveNewPedal = false;
+                  }
+
+            _score->endCmd();
+            }
+
+      // [List: Single / Two on the same staff]
+      else if (selection.isSingle() || twoNotesSameStaff) {
+            if (selection.isSingle()) {
+                  newPedal->setColor(QColor::fromRgb(32, 116, 189));
+                  newPedal->setLineColor(QColor::fromRgb(32, 116, 189));
+                  }
+            if (!noteEntryMode()) {
+                  // [Active pedal exists]
+                  // Create and select a new pedal-line, visually connected to the currently active/selected pedal, prepared for further extension
+                  // Should only happen with Single Note, since other placements do not activate edit-mode
+                  if (activePedal) {
+                        auto staffIdx       = activePedal->staffIdx();
+                        auto activeTrack    = activePedal->track();
+                        auto activeEnd      = activePedal->endCR()->segment();
+                        auto endMeasure     = activePedal->endCR()->measure();
+                        auto nextCR         = activeEnd ? activeEnd->nextCR(activeTrack) : nullptr;
+
+                        if (!nextCR)
+                              return;
+
+                        activePedal->setEndHookType(HookType::HOOK_45);
+                        newPedal->setBeginHookType(HookType::HOOK_45);
+
+                        // Weird to have the new pedal's begin-segment be before the ending of the previous,... but it works...
+                        auto newBeginSegment = activeEnd;
+                        auto newEndSegment = newBeginSegment;
+                        activeEnd = nextCR;
+
+                        if (auto nextMeasure = endMeasure->nextMeasure()) {
+                              auto ns = nextMeasure->findFirstR(SegmentType::ChordRest, nextMeasure->first()->tick());
+                              auto lm = score()->lastMeasure();
+                              auto isLastMeasure = (nextMeasure == lm);
+                              ns = isLastMeasure ? lm->lastEnabled() : ns->nextCR(activeTrack);
+                              if (!ns)
+                                    return;
+
+                              newEndSegment = ns;
+                              }
+
+                        if (activePedal->startCR()->tick() == newBeginSegment->tick()) {
+                              activeEnd = activeEnd ? activeEnd->nextCR(activeTrack) : activeEnd;
+                              if (!activeEnd)
+                                    return;
+                              newBeginSegment = newBeginSegment->next1enabled()->nextChordRest(activeTrack)->segment();
+                              }
+
+                        activePedal->setTicks(activeEnd->tick() - activePedal->startSegment()->tick());
+                        activePedal->setEndElement(activeEnd);
+
+                        if (newBeginSegment && newEndSegment) {
+                              _score->startCmd();
+                                 _score->cmdAddSpanner(newPedal, staffIdx, newBeginSegment, newEndSegment); // reads fine...
+                              _score->endCmd();
+                              endEdit();
+
+                              startEditMode(newPedal->backSegment());
+                              is->setPedalLine(newPedal);
+                              }
+                        else {
+                              qDebug() << "cmdAddPedal: begin and/or end segment invalid.";
+                              }
+                        }
+
+                  // [Single Note] - No active pedal - will extend to next measure's beginning for easy "per-measure" linking
+                  else {
+                        // [Single Note: - Prepare for extension as with Note Entry
+                        if (auto nm = nextSegment->measure()->nextMeasure()) {
+                              auto first = nm->findFirstR(SegmentType::ChordRest, nm->first()->tick());
+                              first = first->nextCR(track);
+                              nextSegment = first;
+                              }
+                        else {
+                              nextSegment = onlyOne ? nextSegment->measure()->lastEnabled() : nextSegment;
+                              }
+                        if (!nextSegment)
+                              return;
+
+                        _score->startCmd();
+                           _score->cmdAddSpanner(newPedal, staffIdx, startSegment, nextSegment);
+                        _score->endCmd();
+
+                        if (onlyOne && el.size() && el.back()) {
+                              is->setPedalLine(newPedal);
+                              startEditMode(newPedal->backSegment());
+                              }
+                        else return;
+                        }
+                  }
+
+            // [Note Entry] - Initialize the [active pedal]
+            else {
+                  bool skip = false;
+                  
+                  // If a pedal exists & ends at current location, force hooks to coincide @ 45 degrees
+                  if (startSegment) {
+                        Fraction tick = startSegment->tick();
+                        auto spanners = score()->spannerMap().findOverlapping(tick.ticks(), tick.ticks());
+                        for (auto interval : spanners) {
+                              Spanner* s = interval.value;
+                              if (!score()->selectionFilter().canSelect(s))
+                                    continue;
+
+                              if (s->isPedal()) {
+                                    Pedal* p = toPedal(s);
+
+                                    // Force overlap when off by one segment. As opposed to Non Note-Entry code,
+                                    // This uses tick mapping
+                                    if (p->endCR()->segment() == is->lastSegment()) {
+                                          if (p->startSegment() == startSegment) {
+                                                skip = true;
+                                                if (p->endSegment() == p->startSegment()) {
+                                                      cr1 = cr1->segment()->nextChordRest(track);
+                                                      endSegment = cr1->segment();
+                                                      p->undoChangeProperty(Pid::SPANNER_TICKS, endSegment->tick() - p->startElement()->tick());
+                                                      p->score()->undo(new ChangeSpannerElements(p, p->startElement(), cr1));
+                                                      }
+                                                else if (p->endSegment() == nextSegment) {
+                                                      // Happens when |_| on just one note (not start==end)
+                                                      cr1 = nextSegment->nextChordRest(track);
+                                                      cr2 = cr1->segment()->nextChordRest(track);
+                                                      endSegment = cr1->segment();
+                                                      p->undoChangeProperty(Pid::SPANNER_TICKS, cr2->tick() - cr1->tick());
+                                                      p->score()->undo(new ChangeSpannerElements(p, cr1, cr2));
+                                                      skip = false;
+                                                      }
+
+                                                break;
+                                                }
+
+                                          p->setEndElement(cr1);
+                                          p->undoChangeProperty(Pid::SPANNER_TICKS, p->endElement()->nextSegmentElement()->tick() - p->startElement()->tick());
+                                          p->score()->undo(new ChangeSpannerElements(p, p->startElement(), cr1));
+                                          }
+                                    else if (p->startCR()->segment() == startSegment) {
+                                          skip = true;
+                                          break;
+                                          }
+
+                                    if (p->endCR() == cr1) {
+                                          p->setEndHookType(HookType::HOOK_45);           // existing pedal
+                                          newPedal->setBeginHookType(HookType::HOOK_45);  // new pedal
+                                          }
+                                    }
+                              }
+                        }
+
+                  if (newPedal && !skip) {
+                        _score->startCmd();
+                           _score->cmdAddSpanner(newPedal, staffIdx, startSegment, nextSegment);
+                        _score->endCmd();
+
+                        // Probably not necessary:
+                        _score->updateSelection();
+
+                        is->setPedalLine(newPedal);
+
+                        // Probably not necessary:
+                        is->pedalLine()->setTick(cr1->tick());
+                        is->pedalLine()->setTrack(track);
+                        is->pedalLine()->setStartElement(cr1);
+                        }
+                  }
+            }
+      else {
+            // List selection:
+            // Not implemented
+            return;
+            }
+}
+
 
 //---------------------------------------------------------
 //   cmdAddNoteLine
