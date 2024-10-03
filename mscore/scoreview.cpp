@@ -4979,8 +4979,9 @@ void ScoreView::cmdInsertMeasures(int n, ElementType type)
       else if (mb->type() == ElementType::MEASURE) {
             // re-select the original measure (which may now be covered by an mmrest)
             // do this after the layout so mmrests are updated
-            Measure* m = _score->tick2measureMM(mb->tick());
-            _score->select(m, SelectType::SINGLE, 0);
+            if (Measure* m = _score->tick2measureMM(mb->tick())) {
+                  _score->select(m, SelectType::SINGLE, 0);
+                  }
             }
       else {
             // original selection was not a measure, just re-select it
