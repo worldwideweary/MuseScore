@@ -517,6 +517,7 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
       if (element->isSpanner())
             TourHandler::startTour("spanner-drop-apply");
 
+      auto& is = score->inputState();
       bool isFrame  = false;
       auto iconType = element->isIcon() ? toIcon(element)->iconType() : IconType::NONE;
       switch (iconType) { // fallthroughs
@@ -660,9 +661,22 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                                     }
                               }
                         }
-                  for (Element* e : sel.elements())
-                        applyDrop(score, viewer, e, element, modifiers);
 
+                  for (Element* e : sel.elements()) {
+                        auto ee = e;
+
+                        // Change from 3.6.2: Let barline placement be equiv. to range selection
+                        // in N.E. starting new measure entry (end of the measure placement for streamlining)
+                        if (element->type() == ElementType::BAR_LINE && is.noteEntryMode() ) {
+                              auto ism = is.cr() ? is.cr()->measure() : score->tick2measure(is.tick());
+                              auto em  = e->findMeasure();
+                              if (ism && em && (em->index() != ism->index())) {
+                                    ee = em;
+                                    }
+                              }
+
+                        applyDrop(score, viewer, ee, element, modifiers);
+                        }
                   }
             }
       else if (sel.isRange()) {
