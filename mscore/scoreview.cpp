@@ -1268,11 +1268,12 @@ void ScoreView::paint(const QRect& r, QPainter& p)
 
       Element* editElement = 0;
       Lasso* lassoToDraw = 0;
+      bool postponeEditMode = false;
       if (editData.element) {
             switch (state) {
                   case ViewState::NORMAL:
                         if (editData.element->normalModeEditBehavior() == Element::EditBehavior::Edit)
-                              editData.element->drawEditMode(&p, editData);
+                              postponeEditMode = true;
                         break;
                   case ViewState::DRAG:
                   case ViewState::DRAG_OBJECT:
@@ -1556,8 +1557,12 @@ void ScoreView::paint(const QRect& r, QPainter& p)
             p.drawLine(QLineF(x2, y1, x2, y2).translated(system2->page()->pos()));
             }
 
+      // Draw regular edit to ensure any grips are above score elements:
+      if (postponeEditMode)
+            editData.element->drawEditMode(&p, editData);
+
       // Draw foto lasso to ensure that it is above everything else
-      if (lassoToDraw)
+      else if (lassoToDraw)
             lassoToDraw->drawEditMode(&p, editData);
 
       p.setWorldMatrixEnabled(false);
