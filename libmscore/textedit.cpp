@@ -237,6 +237,8 @@ bool TextBase::edit(EditData& ed)
       bool ctrlPressed  = ed.modifiers & Qt::ControlModifier;
       bool shiftPressed = ed.modifiers & Qt::ShiftModifier;
       bool altPressed   = ed.modifiers & Qt::AltModifier;
+      bool numPad       = ed.modifiers & Qt::KeypadModifier;
+      bool autoForward  = false;
 
       QTextCursor::MoveMode mm = shiftPressed ? QTextCursor::KeepAnchor : QTextCursor::MoveAnchor;
 
@@ -383,23 +385,35 @@ bool TextBase::edit(EditData& ed)
                         break;
 
                   case Qt::Key_Tab:
+                        // FALL-THROUGH
+                  case Qt::Key_Backtab:
+                        {
+                        auto backwards = (ed.key == Qt::Key_Backtab);
+                        // Measure skipping
+                        if (isFingering() && ed.view) {
+                              score()->endCmd();
+                              ed.view->textTab(backwards);
+                              return true;
+                              }
                         s = " ";
                         ed.modifiers = {};
+                        }
                         break;
 
                   case Qt::Key_Space:
-                        if ((ed.modifiers & CONTROL_MODIFIER) || currentFormat->fontFamily() == "ScoreText") {
-                              s = QString(QChar(0xa0)); // non-breaking space
+                        {
+                        auto nonbreakingSpace  = QString(QChar(0xa0));
+                        auto space = QString(" ");
+                        s = (ctrlPressed || currentFormat->fontFamily() == "ScoreText") ? nonbreakingSpace : space;
+                        if (isFingering() && ed.view) {
+                              score()->endCmd();
+                              auto backwards = shiftPressed;
+                              ed.view->textTab(backwards);
+                              return true;
                               }
-                        else {
-                              if (isFingering() && ed.view) {
-                                    score()->endCmd();
-                                    ed.view->textTab(ed.modifiers & Qt::ShiftModifier);
-                                    return true;
-                                    }
-                              s = " ";
-                              }
+
                         ed.modifiers = {};
+                        }
                         break;
 
                   case Qt::Key_Minus:
@@ -419,6 +433,31 @@ bool TextBase::edit(EditData& ed)
                               s.clear();
                         }
                         break;
+                  case Qt::Key_X:
+                        if (isFingering()) {
+                              // Allow flipping direction via 'x' while typing in fingerings:
+                              auto newPlacement = placeAbove() ? Placement::BELOW : Placement::ABOVE;
+                              setProperty(Pid::PLACEMENT, int(newPlacement));
+                              setPropertyFlags(Pid::PLACEMENT,  PropertyFlags::UNSTYLED);
+                              s = "";
+                              }
+                        break;
+
+                  case Qt::Key_0: // FALL_THROUGH
+                  case Qt::Key_1:
+                  case Qt::Key_2:
+                  case Qt::Key_3:
+                  case Qt::Key_4:
+                  case Qt::Key_5:
+                  case Qt::Key_6:
+                  case Qt::Key_7:
+                  case Qt::Key_8:
+                  case Qt::Key_9:
+                  if (isFingering()) {
+                        if (numPad || MScore::fingerTextAutoForwardAlphaNumeric) {
+                              autoForward = true;
+                              }
+                        }
                   default:
                         break;
                   }
@@ -484,6 +523,13 @@ bool TextBase::edit(EditData& ed)
                   currentFormat->setFontFamily(propertyDefault(Pid::FONT_FACE).value<QString>());
             deleteSelectedText(ed);
             score()->undo(new InsertText(_cursor, s), &ed);
+
+            // Fingering auto-forward:
+            if (autoForward && ed.view) {
+                  score()->endCmd();
+                  auto backwards = false;
+                  ed.view->textTab(backwards);
+                  }
             }
       return true;
       }
