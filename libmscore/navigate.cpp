@@ -538,13 +538,17 @@ ChordRest* Score::nextMeasure(ChordRest* element, bool selectBehavior, bool mmRe
       bool last   = false;
 
       if (selection().isRange()) {
-            if (element->tick() != endTick && selection().tickEnd() <= endTick) {
-                  measure = element->measure();
-                  last = true;
+            if (selectBehavior) {
+                  if (element->tick() != endTick && selection().tickEnd() <= endTick) {
+                        measure = element->measure();
+                        last = true;
+                        }
+                  else if (element->tick() == endTick && selection().isEndActive()) {
+                        last = true;
+                        }
                   }
-            else if (element->tick() == endTick && selection().isEndActive())
-                  last = true;
             }
+
       else if (element->tick() != endTick && selectBehavior) {
             measure = element->measure();
             last = true;
@@ -597,15 +601,23 @@ ChordRest* Score::prevMeasure(ChordRest* element, bool mmRest)
             }
 
       int staff = element->staffIdx();
-
       Segment* startSeg = last ? measure->last() : measure->first();
       for (Segment* seg = startSeg; seg; seg = last ? seg->prev() : seg->next()) {
-            int etrack = (staff+1) * VOICES;
-            for (int track = staff * VOICES; track < etrack; ++track) {
-                  Element* pel = seg->element(track);
-
-                  if (pel && pel->isChordRest())
-                        return toChordRest(pel);
+            if (score()->noteEntryMode() || selection().hasTemporaryFilter()) {
+                  int track = element->track();
+                  if (auto pel = seg->element(track)) {
+                        if (pel->isChordRest()) {
+                              return toChordRest(pel);
+                              }
+                        }
+                  }
+            else {
+                  int etrack = (staff+1) * VOICES;
+                  for (int track = staff * VOICES; track < etrack; ++track) {
+                        Element* pel = seg->element(track);
+                        if (pel && pel->isChordRest())
+                              return toChordRest(pel);
+                        }
                   }
             }
       return 0;
