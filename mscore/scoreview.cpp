@@ -5374,7 +5374,7 @@ void ScoreView::cmdRealtimeAdvance()
 //   cmdAddChordName
 //---------------------------------------------------------
 
-void ScoreView::cmdAddChordName(HarmonyType ht)
+void ScoreView::cmdAddChordName(HarmonyType ht, bool poly)
       {
       if (!_score->checkHasMeasures())
             return;
@@ -5382,16 +5382,26 @@ void ScoreView::cmdAddChordName(HarmonyType ht)
       int track = -1;
       Element* newParent = nullptr;
       Element* el = _score->selection().element();
-      if (el && el->isFretDiagram()) {
-            FretDiagram* fd = toFretDiagram(el);
-            track = fd->track();
-            newParent = fd;
-            }
-      else {
-            ChordRest* cr = _score->getSelectedChordRest();
-            if (cr) {
-                  track = cr->track();
-                  newParent = toElement(cr->segment());
+      if (el) {
+            if (el->isFretDiagram()) {
+                  FretDiagram* fd = toFretDiagram(el);
+                  track = fd->track();
+                  newParent = fd;
+                  }
+            else {
+                  // Allow for harmony to be applied when harmony is selected
+                  if (el->isHarmony()) {
+                        auto harmony = toHarmony(el);
+                        track = harmony->track();
+                        newParent = toElement(harmony->getParentSeg());
+                        }
+                  else  {
+                        ChordRest* cr = _score->getSelectedChordRest();
+                        if (cr) {
+                              track = cr->track();
+                              newParent = toElement(cr->segment());
+                              }
+                        }
                   }
             }
       if (track == -1 || !newParent)
@@ -5402,6 +5412,18 @@ void ScoreView::cmdAddChordName(HarmonyType ht)
       harmony->setTrack(track);
       harmony->setParent(newParent);
       harmony->setHarmonyType(ht);
+      if (poly) {
+            harmony->setProperty     (Pid::ALIGN,           int(Align::HCENTER | Align::BASELINE));
+            harmony->setPropertyFlags(Pid::ALIGN,           PropertyFlags::UNSTYLED);
+            harmony->setProperty     (Pid::FONT_STYLE,      int(FontStyle::Underline));
+            harmony->setPropertyFlags(Pid::FONT_STYLE,      PropertyFlags::UNSTYLED);
+            harmony->setProperty     (Pid::FRAME_TYPE,      int(FrameType::SQUARE));
+            harmony->setPropertyFlags(Pid::FRAME_TYPE,      PropertyFlags::UNSTYLED);
+            harmony->setProperty     (Pid::FRAME_WIDTH,     Spatium(0.0));
+            harmony->setPropertyFlags(Pid::FRAME_WIDTH,     PropertyFlags::UNSTYLED);
+            harmony->setProperty     (Pid::FRAME_PADDING,   Spatium(0.0));
+            harmony->setPropertyFlags(Pid::FRAME_PADDING,   PropertyFlags::UNSTYLED);
+            }
       _score->undoAddElement(harmony);
       _score->endCmd();
 
