@@ -2806,7 +2806,7 @@ Element* Score::selectMove(const QString& cmd)
                   if (pcr == cr && !selection().isRange()) {
                         selectSelf = true;
                         }}}
-                   }
+                  }
             el = selectSelf ? cr : prevChordRest(cr, true);
             }
       else if (cmd == "select-next-measure")
