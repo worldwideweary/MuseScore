@@ -2998,10 +2998,10 @@ void ScoreView::cmd(const char* s)
                               cv->score()->select(toChord(newCR)->upNote(), SelectType::SINGLE);
                         else cv->score()->select(newCR, SelectType::SINGLE);
                         if (NEM) {
-                            // Hack: Toggle Note Entry to eradicate a potential "mid-way" error after split:
-                            cv->changeState(ViewState::NORMAL);
-                            cv->changeState(ViewState::NOTE_ENTRY);
-                            }
+                              // Hack: Toggle Note Entry to eradicate a potential "mid-way" error after split:
+                              cv->changeState(ViewState::NORMAL);
+                              cv->changeState(ViewState::NOTE_ENTRY);
+                              }
                         }
                   }},
             {{"join-measures"}, [](ScoreView* cv, const QByteArray&) {
