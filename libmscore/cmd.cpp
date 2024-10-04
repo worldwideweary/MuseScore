@@ -2627,6 +2627,14 @@ Element* Score::move(const QString& cmd)
                   }
 
             if (el) {
+                  auto oldEl = el;
+                  auto m = el->findMeasure();
+                  if (cr && m == cr->measure() && m->last()) {
+                        el = m->last()->nextChordRest(el->track(), true);
+                        if (!el) {
+                              el = oldEl;
+                              }
+                        }
                   if (noteEntryMode()) {
                         _is.moveInputPos(el);
                         auto desiredTrackCR = _is.segment()->nextChordRest(currentTrack);
