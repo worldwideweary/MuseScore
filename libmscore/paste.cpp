@@ -513,8 +513,9 @@ bool Score::pasteStaff(XmlReader& e, Segment* dst, int dstStaff, Fraction scale)
 
             for (MuseScoreView* v : qAsConst(viewer))
                   v->adjustCanvasPosition(el, false);
-            if (!selection().isRange())
+            if (!selection().isRange()) {
                   _selection.setState(SelState::RANGE);
+                  }
             }
       return true;
       }
