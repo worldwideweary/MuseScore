@@ -368,6 +368,8 @@ bool Score::transpose(TransposeMode mode, TransposeDirection direction, Key trKe
 
       alreadyTransposed.clear();
       QList<Staff*> sl;
+      int tempFilteredVoice = selection().hasTemporaryFilter();
+
       for (int staffIdx = _selection.staffStart(); staffIdx < _selection.staffEnd(); ++staffIdx) {
             Staff* s = staff(staffIdx);
             if (s->staffType(Fraction(0,1))->group() == StaffGroup::PERCUSSION)      // ignore percussion staff
@@ -415,6 +417,9 @@ bool Score::transpose(TransposeMode mode, TransposeDirection direction, Key trKe
 
                   if (e->isChord()) {
                         Chord* chord = toChord(e);
+                        if (tempFilteredVoice && (chord->voice() != (tempFilteredVoice - 1))) {
+                              continue;
+                              }
                         std::vector<Note*> nl = chord->notes();
                         for (Note* n : nl) {
                               if (mode == TransposeMode::DIATONICALLY) {
