@@ -727,7 +727,10 @@ void Selection::updateState()
       if (n == 0) {
             setState(SelState::NONE);
             if (hasTemporaryFilter()) {
-                  hasTemporaryFilter(false);
+                  if (!score()->noteEntryMode()) {
+                        hasTemporaryFilter(0);
+                        }
+                  // keep [range] when [note entry] + [voice switch]:
                   auto& sf = score()->selectionFilter();
                   sf.setFiltered(SelectionFilterType::ALL, true);
                   }

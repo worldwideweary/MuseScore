@@ -5096,6 +5096,7 @@ void MuseScore::undoRedo(bool undo)
       {
       Q_ASSERT(cv);
       Q_ASSERT(cs);
+      int tempVoiceFilter = cv->score()->selection().hasTemporaryFilter();
       if (_sstate & (STATE_EDIT | STATE_HARMONY_FIGBASS_EDIT | STATE_LYRICS_EDIT))
             cv->changeState(ViewState::NORMAL);
       cv->startUndoRedo(undo);
@@ -5103,6 +5104,9 @@ void MuseScore::undoRedo(bool undo)
       endCmd(/* undoRedo */ true);
       if (pianorollEditor)
             pianorollEditor->update();
+      if (tempVoiceFilter) {
+            cv->score()->cmdCycleVoiceFilter(tempVoiceFilter);
+            }
       }
 
 //---------------------------------------------------------

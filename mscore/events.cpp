@@ -576,6 +576,7 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                   if (ev->button() == Qt::RightButton)
                         _score->inputState().setRest(!restMode);
                   if (MScore::disableMouseEntry) {
+                        int track = _score->inputTrack();
                         if (auto el = elementAt(editData.pos)) {
                               if (!el->isStaffLines()) {
                                     _score->select(el);
@@ -583,6 +584,19 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                                           _score->inputState().moveInputPos(el);
                                     else changeState(ViewState::NORMAL);
                                     //adjustCanvasPosition(el, true);
+                                    }
+                              else if (auto m = toStaffLines(el)->measure()) {
+                                    if (auto f = m->first()) {
+                                          if (auto cr = f->nextChordRest(el->track())) {
+                                                if (cr->isChord())
+                                                      _score->select(toChord(cr)->upNote());
+                                                else _score->select(cr);
+                                                _score->select(m, SelectType::RANGE, cr->staffIdx());
+                                                _score->inputState().moveInputPos(cr);
+                                                // Default into voice-1 when N.E.M + [measure select via mouse]
+                                                _score->cmdCycleVoiceFilter();
+                                                }
+                                          }
                                     }
                               }
                         }
@@ -1157,7 +1171,7 @@ void ScoreView::changeState(ViewState s)
             sf.setFiltered(SelectionFilterType::SECOND_VOICE, true);
             sf.setFiltered(SelectionFilterType::THIRD_VOICE, true);
             sf.setFiltered(SelectionFilterType::FOURTH_VOICE, true);
-            selection.hasTemporaryFilter(false);
+            selection.hasTemporaryFilter(0);
             }
 
       //

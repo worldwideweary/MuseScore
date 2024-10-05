@@ -2098,6 +2098,17 @@ bool ScoreView::normalPaste(Fraction scale)
       _score->cmdPaste(ms, this, scale);
       bool rv = MScore::_error == MS_NO_ERROR;
       _score->endCmd();
+
+      if (int tempVoiceFilter = _score->selection().hasTemporaryFilter()) {
+            _score->cmdCycleVoiceFilter(tempVoiceFilter);
+            if (auto fcr = _score->selection().firstChordRest()) {
+                  if (_score->noteEntryMode()) {
+                        _score->setInputTrack(fcr->track());
+                        _score->update();
+                        }
+                  }
+            }
+
       return rv;
       }
 
@@ -2279,6 +2290,8 @@ void ScoreView::cmd(const char* s)
                         cv->editSwap();
                   }},
             {{"double-duration"}, [](ScoreView* cv, const QByteArray&) {
+                  int tempVoiceFilter = cv->score()->selection().hasTemporaryFilter();
+
                   cv->score()->startCmd();
                      cv->score()->cmdDoubleDuration();
                   cv->score()->endCmd();
@@ -2289,8 +2302,13 @@ void ScoreView::cmd(const char* s)
                         if (end)
                              cv->score()->nextInputPos(end, false);
                         }
+
+                  if (tempVoiceFilter)
+                        cv->score()->cmdCycleVoiceFilter(tempVoiceFilter);
                   }},
             {{"half-duration"}, [](ScoreView* cv, const QByteArray&) {
+                  int tempVoiceFilter = cv->score()->selection().hasTemporaryFilter();
+
                   cv->score()->startCmd();
                      cv->score()->cmdHalfDuration();
                   cv->score()->endCmd();
@@ -2301,8 +2319,13 @@ void ScoreView::cmd(const char* s)
                         if (end)
                              cv->score()->nextInputPos(end, false);
                         }
+
+                  if (tempVoiceFilter)
+                        cv->score()->cmdCycleVoiceFilter(tempVoiceFilter);
                   }},
             {{"inc-duration-dotted"}, [](ScoreView* cv, const QByteArray&) {
+                  int tempVoiceFilter = cv->score()->selection().hasTemporaryFilter();
+
                   cv->score()->startCmd();
                      cv->score()->cmdIncDurationDotted();
                   cv->score()->endCmd();
@@ -2313,8 +2336,11 @@ void ScoreView::cmd(const char* s)
                         if (end)
                              cv->score()->nextInputPos(end, false);
                         }
+                  if (tempVoiceFilter)
+                        cv->score()->cmdCycleVoiceFilter(tempVoiceFilter);
                   }},
             {{"dec-duration-dotted"}, [](ScoreView* cv, const QByteArray&) {
+                  int tempVoiceFilter = cv->score()->selection().hasTemporaryFilter();
                   cv->score()->startCmd();
                      cv->score()->cmdDecDurationDotted();
                   cv->score()->endCmd();
@@ -2325,6 +2351,8 @@ void ScoreView::cmd(const char* s)
                         if (end)
                              cv->score()->nextInputPos(end, false);
                         }
+                  if (tempVoiceFilter)
+                        cv->score()->cmdCycleVoiceFilter(tempVoiceFilter);
                   }},
             {{"lyrics"}, [](ScoreView* cv, const QByteArray&) {
                   cv->score()->startCmd();
@@ -2517,14 +2545,13 @@ void ScoreView::cmd(const char* s)
               "select-end-score",
               "select-staff-above",
               "select-staff-below"}, [](ScoreView* cv, const QByteArray& cmd) {
-                  Element* el = cv->score()->selectMove(cmd);
-
-                  if (cv->score()->noteEntryMode()) {
-                        auto voice = cv->score()->inputState().voice() + 1; // 1 - 4
-                        cv->score()->cmdCycleVoiceFilter(voice);
-                        }
-                  if (el)
+                  if (auto el = cv->score()->selectMove(cmd)) {
+                        if (cv->score()->noteEntryMode()) {
+                              auto voice = cv->score()->inputState().voice() + 1; // [1, 4]
+                              cv->score()->cmdCycleVoiceFilter(voice);
+                              }
                         cv->adjustCanvasPosition(el, false);
+                        }
                   cv->score()->setPlayChord(true);
                   cv->updateAll();
                   }},
@@ -2862,24 +2889,10 @@ void ScoreView::cmd(const char* s)
                   cv->moveCursor();
                   }},
             {{"repeat-sel"}, [](ScoreView* cv, const QByteArray&) {
-                  auto& sf = cv->score()->selectionFilter();
-                  bool tempFilter = cv->score()->selection().hasTemporaryFilter();
-                  auto voice = 0;
-                  if (tempFilter) {
-                        if (sf.isFiltered(SelectionFilterType::ALL))
-                              voice = 0; // All
-                        if (sf.isFiltered(SelectionFilterType::FIRST_VOICE))
-                              voice = 1;
-                        if (sf.isFiltered(SelectionFilterType::SECOND_VOICE))
-                              voice = 2;
-                        if (sf.isFiltered(SelectionFilterType::THIRD_VOICE))
-                              voice = 3;
-                        if (sf.isFiltered(SelectionFilterType::FOURTH_VOICE))
-                              voice = 4;
-                        }
+                  int tempVoiceFilter = cv->score()->selection().hasTemporaryFilter();
                   cv->cmdRepeatSelection();
-                  if (tempFilter) {
-                        cv->score()->cmdCycleVoiceFilter(voice);
+                  if (tempVoiceFilter) {
+                        cv->score()->cmdCycleVoiceFilter(tempVoiceFilter);
                         }
                   }},
             {{"voice-1"}, [](ScoreView* cv, const QByteArray&) {
@@ -3127,14 +3140,15 @@ void ScoreView::cmd(const char* s)
                   bool value = preferences.getBool(PREF_SCORE_NOTE_PLAYONCLICK);
                   preferences.setPreference(PREF_SCORE_NOTE_PLAYONCLICK, !value);
                   }},
-            {{"delete"}, [](ScoreView* cv, const QByteArray&) {
+            {{"delete"}, [&](ScoreView* cv, const QByteArray&) {
+                  int filter = cv->score()->selection().hasTemporaryFilter();
                   auto& is = cv->score()->inputState();
                   int inputTrack = is.track();
                   int idxStaff = track2staff(inputTrack);
 
                   cv->setDropTarget(nullptr);
                   cv->score()->startCmd();
-                  cv->score()->cmdDeleteSelection();
+                     cv->score()->cmdDeleteSelection();
                   cv->score()->endCmd();
 
                   if (is.noteEntryMode()) {
@@ -3148,9 +3162,10 @@ void ScoreView::cmd(const char* s)
                               is.setTrack(inputTrack);
                               }
                         }
-                  else if (cv->score()->selection().elements().size() < 2) {
-                        cv->changeState(ViewState::NOTE_ENTRY);
-                        cv->changeState(ViewState::NORMAL);
+                  else if (filter) {
+                        cv->score()->selection().hasTemporaryFilter(0);
+                        cv->score()->setSelection(originalSelection);
+                        cv->score()->cmdCycleVoiceFilter(-1);
                         }
                   }},
             };
@@ -5249,6 +5264,7 @@ void ScoreView::cmdCreateTuplet(ChordRest* cr, Tuplet* tuplet)
 void ScoreView::changeVoice(int voice)
       {
       InputState* is = &score()->inputState();
+      bool isRange = score()->selection().isRange();
       int track = (is->track() / VOICES) * VOICES + voice;
       int desiredVoice = voice;
       auto inputTick = is->tick();
@@ -5279,6 +5295,20 @@ void ScoreView::changeVoice(int voice)
             score()->setUpdateAll();
             score()->update();
             mscore->setPos(is->segment()->tick());
+            if (isRange) {
+                  if (is->cr()) {
+                        score()->setSelection(originalSelection);
+                        score()->cmdCycleVoiceFilter(voice);
+                        }
+                  else if (auto m = score()->tick2measure(is->tick())) {
+                        if (auto seg = m->findFirstR(SegmentType::ChordRest, m->tick())) {
+                        if (auto e = seg->element(track2staff(is->track()))) {
+                              // Lose range selection + set appropriate input state:
+                              score()->select(e);
+                              score()->setInputTrack(track);
+                              }}
+                        }
+                  }
             }
       else {
             // Normal State: command moves selection to another voice:
