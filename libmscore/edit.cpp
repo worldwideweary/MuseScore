@@ -2490,7 +2490,7 @@ std::vector<ChordRest*> Score::deleteRange(Segment* s1, Segment* s2, int track1,
 void Score::cmdDeleteSelection()
       {
       std::vector<ChordRest*> crsSelectedAfterDeletion;
-
+      int tempVoiceFilter = selection().hasTemporaryFilter();
       // For note-entry changes:
       int iTrack = _is.track();
       auto iTick = _is.tick();
@@ -2620,6 +2620,9 @@ void Score::cmdDeleteSelection()
                   else
                         select(cr, SelectType::SINGLE);
                   }
+            }
+      else if (tempVoiceFilter) {
+            ;
             }
       else if (!crsSelectedAfterDeletion.empty()) {
             std::vector<Element*> elementsToSelect;
