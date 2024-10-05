@@ -2846,9 +2846,18 @@ Hairpin* Score::addHairpin(HairpinType type, ChordRest* cr1, ChordRest* cr2, boo
 void Score::cmdCreateTuplet(ChordRest* ocr, Tuplet* tuplet)
       {
       int track        = ocr->track();
+      Staff* s         = ocr->staff();
       Measure* measure = ocr->measure();
       Fraction tick    = ocr->tick();
       Fraction an      = (tuplet->ticks() * tuplet->ratio()) / tuplet->baseLen().fraction();
+
+      ClefType clef = s->clef(tick);
+      Key key = s->key(tick);
+      int line = ((s->lines(tick) - 1) / 2) * 2;
+      auto pitch = line2pitch(line, clef, key);
+      bool pitchedStaff = s->isPitchedStaff(tick);
+      bool rhythmMode = usingNoteEntryMethod(NoteEntryMethod::RHYTHM);
+
       if (!an.denominator())
            return;
 
@@ -2867,8 +2876,14 @@ void Score::cmdCreateTuplet(ChordRest* ocr, Tuplet* tuplet)
                   cr->add(note);
                   }
             }
-      else
-            cr = new Rest(this);
+      else if (rhythmMode && pitchedStaff) {
+            Note* note = new Note(this);
+            note->setPitch(pitch);
+            note->setTpcFromPitch();
+            cr = new Chord(this);
+            cr->add(note);
+            }
+      else cr = new Rest(this);
 
       int actualNotes = an.numerator() / an.denominator();
 
@@ -2884,12 +2899,28 @@ void Score::cmdCreateTuplet(ChordRest* ocr, Tuplet* tuplet)
 
       for (int i = 0; i < (actualNotes-1); ++i) {
             tick += ticks;
-            Rest* rest = new Rest(this);
-            rest->setTuplet(tuplet);
-            rest->setTrack(track);
-            rest->setDurationType(tuplet->baseLen());
-            rest->setTicks(tuplet->baseLen().fraction());
-            undoAddCR(rest, measure, tick);
+            if (rhythmMode && pitchedStaff) {
+                  Note* note = new Note(this);
+                  note->setPitch(pitch);
+                  note->setTpcFromPitch();
+                  ChordRest* ncr = new Chord(this);
+
+                  ncr->setTuplet(tuplet);
+                  ncr->setTrack(track);
+                  ncr->setDurationType(tuplet->baseLen());
+                  ncr->setTicks(tuplet->baseLen().fraction());
+                  ncr->add(note);
+
+                  undoAddCR(ncr, measure, tick);
+                  }
+            else  {
+                  Rest* rest = new Rest(this);
+                  rest->setTuplet(tuplet);
+                  rest->setTrack(track);
+                  rest->setDurationType(tuplet->baseLen());
+                  rest->setTicks(tuplet->baseLen().fraction());
+                  undoAddCR(rest, measure, tick);
+                  }
             }
       }
 
