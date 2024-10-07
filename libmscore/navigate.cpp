@@ -516,8 +516,15 @@ ChordRest* Score::prevTrack(ChordRest* cr, bool skipVoices)
             while (--track >= 0) {
                   if (skipVoices) {
                         // Disregard voices and directly refer to previous staff
-                        if ((track % 4) != 0)
+                        int currStaff = cr->staffIdx();
+                        int prevStaff = track2staff(track);
+                        bool trackIsFirstVoice = ((track % 4) == 0);
+                        if (!trackIsFirstVoice) {
                               continue;
+                              }
+                        else if (currStaff == prevStaff) {
+                              continue;
+                              }
                         break;
                         }
                   else if (measure->hasVoice(track))
