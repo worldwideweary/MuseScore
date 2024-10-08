@@ -6363,8 +6363,62 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
       else if (cmd == "layer" && enableExperimental)
             showLayerManager();
       else if (cmd == "backspace") {
-            if (_sstate != STATE_NORMAL )
+            bool isRange = (cs->selection().isRange());
+            bool isNoteEntry =
+                  (_sstate == STATE_NOTE_ENTRY_METHOD_STEPTIME ||
+                  _sstate == STATE_NOTE_ENTRY_METHOD_REPITCH ||
+                  _sstate == STATE_NOTE_ENTRY_METHOD_RHYTHM); 
+            
+            if (isNoteEntry) {
+                  // Note Entry - Delete current chord, or move to previous chord in current track
+                  auto& is = cs->inputState();
+                  auto  iTick = is.tick();
+                  if (auto cr = cs->selection().firstChordRest()) {
+                        auto track = cr->track();
+                        if (isRange) {
+                              cv->cmd(getAction("delete")); // Specifically not cs->cmdDeleteSelection();
+                              }
+                        else if (cr->isRest()) {
+                              auto fsTick = cs->firstSegment(SegmentType::ChordRest)->tick();
+                              while (cr && !cr->isChord() && fsTick != cr->tick()) {
+                                    if (auto pSeg = cr->segment()->prev1MM(SegmentType::ChordRest)) {
+                                          if (pSeg != cr->segment()){
+                                                cr = pSeg->nextChordRest(track, true);
+                                                if (!cr || (cr->tick() == iTick))
+                                                      break;
+                                                }
+                                          else break;
+                                          }
+                                    }
+                              if (cr) {
+                                    if (cr->isChord()) {
+                                          auto c = toChord(cr);
+                                          cs->select(c->upNote());
+                                          }
+                                    else cs->select(cr); // rest
+                                    is.moveInputPos(cr);
+                                    }
+                              }
+                        else { // Chord:
+                              cs->startCmd();
+                              auto selectionTick = cr->tick();
+                              auto inputTick = is.tick();
+                              if (inputTick > selectionTick || inputTick == selectionTick) {
+                                    is.moveInputPos(cr);
+                                    }
+                              cs->deleteItem(cs->getSelectedChordRest());
+                              cs->endCmd();
+                              }
+                        }
+                  else { // Note Entry: selection not a chordrest:
+                        cs->startCmd();
+                           cs->cmdDeleteSelection();
+                        cs->endCmd();
+                        }
+                  }
+            else if (_sstate != STATE_NORMAL) {
                   undoRedo(true);
+                  }
 #ifdef Q_OS_MAC
             else if (cv) {
                   cv->cmd(getAction("delete"));
