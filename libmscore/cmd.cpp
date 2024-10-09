@@ -4526,23 +4526,25 @@ void Score::cmdCycleVoiceFilter(int voice)
       {
       static int nextVoice  = 1;
       static bool failed    = false;
+      const int all         = 0;
       const int lastVoice   = 4;
 
-      if (!selection().isRange())
+      if (!selection().isRange()) {
             return;
+            }
 
       auto& sf = selectionFilter();
       auto first      = selection().firstChordRest();
       auto last       = selection().lastChordRest();
       auto staffBegin = selection().staffStart();
       auto staffEnd   = selection().staffEnd() - 1;
-      bool firstVoiceAlreadyActive = (first->voice() == 0);
+      bool firstVoiceAlreadyActive = first ? (first->voice() == 0) : false;
       if (failed) {
             // Still engaged in the cycle rather than starting over just yet
-            selection().hasTemporaryFilter(true);
+            selection().hasTemporaryFilter(nextVoice);
             }
 
-      if (noteEntryMode() && voice == 0) {
+      if (noteEntryMode() && voice == all) {
             bool notLimited = sf.isFiltered(SelectionFilterType::DYNAMIC);
             if (notLimited) {
                   // Cycle between [limited/all] of note entry's current voice
@@ -4550,8 +4552,8 @@ void Score::cmdCycleVoiceFilter(int voice)
                   }
             }
 
-      bool validVoice = (voice >= 1) && (voice <= lastVoice);
-      if (validVoice) {
+      bool forceVoice = (voice > all) && (voice <= lastVoice);
+      if (forceVoice) {
             sf.setFiltered(SelectionFilterType::FIRST_VOICE,   false);
             sf.setFiltered(SelectionFilterType::SECOND_VOICE,  false);
             sf.setFiltered(SelectionFilterType::THIRD_VOICE,   false);
@@ -4582,9 +4584,12 @@ void Score::cmdCycleVoiceFilter(int voice)
             case 4: sf.setFiltered(SelectionFilterType::FOURTH_VOICE, true); break;
             }
 
-            selection().hasTemporaryFilter(true);
+            selection().hasTemporaryFilter(voice);
             update();
             return;
+            }
+      else if (voice == -1) {
+            nextVoice = all;
             }
 
       // Voice cycle:
@@ -4592,8 +4597,11 @@ void Score::cmdCycleVoiceFilter(int voice)
       // Left over cycling (e.g. an old range selection) should prepare for filtering at voice-1
       if (firstVoiceAlreadyActive && !noteEntryMode()) {
             bool toBeVoiceOne = (!nextVoice || nextVoice > 2);
-            if (toBeVoiceOne) {
+            if (toBeVoiceOne && !failed) {
                   nextVoice = 1;
+                  }
+            else if (voice == -1) {
+                  nextVoice = all;
                   }
             }
 
@@ -4609,13 +4617,14 @@ void Score::cmdCycleVoiceFilter(int voice)
       case 2: sf.setFiltered(SelectionFilterType::SECOND_VOICE, true); break;
       case 3: sf.setFiltered(SelectionFilterType::THIRD_VOICE,  true); break;
       case 4: sf.setFiltered(SelectionFilterType::FOURTH_VOICE, true); break;
-      case 0: default: sf.setFiltered(SelectionFilterType::ALL, true); break;
+      case all: default: sf.setFiltered(SelectionFilterType::ALL, true); break;
       }
 
-      selection().hasTemporaryFilter((!nextVoice ? false : true));
+      selection().hasTemporaryFilter(nextVoice);
 
-      if (++nextVoice > lastVoice)
-            nextVoice = 0;
+      if (++nextVoice > lastVoice) {
+            nextVoice = all;
+            }
 
       setUpdateAll();
       update();
@@ -4631,13 +4640,15 @@ void Score::cmdCycleVoiceFilter(int voice)
             update();
 
             // Reset filter if needed after having failed
-            bool resetFilter = (nextVoice >= lastVoice);
+            bool resetFilter = (nextVoice == all);
             if (resetFilter) {
-                  selection().hasTemporaryFilter(false);
+                  selection().hasTemporaryFilter(all);
                   nextVoice = 1;
                   failed = false;
                   }
-            else cmdCycleVoiceFilter();
+            else  {
+                  cmdCycleVoiceFilter();
+                  }
             }
       else failed = false;
       }
