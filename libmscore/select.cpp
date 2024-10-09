@@ -57,6 +57,7 @@
 #include "accidental.h"
 #include "articulation.h"
 #include "stafftext.h"
+#include "tempotext.h"
 #include "sticking.h"
 
 namespace Ms {
@@ -1041,6 +1042,9 @@ Enabling copying of more element types requires enabling pasting in Score::paste
                         // fall through
                   case ElementType::HAIRPIN:
                         seg = toHairpin(e)->startSegment();
+                        break;
+                  case ElementType::TEMPO_TEXT:
+                        seg = toTempoText(e)->segment();
                         break;
                   default:
                         continue;
