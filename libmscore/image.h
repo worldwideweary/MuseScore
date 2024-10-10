@@ -45,6 +45,8 @@ class Image final : public BSymbol {
       bool _lockAspectRatio;
       bool _autoScale;              ///< fill parent frame
       bool _sizeIsSpatium;
+      qreal _frameWidth;
+      QColor _frameColor;
       mutable bool _dirty;
       bool _used;
 
@@ -79,6 +81,11 @@ class Image final : public BSymbol {
       bool isUsed() const                { return _used;          }
       void setUsed(bool val)             { _used = val;           }
 
+      void setFrameWidth(qreal val)      { _frameWidth = val;     }
+      qreal getFrameWidth() const        { return _frameWidth;    }
+      void setFrameColor(const QColor& c){ _frameColor = c;       }
+      QColor getFrameColor() const       { return _frameColor;    }
+
       QVariant getProperty(Pid ) const override;
       bool setProperty(Pid propertyId, const QVariant&) override;
       QVariant propertyDefault(Pid id) const override;
@@ -90,7 +97,7 @@ class Image final : public BSymbol {
       bool isValid() const           { return rasterDoc || svgDoc; }
 
       Element::EditBehavior normalModeEditBehavior() const override { return Element::EditBehavior::Edit; }
-      int gripsCount() const override { return 2; }
+      int gripsCount() const override { return 8; }
       Grip initialEditModeGrip() const override { return Grip(1); }
       Grip defaultGrip() const override { return Grip(1); }
       std::vector<QPointF> gripsPositions(const EditData&) const override;

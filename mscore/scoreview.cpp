@@ -46,6 +46,7 @@
 #include "libmscore/hairpin.h"
 #include "libmscore/harmony.h"
 #include "libmscore/fret.h"
+#include "libmscore/image.h"
 #include "libmscore/instrchange.h"
 #include "libmscore/keysig.h"
 #include "libmscore/lasso.h"
@@ -2414,6 +2415,9 @@ void ScoreView::cmd(const char* s)
                   else if (cv->fotoMode())
                         cv->changeState(ViewState::NORMAL);
                   }},
+            {{"picture"}, [](ScoreView* cv, const QByteArray&) {
+                  cv->cmdAddEmptyImage(true, true);
+                  }},
             {{"add-slur"}, [](ScoreView* cv, const QByteArray&) {
                   cv->cmdAddSlur();
                   }},
@@ -4311,6 +4315,46 @@ void ScoreView::startUndoRedo(bool undo)
             cmd("escape");        // leave note entry mode
 
       updateEditElement();
+      }
+
+//---------------------------------------------------------
+//   cmdAddEmptyImage
+//    MuseScore 3.6 has "picture" shortcut which is non-functional,
+//    but supplies the command for adding images into frames.
+//    This will provide an empty "see-through" image  (with frame option)
+//    to be invoked by the "picture" shortcut.
+//---------------------------------------------------------
+
+void ScoreView::cmdAddEmptyImage(bool framed, bool fullyTransparent)
+      {
+      Element* e = nullptr;
+      if (auto fcr = _score->selection().firstChordRest()) {
+            if (fcr->isChord())
+                  e = toChord(fcr)->upNote();
+            else
+                  e = fcr;
+            }
+      if (!e)
+            return;
+
+      Image* s = new Image(_score);
+      s->setImageType(ImageType::NONE);
+      s->setAutoplace(false);
+
+      int alpha = fullyTransparent ? 0 : 88;
+      s->setColor(QColor(0, 0, 0, alpha));
+
+      qreal frameWidth = framed ? SPATIUM20 : 0.0;
+      s->setFrameWidth(frameWidth);
+
+      s->setParent(e);
+      s->setSize(QSizeF(10, 10));
+
+      s->setLockAspectRatio(false);
+
+      _score->startCmd();
+         _score->undoAddElement(s);
+      _score->endCmd();
       }
 
 //---------------------------------------------------------

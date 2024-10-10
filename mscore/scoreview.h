@@ -432,6 +432,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       virtual void cmdAddHairpin(HairpinType);
       virtual void cmdAddPedal(HookType, HookType);
       void cmdAddNoteLine();
+      void cmdAddEmptyImage(bool, bool);
 
       void setEditElement(Element*);
       void updateEditElement();
