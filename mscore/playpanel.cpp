@@ -170,6 +170,8 @@ void PlayPanel::showEvent(QShowEvent* e)
             activateWindow();
             setFocus();
             }
+      volSpinBox->setFocus();
+      volSpinBox->selectAll();
       }
 
 //---------------------------------------------------------
