@@ -2319,6 +2319,16 @@ void ScoreView::cmd(const char* s)
                         cv->changeState(ViewState::NOTE_ENTRY);
                   else if (cv->state == ViewState::NOTE_ENTRY)
                         cv->changeState(ViewState::NORMAL);
+
+                  else if (cv->state ==ViewState::PLAY) {
+                        cv->changeState(ViewState::NORMAL);
+                        if (!cv->score()->selection().isNone())
+                              cv->deselectAll();
+                        if (auto el = cv->chordRestFromCursor()) {
+                              cv->score()->select(el);
+                              cv->changeState(ViewState::NOTE_ENTRY);
+                              }
+                        }
                   }},
             {{"copy"}, [](ScoreView* cv, const QByteArray&) {
                   if (cv->fotoMode())
