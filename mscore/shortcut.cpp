@@ -100,6 +100,13 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
+         "reset-input-octave",
+         QT_TRANSLATE_NOOP("action","Reset input octave to default"),
+         QT_TRANSLATE_NOOP("action","Reset input octave to default")
+         },
+      {
+         MsWidget::MAIN_WINDOW,
          STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT | STATE_PLAY,
          "file-save-a-copy",
          QT_TRANSLATE_NOOP("action","Save a Copy…"),
