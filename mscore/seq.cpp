@@ -522,7 +522,7 @@ void MuseScore::seqStarted()
 
 void MuseScore::seqStopped()
       {
-      cv->setCursorOn(false);
+      cv->setCursorOn(cv->noteEntryMode());
       }
 
 //---------------------------------------------------------

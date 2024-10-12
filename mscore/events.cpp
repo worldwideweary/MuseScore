@@ -1147,7 +1147,8 @@ static const char* stateName(ViewState s)
 
 void ScoreView::seqStopped()
       {
-      changeState(ViewState::NORMAL);
+      if (state != ViewState::NORMAL && state != ViewState::NOTE_ENTRY)
+            changeState(ViewState::NORMAL);
       }
 
 //---------------------------------------------------------
