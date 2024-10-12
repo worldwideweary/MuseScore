@@ -640,6 +640,34 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                   spanner->isVoiceSpecific();
                   }
             else {
+                  bool finished = false;
+                  if (element->isClef() && is.noteEntryMode()) {
+                        // Given note-entry mode:
+                        // 1) Apply clef to measure if at beginning of measure
+                        // 2) Place clefs before [input state] rather than before selection
+                        auto& is = score->inputState();
+                        int track = is.track();
+                        if (auto iseg = is.segment()) {
+                              int staffIdx = track2staff(track);
+                              if (iseg->rtick().isZero()) {
+                                    auto measure = iseg->measure();
+                                    QRectF r = measure->staffabbox(staffIdx);
+                                    QPointF staffPoint(r.x() + r.width() * .5, r.y() + r.height() * .5);
+                                    staffPoint += measure->system()->page()->pos();
+                                    applyDrop(score, viewer, measure, element, modifiers, staffPoint);
+                                    finished = true;
+                                    }
+                              else if (auto cr = iseg->nextChordRest(track)) {
+                                    Element* e = nullptr;
+                                    if (cr->isChord())
+                                          e = toChord(cr)->upNote();
+                                    else e = cr;
+                                    applyDrop(score, viewer, e, element, modifiers);
+                                    finished = true;
+                                    }
+                              }
+                        }
+
                   // If dynamic is placed while a hairpin is active within note entry,
                   // finalize the hairpin to be just before the dynamic mark or after it
                   // depending on whether the hairpin started at this position.
