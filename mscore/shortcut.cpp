@@ -1727,14 +1727,14 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NOTE_ENTRY,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "pad-note-increase",
          QT_TRANSLATE_NOOP("action","Increase Active Duration"),
          QT_TRANSLATE_NOOP("action","Increase active duration")
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NOTE_ENTRY,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "pad-note-decrease",
          QT_TRANSLATE_NOOP("action","Decrease Active Duration"),
          QT_TRANSLATE_NOOP("action","Decrease active duration")
