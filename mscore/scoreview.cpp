@@ -2585,6 +2585,10 @@ void ScoreView::cmd(const char* s)
                         cv->changeState(ViewState::NOTE_ENTRY);
                   else if (cv->state == ViewState::NOTE_ENTRY)
                         cv->changeState(ViewState::NORMAL);
+                  else if (cv->state == ViewState::EDIT) {
+                        cv->endEdit();
+                        cv->changeState(ViewState::NOTE_ENTRY);
+                        }
 
                   else if (cv->state ==ViewState::PLAY) {
                         cv->changeState(ViewState::NORMAL);
