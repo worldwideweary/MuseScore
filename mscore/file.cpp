@@ -2502,12 +2502,17 @@ bool MuseScore::saveAs(Score* cs_, bool saveCopy)
       else
             mscore->lastSaveDirectory = fi.absolutePath();
 
-      if (fi.suffix().isEmpty()) {
+      auto suffix = fi.suffix();
+      if (suffix != "mscz" && suffix != "mscx") {
+            suffix = "mscz";
+            }
+
+      if (suffix.isEmpty()) {
             if (!MScore::noGui)
                   QMessageBox::critical(mscore, tr("Save As"), tr("Cannot determine file type"));
             return false;
             }
-      return saveAs(cs_, saveCopy, fn, fi.suffix());
+      return saveAs(cs_, saveCopy, fn, suffix);
       }
 
 //---------------------------------------------------------
