@@ -90,6 +90,8 @@ qreal   MScore::horizontalPageGapOdd = 50.0;
 QColor  MScore::selectColor[VOICES];
 QColor  MScore::cursorColor;
 QColor  MScore::defaultColor;
+bool    MScore::cursorResetToStart;
+bool    MScore::selectionFollowsCursor;
 
 bool    MScore::noteInputOctaveTendencyIsTopNote;
 bool    MScore::noteInputOctaveUpwardFifth;

@@ -267,7 +267,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::MAIN_WINDOW,
-         STATE_NORMAL | STATE_NOTE_ENTRY,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_PLAY,
          "note-input",
          QT_TRANSLATE_NOOP("action","Note Input"),
          QT_TRANSLATE_NOOP("action","Note input: Toggle Entry/Normal mode"),
@@ -1197,6 +1197,13 @@ Shortcut Shortcut::_sc[] = {
          "playback-position",
          QT_TRANSLATE_NOOP("action","Playback Cursor Position"),
          QT_TRANSLATE_NOOP("action","Go to recent playback cursor position")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_PLAY,
+         "play-at-selection",
+         QT_TRANSLATE_NOOP("action","Playback Cursor Position Reset"),
+         QT_TRANSLATE_NOOP("action","Start playback at current single-element selection"),
          },
       {
          MsWidget::SCORE_TAB,

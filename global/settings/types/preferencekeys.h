@@ -136,6 +136,8 @@
 #define PREF_SCORE_PLAYBACK_CURSOR_ENTIRE_MEASURE           "ui/score/playbackCursor/entireMeasure"
 #define PREF_SCORE_PLAYBACK_CURSOR_MOVE_BY_BEAT             "ui/score/playbackCursor/moveByBeats"
 #define PREF_SCORE_PLAYBACK_CURSOR_BACKGROUND               "ui/score/playbackCursor/behindStaff"
+#define PREF_SCORE_PLAYBACK_SELECT_POSITION_ON_STOP         "ui/score/playback/selectPlaybackPosition"
+#define PREF_SCORE_PLAYBACK_BRING_POSITION_TO_START         "ui/score/playback/resetToStart"
 #define PREF_UI_CANVAS_BG_USECOLOR                          "ui/canvas/background/useColor"
 #define PREF_UI_CANVAS_FG_USECOLOR                          "ui/canvas/foreground/useColor"
 #define PREF_UI_CANVAS_FG_USECOLOR_IN_PALETTES              "ui/canvas/foreground/useColorInPalettes"

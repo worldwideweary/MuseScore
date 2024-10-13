@@ -443,7 +443,7 @@ void MuseScore::seqStarted()
 
 void MuseScore::seqStopped()
       {
-      cv->setCursorOn(false);
+      cv->setCursorOn(cv->noteEntryMode());
       }
 
 //---------------------------------------------------------
@@ -475,8 +475,15 @@ void Seq::guiStop()
       if (!cs)
             return;
 
-      int tck = cs->repeatList().utick2tick(cs->utime2utick(qreal(playFrame) / qreal(MScore::sampleRate)));
-      cs->setPlayPos(Fraction::fromTicks(tck));
+      if (MScore::cursorResetToStart) {
+            auto tick = viewer()->startTickFromSelection();
+            cs->setPlayPos(tick);
+            }
+      else {
+            int tck = cs->repeatList().utick2tick(cs->utime2utick(qreal(playFrame) / qreal(MScore::sampleRate)));
+            cs->setPlayPos(Fraction::fromTicks(tck));
+            }
+
       cs->update();
       emit stopped();
       }

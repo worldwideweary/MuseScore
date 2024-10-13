@@ -947,6 +947,74 @@ void ScoreView::moveCursor()
       }
 
 //---------------------------------------------------------
+//   chordRestFromCursor
+//    useNextSegment - Get the following ChordRest after
+//                playback tick, if true, or fall back to
+//                previous if false
+//    considerAllTracks: If false, default to use track 0
+//    returns either Rest or Top Note of a chord (Element*)
+//---------------------------------------------------------
+
+Element* ScoreView::chordRestFromCursor(bool useNextSegment, bool considerAllTracks)
+      {
+      auto s = score();
+      ChordRest* cr = nullptr;
+      Element* el = nullptr;
+      int track = s->getSelectedElement() ? s->getSelectedElement()->track() : 0;
+      track = track < 0 ? 0 : track;
+      // auto seqCursorPos = seq->getCurTick(); // gives repeat tick (not necessarily in accord with visual score)
+      auto scoreCursorPos = cursorTick().ticks();
+      auto pos { Fraction::fromTicks(scoreCursorPos) };
+      auto seg = useNextSegment ? s->tick2rightSegment(pos, false) : s->tick2leftSegment(pos, false);
+      if (seg) {
+            if (seg->isChordRestType()) {
+                  if ( (cr = seg->cr(track)) )
+                        el = cr;
+                  else {
+                        for (int t = 0; t < s->ntracks(); ++t) {
+                              if ( (cr = seg->cr(t)) ) {
+                                    el = cr;
+                                    break;
+                                    }
+                              }
+                        }
+                  }
+            else {
+                  // Cycle through tracks if no CR* found
+                  if (considerAllTracks) {
+                        for (int t = 0; t < s->ntracks(); ++t) {
+                              if ( (cr = seg->cr(t)) ) {
+                                    el = cr;
+                                    break;
+                                    }
+                              }
+                        }
+                  // Nothing found:
+                  else el = seg->nextChordRest(0);
+                  }
+            }
+      if (el) {
+            if (el->isChord())
+                  el = toChord(el)->upNote();
+            }
+      return el;
+      }
+
+//---------------------------------------------------------
+//   startTickFromSelection
+//    Not just the tick of score->selection but using the
+//    original selection since it may be removed during playback
+//---------------------------------------------------------
+
+Fraction ScoreView::startTickFromSelection(void)
+      {
+      auto cr = originalSelection.firstChordRest();
+      if (!cr)
+            qDebug() << "original score-selection invalid";
+      return cr ? cr->tick() : Fraction(0,1);
+      }
+
+//---------------------------------------------------------
 //   cursorTick
 //---------------------------------------------------------
 
@@ -2167,6 +2235,9 @@ void ScoreView::cmd(const char* s)
       if (MScore::debugMode)
             qDebug("ScoreView::cmd <%s>", s);
 
+      if (score()->selection().element() || !score()->selection().elements().isEmpty())
+            originalSelection = score()->selection();
+
       //-------------------------------------
       // Lambda: removeDuplicates
       //-------------------------------------
@@ -2248,6 +2319,16 @@ void ScoreView::cmd(const char* s)
                         cv->changeState(ViewState::NOTE_ENTRY);
                   else if (cv->state == ViewState::NOTE_ENTRY)
                         cv->changeState(ViewState::NORMAL);
+
+                  else if (cv->state ==ViewState::PLAY) {
+                        cv->changeState(ViewState::NORMAL);
+                        if (!cv->score()->selection().isNone())
+                              cv->deselectAll();
+                        if (auto el = cv->chordRestFromCursor()) {
+                              cv->score()->select(el);
+                              cv->changeState(ViewState::NOTE_ENTRY);
+                              }
+                        }
                   }},
             {{"copy"}, [](ScoreView* cv, const QByteArray&) {
                   if (cv->fotoMode())
@@ -2380,14 +2461,11 @@ void ScoreView::cmd(const char* s)
                         auto cvSel = cvScore->selection();
                         if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY) {
                               if (!cvSel.isNone()) {
-                                    originalSelection = cvScore->selection();
-                                    // Clear score + onscreen keyboard
                                     cvScore->deselectAll();
                                     if (auto piano = mscore->pianoTools()) {
                                           piano->changeSelection(cvScore->selection());
                                           }
                                     }
-
                               cv->changeState(ViewState::PLAY);
                               }
                         else if (cv->state == ViewState::PLAY) {
@@ -2397,7 +2475,11 @@ void ScoreView::cmd(const char* s)
                               cv->changeState(ViewState::NORMAL);
 
                               bool validOriginalSelection = originalSelection.score();
-                              if (validOriginalSelection) {
+                              if (MScore::selectionFollowsCursor) {
+                                    auto el = cv->chordRestFromCursor();
+                                    cv->score()->select(el);
+                                    }
+                              else if (validOriginalSelection) {
                                     // Restore score + onscreen keyboard selection
                                     cvScore->setSelection(originalSelection);
                                     if (auto piano = mscore->pianoTools()) {
@@ -2805,6 +2887,30 @@ void ScoreView::cmd(const char* s)
                         if (el->isChord())
                               el = toChord(el)->upNote();
                         cv->cmdGotoElement(el);
+                        }
+                  }},
+            {{"play-at-selection"}, [](ScoreView* cv, const QByteArray&) {
+                  auto s = cv->score();
+                  static Fraction tick;
+                  if (auto cr = cv->getOriginalSelection().firstChordRest()) {
+                        tick = cr->tick();
+                        }
+                  s->deselectAll();
+
+                  // duplicated code from 'play' command:
+                  if (seq && seq->canStart()) {
+                        if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY) {
+                              // Play:
+                              s->setPlayPos(tick);
+                              cv->changeState(ViewState::PLAY);
+                              }
+                        else if (cv->state == ViewState::PLAY) {
+                              // Rewind: restart to original position instead of functioning as "STOP"
+                              // Isn't 100% consistent - i.e., occasional pause if triggered quickly
+                              cv->changeState(ViewState::NORMAL);
+                              s->setPlayPos(tick);
+                              cv->changeState(ViewState::PLAY);
+                              }
                         }
                   }},
             {{"rest", "rest-TAB"}, [](ScoreView* cv, const QByteArray&) {

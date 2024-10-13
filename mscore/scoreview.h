@@ -27,6 +27,7 @@
 #include "libmscore/property.h"
 #include "libmscore/select.h"
 #include "libmscore/textline.h"
+#include "libmscore/select.h"
 
 namespace Ms {
 
@@ -401,6 +402,10 @@ class ScoreView : public QWidget, public MuseScoreView {
       void setBackground(const QColor&);
       void setForeground(QPixmap*);
       void setForeground(const QColor&);
+
+      Element* chordRestFromCursor(bool useNextSegment=false, bool considerAllTracks=true);
+      Fraction startTickFromSelection(void);
+      const Selection& getOriginalSelection(void) { return originalSelection; }
 
       Page* addPage();
       virtual void setScore(Score* s) override;
