@@ -2600,9 +2600,7 @@ void Note::editDrag(EditData& editData)
             const Spatium deltaSp = Spatium(editData.delta.x() / spatium());
             seg->undoChangeProperty(Pid::LEADING_SPACE, seg->extraLeadingSpace() + deltaSp);
             }
-      else if (ch->notes().size() == 1) {
-            // if the chord contains only this note, then move the whole chord
-            // including stem, flag etc.
+      else if (ch) {
             ch->undoChangeProperty(Pid::OFFSET, ch->offset() + offset() + editData.evtDelta);
             setOffset(QPointF());
             }
