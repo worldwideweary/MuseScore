@@ -340,6 +340,7 @@ class Element : public ScoreElement {
       void updateGrips(EditData&) const;
       virtual bool nextGrip(EditData&) const;
       virtual bool prevGrip(EditData&) const;
+      virtual bool setGrip(EditData&, Grip) const;
       /** Returns anchor lines displayed while dragging element's grip in canvas coordinates. */
       virtual QVector<QLineF> gripAnchorLines(Grip) const     { return QVector<QLineF>(); }
 
