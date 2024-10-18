@@ -2040,6 +2040,16 @@ bool Element::prevGrip(EditData& ed) const
       }
 
 //---------------------------------------------------------
+//   setGrip
+//---------------------------------------------------------
+
+bool Element::setGrip(EditData& ed, Grip g) const
+      {
+      ed.curGrip = Grip(g);
+      return true;
+      }
+
+//---------------------------------------------------------
 //   isUserModified
 //    Check if this element was modified by user and
 //    therefore must be saved.
