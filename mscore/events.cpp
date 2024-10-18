@@ -46,8 +46,14 @@ bool ScoreView::event(QEvent* event)
             case QEvent::KeyPress: {
                   QKeyEvent* ke = static_cast<QKeyEvent*>(event);
                   const int key = ke->key();
-                  if (key != Qt::Key_Tab && key != Qt::Key_Backtab)
+                  if (key != Qt::Key_Tab &&
+                      key != Qt::Key_Backtab &&
+                      key != Qt::Key_1 &&
+                      key != Qt::Key_2 &&
+                      key != Qt::Key_3 &&
+                      key != Qt::Key_4) {
                         break;
+                        }
 
                   if (textEditMode()) {
                         // Allow [tabbing] forward/backward in fingering-mode
@@ -56,10 +62,30 @@ bool ScoreView::event(QEvent* event)
                         }
 
                   if (hasEditGrips() || editMode()) {
-                        if (ke->key() == Qt::Key_Tab)
+                        int gCount = editData.element->gripsCount();
+                        if (ke->key() == Qt::Key_1) {
+                              editData.element->setGrip(editData, Grip::START);
+                              }
+                        else if (ke->key() == Qt::Key_2) {
+                              Grip g = (gCount == 3) ? Grip::MIDDLE : Grip::DRAG;
+                              if (gCount == 4) g = Grip::SHOULDER;
+                              editData.element->setGrip(editData, g);
+                              }
+                        else if (ke->key() == Qt::Key_3) {
+                              Grip g = (gCount == 3) ? Grip::MIDDLE : Grip::SHOULDER;
+                              if (gCount == 4) g = Grip::MIDDLE;
+                              editData.element->setGrip(editData, g);
+                              }
+                        else if (ke->key() == Qt::Key_4) {
+                              editData.element->setGrip(editData, Grip::END);
+                              }
+                        else if (ke->key() == Qt::Key_Tab) {
                               editData.element->nextGrip(editData);
-                        else
+                              }
+                        else {
                               editData.element->prevGrip(editData);
+                              }
+
                         updateGrips();
                         _score->update();
                         return true;
@@ -87,6 +113,15 @@ bool ScoreView::event(QEvent* event)
                                     return true;
                                     }
                               }
+                              break;
+                        case Qt::Key_1 :
+                        case Qt::Key_2 :
+                        case Qt::Key_3 :
+                        case Qt::Key_4 :
+                              if (!hasEditGrips())
+                                    break;
+                              ke->accept();
+                              return true;
                               break;
                         default:
                               break;
