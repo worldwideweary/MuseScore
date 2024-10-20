@@ -442,6 +442,7 @@ bool Arpeggio::edit(EditData& ed)
       Chord* c = chord();
       rxpos() = -(width() + spatium() * .5);
       c->layoutArpeggio2();
+      c->triggerLayout();
       return true;
       }
 
