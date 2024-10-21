@@ -107,6 +107,7 @@ class Beam final : public Element {
       void layout();
 
       const QVector<ChordRest*>& elements() { return _elements;  }
+      const QVector<ChordRest*>& elements() const { return _elements;  }
       void clear()                        { _elements.clear(); }
       bool empty() const                { return _elements.empty(); }
       bool contains(const ChordRest* cr) const { return std::find(_elements.begin(), _elements.end(), cr) != _elements.end(); }
