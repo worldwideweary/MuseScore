@@ -32,6 +32,8 @@
 #include "libmscore/staff.h"
 #include "libmscore/stafflines.h"
 #include "libmscore/text.h"
+#include "libmscore/textedit.h"
+#include "libmscore/stafftext.h"
 #include "libmscore/timesig.h"
 #include "libmscore/utils.h"
 
@@ -851,6 +853,7 @@ void ScoreView::mouseDoubleClickEvent(QMouseEvent* mouseEvent)
       {
       QTimer::singleShot(QApplication::doubleClickInterval(), this, SLOT(tripleClickTimeOut()));
       tripleClickPending = true;
+      QPointF mousePosition = toLogical(mouseEvent->pos());
 
       if (textEditMode()) {
             // double click on a textBase element that is being edited - select word
@@ -865,24 +868,57 @@ void ScoreView::mouseDoubleClickEvent(QMouseEvent* mouseEvent)
       if (state != ViewState::NORMAL)
             return;
 
-      Element* clickedElement = elementNear(toLogical(mouseEvent->pos()));
+      Element* clickedElement = elementNear(mousePosition);
+      if (clickedElement) {
+            if (!clickedElement->isEditable()) {
+                  if (clickedElement->isInstrumentName()) // double-click an instrument name to open the edit staff/part properties menu
+                        elementPropertyAction("staff-props", clickedElement);
+                  else if (clickedElement->isText() && (toText(clickedElement)->tid() == Tid::HEADER || toText(clickedElement)->tid() == Tid::FOOTER)) // double-click a header/footer to open the Header/Footer page in the Style dialog
+                        elementPropertyAction("style", clickedElement);
+                  return;
+                  }
 
-      if (!clickedElement)
-            return;
+            startEditMode(clickedElement);
 
-      if (!clickedElement->isEditable()) {
-            if (clickedElement->isInstrumentName()) // double-click an instrument name to open the edit staff/part properties menu
-                  elementPropertyAction("staff-props", clickedElement);
-            else if (clickedElement->isText() && (toText(clickedElement)->tid() == Tid::HEADER || toText(clickedElement)->tid() == Tid::FOOTER)) // double-click a header/footer to open the Header/Footer page in the Style dialog
-                  elementPropertyAction("style", clickedElement);
-            return;
+            if (clickedElement->isTextBase()) {
+                  setCursor(QCursor(Qt::IBeamCursor));
+                  toTextBase(clickedElement)->setPrimed(false);
+                  }
             }
+      else if (MScore::lassoAnnotations) {
+            if (Element* el = nearestElement(mousePosition, mousePosition)) {
+                  if (const Measure* m = nearestMeasure(el)) {
+                        if (ChordRest* cr = m->first()->nextChordRest(0)) {
+                              // Attempt adding [staff-text] to closest measure, offset to mouse position
+                              Element* e = cr;
+                              if (cr->isChord())
+                                    e = toChord(cr)->upNote();
+                              _score->select(e);
+                              cmdAddText(Tid::STAFF, Tid::DEFAULT, PropertyFlags::STYLED, Placement::ABOVE);
+                              e = _score->selection().element();
+                              if (e->isStaffText()) {
+                                    StaffText* text = toStaffText(e);
+                                    text->setAutoplace(false);
+                                    text->setPlainText("…");
+                                    text->layout();
 
-      startEditMode(clickedElement);
+                                    TextEditData* ted = static_cast<TextEditData*>(getEditData().getData(text));
+                                    TextCursor* _cursor = &ted->cursor;
+                                    text->selectAll(_cursor);
 
-      if (clickedElement->isTextBase()) {
-            setCursor(QCursor(Qt::IBeamCursor));
-            toTextBase(clickedElement)->setPrimed(false);
+                                    qreal tx = text->canvasBoundingRect().x();
+                                    qreal ty = text->canvasBoundingRect().y();
+                                    qreal mx = mousePosition.x();
+                                    qreal my = mousePosition.y();
+                                    qreal diffX = (mx > tx) ? (mx - tx) : -(tx - mx);
+                                    qreal diffY = (my > ty) ? (my - ty) : -(ty - my);
+
+                                    text->setOffset(diffX, diffY);
+                                    text->setPropertyFlags(Pid::OFFSET, PropertyFlags::UNSTYLED);
+                                    }
+                              }
+                        }
+                  }
             }
       }
 
