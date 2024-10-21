@@ -15,6 +15,8 @@
 #include "mscoreview.h"
 #include "score.h"
 
+#include <QPainter>
+
 namespace Ms {
 
 //---------------------------------------------------------
@@ -33,14 +35,19 @@ Lasso::Lasso(Score* s)
 
 void Lasso::draw(QPainter* painter) const
       {
-      auto color = MScore::lassoColor;
-      painter->setBrush(QBrush(color));
+      QColor color = MScore::lassoColor;
+      QColor selectionColor = MScore::selectColor[0];
+            (void) selectionColor;
+
+      painter->setBrush(Qt::NoBrush);
       if (MScore::lassoBorderEnabled) {
-            // 2 pixels width, regardless of view
-            qreal w = 2.0 / painter->transform().m11();
-            painter->setPen(QPen(MScore::selectColor[0], w));
+            qreal w = 5.0;
+            painter->setPen(QPen(color, w));
             }
-      else painter->setPen(Qt::NoPen);
+      else {
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(QBrush(color));
+            }
 
       painter->drawRect(bbox());
       }

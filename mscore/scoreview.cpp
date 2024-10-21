@@ -3119,7 +3119,19 @@ void ScoreView::cmd(const char* s)
                         cv->changeState(ViewState::NORMAL);
                   }},
             {{"picture"}, [](ScoreView* cv, const QByteArray&) {
-                  cv->cmdAddEmptyImage(true, true);
+                  Element* e = nullptr;
+                  if (ChordRest* fcr = cv->score()->selection().firstChordRest()) {
+                        if (fcr->isChord())
+                              e = toChord(fcr)->upNote();
+                        else
+                              e = fcr;
+                        }
+
+                  if (!e) return;
+
+                  if (Measure* fm = e->findMeasure()) {
+                        cv->cmdAddEmptyImage(MScore::lassoBorderEnabled, true, QRectF(), *fm);
+                        }
                   }},
             {{"add-slur"}, [](ScoreView* cv, const QByteArray&) {
                   cv->cmdAddSlur();
@@ -4547,13 +4559,40 @@ void ScoreView::dragScoreView(QMouseEvent* ev)
 
 void ScoreView::doDragLasso(QMouseEvent* ev)
       {
+      // TODO: Allow no selection to occur when beginning drag (dragging is registerd after "normal click/select")
+
+      bool shift = ev->modifiers() & Qt::ShiftModifier;
+      bool ctrl  = ev->modifiers() & Qt::ControlModifier;
+            (void) ctrl;
+      bool alt   = ev->modifiers() & Qt::AltModifier;
+            (void) alt;
+
+      static bool hasSwitchedBorderStyle = false;
+      if (!shift && hasSwitchedBorderStyle)
+            hasSwitchedBorderStyle = false;
+
       TourHandler::startTour("select-tour");
       QPointF p = toLogical(ev->pos());
       _score->addRefresh(lasso->canvasBoundingRect());
       QRectF r;
+
+      lasso->startPoint = editData.startMove;
+      lasso->endPoint = QPointF(p.x(), p.y());
+
+      // qDebug() << "Lasso-drag start:" << editData.startMove << "current position:" << lasso->endPoint;
+
       r.setCoords(editData.startMove.x(), editData.startMove.y(), p.x(), p.y());
       lasso->setbbox(r.normalized());
       QRectF _lassoRect(lasso->bbox());
+
+      if (dropTarget) {
+            ;
+            }
+      else if (shift && !hasSwitchedBorderStyle) {
+            MScore::lassoBorderEnabled = !MScore::lassoBorderEnabled;
+            hasSwitchedBorderStyle = true;
+            }
+
       r = _matrix.mapRect(_lassoRect);
       QSize sz(r.size().toSize());
       mscore->statusBar()->showMessage(QString("%1 x %2").arg(sz.width()).arg(sz.height()), 3000);
@@ -4567,10 +4606,44 @@ void ScoreView::doDragLasso(QMouseEvent* ev)
 
 void ScoreView::endLasso()
       {
+      Qt::KeyboardModifiers currentModifiers = keyMods; 
+            (void) currentModifiers;
+
+      keyMods = Qt::NoModifier;
       _score->lassoSelect(lasso->bbox());
       _score->addRefresh(lasso->canvasBoundingRect());
+
+      if (MScore::lassoAnnotations) {
+            QString err;
+            QPointF lassoTopLeft = lasso->canvasBoundingRect().topLeft();
+            QPointF lassoBottomRight = lasso->canvasBoundingRect().bottomRight();
+            if (const Element* el = nearestElement(lassoTopLeft, lassoBottomRight)) {
+                  if (const Measure* m = nearestMeasure(el)) {
+                        if (!dropTarget) {
+                              bool framed = MScore::lassoBorderEnabled;
+                              bool transparent = MScore::lassoBorderEnabled;
+                              QRectF lassoRect(lassoTopLeft, QSizeF(lasso->width(), lasso->height()));
+                              if (Image* img = cmdAddEmptyImage(framed, transparent, lassoRect, *m)) {
+                                    Segment* fs = m->findFirstR(SegmentType::ChordRest, m->tick());
+                                    QPointF measureTopLeft = fs->canvasBoundingRect().topLeft();
+                                    qreal lx = lassoTopLeft.x();
+                                    qreal mx = measureTopLeft.x();
+                                    qreal ly = lassoTopLeft.y();
+                                    qreal my = measureTopLeft.y();
+
+                                    qreal diffX = (lx > mx) ? (lx - mx) : -(mx - lx);
+                                    qreal diffY = (ly > my) ? (ly - my) : -(my - ly);
+                                    img->setOffset(diffX, diffY);
+                                    }
+                              } else err = "uncreated empty image";
+                        } else err = "no near measure found";
+                  } else err = "no near element found";
+            if (!err.isEmpty()) qDebug() << "Error:" << err;
+            }
+
+      dropTarget = nullptr;
       lasso->setbbox(QRectF());
-      _score->lassoSelectEnd();
+      MScore::lassoAnnotations ? _score->selection().clear() : _score->lassoSelectEnd();
       _score->update();
       mscore->endCmd();
       }
@@ -5279,36 +5352,40 @@ void ScoreView::startUndoRedo(bool undo)
 //    to be invoked by the "picture" shortcut.
 //---------------------------------------------------------
 
-void ScoreView::cmdAddEmptyImage(bool framed, bool fullyTransparent)
+Image* ScoreView::cmdAddEmptyImage(bool framed, bool fullyTransparent, const QRectF& r, const Measure& m)
       {
-      Element* e = nullptr;
-      if (auto fcr = _score->selection().firstChordRest()) {
-            if (fcr->isChord())
-                  e = toChord(fcr)->upNote();
-            else
-                  e = fcr;
-            }
-      if (!e)
-            return;
-
       Image* s = new Image(_score);
       s->setImageType(ImageType::NONE);
       s->setAutoplace(false);
+      s->setZ(33);
+      s->setVoice(0);
 
-      int alpha = fullyTransparent ? 0 : 88;
-      s->setColor(QColor(0, 0, 0, alpha));
+      int alpha = fullyTransparent ? 0 : MScore::lassoColor.alpha();
+      if (framed && fullyTransparent)
+            s->setFrameColor(MScore::lassoColor);
 
-      qreal frameWidth = framed ? SPATIUM20 : 0.0;
+      s->setColor(QColor(MScore::lassoColor.red(), MScore::lassoColor.green(), MScore::lassoColor.blue(),  alpha));
+
+      qreal frameWidth = framed ? SPATIUM20 * 2.0 : 0.0;
       s->setFrameWidth(frameWidth);
+      s->setParent(m.findFirstR(SegmentType::ChordRest, m.tick()));
 
-      s->setParent(e);
-      s->setSize(QSizeF(10, 10));
+      qreal w = 10;
+      qreal h = 10;
+      if (!r.isEmpty()) {
+            QSizeF sz = s->pixel2size(QSizeF(r.width(), r.height()));
+            w = sz.width();
+            h = sz.height();
+            }
 
+      s->setSize(QSizeF(w, h));
       s->setLockAspectRatio(false);
 
       _score->startCmd();
          _score->undoAddElement(s);
       _score->endCmd();
+
+      return s;
       }
 
 //---------------------------------------------------------
@@ -7366,6 +7443,64 @@ Element* ScoreView::elementNear(QPointF p)
 #endif
       Element* e = ll.at(0);
       return e;
+      }
+
+//---------------------------------------------------------
+//   nearestElement
+//---------------------------------------------------------
+
+Element* ScoreView::nearestElement(const QPointF& point, const QPointF& point2)
+      {
+      const int testLimit = 50;
+      const int testStep  = 10;
+      Element* el = elementNear(point);
+      QPointF leftTest = point;
+      QPointF rightTest = point2;
+
+      // Attempt finding near-element: Vertical test
+      for (int i = 0; !el && i < testLimit; ++i) {
+            rightTest.ry() -= testStep;
+            leftTest.ry() += testStep;
+            el = elementNear(leftTest) ? elementNear(leftTest) : elementNear(rightTest);
+            }
+
+      if (!el) {
+            // TODO: contrary 45 degree testing
+            }
+
+      return el;
+      }
+
+//---------------------------------------------------------
+//   nearestMeasure
+//---------------------------------------------------------
+
+const Measure* ScoreView::nearestMeasure(const Element* el)
+      {
+      const Measure* m = nullptr;
+      if (el) {
+            if (const Measure* ms = el->findMeasure()) {
+                  m = ms;
+                  }
+            else if (el->isSpannerSegment()) {
+                  const SpannerSegment* sseg = toSpannerSegment(el);
+                  if (const Element* sEl = sseg->spanner()->startElement()) {
+                        m = sEl->findMeasure();
+                        }
+                  }
+            else if (el->isBeam()) {
+                  m = toBeam(el)->elements().first()->measure();
+                  }
+            else if (el->isMeasureBase()) {
+                  m = toMeasureBase(el)->nextMeasure();
+                  }
+            else if (const Element* p1 = el->parent()) {
+                  if (const Measure* m2 = p1->findMeasure()) {
+                        m = m2;
+                        }
+                  }
+            }
+      return m;
       }
 
 //---------------------------------------------------------
