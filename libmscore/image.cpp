@@ -17,6 +17,8 @@
 #include "undo.h"
 #include "xml.h"
 
+#include <QPainter>
+
 namespace Ms {
 
 //---------------------------------------------------------
@@ -187,7 +189,15 @@ void Image::draw(QPainter* painter) const
             br.setStyle(Qt::SolidPattern);
             painter->setBrush(br);
             painter->setPen(Qt::NoPen);
-            painter->drawRect(bbox());
+
+            // TODO: Option for ellipse versus rectangle
+            bool ellipse = false;
+            if (ellipse) {
+                  qreal ellX = bbox().width() * 0.5;
+                  qreal ellY = bbox().height() * 0.5;
+                  painter->drawEllipse(bbox().center(), ellX, ellY);
+                  }
+            else painter->drawRect(bbox());
             }
       if (_frameWidth != 0.0) {
             QPen pen(Qt::NoBrush, _frameWidth * 0.10, Qt::SolidLine, Qt::SquareCap, Qt::BevelJoin);
