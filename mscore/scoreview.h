@@ -186,6 +186,8 @@ class ScoreView : public QWidget, public MuseScoreView {
 
       QFocusFrame* focusFrame;
 
+      Qt::KeyboardModifiers keyMods;
+
       EditData editData;
       std::vector<std::unique_ptr<ElementGroup>> dragGroups;
 
@@ -445,7 +447,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       virtual void cmdAddHairpin(HairpinType);
       virtual void cmdAddPedal(HookType, HookType);
       void cmdAddNoteLine(bool);
-      void cmdAddEmptyImage(bool, bool);
+      Image* cmdAddEmptyImage(const bool, const bool, const QRectF&, const Measure& m);
 
       void setEditElement(Element*);
       void updateEditElement();
@@ -553,6 +555,9 @@ class ScoreView : public QWidget, public MuseScoreView {
       void selectInstrument(InstrumentChange*);
       EditData& getEditData()        { return editData; }
       void changeState(ViewState);
+
+      Element* nearestElement(const QPointF& point, const QPointF& point2);
+      const Measure* nearestMeasure(const Element* el);
 
       virtual const QRect geometry() const override { return QWidget::geometry(); }
 
