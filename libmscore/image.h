@@ -32,9 +32,6 @@ class Image final : public BSymbol {
             };
       ImageType imageType;
 
-      QSizeF pixel2size(const QSizeF& s) const;
-      QSizeF size2pixel(const QSizeF& s) const;
-
    protected:
       ImageStoreItem* _storeItem;
       QString _storePath;           // the path of the img in the ImageStore
@@ -91,6 +88,8 @@ class Image final : public BSymbol {
       QVariant propertyDefault(Pid id) const override;
 
       QSizeF imageSize() const;
+      QSizeF pixel2size(const QSizeF& s) const;
+      QSizeF size2pixel(const QSizeF& s) const;
 
       void setImageType(ImageType);
       ImageType getImageType() const { return imageType; }
