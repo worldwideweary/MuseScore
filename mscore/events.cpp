@@ -878,11 +878,16 @@ void ScoreView::mouseDoubleClickEvent(QMouseEvent* mouseEvent)
                   return;
                   }
 
-            startEditMode(clickedElement);
+            if (clickedElement->isNote() && MScore::lassoAnnotations) {
+                  cmdAddText(Tid::FINGERING);
+                  }
+            else {
+                  startEditMode(clickedElement);
 
-            if (clickedElement->isTextBase()) {
-                  setCursor(QCursor(Qt::IBeamCursor));
-                  toTextBase(clickedElement)->setPrimed(false);
+                  if (clickedElement->isTextBase()) {
+                        setCursor(QCursor(Qt::IBeamCursor));
+                        toTextBase(clickedElement)->setPrimed(false);
+                        }
                   }
             }
       else if (MScore::lassoAnnotations) {
