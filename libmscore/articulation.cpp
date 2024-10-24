@@ -693,7 +693,7 @@ void Articulation::doAutoplace()
             int si     = vStaffIdx();
 
             qreal sp = score()->spatium();
-            qreal md = minDistance().val() * sp;
+            qreal md = minDistance().val();
 
             SysStaff* ss = m->system()->staff(si);
             QRectF r = bbox().translated(chordRest()->pos() + m->pos() + s->pos() + pos());

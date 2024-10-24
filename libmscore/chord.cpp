@@ -3715,23 +3715,26 @@ void Chord::layoutArticulations2()
             if (aa != ArticulationAnchor::CHORD && aa != ArticulationAnchor::TOP_CHORD && aa != ArticulationAnchor::BOTTOM_CHORD)
                   continue;
 
+            qreal counter = a->isAccent() ? 0.5 * _spatium : 0.0;
             if (a->up()) {
                   if (!a->layoutCloseToNote()) {
                         a->layout();
+                        chordTopY += counter;
                         a->setPos(x, chordTopY);
                         a->doAutoplace();
                         }
                   if (a->visible())
-                        chordTopY = a->y() - a->height() - 0.5 * _spatium;
+                        chordTopY = a->y() - a->height() - 0.5 * _spatium - counter;
                   }
             else {
                   if (!a->layoutCloseToNote()) {
                         a->layout();
+                        chordBotY -= counter;
                         a->setPos(x, chordBotY);
                         a->doAutoplace();
                         }
                   if (a->visible())
-                        chordBotY = a->y() + a->height() + 0.5 * _spatium;
+                        chordBotY = a->y() + a->height() + 0.5 * _spatium + counter ;
                   }
             }
       //
