@@ -446,7 +446,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       void addSlur(ChordRest*, ChordRest*, const Slur*) override;
       virtual void cmdAddHairpin(HairpinType);
       virtual void cmdAddPedal(HookType, HookType);
-      void cmdAddNoteLine(bool);
+      LineSegment* cmdAddLine(const bool, const Measure* startM=nullptr, const Measure* endM=nullptr, const QPointF startDest=QPointF(), const QPointF endDest=QPointF());
       Image* cmdAddEmptyImage(const bool, const bool, const QRectF&, const Measure& m);
 
       void setEditElement(Element*);

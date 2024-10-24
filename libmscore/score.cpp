@@ -313,8 +313,16 @@ Score::~Score()
       // deselectAll();
       qDeleteAll(_systems); // systems are layout-only objects so we delete
                             // them prior to measures.
+
       for (MeasureBase* m = _measures.first(); m;) {
             MeasureBase* nm = m->next();
+            // Remove spanners from measure bases first before deleting them afterwards (safe-side)
+            for (auto el : m->el()) {
+                  if (el->isSpanner()) {
+                        auto sp = toSpanner(el);
+                        m->el().remove(sp);
+                        }
+                  }
             if (m->isMeasure() && toMeasure(m)->mmRest())
                   delete toMeasure(m)->mmRest();
             delete m;
@@ -5508,7 +5516,7 @@ void MasterScore::setLayout(const Fraction& tick1, const Fraction& tick2, int st
 
       if (tick1 >= zero)
             _cmdState.setTick(tick1);
-      if (tick2 >= zero && (tick2 > tick1))
+      if (tick2 >= zero && (tick2 >= tick1))
             _cmdState.setTick(tick2);
 
       if (e && e->score() == this) {
