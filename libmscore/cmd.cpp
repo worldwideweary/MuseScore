@@ -457,8 +457,6 @@ void Score::cmdAddSpanner(Spanner* spanner, int staffIdx, Segment* startSegment,
       Fraction tick2;
       if (!endSegment)
             tick2 = lastSegment()->tick();
-      else if (endSegment == startSegment)
-            tick2 = startSegment->measure()->last()->tick();
       else
             tick2 = endSegment->tick();
       spanner->setTick2(tick2);
