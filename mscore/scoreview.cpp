@@ -3906,6 +3906,9 @@ void ScoreView::startNoteEntry()
             // or, CR at last selected position if that is in view
             Page* p = nullptr;
             QList<QPointF> points;
+            points.append(toLogical(QPoint(width() * 0.5, height() * 0.5)));
+            points.append(toLogical(QPoint(width() * 0.5, height() * 0.22)));
+            points.append(toLogical(QPoint(width() * 0.5, height() * 0.88)));
             points.append(toLogical(QPoint(width() * 0.25, height() * 0.25)));
             points.append(toLogical(QPoint(0.0, 0.0)));
             points.append(toLogical(QPoint(0.0, height())));
