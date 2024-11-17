@@ -239,24 +239,32 @@ void ScoreAccessibility::currentInfoChanged()
             if (!e) {
                   return;
                   }
-            Element* el = e->isSpannerSegment() ? static_cast<SpannerSegment*>(e)->spanner() : e;
+
+            Element* el = e->isSpannerSegment() ? toSpannerSegment(e)->spanner() : e;
             QString barsAndBeats = "";
             QString optimizedBarsAndBeats = "";
-            if (el->isSpanner()) {
-                  Spanner* s = static_cast<Spanner*>(el);
+            Spanner* s = el->isSpanner() ? toSpanner(el) : nullptr;
+            if (s && s->startSegment()) { 
                   std::pair<int, float> bar_beat = s->startSegment()->barbeat();
                   barsAndBeats += " " + tr("Start Measure: %1; Start Beat: %2").arg(QString::number(bar_beat.first)).arg(QString::number(bar_beat.second));
                   Segment* seg = s->endSegment();
-                  if(!seg)
+                  if (!seg)
                         seg = score->lastSegment()->prev1MM(SegmentType::ChordRest);
 
-                  if (seg->tick() != score->lastSegment()->prev1MM(SegmentType::ChordRest)->tick() &&
+                  if (seg && seg->tick() != score->lastSegment()->prev1MM(SegmentType::ChordRest)->tick() &&
                       s->type() != ElementType::SLUR                                               &&
                       s->type() != ElementType::TIE                                                )
                         seg = seg->prev1MM(SegmentType::ChordRest);
 
+                  if (!seg) { 
+                        seg = s->endSegment();
+                        if (!seg)
+                              return;
+                        }
+
                   bar_beat = seg->barbeat();
                   barsAndBeats += "; " + tr("End Measure: %1; End Beat: %2").arg(QString::number(bar_beat.first)).arg(QString::number(bar_beat.second));
+                  barsAndBeats += "; Ticks: " + s->tick().print() + " - " + s->tick2().print();
                   optimizedBarsAndBeats = barsAndBeats;
                   }
             else {
@@ -270,6 +278,7 @@ void ScoreAccessibility::currentInfoChanged()
                               barsAndBeats += "; " + tr("Beat: %1").arg(QString::number(bar_beat.second));
                               optimizedBarsAndBeats += "; " + tr("Beat: %1").arg(QString::number(bar_beat.second));
                               }
+                        barsAndBeats += "; Tick: " + el->tick().print();
                         }
                   }
 
