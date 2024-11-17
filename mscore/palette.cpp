@@ -691,7 +691,7 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
 
                   // Note Entry + Apply Key Signature -> Apply keysig to entire part (e.g. a grand staff)
                   if (element->isKeySig()) {
-                        if (score->noteEntryMode()) {
+                        if (score->noteEntryMode() && cr1) {
                               if (auto part = cr1->part()) {
                                     std::vector<ChordRest*> crs;
                                     cr1->getChordRestsAtPosition(crs);
