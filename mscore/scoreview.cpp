@@ -3710,9 +3710,11 @@ void ScoreView::textTab(bool back)
       if (!editMode())
             return;
       Element* oe = editData.element;
-      auto cr = score()->selection().currentCR();
-      bool fMeasureSkip  = oe->isFingering() && (editData.key == Qt::Key_Tab || editData.key == Qt::Key_Backtab);
-      bool fChordSkip    = oe->isFingering() && (editData.key == Qt::Key_Space && (editData.modifiers & CONTROL_MODIFIER));
+      bool isFingering = oe->isFingering();
+      auto originalEl = score()->selection().element();
+      auto cr = score()->selection().currentCR();// score()->selection().cr();
+      bool fMeasureSkip  = isFingering && (editData.key == Qt::Key_Tab || editData.key == Qt::Key_Backtab);
+      bool fChordSkip    = isFingering && (editData.key == Qt::Key_Space && (editData.modifiers & CONTROL_MODIFIER));
       bool fingeringJump = fMeasureSkip || fChordSkip;
 
       if (!oe || !oe->isTextBase())
@@ -3762,6 +3764,13 @@ void ScoreView::textTab(bool back)
       Tid defaultTid;
       Tid tid;
       auto nextElement = back ? score()->prevElement() : score()->nextElement();
+      if (nextElement) {
+            // qDebug() << "nextElement: " << nextElement->name() << nextElement->tick().print();
+            }
+      bool sameParent = false;
+      if (originalEl && nextElement && (originalEl->parent() == nextElement->parent())) {
+            sameParent = true;
+            }
       if (!fingeringJump) {
             defaultTid = Tid(ot->propertyDefault(Pid::SUB_STYLE).toInt());
             tid = ot->tid();
@@ -3770,13 +3779,14 @@ void ScoreView::textTab(bool back)
             }
       else  {
             type = ElementType::FINGERING;
-            staffIdx = cr->staffIdx();
+            staffIdx = originalEl ? originalEl->staffIdx() : 0;
             tid = toFingering(oe)->tid();
             defaultTid = tid;
             }
 
       // get prev/next element now, as current element may be deleted if empty
       Element* el = fingeringJump ? cr : nextElement;
+      Element* prevEl = el;
 
       // end edit mode
       changeState(ViewState::NORMAL);
@@ -3808,12 +3818,44 @@ void ScoreView::textTab(bool back)
                         break;
                   here = true;
                   }
+            else if (el->isBarLine() && !back) {
+                  auto bl = toBarLine(el);
+                  auto tick = bl->tick();
+                  if (auto m = score()->tick2measure(tick)) {
+                        if (auto seg = m->findFirstR(SegmentType::ChordRest, tick)) {
+                              if (auto fe = seg->firstElement(bl->staffIdx())) {
+                                    el = fe;
+                                    if (el->isNote() || el->tick() < tick)
+                                          break;
+                                    }
+                              }
+                        }
+                  }
+
             // get prev/next note
             score()->select(el);
             Element* el2 = back ? score()->prevElement() : score()->nextElement();
+
+            // SITUATION: On last note of penultimate measure of system: place fingering -- auto move forward
+            /// last measure of system has whole note... and this is skipped for some reason
+            if (!el2) {
+                  auto ns = back ? cr->segment()->prev1(SegmentType::ChordRest) : cr->segment()->next1(SegmentType::ChordRest);
+                  ChordRest* ncr = ns ? ns->nextChordRest(trackZeroVoice(cr->track()), back) : nullptr;
+                  if (ncr) {
+                        if (ncr->isChord())
+                              el2 = toChord(ncr)->upNote();
+                        else el2 = ncr;
+                        }
+                  }
+
             // start/end of score reached
             if (el2 == el)
                   break;
+            else if (el2 == nextElement)
+                  break;
+            else if (el2 == prevEl)
+                  break;
+            prevEl = el;
             el = el2;
             }
       if (!el || !el->isNote()) {
