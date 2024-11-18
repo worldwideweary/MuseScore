@@ -25,6 +25,7 @@
 #include "spanner.h"
 #include "staff.h"
 #include "system.h"
+#include "tuplet.h"
 #include "utils.h"
 
 namespace Ms {
@@ -664,8 +665,78 @@ Element* Score::nextElement()
             switch (e->type()) {
                   case ElementType::NOTE:
                   case ElementType::REST:
-                  case ElementType::CHORD:
-                  case ElementType::TUPLET: {
+                  case ElementType::TUPLET:
+                  case ElementType::CHORD: {
+                        if (e->isNote()) {
+                              auto n = toNote(e);
+                              auto c = n->chord();
+                              auto tuple = c->tuplet();
+                              bool ending = (n == c->downNote());
+                              if (ending) {
+                                    if (auto next = c->nextSegmentElement()) {
+                                          if (next->isNote()) {
+                                                auto nn = toNote(next);
+                                                auto nc = nn->chord();
+                                                if (nc != c) {
+                                                      if (auto t = nc->tuplet()) {
+                                                            if (t != tuple) {
+                                                                  return t;
+                                                                  }
+                                                            }
+                                                      }
+                                                }
+                                          else if (next->isRest()) {
+                                                auto rr = toRest(next);
+                                                if (auto t = rr->tuplet()) {
+                                                      if (t != tuple) {
+                                                            return t;
+                                                            }
+                                                      }
+                                                }
+                                          }
+                                    }
+                              }
+                        else if (e->isRest()) {
+                              auto r = toRest(e);
+                              if (!r->isGap()) {
+                                    auto tuple = r->tuplet();
+                                    if (auto next = r->nextSegmentElement()) {
+                                          if (next->isNote()) {
+                                                auto nn = toNote(next);
+                                                auto nc = nn->chord();
+                                                if (auto t = nc->tuplet()) {
+                                                      if (t != tuple) {
+                                                            return t;
+                                                            }
+                                                      }
+                                                }
+                                          else if (next->isRest()) {
+                                                auto rr = toRest(next);
+                                                if (auto t = rr->tuplet()) {
+                                                      if (t != tuple) {
+                                                            return t;
+                                                            }
+                                                      }
+                                                }
+                                          }
+                                    }
+                              }
+                        else if (e->isTuplet()) {
+                              if (auto t = toTuplet(e)) {
+                                    Note* n = nullptr;
+                                    DurationElement* de = t->elements().front();
+                                    if (de->isChord()) {
+                                          auto c = toChord(de);
+                                          n = c->upNote();
+                                          return n;
+                                          }
+                                    else if (de->isRest()) {
+                                          auto r = toRest(de);
+                                          return r;
+                                          }
+                                    }
+                              }
+
                         Element* next = e->nextElement();
                         if (next)
                               return next;
