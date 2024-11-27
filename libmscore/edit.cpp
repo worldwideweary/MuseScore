@@ -1508,8 +1508,32 @@ void Score::cmdSetBeamMode(Beam::Mode mode)
                         fingering->setTid(value);
                         fingering->styleChanged();
                         }
+                  else if (el->isBeam()) {
+                        // Beams: toggle Force Horizontal
+                        auto beam = toBeam(el);
+                        bool value = !beam->noSlope();
+                        beam->undoChangeProperty(Pid::USER_MODIFIED, false);
+                        beam->undoChangeProperty(Pid::BEAM_NO_SLOPE, value);
+                        beam->setPropertyFlags(Pid::BEAM_NO_SLOPE, PropertyFlags::UNSTYLED);
+                        }
+                  else if (el->isTuplet()) {
+                        // Tuples: Toggle Show/Auto bracket + NumberType
+                        auto tuplet = toTuplet(el);
+                        TupletNumberType  numberType = tuplet->numberType();
+                        TupletBracketType bracketType = tuplet->bracketType();
+                        if (mode == Beam::Mode::MID) {
+                              bracketType = tuplet->hasBracket() ? TupletBracketType::SHOW_NO_BRACKET : TupletBracketType::SHOW_BRACKET;
+                              tuplet->undoChangeProperty(Pid::BRACKET_TYPE, static_cast<int>(bracketType));
+                              tuplet->setPropertyFlags(Pid::BRACKET_TYPE, PropertyFlags::UNSTYLED);
+                              }
+                        else if (mode == Beam::Mode::BEGIN) {
+                              numberType = (tuplet->numberType() == TupletNumberType::SHOW_NUMBER) ? TupletNumberType::SHOW_RELATION                                                                                                   : TupletNumberType::SHOW_NUMBER;
+                              tuplet->undoChangeProperty(Pid::NUMBER_TYPE, static_cast<int>(numberType));
+                              tuplet->setPropertyFlags(Pid::NUMBER_TYPE, PropertyFlags::UNSTYLED);
+                              }
+                        }
                   }
-            }      
+            }
 
       for (ChordRest* cr : getSelectedChordRests()) {
             if (cr)
