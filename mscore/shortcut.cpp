@@ -2878,7 +2878,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::MAIN_WINDOW,
-         STATE_NORMAL | STATE_EDIT,
+         STATE_NORMAL | STATE_EDIT | STATE_NOTE_ENTRY,
          "reset",
          QT_TRANSLATE_NOOP("action","Reset Shapes and Positions"),
          QT_TRANSLATE_NOOP("action","Reset shapes and positions"),
