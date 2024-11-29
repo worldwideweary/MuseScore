@@ -650,11 +650,20 @@ void Score::transposeSemitone(int step)
 
       const int interval = intervalListArray[keyType][step > 0 ? 0 : 1];
 
-      if (!transpose(TransposeMode::BY_INTERVAL, dir, Key::C, interval, true, true, false)) {
+      bool includeHarmony =
+            selectionFilter().isFiltered(SelectionFilterType::CHORD_SYMBOL);
+
+      bool includeKeySigs =
+            !noteEntryMode();
+
+      if (!transpose(TransposeMode::BY_INTERVAL, dir, Key::C, interval, includeKeySigs, includeHarmony, false)) {
             qDebug("Score::transposeSemitone: failed");
             // TODO: set error message
             }
-      else setSelectionChanged(true);
+      else {
+            setPlayNote(true); // For when selection is a single note, also playback that note
+            setSelectionChanged(true);
+            }
       }
 
 //---------------------------------------------------------
@@ -743,7 +752,9 @@ void Score::transposeDiatonicAlterations(TransposeDirection direction)
       // Transpose current selection diatonically (up/down) while keeping degree alterations
       // Note: Score::transpose() absolutely requires valid selection before invocation.
       if (!selection().isNone()) {
-            transpose(TransposeMode::DIATONICALLY, direction, Key::C, 1, true, true, true);
+            bool includeChordSymbols =
+                  selectionFilter().isFiltered(SelectionFilterType::CHORD_SYMBOL);
+            transpose(TransposeMode::DIATONICALLY, direction, Key::C, 1, true, includeChordSymbols, true);
             setPlayNote(true); // For when selection is a single note, also playback that note
             setSelectionChanged(true); // This will update the on-screen keyboard
             }
