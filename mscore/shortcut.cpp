@@ -3495,14 +3495,14 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "transpose-up",
          QT_TRANSLATE_NOOP("action","Transpose Up"),
          QT_TRANSLATE_NOOP("action","Transpose up")
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "transpose-down",
          QT_TRANSLATE_NOOP("action","Transpose Down"),
          QT_TRANSLATE_NOOP("action","Transpose down")
