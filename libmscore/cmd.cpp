@@ -4379,6 +4379,7 @@ void Score::cmdRemoveEmptyTrailingMeasures()
 
 void Score::cmdPitchUp()
       {
+      bool isRange = selection().isRange();
       Element* el = selection().element();
       if (el && el->isLyrics())
             cmdMoveLyrics(toLyrics(el), Direction::UP);
@@ -4386,6 +4387,10 @@ void Score::cmdPitchUp()
             el->undoChangeProperty(Pid::OFFSET, el->offset() + QPointF(0.0, -MScore::nudgeStep * el->spatium()), PropertyFlags::UNSTYLED);
       else if (el && el->isRest())
             cmdMoveRest(toRest(el), Direction::UP);
+      else if (isRange) {
+            int up = 1;
+            transposeSemitone(up);
+            }
       else
             upDown(true, UpDownMode::CHROMATIC);
       }
@@ -4396,6 +4401,7 @@ void Score::cmdPitchUp()
 
 void Score::cmdPitchDown()
       {
+      bool isRange = selection().isRange();
       Element* el = selection().element();
       if (el && el->isLyrics())
             cmdMoveLyrics(toLyrics(el), Direction::DOWN);
@@ -4403,6 +4409,10 @@ void Score::cmdPitchDown()
             el->undoChangeProperty(Pid::OFFSET, el->offset() + QPointF(0.0, MScore::nudgeStep * el->spatium()), PropertyFlags::UNSTYLED);
       else if (el && el->isRest())
             cmdMoveRest(toRest(el), Direction::DOWN);
+      else if (isRange) {
+            int down = -1;
+            transposeSemitone(down);
+            }
       else
             upDown(false, UpDownMode::CHROMATIC);
       }
