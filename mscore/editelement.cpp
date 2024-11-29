@@ -26,6 +26,7 @@
 #include "libmscore/text.h"
 #include "libmscore/spanner.h"
 #include "libmscore/measure.h"
+#include "libmscore/textedit.h"
 #include "libmscore/textframe.h"
 
 namespace Ms {
@@ -103,6 +104,13 @@ void ScoreView::startEditMode(Element* e)
             changeState(ViewState::NORMAL);
       editData.element = e;
       changeState(ViewState::EDIT);
+      if (e->isTextBase()) {
+            auto txt = toTextBase(e);
+            TextEditData* ted = static_cast<TextEditData*>(editData.getData(e));
+            TextCursor* _cursor = &ted->cursor;
+            txt->selectAll(_cursor);
+            }
+      adjustCanvasPosition(e, false);
       }
 
 //---------------------------------------------------------
