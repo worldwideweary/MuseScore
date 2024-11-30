@@ -4293,23 +4293,41 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
             static const int tab[] = { 0, 2, 4, 5, 7, 9, 11 };
 
             Element* el = selection().element();
-            if (addFlag && el && el->isNote()) {
-                  Chord* chord = toNote(el)->chord();
+            if (!el && !selection().elements().isEmpty())
+                  el = selection().elements().front();
 
-                  // if adding notes, add above the upNote of the current chord
-                  // alternatively, if adding tpc downward, base position will be current selected note
-                  (void) useUpNote;
-                  Note* n = below ? toNote(el) : chord->upNote();
+            if (addFlag) {
+                  std::vector<Chord*> chords;
+                  for (auto e : selection().elements()) {
+                        if (e->isNote()) {
+                              Chord* chord = toNote(e)->chord();
+                              auto it =
+                                 std::find_if(chords.begin(),
+                                              chords.end(),
+                                              [&chord](Chord* c) { return c == chord; } );
 
-                  int tpc = n->tpc();
-                  octave = (n->epitch() - int(tpc2alter(tpc))) / PITCH_DELTA_OCTAVE;
-                  if (note <= tpc2step(tpc) && !below)
-                        octave++;
-                  else if (note >= tpc2step(tpc) && below)
-                        octave--;
+                              if (it != std::end(chords)) continue; // chord already found
+                              chords.emplace_back(chord);
+
+                              // TPC above: use upNote as basis
+                              // TPC below: basis is current note selection
+
+                              Note* n = below ? toNote(e) : chord->upNote();
+                              int tpc = n->tpc();
+                              octave = (n->epitch() - int(tpc2alter(tpc))) / PITCH_DELTA_OCTAVE;
+                              if (note <= tpc2step(tpc) && !below)
+                                    octave++;
+                              else if (note >= tpc2step(tpc) && below)
+                                    octave--;
+
+                              int step = octave * TPC_DELTA_SEMITONE + note;
+                              cmdAddPitch(n, step);
+                              }
+                        }
+                        return;
                   }
-                  // Observation: this is partial in that it will only work for one element and not on a range
             else {
+                  // Observation: this is partial in that it will only work for one element and not on a range
                   int curPitch = 60;
                   el = !el ? selection().firstChordRest() : el;
                   if (!el)
@@ -4450,8 +4468,8 @@ void Score::cmdAddPitch(int step, bool addFlag, bool insert)
                         }
                   addNote(chord, nval, forceAccidental);
                   _is.setAccidentalType(AccidentalType::NONE);
-                  return;
                   }
+                  return;
             }
 
       pos.segment   = inputState().segment();
@@ -4467,6 +4485,30 @@ void Score::cmdAddPitch(int step, bool addFlag, bool insert)
             else
                   putNote(pos, !addFlag);
             }
+      _is.setAccidentalType(AccidentalType::NONE);
+      }
+
+void Score::cmdAddPitch(Note* selectedNote, int step)
+      {
+      if (!selectedNote) return;
+            
+      Position pos;
+      Chord* chord  = selectedNote->chord();
+      Segment* seg  = chord->segment();
+      pos.segment   = seg;
+      pos.staffIdx  = chord->vStaffIdx();
+      ClefType clef = staff(pos.staffIdx)->clef(seg->tick());
+      pos.line      = relStep(step, clef);
+      bool error;
+      NoteVal nval = noteValForPosition(pos, _is.accidentalType(), error);
+      if (error) return;
+      
+      bool forceAccidental = false;
+      if (_is.accidentalType() != AccidentalType::NONE) {
+            NoteVal nval2 = noteValForPosition(pos, AccidentalType::NONE, error);
+            forceAccidental = (nval.pitch == nval2.pitch);
+            }
+      addNote(chord, nval, forceAccidental);
       _is.setAccidentalType(AccidentalType::NONE);
       }
 
