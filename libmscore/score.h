@@ -1255,6 +1255,8 @@ class Score : public QObject, public ScoreElement {
       void setFooterText(Text* t, int index)          { _footersText.at(index) = t;     }
 
       void cmdAddPitch(int note, bool addFlag, bool insert);
+      void cmdAddPitch(Note* selectedNote, int step);
+
       void forAllLyrics(std::function<void(Lyrics*)> f);
 
       System* getNextSystem(LayoutContext&);
