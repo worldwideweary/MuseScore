@@ -20,6 +20,7 @@
 #include "clef.h"
 #include "excerpt.h"
 #include "fermata.h"
+#include "fingering.h"
 #include "glissando.h"
 #include "hairpin.h"
 #include "harmony.h"
@@ -1491,8 +1492,20 @@ void Score::cmdAddOttava(OttavaType type)
 
 void Score::cmdSetBeamMode(Beam::Mode mode)
       {
-      const QSet<ChordRest*> crs = getSelectedChordRests();
-      for (ChordRest* cr : crs) {
+      // Alternative features:
+      if (selection().isList()) {
+            for (auto el : selection().elements()) {
+                  if (el->isFingering()) {
+                        // TODO: Enable/disable **while** in fingering entry mode
+                        auto fingering = toFingering(el);
+                        Tid value = (fingering->tid() == Tid::LH_GUITAR_FINGERING) ? Tid::FINGERING : Tid::LH_GUITAR_FINGERING;
+                        fingering->setTid(value);
+                        fingering->styleChanged();
+                        }
+                  }
+            }      
+
+      for (ChordRest* cr : getSelectedChordRests()) {
             if (cr)
                   cr->undoChangeProperty(Pid::BEAM_MODE, int(mode));
             }
