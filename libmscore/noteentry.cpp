@@ -430,7 +430,16 @@ void Score::putNote(const Position& p, bool replace)
 
             if (_is.rest())
                   nval.pitch = -1;
-            setNoteRest(_is.segment(), _is.track(), nval, _is.duration().fraction(), stemDirection, forceAccidental);
+
+            bool durationNeedsUpdate =
+                  _is.duration().isMeasure() ||
+                  _is.duration().isZero()    ||
+                  !_is.duration().isValid();
+
+            Fraction defaultDuration = TDuration(TDuration::DurationType::V_QUARTER).fraction();
+            Fraction duration = (!durationNeedsUpdate ? _is.duration().fraction() : defaultDuration);
+            // duration = _is.duration().fraction();
+            setNoteRest(_is.segment(), _is.track(), nval, duration, stemDirection, forceAccidental);
             _is.setAccidentalType(AccidentalType::NONE);
             }
       if (!st->isTabStaff(cr->tick()))
