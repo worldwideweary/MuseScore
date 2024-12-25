@@ -4248,6 +4248,10 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
       InputState& is = inputState();
       if (is.track() == -1)          // invalid state
             return;
+      if (is.duration() == TDuration::DurationType::V_INVALID) {
+            qDebug("cmdAddPitch: invalid input state duration");
+            return;
+            }
       if (is.segment() == 0) {
             qDebug("cannot enter notes here (no chord rest at current position)");
             return;
@@ -4296,6 +4300,7 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                   el = selection().elements().front();
 
             if (addFlag) {
+                  // TODO: result in a multi-list selection/keep active range selection
                   std::vector<Chord*> chords;
                   for (auto e : selection().elements()) {
                         if (e->isNote()) {
@@ -4500,6 +4505,7 @@ void Score::cmdAddPitch(Note* selectedNote, int step)
       pos.line      = relStep(step, clef);
       bool error;
       NoteVal nval = noteValForPosition(pos, _is.accidentalType(), error);
+      
       if (error) return;
       
       bool forceAccidental = false;
