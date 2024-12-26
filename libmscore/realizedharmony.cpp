@@ -338,8 +338,13 @@ RealizedHarmony::PitchMap RealizedHarmony::getIntervals(int rootTpc, bool litera
                         if (extType == "" || extType == "major") { //alteration
                               if (deg == 9)
                                     ret.insert(step2pitchInterval(deg, alter) + RANK_MULT*RANK_9TH, tpcInterval(rootTpc, deg, alter));
-                              else
+                              else {
+                                    if (deg < 1) {
+                                          qDebug() << "RealizeHarmony error: got 0th degree - defaulting to 1";
+                                          deg = 1;
+                                          }
                                     ret.insert(step2pitchInterval(deg, alter) + RANK_MULT*RANK_ADD, tpcInterval(rootTpc, deg, alter));
+                                    }
                               if (deg == 5)
                                     alt5 = true;
                               omit |= 1 << deg;

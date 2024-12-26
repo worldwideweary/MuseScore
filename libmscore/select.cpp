@@ -222,11 +222,12 @@ Segment* Selection::firstChordRestSegment() const
 ChordRest* Selection::firstChordRest(int track) const
       {
       if (_el.size() == 1) {
-            Element* el = _el[0];
-            if (el->isNote())
-                  return toChordRest(el->parent());
-            else if (el->isRest())
-                  return toChordRest(el);
+            if (auto el = _el[0]) {
+                  if (el->isNote())
+                        return toChordRest(el->parent());
+                  else if (el->isRest())
+                        return toChordRest(el);
+                  }
             return 0;
             }
       ChordRest* cr = 0;
