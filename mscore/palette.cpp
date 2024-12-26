@@ -625,7 +625,7 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                   if (et != ElementType::INVALID)
                         viewer->cmdInsertMeasures(1, et);
                   }
-            else if (element->isSLine() && !element->isGlissando() && addSingle) {
+            else if (element->isSLine() && !element->isGlissando() && addSingle && cr1) {
                   Segment* startSegment = cr1->segment();
                   Segment* endSegment = cr2->segment();
                   if (element->type() == ElementType::PEDAL && cr2 != cr1)
@@ -679,7 +679,7 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                               Element* start = hp->startElement();
                               Element* end = hp->endElement();
                               Element* next = end;
-                              if (next && !(cr1->tick() == start->tick())) {
+                              if (next && cr1 && !(cr1->tick() == start->tick())) {
                                     hp->undoChangeProperty(Pid::SPANNER_TICKS, next->tick() - start->tick());
                                     hp->score()->undo(new ChangeSpannerElements(hp, start, end));
                                     is.dynamicLine()->setSelected(false);

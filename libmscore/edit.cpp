@@ -4595,6 +4595,7 @@ void Score::undoChangeInvisible(Element* e, bool v)
 
 void Score::undoAddElement(Element* element)
       {
+      auto elParent = element ? element->parent() : nullptr;
       QList<Staff* > staffList;
       Staff* ostaff = element->staff();
       int strack = -1;
@@ -4650,17 +4651,17 @@ void Score::undoAddElement(Element* element)
                         undo(new AddElement(nsp));
                         }
                   else if (et == ElementType::MARKER || et == ElementType::JUMP) {
-                        Measure* om = toMeasure(element->parent());
+                        Measure* om = toMeasure(elParent);
                         Measure* m  = score->tick2measure(om->tick());
                         ne->setTrack(element->track());
                         ne->setParent(m);
                         undo(new AddElement(ne));
                         }
                   else if (et == ElementType::MEASURE_NUMBER) {
-                        toMeasure(element->parent())->undoChangeProperty(Pid::MEASURE_NUMBER_MODE, static_cast<int>(MeasureNumberMode::SHOW));
+                        toMeasure(elParent)->undoChangeProperty(Pid::MEASURE_NUMBER_MODE, static_cast<int>(MeasureNumberMode::SHOW));
                         }
                   else {
-                        Segment* segment  = toSegment(element->parent());
+                        Segment* segment  = toSegment(elParent);
                         Fraction tick     = segment->tick();
                         Measure* m        = score->tick2measure(tick);
                         Segment* seg      = m->undoGetSegment(SegmentType::ChordRest, tick);
@@ -4673,16 +4674,15 @@ void Score::undoAddElement(Element* element)
             }
 
       if (et == ElementType::FINGERING
-         || (et == ElementType::IMAGE  && !element->parent()->isSegment())
-         || (et == ElementType::SYMBOL && !element->parent()->isSegment())
+         || (et == ElementType::IMAGE  && !elParent->isSegment())
+         || (et == ElementType::SYMBOL && !elParent->isSegment())
          || et == ElementType::NOTE
          || et == ElementType::TEXT
          || et == ElementType::GLISSANDO
          || et == ElementType::BEND
          || (et == ElementType::CHORD && toChord(element)->isGrace())
             ) {
-            Element* parent = element->parent();
-            const LinkedElements* links = parent->links();
+            const LinkedElements* links = elParent ? elParent->links() : nullptr;
             // don't link part name
             if (et == ElementType::TEXT) {
                   Text* t = toText(element);
@@ -4696,7 +4696,7 @@ void Score::undoAddElement(Element* element)
             for (ScoreElement* ee : *links) {
                   Element* e = static_cast<Element*>(ee);
                   Element* ne;
-                  if (e == parent)
+                  if (e == elParent)
                         ne = element;
                   else {
                         if (element->isGlissando()) {    // and other spanners with Anchor::NOTE
@@ -4925,7 +4925,7 @@ void Score::undoAddElement(Element* element)
                         undo(new AddElement(na));
                         }
                   else if (element->isChordLine() || element->isLyrics()) {
-                        ChordRest* cr    = toChordRest(element->parent());
+                        ChordRest* cr    = toChordRest(elParent);
                         Segment* segment = cr->segment();
                         Fraction tick    = segment->tick();
                         Measure* m       = score->tick2measure(tick);
@@ -4954,7 +4954,7 @@ void Score::undoAddElement(Element* element)
                      || element->isFiguredBass()
                      || element->isClef()
                      || element->isAmbitus()) {
-                        Segment* segment = element->parent()->isFretDiagram() ? toSegment(element->parent()->parent()) : toSegment(element->parent());
+                        Segment* segment = elParent->isFretDiagram() ? toSegment(elParent->parent()) : toSegment(elParent);
                         Fraction tick    = segment->tick();
                         Measure* m       = score->tick2measure(tick);
                         if ((segment->segmentType() & (SegmentType::EndBarLine | SegmentType::Clef)) && (m->tick() == tick) && m->prevMeasure())
@@ -5078,13 +5078,13 @@ void Score::undoAddElement(Element* element)
                         undo(new AddElement(ntremolo));
                         }
                   else if (element->isTremolo() && !toTremolo(element)->twoNotes()) {
-                        Chord* cr = toChord(element->parent());
+                        Chord* cr = toChord(elParent);
                         Chord* c1 = findLinkedChord(cr, score->staff(staffIdx));
                         ne->setParent(c1);
                         undo(new AddElement(ne));
                         }
                   else if (element->isArpeggio()) {
-                        ChordRest* cr = toChordRest(element->parent());
+                        ChordRest* cr = toChordRest(elParent);
                         Segment* s    = cr->segment();
                         Measure* m    = s->measure();
                         Measure* nm   = score->tick2measure(m->tick());
