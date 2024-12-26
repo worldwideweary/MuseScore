@@ -107,8 +107,10 @@ void MuseScore::resetWorkspace()
             Q_ASSERT(!defaultWorkspaceName.isEmpty());
             Workspace* defaultWorkspace = WorkspacesManager::findByTranslatableName(defaultWorkspaceName);
             Workspace* currWorkspace = WorkspacesManager::currentWorkspace();
-            changeWorkspace(defaultWorkspace);
-            WorkspacesManager::remove(currWorkspace);
+            if (defaultWorkspace) {
+                  changeWorkspace(defaultWorkspace);
+                  WorkspacesManager::remove(currWorkspace);
+                  }
             }
       //else if currentWorkspace is a custom workspace, reset all palettes, toolbars, menus and GUI to the values defined in the source workspace
       else

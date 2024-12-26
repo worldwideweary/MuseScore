@@ -419,7 +419,7 @@ void Score::putNote(const Position& p, bool replace)
             NoteVal nval2 = noteValForPosition(p, AccidentalType::NONE, error);
             forceAccidental = (nval.pitch == nval2.pitch);
             }
-      if (addToChord && cr->isChord()) {
+      if (addToChord && cr && cr->isChord()) {
             // if adding, add!
             addNote(toChord(cr), nval, forceAccidental);
             _is.setAccidentalType(AccidentalType::NONE);
@@ -442,7 +442,7 @@ void Score::putNote(const Position& p, bool replace)
             setNoteRest(_is.segment(), _is.track(), nval, duration, stemDirection, forceAccidental);
             _is.setAccidentalType(AccidentalType::NONE);
             }
-      if (!st->isTabStaff(cr->tick()))
+      if (cr && !st->isTabStaff(cr->tick()))
             _is.moveToNextInputPos();
       }
 
