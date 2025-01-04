@@ -428,6 +428,8 @@ void updateExternalValuesFromPreferences() {
       MScore::bgColor = preferences.getColor(PREF_UI_CANVAS_BG_COLOR);
       MScore::dropColor = preferences.getColor(PREF_UI_SCORE_NOTE_DROPCOLOR);
       MScore::defaultColor = preferences.getColor(PREF_UI_SCORE_DEFAULTCOLOR);
+
+      MScore::noteInputOctaveTendencyIsTopNote = preferences.getBool(PREF_SCORE_NOTE_INPUT_OCTAVE_TENDENCY);
       MScore::defaultPlayDuration = preferences.getInt(PREF_SCORE_NOTE_DEFAULTPLAYDURATION);
       MScore::panPlayback = preferences.getBool(PREF_APP_PLAYBACK_PANPLAYBACK);
       MScore::harmonyPlayDisableCompatibility = preferences.getBool(PREF_SCORE_HARMONY_PLAY_DISABLE_COMPATIBILITY);

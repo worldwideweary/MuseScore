@@ -336,6 +336,9 @@ class MScore {
       static QColor selectColor[VOICES];
       static QColor cursorColor;
       static QColor defaultColor;
+
+      static bool noteInputOctaveTendencyIsTopNote;
+
       static QColor dropColor;
       static QColor layoutBreakColor;
       static QColor frameMarginColor;
