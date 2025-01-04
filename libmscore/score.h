@@ -567,8 +567,7 @@ class Score : public QObject, public ScoreElement {
       void createGraceNotesPlayEvents(const Fraction& tick, Chord* chord, int& ontime, int& trailtime);
       void cmdPitchUp();
       void cmdPitchDown();
-      void cmdPitchUpOctave();
-      void cmdPitchDownOctave();
+      void cmdPitchUpDownOctave(Direction dir, bool noteEntry);
       void cmdPadNoteIncreaseTAB(const EditData& ed);
       void cmdPadNoteDecreaseTAB(const EditData& ed);
       void cmdToggleMmrest();
