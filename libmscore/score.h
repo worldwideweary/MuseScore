@@ -541,7 +541,7 @@ class Score : public QObject, public ScoreElement {
 
       bool canReselectItem(const Element* e) const;
 
-      void cmdAddPitch(const EditData&, int note, bool addFlag, bool insert);
+      void cmdAddPitch(const EditData&, int note, bool addFlag, bool insert, bool useUpNote=false, bool below=false);
       void cmdAddFret(int fret);
       void cmdToggleVisible();
 
