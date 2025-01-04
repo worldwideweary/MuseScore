@@ -177,7 +177,7 @@ enum class KeySigNatural : char {
 //---------------------------------------------------------
 
 enum class UpDownMode : char {
-      CHROMATIC, OCTAVE, DIATONIC
+      CHROMATIC, OCTAVE, DIATONIC, OCTAVE_QUICK
       };
 
 //---------------------------------------------------------
