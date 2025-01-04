@@ -3211,7 +3211,6 @@ void Score::insertMeasure(ElementType type, MeasureBase* measure, bool createEmp
                   score->undoAddCR(rest, om, tick);
                   }
             }
-      deselectAll();
       }
 
 //---------------------------------------------------------
