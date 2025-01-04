@@ -98,6 +98,8 @@ bool    MScore::warnPitchRange;
 bool    MScore::disableMouseEntry;
 int     MScore::pedalEventsMinTicks;
 
+qreal   MScore::systemBracketMultiplier;
+
 bool    MScore::harmonyPlayDisableCompatibility;
 bool    MScore::harmonyPlayDisableNew;
 bool    MScore::playRepeats;
