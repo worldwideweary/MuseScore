@@ -226,6 +226,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT,            new BoolPreference(false, true)},
             {PREF_SCORE_NOTE_INPUT_OCTAVE_TENDENCY,                new BoolPreference(false, true)},
             {PREF_SCORE_NOTE_INPUT_FIFTH_IS_UPWARD,                new BoolPreference(false)},
+            {PREF_SCORE_FINGERING_ALPHANUMERIC_AUTOFORWARD,        new BoolPreference(false)},
             {PREF_UI_SCORE_DISABLE_NOTE_DRAG_VERTICAL,             new BoolPreference(false)},
             {PREF_SCORE_STYLE_DEFAULTSTYLEFILE,                    new StringPreference("", false)},
             {PREF_SCORE_STYLE_PARTSTYLEFILE,                       new StringPreference("", false)},
