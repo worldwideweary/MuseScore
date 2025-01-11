@@ -867,7 +867,12 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
                   return;
                   }
             else if (editData.key == Qt::Key_Return) {
-                  changeState(ViewState::NORMAL);
+                  if (editData.modifiers & CONTROL_MODIFIER) {
+                        // Multi-chord (polychord) stacking
+                        changeState(ViewState::NORMAL);
+                        cmdAddChordName(HarmonyType::STANDARD, true);
+                        }
+                  else changeState(ViewState::NORMAL);
                   return;
                   }
             }
