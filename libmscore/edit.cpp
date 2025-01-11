@@ -1764,7 +1764,7 @@ void Score::deleteItem(Element* el)
                                           }
                                     }
                               }
-                        //select(rest, SelectType::SINGLE, 0);
+                        select(rest, SelectType::SINGLE, 0);
                         }
                   else  {
                         // remove segment if empty
