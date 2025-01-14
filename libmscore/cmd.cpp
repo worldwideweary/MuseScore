@@ -3989,6 +3989,18 @@ void Score::cmdPitchUpDownOctave(Direction dir, bool noteEntry)
 
 void Score::cmdPadNoteIncreaseTAB(const EditData& ed)
       {
+      if (!noteEntryMode() || selection().isRange()) {
+            cmdDoubleDuration();
+            // Update note-entry position:
+            if (noteEntryMode()) {
+                  selection().updateSelectedElements();
+                  if (auto end = selection().lastChordRest()) {
+                        nextInputPos(end, false);
+                        }
+                  }
+            return;
+            }
+
       switch (_is.duration().type() ) {
 // cycle back from longest to shortest?
 //          case TDuration::V_LONG:
@@ -4032,6 +4044,18 @@ void Score::cmdPadNoteIncreaseTAB(const EditData& ed)
 
 void Score::cmdPadNoteDecreaseTAB(const EditData& ed)
       {
+      if (!noteEntryMode() || selection().isRange()) {
+            cmdHalfDuration();
+            // Update note-entry position:
+            if (noteEntryMode()) {
+                  selection().updateSelectedElements();
+                  if (auto end = selection().lastChordRest()) {
+                        nextInputPos(end, false);
+                        }
+                  }
+            return;
+            }
+
       switch (_is.duration().type() ) {
             case TDuration::DurationType::V_LONG:
                   padToggle(Pad::NOTE0, ed);

@@ -548,7 +548,12 @@ void Selection::updateSelectedElements()
             if (s1 && s2 && s1->tick() + s1->ticks() > s2->tick()) {
                   // can happen with MM rests as tick2measure returns only
                   // the first segment for them.
-                  return;
+                  if (s1->measure()->isMMRest() || s2->measure()->isMMRest()) {
+                        return;
+                        }
+
+                  // can also happen if single-range @ first ChordRest of measure
+                  // i.e. using double/half functions, ...will continue as usual
                   }
             if (s2 && s2 == s2->measure()->first())
                   s2 = s2->prev1();   // we want the last segment of the previous measure
