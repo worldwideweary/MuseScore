@@ -3237,10 +3237,16 @@ Measure* Measure::cloneMeasureLimited(Score* scoreDest, const Fraction& tick, Ti
       m->_breakMultiMeasureRest = _breakMultiMeasureRest;
       m->_playbackCount         = _playbackCount;
 
+      m->setRepeatStart (repeatStart());
+      m->setRepeatEnd   (repeatEnd()  );
+      m->setRepeatJump  (repeatJump() );
+      m->setRepeatCount (repeatCount());
+
       m->setTick(tick);
       m->setLineBreak(lineBreak());
       m->setPageBreak(pageBreak());
       m->setSectionBreak(sectionBreak() ? new LayoutBreak(*sectionBreakElement()) : 0);
+      m->setHasCourtesyKeySig(hasCourtesyKeySig());
 
       m->setHeader(header()); m->setTrailer(trailer());
       TupletMap tupletMap;
