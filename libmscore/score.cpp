@@ -2236,7 +2236,7 @@ bool Score::appendMeasuresFromScore(Score* score, const Fraction& startTick, con
 //       resorting to a regular paste afterwards as a workaround
 //---------------------------------------------------------
 
-MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection& selectionSource, MeasureBase& mbInsert) {
+MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection& selectionSource, MeasureBase& mbInsert, bool entireScore) {
       auto scoreDest = this;
       Measure* mFirst;
       Measure* mLast;
@@ -2312,6 +2312,12 @@ MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection&
             index++;
             }
 
+      if (entireScore) {
+            // Include initial and following frames if entire score's timeline is range-selected
+            mbStart = scoreSource->first();
+            mbEnd   = scoreSource->last();
+            }
+
       // Clone & Insert measures:
       std::vector<MeasureBase*> insertedMeasures;
       int safeGuard = 0;
@@ -2331,8 +2337,11 @@ MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection&
                   }
             if (!firstIteration) {
                   if ((mbCurrent->no() == mbStart->no()) && !mbCurrent->isBox()) {
-                        qDebug() << "error:" << "restart or invalid interaction with insertion point.";
-                        break;
+                        if (mbCurrent->index() == mbStart->index()) {
+                              qDebug() << "error:" << "restart or invalid interaction with insertion point.";
+                              break;
+                              }
+                        // ...OK when including entire score
                         }
                   else if (!mbCurrent->no()) {
                         qDebug() << "error:" << "reached a measure #0 mid-way" ;
