@@ -433,6 +433,19 @@ void ScoreView::measurePopup(QContextMenuEvent* ev, Measure* obj)
       popup->addAction(getAction("copy"));
       popup->addAction(getAction("paste"));
       popup->addAction(getAction("paste-clone"));
+
+      // [Action: Paste Clone All] option contingent upon an existing entire range-selection:
+      auto lastSelection = mscore->getLastScoreSelection();
+      auto lastScore = lastSelection.score();
+      Measure* first;
+      Measure* last;
+      lastSelection.measureRange(&first, &last);
+      if (lastScore && lastScore->firstMeasure() == first) {
+            if (lastScore->lastMeasure() == last) {
+                  popup->addAction(getAction("paste-clone-all"));
+                  }
+            }
+
       popup->addAction(getAction("swap"));
       popup->addAction(getAction("delete"));
       popup->addAction(getAction("time-delete"));
@@ -2187,7 +2200,7 @@ bool ScoreView::normalPaste(Fraction scale)
             if (auto oe = srcSelection.element()) {
                   if (oe->isBox() && !oe->isFBox()) {
                         // Allow normal paste to insert clone of V/H/T boxes
-                        _score->insertMeasuresFromScore(srcScore, srcSelection, *insertionMeasureBase);
+                        _score->insertMeasuresFromScore(srcScore, srcSelection, *insertionMeasureBase, false);
                         _score->endCmd();
                         return MScore::_error == MS_NO_ERROR;
                         }
@@ -2216,11 +2229,10 @@ bool ScoreView::normalPaste(Fraction scale)
 //   clonePaste
 //---------------------------------------------------------
 
-bool ScoreView::clonePaste()
+bool ScoreView::clonePaste(bool entireScore)
       {
       MeasureBase* mbFirstInsertion = nullptr;
       auto currentStaff = _score->selection().staffStart();
-      _score->startCmd();
 
       auto srcScore = mscore->getLastScoreSelection().score();
       auto copiedSel = mscore->getLastScoreSelection();
@@ -2238,6 +2250,7 @@ bool ScoreView::clonePaste()
       MeasureBase* insertionMeasureBase = nullptr;
       bool rv;
 
+      _score->startCmd();
       if (auto e = _score->selection().element()) {
             if (auto mb = e->findMeasureBase()) {
                   insertionMeasureBase = mb;
@@ -2249,7 +2262,7 @@ bool ScoreView::clonePaste()
                   }
             }
       if (insertionMeasureBase) {
-            mbFirstInsertion = _score->insertMeasuresFromScore(srcScore, copiedSel, *insertionMeasureBase);
+            mbFirstInsertion = _score->insertMeasuresFromScore(srcScore, copiedSel, *insertionMeasureBase, entireScore);
             rv = MScore::_error == MS_NO_ERROR;
             }
       else rv = MScore::_error == NO_DEST;
@@ -2438,7 +2451,12 @@ void ScoreView::cmd(const char* s)
                         cv->editPaste();
                   }},
             {{"paste-clone"}, [](ScoreView* cv, const QByteArray&) {
-                  cv->clonePaste();
+                  bool entireScore = true;
+                  cv->clonePaste(!entireScore);
+                  }},
+            {{"paste-clone-all"}, [](ScoreView* cv, const QByteArray&) {
+                  bool entireScore = true;
+                  cv->clonePaste(entireScore);
                   }},
             {{"paste-half"}, [](ScoreView* cv, const QByteArray&) {
                   cv->normalPaste(Fraction(1, 2));
