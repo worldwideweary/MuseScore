@@ -648,7 +648,7 @@ class Score : public QObject, public ScoreElement {
 
       bool appendMeasuresFromScore(Score* score, const Fraction& startTick, const Fraction& endTick);
 
-      MeasureBase* insertMeasuresFromScore (Score* scoreSource, const Selection& selectionSource, MeasureBase& mbInsert);
+      MeasureBase* insertMeasuresFromScore (Score* scoreSource, const Selection& selectionSource, MeasureBase& mbInsert, bool entireScore);
 
       bool appendScore(Score*, bool addPageBreak = false, bool addSectionBreak = true);
 
