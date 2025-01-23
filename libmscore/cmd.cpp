@@ -4409,7 +4409,7 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
 
                   if (forceBeneathFirstVoice) {
                         while (octave >= aboveOctave) {
-                              if ((octave == aboveOctave) && (note < aboveNote)) {
+                              if ((octave == aboveOctave) && (note <= aboveNote)) {
                                     break;
                                     }
                               --octave;
