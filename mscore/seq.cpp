@@ -873,7 +873,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                               break;
                         n = playPosFrame - *pPlayFrame;
                         if (n < 0) {
-                              qDebug("%d:  %d - %d", playPosUTick, playPosFrame, *pPlayFrame);
+                              // qDebug("%d:  %d - %d", playPosUTick, playPosFrame, *pPlayFrame);
                               n = 0;
                               }
                         if (mscore->loop()) {
