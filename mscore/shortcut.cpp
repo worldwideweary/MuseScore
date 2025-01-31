@@ -4453,8 +4453,11 @@ QString Shortcut::help() const
 Shortcut* Shortcut::getShortcut(const char* id)
       {
       Shortcut* s = _shortcuts.value(QByteArray(id));
-      if (s == 0) {
-            qDebug("Internal error: shortcut <%s> not found", id);
+      if (s == 0 && id) {
+            if (*id != 0) {
+                  // Omit debug message for null command occurring in ScoreView::midiNoteReceived()
+                  qDebug("Internal error: shortcut <%s> not found", id);
+                  }
             return 0;
             }
       return s;
