@@ -5658,7 +5658,7 @@ void ScoreView::midiNoteReceived(int pitch, bool chord, int velocity)
       score()->masterScore()->enqueueMidiEvent(ev);
 
       if (!score()->undoStack()->active())
-            cmd((const char*)0);
+            cmd(static_cast<const char*>(0));
 
       if (!chord && velocity && !realtimeTimer->isActive() && score()->usingNoteEntryMethod(NoteEntryMethod::REALTIME_AUTO)) {
             // First note pressed in automatic real-time mode.
