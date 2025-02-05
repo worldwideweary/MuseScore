@@ -55,8 +55,8 @@ class Fraction {
             : _numerator { n < 0 ? -z : z }, _denominator { n < 0 ? -n : n } {}
       constexpr int numerator() const   { return static_cast<int>(_numerator);   }
       constexpr int denominator() const { return static_cast<int>(_denominator); }
-      //int64_t& rnumerator()   { return _numerator;   }
-      //int64_t& rdenominator() { return _denominator; }
+      int64_t& rnumerator()   { return _numerator;   }
+      int64_t& rdenominator() { return _denominator; }
 
       /// Use this when you need to initialize a Fraction to an arbitrary high value
       static constexpr Fraction max() { return Fraction(std::numeric_limits<int>::max(), 1); }
