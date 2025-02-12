@@ -335,8 +335,8 @@ void PlayPanel::setPos(int utick)
       {
       if (!cs)
             return;
-      if (cachedTickPosition != utick)
-            emit posChange(utick);
+
+      emit posChange(utick, true);
       updatePosLabel(utick);
       updateTimeLabel(cs->utick2utime(utick));
       }
