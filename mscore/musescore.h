@@ -618,6 +618,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       bool checkDirty(MasterScore*);
       IPlayPanel* playPanelInterface() const;
       PlayPanel* getPlayPanel() const { return playPanel; }
+      PlayPanel* getVerifiedPlayPanel() { createPlayPanel(); return playPanel; }
       Mixer* getMixer() const { return mixer; }
       QMenu* genCreateMenu(QWidget* parent = 0);
       virtual int appendScore(MasterScore*);
