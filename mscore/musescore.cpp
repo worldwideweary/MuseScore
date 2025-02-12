@@ -3105,7 +3105,7 @@ void MuseScore::createPlayPanel()
             playPanel = new PlayPanel(this);
             connect(playPanel, SIGNAL(metronomeGainChanged(float)), seq, SLOT(setMetronomeGain(float)));
             connect(playPanel, SIGNAL(speedChanged(double)), seq, SLOT(setRelTempo(double)));
-            connect(playPanel, SIGNAL(posChange(int)), seq, SLOT(seek(int)));
+            connect(playPanel, SIGNAL(posChange(int, bool)), seq, SLOT(seek(int, bool)));
             connect(playPanel, SIGNAL(closed(bool)), playId, SLOT(setChecked(bool)));
             connect(synti, SIGNAL(gainChanged(float)), playPanel, SLOT(setGain(float)));
             playPanel->setSpeedIncrement(preferences.getInt(PREF_APP_PLAYBACK_SPEEDINCREMENT));
