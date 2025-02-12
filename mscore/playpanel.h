@@ -65,7 +65,7 @@ class PlayPanel : public QDockWidget, private Ui::PlayPanelBase, public IPlayPan
    signals:
       void speedChanged(double);
       void metronomeGainChanged(float);
-      void posChange(int);
+      void posChange(int, bool);
       void closed(bool);
 
    public slots:
