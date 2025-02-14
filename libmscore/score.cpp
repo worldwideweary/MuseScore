@@ -2274,7 +2274,6 @@ MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection&
 
       // Store start of range selection status:
       auto tickStartOfRange = mbStart->tick();
-      int index = 0;
       for (int staffIdx = selectionSource.staffStart(); staffIdx < selectionSource.staffEnd(); ++staffIdx) {
             auto staffSource = scoreSource->staff(staffIdx);
             KeySigEvent nkse =
@@ -2283,15 +2282,14 @@ MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection&
                   staffSource->timeSig(tickStartOfRange);
             ClefType clef =
                   staffSource->clef(tickStartOfRange);
+
             originalKeySigs.emplace_back(nkse);
             originalClefTypes.emplace_back(clef);
-            originalTimeSigs.emplace_back(timeSig->clone());
-
-            index++;
+            if (timeSig)
+                  originalTimeSigs.emplace_back(timeSig->clone());
             }
 
       // Store insertion point status:
-      index = 0;
       for (int staffIdx = destStaffStart; staffIdx < destStaffEnd; ++staffIdx) {
             if (!mInsert || mbSingle)
                   break;
@@ -2299,12 +2297,12 @@ MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection&
             auto staffDest   = scoreDest->staff(staffIdx);
             auto tickInsertion = mInsert->tick();
             KeySigEvent nkse = staffDest->keySigEvent(tickInsertion);
-            TimeSig* timeSig = staffDest->timeSig(tickInsertion);
             ClefType clef = staffDest->clef(tickInsertion);
+            TimeSig* timeSig = staffDest->timeSig(tickInsertion);
             oldKeySigs.emplace_back(nkse);
             oldClefTypes.emplace_back(clef);
-            oldTimeSigs.emplace_back(timeSig->clone());
-            index++;
+            if (timeSig)
+                  oldTimeSigs.emplace_back(timeSig->clone());
             }
 
       if (entireScore) {
@@ -2419,7 +2417,8 @@ MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection&
       // Iterate destination staves and re-apply information at end of insertion if appropriate
       auto tickInsertionPoint = mInsert->tick();
       auto tickFirstInsertion = firstInsertedMeasure->tick();
-      index = 0;
+      size_t index = 0;
+
       for (int staffIdx = destStaffStart; staffIdx < destStaffEnd; ++staffIdx) {
             if (!mInsert)
                   break;
@@ -2435,12 +2434,15 @@ MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection&
             if (nkse.key() != oNkse.key())
                   undoChangeKeySig(staffDest, tickInsertionPoint, nkse);
 
-            TimeSig* newTimeSig = oldTimeSigs.at(index);
+            bool tsIndexOK = (!oldTimeSigs.empty() && index < oldTimeSigs.size());
+            TimeSig* newTimeSig = tsIndexOK ? oldTimeSigs.at(index) : nullptr;
             TimeSig* oldTimeSig = staffDest->timeSig(tickInsertionPoint);
-            if (newTimeSig->sig() != oldTimeSig->sig()) {
-                  newTimeSig->setScore(scoreDest);
-                  newTimeSig->setTrack(trackIdx);
-                  cmdAddTimeSig(mInsert, staffIdx, newTimeSig, false);
+            if (newTimeSig && oldTimeSig) {
+                  if (newTimeSig->sig() != oldTimeSig->sig()) {
+                        newTimeSig->setScore(scoreDest);
+                        newTimeSig->setTrack(trackIdx);
+                        cmdAddTimeSig(mInsert, staffIdx, newTimeSig, false);
+                        }
                   }
 
             ClefType clefType = oldClefTypes.at(index);
@@ -2456,10 +2458,12 @@ MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection&
 
             newTimeSig = originalTimeSigs.at(index);
             oldTimeSig = staffDest->timeSig(tickFirstInsertion);
-            if (newTimeSig->sig() != oldTimeSig->sig()) {
-                  newTimeSig->setScore(scoreDest);
-                  newTimeSig->setTrack(trackIdx);
-                  cmdAddTimeSig(firstInsertedMeasure, staffIdx, newTimeSig, false);
+            if (newTimeSig) {
+                  if (!oldTimeSig || (oldTimeSig->sig() != newTimeSig->sig())) {
+                        newTimeSig->setScore(scoreDest);
+                        newTimeSig->setTrack(trackIdx);
+                        cmdAddTimeSig(firstInsertedMeasure, staffIdx, newTimeSig, false);
+                        }
                   }
 
             clefType = originalClefTypes.at(index);
