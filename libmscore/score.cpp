@@ -4425,7 +4425,7 @@ ChordRest* Score::findCRinStaff(const Fraction& tick, int staffIdx) const
 
 ChordRest* Score::cmdNextPrevSystem(ChordRest* cr, bool next)
       {
-      IF_ASSERT_FAILED(cr)
+      if (!cr)
           return nullptr;
 
       auto newCR = cr;
