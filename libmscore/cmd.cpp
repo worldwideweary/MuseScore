@@ -2675,13 +2675,50 @@ Element* Score::move(const QString& cmd)
                         }
                   }
             }
-      else if (cmd == "next-system" && cr) {
-            el = cmdNextPrevSystem(cr, true);
-            if (noteEntryMode())
-                  _is.moveInputPos(el);
-            }
-      else if (cmd == "prev-system" && cr) {
-            el = cmdNextPrevSystem(cr, false);
+      else if (cmd == "next-system" || cmd == "prev-system") {
+            if (!cr && !box)
+                  return nullptr;
+
+            el = nullptr;
+            bool next = (cmd == "next-system");
+            MeasureBase* dest = nullptr;
+            if (cr) {
+                  if (auto m = cr->findMeasureBase()) {
+                        if (!next) {
+                              bool atStartOfMeasure = (cr->tick() == cr->measure()->tick());
+                              dest = atStartOfMeasure ? m->prev() : m;
+                              }
+                        else if (auto s = m->system()) {
+                              if (auto lm = s->lastMeasure()) {
+                                    auto firstMeasureOfNextSystem = lm->next();
+                                    dest = firstMeasureOfNextSystem;
+                                    }
+                              }
+                        }
+                  }
+
+            if (!dest) {
+                  if (next)
+                        dest = box ? box->next() : lastMeasureMM();
+                  else dest = box ? box->prev() : dest;
+                  }
+
+            bool isDestBox = dest ? dest->isBox() : false;
+            if (isDestBox) {
+                  el = toBox(dest);
+                  }
+            else if (box && dest) {
+                  if (auto m = dest->findMeasure()) {
+                        auto staff = m->system()->firstVisibleStaff();
+                        auto track = staff * VOICES;
+                        auto currentCR = m->last()->nextChordRest(track, true);
+                        el = next ? m->first()->nextChordRest(track)
+                                  : cmdNextPrevSystem(currentCR, false);
+                        }
+                  }
+
+            if (!el) el = cmdNextPrevSystem(cr, next);
+
             if (noteEntryMode())
                   _is.moveInputPos(el);
             }
