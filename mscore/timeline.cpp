@@ -1560,6 +1560,15 @@ unsigned Timeline::getMetaRow(QString targetText)
 
 bool Timeline::addMetaValue(int x, int pos, QString metaText, int row, ElementType elementType, Element* element, Segment* seg, Measure* measure, QString tooltip)
       {
+      static int lastPositionEnd = 0;
+      bool isRehearsalMark = (elementType == ElementType::REHEARSAL_MARK);
+
+      if (isRehearsalMark && _contiguousRM) {
+            if (x == 0)
+                  lastPositionEnd = 0;
+            x = pos = lastPositionEnd;
+            }
+
       QGraphicsTextItem* graphicsTextItem = new QGraphicsTextItem(metaText);
       qreal textWidth = graphicsTextItem->boundingRect().width();
 
@@ -1688,6 +1697,10 @@ bool Timeline::addMetaValue(int x, int pos, QString metaText, int row, ElementTy
 
       scene()->addItem(graphicsRectItem);
       scene()->addItem(itemToAdd);
+
+      if (isRehearsalMark && _contiguousRM) {
+            lastPositionEnd += textWidth;
+            }
 
       std::pair<QGraphicsItem*, int> pairTimeRect = std::make_pair(graphicsRectItem, row);
       std::pair<QGraphicsItem*, int> pairTimeText = std::make_pair(itemToAdd, row);
@@ -3002,6 +3015,13 @@ void Timeline::contextMenuEvent(QContextMenuEvent*)
                         }
                   }
             contextMenu->addSeparator();
+
+            QAction* contiguousRehearsalMarks = new QAction(tr("Contiguous Rehearsal Marks"), this);
+            contiguousRehearsalMarks->setCheckable(true);
+            contiguousRehearsalMarks->setChecked(_contiguousRM);
+            connect(contiguousRehearsalMarks, SIGNAL(triggered()), this, SLOT(toggleMetaRow()));
+            contextMenu->addAction(contiguousRehearsalMarks);
+
             QAction* hide_all = new QAction(tr("Hide all"), this);
             connect(hide_all, SIGNAL(triggered()), this, SLOT(toggleMetaRow()));
             contextMenu->addAction(hide_all);
@@ -3034,6 +3054,11 @@ void Timeline::toggleMetaRow()
             else if (targetText == tr("Show all")) {
                   for (auto it = _metas.begin(); it != _metas.end(); ++it)
                         std::get<2>(*it) = true;
+                  updateGrid();
+                  return;
+                  }
+            else if (targetText == tr("Contiguous Rehearsal Marks")) {
+                  _contiguousRM = !_contiguousRM;
                   updateGrid();
                   return;
                   }
