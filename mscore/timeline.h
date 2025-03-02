@@ -172,6 +172,7 @@ class Timeline : public QGraphicsView {
       QPoint _oldLoc;
 
       bool _collapsedMeta { false };
+      bool _contiguousRM = true;
 
       std::vector<std::tuple<QString, void (Timeline::*)(Segment*, int*, int), bool>> _metas;
       void tempoMeta(Segment* seg, int* stagger, int pos);
