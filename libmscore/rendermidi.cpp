@@ -298,6 +298,7 @@ static void playNote(EventMap* events, const Note* note, int channel, int pitch,
                   }
             }
 
+      // Off event:
       ev.setVelo(0);
       events->insert(std::pair<int, NPlayEvent>(offTime, ev));
       }
@@ -526,6 +527,28 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
       }
 
 //---------------------------------------------------------
+//   collectRest
+//---------------------------------------------------------
+
+static void collectRest(EventMap* events, int channel, const Rest* rest, int tickOffset, Staff* staff, SndConfig config)
+      {
+      int staffIdx = staff->idx();
+      NPlayEvent event = NPlayEvent(ME_CHORD, channel, config.controller, 1);
+      int startTick = rest->tick().ticks();
+          startTick += tickOffset;
+      int length = rest->actualTicks().ticks();
+      event.setOriginatingStaff(staffIdx);
+      event.setRest(rest);
+      event.setNote(nullptr);
+      // ON
+      event.setVelo(1);
+      events->insert(std::make_pair(startTick, event));
+      // OFF
+      event.setVelo(0);
+      events->insert(std::make_pair(startTick + length, event));
+      }
+
+//---------------------------------------------------------
 //   aeolusSetStop
 //---------------------------------------------------------
 
@@ -715,37 +738,44 @@ void MidiRenderer::collectMeasureEventsSimple(EventMap* events, Measure const * 
                         track += VOICES-1;
                         continue;
                         }
+
                   Element* cr = seg->element(track);
-                  if (cr == 0 || cr->type() != ElementType::CHORD)
+                  if (!cr)
+                        continue;
+                  else if (cr->type() != ElementType::REST && cr->type() != ElementType::CHORD)
                         continue;
 
-                  Chord* chord = toChord(cr);
-                  Staff* st1   = chord->staff();
-                  Instrument* instr = chord->part()->instrument(Fraction::fromTicks(tick));
-                  int channel = instr->channel(chord->upNote()->subchannel())->channel();
+                  Chord* chord = cr->isChord() ? toChord(cr) : nullptr;
+                  Rest*  rest  = cr->isRest()  ? toRest(cr)  : nullptr;
+                  Staff* st1   = cr->staff();
+                  Instrument* instr = cr->part()->instrument(Fraction::fromTicks(tick));
+                  int channel = chord ? instr->channel(chord->upNote()->subchannel())->channel() : 0;
                   events->registerChannel(channel);
-
-                  qreal veloMultiplier = 1;
-                  for (Articulation*& a : chord->articulations()) {
-                        if (a->playArticulation()) {
-                              veloMultiplier *= instr->getVelocityMultiplier(a->articulationName());
-                              }
-                        }
 
                   SndConfig config;       // dummy
 
-                  if (!graceNotesMerged(chord))
-                        for (Chord*& c : chord->graceNotesBefore())
-                              for (const Note* note : c->notes())
-                                    collectNote(events, channel, note, veloMultiplier, tickOffset, st1, config);
+                  qreal veloMultiplier = 1;
+                  if (rest) {
+                        collectRest(events, channel, rest, tickOffset, st1, config);
+                        }
+                  else if (chord) {
+                        for (Articulation* a : chord->articulations()) {
+                              if (a->playArticulation()) {
+                                    veloMultiplier *= instr->getVelocityMultiplier(a->articulationName());
+                                    }
+                              }
+                        if (!graceNotesMerged(chord))
+                              for (Chord* c : chord->graceNotesBefore())
+                                    for (const Note* note : c->notes())
+                                          collectNote(events, channel, note, veloMultiplier, tickOffset, st1, config);
+                        for (const Note* note : chord->notes())
+                              collectNote(events, channel, note, veloMultiplier, tickOffset, st1, config);
+                        if (!graceNotesMerged(chord))
+                              for (Chord* c : chord->graceNotesAfter())
+                                    for (const Note* note : c->notes())
+                                          collectNote(events, channel, note, veloMultiplier, tickOffset, st1, config);
+                        }
 
-                  for (const Note* note : chord->notes())
-                        collectNote(events, channel, note, veloMultiplier, tickOffset, st1, config);
-
-                  if (!graceNotesMerged(chord))
-                        for (Chord*& c : chord->graceNotesAfter())
-                              for (const Note* note : c->notes())
-                                    collectNote(events, channel, note, veloMultiplier, tickOffset, st1, config);
                   }
             }
       }
@@ -805,47 +835,51 @@ void MidiRenderer::collectMeasureEventsDefault(EventMap* events, Measure const *
                   Element* cr = seg->element(track);
                   if (!cr)
                         continue;
-
-                  if (!cr->isChord())
+                  else if (cr->type() != ElementType::REST && cr->type() != ElementType::CHORD)
                         continue;
 
-                  Chord* chord = toChord(cr);
-
+                  Chord* chord = cr->isChord() ? toChord(cr) : nullptr;
+                  Rest*  rest  = cr->isRest()  ? toRest(cr)  : nullptr;
                   Instrument* instr = st1->part()->instrument(tick);
-                  int subchannel = chord->upNote()->subchannel();
+                  int subchannel = chord ? chord->upNote()->subchannel() : 0;
                   int channel = instr->channel(subchannel)->channel();
-
-                  events->registerChannel(channel);
-
-                  // Get a velocity multiplier
-                  qreal veloMultiplier = 1;
-                  for (Articulation*& a : chord->articulations()) {
-                        if (a->playArticulation()) {
-                              veloMultiplier *= instr->getVelocityMultiplier(a->articulationName());
-                              }
-                        }
-
                   bool useSND = instr->singleNoteDynamics();
                   SndConfig config = SndConfig(useSND, controller, sctx.method);
+                  events->registerChannel(channel);
+                  if (rest) {
+                        collectRest(events, channel, rest, tickOffset, st1, config);
+                        }
+                  else if (chord) {
+                        // Get a velocity multiplier
+                        qreal veloMultiplier = 1;
+                        for (Articulation* a : chord->articulations()) {
+                              if (a->playArticulation()) {
+                                    veloMultiplier *= instr->getVelocityMultiplier(a->articulationName());
+                                    }
+                              }
 
-                  //
-                  // Add normal note events
-                  //
+                        // Add normal note events
+                        if (!graceNotesMerged(chord))
+                              for (Chord* c : chord->graceNotesBefore())
+                                    for (const Note* note : c->notes())
+                                          collectNote(events, channel, note, veloMultiplier, tickOffset, st1, config);
 
-                  if (!graceNotesMerged(chord))
-                        for (Chord*& c : chord->graceNotesBefore())
-                              for (const Note* note : c->notes())
-                                    collectNote(events, channel, note, veloMultiplier, tickOffset, st1, config);
+                        for (const Note* note : chord->notes())
+                              collectNote(events, channel, note, veloMultiplier, tickOffset, st1, config);
 
-                  for (const Note* note : chord->notes())
-                        collectNote(events, channel, note, veloMultiplier, tickOffset, st1, config);
+                        if (!graceNotesMerged(chord))
+                              for (Chord*& c : chord->graceNotesAfter())
+                                    for (const Note* note : c->notes())
+                                          collectNote(events, channel, note, veloMultiplier, tickOffset, st1, config);
 
-                  if (!graceNotesMerged(chord))
-                        for (Chord*& c : chord->graceNotesAfter())
-                              for (const Note* note : c->notes())
-                                    collectNote(events, channel, note, veloMultiplier, tickOffset, st1, config);
+                        if (!graceNotesMerged(chord))
+                              for (Chord* c : chord->graceNotesAfter())
+                                    for (const Note* note : c->notes())
+                                          collectNote(events, channel, note, veloMultiplier, tickOffset, st1, config);
+                        }
                   }
             }
+
       }
 
 //---------------------------------------------------------
