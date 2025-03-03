@@ -473,6 +473,11 @@ void updateExternalValuesFromPreferences() {
 
       MScore::systemBracketMultiplier = preferences.getDouble(PREF_UI_SCORE_BRACKET_MULTIPLIER);
 
+      MScore::highlightNotes  = preferences.getBool(PREF_SCORE_PLAYBACK_HIGHLIGHT_NOTES);
+      MScore::highlightRests  = preferences.getBool(PREF_SCORE_PLAYBACK_HIGHLIGHT_RESTS);
+      MScore::highlightMore   = preferences.getBool(PREF_SCORE_PLAYBACK_HIGHLIGHT_MORE);  
+      MScore::highlightLyrics = preferences.getBool(PREF_SCORE_PLAYBACK_HIGHLIGHT_LYRICS);
+
       MScore::setHRaster(preferences.getInt(PREF_UI_APP_RASTER_HORIZONTAL));
       MScore::setVRaster(preferences.getInt(PREF_UI_APP_RASTER_VERTICAL));
 
