@@ -2445,7 +2445,7 @@ Element* Score::move(const QString& cmd)
       // no chord/rest found? look for another type of element,
       // but commands [empty-trailing-measure] and [top-staff] don't
       // necessarily need an active selection for appropriate functioning
-      if (!cr && cmd != "empty-trailing-measure" && cmd != "top-staff") {
+      if (!cr && cmd != "empty-trailing-measure" && cmd != "top-staff" && !cmd.endsWith("rehearsal-mark")) {
             if (selection().elements().empty())
                   return 0;
             // retrieve last element of section list
@@ -2523,7 +2523,7 @@ Element* Score::move(const QString& cmd)
       lastCR  = lastCR  ? lastCR : cr;
       firstCR = firstCR ? firstCR : cr;
 
-      Element* el = 0;
+      Element* el = selection().element();
       Segment* ois = noteEntryMode() ? _is.segment() : nullptr;
       Measure* oim = ois ? ois->measure() : nullptr;
 
@@ -2691,6 +2691,17 @@ Element* Score::move(const QString& cmd)
             if (!(el = box))
                   el = cr;
             el = cmdNextPrevSection(el, false);
+            }
+      else if (cmd == "next-rehearsal-mark" || cmd == "prev-rehearsal-mark") {
+            bool next = (cmd == "next-rehearsal-mark");
+            if (el && el->isRehearsalMark())
+                  ;
+            else if (!(el = box))
+                  el = cr;
+            if (!el) if (auto s = firstSegment(SegmentType::ChordRest)) if (auto fcr = s->cr(0))
+                  el = fcr->isChord() ? toElement(toChord(fcr)->upNote()) : toElement(fcr);
+
+            el = cmdNextPrevRehearsalMark(el, next);
             }
       else if (cmd == "next-track" && cr) {
             el = nextTrack(cr);
