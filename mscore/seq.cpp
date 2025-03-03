@@ -23,6 +23,7 @@
 #include "pianotools.h"
 #include "playpanel.h"
 #include "preferences.h"
+#include "scoretab.h"
 #include "scoreview.h"
 #include "seq.h"
 #include "synthcontrol.h"
@@ -36,6 +37,7 @@
 #include "libmscore/part.h"
 #include "libmscore/rendermidi.h"
 #include "libmscore/repeatlist.h"
+#include "libmscore/rest.h"
 #include "libmscore/score.h"
 #include "libmscore/segment.h"
 #include "libmscore/staff.h"
@@ -385,6 +387,10 @@ void Seq::stop()
       {
       const bool seqStopped = (state == Transport::STOP);
       const bool driverStopped = !_driver || _driver->getState() == Transport::STOP;
+
+      // Reset for "more" playback highlighting
+      score()->setLastCRSequenced(nullptr);
+
       if (seqStopped && driverStopped)
             return;
 
@@ -458,11 +464,17 @@ void MuseScore::seqStopped()
 
 void Seq::unmarkNotes()
       {
-      foreach(const Note* n, markedNotes) {
+      for (auto n : markedNotes) {
             n->setMark(false);
             cs->addRefresh(n->canvasBoundingRect());
             }
+      for (auto rest : markedRests) {
+            rest->setMark(false);
+            cs->addRefresh(rest->canvasBoundingRect());
+            }
+
       markedNotes.clear();
+
       PianoTools* piano = mscore->pianoTools();
       if (piano && piano->isVisible())
             piano->setPlaybackNotes(markedNotes);
@@ -918,7 +930,18 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
                         }
                   const NPlayEvent& event = (*pPlayPos)->second;
                   playEvent(event, framePos);
-                  if (event.type() == ME_TICK1) {
+
+                  if (event.type() == ME_CHORD) {
+                        if (auto r = event.rest()) {
+                              r->score()->setLastCRSequenced(r);
+                              }
+                        }
+                  else if (event.type() == ME_NOTEON) {
+                        if (auto n = event.note()) {
+                              n->score()->setLastCRSequenced(n->chord());
+                              }
+                        }
+                  else if (event.type() == ME_TICK1) {
                         tickRemain = tickLength;
                         tickVolume = event.velo() ? qreal(event.value()) / 127.0 : 1.0;
                         }
@@ -1657,7 +1680,25 @@ void Seq::heartBeatTimeout()
                   if (guiPos->first >= cs->repeatList().tick2utick(cs->loopOutTick().ticks()))
                         break;
             const NPlayEvent& n = guiPos->second;
-            if (n.type() == ME_NOTEON) {
+            if (n.type() == ME_CHORD && MScore::highlightRests) {
+                  if (auto rest = n.rest()) {
+                        for (auto se : rest->linkList()) {
+                              if (!se->isRest())
+                                    continue;
+                              auto currentRest = toRest(se);
+                              if (n.velo()) {
+                                    currentRest->setMark(true);
+                                    markedRests.append(currentRest);
+                                    }
+                              else {
+                                    currentRest->setMark(false);
+                                    markedRests.removeOne(currentRest);
+                                    }
+                              r |= currentRest->canvasBoundingRect();
+                              }
+                        }
+                  }
+            if (n.type() == ME_NOTEON && MScore::highlightNotes) {
                   const Note* note1 = n.note();
                   if (n.velo()) {
                         while (note1) {
@@ -1702,7 +1743,7 @@ void Seq::heartBeatTimeout()
       if (piano && piano->isVisible())
             piano->updateAllKeys();
 
-      cv->update(cv->toPhysical(r));
+      MScore::highlightMore ? cv->update() : cv->update(cv->toPhysical(r));
       }
 
 //---------------------------------------------------------
