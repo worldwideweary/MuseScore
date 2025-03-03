@@ -2771,6 +2771,8 @@ void ScoreView::cmd(const char* s)
               "prev-frame",
               "next-section",
               "prev-section",
+              "next-rehearsal-mark",
+              "prev-rehearsal-mark",
               "empty-trailing-measure",
               "top-staff"}, [](ScoreView* cv, const QByteArray& cmd) {
 
@@ -2780,7 +2782,8 @@ void ScoreView::cmd(const char* s)
                         }
 
                   Element* el = cv->score()->selection().element();
-                  if (el && (el->isTextBase())) {
+
+                  if (el && el->isTextBase() && !cmd.endsWith("rehearsal-mark")) {
                         cv->score()->startCmd();
                         const PropertyFlags pf = PropertyFlags::UNSTYLED;
                         if (cmd == "prev-chord")
