@@ -16,6 +16,7 @@
 #include "texttools.h"
 #include "timeline.h"
 #include "tourhandler.h"
+#include "playpanel.h"
 
 #include "libmscore/barline.h"
 #include "libmscore/chordrest.h"
@@ -29,6 +30,7 @@
 #include "libmscore/page.h"
 #include "libmscore/part.h"
 #include "libmscore/rehearsalmark.h"
+#include "libmscore/repeatlist.h"
 #include "libmscore/score.h"
 #include "libmscore/staff.h"
 #include "libmscore/system.h"
@@ -1567,6 +1569,15 @@ unsigned Timeline::getMetaRow(QString targetText)
 
 bool Timeline::addMetaValue(int x, int pos, QString metaText, int row, ElementType elementType, Element* element, Segment* seg, Measure* measure, QString tooltip)
       {
+      static int lastPositionEnd = 0;
+      bool isRehearsalMark = (elementType == ElementType::REHEARSAL_MARK);
+
+      if (isRehearsalMark && _contiguousRM) {
+            if (x == 0)
+                  lastPositionEnd = 0;
+            x = pos = lastPositionEnd;
+            }
+
       QGraphicsTextItem* graphicsTextItem = new QGraphicsTextItem(metaText);
       qreal textWidth = graphicsTextItem->boundingRect().width();
 
@@ -1695,6 +1706,10 @@ bool Timeline::addMetaValue(int x, int pos, QString metaText, int row, ElementTy
 
       scene()->addItem(graphicsRectItem);
       scene()->addItem(itemToAdd);
+
+      if (isRehearsalMark && _contiguousRM) {
+            lastPositionEnd += textWidth;
+            }
 
       std::pair<QGraphicsItem*, int> pairTimeRect = std::make_pair(graphicsRectItem, row);
       std::pair<QGraphicsItem*, int> pairTimeText = std::make_pair(itemToAdd, row);
@@ -2201,7 +2216,16 @@ void Timeline::mousePressEvent(QMouseEvent* event)
                               // Select just the element for tempo_text
                               Element* element = static_cast<Element*>(currGraphicsItem->data(4).value<void*>());
                               _score->deselectAll();
-                              _score->select(element);
+
+                              bool isScorePlaying = (mscore->state() == ScoreState::STATE_PLAY);
+                              if (element->isRehearsalMark() && isScorePlaying) {
+                                    Fraction tick = element->tick();
+                                    int utick = _score->repeatList().tick2utick(tick.ticks());
+                                    if (auto playPanel = mscore->getVerifiedPlayPanel()) {
+                                          playPanel->setPos(utick);
+                                          }
+                                    }
+                              else _score->select(element);
                               }
                         }
                   }
@@ -3000,6 +3024,13 @@ void Timeline::contextMenuEvent(QContextMenuEvent*)
                         }
                   }
             contextMenu->addSeparator();
+
+            QAction* contiguousRehearsalMarks = new QAction(tr("Contiguous Rehearsal Marks"), this);
+            contiguousRehearsalMarks->setCheckable(true);
+            contiguousRehearsalMarks->setChecked(_contiguousRM);
+            connect(contiguousRehearsalMarks, SIGNAL(triggered()), this, SLOT(toggleMetaRow()));
+            contextMenu->addAction(contiguousRehearsalMarks);
+
             QAction* hide_all = new QAction(tr("Hide all"), this);
             connect(hide_all, SIGNAL(triggered()), this, SLOT(toggleMetaRow()));
             contextMenu->addAction(hide_all);
@@ -3032,6 +3063,11 @@ void Timeline::toggleMetaRow()
             else if (targetText == tr("Show all")) {
                   for (auto it = _metas.begin(); it != _metas.end(); ++it)
                         std::get<2>(*it) = true;
+                  updateGrid();
+                  return;
+                  }
+            else if (targetText == tr("Contiguous Rehearsal Marks")) {
+                  _contiguousRM = !_contiguousRM;
                   updateGrid();
                   return;
                   }
