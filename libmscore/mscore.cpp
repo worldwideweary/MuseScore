@@ -77,6 +77,11 @@ QColor  MScore::defaultColor;
 bool    MScore::cursorResetToStart;
 bool    MScore::selectionFollowsCursor;
 
+bool    MScore::highlightNotes;
+bool    MScore::highlightRests;
+bool    MScore::highlightMore;
+bool    MScore::highlightLyrics;
+
 bool    MScore::noteInputOctaveTendencyIsTopNote;
 bool    MScore::noteInputOctaveUpwardFifth;
 bool    MScore::resetNoteEntryAtSystemOrCourtesy;
