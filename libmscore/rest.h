@@ -32,7 +32,9 @@ class Rest : public ChordRest {
       int dotline    { -1  };       // depends on rest symbol
       qreal _mmWidth;               // width of multimeasure rest
       qreal _mmRestNumberPos;       // vertical position of number of multimeasure rest
-      bool _gap      { false };     // invisible and not selectable for user
+      bool _gap          { false }; // invisible and not selectable for user
+      mutable bool _mark { false }; // for use in sequencer
+
       std::vector<NoteDot*> _dots;
 
       QRectF drag(EditData&) override;
@@ -76,6 +78,12 @@ class Rest : public ChordRest {
       QRectF mmRestNumberRect() const;
       qreal mmWidth() const        { return _mmWidth; }
       SymId getSymbol(TDuration::DurationType type, int line, int lines,  int* yoffset);
+
+      bool mark() const
+            { return _mark; }
+
+      void setMark(bool v) const
+            { _mark = v; }
 
       void checkDots();
       void layoutDots();

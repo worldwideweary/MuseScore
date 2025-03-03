@@ -18,6 +18,7 @@
 #include "measure.h"
 #include "mscore.h"
 #include "note.h"
+#include "rest.h"
 #include "score.h"
 #include "segment.h"
 #include "sig.h"
@@ -202,6 +203,48 @@ void Beam::removeChordRest(ChordRest* a)
             qDebug("Beam::remove(): cannot find ChordRest");
       a->setBeam(0);
       }
+
+//---------------------------------------------------------
+//   containsMarkedElements
+//---------------------------------------------------------
+
+bool Beam::containsMarkedElements(void) const
+      {
+      bool marked = false;
+      for (ChordRest* cr : _elements) {
+            if (cr->isChord()) {
+                  auto c = toChord(cr);
+                  for (auto n : c->notes()) {
+                        if (n->mark()) {
+                              marked = true;
+                              }
+                        }
+                  }
+            else if (cr->isRest()) {
+                  auto r = toRest(cr);
+                  if (r->mark()) {
+                        marked = true;
+                        }
+                  }
+            }
+      return marked;
+      }
+
+//---------------------------------------------------------
+//   staffIdxOfFirstElement
+//---------------------------------------------------------
+
+int Beam::staffIdxOfFirstElement() const
+      {
+      int staffIdx = -1;
+      if (!_elements.isEmpty()) {
+            if (auto firstElement = _elements.first()) {
+                  staffIdx = firstElement->staffIdx();
+                  }
+            }
+      return staffIdx;
+      }
+
 
 //---------------------------------------------------------
 //   draw

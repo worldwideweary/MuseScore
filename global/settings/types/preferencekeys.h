@@ -138,6 +138,12 @@
 #define PREF_SCORE_PLAYBACK_CURSOR_ENTIRE_MEASURE           "ui/score/playbackCursor/entireMeasure"
 #define PREF_SCORE_PLAYBACK_CURSOR_MOVE_BY_BEAT             "ui/score/playbackCursor/moveByBeats"
 #define PREF_SCORE_PLAYBACK_CURSOR_BACKGROUND               "ui/score/playbackCursor/behindStaff"
+
+#define PREF_SCORE_PLAYBACK_HIGHLIGHT_NOTES                 "ui/score/playback/highlightNotes"
+#define PREF_SCORE_PLAYBACK_HIGHLIGHT_RESTS                 "ui/score/playback/highlightRests"
+#define PREF_SCORE_PLAYBACK_HIGHLIGHT_MORE                  "ui/score/playback/highlightMore"
+#define PREF_SCORE_PLAYBACK_HIGHLIGHT_LYRICS                "ui/score/playback/highlightLyrics"
+
 #define PREF_SCORE_PLAYBACK_SELECT_POSITION_ON_STOP         "ui/score/playback/selectPlaybackPosition"
 #define PREF_SCORE_PLAYBACK_BRING_POSITION_TO_START         "ui/score/playback/resetToStart"
 #define PREF_UI_CANVAS_BG_USECOLOR                          "ui/canvas/background/useColor"

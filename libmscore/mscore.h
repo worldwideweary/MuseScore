@@ -339,6 +339,11 @@ class MScore {
       static bool   cursorResetToStart;
       static bool   selectionFollowsCursor;
 
+      static bool   highlightNotes;
+      static bool   highlightRests;
+      static bool   highlightMore;
+      static bool   highlightLyrics;
+
       static bool noteInputOctaveTendencyIsTopNote;
       static bool noteInputOctaveUpwardFifth;
       static bool resetNoteEntryAtSystemOrCourtesy;
