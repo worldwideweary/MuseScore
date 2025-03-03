@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "chordrest.h"
 #include "mscore.h"
 #include "measure.h"
 #include "score.h"
@@ -71,7 +72,29 @@ void TextLineBaseSegment::setSelected(bool f)
 
 void TextLineBaseSegment::draw(QPainter* painter) const
       {
-      TextLineBase* tl   = textLineBase();
+      TextLineBase* tl = textLineBase();
+      QColor textColor = tl->color();
+
+      // Playback marked color:
+      auto t1 = spanner()->tick();
+      auto t2 = spanner()->tick2();
+      auto playingElement = score()->getLastCRSequenced();
+      auto pos = playingElement ? playingElement->tick() : Fraction(-1,1);
+      bool marked = (pos >= t1 && pos < t2);
+      
+      if (marked) {
+            textColor = (track() == -1) ? MScore::selectColor[0] : MScore::selectColor[voice()];
+            if (!tl->visible()) {
+                  int red   = textColor.red();
+                  int green = textColor.green();
+                  int blue  = textColor.blue();
+                  float tint = .6f;  // [0..1]  >=lighter
+                  textColor = QColor(red + tint * (255 - red), green + tint * (255 - green), blue + tint * (255 - blue));
+                  }
+            }
+
+      _text->setColor(textColor);
+      _endText->setColor(textColor);
 
       if (!_text->empty()) {
             painter->translate(_text->pos());

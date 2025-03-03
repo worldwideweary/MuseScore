@@ -110,6 +110,8 @@ class Beam final : public Element {
       void clear()                        { _elements.clear(); }
       bool empty() const                { return _elements.empty(); }
       bool contains(const ChordRest* cr) const { return std::find(_elements.begin(), _elements.end(), cr) != _elements.end(); }
+      bool containsMarkedElements(void) const;
+      int staffIdxOfFirstElement() const;
 
       void add(Element*) override;
       void remove(Element*) override;
