@@ -1159,6 +1159,13 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::SCORE_TAB,
          STATE_NORMAL | STATE_NOTE_ENTRY,
+         "prev-rehearsal-mark",
+         QT_TRANSLATE_NOOP("action","Previous Rehearsal Mark"),
+         QT_TRANSLATE_NOOP("action","Go to previous rehearsal mark")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "prev-track",
          QT_TRANSLATE_NOOP("action","Previous Staff or Voice"),
          QT_TRANSLATE_NOOP("action","Previous staff or voice")
@@ -1204,6 +1211,13 @@ Shortcut Shortcut::_sc[] = {
          "next-section",
          QT_TRANSLATE_NOOP("action","Next Section"),
          QT_TRANSLATE_NOOP("action","Go to next section")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         "next-rehearsal-mark",
+         QT_TRANSLATE_NOOP("action","Next Rehearsal Mark"),
+         QT_TRANSLATE_NOOP("action","Go to next rehearsal mark")
          },
       {
          MsWidget::SCORE_TAB,
@@ -2537,6 +2551,20 @@ Shortcut Shortcut::_sc[] = {
          0,
          Icons::Invalid_ICON,
          Qt::ApplicationShortcut
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_PLAY,
+         "play-prev-rehearsal-mark",
+         QT_TRANSLATE_NOOP("action","Play Previous Rehearsal Mark"),
+         QT_TRANSLATE_NOOP("action","Play previous rehearsal mark")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_PLAY,
+         "play-next-rehearsal-mark",
+         QT_TRANSLATE_NOOP("action","Play Next Rehearsal Mark"),
+         QT_TRANSLATE_NOOP("action","Play next rehearsal mark")
          },
       {
          MsWidget::MAIN_WINDOW,

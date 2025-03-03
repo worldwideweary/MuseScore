@@ -35,6 +35,7 @@
 #include "libmscore/measure.h"
 #include "libmscore/note.h"
 #include "libmscore/part.h"
+#include "libmscore/rehearsalmark.h"
 #include "libmscore/rendermidi.h"
 #include "libmscore/repeatlist.h"
 #include "libmscore/rest.h"
@@ -1424,6 +1425,62 @@ void Seq::setController(int channel, int ctrl, int data)
 void Seq::sendEvent(const NPlayEvent& ev)
       {
       guiToSeq(SeqMsg(SeqMsgId::PLAY, ev));
+      }
+
+//---------------------------------------------------------
+//   nextRehearsalMark
+//   !next = previous
+//---------------------------------------------------------
+
+void Seq::nextRehearsalMark(bool next)
+      {
+      Segment* currentSeg=nullptr;
+      auto startTick = guiPos->first;
+      // Get start segment:
+      for (auto i = guiPos; i != eventsEnd; ++i) {
+            const NPlayEvent& npe = i->second;
+            if (auto n = npe.note()) {
+                  auto c = n->chord();
+                  currentSeg = c->segment();
+                  break;
+                  }
+            else if (auto r = npe.rest()) {
+                  currentSeg = r->segment();
+                  break;
+                  }
+            else continue;
+            }
+
+      // Seek for next/prev tick of Rehearsal Mark
+      if (currentSeg) {
+            RehearsalMark* foundRMark=nullptr;
+            Fraction rmTick;
+            auto st = SegmentType::ChordRest;
+            auto rmType = ElementType::REHEARSAL_MARK;
+            startTick = currentSeg->tick().ticks();
+            for (auto seg = currentSeg; seg; seg = (next ? seg->next1(st) : seg->prev1(st))) {
+                  auto sTick  = seg->tick();
+                  auto sTicks = seg->tick().ticks();
+                  for (auto e : seg->annotations()){
+                        if (e->type() == rmType) {
+                              int prevThresh = 380;
+                              if (next) { if (startTick >= sTicks) continue; }
+                              else if ( (startTick - sTicks) < prevThresh )
+                                    break;
+
+                              foundRMark = toRehearsalMark(e);
+                              rmTick = sTick;
+                              break;
+                              }
+                        }
+                  if (foundRMark) break;
+                  }
+
+            if (foundRMark) {
+                  int utick = score()->repeatList().tick2utick(rmTick.ticks());
+                  seek(utick);
+                  }
+            }
       }
 
 //---------------------------------------------------------

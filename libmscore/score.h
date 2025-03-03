@@ -867,6 +867,7 @@ class Score : public QObject, public ScoreElement {
       ChordRest* cmdNextPrevSystem(ChordRest*, bool);
       Box* cmdNextPrevFrame(MeasureBase*, bool) const;
       Element* cmdNextPrevSection(Element*, bool) const;
+      Element* cmdNextPrevRehearsalMark(Element*, bool) const;
       MeasureBase* getNextPrevSectionBreak(MeasureBase*, bool) const;
       Element* getScoreElementOfMeasureBase(MeasureBase*) const;
 
