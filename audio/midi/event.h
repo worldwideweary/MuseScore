@@ -18,6 +18,7 @@
 namespace Ms {
 
 class Note;
+class Rest;
 class Harmony;
 class XmlWriter;
 class Score;
@@ -245,6 +246,7 @@ class PlayEvent : public MidiCoreEvent {
 
 class NPlayEvent : public PlayEvent {
       const Note* _note{nullptr};
+      const Rest* _rest{nullptr};
       const Harmony* _harmony{nullptr};
       int _origin = -1;
       int _discard = 0;
@@ -259,6 +261,8 @@ class NPlayEvent : public PlayEvent {
 
       const Note* note() const            { return _note;    }
       void setNote(const Note* v)         { _note = v;       }
+      const Rest* rest() const            { return _rest;    }
+      void setRest(const Rest* v)         { _rest = v;       }
       const Harmony* harmony() const      { return _harmony; }
       void setHarmony(const Harmony* v)   { _harmony = v;    }
 
@@ -291,6 +295,7 @@ class Event : public PlayEvent {
       int _len;
       int _metaType;
       const Note* _note;
+      const Rest* _rest;
 
    public:
       Event();
@@ -327,6 +332,8 @@ class Event : public PlayEvent {
       void setTpc(int v)             { _tpc = v; }
       const Note* note() const       { return _note; }
       void setNote(const Note* v)    { _note = v; }
+      const Rest* rest() const       { return _rest; }
+      void setRest(const Rest* v)    { _rest= v; }
       };
 
 //---------------------------------------------------------
