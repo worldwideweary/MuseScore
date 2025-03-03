@@ -2523,7 +2523,7 @@ Element* Score::move(const QString& cmd)
       lastCR  = lastCR  ? lastCR : cr;
       firstCR = firstCR ? firstCR : cr;
 
-      Element* el = 0;
+      Element* el = selection().element();
       Segment* ois = noteEntryMode() ? _is.segment() : nullptr;
       Measure* oim = ois ? ois->measure() : nullptr;
 
@@ -2691,6 +2691,18 @@ Element* Score::move(const QString& cmd)
             if (!(el = box))
                   el = cr;
             el = cmdNextPrevSection(el, false);
+            }
+      else if (cmd == "next-rehearsal-mark") {
+            if (el && el->isRehearsalMark()) {}
+            else if (!(el = box))
+                  el = cr;
+            el = cmdNextPrevRehearsalMark(el, true);
+            }
+      else if (cmd == "prev-rehearsal-mark") {
+            if (el && el->isRehearsalMark()) {}
+            else if (!(el = box))
+                  el = cr;
+            el = cmdNextPrevRehearsalMark(el, false);
             }
       else if (cmd == "next-track" && cr) {
             el = nextTrack(cr);
