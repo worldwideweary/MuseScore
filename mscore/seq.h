@@ -354,6 +354,7 @@ class Seq : public QObject, public Sequencer {
       void seekEnd();
       void nextMeasure();
       void nextChord();
+      void nextRehearsalMark(bool next=true);
       void prevMeasure();
       void prevChord();
 
