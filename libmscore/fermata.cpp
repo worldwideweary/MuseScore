@@ -170,9 +170,12 @@ void Fermata::draw(QPainter* painter) const
 
 ChordRest* Fermata::chordRest() const
       {
-      if (parent() && parent()->isChordRest())
-            return toChordRest(parent());
-      return 0;
+      if (parent()) {
+            if (parent()->isChordRest()) {
+                  return toChordRest(parent());
+                  }
+            }
+      return nullptr;
       }
 
 //---------------------------------------------------------

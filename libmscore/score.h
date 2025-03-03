@@ -493,6 +493,7 @@ class Score : public QObject, public ScoreElement {
 
       //------------------
 
+      const ChordRest* _lastCRSequenced = nullptr;
       ChordRest* nextMeasure(ChordRest* element, bool selectBehavior = false, bool mmRest = false);
       ChordRest* prevMeasure(ChordRest* element, bool mmRest = false);
       void cmdSetBeamMode(Beam::Mode);
@@ -866,6 +867,9 @@ class Score : public QObject, public ScoreElement {
       Element* cmdNextPrevSection(Element*, bool) const;
       MeasureBase* getNextPrevSectionBreak(MeasureBase*, bool) const;
       Element* getScoreElementOfMeasureBase(MeasureBase*) const;
+
+      const ChordRest* getLastCRSequenced(void) { return _lastCRSequenced; }
+      void setLastCRSequenced(const ChordRest* cr) { _lastCRSequenced = cr; }
 
       void cmd(const QAction*, EditData&);
       int fileDivision(int t) const { return (t * MScore::division + _fileDivision / 2) / _fileDivision; }
