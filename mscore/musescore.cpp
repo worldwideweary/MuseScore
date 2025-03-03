@@ -6330,6 +6330,10 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             seq->prevMeasure();
       else if (cmd == "play-prev-chord")
             seq->prevChord();
+      else if (cmd == "play-next-rehearsal-mark")
+            seq->nextRehearsalMark();
+      else if (cmd == "play-prev-rehearsal-mark")
+            seq->nextRehearsalMark(false);
       else if (cmd == "seek-begin")
             seq->rewindStart();
       else if (cmd == "seek-end")

@@ -4580,6 +4580,37 @@ MeasureBase* Score::getNextPrevSectionBreak(MeasureBase* mb, bool dir) const
       return destination;
       }
 
+//---------------------------------------------------------
+//   cmdNextPrevRehearsalMark
+//    !next = previous
+//---------------------------------------------------------
+
+Element* Score::cmdNextPrevRehearsalMark(Element* el, bool next) const
+      {
+      auto st = SegmentType::ChordRest;
+      Segment* currentSeg=nullptr;
+      RehearsalMark* rm=nullptr;
+
+      // Get segment:
+      if (el->isRehearsalMark()) currentSeg = toRehearsalMark(el)->segment();
+      else if (el->isChord())    currentSeg = toChord(el)->segment();
+      else if (el->isNote())     currentSeg = toNote(el)->chord()->segment();
+      else if (el->isRest())     currentSeg = toRest(el)->segment();
+
+      // Seek rehearsal marks via ChordRest segments
+      for (auto seg = currentSeg; seg; seg = next ? seg->next1(st) : seg->prev1(st)) {
+            for (auto e : seg->annotations()) {
+                  if (e->isRehearsalMark()) {
+                        if (e->tick() != currentSeg->tick())
+                              rm = toRehearsalMark(e);
+                        break;
+                        }
+                  }
+            if (rm) break;
+            }
+
+      return rm;
+      }
 
 //---------------------------------------------------------
 //   getScoreElementOfMeasureBase
