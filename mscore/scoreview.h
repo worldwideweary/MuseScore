@@ -345,7 +345,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       Element* getDropTarget(EditData&);
 
    private slots:
-      void posChanged(POS pos, unsigned tick);
+      void posChanged(POS pos, unsigned tick, bool viaUserNavigation);
       void loopToggled(bool);
       void triggerCmdRealtimeAdvance();
       void cmdRealtimeAdvance();
@@ -393,7 +393,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       void startEdit(Element*, Grip) override;
       void startEditMode(Element*);
 
-      void moveCursor(const Fraction& tick);
+      void moveCursor(const Fraction& tick, bool viaUserNavigation=false);
       void moveControlCursor(const Fraction& tick);
       bool isCursorDistanceReasonable();
       void moveControlCursorNearCursor();
