@@ -246,7 +246,7 @@ void ScoreView::setScore(Score* s)
             _curLoopOut->move(s->pos(POS::RIGHT));
             loopToggled(getAction("loop")->isChecked());
 
-            connect(s, SIGNAL(posChanged(POS,uint)), SLOT(posChanged(POS,uint)));
+            connect(s, SIGNAL(posChanged(POS,unsigned,bool)), SLOT(posChanged(POS,unsigned,bool)));
             connect(this, SIGNAL(viewRectChanged()), this, SLOT(updateContinuousPanel()));
             }
       }
@@ -583,8 +583,9 @@ void ScoreView::dataChanged(const QRectF& r)
 //    move cursor during playback
 //---------------------------------------------------------
 
-void ScoreView::moveCursor(const Fraction& tick)
+void ScoreView::moveCursor(const Fraction& tick, bool viaUserNavigation)
       {
+      (void) viaUserNavigation;
       Measure* measure = score()->tick2measureMM(tick);
       if (measure == 0)
             return;
@@ -668,8 +669,6 @@ void ScoreView::moveCursor(const Fraction& tick)
             return;
       double y        = system->staffYpage(0) + system->page()->pos().y();
       double _spatium = score()->spatium();
-
-      update(_matrix.mapRect(_cursor->rect()).toRect().adjusted(-1,-1,1,1));
 
       qreal mag = _spatium / SPATIUM20;
       double w  = (_spatium * 1.0) + score()->scoreFont()->width(SymId::noteheadBlack, mag);
@@ -6448,7 +6447,7 @@ Element* ScoreView::elementNear(QPointF p)
 //   posChanged
 //---------------------------------------------------------
 
-void ScoreView::posChanged(POS pos, unsigned tick)
+void ScoreView::posChanged(POS pos, unsigned tick, bool viaUserNavigation)
       {
       switch (pos) {
             case POS::CURRENT:
@@ -6456,9 +6455,9 @@ void ScoreView::posChanged(POS pos, unsigned tick)
                   if (this != mscore->currentScoreView() && !_moveWhenInactive)
                         return;
                   if (noteEntryMode())
-                        moveCursor();     // update input cursor position
+                        moveCursor(); // update input cursor position
                   else
-                        moveCursor(Fraction::fromTicks(tick)); // update play position
+                        moveCursor(Fraction::fromTicks(tick), viaUserNavigation); // update play position
                   break;
             case POS::LEFT:
                   _curLoopIn->move(_score->pos(POS::LEFT));
