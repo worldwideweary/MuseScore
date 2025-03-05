@@ -580,7 +580,7 @@ class Score : public QObject, public ScoreElement {
       inline virtual const Movements* movements() const;
 
    signals:
-      void posChanged(POS, unsigned);
+      void posChanged(POS, unsigned, bool);
       void playlistChanged();
 
    public:
@@ -926,14 +926,15 @@ class Score : public QObject, public ScoreElement {
 
       // These position are in ticks and not uticks
       Fraction playPos() const                      { return pos(POS::CURRENT);   }
-      void setPlayPos(const Fraction& tick)         { setPos(POS::CURRENT, tick); }
+      void setPlayPos(const Fraction& tick, bool viaUserNavigation=false)
+            { setPos(POS::CURRENT, tick, viaUserNavigation); }
       Fraction loopInTick() const                   { return pos(POS::LEFT);      }
       Fraction loopOutTick() const                  { return pos(POS::RIGHT);     }
       void setLoopInTick(const Fraction& tick)      { setPos(POS::LEFT, tick);    }
       void setLoopOutTick(const Fraction& tick)     { setPos(POS::RIGHT, tick);   }
 
       inline Fraction pos(POS pos) const;
-      inline void setPos(POS pos, Fraction tick);
+      inline void setPos(POS pos, Fraction tick, bool viaUserNavigation=false);
 
       bool noteEntryMode() const                   { return inputState().noteEntryMode(); }
       void setNoteEntryMode(bool val)              { inputState().setNoteEntryMode(val); }
@@ -1435,7 +1436,7 @@ class MasterScore : public Score {
 
       using Score::pos;
       Fraction pos(POS pos) const { return _pos[int(pos)]; }
-      void setPos(POS pos, Fraction tick);
+      void setPos(POS pos, Fraction tick, bool viaUserNavigation=false);
 
       void addExcerpt(Excerpt*);
       void removeExcerpt(Excerpt*);
@@ -1503,7 +1504,8 @@ inline Movements* Score::movements()                   { return _masterScore->mo
 inline const Movements* Score::movements() const       { return _masterScore->movements();       }
 
 inline Fraction Score::pos(POS pos) const              { return _masterScore->pos(pos);          }
-inline void Score::setPos(POS pos, Fraction tick)      { _masterScore->setPos(pos, tick);        }
+inline void Score::setPos(POS pos, Fraction tick, bool viaUserNavigation)
+      { _masterScore->setPos(pos, tick, viaUserNavigation); }
 
 extern MasterScore* gscore;
 
