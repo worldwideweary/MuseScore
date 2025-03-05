@@ -4289,7 +4289,7 @@ void Score::removeUnmanagedSpanner(Spanner* s)
 //   setPos
 //---------------------------------------------------------
 
-void MasterScore::setPos(POS pos, Fraction tick)
+void MasterScore::setPos(POS pos, Fraction tick, bool viaUserNavigation)
       {
       if (tick < Fraction(0,1))
             tick = Fraction(0,1);
@@ -4303,7 +4303,7 @@ void MasterScore::setPos(POS pos, Fraction tick)
       // so we should update cursor here
       // however, we must be careful not to call setPos() again while handling posChanged, or recursion results
       for (Score*& s : scoreList())
-            emit s->posChanged(pos, unsigned(tick.ticks()));
+            emit s->posChanged(pos, unsigned(tick.ticks()), viaUserNavigation);
       }
 
 //---------------------------------------------------------
