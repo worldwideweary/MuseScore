@@ -670,16 +670,51 @@ void Slur::slurPos(SlurPos* sp)
             }
       // also link start of slur to stem if start chord & slur are in same direction and there is a hook
       if (scr->up() == _up && stem1 && sc->hook()) {
+            // Personal preference: allow font-family to trigger a change in vertical offset to clear a hook.
+            if (score()->styleSt(Sid::musicalSymbolFont) == "MuseJazz" ||
+                score()->scoreFont()->family().contains("beam", Qt::CaseInsensitive)) {
+                  qreal yAdjust = 9.0; // decent enough "magic" number
+                  qreal direction = scr->up() ? -1.0 : 1.0;
+                  sp->p1.ry() += yAdjust * direction;
+                  }
+
+            // link start of slur to stem if start chord & slur are in same direction and there is a hook
             sa1 = SlurAnchor::STEM;
             // if end chord is in same direction, link end of slur to stem too
-            if (ecr->up() == scr->up() && stem2 && (!ecr->beam() || !ecr->beam()->cross()))
-                  sa2 = SlurAnchor::STEM;
+
+            // Observation: Previously checking if end-chord is not cross-staff seemed to be incorrect
+            // when end-chord is a beam but not a cross-staff beam. Removal results in a more consistent
+            // slur placement (non-stem), but with that "the royal we" must be sure that the beam
+            // is not immediately after the starting chord (End is first of beam), else "we'll" want
+            // STEM position and not NONE since NONE in that instance is defaulted to be positioning
+            // the slur close to the notehead instead of the beam-side.
+            if (ecr->up() == scr->up() && stem2) {
+                  auto endBeam = ecr->beam();
+                  if (!endBeam || endBeam->elements().first() == ec)
+                        sa2 = SlurAnchor::STEM;
+                  }
+
             }
+
+      // Observation: area has HOOK + [beam-beam] where the first beam gets the slur at notehead position when NONE
+      // but should be at the stem position as if all were a beam. The second beam gets this at NONE but the first
+      // goes to notehead! need special delimiter somehow to know if beam is connected to SA1
 
       qreal __up = _up ? -1.0 : 1.0;
       qreal hw1 = note1 ? note1->tabHeadWidth(stt) : scr->width();      // if stt == 0, tabHeadWidth()
       qreal hw2 = note2 ? note2->tabHeadWidth(stt) : ecr->width();      // defaults to headWidth()
       QPointF pt;
+
+      // Intention: when slur is beam-side, let the slur's distance be similar to notehead distance 
+      // Don't perform extra offsetting when:
+      // (1) Articulation is present (otherwise the slur gets too close since the offset from
+      //     an articulation is lesser than from a beam: about same as slur-to-notehead distance).
+      // (2) When start/end notes do not have the same stem-direction.
+      // (3) SlurAnchor type is STEM (OK as is unless using big MuseJazz hooks and the like)
+      // Do, however, apply the offsetting to non-beamed hooks when they are not aligned to stems
+      // so that they are in conformity with the offset of the beamed notes.
+      qreal yAdjBeam = 09.5 * __up; // Offset when beamed
+
       switch (sa1) {
             case SlurAnchor::STEM:        //sc can't be null
                   {
@@ -692,10 +727,14 @@ void Slur::slurPos(SlurPos* sp)
                   // don't allow overlap with hook if not disabling the autoplace checks against start/end segments in SlurSegment::layoutSegment()
                   qreal yadj = -0.25;     // sc->hook() ? 0.25 : -0.25;
                   yadj *= _spatium * __up;
-                  pt += QPointF(0.35 * _spatium, yadj);
+                  pt += QPointF(0.25 * _spatium, yadj);
                   // account for articulations
                   pt.ry() = fixArticulations(pt.y(), sc, __up, true);
                   sp->p1 += pt;
+                  if (auto st = sc->stem()) {
+                        if (!sc->hook())
+                              sp->p1.ry() -= st->stemLen() * 0.20;
+                        }
                   }
                   break;
             case SlurAnchor::NONE:
@@ -714,6 +753,10 @@ void Slur::slurPos(SlurPos* sp)
                   // account for articulations
                   pt.ry() = fixArticulations(pt.y(), ec, __up, true);
                   sp->p2 += pt;
+                  if (auto st = ec->stem()) {
+                        if (!ec->hook())
+                              sp->p2.ry() -= st->stemLen() * 0.20;
+                        }
                   }
                   break;
             case SlurAnchor::NONE:
@@ -738,17 +781,26 @@ void Slur::slurPos(SlurPos* sp)
                   yo = scr->bbox().top();
             else
                   yo = scr->bbox().top() + scr->height();
+
+            // Point of interest:
             yo += _spatium * .9 * __up;
 
             // adjustments for stem and/or beam
-
-            if (stem1) { //sc not null
-                  Beam* beam1 = sc->beam();
+            // valid sc is guaranteed
+            if (stem1) {
+                  auto beam1 = sc->beam();
+                  bool stemSide = _up == sc->up();
                   if (beam1 && beam1->cross()) {
-                        // TODO: stem direction is not finalized, so we cannot use it here
-                        yo = fixArticulations(yo, sc, __up, false);
+                        qreal sh = stem1->height();
+                        sh -= _spatium * 0.2 * __up;
+                        if (stemSide) {
+                              yo += scr->up() ? -sh : +sh;
+                              xo = stem1->pos().x();
+                              stemPos = true;
+                              }
+                        yo = fixArticulations(yo, sc, __up, stemPos);
                         }
-                  else if (beam1 && (beam1->elements().back() != sc) && (sc->up() == _up)) {
+                  else if (beam1 && (beam1->elements().back() != sc) && stemSide) {
                         // start chord is beamed but not the last chord of beam group
                         // and slur direction is same as start chord (stem side)
 
@@ -761,8 +813,11 @@ void Slur::slurPos(SlurPos* sp)
                               yo = sc->upNote()->pos().y() + sh;
                         xo       = stem1->pos().x();
 
+                        // customize:
+                        yo -= yAdjBeam;
+
                         // account for articulations
-                        yo = fixArticulations(yo, sc, __up, true);
+                        yo = fixArticulations(yo, sc, __up, stemSide);
 
                         // force end of slur to layout to stem as well,
                         // if start and end chords have same stem direction
@@ -784,7 +839,7 @@ void Slur::slurPos(SlurPos* sp)
                         // handle case: stem up   - stem down
                         //              stem down - stem up
                         //
-                        if ((sc->up() != ecr->up()) && (sc->up() == _up)) {
+                        if ((sc->up() != ecr->up()) && stemSide) {
                               // start and end chord have opposite direction
                               // and slur direction is same as start chord
                               // (so slur starts on stem side)
@@ -810,7 +865,7 @@ void Slur::slurPos(SlurPos* sp)
                                     yo = qMin(yo + yd, sc->upNote()->pos().y() + sh + _spatium);
 
                               // account for articulations
-                              yo = fixArticulations(yo, sc, __up, true);
+                              yo = fixArticulations(yo, sc, __up, false);
 
                               // we may wish to force end to align to stem as well,
                               // if it is in same direction
@@ -819,13 +874,14 @@ void Slur::slurPos(SlurPos* sp)
                               }
                         else {
                               // avoid articulations
-                              yo = fixArticulations(yo, sc, __up, sc->up() == _up);
+                              yo = fixArticulations(yo, sc, __up, stemSide);
                               }
                         }
                   }
             else if (sc) {
                   // avoid articulations
-                  yo = fixArticulations(yo, sc, __up, sc->up() == _up);
+                  bool stemSide = sc->up() == _up;
+                  yo = fixArticulations(yo, sc, __up, stemSide);
                   }
 
             if (sa1 == SlurAnchor::NONE)
@@ -845,18 +901,25 @@ void Slur::slurPos(SlurPos* sp)
                   yo += _spatium * .9 * __up;
 
                   // adjustments for stem and/or beam
-
-                  if (stem2) { //ec can't be null
-                        Beam* beam2 = ec->beam();
+                  // valid ec is guaranteed
+                  if (stem2) {
+                        auto beam2 = ec->beam();
+                        bool stemSide = _up == ec->up();
                         if (beam2 && beam2->cross()) {
-                              // TODO: stem direction is not finalized, so we cannot use it here
-                              yo = fixArticulations(yo, ec, __up, false);
+                              qreal sh = stem2->height();
+                              sh -= _spatium * 0.2 * __up;
+                              if (stemSide) {
+                                    yo += ecr->up() ? -sh : +sh;
+                                    xo = stem2->pos().x();
+                                    stemPos = true;
+                                    }
+                              yo = fixArticulations(yo, ec, __up, stemPos);
                               }
                         else if ((stemPos && (scr->up() == ec->up()))
                            || (beam2
                              && (!beam2->elements().empty())
                              && (beam2->elements().front() != ec)
-                             && (ec->up() == _up)
+                             && stemSide
                              && sc && (sc->noteType() == NoteType::NORMAL)
                              )
                               ) {
@@ -876,8 +939,11 @@ void Slur::slurPos(SlurPos* sp)
                                     yo = ec->upNote()->pos().y() + sh;
                               xo = stem2->pos().x();
 
+                              // customize:
+                              yo -= yAdjBeam;
+
                               // account for articulations
-                              yo = fixArticulations(yo, ec, __up, true);
+                              yo = fixArticulations(yo, ec, __up, stemSide);
                               }
                         else
                               {
