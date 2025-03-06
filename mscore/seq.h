@@ -197,7 +197,7 @@ class Seq : public QObject, public Sequencer {
       void playEvent(const NPlayEvent&, unsigned framePos);
       void guiToSeq(const SeqMsg& msg);
       void metronome(unsigned n, float* l, bool force);
-      void seekCommon(int utick);
+      void seekCommon(int utick, bool viaUserNavigation=false);
       void unmarkNotes();
       void updateSynthesizerState(int tick1, int tick2);
       void addCountInClicks();
@@ -215,12 +215,12 @@ class Seq : public QObject, public Sequencer {
 
    public slots:
       void setRelTempo(double);
-      void seek(int utick);
+      void seek(int utick, bool viaUserNavigation=false);
       void seekRT(int utick);
       void stopNotes(int channel = -1, bool realTime = false);
       void start();
       void stop();
-      void setPos(POS, unsigned);
+      void setPos(POS, unsigned, bool viaUserNavigation=false);
       void setMetronomeGain(float val) { metronomeVolume = val; }
 
    signals:
@@ -244,7 +244,7 @@ class Seq : public QObject, public Sequencer {
       void prevMeasure();
       void prevChord();
 
-      void collectEvents(int utick);
+      void collectEvents(int utick, bool viaUserNavigation=false);
       void ensureBufferAsync(int utick);
       void guiStop();
       void stopWait();
