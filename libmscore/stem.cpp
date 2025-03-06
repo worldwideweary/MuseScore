@@ -402,6 +402,16 @@ QPointF Stem::hookPos() const
       {
       QPointF p(pos() + line.p2());
 
+      // Custom: Apply extra offset away from notehead for beam-style flags.
+      if (score()->scoreFont()->family().contains("beam", Qt::CaseInsensitive)) {
+            qreal yOffset = 0.5 * lineWidthMag();
+            qreal direction = up() ? -1.0 : 1.0;
+            // accommodate the lesser angling of a beam-style hook
+            qreal accommodate = 1.5;
+            p.ry() += yOffset * direction;
+            p.ry() += accommodate * direction;
+            }
+
       qreal xoff = 0.5 * lineWidthMag();
       p.rx() += xoff;
       return p;
