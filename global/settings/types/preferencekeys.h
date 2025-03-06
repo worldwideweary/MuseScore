@@ -191,6 +191,7 @@
 #define PREF_UI_SCORE_SLURS_MAX_SHOULDER_EXTRA              "ui/score/slurs/shoulder/extraHeight"
 #define PREF_UI_SCORE_SLURS_MIN_SHOULDER_EXTRA              "ui/score/slurs/shoulder/extraHeightSmall"
 #define PREF_UI_SCORE_TIES_ADJUST_FOR_LEDGER_LINES          "ui/score/ties/adjustForLedgerLines"
+#define PREF_UI_SCORE_TIES_UNIFORM_ADJUSTMENTS              "ui/score/ties/uniformTieAdjustments"
 #define PREF_UI_THEME_ICONHEIGHT                            "ui/theme/iconHeight"
 #define PREF_UI_THEME_ICONWIDTH                             "ui/theme/iconWidth"
 #define PREF_UI_THEME_FONTFAMILY                            "ui/theme/fontFamily"

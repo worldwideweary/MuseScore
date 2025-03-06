@@ -129,6 +129,7 @@ qreal   MScore::slurShoulderExtraMax;
 qreal   MScore::slurShoulderExtraMin;
 
 bool    MScore::tiesAdjustForLedgerLines;
+bool    MScore::uniformTieAdjustments;
 
 bool    MScore::harmonyPlayDisableCompatibility;
 bool    MScore::harmonyPlayDisableNew;

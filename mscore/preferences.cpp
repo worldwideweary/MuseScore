@@ -295,6 +295,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_UI_SCORE_SLURS_MAX_SHOULDER_EXTRA,               new DoublePreference(1.8)}, // Use 1.0 for 3.6.2 equivalent
             {PREF_UI_SCORE_SLURS_MIN_SHOULDER_EXTRA,               new DoublePreference(1.2)},
             {PREF_UI_SCORE_TIES_ADJUST_FOR_LEDGER_LINES,           new BoolPreference(true)},
+            {PREF_UI_SCORE_TIES_UNIFORM_ADJUSTMENTS,               new BoolPreference(false)},
             {PREF_UI_THEME_ICONWIDTH,                              new IntPreference(28, false)},
             {PREF_UI_THEME_ICONHEIGHT,                             new IntPreference(24, false)},
             {PREF_UI_THEME_FONTFAMILY,                             new StringPreference(QApplication::font().family(), false) },
