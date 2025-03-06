@@ -3541,12 +3541,13 @@ void Chord::layoutArticulations()
                   if (!headSide && stem()) {
                         y = upPos() + stem()->stemLen();
                         if (beam())
-                              y += score()->styleS(Sid::beamWidth).val() * _spatium * .5;
+                              y += score()->styleS(Sid::beamWidth).val();
+
                         int line = (int)lrint((y + 0.5 * _spStaff) / _spStaff);
                         if (line < staffType->lines())  // align between staff lines
                               y = line * _spStaff + _spatium * .5;
                         else
-                              y += _spatium;
+                              y += (_spatium * 0.75);
                         if (a->isStaccato() && articulations().size() == 1) {
                               if (_up)
                                     x = downNote()->bboxRightPos() - stem()->width() * .5;
@@ -3571,12 +3572,13 @@ void Chord::layoutArticulations()
                   if (!headSide && stem()) {
                         y = downPos() + stem()->stemLen();
                         if (beam())
-                              y -= score()->styleS(Sid::beamWidth).val() * _spatium * .5;
+                              y -= score()->styleS(Sid::beamWidth).val();
+
                         int line = (int)lrint((y-0.5*_spStaff) / _spStaff);
                         if (line >= 0)  // align between staff lines
                               y = line * _spStaff - _spatium * .5;
                         else
-                              y -= _spatium;
+                              y -= (_spatium * 0.75);
                         if (a->isStaccato() && articulations().size() == 1) {
                               if (_up)
                                     x = downNote()->bboxRightPos() - stem()->width() * .5;
