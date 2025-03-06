@@ -333,34 +333,15 @@ void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       if (staffType())
             rypos() += staffType()->yoffset().val() * spatium();
 
+      return;
+
       if (isNudged() || isEdited())
             return;
 
       QRectF bbox;
-      if (p1.y() == p2.y()) {
-            // for horizontal ties we can estimate the bbox using simple math instead of having to call
-            // computeBezier() which uses a whole lot of trigonometry to draw the entire tie
-            bbox.setX(p1.x());
-            bbox.setWidth(p2.x() - p1.x());
 
-            // The following is ripped from computeBezier()
-            // TODO: refactor this into its own method
-            qreal shoulderHeight = bbox.width() * 0.4 * 0.38;
-            shoulderHeight = qBound(shoulderHeightMin * spatium(), shoulderHeight, shoulderHeightMax * spatium());
-            //////////
-            qreal actualHeight = 2 * (shoulderHeight + styleP(Sid::slurMidWidth)) / 3;
-
-            bbox.setY(p1.y() - (slurTie()->up() ? actualHeight : 0));
-            bbox.setHeight(actualHeight);
-            }
-      else {
-            computeBezier();
-            bbox = path.boundingRect();
-            }
-
-      // instead of the above if-else, the more "accurate" way to do this is:
-      // computeBezier();
-      // bbox = path.boundingRect();
+      computeBezier();
+      bbox = path.boundingRect();
 
       Tie* t = toTie(slurTie());
       qreal sp = spatium();
@@ -514,9 +495,10 @@ void TieSegment::adjustX()
       qreal collisionYMargin = spatium() * 0.25;
 
       qreal xo;
+      qreal yo = 0.0;
 
-      if (isNudged() || isEdited())
-            return;
+      qreal xoDottedForAll = 0.0;
+      qreal xoLedgerForAll = 0.0;
 
       // ADJUST LEFT GRIP -----------
       if (sc && ((spannerSegmentType() == SpannerSegmentType::SINGLE || spannerSegmentType() == SpannerSegmentType::BEGIN))) {
@@ -552,8 +534,27 @@ void TieSegment::adjustX()
                                     xo = qMax(xo, chord->stem()->x() + chord->stem()->width() + chordOffset);
                               }
 
+
+                        // EQUIDISTANT TIES
+                        // 2) Ledger Lines - Left side
+                        if (MScore::uniformTieAdjustments) {
+                              for (auto chord : chords) {
+                                    for (auto ledger = chord->ledgerLines(); ledger; ledger = ledger->next()) {
+                                          auto extension = ledger->x() + ledger->len() + chordOffset;
+                                          xoLedgerForAll = std::max(xoLedgerForAll, extension);
+                                          }
+                                    }
+                              }
+
+
                         // adjust for ledger lines
-                        if (MScore::tiesAdjustForLedgerLines) {
+                        if (MScore::uniformTieAdjustments && MScore::tiesAdjustForLedgerLines) {
+                              // X-adjustmentsx-position adjustment
+                              if (xoLedgerForAll > 0.0)
+                                    xo = std::max(xo, xoLedgerForAll);
+                              }
+
+                        else if (MScore::tiesAdjustForLedgerLines) { // x-adjustment
                               for (LedgerLine* currLedger = chord->ledgerLines(); currLedger; currLedger = currLedger->next()) {
                                     // search through ledger lines and see if any are within [Update: 0.33p] of tie start
                                     if (qAbs(p1.y() - currLedger->y()) < (spatium() * 0.33)) {
@@ -562,13 +563,59 @@ void TieSegment::adjustX()
                                           }
                                     }
                               }
+                        else { // y-position adjustment for ledger-lines
+                             bool isUp = slurTie()->up();
+                             for (LedgerLine* l = chord->ledgerLines(); l; l = l->next()) {
+                                   // search through ledger lines and see if any are within [Update: 0.33p] of tie start
+                                   if (qAbs(p1.y() - l->y()) < (spatium() * 0.33)) {
+                                         qreal thickness = (l->lineWidth()) * 2;
+                                         yo = isUp ? +thickness : -thickness;
+                                         break;
+                                         }
+                                   }
+                             }
+
+                        // EQUIDISTANT TIES
+                        // 1) Dots
+                        if (MScore::uniformTieAdjustments) {
+                              for (auto note : chord->notes()) {
+                                    if (note->dots().size() > 0 && note->track() == this->track()) {
+                                          // Dots are out there!
+                                          yo = 0.0; // Don't adjust y-position if dots present, since they'll be x-adjusted
+
+                                          auto extension
+                                                  = note->x()
+                                                  + note->dots().last()->x()
+                                                  + note->dots().last()->width()
+                                                  + chordOffset;
+                                          xoDottedForAll = std::max(xoDottedForAll, extension);
+                                          }
+                                    }
+                              }
+
+                        qreal rightMostNote = 0.0;
+                        if (MScore::uniformTieAdjustments) {
+                              if (this->track() != chord->track())
+                                    continue;
+                              for (auto note : chord->notes()) {
+                                    auto position = note->x() + note->width() + chordOffset;
+                                    rightMostNote = std::max(rightMostNote, position);
+                                    }
+                              }
 
                         for (auto note : chord->notes()) {
                               // adjust for dots
-                              if (note->dots().size() > 0) {
-                                    qreal dotY = note->pos().y() + note->dots().last()->y();
-                                    if (qAbs(p1.y() - dotY) < spatium() * 0.5)
-                                          xo = qMax(xo, note->x() + note->dots().last()->x() + note->dots().last()->width() + chordOffset);
+                              if (MScore::uniformTieAdjustments) {
+                                    if (xoDottedForAll > 0.0) {
+                                          xo = std::max(xo, xoDottedForAll);
+                                          }
+                                    }
+                              else {
+                                    if (note->dots().size() > 0) {
+                                          qreal dotY = note->pos().y() + note->dots().last()->y();
+                                          if (qAbs(p1.y() - dotY) < spatium() * 0.33)
+                                                xo = qMax(xo, note->x() + note->dots().last()->x() + note->dots().last()->width() + chordOffset);
+                                          }
                                     }
 
                               // adjust for note collisions
@@ -576,16 +623,23 @@ void TieSegment::adjustX()
                                     continue;
                               qreal noteTop = note->y() + note->bbox().top();
                               qreal noteHeight = note->height();
-                              if (p1.y() > noteTop && p1.y() < noteTop + noteHeight)
-                                    xo = qMax(xo, note->x() + note->width() + chordOffset);
+
+                              // Uniform note-head position:
+                              qreal extension = note->x() + note->width() + chordOffset;
+                              if (MScore::uniformTieAdjustments) {
+                                    xo = std::max(xo, rightMostNote);
+                                    }
+                              else if (p1.y() > noteTop && p1.y() < noteTop + noteHeight)
+                                    xo = std::max(xo, extension);
                               }
                         }
                   }
             xo = (beginGrace || endGrace ? 0.0 : xo) + offsetMargin;
-            ups(Grip::START).p += QPointF(xo, 0);
+            ups(Grip::START).p += QPointF(xo, yo);
             }
 
       // ADJUST RIGHT GRIP ----------
+      xoLedgerForAll = 0.0;
       if (ec && ((spannerSegmentType() == SpannerSegmentType::SINGLE || spannerSegmentType() == SpannerSegmentType::END))) {
             // grips are in system coordinates, normalize to note position
             QPointF p2 = ups(Grip::END).p + QPointF(system()->pos().x() - en->canvasX(), 0);
@@ -600,17 +654,48 @@ void TieSegment::adjustX()
                               chords.push_back(ch);
                         }
 
+                  // EQUIDISTANT TIES (Adv. Option?)
+                  // 2) Ledger Lines
+                  if (MScore::uniformTieAdjustments) {
+                        for (auto chord : chords) {
+                              auto chordOffset = (ec->x() + en->x()) - chord->x();
+                              for (auto currentLedger = chord->ledgerLines(); currentLedger; currentLedger = currentLedger->next()) {
+                                    auto extension = currentLedger->x() - chordOffset;
+                                    xoLedgerForAll = std::min(xoLedgerForAll, extension);
+                                    }
+                              }
+                        }
+
                   for (Chord* chord : chords) {
+                        if (this->track() != chord->track())
+                              continue;
                         qreal chordOffset = (ec->x() + en->x()) - chord->x(); // en->x() for right-offset notes
 
-                        if (MScore::tiesAdjustForLedgerLines) {
-                              for (LedgerLine* currLedger = chord->ledgerLines(); currLedger; currLedger = currLedger->next()) {
-                                    // search through ledger lines and see if any are within [Update: 0.33p] of tie end
-                                    if (qAbs(p2.y() - currLedger->y()) < (spatium() * 0.33))
-                                          xo = qMin(xo, currLedger->x() - chordOffset);
+                        qreal leftMostNote = 0.0;
+                        if (MScore::uniformTieAdjustments) {
+                              for (auto note : chord->notes()) {
+                                    if (!note->tieBack()) continue;
+                                    qreal position = note->x() - chordOffset;
+                                    leftMostNote = std::min(leftMostNote, position);
                                     }
                               }
 
+                        if (MScore::tiesAdjustForLedgerLines) {
+                              if (MScore::uniformTieAdjustments) {
+                                    if (xoLedgerForAll < 0.0) {
+                                          xo = std::min(xo, xoLedgerForAll);
+                                          }
+                                    }
+                              else {
+                                    for (LedgerLine* currLedger = chord->ledgerLines();
+                                         currLedger;
+                                         currLedger = currLedger->next()) {
+                                          // search through ledger lines and see if any are within [Update: 0.33p] of tie end
+                                          if (qAbs(p2.y() - currLedger->y()) < (spatium() * 0.33))
+                                                xo = qMin(xo, currLedger->x() - chordOffset);
+                                          }
+                                    }
+                              }
                         if (chord->stem() && chord->stem()->visible()) {
                               // adjust for stems
                               qreal stemLen = chord->stem()->bbox().height();
@@ -634,13 +719,19 @@ void TieSegment::adjustX()
                               // adjust for shifted notes (such as intervals of unison or second)
                               qreal noteTop = note->y() + note->bbox().top();
                               qreal noteHeight = note->headHeight();
-                              if (p2.y() >= noteTop - collisionYMargin  && p2.y() <= noteTop + noteHeight + collisionYMargin )
-                                    xo = qMin(xo, note->x() - chordOffset);
+
+                              // Uniform note-head position:
+                              qreal extension = note->x() - chordOffset;
+                              if (MScore::uniformTieAdjustments) {
+                                    xo = std::min(xo, leftMostNote);
+                                    }
+                              else if (p2.y() >= noteTop - collisionYMargin  && p2.y() <= noteTop + noteHeight + collisionYMargin )
+                                    xo = qMin(xo, extension);
                               }
                         }
                   }
             xo = (beginGrace || endGrace ? 0.0 : xo) - offsetMargin;
-            ups(Grip::END).p += QPointF(xo, 0);
+            ups(Grip::END).p += QPointF(xo, yo);
             }
       }
 
