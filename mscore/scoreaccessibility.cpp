@@ -199,6 +199,9 @@ ScoreAccessibility::ScoreAccessibility(QMainWindow* mainWindow) : QObject(mainWi
       {
       this->mainWindow = mainWindow;
       statusBarLabel = new QLabel(mainWindow->statusBar());
+      int maxHeight = statusBarLabel->height();
+      statusBarLabel->setFixedHeight(maxHeight);
+      statusBarLabel->setMaximumHeight(maxHeight);
       mainWindow->statusBar()->addWidget(statusBarLabel);
       }
 
@@ -239,24 +242,32 @@ void ScoreAccessibility::currentInfoChanged()
             if (!e) {
                   return;
                   }
-            Element* el = e->isSpannerSegment() ? static_cast<SpannerSegment*>(e)->spanner() : e;
+
+            Element* el = e->isSpannerSegment() ? toSpannerSegment(e)->spanner() : e;
             QString barsAndBeats = "";
             QString optimizedBarsAndBeats = "";
-            if (el->isSpanner()) {
-                  Spanner* s = static_cast<Spanner*>(el);
+            Spanner* s = el->isSpanner() ? toSpanner(el) : nullptr;
+            if (s && s->startSegment()) { 
                   std::pair<int, float> bar_beat = s->startSegment()->barbeat();
                   barsAndBeats += " " + tr("Start Measure: %1; Start Beat: %2").arg(QString::number(bar_beat.first)).arg(QString::number(bar_beat.second));
                   Segment* seg = s->endSegment();
-                  if(!seg)
+                  if (!seg)
                         seg = score->lastSegment()->prev1MM(SegmentType::ChordRest);
 
-                  if (seg->tick() != score->lastSegment()->prev1MM(SegmentType::ChordRest)->tick() &&
+                  if (seg && seg->tick() != score->lastSegment()->prev1MM(SegmentType::ChordRest)->tick() &&
                       s->type() != ElementType::SLUR                                               &&
                       s->type() != ElementType::TIE                                                )
                         seg = seg->prev1MM(SegmentType::ChordRest);
 
+                  if (!seg) { 
+                        seg = s->endSegment();
+                        if (!seg)
+                              return;
+                        }
+
                   bar_beat = seg->barbeat();
                   barsAndBeats += "; " + tr("End Measure: %1; End Beat: %2").arg(QString::number(bar_beat.first)).arg(QString::number(bar_beat.second));
+                  barsAndBeats += "; Ticks: " + s->tick().print() + " - " + s->tick2().print();
                   optimizedBarsAndBeats = barsAndBeats;
                   }
             else {
@@ -270,6 +281,7 @@ void ScoreAccessibility::currentInfoChanged()
                               barsAndBeats += "; " + tr("Beat: %1").arg(QString::number(bar_beat.second));
                               optimizedBarsAndBeats += "; " + tr("Beat: %1").arg(QString::number(bar_beat.second));
                               }
+                        barsAndBeats += "; Tick: " + el->tick().print();
                         }
                   }
 
@@ -300,6 +312,8 @@ void ScoreAccessibility::currentInfoChanged()
                   }
 
             statusBarLabel->setText(rez.simplified()); // no linebreaks in statusbar
+            makeReadable(rez);
+            statusBarLabel->setText(rez);
 
             if (scoreView->mscoreState() & STATE_ALLTEXTUAL_EDIT) {
                   // Don't say element name during text editing.
@@ -422,6 +436,59 @@ void ScoreAccessibility::updateAccessibility()
 
 void ScoreAccessibility::makeReadable(QString& s)
       {
+      QString pre  = "<font face=\"bravura text\" size=\"6\">";
+      QString pre3 = "<font face=\"bravura text\" size=\"3\">";
+      QString post = " </font>";
+      static std::vector<std::pair<QString, QString>> statusBarUnicodeReplacements {
+            // These were printing out as curly braces or other non-musical symbols,
+            // sometimes making status bar vertically large
+            // TODO? Wildcard replacement for SMuFL
+            { "\U0000E260", pre3+"♭"+post },
+            { "\U0000E261", pre3+"♮"+post },
+            { "\U0000E262", pre3+"♯"+post },
+            { "\U0000E263", pre +"𝄪"+post },
+            { "\U0000E264", pre +"𝄫"+post },
+            // Copy and paste of symbols from program will also work:
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+            { "", pre+""+post },
+      };
+
       static std::vector<std::pair<QString, QString>> unicodeReplacements {
             { "♭", " " + tr("flat") },
             { "♮", " " + tr("natural") },
@@ -430,10 +497,15 @@ void ScoreAccessibility::makeReadable(QString& s)
             { "𝄪", " " + tr("double sharp") },
       };
 
+      for (auto const &r : statusBarUnicodeReplacements)
+            s.replace(r.first, r.second);
+
       if (!QAccessible::isActive())
             return;
+
       for (auto const &r : unicodeReplacements)
             s.replace(r.first, r.second);
+
       ScoreFont* sf = gscore->scoreFont();
       for (auto id : Sym::commonScoreSymbols) {
             if (id == SymId::space)
