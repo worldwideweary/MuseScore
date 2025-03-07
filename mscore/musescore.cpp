@@ -485,6 +485,9 @@ void updateExternalValuesFromPreferences() {
       MScore::slurShoulderExtraMax = preferences.getDouble(PREF_UI_SCORE_SLURS_MAX_SHOULDER_EXTRA);
       MScore::slurShoulderExtraMin = preferences.getDouble(PREF_UI_SCORE_SLURS_MIN_SHOULDER_EXTRA);
 
+      MScore::tiesAdjustForLedgerLines = preferences.getBool(PREF_UI_SCORE_TIES_ADJUST_FOR_LEDGER_LINES);
+      MScore::uniformTieAdjustments = preferences.getBool(PREF_UI_SCORE_TIES_UNIFORM_ADJUSTMENTS);
+
       MScore::setHRaster(preferences.getInt(PREF_UI_APP_RASTER_HORIZONTAL));
       MScore::setVRaster(preferences.getInt(PREF_UI_APP_RASTER_VERTICAL));
 

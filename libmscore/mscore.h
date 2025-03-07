@@ -374,6 +374,9 @@ class MScore {
       static qreal slurShoulderExtraMax;
       static qreal slurShoulderExtraMin;
 
+      static bool  tiesAdjustForLedgerLines;
+      static bool  uniformTieAdjustments;
+
       static bool harmonyPlayDisableCompatibility;
       static bool harmonyPlayDisableNew;
       static bool playRepeats;
