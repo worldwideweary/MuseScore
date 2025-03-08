@@ -87,6 +87,9 @@
 #include "libmscore/volta.h"
 #include "libmscore/xml.h"
 
+#include <QPainter>
+#include <QRectF>
+
 #ifdef AVSOMR
 #include "avsomr/avsomr.h"
 #include "avsomr/avsomrdrawer.h"
@@ -558,6 +561,7 @@ void ScoreView::setForeground(QPixmap* pm)
       {
       delete _fgPixmap;
       _fgPixmap = pm;
+      _pagePixmap = QPixmap();
       update();
       }
 
@@ -566,6 +570,7 @@ void ScoreView::setForeground(const QColor& color)
       delete _fgPixmap;
       _fgPixmap = 0;
       _fgColor = color;
+      _pagePixmap = QPixmap();
       update();
       }
 
@@ -1272,6 +1277,141 @@ void ScoreView::drawBackground(QPainter* p, const QRectF& r) const
             }
       }
 
+void ScoreView::drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF& canvasR, const Element* el) const
+      {
+
+      // Note: when exporting (printing)
+      //    - Transparency performs no implicit cut-out overlays (tab/implicit text frame)
+      //    - Color or Background Image will perform implicit cut-out overlays
+
+      bool printing   = score()->printing();
+      QRectF dest = printing ? r : p->matrix().mapRect(r);
+      qreal w      = dest.width();
+      qreal h      = dest.height();
+      qreal transX = p->transform().dx();
+      qreal transY = p->transform().dy();
+      qreal xOff   = 0.0;
+      qreal yOff   = 0.0;
+      bool  skip  = false;
+      bool  circlePath = false;
+
+      if (el == dropTarget) return;
+
+      if (el) {
+            if (el->isTextBase()) {
+                  auto tb = toTextBase(el);
+                  if (tb->parent() && tb->parent()->isTextLineSegment()) {
+                        if (auto tls = toTextLineSegment(tb->parent())) {
+                              if (tls == dropTarget) return;
+                              
+                              // HACK: draw cut-away background iff diagonal enabled
+                              if (tls->textLine()->diagonal()) {
+                                    //
+                                    // BEGIN TEXT of Textline (non-centered)
+                                    //
+                                    xOff  = -(el->offset().x());
+                                    yOff  = -(el->offset().y());
+                                    yOff -= 1.0;
+                                    if (!printing) {
+                                          if (tb->align() & Align::HCENTER)
+                                                transX -= (w * 0.5);
+                                          else if (tb->align() & Align::RIGHT)
+                                                transX -= w;
+                                          transY -= h;
+                                          dest = QRectF(transX, transY, w, h);
+                                          }
+                                    else {
+                                          if ((static_cast<char>(tb->align()) & static_cast<char>(Align::VMASK)) == static_cast<char>(Align::TOP)) {
+                                                // TOP
+                                                dest.translate(0.0, -r.height());
+                                                }
+                                          else if (tb->align() & Align::VCENTER) {
+                                                // V-Center Correction
+                                                dest.translate(0.0, -r.height() * 0.5);
+                                                }
+                                          }
+                                    }
+                              else skip = true;
+                              }
+                        }
+                  else {
+                        //
+                        // Text without line:
+                        //
+                        transX = dest.x();
+                        transY = dest.y();
+                        if (tb->circle()) {
+                              // Clip to circular frame when drawing background
+                              QPainterPath path;
+                              path.addEllipse(r);
+                              p->setClipPath(path);
+                              circlePath = true;
+                              }
+
+                        }
+                  }
+            else if (el->isNote()) {
+                  //
+                  // Guitar Tablature cut-out:
+                  //
+                  qreal verticalScalingFactor = p->worldTransform().m22();
+                  transX += (r.left() * verticalScalingFactor);
+                  transY -= (h * 0.5);
+                  }
+            }
+      else {
+            // Default:
+            transX = dest.x();
+            transY = dest.y();
+            }
+
+      // Keep transform position, yet use clean identity matrix for mapping
+      if (skip) return;
+
+      if (!printing) {
+            p->save();
+            p->resetMatrix();
+            p->resetTransform();
+            }
+      else {
+            int exportBgStyle = preferences.getInt(PREF_EXPORT_BG_STYLE);
+            
+            // [Transparent] -- fills no background (not even whiteness)            
+            if (exportBgStyle == 0) return;
+            
+            // [Color] - does not include the potential gradient option (use background paper for that)
+            else if (exportBgStyle == 2) skip = true;
+            }
+
+      if (_bgPixmap && !printing) {
+            //
+            // Background Wallpaper
+            //
+            p->drawTiledPixmap(dest, *_bgPixmap, QPointF(transX, transY));
+            }
+      if (_fgPixmap && !skip) {
+            //
+            // Foreground Wallpaper
+            //
+            QRectF src = canvasR.adjusted(xOff, yOff, xOff, yOff);
+            p->drawPixmap(dest, *_fgPixmap, src);
+            }
+      else {
+            //
+            // Foreground Color
+            //
+            p->fillRect(dest, preferences.getColor(PREF_UI_CANVAS_FG_COLOR));
+            }
+
+      if (!printing) {
+            p->restore();
+            }
+
+      if (circlePath) {
+            p->setClipping(false);
+            }
+      }
+
 //---------------------------------------------------------
 //   paintPageBorder
 //---------------------------------------------------------
@@ -1385,11 +1525,11 @@ void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* ed
 void ScoreView::paint(const QRect& r, QPainter& p)
       {
       p.save();
-      if (_fgPixmap == 0 || _fgPixmap->isNull())
-            p.fillRect(r, _fgColor);
-      else {
-            p.drawTiledPixmap(r, *_fgPixmap, r.topLeft());
-            }
+
+      // Background "Blackboard" image/color
+      if (_bgPixmap == 0 || _bgPixmap->isNull())
+            p.fillRect(r, _bgColor);
+      else p.drawTiledPixmap(r, *_bgPixmap, r.topLeft());
 
       p.setTransform(_matrix);
       QRectF fr = imatrix.mapRect(QRectF(r));
@@ -1420,13 +1560,16 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                   case ViewState::FOTO_DRAG_EDIT:
                   case ViewState::FOTO_DRAG_OBJECT:
                   case ViewState::FOTO_LASSO:
-                        if (editData.element->isLasso())
+                        if (editData.element->isLasso()) {
                               lassoToDraw = toLasso(editData.element);
-                        else
+                              }
+                        else {
                               postponeEditMode = true;
-
-                        if (editData.element->isHarmony())
-                              editElement = editData.element;     // do not call paint() method
+                              }
+                        if (editData.element->isHarmony()) {
+                              // do not call paint() method
+                              editElement = editData.element;
+                              }
                         break;
                   }
             }
@@ -1470,15 +1613,44 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                   }
             }
       else {
-            for (Page* page : qAsConst(_score->pages())) {
+            //--- Paper/Margins
+            for (auto page : _score->pages()) {
                   QRectF pr(page->abbox().translated(page->pos()));
                   if (pr.right() < fr.left())
                         continue;
                   if (pr.left() > fr.right())
                         break;
 
+                  // Page Background
+                  qreal x = pr.x();
+                  qreal y = pr.y();
+                  qreal w = pr.width();
+                  qreal h = pr.height();
+                  if (_fgPixmap == 0 || _fgPixmap->isNull()) {                        
+                        p.fillRect(x, y, w, h, _fgColor);
+                        }
+                  else {
+                        if (_pagePixmap.isNull()) {
+                              _pagePixmap.detach();
+                              *_fgPixmap  = _fgPixmap->scaled(w,h);
+                              _pagePixmap = *_fgPixmap;
+                              }
+                        p.drawPixmap(x, y, w, h, *_fgPixmap);
+                        }
+                  }
+
+            // Page Elements
+            for (auto page : _score->pages()) {
+                  QRectF pr(page->abbox().translated(page->pos()));
+                  if (pr.right() < fr.left())
+                        continue;
+                  if (pr.left() > fr.right())
+                        break;
+
+                  // Page Border
                   if (!score()->printing())
                         paintPageBorder(p, page);
+
                   QList<Element*> ell = page->items(fr.translated(-page->pos()));
                   QPointF pos(page->pos());
                   p.translate(pos);
@@ -1490,8 +1662,7 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                         omrDrawer.draw(omrDrawCtx, ml);
                         }
 #endif
-                  // ------------
-
+                  // Page Elements
                   drawElements(p, ell, editElement);
 
 #ifndef NDEBUG
@@ -1566,6 +1737,7 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                   r1 -= _matrix.mapRect(pr).toAlignedRect();
                   }
             }
+
       if (dropRectangle.isValid())
             p.fillRect(dropRectangle, QColor(80, 0, 0, 80));
 
@@ -1687,22 +1859,20 @@ void ScoreView::paint(const QRect& r, QPainter& p)
             p.drawLine(QLineF(x2, y1, x2, y2).translated(system2->page()->pos()));
             }
 
-      // Draw regular edit to ensure any grips are above score elements:
+      // Regular Edit Mode (Grips take precedence)
       if (postponeEditMode)
             editData.element->drawEditMode(&p, editData);
 
-      // Draw foto lasso to ensure that it is above everything else
-      else if (lassoToDraw)
-            lassoToDraw->drawEditMode(&p, editData);
+      // Lasso (Transparent overlay) / FOTO capture
+      else if (lassoToDraw) {
+            if (state == ViewState::LASSO)
+                  lassoToDraw->draw(&p);
+            else
+                  lassoToDraw->drawEditMode(&p, editData);
+            }
 
       p.setWorldMatrixEnabled(false);
-      if (_score->layoutMode() != LayoutMode::LINE && _score->layoutMode() != LayoutMode::SYSTEM && !r1.isEmpty()) {
-            p.setClipRegion(r1);  // only background
-            if (_bgPixmap == 0 || _bgPixmap->isNull())
-                  p.fillRect(r, _bgColor);
-            else
-                  p.drawTiledPixmap(r, *_bgPixmap, r.topLeft());
-            }
+
       p.restore();
       }
 
