@@ -1481,16 +1481,32 @@ void Harmony::draw(QPainter* painter) const
             return;
             }
       if (hasFrame()) {
-            if (!qFuzzyIsNull(frameWidth().val())) {
-                  QColor color = frameColor();
-                  QPen pen(color, frameWidth().val() * spatium(), Qt::SolidLine,
-                     Qt::SquareCap, Qt::MiterJoin);
+            qreal baseSpatium = MScore::baseStyle().value(Sid::spatium).toDouble();
+            qreal frameWidthVal = frameWidth().val() * (sizeIsSpatiumDependent() ? spatium() : baseSpatium);
+            if (!frameWidth().isZero()) {
+                  QColor fColor = frameColor();
+                  QColor hColor = this->color();
+                  QColor color = fColor;
+                  if (fColor == MScore::defaultColor) {
+                        if (hColor != MScore::defaultColor) 
+                              color = hColor;
+                        }
+                  QPen pen(fColor, frameWidthVal, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin);
                   painter->setPen(pen);
                   }
-            else
-                  painter->setPen(Qt::NoPen);
+            else painter->setPen(Qt::NoPen);
+
             QColor bg(bgColor());
             painter->setBrush(bg.alpha() ? QBrush(bg) : Qt::NoBrush);
+            QRectF bb     = bbox().adjusted(frameWidthVal, frameWidthVal, -frameWidthVal, -frameWidthVal);
+            QRectF pageBB = pageBoundingRect().adjusted(frameWidthVal, frameWidthVal, -frameWidthVal, -frameWidthVal);
+            if (!score()->getViewer().empty()) {
+                  for (MuseScoreView* view : score()->getViewer()) {
+                        view->drawBackgroundOffset(painter, bb, pageBB, this);
+                        }
+                  }
+            else painter->fillRect(bb, Qt::white);
+
             if (circle())
                   painter->drawArc(frame, 0, 5760);
             else {
