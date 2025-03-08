@@ -518,6 +518,10 @@ void ExportDialog::accept()
       // At this moment, close the dialog
       QDialog::accept();
 
+      const QColor fgColor = preferences.getColor(PREF_UI_CANVAS_FG_COLOR);
+      const QColor customColor = preferences.getColor(PREF_EXPORT_BG_CUSTOM_COLOR);
+      preferences.setPreference(PREF_UI_CANVAS_FG_COLOR, customColor);
+
       if (singlePDF)
             // Export the selected scores as one pdf file, directly with the filename the user typed
             mscore->savePdf(scores, filename);
@@ -562,6 +566,7 @@ void ExportDialog::accept()
                   mscore->saveAs(score, true, definitiveFilename, suffix, &replacePolicy);
                   }
             }
+      preferences.setPreference(PREF_UI_CANVAS_FG_COLOR, fgColor);
       }
 
 //---------------------------------------------------------

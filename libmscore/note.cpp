@@ -16,6 +16,7 @@
 */
 
 #include <QPointF>
+#include <QRectF>
 #include <QtMath>
 #include <QVector2D>
 
@@ -1249,12 +1250,19 @@ void Note::draw(QPainter* painter) const
             // draw background, if required (to hide a segment of string line or to show a fretting conflict)
             if (!tab->linesThrough() || fretConflict()) {
                   qreal d  = spatium() * .1;
-                  QRectF bb = QRectF(bbox().x()-d, tab->fretMaskY() * magS(), bbox().width() + 2 * d, tab->fretMaskH()*magS());
+                  qreal dx = -d;
+                  qreal dy = +0.0;
+                  qreal dw = +d*2;
+                  qreal dh = +0.0;
+
+                  QRectF bb = bbox().adjusted(dx, dy, dw, dh);
+                  QRectF canvasBB = pageBoundingRect().adjusted(dx, dy, dw, dh);
+
                   // we do not know which viewer did this draw() call
                   // so update all:
                   if (!score()->getViewer().empty()) {
                         for (MuseScoreView* view : score()->getViewer())
-                              view->drawBackground(painter, bb);
+                              view->drawBackgroundOffset(painter, bb, canvasBB, this);
                         }
                   else
                         painter->fillRect(bb, Qt::white);
