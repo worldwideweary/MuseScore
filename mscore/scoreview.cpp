@@ -1252,8 +1252,6 @@ void ScoreView::paintEvent(QPaintEvent* ev)
       if (_score->layoutMode() == LayoutMode::LINE)
             _continuousPanel->paint(ev->rect(), vp);
 
-      if (!lasso->bbox().isEmpty())
-            lasso->draw(&vp);
       shadowNote->draw(&vp);
 
       drawAnchorLines(vp);
@@ -3918,7 +3916,6 @@ void ScoreView::doDragLasso(QMouseEvent* ev)
       QSize sz(r.size().toSize());
       mscore->statusBar()->showMessage(QString("%1 x %2").arg(sz.width()).arg(sz.height()), 3000);
       _score->addRefresh(lasso->canvasBoundingRect());
-      _score->lassoSelect(lasso->bbox());
       _score->update();
       }
 
@@ -3928,6 +3925,7 @@ void ScoreView::doDragLasso(QMouseEvent* ev)
 
 void ScoreView::endLasso()
       {
+      _score->lassoSelect(lasso->bbox());
       _score->addRefresh(lasso->canvasBoundingRect());
       lasso->setbbox(QRectF());
       _score->lassoSelectEnd();
