@@ -200,6 +200,7 @@ enum class Pid {
       LINE_STYLE,
       LINE_WIDTH,
       LINE_WIDTH_SPATIUM,
+      LINE_COLOR,
       LASSO_POS,
       LASSO_SIZE,
       TIME_STRETCH,

@@ -127,7 +127,7 @@ QByteArray SpannerSegment::mimeData(const QPointF& dragOffset) const
 
 Element* SpannerSegment::propertyDelegate(Pid pid)
       {
-      if (pid == Pid::COLOR || pid == Pid::VISIBLE || pid == Pid::PLACEMENT)
+      if (pid == Pid::LINE_COLOR || pid == Pid::VISIBLE || pid == Pid::PLACEMENT)
             return spanner();
       return 0;
       }

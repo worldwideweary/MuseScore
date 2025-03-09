@@ -73,6 +73,7 @@ void TextLineBaseSegment::setSelected(bool f)
 void TextLineBaseSegment::draw(QPainter* painter) const
       {
       TextLineBase* tl = textLineBase();
+      QColor lineColor = curColor(tl->visible() && tl->lineVisible(), tl->lineColor());      
       QColor textColor = tl->color();
 
       // Playback marked color:
@@ -93,20 +94,21 @@ void TextLineBaseSegment::draw(QPainter* painter) const
                   }
             }
 
-      _text->setColor(textColor);
-      _endText->setColor(textColor);
-
       if (!_text->empty()) {
-            painter->translate(_text->pos());
             _text->setVisible(tl->visible());
-            _text->draw(painter);
+            _text->setColor(textColor);
+
+            painter->translate(_text->pos());
+               _text->draw(painter);
             painter->translate(-_text->pos());
             }
 
       if (!_endText->empty()) {
-            painter->translate(_endText->pos());
             _endText->setVisible(tl->visible());
-            _endText->draw(painter);
+            _endText->setColor(textColor);
+
+            painter->translate(_endText->pos());
+               _endText->draw(painter);
             painter->translate(-_endText->pos());
             }
 
@@ -121,13 +123,12 @@ void TextLineBaseSegment::draw(QPainter* painter) const
       else
             color = tl->lineColor();
 #endif
-      QColor color = curColor(tl->visible() && tl->lineVisible(), tl->lineColor());
 
       qreal textlineLineWidth = tl->lineWidth();
       if (staff())
             textlineLineWidth *= mag();
-      QPen pen(color, textlineLineWidth, tl->lineStyle());
-      QPen solidPen(color, textlineLineWidth, Qt::SolidLine);
+      QPen pen(lineColor, textlineLineWidth, tl->lineStyle());
+      QPen solidPen(lineColor, textlineLineWidth, Qt::SolidLine);
 
       //Replace generic Qt dash patterns with improved equivalents to show true dots
       QVector<qreal> dotted        = { 0.01, 1.99 }; // 0.01 for cap dots. tighter than default Qt Dotline (would be { 0.01, 2.99 }). 
@@ -268,6 +269,7 @@ void TextLineBaseSegment::layout()
       {
       npoints      = 0;
       TextLineBase* tl = textLineBase();
+      QColor textColor = tl->color();
       qreal _spatium = tl->spatium();
       bool isSingleOrBegin = isSingleBeginType();
 
@@ -305,7 +307,7 @@ void TextLineBaseSegment::layout()
             }
       _text->setPlacement(Placement::ABOVE);
       _text->setTrack(track());
-      _text->setColor(textLineBase()->lineColor());
+      _text->setColor(textColor);
       _text->layout();
 
       if ((isSingleType() || isEndType())) {
@@ -320,7 +322,7 @@ void TextLineBaseSegment::layout()
             _endText->setStrike(tl->endFontStyle() & FontStyle::Strike);
             _endText->setPlacement(Placement::ABOVE);
             _endText->setTrack(track());
-            _endText->setColor(textLineBase()->lineColor());
+            _endText->setColor(textColor);
             _endText->layout();
             }
       else {
