@@ -3134,7 +3134,8 @@ void TextBase::draw(QPainter* p) const
             QRectF bb     = bbox().adjusted(frameWidthVal, frameWidthVal, -frameWidthVal, -frameWidthVal);
             QRectF pageBB = pageBoundingRect().adjusted(frameWidthVal, frameWidthVal, -frameWidthVal, -frameWidthVal);
             bool skip = (parent() && parent()->isBox());
-            if (!skip && !score()->getViewer().empty()) {
+            if (MScore::noGui) {;}
+            else if (!skip && !score()->getViewer().empty()) {
                   for (MuseScoreView* view : score()->getViewer())
                         view->drawBackgroundOffset(p, bb, pageBB, this);
                   }
