@@ -83,7 +83,7 @@ QString MScore::_globalShare;
 int     MScore::_vRaster;
 int     MScore::_hRaster;
 bool    MScore::_verticalOrientation = false;
-qreal   MScore::verticalPageGap = 5.0;
+qreal   MScore::verticalPageGap = 50.0;
 qreal   MScore::horizontalPageGapEven = 1.0;
 qreal   MScore::horizontalPageGapOdd = 50.0;
 

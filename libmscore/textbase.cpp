@@ -24,6 +24,8 @@
 #include "undo.h"
 #include "xml.h"
 
+#include <QRectF>
+
 namespace Ms {
 
 #ifdef Q_OS_MAC
@@ -759,6 +761,20 @@ void TextFragment::draw(QPainter* p, const TextBase* t) const
       {
       QFont f(font(t));
       f.setPointSizeF(f.pointSizeF() * MScore::pixelRatio);
+
+      bool isBeginText =
+            // TODO: provide awareness of [begin/continue/end text of textline] for TextFragment
+            false;
+
+      if (isBeginText) {
+            // Draw background behind
+            if (!t->score()->getViewer().empty()) {
+                  for (MuseScoreView* view : t->score()->getViewer()) {
+                        view->drawBackgroundOffset(p, t->bbox(), t->pageBoundingRect(), t);
+                        }
+                  }
+            }
+
 #ifndef Q_OS_MACOS
       TextBase::drawTextWorkaround(p, f, pos, text);
 #else
@@ -3102,18 +3118,29 @@ void TextBase::draw(QPainter* p) const
       {
       if (hasFrame()) {
             qreal baseSpatium = MScore::baseStyle().value(Sid::spatium).toDouble();
-            if (!qFuzzyIsNull(frameWidth().val())) {
+            qreal frameWidthVal = frameWidth().val() * (sizeIsSpatiumDependent() ? spatium() : baseSpatium);
+            QColor fColor = curColor(visible(), frameColor());
+            if (!frameWidth().isZero()) {
                   QColor fColor = curColor(visible(), frameColor());
                   qreal frameWidthVal = frameWidth().val() * (sizeIsSpatiumDependent() ? spatium() : baseSpatium);
-
-                  QPen pen(fColor, frameWidthVal, Qt::SolidLine,
-                     Qt::SquareCap, Qt::MiterJoin);
+                  QPen pen(fColor, frameWidthVal, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin);
                   p->setPen(pen);
                   }
-            else
-                  p->setPen(Qt::NoPen);
+            else p->setPen(Qt::NoPen);
             QColor bg(bgColor());
             p->setBrush(bg.alpha() ? QBrush(bg) : Qt::NoBrush);
+
+            // Draw background within text-frame
+            QRectF bb     = bbox().adjusted(frameWidthVal, frameWidthVal, -frameWidthVal, -frameWidthVal);
+            QRectF pageBB = pageBoundingRect().adjusted(frameWidthVal, frameWidthVal, -frameWidthVal, -frameWidthVal);
+            bool skip = (parent() && parent()->isBox());
+            if (MScore::noGui) {;}
+            else if (!skip && !score()->getViewer().empty()) {
+                  for (MuseScoreView* view : score()->getViewer())
+                        view->drawBackgroundOffset(p, bb, pageBB, this);
+                  }
+            else p->fillRect(bb, Qt::white);
+
             if (circle())
                   p->drawEllipse(frame);
             else {

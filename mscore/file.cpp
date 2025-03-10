@@ -2113,9 +2113,15 @@ bool MuseScore::savePdf(Score* cs_, QPrinter& printer)
       const QRect fillRect(0.0, 0.0, size.width() * DPI, size.height() * DPI);
       int exportBgStyle = preferences.getInt(PREF_EXPORT_BG_STYLE);
       bool useFgColor = preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR);
+      bool useTransparency = !exportBgStyle;
       const QColor fgColor = preferences.getColor(PREF_UI_CANVAS_FG_COLOR);
       const QColor customColor = preferences.getColor(PREF_EXPORT_BG_CUSTOM_COLOR);
-      const QPixmap fgPixMap(preferences.getString(PREF_UI_CANVAS_FG_WALLPAPER));
+      QPixmap* fgPixMap = currentScoreView()->fgPixmap();
+      auto w = size.width()  * DPI;
+      auto h = size.height() * DPI;
+      if (fgPixMap && useTransparency) {
+            fgPixMap = nullptr;
+            }
 
       for (int n = 0; n < pages; ++n) {
             if (!firstPage)
@@ -2123,10 +2129,12 @@ bool MuseScore::savePdf(Score* cs_, QPrinter& printer)
             firstPage = false;
             switch (exportBgStyle) {
                   case 1:
-                        if (useFgColor)
+                        if (fgPixMap && !fgPixMap->isNull()) {
+                              p.drawTiledPixmap(fillRect, *fgPixMap, fillRect.topLeft());
+                              }
+                        else if (useFgColor) {
                               p.fillRect(fillRect, fgColor);
-                        else
-                              p.drawTiledPixmap(fillRect, fgPixMap, fillRect.topLeft());
+                              }
                         break;
                   case 2:
                         p.fillRect(fillRect, customColor);
@@ -2838,7 +2846,7 @@ void WallpaperPreview::setImage(const QString& path)
 QString MuseScore::getWallpaper(const QString& caption)
       {
       QString filter = tr("Images") + " (*.jpg *.jpeg *.png *.bmp *.tif *.tiff);;" + tr("All") + " (*)";
-      QString d = mscoreGlobalShare + "/wallpaper";
+      QString d = preferences.getString(PREF_APP_PATHS_MYIMAGES);
 
       if (preferences.getBool(PREF_UI_APP_USENATIVEDIALOGS)) {
             QString s = QFileDialog::getOpenFileName(
