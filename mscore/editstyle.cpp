@@ -37,7 +37,7 @@ const char* lineStyles[] = {
       QT_TRANSLATE_NOOP("EditStyleBase", "Dashed"),
       QT_TRANSLATE_NOOP("EditStyleBase", "Dotted"),
       QT_TRANSLATE_NOOP("EditStyleBase", "Dash-dotted"),
-      QT_TRANSLATE_NOOP("EditStyleBase", "Dash-dot-dotted")
+      QT_TRANSLATE_NOOP("EditStyleBase", "Squared")
 };
 
 //---------------------------------------------------------
