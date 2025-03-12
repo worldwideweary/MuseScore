@@ -2884,6 +2884,64 @@ void ScoreView::cmd(const char* s)
       //      {{"find"}, [](ScoreView* cv, const QByteArray&) {
       //            ; // TODO:state         sm->postEvent(new CommandEvent(cmd));
       //            }},
+            {{"select-slur"}, [](ScoreView* cv, const QByteArray&) {
+                  Element* e = nullptr;
+                  int beginning = 0;
+                  int tick      = 0;
+                  int track     = 0;
+                  auto score = cv->score();
+                  auto& sel  = score->selection();
+                  if (sel.isRange()) {
+                        e = sel.elements().front();
+                        tick = sel.tickEnd().ticks();
+                        if (sel.firstChordRest())
+                              track = sel.firstChordRest()->track();
+                        }
+                  if (sel.isSingle()) {
+                        e = sel.element();
+                        tick = e->tick().ticks();
+                        track = e->track();
+                        }
+                  if (!e) return;
+
+                  // Will consider entire staff's voicing, but use Note-Entry's track info initially
+                  track = score->noteEntryMode() ? score->inputTrack() : -1;
+
+                  if (e->isSlurSegment()) {
+                        // Go to previous (or overlapping) slur of current position in same track
+                        auto overlappingSpanners = score->spannerMap().findOverlapping(tick, tick);
+                        std::vector<SlurSegment*> overlappingSlurSegments;
+                        for (auto i : overlappingSpanners) {
+                               auto s = i.value;
+                               if (s->isSlur()) {
+                                     if (s->track() == track || (s->staff() == e->staff() && track < 0)) {
+                                           auto slur = toSlur(s);
+                                           overlappingSlurSegments.emplace_back(slur->backSegment());
+                                           }
+                                     }
+                               }
+                        if (e == overlappingSlurSegments.front())
+                              --tick;
+                        else beginning = tick;
+                        }
+
+                  auto spanners = score->spannerMap().findOverlapping(beginning, tick);
+                  std::reverse(spanners.begin(), spanners.end());
+                  for (auto interval : spanners) {
+                        auto spanner = interval.value;
+                        if (spanner->isSlur()) {
+                              if (spanner->track() == track || (spanner->staff() == e->staff() && track < 0)) {
+                                    auto slur = toSlur(spanner);
+                                    auto ss = slur->backSegment();
+                                    if (ss == e) continue;
+                                    cv->changeState(ViewState::NORMAL);
+                                    score->select(ss);
+                                    cv->cmdGotoElement(ss);
+                                    break;
+                                    }
+                              }
+                        }
+                  }},
             {{"scr-prev"}, [](ScoreView* cv, const QByteArray&) {
                   cv->screenPrev();
                   }},
