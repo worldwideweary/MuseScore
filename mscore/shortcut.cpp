@@ -1131,6 +1131,13 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::SCORE_TAB,
          STATE_NORMAL | STATE_NOTE_ENTRY,
+         "prev-beat",
+         QT_TRANSLATE_NOOP("action","Previous Beat"),
+         QT_TRANSLATE_NOOP("action","Go to previous beat")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "prev-measure",
          QT_TRANSLATE_NOOP("action","Previous Measure"),
          QT_TRANSLATE_NOOP("action","Go to previous measure or move text left")
@@ -1183,6 +1190,13 @@ Shortcut Shortcut::_sc[] = {
          "next-chord",
          QT_TRANSLATE_NOOP("action","Next Chord"),
          QT_TRANSLATE_NOOP("action","Go to next chord or move text right")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         "next-beat",
+         QT_TRANSLATE_NOOP("action","Next Beat"),
+         QT_TRANSLATE_NOOP("action","Go to next beat")
          },
       {
          MsWidget::SCORE_TAB,
@@ -1271,6 +1285,13 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::SCORE_TAB,
          STATE_NORMAL | STATE_NOTE_ENTRY,
+         "select-prev-beat",
+         QT_TRANSLATE_NOOP("action","Add Previous Beat to Selection"),
+         QT_TRANSLATE_NOOP("action","Add previous beat to selection")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "select-prev-measure",
          QT_TRANSLATE_NOOP("action","Select to Beginning of Measure"),
          QT_TRANSLATE_NOOP("action","Select to beginning of measure")
@@ -1281,6 +1302,13 @@ Shortcut Shortcut::_sc[] = {
          "select-next-chord",
          QT_TRANSLATE_NOOP("action","Add Next Chord to Selection"),
          QT_TRANSLATE_NOOP("action","Add next chord to selection")
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         "select-next-beat",
+         QT_TRANSLATE_NOOP("action","Add Next Beat to Selection"),
+         QT_TRANSLATE_NOOP("action","Add next beat to selection")
          },
       {
          MsWidget::SCORE_TAB,
@@ -2689,7 +2717,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "voice-x12",
          QT_TRANSLATE_NOOP("action","Exchange Voice 1-2"),
          QT_TRANSLATE_NOOP("action","Exchange voice 1-2"),
@@ -2699,7 +2727,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "voice-x13",
          QT_TRANSLATE_NOOP("action","Exchange Voice 1-3"),
          QT_TRANSLATE_NOOP("action","Exchange voice 1-3"),
@@ -2709,7 +2737,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "voice-x14",
          QT_TRANSLATE_NOOP("action","Exchange Voice 1-4"),
          QT_TRANSLATE_NOOP("action","Exchange voice 1-4"),
@@ -2719,7 +2747,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "voice-x23",
          QT_TRANSLATE_NOOP("action","Exchange Voice 2-3"),
          QT_TRANSLATE_NOOP("action","Exchange voice 2-3"),
@@ -2729,7 +2757,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "voice-x24",
          QT_TRANSLATE_NOOP("action","Exchange Voice 2-4"),
          QT_TRANSLATE_NOOP("action","Exchange voice 2-4"),
@@ -2739,7 +2767,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "voice-x34",
          QT_TRANSLATE_NOOP("action","Exchange Voice 3-4"),
          QT_TRANSLATE_NOOP("action","Exchange voice 3-4"),

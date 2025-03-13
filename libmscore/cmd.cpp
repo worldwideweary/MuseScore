@@ -1820,8 +1820,13 @@ void Score::addArticulation(SymId attr)
       int numAdded = 0;
       int numRemoved = 0;
       for (Element* el : selection().elements()) {
+            if (!selection().isRange() && el->isArticulation()) {
+                  if (auto parent = el->parent()) {
+                        el = parent->isChord() ? toChord(parent) : el;
+                        }
+                  }
             if (el->isNote() || el->isChord()) {
-                  Chord* cr = 0;
+                  Chord* cr = nullptr;
                   // apply articulation on a given chord only once
                   if (el->isNote()) {
                         cr = toNote(el)->chord();
@@ -1884,8 +1889,10 @@ void Score::toggleAccidental(AccidentalType at, const EditData& ed)
 
 void Score::changeAccidental(AccidentalType idx)
       {
-      foreach(Note* note, selection().noteList())
+      for (auto note : selection().noteList()) {
+            idx = (note->accidentalType() != idx) ? idx : AccidentalType::NONE;
             changeAccidental(note, idx);
+            }
       }
 
 //---------------------------------------------------------
@@ -2614,6 +2621,128 @@ Element* Score::move(const QString& cmd)
                   el = cr;
 
             }
+      else if (cmd == "next-beat" && cr) {
+            // consider a combination of "next/prev beat"  and "end/begin of beam"
+            if (noteEntryMode())
+                  _is.moveToNextInputPos();
+
+            auto n = cr->beat().numerator();
+            auto d = cr->beat().denominator();
+            float div = static_cast<float>(n) / static_cast<float>(d);
+            float ceiling = std::ceil( (div) );
+
+            n = (d == 1) ? (n+1) : ceiling;
+            auto nextBeat = Fraction(n, 1);
+            SigEvent se = score()->sigmap()->timesig(cr->tick());
+            auto bpm = se.timesig().numerator();
+            if (nextBeat.numerator() > bpm)
+                nextBeat.setNumerator(1);
+
+            auto beam = cr->beam();
+            if (beam && beam->elements().back() == cr) {
+                  beam = nullptr;
+                  }
+            auto ncr = nextChordRest(cr);
+            auto pcr = cr;
+            while (ncr && (beam || (ncr->beat() != nextBeat))) {
+                  if (beam) {
+                        if (!beam->contains(ncr)) {
+                              ncr = pcr;
+                              break;
+                              }
+                        else pcr = ncr;
+                        }
+                  else if (ncr->beat().numerator() == 1) {
+                        break;
+                        }
+                  ncr = nextChordRest(ncr);
+                  }
+
+            el = ncr;
+
+            while (el && el->isRest() && toRest(el)->isGap())
+                  el = nextChordRest(toChordRest(el));
+
+            if (el && noteEntryMode()) {
+                  Measure* m = toChordRest(el)->measure();
+                  Segment* nis = _is.segment();
+                  Measure* nim = nis ? nis->measure() : nullptr;
+                  if (m != oim && m != nim)
+                        el = cr;
+                  else if (cr && nis == cr->segment())
+                        el = cr;
+                  }
+            else if (!el)
+                  el = cr;
+            }
+      else if (cmd == "prev-beat" && cr) {
+            if (noteEntryMode() && _is.segment()) {
+                  Measure* m = _is.segment()->measure();
+                  Segment* s = _is.segment()->prev1(SegmentType::ChordRest);
+                  int track = _is.track();
+                  for (; s; s = s->prev1(SegmentType::ChordRest)) {
+                      if (s->element(track) || (s->measure() != m && s->rtick().isZero())) {
+                              if (s->element(track)) {
+                                    if (s->element(track)->isRest() && toRest(s->element(track))->isGap())
+                                          continue;
+                                    }
+                              break;
+                              }
+                        }
+                  _is.moveInputPos(s);
+                  }
+
+            SigEvent se = score()->sigmap()->timesig(cr->tick());
+            auto bpm = se.timesig().numerator();
+            auto n = cr->beat().numerator();
+            auto d = cr->beat().denominator();
+            float realBeat = static_cast<float>(n) / static_cast<float>(d);
+            float floor = std::floor(realBeat);
+            n = (d == 1) ? (n-1) : floor;
+            auto prevBeat = (n == 0) ? Fraction (bpm, 1) : Fraction(n, 1);
+            auto beam = cr->beam();
+            if (beam && beam->elements().front() == cr) {
+                  beam = nullptr;
+                  }
+
+            auto pcr = cr;
+            auto ncr = prevChordRest(cr);
+            while (ncr && (beam || (ncr->beat() != prevBeat))) {
+                  bool newMeasure = (ncr->beat().numerator() == 1);
+                  if (beam) {
+                        if (!beam->contains(ncr)) {
+                              ncr = pcr;
+                              break;
+                              }
+                        else pcr = ncr;
+                        }
+                  else if (newMeasure) {
+                        break;
+                        }
+                  ncr = prevChordRest(ncr);
+                  }
+
+            el = ncr;
+
+            while (el && el->isRest() && toRest(el)->isGap())
+                  el = prevChordRest(toChordRest(el));
+
+            if (el && noteEntryMode()) {
+                  // Disregard if not in original or new measure (i.e., don't skip measures)
+                  Measure* m = toChordRest(el)->measure();
+                  Segment* nis = _is.segment();
+                  Measure* nim = nis ? nis->measure() : nullptr;
+                  if (m != oim && m != nim)
+                        el = cr;
+                  // do not use if new input segment is current cr
+                  // (input cursor just caught up to current selection)
+                  else if (cr && nis == cr->segment())
+                        el = cr;
+                  }
+
+            else if (!el)
+                  el = cr;
+            }
       else if (cmd == "next-measure") {
             auto currentTrack = noteEntryMode() ? _is.track() : 0;
             if (isRange)
@@ -2857,6 +2986,86 @@ Element* Score::selectMove(const QString& cmd)
                         }}}
                   }
             el = selectSelf ? cr : prevChordRest(cr, true);
+            }
+      else if (cmd == "select-next-beat") {
+            // Considers begin/end of beam, if any, to take precedence over beat
+            auto n = cr->beat().numerator();
+            auto d = cr->beat().denominator();
+            float div = static_cast<float>(n) / static_cast<float>(d);
+            float ceiling = std::ceil( (div) );
+            n = (d == 1) ? (n+1) : ceiling;
+            auto nextBeat = Fraction(n, 1);
+            SigEvent se = score()->sigmap()->timesig(cr->tick());
+            auto bpm = se.timesig().numerator();
+            if (nextBeat.numerator() > bpm)
+                  nextBeat.setNumerator(1);
+            auto beam = cr->beam();
+            if (beam && beam->elements().back() == cr) {
+                  // @beam end
+                  beam = nullptr;
+                  }
+            auto ncr = nextChordRest(cr);
+            auto pcr = cr;
+            while (ncr && (beam || (ncr->beat() != nextBeat))) {
+                  bool newMeasure = (ncr->beat().numerator() == 1);
+                  if (beam) {
+                        if (!beam->contains(ncr)) {
+                              ncr = pcr;
+                              break;
+                              }
+                        else pcr = ncr;
+                        }
+                  else if (newMeasure) {
+                        break;
+                        }
+                  ncr = nextChordRest(ncr);
+                  }
+
+            el = ncr;
+
+            while (el && el->isRest() && toRest(el)->isGap())
+                  el = nextChordRest(toChordRest(el));
+
+            if (!el)
+                  el = cr;
+            }
+      else if (cmd == "select-prev-beat") {
+            SigEvent se = score()->sigmap()->timesig(cr->tick());
+            auto bpm = se.timesig().numerator();
+            auto n = cr->beat().numerator();
+            auto d = cr->beat().denominator();
+            float realBeat = static_cast<float>(n) / static_cast<float>(d);
+            float floor = std::floor(realBeat);
+            n = (d == 1) ? (n-1) : floor;
+            auto prevBeat = (n == 0) ? Fraction (bpm, 1) : Fraction(n, 1);
+
+            auto beam = cr->beam();
+            if (beam && beam->elements().front() == cr)
+                  beam = nullptr;
+            auto pcr = cr;
+            auto ncr = prevChordRest(cr);
+            while (ncr && (beam || (ncr->beat() != prevBeat))) {
+                  bool newMeasure = (ncr->beat().numerator() == 1);
+                  if (beam) {
+                        if (!beam->contains(ncr)) {
+                              ncr = pcr;
+                              break;
+                              }
+                        else pcr = ncr;
+                        }
+                  else if (newMeasure) {
+                        break;
+                        }
+                  ncr = prevChordRest(ncr);
+                  }
+
+            el = ncr;
+
+            while (el && el->isRest() && toRest(el)->isGap())
+                  el = prevChordRest(toChordRest(el));
+
+            if (!el)
+                  el = cr;
             }
       else if (cmd == "select-next-measure")
             el = nextMeasure(cr, true, true);
