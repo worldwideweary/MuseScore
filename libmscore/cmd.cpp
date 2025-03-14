@@ -2546,7 +2546,8 @@ Element* Score::move(const QString& cmd)
       Measure* oim = ois ? ois->measure() : nullptr;
 
       if (cmd == "next-chord" && cr) {
-            // note input cursor
+            auto iCr = _is.cr();
+
             if (noteEntryMode())
                   _is.moveToNextInputPos();
 
@@ -2564,12 +2565,20 @@ Element* Score::move(const QString& cmd)
                   Measure* m = toChordRest(el)->measure();
                   Segment* nis = _is.segment();
                   Measure* nim = nis ? nis->measure() : nullptr;
-                  if (m != oim && m != nim)
-                        el = cr;
+                  if (m != oim && m != nim) {
+                        if (noteEntryMethod() == NoteEntryMethod::REPITCH)
+                              el = iCr;
+                        else
+                              el = cr;
+                        }
                   // do not use if new input segment is current cr
                   // this means input cursor just caught up to current selection
-                  else if (cr && nis == cr->segment() && !isRange)
-                        el = cr;
+                  else if (cr && nis == cr->segment() && !isRange) {
+                        if (noteEntryMethod() == NoteEntryMethod::REPITCH)
+                              el = iCr;
+                        else
+                              el = cr;
+                        }
                   }
             else if (!el)
                   el = cr;
