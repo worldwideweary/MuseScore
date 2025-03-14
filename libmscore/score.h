@@ -736,11 +736,11 @@ class Score : public QObject, public ScoreElement {
       void addElement(Element*);
       void removeElement(Element*);
 
-      Note* addPitch(NoteVal&, bool addFlag, InputState* externalInputState = nullptr);
+      Note* addPitch(NoteVal&, bool addFlag, InputState* externalInputState = nullptr, bool silent = false);
       void addPitch(int pitch, bool addFlag, bool insert);
       Note* addTiedMidiPitch(int pitch, bool addFlag, Chord* prevChord);
       Note* addMidiPitch(int pitch, bool addFlag);
-      Note* addNote(Chord*, const NoteVal& noteVal, bool forceAccidental = false, InputState* externalInputState = nullptr);
+      Note* addNote(Chord*, const NoteVal& noteVal, bool forceAccidental = false, InputState* externalInputState = nullptr, bool silent = false);
 
       NoteVal noteValForPosition(Position pos, AccidentalType at, bool &error);
 
@@ -1074,7 +1074,7 @@ class Score : public QObject, public ScoreElement {
       Element* move(const QString& cmd);
       void cmdEnterRest(const TDuration& d);
       void enterRest(const TDuration& d, InputState* externalInputState = nullptr);
-      void cmdAddInterval(int, const std::vector<Note*>&);
+      Note* cmdAddInterval(int, const std::vector<Note*>&);
       void cmdCreateTuplet(ChordRest*, Tuplet*);
       void removeAudio();
 

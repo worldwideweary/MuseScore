@@ -2585,6 +2585,10 @@ void ScoreView::cmd(const char* s)
                         cv->changeState(ViewState::NOTE_ENTRY);
                   else if (cv->state == ViewState::NOTE_ENTRY)
                         cv->changeState(ViewState::NORMAL);
+                  else if (cv->state == ViewState::EDIT) {
+                        cv->endEdit();
+                        cv->changeState(ViewState::NOTE_ENTRY);
+                        }
 
                   else if (cv->state ==ViewState::PLAY) {
                         cv->changeState(ViewState::NORMAL);
@@ -3298,6 +3302,42 @@ void ScoreView::cmd(const char* s)
                         //      ;     // TODO: state    sm->postEvent(new CommandEvent("note-input"));
                         cv->score()->cmdAddInterval(n, nl);
                         }
+                  else  {
+                        auto score      = cv->score();
+                        auto selection  = score->selection();
+                        auto& is        = score->inputState();
+                        auto cr         = selection.currentCR();
+
+                        if (cv->noteEntryMode() && cr && cr->isRest()) {
+                              bool silent = true;
+                              cv->cmdRepeatSelection(silent); // TODO: silent makes no difference
+                              auto last = is.lastSegment();
+                              is.moveInputPos(last);
+                              cr = selection.currentCR();
+
+                              if (cr->isChord()) {
+                                    auto chord = toChord(cr);
+                                    // note list from selection is top most note, bottom will be bottom note.
+                                    std::vector<Note*> bottom;
+                                    bottom.emplace_back(chord->downNote());
+                                    nl = MScore::noteInputOctaveTendencyIsTopNote ? selection.noteList() : bottom;
+                                    Note* addedNote = score->cmdAddInterval(n, nl);
+                                    if (addedNote) {
+                                          // Erase all but the added note:
+                                          // TODO: Undo stack stores deletions. Without start/end commands, program halts
+                                          // due to assert of !empty note list
+                                          score->startCmd();
+                                          for (auto it = chord->notes().begin(); it != chord->notes().end(); ) {
+                                                if (*it != addedNote)
+                                                      score->deleteItem(*it);
+                                                else ++it;
+                                                }
+                                          is.moveToNextInputPos();
+                                          score->endCmd();
+                                          }
+                                    }
+                              }
+                        }
                   }},
             {{"tie"}, [](ScoreView* cv, const QByteArray&) {
                   if (cv->noteEntryMode()) {
@@ -3897,6 +3937,7 @@ void ScoreView::startNoteEntry()
 
       is.setSegment(0);
       Note* note  = 0;
+      auto defaultDuration = TDuration(TDuration::DurationType::V_QUARTER);
 
       if (_score->selection().isNone()) {
             // no selection
@@ -3905,6 +3946,9 @@ void ScoreView::startNoteEntry()
             // or, CR at last selected position if that is in view
             Page* p = nullptr;
             QList<QPointF> points;
+            points.append(toLogical(QPoint(width() * 0.5, height() * 0.5)));
+            points.append(toLogical(QPoint(width() * 0.5, height() * 0.22)));
+            points.append(toLogical(QPoint(width() * 0.5, height() * 0.88)));
             points.append(toLogical(QPoint(width() * 0.25, height() * 0.25)));
             points.append(toLogical(QPoint(0.0, 0.0)));
             points.append(toLogical(QPoint(0.0, height())));
@@ -4009,10 +4053,16 @@ void ScoreView::startNoteEntry()
             if (note == 0)
                   note = c->upNote();
             el = note;
+            defaultDuration = c->durationType();
+            }
+      else if (el->type() == ElementType::REST) {
+            Rest* r = toRest(el);
+            defaultDuration = r->durationType() == TDuration::DurationType::V_MEASURE ? defaultDuration : r->durationType();
             }
       TDuration d(is.duration());
+
       if (!d.isValid() || d.isZero() || d.type() == TDuration::DurationType::V_MEASURE)
-            is.setDuration(TDuration(TDuration::DurationType::V_QUARTER));
+            is.setDuration(defaultDuration);
       is.setAccidentalType(AccidentalType::NONE);
 
       _score->select(el, SelectType::SINGLE, 0);
@@ -6345,52 +6395,79 @@ MeasureBase* ScoreView::checkSelectionStateForInsertMeasure()
 //   cmdRepeatSelection
 //---------------------------------------------------------
 
-void ScoreView::cmdRepeatSelection()
+void ScoreView::cmdRepeatSelection(bool silent)
       {
       const Selection& selection = _score->selection();
-
+      bool resetToRepitch = false;
+      bool isRange = selection.isRange();
+      auto iCR = _score->inputState().cr();
       if (noteEntryMode() && selection.isSingle()) {
-            Element* el = _score->selection().element();
-            while (el && el->type() != ElementType::NOTE)
-                   el = el->prevSegmentElement();
-            if (el && el->type() == ElementType::NOTE && !_score->inputState().endOfScore()) {
+            if (_score->noteEntryMethod() == NoteEntryMethod::REPITCH) {
+                  resetToRepitch = true;
+                  _score->setNoteEntryMethod(NoteEntryMethod::STEPTIME);
+                  }
+
+            if (auto el = selection.element()) {
+                  bool isRest = el->type() == ElementType::REST;
+                  bool isNote = el->type() == ElementType::NOTE;
+
+                  if (!isRest && !isNote)
+                        return;
+
+                  auto startTick = selection.tickStart();
+                  auto inputTick = _score->inputState().tick();
+
+                  bool selectionAndInputAreSamePos = startTick == inputTick;
+                  bool usePrevChord = (isRest || (isNote && selectionAndInputAreSamePos));
+                  ChordRest* prevCR = isRest ? toChordRest(el) : toChordRest(el->parent());
+                  if (usePrevChord) {
+                        prevCR = prevChordRest(prevCR);
+                        while (el) {
+                              if (!prevCR || prevCR == prevChordRest(prevCR))
+                                    return;
+
+                              if (!prevCR->isRest()) {
+                                    el = prevCR;
+                                    break;
+                                    }
+
+                              prevCR = prevChordRest(prevCR);
+                              }
+                        }
+
                   _score->startCmd();
                   bool addTo = false;
-                  Chord* c = toNote(el)->chord();
+                  auto c = usePrevChord ? toChord(prevCR) : static_cast<Note*>(el)->chord();
                   for (Note* note : c->notes()) {
                         NoteVal nval = note->noteVal();
-                        _score->addPitch(nval, addTo);
+                        usePrevChord ? _score->addPitch(nval, addTo, nullptr, silent)
+                                     : _score->addPitch(nval, addTo);
                         addTo = true;
                         }
                   _score->endCmd();
                   }
-            if (el && el->type() == ElementType::REST) {
-                  auto prevCR = toChordRest(el);
-                  prevCR = prevChordRest(prevCR);
-                  while (el) {
-                        if (!prevCR || prevCR == prevChordRest(prevCR))
-                              return;
-                        if (!prevCR->isRest()) {
-                              el = prevCR;
-                              break;
+
+            if (resetToRepitch) {
+                  _score->setNoteEntryMethod(NoteEntryMethod::REPITCH);
+                  if (auto nCR = nextChordRest(iCR)) {
+                        auto oCR = nCR;
+                        bool end = false;
+                        while (nCR && !nCR->isChord()) {
+                              if ((nCR = nextChordRest(nCR))) {
+                                    _score->inputState().setSegment(nCR->segment());
+                                    }
+                              else end = true;
                               }
-                        prevCR = prevChordRest(prevCR);
-                        }
-                  if (!_score->inputState().endOfScore()) {
-                        _score->startCmd();
-                        bool addTo = false;
-                        auto c = toChord(prevCR);
-                        for (auto note : c->notes()) {
-                              auto noteVal = note->noteVal();
-                              _score->addPitch(noteVal, addTo);
-                              addTo = true;
+                        if (end) {
+                              _score->inputState().setSegment(oCR->segment());
                               }
-                        _score->endCmd();
                         }
+                  moveCursor();
                   }
+
             return;
             }
-      if (!selection.isRange()) {
+      if (!isRange) {
             ChordRest* cr = _score->getSelectedChordRest();
             if (!cr)
                   return;
@@ -6418,22 +6495,43 @@ void ScoreView::cmdRepeatSelection()
       int dStaff = selection.staffStart();
       if (auto endSegment = selection.endSegment()) {
             auto eTrack = selection.elements().front()->track();
-            auto staffTrack   = staff2track(dStaff);
+            auto staffTrack = staff2track(dStaff);
             bool filtered = score()->selection().hasTemporaryFilter();
             if (endSegment->segmentType() != SegmentType::ChordRest)
                   endSegment = endSegment->next1(SegmentType::ChordRest);
-            if (!endSegment)
-                  return;
-            auto e = (filtered && endSegment->element(eTrack)) ? endSegment->element(eTrack) : endSegment->element(staffTrack);
-            if (e) {
-                  auto cr = toChordRest(e);
-                  _score->startCmd();
-                  _score->pasteStaff(xml, cr->segment(), cr->staffIdx());
-                  _score->endCmd();
-                  }
-            else qDebug("cmdRepeatSelection: cannot paste: endSegment: %p dStaff %d", endSegment, dStaff);
+            if (endSegment) {
+                  int endTick   = selection.tickEnd().ticks();
+                  int startTick = selection.tickStart().ticks();
+                  if (endTick < startTick)
+                        std::swap(endTick, startTick);
+                  int totalTicks = endTick - startTick;
+
+                  if ( (endTick + totalTicks) > score()->endTick().ticks() ) {
+                        qDebug() << "cmdRepeatSelection: Results exceed size of score";
+                        if (_score->selection().hasTemporaryFilter()) {
+                              return;
+                              }
+                        }
+
+                  int track = filtered ? eTrack : staffTrack;
+                  auto el = endSegment->element(track) ? endSegment->element(track) : selection.lastChordRest(track);
+                  if (el) {
+                        int staffIdx = el->staffIdx();
+                        _score->startCmd();
+                        _score->pasteStaff(xml, endSegment, staffIdx);
+                        _score->endCmd();
+                        } else qDebug("cmdRepeatSelection: cannot paste: endSegment: %p dStaff %d", endSegment, dStaff);
+                  } else qDebug("cmdRepeatSelection: cannot paste: endSegment: %p dStaff %d", endSegment, dStaff);
+            } else qDebug("cmdRepeatSelection: cannot paste: endSegment: %p dStaff %d", endSegment, dStaff);
+
+      if (isRange && noteEntryMode()) {
+            auto& _is = _score->inputState();
+            auto track = _is.track();
+            auto ncr  = selection.endSegment()->nextChordRest(track);
+            _is.moveInputPos(ncr);
+            _is.setTrack(track);
             }
-      else qDebug() << "cmdRepeatSelection: no end segment";
+
       }
 
 //---------------------------------------------------------

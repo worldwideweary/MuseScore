@@ -377,9 +377,10 @@ std::vector<Rest*> Score::setRests(const Fraction& _tick, int track, const Fract
 //   addNote from NoteVal
 //---------------------------------------------------------
 
-Note* Score::addNote(Chord* chord, const NoteVal& noteVal, bool forceAccidental, InputState* externalInputState)
+Note* Score::addNote(Chord* chord, const NoteVal& noteVal, bool forceAccidental, InputState* externalInputState, bool silent)
       {
       InputState& is = externalInputState ? (*externalInputState) : _is;
+      auto inputSeg = is.segment();
 
       Note* note = new Note(this);
       note->setParent(chord);
@@ -396,8 +397,8 @@ Note* Score::addNote(Chord* chord, const NoteVal& noteVal, bool forceAccidental,
             a->setParent(note);
             undoAddElement(a);
             }
-      setPlayNote(true);
-      setPlayChord(true);
+      setPlayNote(!silent);
+      setPlayChord(!silent);
 
       if (externalInputState) {
             is.setTrack(note->track());
@@ -410,8 +411,14 @@ Note* Score::addNote(Chord* chord, const NoteVal& noteVal, bool forceAccidental,
 
       if (!chord->staff()->isTabStaff(chord->tick())) {
             NoteEntryMethod entryMethod = is.noteEntryMethod();
-            if (entryMethod != NoteEntryMethod::REALTIME_AUTO && entryMethod != NoteEntryMethod::REALTIME_MANUAL)
-                  is.moveToNextInputPos();
+            if (entryMethod != NoteEntryMethod::REALTIME_AUTO && entryMethod != NoteEntryMethod::REALTIME_MANUAL) {
+                  if (entryMethod == NoteEntryMethod::REPITCH) {
+                        if (inputSeg) {
+                              is.setSegment(inputSeg);
+                              }
+                        }
+                  else is.moveToNextInputPos();
+                  }
             }
       return note;
       }

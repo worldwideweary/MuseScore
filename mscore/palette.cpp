@@ -671,10 +671,9 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                               }
                         }
 
-                  // If dynamic is placed while a hairpin is active within note entry,
-                  // finalize the hairpin to be just before the dynamic mark or after it
-                  // depending on whether the hairpin started at this position.
                   if (element->isDynamic()) {
+                        // Finalize any active hairpin just before dynamic mark (or after if hairpin 
+                        // started at current position 
                         auto hp = is.dynamicLine();
                         if (score->noteEntryMode() && hp) {
                               Element* start = hp->startElement();
@@ -685,24 +684,23 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                                     hp->score()->undo(new ChangeSpannerElements(hp, start, end));
                                     is.dynamicLine()->setSelected(false);
                                     is.setDynamicLine(nullptr);
+                                    // Dynamic remains to be applied...
                                     }
                               }
                         }
 
-                  for (Element* e : sel.elements()) {
-                        auto ee = e;
-
-                        // Change from 3.6.2: Let barline placement be equiv. to range selection
-                        // in N.E. starting new measure entry (end of the measure placement for streamlining)
-                        if (element->type() == ElementType::BAR_LINE && is.noteEntryMode() ) {
-                              auto ism = is.cr() ? is.cr()->measure() : score->tick2measure(is.tick());
-                              auto em  = e->findMeasure();
-                              if (ism && em && (em->index() != ism->index())) {
-                                    ee = em;
+                  if (!finished) {
+                        for (Element* e : sel.elements()) {
+                              auto ee = e;
+                              if (element->type() == ElementType::BAR_LINE && is.noteEntryMode() ) {
+                                    auto ism = is.cr() ? is.cr()->measure() : score->tick2measure(is.tick());
+                                    auto em  = e->findMeasure();
+                                    if (ism && em && (em->index() != ism->index())) {
+                                          ee = em;
+                                          }
                                     }
+                              applyDrop(score, viewer, ee, element, modifiers);
                               }
-
-                        applyDrop(score, viewer, ee, element, modifiers);
                         }
                   }
             }
@@ -726,6 +724,10 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                   Measure* last = sel.endSegment() ? sel.endSegment()->measure() : nullptr;
                   bool onlyOneMeasure = (sel.startSegment()->measure() == last);
                   for (Measure* m = sel.startSegment()->measure(); m; m = m->nextMeasureMM()) {
+                        if ( (element->type() == ElementType::BAR_LINE)  ) {
+                              if (m != last)
+                                    continue;
+                              }
                         QRectF r = m->staffabbox(sel.staffStart());
                         QPointF pt(r.x() + r.width() * .5, r.y() + r.height() * .5);
                         pt += m->system()->page()->pos();
