@@ -380,6 +380,7 @@ std::vector<Rest*> Score::setRests(const Fraction& _tick, int track, const Fract
 Note* Score::addNote(Chord* chord, const NoteVal& noteVal, bool forceAccidental, InputState* externalInputState)
       {
       InputState& is = externalInputState ? (*externalInputState) : _is;
+      auto inputSeg = is.segment();
 
       Note* note = new Note(this);
       note->setParent(chord);
@@ -410,8 +411,14 @@ Note* Score::addNote(Chord* chord, const NoteVal& noteVal, bool forceAccidental,
 
       if (!chord->staff()->isTabStaff(chord->tick())) {
             NoteEntryMethod entryMethod = is.noteEntryMethod();
-            if (entryMethod != NoteEntryMethod::REALTIME_AUTO && entryMethod != NoteEntryMethod::REALTIME_MANUAL)
-                  is.moveToNextInputPos();
+            if (entryMethod != NoteEntryMethod::REALTIME_AUTO && entryMethod != NoteEntryMethod::REALTIME_MANUAL) {
+                  if (entryMethod == NoteEntryMethod::REPITCH) {
+                        if (inputSeg) {
+                              is.setSegment(inputSeg);
+                              }
+                        }
+                  else is.moveToNextInputPos();
+                  }
             }
       return note;
       }
