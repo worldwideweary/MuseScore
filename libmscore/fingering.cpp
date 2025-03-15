@@ -103,13 +103,14 @@ void Fingering::layout()
       rypos() = 0.0;    // handle placement below
       qreal verticalSpacing = 0.15; // Percentage of text-height for stacking vertically
 
-      if (autoplace() && note()) {
+      if (note()) {
             Note* n      = note();
             Chord* chord = n->chord();
-            bool voices  = chord->measure()->hasVoices(chord->staffIdx(), chord->tick(), chord->actualTicks());
-            bool tight   = voices && chord->notes().size() == 1 && !chord->beam() && tid() != Tid::STRING_NUMBER;
-
+            Note* downNote = chord->downNote();
             qreal headWidth = n->bboxRightPos();
+            bool voices  = MScore::fingeringTextOmitVoicing ? false : chord->measure()->hasVoices(chord->staffIdx(), chord->tick(), chord->actualTicks());
+            bool tight   = MScore::fingeringTextOmitTightening ? false : voices && chord->notes().size() == 1 && !chord->beam() && tid() != Tid::STRING_NUMBER;
+            bool ap = autoplace();
 
             // update offset after drag
             qreal rebase = 0.0;
@@ -129,10 +130,16 @@ void Fingering::layout()
                   SysStaff* ss = m->system()->staff(chord->vStaffIdx());
                   Staff* vStaff = chord->staff();     // TODO: use current height at tick
 
-                  if (n->mirror())
-                        rxpos() -= n->ipos().x();
-                  rxpos() += headWidth * .5;
-                  if (above) {
+                  if (n->mirror()) {
+                        qreal xOff = n->ipos().x();
+                        xOff -= (n != downNote) ? downNote->ipos().x() : 0.0;
+                        rxpos() -= xOff;
+                        }
+                  rxpos() += headWidth * 0.5;
+                  if (!ap) {
+                        rypos() += (above ? -sp : +sp) * 1.5;
+                        }
+                  else if (above) {
                         if (tight) {
                               if (chord->stem())
                                     rxpos() -= 0.8 * sp;
@@ -216,7 +223,8 @@ void Fingering::layout()
             // for other fingering styles, do not autoplace
 
             // restore autoplace
-            setAutoplace(true);
+            if (ap)
+                  setAutoplace(true);
             }
       else if (offsetChanged() != OffsetChange::NONE) {
             // rebase horizontally too, as autoplace may have adjusted it
