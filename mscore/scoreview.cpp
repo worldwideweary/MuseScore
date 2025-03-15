@@ -6223,8 +6223,25 @@ void ScoreView::cmdAddText(Tid tid, Tid customTid, PropertyFlags pf, Placement p
             case Tid::STRING_NUMBER:
                   {
                   Element* e = _score->getSelectedElement();
-                  if (!e || !e->isNote())
+
+                  if (!e)
                         break;
+
+                  if (!e->isNote()) {
+                        if (e->isRest()) {
+                              while (e && !e->isNote()) {
+                                    bool end = (e->tick() >= score()->lastMeasure()->tick());
+                                    if (end)
+                                          break;
+                                    e = e->nextSegmentElement();
+                                    }
+                              }
+                        else break;
+                        }
+
+                  if (!e->isNote())
+                      break;
+
                   bool isTablature = e->staff()->isTabStaff(e->tick());
                   bool tabFingering = e->staff()->staffType(e->tick())->showTabFingering();
                   if (isTablature && !tabFingering)
