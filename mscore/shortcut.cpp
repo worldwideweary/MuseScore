@@ -3993,6 +3993,20 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         "list-selection-notes",
+         QT_TRANSLATE_NOOP("action","Convert Range Selection to List of Notes"),
+         QT_TRANSLATE_NOOP("action","Convert Range Selection to List of Notes"),
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         "list-selection-notes-rests",
+         QT_TRANSLATE_NOOP("action","Convert Range Selection to List of Notes & Rests"),
+         QT_TRANSLATE_NOOP("action","Convert Range Selection to List of Notes & Rests"),
+         },
+      {
+         MsWidget::SCORE_TAB,
          STATE_NORMAL,
          "toggle-mmrest",
          QT_TRANSLATE_NOOP("action","Toggle 'Create Multimeasure Rest'"),

@@ -22,12 +22,14 @@
 #include "box.h"
 #include "chord.h"
 #include "chordlist.h"
+#include "chordrest.h"
 #include "clef.h"
 #include "drumset.h"
 #include "durationtype.h"
 #include "dynamic.h"
 #include "hairpin.h"
 #include "harmony.h"
+#include "hook.h"
 #include "key.h"
 #include "keysig.h"
 #include "lyrics.h"
@@ -52,8 +54,10 @@
 #include "slur.h"
 #include "staff.h"
 #include "stafftype.h"
+#include "stem.h"
 #include "stringdata.h"
 #include "style.h"
+#include "textframe.h"
 #include "textline.h"
 #include "sym.h"
 #include "system.h"
@@ -3406,6 +3410,144 @@ void Score::cmdAddGrace (NoteType graceType, int duration)
       }
 
 //---------------------------------------------------------
+//   cmdRangeToList
+//   Mimic the inspector activity of Range to List selection
+//   for keyboard activity
+//   Alternatively: cycle box texts & stem/hook/beam/notehead
+//   - [rests] includes rests along with notes iff true
+//---------------------------------------------------------
+
+void Score::cmdRangeToList(bool rests)
+      {
+      QList<Element*> els = selection().elements();
+      QList<Element*> nel;
+      bool restartAtTop = false;
+
+      // Alternative Command(s): Cycle through elements (Vertical equivalent to next/prev element)
+      if (selection().isSingle()) {
+            if (auto e = els.front()) {
+                  if (e->isAccidental()) {
+                        auto acc = toAccidental(e);
+                        auto note = acc->note();
+                        auto stem = note->chord()->stem();
+                        deselectAll();
+                        stem ? select(stem) : select(note);
+                        }
+                  else if (e->isNote()) {
+                        auto note = toNote(e);
+                        auto stem = note->chord()->stem();
+                        auto acc  = note->accidental();
+                        bool haveAccidental = (acc && note->accidentalType() != AccidentalType::NONE);
+                        deselectAll();
+                        haveAccidental ? select(acc) : select(stem);
+                        }
+                  else if (e->isStem()) {
+                        auto stem = toStem(e);
+                        if (auto p = stem->parent()) {
+                              if (p->isChord()) {
+                                    auto c = toChord(p);
+                                    if (auto beam = c->beam())
+                                          select(beam);
+                                    else if (auto hook = c->hook())
+                                          select(hook);
+                                    else if (restartAtTop)
+                                          select(c->upNote());
+                                    else
+                                          select(c->downNote());
+                                    }
+                              }
+                        }
+                  else if (e->isHook()) {
+                        auto hook = toHook(e);
+                        if (auto c = hook->chord())
+                              select( (restartAtTop ? c->upNote() : c->downNote()) );
+                        }
+                  else if (e->isBeam()) {
+                        auto beam = toBeam(e);
+                        auto crs = beam->elements();
+                        bool found = false;
+                        if (score()->noteEntryMode()) {
+                              auto inputTick = score()->inputPos();
+                              for (auto cr : crs) {
+                                    if (cr->tick() == inputTick) {
+                                          if (cr->isChord()) {
+                                                auto c = toChord(cr);
+                                                select( (restartAtTop ? c->upNote() : c->downNote()) );
+                                                }
+                                          else select(cr);
+                                          found = true;
+                                          }
+                                    }
+                              }
+                        if (!found) {
+                              if (auto cr = crs.front()) {
+                                    if (cr->isChord()) {
+                                          auto c = toChord(cr);
+                                          select( (restartAtTop ? c->upNote() : c->downNote()) );
+                                          }
+                                    else select(cr);
+                                    }
+                              }
+                        }
+                  else if (e->isRest()) {
+                        auto rest = toRest(e);
+                        if (auto beam = rest->beam()) {
+                              select(beam);
+                              }
+                        }
+                  else if (e->isBox()) {
+                        auto box = toBox(e);
+                        auto els = box->el();
+                        if (e->isTBox()) {
+                              auto tbox = toTBox(e);
+                              if (auto txt = tbox->text())
+                                    select(txt);
+                              }
+                        else if (!els.empty()) {
+                              e = els.front();
+                              select(e);
+                              }
+                        }
+                  else if (e->isText()) {
+                        auto txt = toText(e);
+                        if (auto p = txt->parent()) {
+                              if (p->isBox()) {
+                                    auto box = toBox(p);
+                                    auto els = box->el();
+                                    for (auto it = els.cbegin(); it != els.cend(); it++) {
+                                          if (e == *it) {
+                                                e = (++it != els.cend()) ? *it : els.front();
+                                                select(e);
+                                                break;
+                                                }
+                                          }
+                                    }
+                              }
+                        }
+                  }
+            }
+      // Default command (last, of course)
+      else {
+            deselectAll();
+            for (auto e : els) {
+                  // TODO Potentially: 3rd shortcut for [rests only] would check an onlyRests flag, like:
+                  if (e->isNote() /* && !onlyRests */) {
+                        auto note = toNote(e);
+                        if (!note->chord()->isGrace()) {
+                              nel.append(note);
+                              selection().add(note);
+                              }
+                        }
+                  else if (rests && e->isRest()) {
+                        nel.append(e);
+                        selection().add(e);
+                        }
+                   }
+             }
+      update();
+      }
+
+//---------------------------------------------------------
 //   cmdExplode
 ///   explodes contents of top selected staff into subsequent staves
 //---------------------------------------------------------
@@ -5215,7 +5357,9 @@ void Score::cmd(const QAction* a, EditData& ed)
             { "select-section",             [](Score* cs, EditData&){ cs->cmdSelectSection();                                         }},
             { "add-brackets",               [](Score* cs, EditData&){ cs->cmdAddBracket();                                            }},
             { "add-parentheses",            [](Score* cs, EditData&){ cs->cmdAddParentheses();                                        }},
-            { "add-braces",                 [](Score* cs, EditData&){ cs->cmdAddBraces();                                        }},
+            { "add-braces",                 [](Score* cs, EditData&){ cs->cmdAddBraces();                                             }},
+            { "list-selection-notes",       [](Score* cs, EditData&){ cs->cmdRangeToList(false);                                      }},
+            { "list-selection-notes-rests", [](Score* cs, EditData&){ cs->cmdRangeToList(true);                                       }},
             { "acciaccatura",               [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::ACCIACCATURA, MScore::division / 2);  }},
             { "appoggiatura",               [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::APPOGGIATURA, MScore::division / 2);  }},
             { "grace4",                     [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::GRACE4, MScore::division);            }},
