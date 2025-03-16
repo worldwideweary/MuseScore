@@ -368,6 +368,8 @@ class MScore {
       static bool disableMouseEntry;
       static int pedalEventsMinTicks;
 
+      static bool fadeFocus;
+
       static bool cursorMoveByBeat;
       static bool cursorMoveByMeasure;
       static bool cursorDrawnBehindStaff;
