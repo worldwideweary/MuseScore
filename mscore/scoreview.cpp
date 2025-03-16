@@ -2024,12 +2024,13 @@ void ScoreView::constraintCanvas (int* dxx, int* dyy)
 //   setPhysicalZoomLevel
 //---------------------------------------------------------
 
-void ScoreView::setPhysicalZoomLevel(const qreal physicalLevel)
+bool ScoreView::setPhysicalZoomLevel(const qreal physicalLevel)
       {
       const qreal currentPhysicalLevel = _matrix.m11();
 
-      if (physicalLevel == currentPhysicalLevel)
-            return;
+      if (physicalLevel == currentPhysicalLevel) {
+            return false;
+            }
 
       const double deltaPhysicalLevel = physicalLevel / currentPhysicalLevel;
 
@@ -2047,14 +2048,16 @@ void ScoreView::setPhysicalZoomLevel(const qreal physicalLevel)
                   }
             }
       update();
+      return true;
       }
 
 //---------------------------------------------------------
 //   setLogicalZoom
 //    Sets the zoom type and logical zoom level. pos is optional and may be omitted to zoom relative to the top-left corner.
+//    Return false = didn't update (same zoom level)  true: zoom was updated
 //---------------------------------------------------------
 
-void ScoreView::setLogicalZoom(ZoomIndex index, qreal logicalLevel, const QPointF& pos/* = QPointF()*/)
+bool ScoreView::setLogicalZoom(ZoomIndex index, qreal logicalLevel, const QPointF& pos/* = QPointF()*/)
       {
       _zoomIndex = index;
 
@@ -2064,7 +2067,9 @@ void ScoreView::setLogicalZoom(ZoomIndex index, qreal logicalLevel, const QPoint
 
       const QPointF p1 = pos.isNull() ? pos : imatrix.map(pos);
 
-      setPhysicalZoomLevel(newPhysicalLevel);
+      bool changed = setPhysicalZoomLevel(newPhysicalLevel);
+      if (!changed)
+            return false;
 
       int dx = 0;
       int dy = 0;
@@ -2090,6 +2095,7 @@ void ScoreView::setLogicalZoom(ZoomIndex index, qreal logicalLevel, const QPoint
       update();
 
       mscore->updateZoomBox(index, newLogicalLevel);
+      return true;
       }
 
 //---------------------------------------------------------
@@ -2751,6 +2757,9 @@ void ScoreView::cmd(const char* s)
                         else if (cv->state == ViewState::PLAY) {
                               // Stop:
                               cv->changeState(ViewState::NORMAL);
+
+                              if (!cv->score()->selection().isNone())
+                                    cv->score()->deselectAll();
 
                               bool validOriginalSelection = (originalSelection.score() == _score);
                               if (MScore::selectionFollowsCursor) {
@@ -3770,6 +3779,7 @@ void ScoreView::textTab(bool back)
       bool sameParent = false;
       if (originalEl && nextElement && (originalEl->parent() == nextElement->parent())) {
             sameParent = true;
+            (void) sameParent; // Unused for now
             }
       if (!fingeringJump) {
             defaultTid = Tid(ot->propertyDefault(Pid::SUB_STYLE).toInt());
@@ -4681,8 +4691,13 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       QRectF sysRect;
       if (staffIdx == -1)
             sysRect = sys->canvasBoundingRect();
-      else
-            sysRect = sys->staff(staffIdx)->bbox();
+      else if (auto staves = sys->staves()) {
+            if (!staves->isEmpty()) {
+                  if (auto staff = staves->at(staffIdx))
+                        sysRect = staff->bbox();
+                  }
+            else return;
+            }
 
       // only try to track measure if not during playback
       if (!playBack)
