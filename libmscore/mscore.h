@@ -336,6 +336,7 @@ class MScore {
       static QColor selectColor[VOICES];
       static QColor cursorColor;
       static QColor defaultColor;
+      static QColor invisibleElementsColor;
       static bool   cursorResetToStart;
       static bool   selectionFollowsCursor;
 
@@ -364,6 +365,8 @@ class MScore {
       static bool warnPitchRange;
       static bool disableMouseEntry;
       static int pedalEventsMinTicks;
+
+      static bool fadeFocus;
 
       static bool cursorMoveByBeat;
       static bool cursorMoveByMeasure;

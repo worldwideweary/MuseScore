@@ -224,6 +224,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_SCORE_NOTE_DEFAULTPLAYDURATION,                  new IntPreference(300 /* ms */, false)},
             {PREF_SCORE_NOTE_WARNPITCHRANGE,                       new BoolPreference(true, false)},
             {PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT,            new BoolPreference(false, true)},
+            {PREF_UI_SCORE_FADE_FOCUS,                             new BoolPreference(false, false)},
             {PREF_SCORE_NOTE_INPUT_OCTAVE_TENDENCY,                new BoolPreference(false, true)},
             {PREF_SCORE_NOTE_INPUT_FIFTH_IS_UPWARD,                new BoolPreference(false)},
             {PREF_SCORE_NOTE_INPUT_RETAIN_AUG_RHYTHM_MODE,         new BoolPreference(false)},
@@ -291,6 +292,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_UI_SCORE_VOICE3_COLOR,                           new ColorPreference(QColor(0xC53F00))},
             {PREF_UI_SCORE_VOICE4_COLOR,                           new ColorPreference(QColor(0xC31989))},
             {PREF_UI_SCORE_CURSOR_COLOR,                           new ColorPreference(QColor(0x0065BF))},
+            {PREF_UI_SCORE_INVISIBLE_COLOR,                        new ColorPreference(QColor(Qt::gray))},
             {PREF_UI_SCORE_BRACKET_MULTIPLIER,                     new DoublePreference(0.25)},
             {PREF_UI_SCORE_SLURS_MAX_SHOULDER_EXTRA,               new DoublePreference(1.8)}, // Use 1.0 for 3.6.2 equivalent
             {PREF_UI_SCORE_SLURS_MIN_SHOULDER_EXTRA,               new DoublePreference(1.2)},

@@ -465,6 +465,7 @@ void updateExternalValuesFromPreferences() {
       MScore::warnPitchRange = preferences.getBool(PREF_SCORE_NOTE_WARNPITCHRANGE);
       MScore::disableMouseEntry = preferences.getBool(PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT);
       MScore::pedalEventsMinTicks = preferences.getInt(PREF_IO_MIDI_PEDAL_EVENTS_MIN_TICKS);
+      MScore::fadeFocus = preferences.getBool(PREF_UI_SCORE_FADE_FOCUS);
       MScore::layoutBreakColor = preferences.getColor(PREF_UI_SCORE_LAYOUTBREAKCOLOR);
       MScore::frameMarginColor = preferences.getColor(PREF_UI_SCORE_FRAMEMARGINCOLOR);
       MScore::setVerticalOrientation(preferences.getBool(PREF_UI_CANVAS_SCROLL_VERTICALORIENTATION));
@@ -474,6 +475,7 @@ void updateExternalValuesFromPreferences() {
       MScore::selectColor[2] = preferences.getColor(PREF_UI_SCORE_VOICE3_COLOR);
       MScore::selectColor[3] = preferences.getColor(PREF_UI_SCORE_VOICE4_COLOR);
       MScore::cursorColor    = preferences.getColor(PREF_UI_SCORE_CURSOR_COLOR);
+      MScore::invisibleElementsColor = preferences.getColor(PREF_UI_SCORE_INVISIBLE_COLOR);
 
       MScore::cursorMoveByBeat = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_MOVE_BY_BEAT);
       MScore::cursorMoveByMeasure = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_ENTIRE_MEASURE);

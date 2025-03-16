@@ -1874,6 +1874,16 @@ void ScoreView::paint(const QRect& r, QPainter& p)
       p.setWorldMatrixEnabled(false);
 
       p.restore();
+
+      if (MScore::fadeFocus && !hasFocus()) {
+            auto w = width();
+            auto h = height();
+            QColor c = MScore::invisibleElementsColor;
+            c.setAlpha(50);
+            QBrush b = QBrush(c);
+            p.setPen(Qt::NoPen);
+            p.fillRect(0,0, w, h, b);
+            }
       }
 
 //---------------------------------------------------------
