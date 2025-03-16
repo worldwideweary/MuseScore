@@ -2758,6 +2758,9 @@ void ScoreView::cmd(const char* s)
                               // Stop:
                               cv->changeState(ViewState::NORMAL);
 
+                              if (!cv->score()->selection().isNone())
+                                    cv->score()->deselectAll();
+
                               bool validOriginalSelection = (originalSelection.score() == _score);
                               if (MScore::selectionFollowsCursor) {
                                     auto el = cv->chordRestFromCursor();
