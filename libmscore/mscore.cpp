@@ -103,6 +103,7 @@ QColor  MScore::dropColor;
 bool    MScore::warnPitchRange;
 bool    MScore::disableMouseEntry;
 int     MScore::pedalEventsMinTicks;
+bool    MScore::fadeFocus;
 
 bool    MScore::cursorMoveByBeat;
 bool    MScore::cursorMoveByMeasure;
