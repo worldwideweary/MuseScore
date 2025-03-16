@@ -569,8 +569,10 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
                   return QColor(red + tint * (255 - red), green + tint * (255 - green), blue + tint * (255 - blue));
                   }
             }
+
       if (!isVisible)
-            return Qt::gray;
+            return MScore::invisibleElementsColor;
+
       return normalColor;
       }
 
