@@ -90,6 +90,7 @@ qreal   MScore::horizontalPageGapOdd = 50.0;
 QColor  MScore::selectColor[VOICES];
 QColor  MScore::cursorColor;
 QColor  MScore::defaultColor;
+QColor  MScore::invisibleElementsColor;
 bool    MScore::cursorResetToStart;
 bool    MScore::selectionFollowsCursor;
 
