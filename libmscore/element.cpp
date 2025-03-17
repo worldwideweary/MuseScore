@@ -2132,14 +2132,18 @@ void EditData::addData(ElementEditData* ed)
 
 void Element::drawEditMode(QPainter* p, EditData& ed)
       {
-      QPen pen(MScore::defaultColor, 0.0);
+      // Frame color:
+      QColor color = MScore::defaultColor;
+      QPen pen(color, 1.0);
       p->setPen(pen);
+
       for (int i = 0; i < ed.grips; ++i) {
-            if (Grip(i) == ed.curGrip)
-                  p->setBrush(MScore::frameMarginColor);
-            else
-                  p->setBrush(Qt::NoBrush);
-            p->drawRect(ed.grip[i]);
+            // Fill color:
+            bool selected = (Grip(i) == ed.curGrip);
+            color = selected ? MScore::frameMarginColor : MScore::gripsColor;
+            p->setBrush(color);
+            qreal adj = 5.0;
+            p->drawRect(ed.grip[i].adjusted(-adj, -adj, +adj, +adj));
             }
       }
 
