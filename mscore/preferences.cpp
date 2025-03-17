@@ -282,6 +282,8 @@ void Preferences::init(bool storeInMemoryOnly)
 #endif
             {PREF_UI_APP_USENEWWIZARD,                             new BoolPreference(true)},
             {PREF_UI_PIANO_HIGHLIGHTCOLOR,                         new ColorPreference(QColor(0x0065BF))},
+            {PREF_UI_PIANO_BLACK_KEYS_COLOR,                       new ColorPreference(QColor(Qt::black))},
+            {PREF_UI_PIANO_WHITE_KEYS_COLOR,                       new ColorPreference(QColor(0xE8F0FE))},
             {PREF_UI_PIANO_SHOWPITCHHELP,                          new BoolPreference(true)},
             {PREF_UI_SCORE_NOTE_DROPCOLOR,                         new ColorPreference(QColor(0x0065BF))},
             {PREF_UI_SCORE_DEFAULTCOLOR,                           new ColorPreference(QColor(Qt::black))}, //"#000000"
