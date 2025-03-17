@@ -91,6 +91,8 @@ QColor  MScore::selectColor[VOICES];
 QColor  MScore::cursorColor;
 QColor  MScore::defaultColor;
 QColor  MScore::invisibleElementsColor;
+QColor  MScore::singleNoteSelectionColor;
+bool    MScore::singleNoteSelectionColorEnabled;
 
 QColor  MScore::lassoColor;
 bool    MScore::lassoBorderEnabled;

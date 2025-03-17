@@ -555,10 +555,10 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
 
       if (selected() || marked ) {
             QColor originalColor;
-            if (track() == -1)
-                  originalColor = MScore::selectColor[0];
-            else
-                  originalColor = MScore::selectColor[voice()];
+            if (MScore::singleNoteSelectionColorEnabled)
+                  originalColor = MScore::singleNoteSelectionColor;
+            else originalColor = (track() == -1) ? MScore::selectColor[0] : MScore::selectColor[voice()];
+
             if (isVisible)
                   return originalColor;
             else {
