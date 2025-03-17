@@ -142,6 +142,9 @@
 
 #define PREF_SCORE_GRIPS_COLOR                              "ui/score/gripsColor"
 
+#define PREF_SCORE_SINGLE_SELECTION_COLOR                   "ui/score/selection/unifiedColor"
+#define PREF_SCORE_SINGLE_SELECTION_COLOR_ENABLED           "ui/score/selection/unifiedColor/enabled"
+
 #define PREF_SCORE_PLAYBACK_HIGHLIGHT_NOTES                 "ui/score/playback/highlightNotes"
 #define PREF_SCORE_PLAYBACK_HIGHLIGHT_RESTS                 "ui/score/playback/highlightRests"
 #define PREF_SCORE_PLAYBACK_HIGHLIGHT_MORE                  "ui/score/playback/highlightMore"
