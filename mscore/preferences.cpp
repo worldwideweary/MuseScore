@@ -298,6 +298,8 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_UI_SCORE_INVISIBLE_COLOR,                        new ColorPreference(QColor(Qt::gray))},
             {PREF_UI_SCORE_LASSO_COLOR,                            new ColorPreference(QColor(0, 0, 50, 50))},
             {PREF_UI_SCORE_LASSO_BORDER_ENABLED,                   new BoolPreference(true)},
+            {PREF_SCORE_SINGLE_SELECTION_COLOR,                    new ColorPreference(QColor(Qt::black))},
+            {PREF_SCORE_SINGLE_SELECTION_COLOR_ENABLED,            new BoolPreference(false)},
             {PREF_SCORE_GRIPS_COLOR,                               new ColorPreference(QColor(100, 100, 100, 50))},
             {PREF_UI_SCORE_BRACKET_MULTIPLIER,                     new DoublePreference(0.25)},
             {PREF_UI_SCORE_SLURS_MAX_SHOULDER_EXTRA,               new DoublePreference(1.8)}, // Use 1.0 for 3.6.2 equivalent
