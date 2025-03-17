@@ -186,6 +186,8 @@
 #define PREF_UI_APP_BUILD_DATE_ISO                          "ui/application/build/date/isoFormat"
 #define PREF_UI_APP_AUTOHIDE_PALETTES                       "ui/application/palette/applyAutoHides"
 #define PREF_UI_PIANO_HIGHLIGHTCOLOR                        "ui/piano/highlightColor"
+#define PREF_UI_PIANO_WHITE_KEYS_COLOR                      "ui/piano/keys/color/white"
+#define PREF_UI_PIANO_BLACK_KEYS_COLOR                      "ui/piano/keys/color/black"
 #define PREF_UI_PIANO_SHOWPITCHHELP                         "ui/piano/showPitchHelp"
 #define PREF_UI_SCORE_NOTE_DROPCOLOR                        "ui/score/note/dropColor"
 #define PREF_UI_SCORE_DEFAULTCOLOR                          "ui/score/defaultColor"
