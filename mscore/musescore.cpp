@@ -448,6 +448,9 @@ void updateExternalValuesFromPreferences() {
 
       MScore::palettesHideWhenApplied = preferences.getBool(PREF_UI_APP_AUTOHIDE_PALETTES);
 
+      MScore::pianoWhiteKeysColor = preferences.getColor(PREF_UI_PIANO_WHITE_KEYS_COLOR);
+      MScore::pianoBlackKeysColor = preferences.getColor(PREF_UI_PIANO_BLACK_KEYS_COLOR);
+
       MScore::disableVerticalMouseDragOfNotes = preferences.getBool(PREF_UI_SCORE_DISABLE_NOTE_DRAG_VERTICAL);
       MScore::lassoWithoutShift = preferences.getBool(PREF_UI_SCORE_LASSO_WITHOUT_SHIFT);
       MScore::noteInputOctaveTendencyIsTopNote = preferences.getBool(PREF_SCORE_NOTE_INPUT_OCTAVE_TENDENCY);
