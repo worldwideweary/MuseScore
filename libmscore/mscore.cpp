@@ -78,6 +78,7 @@ QColor  MScore::invisibleElementsColor;
 
 QColor  MScore::lassoColor;
 bool    MScore::lassoBorderEnabled;
+QColor  MScore::gripsColor;
 
 bool    MScore::cursorResetToStart;
 bool    MScore::selectionFollowsCursor;
