@@ -425,7 +425,13 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
       // Color Overrides:
       //
       QColor overrideColor = normalColor;
-      if (isLedgerLine()) {
+      if (isBarLine())
+            overrideColor = MScore::overrideBarlinesColor;
+
+      else if (isBracket() || isBracketItem())
+            overrideColor = MScore::overrideBracketsColor;
+
+      else if (isLedgerLine()) {
             auto ll = toLedgerLine(this);
             auto stem = ll->chord() ? ll->chord()->stem() : nullptr;
             QColor stemColor = stem ? stem->color() : Qt::black;

@@ -145,6 +145,8 @@
 #define PREF_SCORE_SINGLE_SELECTION_COLOR                   "ui/score/selection/unifiedColor"
 #define PREF_SCORE_SINGLE_SELECTION_COLOR_ENABLED           "ui/score/selection/unifiedColor/enabled"
 
+#define PREF_UI_SCORE_OVERRIDE_BARLINES_COLOR               "ui/score/elements/override/color/barlines"
+#define PREF_UI_SCORE_OVERRIDE_BRACKETS_COLOR               "ui/score/elements/override/color/brackets"
 #define PREF_UI_SCORE_OVERRIDE_STAFFLINES_COLOR             "ui/score/elements/override/color/staffLines"
 
 #define PREF_SCORE_PLAYBACK_HIGHLIGHT_NOTES                 "ui/score/playback/highlightNotes"

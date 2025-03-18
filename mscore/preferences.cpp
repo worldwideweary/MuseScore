@@ -304,6 +304,8 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_SCORE_SINGLE_SELECTION_COLOR_ENABLED,            new BoolPreference(false)},
             {PREF_SCORE_GRIPS_COLOR,                               new ColorPreference(QColor(100, 100, 100, 50))},
 
+            {PREF_UI_SCORE_OVERRIDE_BARLINES_COLOR,                new ColorPreference(QColor(Qt::black))},
+            {PREF_UI_SCORE_OVERRIDE_BRACKETS_COLOR,                new ColorPreference(QColor(Qt::black))},
             {PREF_UI_SCORE_OVERRIDE_STAFFLINES_COLOR,              new ColorPreference(QColor(Qt::black))},
 
             {PREF_UI_SCORE_BRACKET_MULTIPLIER,                     new DoublePreference(0.25)},
