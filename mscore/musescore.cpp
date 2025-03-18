@@ -487,15 +487,25 @@ void updateExternalValuesFromPreferences() {
       MScore::lassoBorderEnabled = preferences.getBool(PREF_UI_SCORE_LASSO_BORDER_ENABLED);
       MScore::gripsColor = preferences.getColor(PREF_SCORE_GRIPS_COLOR);
 
+      MScore::overrideAllColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_ALL_ELEMENTS_COLOR);
       MScore::overrideBarlinesColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_BARLINES_COLOR);
+      MScore::overrideBoxTextsColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_BOX_TEXT_COLOR);
       MScore::overrideBracketsColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_BRACKETS_COLOR);
-      MScore::overrideSlursColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_SLURS_COLOR);
-      MScore::overrideStaffLinesColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_STAFFLINES_COLOR);
-      MScore::overrideTiesColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_TIES_COLOR);
+      MScore::overrideDynamicsColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_DYNAMICS_COLOR);
+      MScore::overrideEvenStaffElementsColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_EVEN_STAFF_ELEMENTS_COLOR);
+      MScore::overrideExpressionTextColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_EXPRESSION_TEXT_COLOR);
+      MScore::overrideFingeringTextColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_FINGERING_TEXT_COLOR);
+      MScore::overrideHarmonyTextColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_HARMONY_TEXT_COLOR);
+      MScore::overrideLedgerLinesColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_LEDGER_LINES_COLOR);
       MScore::noteheadsAlterationColorsEnabled = preferences.getBool(PREF_UI_SCORE_OVERRIDE_NOTEHEAD_ALTERATION_COLOR_ENABLED);
       MScore::overrideNoteheadColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_NOTEHEAD_COLOR);
       MScore::overrideNoteheadLoweredColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_NOTEHEAD_LOWERED_COLOR);
       MScore::overrideNoteheadRaisedColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_NOTEHEAD_RAISED_COLOR);
+      MScore::overrideSlursColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_SLURS_COLOR);
+      MScore::overrideStaffLinesColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_STAFFLINES_COLOR);
+      MScore::overrideStaffTextColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_STAFF_TEXT_COLOR);
+      MScore::overrideTextLinesColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_TEXT_LINES_COLOR);
+      MScore::overrideTiesColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_TIES_COLOR);
       
       MScore::cursorMoveByBeat = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_MOVE_BY_BEAT);
       MScore::cursorMoveByMeasure = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_ENTIRE_MEASURE);
