@@ -1489,12 +1489,6 @@ void Harmony::draw(QPainter* painter) const
             qreal frameWidthVal = frameWidth().val() * (sizeIsSpatiumDependent() ? spatium() : baseSpatium);
             if (!frameWidth().isZero()) {
                   QColor fColor = frameColor();
-                  QColor hColor = this->color();
-                  QColor color = fColor;
-                  if (fColor == MScore::defaultColor) {
-                        if (hColor != MScore::defaultColor) 
-                              color = hColor;
-                        }
                   QPen pen(fColor, frameWidthVal, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin);
                   painter->setPen(pen);
                   }
@@ -1565,8 +1559,6 @@ void Harmony::draw(QPainter* painter) const
 
 void Harmony::drawEditMode(QPainter* p, EditData& ed)
       {
-      TextBase::drawEditMode(p, ed);
-
       QColor originalColor = color();
       if (showSpell) {
             setColor(QColor(Qt::red));
@@ -1580,6 +1572,7 @@ void Harmony::drawEditMode(QPainter* p, EditData& ed)
             setColor(originalColor);
             setSelected(true);
             }
+      TextBase::drawEditMode(p, ed);
       }
 
 //---------------------------------------------------------
