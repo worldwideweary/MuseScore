@@ -147,6 +147,11 @@
 
 #define PREF_UI_SCORE_OVERRIDE_BARLINES_COLOR               "ui/score/elements/override/color/barlines"
 #define PREF_UI_SCORE_OVERRIDE_BRACKETS_COLOR               "ui/score/elements/override/color/brackets"
+#define PREF_UI_SCORE_OVERRIDE_NOTEHEAD_ALTERATION_COLOR_ENABLED \
+                                                            "ui/score/elements/override/color/noteheads/enableAlterationColor"
+#define PREF_UI_SCORE_OVERRIDE_NOTEHEAD_COLOR               "ui/score/elements/override/color/noteheads"
+#define PREF_UI_SCORE_OVERRIDE_NOTEHEAD_LOWERED_COLOR       "ui/score/elements/override/color/noteheads/lowered"
+#define PREF_UI_SCORE_OVERRIDE_NOTEHEAD_RAISED_COLOR        "ui/score/elements/override/color/noteheads/raised"
 #define PREF_UI_SCORE_OVERRIDE_SLURS_COLOR                  "ui/score/elements/override/color/slurs"
 #define PREF_UI_SCORE_OVERRIDE_STAFFLINES_COLOR             "ui/score/elements/override/color/staffLines"
 #define PREF_UI_SCORE_OVERRIDE_TIES_COLOR                   "ui/score/elements/override/color/ties"

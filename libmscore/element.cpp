@@ -441,6 +441,30 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
                   overrideColor = MScore::overrideStaffLinesColor;
             }
 
+      else if (isNote()) {
+            auto note = toNote(this);
+            int tpc = note->tpc();
+            int pitch = note->pitch();
+            QColor noteColor = color();
+            if (!userDefined(noteColor) && !selected() && !note->mark())
+                  overrideColor = MScore::overrideNoteheadColor;
+
+            if (MScore::noteheadsAlterationColorsEnabled) {
+                  switch (pitch % 12) {
+                        case 1:  // C#/Db
+                        case 3:  // D#/Eb
+                        case 6:  // F#/Gb
+                        case 8:  // G#/Ab
+                        case 10: // A#/Bb
+                              if (tpc >= 20)
+                                    overrideColor = MScore::overrideNoteheadRaisedColor;
+                        else if (tpc <= 12)
+                              overrideColor = MScore::overrideNoteheadLoweredColor;
+                        default:break;
+                        }
+                  }
+            }
+
       else if (isSlurSegment())
             overrideColor = MScore::overrideSlursColor;
 
