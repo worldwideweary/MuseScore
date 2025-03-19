@@ -103,6 +103,10 @@ QColor  MScore::overrideBracketsColor;
 QColor  MScore::overrideSlursColor;
 QColor  MScore::overrideStaffLinesColor;
 QColor  MScore::overrideTiesColor;
+bool    MScore::noteheadsAlterationColorsEnabled;
+QColor  MScore::overrideNoteheadColor;
+QColor  MScore::overrideNoteheadLoweredColor;
+QColor  MScore::overrideNoteheadRaisedColor;
 
 bool    MScore::cursorResetToStart;
 bool    MScore::selectionFollowsCursor;
