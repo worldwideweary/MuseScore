@@ -98,6 +98,8 @@ QColor  MScore::lassoColor;
 bool    MScore::lassoBorderEnabled;
 QColor  MScore::gripsColor;
 
+QColor  MScore::overrideStaffLinesColor;
+
 bool    MScore::cursorResetToStart;
 bool    MScore::selectionFollowsCursor;
 
