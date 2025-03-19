@@ -348,6 +348,10 @@ class MScore {
       static QColor overrideSlursColor;
       static QColor overrideStaffLinesColor;
       static QColor overrideTiesColor;
+      static bool   noteheadsAlterationColorsEnabled;
+      static QColor overrideNoteheadColor;
+      static QColor overrideNoteheadLoweredColor;
+      static QColor overrideNoteheadRaisedColor;
 
       static bool   cursorResetToStart;
       static bool   selectionFollowsCursor;
