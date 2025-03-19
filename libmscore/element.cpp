@@ -48,6 +48,7 @@
 #include "jump.h"
 #include "keysig.h"
 #include "layoutbreak.h"
+#include "ledgerline.h"
 #include "letring.h"
 #include "lyrics.h"
 #include "marker.h"
@@ -403,11 +404,15 @@ QColor Element::curColor(bool isVisible) const
 
 QColor Element::curColor(bool isVisible, QColor normalColor) const
       {
-      auto currentStaff = staffIdx();      
+      auto userDefined = [](QColor& c) -> bool {
+            return c != MScore::defaultColor;
+            };
+
       bool marked = false;
-      bool isDefault = (normalColor == MScore::defaultColor);
-      
+      bool isDefault = !userDefined(normalColor);
+
       // Observation: Cross-staff beams don't have same staffIdx as correspondent ChordRest...
+      int currentStaff = staffIdx();
       if (isBeam()) {
             auto beam = toBeam(this);
             int staffIdxOfBeamElement = beam->staffIdxOfFirstElement();
@@ -416,15 +421,33 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
                   currentStaff = staffIdxOfBeamElement;
             }
 
-      // the default element color is always interpreted as black in printing
-      if (score() && score()->printing()) {
-            return isDefault ? Qt::black : normalColor;
+      // 
+      // Color Overrides:
+      //
+      QColor overrideColor = normalColor;
+      if (isLedgerLine()) {
+            auto ll = toLedgerLine(this);
+            auto stem = ll->chord() ? ll->chord()->stem() : nullptr;
+            QColor stemColor = stem ? stem->color() : Qt::black;
+            if (userDefined(stemColor))
+                  overrideColor = stemColor;
+            else if (userDefined(MScore::overrideStaffLinesColor))
+                  overrideColor = MScore::overrideStaffLinesColor;
             }
+
+      else if (isStaffLines())
+            overrideColor = MScore::overrideStaffLinesColor;
+      
+      if (score() && score()->printing())
+            return isDefault ? overrideColor : normalColor;
 
       if (flag(ElementFlag::DROP_TARGET)) {
             return MScore::dropColor;
             }
 
+      // 
+      // Playback Highlighting
+      //     
       if (isLyrics() && MScore::highlightLyrics) {
             if (auto p = this->parent()) {
                   if (p->isChord()) {
@@ -573,7 +596,7 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
       if (!isVisible)
             return MScore::invisibleElementsColor;
 
-      return normalColor;
+      return isDefault ? overrideColor : normalColor;
       }
 
 //---------------------------------------------------------

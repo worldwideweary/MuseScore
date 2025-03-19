@@ -303,6 +303,9 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_SCORE_SINGLE_SELECTION_COLOR,                    new ColorPreference(QColor(Qt::black))},
             {PREF_SCORE_SINGLE_SELECTION_COLOR_ENABLED,            new BoolPreference(false)},
             {PREF_SCORE_GRIPS_COLOR,                               new ColorPreference(QColor(100, 100, 100, 50))},
+
+            {PREF_UI_SCORE_OVERRIDE_STAFFLINES_COLOR,              new ColorPreference(QColor(Qt::black))},
+
             {PREF_UI_SCORE_BRACKET_MULTIPLIER,                     new DoublePreference(0.25)},
             {PREF_UI_SCORE_SLURS_MAX_SHOULDER_EXTRA,               new DoublePreference(1.8)}, // Use 1.0 for 3.6.2 equivalent
             {PREF_UI_SCORE_SLURS_MIN_SHOULDER_EXTRA,               new DoublePreference(1.2)},
