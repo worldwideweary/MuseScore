@@ -93,7 +93,10 @@ void Box::draw(QPainter* painter) const
             path.addRect(bbox().adjusted(w, w, -w, -w));
             QPainterPath stroke = stroker.createStroke(path);
             painter->setBrush(Qt::NoBrush);
-            painter->fillPath(stroke, (selected() || editMode || dropTarget()) ? MScore::selectColor[0] : MScore::frameMarginColor);
+            QColor c = MScore::frameMarginColor;
+            if ((selected() || editMode || dropTarget()))
+                  c = MScore::singleNoteSelectionColorEnabled ? MScore::singleNoteSelectionColor : MScore::selectColor[0];
+            painter->fillPath(stroke,  c);
             }
       }
 

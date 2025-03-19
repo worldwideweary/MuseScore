@@ -335,8 +335,36 @@ class MScore {
 
       static QColor selectColor[VOICES];
       static QColor cursorColor;
+      static QColor lassoColor;
+      static bool   lassoBorderEnabled;
       static QColor defaultColor;
       static QColor invisibleElementsColor;
+      static QColor singleNoteSelectionColor;
+      static bool   singleNoteSelectionColorEnabled;
+      static QColor gripsColor;
+
+      static QColor overrideAllColor;
+      static QColor overrideBarlinesColor;
+      static QColor overrideBoxTextsColor;
+      static QColor overrideBracketsColor;
+      static QColor overrideDynamicsColor;
+      static QColor overrideEvenStaffElementsColor;
+      static QColor overrideExpressionTextColor;
+      static QColor overrideFingeringTextColor;
+      static QColor overrideHarmonyTextColor;
+      static QColor overrideLedgerLinesColor;
+      static bool   overrideOnlyAllColor;
+      static QColor overrideSlursColor;
+      static QColor overrideStaffLinesColor;
+      static QColor overrideStaffTextColor;
+      static QColor overrideTextLinesColor;
+
+      static QColor overrideTiesColor;
+      static bool   noteheadsAlterationColorsEnabled;
+      static QColor overrideNoteheadColor;
+      static QColor overrideNoteheadLoweredColor;
+      static QColor overrideNoteheadRaisedColor;
+
       static bool   cursorResetToStart;
       static bool   selectionFollowsCursor;
 
@@ -357,6 +385,9 @@ class MScore {
       static bool lassoWithoutShift;
 
       static bool palettesHideWhenApplied;
+
+      static QColor pianoWhiteKeysColor;
+      static QColor pianoBlackKeysColor;
 
       static QColor dropColor;
       static QColor layoutBreakColor;

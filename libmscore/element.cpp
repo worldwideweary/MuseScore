@@ -48,6 +48,7 @@
 #include "jump.h"
 #include "keysig.h"
 #include "layoutbreak.h"
+#include "ledgerline.h"
 #include "letring.h"
 #include "lyrics.h"
 #include "marker.h"
@@ -89,6 +90,7 @@
 #include "text.h"
 #include "textframe.h"
 #include "textline.h"
+#include "textlinebase.h"
 #include "tie.h"
 #include "timesig.h"
 #include "tremolo.h"
@@ -403,28 +405,155 @@ QColor Element::curColor(bool isVisible) const
 
 QColor Element::curColor(bool isVisible, QColor normalColor) const
       {
-      auto currentStaff = staffIdx();      
+      auto userDefined = [](QColor& c) -> bool {
+            return c != MScore::defaultColor;
+            };
+
       bool marked = false;
-      bool isDefault = (normalColor == MScore::defaultColor);
+      bool isDefault = !userDefined(normalColor);
+
+      // Leave as is for testing/cmd-line
+      if (MScore::testMode || MScore::noGui)
+            return normalColor;
+
+      // 
+      // Color Overrides:
+      //
+      auto mb = findMeasureBase();
+      bool isFrame = mb && mb->isBox();
       
-      // Observation: Cross-staff beams don't have same staffIdx as correspondent ChordRest...
-      if (isBeam()) {
-            auto beam = toBeam(this);
-            int staffIdxOfBeamElement = beam->staffIdxOfFirstElement();
-            // Observation: parent of beam is "System", not "ChordRest"
-            if (staffIdxOfBeamElement != beam->staffIdx())
-                  currentStaff = staffIdxOfBeamElement;
+      QColor overrideColor = normalColor;
+
+      if (MScore::overrideOnlyAllColor)
+            overrideColor = MScore::overrideAllColor;
+      
+      else if (isBarLine())
+            overrideColor = MScore::overrideBarlinesColor;
+
+      else if (isBracket() || isBracketItem())
+            overrideColor = MScore::overrideBracketsColor;
+
+      else if (isDynamic())
+            overrideColor = MScore::overrideDynamicsColor;
+
+      else if (isFingering())
+            overrideColor = MScore::overrideFingeringTextColor;
+
+      else if (isFrame)
+            overrideColor = MScore::overrideBoxTextsColor;
+
+      else if (isLedgerLine()) {
+            auto ll = toLedgerLine(this);
+            auto stem = ll->chord() ? ll->chord()->stem() : nullptr;
+            QColor stemColor = stem ? stem->color() : Qt::black;
+            if (userDefined(stemColor))
+                  overrideColor = stemColor;
+            else if (userDefined(MScore::overrideLedgerLinesColor))
+                  overrideColor = MScore::overrideLedgerLinesColor;
+            else if (userDefined(MScore::overrideStaffLinesColor))
+                  overrideColor = MScore::overrideStaffLinesColor;
             }
 
-      // the default element color is always interpreted as black in printing
-      if (score() && score()->printing()) {
-            return isDefault ? Qt::black : normalColor;
+      else if (isNote()) {
+            auto note = toNote(this);
+            int tpc = note->tpc();
+            int pitch = note->pitch();
+            QColor noteColor = color();
+            if (!userDefined(noteColor) && !selected() && !note->mark())
+                  overrideColor = MScore::overrideNoteheadColor;
+
+            if (MScore::noteheadsAlterationColorsEnabled) {
+                  switch (pitch % 12) {
+                        case 1:  // C#/Db
+                        case 3:  // D#/Eb
+                        case 6:  // F#/Gb
+                        case 8:  // G#/Ab
+                        case 10: // A#/Bb
+                              if (tpc >= 20)
+                                    overrideColor = MScore::overrideNoteheadRaisedColor;
+                        else if (tpc <= 12)
+                              overrideColor = MScore::overrideNoteheadLoweredColor;
+                        default:break;
+                        }
+                  }
             }
+
+      else if (isSlurSegment())
+            overrideColor = MScore::overrideSlursColor;
+
+      else if (isStaffLines())
+            overrideColor = MScore::overrideStaffLinesColor;
+
+      else if (isTextBase()) {
+            auto tb = toTextBase(this);
+            auto id = tb->tid();
+            bool isBeginContinueEndLineText = (id == Tid::DEFAULT && tb->parent() && tb->parent()->isTextLineSegment());
+            bool isHarmonyText = (id == Tid::HARMONY_A || id == Tid::HARMONY_B || id == Tid::HARMONY_NASHVILLE || id == Tid::HARMONY_ROMAN);
+
+            if (isBeginContinueEndLineText)
+                  overrideColor = MScore::overrideExpressionTextColor;
+            else if (isHarmonyText)
+                  overrideColor = MScore::overrideHarmonyTextColor;
+            else if (isStaffText() && isStaffTextBase()) {
+                  auto id = toStaffTextBase(this)->tid();
+                  if (Tid::EXPRESSION == id)
+                        overrideColor = MScore::overrideExpressionTextColor;
+                  if (Tid::STAFF == id)
+                        overrideColor = MScore::overrideStaffTextColor;
+                  }
+            else if (isSystemText())
+                  overrideColor = MScore::overrideExpressionTextColor;
+            else if (isTempoText())
+                  overrideColor = MScore::overrideExpressionTextColor;
+            }
+
+      else if (isTextLineSegment()) {
+            auto tls = toTextLineSegment(this);
+            auto tl  = tls->textLine();
+            normalColor = tl->lineColor();
+            if (!userDefined(normalColor))
+                  overrideColor = MScore::overrideTextLinesColor;
+            else isDefault = false;
+            }
+
+      else if (isTieSegment())
+            overrideColor = MScore::overrideTiesColor;
+
+      // Odd/Even staff differentiation:
+      if (isDefault && !MScore::overrideOnlyAllColor) { 
+            int currentStaff = staffIdx();
+            if (isBeam()) {
+                  // cross-staff beams don't have same staffIdx of first ChordRest
+                  auto beam = toBeam(this);
+                  int staffIdxOfBeamElement = beam->staffIdxOfFirstElement();
+                  // beam's parent is "System", not "ChordRest"
+                  if (staffIdxOfBeamElement != beam->staffIdx())
+                        currentStaff = staffIdxOfBeamElement;
+                  }
+
+            bool evenStaff = !(currentStaff % 2);
+            bool typeOmitsOddEven = isBarLine() || isLedgerLine() || isStaff() || isStaffLines();
+            bool useEvenStaffColor = evenStaff && !typeOmitsOddEven && userDefined(MScore::overrideEvenStaffElementsColor);
+            if (useEvenStaffColor)
+                  overrideColor = MScore::overrideEvenStaffElementsColor;
+            else if (userDefined(MScore::overrideAllColor))
+                  overrideColor = MScore::overrideAllColor;
+            }
+
+      // ... override unspecified... //
+      if (!userDefined(overrideColor))
+            overrideColor = MScore::overrideAllColor;
+      
+      if (score() && score()->printing())
+            return isDefault ? overrideColor : normalColor;
 
       if (flag(ElementFlag::DROP_TARGET)) {
             return MScore::dropColor;
             }
 
+      // 
+      // Playback Highlighting
+      //     
       if (isLyrics() && MScore::highlightLyrics) {
             if (auto p = this->parent()) {
                   if (p->isChord()) {
@@ -555,10 +684,10 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
 
       if (selected() || marked ) {
             QColor originalColor;
-            if (track() == -1)
-                  originalColor = MScore::selectColor[0];
-            else
-                  originalColor = MScore::selectColor[voice()];
+            if (MScore::singleNoteSelectionColorEnabled)
+                  originalColor = MScore::singleNoteSelectionColor;
+            else originalColor = (track() == -1) ? MScore::selectColor[0] : MScore::selectColor[voice()];
+
             if (isVisible)
                   return originalColor;
             else {
@@ -573,7 +702,7 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
       if (!isVisible)
             return MScore::invisibleElementsColor;
 
-      return normalColor;
+      return isDefault ? overrideColor : normalColor;
       }
 
 //---------------------------------------------------------
@@ -2132,14 +2261,23 @@ void EditData::addData(ElementEditData* ed)
 
 void Element::drawEditMode(QPainter* p, EditData& ed)
       {
-      QPen pen(MScore::defaultColor, 0.0);
+      QColor color = MScore::defaultColor;
+      QPen pen(color, 1.0); // Sets "frame"
       p->setPen(pen);
       for (int i = 0; i < ed.grips; ++i) {
-            if (Grip(i) == ed.curGrip)
-                  p->setBrush(MScore::frameMarginColor);
-            else
-                  p->setBrush(Qt::NoBrush);
-            p->drawRect(ed.grip[i]);
+            bool selected = (Grip(i) == ed.curGrip);
+            if (selected) {
+                  if (MScore::singleNoteSelectionColorEnabled)
+                        color = MScore::singleNoteSelectionColor;
+                  else if (MScore::overrideAllColor != MScore::defaultColor)
+                        color = MScore::overrideAllColor;
+                  else
+                        color = MScore::frameMarginColor;
+                  }
+            else color = MScore::gripsColor;
+            p->setBrush(color);
+            qreal adj = 5.0;
+            p->drawRect(ed.grip[i].adjusted(-adj, -adj, +adj, +adj));
             }
       }
 
