@@ -441,9 +441,15 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
                   overrideColor = MScore::overrideStaffLinesColor;
             }
 
+      else if (isSlurSegment())
+            overrideColor = MScore::overrideSlursColor;
+
       else if (isStaffLines())
             overrideColor = MScore::overrideStaffLinesColor;
-      
+
+      else if (isTieSegment())
+            overrideColor = MScore::overrideTiesColor;
+
       if (score() && score()->printing())
             return isDefault ? overrideColor : normalColor;
 

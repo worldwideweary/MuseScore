@@ -306,7 +306,9 @@ void Preferences::init(bool storeInMemoryOnly)
 
             {PREF_UI_SCORE_OVERRIDE_BARLINES_COLOR,                new ColorPreference(QColor(Qt::black))},
             {PREF_UI_SCORE_OVERRIDE_BRACKETS_COLOR,                new ColorPreference(QColor(Qt::black))},
+            {PREF_UI_SCORE_OVERRIDE_SLURS_COLOR,                   new ColorPreference(QColor(Qt::black))},
             {PREF_UI_SCORE_OVERRIDE_STAFFLINES_COLOR,              new ColorPreference(QColor(Qt::black))},
+            {PREF_UI_SCORE_OVERRIDE_TIES_COLOR,                    new ColorPreference(QColor(Qt::black))},
 
             {PREF_UI_SCORE_BRACKET_MULTIPLIER,                     new DoublePreference(0.25)},
             {PREF_UI_SCORE_SLURS_MAX_SHOULDER_EXTRA,               new DoublePreference(1.8)}, // Use 1.0 for 3.6.2 equivalent
