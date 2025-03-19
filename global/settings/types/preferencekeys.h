@@ -145,7 +145,9 @@
 
 #define PREF_UI_SCORE_OVERRIDE_BARLINES_COLOR               "ui/score/elements/override/color/barlines"
 #define PREF_UI_SCORE_OVERRIDE_BRACKETS_COLOR               "ui/score/elements/override/color/brackets"
+#define PREF_UI_SCORE_OVERRIDE_SLURS_COLOR                  "ui/score/elements/override/color/slurs"
 #define PREF_UI_SCORE_OVERRIDE_STAFFLINES_COLOR             "ui/score/elements/override/color/staffLines"
+#define PREF_UI_SCORE_OVERRIDE_TIES_COLOR                   "ui/score/elements/override/color/ties"
 
 #define PREF_SCORE_PLAYBACK_HIGHLIGHT_NOTES                 "ui/score/playback/highlightNotes"
 #define PREF_SCORE_PLAYBACK_HIGHLIGHT_RESTS                 "ui/score/playback/highlightRests"

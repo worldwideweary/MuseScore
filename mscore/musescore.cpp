@@ -489,7 +489,9 @@ void updateExternalValuesFromPreferences() {
 
       MScore::overrideBarlinesColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_BARLINES_COLOR);
       MScore::overrideBracketsColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_BRACKETS_COLOR);
+      MScore::overrideSlursColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_SLURS_COLOR);
       MScore::overrideStaffLinesColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_STAFFLINES_COLOR);
+      MScore::overrideTiesColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_TIES_COLOR);
       
       MScore::cursorMoveByBeat = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_MOVE_BY_BEAT);
       MScore::cursorMoveByMeasure = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_ENTIRE_MEASURE);
