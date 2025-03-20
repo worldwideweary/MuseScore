@@ -122,6 +122,8 @@
 #define PREF_SCORE_NOTE_PLAYONCLICK                         "score/note/playOnClick"
 #define PREF_SCORE_NOTE_DEFAULTPLAYDURATION                 "score/note/defaultPlayDuration"
 #define PREF_SCORE_NOTE_WARNPITCHRANGE                      "score/note/warnPitchRange"
+#define PREF_SCORE_HOVER_COLOR                              "ui/score/mouse/behavior/hoverColor"
+#define PREF_SCORE_HOVER_COLOR_ENABLE                       "ui/score/mouse/behavior/hoverEnabled"
 #define PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT           "ui/score/noteEntry/disableMouseEntry"
 #define PREF_UI_SCORE_DISABLE_NOTE_DRAG_VERTICAL            "ui/score/mouse/behavior/disableNoteDragVertical"
 #define PREF_UI_SCORE_LASSO_WITHOUT_SHIFT                   "ui/score/mouse/behavior/enableLassoWithoutShift"

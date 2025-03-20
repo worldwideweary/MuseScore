@@ -467,6 +467,8 @@ void updateExternalValuesFromPreferences() {
       MScore::playbackSpeedIncrement = preferences.getInt(PREF_APP_PLAYBACK_SPEEDINCREMENT);
       MScore::warnPitchRange = preferences.getBool(PREF_SCORE_NOTE_WARNPITCHRANGE);
       MScore::disableMouseEntry = preferences.getBool(PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT);
+      MScore::hoverColor = preferences.getColor(PREF_SCORE_HOVER_COLOR);
+      MScore::hoverColorEnabled = preferences.getBool(PREF_SCORE_HOVER_COLOR_ENABLE);
       MScore::pedalEventsMinTicks = preferences.getInt(PREF_IO_MIDI_PEDAL_EVENTS_MIN_TICKS);
       MScore::fadeFocus = preferences.getBool(PREF_UI_SCORE_FADE_FOCUS);
       MScore::layoutBreakColor = preferences.getColor(PREF_UI_SCORE_LAYOUTBREAKCOLOR);
@@ -5199,6 +5201,7 @@ void MuseScore::undoRedo(bool undo)
       cv->startUndoRedo(undo);
       updateInputState(cs);
       endCmd(/* undoRedo */ true);
+      cv->setDropTarget(nullptr);
       if (pianorollEditor)
             pianorollEditor->update();
       if (tempVoiceFilter) {
