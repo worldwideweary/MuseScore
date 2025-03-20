@@ -1627,6 +1627,17 @@ void ScoreView::paint(const QRect& r, QPainter& p)
       p.setTransform(_matrix);
       QRectF fr = imatrix.mapRect(QRectF(r));
 
+      if (state == ViewState::LASSO) {
+            if (!lasso->bbox().isEmpty()) {
+                  lassoToDraw = lasso;
+                  bool drawLassoBehindElements = (MScore::lassoColor.alpha() > 200);
+                  if (drawLassoBehindElements) {
+                        lassoToDraw->draw(&p);
+                        lassoToDraw = nullptr;
+                        }
+                  }
+            }
+
       if (MScore::cursorDrawnBehindStaff)
             _cursor->paint(&p);
 
