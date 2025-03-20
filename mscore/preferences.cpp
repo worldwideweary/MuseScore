@@ -244,6 +244,10 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_SCORE_PLAYBACK_HIGHLIGHT_RESTS,                  new BoolPreference(true)},
             {PREF_SCORE_PLAYBACK_HIGHLIGHT_MORE,                   new BoolPreference(false)},
             {PREF_SCORE_PLAYBACK_HIGHLIGHT_LYRICS,                 new BoolPreference(false)},
+
+            {PREF_UI_SCORE_NOTEHEADS_BEHIND_STAFF_LINES,           new BoolPreference(false)},
+            {PREF_UI_SCORE_NOTEHEADS_BEHIND_LEDGER_LINES,          new BoolPreference(false)},
+
             {PREF_UI_CANVAS_BG_USECOLOR,                           new BoolPreference(true)},
             {PREF_UI_CANVAS_FG_USECOLOR,                           new BoolPreference(true)},
             {PREF_UI_CANVAS_FG_USECOLOR_IN_PALETTES,               new BoolPreference(false)},
