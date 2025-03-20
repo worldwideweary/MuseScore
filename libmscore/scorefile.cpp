@@ -1100,16 +1100,70 @@ void Score::print(QPainter* painter, int pageNo)
       MScore::pdfPrinting = true;
       Page* page = pages().at(pageNo);
       QRectF fr  = page->abbox();
+      QList<Element*> elements = page->items(fr);
+      std::stable_sort(elements.begin(), elements.end(), elementLessThan);
 
-      QList<Element*> ell = page->items(fr);
-      std::stable_sort(ell.begin(), ell.end(), elementLessThan);
-      for (const Element* e : qAsConst(ell)) {
+      // PASS #1
+      if (MScore::noteheadsBehindStaff) {
+            // Stems
+            for (const Element* e : elements) {
+                  if (!e->isStem())
+                        continue;
+                  if (!e->visible())
+                        continue;
+                  painter->save();
+                     QPointF pos(e->pagePos());
+                     painter->translate(pos);
+                        e->draw(painter);
+                     painter->translate(-pos);
+                  painter->restore();
+                  }
+            // Noteheads
+            for (const Element* e : elements) {
+                  if (!e->isNote())
+                        continue;
+                  if (!e->visible())
+                        continue;
+                  painter->save();
+                     QPointF pos(e->pagePos());
+                     painter->translate(pos);
+                        e->draw(painter);
+                     painter->translate(-pos);
+                  painter->restore();
+                  }
+            }
+
+      // PASS #2
+      // Regular:
+      for (const Element* e : qAsConst(elements)) {
+            if (MScore::noteheadsBehindLedger && e->isLedgerLine())
+                  continue;
+            if (MScore::noteheadsBehindStaff && (e->isNote() || e->isStem()))
+                  continue;
             if (!e->visible())
                   continue;
             painter->save();
-            painter->translate(e->pagePos());
-            e->draw(painter);
+               painter->translate(e->pagePos());
+                  e->draw(painter);
+               painter->translate(-e->pagePos());
             painter->restore();
+            }
+
+      // PASS #3
+      // Ledger Lines
+      if (MScore::noteheadsBehindLedger) {
+            for (const Element* e : elements) {
+                  if (!e->isLedgerLine())
+                        continue;
+                  if (!e->visible())
+                        continue;
+                  painter->save();
+                     QPointF pos(e->pagePos());
+                     painter->translate(pos);
+                        e->draw(painter);
+                     painter->translate(-pos);
+                  painter->restore();
+                  }
             }
       MScore::pdfPrinting = false;
       _printing = false;
