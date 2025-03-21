@@ -118,8 +118,7 @@ void PaletteListView::setupStyle()
       {
       QPalette pal = palette(); // color palette
       QColor c;
-      if (preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR)
-         && preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR_IN_PALETTES))
+      if (preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR_IN_PALETTES))
             c = preferences.getColor(PREF_UI_CANVAS_FG_COLOR);
       else
             c = preferences.defaultValue(PREF_UI_CANVAS_FG_COLOR).value<QColor>();
