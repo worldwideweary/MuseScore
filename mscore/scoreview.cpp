@@ -1627,12 +1627,24 @@ void ScoreView::paint(const QRect& r, QPainter& p)
       p.setTransform(_matrix);
       QRectF fr = imatrix.mapRect(QRectF(r));
 
+      Element* editElement = nullptr;
+      Lasso* lassoToDraw = nullptr;
+      bool postponeEditMode = false;
+
+      if (state == ViewState::LASSO) {
+            if (!lasso->bbox().isEmpty()) {
+                  lassoToDraw = lasso;
+                  bool drawLassoBehindElements = (MScore::lassoColor.alpha() > 200);
+                  if (drawLassoBehindElements) {
+                        lassoToDraw->draw(&p);
+                        lassoToDraw = nullptr;
+                        }
+                  }
+            }
+
       if (MScore::cursorDrawnBehindStaff)
             _cursor->paint(&p);
 
-      Element* editElement = 0;
-      Lasso* lassoToDraw = 0;
-      bool postponeEditMode = false;
       if (editData.element) {
             switch (state) {
                   case ViewState::NORMAL:
