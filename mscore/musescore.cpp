@@ -692,6 +692,8 @@ void MuseScore::preferencesChanged(bool fromWorkspace, bool changeUI)
 
       if (seq)
             seq->preferencesChanged();
+
+      if (mscore) mscore->updateMenus();
       }
 
 //---------------------------------------------------------
