@@ -553,8 +553,18 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
 
       // 
       // Playback Highlighting
-      //     
-      if (isLyrics() && MScore::highlightLyrics) {
+      //
+      if (MScore::highlightNotes && isNote()) {
+            auto n = toNote(this);
+            marked = n->mark();
+            }
+
+      if (MScore::highlightRests && isRest()) {
+            auto r = toRest(this);
+            marked = r->mark();
+            }
+
+      if (MScore::highlightLyrics && isLyrics()) {
             if (auto p = this->parent()) {
                   if (p->isChord()) {
                         auto c = toChord(p);
@@ -670,16 +680,6 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
                         marked = (pos >= t1 && pos <= t2);
                         }
                   }
-            }
-
-      if (isNote()) {
-            auto n = toNote(this);
-            marked = n->mark();
-            }
-
-      if (isRest() && MScore::highlightRests) {
-            auto r = toRest(this);
-            marked = r->mark();
             }
 
       if (selected() || marked ) {

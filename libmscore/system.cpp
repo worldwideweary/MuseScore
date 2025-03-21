@@ -1519,7 +1519,7 @@ int System::firstVisibleSysStaff() const
             if (_staves[i]->show())
                   return i;
             }
-      qDebug("no sys staff");
+      // qDebug("no sys staff");
       return -1;
       }
 
@@ -1534,7 +1534,7 @@ int System::lastVisibleSysStaff() const
             if (_staves[i]->show())
                   return i;
             }
-      qDebug("no sys staff");
+      // qDebug("no sys staff");
       return -1;
       }
 

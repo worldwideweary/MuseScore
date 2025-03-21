@@ -3383,49 +3383,10 @@ void ScoreView::cmd(const char* s)
                         }
                   }},
             {{"playback-position"}, [](ScoreView* cv, const QByteArray&) {
-                  ChordRest* cr { nullptr };
-                  Element* el { nullptr };
-                  int currentTrack = cv->score()->getSelectedElement() ?
-                                     cv->score()->getSelectedElement()->track() : 0;
-                  currentTrack = (currentTrack >= 0) ? currentTrack : 0;
-                  auto considerAllTracks { true }; // True : Consider all tracks instead of only voice-1 of first instrument
-                  auto next { false };             // False: Get current (rather than next) segment of playback cursor
-                  auto cursorPosition = cv->score()->repeatList().tick2utick(cv->score()->playPos().ticks());
-                  Fraction frac { Fraction::fromTicks(cursorPosition) };
-                  Segment* seg = next ? cv->score()->tick2rightSegment(frac, false) : cv->score()->tick2leftSegment(frac, false);
-
-                  if (seg) {
-                        if (seg->isChordRestType()) {
-                              if ((cr = seg->cr(currentTrack)))
-                                    el = cr;
-                              else {
-                                    for (int t = 0; t < cv->score()->ntracks(); t++) {
-                                          if ((cr = seg->cr(t))) {
-                                                el = cr;
-                                                break;
-                                                }
-                                          }
-                                    }
-                              }
-                        else {
-                              // Cycle through tracks if no CR* found
-                              if (considerAllTracks) {
-                                    for (int t = 0; t < cv->score()->ntracks(); t++) {
-                                          if ((cr = seg->cr(t))) {
-                                                el = cr;
-                                                break;
-                                                }
-                                          }
-                                    }
-                              // If still nothing found, get next CR*
-                              else el = seg->nextChordRest(0, false);
-                              }
-                        }
-                  if (el) {
-                        if (el->isChord())
-                              el = toChord(el)->upNote();
-                        cv->cmdGotoElement(el);
-                        }
+                  bool considerAllTracks = true;
+                  bool useNextPosition = true;
+                  if (auto cr = cv->chordRestFromCursor(!useNextPosition, considerAllTracks))
+                        cv->cmdGotoElement(cr);
                   }},
             {{"play-at-selection"}, [](ScoreView* cv, const QByteArray&) {
                   auto s = cv->score();
@@ -4900,9 +4861,10 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       double _spatium    = score()->spatium();
       const qreal border = _spatium * 3;
       QRectF showRect;
+      qreal topAdj = MScore::currentSystemAlwaysTop ? _spatium : border;
       if (staff == -1) {
-            showRect = QRectF(mRect.x(), sysRect.y(), mRect.width(), sysRect.height())
-                        .adjusted(-border, -border, border, border);
+            showRect = QRectF(mRect.x(), sysRect.y(), mRect.width(), sysRect.height());
+            showRect.adjust(-border, -topAdj, border, border);
             }
       else {
             // find a box for the individual stave in a system
@@ -4910,7 +4872,23 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
                                   sys->staffCanvasYpage(staff),
                                   sys->width(),
                                   sys->staff(staff)->bbox().height());
-            showRect = mRect.intersected(stave).adjusted(-border, -border, border, border);
+            showRect = mRect.intersected(stave).adjusted(-border, -topAdj, border, border);
+            }
+
+      auto canvasViewHeight   = r.height();
+      auto showHeight         = showRect.height();
+      bool editing            = (state == ViewState::EDIT);
+      bool fits               = (canvasViewHeight > showHeight);
+      bool alwaysTop          = MScore::currentSystemAlwaysTop && fits && !editing;
+
+      // Utilize skyline to include elements (spanners/etc) above system bbox
+      qreal sysTop = 0.0;
+      if (alwaysTop) {
+            for (auto& s : score()->systems())
+                  sysTop = std::max(s->minTop(), sysTop);
+            sysRect.adjust(0.0, -sysTop, 0.0, 0.0);
+            showHeight += sysTop;
+            showHeight += sys->minBottom();
             }
 
 /*printf("%f %f %f %f   %f %f %f %f  %d\n",
@@ -4927,11 +4905,15 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             }
 
       // canvas is not as tall as system
-      if (r.height() < showRect.height()) {
+      if (alwaysTop) {
+            showRect.setY(sys->canvasBoundingRect().y() - sysTop);
+            }
+      else if (canvasViewHeight < showHeight) {
             if (sys->staves()->size() == 1 || !playBack) {
                   // track note if single staff
-                  showRect.setY(p.y());
-                  showRect.setHeight(el->height());
+                  qreal elHeight = el->height();
+                  showRect.setY(p.y() - elHeight);
+                  showRect.setHeight(elHeight * 2);
                   }
             else if (sys->page()->systems().size() == 1) {
                   // otherwise, just keep current vertical position if possible
@@ -4940,11 +4922,19 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
                   showRect.setHeight(r.height());
                   }
             }
+      else if (editing){
+            // keep position while editing and currentSystemAlwaysTop is off
+            showRect.setY(r.y());
+            showRect.setHeight(r.height());
+            }
+
       if (shadowNote->visible())
             setShadowNote(p);
 
-      if (r.contains(showRect))
-            return;
+      if (!MScore::currentSystemAlwaysTop) {
+            if (r.contains(showRect))
+                  return;
+            }
 
       qreal x  = - xoffset() / physicalZoomLevel();
       qreal y  = - yoffset() / physicalZoomLevel();
@@ -4957,12 +4947,17 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             x = showRect.right() - width() / physicalZoomLevel() + border;
       else if (r.width() >= showRect.width() && showRect.right() > r.right())
             x = showRect.left() - border;
-      if (showRect.top() < r.top() && showRect.bottom() < r.bottom())
-            y = showRect.top() - border;
-      else if (showRect.top() > r.bottom())
-            y = showRect.bottom() - height() / physicalZoomLevel() + border;
-      else if (r.height() >= showRect.height() && showRect.bottom() > r.bottom())
-            y = showRect.top() - border;
+
+      if (alwaysTop)
+            y = showRect.top();
+      else {
+            if (showRect.top() < r.top() && showRect.bottom() < r.bottom())
+                  y = showRect.top() - border;
+            else if (showRect.top() > r.bottom())
+                  y = showRect.bottom() - height() / physicalZoomLevel() + border;
+            else if (r.height() >= showRect.height() && showRect.bottom() > r.bottom())
+                  y = showRect.top() - border;
+            }
 
       // align to page borders if extends beyond
       Page* page = sys->page();
@@ -4970,14 +4965,16 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             x = page->x();
       else if (r.width() < page->width() && r.width() + x > page->width() + page->x())
             x = (page->width() + page->x()) - r.width();
-      if (y < page->y() || r.height() >= page->height())
-            y = page->y();
-      else if (r.height() < page->height() && r.height() + y > page->height() + page->y())
-            y = (page->height() + page->y()) - r.height();
 
-      // hack: don't update if we haven't changed the offset
-      if (oldX == x && oldY == y)
-            return;
+      if (!MScore::currentSystemAlwaysTop) {
+            if (y < page->y() || r.height() >= page->height())
+                  y = page->y();
+            else if (r.height() < page->height() && r.height() + y > page->height() + page->y())
+                  y = (page->height() + page->y()) - r.height();
+            // hack: don't update if we haven't changed the offset
+            if (oldX == x && oldY == y)
+                  return;
+            }
 
       x *= -physicalZoomLevel();
       y *= -physicalZoomLevel();
