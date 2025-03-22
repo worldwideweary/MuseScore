@@ -473,7 +473,9 @@ void updateExternalValuesFromPreferences() {
       MScore::fadeFocus = preferences.getBool(PREF_UI_SCORE_FADE_FOCUS);
       MScore::currentSystemAlwaysTop = preferences.getBool(PREF_UI_SCORE_CURRENT_SYS_ON_TOP);
       MScore::omitAddingLinkedLines = preferences.getBool(PREF_UI_SCORE_OMIT_ADDING_LINKED_LINES);
-            
+
+      MScore::bypassAltMenu = preferences.getBool(PREF_UI_SCORE_BYPASS_ALT_MENU);
+
       MScore::layoutBreakColor = preferences.getColor(PREF_UI_SCORE_LAYOUTBREAKCOLOR);
       MScore::frameMarginColor = preferences.getColor(PREF_UI_SCORE_FRAMEMARGINCOLOR);
       MScore::setVerticalOrientation(preferences.getBool(PREF_UI_CANVAS_SCROLL_VERTICALORIENTATION));
@@ -651,6 +653,8 @@ void MuseScore::preferencesChanged(bool fromWorkspace, bool changeUI)
 
       if (seq)
             seq->preferencesChanged();
+
+      if (mscore) mscore->updateMenus();
       }
 
 //---------------------------------------------------------
@@ -2279,33 +2283,33 @@ void MuseScore::setMenuTitles()
       // The list below is not static, both strings
       // and menu pointers need refreshing.
       const std::initializer_list<std::pair<QMenu*, QString>> titles {
-            { menuFile,             tr("&File")             },
-            { openRecent,           tr("Open &Recent")      },
-            { menuEdit,             tr("&Edit")             },
-            { menuView,             tr("&View")             },
-            { menuToolbars,         tr("&Toolbars")         },
-            { menuWorkspaces,       tr("W&orkspaces")       },
-            { menuAdd,              tr("&Add")              },
-            { menuAddMeasures,      tr("&Measures")         },
-            { menuAddFrames,        tr("&Frames")           },
-            { menuAddText,          tr("&Text")             },
-            { menuAddLines,         tr("&Lines")            },
-            { menuAddPitch,         tr("N&otes")            },
-            { menuAddInterval,      tr("&Intervals")        },
-            { menuTuplet,           tr("T&uplets")          },
-            { menuFormat,           tr("F&ormat")           },
-            { menuStretch,          tr("&Stretch")          },
-            { menuTools,            tr("&Tools")            },
-            { menuVoices,           tr("&Voices")           },
-            { menuMeasure,          tr("&Measure")          },
+            { menuFile,             tr(MScore::bypassAltMenu ? "File" : "&File")                },
+            { openRecent,           tr(MScore::bypassAltMenu ? "Open Recent" : "Open &Recent")  },
+            { menuEdit,             tr(MScore::bypassAltMenu ? "Edit" : "&Edit")                },
+            { menuView,             tr(MScore::bypassAltMenu ? "View" : "&View")                },
+            { menuToolbars,         tr(MScore::bypassAltMenu ? "Toolbars" : "&Toolbars")        },
+            { menuWorkspaces,       tr(MScore::bypassAltMenu ? "Workspaces" : "W&orkspaces")    },
+            { menuAdd,              tr(MScore::bypassAltMenu ? "Add" : "&Add")                  },
+            { menuAddMeasures,      tr(MScore::bypassAltMenu ? "Measures" : "&Measures")        },
+            { menuAddFrames,        tr(MScore::bypassAltMenu ? "Frames" : "&Frames")            },
+            { menuAddText,          tr(MScore::bypassAltMenu ? "Text" : "&Text")                },
+            { menuAddLines,         tr(MScore::bypassAltMenu ? "Lines" : "&Lines")              },
+            { menuAddPitch,         tr(MScore::bypassAltMenu ? "Notes" : "N&otes")              },
+            { menuAddInterval,      tr(MScore::bypassAltMenu ? "Intervals" : "&Intervals")      },
+            { menuTuplet,           tr(MScore::bypassAltMenu ? "Tuplets" : "T&uplets")          },
+            { menuFormat,           tr(MScore::bypassAltMenu ? "Format" : "F&ormat")            },
+            { menuStretch,          tr(MScore::bypassAltMenu ? "Stretch" : "&Stretch")          },
+            { menuTools,            tr(MScore::bypassAltMenu ? "Tools" : "&Tools")              },
+            { menuVoices,           tr(MScore::bypassAltMenu ? "Voices" : "&Voices")            },
+            { menuMeasure,          tr(MScore::bypassAltMenu ? "Measure" : "&Measure")          },
 #ifdef SCRIPT_INTERFACE
-            { menuPlugins,          tr("&Plugins")          },
+            { menuPlugins,          tr(MScore::bypassAltMenu ? "Plugins" : "&Plugins")          },
 #endif
 #ifndef NDEBUG
             { menuDebug,            "Debug"                 }, // not translated
 #endif
-            { menuHelp,             tr("&Help")             },
-            { menuTours,            tr("&Tours")            }
+            { menuHelp,             tr(MScore::bypassAltMenu ? "Help" : "&Help")                },
+            { menuTours,            tr(MScore::bypassAltMenu ? "Tours" : "&Tours")              }
             };
 
       for (const auto& t : titles) {
@@ -4208,9 +4212,23 @@ bool MuseScore::eventFilter(QObject *obj, QEvent *event)
                   }
             case QEvent::StatusTip:
                   return true; // prevent updates to the status bar
+            case QEvent::KeyRelease:
+                  {
+                  QKeyEvent* e = static_cast<QKeyEvent*>(event);
+                  if (e->key() == Qt::Key_Alt) {
+                        focusScoreView();
+                        return true;
+                        }
+                  }
+                  break;
             case QEvent::KeyPress: // Note: [Return] is not registered here
                   {
                   QKeyEvent* e = static_cast<QKeyEvent*>(event);
+                  if (e->key() == Qt::Key_Alt) {
+                        // Omit singular alt-modifier
+                        e->ignore();
+                        return true;
+                        }
                   if(obj->isWidgetType()) {
                         if (e->key() == Qt::Key_Escape && e->modifiers() == Qt::NoModifier) {
                               // Close the search dialog when Escape is pressed:
