@@ -3454,7 +3454,7 @@ void ScoreView::cmd(const char* s)
                         }
                   else  {
                         auto score      = cv->score();
-                        auto selection  = score->selection();
+                        auto& selection = score->selection();
                         auto& is        = score->inputState();
                         auto cr         = selection.currentCR();
 
