@@ -45,7 +45,7 @@ XmlWriter::XmlWriter(Score* s, QIODevice* device)
 void XmlWriter::pTag(const char* name, PlaceText place)
       {
       const char* tags[] = {
-            "auto", "above", "below", "left"
+            "auto", "above", "below", "left", "centered", "centeredbroken"
             };
       tag(name, tags[int(place)]);
       }
