@@ -33,10 +33,16 @@ class TextLineBaseSegment : public LineSegment {
       Text* _text;
       Text* _endText;
       QPointF points[6];
+      QPointF brokenPoints[4];
       int npoints;
       qreal lineLength;
       bool twoLines { false };
+      
+      QLineF beginHookLine;
+      QLineF endHookLine;
+      QLineF textLine;
       QPolygonF joinedHairpin;
+      QRectF beginHookBB, endHookBB, lineBB;
 
    public:
       TextLineBaseSegment(Spanner*, Score* s, ElementFlags f = ElementFlag::NOTHING);

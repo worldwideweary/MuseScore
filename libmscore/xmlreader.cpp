@@ -425,6 +425,10 @@ PlaceText readPlacement(XmlReader& e)
             return PlaceText::BELOW;
       if (s == "left" || s == "3")
             return PlaceText::LEFT;
+      if (s == "centered" || s == "4")
+            return PlaceText::CENTERED;
+      if (s == "centeredbroken" || s == "5")
+            return PlaceText::CENTERED_BROKEN;
       qDebug("unknown placement value <%s>", qPrintable(s));
       return PlaceText::AUTO;
       }
