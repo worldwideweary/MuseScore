@@ -437,6 +437,7 @@ void ScoreView::dropEvent(QDropEvent* event)
             switch (editData.dropElement->type()) {
                   case ElementType::TEXTLINE:
                         firstStaffOnly = editData.dropElement->systemFlag();
+                        applyUserOffset = true; // It's the thought that counts...
                         // fall-thru
                   case ElementType::VOLTA:
                         // voltas drop to first staff by default, or closest staff if Control is held

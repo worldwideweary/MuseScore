@@ -2247,6 +2247,7 @@ MuseScore::MuseScore()
       menuAddLines->addAction(getAction("add-8va"));
       menuAddLines->addAction(getAction("add-8vb"));
       menuAddLines->addAction(getAction("add-noteline"));
+      menuAddLines->addAction(getAction("add-noteline-alt"));
       menuAdd->addMenu(menuAddLines);
 
       //---------------------

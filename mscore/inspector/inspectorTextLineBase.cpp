@@ -34,13 +34,17 @@ void populateHookType(QComboBox* b)
 //   populateTextPlace
 //---------------------------------------------------------
 
-void populateTextPlace(QComboBox* b)
+void populateTextPlace(QComboBox* b, bool showCenteringOptions)
       {
       b->clear();
       b->addItem(b->QObject::tr("Auto"),  int(PlaceText::AUTO));
       b->addItem(b->QObject::tr("Above"), int(PlaceText::ABOVE));
       b->addItem(b->QObject::tr("Below"), int(PlaceText::BELOW));
       b->addItem(b->QObject::tr("Left"),  int(PlaceText::LEFT));
+      if (showCenteringOptions) {
+            b->addItem(b->QObject::tr("Centered"), int(PlaceText::CENTERED));
+            b->addItem(b->QObject::tr("Centered (Broken)"), int(PlaceText::CENTERED_BROKEN));
+            }
       }
 
 //---------------------------------------------------------
@@ -103,9 +107,9 @@ InspectorTextLineBase::InspectorTextLineBase(QWidget* parent)
 
       populateHookType(tl.beginHookType);
       populateHookType(tl.endHookType);
-      populateTextPlace(tl.beginTextPlacement);
-      populateTextPlace(tl.continueTextPlacement);
-      populateTextPlace(tl.endTextPlacement);
+      populateTextPlace(tl.beginTextPlacement, true);
+      populateTextPlace(tl.continueTextPlacement, false);
+      populateTextPlace(tl.endTextPlacement, false);
 
       connect(tl.hasBeginText,    &QCheckBox::clicked, this, &InspectorTextLineBase::hasBeginTextClicked);
       connect(tl.hasContinueText, &QCheckBox::clicked, this, &InspectorTextLineBase::hasContinueTextClicked);
