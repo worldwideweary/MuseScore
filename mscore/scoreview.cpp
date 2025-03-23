@@ -2970,7 +2970,10 @@ void ScoreView::cmd(const char* s)
                         cv->cmdAddPedal(HookType::HOOK_90, HookType::HOOK_90);
                   }},
             {{"add-noteline"}, [](ScoreView* cv, const QByteArray&) {
-                  cv->cmdAddNoteLine();
+                  cv->cmdAddNoteLine(false);
+                  }},
+            {{"add-noteline-alt"}, [](ScoreView* cv, const QByteArray&) {
+                  cv->cmdAddNoteLine(true);
                   }},
             {{"chord-text"}, [](ScoreView* cv, const QByteArray&) {
                   cv->changeState(ViewState::NORMAL);
@@ -5805,9 +5808,11 @@ void ScoreView::cmdAddPedal(HookType beginHook, HookType endHook)
 
 //---------------------------------------------------------
 //   cmdAddNoteLine
+//     hiddenLineWithText (if true) will give 0 width line
+//     + a centered text letter "H"
 //---------------------------------------------------------
 
-void ScoreView::cmdAddNoteLine()
+void ScoreView::cmdAddNoteLine(bool hiddenLineWithText)
       {
       Note* firstNote = 0;
       Note* lastNote  = 0;
@@ -5824,32 +5829,101 @@ void ScoreView::cmdAddNoteLine()
                   }
             }
       else {
-            for (Note* n : _score->selection().noteList()) {
-                  if (firstNote == 0 || firstNote->chord()->tick() > n->chord()->tick())
-                        firstNote = n;
-                  if (lastNote == 0 || lastNote->chord()->tick() < n->chord()->tick())
-                        lastNote = n;
+            if (_score->selection().isList() && !_score->selection().noteList().empty()) {
+                  auto noteList = _score->selection().noteList();
+                  firstNote = noteList.front();
+                  lastNote  = noteList.back();
+                  if (firstNote->chord() == lastNote->chord()) {
+                        // 1) Same chord, one/same note  -> Single vertical line anchored above note (arrows/etc)
+                        // 2) Same chord, different note -> 3.x Will allow (Also grace notes) for clusters / more options
+                        }
+
+                  // Update: Allow lines to be drawn to more than one pair of noteheads at a time using a
+                  //         LIST selection: (appropiate to select top notes only first, etc.)
+                  std::size_t listSize = _score->selection().noteList().size();
+                  if (listSize > 2) {
+
+                        _score->startCmd();
+
+                        for (std::size_t idx = 0; idx < listSize-1; idx++) {
+                              firstNote = noteList.at(idx);
+                              lastNote = noteList.at(idx+1);
+                              // 1) Omit drawing line from one note to the next in the same chord
+                              // 2) Only draw to the same voice
+                              if (firstNote->chord() != lastNote->chord() && (firstNote->voice() == lastNote->voice())) {
+                                    TextLine* tl = new TextLine(_score);
+                                    tl->setParent(firstNote);
+                                    tl->setStartElement(firstNote);
+                                    tl->setDiagonal(true);
+                                    tl->setAnchor(Spanner::Anchor::NOTE);
+                                    tl->setSystemFlag(false);
+                                    tl->setTick(firstNote->chord()->tick());
+                                    tl->setEndElement(lastNote);
+
+                                    // --- Workaround for Hammer-on/Pull-off text
+                                    if (hiddenLineWithText) {
+                                          tl->setBeginText("H");
+                                          tl->setBeginTextPlace(PlaceText::CENTERED);
+                                          tl->setLineWidth(0.0); // Hidden line
+                                          tl->setLineColor(QColor(255, 255, 255, 0));
+                                          tl->setBeginTextOffset(QPointF(0.0, -75.0));
+                                          // Lame, but it works for now since ->offset doesn't do shit for some reason
+                                          }
+                                    _score->undoAddElement(tl);
+                                    }
+                              }
+                        _score->endCmd();
+
+                        return;
+                        }
+                  }
+            else  {
+                  // qDebug() << "Invalid Selection to add Note-Anchored Line (rests, etc)";
+                  return;
                   }
             }
       if (!firstNote || !lastNote) {
             qDebug("addNoteLine: no note %p %p", firstNote, lastNote);
             return;
             }
-      if (firstNote == lastNote) {
-            qDebug("addNoteLine: no support for note to same note line %p", firstNote);
-            return;
-            }
+
       TextLine* tl = new TextLine(_score);
       tl->setParent(firstNote);
       tl->setStartElement(firstNote);
       tl->setDiagonal(true);
       tl->setAnchor(Spanner::Anchor::NOTE);
       tl->setTick(firstNote->chord()->tick());
+      tl->setSystemFlag(false);
       tl->setEndElement(lastNote);
+
+      // --- Workaround for Hammer-on/Pull-off text (sloppy for now)
+      if (hiddenLineWithText) {
+            tl->setBeginText("H");
+            tl->setBeginTextPlace(PlaceText::CENTERED);
+            tl->setLineWidth(0.0); // Hidden line
+            tl->setLineColor(QColor(255, 255, 255, 0));
+            tl->setBeginTextOffset(QPointF(0.0, -75.0));
+            }
+
       _score->startCmd();
-      _score->undoAddElement(tl);
+            _score->undoAddElement(tl);
       _score->endCmd();
-      tl->setEndElement(lastNote);
+
+      if (firstNote == lastNote) {
+            // Single-note anchor line
+            tl->setProperty(Pid::AUTOPLACE, false);
+            tl->setPropertyFlags(Pid::OFFSET, PropertyFlags::UNSTYLED);
+            tl->setPropertyFlags(Pid::OFFSET2, PropertyFlags::UNSTYLED);
+            if (auto tls = tl->frontSegment()) {
+                  tls->setUserOff2(QPointF(0.0, -125.0));
+                  }
+            // Automatically select without edit mode: allowing up/down placement changes
+            deselectAll();
+            if (!tl->spannerSegments().empty()) {
+                  score()->select(tl->spannerSegments().front(), SelectType::SINGLE, 0);
+                  }
+            }
+
       }
 
 //---------------------------------------------------------
