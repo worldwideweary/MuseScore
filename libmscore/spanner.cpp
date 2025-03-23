@@ -1482,8 +1482,11 @@ void SpannerSegment::autoplaceSpannerSegment()
       if (isStyled(Pid::OFFSET))
             setOffset(spanner()->propertyDefault(Pid::OFFSET).toPointF());
 
-      if (spanner()->anchor() == Spanner::Anchor::NOTE)
-            return;
+      bool singleNoteAnchor = (spanner()->startElement() == spanner()->endElement());
+      if (spanner()->anchor() == Spanner::Anchor::NOTE) {
+            if (!singleNoteAnchor)
+                  return;
+            }
 
       // rebase vertical offset on drag
       qreal rebase = 0.0;
@@ -1519,6 +1522,9 @@ void SpannerSegment::autoplaceSpannerSegment()
                         rebaseMinDistance(md, yd, sp, rebase, above, inStaff);
                         }
                   rypos() += yd;
+                  }
+            if (singleNoteAnchor) {
+                  // Placeholder
                   }
             }
       setOffsetChanged(false);

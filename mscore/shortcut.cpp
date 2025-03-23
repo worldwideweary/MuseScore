@@ -3590,6 +3590,13 @@ Shortcut Shortcut::_sc[] = {
          QT_TRANSLATE_NOOP("action","Note anchored line")
          },
       {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         "add-noteline-alt",
+         QT_TRANSLATE_NOOP("action","Note Anchored (Hidden) Line: Centered Text H"),
+         QT_TRANSLATE_NOOP("action","Note anchored (Hidden) line: Centered Text H")
+         },
+      {
          MsWidget::MAIN_WINDOW,
          STATE_NORMAL | STATE_LOCK,
          "lock",

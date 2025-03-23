@@ -22,6 +22,10 @@
 #include "utils.h"
 #include "xml.h"
 
+#include <QLineF>
+#include <QRectF>
+#include <QPointF>
+
 namespace Ms {
 
 //---------------------------------------------------------
@@ -75,6 +79,8 @@ void TextLineBaseSegment::draw(QPainter* painter) const
       TextLineBase* tl = textLineBase();
       QColor lineColor = curColor(tl->visible() && tl->lineVisible(), tl->lineColor());      
       QColor textColor = tl->color();
+      qreal strokeWidth = tl->lineWidth();
+      qreal lineAngle = -(textLine.angle());
 
       // Playback marked color:
       auto t1 = spanner()->tick();
@@ -96,20 +102,46 @@ void TextLineBaseSegment::draw(QPainter* painter) const
 
       if (!_text->empty()) {
             _text->setVisible(tl->visible());
-            _text->setColor(textColor);
+            bool isCenteredText = (tl->beginTextPlace() == PlaceText::CENTERED) || (tl->beginTextPlace() == PlaceText::CENTERED_BROKEN);
+            auto horizon = isCenteredText ? textLine.center() : _text->ipos();
+            auto userOffset = _text->offset();
+            auto lineStrokeOffset = QPointF(0.0, _text->getVAlignOffset());
+            // Note: TextBase stores angle, yet is unused at the moment. Separate angles in future?
+            auto angle  = isCenteredText ? lineAngle : 0.0;
 
-            painter->translate(_text->pos());
-               _text->draw(painter);
-            painter->translate(-_text->pos());
+            // Apply user x-y + line width offsets after rotation
+            painter->translate(horizon);
+            painter->rotate(angle);
+            painter->translate(lineStrokeOffset);
+            painter->translate(userOffset);
+
+                  _text->draw(painter);
+
+            painter->translate(-userOffset);
+            painter->translate(-lineStrokeOffset);
+            painter->rotate(-angle);
+            painter->translate(-horizon);
             }
 
       if (!_endText->empty()) {
             _endText->setVisible(tl->visible());
-            _endText->setColor(textColor);
+            auto horizon = textLine.p2();
+            auto userOffset = _endText->offset();
+            auto lineStrokeOffset = QPointF(0.0, _endText->getVAlignOffset());
+            auto angle = lineAngle;
 
-            painter->translate(_endText->pos());
-               _endText->draw(painter);
-            painter->translate(-_endText->pos());
+            // Apply user x-y + line-width offsets after rotation
+            painter->translate(horizon);
+            painter->rotate(angle);
+            painter->translate(lineStrokeOffset);
+            painter->translate(userOffset);
+
+                  _endText->draw(painter);
+            
+            painter->translate(-userOffset);
+            painter->translate(-lineStrokeOffset);
+            painter->rotate(-angle);
+            painter->translate(-horizon);
             }
 
       if ((npoints == 0) || (score() && (score()->printing() || !score()->showInvisible()) && !tl->lineVisible()))
@@ -124,20 +156,26 @@ void TextLineBaseSegment::draw(QPainter* painter) const
             color = tl->lineColor();
 #endif
 
-      qreal textlineLineWidth = tl->lineWidth();
       if (staff())
-            textlineLineWidth *= mag();
-      QPen pen(lineColor, textlineLineWidth, tl->lineStyle());
-      QPen solidPen(lineColor, textlineLineWidth, Qt::SolidLine);
+            strokeWidth *= mag();
+      QPen pen(lineColor, strokeWidth, tl->lineStyle());
+      QPen solidPen(lineColor, strokeWidth, Qt::SolidLine);
 
+
+      // Δ from 3.6.2: MiterJoined Polylines for each segment + round-capped single-lined hooks for pedals
+      pen.setCapStyle(Qt::FlatCap);
+      solidPen.setCapStyle(Qt::FlatCap);
+      solidPen.setJoinStyle(Qt::MiterJoin);
+      pen.setJoinStyle(Qt::MiterJoin);
       //Replace generic Qt dash patterns with improved equivalents to show true dots
       QVector<qreal> dotted        = { 0.01, 1.99 }; // 0.01 for cap dots. tighter than default Qt Dotline (would be { 0.01, 2.99 }). 
+// QUESTION: should just be 0.01 + 1.99 like dotted:?>    
+      QVector<qreal> squared       = { 1.0, 2.00 }; // 0.01 for cap dots. tighter than default Qt Dotline (would be { 0.01, 2.99 }).      
       QVector<qreal> dashed        = { 3.0, 3.0 };   // Compensating for caps. Qt default DashLine is { 4.0, 2.0 }
       QVector<qreal> dashDotted    = { 3.0, 3.0, 0.01, 2.99 };
       QVector<qreal> dashDotDotted = { 3.0, 3.0, 0.01, 2.99, 0.01, 2.99 };
       QVector<qreal> customDashes  = { tl->dashLineLen(), tl->dashGapLen() };
 
-      pen.setCapStyle(Qt::SquareCap);
       switch (tl->lineStyle()) {
             case Qt::DashLine:
                 pen.setDashPattern(dashed);
@@ -151,36 +189,59 @@ void TextLineBaseSegment::draw(QPainter* painter) const
                 break;
             case Qt::DashDotDotLine:
                 // Square dots instead:
-                pen.setDashPattern(dotted);
+                pen.setDashPattern(squared);
                 break;
             case Qt::CustomDashLine:
                 pen.setDashPattern(customDashes);
+                break;
+            case Qt::SolidLine:
                 break;
             default:
                   break;
             }
 
-      //Draw lines
-      if (twoLines) {   // hairpins
+      if (twoLines) {
+            // Draw Hairpins
+            // Need more precise control over terminal-points:
             pen.setJoinStyle(Qt::BevelJoin);
             painter->setPen(pen);
 
             if (!joinedHairpin.isEmpty() && tl->lineStyle() == Qt::SolidLine)
                   painter->drawPolyline(joinedHairpin);
-            else
+            else  // Non solid-lines look better not joined?
                   painter->drawLines(&points[0], 2);
             }
       else {
             int start = 0;
             int end = npoints;
-            //draw centered hooks as solid
-            painter->setPen(solidPen);
+            auto angle = lineAngle;
+            auto dx = textLine.p1().x();
+
+            // Centered hooks are always solid
             if (tl->beginHookType() == HookType::HOOK_90T && (isSingleType() || isBeginType())) {
-                  painter->drawLines(&points[0], 1);
+                  painter->setPen(solidPen);
+                  painter->save();
+                  painter->translate(+dx, 0.0);
+                  painter->rotate(angle);
+                  painter->translate(-dx, 0.0);
+
+                        painter->drawLine(beginHookLine);
+
+                  painter->rotate(-angle);
+                  painter->restore();
                   start++;
                   }
             if (tl->endHookType() == HookType::HOOK_90T && (isSingleType() || isEndType())) {
-                  painter->drawLines(&points[npoints-1], 1);
+                  painter->setPen(solidPen);
+                  painter->save();
+                  painter->translate(+dx, 0.0);
+                  painter->rotate(angle);
+                  painter->translate(-dx, 0.0);
+                  
+                        painter->drawLine(endHookLine);
+
+                  painter->rotate(-angle); // superfluous before a restore?
+                  painter->restore();
                   end--;
                   }
 #if 0 // experiment
@@ -189,48 +250,158 @@ void TextLineBaseSegment::draw(QPainter* painter) const
                   painter->setPen(pen);
                   painter->drawLines(&points[0], 1);
                   start++;
-            }
+                  }
             if (tl->endHookType() == HookType::HOOK_45 && (isSingleType() || isEndType())) {
                   pen.setCapStyle(Qt::RoundCap);
                   painter->setPen(pen);
                   painter->drawLines(&points[npoints-1], 1);
                   end--;
-            }
+                  }
 #endif
-            //draw rest of line as regular
-            //calculate new gap
-            if (tl->lineStyle() == Qt::CustomDashLine) {
-                  qreal adjustedLineLength = lineLength / textlineLineWidth;
-                  qreal dash = tl->dashLineLen();
-                  qreal gap = tl->dashGapLen();
-                  int numPairs;
-                  qreal newGap = 0;
-                  QVector<qreal> nDashes { dash, newGap };
-                  if (tl->beginHookType() == HookType::HOOK_45 || tl->beginHookType() == HookType::HOOK_90) {
-                        qreal absD = sqrt(QPointF::dotProduct(points[start+1]-points[start], points[start+1]-points[start])) / textlineLineWidth;
-                        numPairs = std::max(qreal(1), absD / (dash + gap));
-                        nDashes[1] = (absD - dash * (numPairs + 1)) / numPairs;
-                        pen.setDashPattern(nDashes);
-                        painter->setPen(pen);
-                        painter->drawLine(points[start+1], points[start]);
+            if (tl->anchor() == Spanner::Anchor::NOTE) {
+                  if (tl->startElement() != tl->endElement()) {
+                        pen.setCapStyle(Qt::RoundCap);
+                        }
+                  }
+            if (tl->isPedal() || tl->isPedalSegment()) {
+                  pen.setCapStyle(Qt::RoundCap);
+                  pen.setJoinStyle(Qt::MiterJoin);
+                  }
+
+            painter->setPen(pen);
+
+            // Calculate dash-gap and draw hooks if not solid line
+            auto adjustedLineLength = lineLength / strokeWidth;
+            auto dash = tl->dashLineLen();
+            auto gap = tl->dashGapLen();
+            int numPairs;
+            qreal newGap = 0;
+            bool separateHooks = (tl->lineStyle() == Qt::DashDotDotLine) || (tl->lineStyle() == Qt::DotLine);
+            bool square = tl->lineStyle() == Qt::DashDotDotLine;
+
+            QVector<qreal> nDashes { dash, newGap };
+            if (tl->beginHookType() == HookType::HOOK_45 || tl->beginHookType() == HookType::HOOK_90) {
+                  qreal absD = sqrt(QPointF::dotProduct(points[start+1]-points[start], points[start+1]-points[start])) / strokeWidth;
+                  numPairs = std::max(qreal(1), absD / (dash + gap));
+                  nDashes[1] = (absD - dash * (numPairs + 1)) / numPairs;
+
+                  // Alternative:
+                  // if (tl->lineStyle() == Qt::CustomDashLine)
+                        // painter->setPen(solidPen);
+
+                  if (separateHooks) {
+                        painter->save();
+                        painter->translate(+dx, 0.0);
+                        painter->rotate(angle);
+                        painter->translate(-dx, 0.0);
+                        QLineF reversedBeginHookLine(beginHookLine.p2(), beginHookLine.p1());
+                        if (square) {
+                              reversedBeginHookLine.translate(strokeWidth * 0.5, -strokeWidth * 0.5);
+                              }
+
+                        painter->drawLine(reversedBeginHookLine);
+
+                        painter->rotate(-angle);
+                        painter->restore();
                         start++;
                         }
-                  if (tl->endHookType() == HookType::HOOK_45 || tl->endHookType() == HookType::HOOK_90) {
-                        qreal absD = sqrt(QPointF::dotProduct(points[end]-points[end-1], points[end]-points[end-1])) / textlineLineWidth;
-                        numPairs = std::max(qreal(1), absD / (dash + gap));
-                        nDashes[1] = (absD - dash * (numPairs + 1)) / numPairs;
-                        pen.setDashPattern(nDashes);
-                        painter->setPen(pen);
-                        painter->drawLines(&points[end-1], 1);
+                  }
+            if (tl->endHookType() == HookType::HOOK_45 || tl->endHookType() == HookType::HOOK_90) {
+                  qreal absD = sqrt(QPointF::dotProduct(points[end]-points[end-1], points[end]-points[end-1])) / strokeWidth;
+                  numPairs = std::max(qreal(1), absD / (dash + gap));
+                  nDashes[1] = (absD - dash * (numPairs + 1)) / numPairs;
+
+                  // if (tl->lineStyle() == Qt::CustomDashLine)
+                        // painter->setPen(solidPen);
+
+                  if (separateHooks) {
+                        painter->save();
+                        painter->translate(+dx, 0.0);
+                        painter->rotate(angle);
+                        painter->translate(-dx, 0.0);
+                        QLineF correctedHook = endHookLine;
+                        if (square) {
+                              correctedHook.translate(-strokeWidth * 0.5, -strokeWidth * 0.5);
+                              }
+
+                        painter->drawLine(correctedHook);
+
+                        painter->rotate(-angle);
+                        painter->restore();
                         end--;
                         }
-                  numPairs = std::max(qreal(1), adjustedLineLength / (dash + gap));
-                  nDashes[1] = (adjustedLineLength - dash * (numPairs + 1)) / numPairs;
+                  }
+
+            numPairs = std::max(qreal(1), adjustedLineLength / (dash + gap));
+            nDashes[1] = (adjustedLineLength - dash * (numPairs + 1)) / numPairs;
+
+            if (tl->lineStyle() != Qt::SolidLine) {
                   pen.setDashPattern(nDashes);
                   }
-            painter->setPen(pen);
-            for (int i = start; i < end; ++i)
-                  painter->drawLines(&points[i], 1);
+            if (tl->lineStyle() == Qt::CustomDashLine) {
+                  // pen.setCapStyle(Qt::FlatCap);
+                  painter->setPen(pen);
+                  }
+
+            QPolygonF totalLine;
+            bool centeredBrokenText = (tl->beginTextPlace() == PlaceText::CENTERED_BROKEN && !_text->empty());
+            auto unangledTextLine = textLine;
+            unangledTextLine.setAngle(0.0);
+
+            painter->translate(+unangledTextLine.p1());
+            painter->rotate(angle);
+            painter->translate(-unangledTextLine.p1());
+
+            if (endHookLine.length() && !separateHooks) {
+                  if (tl->endHookType() == HookType::HOOK_45 || tl->endHookType() == HookType::HOOK_90)
+                        totalLine << endHookLine.p2();
+                  }
+
+            if (centeredBrokenText) {
+                  totalLine << brokenPoints[3] << brokenPoints[2];
+
+                  painter->drawPolyline(totalLine);
+
+                  totalLine.clear();
+                  totalLine << brokenPoints[1] << brokenPoints[0];
+                  }
+            else {
+                  totalLine << unangledTextLine.p2() << unangledTextLine.p1();
+                  }
+
+            if (beginHookLine.length() && !separateHooks) {
+                  if (tl->beginHookType() == HookType::HOOK_45 || tl->beginHookType() == HookType::HOOK_90)
+                        totalLine << beginHookLine.p1();
+                        }
+
+            painter->drawPolyline(totalLine);
+
+            painter->translate(+unangledTextLine.p1());
+            painter->rotate(-angle);
+            painter->translate(-unangledTextLine.p1());
+
+            if (totalLine.isEmpty()) {
+                  // Left-over for non-joined polylines. 90T hooks and custom dash lined hooks were already drawn
+                  if (tl->endHookType() != HookType::NONE && tl->endHookType() != HookType::HOOK_90T && tl->lineStyle() != Qt::CustomDashLine) {
+                        if (endHookLine.length()) {
+                              painter->rotate(angle);
+                              painter->drawLine(endHookLine);
+                              painter->rotate(-angle);
+                              }
+                        }
+                  QLineF reverseLine(textLine.p2(), textLine.p1());
+                  if (tl->lineStyle() == Qt::DashDotDotLine || tl->lineStyle() == Qt::DotLine)
+                        painter->drawLine(reverseLine);
+                  else painter->drawLine(textLine);
+                  if (tl->beginHookType() != HookType::NONE && tl->beginHookType() != HookType::HOOK_90T && tl->lineStyle() != Qt::CustomDashLine) {
+                        if (beginHookLine.length()) {
+                              painter->rotate(angle);
+                              painter->drawLine(beginHookLine);
+                              painter->rotate(-angle);
+                              }
+                        }
+                  }
+
             }
       }
 
@@ -241,23 +412,29 @@ void TextLineBaseSegment::draw(QPainter* painter) const
 Shape TextLineBaseSegment::shape() const
       {
       Shape shape;
-      if (!_text->empty())
-            shape.add(_text->bbox().translated(_text->pos()));
-      if (!_endText->empty())
-            shape.add(_endText->bbox().translated(_endText->pos()));
+      auto  tl = textLineBase();
       qreal lw  = textLineBase()->lineWidth();
-      qreal lw2 = lw * .5;
-      if (twoLines) {   // hairpins
+      qreal lw2 = (lw * 0.5);
+
+      if (!_text->empty())
+            shape.add(_text->bbox());
+      if (!_endText->empty())
+            shape.add(_endText->bbox());
+
+      if (twoLines) {
+            // Hairpins:
             shape.add(QRectF(points[0].x(), points[0].y() - lw2,
                points[1].x() - points[0].x(), points[1].y() - points[0].y() + lw));
             shape.add(QRectF(points[2].x(), points[2].y() - lw2,
                points[3].x() - points[2].x(), points[3].y() - points[2].y() + lw));
             }
-      else if (textLineBase()->lineVisible()) {
-            for (int i = 0; i < npoints; ++i) {
-                  shape.add(QRectF(points[i].x() - lw2, points[i].y() - lw2,
-                     points[i+1].x() - points[i].x() + lw, points[i+1].y() - points[i].y() + lw));
-                  }
+      else if (tl->lineVisible()) {
+            if (!beginHookLine.isNull())
+                  shape.add(beginHookBB);
+            if (!textLine.isNull())
+                  shape.add(lineBB);
+            if (!endHookLine.isNull())
+                  shape.add(endHookBB);
             }
       return shape;
       }
@@ -268,12 +445,64 @@ Shape TextLineBaseSegment::shape() const
 
 void TextLineBaseSegment::layout()
       {
+
+      // Lazy Functor Helpers: Form bounding box from line with "margins" (e.g. line stroke width)
+      auto formBoundingBox = [](const QLineF& line, qreal xo, qreal yo, qreal wo, qreal ho) {
+            qreal x = line.x1() + xo;
+            qreal y = line.y1() + yo;
+            qreal w = line.dx() + wo;
+            qreal h = line.dy() + ho;
+            return QRectF(x, y, w, h);
+            };
+
+      // Would be nice to have rectangle and point in one function, but for that would need templates
+      auto rotateRectangle = [](auto& in, QPointF t1, qreal angle, QPointF t2) {
+            QPolygonF polygonInput(in);
+            auto theta = -(angle);
+            QTransform transform = QTransform()
+                  .translate(t1.x(), t1.y())
+                  .rotate(theta)
+                  .translate(t2.x(), t2.y())
+                  ;
+            QPolygonF rotatedPolygon = transform.map(polygonInput);
+            return rotatedPolygon.boundingRect();
+            };
+
+//      auto rotatePoint = [](QPointF in, QPointF t1, qreal angle, QPointF t2) {
+//            auto theta = -(angle);
+//            QTransform transform = QTransform()
+//                  .translate(t1.x(), t1.y())
+//                  .rotate(theta)
+//                  .translate(t2.x(), t2.y())
+//                  ;
+//            return transform.map(in);
+//            };
+
       npoints      = 0;
       TextLineBase* tl = textLineBase();
       qreal lineStrokeWidth = tl->lineWidth();
       QColor textColor = tl->color();
       qreal _spatium = tl->spatium();
       bool isSingleOrBegin = isSingleBeginType();
+
+      bool singleNoteAnchor = (tl->startElement() == tl->endElement());
+      auto beginHookType = tl->beginHookType();
+      auto endHookType = tl->endHookType();
+      bool hasBeginHook = beginHookType != HookType::NONE;
+      bool hasEndHook = endHookType != HookType::NONE;
+      bool hasNoHooks = !hasBeginHook && !hasEndHook;
+      bool isCenteredText = (tl->beginTextPlace() == PlaceText::CENTERED || tl->beginTextPlace() == PlaceText::CENTERED_BROKEN);
+      bool isBroken       = (tl->beginTextPlace() == PlaceText::CENTERED_BROKEN);
+
+      // Reset lines
+      if (!beginHookLine.isNull())
+            beginHookLine.setLine(0.0, 0.0, 0.0, 0.0);
+
+      if (!endHookLine.isNull())
+            endHookLine.setLine(0.0, 0.0, 0.0, 0.0);
+
+      if (!textLine.isNull())
+            textLine.setLine(0.0, 0.0, 0.0, 0.0);
 
       if (spanner()->placeBelow())
             rypos() = staff() ? staff()->height() : 0.0;
@@ -284,6 +513,18 @@ void TextLineBaseSegment::layout()
 
       if (!tl->diagonal())
             _offset2.setY(0);
+
+      // Initialization of line information:
+      QPointF pp1;
+      QPointF pp2(pos2());
+      bool isHorizontallyBackwards = pp1.x() > pp2.x();
+      bool isDiagonal = (pp2.y() != 0);
+      bool hasNoText = _text->empty() && _endText->empty();
+      textLine.setPoints(pp1, pp2);
+      lineLength = textLine.length();
+
+      // Bounding-box: first phase
+      setbbox(QRectF(pp1, pp2).normalized());
 
       if (isSingleOrBegin) {
             _text->setXmlText(tl->beginText());
@@ -307,10 +548,12 @@ void TextLineBaseSegment::layout()
             _text->setUnderline(tl->continueFontStyle() & FontStyle::Underline);
             _text->setStrike(tl->continueFontStyle() & FontStyle::Strike);
             }
+
       _text->setPlacement(Placement::ABOVE);
       _text->setTrack(track());
-      _text->setColor(textColor);
       _text->setVAlignOffset(lineStrokeWidth);
+      _text->setAngle(isCenteredText ? textLine.angle() : 0.0);
+      _text->setColor(textColor);
       _text->layout();
 
       if ((isSingleType() || isEndType())) {
@@ -325,70 +568,49 @@ void TextLineBaseSegment::layout()
             _endText->setStrike(tl->endFontStyle() & FontStyle::Strike);
             _endText->setPlacement(Placement::ABOVE);
             _endText->setTrack(track());
-            _endText->setColor(textColor);
             _endText->setVAlignOffset(lineStrokeWidth);
+            _endText->setAngle(textLine.angle());
+            _endText->setColor(textColor);
             _endText->layout();
             }
       else {
             _endText->setXmlText("");
             }
 
-      QPointF pp1;
-      QPointF pp2(pos2());
-
-      // diagonal line with no text or hooks - just use the basic rectangle for line
-      if (_text->empty() && _endText->empty() && pp2.y() != 0
-          && (!isSingleOrBegin || textLineBase()->beginHookType() == HookType::NONE)
-          && (!isSingleEndType() || textLineBase()->endHookType() == HookType::NONE)) {
-            npoints = 1; // 2 points, but only one line must be drawn
-            points[0] = pp1;
-            points[1] = pp2;
-            lineLength = sqrt(QPointF::dotProduct(pp2-pp1, pp2-pp1));
-
-            setbbox(QRectF(pp1, pp2).normalized());
+      if (isDiagonal && hasNoText && hasNoHooks && !singleNoteAnchor) {
+            npoints = 1;
+            qreal w = abs(bbox().width());
+            qreal h = abs(bbox().height());
+            bool zeroWidth  = (w < 0.01);
+            bool zeroHeight = (h < 0.01);
+            w = zeroWidth  ? lineStrokeWidth : w;
+            h = zeroHeight ? lineStrokeWidth : h;
+            bbox().setWidth(w);
+            bbox().setHeight(h);
+            lineBB = bbox();
             return;
             }
 
-      // line has text or hooks or is not diagonal - calculate reasonable bbox
-
+      // Calculate dimensions of bounding-box based on initial text positioning and hooks [[or is not diagonal]]
       qreal x1 = qMin(0.0, pp2.x());
       qreal x2 = qMax(0.0, pp2.x());
-      qreal y0 = -textLineBase()->lineWidth();
+      qreal y0 = -lineStrokeWidth;
       qreal y1 = qMin(0.0, pp2.y()) + y0;
       qreal y2 = qMax(0.0, pp2.y()) - y0;
 
-      qreal l1 = 0.0;
-      qreal l2 = 0.0;
-      qreal textlineTextDistance = _spatium * .5;
-
-      bool alignBeginText = tl->beginTextPlace() == PlaceText::LEFT || tl->beginTextPlace() == PlaceText::AUTO;
-      bool alignContinueText = tl->continueTextPlace() == PlaceText::LEFT || tl->continueTextPlace() == PlaceText::AUTO;
-      //bool alignEndText = tl->endTextPlace() == PlaceText::LEFT || tl->endTextPlace() == PlaceText::AUTO;
-      //bool hasBeginText = !_text->empty() && isSingleOrBegin;
-      //bool hasContinueText = !_text->empty() && !isSingleOrBegin;
-      //bool hasEndText = !_endText->empty() && isSingleEndType();
+      qreal l = 0.0;
 
       if (!_text->empty()) {
-            if ((isSingleOrBegin && alignBeginText) || (!isSingleOrBegin && alignContinueText)) {
-                  l1 = textlineTextDistance;
-                  auto txtPlace = textLineBase()->beginTextPlace();
-                  if (txtPlace == PlaceText::AUTO || txtPlace == PlaceText::LEFT)
-                        l1 += _text->bbox().right();
-                  switch (_text->align()) {
-                        case Align::LEFT:
-                              l1 += _text->bbox().width();
-                              break;
-                        case Align::HCENTER:
-                              l1 += _text->bbox().width() / 2;
-                              break;
-                        default:
-                              break;
-                        }
+            qreal textlineTextDistance = _spatium * 0.5;
+            if (((isSingleType() || isBeginType())
+               && (tl->beginTextPlace() == PlaceText::LEFT || tl->beginTextPlace() == PlaceText::AUTO))
+               || ((isMiddleType() || isEndType()) && (tl->continueTextPlace() == PlaceText::LEFT))) {
+                  l = _text->pos().x() + _text->bbox().width() + textlineTextDistance;
                   }
             qreal h = _text->height();
-            if (textLineBase()->beginTextPlace() == PlaceText::ABOVE)
+            if (tl->beginTextPlace() == PlaceText::ABOVE)
                   y1 = qMin(y1, -h);
-            else if (textLineBase()->beginTextPlace() == PlaceText::BELOW)
+            else if (tl->beginTextPlace() == PlaceText::BELOW)
                   y2 = qMax(y2, h);
             else {
                   y1 = qMin(y1, -h * .5);
@@ -397,91 +619,209 @@ void TextLineBaseSegment::layout()
             x2 = qMax(x2, _text->width());
             }
 
-      if (textLineBase()->endHookType() != HookType::NONE) {
-            qreal h = pp2.y() + textLineBase()->endHookHeight().val() * _spatium;
+      if (hasEndHook) {
+            qreal h = pp2.y() + tl->endHookHeight().val() * _spatium;
             if (h > y2)
                   y2 = h;
             else if (h < y1)
                   y1 = h;
             }
 
-      if (textLineBase()->beginHookType() != HookType::NONE) {
-            qreal h = textLineBase()->beginHookHeight().val() * _spatium;
+      if (hasBeginHook) {
+            qreal h = tl->beginHookHeight().val() * _spatium;
             if (h > y2)
                   y2 = h;
             else if (h < y1)
                   y1 = h;
             }
-      bbox().setRect(x1, y1, x2 - x1, y2 - y1);
-      if (!_text->empty())
-            bbox() |= _text->bbox().translated(_text->pos());  // DEBUG
-      // set end text position and extend bbox
-      if (!_endText->empty()) {
-            l2 = textlineTextDistance;
-            switch (_endText->align()) {
-                  case Align::RIGHT:
-                        l2 += _endText->bbox().width();
-                        break;
-                  case Align::HCENTER:
-                        l2 += _endText->bbox().width() / 2;
-                        break;
-                  default:
-                        break;
-                  }
-            _endText->setPos(bbox().right(), 0);
-            bbox() |= _endText->bbox().translated(_endText->pos());
-            }
 
-      if (!(tl->lineVisible() || score()->showInvisible()))
-            return;
+      // Bounding-box: second phase (accommodate for potential zero width/height [horizontal/vertical line])
+      qreal w = abs(x2 - x1);
+      qreal h = abs(y2 - y1);
+      bool zeroWidth  = (w < 0.01);
+      bool zeroHeight = (h < 0.01);
+      w = zeroWidth  ? lineStrokeWidth : w;
+      h = zeroHeight ? lineStrokeWidth : h;
 
+      // Convert "close-enough" verticality to absolute:
+      bool isVertical = abs(textLine.dx()) < 1;
+      if (isVertical)
+            pp2.setX(pp1.x());
+
+      // Bounding-box before further textual positioning:
+      bbox().setRect(x1, y1, w, h);
+
+      // Hook handling
+      qreal beginHookWidth = 0.0;
+      qreal endHookWidth   = 0.0;
       if (tl->lineVisible() || !score()->printing()) {
-            pp1 = QPointF(l1, 0.0);
-            pp2.rx() -= l2;
+            pp1 = QPointF(l, 0.0);
 
-            qreal beginHookWidth;
-            qreal endHookWidth;
-
-            if (tl->beginHookType() == HookType::HOOK_45) {
+            // 45-degree hooks slightly shorten textline for angle-width accommodation
+            if (beginHookType == HookType::HOOK_45) {
                   beginHookWidth = fabs(tl->beginHookHeight().val() * _spatium * .4);
                   pp1.rx() += beginHookWidth;
+                  textLine.setLine(pp1.x(), pp1.y(), pp2.x(), pp2.y());
                   }
-            else
-                  beginHookWidth = 0;
-
-            if (tl->endHookType() == HookType::HOOK_45) {
+            else beginHookWidth = 0;
+            if (endHookType == HookType::HOOK_45) {
                   endHookWidth = fabs(tl->endHookHeight().val() * _spatium * .4);
                   pp2.rx() -= endHookWidth;
+                  textLine.setLine(pp1.x(), pp1.y(), pp2.x(), pp2.y());
                   }
-            else
-                  endHookWidth = 0;
+            else endHookWidth = 0;
+
+            textLine.setP1(pp1);
+
+            QPointF hookP1, hookP2;
+            if (hasBeginHook && (isSingleType() || isBeginType())) {
+                  qreal beginHookHeight = tl->beginHookHeight().val() * _spatium;
+                  qreal x1 = pp1.x() - beginHookWidth;
+                  qreal y1 = pp1.y() + beginHookHeight;
+                  qreal x2 = pp1.x();
+                  qreal y2 = (beginHookType == HookType::HOOK_90T) ? (pp1.y() - beginHookHeight) : pp1.y();
+                  beginHookLine.setPoints(QPointF(x1, y1), QPointF(x2, y2));
+
+                  if (beginHookType == HookType::HOOK_90T)
+                        points[npoints++] = QPointF(x1, y1);
+                  else  points[npoints++] = QPointF(x2, y2);
+
+                  points[npoints] = pp1;
+                  }
 
             // don't draw backwards lines (or hooks) if text is longer than nominal line length
-            bool backwards = !_text->empty() && pp1.x() > pp2.x() && !tl->diagonal();
+            bool backwardsWithText = isHorizontallyBackwards && !_text->empty() && !isDiagonal;
+            if (!backwardsWithText) {
+                  points[npoints++] = pp1;
+                  points[npoints]   = pp2;
 
-            if (isSingleOrBegin && tl->beginHookType() != HookType::NONE) {
-                  qreal hh = tl->beginHookHeight().val() * _spatium;
-                  if (tl->beginHookType() == HookType::HOOK_90T)
-                        points[npoints++] = QPointF(pp1.x() - beginHookWidth, pp1.y() - hh);
-                  points[npoints] = QPointF(pp1.x() - beginHookWidth, pp1.y() + hh);
-                  ++npoints;
-                  points[npoints] = pp1;
-                  }
-            if (!backwards) {
-                  points[npoints] = pp1;
-                  ++npoints;
-                  points[npoints] = pp2;
+                  textLine.setPoints(pp1, pp2);
                   lineLength = sqrt(QPointF::dotProduct(pp2-pp1, pp2-pp1));
-                  // painter->drawLine(QLineF(pp1.x(), pp1.y(), pp2.x(), pp2.y()));
 
-                  if ((tl->endHookType() != HookType::NONE) && (isSingleType() || isEndType())) {
+                  if (hasEndHook && (isSingleType() || isEndType())) {
                         ++npoints;
-                        qreal hh = tl->endHookHeight().val() * _spatium;
-                        // painter->drawLine(QLineF(pp2.x(), pp2.y(), pp2.x() + endHookWidth, pp2.y() + hh));
-                        points[npoints] = QPointF(pp2.x() + endHookWidth, pp2.y() + hh);
+                        qreal endHookHeight = tl->endHookHeight().val() * _spatium;
+                        qreal x1 = textLine.length() + beginHookWidth + l;
+                        // Rotation will later handle y-positioning
+                        qreal y1 = (endHookType == HookType::HOOK_90T) ? (0.0 + endHookHeight) : 0.0;
+                        qreal x2 = x1 + endHookWidth;
+                        qreal y2 = (endHookType == HookType::HOOK_90T) ? (0.0 - endHookHeight) : (0.0 + endHookHeight);
+                        endHookLine.setPoints(QPointF(x1, y1), QPointF(x2, y2));
+
+                        points[npoints++] = QPointF(x1, y1);
                         if (tl->endHookType() == HookType::HOOK_90T)
-                              points[++npoints] = QPointF(pp2.x() + endHookWidth, pp2.y() - hh);
+                              points[++npoints] = hookP2;
                         }
+                  }
+
+            }
+
+      if (!_text->empty()) {
+            qreal xo = 0.0;
+            qreal yo = 0.0;
+            auto bb = _text->bbox();
+            if (isCenteredText) {
+                  xo = textLine.center().x() + _text->rxoffset();
+                  yo = textLine.center().y() + _text->ryoffset();
+                  if (isBroken) {
+                        // Compute broken lines
+                        //   Let painter rotate the broken-lines after forming
+                        //   the points based on line length without reference to angle
+                        QLineF horizontalTextLine(textLine);
+                        horizontalTextLine.setAngle(0.0);
+                        auto xUserOffset          = _text->offset().x();
+                        auto textWidth            = _text->bbox().width();
+                        auto lineWidth            = horizontalTextLine.length();
+                        auto xCenter              = horizontalTextLine.center().x();
+
+                        auto textLeftEdge         = xCenter - (textWidth * 0.5) - lineStrokeWidth - beginHookWidth + xUserOffset - (spatium() * 0.5);
+                        auto textRightEdge        = xCenter + (textWidth * 0.5) + lineStrokeWidth - beginHookWidth + xUserOffset + (spatium() * 0.5);
+
+                        auto leftProportion       = textLeftEdge  / lineWidth;
+                        auto rightProportion      = textRightEdge / lineWidth;
+
+                        auto beginEdgePoint = horizontalTextLine.pointAt(leftProportion);
+                        auto endEdgePoint   = horizontalTextLine.pointAt(rightProportion);
+
+                        brokenPoints[0] = horizontalTextLine.p1();
+                        brokenPoints[1] = beginEdgePoint;
+                        brokenPoints[2] = endEdgePoint;
+                        brokenPoints[3] = horizontalTextLine.p2();
+                        }
+                  }
+            _text->setPos(xo, yo);
+            if (isCenteredText) {
+                  auto aboutSelf = QPointF(0,0);
+                  auto translate = _text->offset();
+                  auto angle = textLine.angle();
+
+                  // Z-Axis rotation, then apply user-offsets
+                  bb = rotateRectangle(bb, aboutSelf, angle, translate);
+                  bb.translate(textLine.center());
+                  }
+            else {
+                  bb = _text->bbox().translated(_text->pos());
+                  }
+            _text->setbbox(bb);
+            bbox() |= bb;
+            }
+
+      if (!_endText->empty()) {
+            auto xo = bbox().right();
+            auto yo = _endText->getVAlignOffset();
+            auto bb = _endText->bbox();
+            auto angle = textLine.angle();
+            auto aboutSelf = QPointF(0,0);
+            auto translate = _endText->offset();
+            translate.rx() += (lineStrokeWidth * 0.5);
+
+            // Z-Axis rotation, then apply user-offsets
+            bb = rotateRectangle(bb, aboutSelf, angle, translate);
+            bb.translate(textLine.p2());
+
+            _endText->setPos(xo, yo);
+            _endText->setbbox(bb);
+            bbox() |= bb;
+            }
+
+      // MS3.6 didn't incorporate hooks or prepare for rotated objects into the main bounding-box.
+      // Calculate rotation and position here, then store the results so that Shape() can add them easily:
+      if (tl->lineVisible()) {
+            auto angle = textLine.angle();
+            auto translate = QPointF(textLine.p1().x(), 0.0);
+            auto lw = lineStrokeWidth;
+            auto lw2 = (lw * 0.5);
+            if (!textLine.isNull()) {
+                  QLineF flatLine = textLine;
+                  flatLine.setAngle(0.0);
+                  lineBB = formBoundingBox(flatLine, -lw2, -lw2, +lw, +lw);
+                  auto translate = flatLine.p1();
+                  lineBB = rotateRectangle(lineBB, translate, angle, -translate);
+
+                  bbox() |= lineBB;
+                  }
+            if (!beginHookLine.isNull()) {
+                  auto foeD5 = (tl->beginHookType() == HookType::HOOK_45);
+                  QLineF swappedLine(beginHookLine.p1(), beginHookLine.p2());
+                  swappedLine.setAngle(swappedLine.angle() + angle);
+                  beginHookBB = formBoundingBox(swappedLine,
+                                                foeD5 ? +lw2 : -lw2,
+                                                foeD5 ? -lw2 : -lw2,
+                                                foeD5 ? -lw  : +lw,
+                                                foeD5 ? +lw  : +lw);
+                  // If swappedLine's angle wasn't updated, then:
+                  //    beginHookBB = rotateRectangle(beginHookBB, translate, angle, -translate);
+
+                  bbox() |= beginHookBB;
+                  }
+            if (!endHookLine.isNull()) {
+                  // Lacks "best practice" for 45's bounding-box, but works well enough:
+                  auto fowtyFive = (tl->endHookType() == HookType::HOOK_45);
+                  QLineF swappedLine(endHookLine.p2(), endHookLine.p1());
+                  endHookBB = formBoundingBox(fowtyFive ? endHookLine : swappedLine, -lw2, -lw2, +lw, +lw);
+                  endHookBB = rotateRectangle(endHookBB, translate, angle, -translate);
+
+                  bbox() |= endHookBB;
                   }
             }
       }

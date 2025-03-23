@@ -261,6 +261,7 @@ class TextBase : public Element {
       int  hexState = -1;
       bool _primed = false;
       qreal _vAlignOffset = 0.0;
+      qreal _angle = 0.0;
       void drawSelection(QPainter*, const QRectF&) const;
       void insert(TextCursor*, uint code);
       void genText() const;
@@ -390,6 +391,9 @@ class TextBase : public Element {
       bool hasFrame() const                      { return _frameType != FrameType::NO_FRAME; }
       bool circle() const                        { return _frameType == FrameType::CIRCLE; }
       bool square() const                        { return _frameType == FrameType::SQUARE; }
+
+      qreal angle() const                        { return _angle; }
+      void setAngle(qreal a)                     { _angle = a; }
 
       void setVAlignOffset(qreal v)              { _vAlignOffset = v;    }
       qreal getVAlignOffset()                    { return _vAlignOffset; }

@@ -385,14 +385,40 @@ void Score::cmdAddSpanner(Spanner* spanner, const QPointF& pos, bool firstStaffO
             Fraction tick2 = qMin(segment->measure()->tick() + segment->measure()->ticks(), lastTick);
             spanner->setTick2(tick2);
             }
-      else {      // Anchor::MEASURE, Anchor::CHORD, Anchor::NOTE
+      else {
+            // Anchor::MEASURE, Anchor::CHORD, Anchor::NOTE
             Measure* m = toMeasure(mb);
             QRectF b(m->canvasBoundingRect());
 
             if (pos.x() >= (b.x() + b.width() * .5) && m != lastMeasureMM() && m->nextMeasure()->system() == m->system())
                   m = m->nextMeasure();
-            spanner->setTick(m->tick());
-            spanner->setTick2(m->endTick());
+
+            if (spanner->anchor() == Spanner::Anchor::NOTE) {
+                  // Single Note Anchor Line
+                  // Will copy a SNAL, but won't keep offsets when applying to palette
+                  if (spanner->isTextLine()) {
+                        auto tl = toTextLine(spanner);
+                        auto cr = segment->nextChordRest(track);
+                        if (cr && cr->isChord()) {
+                              auto chord = toChord(segment->nextChordRest(track));
+                              auto firstNote = chord->notes().front();
+                              auto lastNote = firstNote;
+                              tl->setParent(firstNote);
+                              tl->setStartElement(firstNote);
+                              tl->setDiagonal(true);
+                              tl->setAnchor(Spanner::Anchor::NOTE);
+                              tl->setTick(chord->tick());
+                              tl->setEndElement(lastNote);
+                              undoAddElement(tl);
+                              select(tl, SelectType::SINGLE, 0);
+                              }
+                        return;
+                        }
+                  else {
+                        spanner->setTick(segment->tick());
+                        spanner->setTick2(segment->tick());
+                        }
+                  }
             }
 
       bool isTextLineBase = spanner->isTextLineBase();
