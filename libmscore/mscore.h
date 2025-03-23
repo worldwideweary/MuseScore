@@ -117,7 +117,7 @@ enum class BracketType : signed char {
 //---------------------------------------------------------
 
 enum class PlaceText : char {
-      AUTO, ABOVE, BELOW, LEFT
+      AUTO, ABOVE, BELOW, LEFT, CENTERED, CENTERED_BROKEN
       };
 
 //---------------------------------------------------------

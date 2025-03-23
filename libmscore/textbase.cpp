@@ -776,6 +776,7 @@ void TextFragment::draw(QPainter* p, const TextBase* t) const
             }
 
 #ifndef Q_OS_MACOS
+      // Internal H-Alignment offset is included in pos
       TextBase::drawTextWorkaround(p, f, pos, text);
 #else
       p->setFont(f);
@@ -846,6 +847,7 @@ void TextBase::drawTextWorkaround(QPainter* p, QFont& f, const QPointF pos, cons
                         }
                   else
                         glyphrun2.setRawFont(fRaw);
+                  // TODO: Angling with bold?
                   p->drawGlyphRun(QPointF(pos.x() / factor, pos.y() / factor - offset),glyphrun2);
                   positions2.clear();
                   }
@@ -928,6 +930,7 @@ QFont TextFragment::font(const TextBase* t) const
 
 void TextBlock::draw(QPainter* p, const TextBase* t) const
       {
+      // Translate to V-alignment
       p->translate(0.0, _y);
       for (const TextFragment& f : _fragments)
             f.draw(p, t);
@@ -1907,7 +1910,7 @@ void TextBase::layout1()
       for (TextBlock& t : _layout)
             t.setY(t.y() + yoff);
 
-      bb.translate(0.0, yoff);
+      bb.translate(0.0, yoff + getVAlignOffset());
 
       setbbox(bb);
       if (hasFrame())

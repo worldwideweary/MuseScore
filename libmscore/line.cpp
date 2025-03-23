@@ -1026,6 +1026,17 @@ QPointF SLine::linePos(Grip grip, System** sys) const
                   QPointF p = n->pagePos() - s->pagePos();
                   if (!isGlissando())
                         p.rx() += n->headWidth() * 0.5;
+
+                  if (startElement() == endElement()) {
+                        // Single note anchor line potential options:
+                        if (grip == Grip::START) {
+                              ;
+                              }
+                        if (grip == Grip::END) {
+                              ;
+                              }
+                        }
+
                   return p;
                   }
 
