@@ -4408,12 +4408,13 @@ void Score::cmdPitchUpDownOctave(Direction dir, bool noteEntry)
       {
       signed int sign = (dir == Direction::DOWN ? +1 : -1);
       Element* el = selection().element();
-      auto x = 0.0;
-      auto y = sign * MScore::nudgeStep10 * el->spatium();
-      bool up = (dir == Direction::UP);
-      if (el && (el->isArticulation() || el->isTextBase()))
+      if (el && (el->isArticulation() || el->isTextBase())) {
+            qreal x = 0.0;
+            qreal y = sign * MScore::nudgeStep10 * el->spatium();
             el->undoChangeProperty(Pid::OFFSET, el->offset() + QPointF(x, y), PropertyFlags::UNSTYLED);
+            }
       else {
+            bool up = (dir == Direction::UP);
             auto octaveMode = noteEntry ? UpDownMode::OCTAVE_QUICK : UpDownMode::OCTAVE;
             upDown(up, octaveMode);
             }
