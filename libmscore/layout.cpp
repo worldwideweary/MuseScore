@@ -4515,6 +4515,33 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
                                     if (e->addToSkyline() || e->isChord())
                                           skyline.add(e->shape().translated(e->pos() + p));
 
+                                    // Allow tuplets to get skyline even when "avoid staves" is disabled
+                                    // (still want to avoid elements via auto-place, e.g. hairpins...)
+                                    if (e->isChordRest()) {
+                                          if (auto t = toChordRest(e)->tuplet()) {
+                                                bool addToSky = true;
+
+                                                // Omit skyline if any cross-staffed elements:
+                                                for (auto& e : t->elements()) {
+
+                                                      if (e->staffIdx() != e->vStaffIdx()) {
+                                                            addToSky = false;
+                                                            // TODO: Figure how to do something like this while finding the right formula
+                                                                // SysStaff* ss = system->staff(e->vStaffIdx());
+                                                                // Skyline& vSkyline = ss->skyline();
+                                                                // vSkyline.add(t->shape().translated(m->pos()));
+                                                            }
+                                                      }
+                                                if (t->addToSkyline() && addToSky) {
+                                                      // Note: layout isn't 100% realtime:
+                                                      QPointF offset(m->pos());
+                                                      offset.rx() += t->offset().x();
+                                                      offset.ry() += t->offset().y();
+                                                      skyline.add(t->shape().translated(offset));
+                                                      }
+                                                }
+                                          }
+
                                     // add tremolo to skyline
                                     if (e->isChord() && toChord(e)->tremolo()) {
                                           Tremolo* t = toChord(e)->tremolo();

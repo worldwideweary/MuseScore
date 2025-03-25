@@ -328,7 +328,22 @@ void Tuplet::layout()
                   outOfStaff = false;
             }
 
-      qreal l1  =  score()->styleP(Sid::tupletBracketHookHeight);
+      auto centerOfChord = [](const Chord* cr){
+            qreal l = 0.0;
+            qreal r = 0.0;
+            qreal c = cr->upNote()->abbox().center().x();
+            for (const auto& n : cr->notes()) {
+                  auto nc = n->abbox().center().x();
+                  if (nc < c)
+                      l = nc;
+                  else r = nc;
+                  }
+            if (l == 0.0 || r == 0.0)
+                 return c;
+            else return ( (l + r) * 0.5 );
+            };
+
+      qreal l1  = this->hasBracket() ? score()->styleP(Sid::tupletBracketHookHeight) : 0.0;
       qreal l2l = vHeadDistance;    // left bracket vertical distance
       qreal l2r = vHeadDistance;    // right bracket vertical distance right
 
@@ -357,8 +372,10 @@ void Tuplet::layout()
             if (cr1->isChord()) {
                   const Chord* chord1 = toChord(cr1);
                   Stem* stem = chord1->stem();
-                  if (stem)
+                  if (stem) {
                         xx1 = stem->abbox().x();
+                        p1.rx() = chord1->up() ? chord1->stemPos().x() : centerOfChord(chord1);
+                        }
                   if (chord1->up()) {
                         if (stem) {
                               if (followBeam)
@@ -375,14 +392,14 @@ void Tuplet::layout()
                         }
                   else if (!chord1->up()) {
                         p1.ry() = chord1->upNote()->abbox().top();
-                        if (stem)
-                              p1.rx() = cr1->pagePos().x() - stemLeft;
                         }
                   }
 
             if (cr2->isChord()) {
                   const Chord* chord2 = toChord(cr2);
                   Stem* stem = chord2->stem();
+                  if (stem)
+                        p2.rx() = chord2->up() ? (chord2->stemPos().x() + stemRight) : centerOfChord(chord2);
                   if (stem && chord2->up()) {
                         if (followBeam)
                               p2.ry() = stem->abbox().top() - beamAdjust;
@@ -391,7 +408,6 @@ void Tuplet::layout()
                         else
                               p2.ry() = stem->abbox().top();
                         l2r = vStemDistance;
-                        p2.rx() = chord2->pagePos().x() + chord2->maxHeadWidth() + stemRight;
                         }
                   else {
                         p2.ry() = chord2->upNote()->abbox().top();
@@ -401,7 +417,7 @@ void Tuplet::layout()
             // special case: one of the bracket endpoints is
             // a rest
             //
-            if (cr1->isChord() && cr2->isChord()) {
+            if (!cr1->isChord() && cr2->isChord()) {
                   if (p2.y() < p1.y())
                         p1.setY(p2.y());
                   else
@@ -467,8 +483,10 @@ void Tuplet::layout()
             if (cr1->isChord()) {
                   const Chord* chord1 = toChord(cr1);
                   Stem* stem = chord1->stem();
-                  if (stem)
+                  if (stem) {
                         xx1 = stem->abbox().x();
+                        p1.rx() = !chord1->up() ? chord1->stemPos().x() - stemLeft : centerOfChord(chord1);
+                        }
                   if (!chord1->up()) {
                         if (stem) {
                               if (followBeam)
@@ -478,7 +496,6 @@ void Tuplet::layout()
                               else
                                     p1.ry() = stem->abbox().bottom();
                               l2l = vStemDistance;
-                              p1.rx() = cr1->pagePos().x() - stemLeft;
                               }
                         else {
                               p1.ry() = chord1->downNote()->abbox().bottom(); // whole note
@@ -492,12 +509,14 @@ void Tuplet::layout()
             if (cr2->isChord()) {
                   const Chord* chord2 = toChord(cr2);
                   Stem* stem = chord2->stem();
+                  if (stem)
+                        p2.rx() = !chord2->up() ? chord2->stemPos().x() + stemRight : centerOfChord(chord2);
                   if (stem && !chord2->up()) {
                         // if (chord2->beam())
                         //      p2.setX(stem->abbox().x());
                         if (followBeam)                                          //??
                               p2.ry() = stem->abbox().bottom() + beamAdjust;     //??
-                        if (chord2->beam() && !chord2->staffMove() && !chord2->beam()->cross())
+                        else if (chord2->beam() && !chord2->staffMove() && !chord2->beam()->cross())
                               p2.ry() = chord2->beam()->abbox().bottom();
                         else
                               p2.ry() = stem->abbox().bottom();
@@ -505,8 +524,6 @@ void Tuplet::layout()
                         }
                   else {
                         p2.ry() = chord2->downNote()->abbox().bottom();
-                        if (stem)
-                              p2.rx() = chord2->pagePos().x() + chord2->maxHeadWidth() + stemRight;
                         }
                   }
             //
@@ -592,6 +609,20 @@ void Tuplet::layout()
       p2.ry() -= l2r * (_isUp ? 1.0 : -1.0);
 
       // l2l l2r, mp, _p1, _p2 const
+
+      // Custom: Reset once again if there is a rest to get horizontal tuples
+      if (!cr1->isChord() && cr2->isChord()) {
+            if (p2.y() < p1.y())
+                  p1.setY(p2.y());
+            else
+                  p2.setY(p1.y());
+            }
+      else if (cr1->isChord() && !cr2->isChord()) {
+            if (p1.y() < p2.y())
+                  p2.setY(p1.y());
+            else
+                  p1.setY(p2.y());
+            }
 
       // center number
       qreal x3 = 0.0;
