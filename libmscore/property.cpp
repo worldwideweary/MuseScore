@@ -538,6 +538,10 @@ QVariant propertyFromString(Pid id, QString value)
                         return QVariant(int(PlaceText::BELOW));
                   else if (value == "left")
                         return QVariant(int(PlaceText::LEFT));
+                  else if (value == "centered")
+                        return QVariant(int(PlaceText::CENTERED));
+                  else if (value == "centeredbroken")
+                        return QVariant(int(PlaceText::CENTERED_BROKEN));
                   }
                   break;
             case P_TYPE::BARLINE_TYPE: {
@@ -834,6 +838,10 @@ QString propertyToString(Pid id, QVariant value, bool mscx)
                               return "below";
                         case PlaceText::LEFT:
                               return "left";
+                        case PlaceText::CENTERED:
+                              return "centered";
+                        case PlaceText::CENTERED_BROKEN:
+                              return "centeredbroken";
                         }
                   break;
             case P_TYPE::SYMID:

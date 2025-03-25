@@ -640,8 +640,28 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                   Spanner* spanner = static_cast<Spanner*>(Element::create(type, score));
                   spanner->read(e);
                   spanner->styleChanged();
-                  score->cmdAddSpanner(spanner, cr1->staffIdx(), startSegment, endSegment);
-                  spanner->isVoiceSpecific();
+                  if (element->isTextLine()) {
+                        // Allow for drag-copying a (single) note-anchor line
+                        auto tl = toTextLine(spanner);
+                        if (tl->anchor() == Spanner::Anchor::NOTE) {
+                              if (cr1 && cr1->isChord()) {
+                                    auto chord = toChord(cr1);
+                                    auto note = chord->notes().front();
+                                    tl->setParent(note);
+                                    tl->setStartElement(note);
+                                    tl->setDiagonal(true);
+                                    tl->setTick(chord->tick());
+                                    tl->setEndElement(note);
+                                    score->startCmd();
+                                          score->undoAddElement(tl);
+                                    score->endCmd();
+                                    }
+                              }
+                        }
+                  else  {
+                        score->cmdAddSpanner(spanner, cr1->staffIdx(), startSegment, endSegment);
+                        spanner->isVoiceSpecific();
+                        }
                   }
             else {
                   bool finished = false;
