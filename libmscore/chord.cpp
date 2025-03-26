@@ -246,6 +246,7 @@ Chord::Chord(Score* s)
       _stem             = 0;
       _hook             = 0;
       _stemDirection    = Direction::AUTO;
+      _hookIsReversed   = false;
       _arpeggio         = 0;
       _tremolo          = 0;
       _endsGlissando    = false;
@@ -291,6 +292,7 @@ Chord::Chord(const Chord& c, bool link)
 
       _graceIndex     = c._graceIndex;
       _noStem         = c._noStem;
+      _hookIsReversed = c._hookIsReversed;
       _playEventType  = c._playEventType;
       _stemDirection  = c._stemDirection;
       _noteType       = c._noteType;
@@ -1072,8 +1074,14 @@ void Chord::write(XmlWriter& xml) const
             xml.tag("noStem", _noStem);
       else if (_stem && (_stem->isUserModified() || !qFuzzyIsNull(_stem->userLen())))
             _stem->write(xml);
-      if (_hook && _hook->isUserModified())
-            _hook->write(xml);
+      if (_hook) {
+            if (_hook->isUserModified()) {
+                  _hook->write(xml);
+                  }
+            if (_hookIsReversed) {
+                  writeProperty(xml, Pid::HOOK_REVERSED);
+                  }
+            }
       if (_stemSlash && _stemSlash->isUserModified())
             _stemSlash->write(xml);
       writeProperty(xml, Pid::STEM_DIRECTION);
@@ -1169,6 +1177,8 @@ bool Chord::readProperties(XmlReader& e)
             }
       else if (readProperty(tag, e, Pid::STEM_DIRECTION))
             ;
+      else if (tag == "hookReverse")
+            _hookIsReversed = e.readBool();
       else if (tag == "noStem")
             _noStem = e.readInt();
       else if (tag == "Arpeggio") {
@@ -2863,6 +2873,8 @@ QVariant Chord::getProperty(Pid propertyId) const
             case Pid::NO_STEM:        return noStem();
             case Pid::SMALL:          return isSmall();
             case Pid::STEM_DIRECTION: return QVariant::fromValue<Direction>(stemDirection());
+            case Pid::HOOK_REVERSED:  return hookIsReversed();
+
             default:
                   return ChordRest::getProperty(propertyId);
             }
@@ -2878,6 +2890,8 @@ QVariant Chord::propertyDefault(Pid propertyId) const
             case Pid::NO_STEM:        return false;
             case Pid::SMALL:          return false;
             case Pid::STEM_DIRECTION: return QVariant::fromValue<Direction>(Direction::AUTO);
+            case Pid::HOOK_REVERSED:  return false;
+
             default:
                   return ChordRest::propertyDefault(propertyId);
             }
@@ -2899,6 +2913,10 @@ bool Chord::setProperty(Pid propertyId, const QVariant& v)
             case Pid::STEM_DIRECTION:
                   setStemDirection(v.value<Direction>());
                   break;
+            case Pid::HOOK_REVERSED:
+                  setHookReversed(v.toBool());
+                  break;
+
             default:
                   return ChordRest::setProperty(propertyId, v);
             }
@@ -3586,6 +3604,20 @@ void Chord::layoutArticulations()
             qreal x = centerX();
             qreal y = 0.0;
 
+            const Note* note = up() ? upNote(true) : downNote(true);
+            qreal overlapMirror;
+            if (this->stem())
+                  overlapMirror = this->stem()->lineWidth();
+            else if (this->durationType().headType() == NoteHead::Type::HEAD_WHOLE)
+                  overlapMirror = styleP(Sid::stemWidth) * this->mag();
+            else
+                  overlapMirror = 0.0;
+            qreal dx = up() ? overlapMirror : -overlapMirror;
+            // Counter mirror from layoutChords3()
+            if (note->mirror()) {
+                  x += dx;
+                  }
+
             if (bottom) {
                   if (!headSide && stem()) {
                         y = upPos() + stem()->stemLen();
@@ -3668,7 +3700,19 @@ void Chord::layoutArticulations2()
       if (_articulations.empty())
             return;
       qreal _spatium  = spatium();
-      qreal x         = centerX();
+      qreal x = centerX();
+      const Note* note = up() ? upNote(true) : downNote(true);
+      qreal overlapMirror = 0.0;
+      if (stem())
+            overlapMirror = stem()->lineWidth();
+      else if (durationType().headType() == NoteHead::Type::HEAD_WHOLE)
+            overlapMirror = styleP(Sid::stemWidth) * this->mag();
+      qreal dx = up() ? overlapMirror : -overlapMirror;
+      // Counter mirror from layoutChords3()
+      if (note->mirror()) {
+            x += dx;
+            }
+
       qreal distance0 = score()->styleP(Sid::propertyDistance);
       qreal distance2 = score()->styleP(Sid::propertyDistanceStem);
 
@@ -3704,23 +3748,26 @@ void Chord::layoutArticulations2()
             if (aa != ArticulationAnchor::CHORD && aa != ArticulationAnchor::TOP_CHORD && aa != ArticulationAnchor::BOTTOM_CHORD)
                   continue;
 
+            qreal counter = a->isAccent() ? 0.5 * _spatium : 0.0;
             if (a->up()) {
                   if (!a->layoutCloseToNote()) {
                         a->layout();
+                        chordTopY += counter;
                         a->setPos(x, chordTopY);
                         a->doAutoplace();
                         }
                   if (a->visible())
-                        chordTopY = a->y() - a->height() - 0.5 * _spatium;
+                        chordTopY = a->y() - a->height() - 0.5 * _spatium - counter;
                   }
             else {
                   if (!a->layoutCloseToNote()) {
                         a->layout();
+                        chordBotY -= counter;
                         a->setPos(x, chordBotY);
                         a->doAutoplace();
                         }
                   if (a->visible())
-                        chordBotY = a->y() + a->height() + 0.5 * _spatium;
+                        chordBotY = a->y() + a->height() + 0.5 * _spatium + counter ;
                   }
             }
       //
