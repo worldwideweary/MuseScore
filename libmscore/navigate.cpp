@@ -402,14 +402,18 @@ ChordRest* Score::upStaff(ChordRest* cr)
       for (int track = (cr->staffIdx() - 1) * VOICES; track >= 0; --track) {
             Element* el = nullptr;
             while (!el) {
-                  el = segment->element(track);
-                  if (el) {
-                        break;
-                        }
-                  segment = segment->prev();
-                  bool sameMeasure = (segment->measure() == cr->measure());
-                  if (!segment || !sameMeasure) {
-                        return nullptr;
+                  if (segment) {
+                        el = segment->element(track);
+                        if (el)
+                              break;
+
+                        segment = segment->prev();
+                        if (!segment)
+                              return nullptr;
+
+                        bool sameMeasure = (segment->measure() == cr->measure());
+                        if (!sameMeasure)
+                              return nullptr;
                         }
                   }
             if (!el)
@@ -419,7 +423,7 @@ ChordRest* Score::upStaff(ChordRest* cr)
             if (el->isChordRest())
                   return toChordRest(el);
             }
-      return 0;
+      return nullptr;
       }
 
 //---------------------------------------------------------
@@ -437,14 +441,18 @@ ChordRest* Score::downStaff(ChordRest* cr)
       for (int track = (cr->staffIdx() + 1) * VOICES; track < tracks; --track) {
             Element* el = nullptr;
             while (!el) {
-                  el = segment->element(track);
-                  if (el) {
-                        break;
-                        }
-                  segment = segment->prev();
-                  bool sameMeasure = (segment->measure() == cr->measure());
-                  if (!segment || !sameMeasure) {
-                        return nullptr;
+                  if (segment) {
+                        el = segment->element(track);
+                        if (el)
+                              break;
+
+                        segment = segment->prev();
+                        if (!segment)
+                              return nullptr;
+
+                        bool sameMeasure = (segment->measure() == cr->measure());
+                        if (!sameMeasure)
+                              return nullptr;
                         }
                   }
             if (el->isNote())
@@ -452,7 +460,7 @@ ChordRest* Score::downStaff(ChordRest* cr)
             if (el->isChordRest())
                   return toChordRest(el);
             }
-      return 0;
+      return nullptr;
       }
 
 //---------------------------------------------------------
