@@ -107,8 +107,8 @@ void ScoreView::startEditMode(Element* e)
       if (e->isTextBase()) {
             auto txt = toTextBase(e);
             TextEditData* ted = static_cast<TextEditData*>(editData.getData(e));
-            TextCursor* _cursor = &ted->cursor;
-            txt->selectAll(_cursor);
+            TextCursor* currentCursor = &ted->cursor;
+            txt->selectAll(currentCursor);
             }
       adjustCanvasPosition(e, false);
       }
