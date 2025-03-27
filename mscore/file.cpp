@@ -2123,8 +2123,6 @@ bool MuseScore::savePdf(Score* cs_, QPrinter& printer)
       const QColor fgColor = preferences.getColor(PREF_UI_CANVAS_FG_COLOR);
       const QColor customColor = preferences.getColor(PREF_EXPORT_BG_CUSTOM_COLOR);
       QPixmap* fgPixMap = currentScoreView()->fgPixmap();
-      auto w = size.width()  * DPI;
-      auto h = size.height() * DPI;
       if (fgPixMap && useTransparency) {
             fgPixMap = nullptr;
             }
