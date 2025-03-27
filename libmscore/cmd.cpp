@@ -3533,14 +3533,14 @@ void Score::cmdRangeToList(bool rests)
                         }
                   else if (e->isBox()) {
                         auto box = toBox(e);
-                        auto els = box->el();
+                        auto boxEls = box->el();
                         if (e->isTBox()) {
                               auto tbox = toTBox(e);
                               if (auto txt = tbox->text())
                                     select(txt);
                               }
-                        else if (!els.empty()) {
-                              e = els.front();
+                        else if (!boxEls.empty()) {
+                              e = boxEls.front();
                               select(e);
                               }
                         }
@@ -3549,10 +3549,10 @@ void Score::cmdRangeToList(bool rests)
                         if (auto p = txt->parent()) {
                               if (p->isBox()) {
                                     auto box = toBox(p);
-                                    auto els = box->el();
-                                    for (auto it = els.cbegin(); it != els.cend(); it++) {
+                                    auto boxEls = box->el();
+                                    for (auto it = boxEls.cbegin(); it != boxEls.cend(); it++) {
                                           if (e == *it) {
-                                                e = (++it != els.cend()) ? *it : els.front();
+                                                e = (++it != boxEls.cend()) ? *it : boxEls.front();
                                                 select(e);
                                                 break;
                                                 }

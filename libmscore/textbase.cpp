@@ -3145,8 +3145,6 @@ void TextBase::draw(QPainter* p) const
             qreal frameWidthVal = frameWidth().val() * (sizeIsSpatiumDependent() ? spatium() : baseSpatium);
             QColor fColor = curColor(visible(), frameColor());
             if (!frameWidth().isZero()) {
-                  QColor fColor = curColor(visible(), frameColor());
-                  qreal frameWidthVal = frameWidth().val() * (sizeIsSpatiumDependent() ? spatium() : baseSpatium);
                   QPen pen(fColor, frameWidthVal, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin);
                   p->setPen(pen);
                   }
