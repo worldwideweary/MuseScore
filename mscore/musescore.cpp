@@ -448,6 +448,7 @@ void updateExternalValuesFromPreferences() {
 
       MScore::palettesHideWhenApplied = preferences.getBool(PREF_UI_APP_AUTOHIDE_PALETTES);
 
+      MScore::pianoHighlightColor = preferences.getColor(PREF_UI_PIANO_HIGHLIGHTCOLOR);
       MScore::pianoWhiteKeysColor = preferences.getColor(PREF_UI_PIANO_WHITE_KEYS_COLOR);
       MScore::pianoBlackKeysColor = preferences.getColor(PREF_UI_PIANO_BLACK_KEYS_COLOR);
 
