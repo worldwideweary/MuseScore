@@ -168,12 +168,12 @@ void PageSettings::updateValues()
       if (mm) {
             suffix = "mm";
             singleStepSize = 1.0;
-            singleStepScale = 0.2;
+            singleStepScale = 0.05;
             }
       else {
             suffix = "in";
             singleStepSize = 0.05;
-            singleStepScale = 0.005;
+            singleStepScale = 0.002;
             }
       for (auto w : { oddPageTopMargin, oddPageBottomMargin, oddPageLeftMargin, oddPageRightMargin, evenPageTopMargin,
          evenPageBottomMargin, evenPageLeftMargin, evenPageRightMargin, spatiumEntry, pageWidth, pageHeight } )
@@ -231,7 +231,6 @@ void PageSettings::updateValues()
       pageOffsetEntry->setValue(score->pageNumberOffset() + 1);
 
       blockSignals(false);
-      _changeFlag = true;
       }
 
 //---------------------------------------------------------
@@ -589,7 +588,7 @@ void PageSettings::pageWidthChanged(double val)
 
 void PageSettings::updatePreview()
       {
-      updateValues();
+      _changeFlag = true;
       preview->score()->doLayout();
       preview->layoutChanged();
       }
