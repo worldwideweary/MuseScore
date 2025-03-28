@@ -144,6 +144,7 @@ bool    MScore::lassoWithoutShift;
 
 bool    MScore::palettesHideWhenApplied;
 
+QColor  MScore::pianoHighlightColor;
 QColor  MScore::pianoWhiteKeysColor;
 QColor  MScore::pianoBlackKeysColor;
 

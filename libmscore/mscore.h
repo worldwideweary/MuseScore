@@ -389,6 +389,7 @@ class MScore {
 
       static bool palettesHideWhenApplied;
 
+      static QColor pianoHighlightColor;
       static QColor pianoWhiteKeysColor;
       static QColor pianoBlackKeysColor;
 
