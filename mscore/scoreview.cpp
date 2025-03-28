@@ -1631,20 +1631,6 @@ void ScoreView::paint(const QRect& r, QPainter& p)
       Lasso* lassoToDraw = nullptr;
       bool postponeEditMode = false;
 
-      if (state == ViewState::LASSO) {
-            if (!lasso->bbox().isEmpty()) {
-                  lassoToDraw = lasso;
-                  bool drawLassoBehindElements = (MScore::lassoColor.alpha() > 200);
-                  if (drawLassoBehindElements) {
-                        lassoToDraw->draw(&p);
-                        lassoToDraw = nullptr;
-                        }
-                  }
-            }
-
-      if (MScore::cursorDrawnBehindStaff)
-            _cursor->paint(&p);
-
       if (editData.element) {
             switch (state) {
                   case ViewState::NORMAL:
@@ -1741,6 +1727,20 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                               _pagePixmap = *_fgPixmap;
                               }
                         p.drawPixmap(x, y, w, h, *_fgPixmap);
+                        }
+                  }
+
+            if (MScore::cursorDrawnBehindStaff)
+                  _cursor->paint(&p);
+
+            if (state == ViewState::LASSO) {
+                  if (!lasso->bbox().isEmpty()) {
+                        lassoToDraw = lasso;
+                        bool drawLassoBehindElements = (MScore::lassoColor.alpha() > 200);
+                        if (drawLassoBehindElements) {
+                              lassoToDraw->draw(&p);
+                              lassoToDraw = nullptr;
+                              }
                         }
                   }
 
