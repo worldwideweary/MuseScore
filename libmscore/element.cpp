@@ -536,8 +536,6 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
             bool useEvenStaffColor = evenStaff && !typeOmitsOddEven && userDefined(MScore::overrideEvenStaffElementsColor);
             if (useEvenStaffColor)
                   overrideColor = MScore::overrideEvenStaffElementsColor;
-            else if (userDefined(MScore::overrideAllColor))
-                  overrideColor = MScore::overrideAllColor;
             }
 
       // ... override unspecified... //
