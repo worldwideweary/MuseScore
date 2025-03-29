@@ -36,7 +36,7 @@ class AgentList
       bool empty() const { return list.empty(); }
       Container::iterator begin() { return list.begin(); }
       Container::iterator end() { return list.end(); }
-      size_t size() { return list.size(); }
+      std::size_t size() { return list.size(); }
 
       void push_back(Agent *a) { list.push_back(a); }
 
