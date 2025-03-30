@@ -33,7 +33,8 @@ ToolButtonMenu::ToolButtonMenu(QString name,
       setPopupMode(QToolButton::MenuButtonPopup);
 
       if (!swapAction) {
-            addAction(defaultAction);
+            if (defaultAction->isEnabled())
+                  addAction(defaultAction);
             addSeparator();
             }
 
