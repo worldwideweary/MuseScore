@@ -800,6 +800,7 @@ class Score : public QObject, public ScoreElement {
       void changeVoice(int);
       void cmdToggleMouseEntry(void);
       void cmdOverrideColor(const char*);
+      bool cmdToggleOptions(const QString&);
 
       void colorItem(Element*);
       QList<Part*>& parts()                { return _parts; }

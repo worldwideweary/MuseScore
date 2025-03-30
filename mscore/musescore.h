@@ -217,6 +217,9 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       static const std::list<const char*> _allColorControlMenuEntries;
       std::list<const char*> _colorControlMenuEntries { _allColorControlMenuEntries };
 
+      static const std::list<const char*> _allToggleOptionsMenuEntries;
+      std::list<const char*> _toggleOptionsMenuEntries { _allToggleOptionsMenuEntries };
+
       static const std::list<const char*> _allFileOperationEntries;
       std::list<const char*> _fileOperationEntries { _allFileOperationEntries };
 
@@ -261,6 +264,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       QToolBar* transportTools;
       QToolBar* entryTools;
       QToolBar* colorTools;
+      QToolBar* toggleTools;
       QToolBar* workspacesTools;
       TextTools* _textTools                { 0 };
       PianoTools* _pianoTools              { 0 };
@@ -936,6 +940,11 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       std::list<const char*>* colorControlMenuEntries()                 { return &_colorControlMenuEntries; }
       void setColorControlMenuEntries(std::list<const char*> l)         { _colorControlMenuEntries = l; }
       void populateColorControlMenu();
+
+      static const std::list<const char*>& allToggleOptionsMenuEntries() { return _allToggleOptionsMenuEntries; }
+      std::list<const char*>* toggleOptionsMenuEntries()                 { return &_toggleOptionsMenuEntries; }
+      void setToggleOptionsMenuEntries(std::list<const char*> l)         { _toggleOptionsMenuEntries = l; }
+      void populateToggleOptionsMenu();
 
       static const std::list<const char*>& allFileOperationEntries() { return _allFileOperationEntries; }
       std::list<const char*>* fileOperationEntries()                 { return &_fileOperationEntries; }
