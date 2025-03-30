@@ -72,6 +72,7 @@
 #include "volta.h"
 #include "xml.h"
 #include "mscore/preferences.h"
+#include "mscore/shortcut.h"
 
 #include <QColor>
 #include <QColorDialog>
@@ -5324,6 +5325,126 @@ void Score::cmdOverrideColor(const char* what)
 
       else qDebug() << "Override color <%s> not implemented" << what;
       }
+
+//---------------------------------------------------------
+//   cmdToggleOptions
+//---------------------------------------------------------
+            
+bool Score::cmdToggleOptions(const QString& cmd)
+      {
+      auto toggle = [](bool& v) -> bool { return (v = !v); };
+      bool checked = false;
+      bool updateScore = false;
+
+      if (cmd.endsWith("only-all-color")) {
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_ONLY_ALL_COLOR, checked=toggle(MScore::overrideOnlyAllColor));
+            updateScore = true;
+            }
+      else if (cmd.endsWith("colored-alteration-noteheads")) {
+            preferences.setPreference(PREF_UI_SCORE_OVERRIDE_NOTEHEAD_ALTERATION_COLOR_ENABLED, checked=toggle(MScore::noteheadsAlterationColorsEnabled));
+            updateScore = true;
+            }
+      else if (cmd.endsWith("current-system-on-top")) {
+            preferences.setPreference(PREF_UI_SCORE_CURRENT_SYS_ON_TOP, checked=toggle(MScore::currentSystemAlwaysTop));
+            }
+      else if (cmd.endsWith("fade-focus")) {
+            preferences.setPreference(PREF_UI_SCORE_FADE_FOCUS, checked=toggle(MScore::fadeFocus));
+            }
+      else if (cmd.endsWith("fingering-tightening-layout")) {
+            preferences.setPreference(PREF_UI_SCORE_FINGERING_OMIT_TIGHTENING, checked=toggle(MScore::fingeringTextOmitTightening));
+            checked = !checked; // inverted: user-interaction versus internals
+            updateScore = true;
+            }
+      else if (cmd.endsWith("fingering-voicing-layout")) {
+            preferences.setPreference(PREF_UI_SCORE_FINGERING_OMIT_VOICING, checked=toggle(MScore::fingeringTextOmitVoicing));
+            checked = !checked; // inverted: user-interaction versus internals
+            updateScore = true;
+            }
+      else if (cmd.endsWith("lasso-border")) {
+            preferences.setPreference(PREF_UI_SCORE_LASSO_BORDER_ENABLED, checked=toggle(MScore::lassoBorderEnabled));
+            }
+      else if (cmd.endsWith("move-cursor-by-beat")) {
+            preferences.setPreference(PREF_SCORE_PLAYBACK_CURSOR_MOVE_BY_BEAT, checked=toggle(MScore::cursorMoveByBeat));
+            }
+      else if (cmd.endsWith("move-cursor-by-measure")) {
+            preferences.setPreference(PREF_SCORE_PLAYBACK_CURSOR_ENTIRE_MEASURE, checked=toggle(MScore::cursorMoveByMeasure));
+            }
+      else if (cmd.endsWith("move-cursor-to-playback-position")) {
+            preferences.setPreference(PREF_SCORE_PLAYBACK_SELECT_POSITION_ON_STOP, checked=toggle(MScore::selectionFollowsCursor));
+            if (checked) {
+                  MScore::cursorResetToStart = false;
+                  preferences.setPreference(PREF_SCORE_PLAYBACK_BRING_POSITION_TO_START, MScore::cursorResetToStart);
+                  Shortcut::getShortcut("toggle-options-move-playback-position-to-start")->checkAction(MScore::cursorResetToStart);
+                  }            
+            }
+      else if (cmd.endsWith("move-playback-position-to-start")) {
+            preferences.setPreference(PREF_SCORE_PLAYBACK_BRING_POSITION_TO_START, checked=toggle(MScore::cursorResetToStart));
+            if (checked) {
+                  MScore::selectionFollowsCursor = false;
+                  preferences.setPreference(PREF_SCORE_PLAYBACK_SELECT_POSITION_ON_STOP, MScore::selectionFollowsCursor);
+                  Shortcut::getShortcut("toggle-options-move-cursor-to-playback-position")->checkAction(MScore::selectionFollowsCursor);
+                  }            
+            }
+      else if (cmd.endsWith("mouse-hover")) {
+            preferences.setPreference(PREF_SCORE_HOVER_COLOR_ENABLE, checked=toggle(MScore::hoverColorEnabled));
+            }
+      else if (cmd.endsWith("noteheads-behind-staff")) {
+            preferences.setPreference(PREF_UI_SCORE_NOTEHEADS_BEHIND_STAFF_LINES, checked=toggle(MScore::noteheadsBehindStaff));
+            updateScore = true;
+            }
+      else if (cmd.endsWith("noteheads-behind-ledger")) {
+            preferences.setPreference(PREF_UI_SCORE_NOTEHEADS_BEHIND_LEDGER_LINES, checked=toggle(MScore::noteheadsBehindLedger));
+            updateScore = true;
+            }
+      else if (cmd.endsWith("octave-tendency")) {
+            preferences.setPreference(PREF_SCORE_NOTE_INPUT_OCTAVE_TENDENCY, checked=toggle(MScore::noteInputOctaveTendencyIsTopNote));
+            }
+      else if (cmd.endsWith("playback-highlight-notes")) {
+            preferences.setPreference(PREF_SCORE_PLAYBACK_HIGHLIGHT_NOTES, checked=toggle(MScore::highlightNotes));
+            }
+      else if (cmd.endsWith("playback-highlight-rests")) {
+            preferences.setPreference(PREF_SCORE_PLAYBACK_HIGHLIGHT_RESTS, checked=toggle(MScore::highlightRests));
+            }
+      else if (cmd.endsWith("playback-highlight-lyrics")) {
+            preferences.setPreference(PREF_SCORE_PLAYBACK_HIGHLIGHT_LYRICS, checked=toggle(MScore::highlightLyrics));
+            }
+      else if (cmd.endsWith("playback-highlight-more")) {
+            preferences.setPreference(PREF_SCORE_PLAYBACK_HIGHLIGHT_MORE, checked=toggle(MScore::highlightMore));
+            }
+      else if (cmd.endsWith("reset-entry-NewSystemOrCourtesy")) {
+            preferences.setPreference(PREF_SCORE_NOTE_INPUT_RESET_PITCH_AT_SYSTEM, checked=toggle(MScore::resetNoteEntryAtSystemOrCourtesy));
+            }
+      else if (cmd.endsWith("retain-augmentation-rhythmMode")) {
+            preferences.setPreference(PREF_SCORE_NOTE_INPUT_RETAIN_AUG_RHYTHM_MODE, checked=toggle(MScore::retainAugmentationInRhythmEntry));
+            }
+      else if (cmd.endsWith("single-note-selection-color")) {
+            preferences.setPreference(PREF_SCORE_SINGLE_SELECTION_COLOR_ENABLED, checked=toggle(MScore::singleNoteSelectionColorEnabled));
+            }
+      else if (cmd.endsWith("ties-consider-ledgers")) {
+            preferences.setPreference(PREF_UI_SCORE_TIES_ADJUST_FOR_LEDGER_LINES, checked=toggle(MScore::tiesAdjustForLedgerLines));
+            updateScore = true;
+            }
+      else if (cmd.endsWith("ties-uniformity")) {
+            preferences.setPreference(PREF_UI_SCORE_TIES_UNIFORM_ADJUSTMENTS, checked=toggle(MScore::uniformTieAdjustments));
+            updateScore = true;
+            }
+      else if (cmd.endsWith("upward-fifth-entry")) {
+            preferences.setPreference(PREF_SCORE_NOTE_INPUT_FIFTH_IS_UPWARD, checked=toggle(MScore::noteInputOctaveUpwardFifth));
+            }
+      else if (cmd.endsWith("vertical-note-drag-allowed")) {
+            preferences.setPreference(PREF_UI_SCORE_DISABLE_NOTE_DRAG_VERTICAL, checked=toggle(MScore::disableVerticalMouseDragOfNotes));
+            }
+
+      else qDebug() << "Toggle option <%s> not implemented" << cmd;
+
+      // Update checkbox in menu
+      if (!cmd.endsWith("null")) {
+            Shortcut::getShortcut(cmd.toStdString().c_str())->checkAction(checked);
+            }
+
+      return updateScore;
+      }
+
 
 //---------------------------------------------------------
 //   cmdToggleMouseEntry
