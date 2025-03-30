@@ -161,6 +161,7 @@ class Shortcut {
       void setStandardKey(QKeySequence::StandardKey k);
       void setKeys(const QList<QKeySequence>& ks);
       void setKeys(const Shortcut&);
+      void checkAction(bool check);
 
       bool compareKeys(const Shortcut&) const;
       QString keysToString() const;
