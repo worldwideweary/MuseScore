@@ -2812,6 +2812,17 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::MAIN_WINDOW,
          STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-honor-en-passant-visibility",
+         QT_TRANSLATE_NOOP("action","Honor En Passant Option of Text Line (Visibility/Highlight)"),
+         QT_TRANSLATE_NOOP("action","Honor En Passant Option of Text Line (Visibility/Highlight)"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
          "toggle-options-null",
          QT_TRANSLATE_NOOP("action","Options"),
          QT_TRANSLATE_NOOP("action","Options"),
