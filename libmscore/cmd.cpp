@@ -5358,6 +5358,9 @@ bool Score::cmdToggleOptions(const QString& cmd)
             checked = !checked; // inverted: user-interaction versus internals
             updateScore = true;
             }
+      else if (cmd.endsWith("honor-en-passant-visibility")) {
+            preferences.setPreference(PREF_SCORE_PLAYBACK_HONOR_EN_PASSANT_VISIBLE, checked=toggle(MScore::honorEnPassantVisibility));
+            }
       else if (cmd.endsWith("lasso-border")) {
             preferences.setPreference(PREF_UI_SCORE_LASSO_BORDER_ENABLED, checked=toggle(MScore::lassoBorderEnabled));
             }
