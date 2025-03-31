@@ -173,6 +173,7 @@ class Element : public ScoreElement {
       mutable ElementFlags _flags;
                                   ///< valid after call to layout()
       uint _tag;                  ///< tag bitmask
+      bool _temporarilyShowing = false;
 
    public:
       enum class EditBehavior {
@@ -388,6 +389,9 @@ class Element : public ScoreElement {
       virtual void setColor(const QColor& c)     { _color = c;    }
       void undoSetColor(const QColor& c);
       void undoSetVisible(bool v);
+
+      bool isTemporarilyShowing(void) const { return _temporarilyShowing; }
+      void setTemporarilyShowing(bool v) { _temporarilyShowing = v; }
 
       static ElementType readType(XmlReader& node, QPointF*, Fraction*);
       static Element* readMimeData(Score* score, const QByteArray& data, QPointF*, Fraction*);
