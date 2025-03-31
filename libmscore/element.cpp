@@ -555,6 +555,42 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
       if (MScore::highlightNotes && isNote()) {
             auto n = toNote(this);
             marked = n->mark();
+
+            if (MScore::honorEnPassantVisibility && marked) {
+                  auto c         = n->chord();
+                  auto s         = c->segment();
+                  auto noteTick  = s->tick().ticks();
+                  auto noteTrack = n->track();
+                  auto overlappingSpanners = score()->spannerMap().findOverlapping(0, noteTick);
+                  for (auto i : overlappingSpanners) {
+                        auto s = i.value;
+                        if (s->isTextLineBase() && s->track() == noteTrack) {
+                              auto tlb = toTextLineBase(s);
+                              bool enPassant = tlb->enPassantManifest();
+                              if (enPassant) {
+                                    bool withinPlaybackPosition = (noteTick >= tlb->tick().ticks() && noteTick <= tlb->tick2().ticks());
+                                    if (withinPlaybackPosition) {
+                                          if (!tlb->visible()) {
+                                                tlb->setVisible(true);
+                                                tlb->setTemporarilyShowing(true);                                                
+                                                // BSP Tree needs updating if already invisible
+                                                // TODO TEST this on large scores to verify everything's okay.
+                                                score()->masterScore()->rebuildBspTree();
+                                                score()->masterScore()->setUpdateAll();
+                                                }
+                                          else if (!tlb->isTemporarilyShowing()) {
+                                                tlb->frontSegment()->setSelected(true);
+                                                }
+                                          }
+                                    else if (tlb->isTemporarilyShowing())
+                                          tlb->setVisible(false);
+                                    else {
+                                          tlb->frontSegment()->setSelected(false);
+                                          }
+                                    }
+                              }
+                        }
+                  }
             }
 
       if (MScore::highlightRests && isRest()) {
