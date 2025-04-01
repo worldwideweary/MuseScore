@@ -555,42 +555,6 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
       if (MScore::highlightNotes && isNote()) {
             auto n = toNote(this);
             marked = n->mark();
-
-            if (MScore::honorEnPassantVisibility && marked) {
-                  auto c         = n->chord();
-                  auto s         = c->segment();
-                  auto noteTick  = s->tick().ticks();
-                  auto noteTrack = n->track();
-                  auto overlappingSpanners = score()->spannerMap().findOverlapping(0, noteTick);
-                  for (auto i : overlappingSpanners) {
-                        auto s = i.value;
-                        if (s->isTextLineBase() && s->track() == noteTrack) {
-                              auto tlb = toTextLineBase(s);
-                              bool enPassant = tlb->enPassantManifest();
-                              if (enPassant) {
-                                    bool withinPlaybackPosition = (noteTick >= tlb->tick().ticks() && noteTick <= tlb->tick2().ticks());
-                                    if (withinPlaybackPosition) {
-                                          if (!tlb->visible()) {
-                                                tlb->setVisible(true);
-                                                tlb->setTemporarilyShowing(true);                                                
-                                                // BSP Tree needs updating if already invisible
-                                                // TODO TEST this on large scores to verify everything's okay.
-                                                score()->masterScore()->rebuildBspTree();
-                                                score()->masterScore()->setUpdateAll();
-                                                }
-                                          else if (!tlb->isTemporarilyShowing()) {
-                                                tlb->frontSegment()->setSelected(true);
-                                                }
-                                          }
-                                    else if (tlb->isTemporarilyShowing())
-                                          tlb->setVisible(false);
-                                    else {
-                                          tlb->frontSegment()->setSelected(false);
-                                          }
-                                    }
-                              }
-                        }
-                  }
             }
 
       if (MScore::highlightRests && isRest()) {
@@ -699,7 +663,7 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
                         }
                   }
             else if (isSpannerSegment()) {
-                  auto ss = toSpannerSegment(this);
+                  auto ss = toSpannerSegment(const_cast<Element*>(this));
                   auto sp = ss->spanner();
                   auto t1 = sp->tick();
                   auto t2 = sp->tick2();
@@ -711,7 +675,49 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
                         }
                   if (auto playingElement = ss->score()->getLastCRSequenced()) {
                         auto pos = playingElement->tick();
-                        marked = (pos >= t1 && pos <= t2);
+                        marked = (pos >= t1 && pos < t2);
+                        ss->setSelected(marked);
+                        }
+                  }
+            }
+
+      if (MScore::honorEnPassantVisibility && marked) {
+            Fraction fTick = this->tick();
+            int  iTick = fTick.ticks();
+            int  iTrack = this->track();
+            auto overlappingSpanners = score()->spannerMap().findOverlapping(0, iTick);
+            for (auto i : overlappingSpanners) {
+                  auto s = i.value;
+                  if (s->isTextLineBase() && s->track() == iTrack) {
+                        auto tlb = toTextLineBase(s);
+                        bool enPassant = tlb->enPassantManifest();
+                        if (enPassant) {
+                              auto beginTick = tlb->tick();
+                              auto endTick = tlb->tick2();
+                              bool withinPlaybackPosition = (iTick >= beginTick.ticks() &&
+                                                             iTick < endTick.ticks());
+                              if (withinPlaybackPosition) {
+                                    if (!tlb->visible()) {
+                                          tlb->setVisible(true);
+                                          tlb->setTemporarilyShowing(true);
+                                          // BSP Tree needs updating if already invisible
+                                          // TODO TEST this on large scores to verify everything's okay.
+                                          score()->masterScore()->rebuildBspTree();
+                                          score()->masterScore()->setUpdateAll();
+                                          }
+                                    else if (!tlb->isTemporarilyShowing()) {
+                                          tlb->frontSegment()->setSelected(true);
+                                          }
+                                    }
+                              else if (tlb->isTemporarilyShowing()) {
+                                    tlb->setVisible(false);
+                                    score()->masterScore()->setUpdateAll();
+                                    }
+                              else {
+                                    tlb->frontSegment()->setSelected(false);
+                                    score()->masterScore()->setUpdateAll();
+                                    }
+                              }
                         }
                   }
             }

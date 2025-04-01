@@ -702,10 +702,10 @@ void ScoreView::moveCursor(const Fraction& tick, bool viaUserNavigation)
             h = measure->height() - (2 * _spatium);
             }
 
-      if (isUpdated) {
+      if (isUpdated)
             _cursor->setRect(QRectF(x, y, w, h));
-            update(_matrix.mapRect(_cursor->rect()).toRect().adjusted(-1,-1,1,1));
-            }
+
+      update();
 
       if (_score->layoutMode() == LayoutMode::LINE && seq->isPlaying() && panSettings().enabled)
             moveControlCursor(tick);
@@ -2906,26 +2906,26 @@ void ScoreView::cmd(const char* s)
                   if (seq && seq->canStart()) {
                         auto _score = cv->score();
                         auto& _selection = _score->selection();
-                        if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY) {
-                              // Start:
-                              auto resetTempSpannerVisibility = [](Score* score) {
-                                    int beginTick = 0;
-                                    int endTick   = score->endTick().ticks();
-                                    auto overlappingSpanners = score->spannerMap().findOverlapping(beginTick, endTick);
-                                    for (auto i : overlappingSpanners) {
-                                          auto s = i.value;
-                                          if (s->isTextLineBase()) {
-                                                auto tlb = toTextLineBase(s);
-                                                if (tlb->isTemporarilyShowing()) {
-                                                      tlb->setTemporarilyShowing(false);
-                                                      tlb->setVisible(false);
-                                                      }
+
+                        auto resetTempSpannerVisibility = [](Score* score) {
+                              int beginTick = 0;
+                              int endTick   = score->endTick().ticks();
+                              auto overlappingSpanners = score->spannerMap().findOverlapping(beginTick, endTick);
+                              for (auto i : overlappingSpanners) {
+                                    auto s = i.value;
+                                    if (s->isTextLineBase()) {
+                                          auto tlb = toTextLineBase(s);
+                                          if (tlb->isTemporarilyShowing()) {
+                                                tlb->setTemporarilyShowing(false);
+                                                tlb->setVisible(false);
                                                 }
                                           }
-                                    };
+                                    }
+                              };
 
+                        if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY) {
+                              // Start:
                               resetTempSpannerVisibility(_score);
-
                               if (!_selection.isNone()) {
                                     _score->deselectAll();
                                     // Clear on-screen keyboard:
@@ -2937,14 +2937,10 @@ void ScoreView::cmd(const char* s)
                               }
                         else if (cv->state == ViewState::PLAY) {
                               // Stop:
-                              cv->changeState(ViewState::NORMAL);
-
-                              if (!_selection.isNone())
-                                    _score->deselectAll();
-
                               bool validOriginalSelection = (originalSelection.score() == _score);
-
+                              cv->changeState(ViewState::NORMAL);
                               // Deselect any text line segments (en passant)
+                              resetTempSpannerVisibility(_score);
                               if (!_selection.isNone())
                                     cv->deselectAll();
 
