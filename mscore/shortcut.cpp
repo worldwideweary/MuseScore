@@ -2521,6 +2521,317 @@ Shortcut Shortcut::_sc[] = {
          ShortcutFlags::A_CHECKABLE
          },
 // End Color Options
+
+// TOGGLE-OPTIONS
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-only-all-color",
+         QT_TRANSLATE_NOOP("action","Use Override All Color for all elements"),
+         QT_TRANSLATE_NOOP("action","Use Override All Color for all elements"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-single-note-selection-color",
+         QT_TRANSLATE_NOOP("action","Selection: One color for all (See Color Options)"),
+         QT_TRANSLATE_NOOP("action","Selection: One color for all (See Color Options)"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-vertical-note-drag-allowed",
+         QT_TRANSLATE_NOOP("action","Mouse: Disable dragging of note pitches"),
+         QT_TRANSLATE_NOOP("action","Mouse: Disable dragging of note pitches"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-octave-tendency",
+         QT_TRANSLATE_NOOP("action","Octave tendency is previous top-note"),
+         QT_TRANSLATE_NOOP("action","Octave tendency is previous top-note"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-upward-fifth-entry",
+         QT_TRANSLATE_NOOP("action","Include [fifth] in upward direction"),
+         QT_TRANSLATE_NOOP("action","Include [fifth] in upward direction"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-colored-alteration-noteheads",
+         QT_TRANSLATE_NOOP("action","Noteheads: Enable coloring of ♯/♭ pitches (See Color Options)"),
+         QT_TRANSLATE_NOOP("action","Noteheads: Enable coloring of ♯/♭ pitches (See Color Options)"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-retain-augmentation-rhythmMode",
+         QT_TRANSLATE_NOOP("action","Augmentation stays toggled (Rhythm Duration Mode)"),
+         QT_TRANSLATE_NOOP("action","Augmentation stays toggled (Rhythm Duration Mode)"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-reset-entry-NewSystemOrCourtesy",
+         QT_TRANSLATE_NOOP("action","Use default octave at New System/Courtesy Clef"),
+         QT_TRANSLATE_NOOP("action","Use default octave at New System/Courtesy Clef"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-playback-highlight-notes",
+         QT_TRANSLATE_NOOP("action","Highlight Notes"),
+         QT_TRANSLATE_NOOP("action","Highlight Notes"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-playback-highlight-rests",
+         QT_TRANSLATE_NOOP("action","Highlight Rests"),
+         QT_TRANSLATE_NOOP("action","Highlight Rests"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-playback-highlight-lyrics",
+         QT_TRANSLATE_NOOP("action","Highlight lyrics"),
+         QT_TRANSLATE_NOOP("action","Highlight lyrics"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-playback-highlight-more",
+         QT_TRANSLATE_NOOP("action","Highlight More Elements"),
+         QT_TRANSLATE_NOOP("action","Highlight More Elements"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-move-cursor-by-beat",
+         QT_TRANSLATE_NOOP("action","Move Cursor by Beat"),
+         QT_TRANSLATE_NOOP("action","Move Cursor by Beat"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-move-cursor-by-measure",
+         QT_TRANSLATE_NOOP("action","Move Cursor by Measure"),
+         QT_TRANSLATE_NOOP("action","Move Cursor by Measure"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-noteheads-behind-staff",
+         QT_TRANSLATE_NOOP("action","Noteheads: Draw Behind Staff Lines"),
+         QT_TRANSLATE_NOOP("action","Noteheads: Draw Behind Staff Lines"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-noteheads-behind-ledger",
+         QT_TRANSLATE_NOOP("action","Noteheads: Draw Behind Ledger Lines"),
+         QT_TRANSLATE_NOOP("action","Noteheads: Draw Behind Ledger Lines"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-ties-consider-ledgers",
+         QT_TRANSLATE_NOOP("action","Ties: Avoid Ledger Lines"),
+         QT_TRANSLATE_NOOP("action","Ties: Avoid Ledger Lines"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-ties-uniformity",
+         QT_TRANSLATE_NOOP("action","Ties: Force Uniform Offsets"), // doesn't work for RHS accidentals...
+         QT_TRANSLATE_NOOP("action","Ties: Force Uniform Offsets"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-lasso-border",
+         QT_TRANSLATE_NOOP("action","Lasso: Enable Border"),
+         QT_TRANSLATE_NOOP("action","Lasso: Enable Border"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-fingering-tightening-layout",
+         QT_TRANSLATE_NOOP("action","Fingering: Tightening (Multi-Voicing)"),
+         QT_TRANSLATE_NOOP("action","Fingering: Tightening (Multi-Voicing)"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-fingering-voicing-layout",
+         QT_TRANSLATE_NOOP("action","Fingering: Multi-Voicing"),
+         QT_TRANSLATE_NOOP("action","Fingering: Multi-Voicing"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-mouse-hover",
+         QT_TRANSLATE_NOOP("action","Score View: Enable Mouse Hover Coloring"),
+         QT_TRANSLATE_NOOP("action","Score View: Enable Mouse Hover Coloring"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-fade-focus",
+         QT_TRANSLATE_NOOP("action","Score View: Fade Out When Not Focused"),
+         QT_TRANSLATE_NOOP("action","Score View: Fade Out When Not Focused"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-current-system-on-top",
+         QT_TRANSLATE_NOOP("action","Score View: Current System Is Always Top"),
+         QT_TRANSLATE_NOOP("action","Score View: Current System Is Always Top"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-move-cursor-to-playback-position",
+         QT_TRANSLATE_NOOP("action","Move Score Selection to Playback Cursor on Stop"),
+         QT_TRANSLATE_NOOP("action","Move Score Selection to Playback Cursor on Stop"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-move-playback-position-to-start",
+         QT_TRANSLATE_NOOP("action","Move Cursor to Original Score Position on Stop"),
+         QT_TRANSLATE_NOOP("action","Move Cursor to Original Score Position on Stop"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-honor-en-passant-visibility",
+         QT_TRANSLATE_NOOP("action","Honor En Passant Option of Text Line (Visibility/Highlight)"),
+         QT_TRANSLATE_NOOP("action","Honor En Passant Option of Text Line (Visibility/Highlight)"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-null",
+         QT_TRANSLATE_NOOP("action","Options"),
+         QT_TRANSLATE_NOOP("action","Options"),
+         0,
+         Icons::options_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::NONE
+         },
+// TOGGLE-OPTIONS - END
       {
          MsWidget::SCORE_TAB,
          STATE_NORMAL | STATE_NOTE_ENTRY,
@@ -2743,6 +3054,13 @@ Shortcut Shortcut::_sc[] = {
          "toggle-colorcontrol",
          QT_TRANSLATE_NOOP("action","Color Control"),
          QT_TRANSLATE_NOOP("action","Toggle 'Color Control' toolbar")
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT ,
+         "toggle-optionscontrol",
+         QT_TRANSLATE_NOOP("action","Toggle Control"),
+         QT_TRANSLATE_NOOP("action","Toggle 'Toggle Options' toolbar")
          },
       {
          MsWidget::MAIN_WINDOW,
@@ -5104,6 +5422,17 @@ void Shortcut::refreshIcon()
       if (QAction* a = this->action()){
             a->setIcon(*icons[int(this->icon())]);
             }
+      }
+
+//---------------------------------------------------------
+//   check/uncheck
+//---------------------------------------------------------
+
+void Shortcut::checkAction(bool check)
+      {
+      _icon = check ? Icons::checkmark_ICON : Icons::empty_ICON;
+      if (_action)
+            _action->setIcon(*icons[int(_icon)]);
       }
 
 //---------------------------------------------------------

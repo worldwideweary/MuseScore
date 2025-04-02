@@ -323,6 +323,45 @@ const std::list<const char*> MuseScore::_allColorControlMenuEntries {
             "color-override-cursor",
             };
 
+const std::list<const char*> MuseScore::_allToggleOptionsMenuEntries {
+            "toggle-options-only-all-color",
+            "toggle-options-single-note-selection-color",
+
+            "separator-Note Entry",
+            "toggle-options-octave-tendency",
+            "toggle-options-upward-fifth-entry",
+            "toggle-options-retain-augmentation-rhythmMode",
+            "toggle-options-reset-entry-NewSystemOrCourtesy",
+
+            "separator-Playback",
+            "toggle-options-playback-highlight-notes",
+            "toggle-options-playback-highlight-rests",
+            "toggle-options-playback-highlight-lyrics",
+            "toggle-options-playback-highlight-more",
+            "toggle-options-honor-en-passant-visibility",
+
+            "toggle-options-move-cursor-by-beat",
+            "toggle-options-move-cursor-by-measure",
+            "toggle-options-move-cursor-to-playback-position",
+            "toggle-options-move-playback-position-to-start",
+
+            "separator-Layout",
+            "toggle-options-noteheads-behind-staff", 
+            "toggle-options-noteheads-behind-ledger",
+            "toggle-options-ties-consider-ledgers",
+            "toggle-options-ties-uniformity",
+            "toggle-options-fingering-voicing-layout",
+            "toggle-options-fingering-tightening-layout",
+            "toggle-options-colored-alteration-noteheads",
+            
+            "separator-Interaction",
+            "toggle-options-mouse-hover",
+            "toggle-options-vertical-note-drag-allowed",
+            "toggle-options-lasso-border",
+            "toggle-options-fade-focus",
+            "toggle-options-current-system-on-top",
+            };
+
 const std::list<const char*> MuseScore::_allFileOperationEntries {
             "file-new",
             "file-open",
@@ -781,6 +820,104 @@ void MuseScore::populateColorControlMenu()
                              true);
       w->setObjectName("color-options");
       colorTools->addWidget(w);
+      }
+
+//---------------------------------------------------------
+//   populateToggleOptionsMenu
+//---------------------------------------------------------
+
+void MuseScore::populateToggleOptionsMenu()
+      {
+      toggleTools->clear();
+      QActionGroup* toggleOptionMethods = new QActionGroup(toggleTools);
+      QWidget* w;
+      for (const auto s : _toggleOptionsMenuEntries) {
+            if (!(strcmp(s, "toggle-options-null") == 0)) {
+                  if (strncmp ("separator", s, 9) == 0) {
+                        QAction* separator = new QAction;
+                        QString separatorTitle(&s[10]);
+                              separator->setSeparator(true);
+                              separator->setParent(toggleOptionMethods);
+                              separator->setText(separatorTitle);
+                              toggleOptionMethods->addAction(separator);
+                        continue;
+                        }
+
+                  const char* option = &s[15]; // toggle-options-*
+                  auto action = getAction(s);
+                  bool pref = false;
+                  
+                  // Maintain these with cmdToggleOptions():                                    
+                  if (0==strcmp(option, "only-all-color"))
+                        pref = MScore::overrideOnlyAllColor;
+                  else if (0==strcmp(option, "colored-alteration-noteheads"))
+                        pref = MScore::noteheadsAlterationColorsEnabled;
+                  else if (0==strcmp(option, "current-system-on-top"))
+                        pref = MScore::currentSystemAlwaysTop;
+                  else if (0==strcmp(option, "fade-focus"))
+                        pref = MScore::fadeFocus;
+                  else if (0==strcmp(option, "fingering-tightening-layout"))
+                        pref = MScore::fingeringTextOmitTightening;
+                  else if (0==strcmp(option, "fingering-voicing-layout"))
+                        pref = MScore::fingeringTextOmitVoicing;
+                  else if (0==strcmp(option, "honor-en-passant-visibility"))
+                        pref = MScore::honorEnPassantVisibility;
+                  else if (0==strcmp(option, "lasso-border"))
+                        pref = MScore::lassoBorderEnabled;
+                  else if (0==strcmp(option, "move-cursor-by-beat"))
+                        pref = MScore::cursorMoveByBeat;
+                  else if (0==strcmp(option, "move-cursor-by-measure"))
+                        pref = MScore::cursorMoveByMeasure;
+                  else if (0==strcmp(option, "move-cursor-to-playback-position"))
+                        pref = MScore::selectionFollowsCursor;
+                  else if (0==strcmp(option, "move-playback-position-to-start"))
+                        pref = MScore::cursorResetToStart;
+                  else if (0==strcmp(option, "mouse-hover"))
+                        pref = MScore::hoverColorEnabled;
+                  else if (0==strcmp(option, "noteheads-behind-staff"))
+                        pref = MScore::noteheadsBehindStaff;
+                  else if (0==strcmp(option, "noteheads-behind-ledger"))
+                        pref = MScore::noteheadsBehindLedger;
+                  else if (0==strcmp(option, "octave-tendency"))
+                        pref = MScore::noteInputOctaveTendencyIsTopNote;
+                  else if (0==strcmp(option, "playback-highlight-notes"))
+                        pref = MScore::highlightNotes;
+                  else if (0==strcmp(option, "playback-highlight-rests"))
+                        pref = MScore::highlightRests;
+                  else if (0==strcmp(option, "playback-highlight-lyrics"))
+                        pref = MScore::highlightLyrics;
+                  else if (0==strcmp(option, "playback-highlight-more"))
+                        pref = MScore::highlightMore;
+                  else if (0==strcmp(option, "reset-entry-NewSystemOrCourtesy"))
+                        pref = MScore::resetNoteEntryAtSystemOrCourtesy;
+                  else if (0==strcmp(option, "retain-augmentation-rhythmMode"))
+                        pref = MScore::retainAugmentationInRhythmEntry;
+                  else if (0==strcmp(option, "single-note-selection-color"))
+                        pref = MScore::singleNoteSelectionColorEnabled;
+                  else if (0==strcmp(option, "ties-consider-ledgers"))
+                        pref = MScore::tiesAdjustForLedgerLines;
+                  else if (0==strcmp(option, "ties-uniformity"))
+                        pref = MScore::uniformTieAdjustments;
+                  else if (0==strcmp(option, "upward-fifth-entry"))
+                        pref = MScore::noteInputOctaveUpwardFifth;
+                  else if (0==strcmp(option, "vertical-note-drag-allowed"))
+                        pref = MScore::disableVerticalMouseDragOfNotes;
+
+                  Shortcut::getShortcut(s)->checkAction(pref);
+                  toggleOptionMethods->addAction(action);
+                  }
+            }
+      connect(toggleOptionMethods, SIGNAL(triggered(QAction*)), this, SLOT(cmd(QAction*)));
+      auto dAct = getAction("toggle-options-null");
+      dAct->setCheckable(false);
+      dAct->setDisabled(true); // Allow the default action not to be within the drop-down list
+      w = new ToolButtonMenu(tr("Toggle Options"),
+                             dAct,
+                             toggleOptionMethods,
+                             this,
+                             false);
+      w->setObjectName("toggle-options");
+      toggleTools->addWidget(w);
       }
 
 //---------------------------------------------------------
@@ -1527,6 +1664,15 @@ MuseScore::MuseScore()
       populateColorControlMenu();
 
       //-------------------------------
+      //    Toggle Options Tool Bar
+      //-------------------------------
+
+      toggleTools = addToolBar("");
+      toggleTools->setObjectName("toggle-tools");
+
+      populateToggleOptionsMenu();
+
+      //-------------------------------
       //    Workspaces Tool Bar
       //-------------------------------
 
@@ -1744,6 +1890,12 @@ MuseScore::MuseScore()
       a->setCheckable(true);
       a->setChecked(colorTools->isVisible());
       connect(colorTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
+      menuToolbars->addAction(a);
+
+      a = getAction("toggle-optionscontrol");
+      a->setCheckable(true);
+      a->setChecked(toggleTools->isVisible());
+      connect(toggleTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
       menuToolbars->addAction(a);
 
       a = getAction("toggle-workspaces-toolbar");
@@ -2320,6 +2472,7 @@ void MuseScore::retranslate()
       fotoTools->setWindowTitle(tr("Image Capture"));
       entryTools->setWindowTitle(tr("Note Input"));
       colorTools->setWindowTitle(tr("Color Control"));
+      toggleTools->setWindowTitle(tr("Toggle Options"));
       workspacesTools->setWindowTitle(tr("Workspaces"));
 
       // keep translatable (con)texts in sync with those from zoombox.cpp
@@ -4665,6 +4818,7 @@ void MuseScore::changeState(ScoreState val)
       zoomBox->setEnabled(enable);
       entryTools->setEnabled(enable);
       colorTools->setEnabled(enable);
+      toggleTools->setEnabled(enable);
 
       if (_sstate == STATE_FOTO)
             updateInspector();
@@ -5024,6 +5178,9 @@ void MuseScore::readSettings()
 
       a = getAction("toggle-colorcontrol");
       a->setChecked(!colorTools->isHidden());
+
+      a = getAction("toggle-optionscontrol");
+      a->setChecked(!toggleTools->isHidden());
       }
 
 //---------------------------------------------------------
@@ -6686,6 +6843,8 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             entryTools->setVisible(!entryTools->isVisible());
       else if (cmd == "toggle-colorcontrol")
             colorTools->setVisible(!colorTools->isVisible());
+      else if (cmd == "toggle-optionscontrol")
+            toggleTools->setVisible(!toggleTools->isVisible());
       else if (cmd == "toggle-workspaces-toolbar")
             workspacesTools->setVisible(!workspacesTools->isVisible());
       else if (cmd == "create-new-workspace") {
@@ -6922,6 +7081,15 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             cv->score()->cmdOverrideColor(token);
             genIcons();
             Shortcut::refreshIcons();
+            }
+      else if (cmd.startsWith("toggle-options-")) {
+            bool updateScore = cv->score()->cmdToggleOptions(cmd);
+            genIcons();
+            Shortcut::refreshIcons();
+            if (cs && updateScore) {
+                  cs->setLayoutAll();
+                  cs->update();
+                  }
             }
 #ifndef NDEBUG
       else if (cmd == "no-horizontal-stretch") {
