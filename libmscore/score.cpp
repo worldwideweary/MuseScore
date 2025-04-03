@@ -2321,8 +2321,10 @@ MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection&
       // Clone & Insert measures:
       std::vector<MeasureBase*> insertedMeasures;
       int safeGuard = 0;
-      const int maxIterations = 1888;
-      for (auto mbCurrent = mbStart; mbCurrent && (mbCurrent->no() <= mbEnd->no()); mbCurrent = mbCurrent->next()) {
+      const int maxIterations = 9999;
+      int sNo = mbStart->no();
+      int eNo = mbEnd->no();
+      for (auto mbCurrent = mbStart; mbCurrent && (mbCurrent->no() <= eNo); mbCurrent = mbCurrent->next()) {
             bool firstIteration = insertedMeasures.empty();
             MeasureBase* mbNext;
 
@@ -2336,21 +2338,23 @@ MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection&
                   return nullptr;
                   }
             if (!firstIteration) {
-                  if ((mbCurrent->no() == mbStart->no()) && !mbCurrent->isBox()) {
-                        if (mbCurrent->index() == mbStart->index()) {
-                              qDebug() << "error:" << "restart or invalid interaction with insertion point.";
+                  int cNo = mbCurrent->no();
+                  int pNo = mbCurrent->prev() ? mbCurrent->prev()->no() : -1;
+
+                  // Ain't Misbehavin'
+                  if (!mbCurrent->isBox()) {
+                        if (!cNo)
                               break;
+                        else if (cNo == sNo) {
+                              // ...OK when including entire score
+                              if (mbCurrent->index() == mbStart->index())
+                                    break;
                               }
-                        // ...OK when including entire score
                         }
-                  else if (!mbCurrent->no()) {
-                        qDebug() << "error:" << "reached a measure #0 mid-way" ;
+                  if (cNo == pNo)
                         break;
-                        }
-                  else if (mbCurrent == mbStart) {
-                        qDebug() << "error:" << "reached first measure more than once";
+                  else if (mbCurrent == mbStart)
                         return nullptr;
-                        }
                   }
 
             if (mbCurrent->isMeasure()) {
