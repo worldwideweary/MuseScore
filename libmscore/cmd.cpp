@@ -2642,6 +2642,7 @@ Element* Score::move(const QString& cmd)
             }
       else if (cmd == "prev-chord" && cr) {
             // note input cursor
+            el = nullptr;
             bool noteEntryPos = false;
             if (noteEntryMode() && _is.segment()) {
                   Measure* m = _is.segment()->measure();
