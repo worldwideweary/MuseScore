@@ -220,6 +220,7 @@ Measure::Measure(Score* s)
       _noMode                   = MeasureNumberMode::AUTO;
       _userStretch              = 1.0;
       _breakMultiMeasureRest    = false;
+      _centerSingleChord        = false;
       _mmRest                   = 0;
       _mmRestCount              = 0;
       setFlag(ElementFlag::MOVABLE, true);
@@ -244,6 +245,7 @@ Measure::Measure(const Measure& m)
             _mstaves.push_back(new MStaff(*ms));
 
       _breakMultiMeasureRest = m._breakMultiMeasureRest;
+      _centerSingleChord     = m._centerSingleChord;
       _mmRest                = m._mmRest;
       _mmRestCount           = m._mmRestCount;
       _playbackCount         = m._playbackCount;
@@ -1969,6 +1971,7 @@ void Measure::write(XmlWriter& xml, int staff, bool writeSystemElements, bool fo
                   xml.tag("endRepeat", _repeatCount);
             writeProperty(xml, Pid::IRREGULAR);
             writeProperty(xml, Pid::BREAK_MMR);
+            writeProperty(xml, Pid::CENTER_SINGLE_CHORD);
             writeProperty(xml, Pid::USER_STRETCH);
             writeProperty(xml, Pid::NO_OFFSET);
             writeProperty(xml, Pid::MEASURE_NUMBER_MODE);
@@ -2077,6 +2080,8 @@ void Measure::read(XmlReader& e, int staffIdx)
                   setIrregular(e.readBool());
             else if (tag == "breakMultiMeasureRest")
                   _breakMultiMeasureRest = e.readBool();
+            else if (tag == "centerSingleChord")
+                  _centerSingleChord = e.readBool();
             else if (tag == "startRepeat") {
                   setRepeatStart(true);
                   e.readNext();
@@ -3125,6 +3130,7 @@ Measure* Measure::cloneMeasure(Score* sc, const Fraction& tick, TieMap* tieMap)
       m->setIrregular(irregular());
       m->_userStretch           = _userStretch;
       m->_breakMultiMeasureRest = _breakMultiMeasureRest;
+      m->_centerSingleChord     = _centerSingleChord;
       m->_playbackCount         = _playbackCount;
 
       m->setTick(tick);
@@ -3235,6 +3241,7 @@ Measure* Measure::cloneMeasureLimited(Score* scoreDest, const Fraction& tick, Ti
       m->setIrregular(irregular());
       m->_userStretch           = _userStretch;
       m->_breakMultiMeasureRest = _breakMultiMeasureRest;
+      m->_centerSingleChord     = _centerSingleChord;
       m->_playbackCount         = _playbackCount;
 
       m->setRepeatStart (repeatStart());
@@ -3446,6 +3453,8 @@ QVariant Measure::getProperty(Pid propertyId) const
                   return int(measureNumberMode());
             case Pid::BREAK_MMR:
                   return breakMultiMeasureRest();
+            case Pid::CENTER_SINGLE_CHORD:
+                  return centerSingleChord();
             case Pid::REPEAT_COUNT:
                   return repeatCount();
             case Pid::USER_STRETCH:
@@ -3474,6 +3483,9 @@ bool Measure::setProperty(Pid propertyId, const QVariant& value)
             case Pid::BREAK_MMR:
                   setBreakMultiMeasureRest(value.toBool());
                   break;
+            case Pid::CENTER_SINGLE_CHORD:
+                  setCenterSingleChord(value.toBool());
+                  break;
             case Pid::REPEAT_COUNT:
                   setRepeatCount(value.toInt());
                   break;
@@ -3500,6 +3512,8 @@ QVariant Measure::propertyDefault(Pid propertyId) const
             case Pid::MEASURE_NUMBER_MODE:
                   return int(MeasureNumberMode::AUTO);
             case Pid::BREAK_MMR:
+                  return false;
+            case Pid::CENTER_SINGLE_CHORD:
                   return false;
             case Pid::REPEAT_COUNT:
                   return 2;
@@ -3763,7 +3777,11 @@ void Measure::stretchMeasure(qreal targetWidth)
                         continue;
                   ElementType t = e->type();
                   int staffIdx    = e->staffIdx();
-                  if (t == ElementType::REPEAT_MEASURE || (t == ElementType::REST && (isMMRest() || toRest(e)->isFullMeasureRest()))) {
+
+                  ChordRest* cr = e->isChordRest() ? toChordRest(e) : nullptr;
+                  if ((t == ElementType::REPEAT_MEASURE) ||
+                      (t == ElementType::REST && (isMMRest() || toRest(e)->isFullMeasureRest())) ||
+                      (cr && cr->isCentered())) {
                         //
                         // element has to be centered in free space
                         //    x1 - left measure position of free space
@@ -3797,11 +3815,21 @@ void Measure::stretchMeasure(qreal targetWidth)
                               e->setPos(x1 - s.x() + d, e->staff()->height() * .5);   // center vertically in measure
                               s.createShape(staffIdx);
                               }
-                        else { // if (rest->isFullMeasureRest()) {
+                        else {
+                              //
+                              // center singular chordrest filling the measure with centering property
+                              //
+                              if (cr) {
+                                    qreal deltaWidth = cr->isChord() ? (toChord(cr)->upNote()->width() * 0.5)
+                                                                : (e->width() * 0.5);
+
+                                    e->rxpos() = ((x2 - x1) * 0.5) + x1 - s.x() - e->bbox().x() - deltaWidth;
+                                    }
                               //
                               // center full measure rest
                               //
-                              e->rxpos() = (x2 - x1 - e->width()) * .5 + x1 - s.x() - e->bbox().x();
+                              else e->rxpos() = (x2 - x1 - e->width()) * .5 + x1 - s.x() - e->bbox().x();
+
                               s.createShape(staffIdx);  // DEBUG
                               }
                         }
@@ -4649,7 +4677,7 @@ void Measure::setStretchedWidth(qreal w)
 //   hasAccidental
 //---------------------------------------------------------
 
-static bool hasAccidental(Segment* s)
+bool Measure::hasAccidental(Segment* s)
       {
       Score* score = s->score();
       for (int track = 0; track < s->score()->ntracks(); ++track) {

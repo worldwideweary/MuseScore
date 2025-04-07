@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>632</width>
-    <height>426</height>
+    <width>573</width>
+    <height>460</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -277,37 +277,7 @@
           <property name="horizontalSpacing">
            <number>6</number>
           </property>
-          <item row="0" column="0" colspan="2">
-           <widget class="QCheckBox" name="irregular">
-            <property name="toolTip">
-             <string>Do not count</string>
-            </property>
-            <property name="text">
-             <string>Exclude from measure count</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="3">
-           <widget class="QCheckBox" name="breakMultiMeasureRest">
-            <property name="text">
-             <string>Break multimeasure rest</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="3">
-           <widget class="QLabel" name="labelCount">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Play count:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="4">
+          <item row="6" column="4">
            <widget class="QSpinBox" name="count">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -323,20 +293,14 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="2">
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
+          <item row="5" column="0">
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>Measure number mode:</string>
             </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
+           </widget>
           </item>
-          <item row="1" column="3">
+          <item row="5" column="3">
            <widget class="QLabel" name="label_8">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -352,26 +316,7 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="4">
-           <widget class="QDoubleSpinBox" name="layoutStretch">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimum">
-             <double>0.000000000000000</double>
-            </property>
-            <property name="singleStep">
-             <double>0.100000000000000</double>
-            </property>
-            <property name="value">
-             <double>1.000000000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
+          <item row="6" column="0">
            <widget class="QLabel" name="label_7">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -384,30 +329,7 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
-           <widget class="QSpinBox" name="measureNumberOffset">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimum">
-             <number>-9999</number>
-            </property>
-            <property name="maximum">
-             <number>9999</number>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label_9">
-            <property name="text">
-             <string>Measure number mode:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
+          <item row="5" column="1">
            <widget class="QComboBox" name="measureNumberMode">
             <item>
              <property name="text">
@@ -426,7 +348,7 @@
             </item>
            </widget>
           </item>
-          <item row="1" column="5">
+          <item row="5" column="5">
            <spacer name="horizontalSpacer_2">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -438,6 +360,91 @@
              </size>
             </property>
            </spacer>
+          </item>
+          <item row="6" column="1">
+           <widget class="QSpinBox" name="measureNumberOffset">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimum">
+             <number>-9999</number>
+            </property>
+            <property name="maximum">
+             <number>9999</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" colspan="2">
+           <widget class="QCheckBox" name="irregular">
+            <property name="toolTip">
+             <string>Do not count</string>
+            </property>
+            <property name="text">
+             <string>Exclude from measure count</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="2">
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="5" column="4">
+           <widget class="QDoubleSpinBox" name="layoutStretch">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimum">
+             <double>0.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.100000000000000</double>
+            </property>
+            <property name="value">
+             <double>1.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="3">
+           <widget class="QLabel" name="labelCount">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Play count:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0" colspan="2">
+           <widget class="QCheckBox" name="centerSingleChord">
+            <property name="text">
+             <string>Center full-measure ChordRests</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QCheckBox" name="breakMultiMeasureRest">
+            <property name="text">
+             <string>Break multimeasure rest</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -513,7 +520,6 @@
   <tabstop>actualZ</tabstop>
   <tabstop>actualN</tabstop>
   <tabstop>irregular</tabstop>
-  <tabstop>breakMultiMeasureRest</tabstop>
   <tabstop>measureNumberMode</tabstop>
   <tabstop>layoutStretch</tabstop>
   <tabstop>measureNumberOffset</tabstop>

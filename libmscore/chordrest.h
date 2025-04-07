@@ -186,6 +186,8 @@ class ChordRest : public DurationElement {
       virtual void computeUp()   { _up = true; }
 
       bool isFullMeasureRest() const { return _durationType == TDuration::DurationType::V_MEASURE; }
+      bool isCentered() const;
+
       virtual void removeMarkings(bool keepTremolo = false);
 
       bool isBefore(const ChordRest*) const;
