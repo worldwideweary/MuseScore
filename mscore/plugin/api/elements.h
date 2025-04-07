@@ -286,6 +286,7 @@ class Element : public Ms::PluginAPI::ScoreElement {
       API_PROPERTY( spannerTicks,            SPANNER_TICKS             )
       API_PROPERTY( spannerTrack2,           SPANNER_TRACK2            )
       API_PROPERTY( userOff2,                OFFSET2                   )
+      API_PROPERTY( centerSingleChord,       CENTER_SINGLE_CHORD       )
       API_PROPERTY( breakMmr,                BREAK_MMR                 )
       API_PROPERTY( repeatCount,             REPEAT_COUNT              )
       API_PROPERTY( userStretch,             USER_STRETCH              )

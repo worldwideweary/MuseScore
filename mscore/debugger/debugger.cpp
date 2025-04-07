@@ -807,6 +807,7 @@ void MeasureView::setElement(Element* e)
       mb.irregular->setChecked(m->irregular());
       mb.repeatCount->setValue(m->repeatCount());
       mb.breakMultiMeasureRest->setChecked(m->breakMultiMeasureRest());
+      mb.centerSingleChord->setChecked(m->centerSingleChord());
       mb.mmRestCount->setValue(m->mmRestCount());
       mb.timesig->setText(m->timesig().print());
       mb.len->setText(m->ticks().print());
