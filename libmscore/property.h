@@ -218,6 +218,7 @@ enum class Pid {
       SPANNER_TRACK2,
       OFFSET2,
       BREAK_MMR,
+      CENTER_SINGLE_CHORD,
       MMREST_NUMBER_POS,
       REPEAT_COUNT,
 
