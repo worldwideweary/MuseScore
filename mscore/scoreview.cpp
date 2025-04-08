@@ -1942,9 +1942,12 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                                     if (!score()->staff(i)->show())
                                           continue;
                                     ChordRest* cr = static_cast<ChordRest*>(fs->element(i * VOICES));
-                                    if (cr && (cr->type() == ElementType::REPEAT_MEASURE || cr->durationType() == TDuration::DurationType::V_MEASURE)) {
-                                          x2 = s->measure()->abbox().right() - _spatium * 0.5;
-                                          break;
+                                    if (cr) {
+                                          bool haveSingleCenteredChord = (cr->ticks() == cr->measure()->ticks()) && cr->measure()->centerSingleChord();
+                                          if (cr->type() == ElementType::REPEAT_MEASURE || cr->isFullMeasureRest() || haveSingleCenteredChord) {
+                                                x2 = s->measure()->abbox().right() - _spatium * 0.5;
+                                                break;
+                                                }
                                           }
                                     }
                               }
