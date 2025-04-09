@@ -537,6 +537,7 @@ void updateExternalValuesFromPreferences() {
       MScore::retainAugmentationInRhythmEntry = preferences.getBool(PREF_SCORE_NOTE_INPUT_RETAIN_AUG_RHYTHM_MODE);
       MScore::fingerTextAutoForwardAlphaNumeric = preferences.getBool(PREF_SCORE_FINGERING_ALPHANUMERIC_AUTOFORWARD);
       MScore::noteEntryInformationColor = preferences.getColor(PREF_SCORE_NOTE_INPUT_ENTRY_STATUS_COLOR);
+      MScore::noteEntryInformationEnabled = preferences.getBool(PREF_SCORE_NOTE_INPUT_ENTRY_STATUS_ENABLE);
 
       MScore::defaultPlayDuration = preferences.getInt(PREF_SCORE_NOTE_DEFAULTPLAYDURATION);
       MScore::panPlayback = preferences.getBool(PREF_APP_PLAYBACK_PANPLAYBACK);
