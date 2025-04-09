@@ -115,6 +115,7 @@ bool    MScore::highlightLyrics;
 bool    MScore::honorEnPassantVisibility;
 
 QColor  MScore::noteEntryInformationColor;
+bool    MScore::noteEntryInformationEnabled;
 bool    MScore::noteInputOctaveTendencyIsTopNote;
 bool    MScore::noteInputOctaveUpwardFifth;
 bool    MScore::resetNoteEntryAtSystemOrCourtesy;
