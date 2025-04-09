@@ -2834,6 +2834,17 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::MAIN_WINDOW,
          STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-note-entry-information",
+         QT_TRANSLATE_NOOP("action","Show Note Entry information at bottom center of Score View"),
+         QT_TRANSLATE_NOOP("action","Show Note Entry information at bottom center of Score View"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
          "toggle-options-null",
          QT_TRANSLATE_NOOP("action","Options"),
          QT_TRANSLATE_NOOP("action","Options"),
