@@ -2121,9 +2121,11 @@ void ScoreView::paint(const QRect& r, QPainter& p)
 
       p.restore();
 
-      // Center-bottom of ScoreView
-      QPointF noteEntryInfoPos(r.width() * 0.5, r.bottom() - 10);
-      drawNoteEntryInformation(p, noteEntryInfoPos,  72, true);
+      if (MScore::noteEntryInformationEnabled) {
+            qreal yMargin = 10;
+            QPointF bottomCenterOfScoreView(r.width() * 0.5, r.bottom() - yMargin);
+            drawNoteEntryInformation(p, bottomCenterOfScoreView, 72, true);
+            }
 
       if (MScore::fadeFocus && !hasFocus()) {
             auto w = width();
