@@ -5418,6 +5418,10 @@ bool Score::cmdToggleOptions(const QString& cmd)
       else if (cmd.endsWith("mouse-hover")) {
             preferences.setPreference(PREF_SCORE_HOVER_COLOR_ENABLE, checked=toggle(MScore::hoverColorEnabled));
             }
+      else if (cmd.endsWith("note-entry-information")) {
+            preferences.setPreference(PREF_SCORE_NOTE_INPUT_ENTRY_STATUS_ENABLE, checked=toggle(MScore::noteEntryInformationEnabled));
+            updateScore = true;
+            }
       else if (cmd.endsWith("noteheads-behind-staff")) {
             preferences.setPreference(PREF_UI_SCORE_NOTEHEADS_BEHIND_STAFF_LINES, checked=toggle(MScore::noteheadsBehindStaff));
             updateScore = true;
