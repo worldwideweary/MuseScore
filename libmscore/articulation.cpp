@@ -19,8 +19,10 @@
 #include "stafftype.h"
 #include "undo.h"
 #include "page.h"
+#include "part.h"
 #include "barline.h"
 #include "sym.h"
+#include "instrument.h"
 #include "xml.h"
 
 namespace Ms {
@@ -199,9 +201,23 @@ void Articulation::write(XmlWriter& xml) const
       writeProperty(xml, Pid::DIRECTION);
       xml.tag("subtype", Sym::id2name(_symId));
       writeProperty(xml, Pid::PLAY);
-      writeProperty(xml, Pid::GATE_TIME);
+
+      // don't write gate or velocity of articulation if its value is default respecting the instrument definition:
+      if (ChordRest* cr = chordRest()) {
+            if (Part* p = cr->part()) {
+                  if (Instrument* i = p->instrument(cr->tick())) {
+                        for (const MidiArticulation& a : qAsConst(i->articulation())) {
+                              if (this->name() == a.name) {
+                                    if (this->getGateTime() != a.gateTime)
+                                          writeProperty(xml, Pid::GATE_TIME);
+                                    else if (this->getVelocityOffset() != a.velocity)
+                                          writeProperty(xml, Pid::VELOCITY_OFFSET);
+                                    }
+                              }
+                        }
+                  }
+            }
       writeProperty(xml, Pid::ON_TIME);
-      writeProperty(xml, Pid::VELOCITY_OFFSET);
       writeProperty(xml, Pid::ORNAMENT_STYLE);
       for (const StyledProperty& spp : *styledProperties())
             writeProperty(xml, spp.pid);
