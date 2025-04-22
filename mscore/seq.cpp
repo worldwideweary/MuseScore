@@ -567,6 +567,7 @@ void Seq::unmarkNotes()
             }
 
       markedNotes.clear();
+      markedRests.clear();
 
       _activePitches.clear();
       _activeNoteEvents.clear();
