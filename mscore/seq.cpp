@@ -548,6 +548,7 @@ void Seq::unmarkNotes()
             }
 
       markedNotes.clear();
+      markedRests.clear();
 
       PianoTools* piano = mscore->pianoTools();
       if (piano && piano->isVisible())
