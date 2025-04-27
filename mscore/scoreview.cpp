@@ -3062,6 +3062,7 @@ void ScoreView::cmd(const char* s)
                                           if (tlb->isTemporarilyShowing()) {
                                                 tlb->setTemporarilyShowing(false);
                                                 tlb->setVisible(false);
+                                                tlb->setSelected(false);
                                                 }
                                           }
                                     }

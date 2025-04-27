@@ -475,6 +475,7 @@ void Seq::unmarkNotes()
             }
 
       markedNotes.clear();
+      markedRests.clear();
 
       PianoTools* piano = mscore->pianoTools();
       if (piano && piano->isVisible())
@@ -1799,7 +1800,7 @@ void Seq::heartBeatTimeout()
       if (piano && piano->isVisible())
             piano->updateAllKeys();
 
-      MScore::highlightMore ? cv->update() : cv->update(cv->toPhysical(r));
+      cv->update();
       }
 
 //---------------------------------------------------------
