@@ -203,6 +203,10 @@ static constexpr PropertyMetaData propertyList[] = {
       { Pid::LASSO_SIZE,              false, 0,                       P_TYPE::SIZE_MM,             DUMMY_QT_TRANSLATE_NOOP("propertyName", "lasso size")       },
       { Pid::TIME_STRETCH,            true,  "timeStretch",           P_TYPE::REAL,                DUMMY_QT_TRANSLATE_NOOP("propertyName", "time stretch")     },
       { Pid::ORNAMENT_STYLE,          true,  "ornamentStyle",         P_TYPE::ORNAMENT_STYLE,      DUMMY_QT_TRANSLATE_NOOP("propertyName", "ornament style")   },
+      { Pid::GATE_TIME,               true,  "gateTime",              P_TYPE::GATE_TIME,           DUMMY_QT_TRANSLATE_NOOP("propertyName", "gate time")        },
+      { Pid::ON_TIME,                 true,  "onTime",                P_TYPE::ON_TIME,             DUMMY_QT_TRANSLATE_NOOP("propertyName", "on time")          },
+      { Pid::VELOCITY_OFFSET,         true,  "velocityOffset",        P_TYPE::VELOCITY_OFFSET,     DUMMY_QT_TRANSLATE_NOOP("propertyName", "velocity offset")  },
+
 
       { Pid::TIMESIG,                 false, "timesig",               P_TYPE::FRACTION,            DUMMY_QT_TRANSLATE_NOOP("propertyName", "time signature")   },
       { Pid::TIMESIG_GLOBAL,          false, 0,                       P_TYPE::FRACTION,            DUMMY_QT_TRANSLATE_NOOP("propertyName", "global time signature") },
@@ -441,6 +445,9 @@ QVariant propertyFromString(Pid id, QString value)
                   return QVariant(bool(value.toInt()));
             case P_TYPE::ZERO_INT:
             case P_TYPE::INT:
+            case P_TYPE::GATE_TIME:
+            case P_TYPE::ON_TIME:
+            case P_TYPE::VELOCITY_OFFSET:
                   return QVariant(value.toInt());
             case P_TYPE::REAL:
             case P_TYPE::SPATIUM:
@@ -637,6 +644,9 @@ QVariant readProperty(Pid id, XmlReader& e)
             case P_TYPE::BOOL:
                   return QVariant(bool(e.readInt()));
             case P_TYPE::ZERO_INT:
+            case P_TYPE::GATE_TIME:
+            case P_TYPE::ON_TIME:
+            case P_TYPE::VELOCITY_OFFSET:
             case P_TYPE::INT:
                   return QVariant(e.readInt());
             case P_TYPE::REAL:
@@ -729,6 +739,9 @@ QString propertyToString(Pid id, QVariant value, bool mscx)
             case P_TYPE::BOOL:
             case P_TYPE::INT:
             case P_TYPE::ZERO_INT:
+            case P_TYPE::GATE_TIME:
+            case P_TYPE::ON_TIME:
+            case P_TYPE::VELOCITY_OFFSET:
                   return QString::number(value.toInt());
             case P_TYPE::REAL:
                   return QString::number(value.value<double>());

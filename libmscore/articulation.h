@@ -65,6 +65,11 @@ class Articulation final : public Element {
       MScore::OrnamentStyle _ornamentStyle;     // for use in ornaments such as trill
       bool _playArticulation;
 
+      int _gateTime, _onTime;
+      int _veloOffset,
+          _veloUserOffset,
+          _veloStaff;
+
       void draw(QPainter*) const;
 
       enum class AnchorGroup {
@@ -113,6 +118,32 @@ class Articulation final : public Element {
       void setUp(bool val);
       void setDirection(Direction d)        { _direction = d;    }
       Direction direction() const           { return _direction; }
+
+      void setGateTime(int val)
+            { _gateTime = val; }
+      int getGateTime() const
+            { return _gateTime; }
+      
+      void setOnTime(int val)
+            { _onTime = val; }
+      int getOnTime() const
+            { return _onTime; }
+
+      void setVelocityOffset(int val) 
+            { _veloOffset = val; }
+      int getVelocityOffset() const 
+            { return _veloOffset; }
+      
+      void setVelocityUserOffset(int val)
+            { _veloUserOffset = val; }
+      int getVelocityUserOffset() const
+            { return _veloUserOffset; }
+      
+      void setStaffDynamic(int val)
+            { _veloStaff = val; }
+      int getStaffDynamic() const
+            { return _veloStaff; }
+
 
       ChordRest* chordRest() const;
       Segment* segment() const;

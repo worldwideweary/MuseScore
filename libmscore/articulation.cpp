@@ -19,8 +19,10 @@
 #include "stafftype.h"
 #include "undo.h"
 #include "page.h"
+#include "part.h"
 #include "barline.h"
 #include "sym.h"
+#include "instrument.h"
 #include "xml.h"
 
 namespace Ms {
@@ -42,11 +44,16 @@ static const ElementStyle articulationStyle {
 Articulation::Articulation(Score* s)
    : Element(s, ElementFlag::MOVABLE)
       {
-      _symId         = SymId::noSym;
-      _anchor        = ArticulationAnchor::TOP_STAFF;
-      _direction     = Direction::AUTO;
-      _up            = true;
-      _ornamentStyle = MScore::OrnamentStyle::DEFAULT;
+      _symId          = SymId::noSym;
+      _anchor         = ArticulationAnchor::TOP_STAFF;
+      _direction      = Direction::AUTO;
+      _up             = true;
+      _gateTime       = 0;
+      _onTime         = 0;
+      _veloOffset     = 0;
+      _veloUserOffset = 0;
+      _veloStaff      = 0;
+      _ornamentStyle  = MScore::OrnamentStyle::DEFAULT;
       setPlayArticulation(true);
       initElementStyle(&articulationStyle);
       }
@@ -55,6 +62,11 @@ Articulation::Articulation(SymId id, Score* s)
    : Articulation(s)
       {
       setSymId(id);
+      _gateTime       = 0;
+      _onTime         = 0;
+      _veloOffset     = 0;
+      _veloUserOffset = 0;
+      _veloStaff      = 0;
       }
 
 //---------------------------------------------------------
@@ -152,6 +164,12 @@ bool Articulation::readProperties(XmlReader& e)
             ;
       else if (tag == "direction")
             readProperty(e, Pid::DIRECTION);
+      else if (tag == "gateTime")
+            readProperty(e, Pid::GATE_TIME);
+      else if (tag == "onTime")
+            readProperty(e, Pid::ON_TIME);
+      else if (tag == "velocityOffset")
+            readProperty(e, Pid::VELOCITY_OFFSET);
       else if ( tag == "ornamentStyle")
             readProperty(e, Pid::ORNAMENT_STYLE);
       else if ( tag == "play")
@@ -183,6 +201,23 @@ void Articulation::write(XmlWriter& xml) const
       writeProperty(xml, Pid::DIRECTION);
       xml.tag("subtype", Sym::id2name(_symId));
       writeProperty(xml, Pid::PLAY);
+
+      // don't write gate or velocity of articulation if its value is default respecting the instrument definition:
+      if (ChordRest* cr = chordRest()) {
+            if (Part* p = cr->part()) {
+                  if (Instrument* i = p->instrument(cr->tick())) {
+                        for (const MidiArticulation& a : qAsConst(i->articulation())) {
+                              if (this->name() == a.name) {
+                                    if (this->getGateTime() != a.gateTime)
+                                          writeProperty(xml, Pid::GATE_TIME);
+                                    else if (this->getVelocityOffset() != a.velocity)
+                                          writeProperty(xml, Pid::VELOCITY_OFFSET);
+                                    }
+                              }
+                        }
+                  }
+            }
+      writeProperty(xml, Pid::ON_TIME);
       writeProperty(xml, Pid::ORNAMENT_STYLE);
       for (const StyledProperty& spp : *styledProperties())
             writeProperty(xml, spp.pid);
@@ -312,8 +347,12 @@ QVariant Articulation::getProperty(Pid propertyId) const
             case Pid::SYMBOL:              return QVariant::fromValue(_symId);
             case Pid::DIRECTION:           return QVariant::fromValue<Direction>(direction());
             case Pid::ARTICULATION_ANCHOR: return int(anchor());
+            case Pid::GATE_TIME:           return int(getGateTime());
+            case Pid::ON_TIME:             return int(getOnTime());
+            case Pid::VELOCITY_OFFSET:     return int(getVelocityOffset());
             case Pid::ORNAMENT_STYLE:      return int(ornamentStyle());
             case Pid::PLAY:                return bool(playArticulation());
+
             default:
                   return Element::getProperty(propertyId);
             }
@@ -338,6 +377,15 @@ bool Articulation::setProperty(Pid propertyId, const QVariant& v)
             case Pid::PLAY:
                   setPlayArticulation(v.toBool());
                   break;
+            case Pid::GATE_TIME:
+                  setGateTime(v.toInt());
+                  break;
+            case Pid::ON_TIME:
+                  setOnTime(v.toInt());
+                  break;
+            case Pid::VELOCITY_OFFSET:
+                  setVelocityOffset(v.toInt());
+                  break;
             case Pid::ORNAMENT_STYLE:
                   setOrnamentStyle(MScore::OrnamentStyle(v.toInt()));
                   break;
@@ -357,7 +405,12 @@ QVariant Articulation::propertyDefault(Pid propertyId) const
       switch (propertyId) {
             case Pid::DIRECTION:
                   return QVariant::fromValue<Direction>(Direction::AUTO);
-
+            case Pid::ON_TIME:
+                  return 0;
+            case Pid::GATE_TIME:
+                  return 0;
+            case Pid::VELOCITY_OFFSET:
+                  return 0;
             case Pid::ORNAMENT_STYLE:
                   //return int(score()->style()->ornamentStyle(_ornamentStyle));
                   return int(MScore::OrnamentStyle::DEFAULT);
@@ -569,6 +622,9 @@ void Articulation::resetProperty(Pid id)
       {
       switch (id) {
             case Pid::DIRECTION:
+            case Pid::GATE_TIME:
+            case Pid::ON_TIME:
+            case Pid::VELOCITY_OFFSET:
             case Pid::ORNAMENT_STYLE:
                   setProperty(id, propertyDefault(id));
                   return;

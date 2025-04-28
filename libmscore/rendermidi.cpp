@@ -311,7 +311,9 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
       {
       if (!note->play() || note->hidden())      // do not play overlapping notes
             return;
+
       Chord* chord = note->chord();
+      bool isGrace = false;
 
       int staffIdx = staff->idx();
       int ticks;
@@ -319,6 +321,7 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
       if (chord->isGrace()) {
             Q_ASSERT( !graceNotesMerged(chord)); // this function should not be called on a grace note if grace notes are merged
             chord = toChord(chord->parent());
+            isGrace = true;
             }
 
       ticks = chord->actualTicks().ticks(); // ticks of the actual note
@@ -354,6 +357,7 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
 
       NoteEventList nel = note->playEvents();
       int nels = nel.size();
+      std::vector<Articulation*> articulationsRendered;
       for (int i = 0, pitch = note->ppitch(); i < nels; ++i) {
             const NoteEvent& e = nel[i]; // we make an explicit const ref, not a const copy.  no need to copy as we won't change the original object.
 
@@ -370,13 +374,16 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
                   p = 127;
             int on  = tick1 + (ticks * e.ontime())/1000;
             int off = on + (ticks * e.len())/1000 - 1;
+
             if (tieFor && i == nels - 1)
                   off += tieLen;
 
             // Get the velocity used for this note from the staff
             // This allows correct playback of tremolos even without SND enabled.
-            int velo;
             Fraction nonUnwoundTick = Fraction::fromTicks(on - tickOffset);
+            const int staffVelocity = staff->velocities().val(nonUnwoundTick);
+            int velo = 0;
+            int articulationVelocity = 0;
             if (config.useSND) {
                   switch (config.method) {
                         case DynamicsRenderMethod::FIXED_MAX:
@@ -384,15 +391,41 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
                               break;
                         case DynamicsRenderMethod::SEG_START:
                         default:
-                              velo = staff->velocities().val(nonUnwoundTick);
+                              velo = staffVelocity;
                               break;
                         }
                   }
             else {
-                  velo = staff->velocities().val(nonUnwoundTick);
+                  velo = staffVelocity;
+                  for (Articulation* a : chord->articulations()) {
+                        bool rendered
+                              = std::find(articulationsRendered.begin(),
+                                          articulationsRendered.end(),
+                                          a)
+                              == std::end(articulationsRendered) ? false : true;
+                        if (rendered) break;
+
+                        articulationsRendered.emplace_back(a);
+                        articulationVelocity += a->getVelocityOffset();
+                        }
                   }
 
-            velo *= velocityMultiplier;
+            velo *= velocityMultiplier; // e.g. * 1.5
+
+            Tremolo* tremolo = (note->chord() ? note->chord()->tremolo() : nullptr);
+            bool doubleChordTrem = tremolo && (chord->tremoloChordType() != TremoloChordType::TremoloSingle);
+
+            int veloDelta = !doubleChordTrem ? articulationVelocity : e.veloOff();
+            velo += veloDelta;
+            velo += note->veloOffset();
+
+            if (isGrace) {
+                  // Use grace note's velocity from [Score::createGraceNotesPlayEvents] rather than
+                  // the above calculation of parent chord
+                  velo = staffVelocity + e.veloOff();
+                  }
+
+            // Velocity offset per-note is applied within playNote:
             playNote(events, note, channel, p, qBound(1, velo, 127), on, off, staffIdx);
             }
 
@@ -1277,15 +1310,17 @@ const Drumset* getDrumset(const Chord* chord)
 //   renderTremolo
 //---------------------------------------------------------
 
-void renderTremolo(Chord* chord, QList<NoteEventList>& ell)
+void renderTremolo(Chord* chord, QList<NoteEventList>& ell,
+                   int arpeggioDelta, int arpeggio2Delta,
+                   int onTime1, int onTime2,
+                   int gateTime1, int gateTime2,
+                   int vOff1, int vOff2)
       {
-      Segment* seg = chord->segment();
+      size_t firstChordNoteCount = chord->notes().size();
       Tremolo* tremolo = chord->tremolo();
-      int notes = int(chord->notes().size());
 
       // check if tremolo was rendered before for drum staff
-      const Drumset* ds = getDrumset(chord);
-      if (ds) {
+      if (const Drumset* ds = getDrumset(chord)) {
             for (Note* n : chord->notes()) {
                   DrumInstrumentVariant div = ds->findVariant(n->pitch(), chord->articulations(), chord->tremolo());
                   if (div.pitch != INVALID_PITCH && div.tremolo == tremolo->tremoloType())
@@ -1302,34 +1337,46 @@ void renderTremolo(Chord* chord, QList<NoteEventList>& ell)
             int t = MScore::division / (1 << (tremolo->lines() + chord->durationType().hooks()));
             if (t == 0) // avoid crash on very short tremolo
                   t = 1;
-            SegmentType st = SegmentType::ChordRest;
-            Segment* seg2 = seg->next(st);
-            int track = chord->track();
-            while (seg2 && !seg2->element(track))
-                  seg2 = seg2->next(st);
+            if (Chord* chord2 = tremolo->chord2()) {
 
-            if (!seg2)
-                  return;
+                  Arpeggio* chord1Arp     = chord->arpeggio();
+                  bool chord1ArpDown = chord1Arp && !chord1Arp->up();
+                  Arpeggio* chord2Arp     = chord2->arpeggio();
+                  bool chord2ArpDown = chord2Arp && !chord2Arp->up();
 
-            Element* s2El = seg2->element(track);
-            if (s2El) {
-                  if (!s2El->isChord())
-                        return;
-                  }
-            else
-                  return;
+                  size_t secondChordNoteCount
+                        = chord2->notes().size();
 
-            Chord* c2 = toChord(s2El);
-            if (c2->type() == ElementType::CHORD) {
-                  int notes2 = int(c2->notes().size());
-                  int tnotes = qMax(notes, notes2);
-                  int tticks = chord->ticks().ticks() * 2; // use twice the size
-                  int n = tticks / t;
-                  n /= 2;
-                  int l = 2000 * t / tticks;
-                  for (int k = 0; k < tnotes; ++k) {
+                  size_t maxNoteCount
+                        = std::max(firstChordNoteCount, secondChordNoteCount);
+
+                  int totalTicks = 2 * chord->ticks().ticks();
+                  int n  = (totalTicks / t);
+                  int div = n;
+                      n /= 2;
+                  int l  = (2000 * t) / totalTicks;
+
+                  // Second onTime didn't get accumulations through createPlayEvents since it's
+                  // synthetically applied through the first chord
+                  onTime2 *= 10;
+                  onTime1 /= n;
+                  onTime2 /= n;
+
+                  arpeggioDelta  /= (onTime1 != 0) ? div : 1;
+                  arpeggio2Delta /= (onTime2 != 0) ? div : 1;
+
+                  int firstChordIdx   = chord1ArpDown ? firstChordNoteCount  - 1 : 0;
+                  int secondChordIdx  = chord2ArpDown ? secondChordNoteCount - 1 : 0;
+                  int firstChordStep  = chord1ArpDown ? -1 : +1;
+                  int secondChordStep = chord2ArpDown ? -1 : +1;
+
+                  int startFirstChord  = chord1ArpDown ? firstChordNoteCount  - 1 : 0;
+                  int startSecondChord = chord2ArpDown ? secondChordNoteCount - 1 : 0;
+
+                  for (size_t k = 0; k < maxNoteCount; ++k) {
                         NoteEventList* events;
-                        if (k < notes) {
+
+                        if (k < firstChordNoteCount) {
                               // first chord has note
                               events = &ell[k];
                               events->clear();
@@ -1338,29 +1385,69 @@ void renderTremolo(Chord* chord, QList<NoteEventList>& ell)
                               // otherwise reuse note 0
                               events = &ell[0];
                               }
-                        if (k < notes && k < notes2) {
+
+                        int firstArpDelta
+                              = onTime1 + (arpeggioDelta  * startFirstChord)  + (firstChordStep * arpeggioDelta * k);
+                        int secondArpDelta
+                              = onTime2 + (arpeggio2Delta * startSecondChord) + (secondChordStep * arpeggio2Delta * k);
+
+                        if (k < firstChordNoteCount && k < secondChordNoteCount) {
                               // both chords have note
                               int p1 = chord->notes()[k]->pitch();
-                              int p2 = c2->notes()[k]->pitch();
-                              int dpitch = p2 - p1;
+                              int p2 = chord2->notes()[k]->pitch();
+                              int pitchDelta = p2 - p1;
                               for (int i = 0; i < n; ++i) {
-                                    events->append(NoteEvent(0, l * i * 2, l));
-                                    events->append(NoteEvent(dpitch, l * i * 2 + l, l));
+                                    int firstChordOnTime  = l * i * 2;
+                                    int secondChordOnTime = firstChordOnTime + l;
+
+                                    firstChordOnTime  += firstArpDelta;
+                                    secondChordOnTime += secondArpDelta;
+
+                                    int lenFirst  = l - firstArpDelta;
+                                    int lenSecond = l - secondArpDelta;
+
+                                    events->append(NoteEvent(0, firstChordOnTime, lenFirst, vOff1));
+                                          auto& e = events->back();
+                                          e.setLen( (e.len() * gateTime1) / 100);
+
+                                    events->append(NoteEvent(pitchDelta, secondChordOnTime, lenSecond, vOff2));
+                                          auto& e2 = events->back();
+                                          e2.setLen(e2.len() * gateTime2 / 100);
                                     }
+                              firstChordIdx  += firstChordStep;
+                              secondChordIdx += secondChordStep;
                               }
-                        else if (k < notes) {
+                        else if (k < firstChordNoteCount) {
                               // only first chord has note
-                              for (int i = 0; i < n; ++i)
-                                    events->append(NoteEvent(0, l * i * 2, l));
+                              for (int i = 0; i < n; ++i) {
+                                    int onTime = l * i * 2;
+                                    int delta = firstArpDelta;
+                                    onTime += delta;
+                                    int lenFirst = l - delta;
+
+                                    events->append(NoteEvent(0, onTime, lenFirst, vOff1));
+                                    auto& e = events->back();
+                                          e.setLen( (e.len() * gateTime1) / 100);
+                                    }
+                              firstChordIdx++;
                               }
                         else {
                               // only second chord has note
                               // reuse note 0 of first chord
                               int p1 = chord->notes()[0]->pitch();
-                              int p2 = c2->notes()[k]->pitch();
-                              int dpitch = p2-p1;
-                              for (int i = 0; i < n; ++i)
-                                    events->append(NoteEvent(dpitch, l * i * 2 + l, l));
+                              int p2 = chord2->notes()[k]->pitch();
+                              int pitchDelta = p2-p1;
+                              for (int i = 0; i < n; ++i) {
+                                    int onTime = l * i * 2 + l;
+                                    int delta = secondArpDelta;
+                                    onTime += delta;
+                                    int lenSecond = l - delta;
+
+                                    events->append(NoteEvent(pitchDelta, onTime, lenSecond, vOff2));
+                                    auto& e2 = events->back();
+                                          e2.setLen(e2.len() * gateTime2 / 100);
+                                    }
+                              secondChordIdx++;
                               }
                         }
                   }
@@ -1368,7 +1455,8 @@ void renderTremolo(Chord* chord, QList<NoteEventList>& ell)
                   qDebug("Chord::renderTremolo: cannot find 2. chord");
             }
       else if (chord->tremoloChordType() == TremoloChordType::TremoloSecondNote) {
-            for (int k = 0; k < notes; ++k) {
+            // All note events for tremolo were generated during first chord rendering
+            for (size_t k = 0; k < firstChordNoteCount; ++k) {
                   NoteEventList* events = &(ell)[k];
                   events->clear();
                   }
@@ -1379,7 +1467,7 @@ void renderTremolo(Chord* chord, QList<NoteEventList>& ell)
                   t = 1;
             int n = chord->ticks().ticks() / t;
             int l = 1000 / n;
-            for (int k = 0; k < notes; ++k) {
+            for (size_t k = 0; k < firstChordNoteCount; ++k) {
                   NoteEventList* events = &(ell)[k];
                   events->clear();
                   for (int i = 0; i < n; ++i)
@@ -1392,36 +1480,45 @@ void renderTremolo(Chord* chord, QList<NoteEventList>& ell)
 //   renderArpeggio
 //---------------------------------------------------------
 
-void renderArpeggio(Chord *chord, QList<NoteEventList> & ell)
+int renderArpeggio(Chord *chord, QList<NoteEventList> & ell, int prevOnTime)
       {
-      int notes = int(chord->notes().size());
-      int l = 64;
-      while (l && (l * notes > chord->upNote()->playTicks()))
-            l = 2*l / 3;
-      int start, end, step;
-      bool up = chord->arpeggio()->arpeggioType() != ArpeggioType::DOWN && chord->arpeggio()->arpeggioType() != ArpeggioType::DOWN_STRAIGHT;
-      if (up) {
-            start = 0;
-            end   = notes;
-            step  = 1;
-            }
-      else {
-            start = notes - 1;
-            end   = -1;
-            step  = -1;
-            }
-      int j = 0;
-      for (int i = start; i != end; i += step) {
-            NoteEventList* events = &(ell)[i];
+      (void) prevOnTime;
+      Arpeggio* arp = chord->arpeggio();
+      bool isUp = arp->up();
+      size_t noteCount = chord->notes().size();
+      size_t playTicks = chord->upNote()->playTicks();
+      int chordTick = chord->tick().ticks();
+      int fullLength = 1000;
+      int lengthFactor = 64;
+
+      while (lengthFactor && (lengthFactor * noteCount > playTicks))
+            lengthFactor *= 2/3;
+
+      qreal chordTempo = chord->score()->tempomap()->tempo(chordTick);
+      double tempoRatio = chordTempo / Score::defaultTempo();
+      int start = isUp ? 0         : noteCount - 1;
+      int end   = isUp ? noteCount : -1;
+      int step  = isUp ? +1        : -1;
+      int iteration = 0;
+      int delta     = 0;
+      qreal stretch = arp->Stretch();
+
+      for (int noteIndex = start; noteIndex != end; noteIndex += step) {
+            NoteEventList* events = &(ell)[noteIndex];
             events->clear();
 
-            auto tempoRatio = chord->score()->tempomap()->tempo(chord->tick().ticks()) / Score::defaultTempo();
-            int ot = (l * j * 1000) / chord->upNote()->playTicks() *
-               tempoRatio * chord->arpeggio()->Stretch();
+            int onTime  = (iteration * lengthFactor * fullLength) / playTicks;
+                onTime *= (tempoRatio * stretch);
 
-            events->append(NoteEvent(0, ot, 1000 - ot));
-            j++;
+            if (noteIndex == (start + step))
+                  delta = onTime;
+
+            int pitch = 0;
+            int noteLength = fullLength - onTime;
+            events->append(NoteEvent(pitch, onTime, noteLength));
+            iteration++;
             }
+      return delta;
       }
 
 //---------------------------------------------------------
@@ -1996,12 +2093,14 @@ bool graceNotesMerged(Chord* chord)
 //   renderChordArticulation
 //---------------------------------------------------------
 
-void renderChordArticulation(Chord* chord, QList<NoteEventList> & ell, int & gateTime)
+void renderChordArticulation(Chord* chord, QList<NoteEventList>& ell, int& onTime, int& gateTime, int& velocityOffset)
       {
       Segment* seg = chord->segment();
       Instrument* instr = chord->part()->instrument(seg->tick());
       int channel  = 0;  // note->subchannel();
-
+      std::vector<Articulation*> articulationsRendered;
+      signed int gateSum = 0;
+      signed int onSum = 0;
       for (unsigned k = 0; k < chord->notes().size(); ++k) {
             NoteEventList* events = &ell[k];
             Note *note = chord->notes()[k];
@@ -2016,11 +2115,93 @@ void renderChordArticulation(Chord* chord, QList<NoteEventList> & ell, int & gat
                   for (Articulation*& a : chord->articulations()) {
                         if (!a->playArticulation())
                               continue;
-                        if (!renderNoteArticulation(events, note, false, a->symId(), a->ornamentStyle()))
+                        if (!renderNoteArticulation(events, note, false, a->symId(), a->ornamentStyle())) {
+                              bool rendered
+                                    = std::find(articulationsRendered.begin(),
+                                                articulationsRendered.end(),
+                                                a)
+                                    == std::end(articulationsRendered)
+                                          ? false
+                                          : true;
+
+                              if (rendered) break;
+
+                              // NOTE: Instrument definition to Articulation Definition occurs here: (e.g. 95 to 50)
                               instr->updateGateTime(&gateTime, channel, a->articulationName());
+
+                              // NOTE: PRE alterations can and will override gate/onTime changes made here
+                              Fraction noteTick       = chord->tick();
+                              qreal velocityMultiplier = instr->getVelocityMultiplier(a->articulationName());
+
+                              int storedOnTime                 = a->getOnTime();
+                              int storedGateTime               = a->getGateTime();
+                              int storedArticulationDelta      = a->getVelocityOffset();
+                              int storedUserVelocityDelta      = a->getVelocityUserOffset();
+                              int storedStaffDynamic           = a->getStaffDynamic();
+
+                              int currentStaffVelocity         = chord->staff()->velocities().val(noteTick);
+                              int finalDefaultVelocity         = currentStaffVelocity * velocityMultiplier;
+                              int calculatedArticulationDelta  = std::abs(finalDefaultVelocity - currentStaffVelocity);
+
+                              bool initializeGateInspectorValue
+                                    = (storedGateTime == 0);
+
+                              if (initializeGateInspectorValue) {
+                                    a->setGateTime(gateTime);
+                                    }
+
+                              else { // Conform to Inspector value
+                                    gateTime = storedGateTime;
+                                    }
+
+                              gateSum += (-100 + gateTime);
+                              onSum += storedOnTime;
+
+                              //  _  _  ____  __    _____  ___  ____  ____  _  _
+                              // ( \/ )( ___)(  )  (  _  )/ __)(_  _)(_  _)( \/ )
+                              //  \  /  )__)  )(__  )(_)(( (__  _)(_   )(   \  /
+                              //   \/  (____)(____)(_____)\___)(____) (__)  (__)
+                              //
+
+                              int calculatedUserVelocityDelta
+                                    = (storedArticulationDelta - calculatedArticulationDelta);
+                              bool uninitializedArticulationVelocity
+                                    = (storedArticulationDelta == 0);
+                              bool velocityDeltaHasChanged
+                                    = (storedArticulationDelta != calculatedArticulationDelta);
+
+                              if (uninitializedArticulationVelocity) {
+                                    calculatedUserVelocityDelta = 0;
+                                    }
+
+                              else if (velocityDeltaHasChanged) {
+                                    bool staffDynamicsHaveChanged
+                                          = (storedStaffDynamic != currentStaffVelocity);
+                                    if (staffDynamicsHaveChanged) {
+                                          calculatedUserVelocityDelta = storedUserVelocityDelta;
+                                          }
+                                    }
+
+                              int finalVelocity = (storedStaffDynamic == 0) // 0 = score-loading phase
+                                          ? storedArticulationDelta
+                                          : calculatedArticulationDelta + calculatedUserVelocityDelta;
+
+                              a->setVelocityOffset
+                                    (finalVelocity);
+                              a->setVelocityUserOffset
+                                    (calculatedUserVelocityDelta);
+                              a->setStaffDynamic
+                                    (currentStaffVelocity);
+
+                              // Accumulate velocity
+                              velocityOffset += finalVelocity;
+                              articulationsRendered.emplace_back(a);
+                              }
                         }
                   }
             }
+      // Accumulate ontime
+      onTime += onSum;
       }
 
 //---------------------------------------------------------
@@ -2057,39 +2238,87 @@ static QList<NoteEventList> renderChord(Chord* chord, int gateTime, int ontime, 
       if (chord->notes().empty())
             return ell;
 
-      size_t notes = chord->notes().size();
-      for (size_t i = 0; i < notes; ++i)
+      size_t notesCount = chord->notes().size();
+      for (size_t i = 0; i < notesCount; ++i)
             ell.append(NoteEventList());
 
-      bool arpeggio = false;
-      if (chord->tremolo()) {
-            renderTremolo(chord, ell);
+      bool arpeggio      = (chord->arpeggio() && chord->arpeggio()->playArpeggio());
+      int arpeggioDelta  = 0;
+      int arpeggio2Delta = 0;
+
+      int gateTime2 = gateTime;
+      int velocityOffset1 = 0;
+      int velocityOffset2 = 0;
+      bool hasArticulations = !chord->articulations().isEmpty();
+
+      int articulationOnTime1 = ontime;
+      int articulationOnTime2 = 0;
+
+      renderChordArticulation(chord, ell, articulationOnTime1, gateTime, velocityOffset1);
+      Tremolo* tremolo = chord->tremolo();
+      bool twoChordTremolo = tremolo && (chord->tremoloChordType() != TremoloChordType::TremoloSingle);
+      bool firstOfTremolo = (chord->tremoloChordType() == TremoloChordType::TremoloFirstNote);
+
+      if (arpeggio) {
+            arpeggioDelta = renderArpeggio(chord, ell, ontime);
             }
-      else if (chord->arpeggio() && chord->arpeggio()->playArpeggio()) {
-            renderArpeggio(chord, ell);
-            arpeggio = true;
+
+      if (tremolo) {
+            if (firstOfTremolo) {
+                  if (Chord* secondChord = tremolo->chord2()) {
+                        QList<NoteEventList> ell2;
+                        if (!secondChord->notes().empty()) {
+                              for (size_t i = 0; i < secondChord->notes().size(); ++i) {
+                                    ell2.append(NoteEventList());
+                                    }
+                              // Obtain gate/velocity from articulation
+                              renderChordArticulation(secondChord, ell2, articulationOnTime2, gateTime2, velocityOffset2);
+
+                              if (secondChord->arpeggio() && secondChord->arpeggio()->playArpeggio()) {
+                                    // Obtain arpeggio delta
+                                    arpeggio2Delta = renderArpeggio(secondChord, ell2, articulationOnTime2);
+                                    }
+                              }
+                        }
+                  }
+
+            renderTremolo(chord, ell,
+                          arpeggioDelta, arpeggio2Delta,
+                          articulationOnTime1, articulationOnTime2,
+                          gateTime, gateTime2,
+                          velocityOffset1, velocityOffset2);
             }
-      else
-            renderChordArticulation(chord, ell, gateTime);
+
+      bool notSecondOfTremolo  = (chord->tremoloChordType() != TremoloChordType::TremoloSecondNote);
+      bool graceNotesAfter = (trailtime != 0);
 
       // Check each note and apply gateTime
-      for (unsigned i = 0; i < notes; ++i) {
+      // Arpeggios allow for staccato gating
+      for (size_t i = 0; i < notesCount; ++i) {
             NoteEventList* el = &ell[i];
             if (!shouldRenderNote(chord->notes()[i])) {
                   el->clear();
                   continue;
                   }
-            if (arpeggio)
-                  continue; // don't add extra events and apply gateTime to arpeggio
+
+            // Let arpeggios with no articulations be not affected by gateTime change
+            if (arpeggio && !hasArticulations)
+                  continue;
 
             // If we are here then we still need to render the note.
             // Render its body if necessary and apply gateTime.
-            if (el->size() == 0 && chord->tremoloChordType() != TremoloChordType::TremoloSecondNote) {
+            if (el->empty() && notSecondOfTremolo) {
                   el->append(NoteEvent(0, ontime, 1000 - ontime - trailtime));
                   }
-            if (trailtime == 0) // if trailtime is non-zero that means we have graceNotesAfter, so we don't need additional gate time.
-                  for (NoteEvent& e : ell[i])
-                        e.setLen(e.len() * gateTime / 100);
+
+            if (!graceNotesAfter && !twoChordTremolo) {
+                  // Two-chord tremolos already had length calculated
+                  for (NoteEvent& e : ell[i]) {
+                        int updatedLength = (arpeggio && hasArticulations) ? (gateTime * 10) - e.ontime()
+                                                                           : (e.len() * gateTime) / 100;
+                        e.setLen(updatedLength);
+                        }
+                  }
             }
       return ell;
       }
@@ -2166,9 +2395,13 @@ void Score::createGraceNotesPlayEvents(const Fraction& tick, Chord* chord, int& 
             QList<NoteEventList> el;
             Chord* gc = gnb.at(i);
             size_t nn = gc->notes().size();
+            int velocityOffset = 0;
+            for (Articulation* a : gc->articulations()) {
+                  velocityOffset += a->getVelocityOffset();
+                  }
             for (unsigned ii = 0; ii < nn; ++ii) {
                   NoteEventList nel;
-                  nel.append(NoteEvent(0, on, graceDuration));
+                  nel.append(NoteEvent(0, on, graceDuration, velocityOffset));
                   el.append(nel);
                   }
 
@@ -2238,6 +2471,13 @@ void Score::createPlayEvents(Chord* chord)
       // Check if swing needs to be applied
       if (unit && !chord->tuplet()) {
             swingAdjustParams(chord, gateTime, ontime, unit, ratio);
+            }
+
+      int onTimeDelta = 0;
+      for (Articulation* a : chord->articulations()) {
+            int storedOnTime = a->getOnTime();
+            onTimeDelta = (storedOnTime * 10);
+            ontime += onTimeDelta;
             }
       //
       //    render normal (and articulated) chords
