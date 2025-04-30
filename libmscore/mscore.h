@@ -337,6 +337,7 @@ class MScore {
       static QColor cursorColor;
       static QColor lassoColor;
       static bool   lassoBorderEnabled;
+      static bool   lassoAnnotations;
       static QColor defaultColor;
       static QColor invisibleElementsColor;
       static QColor singleNoteSelectionColor;
