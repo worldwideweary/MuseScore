@@ -2746,6 +2746,17 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::MAIN_WINDOW,
          STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-lasso-annotations",
+         QT_TRANSLATE_NOOP("action","Annotations (Lasso/Dbl-Click Text)"),
+         QT_TRANSLATE_NOOP("action","Annotations (Lasso/Dbl-Click Text)"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
          "toggle-options-fingering-tightening-layout",
          QT_TRANSLATE_NOOP("action","Fingering: Tightening (Multi-Voicing)"),
          QT_TRANSLATE_NOOP("action","Fingering: Tightening (Multi-Voicing)"),

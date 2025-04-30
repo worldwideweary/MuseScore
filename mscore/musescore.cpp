@@ -574,6 +574,7 @@ void updateExternalValuesFromPreferences() {
 
       MScore::lassoColor = preferences.getColor(PREF_UI_SCORE_LASSO_COLOR);
       MScore::lassoBorderEnabled = preferences.getBool(PREF_UI_SCORE_LASSO_BORDER_ENABLED);
+      MScore::lassoAnnotations = preferences.getBool(PREF_UI_SCORE_LASSO_ANNOTATIONS);
       MScore::gripsColor = preferences.getColor(PREF_SCORE_GRIPS_COLOR);
 
       MScore::overrideAllColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_ALL_ELEMENTS_COLOR);
