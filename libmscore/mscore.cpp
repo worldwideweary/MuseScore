@@ -126,6 +126,7 @@ bool    MScore::fingerTextAutoForwardAlphaNumeric;
 
 bool    MScore::disableVerticalMouseDragOfNotes;
 bool    MScore::lassoWithoutShift;
+bool    MScore::lassoAnnotations;
 
 bool    MScore::palettesHideWhenApplied;
 
