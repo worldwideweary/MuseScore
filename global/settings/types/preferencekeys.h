@@ -129,6 +129,7 @@
 #define PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT           "ui/score/noteEntry/disableMouseEntry"
 #define PREF_UI_SCORE_DISABLE_NOTE_DRAG_VERTICAL            "ui/score/mouse/behavior/disableNoteDragVertical"
 #define PREF_UI_SCORE_LASSO_WITHOUT_SHIFT                   "ui/score/mouse/behavior/enableLassoWithoutShift"
+#define PREF_UI_SCORE_LASSO_ANNOTATIONS                     "ui/score/mouse/behavior/lasso/annotations"
 #define PREF_UI_SCORE_FADE_FOCUS                            "ui/score/fadeFocusUsesInvisibleColor"
 #define PREF_UI_SCORE_CURRENT_SYS_ON_TOP                    "ui/score/currentSystemAlwaysOnTop"
 #define PREF_UI_SCORE_OMIT_ADDING_LINKED_LINES              "ui/score/lines/linked/omit"

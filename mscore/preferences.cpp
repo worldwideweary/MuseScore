@@ -243,6 +243,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_SCORE_NOTE_INPUT_ENTRY_STATUS_ENABLE,            new BoolPreference(false)},
             {PREF_UI_SCORE_DISABLE_NOTE_DRAG_VERTICAL,             new BoolPreference(false)},
             {PREF_UI_SCORE_LASSO_WITHOUT_SHIFT,                    new BoolPreference(true)},
+            {PREF_UI_SCORE_LASSO_ANNOTATIONS,                      new BoolPreference(true)},
             {PREF_SCORE_STYLE_DEFAULTSTYLEFILE,                    new StringPreference("", false)},
             {PREF_SCORE_STYLE_PARTSTYLEFILE,                       new StringPreference("", false)},
             {PREF_SCORE_PLAYBACK_CURSOR_ENTIRE_MEASURE,            new BoolPreference(false, true)},

@@ -4787,20 +4787,26 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
             if (!sp->visible() && ((startMeas && startMeas->isMMRest()) || (endMeas && endMeas->isMMRest()))
                 && score()->styleB(Sid::createMultiMeasureRests))
                   continue;
-            if (sp->tick() < etick && sp->tick2() > stick) {
-                  if (sp->isOttava()) {
-                        if (sp->staff()->staffType(sp->tick())->isTabStaff())
-                              continue;
-                        ottavas.push_back(sp);
+            if (sp->tick() < etick) {
+                  if (sp->tick2() > stick) {
+                        if (sp->isOttava()) {
+                              if (sp->staff()->staffType(sp->tick())->isTabStaff())
+                                    continue;
+                              ottavas.push_back(sp);
+                              }
+                        else if (sp->isPedal())
+                              pedal.push_back(sp);
+                        else if (sp->isVolta())
+                              voltas.push_back(sp);
+                        else if (sp->isHairpin())
+                              hairpins.push_back(sp);
+                        else if (!sp->isSlur() && !sp->isVolta() && !sp->isTrill())    // slurs are already
+                              spanner.push_back(sp);
                         }
-                  else if (sp->isPedal())
-                        pedal.push_back(sp);
-                  else if (sp->isVolta())
-                        voltas.push_back(sp);
-                  else if (sp->isHairpin())
-                        hairpins.push_back(sp);
-                  else if (!sp->isSlur() && !sp->isVolta() && !sp->isTrill())    // slurs are already
-                        spanner.push_back(sp);
+                  else if (sp->tick2() == stick && sp->tick() == stick) {
+                        if (sp->isTextLine())
+                              spanner.push_back(sp);
+                        }
                   }
             }
       processLines(system, hairpins);

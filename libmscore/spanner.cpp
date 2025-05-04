@@ -628,10 +628,16 @@ void Spanner::computeEndElement()
 
       switch (_anchor) {
             case Anchor::SEGMENT: {
+                  bool zeroTicks = ticks().isZero();
                   if (track2() == -1 || isHairpin())
                         setTrack2(track());
-                  if (ticks().isZero() && isTextLine() && parent())   // special case palette
-                        setTicks(score()->lastSegment()->tick() - _tick);
+                  if (zeroTicks && isTextLine() && parent()) {
+                        // Lasso-created lines need to have zero-tick ability, yet this
+                        // "special case palette" seems to have a parent... will bypass for now
+
+                        // special case palette
+                        // setTicks(score()->lastSegment()->tick() - _tick);
+                        }
 
                   if (isLyricsLine() && toLyricsLine(this)->isEndMelisma()) {
                         // lyrics endTick should already indicate the segment we want
@@ -658,7 +664,10 @@ void Spanner::computeEndElement()
                               if (isHairpin()) {
                                     // cr = (cr->track() != track()) ? cr->segment()->nextChordRest(track(), true) : cr;
                                     }
-                              _endElement = cr;
+                              if (zeroTicks && isTextLine() && parent()) {
+                                    _endElement = _startElement;
+                                    }
+                              else _endElement = cr;
                               }
                         }
                   if (!_endElement) {
@@ -670,8 +679,13 @@ void Spanner::computeEndElement()
                         ChordRest* cr = endCR();
                         Fraction nticks = cr->tick() + cr->actualTicks() - _tick;
                         if ((_ticks - nticks).isNotZero()) {
-                              qDebug("%s ticks changed, %d -> %d", name(), _ticks.ticks(), nticks.ticks());
-                              setTicks(nticks);
+                              if (isTextLine() && zeroTicks) {
+                                    // Leave ticks alone (used for same-segment anchored lines (to maintain angles)
+                                    }
+                              else {
+                                    qDebug("%s ticks changed, %d -> %d", name(), _ticks.ticks(), nticks.ticks());
+                                    setTicks(nticks);
+                                    }
                               if (isOttava())
                                     staff()->updateOttava();
                               }

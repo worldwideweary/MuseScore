@@ -457,8 +457,6 @@ void Score::cmdAddSpanner(Spanner* spanner, int staffIdx, Segment* startSegment,
       Fraction tick2;
       if (!endSegment)
             tick2 = lastSegment()->tick();
-      else if (endSegment == startSegment)
-            tick2 = startSegment->measure()->last()->tick();
       else
             tick2 = endSegment->tick();
       spanner->setTick2(tick2);
@@ -5394,6 +5392,9 @@ bool Score::cmdToggleOptions(const QString& cmd)
             }
       else if (cmd.endsWith("lasso-border")) {
             preferences.setPreference(PREF_UI_SCORE_LASSO_BORDER_ENABLED, checked=toggle(MScore::lassoBorderEnabled));
+            }
+      else if (cmd.endsWith("lasso-annotations")) {
+            preferences.setPreference(PREF_UI_SCORE_LASSO_ANNOTATIONS, checked=toggle(MScore::lassoAnnotations));
             }
       else if (cmd.endsWith("move-cursor-by-beat")) {
             preferences.setPreference(PREF_SCORE_PLAYBACK_CURSOR_MOVE_BY_BEAT, checked=toggle(MScore::cursorMoveByBeat));

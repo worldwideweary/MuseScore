@@ -543,6 +543,10 @@ void LineSegment::rebaseAnchors(EditData& ed, Grip grip)
       {
       if (line()->anchor() != Spanner::Anchor::SEGMENT)
             return;
+
+      if (!line()->autoplace())
+            return;
+
       // don't change anchors on keyboard adjustment or if Ctrl is pressed
       // (Ctrl+Left/Right is handled elsewhere!)
       if (ed.key == Qt::Key_Left  || (ed.key == Qt::Key_J && MScore::nudgeUsesIJKL) ||
@@ -895,6 +899,7 @@ QPointF SLine::linePos(Grip grip, System** sys) const
                                     qreal x2 = cr->x() /* TODO + cr->space().rw() */;
                                     Segment* currentSeg = toSegment(endElement()->parent());
                                     Segment* seg = score()->tick2segmentMM(tick2(), false, SegmentType::ChordRest);
+                                    bool sameSegTextLine = (isTextLine() && tick() == tick2());
                                     if (!seg) {
                                           // no end segment found, use measure width
                                           x2 = endElement()->parent()->parent()->width() - sp;
@@ -921,7 +926,8 @@ QPointF SLine::linePos(Grip grip, System** sys) const
                                     else {
                                           // next chordrest is in next measure
                                           // lay out to end (barline) of current measure instead
-                                          seg = currentSeg->next(SegmentType::EndBarLine);
+                                          if (!sameSegTextLine)
+                                                seg = currentSeg->next(SegmentType::EndBarLine);
                                           if (!seg)
                                                 seg = currentSeg->measure()->last();
                                           // allow lyrics hyphen to extend to barline
@@ -931,6 +937,13 @@ QPointF SLine::linePos(Grip grip, System** sys) const
                                           x2 = qMax(x2, x3 - gap);
                                           }
                                     x = x2 - endElement()->parent()->x();
+                                    if (sameSegTextLine) {
+                                          if (auto scr = toChordRest(startElement())) {
+                                                cr = scr;
+                                                x = 0;
+                                                }
+                                          }
+
                                     }
                               }
                         }

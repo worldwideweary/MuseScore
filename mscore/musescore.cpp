@@ -360,6 +360,7 @@ const std::list<const char*> MuseScore::_allToggleOptionsMenuEntries {
             "toggle-options-mouse-hover",
             "toggle-options-vertical-note-drag-allowed",
             "toggle-options-lasso-border",
+            "toggle-options-lasso-annotations",
             "toggle-options-fade-focus",
             "toggle-options-current-system-on-top",
             };
@@ -574,6 +575,7 @@ void updateExternalValuesFromPreferences() {
 
       MScore::lassoColor = preferences.getColor(PREF_UI_SCORE_LASSO_COLOR);
       MScore::lassoBorderEnabled = preferences.getBool(PREF_UI_SCORE_LASSO_BORDER_ENABLED);
+      MScore::lassoAnnotations = preferences.getBool(PREF_UI_SCORE_LASSO_ANNOTATIONS);
       MScore::gripsColor = preferences.getColor(PREF_SCORE_GRIPS_COLOR);
 
       MScore::overrideAllColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_ALL_ELEMENTS_COLOR);
@@ -869,6 +871,8 @@ void MuseScore::populateToggleOptionsMenu()
                         pref = MScore::honorEnPassantVisibility;
                   else if (0==strcmp(option, "lasso-border"))
                         pref = MScore::lassoBorderEnabled;
+                  else if (0==strcmp(option, "lasso-annotations"))
+                        pref = MScore::lassoAnnotations;
                   else if (0==strcmp(option, "move-cursor-by-beat"))
                         pref = MScore::cursorMoveByBeat;
                   else if (0==strcmp(option, "move-cursor-by-measure"))

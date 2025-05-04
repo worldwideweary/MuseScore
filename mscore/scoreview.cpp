@@ -1668,8 +1668,11 @@ void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* ed
       bool hoverUnder = opaqueHoverColor;
       bool haveHover = MScore::hoverColorEnabled && dropTarget; 
       
-      if (haveHover && hoverUnder)
-            drawHoverHighlight(painter, *dropTarget);
+      if (haveHover && hoverUnder) {
+            if (state != ViewState::LASSO) {
+                  drawHoverHighlight(painter, *dropTarget);
+                  }
+            }
 
       // Option: Noteheads behind staff-lines
       // Requires stem to be drawn before noteheads, and a multi-pass approach
@@ -1745,8 +1748,12 @@ void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* ed
                   }
             }
 
-      if (haveHover && !hoverUnder)
-            drawHoverHighlight(painter, *dropTarget);
+      if (haveHover && !hoverUnder) {
+            if (state != ViewState::LASSO) {
+                  drawHoverHighlight(painter, *dropTarget);
+                  }
+            }
+
       }
 
 //---------------------------------------------------------
@@ -1875,7 +1882,7 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                   if (!lasso->bbox().isEmpty()) {
                         lassoToDraw = lasso;
                         bool drawLassoBehindElements = (MScore::lassoColor.alpha() > 200);
-                        if (drawLassoBehindElements) {
+                        if (drawLassoBehindElements && !dropTarget) {
                               lassoToDraw->draw(&p);
                               lassoToDraw = nullptr;
                               }
@@ -2110,7 +2117,7 @@ void ScoreView::paint(const QRect& r, QPainter& p)
             editData.element->drawEditMode(&p, editData);
 
       // Lasso (Transparent overlay) / FOTO capture
-      else if (lassoToDraw) {
+      else if (lassoToDraw && !dropTarget) {
             if (state == ViewState::LASSO)
                   lassoToDraw->draw(&p);
             else
@@ -3119,7 +3126,19 @@ void ScoreView::cmd(const char* s)
                         cv->changeState(ViewState::NORMAL);
                   }},
             {{"picture"}, [](ScoreView* cv, const QByteArray&) {
-                  cv->cmdAddEmptyImage(true, true);
+                  Element* e = nullptr;
+                  if (ChordRest* fcr = cv->score()->selection().firstChordRest()) {
+                        if (fcr->isChord())
+                              e = toChord(fcr)->upNote();
+                        else
+                              e = fcr;
+                        }
+
+                  if (!e) return;
+
+                  if (Measure* fm = e->findMeasure()) {
+                        cv->cmdAddEmptyImage(MScore::lassoBorderEnabled, true, QRectF(), *fm);
+                        }
                   }},
             {{"add-slur"}, [](ScoreView* cv, const QByteArray&) {
                   cv->cmdAddSlur();
@@ -3137,10 +3156,10 @@ void ScoreView::cmd(const char* s)
                         cv->cmdAddPedal(HookType::HOOK_90, HookType::HOOK_90);
                   }},
             {{"add-noteline"}, [](ScoreView* cv, const QByteArray&) {
-                  cv->cmdAddNoteLine(false);
+                  cv->cmdAddLine(false);
                   }},
             {{"add-noteline-alt"}, [](ScoreView* cv, const QByteArray&) {
-                  cv->cmdAddNoteLine(true);
+                  cv->cmdAddLine(true);
                   }},
             {{"chord-text"}, [](ScoreView* cv, const QByteArray&) {
                   cv->changeState(ViewState::NORMAL);
@@ -4547,13 +4566,98 @@ void ScoreView::dragScoreView(QMouseEvent* ev)
 
 void ScoreView::doDragLasso(QMouseEvent* ev)
       {
+      // TODO: Allow no selection to occur when beginning drag (dragging is registerd after "normal click/select")
+
+      bool shift = ev->modifiers() & Qt::ShiftModifier;
+      bool ctrl  = ev->modifiers() & Qt::ControlModifier;
+            (void) ctrl;
+      bool alt   = ev->modifiers() & Qt::AltModifier;
+            (void) alt;
+
+      static bool hasSwitchedBorderStyle = false;
+      if (!shift && hasSwitchedBorderStyle)
+            hasSwitchedBorderStyle = false;
+
       TourHandler::startTour("select-tour");
       QPointF p = toLogical(ev->pos());
       _score->addRefresh(lasso->canvasBoundingRect());
       QRectF r;
+
+      lasso->startPoint = editData.startMove;
+      lasso->endPoint = QPointF(p.x(), p.y());
+
+      // qDebug() << "Lasso-drag start:" << editData.startMove << "current position:" << lasso->endPoint;
+
       r.setCoords(editData.startMove.x(), editData.startMove.y(), p.x(), p.y());
       lasso->setbbox(r.normalized());
       QRectF _lassoRect(lasso->bbox());
+
+      if (dropTarget) {
+            if (dropTarget->isLineSegment()) {
+                  // Update line positioning:
+                  QPointF startDest = lasso->startPoint;
+                  QPointF endDest = lasso->endPoint;
+                  LineSegment* tls = toLineSegment(const_cast<Element*>(dropTarget));
+                  Element* startElement = tls->line()->startElement();
+                  Measure* startM = startElement->findMeasure();
+
+                  Segment* startSegment = startM->findFirstR(SegmentType::ChordRest, startM->tick());
+                  Segment* endSegment = startSegment;
+
+                  qreal startX = startSegment->canvasBoundingRect().left();
+                  qreal endX = endSegment->canvasBoundingRect().left();
+
+                  qreal sx1 = startX;
+                  qreal sy1 = startSegment->canvasBoundingRect().y();
+                  qreal mx = startDest.x();
+                  qreal my = startDest.y();
+                  qreal diffX = (mx > sx1) ? (mx - sx1) : -(sx1 - mx);
+                  qreal diffY = (my > sy1) ? (my - sy1) : -(sy1 - my);
+
+                  // START: (OFFSET requires UNSTYLED property)
+                  tls->setOffset(diffX, diffY);
+
+                  // END:
+                  qreal sx2 = endX + diffX;
+                  qreal sy2 = endSegment->canvasBoundingRect().y() + diffY;
+                  qreal mx2 = endDest.x();
+                  qreal my2 = endDest.y();
+                  qreal diffX2 = (mx2 > sx2) ? (mx2 - sx2) : -(sx2 - mx2);
+                  qreal diffY2 = (my2 > sy2) ? (my2 - sy2) : -(sy2 - my2);
+
+                  qreal sdx = startDest.x();
+                  qreal edx = endDest.x();
+                  qreal sdy = startDest.y();
+                  qreal edy = endDest.y();
+
+                  qreal deltaX = sdx > edx ? (sdx - edx) : -(edx - sdx);
+                  qreal deltaY = sdy > edy ? (sdy - edy) : -(edy - sdy);
+                  int straightThreshold = 25;
+                  if (std::abs(deltaX) < straightThreshold) {
+                        diffX2 += deltaX;
+                        }
+                  if (std::abs(deltaY) < straightThreshold) {
+                        diffY2 += deltaY;
+                        }
+
+                  tls->setUserOff2(QPointF(diffX2, diffY2));
+                  tls->triggerLayout();
+                  }
+            }
+      else if (ctrl && MScore::lassoAnnotations) {
+            // Create line:
+            QPointF lassoTopLeft = lasso->canvasBoundingRect().topLeft();
+            QPointF lassoBottomRight = lasso->canvasBoundingRect().bottomRight();
+            Element* el = nearestElement(lassoTopLeft, lassoBottomRight);
+            if (const Measure* m = nearestMeasure(el)) {
+                  dropTarget = cmdAddLine(false, m, nullptr, lasso->startPoint, lasso->endPoint);
+                  }
+            }
+      else if (shift && !hasSwitchedBorderStyle) {
+            MScore::lassoBorderEnabled = !MScore::lassoBorderEnabled;
+            hasSwitchedBorderStyle = true;
+            }
+
       r = _matrix.mapRect(_lassoRect);
       QSize sz(r.size().toSize());
       mscore->statusBar()->showMessage(QString("%1 x %2").arg(sz.width()).arg(sz.height()), 3000);
@@ -4567,10 +4671,44 @@ void ScoreView::doDragLasso(QMouseEvent* ev)
 
 void ScoreView::endLasso()
       {
+      Qt::KeyboardModifiers currentModifiers = keyMods; 
+            (void) currentModifiers;
+
+      keyMods = Qt::NoModifier;
       _score->lassoSelect(lasso->bbox());
       _score->addRefresh(lasso->canvasBoundingRect());
+
+      if (MScore::lassoAnnotations) {
+            QString err;
+            QPointF lassoTopLeft = lasso->canvasBoundingRect().topLeft();
+            QPointF lassoBottomRight = lasso->canvasBoundingRect().bottomRight();
+            if (const Element* el = nearestElement(lassoTopLeft, lassoBottomRight)) {
+                  if (const Measure* m = nearestMeasure(el)) {
+                        if (!dropTarget) {
+                              bool framed = MScore::lassoBorderEnabled;
+                              bool transparent = MScore::lassoBorderEnabled;
+                              QRectF lassoRect(lassoTopLeft, QSizeF(lasso->width(), lasso->height()));
+                              if (Image* img = cmdAddEmptyImage(framed, transparent, lassoRect, *m)) {
+                                    Segment* fs = m->findFirstR(SegmentType::ChordRest, m->tick());
+                                    QPointF measureTopLeft = fs->canvasBoundingRect().topLeft();
+                                    qreal lx = lassoTopLeft.x();
+                                    qreal mx = measureTopLeft.x();
+                                    qreal ly = lassoTopLeft.y();
+                                    qreal my = measureTopLeft.y();
+
+                                    qreal diffX = (lx > mx) ? (lx - mx) : -(mx - lx);
+                                    qreal diffY = (ly > my) ? (ly - my) : -(my - ly);
+                                    img->setOffset(diffX, diffY);
+                                    } else err = "uncreated empty image";
+                              }
+                        } else err = "no near measure found";
+                  } else err = "no near element found";
+            if (!err.isEmpty()) qDebug() << "Error:" << err;
+            }
+
+      dropTarget = nullptr;
       lasso->setbbox(QRectF());
-      _score->lassoSelectEnd();
+      MScore::lassoAnnotations ? _score->selection().clear() : _score->lassoSelectEnd();
       _score->update();
       mscore->endCmd();
       }
@@ -5279,36 +5417,40 @@ void ScoreView::startUndoRedo(bool undo)
 //    to be invoked by the "picture" shortcut.
 //---------------------------------------------------------
 
-void ScoreView::cmdAddEmptyImage(bool framed, bool fullyTransparent)
+Image* ScoreView::cmdAddEmptyImage(bool framed, bool fullyTransparent, const QRectF& r, const Measure& m)
       {
-      Element* e = nullptr;
-      if (auto fcr = _score->selection().firstChordRest()) {
-            if (fcr->isChord())
-                  e = toChord(fcr)->upNote();
-            else
-                  e = fcr;
-            }
-      if (!e)
-            return;
-
       Image* s = new Image(_score);
       s->setImageType(ImageType::NONE);
       s->setAutoplace(false);
+      s->setZ(33);
+      s->setVoice(0);
 
-      int alpha = fullyTransparent ? 0 : 88;
-      s->setColor(QColor(0, 0, 0, alpha));
+      int alpha = fullyTransparent ? 0 : MScore::lassoColor.alpha();
+      if (framed && fullyTransparent)
+            s->setFrameColor(MScore::lassoColor);
 
-      qreal frameWidth = framed ? SPATIUM20 : 0.0;
+      s->setColor(QColor(MScore::lassoColor.red(), MScore::lassoColor.green(), MScore::lassoColor.blue(),  alpha));
+
+      qreal frameWidth = framed ? SPATIUM20 * 2.0 : 0.0;
       s->setFrameWidth(frameWidth);
+      s->setParent(m.findFirstR(SegmentType::ChordRest, m.tick()));
 
-      s->setParent(e);
-      s->setSize(QSizeF(10, 10));
+      qreal w = 10;
+      qreal h = 10;
+      if (!r.isEmpty()) {
+            QSizeF sz = s->pixel2size(QSizeF(r.width(), r.height()));
+            w = sz.width();
+            h = sz.height();
+            }
 
+      s->setSize(QSizeF(w, h));
       s->setLockAspectRatio(false);
 
       _score->startCmd();
          _score->undoAddElement(s);
       _score->endCmd();
+
+      return s;
       }
 
 //---------------------------------------------------------
@@ -5988,10 +6130,73 @@ void ScoreView::cmdAddPedal(HookType beginHook, HookType endHook)
 //     + a centered text letter "H"
 //---------------------------------------------------------
 
-void ScoreView::cmdAddNoteLine(bool hiddenLineWithText)
+LineSegment* ScoreView::cmdAddLine(const bool hiddenLineWithText, const Measure* startM, const Measure* endM, const QPointF startDest, const QPointF endDest)
       {
       Note* firstNote = 0;
       Note* lastNote  = 0;
+      qreal szEndFont = 24.0;
+
+      if (startM && !endM /* endM is currently superfluous */) {
+            Segment* startSegment = startM->findFirstR(SegmentType::ChordRest, startM->tick());
+            Segment* endSegment   = startSegment;
+            TextLine* tl = static_cast<TextLine*>(Element::create(ElementType::TEXTLINE, score()));
+               tl->setScore(_score);
+               tl->setAnchor(Spanner::Anchor::SEGMENT); // Alternatively: Anchor::MEASURE
+               tl->setVoice(0);
+               tl->setDiagonal(true);
+               tl->setPropertyFlags(Pid::OFFSET,         PropertyFlags::UNSTYLED);
+               tl->setPropertyFlags(Pid::END_FONT_SIZE,  PropertyFlags::UNSTYLED);
+               tl->setPropertyFlags(Pid::END_TEXT_ALIGN, PropertyFlags::UNSTYLED);
+               tl->layout(); // layout creates segment
+               tl->setAutoplace(false);
+               tl->setEndTextAlign(Align::HCENTER | Align::VCENTER);
+               tl->setEndText("<sym>arrowheadBlackRight</sym>");
+               tl->setEndFontSize(szEndFont);
+               tl->styleChanged();
+
+            LineSegment* tls = tl->frontSegment();
+            tls->setPropertyFlags(Pid::OFFSET, PropertyFlags::UNSTYLED); // necessary for offset programming
+            tls->styleChanged();
+
+            // START:
+            qreal startX = startSegment->canvasBoundingRect().left();
+            qreal endX = endSegment->canvasBoundingRect().left();
+            qreal sx1 = startX;
+            qreal sy1 = startSegment->canvasBoundingRect().y();
+            qreal mx = startDest.x();
+            qreal my = startDest.y();
+            qreal diffX = (mx > sx1) ? (mx - sx1) : -(sx1 - mx);
+            qreal diffY = (my > sy1) ? (my - sy1) : -(sy1 - my);
+
+            tls->setOffset(diffX, diffY);
+
+            // END:
+            qreal sx2 = endX + diffX;
+            qreal sy2 = endSegment->canvasBoundingRect().y() + diffY;
+            qreal mx2 = endDest.x();
+            qreal my2 = endDest.y();
+            qreal diffX2 = (mx2 > sx2) ? (mx2 - sx2) : -(sx2 - mx2);
+            qreal diffY2 = (my2 > sy2) ? (my2 - sy2) : -(sy2 - my2);
+            qreal deltaX = std::max(startDest.x(), endDest.x()) - std::min(startDest.x(), endDest.x());
+            qreal deltaY = std::max(startDest.y(), endDest.y()) - std::min(startDest.y(), endDest.y());
+
+            int straightThreshold = 25;
+            if (std::abs(deltaX) < straightThreshold) {
+                  diffX2 -= deltaX;
+                  }
+            if (std::abs(deltaY) < straightThreshold) {
+                  diffY2 -= deltaY;
+                  }
+
+            tls->setUserOff2(QPointF(diffX2, diffY2));
+
+            score()->startCmd();
+               score()->cmdAddSpanner(tl, 0 /*staffIdx*/, startSegment, endSegment);
+            score()->endCmd();
+
+            return tls;
+            }
+
       if (_score->selection().isRange()) {
             int startTrack = _score->selection().staffStart() * VOICES;
             int endTrack   = _score->selection().staffEnd() * VOICES;
@@ -6043,24 +6248,22 @@ void ScoreView::cmdAddNoteLine(bool hiddenLineWithText)
                                           tl->setLineWidth(0.0); // Hidden line
                                           tl->setLineColor(QColor(255, 255, 255, 0));
                                           tl->setBeginTextOffset(QPointF(0.0, -75.0));
-                                          // Lame, but it works for now since ->offset doesn't do shit for some reason
+                                          // TODO: it is now obvious that UNSTYLED property must be utilized to make use of OFFSET
                                           }
                                     _score->undoAddElement(tl);
                                     }
                               }
                         _score->endCmd();
 
-                        return;
+                        return nullptr;
                         }
                   }
-            else  {
-                  // qDebug() << "Invalid Selection to add Note-Anchored Line (rests, etc)";
-                  return;
-                  }
+            else return nullptr;
             }
+
       if (!firstNote || !lastNote) {
             qDebug("addNoteLine: no note %p %p", firstNote, lastNote);
-            return;
+            return nullptr;
             }
 
       TextLine* tl = new TextLine(_score);
@@ -6071,6 +6274,7 @@ void ScoreView::cmdAddNoteLine(bool hiddenLineWithText)
       tl->setTick(firstNote->chord()->tick());
       tl->setSystemFlag(false);
       tl->setEndElement(lastNote);
+      // TODO call layout then consider changing anchor position chord to be "normal" now knowing how to set offsets properly
 
       // --- Workaround for Hammer-on/Pull-off text (sloppy for now)
       if (hiddenLineWithText) {
@@ -6100,6 +6304,8 @@ void ScoreView::cmdAddNoteLine(bool hiddenLineWithText)
                   }
             }
 
+      LineSegment* tls = tl->frontSegment();
+      return tls;
       }
 
 //---------------------------------------------------------
@@ -7366,6 +7572,64 @@ Element* ScoreView::elementNear(QPointF p)
 #endif
       Element* e = ll.at(0);
       return e;
+      }
+
+//---------------------------------------------------------
+//   nearestElement
+//---------------------------------------------------------
+
+Element* ScoreView::nearestElement(const QPointF& point, const QPointF& point2)
+      {
+      const int testLimit = 50;
+      const int testStep  = 10;
+      Element* el = elementNear(point);
+      QPointF leftTest = point;
+      QPointF rightTest = point2;
+
+      // Attempt finding near-element: Vertical test
+      for (int i = 0; !el && i < testLimit; ++i) {
+            rightTest.ry() -= testStep;
+            leftTest.ry() += testStep;
+            el = elementNear(leftTest) ? elementNear(leftTest) : elementNear(rightTest);
+            }
+
+      if (!el) {
+            // TODO: contrary 45 degree testing
+            }
+
+      return el;
+      }
+
+//---------------------------------------------------------
+//   nearestMeasure
+//---------------------------------------------------------
+
+const Measure* ScoreView::nearestMeasure(const Element* el)
+      {
+      const Measure* m = nullptr;
+      if (el) {
+            if (const Measure* ms = el->findMeasure()) {
+                  m = ms;
+                  }
+            else if (el->isSpannerSegment()) {
+                  const SpannerSegment* sseg = toSpannerSegment(el);
+                  if (const Element* sEl = sseg->spanner()->startElement()) {
+                        m = sEl->findMeasure();
+                        }
+                  }
+            else if (el->isBeam()) {
+                  m = toBeam(el)->elements().first()->measure();
+                  }
+            else if (el->isMeasureBase()) {
+                  m = toMeasureBase(el)->nextMeasure();
+                  }
+            else if (const Element* p1 = el->parent()) {
+                  if (const Measure* m2 = p1->findMeasure()) {
+                        m = m2;
+                        }
+                  }
+            }
+      return m;
       }
 
 //---------------------------------------------------------

@@ -14,6 +14,7 @@
 #define __LASSO_H__
 
 #include "element.h"
+#include <QPointF>
 
 namespace Ms {
 
@@ -38,6 +39,8 @@ class Lasso : public Element {
       Grip initialEditModeGrip() const override { return Grip(7); }
       Grip defaultGrip() const override { return Grip(7); }
       std::vector<QPointF> gripsPositions(const EditData&) const override;
+
+      QPointF startPoint, endPoint;
       };
 
 
