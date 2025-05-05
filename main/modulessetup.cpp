@@ -34,7 +34,7 @@
 
 ModulesSetup::ModulesSetup()
       {
-
+/*
       m_modulesSetupList
 #ifdef BUILD_TELEMETRY_MODULE
               << new TelemetrySetup()
@@ -43,6 +43,7 @@ ModulesSetup::ModulesSetup()
               << new Ms::Avs::AvsOmrSetup()
 #endif
               ;
+              */
       }
 
 //---------------------------------------------------------
