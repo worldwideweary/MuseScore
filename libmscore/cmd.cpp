@@ -2902,7 +2902,7 @@ Element* Score::move(const QString& cmd)
 
             if (!el) el = cmdNextPrevSystem(cr, next);
 
-            if (noteEntryMode())
+            if (noteEntryMode() && !isDestBox)
                   _is.moveInputPos(el);
             }
       else if (cmd == "next-frame") {
