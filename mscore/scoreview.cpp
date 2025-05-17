@@ -3410,6 +3410,13 @@ void ScoreView::cmd(const char* s)
                         if (cmd == "empty-trailing-measure")
                               cv->changeState(ViewState::NOTE_ENTRY);
 
+                        // Exit note-entry if navigated per-system into a Frame
+                        else if (cmd == "next-system" || cmd == "prev-system") {
+                              if (ele && ele->isBox() && score->noteEntryMode()) {
+                                    cv->changeState(ViewState::NORMAL);
+                                    }
+                              }
+
                         // Active slur will de-activate if move command is larger than per-chord:
                         if (score->noteEntryMode() && cmd != "next-chord" && cmd != "prev-chord") {
                               if (auto slur = score->inputState().slur()) {
