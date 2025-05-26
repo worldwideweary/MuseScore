@@ -438,6 +438,7 @@ void ScoreView::measurePopup(QContextMenuEvent* ev, Measure* obj)
       popup->addAction(getAction("paste"));
 
       // [Action: Paste Clone] option contingent upon an active selection
+      // [Action: Paste Clone All] additionally contingent upon the selection being score-entire
       Selection& lastSelection = mscore->getLastScoreSelection();
       if (!lastSelection.isNone())
             popup->addAction(getAction("paste-clone"));
