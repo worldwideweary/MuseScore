@@ -436,17 +436,21 @@ void ScoreView::measurePopup(QContextMenuEvent* ev, Measure* obj)
       popup->addAction(getAction("cut"));
       popup->addAction(getAction("copy"));
       popup->addAction(getAction("paste"));
-      popup->addAction(getAction("paste-clone"));
 
-      // [Action: Paste Clone All] option contingent upon an existing entire range-selection:
-      auto lastSelection = mscore->getLastScoreSelection();
-      auto lastScore = lastSelection.score();
-      Measure* first;
-      Measure* last;
-      lastSelection.measureRange(&first, &last);
-      if (lastScore && lastScore->firstMeasure() == first) {
-            if (lastScore->lastMeasure() == last) {
-                  popup->addAction(getAction("paste-clone-all"));
+      // [Action: Paste Clone] contingent upon an active range-selection
+      // [Action: Paste Clone All] additionally contingent upon the selection being score-entire
+      Selection& lastSelection = mscore->getLastScoreSelection();
+      if (!lastSelection.isNone()) {
+            popup->addAction(getAction("paste-clone"));
+
+            Score* lastScore = lastSelection.score();
+            Measure* first;
+            Measure* last;
+            lastSelection.measureRange(&first, &last);
+            if (lastScore && lastScore->firstMeasure() == first) {
+                  if (lastScore->lastMeasure() == last) {
+                        popup->addAction(getAction("paste-clone-all"));
+                        }
                   }
             }
 
@@ -2724,7 +2728,7 @@ bool ScoreView::clonePaste(bool entireScore)
       auto copiedSel = mscore->getLastScoreSelection();
       if (!copiedSel.isRange() && !copiedSel.isSingle()) {
             QMessageBox::warning(0, "MuseScore",
-                   tr("A valid range or single selection required for measure position."));
+                   tr("An active range/single source selection is required for cloning."));
             return false;
             }
       if (!srcScore) {
