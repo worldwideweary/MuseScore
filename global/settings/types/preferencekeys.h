@@ -213,6 +213,7 @@
 #define PREF_UI_APP_STARTUP_SHOWSPLASHSCREEN                "ui/application/startup/showSplashScreen"
 #define PREF_UI_APP_STARTUP_SHOWSTARTCENTER                 "ui/application/startup/showStartCenter"
 #define PREF_UI_APP_STARTUP_SHOWTOURS                       "ui/application/startup/showTours"
+#define PREF_UI_APP_STARTUP_RESTORE_SESSION                 "ui/application/startup/restoreSession"
 #define PREF_UI_APP_GLOBALSTYLE                             "ui/application/globalStyle"
 #define PREF_UI_APP_LANGUAGE                                "ui/application/language"
 #define PREF_UI_APP_RASTER_HORIZONTAL                       "ui/application/raster/horizontal"

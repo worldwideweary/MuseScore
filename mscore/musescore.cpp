@@ -5759,14 +5759,16 @@ bool MuseScore::restoreSession(bool always)
                               e.readNext();
                               }
                         else if (tag == "dirty") {
-                              QMessageBox::StandardButton b = QMessageBox::question(0,
-                                 tr("MuseScore"),
-                                 tr("The previous session quit unexpectedly.\n\nRestore session?"),
-                                 QMessageBox::Yes | QMessageBox::No,
-                                 QMessageBox::Yes
-                                 );
-                              if (b != QMessageBox::Yes)
-                                    return false;
+                              if (!preferences.getBool(PREF_UI_APP_STARTUP_RESTORE_SESSION)) {
+                                    QMessageBox::StandardButton b = QMessageBox::question(0,
+                                       tr("MuseScore"),
+                                       tr("The previous session quit unexpectedly.\n\nRestore session?"),
+                                       QMessageBox::Yes | QMessageBox::No,
+                                       QMessageBox::Yes
+                                       );
+                                    if (b != QMessageBox::Yes)
+                                          return false;
+                                    }
                               e.readNext();
                               }
                         else if (tag == "Score") {
