@@ -285,6 +285,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_UI_APP_STARTUP_SHOWSPLASHSCREEN,                 new BoolPreference(true, false)},
             {PREF_UI_APP_STARTUP_SHOWSTARTCENTER,                  new BoolPreference(true, false)},
             {PREF_UI_APP_STARTUP_SHOWTOURS,                        new BoolPreference(true, false)},
+            {PREF_UI_APP_STARTUP_RESTORE_SESSION,                  new BoolPreference(true)},
             {PREF_UI_APP_GLOBALSTYLE,                              new EnumPreference(QVariant::fromValue(defaultAppGlobalStyle), false)},
             {PREF_UI_APP_LANGUAGE,                                 new StringPreference("system", false)},
             {PREF_UI_APP_RASTER_HORIZONTAL,                        new IntPreference(2)},
