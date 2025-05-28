@@ -391,15 +391,15 @@ bool AlsaDriver::recover()
       snd_pcm_status_alloca (&stat);
 
       if ((err = snd_pcm_status (_play_handle, stat)) < 0) {
-            qDebug("Alsa_driver: recover: pcm_status(): %s",  snd_strerror (err));
+            // qDebug("Alsa_driver: recover: pcm_status(): %s",  snd_strerror (err));
             return false;
             }
       if (snd_pcm_status_get_state (stat) == SND_PCM_STATE_XRUN) {
             struct timeval tnow, trig;
             gettimeofday (&tnow, 0);
             snd_pcm_status_get_trigger_tstamp (stat, &trig);
-            qDebug("AlsaDriver: recover: stat = %02x, xrun of at least %8.3lf ms", _stat,
-               1e3 * tnow.tv_sec - 1e3 * trig.tv_sec + 1e-3 * tnow.tv_usec - 1e-3 * trig.tv_usec);
+            // qDebug("AlsaDriver: recover: stat = %02x, xrun of at least %8.3lf ms", _stat,
+               // 1e3 * tnow.tv_sec - 1e3 * trig.tv_sec + 1e-3 * tnow.tv_usec - 1e-3 * trig.tv_usec);
             }
 
       if (pcmStop()) {
@@ -537,7 +537,8 @@ void AlsaDriver::write(int n, float* l, float* r)
                   }
             int avail = snd_pcm_avail_update(_play_handle);
             if (avail < 0) {
-                  qDebug("AlsaDriver::write: snd_pcm_avail_update() (%s)", snd_strerror(avail));
+                  // Disabling debug messages here temporarily due to broken pipes manifesting during debugging:
+                  // qDebug("AlsaDriver::write: snd_pcm_avail_update() (%s)", snd_strerror(avail));
                   recover();
                   continue;
                   }
@@ -566,18 +567,20 @@ void AlsaDriver::write(int n, float* l, float* r)
                   void* bp[2];
                   bp[0] = lbuffer;
                   bp[1] = rbuffer;
-                  if ((err = snd_pcm_writen(_play_handle, bp, n)) < 0)
-                        qDebug("AlsaDriver::write(): failed (%s)", snd_strerror(err));
+                  if ((err = snd_pcm_writen(_play_handle, bp, n)) < 0) {
+                        // qDebug("AlsaDriver::write(): failed (%s)", snd_strerror(err));
+                        }
                   }
             else if (_play_access == SND_PCM_ACCESS_RW_INTERLEAVED) {
                   short buffer[n * 2];
                   _play_func(l, (char*)buffer, 4, n);
                   _play_func(r, (char*)(buffer + 1), 4, n);
-                  if ((err = snd_pcm_writei(_play_handle, buffer, n)) < 0)
-                        qDebug("AlsaDriver::write(): failed (%s)", snd_strerror(err));
+                  if ((err = snd_pcm_writei(_play_handle, buffer, n)) < 0) {
+                        // qDebug("AlsaDriver::write(): failed (%s)", snd_strerror(err));
+                        }
                   }
             else {
-                  qDebug("AlsaDriver::write(): unsupported access type %d", _play_access);
+                  // qDebug("AlsaDriver::write(): unsupported access type %d", _play_access);
                   return;
                   }
             }
