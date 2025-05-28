@@ -150,7 +150,7 @@ void ZoomBox::setLogicalZoom(const ZoomIndex index, const qreal logicalLevel)
                   // Convert the value to an integer percentage using half-to-even rounding (a.k.a. banker's rounding).
                   const auto logicalLevelPercentage = static_cast<int>((100.0 * logicalLevel) - std::remainder(100.0 * logicalLevel, 1.0));
 
-                  qDebug("ZoomBox::setLogicalZoom(): Formatting logical zoom level as %d%% (rounded from %f)", logicalLevelPercentage, logicalLevel);
+                  // qDebug("ZoomBox::setLogicalZoom(): Formatting logical zoom level as %d%% (rounded from %f)", logicalLevelPercentage, logicalLevel);
                   setItemText(static_cast<int>(ZoomIndex::ZOOM_FREE), QString("%1%").arg(logicalLevelPercentage));
 
                   _previousLogicalLevel = logicalLevel;
