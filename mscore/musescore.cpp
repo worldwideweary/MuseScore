@@ -5842,7 +5842,7 @@ void MuseScore::autoSaveTimerTimeout()
 
       for (MasterScore* s : qAsConst(scoreList)) {
             if (s->autosaveDirty()) {
-                  qDebug("<%s>", qPrintable(s->fileInfo()->completeBaseName()));
+                  // qDebug("<%s>", qPrintable(s->fileInfo()->completeBaseName()));
                   QString tmp = s->tmpName();
                   if (!tmp.isEmpty()) {
                         QFileInfo fi(tmp);
