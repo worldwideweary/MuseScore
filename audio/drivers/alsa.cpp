@@ -537,7 +537,8 @@ void AlsaDriver::write(int n, float* l, float* r)
                   }
             int avail = snd_pcm_avail_update(_play_handle);
             if (avail < 0) {
-                  qDebug("AlsaDriver::write: snd_pcm_avail_update() (%s)", snd_strerror(avail));
+                  // Disabling debug messages here temporarily due to broken pipes manifesting during debugging:
+                  // qDebug("AlsaDriver::write: snd_pcm_avail_update() (%s)", snd_strerror(avail));
                   recover();
                   continue;
                   }
