@@ -606,6 +606,9 @@ void updateExternalValuesFromPreferences() {
       MScore::cursorMoveByMeasure = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_ENTIRE_MEASURE);
       MScore::cursorDrawnBehindStaff = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_BACKGROUND);
 
+      MScore::cursorResetToStart = preferences.getBool(PREF_SCORE_PLAYBACK_BRING_POSITION_TO_START);
+      MScore::selectionFollowsCursor = preferences.getBool(PREF_SCORE_PLAYBACK_SELECT_POSITION_ON_STOP);
+
       MScore::systemBracketMultiplier = preferences.getDouble(PREF_UI_SCORE_BRACKET_MULTIPLIER);
       MScore::fingeringTextOmitVoicing = preferences.getBool(PREF_UI_SCORE_FINGERING_OMIT_VOICING);
       MScore::fingeringTextOmitTightening = preferences.getBool(PREF_UI_SCORE_FINGERING_OMIT_TIGHTENING);
