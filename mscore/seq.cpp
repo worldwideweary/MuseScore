@@ -1148,8 +1148,9 @@ void Seq::collectEvents(int utick, bool viaUserNavigation)
             }
 
       updateEventsEnd();
-      auto eventAtTick = events.find(utick);
-      playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : eventAtTick;
+
+      // Attempted to use events.find(utick) iinstead of events.cbegin(), but will lose play position:
+      playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : events.cbegin();
       playlistChanged = false;
       unmarkNotes();
       mutex.unlock();
