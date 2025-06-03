@@ -105,52 +105,7 @@ void TextLineBaseSegment::draw(QPainter* painter) const
                   }
             }
 
-      if (!_text->empty()) {
-            _text->setVisible(tl->visible());
-            bool isCenteredText = (tl->beginTextPlace() == PlaceText::CENTERED) || (tl->beginTextPlace() == PlaceText::CENTERED_BROKEN);
-            auto horizon = isCenteredText ? textLine.center() : _text->ipos();
-            auto userOffset = _text->offset();
-            auto lineStrokeOffset = QPointF(0.0, _text->getVAlignOffset());
-            // Note: TextBase stores angle, yet is unused at the moment. Separate angles in future?
-            auto angle  = isCenteredText ? lineAngle : 0.0;
-
-            // Apply user x-y + line width offsets after rotation
-            painter->translate(horizon);
-            painter->rotate(angle);
-            painter->translate(lineStrokeOffset);
-            painter->translate(userOffset);
-
-                  _text->draw(painter);
-
-            painter->translate(-userOffset);
-            painter->translate(-lineStrokeOffset);
-            painter->rotate(-angle);
-            painter->translate(-horizon);
-            }
-
-      if (!_endText->empty()) {
-            _endText->setVisible(tl->visible());
-            auto horizon = textLine.p2();
-            auto userOffset = _endText->offset();
-            auto lineStrokeOffset = QPointF(0.0, _endText->getVAlignOffset());
-            auto angle = lineAngle;
-
-            // Apply user x-y + line-width offsets after rotation
-            painter->translate(horizon);
-            painter->rotate(angle);
-            painter->translate(lineStrokeOffset);
-            painter->translate(userOffset);
-
-                  _endText->draw(painter);
-            
-            painter->translate(-userOffset);
-            painter->translate(-lineStrokeOffset);
-            painter->rotate(-angle);
-            painter->translate(-horizon);
-            }
-
-      if ((npoints == 0) || (score() && (score()->printing() || !score()->showInvisible()) && !tl->lineVisible()))
-            return;
+      bool noLine = (npoints == 0) || (score() && (score()->printing() || !score()->showInvisible()) && !tl->lineVisible());
 
       // color for line (text color comes from the text properties)
 #if 0
@@ -160,6 +115,7 @@ void TextLineBaseSegment::draw(QPainter* painter) const
       else
             color = tl->lineColor();
 #endif
+   if (!noLine) {
 
       if (staff())
             strokeWidth *= mag();
@@ -419,7 +375,51 @@ void TextLineBaseSegment::draw(QPainter* painter) const
                               }
                         }
                   }
+            }
+      }
+      // Draw text after line so that it can have higher Z-Order on print
+      if (!_text->empty()) {
+            _text->setVisible(tl->visible());
+            bool isCenteredText = (tl->beginTextPlace() == PlaceText::CENTERED) || (tl->beginTextPlace() == PlaceText::CENTERED_BROKEN);
+            auto horizon = isCenteredText ? textLine.center() : _text->ipos();
+            auto userOffset = _text->offset();
+            auto lineStrokeOffset = QPointF(0.0, _text->getVAlignOffset());
+            // Note: TextBase stores angle, yet is unused at the moment. Separate angles in future?
+            auto angle  = isCenteredText ? lineAngle : 0.0;
 
+            // Apply user x-y + line width offsets after rotation
+            painter->translate(horizon);
+            painter->rotate(angle);
+            painter->translate(lineStrokeOffset);
+            painter->translate(userOffset);
+
+                  _text->draw(painter);
+
+            painter->translate(-userOffset);
+            painter->translate(-lineStrokeOffset);
+            painter->rotate(-angle);
+            painter->translate(-horizon);
+            }
+
+      if (!_endText->empty()) {
+            _endText->setVisible(tl->visible());
+            auto horizon = textLine.p2();
+            auto userOffset = _endText->offset();
+            auto lineStrokeOffset = QPointF(0.0, _endText->getVAlignOffset());
+            auto angle = lineAngle;
+
+            // Apply user x-y + line-width offsets after rotation
+            painter->translate(horizon);
+            painter->rotate(angle);
+            painter->translate(lineStrokeOffset);
+            painter->translate(userOffset);
+
+                  _endText->draw(painter);
+
+            painter->translate(-userOffset);
+            painter->translate(-lineStrokeOffset);
+            painter->rotate(-angle);
+            painter->translate(-horizon);
             }
 
       }
