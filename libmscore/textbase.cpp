@@ -3155,11 +3155,13 @@ void TextBase::draw(QPainter* p) const
             // Draw background within text-frame
             QRectF bb     = bbox().adjusted(frameWidthVal, frameWidthVal, -frameWidthVal, -frameWidthVal);
             QRectF pageBB = pageBoundingRect().adjusted(frameWidthVal, frameWidthVal, -frameWidthVal, -frameWidthVal);
-            bool skip = (parent() && parent()->isBox());
-            if (MScore::noGui) {;}
-            else if (!skip && !score()->getViewer().empty()) {
-                  for (MuseScoreView* view : score()->getViewer())
-                        view->drawBackgroundOffset(p, bb, pageBB, this);
+            bool isZAltered = propertyDefault(Pid::Z) != z();
+            if (MScore::noGui) {}
+            else if (!score()->getViewer().empty()) {
+                  for (MuseScoreView* view : score()->getViewer()) {
+                        if (!isZAltered)
+                              view->drawBackgroundOffset(p, bb, pageBB, this);
+                        }
                   }
             else p->fillRect(bb, Qt::white);
 
