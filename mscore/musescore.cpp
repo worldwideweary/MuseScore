@@ -7264,10 +7264,6 @@ Timeline* MuseScore::timeline() const
 
 ScriptRecorder* MuseScore::getScriptRecorder()
       {
-#ifdef MSCORE_UNSTABLE
-      if (scriptRecorder)
-            return &scriptRecorder->scriptRecorder();
-#endif
       return nullptr;
       }
 
