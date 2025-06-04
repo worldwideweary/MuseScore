@@ -348,14 +348,14 @@ const std::list<const char*> MuseScore::_allToggleOptionsMenuEntries {
             "toggle-options-move-playback-position-to-start",
 
             "separator-Layout",
-            "toggle-options-noteheads-behind-staff", 
+            "toggle-options-noteheads-behind-staff",
             "toggle-options-noteheads-behind-ledger",
             "toggle-options-ties-consider-ledgers",
             "toggle-options-ties-uniformity",
             "toggle-options-fingering-voicing-layout",
             "toggle-options-fingering-tightening-layout",
             "toggle-options-colored-alteration-noteheads",
-            
+
             "separator-Interaction",
             "toggle-options-mouse-hover",
             "toggle-options-vertical-note-drag-allowed",
@@ -592,7 +592,7 @@ void updateExternalValuesFromPreferences() {
       MScore::overrideNoteheadColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_NOTEHEAD_COLOR);
       MScore::overrideNoteheadLoweredColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_NOTEHEAD_LOWERED_COLOR);
       MScore::overrideNoteheadRaisedColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_NOTEHEAD_RAISED_COLOR);
-      MScore::overrideOnlyAllColor = preferences.getBool(PREF_UI_SCORE_OVERRIDE_ONLY_ALL_COLOR);      
+      MScore::overrideOnlyAllColor = preferences.getBool(PREF_UI_SCORE_OVERRIDE_ONLY_ALL_COLOR);
       MScore::overrideSlursColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_SLURS_COLOR);
       MScore::overrideStaffLinesColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_STAFFLINES_COLOR);
       MScore::overrideStaffTextColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_STAFF_TEXT_COLOR);
@@ -601,7 +601,7 @@ void updateExternalValuesFromPreferences() {
 
       MScore::noteheadsBehindStaff = preferences.getBool(PREF_UI_SCORE_NOTEHEADS_BEHIND_STAFF_LINES);
       MScore::noteheadsBehindLedger = preferences.getBool(PREF_UI_SCORE_NOTEHEADS_BEHIND_LEDGER_LINES);
-      
+
       MScore::cursorMoveByBeat = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_MOVE_BY_BEAT);
       MScore::cursorMoveByMeasure = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_ENTIRE_MEASURE);
       MScore::cursorDrawnBehindStaff = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_BACKGROUND);
@@ -615,7 +615,7 @@ void updateExternalValuesFromPreferences() {
 
       MScore::highlightNotes  = preferences.getBool(PREF_SCORE_PLAYBACK_HIGHLIGHT_NOTES);
       MScore::highlightRests  = preferences.getBool(PREF_SCORE_PLAYBACK_HIGHLIGHT_RESTS);
-      MScore::highlightMore   = preferences.getBool(PREF_SCORE_PLAYBACK_HIGHLIGHT_MORE);  
+      MScore::highlightMore   = preferences.getBool(PREF_SCORE_PLAYBACK_HIGHLIGHT_MORE);
       MScore::highlightLyrics = preferences.getBool(PREF_SCORE_PLAYBACK_HIGHLIGHT_LYRICS);
       MScore::honorEnPassantVisibility = preferences.getBool(PREF_SCORE_PLAYBACK_HONOR_EN_PASSANT_VISIBLE);
 
@@ -856,8 +856,8 @@ void MuseScore::populateToggleOptionsMenu()
                   const char* option = &s[15]; // toggle-options-*
                   auto action = getAction(s);
                   bool pref = false;
-                  
-                  // Maintain these with cmdToggleOptions():                                    
+
+                  // Maintain these with cmdToggleOptions():
                   if (0==strcmp(option, "only-all-color"))
                         pref = MScore::overrideOnlyAllColor;
                   else if (0==strcmp(option, "colored-alteration-noteheads"))
@@ -1438,7 +1438,7 @@ MuseScore::MuseScore()
             _statusBar->addPermanentWidget(new QWidget(this), 2);
             _statusBar->addPermanentWidget(new QWidget(this), 100);
             _statusBar->addPermanentWidget(_modeText, 0);
-      
+
             searchCombo = new SearchComboBox;
                   searchCombo->setObjectName("searchCombo");
                   searchCombo->setParent(_statusBar);
@@ -1461,7 +1461,7 @@ MuseScore::MuseScore()
                   playMode->addItem(tr("Audio track"));
                   playMode->setToolTip(tr("Switch play mode"));
                   connect(playMode, SIGNAL(activated(int)), SLOT(switchPlayMode(int)));
-                  
+
                   _statusBar->addPermanentWidget(playMode);
                   _statusBar->addPermanentWidget(layerSwitch);
                   }
@@ -2796,8 +2796,6 @@ void MuseScore::selectionChanged(SelState selectionState)
             else
                   _pianoTools->clearSelection();
             }
-      if (_inspector)
-            updateInspector();
       }
 
 //---------------------------------------------------------
@@ -3674,8 +3672,8 @@ void MuseScore::midiCtrlReceived(int controller, int value)
       if (!cv)
             return;
       if (!isMidiInEnabled())
-            return;      
-      
+            return;
+
       auto score = cv->score();
       // Observation: [Sustain (>0 is ON)(=0 is OFF) is received twice for some reason thru PortMIDI...
       if (score && controller == CTRL_SUSTAIN) {
@@ -6597,7 +6595,11 @@ void MuseScore::endCmd(bool undoRedo)
       else {
             selectionChanged(SelState::NONE);
             }
-      updateInspector();
+      // Suffer the inspector a slight (ms) programmable delay to smooth navigation
+      QTimer::singleShot(preferences.getInt(PREF_UI_APP_INSPECTOR_DELAY_MS), this, [&]() {
+            updateInspector();
+            });
+
       updatePaletteBeamMode();
 #ifdef SCRIPT_INTERFACE
       getPluginEngine()->endEndCmd(this);
@@ -6753,8 +6755,8 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             bool isNoteEntry =
                   (_sstate == STATE_NOTE_ENTRY_METHOD_STEPTIME ||
                   _sstate == STATE_NOTE_ENTRY_METHOD_REPITCH ||
-                  _sstate == STATE_NOTE_ENTRY_METHOD_RHYTHM); 
-            
+                  _sstate == STATE_NOTE_ENTRY_METHOD_RHYTHM);
+
             if (isNoteEntry) {
                   // Note Entry - Delete current chord, or move to previous chord in current track
                   auto& is = cs->inputState();

@@ -278,6 +278,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_UI_APP_STARTUP_CHECKUPDATE,                      new BoolPreference(checkUpdateStartup)},
             {PREF_UI_APP_NUDGESTEP_10,                             new DoublePreference(1.0, true)},
             {PREF_UI_APP_NUDGESTEP_1,                              new DoublePreference(0.1, true)},
+            {PREF_UI_APP_INSPECTOR_DELAY_MS,                       new IntPreference(200, true)},
             {PREF_UI_APP_STARTUP_CHECKUPDATE,                      new BoolPreference(checkUpdateStartup, false)},
             {PREF_UI_APP_STARTUP_CHECK_EXTENSIONS_UPDATE,          new BoolPreference(checkExtensionsUpdateStartup, false)},
             {PREF_UI_APP_STARTUP_SHOWNAVIGATOR,                    new BoolPreference(false, false)},
