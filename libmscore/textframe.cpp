@@ -74,21 +74,24 @@ void TBox::layout()
       else
             ; // y = 0;
 #endif
-      qreal x = leftMargin() * DPMM;
-      qreal y = topMargin() * DPMM;
-      auto frame   = _text->frameWidth().val() * spatium();
-      auto padding = _text->paddingWidth().val() * spatium();
+      const qreal lm = leftMargin() * DPMM;
+      const qreal tm = topMargin() * DPMM;
+      const qreal bm = bottomMargin() * DPMM;
+      const qreal frame   = _text->frameWidth().val() * spatium();
+      const qreal padding = _text->paddingWidth().val() * spatium();
+      qreal x = lm;
+      qreal y = tm;
       bool negX = (_text->align() & Align::RIGHT);
       if (_text->hasFrame()) {
             if (!(_text->align() & Align::HCENTER)) {
                   x += (negX ? -frame   : +frame);
                   x += (negX ? -padding : +padding);
                   }
-            y += _text->frameWidth().val() * spatium();
-            y += _text->paddingWidth().val() * spatium();
+            y += frame;
+            y += padding;
             }
       _text->setPos(x, y);
-      h += topMargin() * DPMM + bottomMargin() * DPMM;
+      h += tm + bm - frame;
       bbox().setRect(0.0, 0.0, w, h);
 
       MeasureBase::layout();  // layout LayoutBreak's
