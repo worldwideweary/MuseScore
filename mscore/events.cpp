@@ -342,6 +342,10 @@ void ScoreView::focusOutEvent(QFocusEvent* event)
 
 bool ScoreView::startTextEditingOnMouseRelease(QMouseEvent* mouseEvent)
       {
+      if (editData.control()) {
+            return false;
+            }
+
       if (!editData.element || mouseEvent->button() != Qt::LeftButton)
             return false;
 
@@ -433,11 +437,12 @@ void ScoreView::mousePressEventNormal(QMouseEvent* ev)
 
       Qt::KeyboardModifiers keyState = ev->modifiers();
       SelectType st = SelectType::SINGLE;
+      bool ctrl = keyState & Qt::ControlModifier;
       if (keyState == Qt::NoModifier)
             st = SelectType::SINGLE;
       else if (keyState & Qt::ShiftModifier)
             st = SelectType::RANGE;
-      else if (keyState & Qt::ControlModifier)
+      else if (ctrl)
             st = SelectType::ADD;
 
       Element* e = editData.element;
@@ -474,6 +479,11 @@ void ScoreView::mousePressEventNormal(QMouseEvent* ev)
                   }
             else {
                   if (st == SelectType::ADD) {
+                        if (e->isTextBase()) {
+                              // Unpriming current text will omit unintended editing of previous element
+                              // after, e.g., selecting an overlapped text via ctrl modifier:
+                              toTextBase(e)->setPrimed(false);
+                              }
                         // convert range to list
                         if (e->score()->selection().isRange()) {
                               e->score()->selection().setState(SelState::LIST);
@@ -498,8 +508,13 @@ void ScoreView::mousePressEventNormal(QMouseEvent* ev)
                               }
                         }
                   if (e) {
-                        if (!e->selected())
+                        if (!e->selected()) {
                               e->score()->select(e, st, -1);
+                              if (e->isTextBase() && ctrl) {
+                                    toTextBase(e)->setPrimed(true);
+                                    updateEditElement();
+                                    }
+                              }
                         else if (st != SelectType::ADD) {
                               modifySelection = true;
                               elementToSelect = e;
@@ -608,7 +623,19 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                         toTextBase(editData.element)->setPrimed(false);
                         }
 
-                  auto en = elementNear(editData.startMove);
+                  bool useRecentSelection = false;
+                  auto el = editData.element;
+                  if (el && el->isTextBase() && toTextBase(el)->isPrimed()) {
+                        auto ens = elementsNear(editData.startMove);
+                        for (auto en : ens) {
+                              if (en == el) {
+                                    useRecentSelection = true;
+                                    break;
+                                    }
+                              }
+                        }
+
+                  auto en = useRecentSelection ? el : elementNear(editData.startMove);
                   if (en && (en->isStaffLines() || en->isStaff()))
                         en = nullptr;
                   setEditElement(en);
