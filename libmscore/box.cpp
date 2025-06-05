@@ -59,10 +59,12 @@ void Box::layout()
                   e->layout();
                   auto _text = toText(e);
                   if (_text->frameType() != FrameType::NO_FRAME) {
-                        qreal x = leftMargin() * DPMM;
-                        qreal y = topMargin() * DPMM;
-                        auto frame   = _text->frameWidth().val() * spatium();
-                        auto padding = _text->paddingWidth().val() * spatium();
+                        const qreal lm = leftMargin() * DPMM;
+                        const qreal tm = topMargin() * DPMM;
+                        const qreal frame   = _text->frameWidth().val() * spatium();
+                        const qreal padding = _text->paddingWidth().val() * spatium();
+                        qreal x = lm;
+                        qreal y = tm;
                         bool negY = (_text->align() & Align::BOTTOM);
                         bool negX = (_text->align() & Align::RIGHT);
                         if (!(_text->align() & Align::HCENTER)) {
@@ -818,10 +820,10 @@ void VBox::layout()
             if (e->isText()) {
                   auto _text = toText(e);
                   if (_text->frameType() != FrameType::NO_FRAME) {
+                        const qreal frame   = _text->frameWidth().val() * spatium();
+                        const qreal padding = _text->paddingWidth().val() * spatium();
                         qreal x = leftMargin() * DPMM;
                         qreal y = topMargin() * DPMM;
-                        auto frame   = _text->frameWidth().val() * spatium();
-                        auto padding = _text->paddingWidth().val() * spatium();
                         bool negY = (_text->align() & Align::BOTTOM);
                         bool negX = (_text->align() & Align::RIGHT);
 
