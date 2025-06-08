@@ -203,9 +203,9 @@ class FretDiagram final : public Element {
       void undoSetFretBarre(int _string, int _fret, bool _add = false);
       void undoFretClear();
       int  fretOffset() const     { return _fretOffset; }
-      void setFretOffset(int val) { _fretOffset = val;  }
+      void setFretOffset(int val);
       int  maxFrets() const       { return _maxFrets;   }
-      void setMaxFrets(int val)   { _maxFrets = val;    }
+      void setMaxFrets(int val);
       bool showNut() const        { return _showNut;    }
       void setShowNut(bool val)   { _showNut = val;     }
 
