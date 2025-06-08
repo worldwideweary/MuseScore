@@ -262,6 +262,7 @@ void FretDiagram::setStrings(int n)
             }
 
       _strings = n;
+      score()->setSelectionChanged(true);
       }
 
 //---------------------------------------------------------
@@ -1379,6 +1380,7 @@ void FretDiagram::setDot(int string, int fret, bool add /*= false*/, FretDotType
             if (!add)
                   setMarker(string, FretMarkerType::NONE);
             }
+      score()->setSelectionChanged(true);
       }
 
 //---------------------------------------------------------
@@ -1392,6 +1394,7 @@ void FretDiagram::setMarker(int string, FretMarkerType mtype)
       if (string >= 0 && string < _strings) {
             _markers[string] = FretItem::Marker(mtype);
             }
+      score()->setSelectionChanged(true);
       }
 
 //---------------------------------------------------------
@@ -1589,6 +1592,7 @@ void FretDiagram::clear()
       _barres.clear();
       _dots.clear();
       _markers.clear();
+      score()->setSelectionChanged(true);
       }
 
 //---------------------------------------------------------
@@ -1601,6 +1605,26 @@ void FretDiagram::undoFretClear()
             FretDiagram* fd = toFretDiagram(e);
             fd->score()->undo(new FretClear(fd));
             }
+      }
+
+//---------------------------------------------------------
+//   setFretOffset
+//---------------------------------------------------------
+
+void FretDiagram::setFretOffset(int val)
+      {
+      _fretOffset = val;
+      score()->setSelectionChanged(true);
+      }
+
+//---------------------------------------------------------
+//   setMaxFrets
+//---------------------------------------------------------
+
+void FretDiagram::setMaxFrets(int val)
+      {
+      _maxFrets = val;
+      score()->setSelectionChanged(true);
       }
 
 //---------------------------------------------------------
