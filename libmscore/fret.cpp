@@ -265,6 +265,58 @@ void FretDiagram::setStrings(int n)
       }
 
 //---------------------------------------------------------
+//   pitches
+//    A convenience for getting all playback pitches
+//    directly from a fret diagram.
+//---------------------------------------------------------
+
+QList<int> FretDiagram::pitches() const
+      {
+      QList<int> pitches;
+      const int fOff = fretOffset();
+      if (const auto p = part()) {
+            if (const auto i = p->instrument()) {
+                  StringData virtualStringData;
+
+                  // Use standard 6-string guitar information for instruments without string data
+                  auto sd = i->stringData();
+                  if (!sd || !sd->frets()) {
+                        const QList<instrString> virtualSixStringGuitar { 40, 45, 50, 55, 59, 64 };
+                        const int virtualFrets = 19;
+                        virtualStringData.setFrets(virtualFrets);
+                        virtualStringData.stringList() = virtualSixStringGuitar;
+                        sd = &virtualStringData;
+                        }
+
+                  // Find Dots:
+                  for (auto const& item : _dots) {
+                        for (auto const& d : item.second) {
+                              if (!d.exists())
+                                    continue;
+                              const int string = (strings() - 1) - item.first;
+                              const int fret = d.fret;
+                              if (d.dtype == FretDotType::CROSS)
+                                    continue;
+                              const int pitch = fOff + sd->getPitch(string, fret, staff(), tick());
+                              pitches.push_back(pitch);
+                              }
+                        }
+
+                  // Find Markers:
+                  for (auto const& item : _markers) {
+                        const int string = (strings() - 1) - item.first;
+                        FretItem::Marker marker = item.second;
+                        if (marker.mtype == FretMarkerType::CIRCLE) {
+                              const int pitch = fOff + sd->getPitch(string, 0, staff(), tick());
+                              pitches.push_back(pitch);
+                              }
+                        }
+                  }
+            }
+      return pitches;
+      }
+
+//---------------------------------------------------------
 //   init
 //---------------------------------------------------------
 
