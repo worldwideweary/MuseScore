@@ -231,6 +231,7 @@ class FretDiagram final : public Element {
       BarreMap barres() const             { return _barres; }
       DotMap dots() const                 { return _dots; }
       MarkerMap markers() const           { return _markers; }
+      QList<int> pitches() const;
 
       Harmony* harmony() const { return _harmony; }
 
