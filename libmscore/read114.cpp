@@ -60,6 +60,7 @@
 
 namespace Ms {
 
+// Some standard string tunings:
 static int g_guitarStrings[] = {40,45,50,55,59,64};
 static int g_bassStrings[]   = {28,33,38,43};
 static int g_violinStrings[] = {55,62,69,76};

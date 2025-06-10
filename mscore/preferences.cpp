@@ -263,6 +263,9 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_UI_CANVAS_FG_USECOLOR_IN_PALETTES,               new BoolPreference(false)},
             {PREF_SCORE_PLAYBACK_SELECT_POSITION_ON_STOP,          new BoolPreference(false)},
             {PREF_SCORE_PLAYBACK_BRING_POSITION_TO_START,          new BoolPreference(false)},
+
+            {PREF_FRETBOARD_GUIDES_COLOR,                          new ColorPreference(QColor(200,200,200))},
+
             {PREF_UI_CANVAS_BG_COLOR,                              new ColorPreference(QColor(0x385F94), false)},
             {PREF_UI_CANVAS_FG_COLOR,                              new ColorPreference(QColor(0xf9f9f9), false)},
             {PREF_UI_CANVAS_BG_WALLPAPER,                          new StringPreference(QFileInfo(QString("%1%2").arg(sharePath(), "wallpaper/background1.png")).absoluteFilePath(), false)},

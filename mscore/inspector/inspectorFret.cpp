@@ -26,15 +26,18 @@ InspectorFretDiagram::InspectorFretDiagram(QWidget* parent)
       f.setupUi(addWidget());
 
       const std::vector<InspectorItem> iiList = {
-            { Pid::COLOR,        0, e.color,       e.resetColor       },
-            { Pid::VISIBLE,      0, e.visible,     e.resetVisible     },
-            { Pid::OFFSET,       0, e.offset,      e.resetOffset      },
-            { Pid::MAG,          0, f.mag,         f.resetMag         },
-            { Pid::PLACEMENT,    0, f.placement,   f.resetPlacement   },
-            { Pid::FRET_STRINGS, 0, f.strings,     f.resetStrings     },
-            { Pid::FRET_FRETS,   0, f.frets,       f.resetFrets       },
-            { Pid::FRET_NUT,     0, f.showNut,     f.resetShowNut     },
-            { Pid::ORIENTATION,  0, f.orientation, f.resetOrientation },
+            { Pid::COLOR,           0, e.color,         e.resetColor            },
+            { Pid::VISIBLE,         0, e.visible,       e.resetVisible          },
+            { Pid::OFFSET,          0, e.offset,        e.resetOffset           },
+            { Pid::MAG,             0, f.mag,           f.resetMag              },
+            { Pid::PLACEMENT,       0, f.placement,     f.resetPlacement        },
+            { Pid::FRET_STRINGS,    0, f.strings,       f.resetStrings          },
+            { Pid::FRET_FRETS,      0, f.frets,         f.resetFrets            },
+            { Pid::FRET_NUT,        0, f.showNut,       f.resetShowNut          },
+            { Pid::FRET_GUIDES,     0, f.showGuides,    f.resetShowGuides       },
+            { Pid::FRET_INTERVALS,  0, f.showIntervals, f.resetShowIntervals    },
+            { Pid::FRET_NAMES,      0, f.showNames,     f.resetShowNames        },
+            { Pid::ORIENTATION,     0, f.orientation,   f.resetOrientation      },
             };
       const std::vector<InspectorPanel> ppList = {
             { f.title, f.panel }

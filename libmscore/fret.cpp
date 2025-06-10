@@ -16,6 +16,7 @@
 #include "measure.h"
 #include "mscore.h"
 #include "note.h"
+#include "part.h"
 #include "rest.h"
 #include "score.h"
 #include "segment.h"
@@ -23,6 +24,8 @@
 #include "stringdata.h"
 #include "system.h"
 #include "undo.h"
+
+#include <QFont>
 
 namespace Ms {
 
@@ -40,6 +43,9 @@ static const ElementStyle fretStyle {
       { Sid::fretStrings,                        Pid::FRET_STRINGS            },
       { Sid::fretFrets,                          Pid::FRET_FRETS              },
       { Sid::fretNut,                            Pid::FRET_NUT                },
+      { Sid::fretGuides,                         Pid::FRET_GUIDES             },
+      { Sid::fretIntervals,                      Pid::FRET_INTERVALS          },
+      { Sid::fretNames,                          Pid::FRET_NAMES              },
       { Sid::fretMinDistance,                    Pid::MIN_DISTANCE            },
       { Sid::fretOrientation,                    Pid::ORIENTATION             },
       };
@@ -59,18 +65,21 @@ FretDiagram::FretDiagram(Score* score)
 FretDiagram::FretDiagram(const FretDiagram& f)
    : Element(f)
       {
-      _strings    = f._strings;
-      _frets      = f._frets;
-      _fretOffset = f._fretOffset;
-      _maxFrets   = f._maxFrets;
-      font        = f.font;
-      _userMag    = f._userMag;
-      _numPos     = f._numPos;
-      _dots       = f._dots;
-      _markers    = f._markers;
-      _barres     = f._barres;
-      _showNut    = f._showNut;
-      _orientation= f._orientation;
+      _strings      = f._strings;
+      _frets        = f._frets;
+      _fretOffset   = f._fretOffset;
+      _maxFrets     = f._maxFrets;
+      font          = f.font;
+      _userMag      = f._userMag;
+      _numPos       = f._numPos;
+      _dots         = f._dots;
+      _markers      = f._markers;
+      _barres       = f._barres;
+      _showNut      = f._showNut;
+      _showGuides   = f._showGuides;
+      _showIntervals= f._showIntervals;
+      _showNames    = f._showNames;
+      _orientation  = f._orientation;
 
       if (f._harmony) {
             Harmony* h = new Harmony(*f._harmony);
@@ -480,7 +489,7 @@ void FretDiagram::calculateBoundingRect()
             qreal numw = fm2.width(QString("%1").arg(_fretOffset+1));
             qreal xdiff = numw + stringDist * .4;
             w += xdiff;
-            x += (_numPos == 0) == (_orientation == Orientation::VERTICAL) ? -xdiff : 0;
+            x += (_numPos == 0) == isVertical() ? -xdiff : 0;
             }
 
       if (_orientation == Orientation::HORIZONTAL) {
@@ -532,9 +541,9 @@ void FretDiagram::layoutHorizontal()
             }
 
       qreal mainWidth = 0.0;
-      if (_orientation == Orientation::VERTICAL)
+      if (isVertical())
             mainWidth = stringDist * (_strings - 1);
-      else if (_orientation == Orientation::HORIZONTAL)
+      else if (isHorizontal())
             mainWidth = fretDist * (_frets + 0.5);
       setPos((noteheadWidth - mainWidth)/2, -(bbox().height() + styleP(Sid::fretY)));
       }
@@ -596,12 +605,15 @@ qreal FretDiagram::centerX() const
 //    written, edit the writeNew function. writeOld is purely compatibility.
 //---------------------------------------------------------
 
-static const std::array<Pid, 8> pids { {
+static const std::array<Pid, 11> pids { {
       Pid::MIN_DISTANCE,
       Pid::FRET_OFFSET,
       Pid::FRET_FRETS,
       Pid::FRET_STRINGS,
       Pid::FRET_NUT,
+      Pid::FRET_GUIDES,
+      Pid::FRET_INTERVALS,
+      Pid::FRET_NAMES,
       Pid::MAG,
       Pid::FRET_NUM_POS,
       Pid::ORIENTATION
@@ -803,6 +815,12 @@ void FretDiagram::read(XmlReader& e)
             // Check for new properties
             else if (tag == "showNut")
                   readProperty(e, Pid::FRET_NUT);
+            else if (tag == "showGuides")
+                  readProperty(e, Pid::FRET_GUIDES);
+            else if (tag == "showIntervals")
+                  readProperty(e, Pid::FRET_INTERVALS);
+            else if (tag == "showNames")
+                  readProperty(e, Pid::FRET_NAMES);
             else if (tag == "orientation")
                   readProperty(e, Pid::ORIENTATION);
 
@@ -1294,6 +1312,12 @@ QVariant FretDiagram::getProperty(Pid propertyId) const
                   return frets();
             case Pid::FRET_NUT:
                   return showNut();
+            case Pid::FRET_GUIDES:
+                  return showGuides();
+            case Pid::FRET_INTERVALS:
+                  return showIntervals();
+            case Pid::FRET_NAMES:
+                  return showNames();
             case Pid::FRET_OFFSET:
                   return fretOffset();
             case Pid::FRET_NUM_POS:
@@ -1324,6 +1348,15 @@ bool FretDiagram::setProperty(Pid propertyId, const QVariant& v)
                   break;
             case Pid::FRET_NUT:
                   setShowNut(v.toBool());
+                  break;
+            case Pid::FRET_GUIDES:
+                  setShowGuides(v.toBool());
+                  break;
+            case Pid::FRET_INTERVALS:
+                  setShowIntervals(v.toBool());
+                  break;
+            case Pid::FRET_NAMES:
+                  setShowNames(v.toBool());
                   break;
             case Pid::FRET_OFFSET:
                   setFretOffset(v.toInt());
