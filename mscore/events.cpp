@@ -523,7 +523,7 @@ void ScoreView::mousePressEventNormal(QMouseEvent* ev)
                   }
             if (e) {
                   setDropTarget(nullptr);
-                  if (e->isNote() || e->isHarmony()) {
+                  if (e->isNote() || e->isHarmony() || e->isFretDiagram()) {
                         e->score()->updateCapo();
                         mscore->play(e);
                         }
