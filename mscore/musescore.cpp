@@ -5252,6 +5252,23 @@ void MuseScore::play(Element* e) const
                   seq->startNote(channel, pitch, 80, 0);
             seq->startNoteTimer(MScore::defaultPlayDuration);
             }
+      else if (e->isFretDiagram()) {
+            seq->stopNotes();
+            const auto fd = toFretDiagram(e);
+            const auto staff = fd->score()->staff(fd->track() / VOICES);
+            const auto pitches = fd->pitches();
+            const int channel = staff->part()->midiChannel();
+
+            // reset the cc that is used for single note dynamics, if any
+            const int cc = synthesizerState().ccToUse();
+            if (cc != -1)
+                  seq->sendEvent(NPlayEvent(ME_CONTROLLER, channel, cc, 80));
+
+            for (const int& pitch : pitches)
+                  seq->startNote(channel, pitch, 80, 0);
+
+            seq->startNoteTimer(MScore::defaultPlayDuration);
+            }
       }
 
 void MuseScore::play(Element* e, int pitch) const
