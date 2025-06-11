@@ -588,7 +588,7 @@ void FretDiagram::draw(QPainter* painter) const
 
       // Draw fret offset number
       // Customization Hack: omit [12th fret] so that position can be designated as root (e.g. equivalent to open position)
-      if (_fretOffset > 0 && _fretOffset != 11) {
+      if (_fretOffset && _fretOffset != 11) {
             qreal fretNumMag = score()->styleD(Sid::fretNumMag);
             QFont scaledFont(font);
             scaledFont.setPointSizeF(font.pointSize() * _userMag * (spatium() / SPATIUM20) * MScore::pixelRatio * fretNumMag);
@@ -888,7 +888,7 @@ void FretDiagram::calculateBoundingRect()
       {
       qreal _spatium  = spatium() * _userMag;
       stringLw        = _spatium * 0.08;
-      nutLw           = (_fretOffset || !_showNut) ? stringLw : _spatium * 0.2;
+      nutLw           = ((_fretOffset > 0) || !_showNut) ? stringLw : (_spatium * 0.2);
       stringDist      = score()->styleP(Sid::fretStringSpacing) * _userMag;
       fretDist        = score()->styleP(Sid::fretFretSpacing) * _userMag;
       markerSize      = stringDist * .8;
