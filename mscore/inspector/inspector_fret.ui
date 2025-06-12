@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>220</width>
-    <height>793</height>
+    <width>248</width>
+    <height>917</height>
    </rect>
   </property>
   <property name="accessibleName">
@@ -131,8 +131,8 @@
       </item>
       <item row="14" column="0" colspan="3">
        <layout class="QGridLayout" name="gridLayout_3">
-        <item row="1" column="3">
-         <widget class="QPushButton" name="squareSelect">
+        <item row="5" column="1">
+         <widget class="QPushButton" name="toggleBarre">
           <property name="sizePolicy">
            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -145,19 +145,22 @@
             <height>20</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string>Add a barre (Shift)</string>
+          </property>
           <property name="accessibleName">
-           <string>Use square symbol</string>
+           <string>Add a barre</string>
           </property>
           <property name="text">
-           <string notr="true">□</string>
+           <string>Barre</string>
           </property>
           <property name="checkable">
            <bool>true</bool>
           </property>
          </widget>
         </item>
-        <item row="1" column="2">
-         <widget class="QPushButton" name="crossSelect">
+        <item row="5" column="2" colspan="2">
+         <widget class="QPushButton" name="toggleMultidot">
           <property name="sizePolicy">
            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -170,11 +173,14 @@
             <height>20</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string>Add multiple dots per string (Ctrl)</string>
+          </property>
           <property name="accessibleName">
-           <string>Use cross symbol</string>
+           <string>Add multiple dots per string</string>
           </property>
           <property name="text">
-           <string notr="true">X</string>
+           <string>Multiple dots</string>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -206,6 +212,31 @@
           </property>
          </widget>
         </item>
+        <item row="1" column="2">
+         <widget class="QPushButton" name="crossSelect">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>1</width>
+            <height>20</height>
+           </size>
+          </property>
+          <property name="accessibleName">
+           <string>Use cross symbol</string>
+          </property>
+          <property name="text">
+           <string notr="true">X</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
         <item row="1" column="1">
          <widget class="QPushButton" name="circleSelect">
           <property name="sizePolicy">
@@ -225,34 +256,6 @@
           </property>
           <property name="text">
            <string notr="true">⚫</string>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="1">
-         <widget class="QPushButton" name="toggleBarre">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>1</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="toolTip">
-           <string>Add a barre (Shift)</string>
-          </property>
-          <property name="accessibleName">
-           <string>Add a barre</string>
-          </property>
-          <property name="text">
-           <string>Barre</string>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -284,8 +287,8 @@
           </property>
          </widget>
         </item>
-        <item row="5" column="2" colspan="2">
-         <widget class="QPushButton" name="toggleMultidot">
+        <item row="1" column="3">
+         <widget class="QPushButton" name="squareSelect">
           <property name="sizePolicy">
            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -298,14 +301,11 @@
             <height>20</height>
            </size>
           </property>
-          <property name="toolTip">
-           <string>Add multiple dots per string (Ctrl)</string>
-          </property>
           <property name="accessibleName">
-           <string>Add multiple dots per string</string>
+           <string>Use square symbol</string>
           </property>
           <property name="text">
-           <string>Multiple dots</string>
+           <string notr="true">Root</string>
           </property>
           <property name="checkable">
            <bool>true</bool>
