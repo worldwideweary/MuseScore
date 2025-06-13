@@ -20,6 +20,8 @@
 #include "pianotools.h"
 #include "preferences.h"
 #include "libmscore/chord.h"
+#include "libmscore/fret.h"
+#include "libmscore/harmony.h"
 
 namespace Ms {
 
@@ -217,6 +219,25 @@ void HPiano::changeSelection(const Selection& selection)
                   if (other->epitch() >= _firstKey && other->epitch() <= _lastKey)
                         keys[other->epitch() - _firstKey]->setHighlighted(true);
             }
+
+      // Single-selection of Harmony/Fretboard Diagram
+      if (const auto e = selection.element()) {
+            std::vector<int> harmonyPitches;
+            const auto h = e->isHarmony() ? toHarmony(e) : nullptr;
+            const auto fd = e->isFretDiagram() ? toFretDiagram(e) : nullptr;
+            const auto pitches = h ? h->getRealizedHarmony().pitches() : fd ? fd->pitches() : QList<int>{};
+            for (const auto& pitch : pitches)
+                  harmonyPitches.emplace_back(pitch);
+
+            for (const auto& pitch : harmonyPitches) {
+                  if (pitch >= _firstKey && pitch <= _lastKey) {
+                        const int idx = pitch - _firstKey;
+                        keys[idx]->setSelected(true);
+                        keys[idx]->setHighlighted(true);
+                        }
+                  }
+            }
+
       for (PianoKeyItem* key : qAsConst(keys))
             key->update();
       }

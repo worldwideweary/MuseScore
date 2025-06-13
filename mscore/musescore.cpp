@@ -609,6 +609,8 @@ void updateExternalValuesFromPreferences() {
       MScore::cursorResetToStart = preferences.getBool(PREF_SCORE_PLAYBACK_BRING_POSITION_TO_START);
       MScore::selectionFollowsCursor = preferences.getBool(PREF_SCORE_PLAYBACK_SELECT_POSITION_ON_STOP);
 
+      MScore::fretboardGuidesColor = preferences.getColor(PREF_FRETBOARD_GUIDES_COLOR);
+
       MScore::systemBracketMultiplier = preferences.getDouble(PREF_UI_SCORE_BRACKET_MULTIPLIER);
       MScore::fingeringTextOmitVoicing = preferences.getBool(PREF_UI_SCORE_FINGERING_OMIT_VOICING);
       MScore::fingeringTextOmitTightening = preferences.getBool(PREF_UI_SCORE_FINGERING_OMIT_TIGHTENING);
@@ -5248,6 +5250,23 @@ void MuseScore::play(Element* e) const
 
             for (int& pitch : pitches)
                   seq->startNote(channel, pitch, 80, 0);
+            seq->startNoteTimer(MScore::defaultPlayDuration);
+            }
+      else if (e->isFretDiagram()) {
+            seq->stopNotes();
+            const auto fd = toFretDiagram(e);
+            const auto staff = fd->score()->staff(fd->track() / VOICES);
+            const auto pitches = fd->pitches();
+            const int channel = staff->part()->midiChannel();
+
+            // reset the cc that is used for single note dynamics, if any
+            const int cc = synthesizerState().ccToUse();
+            if (cc != -1)
+                  seq->sendEvent(NPlayEvent(ME_CONTROLLER, channel, cc, 80));
+
+            for (const int& pitch : pitches)
+                  seq->startNote(channel, pitch, 80, 0);
+
             seq->startNoteTimer(MScore::defaultPlayDuration);
             }
       }

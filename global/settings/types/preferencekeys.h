@@ -189,6 +189,9 @@
 
 #define PREF_SCORE_PLAYBACK_SELECT_POSITION_ON_STOP         "ui/score/playback/selectPlaybackPosition"
 #define PREF_SCORE_PLAYBACK_BRING_POSITION_TO_START         "ui/score/playback/resetToStart"
+
+#define PREF_FRETBOARD_GUIDES_COLOR                         "fretboard/diagram/guides/color"
+
 #define PREF_UI_CANVAS_BG_USECOLOR                          "ui/canvas/background/useColor"
 #define PREF_UI_CANVAS_FG_USECOLOR                          "ui/canvas/foreground/useColor"
 #define PREF_UI_CANVAS_FG_USECOLOR_IN_PALETTES              "ui/canvas/foreground/useColorInPalettes"

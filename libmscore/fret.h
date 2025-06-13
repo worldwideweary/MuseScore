@@ -129,7 +129,10 @@ class FretDiagram final : public Element {
       int _frets         { 4  };
       int _fretOffset    { 0  };
       int _maxFrets      { 24 };
-      bool _showNut      { true };
+      bool _showNut       { true };
+      bool _showGuides    { false };
+      bool _showIntervals { false };
+      bool _showNames     { false };
       Orientation _orientation      { Orientation::VERTICAL };
 
       // Barres are stored in the format: K: fret, V: barre struct
@@ -150,6 +153,7 @@ class FretDiagram final : public Element {
       QFont font;
       qreal _userMag     { 1.0   };             // allowed 0.1 - 10.0
       qreal markerSize;
+      qreal fretOffsetWidth {0.0};
       int _numPos;
 
       void removeDot(int s, int f = 0);
@@ -167,7 +171,7 @@ class FretDiagram final : public Element {
       Element* linkedClone() override;
       FretDiagram* clone() const override { return new FretDiagram(*this); }
 
-      Segment* segment() { return toSegment(parent()); }
+      Segment* segment() const { return toSegment(parent()); }
 
       static FretDiagram* fromString(Score* score, const QString &s);
 
@@ -199,11 +203,19 @@ class FretDiagram final : public Element {
       void undoSetFretBarre(int _string, int _fret, bool _add = false);
       void undoFretClear();
       int  fretOffset() const     { return _fretOffset; }
-      void setFretOffset(int val) { _fretOffset = val;  }
+      void setFretOffset(int val);
       int  maxFrets() const       { return _maxFrets;   }
-      void setMaxFrets(int val)   { _maxFrets = val;    }
+      void setMaxFrets(int val);
       bool showNut() const        { return _showNut;    }
       void setShowNut(bool val)   { _showNut = val;     }
+
+      bool showGuides() const             { return _showGuides;       }
+      void setShowGuides(bool val)        { _showGuides = val;        }
+                                          
+      bool showIntervals() const          { return _showIntervals;    }
+      void setShowIntervals(bool val)     { _showIntervals = val;     }
+      bool showNames() const              { return _showNames;        }
+      void setShowNames(bool val)         { _showNames = val;         }
 
       QString harmonyText() const { return _harmony ? _harmony->plainText() : QString(); }
       qreal centerX() const;
@@ -219,6 +231,7 @@ class FretDiagram final : public Element {
       BarreMap barres() const             { return _barres; }
       DotMap dots() const                 { return _dots; }
       MarkerMap markers() const           { return _markers; }
+      QList<int> pitches() const;
 
       Harmony* harmony() const { return _harmony; }
 
@@ -241,6 +254,9 @@ class FretDiagram final : public Element {
 
       qreal userMag() const         { return _userMag;   }
       void setUserMag(qreal m)      { _userMag = m;      }
+
+      bool isHorizontal() const { return _orientation == Orientation::HORIZONTAL; }
+      bool isVertical() const { return _orientation == Orientation::VERTICAL; }
 
       virtual QString accessibleInfo() const override;
       virtual QString screenReaderInfo() const override;
