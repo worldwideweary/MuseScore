@@ -1879,6 +1879,26 @@ void FretDiagram::setTrack(int val)
       }
 
 //---------------------------------------------------------
+//   startEdit
+//---------------------------------------------------------
+
+void FretDiagram::startEdit(EditData& editData)
+      {
+      if (!_harmony) {
+            _harmony = new Harmony(score());
+            _harmony->setTrack(track());
+            _harmony->setParent(this);
+            _harmony->setHarmonyType(HarmonyType::STANDARD);
+            score()->startCmd();
+            score()->undoAddElement(_harmony);
+            score()->endCmd();
+            }
+      editData.element = _harmony;
+      score()->select(_harmony, SelectType::SINGLE, 0);
+      _harmony->startEdit(editData);
+      }
+
+//---------------------------------------------------------
 //   endEditDrag
 //---------------------------------------------------------
 
