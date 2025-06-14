@@ -223,8 +223,12 @@ void HPiano::changeSelection(const Selection& selection)
       // Single-selection of Harmony/Fretboard Diagram
       if (const auto e = selection.element()) {
             std::vector<int> harmonyPitches;
-            const auto h = e->isHarmony() ? toHarmony(e) : nullptr;
+            auto h = e->isHarmony() ? toHarmony(e) : nullptr;
             const auto fd = e->isFretDiagram() ? toFretDiagram(e) : nullptr;
+
+            if (h && h->rootTpc() == Tpc::TPC_INVALID)
+                  h = nullptr;
+
             const auto pitches = h ? h->getRealizedHarmony().pitches() : fd ? fd->pitches() : QList<int>{};
             for (const auto& pitch : pitches)
                   harmonyPitches.emplace_back(pitch);
