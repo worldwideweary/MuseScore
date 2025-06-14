@@ -243,6 +243,9 @@ class FretDiagram final : public Element {
       bool acceptDrop(EditData&) const override;
       Element* drop(EditData&) override;
 
+      bool isEditable() const override { return true; }
+      void startEdit(EditData&) override;
+
       void endEditDrag(EditData& editData) override;
       void scanElements(void* data, void (*func)(void*, Element*), bool all=true) override;
 
