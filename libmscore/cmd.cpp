@@ -3565,6 +3565,16 @@ void Score::cmdRangeToList(bool rests)
                                     }
                               }
                         }
+                  else if (e->isFretDiagram()) {
+                        if (auto h = toFretDiagram(e)->harmony())
+                              select(h);
+                        }
+                  else if (e->isHarmony()) {
+                        if (auto p = toHarmony(e)->parent()) {
+                              if (p->isFretDiagram())
+                                    select(p);
+                              }
+                        }
                   }
             }
       // Default command (last, of course)
