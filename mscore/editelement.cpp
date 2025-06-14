@@ -104,11 +104,14 @@ void ScoreView::startEditMode(Element* e)
             changeState(ViewState::NORMAL);
       editData.element = e;
       changeState(ViewState::EDIT);
+      e = editData.element;
       if (e->isTextBase()) {
             auto txt = toTextBase(e);
-            TextEditData* ted = static_cast<TextEditData*>(editData.getData(e));
-            TextCursor* currentCursor = &ted->cursor;
-            txt->selectAll(currentCursor);
+            if (!txt->plainText().isEmpty()) {
+                  TextEditData* ted = static_cast<TextEditData*>(editData.getData(e));
+                  TextCursor* currentCursor = &ted->cursor;
+                  txt->selectAll(currentCursor);
+                  }
             }
       adjustCanvasPosition(e, false);
       }
