@@ -14,6 +14,7 @@
 #include "scoreview.h"
 #include "texttools.h"
 #include "libmscore/chordrest.h"
+#include "libmscore/fret.h"
 #include "libmscore/harmony.h"
 #include "libmscore/score.h"
 #include "libmscore/segment.h"
@@ -28,18 +29,19 @@ namespace Ms {
 void ScoreView::harmonyTab(bool back)
       {
       Harmony* harmony = toHarmony(editData.element);
-      if (!harmony->parent() || !harmony->parent()->isSegment()) {
-            qDebug("no segment parent");
+      Segment* segment = nullptr;
+
+      if (auto p = harmony->parent())
+            segment = toSegment(p->isFretDiagram() ? p->parent() : p);
+
+      if (!segment) {
+            qDebug() << "Error:" << "no parent segment";
             return;
             }
+
       int track        = harmony->track();
       HarmonyType ht   = harmony->harmonyType();
       Tid tid          = harmony->tid();
-      Segment* segment = toSegment(harmony->parent());
-      if (!segment) {
-            qDebug("harmonyTicksTab: no segment");
-            return;
-            }
 
       // moving to next/prev measure
 
@@ -101,18 +103,19 @@ void ScoreView::harmonyTab(bool back)
 void ScoreView::harmonyBeatsTab(bool noterest, bool back)
       {
       Harmony* harmony = toHarmony(editData.element);
-      if (!harmony->parent() || !harmony->parent()->isSegment()) {
-            qDebug("no segment parent");
+      Segment* segment = nullptr;
+      if (auto p = harmony->parent())
+            segment = toSegment(p->isFretDiagram() ? p->parent() : p);
+
+      if (!segment) {
+            qDebug() << "Error:" << "no parent segment";
             return;
             }
+
       int track        = harmony->track();
       HarmonyType ht   = harmony->harmonyType();
       Tid tid          = harmony->tid();
-      Segment* segment = toSegment(harmony->parent());
-      if (!segment) {
-            qDebug("no segment");
-            return;
-            }
+
       Measure* measure = segment->measure();
       Fraction tick = segment->tick();
 
@@ -178,6 +181,15 @@ void ScoreView::harmonyBeatsTab(bool noterest, bool back)
                   Harmony* h = toHarmony(e);
                   harmony = h;
                   break;
+                  }
+            else if (e->isFretDiagram()) {
+                  if (e->track() == track) {
+                        FretDiagram* fd = toFretDiagram(e);
+                        harmony = fd->harmony();
+                        if (harmony && harmony->tid() != tid)
+                              harmony = nullptr;
+                        break;
+                        }
                   }
             }
 
