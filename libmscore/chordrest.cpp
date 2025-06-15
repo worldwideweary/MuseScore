@@ -1461,7 +1461,7 @@ void ChordRest::undoAddAnnotation(Element* a)
 //          currently not implemented for pianoview
 //----------------------------------------------------------------
 
-void ChordRest::getNotesAtPosition(std::vector<Note*>& notesAtPosition, bool onlyOne)
+void ChordRest::getNotesAtPosition(std::vector<Note*>& notesAtPosition, bool onlyOne) const
       {
       auto part = staff()->part();
       auto firstTrackOfPart = onlyOne ? part->startTrack()  : 0;
@@ -1491,7 +1491,7 @@ void ChordRest::getNotesAtPosition(std::vector<Note*>& notesAtPosition, bool onl
 //          of vertical movement of selection of the same tick
 //----------------------------------------------------------------
 
-void ChordRest::getChordRestsAtPosition(std::vector<ChordRest*>& chordRestsAtPosition, bool onlyOne)
+void ChordRest::getChordRestsAtPosition(std::vector<ChordRest*>& chordRestsAtPosition, bool onlyOne) const
       {
       auto part = staff()->part();
       auto firstTrackOfPart = onlyOne ? part->startTrack() : 0;
