@@ -1953,7 +1953,6 @@ void TextBase::layoutFrame()
                   qreal w = frame.height() - frame.width();
                   frame.adjust(-w * .5, 0.0, w * .5, 0.0);
                   }
-#else
             // make sure width >= height
             if (frame.height() > frame.width()) {
                   qreal w = frame.height() - frame.width();
