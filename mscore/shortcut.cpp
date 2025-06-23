@@ -3318,6 +3318,16 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::MAIN_WINDOW,
          STATE_PLAY,
+         "play-prev-system",
+         QT_TRANSLATE_NOOP("action","Play Previous System"),
+         QT_TRANSLATE_NOOP("action","Play previous system"),
+         0,
+         Icons::Invalid_ICON,
+         Qt::ApplicationShortcut
+      },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_PLAY,
          "play-next-chord",
          QT_TRANSLATE_NOOP("action","Play Next Chord"),
          QT_TRANSLATE_NOOP("action","Play next chord"),
@@ -3335,6 +3345,16 @@ Shortcut Shortcut::_sc[] = {
          Icons::Invalid_ICON,
          Qt::ApplicationShortcut
          },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_PLAY,
+         "play-next-system",
+         QT_TRANSLATE_NOOP("action","Play Next System"),
+         QT_TRANSLATE_NOOP("action","Play next system"),
+         0,
+         Icons::Invalid_ICON,
+         Qt::ApplicationShortcut
+      },
       {
          MsWidget::SCORE_TAB,
          STATE_PLAY,
