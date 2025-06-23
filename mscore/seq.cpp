@@ -42,6 +42,7 @@
 #include "libmscore/score.h"
 #include "libmscore/segment.h"
 #include "libmscore/staff.h"
+#include "libmscore/system.h"
 #include "libmscore/tempo.h"
 #include "libmscore/tie.h"
 #include "libmscore/utils.h"
@@ -1495,6 +1496,28 @@ void Seq::nextMeasure()
             if (m->nextMeasure())
                   m = m->nextMeasure();
             seek(m->tick().ticks());
+            }
+      }
+
+//---------------------------------------------------------
+//   nextSystem
+//---------------------------------------------------------
+
+void Seq::nextSystem(const bool next)
+      {
+      if (const auto cm = cs->tick2measure(Fraction::fromTicks(guiPos->first))) {
+            Measure* nm = cm;
+            Measure* systemStart = cm->system()->firstMeasure();
+            bool atSystemStart = systemStart == cm;
+            auto pm = systemStart->prevMeasure();
+            auto nsm = cm->system()->lastMeasure()->nextMeasure();
+            if (next)
+                  nm = nsm ? nsm : cm->system()->lastMeasure();
+            else
+                  nm = !atSystemStart ? systemStart : pm ? pm->system()->firstMeasure() : nullptr;
+
+            if (nm)
+                  seek(nm->tick().ticks(), true);
             }
       }
 
