@@ -1529,7 +1529,7 @@ void Seq::nextChord()
       {
       int t = guiPos->first;
       for (auto i = guiPos; i != eventsEnd; ++i) {
-            if (i->second.type() == ME_NOTEON && i->first > t && i->second.velo()) {
+            if (i->second.type() == ME_NOTEON && i->first >= t && i->second.velo()) {
                   seek(i->first);
                   break;
                   }
