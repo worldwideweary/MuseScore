@@ -237,6 +237,7 @@ class Seq : public QObject, public Sequencer {
       void rewindStart();
       void loopStart();
       void seekEnd();
+      void nextSystem(const bool next=true);
       void nextMeasure();
       void nextChord();
       void nextRehearsalMark(bool next=true);
