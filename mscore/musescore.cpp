@@ -6711,10 +6711,14 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                         playPanel->heartBeat(0, 0, 0);
                   }
             }
+      else if (cmd == "play-next-system")
+            seq->nextSystem(true/*next*/);
       else if (cmd == "play-next-measure")
             seq->nextMeasure();
       else if (cmd == "play-next-chord")
             seq->nextChord();
+      else if (cmd == "play-prev-system")
+            seq->nextSystem(false/*prev*/);
       else if (cmd == "play-prev-measure")
             seq->prevMeasure();
       else if (cmd == "play-prev-chord")
