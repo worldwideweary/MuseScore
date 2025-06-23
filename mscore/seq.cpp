@@ -42,6 +42,7 @@
 #include "libmscore/score.h"
 #include "libmscore/segment.h"
 #include "libmscore/staff.h"
+#include "libmscore/system.h"
 #include "libmscore/tempo.h"
 #include "libmscore/tie.h"
 #include "libmscore/utils.h"
@@ -1499,6 +1500,28 @@ void Seq::nextMeasure()
       }
 
 //---------------------------------------------------------
+//   nextSystem
+//---------------------------------------------------------
+
+void Seq::nextSystem(const bool next)
+      {
+      if (const auto cm = cs->tick2measure(Fraction::fromTicks(guiPos->first))) {
+            Measure* nm = cm;
+            Measure* systemStart = cm->system()->firstMeasure();
+            bool atSystemStart = systemStart == cm;
+            auto pm = systemStart->prevMeasure();
+            auto nsm = cm->system()->lastMeasure()->nextMeasure();
+            if (next)
+                  nm = nsm ? nsm : cm->system()->lastMeasure();
+            else
+                  nm = !atSystemStart ? systemStart : pm ? pm->system()->firstMeasure() : nullptr;
+
+            if (nm)
+                  seek(nm->tick().ticks(), true);
+            }
+      }
+
+//---------------------------------------------------------
 //   nextChord
 //---------------------------------------------------------
 
@@ -1506,7 +1529,7 @@ void Seq::nextChord()
       {
       int t = guiPos->first;
       for (auto i = guiPos; i != eventsEnd; ++i) {
-            if (i->second.type() == ME_NOTEON && i->first > t && i->second.velo()) {
+            if (i->second.type() == ME_NOTEON && i->first >= t && i->second.velo()) {
                   seek(i->first);
                   break;
                   }
