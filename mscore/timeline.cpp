@@ -1564,8 +1564,10 @@ bool Timeline::addMetaValue(int x, int pos, QString metaText, int row, ElementTy
       bool isRehearsalMark = (elementType == ElementType::REHEARSAL_MARK);
 
       if (isRehearsalMark && _contiguousRM) {
-            if (x == 0)
+            if ((lastPositionEnd == 0) || (lastPositionEnd > pos)) {
+                  x = 0;
                   lastPositionEnd = 0;
+                  }
             x = pos = lastPositionEnd;
             }
 

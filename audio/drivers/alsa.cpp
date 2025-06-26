@@ -391,15 +391,15 @@ bool AlsaDriver::recover()
       snd_pcm_status_alloca (&stat);
 
       if ((err = snd_pcm_status (_play_handle, stat)) < 0) {
-            qDebug("Alsa_driver: recover: pcm_status(): %s",  snd_strerror (err));
+            // qDebug("Alsa_driver: recover: pcm_status(): %s",  snd_strerror (err));
             return false;
             }
       if (snd_pcm_status_get_state (stat) == SND_PCM_STATE_XRUN) {
             struct timeval tnow, trig;
             gettimeofday (&tnow, 0);
             snd_pcm_status_get_trigger_tstamp (stat, &trig);
-            qDebug("AlsaDriver: recover: stat = %02x, xrun of at least %8.3lf ms", _stat,
-               1e3 * tnow.tv_sec - 1e3 * trig.tv_sec + 1e-3 * tnow.tv_usec - 1e-3 * trig.tv_usec);
+            // qDebug("AlsaDriver: recover: stat = %02x, xrun of at least %8.3lf ms", _stat,
+               // 1e3 * tnow.tv_sec - 1e3 * trig.tv_sec + 1e-3 * tnow.tv_usec - 1e-3 * trig.tv_usec);
             }
 
       if (pcmStop()) {
