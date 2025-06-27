@@ -1302,7 +1302,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "select-prev-chord",
          QT_TRANSLATE_NOOP("action","Add Previous Chord to Selection"),
          QT_TRANSLATE_NOOP("action","Add previous chord to selection")
