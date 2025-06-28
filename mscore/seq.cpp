@@ -1150,8 +1150,18 @@ void Seq::collectEvents(int utick, bool viaUserNavigation)
 
       updateEventsEnd();
 
-      // Attempted to use events.find(utick) iinstead of events.cbegin(), but will lose play position:
-      playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : events.cbegin();
+      // Observation:  Seeking occurs after this current function
+      // Because of quick visual "jump-backs", attempted to use
+      // events.find(utick) instead of events.cbegin(), but that
+      // can somehow lose position upon start/stop
+
+      // Why was playPos updated here? One reason is that it occurs earlier/prior to ::heartBeatTimeout,
+      // allowing its guiPos loop in relation to playPos to be using the correct playPos at that time
+
+      if (mscore->loop())
+            playPos = events.find(cs->loopInTick().ticks());
+      else {;} // playPos = events.cbegin();
+
       playlistChanged = false;
       unmarkNotes();
       mutex.unlock();
@@ -1232,6 +1242,10 @@ void Seq::setPos(int utick)
 
       playFrame = cs->utick2utime(utick) * MScore::sampleRate;
       playPos   = events.lower_bound(utick);
+      guiPos    = playPos; // safeguard against heartBeatTimeout using old guiPos
+
+      unmarkNotes();
+
       mutex.unlock();
       }
 
