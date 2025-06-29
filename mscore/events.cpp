@@ -849,7 +849,7 @@ void ScoreView::mouseMoveEvent(QMouseEvent* me)
                   break;
 
             case ViewState::PLAY:
-                  if (drag)
+                  if (!MScore::currentSystemAlwaysTop && drag)
                         dragScoreView(me);
                   break;
 
