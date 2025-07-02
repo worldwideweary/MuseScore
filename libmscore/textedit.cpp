@@ -310,16 +310,20 @@ bool TextBase::edit(EditData& ed)
                                           score()->undo(new JoinText(_cursor), &ed);
                                           }
                                     }
-                              else {
-                                    score()->undo(new RemoveText(_cursor, QString(_cursor->currentCharacter())), &ed);
+                              else if (ctrlPressed) {
+                                    const auto nextWord = QTextCursor::NextWord;
+                                    _cursor->movePosition(nextWord, QTextCursor::MoveMode::KeepAnchor);
+                                    s.clear();
+                                    deleteSelectedText(ed);
                                     }
+                              else score()->undo(new RemoveText(_cursor, QString(_cursor->currentCharacter())), &ed);
                               }
                         return true;
 
                   case Qt::Key_Backspace:
                         if (ctrlPressed) {
-                              // delete last word
-                              _cursor->movePosition(QTextCursor::WordLeft, QTextCursor::MoveMode::KeepAnchor);
+                              const auto lastWord = QTextCursor::WordLeft;
+                              _cursor->movePosition(lastWord, QTextCursor::MoveMode::KeepAnchor);
                               s.clear();
                               deleteSelectedText(ed);
                               }
