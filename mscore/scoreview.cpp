@@ -6460,14 +6460,22 @@ void ScoreView::setControlCursorVisible(bool v)
 
 void ScoreView::cmdTuplet(int n, ChordRest* cr)
       {
-      if (cr->durationType() != TDuration(TDuration::DurationType::V_MEASURE) &&
-          ((cr->durationType() < TDuration(TDuration::DurationType::V_512TH)) ||
-           (cr->durationType() < TDuration(TDuration::DurationType::V_256TH) && n > 3) ||
-           (cr->durationType() < TDuration(TDuration::DurationType::V_128TH) && n > 7))
-          ) {
-            mscore->noteTooShortForTupletDialog();
-            return;
+      const auto dt = cr->durationType();
+      const auto dtMs  = TDuration(TDuration::DurationType::V_MEASURE);
+      if (dt != dtMs) {
+            bool ok = true;
+            const auto dt512 = TDuration(TDuration::DurationType::V_512TH);
+            const auto dt256 = TDuration(TDuration::DurationType::V_256TH);
+            const auto dt128 = TDuration(TDuration::DurationType::V_128TH);
+            if (dt < dt512 && dt != dtMs) ok = !ok;
+            else if (dt < dt256 && n > 3) ok = !ok;
+            else if (dt < dt128 && n > 7) ok = !ok;
+            if (!ok) {
+                  mscore->noteTooShortForTupletDialog();
+                  return;
+                  }
             }
+
       Measure* measure = cr->measure();
       if (measure && measure->isMMRest())
             return;
