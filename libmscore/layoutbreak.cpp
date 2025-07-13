@@ -302,12 +302,14 @@ bool LayoutBreak::setProperty(Pid propertyId, const QVariant& v)
                   break;
             }
 
-      if (propertyId == Pid::START_WITH_MEASURE_ONE)
-            triggerLayoutToEnd();
-      else {
-            triggerLayout();
-            if (parent() && measure()->next())
-                  measure()->next()->triggerLayout();
+      if (parent()) {
+            if (propertyId == Pid::START_WITH_MEASURE_ONE)
+                  triggerLayoutToEnd();
+            else {
+                  triggerLayout();
+                  if (measure()->next())
+                        measure()->next()->triggerLayout();
+                  }
             }
 
       setGenerated(false);
