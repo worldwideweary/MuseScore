@@ -31,6 +31,7 @@
 #include "libmscore/shadownote.h"
 #include "libmscore/staff.h"
 #include "libmscore/stafflines.h"
+#include "libmscore/slur.h"
 #include "libmscore/text.h"
 #include "libmscore/textedit.h"
 #include "libmscore/stafftext.h"
@@ -997,6 +998,8 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
       editData.modifiers = ev->modifiers();
       editData.s         = ev->text();
 
+      const auto e = editData.element;
+
       if (state != ViewState::EDIT) {
             const bool shiftModifier = ev->modifiers() & Qt::ShiftModifier;
             if (hasEditGrips() && !(shiftModifier && ev->key() == Qt::Key_Backtab)) {
@@ -1014,7 +1017,7 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
                                     }
                               // Move focus to default grip if arrow keys are pressed and no grip is focused
                               if (editData.curGrip == Grip::NO_GRIP)
-                                    editData.curGrip = editData.element->defaultGrip();
+                                    editData.curGrip = e->defaultGrip();
                               break;
                         default:
                               break;
@@ -1022,9 +1025,8 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
 
                   ScoreViewCmdContext ctx(this, /* updateGrips */ true);
 
-                  if (!editData.element->edit(editData)) {
+                  if (!e->edit(editData))
                         handleArrowKeyPress(ev);
-                        }
                   }
             return;
             }
@@ -1033,11 +1035,11 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
             qDebug("keyPressEvent key 0x%02x(%c) mod 0x%04x <%s> nativeKey 0x%02x scancode %d",
                editData.key, editData.key, int(editData.modifiers), qPrintable(editData.s), ev->nativeVirtualKey(), ev->nativeScanCode());
 
-      if (editData.element->isLyrics()) {
+      if (e->isLyrics()) {
             if (editKeyLyrics())
                   return;
             }
-      else if (editData.element->isHarmony()) {
+      else if (e->isHarmony()) {
             if (editData.key == Qt::Key_Space && !(editData.modifiers & CONTROL_MODIFIER)) {
                   harmonyBeatsTab(true, editData.modifiers & Qt::ShiftModifier);
                   return;
@@ -1052,22 +1054,26 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
                   return;
                   }
             }
-      else if (editData.element->isFiguredBass()) {
+      else if (e->isFiguredBass()) {
             if (editData.key == Qt::Key_Space && !(editData.modifiers & CONTROL_MODIFIER)) {
                   figuredBassTab(false, editData.modifiers & Qt::ShiftModifier);
                   return;
                   }
             }
-      else if (editData.element->isSticking()) {
+      else if (e->isSticking()) {
             if (editKeySticking())
                   return;
             }
-      else if (editData.element->isFingering()) {
+      else if (e->isFingering()) {
             if (editData.key == Qt::Key_Tab || editData.key == Qt::Key_Backtab) {
-                  if (editData.element->edit(editData)) {
+                  if (e->edit(editData)) {
                         return;
                         }
                   }
+            }
+      else if (e->isSpannerSegment()) {
+            const auto seg = toSpannerSegment(e);
+            cmdGotoElement(seg); // update view during extension/contraction
             }
 
       ScoreViewCmdContext cc(this, hasEditGrips());
@@ -1087,15 +1093,14 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
 #endif
 
       if (!((editData.modifiers & Qt::ShiftModifier) && (editData.key == Qt::Key_Backtab))) {
-            if (editData.element->edit(editData)) {
+            if (e->edit(editData)) {
                   if (state != ViewState::EDIT) {
                         // textTab or other function may have terminated edit mode
                         mscore->endCmd();
                         return;
                         }
-                  if (textEdit) {
+                  if (textEdit)
                         mscore->textTools()->updateTools(editData);
-                        }
                   return;
                   }
             }
