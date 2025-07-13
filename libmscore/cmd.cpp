@@ -2841,7 +2841,7 @@ Element* Score::move(const QString& cmd)
                   if (selection().isRange()) {
                         cr = selection().firstChordRest();
                         }
-                  el = prevMeasure(cr);
+                  el = noteEntryMode() ? cr : prevMeasure(cr);
                   }
 
             if (el) {
