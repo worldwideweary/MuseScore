@@ -5643,9 +5643,9 @@ void ScoreView::cmdAddHairpin(HairpinType type)
             // Update layout and exit
             score()->startCmd();
                sh->layout();
+               sh->triggerLayout();
                mscore->currentScoreView()->updateGrips();
             score()->endCmd();
-            score()->doLayout();
             return;
             }
 
