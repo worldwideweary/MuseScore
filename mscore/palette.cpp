@@ -898,6 +898,9 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                   int endStaff   = firstStaffOnly ? 1 : sel.staffEnd();
                   for (int i = startStaff; i < endStaff; ++i) {
                         Spanner* spanner = static_cast<Spanner*>(element->clone());
+                        spanner->setTick(startSegment->tick());
+                        if (endSegment)
+                              spanner->setTick2(endSegment->tick());
                         spanner->setScore(score);
                         spanner->styleChanged();
                         score->cmdAddSpanner(spanner, i, startSegment, endSegment);
