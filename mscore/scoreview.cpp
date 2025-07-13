@@ -5245,6 +5245,7 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             auto end = spanner->endElement();
             auto terminus = (spanner->frontSegment() == ss) ? start : end;
             m = toMeasure(terminus->findMeasure());
+            el = terminus;
             }
       else if (el->isSpanner()) {
             Element* se = static_cast<const Spanner*>(el)->startElement();
@@ -5351,9 +5352,10 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
                   }
             }
       else if (editing){
-            // keep position while editing and currentSystemAlwaysTop is off
-            showRect.setY(r.y());
-            showRect.setHeight(r.height());
+            auto ry = sys->canvasBoundingRect().y();
+            auto h = sys->canvasBoundingRect().height();
+            showRect.setY(ry);
+            showRect.setHeight(h);
             }
 
       if (shadowNote->visible())
