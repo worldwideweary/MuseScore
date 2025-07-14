@@ -1517,7 +1517,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL | STATE_NOTE_ENTRY,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
          "delete",
          QT_TRANSLATE_NOOP("action","Delete"),
          QT_TRANSLATE_NOOP("action","Delete"),
@@ -3756,7 +3756,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {                     // mapped to undo in note entry mode
          MsWidget::SCORE_TAB,
-         STATE_NORMAL | STATE_NOTE_ENTRY,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
          "backspace",
          QT_TRANSLATE_NOOP("action","Backspace"),
 //         0,
