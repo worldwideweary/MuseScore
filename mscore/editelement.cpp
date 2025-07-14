@@ -145,6 +145,8 @@ void ScoreView::startEdit(bool editMode)
       if (editData.element->isTBox())
             editData.element = toTBox(editData.element)->text();
 
+      _score->cmdState()._setUpdateMode(UpdateMode::UpdateAll);
+
       Element* e = editData.element;
       setFocus();
       editData.clearData();
