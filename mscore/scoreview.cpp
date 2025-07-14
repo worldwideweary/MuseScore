@@ -4002,8 +4002,21 @@ void ScoreView::cmd(const char* s)
                   int idxStaff = track2staff(inputTrack);
 
                   cv->setDropTarget(nullptr);
+
+
+                  if (cv->editMode())
+                        cv->changeState(ViewState::NORMAL);
+
                   cv->score()->startCmd();
-                     cv->score()->cmdDeleteSelection();
+
+                  const auto ee = cv->getEditElement();
+                  if (ee && ee->isSpannerSegment()) {
+                        auto sseg = toSpannerSegment(ee);
+                        auto span = sseg->spanner();
+                        cv->score()->deleteItem(span);
+                        }
+                  else cv->score()->cmdDeleteSelection();
+
                   cv->score()->endCmd();
 
                   if (is.noteEntryMode()) {
