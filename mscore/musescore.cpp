@@ -6793,6 +6793,7 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   (_sstate == STATE_NOTE_ENTRY_METHOD_STEPTIME ||
                   _sstate == STATE_NOTE_ENTRY_METHOD_REPITCH ||
                   _sstate == STATE_NOTE_ENTRY_METHOD_RHYTHM);
+            auto ee = cv->getEditElement();
 
             if (isNoteEntry) {
                   // Note Entry - Delete current chord, or move to previous chord in current track
@@ -6800,7 +6801,7 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   auto  iTick = is.tick();
                   if (auto cr = cs->selection().firstChordRest()) {
                         auto track = cr->track();
-                        if (isRange) {
+                        if (cv && isRange) {
                               cv->cmd(getAction("delete")); // Specifically not cs->cmdDeleteSelection();
                               }
                         else if (cr->isRest()) {
@@ -6840,6 +6841,24 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                            cs->cmdDeleteSelection();
                         cs->endCmd();
                         }
+                  }
+            else if (!ee || !cv->editMode()) {
+                  cv->cmd(getAction("delete"));
+                  return;
+                  }
+            else if (ee) {
+                  cv->changeState(ViewState::NORMAL);
+
+                  cs->startCmd();
+                  if (ee->isSpannerSegment()) {
+                        auto sseg = toSpannerSegment(ee);
+                        auto span = sseg->spanner();
+                        cs->deleteItem(span);
+                        }
+                  else {
+                        cs->deleteItem(ee);
+                        }
+                  cs->endCmd();
                   }
             else if (_sstate != STATE_NORMAL) {
                   undoRedo(true);
