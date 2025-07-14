@@ -2831,18 +2831,20 @@ Element* Score::move(const QString& cmd)
                   }
             }
       else if (cmd == "prev-measure") {
-            cr = firstCR ? firstCR : cr;
+            const bool isRange = selection().isRange();
+            if (firstCR)
+                  cr = firstCR;
             auto currentTrack = noteEntryMode() ? _is.track() : 0;
             if (box && box->prevMeasure() && box->prevMeasure()->first())
                   el = box->prevMeasure()->first()->nextChordRest(0, false);
             if (cr) {
-                  if (selection().cr() && (cr->tick() != selection().cr()->tick())) {
-                        cr = selection().cr();
-                        }
-                  if (selection().isRange()) {
-                        cr = selection().firstChordRest();
-                        }
-                  el = noteEntryMode() ? cr : prevMeasure(cr);
+                  const auto scr = selection().cr();
+                  const auto fcr = selection().firstChordRest();
+                  if (isRange)
+                        cr = fcr;
+                  else if (scr && (cr->tick() != scr->tick()))
+                        cr = scr;
+                  el = (isRange && noteEntryMode()) ? cr : prevMeasure(cr);
                   }
 
             if (el) {
