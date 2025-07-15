@@ -3854,12 +3854,12 @@ void Chord::layoutArticulations3(Slur* slur)
             if (aShape.intersects(sShape)) {
                   qreal d = score()->styleS(Sid::articulationMinDistance).val() * spatium();
                   if (slur->up()) {
-                        d += qMax(aShape.minVerticalDistance(sShape), 0.0);
+                        d = qMax(aShape.minVerticalDistance(sShape), 0.0);
                         a->rypos() -= d;
                         aShape.translateY(-d);
                         }
                   else {
-                        d += qMax(sShape.minVerticalDistance(aShape), 0.0);
+                        d = qMax(sShape.minVerticalDistance(aShape), 0.0);
                         a->rypos() += d;
                         aShape.translateY(d);
                         }
