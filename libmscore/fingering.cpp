@@ -165,7 +165,8 @@ void Fingering::layout()
                               top -= md;
                               qreal diff = (bbox().bottom() + ipos().y() + yd + n->y()) - top;
                               if (diff > 0.0)
-                                    yd -= diff;
+                                    if (chord->beam())
+                                          yd -= diff;
                               if (offsetChanged() != OffsetChange::NONE) {
                                     // user moved element within the skyline
                                     // we may need to adjust minDistance, yd, and/or offset
@@ -201,7 +202,8 @@ void Fingering::layout()
                               bottom += md;
                               qreal diff = bottom - (bbox().top() + ipos().y() + yd + n->y());
                               if (diff > 0.0)
-                                    yd += diff;
+                                    if (chord->beam())
+                                          yd += diff;
                               if (offsetChanged() != OffsetChange::NONE) {
                                     // user moved element within the skyline
                                     // we may need to adjust minDistance, yd, and/or offset
