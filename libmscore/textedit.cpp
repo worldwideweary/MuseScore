@@ -449,6 +449,18 @@ bool TextBase::edit(EditData& ed)
                               }
                         break;
 
+                  case Qt::Key_M:
+                        // Arbitrary (Ctrl+M) for switching to LH Guitar fingering
+                        // Based on my personal shortcut for doing this outside of editing similar
+                        // to my beam-styling shortcuts
+                        if (ctrlPressed && isFingering()) {
+                              s = "";
+                              Tid value = (tid() == Tid::LH_GUITAR_FINGERING) ? Tid::FINGERING : Tid::LH_GUITAR_FINGERING;
+                              setTid(value);
+                              styleChanged();
+                              layout();
+                              }
+                        break;
                   case Qt::Key_0: // FALL_THROUGH
                   case Qt::Key_1:
                   case Qt::Key_2:
