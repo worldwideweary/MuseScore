@@ -2635,7 +2635,13 @@ Element* Score::move(const QString& cmd)
                   Measure* m = _is.segment()->measure();
                   Segment* s = _is.segment()->prev1(SegmentType::ChordRest);
                   int track = _is.track();
-                  for (; s; s = s->prev1(SegmentType::ChordRest)) {
+
+                  if (auto scr = selection().cr()) {
+                        if (s && s->tick() > scr->tick()) {
+                              _is.moveInputPos(scr);
+                              }
+                        }
+                  else for (; s; s = s->prev1(SegmentType::ChordRest)) {
                         if (s->element(track) || (s->measure() != m && s->rtick().isZero())) {
                               if (s->element(track)) {
                                     el = s->nextChordRest(track, true);
@@ -2867,6 +2873,11 @@ Element* Score::move(const QString& cmd)
             el = nullptr;
             bool next = (cmd == "next-system");
             MeasureBase* dest = nullptr;
+
+            if (auto scr = selection().cr())
+                  if (!next && (_is.tick() > scr->tick()))
+                        cr = scr;
+
             if (cr) {
                   if (auto m = cr->findMeasureBase()) {
                         if (!next) {
