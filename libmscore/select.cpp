@@ -1387,6 +1387,15 @@ std::list<Note*> Selection::uniqueNotes(int track) const
 
 void Selection::extendRangeSelection(ChordRest* cr)
       {
+      const auto startTick = tickStart();
+      const auto newTick = cr->tick();
+      const bool prev = newTick < startTick;
+      const bool grace = prev && cr->isChord() && !toChord(cr)->graceNotesBefore().empty() ? false : true;
+      auto& sf = score()->selectionFilter();
+      // If extending to the left and grace-note(s) exist on destination chord, then filter out grace-notes
+      // to aid in range-based slur applications
+      sf.setFiltered(SelectionFilterType::GRACE_NOTE, grace);
+
       extendRangeSelection(cr->segment(),
          cr->nextSegmentAfterCR(SegmentType::ChordRest
             | SegmentType::EndBarLine
