@@ -2302,7 +2302,8 @@ void ScoreView::updateHover(const QPointF& position)
 
       auto selected     = score()->selection().element();
       auto pastHover    = dropTarget;
-      auto presentHover = elementNear(toLogical(point));
+      const qreal zoomThresh  = 0.33;
+      Element* presentHover = logicalZoomLevel() > zoomThresh ? elementNear(toLogical(point)) : nullptr;
 
       auto logicalPos = toLogical(point);
       editData.pos = logicalPos;
