@@ -660,6 +660,8 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                   break;
 
             case ViewState::NOTE_ENTRY: {
+                  const int voiceFilter = 1 + _score->inputState().voice(); // 0=All, 1=Voice-1 etc.
+                  bool shift = (ev->modifiers() & Qt::ShiftModifier);
                   _score->startCmd();
                   bool restMode = _score->inputState().rest();
                   if (ev->button() == Qt::RightButton)
@@ -667,7 +669,13 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                   if (MScore::disableMouseEntry) {
                         if (auto el = elementAt(editData.pos)) {
                               if (!el->isStaffLines()) {
-                                    _score->select(el);
+                                    if (shift) {
+                                          _score->select(el, SelectType::RANGE);
+                                          _score->cmdCycleVoiceFilter(voiceFilter);
+                                          }
+                                    else
+                                          _score->select(el);
+
                                     if (el->isNote() || el->isRest())
                                           _score->inputState().moveInputPos(el);
                                     else changeState(ViewState::NORMAL);
@@ -676,14 +684,15 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                               else if (auto m = toStaffLines(el)->measure()) {
                                     if (auto f = m->first()) {
                                           if (auto cr = f->nextChordRest(el->track())) {
-                                                if (cr->isChord())
-                                                      _score->select(toChord(cr)->upNote());
-                                                else _score->select(cr);
-                                                _score->select(m, SelectType::RANGE, cr->staffIdx());
+                                                if (!shift) {
+                                                      _score->deselectAll();
+                                                      _score->select(m, SelectType::RANGE, cr->staffIdx());
+                                                      // Default into a voice-1 under these circumstances:
+                                                      _score->cmdCycleVoiceFilter();
+                                                      }
+                                                else _score->select(cr, SelectType::RANGE);
+
                                                 _score->inputState().moveInputPos(cr);
-                                                // Default into a voice-1 measure selection when in Note Entry
-                                                // Alternatively, pass track for retaining current voice
-                                                _score->cmdCycleVoiceFilter();
                                                 }
                                           }
                                     }
