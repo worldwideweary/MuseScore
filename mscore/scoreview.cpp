@@ -2789,6 +2789,126 @@ void ScoreView::cmdGotoElement(Element* e)
       }
 
 //---------------------------------------------------------
+//   selectSlur
+//
+//    Forward can be achieved by using the "Select next slur from position"
+//    command, but it only activates when in Edit Mode to allow for
+//    duplicate shortcut definitions
+//    E.g., Slur [S] for "forward", [Alt+S] for "backward", where [S] won't
+//    work until a slur is selected, and edit mode is on (it isn't enabled by
+//    default when selected via mouse
+//
+//    TODO: Maybe adv. prefewrence for staying on track instead of using entire staff?
+//    TODO: lower_bound & upper_bound for more efficient spanner map traversal
+//
+//    C++ Observation: std::reverse() is not supported for multi-maps [c++17],
+//          but auto type deduction of lambdas was introduced in [c++14]
+//---------------------------------------------------------
+
+void ScoreView::selectSlur(bool backward)
+      {
+      const bool forward = !backward;
+
+      //---------------------------------------------------------
+      //    Outer Lambda: getNextSpannerSegment
+      //---------------------------------------------------------
+      auto getNextSpannerSegment = [&](const Element* selected, const bool backward) -> SpannerSegment* {
+            if (!selected)
+                  return nullptr;
+            const auto selectedSpannerSegment = selected->isSpannerSegment() ? toSpannerSegment(selected) : nullptr;
+            const auto selectedSpanner = selectedSpannerSegment ? selectedSpannerSegment->spanner() : nullptr;
+            SpannerSegment* result = nullptr;
+            bool foundSelf = !selectedSpannerSegment;
+
+            //---------------------------------------------------------
+            //    Inner Lambda: theLogic
+            //---------------------------------------------------------
+            auto theLogic = [&](const auto& it, bool& foundSelf) -> SpannerSegment* {
+                  const auto rejected = nullptr;
+                  const auto s = it->second;
+                  const int begin = it->first;
+
+                  const int selectedPos = selectedSpanner ? selectedSpanner->tick().ticks() : selected->tick().ticks();
+                  const int selectedTrack = score()->noteEntryMode() ? score()->inputTrack() : selected->track();
+                  const auto selectedType = selectedSpanner ? selectedSpanner->type() : ElementType::SLUR;
+                  const auto selectedStaff = selected->staff();
+
+                  if (backward && (begin > selectedPos))
+                        return rejected;
+                  else if (forward && (begin < selectedPos))
+                        return rejected;
+
+                  const bool sameSpanner = selectedSpanner && (selectedSpanner == s);
+                  const bool sameType  = (s->type() == selectedType);
+                  const bool sameTrack = (s->track() == selectedTrack); (void) sameTrack; // Option? Choice between same track or same staff?
+                  const bool sameStaff = (s->staff() == selectedStaff);
+
+                  if (sameSpanner) {
+                        foundSelf = true;
+                        return rejected;
+                        }
+                  if (sameType && sameStaff) {
+                        if (!foundSelf && (begin == selectedPos))
+                              return rejected;
+                        else return backward ? s->backSegment() : s->frontSegment();
+                        }
+                  else return rejected;
+                  };
+
+
+            auto spanners = score()->spannerMap().map();
+            // auto spanners = overlap ? score()->spannerMap().findOverlapping(begin, end) : score()->spannerMap().findContained(begin, end);
+
+            if (backward) {
+                  for (auto it = spanners.rbegin(); it != spanners.rend(); ++it) {
+                        result = theLogic(it, foundSelf);
+                        if (result)
+                              break;
+                        }
+                  }
+            else if (forward) {
+                  for (auto it = spanners.begin(); it != spanners.end(); ++it) {
+                        result = theLogic(it, foundSelf);
+                        if (result)
+                              break;
+                        }
+                  }
+
+            return result;
+            };
+
+      //---------------------------------------------------------
+      //    lambda: activateSpanner
+      //---------------------------------------------------------
+      auto activateSpanner = [this](SpannerSegment* selectMe) -> void {
+            if (!selectMe)
+                  return;
+            changeState(ViewState::NORMAL);
+            score()->select(selectMe);
+            cmdGotoElement(selectMe);
+            startEditMode(selectMe);
+            };
+
+      auto& selection  = score()->selection();
+      const auto e = selection.isRange() ? selection.elements().front() : selection.isSingle() ? selection.element() : nullptr;
+      if (!e)
+            return;
+
+      const auto selectedSpannerSegment = e->isSpannerSegment() ? toSpannerSegment(e) : nullptr;
+      auto selectedSpanner = selectedSpannerSegment ? selectedSpannerSegment->spanner() : nullptr;
+      if (selectedSpanner) {
+            const auto toSelect = backward ? selectedSpanner->frontSegment() : selectedSpanner->backSegment();
+            if (selectedSpannerSegment != toSelect) {
+                  activateSpanner(toSelect);
+                  return;
+                  }
+            }
+
+      auto nextSpannerSegment = getNextSpannerSegment(e, backward);
+      activateSpanner(nextSpannerSegment);
+      }
+
+//---------------------------------------------------------
 //   ticksTab
 //---------------------------------------------------------
 
@@ -3270,62 +3390,10 @@ void ScoreView::cmd(const char* s)
                   ; // TODO:state         sm->postEvent(new CommandEvent(cmd));
                   }},
             {{"select-slur"}, [](ScoreView* cv, const QByteArray&) {
-                  Element* e = nullptr;
-                  int beginning = 0;
-                  int tick      = 0;
-                  int track     = 0;
-                  auto score = cv->score();
-                  auto& sel  = score->selection();
-                  if (sel.isRange()) {
-                        e = sel.elements().front();
-                        tick = sel.tickEnd().ticks();
-                        if (sel.firstChordRest())
-                              track = sel.firstChordRest()->track();
-                        }
-                  if (sel.isSingle()) {
-                        e = sel.element();
-                        tick = e->tick().ticks();
-                        track = e->track();
-                        }
-                  if (!e) return;
-
-                  // Will consider entire staff's voicing, but use Note-Entry's track info initially
-                  track = score->noteEntryMode() ? score->inputTrack() : -1;
-
-                  if (e->isSlurSegment()) {
-                        // Go to previous (or overlapping) slur of current position in same track
-                        auto overlappingSpanners = score->spannerMap().findOverlapping(tick, tick);
-                        std::vector<SlurSegment*> overlappingSlurSegments;
-                        for (auto i : overlappingSpanners) {
-                               auto s = i.value;
-                               if (s->isSlur()) {
-                                     if (s->track() == track || (s->staff() == e->staff() && track < 0)) {
-                                           auto slur = toSlur(s);
-                                           overlappingSlurSegments.emplace_back(slur->backSegment());
-                                           }
-                                     }
-                               }
-                        if (e == overlappingSlurSegments.front())
-                              --tick;
-                        else beginning = tick;
-                        }
-
-                  auto spanners = score->spannerMap().findOverlapping(beginning, tick);
-                  std::reverse(spanners.begin(), spanners.end());
-                  for (auto interval : spanners) {
-                        auto spanner = interval.value;
-                        if (spanner->isSlur()) {
-                              if (spanner->track() == track || (spanner->staff() == e->staff() && track < 0)) {
-                                    auto slur = toSlur(spanner);
-                                    auto ss = slur->backSegment();
-                                    if (ss == e) continue;
-                                    cv->changeState(ViewState::NORMAL);
-                                    score->select(ss);
-                                    cv->cmdGotoElement(ss);
-                                    break;
-                                    }
-                              }
-                        }
+                  cv->selectSlur(true);
+                  }},
+            {{"select-slur-forward"}, [](ScoreView* cv, const QByteArray&) {
+                  cv->selectSlur(false);
                   }},
             {{"scr-prev"}, [](ScoreView* cv, const QByteArray&) {
                   cv->screenPrev();
@@ -5171,8 +5239,12 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       else if (el->isMeasureBase())
             m = static_cast<const MeasureBase*>(el);
       else if (el->isSpannerSegment()) {
-            Element* se = static_cast<const SpannerSegment*>(el)->spanner()->startElement();
-            m = static_cast<Measure*>(se->findMeasure());
+            auto ss = toSpannerSegment(el);
+            auto spanner = ss->spanner();
+            auto start = spanner->startElement();
+            auto end = spanner->endElement();
+            auto terminus = (spanner->frontSegment() == ss) ? start : end;
+            m = toMeasure(terminus->findMeasure());
             }
       else if (el->isSpanner()) {
             Element* se = static_cast<const Spanner*>(el)->startElement();

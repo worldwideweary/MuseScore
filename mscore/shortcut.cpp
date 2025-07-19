@@ -1483,11 +1483,21 @@ Shortcut Shortcut::_sc[] = {
          STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
          "select-slur",
          QT_TRANSLATE_NOOP("action","Selection (slur)"),
-         QT_TRANSLATE_NOOP("action","Select previous slur from position"),
+         QT_TRANSLATE_NOOP("action","Select previous spanner from position of same type (Slur is Default)"),
          0,
          Icons::Invalid_ICON,
          Qt::WindowShortcut
          },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_EDIT,
+         "select-slur-forward",
+         QT_TRANSLATE_NOOP("action","Selection (slur) forward"),
+         QT_TRANSLATE_NOOP("action","Select next slur from position"),
+         0,
+         Icons::Invalid_ICON,
+         Qt::WindowShortcut
+      },
       {
          MsWidget::SCORE_TAB,
          STATE_NORMAL | STATE_NOTE_ENTRY,
