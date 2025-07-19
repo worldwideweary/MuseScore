@@ -329,6 +329,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       void setLoopCursor(PositionCursor* curLoop, const Fraction& tick, bool isInPos);
       void cmdMoveCR(bool left);
       void cmdGotoElement(Element*);
+      void selectSlur(bool backward=true);
       bool checkCopyOrCut();
       QVariant inputMethodQuery(Qt::InputMethodQuery query) const override;
       void startFotomode();
