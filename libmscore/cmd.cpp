@@ -3305,7 +3305,8 @@ void Score::cmdIncDecDuration(int nSteps, bool stepDotted)
                   }
             }
       else {
-            initialDuration = _is.duration();
+            const bool repitch = NoteEntryMethod::REPITCH == _is.noteEntryMethod();
+            initialDuration = repitch ? cr->durationType() : _is.duration();
             }
       TDuration d = (nSteps != 0) ? initialDuration.shiftRetainDots(nSteps, stepDotted) : initialDuration;
       if (!d.isValid())
