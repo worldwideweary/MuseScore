@@ -4110,6 +4110,11 @@ void ScoreView::textTab(bool back)
 
       TextBase* ot = toTextBase(oe);
 
+      const System* oeSys = ot->findMeasureBase() ? ot->findMeasureBase()->system() : nullptr;
+      const System* oeNextSys{0};
+      if (oeSys) if (auto nmb = oeSys->lastMeasure()->findMeasureBase()->next())
+            oeNextSys = nmb->system();
+
       if (oe->isHarmony()) {
             harmonyBeatsTab(true, back);
             return;
@@ -4256,6 +4261,15 @@ void ScoreView::textTab(bool back)
             return;
             }
       Note* nn = toNote(el);
+
+      const auto gotoSys = nn->chord()->measure()->system();
+      bool gotoIsBeyondNextSys = (gotoSys != oeSys && gotoSys != oeNextSys);
+      if (gotoIsBeyondNextSys) {
+            // Safeguard jumping too far away from current position by finalizing onto
+            // original (current) text selection
+            score()->select(oe);
+            return;
+            }
 
       // go to note
       cmdGotoElement(nn);
