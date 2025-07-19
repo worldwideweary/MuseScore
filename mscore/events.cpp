@@ -1022,8 +1022,9 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
 
                   ScoreViewCmdContext ctx(this, /* updateGrips */ true);
 
-                  if (!editData.element->edit(editData))
+                  if (!editData.element->edit(editData)) {
                         handleArrowKeyPress(ev);
+                        }
                   }
             return;
             }
@@ -1092,8 +1093,9 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
                         mscore->endCmd();
                         return;
                         }
-                  if (textEdit)
+                  if (textEdit) {
                         mscore->textTools()->updateTools(editData);
+                        }
                   return;
                   }
             }
