@@ -2330,9 +2330,9 @@ MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection&
       std::vector<MeasureBase*> insertedMeasures;
       int safeGuard = 0;
       const int maxIterations = 9999;
-      int sNo = mbStart->no();
-      int eNo = mbEnd->no();
-      for (auto mbCurrent = mbStart; mbCurrent && (mbCurrent->no() <= eNo); mbCurrent = mbCurrent->next()) {
+      int startIdx = mbStart->index();
+      int endIdx  = mbEnd->index();
+      for (auto mbCurrent = mbStart; mbCurrent && (mbCurrent->index() <= endIdx); mbCurrent = mbCurrent->next()) {
             bool firstIteration = insertedMeasures.empty();
             MeasureBase* mbNext;
 
@@ -2346,20 +2346,20 @@ MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection&
                   return nullptr;
                   }
             if (!firstIteration) {
-                  int cNo = mbCurrent->no();
-                  int pNo = mbCurrent->prev() ? mbCurrent->prev()->no() : -1;
+                  int currIdx = mbCurrent->index();
+                  int prevIdx = mbCurrent->prev() ? mbCurrent->prev()->no() : -1;
 
                   // Ain't Misbehavin'
                   if (!mbCurrent->isBox()) {
-                        if (!cNo)
+                        if (!currIdx)
                               break;
-                        else if (cNo == sNo) {
+                        else if (currIdx == startIdx) {
                               // ...OK when including entire score
                               if (mbCurrent->index() == mbStart->index())
                                     break;
                               }
                         }
-                  if (cNo == pNo)
+                  if (currIdx == prevIdx)
                         break;
                   else if (mbCurrent == mbStart)
                         return nullptr;
