@@ -159,7 +159,7 @@ void KeySig::layout()
       if (measure() && measure()->system() && measure()->isFirstInSystem()
           && prevMeasure && prevMeasure->findSegment(SegmentType::KeySigAnnounce, tick())
           && !segment()->isKeySigAnnounceType())
-            naturalsOn = (keySigEvent().key() == Key::C);
+            naturalsOn = (Key::C == keySigEvent().key() && !prevMeasure->sectionBreak());
       if (track() == -1)
             naturalsOn = false;
 
