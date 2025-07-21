@@ -346,8 +346,8 @@ SpannerSegment * Volta::layoutSystem(System * system)
 
 void Volta::setVelocity() const
       {
-      Measure* startMeasure = Spanner::startMeasure();
-      Measure* endMeasure = Spanner::endMeasure();
+      Measure* startMeasure = Spanner::findStartMeasure();
+      Measure* endMeasure = Spanner::findEndMeasure();
 
       if (startMeasure && endMeasure) {
             if (!endMeasure->repeatEnd())
