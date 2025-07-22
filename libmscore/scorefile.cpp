@@ -238,6 +238,7 @@ void Score::writeMovement(XmlWriter& xml, bool selectionOnly)
                               else
                                     forceTimeSig = false;
                               }
+                        // Largest consumption of time for file-saving:
                         writeMeasure(xml, m, staffIdx, writeSystemElements, forceTimeSig);
                         }
                   xml.etag();
@@ -538,7 +539,6 @@ QImage Score::createThumbnail()
       {
       LayoutMode mode = layoutMode();
       setLayoutMode(LayoutMode::PAGE);
-      doLayout();
 
       Page* page = pages().at(0);
       QRectF fr  = page->abbox();
