@@ -4552,7 +4552,8 @@ void ScoreView::startNoteEntry()
                   }
             }
 
-      Element* el = _score->selection().element();
+      Element* oel = _score->selection().element();
+      Element* el = oel;
       if (!el)
             el = _score->selection().firstChordRest();
       if (el == 0 || (el->type() != ElementType::CHORD && el->type() != ElementType::REST && el->type() != ElementType::NOTE)) {
@@ -4579,6 +4580,17 @@ void ScoreView::startNoteEntry()
             if (note == 0)
                   note = c->upNote();
             el = note;
+
+            if (oel) {
+                  if (oel->isSlurSegment()) {
+                        auto ss = toSlurSegment(oel);
+                        auto s = ss->slur();
+                        el = (ss == s->backSegment()) ? s->endElement() : s->startElement();
+                        if (el->isChord())
+                              el = toChord(el)->upNote();
+                        }
+                  }
+
             defaultDuration = c->durationType();
             }
       else if (el->type() == ElementType::REST) {
