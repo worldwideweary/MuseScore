@@ -5921,6 +5921,12 @@ void Score::cmd(const QAction* a, EditData& ed)
                   startCmd();
                   c.cmd(this, ed);
                   endCmd();
+
+                  if (const auto se = selection().element()) {
+                        for(MuseScoreView* v : qAsConst(viewer))
+                              v->adjustCanvasPosition(se, false);
+                        }
+
                   return;
                   }
             }
