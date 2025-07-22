@@ -581,6 +581,25 @@ void Score::repitchNote(const Position& p, bool replace)
             next = nextChordRest(next);
       if (next)
             _is.moveInputPos(next->segment());
+
+      if (const auto inputSlur = _is.slur()) {
+            // also extend slur in Repitch mode:
+            if (inputSlur->endElement() == inputSlur->startElement())
+                  inputSlur->frontSegment()->reset();
+            Chord* chord = toNote(lastTiedNote)->chord();
+            s->undoChangeProperty(Pid::SPANNER_TICKS, chord->tick() - inputSlur->tick());
+            for (ScoreElement* se : inputSlur->linkList()) {
+                  auto linkSlur = toSlur(se);
+                  for (ScoreElement* ee : chord->linkList()) {
+                        Element* e = static_cast<Element*>(ee);
+                        if (e->score() == linkSlur->score() && e->track() == linkSlur->track2()) {
+                              linkSlur->score()->undo(new ChangeSpannerElements(linkSlur, linkSlur->startElement(), e));
+                              break;
+                              }
+                        }
+                  }
+            }
+
       _is.updateLastPitch(note->pitch());
       }
 
