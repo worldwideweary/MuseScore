@@ -4778,6 +4778,7 @@ void Score::cmdUnsetVisible()
 void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert, bool useUpNote, bool below)
       {
       InputState& is = inputState();
+      const bool repitchMode = is.noteEntryMethod() == NoteEntryMethod::REPITCH;
       if (is.track() == -1)          // invalid state
             return;
       if (is.duration() == TDuration::DurationType::V_INVALID) {
@@ -4953,6 +4954,15 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                                           }
                                     }
                               seg = seg->prev1MM(SegmentType::ChordRest | SegmentType::Clef | SegmentType::HeaderClef);
+                              }
+                        if (repitchMode) {
+                              if (!resetOctave() && (previousPitch > 0)) {
+                                    if (is.tick() == el->tick()) {
+                                          // calculate octave based on selection pitch
+                                          // instead of actual previous input pitch (previousPitch here is score selection)
+                                          curPitch = previousPitch;
+                                          }
+                                    }
                               }
                         octave = curPitch / PITCH_DELTA_OCTAVE;
                         }
