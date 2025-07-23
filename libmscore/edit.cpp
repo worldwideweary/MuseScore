@@ -3560,6 +3560,10 @@ void Score::localTimeDelete()
 
       // Prepare for updating selection:
       nextCR = endSegment->nextChordRest(track);
+      if (auto previousMeasure = startSegment->measure()->prevMeasure()) {
+            auto lastCRofPrevMeasure = previousMeasure->last()->nextChordRest(track, true);
+            nextCR = lastCRofPrevMeasure;
+            }
 
       if (!checkTimeDelete(startSegment, endSegment))
             return;
