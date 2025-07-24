@@ -227,12 +227,8 @@ void Dynamic::layout()
                   if (!e)
                         continue;
                   if (e->isChord() && (align() & Align::HCENTER)) {
-                        Chord* c = toChord(e);
-                        qreal noteHeadWidth = score()->noteHeadWidth() * c->mag();
-                        if (c->stem() && !c->up())  // stem down
-                              rxpos() += noteHeadWidth * .25;  // center on stem + optical correction
-                        else
-                              rxpos() += noteHeadWidth * .5;   // center on notehead
+                        const auto c = toChord(e);
+                        rxpos() += e->x() + c->centerX();
                         }
                   else
                         rxpos() += e->width() * .5;
