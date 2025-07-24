@@ -79,7 +79,7 @@ class Chord final : public ChordRest {
 
       qreal upPos()   const override;
       qreal downPos() const override;
-      qreal centerX() const;
+
       void addLedgerLines();
       void processSiblings(std::function<void(Element*)> func) const;
 
@@ -164,6 +164,8 @@ class Chord final : public ChordRest {
       QPointF stemPosBeam() const override;      ///< page coordinates
       qreal stemPosX() const override;
       qreal rightEdge() const override;
+
+      qreal centerX() const;
 
       bool underBeam() const;
       Hook* hook() const                     { return _hook; }
