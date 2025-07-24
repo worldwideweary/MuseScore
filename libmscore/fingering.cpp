@@ -10,6 +10,8 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+
+#include "arpeggio.h"
 #include "fingering.h"
 #include "score.h"
 #include "staff.h"
@@ -221,6 +223,10 @@ void Fingering::layout()
                         rxpos() -= left;
                   else
                         rxpos() -= n->x();
+
+                  qreal arpWidth = chord->arpeggio() ? chord->arpeggio()->bbox().width() : 0.0;
+                  rxpos() -= arpWidth;
+                  rxpos() -= (arpWidth * 0.25);
                   }
             // for other fingering styles, do not autoplace
 
