@@ -228,11 +228,13 @@ void Fermata::layout()
             setOffset(propertyDefault(Pid::OFFSET).toPointF());
       Element* e = s->element(track());
       if (e) {
-            if (e->isChord())
-                  rxpos() += score()->noteHeadWidth() * staff()->mag(Fraction(0, 1)) * .5;
-            else if (e->isRest()) {
+            if (e->isRest()) {
                   const Rest* rest = toRest(e);
                   rxpos() += e->x() + rest->centerX();
+                  }
+            else if (e->isChord()) {
+                  const auto chord = toChord(e);
+                  rxpos() += e->x() + chord->centerX(); // originally:  rxpos() += score()->noteHeadWidth() * staff()->mag(Fraction(0, 1)) * .5;
                   }
             else
                   rxpos() += e->x() - e->shape().left() + e->width() * staff()->mag(Fraction(0, 1)) * .5;
