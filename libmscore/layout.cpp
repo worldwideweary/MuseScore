@@ -5413,6 +5413,8 @@ void Score::doLayoutRange(const Fraction& st, const Fraction& et)
             lc.curSystem   = system;
             lc.systemList  = _systems.mid(systemIndex);
 
+            Q_ASSERT(systemIndex >= 0);
+
             if (systemIndex == 0)
                   lc.nextMeasure = _showVBox ? first() : firstMeasure();
             else {
