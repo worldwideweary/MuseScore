@@ -2377,6 +2377,8 @@ MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection&
                   }
 
             mbNext->setScore(scoreDest);
+            if (!mbPrevious)
+                  mbNext->setSystem(nullptr);
             mbNext->setPrev(mbPrevious);
             mbNext->setNext(&mbInsert);
             mbPrevious = mbNext;
