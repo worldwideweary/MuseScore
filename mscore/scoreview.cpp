@@ -4613,7 +4613,7 @@ void ScoreView::startNoteEntry()
       setMouseTracking(true);
       if (!MScore::disableMouseEntry)
             shadowNote->setVisible(true);
-      _score->setUpdateAll();
+      _score->setUpdateAllNoLayout();
       _score->update();
 
       Staff* staff = _score->staff(is.track() / VOICES);
