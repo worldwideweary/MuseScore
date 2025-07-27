@@ -786,6 +786,7 @@ class Score : public QObject, public ScoreElement {
       void cmdAddTimeSig(Measure*, int staffIdx, TimeSig*, bool local);
 
       virtual inline void setUpdateAll();
+      virtual inline void setUpdateAllNoLayout();
       inline void setLayoutAll(int staff = -1, const Element* e = nullptr);
       inline void setLayout(const Fraction& tick, int staff, const Element* e = nullptr);
       inline void setLayout(const Fraction& tick1, const Fraction& tick2, int staff1, int staff2, const Element* e = nullptr);
@@ -1399,6 +1400,7 @@ class MasterScore : public Score {
       void addMovement(MasterScore* score);
 
       virtual void setUpdateAll() override;
+      virtual void setUpdateAllNoLayout();
 
       void setLayoutAll(int staff = -1, const Element* e = nullptr);
       void setLayout(const Fraction& tick, int staff, const Element* e = nullptr);
@@ -1516,6 +1518,7 @@ inline QQueue<MidiInputEvent>* Score::midiInputQueue()          { return _master
 inline std::list<MidiInputEvent>* Score::activeMidiPitches()    { return _masterScore->activeMidiPitches(); }
 
 inline void Score::setUpdateAll()                      { _masterScore->setUpdateAll();          }
+inline void Score::setUpdateAllNoLayout()              { _masterScore->setUpdateAllNoLayout();  }
 
 inline void Score::setLayoutAll(int staff, const Element* e) { _masterScore->setLayoutAll(staff, e); }
 inline void Score::setLayout(const Fraction& tick, int staff, const Element* e) { _masterScore->setLayout(tick, staff, e); }
