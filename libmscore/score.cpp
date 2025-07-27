@@ -5495,6 +5495,21 @@ void MasterScore::setUpdateAll()
       }
 
 //---------------------------------------------------------
+//   setUpdateAllNoLayout
+//   regular (above method) considers if updateAll is greater
+//   than current mode, so if it's slated to do a tick-based
+//   update, then UpdateAll is overriden by the range-based
+//   command. This function will override any range-based command
+//   state for a screen update only, without having to
+//   completely reset the command state
+//---------------------------------------------------------
+
+void MasterScore::setUpdateAllNoLayout()
+      {
+      _cmdState._setUpdateMode(UpdateMode::UpdateAll);
+      }
+
+//---------------------------------------------------------
 //   setLayoutAll
 //---------------------------------------------------------
 
