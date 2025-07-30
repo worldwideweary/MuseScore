@@ -1812,7 +1812,7 @@ void Score::upDown(bool up, UpDownMode mode)
                                     undo(new RemoveElement(ln->accidental()));
                               }
                         }
-                  if (mode == UpDownMode::OCTAVE_QUICK && !hasTie && !selection().isRange()) {
+                  if (mode == UpDownMode::OCTAVE_QUICK && !hasTie && noteEntryMode()) {
                         // This style of octave-shifting will guarantee the exact explicit accidental-type
                         // as it was before shifting - useful for transcribing in note-entry.
                         startCmd();
