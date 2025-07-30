@@ -6793,7 +6793,7 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   auto oseg = is.segment();
                   if (auto cr = cs->selection().firstChordRest()) {
                         auto track = cr->track();
-                        if (cv && isRange) {
+                        if (cv && (isRange || cr->isGrace())) {
                               cv->cmd(getAction("delete")); // Specifically not cs->cmdDeleteSelection();
                               }
                         else if (cr->isRest()) {
