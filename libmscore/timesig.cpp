@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "measure.h"
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
@@ -498,7 +499,30 @@ bool TimeSig::setProperty(Pid propertyId, const QVariant& v)
                         return false;
                   break;
             }
-      triggerLayoutAll();      // TODO
+      // triggerLayoutAll();      // TODO
+
+      // Layout from measure to next time-sig
+      if (parent()) {
+            const auto zeroFrac = Fraction(0,1);
+            const auto m = measure();
+            const auto scoreEndTick = score()->endTick();
+            const auto startTick = m ? m->tick() : zeroFrac;
+            Fraction endTick = startTick;
+
+            if (m && m->staff())
+            if (const auto nts = m->staff()->nextTimeSig(startTick))
+                  endTick = nts->tick();
+
+            if (endTick == startTick)
+                  endTick = scoreEndTick;
+
+            if (startTick >= zeroFrac)
+                  score()->cmdState().setTick(TickType::StartTick, startTick);
+
+            score()->cmdState().setTick(TickType::EndTick, endTick);
+            // Observation: seems a doLayoutRange() is unnecessary here (it's called elsewhere)
+            }
+
       setGenerated(false);
       return true;
       }

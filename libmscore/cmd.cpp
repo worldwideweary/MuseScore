@@ -116,6 +116,25 @@ void CmdState::setTick(const Fraction& t)
       }
 
 //---------------------------------------------------------
+//   setTick - Explicit start/end setting: discretion advised
+//---------------------------------------------------------
+
+void CmdState::setTick(TickType tt, const Fraction& t)
+      {
+      if (_locked) {
+            qDebug() << "Failed: CmdState locked";
+            return;
+            }
+
+      if (tt == TickType::StartTick)
+            _startTick = t;
+      else if (tt == TickType::EndTick)
+            _endTick = t;
+
+      setUpdateMode(UpdateMode::Layout);
+      }
+
+//---------------------------------------------------------
 //   setStaff
 //---------------------------------------------------------
 
