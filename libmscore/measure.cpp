@@ -2595,6 +2595,10 @@ bool Measure::stemless(int staffIdx) const
       return staff->stemless(tick()) || _mstaves[staffIdx]->stemless() || staff->staffType(tick())->stemless();
       }
 
+//---------------------------------------------------------
+//   nextSectionBreak
+//---------------------------------------------------------
+
 LayoutBreak* Measure::nextSectionBreak() const
       {
       const MeasureBase* mb = static_cast<const MeasureBase*>(this);
@@ -2607,6 +2611,22 @@ LayoutBreak* Measure::nextSectionBreak() const
             } while (mb && !mb->isMeasure());   // loop until reach next actual measure or end of score
 
       return nullptr;
+      }
+
+//---------------------------------------------------------
+//   nextLayoutBreakMeasure
+//    or end
+//---------------------------------------------------------
+
+const MeasureBase* Measure::nextLayoutBreakMeasure() const
+      {
+      auto mb = toMeasureBase(this);
+      while (mb && mb->noBreak()) {
+            if (const auto nmb = mb->next()) {
+                  mb = (mb != nmb) ? nmb : nullptr;
+                  }
+            }
+      return mb;
       }
 
 //---------------------------------------------------------

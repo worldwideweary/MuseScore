@@ -3940,7 +3940,13 @@ void ScoreView::cmd(const char* s)
                            "Please select a range of measures to join and try again"));
                         }
                   else {
-                        cv->score()->cmdJoinMeasure(m1, m2);
+                        if (auto cr = cv->score()->cmdJoinMeasure(m1, m2)) {
+                              Element* toSelect = cr;
+                              if (cr->isChord())
+                                    toSelect = toChord(cr)->upNote();
+                              cv->score()->select(toSelect);
+                              // a resulting multi-measure rest gives a wrong updated view...
+                              }
                         }
                   }},
             {{"measure-properties"}, [](ScoreView* cv, const QByteArray&) {
