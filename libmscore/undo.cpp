@@ -1887,7 +1887,13 @@ void InsertRemoveMeasures::insertMeasures()
                   key->staff()->setKey(key->segment()->tick(), key->keySigEvent());
             }
 
-      score->setLayoutAll();
+      const auto prevMeasure = fm->prevMeasureMM();
+      const auto startTick  = prevMeasure ? prevMeasure->tick() : fm->tick();
+      const auto nextMeasure = lm->nextMeasure() ? lm->nextMeasure()->nextLayoutBreakMeasure() : nullptr;
+      const auto endTick = nextMeasure ? nextMeasure->endTick() : lm->endTick();
+
+      score->doLayoutRange(startTick, endTick);
+      score->updateMeasureNumbers();
 
       //
       // connect ties
@@ -2001,7 +2007,13 @@ void InsertRemoveMeasures::removeMeasures()
                   }
             }
 
-      score->setLayoutAll();
+      const auto prevMeasure = fm->prevMeasureMM();
+      const auto startTick  = prevMeasure ? prevMeasure->tick() : fm->tick();
+      const auto nextMeasure = lm->nextMeasure() ? lm->nextMeasure()->nextLayoutBreakMeasure() : nullptr;
+      const auto endTick = nextMeasure ? nextMeasure->endTick() : lm->endTick();
+
+      score->doLayoutRange(startTick, endTick);
+      score->updateMeasureNumbers();
       }
 
 //---------------------------------------------------------
@@ -2219,7 +2231,17 @@ void ChangeClefType::flip(EditData*)
       clef->staff()->setClef(clef);
       Segment* segment = clef->segment();
       updateNoteLines(segment, clef->track());
-      clef->triggerLayoutAll();      // TODO: reduce layout to clef range
+      // clef->triggerLayoutAll();      // TODO: reduce layout to clef range
+
+      // update: layout range
+      if (const auto score = clef->score()) {
+            const auto startTick  = clef->measure()->tick();
+            const auto staff = clef->staff();
+            const auto nextClefTick = staff ? staff->nextClefTick(startTick) : score->endTick();
+            const auto endTick = nextClefTick;
+
+            score->doLayoutRange(startTick, endTick);
+            }
 
       concertClef     = ocl;
       transposingClef = otc;
@@ -2370,7 +2392,8 @@ void ChangeSpannerElements::flip(EditData*)
             }
       startElement = oldStartElement;
       endElement   = oldEndElement;
-      spanner->triggerLayout();
+      // triggerLayout() here was updating spanners way too often because of frequent flip() calls during changes:
+      // spanner->triggerLayout();
       }
 
 //---------------------------------------------------------
