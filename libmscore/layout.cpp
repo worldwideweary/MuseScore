@@ -4394,6 +4394,25 @@ System* Score::collectSystem(LayoutContext& lc)
       }
 
 //---------------------------------------------------------
+//   updateMeasureNumbers
+//---------------------------------------------------------
+
+void Score::updateMeasureNumbers() {
+      auto start = measures()->first();
+      auto end = measures()->last();
+      for (auto mb = start; mb; mb = mb->next()) {
+            if (!mb->isMeasure())
+                  continue;
+
+            auto m = toMeasure(mb);
+            m->layoutMeasureNumber();
+
+            if (mb == end)
+                  break;
+          }
+      }
+
+//---------------------------------------------------------
 //   layoutSystemElements
 //---------------------------------------------------------
 
