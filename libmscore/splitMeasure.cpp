@@ -29,9 +29,12 @@ namespace Ms {
 
 ChordRest* Score::cmdSplitMeasure(ChordRest* cr)
       {
+      auto startTick = cr->measure()->tick();
       startCmd();
       Segment* newSeg = splitMeasure(cr->segment());
+      cmdState().setTick(TickType::StartTick, startTick);
       endCmd();
+
       return newSeg ? newSeg->nextChordRest(cr->track()) : nullptr;
       }
 
