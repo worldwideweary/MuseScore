@@ -541,7 +541,7 @@ bool Spanner::setProperty(Pid propertyId, const QVariant& v)
       {
       switch (propertyId) {
             case Pid::SPANNER_TICK:
-                  triggerLayout(); // spanner may have moved to another system
+                  // triggerLayout(); // spanner may have moved to another system
                   setTick(v.value<Fraction>());
                   setStartElement(0);     // invalidate
                   setEndElement(0);       //
@@ -549,7 +549,7 @@ bool Spanner::setProperty(Pid propertyId, const QVariant& v)
                         score()->addSpanner(this);
                   break;
             case Pid::SPANNER_TICKS:
-                  triggerLayout(); // spanner may now span for a smaller number of systems
+                  // triggerLayout(); // spanner may now span for a smaller number of systems
                   setTicks(v.value<Fraction>());
                   setEndElement(0);       // invalidate
                   break;
