@@ -23,10 +23,10 @@ namespace Ms {
 //    join measures from m1 upto (including) m2
 //---------------------------------------------------------
 
-void Score::cmdJoinMeasure(Measure* m1, Measure* m2)
+ChordRest* Score::cmdJoinMeasure(Measure* m1, Measure* m2)
       {
       if (!m1 || !m2)
-            return;
+            return nullptr;
       if (m1->isMMRest())
             m1 = m1->mmRestFirst();
       if (m2->isMMRest())
@@ -38,8 +38,8 @@ void Score::cmdJoinMeasure(Measure* m1, Measure* m2)
       ScoreRange range;
       range.read(m1->first(), m2->last());
 
-      Fraction tick1 = m1->tick();
-      Fraction tick2 = m2->endTick();
+      const Fraction tick1 = m1->tick();
+      const Fraction tick2 = m2->endTick();
 
       auto spanners = _spanner.findContained(tick1.ticks(), tick2.ticks());
       for (auto i : spanners)
@@ -114,7 +114,11 @@ void Score::cmdJoinMeasure(Measure* m1, Measure* m2)
                         }
                   }
             }
+      cmdState().setTick(TickType::StartTick, tick1);
       endCmd();
+
+      auto rv = inserted ? inserted->findChordRest(inserted->tick(), 0) : nullptr;
+      return rv;
       }
 
 }

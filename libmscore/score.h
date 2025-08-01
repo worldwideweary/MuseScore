@@ -256,6 +256,12 @@ enum class UpdateMode {
       Layout,           // do partial layout for tick range
       };
 
+
+enum class TickType {   // for explicit cmdState updates
+      StartTick,
+      EndTick,
+      };
+
 //---------------------------------------------------------
 //   CmdState
 //
@@ -293,6 +299,7 @@ class CmdState {
       bool updateAll() const   { return int(_updateMode) >= int(UpdateMode::UpdateAll); }
       bool updateRange() const { return _updateMode == UpdateMode::Update; }
       void setTick(const Fraction& t);
+      void setTick(TickType tt, const Fraction& t);
       void setStaff(int staff);
       void setElement(const Element* e);
       void unsetElement(const Element* e);
@@ -624,6 +631,8 @@ class Score : public QObject, public ScoreElement {
       System* collectSystem(LayoutContext&);
       void layoutSystemElements(System* system, LayoutContext& lc);
       void getNextMeasure(LayoutContext&);      // get next measure for layout
+
+      void updateMeasureNumbers();
 
       void resetAllPositions();
 
@@ -1115,7 +1124,7 @@ class Score : public QObject, public ScoreElement {
 
       ChordRest* cmdSplitMeasure(ChordRest*);
       Segment* splitMeasure(Segment*);
-      void cmdJoinMeasure(Measure*, Measure*);
+      ChordRest* cmdJoinMeasure(Measure*, Measure*);
       int pageNumberOffset() const          { return _pageNumberOffset; }
       void setPageNumberOffset(int v)       { _pageNumberOffset = v; }
 

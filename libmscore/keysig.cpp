@@ -632,7 +632,15 @@ bool KeySig::setProperty(Pid propertyId, const QVariant& v)
                         return false;
                   break;
             }
-      triggerLayoutAll();
+      // triggerLayoutAll();
+
+      // update: layout range
+      if (parent()) {
+            const auto startTick = measure()->tick();
+            const auto endTick = score()->endTick();
+            score()->doLayoutRange(startTick, endTick);
+            }
+
       setGenerated(false);
       return true;
       }
