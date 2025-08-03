@@ -769,6 +769,7 @@ class Score : public QObject, public ScoreElement {
       void cloneVoice(int strack, int dtrack, Segment* sf, const Fraction& lTick, bool link = true, bool spanner = true);
 
       void repitchNote(const Position& pos, bool replace);
+      Note* repitchNote(const Position& pos, const Note*, bool replace);
       void regroupNotesAndRests(const Fraction&  startTick, const Fraction& endTick, int track);
       bool checkTimeDelete(Segment*, Segment*);
       void timeDelete(Measure*, Segment*, const Fraction&);
