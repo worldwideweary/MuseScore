@@ -812,6 +812,11 @@ class Score : public QObject, public ScoreElement {
       void cmdOverrideColor(const char*);
       bool cmdToggleOptions(const QString&);
 
+      NoteType iconTypeToNoteType(IconType);
+      TDuration iconTypeToDuration(IconType);
+      SymId iconTypeToSymId(IconType);
+      int iconTypeToLen(IconType);
+
       void colorItem(Element*);
       QList<Part*>& parts()                { return _parts; }
       const QList<Part*>& parts() const    { return _parts; }
