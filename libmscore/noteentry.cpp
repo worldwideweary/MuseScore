@@ -368,6 +368,40 @@ void Score::putNote(const Position& p, bool replace)
       ChordRest* cr = _is.cr();
       bool addToChord = false;
 
+      // Allow A-G on a grace-note entry instead of replacing parent-chord note:
+      if (auto el = selection().element()) { // single element
+            if (el->isNote()) {
+                  auto n = toNote(el);
+                  if (auto c = n->chord()) {
+                        if (c->isGrace()) {
+                              if (cr) {
+                                    score()->repitchNote(p, n, true);
+                                    // setGraceNote(toChord(cr), nval.pitch, NoteType::APPOGGIATURA, MScore::division/2);
+                                    // setGraceNote(toChord(cr), nval.pitch, iconTypeToNoteType(_graceInputState), iconTypeToLen(_graceInputState));
+                                    score()->addRefresh(cr->canvasBoundingRect());
+
+                                    // Get next grace note:
+                                    int graceIdx = c->graceIndex();
+                                    int nextGraceIdx = ++graceIdx;
+                                    auto parentChord = toChord(cr);
+                                    const auto graceNotes = parentChord->graceNotes();
+                                    Note* nextNote{0};
+                                    for (Chord* graceChord : graceNotes) {
+                                          if (graceChord->graceIndex() == nextGraceIdx) {
+                                                nextNote = graceNotes.at(nextGraceIdx)->upNote();
+                                                break;
+                                                }
+                                          }
+                                    if (!nextNote)
+                                          nextNote = parentChord->upNote();
+                                    select(nextNote);
+                                    return;
+                                    }
+                              }
+                        }
+                  }
+            }
+
       if (cr) {
             // retrieve total duration of current chord
             TDuration d = cr->durationType();
@@ -508,6 +542,88 @@ void Score::repitchNote(const Position& p, bool replace)
 
       Note* firstTiedNote = 0;
       Note* lastTiedNote = note;
+
+      // Grace note handling:
+      auto& entryGraceNotes = chord->graceNotes();
+      if (!entryGraceNotes.empty()) {
+            if (auto el = selection().element()) {
+                  auto c = el->isNote() ? toNote(el)->chord() : nullptr;
+                  auto& firstGrace = entryGraceNotes.front();
+                  auto noteEntryChord = chord;
+                  if (el->isRest() || (c && (c != noteEntryChord) && (c->parent() != chord))) {
+                        // 1) Note Entry Position mustn't be equivalent to score selection before beginning repitch of grace notes
+                        // b/c repitching will apply to the "next" grace note, not the one "selected" - to repitch the first grace-note
+                        // requires there to be a score selection distinct from its parent chord and itself
+                        auto toChange = firstGrace->upNote();
+                        auto toSelect = score()->repitchNote(p, toChange, true);
+                        score()->addRefresh(cr->canvasBoundingRect());
+                        select(toSelect);
+                        return;
+                        }
+                  else if (c->isGrace()) {
+                        // 2) Grace-note currently selected, so repitch the next grace note if it exists, else its parent chord
+                        int graceIdx = c->graceIndex();
+                        int nextGraceIdx = ++graceIdx;
+                        auto parentChord = chord;
+                        const auto graceNotes = parentChord->graceNotes();
+                        Note* nextNote{0};
+
+                        for (Chord* graceChord : graceNotes) {
+                              if (graceChord->graceIndex() == nextGraceIdx) {
+                                    nextNote = graceNotes.at(nextGraceIdx)->upNote();
+                                    break;
+                                    }
+                              }
+
+                        bool updatedParent = false;
+                        if (!nextNote) {
+                              nextNote = parentChord->upNote();
+                              updatedParent = true;
+                              }
+
+                        auto toSelect = score()->repitchNote(p, nextNote, true);
+                        score()->addRefresh(cr->canvasBoundingRect());
+                        select(toSelect); // select prev note
+                        if (updatedParent)
+                              _is.moveToNextInputPos();
+
+                        return;
+                        }
+                  }
+            }
+
+      if (auto el = selection().element()) {
+            if (el->isNote()) {
+                  auto n = toNote(el);
+                  if (auto c = n->chord()) {
+                        if (c->isGrace()) {
+                              if (cr) {
+                                    score()->repitchNote(p, n, true);
+                                    score()->addRefresh(cr->canvasBoundingRect());
+
+                                    // Get next grace note:
+                                    int graceIdx = c->graceIndex();
+                                    int nextGraceIdx = ++graceIdx;
+                                    auto parentChord = toChord(cr);
+                                    const auto graceNotes = parentChord->graceNotes();
+                                    Note* nextNote{0};
+                                    for (Chord* graceChord : graceNotes) {
+                                          if (graceChord->graceIndex() == nextGraceIdx) {
+                                                nextNote = graceNotes.at(nextGraceIdx)->upNote();
+                                                break;
+                                                }
+                                          }
+                                    if (!nextNote)
+                                          nextNote = parentChord->upNote();
+                                    select(nextNote);
+                                    return;
+                                    }
+                              }
+                        }
+                  }
+            }
+
+
       if (replace) {
             std::vector<Note*> notes = chord->notes();
             // break all ties into current chord
@@ -586,11 +702,11 @@ void Score::repitchNote(const Position& p, bool replace)
             // also extend slur in Repitch mode:
             if (inputSlur->endElement() == inputSlur->startElement())
                   inputSlur->frontSegment()->reset();
-            Chord* chord = toNote(lastTiedNote)->chord();
-            s->undoChangeProperty(Pid::SPANNER_TICKS, chord->tick() - inputSlur->tick());
+            Chord* lastChord = toNote(lastTiedNote)->chord();
+            s->undoChangeProperty(Pid::SPANNER_TICKS, lastChord->tick() - inputSlur->tick());
             for (ScoreElement* se : inputSlur->linkList()) {
                   auto linkSlur = toSlur(se);
-                  for (ScoreElement* ee : chord->linkList()) {
+                  for (ScoreElement* ee : lastChord->linkList()) {
                         Element* e = static_cast<Element*>(ee);
                         if (e->score() == linkSlur->score() && e->track() == linkSlur->track2()) {
                               linkSlur->score()->undo(new ChangeSpannerElements(linkSlur, linkSlur->startElement(), e));
@@ -602,6 +718,172 @@ void Score::repitchNote(const Position& p, bool replace)
 
       _is.updateLastPitch(note->pitch());
       }
+
+//---------------------------------------------------------
+//   repitchNote
+// Unused for now
+//---------------------------------------------------------
+Note* Score::repitchNote(const Position& p, const Note* n, bool replace)
+      {
+      Segment* s      = p.segment;
+      Fraction tick   = s->tick();
+      Staff* st       = staff(p.staffIdx);
+      ClefType clef   = st->clef(tick);
+
+      NoteVal nval;
+      bool error = false;
+      AccidentalType at = _is.accidentalType();
+      if (_is.drumset() && _is.drumNote() != -1) {
+            nval.pitch = _is.drumNote();
+            }
+      else {
+            AccidentalVal acci = (at == AccidentalType::NONE ? s->measure()->findAccidental(s, p.staffIdx, p.line, error) : Accidental::subtype2value(at));
+            if (error)
+                  return nullptr;
+            int step   = absStep(p.line, clef);
+            int octave = step / 7;
+            nval.pitch = step2pitch(step) + octave * 12 + int(acci);
+
+            if (styleB(Sid::concertPitch))
+                  nval.tpc1 = step2tpc(step % 7, acci);
+            else {
+                  nval.pitch += st->part()->instrument(s->tick())->transpose().chromatic;
+                  nval.tpc2 = step2tpc(step % 7, acci);
+                  }
+            }
+
+      if (!_is.segment())
+            return nullptr;
+
+      Chord* chord;
+      ChordRest* cr = _is.cr();
+
+      if (n)
+            cr = n->chord();
+      else if (auto singleEl = selection().element())
+            if (singleEl->isNote())
+                  cr = toNote(singleEl)->chord();
+
+      if (!cr) {
+            cr = _is.segment()->nextChordRest(_is.track());
+            if (!cr)
+                  return nullptr;
+            }
+
+      if (cr->isRest()) { //skip rests
+            ChordRest* next = nextChordRest(cr);
+            while(next && !next->isChord())
+                  next = nextChordRest(next);
+            if (next)
+                  _is.moveInputPos(next->segment());
+            return nullptr;
+            }
+      else {
+            chord = toChord(cr);
+            }
+      Note* note = new Note(this);
+      note->setParent(chord);
+      note->setTrack(chord->track());
+      note->setNval(nval);
+
+      Note* firstTiedNote = 0;
+      Note* lastTiedNote = note;
+      if (replace) {
+            std::vector<Note*> notes = chord->notes();
+            // break all ties into current chord
+            // these will exist only if user explicitly moved cursor to a tied-into note
+            // in ordinary use, cursor will autoamtically skip past these during note entry
+            for (Note* tbNote : notes) {
+                  if (tbNote->tieBack())
+                        undoRemoveElement(tbNote->tieBack());
+                  }
+            // for single note chords only, preserve ties by changing pitch of all forward notes
+            // the tie forward itself will be added later
+            // multi-note chords get reduced to single note chords anyhow since we remove the old notes below
+            // so there will be no way to preserve those ties
+            if (notes.size() == 1 && notes.front()->tieFor()) {
+                  Note* tn = notes.front()->tieFor()->endNote();
+                  while (tn) {
+                        Chord* tc = tn->chord();
+                        if (tc->notes().size() != 1) {
+                              undoRemoveElement(tn->tieBack());
+                              break;
+                              }
+                        if (!firstTiedNote)
+                              firstTiedNote = tn;
+                        lastTiedNote = tn;
+                        undoChangePitch(tn, note->pitch(), note->tpc1(), note->tpc2());
+                        if (tn->tieFor())
+                              tn = tn->tieFor()->endNote();
+                        else
+                              break;
+                        }
+                  }
+            // remove all notes from chord
+            // the new note will be added below
+            while (!chord->notes().empty())
+                  undoRemoveElement(chord->notes().front());
+      }
+      // add new note to chord
+      undoAddElement(note);
+      bool forceAccidental = false;
+      if (_is.accidentalType() != AccidentalType::NONE) {
+            NoteVal nval2 = noteValForPosition(p, AccidentalType::NONE, error);
+            forceAccidental = (nval.pitch == nval2.pitch);
+            }
+      if (forceAccidental) {
+            int tpc = styleB(Sid::concertPitch) ? nval.tpc1 : nval.tpc2;
+            AccidentalVal alter = tpc2alter(tpc);
+            at = Accidental::value2subtype(alter);
+            Accidental* a = new Accidental(this);
+            a->setAccidentalType(at);
+            a->setRole(AccidentalRole::USER);
+            a->setParent(note);
+            undoAddElement(a);
+            }
+      setPlayNote(true);
+      setPlayChord(true);
+      // recreate tie forward if there is a note to tie to
+      // one-sided ties will not be recreated
+      if (firstTiedNote) {
+            Tie* tie = new Tie(this);
+            tie->setStartNote(note);
+            tie->setEndNote(firstTiedNote);
+            tie->setTick(tie->startNote()->tick());
+            tie->setTick2(tie->endNote()->tick());
+            tie->setTrack(note->track());
+            undoAddElement(tie);
+            }
+      select(lastTiedNote);
+      // move to next Chord
+      ChordRest* next = nextChordRest(lastTiedNote->chord());
+      while (next && !next->isChord())
+            next = nextChordRest(next);
+      if (next)
+            _is.moveInputPos(next->segment());
+
+      if (const auto inputSlur = _is.slur()) {
+            // also extend slur in Repitch mode:
+            if (inputSlur->endElement() == inputSlur->startElement())
+                  inputSlur->frontSegment()->reset();
+            Chord* lastChord = toNote(lastTiedNote)->chord();
+            s->undoChangeProperty(Pid::SPANNER_TICKS, lastChord->tick() - inputSlur->tick());
+            for (ScoreElement* se : inputSlur->linkList()) {
+                  auto linkSlur = toSlur(se);
+                  for (ScoreElement* ee : lastChord->linkList()) {
+                        Element* e = static_cast<Element*>(ee);
+                        if (e->score() == linkSlur->score() && e->track() == linkSlur->track2()) {
+                              linkSlur->score()->undo(new ChangeSpannerElements(linkSlur, linkSlur->startElement(), e));
+                              break;
+                              }
+                        }
+                  }
+            }
+
+      _is.updateLastPitch(note->pitch());
+      return note;
+      }
+
 
 //---------------------------------------------------------
 //   insertChord
