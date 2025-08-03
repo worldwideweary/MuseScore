@@ -759,6 +759,7 @@ Note* Score::setGraceNote(Chord* ch, int pitch, NoteType type, int len)
       {
       Note* note = new Note(this);
       Chord* chord = new Chord(this);
+      Segment* oseg = _is.segment();
 
       // allow grace notes to be added to other grace notes
       // by really adding to parent chord
@@ -791,6 +792,8 @@ Note* Score::setGraceNote(Chord* ch, int pitch, NoteType type, int len)
 
       undoAddElement(chord);
       select(note, SelectType::SINGLE, 0);
+      if (usingNoteEntryMethod(NoteEntryMethod::RHYTHM))
+            _is.setSegment(oseg);
       return note;
       }
 
@@ -4826,9 +4829,36 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
             }
 
       qreal previousPitch = -1;
+
+      // Grace-note entry: get previous pitch
+      int gracePitchOverride = -1;
       if (auto e = selection().element()) {
             if (e->isNote()) {
-                  previousPitch = toNote(e)->pitch();
+                  auto n = toNote(e);
+                  auto c = n->chord();
+                  previousPitch = n->pitch();
+                  if (c->isGrace()){
+                        int graceIdx = c->graceIndex();
+                        int prevGraceIdx = --graceIdx;
+                        auto parentChord = toChord(c->parent());
+                        const auto graceNotes = parentChord->graceNotes();
+                        for (Chord* graceChord : graceNotes) {
+                              bool havePrevGraceNote = (graceChord->graceIndex() == prevGraceIdx);
+                              if (havePrevGraceNote) {
+                                    // Use previous grace note for octave placement:
+                                    auto prevNote = graceNotes.at(prevGraceIdx)->upNote();
+                                    gracePitchOverride = prevNote->ppitch();
+                                    break;
+                                    }
+                              }
+                        if (gracePitchOverride < 0) {
+                              // No previous grace-note: use current selection for octave placement
+                              auto firstGraceNote = MScore::noteInputOctaveTendencyIsTopNote
+                                          ? graceNotes.front()->upNote()
+                                          : graceNotes.front()->downNote();
+                              gracePitchOverride = firstGraceNote->ppitch();
+                              }
+                        }
                   }
             }
 
@@ -4999,6 +5029,10 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                                           }
                                     }
                               }
+
+                        if (gracePitchOverride > -1)
+                              curPitch = gracePitchOverride;
+
                         octave = curPitch / PITCH_DELTA_OCTAVE;
                         }
 
