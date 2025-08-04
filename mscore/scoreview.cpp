@@ -3624,6 +3624,32 @@ void ScoreView::cmd(const char* s)
                   else
                         cv->cmdGotoElement(cv->score()->lastElement());
                   }},
+            {{"next-articulation"}, [](ScoreView* cv, const QByteArray&) {
+                  auto& selection = cv->score()->selection();
+                  auto st = selection.isRange() ? SelectType::ADD : SelectType::SINGLE;
+                  for (auto el : selection.elements()) {
+                        if (el->isNote()) {
+                              auto c = toNote(el)->chord();
+                              auto& arts = c->articulations();
+                              if (!arts.empty()) {
+                                    el = arts.front();
+                                    cv->score()->select(el, st);
+                                    }
+                              }
+                        else if (el->isArticulation()) {
+                              auto art = toArticulation(el);
+                              auto cr = art->chordRest();
+                              if (cr->isChord()) {
+                                    auto c = toChord(cr);
+                                    auto next = c->nextArticulationOrLyric(art);
+                                    if (!next)
+                                          next = c->articulations().front();
+                                    cv->score()->select(next, st);
+                                    }
+                              }
+                        }
+                  cv->updateAll();
+                  }},
             {{"first-element"}, [](ScoreView* cv, const QByteArray&) {
                   cv->cmdGotoElement(cv->score()->firstElement(false));
                   }},
