@@ -4819,6 +4819,13 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         "next-articulation",
+         QT_TRANSLATE_NOOP("action","Select next articulation of Chord"),
+         QT_TRANSLATE_NOOP("action","Select next articulation of Chord"),
+         },
+      {
+         MsWidget::SCORE_TAB,
          STATE_NORMAL,
          "toggle-mmrest",
          QT_TRANSLATE_NOOP("action","Toggle 'Create Multimeasure Rest'"),
