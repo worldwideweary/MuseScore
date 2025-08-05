@@ -587,6 +587,11 @@ void Score::expandVoice()
 
 Note* Score::cmdAddInterval(int val, const std::vector<Note*>& nl)
       {
+      if (MScore::noteEntryAutoSwitchModes) {
+            if (usingNoteEntryMethod(NoteEntryMethod::RHYTHM)) {
+                  _is.setNoteEntryMethod(NoteEntryMethod::REPITCH);
+                  }
+            }
       auto inputSeg = _is.segment();
       Note* ret = nullptr;      
       startCmd();
@@ -4781,6 +4786,11 @@ void Score::cmdUnsetVisible()
 
 void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert, bool useUpNote, bool below)
       {
+      if (MScore::noteEntryAutoSwitchModes) {
+            if (usingNoteEntryMethod(NoteEntryMethod::RHYTHM)) {
+                  _is.setNoteEntryMethod(NoteEntryMethod::REPITCH);
+                  }
+            }
       InputState& is = inputState();
       const bool repitchMode = is.noteEntryMethod() == NoteEntryMethod::REPITCH;
       if (is.track() == -1)          // invalid state
