@@ -564,7 +564,9 @@ bool Score::rewriteMeasures(Measure* fm, Measure* lm, const Fraction& ns, int st
                   continue;
             nfm->setPrev(m1->prev());
             nlm->setNext(m2->next());
+            setPrinting(true);
             s->undo(new InsertMeasures(nfm, nlm));
+            setPrinting(false);
             }
       if (!fill.isZero())
             undoInsertTime(lm->endTick(), fill);
@@ -864,10 +866,13 @@ void Score::cmdAddTimeSig(Measure* fm, int staffIdx, TimeSig* ts, bool local)
             // we will only add time signatures if this succeeds
             // this means, however, that the rewrite cannot depend on the time signatures being in place
             if (mf) {
+                  setPrinting(true);
                   if (!mScore->rewriteMeasures(mf, ns, local ? staffIdx : -1)) {
                         undoStack()->current()->unwind();
+                        setPrinting(false);
                         return;
                         }
+                  setPrinting(false);
                   }
             // add the time signatures
             std::map<int, TimeSig*> masterTimeSigs;
