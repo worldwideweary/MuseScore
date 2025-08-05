@@ -2655,6 +2655,8 @@ bool Measure::isAnacrusis() const
 
 bool Measure::isFirstInSystem() const
       {
+      if (!system()) return false;
+
       IF_ASSERT_FAILED(system()) {
             return false;
             }
