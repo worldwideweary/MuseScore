@@ -540,6 +540,7 @@ void updateExternalValuesFromPreferences() {
       MScore::fingerTextAutoForwardAlphaNumeric = preferences.getBool(PREF_SCORE_FINGERING_ALPHANUMERIC_AUTOFORWARD);
       MScore::noteEntryInformationColor = preferences.getColor(PREF_SCORE_NOTE_INPUT_ENTRY_STATUS_COLOR);
       MScore::noteEntryInformationEnabled = preferences.getBool(PREF_SCORE_NOTE_INPUT_ENTRY_STATUS_ENABLE);
+      MScore::noteEntryAutoSwitchModes = preferences.getBool(PREF_SCORE_NOTE_INPUT_ENTRY_AUTO_SWITCH_MODE);
 
       MScore::defaultPlayDuration = preferences.getInt(PREF_SCORE_NOTE_DEFAULTPLAYDURATION);
       MScore::panPlayback = preferences.getBool(PREF_APP_PLAYBACK_PANPLAYBACK);
@@ -4862,6 +4863,8 @@ void MuseScore::changeState(ScoreState val)
                         cv->cmd("note-input");
                   // fall through
             case STATE_NOTE_ENTRY_STAFF_PITCHED:
+            case STATE_NOTE_ENTRY_METHOD_REPITCH:
+            case STATE_NOTE_ENTRY_METHOD_RHYTHM:
                   if (getAction("note-input-repitch")->isChecked()) {
                         showModeText(tr("Repitch input mode"));
                         cs->setNoteEntryMethod(NoteEntryMethod::REPITCH);
