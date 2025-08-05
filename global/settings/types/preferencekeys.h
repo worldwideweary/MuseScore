@@ -141,6 +141,8 @@
 #define PREF_SCORE_NOTE_INPUT_ENTRY_STATUS_COLOR            "ui/score/noteEntry/toggleStatusColor"
 #define PREF_SCORE_NOTE_INPUT_ENTRY_STATUS_ENABLE           "ui/score/noteEntry/toggleStatus"
 
+#define PREF_SCORE_NOTE_INPUT_ENTRY_AUTO_SWITCH_MODE        "ui/score/noteEntry/autoSwitchRhythmRepitch"
+
 #define PREF_SCORE_FINGERING_ALPHANUMERIC_AUTOFORWARD       "score/fingering/autoForwardWithAlphaNumerics"
 #define PREF_SCORE_STYLE_DEFAULTSTYLEFILE                   "score/style/defaultStyleFile"
 #define PREF_SCORE_STYLE_PARTSTYLEFILE                      "score/style/partStyleFile"

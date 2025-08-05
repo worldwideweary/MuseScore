@@ -3131,6 +3131,13 @@ void Score::addAudioTrack()
 
 void Score::padToggle(Pad p, const EditData& ed)
       {
+      const bool repitchMode = usingNoteEntryMethod(NoteEntryMethod::REPITCH);
+      if (MScore::noteEntryAutoSwitchModes) {
+            if (repitchMode) {
+                  _is.setNoteEntryMethod(NoteEntryMethod::RHYTHM);
+                  }
+            }
+
       int oldDots = _is.duration().dots();
       switch (p) {
             case Pad::NOTE00:
