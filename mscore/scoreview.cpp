@@ -5488,6 +5488,10 @@ void ScoreView::cmdEnterRest(const TDuration& d)
       {
       if (!noteEntryMode())
             cmd("note-input");
+
+      if (MScore::noteEntryAutoSwitchModes && _score->usingNoteEntryMethod(NoteEntryMethod::RHYTHM))
+            _score->setNoteEntryMethod(NoteEntryMethod::REPITCH);
+
       if (_score->usingNoteEntryMethod(NoteEntryMethod::RHYTHM))
             _score->cmd(getAction("pad-rest"), editData);
       else
