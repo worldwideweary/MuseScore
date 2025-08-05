@@ -1313,7 +1313,6 @@ Measure* Score::getCreateMeasure(const Fraction& tick)
 void Score::addElement(Element* element)
       {
       Element* parent = element->parent();
-      element->triggerLayout();
 
 //      qDebug("Score(%p) Element(%p)(%s) parent %p(%s)",
 //         this, element, element->name(), parent, parent ? parent->name() : "");
@@ -1436,7 +1435,21 @@ void Score::addElement(Element* element)
             default:
                   break;
             }
-      element->triggerLayout();
+
+      bool skipLayout = false;
+
+      if (element->isBarLine()) {
+            skipLayout = true;
+            }
+      if (element->isSegment()) {
+            auto s = toSegment(element);
+            if (s->isTimeSig() || s->isTimeSigType()) {
+                  skipLayout = true;
+                  }
+            }
+
+      if (!skipLayout)
+            element->triggerLayout();
       }
 
 //---------------------------------------------------------
