@@ -390,6 +390,8 @@ class MScore {
       static bool noteInputForceVoice2BeneathVoice1;
       static bool retainAugmentationInRhythmEntry;
 
+      static bool noteEntryAutoSwitchModes;
+
       static bool fingerTextAutoForwardAlphaNumeric;
 
       static bool disableVerticalMouseDragOfNotes;

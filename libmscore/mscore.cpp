@@ -126,6 +126,8 @@ bool    MScore::retainAugmentationInRhythmEntry;
 
 bool    MScore::fingerTextAutoForwardAlphaNumeric;
 
+bool    MScore::noteEntryAutoSwitchModes;
+
 bool    MScore::disableVerticalMouseDragOfNotes;
 bool    MScore::lassoWithoutShift;
 bool    MScore::lassoAnnotations;
