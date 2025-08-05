@@ -564,9 +564,7 @@ bool Score::rewriteMeasures(Measure* fm, Measure* lm, const Fraction& ns, int st
                   continue;
             nfm->setPrev(m1->prev());
             nlm->setNext(m2->next());
-            setPrinting(true);
             s->undo(new InsertMeasures(nfm, nlm));
-            setPrinting(false);
             }
       if (!fill.isZero())
             undoInsertTime(lm->endTick(), fill);
@@ -866,6 +864,8 @@ void Score::cmdAddTimeSig(Measure* fm, int staffIdx, TimeSig* ts, bool local)
             // we will only add time signatures if this succeeds
             // this means, however, that the rewrite cannot depend on the time signatures being in place
             if (mf) {
+                  // When re-writing measures, theoretically there should be no need to doLayoutRange() until finalized
+                  // _printing flag will serve as a hack to denote not to perform layout during the operation
                   setPrinting(true);
                   if (!mScore->rewriteMeasures(mf, ns, local ? staffIdx : -1)) {
                         undoStack()->current()->unwind();
@@ -1358,7 +1358,9 @@ void Score::cmdAddTie(bool addToChord)
                         if (!lastAddedChord)
                               lastAddedChord = n->chord();
                         // n is not necessarily next note if duration span over measure
+
                         Note* nnote = searchTieNote(note);
+
                         while (nnote) {
                               // DEBUG: if duration spans over measure
                               // this does not set line for intermediate notes

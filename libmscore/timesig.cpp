@@ -509,15 +509,19 @@ bool TimeSig::setProperty(Pid propertyId, const QVariant& v)
             const auto startTick = m ? m->tick() : zeroFrac;
             Fraction endTick = startTick;
 
-            if (m && m->staff())
-            if (const auto nts = m->staff()->nextTimeSig(startTick))
+            if (m && m->staff()) {
+            if (const auto nts = m->staff()->nextTimeSig(startTick)) {
                   endTick = nts->tick();
+                  }
+                  }
 
-            if (endTick == startTick)
+            if (endTick == startTick) {
                   endTick = scoreEndTick;
+                  }
 
-            if (startTick >= zeroFrac)
+            if (startTick >= zeroFrac) {
                   score()->cmdState().setTick(TickType::StartTick, startTick);
+                  }
 
             score()->cmdState().setTick(TickType::EndTick, endTick);
             // Observation: seems a doLayoutRange() is unnecessary here (it's called elsewhere)
