@@ -237,9 +237,14 @@ Segment* InputState::nextInputPos() const
       {
       Measure* m = _segment->measure();
       Segment* s = _segment->next1(SegmentType::ChordRest);
+      bool repitching = _segment->score()->usingNoteEntryMethod(NoteEntryMethod::REPITCH);
       while (s) {
-            if (s->element(_track) || s->measure() != m)
-                  return s;
+            if (s->element(_track) || s->measure() != m) {
+                  auto nse = s->cr(track());
+                  bool isRest = nse && nse->isRest();
+                  if (!repitching || !isRest)
+                        return s;
+                  }
             s = s->next1(SegmentType::ChordRest);
             }
       return 0;
