@@ -7399,9 +7399,22 @@ void ScoreView::cmdRepeatSelection(bool silent)
       const Selection& selection = _score->selection();
       bool resetToRepitch = false;
       bool isRange = selection.isRange();
-      auto iCR = _score->inputState().cr();
+      auto& is = _score->inputState();
+      auto iCR = is.cr();
+      const bool stepTime = _score->usingNoteEntryMethod(NoteEntryMethod::STEPTIME);
+      const bool rhythm = _score->usingNoteEntryMethod(NoteEntryMethod::RHYTHM);
+      bool repitch = _score->usingNoteEntryMethod(NoteEntryMethod::REPITCH);
+
+      if (!stepTime && iCR)
+            is.setDuration(iCR->durationType());
+
+      if (MScore::noteEntryAutoSwitchModes && rhythm) {
+            _score->setNoteEntryMethod(NoteEntryMethod::REPITCH);
+            repitch = true;
+            }
+
       if (noteEntryMode() && selection.isSingle()) {
-            if (_score->noteEntryMethod() == NoteEntryMethod::REPITCH) {
+            if (repitch) {
                   resetToRepitch = true;
                   _score->setNoteEntryMethod(NoteEntryMethod::STEPTIME);
                   }
@@ -7414,7 +7427,7 @@ void ScoreView::cmdRepeatSelection(bool silent)
                         return;
 
                   auto startTick = selection.tickStart();
-                  auto inputTick = _score->inputState().tick();
+                  auto inputTick = is.tick();
 
                   bool selectionAndInputAreSamePos = startTick == inputTick;
                   bool usePrevChord = (isRest || (isNote && selectionAndInputAreSamePos));
@@ -7453,12 +7466,12 @@ void ScoreView::cmdRepeatSelection(bool silent)
                         bool end = false;
                         while (nCR && !nCR->isChord()) {
                               if ((nCR = nextChordRest(nCR))) {
-                                    _score->inputState().setSegment(nCR->segment());
+                                    is.setSegment(nCR->segment());
                                     }
                               else end = true;
                               }
                         if (end) {
-                              _score->inputState().setSegment(oCR->segment());
+                              is.setSegment(oCR->segment());
                               }
                         }
                   moveCursor();
@@ -7524,11 +7537,10 @@ void ScoreView::cmdRepeatSelection(bool silent)
             } else qDebug("cmdRepeatSelection: cannot paste: endSegment: %p dStaff %d", endSegment, dStaff);
 
       if (isRange && noteEntryMode()) {
-            auto& _is = _score->inputState();
-            auto track = _is.track();
+            auto track = is.track();
             auto ncr  = selection.endSegment()->nextChordRest(track);
-            _is.moveInputPos(ncr);
-            _is.setTrack(track);
+            is.moveInputPos(ncr);
+            is.setTrack(track);
             }
 
       }
