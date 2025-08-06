@@ -689,8 +689,9 @@ void Score::repitchNote(const Position& p, bool replace)
             tie->setTick2(tie->endNote()->tick());
             tie->setTrack(note->track());
             undoAddElement(tie);
+            firstTiedNote = note;
             }
-      select(lastTiedNote);
+      select(firstTiedNote ? firstTiedNote : lastTiedNote);
       // move to next Chord
       ChordRest* next = nextChordRest(lastTiedNote->chord());
       while (next && !next->isChord())
