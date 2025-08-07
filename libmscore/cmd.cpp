@@ -2670,6 +2670,10 @@ Element* Score::move(const QString& cmd)
                               _is.moveInputPos(scr);
                               }
                         }
+                  else if (noteEntryMode() && isRange) {
+                        if (lastCR)
+                              s = lastCR->nextSegmentAfterCR(SegmentType::ChordRest);
+                        }
                   else for (; s; s = s->prev1(SegmentType::ChordRest)) {
                         if (s->element(track) || (s->measure() != m && s->rtick().isZero())) {
                               if (s->element(track)) {
@@ -2699,12 +2703,14 @@ Element* Score::move(const QString& cmd)
                   Measure* m = toChordRest(el)->measure();
                   Segment* nis = _is.segment();
                   Measure* nim = nis ? nis->measure() : nullptr;
-                  if (m != oim && m != nim)
-                        el = cr;
-                  // do not use if new input segment is current cr
-                  // this means input cursor just caught up to current selection
-                  else if (cr && nis == cr->segment())
-                        el = cr;
+                  if (!isRange) {
+                        if (m != oim && m != nim)
+                              el = cr;
+                        // do not use if new input segment is current cr
+                        // this means input cursor just caught up to current selection
+                        else if (cr && nis == cr->segment())
+                              el = cr;
+                        }
                   }
             else if (!el)
                   el = cr;
@@ -2833,44 +2839,53 @@ Element* Score::move(const QString& cmd)
                   el = cr;
             }
       else if (cmd == "next-measure") {
-            auto currentTrack = noteEntryMode() ? _is.track() : 0;
-            if (isRange)
+            const int currentTrack = noteEntryMode() ? _is.track() : 0;
+            if (isRange) {
                   cr = lastCR;
-            if (box && box->nextMeasure() && box->nextMeasure()->first())
-                  el = box->nextMeasure()->first()->nextChordRest(0, false);
-            if (cr) {
-                  if (selection().cr() && (cr->tick() != selection().cr()->tick()))
-                        cr = selection().cr();
-                  el = nextMeasure(cr);
+                  el = noteEntryMode() ? cr : nextMeasure(cr);
+                  }
+            else if (box) {
+                  if (auto nm = box->nextMeasure())
+                        if (auto fs = nm->first())
+                              el = fs->nextChordRest(0);
                   }
 
-            if (el) {
-                  auto oldEl = el;
-                  auto m = el->findMeasure();
-                  if (cr && m == cr->measure() && m->last()) {
-                        el = m->last()->nextChordRest(el->track(), true);
-                        if (!el) {
-                              el = oldEl;
+            if (!isRange) {
+                  if (cr) {
+                        auto scr = selection().cr();
+                        if (scr && cr->tick() != scr->tick())
+                              cr = selection().cr();
+                        el = nextMeasure(cr);
+                        }
+                  if (el) {
+                        auto oel = el;
+                        auto m = el->findMeasure();
+                        if (cr && (m == cr->measure()) && m->last()) {
+                              el = m->last()->nextChordRest(el->track(), true);
+                              if (!el)
+                                    el = oel;
                               }
                         }
-                  if (noteEntryMode()) {
-                        _is.moveInputPos(el);
-                        auto desiredTrackCR = _is.segment()->nextChordRest(currentTrack);
-                        auto inputTick = _is.tick();
-                        if (desiredTrackCR && desiredTrackCR->tick() <= inputTick) {
-                              auto note = desiredTrackCR->isChord() ? toChord(desiredTrackCR)->upNote() : nullptr;
-                              if (note) el = note; else el = desiredTrackCR;
-                              }
+                  }
+            if (noteEntryMode() && el) {
+                  _is.moveInputPos(el);
+                  auto desiredTrackCR = _is.segment()->nextChordRest(currentTrack);
+                  auto inputTick = _is.tick();
+                  if (desiredTrackCR && desiredTrackCR->tick() <= inputTick) {
+                        auto note = desiredTrackCR->isChord() ? toChord(desiredTrackCR)->upNote() : nullptr;
+                        if (note) el = note; else el = desiredTrackCR;
                         }
                   }
             }
       else if (cmd == "prev-measure") {
-            const bool isRange = selection().isRange();
+            const int currentTrack = noteEntryMode() ? _is.track() : 0;
             if (firstCR)
                   cr = firstCR;
-            auto currentTrack = noteEntryMode() ? _is.track() : 0;
-            if (box && box->prevMeasure() && box->prevMeasure()->first())
-                  el = box->prevMeasure()->first()->nextChordRest(0, false);
+            else if (box) {
+                  if (auto pm = box->prevMeasure())
+                        if (auto fs = pm->first())
+                              el = fs->nextChordRest(0);
+                  }
             if (cr) {
                   const auto scr = selection().cr();
                   const auto fcr = selection().firstChordRest();
@@ -2900,18 +2915,23 @@ Element* Score::move(const QString& cmd)
                   return nullptr;
 
             el = nullptr;
-            bool next = (cmd == "next-system");
+            const bool next = (cmd == "next-system");
+            const bool prev = !next;
+            bool atStartOfMeasure = false;
             MeasureBase* dest = nullptr;
 
-            if (auto scr = selection().cr())
-                  if (!next && (_is.tick() > scr->tick()))
+            if (auto scr = selection().cr()) {
+                  if (prev && (_is.tick() > scr->tick()))
                         cr = scr;
+                  }
+            else if (isRange)
+                  cr = prev ? firstCR : lastCR;
 
             if (cr) {
+                  atStartOfMeasure = (cr->tick() == cr->measure()->tick());
                   if (auto m = cr->findMeasureBase()) {
-                        if (!next) {
-                              bool atStartOfMeasure = (cr->tick() == cr->measure()->tick());
-                              dest = atStartOfMeasure ? m->prev() : m;
+                        if (prev) {
+                              dest = (atStartOfMeasure && !isRange) ? m->prev() : m;
                               }
                         else if (auto s = m->system()) {
                               if (auto lm = s->lastMeasure()) {
