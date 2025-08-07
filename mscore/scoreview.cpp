@@ -2003,6 +2003,8 @@ void ScoreView::paint(const QRect& r, QPainter& p)
             p.fillRect(dropRectangle, QColor(80, 0, 0, 80));
 
       const Selection& sel = _score->selection();
+
+      // RANGE SELECTION
       if (sel.isRange()) {
             Segment* ss = sel.startSegment();
             Segment* es = sel.endSegment();
@@ -2033,8 +2035,10 @@ void ScoreView::paint(const QRect& r, QPainter& p)
             p.setBrush(Qt::NoBrush);
 
             QPen pen;
-            pen.setColor(MScore::selectColor[0]);
-            pen.setWidthF(2.0 / p.worldTransform().m11());
+            QColor rangeColor = MScore::lassoColor; // MScore::selectColor[0];
+            qreal rangeWidth = 5.0; // 2.0
+            pen.setColor(rangeColor);
+            pen.setWidthF(rangeWidth / p.worldTransform().m11());
 
             pen.setStyle(Qt::SolidLine);
 
