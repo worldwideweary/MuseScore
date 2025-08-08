@@ -3794,6 +3794,8 @@ void ScoreView::cmd(const char* s)
                   }},
             {{"tie"}, [](ScoreView* cv, const QByteArray&) {
                   if (cv->noteEntryMode()) {
+                        if (MScore::noteEntryAutoSwitchModes && cv->score()->usingNoteEntryMethod(NoteEntryMethod::RHYTHM))
+                              cv->score()->setNoteEntryMethod(NoteEntryMethod::REPITCH);
                         cv->score()->cmdAddTie();
                         cv->moveCursor();
                         }
