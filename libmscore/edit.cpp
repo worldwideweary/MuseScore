@@ -2692,6 +2692,8 @@ void Score::cmdDeleteSelection()
                         select(toChord(cr)->upNote(), SelectType::SINGLE);
                   else
                         select(cr, SelectType::SINGLE);
+
+                  _is.moveToNextInputPos();
                   }
             }
       else if (tempVoiceFilter) {
