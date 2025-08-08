@@ -5485,8 +5485,24 @@ void ScoreView::cmdEnterRest()
       InputState& is = _score->inputState();
       if (is.track() == -1 || is.segment() == 0)          // invalid state
             return;
-      if (!is.duration().isValid() || is.duration().isZero() || is.duration().isMeasure())
+
+      bool invalid = false;
+      const bool rhythmMode = _score->usingNoteEntryMethod(NoteEntryMethod::RHYTHM);
+      if (MScore::noteEntryAutoSwitchModes) {
+            if (rhythmMode) {
+                  _score->setNoteEntryMethod(NoteEntryMethod::REPITCH);
+                  if (auto cr = is.cr())
+                        is.setDuration(cr->durationType());
+
+                  invalid = !is.duration().isValid() || is.duration().isZero() || is.duration().isMeasure();
+                  if (invalid)
+                        return;
+                  }
+            }
+
+      if (invalid)
             is.setDuration(TDuration::DurationType::V_QUARTER);
+
       cmdEnterRest(is.duration());
       }
 
@@ -5498,9 +5514,6 @@ void ScoreView::cmdEnterRest(const TDuration& d)
       {
       if (!noteEntryMode())
             cmd("note-input");
-
-      if (MScore::noteEntryAutoSwitchModes && _score->usingNoteEntryMethod(NoteEntryMethod::RHYTHM))
-            _score->setNoteEntryMethod(NoteEntryMethod::REPITCH);
 
       if (_score->usingNoteEntryMethod(NoteEntryMethod::RHYTHM))
             _score->cmd(getAction("pad-rest"), editData);
