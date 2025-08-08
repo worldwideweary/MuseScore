@@ -948,7 +948,8 @@ Shortcut Shortcut::_sc[] = {
          QT_TRANSLATE_NOOP("action","Go to higher pitched note in chord"),
          0,
          Icons::Invalid_ICON,
-         Qt::WindowShortcut
+         Qt::WindowShortcut,
+         ShortcutFlags::A_CMD
          },
       {
          MsWidget::SCORE_TAB,
