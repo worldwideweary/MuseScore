@@ -3019,6 +3019,10 @@ void ScoreView::cmd(const char* s)
                   el = score.moveAlt(el, dir);
                   cv->cmdGotoElement(el);
                   }
+            if (score.noteEntryMode()) {
+                  auto& is = score.inputState();
+                  is.moveToNextInputPos();
+                  }
             };
 
       static const std::vector<ScoreViewCmd> cmdList {
