@@ -6125,7 +6125,6 @@ void ScoreView::cmdAddPedal(HookType beginHook, HookType endHook)
                pedal->layout();
                mscore->currentScoreView()->updateGrips();
             score()->endCmd();
-            score()->doLayout();
 
             // When altering start-style only, finalize function
             // Or when altering end-style during middle-selection
