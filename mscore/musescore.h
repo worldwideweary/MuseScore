@@ -343,6 +343,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       QStatusBar* _statusBar;
       QLabel* _modeText;
       QLabel* _positionLabel;
+      QLabel* _timerLabel;
       NewWizard* newWizard           { 0 };
       HelpBrowser* helpBrowser       { 0 };
       QDockWidget* manualDock        { 0 };
@@ -372,6 +373,10 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       bool _horizontalSplit              { true  };
 
       QString rev;
+
+      QTime _time;
+      bool _timeStopped                 { false };
+      QTimer* _timer{0};
 
       int _midiRecordId                  { -1 };
 
@@ -629,6 +634,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void checkForUpdates();
       void startPreferenceDialog();
       void restartAudioEngine();
+      void updateTimer();
 
    public:
       MuseScore();
@@ -644,6 +650,10 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void showElementContext(Element* el);
       void cmdAppendMeasures(int);
       bool isMidiInEnabled() const;
+
+      void stopStartTime();
+      void clearTime();
+      void storeTime();
 
       void readSettings();
       void writeSettings();
