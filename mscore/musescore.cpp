@@ -1425,6 +1425,15 @@ MuseScore::MuseScore()
       _positionLabel = new QLabel;
       _positionLabel->setObjectName("decoration widget");  // this prevents animations
 
+      _timerLabel = new QLabel;
+      _timerLabel->setObjectName("timerLabel");
+
+      _time.setHMS(0,0,1);
+      _timer = new QTimer(this);
+      connect(_timer, &QTimer::timeout, this, QOverload<>::of(&MuseScore::updateTimer));
+      int perSecond = 1000/*ms*/;
+      _timer->start(perSecond);
+
       _modeText = new QLabel;
       _modeText->setAutoFillBackground(false);
       _modeText->setObjectName("modeLabel");
@@ -1470,6 +1479,7 @@ MuseScore::MuseScore()
                   _statusBar->addPermanentWidget(layerSwitch);
                   }
 
+            _statusBar->addPermanentWidget(_timerLabel, 0);
             _statusBar->addPermanentWidget(_positionLabel, 0);
 
       setStatusBar(_statusBar);
@@ -2470,6 +2480,7 @@ void MuseScore::retranslate()
       {
       setMenuTitles();
       _positionLabel->setToolTip(tr("Measure:Beat:Tick"));
+      _timerLabel->setToolTip(tr("HH:MM:SS Timer"));
       pref->setText(tr("&Preferences…"));
       aboutAction->setText(tr("&About…"));
       aboutQtAction->setText(tr("About &Qt…"));
@@ -4457,6 +4468,17 @@ bool MuseScore::eventFilter(QObject *obj, QEvent *event)
                   globalY = me->globalY();
                   return QMainWindow::eventFilter(obj, event);
                   }
+            case QEvent::MouseButtonPress: {
+                  QMouseEvent* me = static_cast<QMouseEvent*>(event);
+                  // HACK - Would be better to overload QLabel to handle mouse event
+                  if (obj->objectName()=="timerLabel") {
+                        if (me->button() == Qt::LeftButton)
+                              stopStartTime();
+                        if (me->button() == Qt::RightButton)
+                              clearTime();
+                        }
+                  return QMainWindow::eventFilter(obj, event);
+                  }
             case QEvent::StatusTip:
                   return true; // prevent updates to the status bar
             case QEvent::KeyRelease:
@@ -5490,6 +5512,27 @@ void MuseScore::setPos(const Fraction& t)
       }
 
 //---------------------------------------------------------
+//   timer functions
+//---------------------------------------------------------
+
+void MuseScore::stopStartTime()
+      {
+      _timeStopped = !_timeStopped;
+      }
+
+void MuseScore::clearTime()
+      {
+      _time.setHMS(0,0,0);
+      _timerLabel->setText(_time.toString());
+      }
+
+void MuseScore::storeTime()
+      {
+      // TODO: store cumulation of timer into mscz file
+      //
+      }
+
+//---------------------------------------------------------
 //   undoRedo
 //---------------------------------------------------------
 
@@ -5547,6 +5590,16 @@ void MuseScore::handleMessage(const QString& message)
       ((QtSingleApplication*)(qApp))->activateWindow();
       openScore(message);
       }
+
+void MuseScore::updateTimer()
+      {
+      if (!_timeStopped) {
+            _time = _time.addSecs(1);       // +1 second
+            QString str = _time.toString(); // HH:MM:SS
+            _timerLabel->setText(str);
+            }
+      }
+
 
 //---------------------------------------------------------
 //   editInPianoroll
