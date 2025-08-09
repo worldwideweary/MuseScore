@@ -6006,9 +6006,6 @@ void ScoreView::cmdAddPedal(HookType beginHook, HookType endHook)
 
             } // End "style" cycle
 
-      if (!selection.firstChordRest())
-            return;
-
       // Initialize Pedal
       auto newPedal = new Pedal(_score);
 
@@ -6040,6 +6037,7 @@ void ScoreView::cmdAddPedal(HookType beginHook, HookType endHook)
       // Retrieve two chord rests from score selection:
       auto cr1 = selection.firstChordRest();
       auto cr2 = selection.lastChordRest();
+
       if (!cr1 && !activePedal)
             return;
 
@@ -6048,11 +6046,12 @@ void ScoreView::cmdAddPedal(HookType beginHook, HookType endHook)
             onlyOne = true;
             cr2 = cr1;
             }
-      auto startSegment = cr1->segment();
-      auto endSegment   = cr2->segment();
-      auto track        = cr1->track();
-      auto nextSegment  = endSegment->nextCR(track, true);
-      auto staffIdx     = cr1->staffIdx();
+      // Reminder that this whole set of code could be redone:
+      auto startSegment = cr1 ? cr1->segment() : nullptr;
+      auto endSegment   = cr2 ? cr2->segment() : nullptr;
+      auto track        = cr1 ? cr1->track() : 0;
+      auto nextSegment  = endSegment ? endSegment->nextCR(track, true) : nullptr;
+      auto staffIdx     = cr1 ? cr1->staffIdx() : 0;
 
       if (nextSegment) {
             // Will be jumping to next measure later, so pull back if already ahead of beginning measure:
