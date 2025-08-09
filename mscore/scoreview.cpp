@@ -5924,10 +5924,12 @@ void ScoreView::cmdAddPedal(HookType beginHook, HookType endHook)
             activePedal = nullptr;
             }
 
+      bool editElementIsPedalSeg = (editData.element && editData.element->type() == ElementType::PEDAL_SEGMENT);
+      bool selIsPedalSeg = selection.element() && selection.element()->type() == ElementType::PEDAL_SEGMENT;
+      bool havePedal = selIsPedalSeg || editElementIsPedalSeg;
       // Pedal Style Cycling
       // -------------------
-      bool editElementIsPedalSeg = (editData.element && editData.element->type() == ElementType::PEDAL_SEGMENT);
-      if (selection.isSingle() && (selection.element()->isPedalSegment() || editElementIsPedalSeg)) {
+      if (havePedal) {
             auto pseg = editElementIsPedalSeg ? toPedalSegment(editData.element)
                                               : toPedalSegment(selection.element());
             if (!pseg) return;
@@ -5937,9 +5939,13 @@ void ScoreView::cmdAddPedal(HookType beginHook, HookType endHook)
             auto middleGripSelected = editData.curGrip == Grip::MIDDLE;
             auto nothingSelected = !endGripSelected && !startGripSelected && !middleGripSelected;
 
+            if (!activePedal && endGripSelected) {
+                  activePedal = pedal;
+                  }
+
             // [Cycle End Hook] - [If active pedal], will apply additional pedal-line
             // Alt: If mid-grip is active, allow end-style cycling while [active pedal].
-            if ((endGripSelected && !activePedal) || (middleGripSelected && activePedal)) {
+            if (middleGripSelected) {
                   auto height = pedal->endHookHeight();
                   // Cycle through hook types, then change height +/-
                   if (pedal->endHookType() == HookType::HOOK_90)
