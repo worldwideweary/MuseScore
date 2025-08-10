@@ -7426,6 +7426,9 @@ void ScoreView::cmdRepeatSelection(bool silent)
       if (MScore::noteEntryAutoSwitchModes && rhythm) {
             _score->setNoteEntryMethod(NoteEntryMethod::REPITCH);
             repitch = true;
+            bool invalid = !is.duration().isValid() || is.duration().isZero() || is.duration().isMeasure();
+            if (invalid)
+                  return;
             }
 
       if (noteEntryMode() && selection.isSingle()) {
