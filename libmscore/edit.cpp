@@ -2571,6 +2571,7 @@ void Score::cmdDeleteSelection()
       bool isRange = selection().isRange();
       Segment* s1 = nullptr;
       Segment* s2 = nullptr;
+      Chord* graceParentChord{0};
       if (isRange) {
             s1 = selection().startSegment();
             s2 = selection().endSegment();
@@ -2578,6 +2579,10 @@ void Score::cmdDeleteSelection()
                                                    staff2track(selection().staffEnd()), selectionFilter());
             }
       else {
+            if (auto scr = selection().cr()) {
+                  if (scr->isGrace())
+                        graceParentChord = toChord(scr->parent());
+                  }
             // deleteItem modifies selection().elements() list,
             // so we need a local copy:
             QList<Element*> el = selection().elements();
@@ -2699,18 +2704,31 @@ void Score::cmdDeleteSelection()
       else if (tempVoiceFilter) {
             ;
             }
-      else if (!crsSelectedAfterDeletion.empty()) {
-            std::vector<Element*> elementsToSelect;
-            for (auto cr : crsSelectedAfterDeletion) {
-                  if (cr) {
-                        if (cr->isChord())
-                              elementsToSelect.push_back(dynamic_cast<Element*>(toChord(cr)->upNote()));
-                        else if (cr->isRest())
-                              elementsToSelect.push_back(dynamic_cast<Element*>(cr));
+      if (!crsSelectedAfterDeletion.empty()) {
+            if (graceParentChord) {
+                  auto chords = graceParentChord->graceNotes();
+                  if (!chords.isEmpty()) {
+                        if (auto chord = chords.front()) {
+                              auto n = chord->upNote();
+                              select(n);
+                              }
+                        }
+                  else select(graceParentChord->upNote());
+                  }
+            else if (!noteEntryMode()) {
+                  std::vector<Element*> elementsToSelect;
+                  for (auto cr : crsSelectedAfterDeletion) {
+                        if (cr) {
+                              if (cr->isChord())
+                                    elementsToSelect.push_back(dynamic_cast<Element*>(toChord(cr)->upNote()));
+                              else if (cr->isRest())
+                                    elementsToSelect.push_back(dynamic_cast<Element*>(cr));
+                              }
+                        }
+                  for (auto el : elementsToSelect) {
+                        select(el, SelectType::ADD, 0);
                         }
                   }
-            for (auto el : elementsToSelect)
-                  select(el, SelectType::ADD, 0);
             }
       }
 
