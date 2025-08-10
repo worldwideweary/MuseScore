@@ -3152,6 +3152,24 @@ void Score::enterRest(const TDuration& d, InputState* externalInputState)
 void Score::removeChordRest(ChordRest* cr, bool clearSegment)
       {
       QList<Segment*> segments;
+
+      auto tick = cr->tick().ticks();
+      auto spanners = spannerMap().findOverlapping(tick,tick);
+      std::vector<Spanner*> toRemove;
+      for (auto interval : spanners) {
+            Spanner* s = interval.value;
+            if (s->anchor() == Spanner::Anchor::MEASURE || s->anchor() == Spanner::Anchor::NOTE)
+                  continue;
+            if (s->startCR() == cr) {
+                  if (s->isSlur()) {
+                        toRemove.push_back(s);
+                        }
+                  }
+            }
+      for (auto remove : toRemove) {
+            undoRemoveElement(remove);
+            }
+
       for (ScoreElement*& e : cr->linkList()) {
             undo(new RemoveElement(static_cast<Element*>(e)));
             if (clearSegment) {
