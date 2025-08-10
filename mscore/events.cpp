@@ -682,9 +682,10 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                                     else changeState(ViewState::NORMAL);
                                     //adjustCanvasPosition(el, true);
                                     }
-                              else if (auto m = toStaffLines(el)->measure()) {
-                                    if (auto f = m->first()) {
-                                          if (auto cr = f->nextChordRest(el->track())) {
+                              else if (auto sl = toStaffLines(el)) {
+                                    if (auto m = sl->measure()) {
+                                          int firstTrack = staff2track(sl->staffIdx());
+                                          if (auto cr = m->findChordRest(m->tick(), firstTrack)) {
                                                 if (!shift) {
                                                       _score->deselectAll();
                                                       _score->select(m, SelectType::RANGE, cr->staffIdx());
@@ -693,6 +694,7 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                                                       }
                                                 else _score->select(cr, SelectType::RANGE);
 
+                                                _score->inputState().setTrack(firstTrack);
                                                 _score->inputState().moveInputPos(cr);
                                                 }
                                           }
