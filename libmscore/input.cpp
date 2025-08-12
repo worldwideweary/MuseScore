@@ -259,8 +259,21 @@ void InputState::moveToNextInputPos()
       {
       Segment* s   = nextInputPos();
       _lastSegment = _segment;
-      if (s)
+      if (s) {
             _segment = s;
+            if (MScore::noteEntryAutoSwitchModes) {
+                  const bool rhythmMode = usingNoteEntryMethod(NoteEntryMethod::RHYTHM);
+                  if (MScore::noteEntryAutoSwitchModes && rhythmMode) {
+                        // Non note-entry selection duration mustn't linger:
+                        TDuration defaultDuration = TDuration::DurationType::V_QUARTER;
+                        TDuration d = cr() ? cr()->durationType() : defaultDuration;
+                        if (!d.isValid() || d.isZero() || d.isMeasure()) {
+                              d = defaultDuration;
+                              }
+                        setDuration(d);
+                        }
+                  }
+            }
       }
 
 //---------------------------------------------------------
