@@ -4618,8 +4618,16 @@ void ScoreView::startNoteEntry()
             }
       TDuration d(is.duration());
 
-      if (!d.isValid() || d.isZero() || d.type() == TDuration::DurationType::V_MEASURE)
-            is.setDuration(defaultDuration);
+      const bool rhythmMode = is.usingNoteEntryMethod(NoteEntryMethod::RHYTHM);
+      if (MScore::noteEntryAutoSwitchModes && rhythmMode) {
+            if (auto icr = is.cr())
+                  d = icr->durationType();
+            }
+
+      if (!d.isValid() || d.isZero() || d.isMeasure())
+            d = defaultDuration;
+
+      is.setDuration(d);
       is.setAccidentalType(AccidentalType::NONE);
 
       _score->select(el, SelectType::SINGLE, 0);
