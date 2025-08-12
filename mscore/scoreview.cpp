@@ -2968,10 +2968,13 @@ void ScoreView::cmd(const char* s)
             auto& selection = score.selection();
             auto el = selection.element();
             auto oel = el;
-            bool isRange = selection.isRange();
+            const bool isRange = selection.isRange();
+            bool cursorHasSamePosition = false;
             std::vector<Element*> notes;
 
             if (el && (el->isNote() || el->isRest())) {
+                  if (score.inputState().tick() == el->tick())
+                        cursorHasSamePosition = true;
                   cv->cmdGotoElement(score.moveAlt(el, dir));
                   }
             else for (auto e : selection.elements()) {
@@ -3018,7 +3021,7 @@ void ScoreView::cmd(const char* s)
                   el = score.moveAlt(el, dir);
                   cv->cmdGotoElement(el);
                   }
-            if (score.noteEntryMode()) {
+            if (score.noteEntryMode() && !cursorHasSamePosition) {
                   auto& is = score.inputState();
                   is.moveToNextInputPos();
                   }
