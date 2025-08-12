@@ -6708,6 +6708,7 @@ void ScoreView::cmdCreateTuplet(ChordRest* cr, Tuplet* tuplet)
 
 void ScoreView::changeVoice(int voice)
       {
+      ///
       InputState* is = &score()->inputState();
       bool isRange = score()->selection().isRange();
       int track = (is->track() / VOICES) * VOICES + voice;
@@ -6773,6 +6774,20 @@ void ScoreView::changeVoice(int voice)
                         break;
                         }
                   }
+            }
+
+      if (MScore::noteEntryAutoSwitchModes) {
+            const bool rhythmMode = is->usingNoteEntryMethod(NoteEntryMethod::RHYTHM);
+            if (!rhythmMode)
+                  return;
+
+            // Duration mustn't linger with auto switching
+            TDuration defaultDuration = TDuration::DurationType::V_QUARTER;
+            TDuration d = is->cr() ? is->cr()->durationType() : defaultDuration;
+            if (!d.isValid() || d.isZero() || d.isMeasure()) {
+                  d = defaultDuration;
+                  }
+            is->setDuration(d);
             }
       }
 
