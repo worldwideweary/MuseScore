@@ -2557,6 +2557,8 @@ void Score::cmdDeleteSelection()
       Segment* s1 = nullptr;
       Segment* s2 = nullptr;
       Chord* graceParentChord{0};
+      const auto scr = selection().cr();
+      bool cursorHasSamePosition = scr && (_is.tick() == scr->tick());
       if (isRange) {
             s1 = selection().startSegment();
             s2 = selection().endSegment();
@@ -2564,9 +2566,8 @@ void Score::cmdDeleteSelection()
                                                    staff2track(selection().staffEnd()), selectionFilter());
             }
       else {
-            if (auto scr = selection().cr()) {
-                  if (scr->isGrace())
-                        graceParentChord = toChord(scr->parent());
+            if (scr && scr->isGrace()) {
+                  graceParentChord = toChord(scr->parent());
                   }
             // deleteItem modifies selection().elements() list,
             // so we need a local copy:
@@ -2683,7 +2684,8 @@ void Score::cmdDeleteSelection()
                   else
                         select(cr, SelectType::SINGLE);
 
-                  _is.moveToNextInputPos();
+                  if (!cursorHasSamePosition)
+                        _is.moveToNextInputPos();
                   }
             }
       else if (tempVoiceFilter) {
