@@ -5687,8 +5687,26 @@ void Score::undoRemoveMeasures(Measure* m1, Measure* m2, bool preserveTies)
       //  handle ties which start before m1 and end in (m1-m2)
       //
       for (Segment* s = m1->first(); s != m2->last(); s = s->next1()) {
+            if (!s) {
+                  // This score is corrupted; handle it without crashing,
+                  // to help the user to fix corruptions by deleting the affected measures
+                  qDebug() << "Missing segments detected while deleting measures " << m1->no() << " to " << m2->no()
+                           << ". This score (" << name() << ") is corrupted. Continuing without deleting measure contents.";
+                  break;
+                  }
+
             if (!s->isChordRestType())
                   continue;
+
+            // Make sure annotations are removed once, even if this segment contains linked copies of the same annotation
+            // (the linked copy would be removed by undoRemoveElement)
+            while (!s->annotations().empty()) {
+                  Element* annotation = s->annotations().front();
+                  if (!annotation)
+                        continue;
+                  undoRemoveElement(annotation);
+                  }
+
             for (int track = 0; track < ntracks(); ++track) {
                   Element* e = s->element(track);
                   if (!e || !e->isChord())
@@ -5697,14 +5715,14 @@ void Score::undoRemoveMeasures(Measure* m1, Measure* m2, bool preserveTies)
                   for (Note* n : c->notes()) {
                         // Remove ties crossing measure range boundaries
                         Tie* t = n->tieBack();
-                        if (t && (t->startNote()->chord()->tick() < startTick)) {
+                        if (t && t->startNote() && (t->startNote()->chord()->tick() < startTick)) {
                               if (preserveTies)
                                     t->setEndNote(0);
                               else
                                     undoRemoveElement(t);
                               }
                         t = n->tieFor();
-                        if (t && (t->endNote()->chord()->tick() >= endTick))
+                        if (t && t->endNote() && (t->endNote()->chord()->tick() >= endTick))
                               undoRemoveElement(t);
 
                         // Do the same for other note-anchored spanners (e.g. glissandi).
