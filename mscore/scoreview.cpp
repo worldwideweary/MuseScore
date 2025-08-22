@@ -6841,7 +6841,9 @@ void ScoreView::cmdTuplet(int n)
                               : _score->inputState().cr();
 
             if (cr) {
-                  _score->changeCRlen(cr, _score->inputState().duration());
+                  InputState& is = _score->inputState();
+                  const auto duration = rhythmEntry ? cr->durationType() : is.duration();
+                  _score->changeCRlen(cr, duration);
                   cmdTuplet(n, cr);
                   }
             }
