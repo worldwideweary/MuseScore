@@ -61,7 +61,8 @@ class InputState {
       int _lastInputPitchDiff  { 0 };
       Direction _lastInputDirection { Direction::AUTO };
 
-      Segment* nextInputPos() const;
+      Segment* nextInputPos(bool repitch) const;
+      void updateAutoModeDuration();
 
    public:
       ChordRest* cr() const;
@@ -128,6 +129,7 @@ class InputState {
       void update(Selection& selection);
       void moveInputPos(Element* e);
       void moveToNextInputPos();
+      void moveToNextInputPos(bool repitch);
       bool endOfScore() const;
 
       void updateLastPitch(int p)         { _lastInputPitch = p;    }
