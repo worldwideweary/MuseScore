@@ -230,20 +230,42 @@ void InputState::setSegment(Segment* s)
       }
 
 //---------------------------------------------------------
+//   updateAutoModeDuration
+//---------------------------------------------------------
+
+void InputState::updateAutoModeDuration()
+      {
+      if (MScore::noteEntryAutoSwitchModes) {
+            const bool rhythmMode = usingNoteEntryMethod(NoteEntryMethod::RHYTHM);
+            if (!rhythmMode)
+                  return;
+
+            // Non note-entry selection duration mustn't linger:
+            TDuration defaultDuration = TDuration::DurationType::V_QUARTER;
+            TDuration d = cr() ? cr()->durationType() : defaultDuration;
+            if (!d.isValid() || d.isZero() || d.isMeasure()) {
+                  d = defaultDuration;
+                  }
+            setDuration(d);
+            }
+      }
+
+//---------------------------------------------------------
 //   nextInputPos
 //---------------------------------------------------------
 
-Segment* InputState::nextInputPos() const
+Segment* InputState::nextInputPos(bool repitch) const
       {
       Measure* m = _segment->measure();
       Segment* s = _segment->next1(SegmentType::ChordRest);
-      bool repitching = _segment->score()->usingNoteEntryMethod(NoteEntryMethod::REPITCH);
+
       while (s) {
             if (s->element(_track) || s->measure() != m) {
                   auto nse = s->cr(track());
                   bool isRest = nse && nse->isRest();
-                  if (!repitching || !isRest)
+                  if (!repitch || !isRest) {
                         return s;
+                        }
                   }
             s = s->next1(SegmentType::ChordRest);
             }
@@ -257,22 +279,27 @@ Segment* InputState::nextInputPos() const
 
 void InputState::moveToNextInputPos()
       {
-      Segment* s   = nextInputPos();
+      Segment* s   = nextInputPos(usingNoteEntryMethod(NoteEntryMethod::REPITCH));
       _lastSegment = _segment;
       if (s) {
             _segment = s;
-            if (MScore::noteEntryAutoSwitchModes) {
-                  const bool rhythmMode = usingNoteEntryMethod(NoteEntryMethod::RHYTHM);
-                  if (MScore::noteEntryAutoSwitchModes && rhythmMode) {
-                        // Non note-entry selection duration mustn't linger:
-                        TDuration defaultDuration = TDuration::DurationType::V_QUARTER;
-                        TDuration d = cr() ? cr()->durationType() : defaultDuration;
-                        if (!d.isValid() || d.isZero() || d.isMeasure()) {
-                              d = defaultDuration;
-                              }
-                        setDuration(d);
-                        }
-                  }
+            updateAutoModeDuration();
+            }
+      }
+
+//---------------------------------------------------------
+//   moveToNextInputPos
+//   TODO: special case: note is first note of tie: goto to last note of tie
+//   Alternative function to allow override of directive to act as repitch
+//---------------------------------------------------------
+
+void InputState::moveToNextInputPos(bool repitch)
+      {
+      Segment* s   = nextInputPos(repitch);
+      _lastSegment = _segment;
+      if (s) {
+            _segment = s;
+            updateAutoModeDuration();
             }
       }
 
@@ -282,7 +309,7 @@ void InputState::moveToNextInputPos()
 
 bool InputState::endOfScore() const
       {
-      return (_lastSegment == _segment) && !nextInputPos();
+      return (_lastSegment == _segment) && !nextInputPos(usingNoteEntryMethod(NoteEntryMethod::REPITCH));
       }
 
 
