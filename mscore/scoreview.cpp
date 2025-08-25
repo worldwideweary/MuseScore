@@ -3499,14 +3499,27 @@ void ScoreView::cmd(const char* s)
                                     }
                               }
 
-                        // Active slur will de-activate if move command is larger than per-chord:
-                        if (score->noteEntryMode() && cmd != "next-chord" && cmd != "prev-chord") {
-                              if (auto slur = score->inputState().slur()) {
-                                    auto& ss = slur->spannerSegments();
-                                    if (!ss.empty())
-                                          ss.front()->setSelected(false);
-                                    
-                                    score->inputState().setSlur(nullptr);
+                        if (score->noteEntryMode()) {
+                              auto& is = score->inputState();
+                              bool repitching = is.usingNoteEntryMethod(NoteEntryMethod::RHYTHM) && MScore::noteEntryAutoSwitchModes;
+                              if (repitching) {
+                                    // Combined Rhythm+Repitch needs duration state to be not lingering from a
+                                    // non note-entry selection
+                                    TDuration d = is.cr() ? is.cr()->durationType() : TDuration::DurationType::V_QUARTER;
+                                    if (!d.isValid() || d.isZero() || d.isMeasure())
+                                          d = TDuration::DurationType::V_QUARTER;
+                                    is.setDuration(d);
+                                    }
+
+                              if (auto slur = is.slur()) {
+                                    // Active slur will de-activate if move command is larger than per-chord:
+                                    if (cmd != "next-chord" && cmd != "prev-chord") {
+                                          auto& ss = slur->spannerSegments();
+                                          if (!ss.empty())
+                                                ss.front()->setSelected(false);
+
+                                          is.setSlur(nullptr);
+                                          }
                                     }
                               }
                         if (ele)
@@ -3797,10 +3810,39 @@ void ScoreView::cmd(const char* s)
                   }},
             {{"tie"}, [](ScoreView* cv, const QByteArray&) {
                   if (cv->noteEntryMode()) {
-                        if (MScore::noteEntryAutoSwitchModes && cv->score()->usingNoteEntryMethod(NoteEntryMethod::RHYTHM))
+                        auto& is = cv->score()->inputState();
+                        const bool rhythmMode = is.usingNoteEntryMethod(NoteEntryMethod::RHYTHM);
+
+                        if (MScore::noteEntryAutoSwitchModes && rhythmMode) {
                               cv->score()->setNoteEntryMethod(NoteEntryMethod::REPITCH);
+                              }
+
+                        // Switch to step-time temporarily if no immediate note to tie to:
+                        bool farOut = false;
+                        auto se = cv->score()->selection().element();
+                        if (rhythmMode && se && se->isNote()) {
+                              const auto note = toNote(se);
+                              const auto chord = note->chord();
+                              const auto nnote = searchTieNote(note);
+                              if (!nnote) {
+                                    if (auto nseg = chord->segment()->next1(SegmentType::ChordRest)) {
+                                          auto e = nseg->element(chord->track());
+                                          if (!e || !e->isChord()) {
+                                                farOut = true;
+                                                }
+                                          }
+                                    }
+
+                              if (farOut && MScore::noteEntryAutoSwitchModes && rhythmMode) {
+                                    is.setNoteEntryMethod(NoteEntryMethod::STEPTIME);
+                                    }
+                              }
+
                         cv->score()->cmdAddTie();
                         cv->moveCursor();
+                        if (farOut) {
+                              is.setNoteEntryMethod(NoteEntryMethod::RHYTHM);
+                              }
                         }
                   else
                         cv->score()->cmdToggleTie();
@@ -7429,6 +7471,7 @@ MeasureBase* ScoreView::checkSelectionStateForInsertMeasure()
 void ScoreView::cmdRepeatSelection(bool silent)
       {
       const Selection& selection = _score->selection();
+      auto scr = selection.cr();
       bool resetToRepitch = false;
       bool isRange = selection.isRange();
       auto& is = _score->inputState();
@@ -7436,16 +7479,20 @@ void ScoreView::cmdRepeatSelection(bool silent)
       const bool stepTime = _score->usingNoteEntryMethod(NoteEntryMethod::STEPTIME);
       const bool rhythm = _score->usingNoteEntryMethod(NoteEntryMethod::RHYTHM);
       bool repitch = _score->usingNoteEntryMethod(NoteEntryMethod::REPITCH);
+      bool invalid = false;
 
-      if (!stepTime && iCR)
-            is.setDuration(iCR->durationType());
+      if (!stepTime) {
+            if (iCR) {
+                  is.setDuration(iCR->durationType());
+                  }
+            else if (scr) {
+                  is.setDuration(scr->durationType());
+                  }
+            }
 
       if (MScore::noteEntryAutoSwitchModes && rhythm) {
             _score->setNoteEntryMethod(NoteEntryMethod::REPITCH);
             repitch = true;
-            bool invalid = !is.duration().isValid() || is.duration().isZero() || is.duration().isMeasure();
-            if (invalid)
-                  return;
             }
 
       if (noteEntryMode() && selection.isSingle()) {
@@ -7453,6 +7500,8 @@ void ScoreView::cmdRepeatSelection(bool silent)
                   resetToRepitch = true;
                   _score->setNoteEntryMethod(NoteEntryMethod::STEPTIME);
                   }
+
+            invalid = !is.duration().isValid() || is.duration().isZero() || is.duration().isMeasure();
 
             if (auto el = selection.element()) {
                   bool isRest = el->type() == ElementType::REST;
@@ -7470,8 +7519,15 @@ void ScoreView::cmdRepeatSelection(bool silent)
                   if (usePrevChord) {
                         prevCR = prevChordRest(prevCR);
                         while (el) {
-                              if (!prevCR || prevCR == prevChordRest(prevCR))
-                                    return;
+                              if (!prevCR) {
+                                    el = prevCR = iCR;
+                                    break;
+                                    }
+
+                              if (prevCR == prevChordRest(prevCR)) {
+                                    el = prevCR;
+                                    break;
+                                    }
 
                               if (!prevCR->isRest()) {
                                     el = prevCR;
@@ -7480,6 +7536,17 @@ void ScoreView::cmdRepeatSelection(bool silent)
 
                               prevCR = prevChordRest(prevCR);
                               }
+                        }
+
+                  if (invalid) {
+                        if (usePrevChord) {
+                              is.setDuration(prevCR->durationType());
+                              }
+                        else if (scr) {
+                              is.setDuration(scr->durationType());
+                              }
+                        else
+                              return;
                         }
 
                   _score->startCmd();
