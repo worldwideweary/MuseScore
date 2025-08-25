@@ -108,17 +108,10 @@ void CmdState::setTick(const Fraction& t)
       if (_locked)
             return;
 
-      if (_startTick == Fraction(-1,1) || t < _startTick) {
+      if (_startTick == Fraction(-1,1) || t < _startTick)
             _startTick = t;
-            qDebug()<<"START"<<t.print();
-            if (_startTick == Fraction(-1,1) || _startTick == Fraction(0,1)) {
-                  qDebug() << "Rock bottom" << "do break";
-                  }
-            }
-      if (_endTick == Fraction(-1,1) || t > _endTick) {
+      if (_endTick == Fraction(-1,1) || t > _endTick)
             _endTick = t;
-            qDebug()<<"END"<<t.print();
-            }
       setUpdateMode(UpdateMode::Layout);
       }
 
@@ -321,7 +314,6 @@ void CmdState::dump()
 
 void Score::update(bool resetCmdState)
       {
-      qDebug() << "update begin";
       bool updateAll = false;
       for (MasterScore* ms : *movements()) {
             CmdState& cs = ms->cmdState();
@@ -366,7 +358,6 @@ void Score::update(bool resetCmdState)
             }
       if (_selection.isRange() && !_selection.isLocked())
             _selection.updateSelectedElements();
-      qDebug() << "update end";
       }
 
 //---------------------------------------------------------
@@ -5174,7 +5165,6 @@ void Score::cmdAddFret(int fret)
 
 void Score::cmdRelayout()
       {
-      qDebug()<<"";
       setLayoutAll();
       }
 
