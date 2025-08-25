@@ -5375,7 +5375,6 @@ class CmdStateLocker {
 
 void Score::doLayoutRange(const Fraction& st, const Fraction& et)
       {
-      qDebug() << st.print() << et.print();
       CmdStateLocker cmdStateLocker(this);
       LayoutContext lc(this);
 
@@ -5527,7 +5526,6 @@ void Score::doLayoutRange(const Fraction& st, const Fraction& et)
       lc.curSystem = collectSystem(lc);
 
       lc.layout();
-      qDebug() << "DONE" << st.print() << et.print();
       }
 
 //---------------------------------------------------------
