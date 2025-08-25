@@ -68,8 +68,7 @@ void MuseScore::updateInputState(Score* score)
       {
       InputState& is = score->inputState();
       if (is.noteEntryMode()) {
-            bool repitching = is.usingNoteEntryMethod(NoteEntryMethod::REPITCH) ||
-                              (is.usingNoteEntryMethod(NoteEntryMethod::RHYTHM) && MScore::noteEntryAutoSwitchModes);
+            bool repitching = is.usingNoteEntryMethod(NoteEntryMethod::REPITCH);
             if (repitching) {
                   TDuration d = is.cr() ? is.cr()->durationType() : TDuration::DurationType::V_QUARTER;
                   if (!d.isValid() || d.isZero() || d.isMeasure())
