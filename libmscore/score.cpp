@@ -5648,7 +5648,6 @@ void MasterScore::setUpdateAllNoLayout()
 
 void MasterScore::setLayoutAll(int staff, const Element* e)
       {
-      qDebug() << "";
       _cmdState.setTick(Fraction(0,1));
       _cmdState.setTick(measures()->last() ? measures()->last()->endTick() : Fraction(0,1));
 
