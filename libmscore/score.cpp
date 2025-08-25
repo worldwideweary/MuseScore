@@ -1445,6 +1445,7 @@ void Score::addElement(Element* element)
       bool skipLayout = false;
 
       if (element->isBarLine()) {
+            // Testing: may be a time-saver to skip this in large scores
             skipLayout = true;
             }
       if (element->isSegment()) {
