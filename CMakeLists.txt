@@ -246,9 +246,14 @@ endif (NOT MSVC)
 if (APPLE)
    if (XCODE)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fPIC -stdlib=libc++ -Wno-inconsistent-missing-override -Wno-deprecated-register")
+      set(CMAKE_CXX_STANDARD 17)
+      set(CMAKE_CXX_STANDARD_REQUIRED ON)
    else (XCODE)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17 -fPIC -stdlib=libc++ -Wno-inconsistent-missing-override -Wno-deprecated-register")
+	  set(CMAKE_CXX_STANDARD 17)
+      set(CMAKE_CXX_STANDARD_REQUIRED ON)
    endif (XCODE)
+   
    # This is necessary for genManual to be executed during the build phase,
    # it needs to be able to get the Qt libs.
    # TODO: is it still needed? genManual is removed.
