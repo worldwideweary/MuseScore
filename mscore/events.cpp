@@ -31,6 +31,7 @@
 #include "libmscore/shadownote.h"
 #include "libmscore/staff.h"
 #include "libmscore/stafflines.h"
+#include "libmscore/slur.h"
 #include "libmscore/text.h"
 #include "libmscore/textedit.h"
 #include "libmscore/stafftext.h"
@@ -660,6 +661,8 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                   break;
 
             case ViewState::NOTE_ENTRY: {
+                  const int voiceFilter = 1 + _score->inputState().voice(); // 0=All, 1=Voice-1 etc.
+                  bool shift = (ev->modifiers() & Qt::ShiftModifier);
                   _score->startCmd();
                   bool restMode = _score->inputState().rest();
                   if (ev->button() == Qt::RightButton)
@@ -667,7 +670,13 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                   if (MScore::disableMouseEntry) {
                         if (auto el = elementAt(editData.pos)) {
                               if (!el->isStaffLines()) {
-                                    _score->select(el);
+                                    if (shift) {
+                                          _score->select(el, SelectType::RANGE);
+                                          _score->cmdCycleVoiceFilter(voiceFilter);
+                                          }
+                                    else
+                                          _score->select(el);
+
                                     if (el->isNote() || el->isRest())
                                           _score->inputState().moveInputPos(el);
                                     else changeState(ViewState::NORMAL);
@@ -676,14 +685,15 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                               else if (auto m = toStaffLines(el)->measure()) {
                                     if (auto f = m->first()) {
                                           if (auto cr = f->nextChordRest(el->track())) {
-                                                if (cr->isChord())
-                                                      _score->select(toChord(cr)->upNote());
-                                                else _score->select(cr);
-                                                _score->select(m, SelectType::RANGE, cr->staffIdx());
+                                                if (!shift) {
+                                                      _score->deselectAll();
+                                                      _score->select(m, SelectType::RANGE, cr->staffIdx());
+                                                      // Default into a voice-1 under these circumstances:
+                                                      _score->cmdCycleVoiceFilter();
+                                                      }
+                                                else _score->select(cr, SelectType::RANGE);
+
                                                 _score->inputState().moveInputPos(cr);
-                                                // Default into a voice-1 measure selection when in Note Entry
-                                                // Alternatively, pass track for retaining current voice
-                                                _score->cmdCycleVoiceFilter();
                                                 }
                                           }
                                     }
@@ -988,6 +998,8 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
       editData.modifiers = ev->modifiers();
       editData.s         = ev->text();
 
+      const auto e = editData.element;
+
       if (state != ViewState::EDIT) {
             const bool shiftModifier = ev->modifiers() & Qt::ShiftModifier;
             if (hasEditGrips() && !(shiftModifier && ev->key() == Qt::Key_Backtab)) {
@@ -1005,7 +1017,7 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
                                     }
                               // Move focus to default grip if arrow keys are pressed and no grip is focused
                               if (editData.curGrip == Grip::NO_GRIP)
-                                    editData.curGrip = editData.element->defaultGrip();
+                                    editData.curGrip = e->defaultGrip();
                               break;
                         default:
                               break;
@@ -1013,7 +1025,7 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
 
                   ScoreViewCmdContext ctx(this, /* updateGrips */ true);
 
-                  if (!editData.element->edit(editData))
+                  if (!e->edit(editData))
                         handleArrowKeyPress(ev);
                   }
             return;
@@ -1023,11 +1035,11 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
             qDebug("keyPressEvent key 0x%02x(%c) mod 0x%04x <%s> nativeKey 0x%02x scancode %d",
                editData.key, editData.key, int(editData.modifiers), qPrintable(editData.s), ev->nativeVirtualKey(), ev->nativeScanCode());
 
-      if (editData.element->isLyrics()) {
+      if (e->isLyrics()) {
             if (editKeyLyrics())
                   return;
             }
-      else if (editData.element->isHarmony()) {
+      else if (e->isHarmony()) {
             if (editData.key == Qt::Key_Space && !(editData.modifiers & CONTROL_MODIFIER)) {
                   harmonyBeatsTab(true, editData.modifiers & Qt::ShiftModifier);
                   return;
@@ -1042,22 +1054,26 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
                   return;
                   }
             }
-      else if (editData.element->isFiguredBass()) {
+      else if (e->isFiguredBass()) {
             if (editData.key == Qt::Key_Space && !(editData.modifiers & CONTROL_MODIFIER)) {
                   figuredBassTab(false, editData.modifiers & Qt::ShiftModifier);
                   return;
                   }
             }
-      else if (editData.element->isSticking()) {
+      else if (e->isSticking()) {
             if (editKeySticking())
                   return;
             }
-      else if (editData.element->isFingering()) {
+      else if (e->isFingering()) {
             if (editData.key == Qt::Key_Tab || editData.key == Qt::Key_Backtab) {
-                  if (editData.element->edit(editData)) {
+                  if (e->edit(editData)) {
                         return;
                         }
                   }
+            }
+      else if (e->isSpannerSegment()) {
+            const auto seg = toSpannerSegment(e);
+            cmdGotoElement(seg); // update view during extension/contraction
             }
 
       ScoreViewCmdContext cc(this, hasEditGrips());
@@ -1077,7 +1093,7 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
 #endif
 
       if (!((editData.modifiers & Qt::ShiftModifier) && (editData.key == Qt::Key_Backtab))) {
-            if (editData.element->edit(editData)) {
+            if (e->edit(editData)) {
                   if (state != ViewState::EDIT) {
                         // textTab or other function may have terminated edit mode
                         mscore->endCmd();

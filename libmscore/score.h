@@ -255,6 +255,12 @@ enum class UpdateMode {
       Layout,           // do partial layout for tick range
       };
 
+
+enum class TickType {   // for explicit cmdState updates
+      StartTick,
+      EndTick,
+      };
+
 //---------------------------------------------------------
 //   CmdState
 //
@@ -292,6 +298,7 @@ class CmdState {
       bool updateAll() const   { return int(_updateMode) >= int(UpdateMode::UpdateAll); }
       bool updateRange() const { return _updateMode == UpdateMode::Update; }
       void setTick(const Fraction& t);
+      void setTick(TickType tt, const Fraction& t);
       void setStaff(int staff);
       void setElement(const Element* e);
       void unsetElement(const Element* e);
@@ -624,6 +631,8 @@ class Score : public QObject, public ScoreElement {
       void layoutSystemElements(System* system, LayoutContext& lc);
       void getNextMeasure(LayoutContext&);      // get next measure for layout
 
+      void updateMeasureNumbers();
+
       void resetAllPositions();
 
       void resetOctave(bool v) { _resetOctave = v;    }
@@ -760,6 +769,7 @@ class Score : public QObject, public ScoreElement {
       void cloneVoice(int strack, int dtrack, Segment* sf, const Fraction& lTick, bool link = true, bool spanner = true);
 
       void repitchNote(const Position& pos, bool replace);
+      Note* repitchNote(const Position& pos, const Note*, bool replace);
       void regroupNotesAndRests(const Fraction&  startTick, const Fraction& endTick, int track);
       bool checkTimeDelete(Segment*, Segment*);
       void timeDelete(Measure*, Segment*, const Fraction&);
@@ -773,6 +783,7 @@ class Score : public QObject, public ScoreElement {
       void cmdAddTimeSig(Measure*, int staffIdx, TimeSig*, bool local);
 
       virtual inline void setUpdateAll();
+      virtual inline void setUpdateAllNoLayout();
       inline void setLayoutAll(int staff = -1, const Element* e = nullptr);
       inline void setLayout(const Fraction& tick, int staff, const Element* e = nullptr);
       inline void setLayout(const Fraction& tick1, const Fraction& tick2, int staff1, int staff2, const Element* e = nullptr);
@@ -800,6 +811,11 @@ class Score : public QObject, public ScoreElement {
       void cmdToggleMouseEntry(void);
       void cmdOverrideColor(const char*);
       bool cmdToggleOptions(const QString&);
+
+      NoteType iconTypeToNoteType(IconType);
+      TDuration iconTypeToDuration(IconType);
+      SymId iconTypeToSymId(IconType);
+      int iconTypeToLen(IconType);
 
       void colorItem(Element*);
       QList<Part*>& parts()                { return _parts; }
@@ -1113,7 +1129,7 @@ class Score : public QObject, public ScoreElement {
 
       ChordRest* cmdSplitMeasure(ChordRest*);
       Segment* splitMeasure(Segment*);
-      void cmdJoinMeasure(Measure*, Measure*);
+      ChordRest* cmdJoinMeasure(Measure*, Measure*);
       int pageNumberOffset() const          { return _pageNumberOffset; }
       void setPageNumberOffset(int v)       { _pageNumberOffset = v; }
 
@@ -1380,6 +1396,7 @@ class MasterScore : public Score {
       void addMovement(MasterScore* score);
 
       virtual void setUpdateAll() override;
+      virtual void setUpdateAllNoLayout();
 
       void setLayoutAll(int staff = -1, const Element* e = nullptr);
       void setLayout(const Fraction& tick, int staff, const Element* e = nullptr);
@@ -1497,6 +1514,7 @@ inline QQueue<MidiInputEvent>* Score::midiInputQueue()          { return _master
 inline std::list<MidiInputEvent>* Score::activeMidiPitches()    { return _masterScore->activeMidiPitches(); }
 
 inline void Score::setUpdateAll()                      { _masterScore->setUpdateAll();          }
+inline void Score::setUpdateAllNoLayout()              { _masterScore->setUpdateAllNoLayout();  }
 
 inline void Score::setLayoutAll(int staff, const Element* e) { _masterScore->setLayoutAll(staff, e); }
 inline void Score::setLayout(const Fraction& tick, int staff, const Element* e) { _masterScore->setLayout(tick, staff, e); }

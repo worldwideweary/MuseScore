@@ -567,18 +567,20 @@ void AlsaDriver::write(int n, float* l, float* r)
                   void* bp[2];
                   bp[0] = lbuffer;
                   bp[1] = rbuffer;
-                  if ((err = snd_pcm_writen(_play_handle, bp, n)) < 0)
-                        qDebug("AlsaDriver::write(): failed (%s)", snd_strerror(err));
+                  if ((err = snd_pcm_writen(_play_handle, bp, n)) < 0) {
+                        // qDebug("AlsaDriver::write(): failed (%s)", snd_strerror(err));
+                        }
                   }
             else if (_play_access == SND_PCM_ACCESS_RW_INTERLEAVED) {
                   short buffer[n * 2];
                   _play_func(l, (char*)buffer, 4, n);
                   _play_func(r, (char*)(buffer + 1), 4, n);
-                  if ((err = snd_pcm_writei(_play_handle, buffer, n)) < 0)
-                        qDebug("AlsaDriver::write(): failed (%s)", snd_strerror(err));
+                  if ((err = snd_pcm_writei(_play_handle, buffer, n)) < 0) {
+                        // qDebug("AlsaDriver::write(): failed (%s)", snd_strerror(err));
+                        }
                   }
             else {
-                  qDebug("AlsaDriver::write(): unsupported access type %d", _play_access);
+                  // qDebug("AlsaDriver::write(): unsupported access type %d", _play_access);
                   return;
                   }
             }

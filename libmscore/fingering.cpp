@@ -10,6 +10,8 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+
+#include "arpeggio.h"
 #include "fingering.h"
 #include "score.h"
 #include "staff.h"
@@ -165,7 +167,8 @@ void Fingering::layout()
                               top -= md;
                               qreal diff = (bbox().bottom() + ipos().y() + yd + n->y()) - top;
                               if (diff > 0.0)
-                                    yd -= diff;
+                                    if (chord->beam())
+                                          yd -= diff;
                               if (offsetChanged() != OffsetChange::NONE) {
                                     // user moved element within the skyline
                                     // we may need to adjust minDistance, yd, and/or offset
@@ -201,7 +204,8 @@ void Fingering::layout()
                               bottom += md;
                               qreal diff = bottom - (bbox().top() + ipos().y() + yd + n->y());
                               if (diff > 0.0)
-                                    yd += diff;
+                                    if (chord->beam())
+                                          yd += diff;
                               if (offsetChanged() != OffsetChange::NONE) {
                                     // user moved element within the skyline
                                     // we may need to adjust minDistance, yd, and/or offset
@@ -219,6 +223,10 @@ void Fingering::layout()
                         rxpos() -= left;
                   else
                         rxpos() -= n->x();
+
+                  qreal arpWidth = chord->arpeggio() ? chord->arpeggio()->bbox().width() : 0.0;
+                  rxpos() -= arpWidth;
+                  rxpos() -= (arpWidth * 0.25);
                   }
             // for other fingering styles, do not autoplace
 

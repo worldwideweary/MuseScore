@@ -4378,6 +4378,25 @@ System* Score::collectSystem(LayoutContext& lc)
       }
 
 //---------------------------------------------------------
+//   updateMeasureNumbers
+//---------------------------------------------------------
+
+void Score::updateMeasureNumbers() {
+      auto start = measures()->first();
+      auto end = measures()->last();
+      for (auto mb = start; mb; mb = mb->next()) {
+            if (!mb->isMeasure())
+                  continue;
+
+            auto m = toMeasure(mb);
+            m->layoutMeasureNumber();
+
+            if (mb == end)
+                  break;
+          }
+      }
+
+//---------------------------------------------------------
 //   layoutSystemElements
 //---------------------------------------------------------
 
@@ -4555,6 +4574,24 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
             }
 
       //-------------------------------------------------------------
+      // layout articulations
+      //-------------------------------------------------------------
+
+      for (Segment* s : sl) {
+            for (Element* e : s->elist()) {
+                  if (!e || !e->isChordRest() || !score()->staff(e->staffIdx())->show())
+                        continue;
+                  ChordRest* cr = toChordRest(e);
+                  // articulations
+                  if (cr->isChord()) {
+                        Chord* c = toChord(cr);
+                        c->layoutArticulations();
+                        c->layoutArticulations2();
+                        }
+                  }
+            }
+
+      //-------------------------------------------------------------
       // layout fingerings, add beams to skylines
       //-------------------------------------------------------------
 
@@ -4621,24 +4658,6 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
                   }
             for (auto staffIdx : recreateShapes)
                   s->createShape(staffIdx);
-            }
-
-      //-------------------------------------------------------------
-      // layout articulations
-      //-------------------------------------------------------------
-
-      for (Segment* s : sl) {
-            for (Element* e : s->elist()) {
-                  if (!e || !e->isChordRest() || !score()->staff(e->staffIdx())->show())
-                        continue;
-                  ChordRest* cr = toChordRest(e);
-                  // articulations
-                  if (cr->isChord()) {
-                        Chord* c = toChord(cr);
-                        c->layoutArticulations();
-                        c->layoutArticulations2();
-                        }
-                  }
             }
 
       //-------------------------------------------------------------
@@ -5376,6 +5395,8 @@ void Score::doLayoutRange(const Fraction& st, const Fraction& et)
                   lc.curPage = 0;
             lc.curSystem   = system;
             lc.systemList  = _systems.mid(systemIndex);
+
+            Q_ASSERT(systemIndex >= 0);
 
             if (systemIndex == 0)
                   lc.nextMeasure = _showVBox ? first() : firstMeasure();

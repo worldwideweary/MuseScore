@@ -6779,14 +6779,17 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   (_sstate == STATE_NOTE_ENTRY_METHOD_STEPTIME ||
                   _sstate == STATE_NOTE_ENTRY_METHOD_REPITCH ||
                   _sstate == STATE_NOTE_ENTRY_METHOD_RHYTHM);
+            bool rhythmMethod = _sstate == STATE_NOTE_ENTRY_METHOD_RHYTHM;
+            auto ee = cv->getEditElement();
 
             if (isNoteEntry) {
                   // Note Entry - Delete current chord, or move to previous chord in current track
                   auto& is = cs->inputState();
                   auto  iTick = is.tick();
+                  auto oseg = is.segment();
                   if (auto cr = cs->selection().firstChordRest()) {
                         auto track = cr->track();
-                        if (isRange) {
+                        if (cv && (isRange || cr->isGrace())) {
                               cv->cmd(getAction("delete")); // Specifically not cs->cmdDeleteSelection();
                               }
                         else if (cr->isRest()) {
@@ -6826,6 +6829,29 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                            cs->cmdDeleteSelection();
                         cs->endCmd();
                         }
+
+                  if (rhythmMethod) {
+                        is.setSegment(oseg);
+                        cs->setPlayPos(oseg->tick(), true);
+                        }
+                  }
+            else if (!ee || !cv->editMode()) {
+                  cv->cmd(getAction("delete"));
+                  return;
+                  }
+            else if (ee) {
+                  cv->changeState(ViewState::NORMAL);
+
+                  cs->startCmd();
+                  if (ee->isSpannerSegment()) {
+                        auto sseg = toSpannerSegment(ee);
+                        auto span = sseg->spanner();
+                        cs->deleteItem(span);
+                        }
+                  else {
+                        cs->deleteItem(ee);
+                        }
+                  cs->endCmd();
                   }
             else if (_sstate != STATE_NORMAL) {
                   undoRedo(true);

@@ -1469,11 +1469,21 @@ Shortcut Shortcut::_sc[] = {
          STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
          "select-slur",
          QT_TRANSLATE_NOOP("action","Selection (slur)"),
-         QT_TRANSLATE_NOOP("action","Select previous slur from position"),
+         QT_TRANSLATE_NOOP("action","Select previous spanner from position of same type (Slur is Default)"),
          0,
          Icons::Invalid_ICON,
          Qt::WindowShortcut
          },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_EDIT,
+         "select-slur-forward",
+         QT_TRANSLATE_NOOP("action","Selection (slur) forward"),
+         QT_TRANSLATE_NOOP("action","Select next slur from position"),
+         0,
+         Icons::Invalid_ICON,
+         Qt::WindowShortcut
+      },
       {
          MsWidget::SCORE_TAB,
          STATE_NORMAL | STATE_NOTE_ENTRY,
@@ -1503,7 +1513,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
-         STATE_NORMAL | STATE_NOTE_ENTRY,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
          "delete",
          QT_TRANSLATE_NOOP("action","Delete"),
          QT_TRANSLATE_NOOP("action","Delete"),
@@ -3742,7 +3752,7 @@ Shortcut Shortcut::_sc[] = {
          },
       {                     // mapped to undo in note entry mode
          MsWidget::SCORE_TAB,
-         STATE_NORMAL | STATE_NOTE_ENTRY,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
          "backspace",
          QT_TRANSLATE_NOOP("action","Backspace"),
 //         0,
@@ -4782,6 +4792,13 @@ Shortcut Shortcut::_sc[] = {
          "list-selection-notes-rests",
          QT_TRANSLATE_NOOP("action","Convert Range Selection to List of Notes & Rests"),
          QT_TRANSLATE_NOOP("action","Convert Range Selection to List of Notes & Rests"),
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         "next-articulation",
+         QT_TRANSLATE_NOOP("action","Select next articulation of Chord"),
+         QT_TRANSLATE_NOOP("action","Select next articulation of Chord"),
          },
       {
          MsWidget::SCORE_TAB,

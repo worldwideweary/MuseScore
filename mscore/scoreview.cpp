@@ -2303,7 +2303,8 @@ void ScoreView::updateHover(const QPointF& position)
 
       auto selected     = score()->selection().element();
       auto pastHover    = dropTarget;
-      auto presentHover = elementNear(toLogical(point));
+      const qreal zoomThresh  = 0.33;
+      Element* presentHover = logicalZoomLevel() > zoomThresh ? elementNear(toLogical(point)) : nullptr;
 
       auto logicalPos = toLogical(point);
       editData.pos = logicalPos;
@@ -2790,6 +2791,126 @@ void ScoreView::cmdGotoElement(Element* e)
       }
 
 //---------------------------------------------------------
+//   selectSlur
+//
+//    Forward can be achieved by using the "Select next slur from position"
+//    command, but it only activates when in Edit Mode to allow for
+//    duplicate shortcut definitions
+//    E.g., Slur [S] for "forward", [Alt+S] for "backward", where [S] won't
+//    work until a slur is selected, and edit mode is on (it isn't enabled by
+//    default when selected via mouse
+//
+//    TODO: Maybe adv. prefewrence for staying on track instead of using entire staff?
+//    TODO: lower_bound & upper_bound for more efficient spanner map traversal
+//
+//    C++ Observation: std::reverse() is not supported for multi-maps [c++17],
+//          but auto type deduction of lambdas was introduced in [c++14]
+//---------------------------------------------------------
+
+void ScoreView::selectSlur(bool backward)
+      {
+      const bool forward = !backward;
+
+      //---------------------------------------------------------
+      //    Outer Lambda: getNextSpannerSegment
+      //---------------------------------------------------------
+      auto getNextSpannerSegment = [&](const Element* selected, const bool backward) -> SpannerSegment* {
+            if (!selected)
+                  return nullptr;
+            const auto selectedSpannerSegment = selected->isSpannerSegment() ? toSpannerSegment(selected) : nullptr;
+            const auto selectedSpanner = selectedSpannerSegment ? selectedSpannerSegment->spanner() : nullptr;
+            SpannerSegment* result = nullptr;
+            bool foundSelf = !selectedSpannerSegment;
+
+            //---------------------------------------------------------
+            //    Inner Lambda: theLogic
+            //---------------------------------------------------------
+            auto theLogic = [&](const auto& it, bool& foundSelf) -> SpannerSegment* {
+                  const auto rejected = nullptr;
+                  const auto s = it->second;
+                  const int begin = it->first;
+
+                  const int selectedPos = selectedSpanner ? selectedSpanner->tick().ticks() : selected->tick().ticks();
+                  const int selectedTrack = score()->noteEntryMode() ? score()->inputTrack() : selected->track();
+                  const auto selectedType = selectedSpanner ? selectedSpanner->type() : ElementType::SLUR;
+                  const auto selectedStaff = selected->staff();
+
+                  if (backward && (begin > selectedPos))
+                        return rejected;
+                  else if (forward && (begin < selectedPos))
+                        return rejected;
+
+                  const bool sameSpanner = selectedSpanner && (selectedSpanner == s);
+                  const bool sameType  = (s->type() == selectedType);
+                  const bool sameTrack = (s->track() == selectedTrack); (void) sameTrack; // Option? Choice between same track or same staff?
+                  const bool sameStaff = (s->staff() == selectedStaff);
+
+                  if (sameSpanner) {
+                        foundSelf = true;
+                        return rejected;
+                        }
+                  if (sameType && sameStaff) {
+                        if (!foundSelf && (begin == selectedPos))
+                              return rejected;
+                        else return backward ? s->backSegment() : s->frontSegment();
+                        }
+                  else return rejected;
+                  };
+
+
+            auto spanners = score()->spannerMap().map();
+            // auto spanners = overlap ? score()->spannerMap().findOverlapping(begin, end) : score()->spannerMap().findContained(begin, end);
+
+            if (backward) {
+                  for (auto it = spanners.rbegin(); it != spanners.rend(); ++it) {
+                        result = theLogic(it, foundSelf);
+                        if (result)
+                              break;
+                        }
+                  }
+            else if (forward) {
+                  for (auto it = spanners.begin(); it != spanners.end(); ++it) {
+                        result = theLogic(it, foundSelf);
+                        if (result)
+                              break;
+                        }
+                  }
+
+            return result;
+            };
+
+      //---------------------------------------------------------
+      //    lambda: activateSpanner
+      //---------------------------------------------------------
+      auto activateSpanner = [this](SpannerSegment* selectMe) -> void {
+            if (!selectMe)
+                  return;
+            changeState(ViewState::NORMAL);
+            score()->select(selectMe);
+            cmdGotoElement(selectMe);
+            startEditMode(selectMe);
+            };
+
+      auto& selection  = score()->selection();
+      const auto e = selection.isRange() ? selection.elements().front() : selection.isSingle() ? selection.element() : nullptr;
+      if (!e)
+            return;
+
+      const auto selectedSpannerSegment = e->isSpannerSegment() ? toSpannerSegment(e) : nullptr;
+      auto selectedSpanner = selectedSpannerSegment ? selectedSpannerSegment->spanner() : nullptr;
+      if (selectedSpanner) {
+            const auto toSelect = backward ? selectedSpanner->frontSegment() : selectedSpanner->backSegment();
+            if (selectedSpannerSegment != toSelect) {
+                  activateSpanner(toSelect);
+                  return;
+                  }
+            }
+
+      auto nextSpannerSegment = getNextSpannerSegment(e, backward);
+      activateSpanner(nextSpannerSegment);
+      }
+
+//---------------------------------------------------------
 //   ticksTab
 //---------------------------------------------------------
 
@@ -3271,62 +3392,10 @@ void ScoreView::cmd(const char* s)
       //            ; // TODO:state         sm->postEvent(new CommandEvent(cmd));
       //            }},
             {{"select-slur"}, [](ScoreView* cv, const QByteArray&) {
-                  Element* e = nullptr;
-                  int beginning = 0;
-                  int tick      = 0;
-                  int track     = 0;
-                  auto score = cv->score();
-                  auto& sel  = score->selection();
-                  if (sel.isRange()) {
-                        e = sel.elements().front();
-                        tick = sel.tickEnd().ticks();
-                        if (sel.firstChordRest())
-                              track = sel.firstChordRest()->track();
-                        }
-                  if (sel.isSingle()) {
-                        e = sel.element();
-                        tick = e->tick().ticks();
-                        track = e->track();
-                        }
-                  if (!e) return;
-
-                  // Will consider entire staff's voicing, but use Note-Entry's track info initially
-                  track = score->noteEntryMode() ? score->inputTrack() : -1;
-
-                  if (e->isSlurSegment()) {
-                        // Go to previous (or overlapping) slur of current position in same track
-                        auto overlappingSpanners = score->spannerMap().findOverlapping(tick, tick);
-                        std::vector<SlurSegment*> overlappingSlurSegments;
-                        for (auto i : overlappingSpanners) {
-                               auto s = i.value;
-                               if (s->isSlur()) {
-                                     if (s->track() == track || (s->staff() == e->staff() && track < 0)) {
-                                           auto slur = toSlur(s);
-                                           overlappingSlurSegments.emplace_back(slur->backSegment());
-                                           }
-                                     }
-                               }
-                        if (e == overlappingSlurSegments.front())
-                              --tick;
-                        else beginning = tick;
-                        }
-
-                  auto spanners = score->spannerMap().findOverlapping(beginning, tick);
-                  std::reverse(spanners.begin(), spanners.end());
-                  for (auto interval : spanners) {
-                        auto spanner = interval.value;
-                        if (spanner->isSlur()) {
-                              if (spanner->track() == track || (spanner->staff() == e->staff() && track < 0)) {
-                                    auto slur = toSlur(spanner);
-                                    auto ss = slur->backSegment();
-                                    if (ss == e) continue;
-                                    cv->changeState(ViewState::NORMAL);
-                                    score->select(ss);
-                                    cv->cmdGotoElement(ss);
-                                    break;
-                                    }
-                              }
-                        }
+                  cv->selectSlur(true);
+                  }},
+            {{"select-slur-forward"}, [](ScoreView* cv, const QByteArray&) {
+                  cv->selectSlur(false);
                   }},
             {{"scr-prev"}, [](ScoreView* cv, const QByteArray&) {
                   cv->screenPrev();
@@ -3556,6 +3625,32 @@ void ScoreView::cmd(const char* s)
                         cv->cmdGotoElement(cv->score()->prevElement());
                   else
                         cv->cmdGotoElement(cv->score()->lastElement());
+                  }},
+            {{"next-articulation"}, [](ScoreView* cv, const QByteArray&) {
+                  auto& selection = cv->score()->selection();
+                  auto st = selection.isRange() ? SelectType::ADD : SelectType::SINGLE;
+                  for (auto el : selection.elements()) {
+                        if (el->isNote()) {
+                              auto c = toNote(el)->chord();
+                              auto& arts = c->articulations();
+                              if (!arts.empty()) {
+                                    el = arts.front();
+                                    cv->score()->select(el, st);
+                                    }
+                              }
+                        else if (el->isArticulation()) {
+                              auto art = toArticulation(el);
+                              auto cr = art->chordRest();
+                              if (cr->isChord()) {
+                                    auto c = toChord(cr);
+                                    auto next = c->nextArticulationOrLyric(art);
+                                    if (!next)
+                                          next = c->articulations().front();
+                                    cv->score()->select(next, st);
+                                    }
+                              }
+                        }
+                  cv->updateAll();
                   }},
             {{"first-element"}, [](ScoreView* cv, const QByteArray&) {
                   cv->cmdGotoElement(cv->score()->firstElement(false));
@@ -3871,7 +3966,13 @@ void ScoreView::cmd(const char* s)
                            "Please select a range of measures to join and try again"));
                         }
                   else {
-                        cv->score()->cmdJoinMeasure(m1, m2);
+                        if (auto cr = cv->score()->cmdJoinMeasure(m1, m2)) {
+                              Element* toSelect = cr;
+                              if (cr->isChord())
+                                    toSelect = toChord(cr)->upNote();
+                              cv->score()->select(toSelect);
+                              // a resulting multi-measure rest gives a wrong updated view...
+                              }
                         }
                   }},
             {{"measure-properties"}, [](ScoreView* cv, const QByteArray&) {
@@ -4002,8 +4103,21 @@ void ScoreView::cmd(const char* s)
                   int idxStaff = track2staff(inputTrack);
 
                   cv->setDropTarget(nullptr);
+
+
+                  if (cv->editMode())
+                        cv->changeState(ViewState::NORMAL);
+
                   cv->score()->startCmd();
-                     cv->score()->cmdDeleteSelection();
+
+                  const auto ee = cv->getEditElement();
+                  if (ee && ee->isSpannerSegment()) {
+                        auto sseg = toSpannerSegment(ee);
+                        auto span = sseg->spanner();
+                        cv->score()->deleteItem(span);
+                        }
+                  else cv->score()->cmdDeleteSelection();
+
                   cv->score()->endCmd();
 
                   if (is.noteEntryMode()) {
@@ -4078,6 +4192,11 @@ void ScoreView::textTab(bool back)
             return;
 
       TextBase* ot = toTextBase(oe);
+
+      const System* oeSys = ot->findMeasureBase() ? ot->findMeasureBase()->system() : nullptr;
+      const System* oeNextSys{0};
+      if (oeSys) if (auto nmb = oeSys->lastMeasure()->findMeasureBase()->next())
+            oeNextSys = nmb->system();
 
       if (oe->isHarmony()) {
             harmonyBeatsTab(true, back);
@@ -4225,6 +4344,15 @@ void ScoreView::textTab(bool back)
             return;
             }
       Note* nn = toNote(el);
+
+      const auto gotoSys = nn->chord()->measure()->system();
+      bool gotoIsBeyondNextSys = (gotoSys != oeSys && gotoSys != oeNextSys);
+      if (gotoIsBeyondNextSys) {
+            // Safeguard jumping too far away from current position by finalizing onto
+            // original (current) text selection
+            score()->select(oe);
+            return;
+            }
 
       // go to note
       cmdGotoElement(nn);
@@ -4433,7 +4561,8 @@ void ScoreView::startNoteEntry()
                   }
             }
 
-      Element* el = _score->selection().element();
+      Element* oel = _score->selection().element();
+      Element* el = oel;
       if (!el)
             el = _score->selection().firstChordRest();
       if (el == 0 || (el->type() != ElementType::CHORD && el->type() != ElementType::REST && el->type() != ElementType::NOTE)) {
@@ -4460,6 +4589,17 @@ void ScoreView::startNoteEntry()
             if (note == 0)
                   note = c->upNote();
             el = note;
+
+            if (oel) {
+                  if (oel->isSlurSegment()) {
+                        auto ss = toSlurSegment(oel);
+                        auto s = ss->slur();
+                        el = (ss == s->backSegment()) ? s->endElement() : s->startElement();
+                        if (el->isChord())
+                              el = toChord(el)->upNote();
+                        }
+                  }
+
             defaultDuration = c->durationType();
             }
       else if (el->type() == ElementType::REST) {
@@ -4482,7 +4622,7 @@ void ScoreView::startNoteEntry()
       setMouseTracking(true);
       if (!MScore::disableMouseEntry)
             shadowNote->setVisible(true);
-      _score->setUpdateAll();
+      _score->setUpdateAllNoLayout();
       _score->update();
 
       Staff* staff = _score->staff(is.track() / VOICES);
@@ -5143,8 +5283,13 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       else if (el->isMeasureBase())
             m = static_cast<const MeasureBase*>(el);
       else if (el->isSpannerSegment()) {
-            Element* se = static_cast<const SpannerSegment*>(el)->spanner()->startElement();
-            m = static_cast<Measure*>(se->findMeasure());
+            auto ss = toSpannerSegment(el);
+            auto spanner = ss->spanner();
+            auto start = spanner->startElement();
+            auto end = spanner->endElement();
+            auto terminus = (spanner->frontSegment() == ss) ? start : end;
+            m = toMeasure(terminus->findMeasure());
+            el = terminus;
             }
       else if (el->isSpanner()) {
             Element* se = static_cast<const Spanner*>(el)->startElement();
@@ -5251,9 +5396,10 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
                   }
             }
       else if (editing){
-            // keep position while editing and currentSystemAlwaysTop is off
-            showRect.setY(r.y());
-            showRect.setHeight(r.height());
+            auto ry = sys->canvasBoundingRect().y();
+            auto h = sys->canvasBoundingRect().height();
+            showRect.setY(ry);
+            showRect.setHeight(h);
             }
 
       if (shadowNote->visible())
@@ -5643,9 +5789,9 @@ void ScoreView::cmdAddHairpin(HairpinType type)
             // Update layout and exit
             score()->startCmd();
                sh->layout();
+               sh->triggerLayout();
                mscore->currentScoreView()->updateGrips();
             score()->endCmd();
-            score()->doLayout();
             return;
             }
 
@@ -6460,13 +6606,22 @@ void ScoreView::setControlCursorVisible(bool v)
 
 void ScoreView::cmdTuplet(int n, ChordRest* cr)
       {
-      if ((cr->durationType() < TDuration(TDuration::DurationType::V_512TH) && cr->durationType() != TDuration(TDuration::DurationType::V_MEASURE))
-          || (cr->durationType() < TDuration(TDuration::DurationType::V_256TH) && n > 3)
-          || (cr->durationType() < TDuration(TDuration::DurationType::V_128TH) && n > 7)
-          ) {
-            mscore->noteTooShortForTupletDialog();
-            return;
+      const auto dt = cr->durationType();
+      const auto dtMs  = TDuration(TDuration::DurationType::V_MEASURE);
+      if (dt != dtMs) {
+            bool ok = true;
+            const auto dt512 = TDuration(TDuration::DurationType::V_512TH);
+            const auto dt256 = TDuration(TDuration::DurationType::V_256TH);
+            const auto dt128 = TDuration(TDuration::DurationType::V_128TH);
+            if (dt < dt512 && dt != dtMs) ok = !ok;
+            else if (dt < dt256 && n > 3) ok = !ok;
+            else if (dt < dt128 && n > 7) ok = !ok;
+            if (!ok) {
+                  mscore->noteTooShortForTupletDialog();
+                  return;
+                  }
             }
+
       Measure* measure = cr->measure();
       if (measure && measure->isMMRest())
             return;

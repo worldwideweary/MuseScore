@@ -1319,7 +1319,6 @@ Measure* Score::getCreateMeasure(const Fraction& tick)
 void Score::addElement(Element* element)
       {
       Element* parent = element->parent();
-      element->triggerLayout();
 
 //      qDebug("Score(%p) Element(%p)(%s) parent %p(%s)",
 //         this, element, element->name(), parent, parent ? parent->name() : "");
@@ -1442,7 +1441,21 @@ void Score::addElement(Element* element)
             default:
                   break;
             }
-      element->triggerLayout();
+
+      bool skipLayout = false;
+
+      if (element->isBarLine()) {
+            skipLayout = true;
+            }
+      if (element->isSegment()) {
+            auto s = toSegment(element);
+            if (s->isTimeSig() || s->isTimeSigType()) {
+                  skipLayout = true;
+                  }
+            }
+
+      if (!skipLayout)
+            element->triggerLayout();
       }
 
 //---------------------------------------------------------
@@ -2330,9 +2343,9 @@ MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection&
       std::vector<MeasureBase*> insertedMeasures;
       int safeGuard = 0;
       const int maxIterations = 9999;
-      int sNo = mbStart->no();
-      int eNo = mbEnd->no();
-      for (auto mbCurrent = mbStart; mbCurrent && (mbCurrent->no() <= eNo); mbCurrent = mbCurrent->next()) {
+      int startIdx = mbStart->index();
+      int endIdx  = mbEnd->index();
+      for (auto mbCurrent = mbStart; mbCurrent && (mbCurrent->index() <= endIdx); mbCurrent = mbCurrent->next()) {
             bool firstIteration = insertedMeasures.empty();
             MeasureBase* mbNext;
 
@@ -2346,20 +2359,20 @@ MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection&
                   return nullptr;
                   }
             if (!firstIteration) {
-                  int cNo = mbCurrent->no();
-                  int pNo = mbCurrent->prev() ? mbCurrent->prev()->no() : -1;
+                  int currIdx = mbCurrent->index();
+                  int prevIdx = mbCurrent->prev() ? mbCurrent->prev()->no() : -1;
 
                   // Ain't Misbehavin'
                   if (!mbCurrent->isBox()) {
-                        if (!cNo)
+                        if (!currIdx)
                               break;
-                        else if (cNo == sNo) {
+                        else if (currIdx == startIdx) {
                               // ...OK when including entire score
                               if (mbCurrent->index() == mbStart->index())
                                     break;
                               }
                         }
-                  if (cNo == pNo)
+                  if (currIdx == prevIdx)
                         break;
                   else if (mbCurrent == mbStart)
                         return nullptr;
@@ -2383,6 +2396,8 @@ MeasureBase* Score::insertMeasuresFromScore(Score* scoreSource, const Selection&
                   }
 
             mbNext->setScore(scoreDest);
+            if (!mbPrevious)
+                  mbNext->setSystem(nullptr);
             mbNext->setPrev(mbPrevious);
             mbNext->setNext(&mbInsert);
             mbPrevious = mbNext;
@@ -5192,6 +5207,122 @@ void Score::changeVoice(int voice)
       endCmd();
       }
 
+//---------------------------------------------------------
+//   iconTypeToNoteType
+///  IconType is transformed to NoteType
+//---------------------------------------------------------
+
+NoteType Score::iconTypeToNoteType(IconType value)
+      {
+      switch(value)  {
+            case IconType::ACCIACCATURA:
+                  return NoteType::ACCIACCATURA;
+            case IconType::APPOGGIATURA:
+                  return NoteType::APPOGGIATURA;
+            case IconType::GRACE4:
+                  return NoteType::GRACE4;
+            case IconType::GRACE16:
+                  return NoteType::GRACE16;
+            case IconType::GRACE32:
+                  return NoteType::GRACE32;
+            case IconType::GRACE8_AFTER:
+                  return NoteType::GRACE8_AFTER;
+            case IconType::GRACE16_AFTER:
+                  return NoteType::GRACE16_AFTER;
+            case IconType::GRACE32_AFTER:
+                  return NoteType::GRACE32_AFTER;
+            default:
+                  return NoteType::NORMAL;
+            }
+      }
+
+//---------------------------------------------------------
+//   iconTypeToDuration
+///  IconType is transformed to DurationType
+//---------------------------------------------------------
+
+TDuration Score::iconTypeToDuration(IconType value)
+      {
+      switch(value)  {
+            case IconType::ACCIACCATURA:
+                  return TDuration(TDuration::DurationType::V_EIGHTH);
+            case IconType::APPOGGIATURA:
+                  return TDuration(TDuration::DurationType::V_EIGHTH);
+            case IconType::GRACE4:
+                  return TDuration(TDuration::DurationType::V_QUARTER);
+            case IconType::GRACE16:
+                  return TDuration(TDuration::DurationType::V_16TH);
+            case IconType::GRACE32:
+                  return TDuration(TDuration::DurationType::V_32ND);
+            case IconType::GRACE8_AFTER:
+                  return TDuration(TDuration::DurationType::V_EIGHTH);
+            case IconType::GRACE16_AFTER:
+                  return TDuration(TDuration::DurationType::V_16TH);
+            case IconType::GRACE32_AFTER:
+                  return TDuration(TDuration::DurationType::V_32ND);
+            default:
+                  return TDuration(TDuration::DurationType::V_INVALID);
+            }
+      }
+
+//---------------------------------------------------------
+//   iconTypeToSymId
+///  IconType is transformed to SymId
+//---------------------------------------------------------
+
+SymId Score::iconTypeToSymId(IconType value)
+      {
+      switch(value)  {
+            case IconType::ACCIACCATURA:
+                  return SymId::note8thUp;
+            case IconType::APPOGGIATURA:
+                  return SymId::note8thUp;
+            case IconType::GRACE4:
+                  return SymId::noteQuarterUp;
+            case IconType::GRACE16:
+                  return SymId::note16thUp;
+            case IconType::GRACE32:
+                  return SymId::note32ndUp;
+            case IconType::GRACE8_AFTER:
+                  return SymId::note8thUp;
+            case IconType::GRACE16_AFTER:
+                  return SymId::note16thUp;
+            case IconType::GRACE32_AFTER:
+                  return SymId::note32ndUp;
+            default:
+                  return SymId::noSym;
+            }
+      }
+
+//---------------------------------------------------------
+//   iconTypeToLen
+///  Get note lengh from iconType
+//---------------------------------------------------------
+
+int Score::iconTypeToLen(IconType value)
+      {
+      switch(value)  {
+            case IconType::ACCIACCATURA:
+                  return MScore::division/2;
+            case IconType::APPOGGIATURA:
+                  return MScore::division/2;
+            case IconType::GRACE4:
+                  return MScore::division;
+            case IconType::GRACE16:
+                  return MScore::division/4;
+            case IconType::GRACE32:
+                  return MScore::division/8;
+            case IconType::GRACE8_AFTER:
+                  return MScore::division/2;
+            case IconType::GRACE16_AFTER:
+                  return MScore::division/4;
+            case IconType::GRACE32_AFTER:
+                  return MScore::division/8;
+            default:
+                  return -1;
+            }
+      }
+
 #if 0
 //---------------------------------------------------------
 //   cropPage - crop a single page score to the content
@@ -5457,6 +5588,21 @@ int Score::staffIdx(const Part* part) const
 void MasterScore::setUpdateAll()
       {
       _cmdState.setUpdateMode(UpdateMode::UpdateAll);
+      }
+
+//---------------------------------------------------------
+//   setUpdateAllNoLayout
+//   regular (above method) considers if updateAll is greater
+//   than current mode, so if it's slated to do a tick-based
+//   update, then UpdateAll is overriden by the range-based
+//   command. This function will override any range-based command
+//   state for a screen update only, without having to
+//   completely reset the command state
+//---------------------------------------------------------
+
+void MasterScore::setUpdateAllNoLayout()
+      {
+      _cmdState._setUpdateMode(UpdateMode::UpdateAll);
       }
 
 //---------------------------------------------------------

@@ -116,6 +116,25 @@ void CmdState::setTick(const Fraction& t)
       }
 
 //---------------------------------------------------------
+//   setTick - Explicit start/end setting: discretion advised
+//---------------------------------------------------------
+
+void CmdState::setTick(TickType tt, const Fraction& t)
+      {
+      if (_locked) {
+            qDebug() << "Failed: CmdState locked";
+            return;
+            }
+
+      if (tt == TickType::StartTick)
+            _startTick = t;
+      else if (tt == TickType::EndTick)
+            _endTick = t;
+
+      setUpdateMode(UpdateMode::Layout);
+      }
+
+//---------------------------------------------------------
 //   setStaff
 //---------------------------------------------------------
 
@@ -299,10 +318,12 @@ void Score::update(bool resetCmdState)
       for (MasterScore* ms : *movements()) {
             CmdState& cs = ms->cmdState();
             ms->deletePostponed();
-            if (cs.layoutRange()) {
-                  for (Score* s : ms->scoreList())
-                        s->doLayoutRange(cs.startTick(), cs.endTick());
-                  updateAll = true;
+            if (!printing()) {
+                  if (cs.layoutRange()) {
+                        for (Score* s : ms->scoreList())
+                              s->doLayoutRange(cs.startTick(), cs.endTick());
+                        updateAll = true;
+                        }
                   }
             }
 
@@ -738,6 +759,7 @@ Note* Score::setGraceNote(Chord* ch, int pitch, NoteType type, int len)
       {
       Note* note = new Note(this);
       Chord* chord = new Chord(this);
+      Segment* oseg = _is.segment();
 
       // allow grace notes to be added to other grace notes
       // by really adding to parent chord
@@ -770,6 +792,8 @@ Note* Score::setGraceNote(Chord* ch, int pitch, NoteType type, int len)
 
       undoAddElement(chord);
       select(note, SelectType::SINGLE, 0);
+      if (usingNoteEntryMethod(NoteEntryMethod::RHYTHM))
+            _is.setSegment(oseg);
       return note;
       }
 
@@ -1803,7 +1827,7 @@ void Score::upDown(bool up, UpDownMode mode)
                                     undo(new RemoveElement(ln->accidental()));
                               }
                         }
-                  if (mode == UpDownMode::OCTAVE_QUICK && !hasTie && !selection().isRange()) {
+                  if (mode == UpDownMode::OCTAVE_QUICK && !hasTie && noteEntryMode()) {
                         // This style of octave-shifting will guarantee the exact explicit accidental-type
                         // as it was before shifting - useful for transcribing in note-entry.
                         startCmd();
@@ -2646,7 +2670,13 @@ Element* Score::move(const QString& cmd)
                   Measure* m = _is.segment()->measure();
                   Segment* s = _is.segment()->prev1(SegmentType::ChordRest);
                   int track = _is.track();
-                  for (; s; s = s->prev1(SegmentType::ChordRest)) {
+
+                  if (auto scr = selection().cr()) {
+                        if (s && s->tick() > scr->tick()) {
+                              _is.moveInputPos(scr);
+                              }
+                        }
+                  else for (; s; s = s->prev1(SegmentType::ChordRest)) {
                         if (s->element(track) || (s->measure() != m && s->rtick().isZero())) {
                               if (s->element(track)) {
                                     el = s->nextChordRest(track, true);
@@ -2841,18 +2871,20 @@ Element* Score::move(const QString& cmd)
                   }
             }
       else if (cmd == "prev-measure") {
-            cr = firstCR ? firstCR : cr;
+            const bool isRange = selection().isRange();
+            if (firstCR)
+                  cr = firstCR;
             auto currentTrack = noteEntryMode() ? _is.track() : 0;
             if (box && box->prevMeasure() && box->prevMeasure()->first())
                   el = box->prevMeasure()->first()->nextChordRest(0, false);
             if (cr) {
-                  if (selection().cr() && (cr->tick() != selection().cr()->tick())) {
-                        cr = selection().cr();
-                        }
-                  if (selection().isRange()) {
-                        cr = selection().firstChordRest();
-                        }
-                  el = prevMeasure(cr);
+                  const auto scr = selection().cr();
+                  const auto fcr = selection().firstChordRest();
+                  if (isRange)
+                        cr = fcr;
+                  else if (scr && (cr->tick() != scr->tick()))
+                        cr = scr;
+                  el = (isRange && noteEntryMode()) ? cr : prevMeasure(cr);
                   }
 
             if (el) {
@@ -2876,6 +2908,11 @@ Element* Score::move(const QString& cmd)
             el = nullptr;
             bool next = (cmd == "next-system");
             MeasureBase* dest = nullptr;
+
+            if (auto scr = selection().cr())
+                  if (!next && (_is.tick() > scr->tick()))
+                        cr = scr;
+
             if (cr) {
                   if (auto m = cr->findMeasureBase()) {
                         if (!next) {
@@ -3293,7 +3330,8 @@ void Score::cmdIncDecDuration(int nSteps, bool stepDotted)
                   }
             }
       else {
-            initialDuration = _is.duration();
+            const bool repitch = NoteEntryMethod::REPITCH == _is.noteEntryMethod();
+            initialDuration = repitch ? cr->durationType() : _is.duration();
             }
       TDuration d = (nSteps != 0) ? initialDuration.shiftRetainDots(nSteps, stepDotted) : initialDuration;
       if (!d.isValid())
@@ -4733,6 +4771,7 @@ void Score::cmdUnsetVisible()
 void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert, bool useUpNote, bool below)
       {
       InputState& is = inputState();
+      const bool repitchMode = is.noteEntryMethod() == NoteEntryMethod::REPITCH;
       if (is.track() == -1)          // invalid state
             return;
       if (is.duration() == TDuration::DurationType::V_INVALID) {
@@ -4745,9 +4784,36 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
             }
 
       qreal previousPitch = -1;
+
+      // Grace-note entry: get previous pitch
+      int gracePitchOverride = -1;
       if (auto e = selection().element()) {
             if (e->isNote()) {
-                  previousPitch = toNote(e)->pitch();
+                  auto n = toNote(e);
+                  auto c = n->chord();
+                  previousPitch = n->pitch();
+                  if (c->isGrace()){
+                        int graceIdx = c->graceIndex();
+                        int prevGraceIdx = --graceIdx;
+                        auto parentChord = toChord(c->parent());
+                        const auto graceNotes = parentChord->graceNotes();
+                        for (Chord* graceChord : graceNotes) {
+                              bool havePrevGraceNote = (graceChord->graceIndex() == prevGraceIdx);
+                              if (havePrevGraceNote) {
+                                    // Use previous grace note for octave placement:
+                                    auto prevNote = graceNotes.at(prevGraceIdx)->upNote();
+                                    gracePitchOverride = prevNote->ppitch();
+                                    break;
+                                    }
+                              }
+                        if (gracePitchOverride < 0) {
+                              // No previous grace-note: use current selection for octave placement
+                              auto firstGraceNote = MScore::noteInputOctaveTendencyIsTopNote
+                                          ? graceNotes.front()->upNote()
+                                          : graceNotes.front()->downNote();
+                              gracePitchOverride = firstGraceNote->ppitch();
+                              }
+                        }
                   }
             }
 
@@ -4909,6 +4975,19 @@ void Score::cmdAddPitch(const EditData& ed, int note, bool addFlag, bool insert,
                                     }
                               seg = seg->prev1MM(SegmentType::ChordRest | SegmentType::Clef | SegmentType::HeaderClef);
                               }
+                        if (repitchMode) {
+                              if (!resetOctave() && (previousPitch > 0)) {
+                                    if (is.tick() == el->tick()) {
+                                          // calculate octave based on selection pitch
+                                          // instead of actual previous input pitch (previousPitch here is score selection)
+                                          curPitch = previousPitch;
+                                          }
+                                    }
+                              }
+
+                        if (gracePitchOverride > -1)
+                              curPitch = gracePitchOverride;
+
                         octave = curPitch / PITCH_DELTA_OCTAVE;
                         }
 
@@ -5876,6 +5955,12 @@ void Score::cmd(const QAction* a, EditData& ed)
                   startCmd();
                   c.cmd(this, ed);
                   endCmd();
+
+                  if (const auto se = selection().element()) {
+                        for(MuseScoreView* v : qAsConst(viewer))
+                              v->adjustCanvasPosition(se, false);
+                        }
+
                   return;
                   }
             }

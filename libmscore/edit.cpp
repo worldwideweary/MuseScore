@@ -864,10 +864,15 @@ void Score::cmdAddTimeSig(Measure* fm, int staffIdx, TimeSig* ts, bool local)
             // we will only add time signatures if this succeeds
             // this means, however, that the rewrite cannot depend on the time signatures being in place
             if (mf) {
+                  // When re-writing measures, theoretically there should be no need to doLayoutRange() until finalized
+                  // _printing flag will serve as a hack to denote not to perform layout during the operation
+                  setPrinting(true);
                   if (!mScore->rewriteMeasures(mf, ns, local ? staffIdx : -1)) {
                         undoStack()->current()->unwind();
+                        setPrinting(false);
                         return;
                         }
+                  setPrinting(false);
                   }
             // add the time signatures
             std::map<int, TimeSig*> masterTimeSigs;
@@ -1290,6 +1295,7 @@ void Score::cmdAddTie(bool addToChord)
             if (noteEntryMode()) {
                   ChordRest* cr = nullptr;
                   Chord* c = note->chord();
+                  int staffMove = c->staffMove();
 
                   // set cursor at position after note
                   if (c->isGraceBefore()) {
@@ -1324,8 +1330,12 @@ void Score::cmdAddTie(bool addToChord)
 
                   // if no note to re-use, create one
                   NoteVal nval(note->noteVal());
-                  if (!n)
+                  if (!n) {
                         n = addPitch(nval, addFlag);
+                        if (staffMove) {
+                              undo(new ChangeChordStaffMove(n->chord(), staffMove));
+                              }
+                        }
                   else
                         select(n);
 
@@ -1333,7 +1343,9 @@ void Score::cmdAddTie(bool addToChord)
                         if (!lastAddedChord)
                               lastAddedChord = n->chord();
                         // n is not necessarily next note if duration span over measure
+
                         Note* nnote = searchTieNote(note);
+
                         while (nnote) {
                               // DEBUG: if duration spans over measure
                               // this does not set line for intermediate notes
@@ -1354,6 +1366,11 @@ void Score::cmdAddTie(bool addToChord)
                                     note = nnote;
                                     _is.setLastSegment(_is.segment());
                                     nnote = addPitch(nval, true);
+                                    }
+                              }
+                        if (staffMove) {
+                              for (Note* tiedNote : n->tiedNotes()) {
+                                    undo(new ChangeChordStaffMove(tiedNote->chord(), staffMove));
                                     }
                               }
                         }
@@ -3530,6 +3547,10 @@ void Score::localTimeDelete()
 
       // Prepare for updating selection:
       nextCR = endSegment->nextChordRest(track);
+      if (auto previousMeasure = startSegment->measure()->prevMeasure()) {
+            auto lastCRofPrevMeasure = previousMeasure->last()->nextChordRest(track, true);
+            nextCR = lastCRofPrevMeasure;
+            }
 
       if (!checkTimeDelete(startSegment, endSegment))
             return;

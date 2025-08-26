@@ -159,7 +159,7 @@ void KeySig::layout()
       if (measure() && measure()->system() && measure()->isFirstInSystem()
           && prevMeasure && prevMeasure->findSegment(SegmentType::KeySigAnnounce, tick())
           && !segment()->isKeySigAnnounceType())
-            naturalsOn = (keySigEvent().key() == Key::C);
+            naturalsOn = (Key::C == keySigEvent().key() && !prevMeasure->sectionBreak());
       if (track() == -1)
             naturalsOn = false;
 
@@ -632,7 +632,15 @@ bool KeySig::setProperty(Pid propertyId, const QVariant& v)
                         return false;
                   break;
             }
-      triggerLayoutAll();
+      // triggerLayoutAll();
+
+      // update: layout range
+      if (parent()) {
+            const auto startTick = measure()->tick();
+            const auto endTick = score()->endTick();
+            score()->doLayoutRange(startTick, endTick);
+            }
+
       setGenerated(false);
       return true;
       }
