@@ -6751,7 +6751,148 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
       if (ScriptRecorder* rec = getScriptRecorder())
             rec->recordCommand(cmd);
 
-      if (cmd == "instruments")
+      if (cmd.startsWith("play-")) {
+            const bool next = true;
+            const bool prev = false;
+            if (cmd == "play-next-system")
+                  seq->nextSystem(next);
+            else if (cmd == "play-next-measure")
+                  seq->nextMeasure();
+            else if (cmd == "play-next-chord")
+                  seq->nextChord();
+            else if (cmd == "play-next-rehearsal-mark")
+                  seq->nextRehearsalMark(next);
+            else if (cmd == "play-prev-system")
+                  seq->nextSystem(prev);
+            else if (cmd == "play-prev-measure")
+                  seq->prevMeasure();
+            else if (cmd == "play-prev-chord")
+                  seq->prevChord();
+            else if (cmd == "play-prev-rehearsal-mark")
+                  seq->nextRehearsalMark(prev);
+            else
+                  cv->cmd(a);
+            }
+      else if (cmd.startsWith("color-override-")) {
+            std::string ss = cmd.toStdString();
+            const char* token = &(ss.c_str())[15];
+            cv->score()->cmdOverrideColor(token);
+            genIcons();
+            Shortcut::refreshIcons();
+            }
+      else if (cmd.startsWith("toggle-options-")) {
+            bool updateScore = cv->score()->cmdToggleOptions(cmd);
+            genIcons();
+            Shortcut::refreshIcons();
+            if (cs && updateScore) {
+                  cs->setLayoutAll();
+                  cs->update();
+                  }
+            }
+      else if (cmd.startsWith("toggle")) {
+            if (cmd == "toggle-statusbar") {
+                  preferences.setPreference(PREF_UI_APP_SHOWSTATUSBAR, a->isChecked());
+                  _statusBar->setVisible(a->isChecked());
+                  }
+            else if (cmd == "toggle-playpanel")
+                  showPlayPanel(a->isChecked());
+            else if (cmd == "toggle-navigator")
+                  showNavigator(a->isChecked());
+            else if (cmd == "toggle-timeline")
+                  showTimeline(a->isChecked());
+            else if (cmd == "toggle-midiimportpanel")
+                  importmidiPanel->setVisible(a->isChecked());
+            else if (cmd == "toggle-mixer")
+                  showMixer(a->isChecked());
+
+            else if (cmd == "toggle-selection-window")
+                  showSelectionWindow(a->isChecked());
+            else if (cmd == "toggle-fileoperations")
+                  fileTools->setVisible(!fileTools->isVisible());
+            else if (cmd == "toggle-transport")
+                  transportTools->setVisible(!transportTools->isVisible());
+            else if (cmd == "toggle-concertpitch")
+                  cpitchTools->setVisible(!cpitchTools->isVisible());
+            else if (cmd == "toggle-imagecapture")
+                  fotoTools->setVisible(!fotoTools->isVisible());
+            else if (cmd == "toggle-noteinput")
+                  entryTools->setVisible(!entryTools->isVisible());
+            else if (cmd == "toggle-colorcontrol")
+                  colorTools->setVisible(!colorTools->isVisible());
+            else if (cmd == "toggle-optionscontrol")
+                  toggleTools->setVisible(!toggleTools->isVisible());
+            else if (cmd == "toggle-workspaces-toolbar")
+                  workspacesTools->setVisible(!workspacesTools->isVisible());
+            else if (cmd == "toggle-piano")
+                  showPianoKeyboard(a->isChecked());
+            else if (cmd == "toggle-scorecmp-tool")
+                  reDisplayDockWidget(scoreCmpTool, a->isChecked());
+            #ifdef MSCORE_UNSTABLE
+            else if (cmd == "toggle-script-recorder")
+                  scriptRecorder->setVisible(a->isChecked());
+            #endif
+            else if (cmd == "toggle-all-unprintable") {
+                  // Master toggle command to show/unshow all invisible and unprintable elements:
+                  cs->setShowInvisible(a->isChecked());
+                  cs->setShowUnprintable(a->isChecked());
+                  cs->setShowFrames(a->isChecked());
+                  cs->setShowPageborders(a->isChecked());
+                  cs->setMarkIrregularMeasures(a->isChecked());
+                  cs->update();
+                  }
+            else if (cmd == "toggle-fingering-visibility") {
+                  bool wasNotShowingInvisible = false;
+                  if (!cs->showInvisible()) {
+                        wasNotShowingInvisible = true;
+                        cs->setShowInvisible(true);
+                        cs->rebuildBspTree();
+                        }
+                  for (auto& page : cs->pages()) {
+                        for (auto el : page->elements()) {
+                              if (el->isFingering()) {
+                                    auto fingering = toFingering(el);
+                                    bool invert = !fingering->visible();
+                                    fingering->setVisible(invert);
+                                    fingering->triggerLayout();
+                                    }
+                              else if (el->isImage()) {
+                                    auto img = toImage(el);
+                                    if (img->isEmpty()) {
+                                          bool invert = !img->visible();
+                                          img->setVisible(invert);
+                                          img->triggerLayout();
+                                          }
+                                    }
+                             }
+                        }
+                  cs->setLayoutAll();
+                  cs->update();
+                  if (wasNotShowingInvisible) {
+                        cs->setShowInvisible(false);
+                        }
+                  }
+            else if (cmd == "toggle-visible-en-passant") {
+                  int begin = 0;
+                  int end = cs->endTick().ticks();
+                  auto spanners = cs->spannerMap().findOverlapping(begin, end);
+                  for (auto i : spanners) {
+                        auto s = i.value;
+                        if (s->isTextLineBase()) {
+                              auto tlb = toTextLineBase(s);
+                              bool enPassant = tlb->enPassantManifest();
+                              if (enPassant) {
+                                    bool toggle = !tlb->visible();
+                                    tlb->setVisible(toggle);
+                                    }
+                              }
+                        }
+                  cs->setLayoutAll();
+                  cs->update();
+                  }
+            else
+                  cv->cmd(a);
+            }
+      else if (cmd == "instruments")
             editInstrumentList();
       else if (cmd == "rewind") {
             if (cs) {
@@ -6766,22 +6907,6 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                         playPanel->heartBeat(0, 0, 0);
                   }
             }
-      else if (cmd == "play-next-system")
-            seq->nextSystem(true/*next*/);
-      else if (cmd == "play-next-measure")
-            seq->nextMeasure();
-      else if (cmd == "play-next-chord")
-            seq->nextChord();
-      else if (cmd == "play-prev-system")
-            seq->nextSystem(false/*prev*/);
-      else if (cmd == "play-prev-measure")
-            seq->prevMeasure();
-      else if (cmd == "play-prev-chord")
-            seq->prevChord();
-      else if (cmd == "play-next-rehearsal-mark")
-            seq->nextRehearsalMark();
-      else if (cmd == "play-prev-rehearsal-mark")
-            seq->nextRehearsalMark(false);
       else if (cmd == "seek-begin")
             seq->rewindStart();
       else if (cmd == "seek-end")
@@ -6828,10 +6953,6 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             showMasterPalette(qApp->translate("Palette", "Time Signatures"));
       else if (cmd == "symbols")
             showMasterPalette(qApp->translate("MasterPalette", "Symbols"));
-      else if (cmd == "toggle-statusbar") {
-            preferences.setPreference(PREF_UI_APP_SHOWSTATUSBAR, a->isChecked());
-            _statusBar->setVisible(a->isChecked());
-            }
       else if (cmd == "append-measures")
             cmdAppendMeasures();
       else if (cmd == "insert-measures")
@@ -6954,38 +7075,10 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
       else if (cmd == "omr")
             showOmrPanel(a->isChecked());
 #endif
-      else if (cmd == "toggle-playpanel")
-            showPlayPanel(a->isChecked());
-      else if (cmd == "toggle-navigator")
-            showNavigator(a->isChecked());
-      else if (cmd == "toggle-timeline")
-            showTimeline(a->isChecked());
-      else if (cmd == "toggle-midiimportpanel")
-            importmidiPanel->setVisible(a->isChecked());
-      else if (cmd == "toggle-mixer")
-            showMixer(a->isChecked());
       else if (cmd == "synth-control")
             showSynthControl(a->isChecked());
-      else if (cmd == "toggle-selection-window")
-            showSelectionWindow(a->isChecked());
       else if (cmd == "show-keys")
             ;
-      else if (cmd == "toggle-fileoperations")
-            fileTools->setVisible(!fileTools->isVisible());
-      else if (cmd == "toggle-transport")
-            transportTools->setVisible(!transportTools->isVisible());
-      else if (cmd == "toggle-concertpitch")
-            cpitchTools->setVisible(!cpitchTools->isVisible());
-      else if (cmd == "toggle-imagecapture")
-            fotoTools->setVisible(!fotoTools->isVisible());
-      else if (cmd == "toggle-noteinput")
-            entryTools->setVisible(!entryTools->isVisible());
-      else if (cmd == "toggle-colorcontrol")
-            colorTools->setVisible(!colorTools->isVisible());
-      else if (cmd == "toggle-optionscontrol")
-            toggleTools->setVisible(!toggleTools->isVisible());
-      else if (cmd == "toggle-workspaces-toolbar")
-            workspacesTools->setVisible(!workspacesTools->isVisible());
       else if (cmd == "create-new-workspace") {
             mscore->createNewWorkspace();
             emit mscore->workspacesChanged();
@@ -7019,14 +7112,6 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             editRaster();
       else if (cmd == "hraster" || cmd == "vraster")  // value in [hv]RasterAction already set
             ;
-      else if (cmd == "toggle-piano")
-            showPianoKeyboard(a->isChecked());
-      else if (cmd == "toggle-scorecmp-tool")
-            reDisplayDockWidget(scoreCmpTool, a->isChecked());
-#ifdef MSCORE_UNSTABLE
-      else if (cmd == "toggle-script-recorder")
-            scriptRecorder->setVisible(a->isChecked());
-#endif
       else if (cmd == "plugin-creator")
             showPluginCreator(a);
       else if (cmd == "plugin-manager")
@@ -7083,64 +7168,6 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             setPanPlayback(a->isChecked());
       else if (cmd == "show-invisible") {
             cs->setShowInvisible(a->isChecked());
-            cs->update();
-            }
-      else if (cmd == "toggle-all-unprintable") {
-            // Master toggle command to show/unshow all invisible and unprintable elements:
-            cs->setShowInvisible(a->isChecked());
-            cs->setShowUnprintable(a->isChecked());
-            cs->setShowFrames(a->isChecked());
-            cs->setShowPageborders(a->isChecked());
-            cs->setMarkIrregularMeasures(a->isChecked());
-            cs->update();
-            }
-      else if (cmd == "toggle-fingering-visibility") {
-            bool wasNotShowingInvisible = false;
-            if (!cs->showInvisible()) {
-                  wasNotShowingInvisible = true;
-                  cs->setShowInvisible(true);
-                  cs->rebuildBspTree();
-                  }
-            for (auto& page : cs->pages()) {
-                  for (auto el : page->elements()) {
-                        if (el->isFingering()) {
-                              auto fingering = toFingering(el);
-                              bool invert = !fingering->visible();
-                              fingering->setVisible(invert);
-                              fingering->triggerLayout();
-                              }
-                        else if (el->isImage()) {
-                              auto img = toImage(el);
-                              if (img->isEmpty()) {
-                                    bool invert = !img->visible();
-                                    img->setVisible(invert);
-                                    img->triggerLayout();
-                                    }
-                              }
-                       }
-                  }
-            cs->setLayoutAll();
-            cs->update();
-            if (wasNotShowingInvisible) {
-                  cs->setShowInvisible(false);
-                  }
-            }
-      else if (cmd == "toggle-visible-en-passant") {
-            int begin = 0;
-            int end = cs->endTick().ticks();
-            auto spanners = cs->spannerMap().findOverlapping(begin, end);
-            for (auto i : spanners) {
-                  auto s = i.value;
-                  if (s->isTextLineBase()) {
-                        auto tlb = toTextLineBase(s);
-                        bool enPassant = tlb->enPassantManifest();
-                        if (enPassant) {
-                              bool toggle = !tlb->visible();
-                              tlb->setVisible(toggle);
-                              }
-                        }
-                  }
-            cs->setLayoutAll();
             cs->update();
             }
       else if (cmd == "show-unprintable") {
@@ -7232,22 +7259,6 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             reportBug("panel");
       else if (cmd == "leave-feedback")
             leaveFeedback("panel");
-      else if (cmd.startsWith("color-override-")) {
-            std::string ss = cmd.toStdString();
-            const char* token = &(ss.c_str())[15];
-            cv->score()->cmdOverrideColor(token);
-            genIcons();
-            Shortcut::refreshIcons();
-            }
-      else if (cmd.startsWith("toggle-options-")) {
-            bool updateScore = cv->score()->cmdToggleOptions(cmd);
-            genIcons();
-            Shortcut::refreshIcons();
-            if (cs && updateScore) {
-                  cs->setLayoutAll();
-                  cs->update();
-                  }
-            }
 #ifndef NDEBUG
       else if (cmd == "no-horizontal-stretch") {
             MScore::noHorizontalStretch = a->isChecked();
