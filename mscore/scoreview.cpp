@@ -2327,7 +2327,6 @@ void ScoreView::updateHover(const QPointF& position)
             else if (pastHover) {
                   view = pastHover->canvasBoundingRect();
                   setDropTarget(nullptr);
-                  ScoreAccessibility::instance()->updateAccessibilityInfo();
                   }
             const int margin = 2;
             update(toPhysical(view).adjusted(-margin, -margin, +margin, +margin));
