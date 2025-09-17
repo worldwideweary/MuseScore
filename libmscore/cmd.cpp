@@ -3306,16 +3306,18 @@ void Score::cmdIncDecDuration(int nSteps, bool stepDotted)
             pasteStaff(e, selection().startSegment(), selection().staffStart(), scale);
             return;
             }
-      if (selection().isList() && selection().elements().size() > 1) {
+
+      if (selection().isList()) {
             // List - act as if pressing duration toggle (distinct from range based Half/Double
-            TDuration newDuration(stepDotted
-                                  ? _is.duration().shiftRetainDots(nSteps, stepDotted)
-                                  : _is.duration().shift(nSteps));
-            _is.duration().shiftRetainDots(nSteps, stepDotted);
-            _is.setDuration(newDuration);
-            QSet<ChordRest*> crs = getSelectedChordRests();
-            for (auto cr : getSelectedChordRests()) {
-                  changeCRlen(cr, newDuration);
+            auto crs = getSelectedChordRests();
+            for (auto cr : crs) {
+                  TDuration odt = cr->durationType();
+                  TDuration ndt(stepDotted ? odt.shiftRetainDots(nSteps, stepDotted) : odt.shift(nSteps));
+                  bool isGrace = cr->isChord() && toChord(cr)->isGrace();
+                  if (isGrace)
+                        undoChangeChordRestLen(cr, ndt);
+                  else
+                        changeCRlen(cr, ndt);
                   }
             for (auto cr : crs) {
                   Element* e = cr;
