@@ -2071,8 +2071,12 @@ void renderGlissando(NoteEventList* events, Note *notestart)
 
 Trill* findFirstTrill(Chord *chord)
       {
-      auto spanners = chord->score()->spannerMap().findOverlapping(1+chord->tick().ticks(),
-         chord->tick().ticks() + chord->actualTicks().ticks() - 1);
+      auto& spannerMap = chord->score()->spannerMap();
+      auto tick = chord->tick();
+      auto duration = chord->ticks(); // originally chord->actualTicks();
+      auto st = 1 + tick.ticks();
+      auto et = tick.ticks() + duration.ticks() - 1;
+      auto spanners = spannerMap.findOverlapping(st, et);
       for (auto i : spanners) {
             if (i.value->type() != ElementType::TRILL)
                   continue;
