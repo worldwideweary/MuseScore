@@ -3211,6 +3211,9 @@ void ScoreView::cmd(const char* s)
                         if (cv->state == ViewState::NORMAL || cv->state == ViewState::NOTE_ENTRY) {
                               // Start:
                               resetTempSpannerVisibility(_score);
+
+                              mscore->restartAudioEngine();
+
                               if (!_selection.isNone()) {
                                     _score->deselectAll();
                                     // Clear on-screen keyboard:
