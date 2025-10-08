@@ -727,7 +727,7 @@ bool AlsaAudio::stop()
             for (;i < 4; ++i) {
                   if (runAlsa == 0)
                         break;
-                  sleep(1);
+                  usleep(100'000);
                   }
             pthread_cancel(thread);
             pthread_join(thread, 0);
