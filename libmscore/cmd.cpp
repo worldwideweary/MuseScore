@@ -2425,7 +2425,8 @@ bool Score::processMidiInput()
             if (!noteEntryMode()
                         || entryMethod == NoteEntryMethod::REALTIME_AUTO
                         || entryMethod == NoteEntryMethod::REALTIME_MANUAL) {
-                  int staffIdx = selection().staffStart();
+                  ChordRest* cr = selection().cr();
+                  int staffIdx = cr ? cr->staffIdx() : selection().staffStart();
                   Part* p;
                   if (staffIdx < 0 || staffIdx >= nstaves())
                         p = staff(0)->part();
