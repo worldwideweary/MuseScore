@@ -1123,6 +1123,14 @@ void Seq::collectEvents(int utick, bool viaUserNavigation)
       {
       (void) viaUserNavigation;
 
+      // Note: e3bfc9d525 "Implement background partial MIDI rendering during playback" 2019-04-23)
+      //       allows for partial midi rendering during playback:
+
+      if (state == Transport::PLAY && playlistChanged) {
+            // do not collect even while playing
+            return;
+            }
+
       mutex.lock();
 
       if (midiRenderFuture.isRunning())
@@ -1158,9 +1166,13 @@ void Seq::collectEvents(int utick, bool viaUserNavigation)
       // Why was playPos updated here? One reason is that it occurs earlier/prior to ::heartBeatTimeout,
       // allowing its guiPos loop in relation to playPos to be using the correct playPos at that time
 
-      if (mscore->loop())
-            playPos = events.find(cs->loopInTick().ticks());
-      else {;} // playPos = events.cbegin();
+      // Extra precaution to allow fixing the "lose position" upon start/stop:
+      auto eventAtTick = (utick == 0) ? events.cbegin() : events.find(utick);
+      playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : eventAtTick;
+      const NPlayEvent& e = playPos->second;
+      if (e.type() != ME_NOTEON && !e.rest()) {
+            playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : events.cbegin();
+            }
 
       playlistChanged = false;
       unmarkNotes();
