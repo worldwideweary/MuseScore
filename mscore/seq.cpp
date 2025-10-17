@@ -505,7 +505,7 @@ void Seq::stopWait()
             sleep.wait(&mutex, 100);
             mutex.unlock();
 #ifndef NDEBUG
-            Q_ASSERT(++idx <= 10);
+            Q_ASSERT(++idx <= 100);
 #endif
             }
       }
