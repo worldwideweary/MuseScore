@@ -600,6 +600,20 @@ void Seq::playEvent(const NPlayEvent& event, unsigned framePos)
             }
       else if (type == ME_CONTROLLER || type == ME_PITCHBEND || type == ME_AFTERTOUCH || type == ME_POLYAFTER)
             putEvent(event, framePos);
+
+      // ---------------------------------
+      // Remember last sequenced ChordRest
+      // ---------------------------------
+      if (event.type() == ME_CHORD) {
+            if (auto rest = event.rest())
+                  rest->score()->setLastCRSequenced(rest);
+            }
+      else if (event.type() == ME_NOTEON && event.velo()) {
+            if (auto n = event.note()) {
+                  auto c = n->chord();
+                  n->score()->setLastCRSequenced(c);
+                  }
+            }
       }
 
 //---------------------------------------------------------
