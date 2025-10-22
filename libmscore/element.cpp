@@ -671,10 +671,10 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
                   auto sp = ss->spanner();
                   auto t1 = sp->tick();
                   auto t2 = sp->tick2();
-                  t2 -= Fraction::fromTicks(1);
+                  t2 -= Fraction::fromTicks(isSlurSegment() ? 0 : 1); // let slurs remain highlighted during the final element duration
                   if (auto playingElement = ss->score()->getLastCRSequenced()) {
                         auto pos = playingElement->tick();
-                        marked = (pos >= t1 && pos < t2);
+                        marked = (pos >= t1 && pos <= t2);
                         }
                   }
             else if (isTextBase()) {
