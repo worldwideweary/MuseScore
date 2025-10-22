@@ -1768,20 +1768,27 @@ void Seq::heartBeatTimeout()
             --ppos;
       mutex.unlock();
 
-      ensureBufferAsync(ppos->first);
 
-      if (cs && cs->sigmap()->timesig(getCurTick()).nominal()!=prevTimeSig) {
-            prevTimeSig = cs->sigmap()->timesig(getCurTick()).nominal();
-            emit timeSigChanged();
-            }
-      if (cs && curTempo()!=prevTempo) {
-            prevTempo = curTempo();
-            emit tempoChanged();
+      const int utick = ppos->first;
+      ensureBufferAsync(utick);
+
+      if (cs) {
+            auto timeSig = cs->sigmap()->timesig(utick).nominal(); // was having issues arbitrarily here after multiple repeats with using getCurTick()
+            if (timeSig != prevTimeSig) {
+                  prevTimeSig = timeSig;
+                  emit timeSigChanged();
+                  }
+
+            int tempo = curTempo();
+            if (tempo != prevTempo) {
+                  prevTempo = tempo;
+                  emit tempoChanged();
+                  }
             }
 
       QRectF r;
       for (;guiPos != eventsEnd; ++guiPos) {
-            if (guiPos->first > ppos->first)
+            if (guiPos->first > utick)
                   break;
             if (mscore->loop())
                   if (guiPos->first >= cs->repeatList().tick2utick(cs->loopOutTick().ticks()))
@@ -1835,7 +1842,6 @@ void Seq::heartBeatTimeout()
                         }
                   }
             }
-      int utick = ppos->first;
       int t = cs->repeatList().utick2tick(utick);
       mscore->currentScoreView()->moveCursor(Fraction::fromTicks(t));
       mscore->setPos(Fraction::fromTicks(t));
