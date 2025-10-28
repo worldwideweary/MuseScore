@@ -1670,9 +1670,9 @@ void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* ed
       bool opaqueHoverColor = (MScore::hoverColor.alpha() == 255); 
       bool hoverUnder = opaqueHoverColor;
       bool haveHover = MScore::hoverColorEnabled && dropTarget; 
-      
-      if (haveHover && hoverUnder) {
-            if (state != ViewState::LASSO) {
+
+      if (haveHover && hoverUnder && state != ViewState::LASSO) {
+            if (el.contains(const_cast<Element*>(dropTarget))) {
                   drawHoverHighlight(painter, *dropTarget);
                   }
             }
