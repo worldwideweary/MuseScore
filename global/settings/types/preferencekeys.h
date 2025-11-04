@@ -247,6 +247,9 @@
 #define PREF_UI_APP_USENEWWIZARD                            "ui/application/useNewWizard"
 #define PREF_UI_APP_BUILD_DATE_ISO                          "ui/application/build/date/isoFormat"
 #define PREF_UI_APP_AUTOHIDE_PALETTES                       "ui/application/palette/applyAutoHides"
+#define PREF_UI_APP_FULLSCREEN_HIDES_MENU                   "ui/application/hideMenuOnFullscreen"
+#define PREF_UI_APP_FULLSCREEN_HIDES_TOOLBARS               "ui/application/hideToolbarsOnFullscreen"
+
 #define PREF_UI_PIANO_HIGHLIGHTCOLOR                        "ui/piano/highlightColor"
 #define PREF_UI_PIANO_USER_INPUT_COLOR                      "ui/piano/userInputColor"
 #define PREF_UI_PIANO_WHITE_KEYS_COLOR                      "ui/piano/keys/color/white"
