@@ -299,6 +299,8 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_UI_APP_RASTER_VERTICAL,                          new IntPreference(2)},
             {PREF_UI_APP_SHOWSTATUSBAR,                            new BoolPreference(true)},
             {PREF_UI_APP_AUTOHIDE_PALETTES,                        new BoolPreference(true)},
+            {PREF_UI_APP_FULLSCREEN_HIDES_MENU,                    new BoolPreference(false)},
+            {PREF_UI_APP_FULLSCREEN_HIDES_TOOLBARS,                new BoolPreference(false)},
 #if defined(Q_OS_MAC) || defined(Q_OS_WIN) // use system native file dialog, Qt file dialog is very slow on Windows and Mac
             {PREF_UI_APP_USENATIVEDIALOGS,                         new BoolPreference(true)},
 #else // don't use system native file dialog, this is causing issues on some Linuxes
