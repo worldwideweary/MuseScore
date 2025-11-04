@@ -7088,11 +7088,41 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             startExcerptsDialog();
       else if (cmd == "fullscreen") {
             _fullscreen = a->isChecked();
-            if (_fullscreen)
+            if (_fullscreen) {
                   showFullScreen();
-            else
+
+                  if (preferences.getBool(PREF_UI_APP_FULLSCREEN_HIDES_MENU)) {
+                        // Hide Menubar + Tab Selectors + Toolbars if this adv. preference is enabled
+                        if (QWidget* menubar = mscore->menuWidget()) {
+                              menubar->hide();
+                              }
+                        tab1->getTab()->hide();
+                        }
+                  if (preferences.getBool(PREF_UI_APP_FULLSCREEN_HIDES_TOOLBARS)) {
+                        for (QToolBar* toolbar : { cpitchTools,fotoTools,fileTools,transportTools,entryTools,colorTools,toggleTools,workspacesTools,/*voiceTools,*/ }) {
+                              if (toolbar) {
+                                    toolbar->hide();
+                                    }
+                              }
+                        }
+                  }
+            else {
                   showNormal();
 
+                  if (preferences.getBool(PREF_UI_APP_FULLSCREEN_HIDES_MENU)) {
+                        if (QWidget* menubar = mscore->menuWidget()) {
+                              menubar->show();
+                              }
+                        tab1->getTab()->show();
+                        }
+                  if (preferences.getBool(PREF_UI_APP_FULLSCREEN_HIDES_TOOLBARS)) {
+                        for (QToolBar* toolbar : { cpitchTools,fotoTools,fileTools,transportTools,entryTools,colorTools,toggleTools,workspacesTools,/*voiceTools,*/ }) {
+                              if (toolbar) {
+                                    toolbar->show();
+                                    }
+                              }
+                        }
+                  }
 #ifdef Q_OS_MAC
             // Qt Bug: Toolbar goes into unified mode
             // after switching back from fullscreen
