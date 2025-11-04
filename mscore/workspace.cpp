@@ -22,6 +22,7 @@
 #include "preferences.h"
 #include "musescore.h"
 #include "workspace.h"
+#include "zoombox.h"
 
 #include "libmscore/score.h"
 #include "libmscore/imageStore.h"
