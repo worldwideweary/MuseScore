@@ -102,6 +102,8 @@ ZoomBox::ZoomBox(QWidget* parent)
             QString ts(QCoreApplication::translate("magTable", e.txt));
             addItem(ts, QVariant::fromValue(e.index));
             }
+      view()->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
+      view()->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
       resetToDefaultLogicalZoom();
       connect(this, SIGNAL(currentIndexChanged(int)), SLOT(indexChanged(int)));
       connect(lineEdit(), SIGNAL(returnPressed()), SLOT(textChanged()));
