@@ -1890,6 +1890,7 @@ MuseScore::MuseScore()
       a->setCheckable(true);
       a->setChecked(fileTools->isVisible());
       connect(fileTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
+      connect(fileTools, SIGNAL(orientationChanged(Qt::Orientation)), this, SLOT(handleOrientationChange(Qt::Orientation)));
       menuToolbars->addAction(a);
 
       a = getAction("toggle-transport");
@@ -6823,6 +6824,28 @@ ScoreTab* MuseScore::createScoreTab()
       connect(tab, SIGNAL(tabCloseRequested(int)), SLOT(removeTab(int)));
       connect(tab, SIGNAL(actionTriggered(QAction*)), SLOT(cmd(QAction*)));
       return tab;
+      }
+
+//---------------------------------------------------------
+//   handleOrientationChange
+//---------------------------------------------------------
+
+void MuseScore::handleOrientationChange(Qt::Orientation orientation)
+      {
+      (void) orientation;
+      if (fileTools->orientation() == Qt::Vertical) {
+            zoomBox->setFixedWidth(preferences.getInt(PREF_UI_THEME_ICONWIDTH) * guiScaling);
+            viewModeCombo->setFixedWidth(preferences.getInt(PREF_UI_THEME_ICONWIDTH) * guiScaling);
+            }
+      else {
+            zoomBox->setMinimumWidth(0);
+            zoomBox->setMaximumWidth(QWIDGETSIZE_MAX);
+            zoomBox->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+
+            viewModeCombo->setMinimumWidth(0);
+            viewModeCombo->setMaximumWidth(QWIDGETSIZE_MAX);
+            viewModeCombo->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+            }
       }
 
 //---------------------------------------------------------

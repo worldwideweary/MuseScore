@@ -529,6 +529,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void scoreStateChanged(ScoreState state);
 
    private slots:
+      void handleOrientationChange(Qt::Orientation);
       void cmd(QAction* a, const QString& cmd);
       void autoSaveTimerTimeout();
       void helpBrowser1() const;
