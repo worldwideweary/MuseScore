@@ -1743,9 +1743,12 @@ MuseScore::MuseScore()
       menuFile->addAction(getAction("file-open"));
 
       openRecent = menuFile->addMenu("");
-
       connect(openRecent, SIGNAL(aboutToShow()), SLOT(openRecentMenu()));
       connect(openRecent, SIGNAL(triggered(QAction*)), SLOT(selectScore(QAction*)));
+
+      openArchivedScores = menuFile->addMenu("");
+      connect(openArchivedScores, SIGNAL(aboutToShow()), SLOT(openArchivedTabsMenu));
+      connect(openArchivedScores, SIGNAL(triggered(QAction*)), SLOT(selectArchivedScore(QAction*)));
 
       menuFile->addSeparator();
       menuFile->addAction(getAction("file-close"));
@@ -2311,6 +2314,7 @@ MuseScore::MuseScore()
       // Add all menus to workspace for loading
       Workspace::addMenuAndString(menuFile,        "menu-file");
       Workspace::addMenuAndString(openRecent,      "menu-open-recent");
+      Workspace::addMenuAndString(openArchivedScores, "menu-open-archive");
       Workspace::addMenuAndString(menuEdit,        "menu-edit");
       Workspace::addMenuAndString(menuView,        "menu-view");
       Workspace::addMenuAndString(menuToolbars,    "menu-toolbars");
@@ -2542,6 +2546,7 @@ void MuseScore::setMenuTitles()
       const std::initializer_list<std::pair<QMenu*, QString>> titles {
             { menuFile,             tr(MScore::bypassAltMenu ? "File" : "&File")                },
             { openRecent,           tr(MScore::bypassAltMenu ? "Open Recent" : "Open &Recent")  },
+            { openArchivedScores,   tr(MScore::bypassAltMenu ? "Archived Scores" : "A&rchived Scores")  },
             { menuEdit,             tr(MScore::bypassAltMenu ? "Edit" : "&Edit")                },
             { menuView,             tr(MScore::bypassAltMenu ? "View" : "&View")                },
             { menuToolbars,         tr(MScore::bypassAltMenu ? "Toolbars" : "&Toolbars")        },
@@ -2597,6 +2602,8 @@ void MuseScore::updateMenus()
       {
       updateMenu(menuFile,        "menu-file",         "File");
       updateMenu(openRecent,      "menu-open-recent",  "");
+      updateMenu(openArchivedScores,
+                                  "menu-open-archive",  "");
       updateMenu(menuEdit,        "menu-edit",         "Edit");
       updateMenu(menuView,        "menu-view",         "View");
       updateMenu(menuToolbars,    "menu-toolbars",     "");
@@ -2624,6 +2631,10 @@ void MuseScore::updateMenus()
 #endif
       connect(openRecent,     SIGNAL(aboutToShow()),       SLOT(openRecentMenu()));
       connect(openRecent,     SIGNAL(triggered(QAction*)), SLOT(selectScore(QAction*)));
+      connect(openArchivedScores,
+                              SIGNAL(aboutToShow()),       SLOT(openArchivedTabsMenu()));
+      connect(openArchivedScores,
+                              SIGNAL(triggered(QAction*)), SLOT(selectArchivedScore(QAction*)));
       connect(menuWorkspaces, SIGNAL(aboutToShow()),       SLOT(showWorkspaceMenu()));
       setMenuTitles();
 #ifdef SCRIPT_INTERFACE
@@ -2784,6 +2795,40 @@ void MuseScore::selectScore(QAction* action)
                   }
             default:
                   return;
+            }
+      }
+
+
+//---------------------------------------------------------
+//   selectArchivedScore
+//    "open archived tabs"
+//---------------------------------------------------------
+
+void MuseScore::selectArchivedScore(QAction* action)
+      {
+      QVariant actionData = action->data();
+
+      if (!actionData.isValid())
+            return;
+
+      switch (actionData.type())
+      {
+      case QVariant::String: {
+            if (actionData.toString() == "archive-open-scores") {
+                  saveOpenScoresList();
+                  }
+            else if (actionData.toString() == "open-archived-scores") {
+                  loadOpenScoresList();
+                  }
+            break;
+            }
+      case QVariant::Map: {
+            QVariantMap pathMap = actionData.toMap();
+            openScore(pathMap.value("filePath").toString());
+            break;
+            }
+      default:
+            return;
             }
       }
 
@@ -2975,6 +3020,44 @@ void MuseScore::openRecentMenu()
       else {
             // Don't leave the menu empty, but add a hint
             QAction* hint = openRecent->addAction(tr("No recent files"));
+            hint->setEnabled(false);
+            }
+      }
+
+//---------------------------------------------------------
+//   openArchivedTabsMenu
+//---------------------------------------------------------
+
+void MuseScore::openArchivedTabsMenu()
+      {
+      openArchivedScores->clear();;
+      bool hasAnyArchivedScores = false;
+      for (QFileInfo& fi : archivedScores(true)) {
+            QAction* action = openArchivedScores->addAction(fi.fileName().replace("&", "&&"));  // show filename only
+
+            QString filePath = fi.canonicalFilePath();
+
+            QVariantMap actionData;
+            actionData.insert("actionName", "open-archived-scores");
+            actionData.insert("filePath", filePath);
+
+            action->setData(actionData);
+            action->setToolTip(filePath);
+            hasAnyArchivedScores = true;
+            }
+      if (!scores().empty()) {
+            openArchivedScores->addSeparator();
+            QAction* action = openArchivedScores->addAction(tr("Archive currently opened scores"));
+            action->setData("archive-open-scores");
+            }
+      if (hasAnyArchivedScores) {
+            openArchivedScores->addSeparator();
+            QAction* action = openArchivedScores->addAction(tr("Restore all archived scores"));
+            action->setData("open-archived-scores");
+      }
+      else {
+            // Don't leave the menu empty, but add a hint
+            QAction* hint = openArchivedScores->addAction(tr("No archived scores"));
             hint->setEnabled(false);
             }
       }
@@ -6931,6 +7014,10 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             saveAs(cs, true);
       else if (cmd == "file-save-selection")
             saveSelection(cs);
+      else if (cmd == "file-open-archived-tabs")
+            loadOpenScoresList();
+      else if (cmd == "file-archive-tabs")
+            saveOpenScoresList();
       else if (cmd == saveOnlineMenuItem)
             showUploadScoreDialog();
       else if (cmd == "file-import-pdf")
@@ -7737,6 +7824,88 @@ QFileInfoList MuseScore::recentScores() const
             if (!alreadyLoaded && fi.exists())
                   fil.append(fi);
             }
+      return fil;
+      }
+
+//---------------------------------------------------------
+//   archivedScores
+//    return a list of manually archived tabs, distinct from
+//    recent scores list
+//---------------------------------------------------------
+
+QFileInfoList MuseScore::archivedScores(bool showAlreadyLoaded) const
+      {
+      QFileInfoList fil  {};
+      QStringList scores {};
+
+      QDir dir;
+      dir.mkpath(dataPath);
+      QFile f(dataPath + "/scorelist");
+      QString sessionFullVersion;
+      if (!f.exists())
+            return fil;
+
+      if (!f.open(QIODevice::ReadOnly)) {
+            qDebug("Cannot open session file <%s>", qPrintable(f.fileName()));
+            return fil;
+            }
+
+      XmlReader e(&f);
+      while (e.readNextStartElement()) {
+            if (e.name() == "museScore") {
+                  sessionFullVersion = e.attribute("full-version");
+                  while (e.readNextStartElement()) {
+                        const QStringRef& tag(e.name());
+                        if (tag == "Score") {
+                              QString name;
+                              bool created = false;
+                              while (e.readNextStartElement()) {
+                                    const QStringRef& t(e.name());
+                                    if (t == "name")
+                                          name = e.readElementText();
+                                    else if (t == "created") {
+                                          created = e.readInt();
+                                          qDebug() << "Created:" << created;
+                                          }
+                                    else if (t == "dirty")
+                                          e.readInt();
+                                    else if (t == "path") {
+                                          scores.append(e.readElementText());
+                                          }
+                                    else {
+                                          qDebug() << "wtf";
+                                          e.unknown();
+                                          }
+                                    }
+                              }
+                        }
+                  }
+            }
+
+
+      // _archivedScores
+      for (const QString& s : scores) {
+            if (s.isEmpty())
+                  continue;
+            QFileInfo fi(s);
+            bool alreadyLoaded = false;
+            QString fp = fi.canonicalFilePath();
+            for (Score* sc : qAsConst(mscore->scores())) {
+                  if ((sc->masterScore()->fileInfo()->canonicalFilePath() == fp) || (sc->importedFilePath() == fp)) {
+                        alreadyLoaded = true;
+                        break;
+                        }
+                  }
+            if (fi.exists()) {
+                  if (showAlreadyLoaded || !alreadyLoaded) {
+                        fil.append(fi);
+                        }
+                  else {
+                        ;
+                        }
+                  }
+            }
+
       return fil;
       }
 
