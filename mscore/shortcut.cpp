@@ -157,6 +157,14 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT | STATE_PLAY,
+         "file-close-all",
+         QT_TRANSLATE_NOOP("action","Close All"),
+         QT_TRANSLATE_NOOP("action","File > Close All"),
+         QT_TRANSLATE_NOOP("action","Close all scores")
+         },
+      {
+         MsWidget::MAIN_WINDOW,
          STATE_DISABLED | STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT | STATE_PLAY,
          "file-new",
          QT_TRANSLATE_NOOP("action","New…"),

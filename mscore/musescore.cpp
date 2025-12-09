@@ -1749,6 +1749,7 @@ MuseScore::MuseScore()
 
       menuFile->addSeparator();
       menuFile->addAction(getAction("file-close"));
+      menuFile->addAction(getAction("file-close-all"));
       menuFile->addAction(getAction("file-save"));
       menuFile->addAction(getAction("file-save-as"));
       menuFile->addAction(getAction("file-save-a-copy"));
@@ -6918,6 +6919,10 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             openFiles();
       else if (cmd == "file-close")
             closeScore(cs);
+      else if (cmd == "file-close-all") {
+            for (auto _score : scores())
+                  closeScore(_score);
+            }
       else if (cmd == "file-save")
             saveFile();
       else if (cmd == "file-save-as")
