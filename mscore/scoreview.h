@@ -349,6 +349,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       void endDragEdit();
 
       void startNoteEntry();
+      void selectionFromNothing();
       virtual void startNoteEntryMode() override;
       void endNoteEntry();
 
