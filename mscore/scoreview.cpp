@@ -3497,20 +3497,32 @@ void ScoreView::cmd(const char* s)
 
                   Element* el = cv->score()->selection().element();
                   if (el && el->isTextBase() && !cmd.endsWith("rehearsal-mark")) {
-                        cv->score()->startCmd();
-                        const PropertyFlags pf = PropertyFlags::UNSTYLED;
-                        if (cmd == "prev-chord")
-                              el->undoChangeProperty(Pid::OFFSET, el->offset() - QPointF (MScore::nudgeStep * el->spatium(), 0.0), pf);
-                        else if (cmd == "next-chord")
-                              el->undoChangeProperty(Pid::OFFSET, el->offset() + QPointF (MScore::nudgeStep * el->spatium(), 0.0), pf);
-                        else if (cmd == "prev-measure")
-                              el->undoChangeProperty(Pid::OFFSET, el->offset() - QPointF (MScore::nudgeStep10 * el->spatium(), 0.0), pf);
-                        else if (cmd == "next-measure")
-                              el->undoChangeProperty(Pid::OFFSET, el->offset() + QPointF (MScore::nudgeStep10 * el->spatium(), 0.0), pf);
-                        cv->score()->endCmd();
+                        if (cmd == "next-system" || cmd == "prev-system") {
+                              if (auto ele = cv->score()->move(cmd))
+                                    cv->adjustCanvasPosition(ele, false);
+                              cv->score()->setPlayChord(true);
+                              cv->updateAll();
+                              }
+                        else {
+                              cv->score()->startCmd();
+                              const PropertyFlags pf = PropertyFlags::UNSTYLED;
+                              if (cmd == "prev-chord")
+                                    el->undoChangeProperty(Pid::OFFSET, el->offset() - QPointF (MScore::nudgeStep * el->spatium(), 0.0), pf);
+                              else if (cmd == "next-chord")
+                                    el->undoChangeProperty(Pid::OFFSET, el->offset() + QPointF (MScore::nudgeStep * el->spatium(), 0.0), pf);
+                              else if (cmd == "prev-measure")
+                                    el->undoChangeProperty(Pid::OFFSET, el->offset() - QPointF (MScore::nudgeStep10 * el->spatium(), 0.0), pf);
+                              else if (cmd == "next-measure")
+                                    el->undoChangeProperty(Pid::OFFSET, el->offset() + QPointF (MScore::nudgeStep10 * el->spatium(), 0.0), pf);
+                              cv->score()->endCmd();
+                              }
                         }
                   else {
                         auto score = cv->score();
+
+                        if (score->selection().isNone())
+                              cv->selectionFromNothing();
+
                         Element* ele = score->move(cmd);
                         if (cmd == "empty-trailing-measure")
                               cv->changeState(ViewState::NOTE_ENTRY);
@@ -4545,99 +4557,8 @@ void ScoreView::startNoteEntry()
       Note* note  = 0;
       auto defaultDuration = TDuration(TDuration::DurationType::V_QUARTER);
 
-      if (_score->selection().isNone()) {
-            // no selection
-            // choose page in current view (favor top left quadrant if possible)
-            // select first (top/left) chordrest of that page in current view
-            // or, CR at last selected position if that is in view
-            Page* p = nullptr;
-            QList<QPointF> points;
-            points.append(toLogical(QPoint(width() * 0.5, height() * 0.5)));
-            points.append(toLogical(QPoint(width() * 0.5, height() * 0.22)));
-            points.append(toLogical(QPoint(width() * 0.5, height() * 0.88)));
-            points.append(toLogical(QPoint(width() * 0.25, height() * 0.25)));
-            points.append(toLogical(QPoint(0.0, 0.0)));
-            points.append(toLogical(QPoint(0.0, height())));
-            points.append(toLogical(QPoint(width(), 0.0)));
-            points.append(toLogical(QPoint(width(), height())));
-            int i = 0;
-            while (!p && i < points.size()) {
-                  p = point2page(points[i]);
-                  i++;
-                  }
-            if (p) {
-                  ChordRest* topLeft = nullptr;
-                  qreal tlY = 0.0;
-                  Fraction tlTick = Fraction(0,1);
-                  QRectF viewRect  = toLogical(QRectF(0.0, 0.0, width(), height()));
-                  QRectF pageRect  = p->bbox().translated(p->x(), p->y());
-                  QRectF intersect = viewRect & pageRect;
-                  intersect.translate(-p->x(), -p->y());
-                  QList<Element*> el = p->items(intersect);
-                  ChordRest* lastSelected = score()->selection().currentCR();
-                  if (lastSelected && lastSelected->voice()) {
-                        // if last selected CR was not in voice 1,
-                        // find CR in voice 1 instead
-                        int track = trackZeroVoice(lastSelected->track());
-                        Segment* s = lastSelected->segment();
-                        if (s)
-                              lastSelected = s->nextChordRest(track, true);
-                        }
-                  for (Element* e : qAsConst(el)) {
-                        // loop through visible elements
-                        // looking for the CR in voice 1 with earliest tick and highest staff position
-                        // but stop if we find the last selected CR
-                        ElementType et = e->type();
-                        if (et == ElementType::NOTE || et == ElementType::REST) {
-                              if (e->voice())
-                                    continue;
-                              ChordRest* cr;
-                              if (et == ElementType::NOTE) {
-                                    cr = static_cast<ChordRest*>(e->parent());
-                                    if (!cr)
-                                          continue;
-                                    }
-                              else {
-                                    cr = static_cast<ChordRest*>(e);
-                                    }
-                              if (cr == lastSelected) {
-                                    topLeft = cr;
-                                    break;
-                                    }
-                              // compare ticks rather than x position
-                              // to make sure we favor earlier rather than later systems
-                              // even though later system might have note farther to left
-                              Fraction crTick = Fraction(0,1);
-                              if (cr->segment())
-                                    crTick = cr->segment()->tick();
-                              else
-                                    continue;
-                              // compare staff Y position rather than note Y position
-                              // to be sure we do not reject earliest note
-                              // just because it is lower in pitch than subsequent notes
-                              qreal crY = 0.0;
-                              if (cr->measure() && cr->measure()->system())
-                                    crY = cr->measure()->system()->staffYpage(cr->staffIdx());
-                              else
-                                    continue;
-                              if (topLeft) {
-                                    if (crTick <= tlTick && crY <= tlY) {
-                                          topLeft = cr;
-                                          tlTick = crTick;
-                                          tlY = crY;
-                                          }
-                                    }
-                              else {
-                                    topLeft = cr;
-                                    tlTick = crTick;
-                                    tlY = crY;
-                                    }
-                              }
-                        }
-                  if (topLeft)
-                        _score->select(topLeft, SelectType::SINGLE);
-                  }
-            }
+      if (_score->selection().isNone())
+            selectionFromNothing();
 
       Element* oel = _score->selection().element();
       Element* el = oel;
@@ -4764,6 +4685,105 @@ void ScoreView::endNoteEntry()
       setCursorOn(false);
       _score->setUpdateAll();
       _score->update();
+      }
+
+//---------------------------------------------------------
+//   selectionFromNothing
+//    Score has no current selection, so:
+//          - choose page in current view (favor top left quadrant if possible)
+//          - select first (top/left) chordrest of that page in current view
+//            or, CR at last selected position if that is in view
+//---------------------------------------------------------
+
+void ScoreView::selectionFromNothing()
+      {
+      Page* p = nullptr;
+      QList<QPointF> points;
+      points.append(toLogical(QPoint(width() * 0.5, height() * 0.5)));
+      points.append(toLogical(QPoint(width() * 0.5, height() * 0.22)));
+      points.append(toLogical(QPoint(width() * 0.5, height() * 0.88)));
+      points.append(toLogical(QPoint(width() * 0.25, height() * 0.25)));
+      points.append(toLogical(QPoint(0.0, 0.0)));
+      points.append(toLogical(QPoint(0.0, height())));
+      points.append(toLogical(QPoint(width(), 0.0)));
+      points.append(toLogical(QPoint(width(), height())));
+      int i = 0;
+      while (!p && i < points.size()) {
+            p = point2page(points[i]);
+            i++;
+            }
+      if (p) {
+            ChordRest* topLeft = nullptr;
+            qreal tlY = 0.0;
+            Fraction tlTick = Fraction(0,1);
+            QRectF viewRect  = toLogical(QRectF(0.0, 0.0, width(), height()));
+            QRectF pageRect  = p->bbox().translated(p->x(), p->y());
+            QRectF intersect = viewRect & pageRect;
+            intersect.translate(-p->x(), -p->y());
+            QList<Element*> el = p->items(intersect);
+            ChordRest* lastSelected = score()->selection().currentCR();
+            if (lastSelected && lastSelected->voice()) {
+                  // if last selected CR was not in voice 1,
+                  // find CR in voice 1 instead
+                  int track = trackZeroVoice(lastSelected->track());
+                  Segment* s = lastSelected->segment();
+                  if (s)
+                        lastSelected = s->nextChordRest(track, true);
+                  }
+            for (Element* e : qAsConst(el)) {
+                  // loop through visible elements
+                  // looking for the CR in voice 1 with earliest tick and highest staff position
+                  // but stop if we find the last selected CR
+                  ElementType et = e->type();
+                  if (et == ElementType::NOTE || et == ElementType::REST) {
+                        if (e->voice())
+                              continue;
+                        ChordRest* cr;
+                        if (et == ElementType::NOTE) {
+                              cr = static_cast<ChordRest*>(e->parent());
+                              if (!cr)
+                                    continue;
+                              }
+                        else {
+                              cr = static_cast<ChordRest*>(e);
+                              }
+                        if (cr == lastSelected) {
+                              topLeft = cr;
+                              break;
+                              }
+                        // compare ticks rather than x position
+                        // to make sure we favor earlier rather than later systems
+                        // even though later system might have note farther to left
+                        Fraction crTick = Fraction(0,1);
+                        if (cr->segment())
+                              crTick = cr->segment()->tick();
+                        else
+                              continue;
+                        // compare staff Y position rather than note Y position
+                        // to be sure we do not reject earliest note
+                        // just because it is lower in pitch than subsequent notes
+                        qreal crY = 0.0;
+                        if (cr->measure() && cr->measure()->system())
+                              crY = cr->measure()->system()->staffYpage(cr->staffIdx());
+                        else
+                              continue;
+                        if (topLeft) {
+                              if (crTick <= tlTick && crY <= tlY) {
+                                    topLeft = cr;
+                                    tlTick = crTick;
+                                    tlY = crY;
+                                    }
+                              }
+                        else {
+                              topLeft = cr;
+                              tlTick = crTick;
+                              tlY = crY;
+                              }
+                        }
+                  }
+            if (topLeft)
+                  _score->select(topLeft, SelectType::SINGLE);
+            }
       }
 
 //---------------------------------------------------------

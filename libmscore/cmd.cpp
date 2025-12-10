@@ -2906,8 +2906,16 @@ Element* Score::move(const QString& cmd)
                   }
             }
       else if (cmd == "next-system" || cmd == "prev-system") {
-            if (!cr && !box)
-                  return nullptr;
+            if (!cr && !box) {
+                  if (auto e = selection().element()) {
+                        if (auto m = e->findMeasure()) {
+                              if (auto cr = m->findChordRest(e->tick(), e->track())) {
+                                    select(cr);
+                                    }
+                              }
+                        }
+                  else return nullptr;
+                  }
 
             el = nullptr;
             const bool next = (cmd == "next-system");
