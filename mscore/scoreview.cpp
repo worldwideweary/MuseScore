@@ -1306,6 +1306,8 @@ void ScoreView::drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF&
 
       if (el == dropTarget) return;
 
+      if (score()->lineMode()) return;
+
       if (el) {
             if (el->isTextBase()) {
                   auto tb = toTextBase(el);
