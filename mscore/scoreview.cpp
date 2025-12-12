@@ -1837,8 +1837,27 @@ void ScoreView::paint(const QRect& r, QPainter& p)
       QRegion r1(r);
       if ((_score->layoutMode() == LayoutMode::LINE) || (_score->layoutMode() == LayoutMode::SYSTEM)) {
             if (_score->pages().size() > 0) {
-
                   Page* page = _score->pages().front();
+                  QRectF pr(page->abbox().translated(page->pos()));
+
+                  // this->rect().center
+                  // Page Background
+                  qreal x = pr.x();
+                  qreal y = pr.y();
+                  qreal w = pr.width();
+                  qreal h = pr.height();
+                  if (_fgPixmap == 0 || _fgPixmap->isNull()) {
+                        p.fillRect(x, y, w, h, _fgColor);
+                        }
+                  else {
+                        if (_pagePixmap.isNull()) {
+                              _pagePixmap.detach();
+                              *_fgPixmap  = _fgPixmap->scaled(w,h);
+                              _pagePixmap = *_fgPixmap;
+                              }
+                        p.drawPixmap(x, y, w, h, *_fgPixmap);
+                        }
+
                   QList<Element*> ell = page->items(fr);
 
                   // AvsOmr -----
