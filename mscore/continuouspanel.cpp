@@ -65,6 +65,9 @@ void ContinuousPanel::paint(const QRect&, QPainter& painter)
             return;
             }
 
+      if (!preferences.getBool(PREF_UI_CANVAS_CONTINUOUS_HEADER_VISIBLE))
+            return;
+
       if (measure->mmRest()) {
             measure = measure->mmRest();
             }
@@ -273,38 +276,75 @@ void ContinuousPanel::paint(const QRect&, QPainter& painter)
       pen.setWidthF(0.0);
       pen.setStyle(Qt::NoPen);
       painter.setPen(pen);
-      painter.setBrush(preferences.getColor(PREF_UI_CANVAS_FG_COLOR));
+      painter.setBrush(preferences.getColor(PREF_UI_CANVAS_CONTINUOUS_HEADER_COLOR));
       QRectF bg(_rect);
 
       bg.setWidth(_widthClef + _widthKeySig + _widthTimeSig + _leftMarginTotal + _panelRightPadding);
-      QPixmap* fgPixmap = _sv->fgPixmap();
-      if (fgPixmap == 0 || fgPixmap->isNull())
+
+      const bool useBg = false;
+      QPixmap* pm = useBg ? _sv->bgPixmap() : _sv->fgPixmap();
+
+
+      // Background - Image
+      if (_sv->bgPixmap() && !_sv->bgPixmap()->isNull()) {
+            QRectF dest = painter.matrix().mapRect(bg);
+            qreal transX = painter.transform().dx();
+            qreal transY = painter.transform().dy();
+            transX = dest.x();
+            transY = dest.y();
+            painter.save();
+
+            painter.resetMatrix();
+            painter.resetTransform();
+            painter.drawTiledPixmap(dest, *_sv->bgPixmap(), QPointF(transX, transY));
+
+            painter.restore();
+            }
+
+      if (!_sv->fgPixmap() || _sv->fgPixmap()->isNull()) {
+            // Foreground - Color:
             painter.fillRect(bg, preferences.getColor(PREF_UI_CANVAS_FG_COLOR));
-      else
-            painter.drawTiledPixmap(bg, *fgPixmap, bg.topLeft()
-               - QPoint((int)lrint(_sv->matrix().dx()), (int)lrint(_sv->matrix().dy())));
+            }
+      else {
+            // Foreground - Image:
+            QRectF dest = painter.matrix().mapRect(bg);
+            qreal transX = painter.transform().dx();
+            qreal transY = painter.transform().dy();
+            transX = dest.x();
+            transY = dest.y();
+            painter.save();
+
+            painter.resetMatrix();
+            painter.resetTransform();
+            painter.drawTiledPixmap(dest, *pm, QPointF(transX, transY));
+
+            painter.restore();
+            }
 
       painter.setClipRect(_rect);
       painter.setClipping(true);
 
-      QColor color(MScore::layoutBreakColor);
+      QColor color(preferences.getColor(PREF_UI_CANVAS_CONTINUOUS_HEADER_COLOR));
 
       // Draw measure text number
       // TODO: simplify (no Text element)
-      QString text = QString("#%1").arg(_currentMeasure->no()+1);
-      Text* newElement = new Text(_score);
-      newElement->setFlag(ElementFlag::MOVABLE, false);
-      newElement->setXmlText(text);
-      newElement->setFamily("FreeSans");
-      newElement->setSizeIsSpatiumDependent(true);
-      newElement->setColor(color);
-      newElement->layout1();
-      pos = QPointF(_score->styleP(Sid::clefLeftMargin) + _widthClef, _y + newElement->height());
-      painter.translate(pos);
-      newElement->draw(&painter);
-      pos += QPointF(_offsetPanel, 0);
-      painter.translate(-pos);
-      delete newElement;
+      if (preferences.getBool(PREF_UI_CANVAS_CONTINUOUS_HEADER_MEASURE)) {
+            QString text = QString("#%1").arg(_currentMeasure->no()+1);
+            Text* newElement = new Text(_score);
+            newElement->setFlag(ElementFlag::MOVABLE, false);
+            newElement->setXmlText(text);
+            newElement->setFamily("FreeSans");
+            newElement->setSizeIsSpatiumDependent(true);
+            newElement->setColor(color);
+            newElement->layout1();
+            pos = QPointF(_score->styleP(Sid::clefLeftMargin) + _widthClef, _y + newElement->height());
+            painter.translate(pos);
+            newElement->draw(&painter);
+            pos += QPointF(_offsetPanel, 0);
+            painter.translate(-pos);
+            delete newElement;
+            }
+      else painter.translate(-_offsetPanel, 0);
 
       // This second pass draws the elements spaced evently using the width of the largest element
       for (const Element* e : qAsConst(el)) {
@@ -343,31 +383,33 @@ void ContinuousPanel::paint(const QRect&, QPainter& painter)
                   barLine.draw(&painter);
 
                   // Draw the current staff name
-                  QList<StaffName>& staffNamesLong = currentStaff->part()->instrument(Fraction::fromTicks(tick))->longNames();
-                  QString staffName = staffNamesLong.isEmpty() ? " " : staffNamesLong[0].name();
-                  if (staffName == "") {
-                        QList<StaffName>& staffNamesShort = currentStaff->part()->instrument(Fraction::fromTicks(tick))->shortNames();
-                        staffName = staffNamesShort.isEmpty() ? "" : staffNamesShort[0].name();
-                        }
+                  if (preferences.getBool(PREF_UI_CANVAS_CONTINUOUS_HEADER_INSTRUMENT)) {
+                        QList<StaffName>& staffNamesLong = currentStaff->part()->instrument(Fraction::fromTicks(tick))->longNames();
+                        QString staffName = staffNamesLong.isEmpty() ? " " : staffNamesLong[0].name();
+                        if (staffName == "") {
+                              QList<StaffName>& staffNamesShort = currentStaff->part()->instrument(Fraction::fromTicks(tick))->shortNames();
+                              staffName = staffNamesShort.isEmpty() ? "" : staffNamesShort[0].name();
+                              }
 
-                  Text* newName = new Text(_score);
-                  newName->setXmlText(staffName);
-                  newName->setParent(parent);
-                  newName->setTrack(e->track());
-                  newName->setColor(color);
-                  newName->setFamily("FreeSans");
-                  newName->setSizeIsSpatiumDependent(true);
-                  newName->layout();
-                  newName->setPlainText(newName->plainText());
-                  newName->layout();
-                  if (currentStaff->part()->staff(0) == currentStaff) {
-                        const double spatium = _score->spatium();
-                        pos = QPointF (_score->styleP(Sid::clefLeftMargin) + _widthClef, -spatium * 2);
-                        painter.translate(pos);
-                        newName->draw(&painter);
-                        painter.translate(-pos);
+                        Text* newName = new Text(_score);
+                        newName->setXmlText(staffName);
+                        newName->setParent(parent);
+                        newName->setTrack(e->track());
+                        newName->setColor(color);
+                        newName->setFamily("FreeSans");
+                        newName->setSizeIsSpatiumDependent(true);
+                        newName->layout();
+                        newName->setPlainText(newName->plainText());
+                        newName->layout();
+                        if (currentStaff->part()->staff(0) == currentStaff) {
+                              const double spatium = _score->spatium();
+                              pos = QPointF (_score->styleP(Sid::clefLeftMargin) + _widthClef, -spatium * 2);
+                              painter.translate(pos);
+                              newName->draw(&painter);
+                              painter.translate(-pos);
+                              }
+                        delete newName;
                         }
-                  delete newName;
 
                   qreal posX = 0.0;
 
