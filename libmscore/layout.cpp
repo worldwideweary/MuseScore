@@ -5042,7 +5042,7 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
 void LayoutContext::collectPage()
       {
       const qreal slb = score->styleP(Sid::staffLowerBorder);
-      bool breakPages = score->layoutMode() != LayoutMode::SYSTEM;
+      bool breakPages = !score->systemMode() && !score->floatMode();
       qreal footerExtension = page->footerExtension();
       qreal headerExtension = page->headerExtension();
       qreal headerFooterPadding = score->styleP(Sid::staffHeaderFooterPadding);
@@ -5295,7 +5295,7 @@ void LayoutContext::collectPage()
                   }
             }
 
-      if (score->systemMode()) {
+      if (score->systemMode() || score->floatMode()) {
             System* s = page->systems().last();
             qreal height = s ? s->pos().y() + s->height() + s->minBottom() : page->tm();
             page->bbox().setRect(0.0, 0.0, score->loWidth(), height + page->bm());
