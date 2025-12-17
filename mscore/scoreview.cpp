@@ -1293,7 +1293,7 @@ void ScoreView::drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF&
       //    - Color or Background Image will perform implicit cut-out overlays
 
       bool printing   = score()->printing();
-      QRectF dest = printing || score()->systemMode() ? r : p->matrix().mapRect(r);
+      QRectF dest = printing || score()->systemMode() || score()->floatMode() ? r : p->matrix().mapRect(r);
       qreal w      = dest.width();
       qreal h      = dest.height();
       qreal transX = p->transform().dx();
