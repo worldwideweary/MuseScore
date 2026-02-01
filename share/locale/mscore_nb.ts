@@ -17068,7 +17068,7 @@ vennligst velg en takt og prøv igjen</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/workspace.cpp" line="1095"/>
+        <location filename="../../mscore/workspace.cpp" line="1101"/>
         <source>%1 edited</source>
         <extracomment>Name of the edited read-only workspace, %1 is replaced with the old workspace name</extracomment>
         <translation type="unfinished"></translation>
@@ -18222,7 +18222,7 @@ vennligst velg et annet navn:</translation>
         <translation>Gripebrettdiagram</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1535"/>
+        <location filename="../../mscore/palette.cpp" line="1543"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="483"/>
         <source>Writing Palette File
 %1
@@ -18232,7 +18232,7 @@ failed: </source>
 feilet: </translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1536"/>
+        <location filename="../../mscore/palette.cpp" line="1544"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="484"/>
         <source>Writing Palette File</source>
         <translation>Skriver palett-fil</translation>
@@ -21761,7 +21761,7 @@ Gå til %1MuseScores hjemmeside%2 for å hente den nyeste versjonen.</translatio
         </translation>
     </message>
     <message>
-        <location filename="../../libmscore/measure.cpp" line="2043"/>
+        <location filename="../../libmscore/measure.cpp" line="2053"/>
         <source>MSCX error at line %1: invalid measure length: %2</source>
         <translation>MSCX-feil på linje %1: Ugyldig taktlengde: %2</translation>
     </message>

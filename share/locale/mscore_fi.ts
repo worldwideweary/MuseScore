@@ -17078,7 +17078,7 @@ Haluatko nähdä näitä esittelykierroksia?</translation>
         <translation>Edistynyt muokattu</translation>
     </message>
     <message>
-        <location filename="../../mscore/workspace.cpp" line="1095"/>
+        <location filename="../../mscore/workspace.cpp" line="1101"/>
         <source>%1 edited</source>
         <extracomment>Name of the edited read-only workspace, %1 is replaced with the old workspace name</extracomment>
         <translation>%1 muokattu</translation>
@@ -18232,7 +18232,7 @@ valitse toinen nimi:</translation>
         <translation>Otelautakuvat</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1535"/>
+        <location filename="../../mscore/palette.cpp" line="1543"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="483"/>
         <source>Writing Palette File
 %1
@@ -18242,7 +18242,7 @@ failed: </source>
 kirjoittaminen epäonnistui: </translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1536"/>
+        <location filename="../../mscore/palette.cpp" line="1544"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="484"/>
         <source>Writing Palette File</source>
         <translation>Kirjoitetaan palettitiedostoa</translation>
@@ -21773,7 +21773,7 @@ ei voitu avata</translation>
         </translation>
     </message>
     <message>
-        <location filename="../../libmscore/measure.cpp" line="2043"/>
+        <location filename="../../libmscore/measure.cpp" line="2053"/>
         <source>MSCX error at line %1: invalid measure length: %2</source>
         <translation>MSCX-virhe viivalla %1: epäkelpo tahdin pituus: %2</translation>
     </message>

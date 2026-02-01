@@ -17081,7 +17081,7 @@ Kundi tú hugsa tær at komi við á hesar túrar?</translation>
         <translation>Framkomið &amp; broytt</translation>
     </message>
     <message>
-        <location filename="../../mscore/workspace.cpp" line="1095"/>
+        <location filename="../../mscore/workspace.cpp" line="1101"/>
         <source>%1 edited</source>
         <extracomment>Name of the edited read-only workspace, %1 is replaced with the old workspace name</extracomment>
         <translation>%1 broytt</translation>
@@ -18235,7 +18235,7 @@ vinarliga vel annað navn:</translation>
         <translation>Bandatalvur</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1535"/>
+        <location filename="../../mscore/palette.cpp" line="1543"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="483"/>
         <source>Writing Palette File
 %1
@@ -18245,7 +18245,7 @@ failed: </source>
 miseydnað: </translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1536"/>
+        <location filename="../../mscore/palette.cpp" line="1544"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="484"/>
         <source>Writing Palette File</source>
         <translation>Skrivar palett fílu</translation>
@@ -21774,7 +21774,7 @@ Vitja %1Musescore heimasíðuna%2 fyri at fáa nýggjastu versiónina</translati
         </translation>
     </message>
     <message>
-        <location filename="../../libmscore/measure.cpp" line="2043"/>
+        <location filename="../../libmscore/measure.cpp" line="2053"/>
         <source>MSCX error at line %1: invalid measure length: %2</source>
         <translation>MSCX villa á linju %1 skeiv takt longd: %2</translation>
     </message>

@@ -17083,7 +17083,7 @@ Markera en takt och försök igen</translation>
         <translation>Avancerad redigerad</translation>
     </message>
     <message>
-        <location filename="../../mscore/workspace.cpp" line="1095"/>
+        <location filename="../../mscore/workspace.cpp" line="1101"/>
         <source>%1 edited</source>
         <extracomment>Name of the edited read-only workspace, %1 is replaced with the old workspace name</extracomment>
         <translation>%1 redigerad</translation>
@@ -18237,7 +18237,7 @@ välj ett annat namn:</translation>
         <translation>Greppbrädediagram</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1535"/>
+        <location filename="../../mscore/palette.cpp" line="1543"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="483"/>
         <source>Writing Palette File
 %1
@@ -18247,7 +18247,7 @@ palettfil
 %1:</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1536"/>
+        <location filename="../../mscore/palette.cpp" line="1544"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="484"/>
         <source>Writing Palette File</source>
         <translation>Skriver palettfil</translation>
@@ -21776,7 +21776,7 @@ Gå till %1MuseScores webbsida%2 för att hämta den senaste versionen.</transla
         </translation>
     </message>
     <message>
-        <location filename="../../libmscore/measure.cpp" line="2043"/>
+        <location filename="../../libmscore/measure.cpp" line="2053"/>
         <source>MSCX error at line %1: invalid measure length: %2</source>
         <translation>MSCX-fel vid rad %1: ogiltig taktlängd: %2</translation>
     </message>

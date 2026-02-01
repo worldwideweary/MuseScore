@@ -17050,7 +17050,7 @@ Vui lòng chọn một ô nhịp và thử lại lần nữa</translation>
         <translation>Nâng cao đã bị sửa</translation>
     </message>
     <message>
-        <location filename="../../mscore/workspace.cpp" line="1095"/>
+        <location filename="../../mscore/workspace.cpp" line="1101"/>
         <source>%1 edited</source>
         <extracomment>Name of the edited read-only workspace, %1 is replaced with the old workspace name</extracomment>
         <translation type="unfinished"></translation>
@@ -18208,7 +18208,7 @@ trong bản nhạc Thánh ca.</translation>
         <translation>Biểu đồ phím ghi-ta</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1535"/>
+        <location filename="../../mscore/palette.cpp" line="1543"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="483"/>
         <source>Writing Palette File
 %1
@@ -18218,7 +18218,7 @@ failed: </source>
 báo lỗi:</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1536"/>
+        <location filename="../../mscore/palette.cpp" line="1544"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="484"/>
         <source>Writing Palette File</source>
         <translation>Đang ghi tập tin Bảng công cụ</translation>
@@ -21728,7 +21728,7 @@ Hãy vào %1trang MuseScore%2 để tải về phiên bản mới nhất.</trans
         </translation>
     </message>
     <message>
-        <location filename="../../libmscore/measure.cpp" line="2043"/>
+        <location filename="../../libmscore/measure.cpp" line="2053"/>
         <source>MSCX error at line %1: invalid measure length: %2</source>
         <translation type="unfinished"></translation>
     </message>
