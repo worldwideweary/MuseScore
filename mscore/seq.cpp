@@ -1808,45 +1808,45 @@ void Seq::heartBeatTimeout()
                   if (guiPos->first >= cs->repeatList().tick2utick(cs->loopOutTick().ticks()))
                         break;
             const NPlayEvent& n = guiPos->second;
+            const bool playEventHasVelocity = n.velo();
             if (n.type() == ME_CHORD && MScore::highlightRests) {
-                  if (auto rest = n.rest()) {
-                        for (auto se : rest->linkList()) {
-                              if (!se->isRest())
-                                    continue;
-                              auto currentRest = toRest(se);
-                              if (n.velo()) {
-                                    currentRest->setMark(true);
-                                    markedRests.append(currentRest);
-                                    }
-                              else {
-                                    currentRest->setMark(false);
-                                    markedRests.removeOne(currentRest);
-                                    }
-                              r |= currentRest->canvasBoundingRect();
+                  const auto rest = n.rest();
+                  if (!rest)
+                        continue;
+
+                  for (auto se : rest->linkList()) {
+                        if (!se->isRest())
+                              continue;
+                        auto currentRest = toRest(se);
+                        if (playEventHasVelocity) {
+                              currentRest->setMark(true);
+                              markedRests.append(currentRest);
                               }
+                        else {
+                              currentRest->setMark(false);
+                              markedRests.removeOne(currentRest);
+                              }
+                        r |= currentRest->canvasBoundingRect();
                         }
                   }
             if (n.type() == ME_NOTEON && MScore::highlightNotes) {
-                  const Note* note1 = n.note();
-                  if (n.velo()) {
-                        for (ScoreElement* se : note1->linkList()) {
-                              if (!se->isNote())
-                                    continue;
-                              Note* currentNote = toNote(se);
+                  const auto note = n.note();
+                  if (!note)
+                        continue;
+
+                  for (ScoreElement* se : note->linkList()) {
+                        if (!se->isNote())
+                              continue;
+                        auto currentNote = toNote(se);
+                        if (playEventHasVelocity) {
                               currentNote->setMark(true);
                               markedNotes.append(currentNote);
-                              r |= currentNote->canvasBoundingRect();
                               }
-                        }
-                  else {
-                        for (ScoreElement* se : note1->linkList()) {
-                              if (!se->isNote())
-                                    continue;
-                              Note* currentNote = toNote(se);
+                        else {
                               currentNote->setMark(false);
-                              r |= currentNote->canvasBoundingRect();
                               markedNotes.removeOne(currentNote);
                               }
+                        r |= currentNote->canvasBoundingRect();
                         }
                   }
             }
