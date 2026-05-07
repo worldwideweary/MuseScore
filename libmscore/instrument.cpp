@@ -477,6 +477,8 @@ bool Instrument::readProperties(XmlReader& e, Part* part, bool* customDrumset)
             QString val(e.readElementText());
             setClefType(idx, ClefTypeList(clefType(idx)._concertClef, Clef::clefType(val)));
             }
+      else if (tag == "soundId")    // Mu4 compatibility
+            e.skipCurrentElement(); // skip, don't log
       else
             return false;
 
