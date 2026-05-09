@@ -12,6 +12,7 @@ win32install
 win64build
 win64install
 build.xcode
+muse
 applebuild
 build.artifacts
 MuseScorePortable
