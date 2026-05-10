@@ -4289,10 +4289,11 @@ QString Shortcut::help() const
 Shortcut* Shortcut::getShortcut(const char* id)
       {
       Shortcut* s = _shortcuts.value(QByteArray(id));
-      if (s == 0) {
+      if (s == nullptr // shortcut not found
+          && !(!strcmp(id, "toggle-feedback")
+               || !strcmp(id, "toggle-insert-mode"))
+          ) // and not among the removed ones
             qDebug("Internal error: shortcut <%s> not found", id);
-            return 0;
-            }
       return s;
       }
 
@@ -4586,8 +4587,12 @@ void Shortcut::load()
                                     if (tag == "key") {
                                           QString val(e.readElementText());
                                           sc = getShortcut(qPrintable(val));
-                                          if (!sc)
-                                                qDebug("cannot find shortcut <%s>", qPrintable(val));
+                                          if (!sc) { // shortcut not found
+                                                if (!(!strcmp(qPrintable(val), "toggle-feedback")
+                                                      || !strcmp(qPrintable(val), "toggle-insert-mode"))
+                                                    ) // and not among the removed ones
+                                                      qDebug("cannot find shortcut <%s>", qPrintable(val));
+                                                }
                                           else
                                                 sc->clear();
                                           }
