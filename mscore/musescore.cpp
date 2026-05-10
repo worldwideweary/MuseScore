@@ -1566,14 +1566,6 @@ MuseScore::MuseScore()
       connect(entryTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
       menuToolbars->addAction(a);
 
-#if 0
-      a = getAction("toggle-feedback");
-      a->setCheckable(true);
-      a->setChecked(feedbackTools->isVisible());
-      connect(feedbackTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
-      menuToolbars->addAction(a);
-#endif
-
       a = getAction("toggle-workspaces-toolbar");
       a->setCheckable(true);
       a->setChecked(workspacesTools->isVisible());
