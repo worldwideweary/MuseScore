@@ -318,10 +318,12 @@ void Score::update(bool resetCmdState)
       for (MasterScore* ms : *movements()) {
             CmdState& cs = ms->cmdState();
             ms->deletePostponed();
-            if (cs.layoutRange()) {
-                  for (Score*& s : ms->scoreList())
-                        s->doLayoutRange(cs.startTick(), cs.endTick());
-                  updateAll = true;
+            if (!printing()) {
+                  if (cs.layoutRange()) {
+                        for (Score*& s : ms->scoreList())
+                              s->doLayoutRange(cs.startTick(), cs.endTick());
+                        updateAll = true;
+                        }
                   }
             }
 
