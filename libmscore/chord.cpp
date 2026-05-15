@@ -246,6 +246,7 @@ Chord::Chord(Score* s)
       _stem             = 0;
       _hook             = 0;
       _stemDirection    = Direction::AUTO;
+      _hookIsReversed   = false;
       _arpeggio         = 0;
       _tremolo          = 0;
       _endsGlissando    = false;
@@ -291,6 +292,7 @@ Chord::Chord(const Chord& c, bool link)
 
       _graceIndex     = c._graceIndex;
       _noStem         = c._noStem;
+      _hookIsReversed = c._hookIsReversed;
       _playEventType  = c._playEventType;
       _stemDirection  = c._stemDirection;
       _noteType       = c._noteType;
@@ -1078,8 +1080,14 @@ void Chord::write(XmlWriter& xml) const
             xml.tag("noStem", _noStem);
       else if (_stem && (_stem->isUserModified() || !qFuzzyIsNull(_stem->userLen())))
             _stem->write(xml);
-      if (_hook && _hook->isUserModified())
-            _hook->write(xml);
+      if (_hook) {
+            if (_hook->isUserModified()) {
+                  _hook->write(xml);
+                  }
+            if (_hookIsReversed) {
+                  writeProperty(xml, Pid::HOOK_REVERSED);
+                  }
+            }
       if (_stemSlash && _stemSlash->isUserModified())
             _stemSlash->write(xml);
       writeProperty(xml, Pid::STEM_DIRECTION);
@@ -1175,6 +1183,8 @@ bool Chord::readProperties(XmlReader& e)
             }
       else if (readProperty(tag, e, Pid::STEM_DIRECTION))
             ;
+      else if (tag == "hookReverse")
+            _hookIsReversed = e.readBool();
       else if (tag == "noStem")
             _noStem = e.readInt();
       else if (tag == "Arpeggio") {
@@ -2868,6 +2878,8 @@ QVariant Chord::getProperty(Pid propertyId) const
       switch (propertyId) {
             case Pid::NO_STEM:        return noStem();
             case Pid::STEM_DIRECTION: return QVariant::fromValue<Direction>(stemDirection());
+            case Pid::HOOK_REVERSED:  return hookIsReversed();
+
             default:
                   return ChordRest::getProperty(propertyId);
             }
@@ -2882,6 +2894,8 @@ QVariant Chord::propertyDefault(Pid propertyId) const
       switch (propertyId) {
             case Pid::NO_STEM:        return false;
             case Pid::STEM_DIRECTION: return QVariant::fromValue<Direction>(Direction::AUTO);
+            case Pid::HOOK_REVERSED:  return false;
+
             default:
                   return ChordRest::propertyDefault(propertyId);
             }
@@ -2900,6 +2914,10 @@ bool Chord::setProperty(Pid propertyId, const QVariant& v)
             case Pid::STEM_DIRECTION:
                   setStemDirection(v.value<Direction>());
                   break;
+            case Pid::HOOK_REVERSED:
+                  setHookReversed(v.toBool());
+                  break;
+
             default:
                   return ChordRest::setProperty(propertyId, v);
             }
