@@ -191,7 +191,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       //--input state:
       PositionCursor* _cursor;
       QColor _cursorColor;
-      const int MAX_CURSOR_ALPHA = 220;
+      const int MAX_CURSOR_ALPHA = 257; // Drawing behind allows for total opacity 
 
       PositionCursor* _controlCursor;
       SmoothPanSettings _panSettings;
