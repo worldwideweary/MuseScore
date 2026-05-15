@@ -208,6 +208,9 @@ enum class Pid : short {
       LASSO_SIZE,
       TIME_STRETCH,
       ORNAMENT_STYLE,
+      GATE_TIME,
+      ON_TIME,
+      VELOCITY_OFFSET,
 
       TIMESIG,
       TIMESIG_STRETCH,
@@ -392,6 +395,9 @@ enum class P_TYPE : char {
       DIRECTION,      // enum class Direction
       DIRECTION_H,    // enum class MScore::DirectionH
       ORNAMENT_STYLE, // enum class MScore::OrnamentStyle
+      GATE_TIME,
+      ON_TIME,
+      VELOCITY_OFFSET,
       TDURATION,
       LAYOUT_BREAK,
       VALUE_TYPE,
