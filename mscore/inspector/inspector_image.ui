@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>215</width>
-    <height>154</height>
+    <height>177</height>
    </rect>
   </property>
   <property name="accessibleName">
@@ -49,7 +49,6 @@
      </property>
      <property name="font">
       <font>
-       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -76,6 +75,69 @@
       <property name="spacing">
        <number>3</number>
       </property>
+      <item row="2" column="1" colspan="2">
+       <widget class="Ms::SizeSelect" name="size" native="true">
+        <property name="accessibleName">
+         <string>Size</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="2">
+       <widget class="QDoubleSpinBox" name="frameWidth"/>
+      </item>
+      <item row="3" column="0" colspan="3">
+       <widget class="QCheckBox" name="sizeIsSpatium">
+        <property name="focusPolicy">
+         <enum>Qt::TabFocus</enum>
+        </property>
+        <property name="toolTip">
+         <string>Distance between two lines on a standard 5-line staff</string>
+        </property>
+        <property name="text">
+         <string>Size in staff space units</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="3">
+       <widget class="Ms::ResetButton" name="resetAutoscale" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="accessibleName">
+         <string>Reset 'Scale to frame size' value</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="3">
+       <widget class="Ms::ResetButton" name="resetLockAspectRatio" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="accessibleName">
+         <string>Reset 'Lock aspect ratio' value</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0" colspan="2">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Frame Width:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="2">
+       <widget class="Awl::ColorLabel" name="frameColor">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
       <item row="2" column="0">
        <widget class="QLabel" name="label_2">
         <property name="text">
@@ -106,36 +168,10 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="1" colspan="2">
-       <widget class="Ms::SizeSelect" name="size" native="true">
-        <property name="accessibleName">
-         <string>Size</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0" colspan="3">
-       <widget class="QCheckBox" name="sizeIsSpatium">
-        <property name="focusPolicy">
-         <enum>Qt::TabFocus</enum>
-        </property>
-        <property name="toolTip">
-         <string>Distance between two lines on a standard 5-line staff</string>
-        </property>
+      <item row="6" column="0">
+       <widget class="QLabel" name="label_3">
         <property name="text">
-         <string>Size in staff space units</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="3">
-       <widget class="Ms::ResetButton" name="resetAutoscale" native="true">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="accessibleName">
-         <string>Reset 'Scale to frame size' value</string>
+         <string>Frame Color:</string>
         </property>
        </widget>
       </item>
@@ -165,18 +201,11 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="3">
-       <widget class="Ms::ResetButton" name="resetLockAspectRatio" native="true">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="accessibleName">
-         <string>Reset 'Lock aspect ratio' value</string>
-        </property>
-       </widget>
+      <item row="5" column="3">
+       <widget class="Ms::ResetButton" name="resetFrameWidth" native="true"/>
+      </item>
+      <item row="6" column="3">
+       <widget class="Ms::ResetButton" name="resetFrameColor" native="true"/>
       </item>
      </layout>
     </widget>
@@ -194,6 +223,12 @@
    <class>Ms::SizeSelect</class>
    <extends>QWidget</extends>
    <header>inspector/sizeSelect.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>Awl::ColorLabel</class>
+   <extends>QPushButton</extends>
+   <header>awl/colorlabel.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
