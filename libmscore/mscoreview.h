@@ -62,6 +62,7 @@ class MuseScoreView {
       virtual void startNoteEntryMode() {}
       virtual void drawBackground(QPainter*, const QRectF&) const = 0;
       virtual void setDropTarget(const Element*) {}
+      virtual void drawBackgroundOffset(QPainter*, const QRectF&, const QRectF&, const Element* el=nullptr) const = 0;
 
       virtual void textTab(bool /*back*/) {}
       virtual void lyricsTab(bool /*back*/, bool /*end*/, bool /*moveOnly*/) {}

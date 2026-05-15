@@ -77,6 +77,7 @@ class ExampleView : public QFrame, public MuseScoreView {
       virtual void cmdAddSlur(Note* firstNote, Note* lastNote);
       virtual Element* elementNear(QPointF) override;
       virtual void drawBackground(QPainter*, const QRectF&) const override;
+      virtual void drawBackgroundOffset(QPainter*, const QRectF&, const QRectF&, const Element*) const override {}
       void dragExampleView(QMouseEvent* ev);
       virtual const QRect geometry() const override { return QFrame::geometry(); }
       };
