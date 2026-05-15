@@ -12,6 +12,9 @@
 
 #include "inspectorArpeggio.h"
 #include "libmscore/arpeggio.h"
+#include "libmscore/chord.h"
+#include "libmscore/score.h"
+#include "libmscore/tremolo.h"
 
 namespace Ms {
 
@@ -34,5 +37,29 @@ InspectorArpeggio::InspectorArpeggio(QWidget* parent)
 
       mapSignals(iiList, ppList);
       }
+
+//---------------------------------------------------------
+//   InspectorArpeggio
+//---------------------------------------------------------
+
+void InspectorArpeggio::valueChanged(int idx)
+      {
+      // Update Score/PRE Events
+      InspectorElementBase::valueChanged(idx);
+
+      if (Arpeggio* arpeggio = toArpeggio(inspector->element())) {
+            Score* score = arpeggio->score();
+            if (Element* parent = arpeggio->parent()) {
+                  if (parent->isChord()) {
+                        Chord* chord = toChord(parent);
+                        if (chord->tremolo() && chord->tremoloChordType() == TremoloChordType::TremoloSecondNote) {
+                              chord = chord->tremolo()->chord1();
+                              }
+                        score->createPlayEvents(chord);
+                        }
+                  }
+            }
+      }
+
 }
 
