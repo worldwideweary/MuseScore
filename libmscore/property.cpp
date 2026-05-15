@@ -159,12 +159,12 @@ static constexpr PropertyMetaData propertyList[] = {
       { Pid::HAIRPIN_TYPE,              P_TYPE::INT,            true,  "subtype",                DUMMY_QT_TRANSLATE_NOOP("propertyName", "hairpin type")                                  },
       { Pid::HAIRPIN_HEIGHT,            P_TYPE::SPATIUM,        false, "hairpinHeight",          DUMMY_QT_TRANSLATE_NOOP("propertyName", "hairpin height")                                },
       { Pid::HAIRPIN_CONT_HEIGHT,       P_TYPE::SPATIUM,        false, "hairpinContHeight",      DUMMY_QT_TRANSLATE_NOOP("propertyName", "hairpin cont height")                           },
+      { Pid::HAIRPIN_PIANO_STYLE,       P_TYPE::BOOL,           true,  "hairpinPianoStyle",      DUMMY_QT_TRANSLATE_NOOP("propertyName", "hairpin piano style")                           },
       { Pid::VELO_CHANGE,               P_TYPE::INT,            true,  "veloChange",             DUMMY_QT_TRANSLATE_NOOP("propertyName", "velocity change")                               },
       { Pid::VELO_CHANGE_METHOD,        P_TYPE::CHANGE_METHOD,  true,  "veloChangeMethod",       DUMMY_QT_TRANSLATE_NOOP("propertyName", "velocity change method")                        },     // left as a compatability property - we need to be able to read it correctly
       { Pid::VELO_CHANGE_SPEED,         P_TYPE::CHANGE_SPEED,   true,  "veloChangeSpeed",        DUMMY_QT_TRANSLATE_NOOP("propertyName", "velocity change speed")                         },
       { Pid::DYNAMIC_TYPE,              P_TYPE::DYNAMIC_TYPE,   true,  "subtype",                DUMMY_QT_TRANSLATE_NOOP("propertyName", "dynamic type")                                  },
       { Pid::DYNAMIC_RANGE,             P_TYPE::INT,            true,  "dynType",                DUMMY_QT_TRANSLATE_NOOP("propertyName", "dynamic range")                                 },
-//100
       { Pid::SINGLE_NOTE_DYNAMICS,      P_TYPE::BOOL,           true,  "singleNoteDynamics",     DUMMY_QT_TRANSLATE_NOOP("propertyName", "single note dynamics")                          },
       { Pid::CHANGE_METHOD,             P_TYPE::CHANGE_METHOD,  true,  "changeMethod",           DUMMY_QT_TRANSLATE_NOOP("propertyName", "change method")                                 },        // the new, more general version of VELO_CHANGE_METHOD
       { Pid::PLACEMENT,                 P_TYPE::PLACEMENT,      false, "placement",              DUMMY_QT_TRANSLATE_NOOP("propertyName", "placement")                                     },
