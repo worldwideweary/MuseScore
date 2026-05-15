@@ -139,6 +139,7 @@ void MeasureProperties::setMeasure(Measure* _m)
 
       irregular->setChecked(m->irregular());
       breakMultiMeasureRest->setChecked(m->breakMultiMeasureRest());
+      centerSingleChord->setChecked(m->centerSingleChord());
       int n  = m->repeatCount();
       count->setValue(n);
       bool enableCount = m->repeatEnd();
@@ -266,6 +267,7 @@ void MeasureProperties::apply()
       bool offsetChanged = (measureOffset != m->noOffset()) ? true : false;
       m->undoChangeProperty(Pid::REPEAT_COUNT, repeatCount());
       m->undoChangeProperty(Pid::BREAK_MMR, breakMultiMeasureRest->isChecked());
+      m->undoChangeProperty(Pid::CENTER_SINGLE_CHORD, centerSingleChord->isChecked());
       m->undoChangeProperty(Pid::USER_STRETCH, layoutStretch->value());
       m->undoChangeProperty(Pid::MEASURE_NUMBER_MODE, measureNumberMode->currentIndex());
       m->undoChangeProperty(Pid::NO_OFFSET, measureOffset);

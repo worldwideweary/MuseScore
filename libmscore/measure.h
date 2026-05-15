@@ -84,6 +84,8 @@ class Measure final : public MeasureBase {
       MeasureNumberMode _noMode;
       bool _breakMultiMeasureRest;
 
+      bool _centerSingleChord;
+
       void push_back(Segment* e);
       void push_front(Segment* e);
 
@@ -239,6 +241,9 @@ class Measure final : public MeasureBase {
       bool breakMultiMeasureRest() const        { return _breakMultiMeasureRest; }
       void setBreakMultiMeasureRest(bool val)   { _breakMultiMeasureRest = val;  }
 
+      bool centerSingleChord() const            { return _centerSingleChord;     }
+      void setCenterSingleChord(bool val)       { _centerSingleChord = val;      }
+
       bool empty() const;
       bool isOnlyRests(int track) const;
       bool isOnlyDeletedRests(int track) const;
@@ -286,6 +291,8 @@ class Measure final : public MeasureBase {
       void checkTrailer();
       void setStretchedWidth(qreal);
       void layoutStaffLines();
+
+      static bool hasAccidental(Segment* s);
 
       qreal computeFirstSegmentXPosition(Segment* segment);
 
