@@ -78,6 +78,8 @@ QColor  MScore::invisibleElementsColor;
 QColor  MScore::singleNoteSelectionColor;
 bool    MScore::singleNoteSelectionColorEnabled;
 
+QColor  MScore::fretboardGuidesColor;
+
 QColor  MScore::lassoColor;
 bool    MScore::lassoBorderEnabled;
 QColor  MScore::gripsColor;
