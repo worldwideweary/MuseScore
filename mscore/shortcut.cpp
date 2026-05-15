@@ -4487,11 +4487,13 @@ QString Shortcut::help() const
 Shortcut* Shortcut::getShortcut(const char* id)
       {
       Shortcut* s = _shortcuts.value(QByteArray(id));
-      if (s == nullptr // shortcut not found
-          && !(!strcmp(id, "toggle-feedback")
-               || !strcmp(id, "toggle-insert-mode"))
-          ) // and not among the removed ones
-            qDebug("Internal error: shortcut <%s> not found", id);
+      if (s == nullptr && id) {
+            if (*id != 0) {
+                  // Omit debug message for null command (0) occurring in ScoreView::midiNoteReceived()
+                  qDebug("Internal error: shortcut <%s> not found", id);
+                  }
+            return 0;
+            }
       return s;
       }
 
