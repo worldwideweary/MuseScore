@@ -711,6 +711,7 @@ Element* LineSegment::propertyDelegate(Pid pid)
             case Pid::DASH_GAP_LEN:
             case Pid::DASH_LINE_LEN:
             case Pid::DIAGONAL:
+            case Pid::LINE_COLOR:
             case Pid::LINE_WIDTH:
             case Pid::LINE_STYLE:
                   return spanner();
@@ -758,6 +759,7 @@ SLine::SLine(const SLine& s)
       _diagonal    = s._diagonal;
       _lineWidth   = s._lineWidth;
       _lineColor   = s._lineColor;
+      _color       = s._color;
       _lineStyle   = s._lineStyle;
       _dashLineLen = s._dashLineLen;
       _dashGapLen  = s._dashGapLen;
@@ -1229,6 +1231,7 @@ void SLine::writeProperties(XmlWriter& xml) const
             xml.tag("diagonal", _diagonal);
       writeProperty(xml, Pid::LINE_WIDTH);
       writeProperty(xml, Pid::LINE_STYLE);
+      writeProperty(xml, Pid::LINE_COLOR);
       writeProperty(xml, Pid::ANCHOR);
       writeProperty(xml, Pid::DASH_LINE_LEN);
       writeProperty(xml, Pid::DASH_GAP_LEN);
@@ -1327,8 +1330,6 @@ bool SLine::readProperties(XmlReader& e)
             _dashGapLen = e.readDouble();
       else if (tag == "lineColor")
             _lineColor = e.readColor();
-      else if (tag == "color")
-            _lineColor = e.readColor();
       else if (!Spanner::readProperties(e))
             return false;
       return true;
@@ -1399,8 +1400,10 @@ QVariant SLine::getProperty(Pid id) const
       switch (id) {
             case Pid::DIAGONAL:
                   return _diagonal;
-            case Pid::COLOR:
+            case Pid::LINE_COLOR:
                   return _lineColor;
+            case Pid::COLOR:
+                  return _color;
             case Pid::LINE_WIDTH:
                   return _lineWidth;
             case Pid::LINE_STYLE:
@@ -1424,8 +1427,11 @@ bool SLine::setProperty(Pid id, const QVariant& v)
             case Pid::DIAGONAL:
                   _diagonal = v.toBool();
                   break;
-            case Pid::COLOR:
+            case Pid::LINE_COLOR:
                   _lineColor = v.value<QColor>();
+                  break;
+            case Pid::COLOR:
+                  _color = v.value<QColor>();
                   break;
             case Pid::LINE_WIDTH:
                   _lineWidth = v.toReal();
@@ -1455,7 +1461,7 @@ QVariant SLine::propertyDefault(Pid pid) const
       switch (pid) {
             case Pid::DIAGONAL:
                   return false;
-            case Pid::COLOR:
+            case Pid::LINE_COLOR:
                   return MScore::defaultColor;
             case Pid::LINE_WIDTH:
                   if (propertyFlags(pid) != PropertyFlags::NOSTYLE)
