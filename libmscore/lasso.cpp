@@ -33,10 +33,15 @@ Lasso::Lasso(Score* s)
 
 void Lasso::draw(QPainter* painter) const
       {
-      painter->setBrush(QBrush(QColor(0, 0, 50, 50)));
-      // always 2 pixel width
-      qreal w = 2.0 / painter->transform().m11();
-      painter->setPen(QPen(MScore::selectColor[0], w));
+      auto color = MScore::lassoColor;
+      painter->setBrush(QBrush(color));
+      if (MScore::lassoBorderEnabled) {
+            // 2 pixels width, regardless of view
+            qreal w = 2.0 / painter->transform().m11();
+            painter->setPen(QPen(MScore::selectColor[0], w));
+            }
+      else painter->setPen(Qt::NoPen);
+
       painter->drawRect(bbox());
       }
 

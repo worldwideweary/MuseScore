@@ -75,6 +75,10 @@ QColor  MScore::selectColor[VOICES];
 QColor  MScore::cursorColor;
 QColor  MScore::defaultColor;
 QColor  MScore::invisibleElementsColor;
+
+QColor  MScore::lassoColor;
+bool    MScore::lassoBorderEnabled;
+
 bool    MScore::cursorResetToStart;
 bool    MScore::selectionFollowsCursor;
 
