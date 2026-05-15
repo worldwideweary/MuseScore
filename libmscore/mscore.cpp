@@ -90,6 +90,10 @@ bool    MScore::warnPitchRange;
 bool    MScore::disableMouseEntry;
 int     MScore::pedalEventsMinTicks;
 
+bool    MScore::cursorMoveByBeat;
+bool    MScore::cursorMoveByMeasure;
+bool    MScore::cursorDrawnBehindStaff;
+
 qreal   MScore::systemBracketMultiplier;
 
 bool    MScore::harmonyPlayDisableCompatibility;
