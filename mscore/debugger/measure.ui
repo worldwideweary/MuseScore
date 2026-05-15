@@ -427,6 +427,13 @@
           </property>
          </widget>
         </item>
+        <item row="1" column="4">
+         <widget class="QCheckBox" name="centerSingleChord">
+          <property name="text">
+           <string>centerSingle</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>
