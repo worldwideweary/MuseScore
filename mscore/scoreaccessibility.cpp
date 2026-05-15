@@ -14,8 +14,10 @@
 #include "libmscore/part.h"
 #include "libmscore/score.h"
 #include "libmscore/segment.h"
+#include "libmscore/sig.h"
 #include "libmscore/spanner.h"
 #include "libmscore/staff.h"
+#include "libmscore/stafflines.h"
 #include "libmscore/sym.h"
 #include "libmscore/timesig.h"
 
@@ -230,7 +232,7 @@ void ScoreAccessibility::clearAccessibilityInfo()
       _oldStaff = -1;
       }
 
-void ScoreAccessibility::currentInfoChanged()
+void ScoreAccessibility::currentInfoChanged(Element* hover)
       {
       ScoreView* scoreView =  static_cast<MuseScore*>(mainWindow)->currentScoreView();
       Score* score = scoreView->score();
@@ -241,8 +243,8 @@ void ScoreAccessibility::currentInfoChanged()
       QString oldStatus = statusBarLabel->text();
       QString oldScreenReaderInfo = score->accessibleInfo();
       clearAccessibilityInfo();
-      if (score->selection().isSingle()) {
-            Element* e = score->selection().element();
+      if (score->selection().isSingle() || hover) {
+            Element* e = hover ? hover : score->selection().element();
             if (!e) {
                   return;
                   }
@@ -278,7 +280,19 @@ void ScoreAccessibility::currentInfoChanged()
                   std::pair<int, float>bar_beat = el->barbeat();
                   if (bar_beat.first) {
                         _oldBar = bar_beat.first;
-                        barsAndBeats += " " + tr("Measure: %1").arg(QString::number(bar_beat.first));
+                        if (el->isStaffLines()) {
+                              auto sl = toStaffLines(el);
+                              if (auto m = sl->measure()) {
+                                    auto relMeasureNumber = bar_beat.first;
+                                    auto absMeasureNumber = 1 + m->measureIndex();
+                                    auto finMeasureNumber = 1 + score->lastMeasure()->measureIndex();
+                                    barsAndBeats += " " + tr("Measure: %1 ").arg(QString::number(absMeasureNumber));
+                                    if (relMeasureNumber != absMeasureNumber)
+                                          barsAndBeats += tr("(Relative: %1) ").arg(QString::number(relMeasureNumber));
+                                    barsAndBeats += tr("/ %1").arg(QString::number(finMeasureNumber));
+                                    }
+                              }
+                        else barsAndBeats += " " + tr("Measure: %1").arg(QString::number(bar_beat.first));
                         if (bar_beat.first != oldBar)
                               optimizedBarsAndBeats += " " + tr("Measure: %1").arg(QString::number(bar_beat.first));
                         if (bar_beat.second) {
@@ -373,6 +387,11 @@ void ScoreAccessibility::currentInfoChanged()
 ScoreAccessibility* ScoreAccessibility::instance()
       {
       return inst;
+      }
+
+void ScoreAccessibility::updateLabel(QString s)
+      {
+      statusBarLabel->setText(s);
       }
 
 void ScoreAccessibility::updateAccessibilityInfo()
