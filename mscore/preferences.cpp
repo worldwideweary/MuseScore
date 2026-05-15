@@ -296,6 +296,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_UI_SCORE_VOICE3_COLOR,                           new ColorPreference(QColor(0xC53F00))},
             {PREF_UI_SCORE_VOICE4_COLOR,                           new ColorPreference(QColor(0xC31989))},
             {PREF_UI_SCORE_CURSOR_COLOR,                           new ColorPreference(QColor(0x0065BF))},
+            {PREF_UI_SCORE_INVISIBLE_COLOR,                        new ColorPreference(QColor(Qt::gray))},
 
             {PREF_SCORE_COMPARISON_SELECTION_COLOR,                new ColorPreference(QColor(Qt::green))},
             {PREF_SCORE_COMPARISON_SELECTION_COLOR_ENABLED,        new BoolPreference(false)},
