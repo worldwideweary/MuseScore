@@ -53,7 +53,9 @@ class InputState {
       bool _noteEntryMode      { false };
       NoteEntryMethod _noteEntryMethod { NoteEntryMethod::STEPTIME };
       AccidentalType _accidentalType { AccidentalType::NONE };
-      Slur* _slur              { 0     };
+      Slur* _slur              { nullptr };
+      Hairpin* _dynamicLine    { nullptr }; // allow for a continuous 'slur-input-style' hairpin
+      Pedal* _pedalLine        { nullptr }; // same for pedal mark
       bool _insertMode         { false };
 
       Segment* nextInputPos() const;
@@ -110,6 +112,12 @@ class InputState {
 
       Slur* slur() const                  { return _slur; }
       void setSlur(Slur* s)               { _slur = s; }
+
+      Hairpin* dynamicLine() const        { return _dynamicLine; }
+      void setDynamicLine(Hairpin* h)     { _dynamicLine = h; }
+
+      Pedal* pedalLine() const            { return _pedalLine; }
+      void setPedalLine(Pedal* p)         { _pedalLine = p;   }
 
       bool insertMode() const             { return _insertMode; }
       void setInsertMode(bool val)        { _insertMode = val; }
