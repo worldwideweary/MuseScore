@@ -121,6 +121,7 @@ class PianorollEditor : public QMainWindow, public MuseScoreView {
       const QTransform& matrix() const;
       virtual Element* elementNear(QPointF) override;
       virtual void drawBackground(QPainter* /*p*/, const QRectF& /*r*/) const override {}
+      virtual void drawBackgroundOffset(QPainter*, const QRectF&, const QRectF&, const Element*) const override {}
 
       void setLocator(POS posi, int tick) { locator[int(posi)].setTick(tick); }
 
