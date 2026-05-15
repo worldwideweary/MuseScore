@@ -23,9 +23,11 @@ namespace Ms {
 //   propertyList
 //---------------------------------------------------------
 
-static bool defaultAutoScale        = false;
-static bool defaultLockAspectRatio  = true;
-static bool defaultSizeIsSpatium    = true;
+static bool   defaultAutoScale        = false;
+static bool   defaultLockAspectRatio  = true;
+static bool   defaultSizeIsSpatium    = true;
+static qreal  defaultFrameWidth       = 0.0;
+static QColor defaultFrameColor       = MScore::defaultColor;
 
 //---------------------------------------------------------
 //   Image
@@ -44,6 +46,8 @@ Image::Image(Score* s)
       _sizeIsSpatium   = defaultSizeIsSpatium;
       _linkIsValid     = false;
       _used            = true;
+      _frameColor      = defaultFrameColor;
+      _frameWidth      = defaultFrameWidth;
       }
 
 Image::Image(const Image& img)
@@ -57,6 +61,8 @@ Image::Image(const Image& img)
       _dirty           = img._dirty;
       _storeItem       = img._storeItem;
       _sizeIsSpatium   = img._sizeIsSpatium;
+      _frameColor      = img._frameColor;
+      _frameWidth      = img._frameWidth;
       if (_storeItem)
             _storeItem->reference(this);
       _linkPath        = img._linkPath;
@@ -154,12 +160,29 @@ void Image::draw(QPainter* painter) const
                   painter->restore();
                   }
             }
+      else if (imageType == ImageType::NONE) {
+            emptyImage = true;
+            }
       if (emptyImage) {
-            painter->setBrush(Qt::NoBrush);
-            painter->setPen(Qt::black);
+            // Make use of [Element color] to use as a fill
+            // (highlighting, aleatoric boxes as 100% transparency + frame, etc)
+            QBrush br;
+            br.setColor(color());
+            br.setStyle(Qt::SolidPattern);
+            painter->setBrush(br);
+            painter->setPen(Qt::NoPen);
             painter->drawRect(bbox());
-            painter->drawLine(0.0, 0.0, bbox().width(), bbox().height());
-            painter->drawLine(bbox().width(), 0.0, 0.0, bbox().height());
+            }
+      if (_frameWidth != 0.0) {
+            QPen pen(Qt::NoBrush, _frameWidth * 0.10, Qt::SolidLine, Qt::SquareCap, Qt::BevelJoin);
+            pen.setColor(_frameColor);
+            painter->setPen(pen);
+            // Top + Bottom
+            painter->drawLine(0.0, 0.0, bbox().width(), 0.0);
+            painter->drawLine(0.0, bbox().height(), bbox().width(), bbox().height());
+            // Left + Right
+            painter->drawLine(0.0, 0.0, 0.0, bbox().height());
+            painter->drawLine(bbox().width(), 0.0, bbox().width(), bbox().height());
             }
       if (selected() && !(score() && score()->printing())) {
             painter->setBrush(Qt::NoBrush);
@@ -227,6 +250,8 @@ void Image::write(XmlWriter& xml) const
       writeProperty(xml, Pid::SIZE);
       writeProperty(xml, Pid::LOCK_ASPECT_RATIO);
       writeProperty(xml, Pid::SIZE_IS_SPATIUM);
+      writeProperty(xml, Pid::IMAGE_FRAME_WIDTH);
+      writeProperty(xml, Pid::IMAGE_FRAME_COLOR);
 
       xml.etag();
       }
@@ -248,6 +273,10 @@ void Image::read(XmlReader& e)
                   readProperty(e, Pid::SIZE);
             else if (tag == "lockAspectRatio")
                   readProperty(e, Pid::LOCK_ASPECT_RATIO);
+            else if (tag == "imageFrameWidth")
+                  readProperty(e, Pid::IMAGE_FRAME_WIDTH);
+            else if (tag == "imageFrameColor")
+                  readProperty(e, Pid::IMAGE_FRAME_COLOR);
             else if (tag == "sizeIsSpatium")
                   // setting this using the property Pid::SIZE_IS_SPATIUM breaks, because the
                   // property setter attempts to maintain a constant size. If we're reading, we
@@ -393,7 +422,7 @@ void Image::editDrag(EditData& ed)
             dy /= DPMM;
             }
 
-      // Note: the corner grips will bypass [lock aspect ratio]
+      // Note: the corner grips will bypass [lock aspect ratio], side grips obey locking rule
       switch (int(ed.curGrip)) {
       case 0: // Top-Left
             cursorShape = Qt::SizeFDiagCursor;
@@ -557,6 +586,10 @@ QVariant Image::getProperty(Pid propertyId) const
                   return size();
             case Pid::LOCK_ASPECT_RATIO:
                   return lockAspectRatio();
+            case Pid::IMAGE_FRAME_WIDTH:
+                  return getFrameWidth();
+            case Pid::IMAGE_FRAME_COLOR:
+                  return getFrameColor();
             case Pid::SIZE_IS_SPATIUM:
                   return sizeIsSpatium();
             default:
@@ -581,6 +614,12 @@ bool Image::setProperty(Pid propertyId, const QVariant& v)
                   break;
             case Pid::LOCK_ASPECT_RATIO:
                   setLockAspectRatio(v.toBool());
+                  break;
+            case Pid::IMAGE_FRAME_COLOR:
+                  setFrameColor(v.value<QColor>());
+                  break;
+            case Pid::IMAGE_FRAME_WIDTH:
+                  setFrameWidth(v.toReal());
                   break;
             case Pid::SIZE_IS_SPATIUM:
                   {
@@ -614,6 +653,10 @@ QVariant Image::propertyDefault(Pid id) const
                   return defaultLockAspectRatio;
             case Pid::SIZE_IS_SPATIUM:
                   return defaultSizeIsSpatium;
+            case Pid::IMAGE_FRAME_COLOR:
+                  return defaultFrameColor;
+            case Pid::IMAGE_FRAME_WIDTH:
+                  return defaultFrameWidth;
             default:
                   return Element::propertyDefault(id);
             }

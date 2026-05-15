@@ -43,7 +43,9 @@ InspectorImage::InspectorImage(QWidget* parent)
             { Pid::AUTOSCALE,         0, b.autoscale,       b.resetAutoscale       },
             { Pid::SIZE,              0, b.size,            b.resetSize            },
             { Pid::LOCK_ASPECT_RATIO, 0, b.lockAspectRatio, b.resetLockAspectRatio },
-            { Pid::SIZE_IS_SPATIUM,   0, b.sizeIsSpatium,   b.resetSizeIsSpatium   }
+            { Pid::SIZE_IS_SPATIUM,   0, b.sizeIsSpatium,   b.resetSizeIsSpatium   },
+            { Pid::IMAGE_FRAME_WIDTH, 0, b.frameWidth,      b.resetFrameWidth      },
+            { Pid::IMAGE_FRAME_COLOR, 0, b.frameColor,      b.resetFrameColor      }
             };
       const std::vector<InspectorPanel> ppList = { { b.title, b.panel } };
 
