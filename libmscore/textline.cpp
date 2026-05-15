@@ -296,6 +296,8 @@ QVariant TextLine::propertyDefault(Pid propertyId) const
             case Pid::BEGIN_HOOK_HEIGHT:
             case Pid::END_HOOK_HEIGHT:
                   return Spatium(1.5);
+            case Pid::EN_PASSANT_MANIFEST:
+                  return false;
             default:
                   return TextLineBase::propertyDefault(propertyId);
             }
