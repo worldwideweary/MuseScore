@@ -230,6 +230,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       QColor _fgColor;
       QPixmap* _bgPixmap;
       QPixmap* _fgPixmap;
+      QPixmap  _pagePixmap;
 
       // By default when the view will prevent viewpoint changes if
       // it is inactive. Set this flag to true to change this behaviour.
@@ -489,6 +490,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       void setFocusRect();
       void changeVoice(int voice);
       virtual void drawBackground(QPainter* p, const QRectF& r) const override;
+      virtual void drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF& canvasR, const Element* el=nullptr) const;
       bool fotoScoreViewDragTest(QMouseEvent*);
       bool fotoScoreViewDragRectTest(QMouseEvent*);
       void doDragFotoRect(QMouseEvent*);
