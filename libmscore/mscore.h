@@ -344,6 +344,8 @@ class MScore {
       static bool   singleNoteSelectionColorEnabled;
       static QColor gripsColor;
 
+      static QColor fretboardGuidesColor;
+
       static bool noteheadsBehindStaff;
       static bool noteheadsBehindLedger; 
 
