@@ -261,6 +261,7 @@ static const StyleType styleTypes[] {
       { Sid::hairpinDecrescContText,  "hairpinDecrescContText",  QString("(dim.)") },
       { Sid::hairpinLineStyle,        "hairpinLineStyle",        QVariant(int(Qt::SolidLine)) },
       { Sid::hairpinLineLineStyle,    "hairpinLineLineStyle",    QVariant(int(Qt::CustomDashLine)) },
+      { Sid::hairpinPianoStyle,       "hairpinPianoStyle",       QVariant(true) },
 
       { Sid::pedalPlacement,          "pedalPlacement",          int(Placement::BELOW)  },
       { Sid::pedalPosAbove,           "pedalPosAbove",           QPointF(.0, -1) },

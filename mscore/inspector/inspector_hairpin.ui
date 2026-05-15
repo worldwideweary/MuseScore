@@ -52,7 +52,6 @@
      </property>
      <property name="font">
       <font>
-       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -79,64 +78,7 @@
       <property name="spacing">
        <number>3</number>
       </property>
-      <item row="10" column="2">
-       <widget class="Ms::ResetButton" name="resetSingleNoteDynamics" native="true">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="accessibleName">
-         <string>Reset 'Use single note dynamics' value</string>
-        </property>
-       </widget>
-      </item>
-      <item row="11" column="1">
-       <widget class="QComboBox" name="veloChangeMethod">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="accessibleName">
-         <string>Dynamics change method</string>
-        </property>
-        <item>
-         <property name="text">
-          <string>Default (linear)</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="7" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>Velocity change:</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-        </property>
-        <property name="buddy">
-         <cstring>veloChange</cstring>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="2">
-       <widget class="Ms::ResetButton" name="resetPlacement" native="true">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="accessibleName">
-         <string>Reset 'Placement' value</string>
-        </property>
-       </widget>
-      </item>
-      <item row="11" column="2">
+      <item row="12" column="2">
        <widget class="Ms::ResetButton" name="resetVeloChangeMethod" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -149,83 +91,16 @@
         </property>
        </widget>
       </item>
-      <item row="6" column="1">
-       <widget class="QComboBox" name="dynRange">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Type:</string>
         </property>
-        <property name="accessibleName">
-         <string>Dynamic range</string>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
         </property>
-        <item>
-         <property name="text">
-          <string>Staff</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Part</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>System</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="5" column="1">
-       <widget class="QComboBox" name="placement">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="accessibleName">
-         <string>Placement</string>
-        </property>
-        <item>
-         <property name="text">
-          <string>Above</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Below</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="6" column="2">
-       <widget class="Ms::ResetButton" name="resetDynRange" native="true">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="accessibleName">
-         <string>Reset 'Dynamic range' value</string>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="1">
-       <widget class="QSpinBox" name="veloChange">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="accessibleName">
-         <string>Velocity change</string>
-        </property>
-        <property name="maximum">
-         <number>127</number>
+        <property name="buddy">
+         <cstring>hairpinType</cstring>
         </property>
        </widget>
       </item>
@@ -236,19 +111,6 @@
         </property>
         <property name="checked">
          <bool>false</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="0">
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>Dynamic range:</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-        </property>
-        <property name="buddy">
-         <cstring>dynRange</cstring>
         </property>
        </widget>
       </item>
@@ -278,30 +140,117 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_4">
-        <property name="text">
-         <string>Type:</string>
+      <item row="5" column="1">
+       <widget class="QComboBox" name="placement">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
-        <property name="alignment">
-         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+        <property name="accessibleName">
+         <string>Placement</string>
         </property>
-        <property name="buddy">
-         <cstring>hairpinType</cstring>
+        <item>
+         <property name="text">
+          <string>Above</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Below</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="0" column="1" colspan="2">
+       <widget class="QComboBox" name="hairpinType">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="accessibleName">
+         <string>Type</string>
+        </property>
+        <item>
+         <property name="text">
+          <string notr="true">Crescendo</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string notr="true">Decrescendo</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string notr="true">Crescendo Line</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string notr="true">Decrescendo Line</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="10" column="2">
+       <widget class="Ms::ResetButton" name="resetSingleNoteDynamics" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="accessibleName">
+         <string>Reset 'Use single note dynamics' value</string>
         </property>
        </widget>
       </item>
-      <item row="11" column="0">
-       <widget class="QLabel" name="labelVeloChangeMethod">
+      <item row="5" column="2">
+       <widget class="Ms::ResetButton" name="resetPlacement" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="accessibleName">
+         <string>Reset 'Placement' value</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QLabel" name="label_3">
         <property name="text">
-         <string>Dynamics method:</string>
+         <string>Velocity change:</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
         </property>
         <property name="buddy">
-         <cstring>veloChangeMethod</cstring>
+         <cstring>veloChange</cstring>
         </property>
+       </widget>
+      </item>
+      <item row="12" column="1">
+       <widget class="QComboBox" name="veloChangeMethod">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="accessibleName">
+         <string>Dynamics change method</string>
+        </property>
+        <item>
+         <property name="text">
+          <string>Default (linear)</string>
+         </property>
+        </item>
        </widget>
       </item>
       <item row="1" column="0" colspan="3">
@@ -448,8 +397,8 @@
         </layout>
        </widget>
       </item>
-      <item row="0" column="1" colspan="2">
-       <widget class="QComboBox" name="hairpinType">
+      <item row="7" column="1">
+       <widget class="QSpinBox" name="veloChange">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -457,29 +406,89 @@
          </sizepolicy>
         </property>
         <property name="accessibleName">
-         <string>Type</string>
+         <string>Velocity change</string>
+        </property>
+        <property name="maximum">
+         <number>127</number>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="QComboBox" name="dynRange">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="accessibleName">
+         <string>Dynamic range</string>
         </property>
         <item>
          <property name="text">
-          <string notr="true">Crescendo</string>
+          <string>Staff</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string notr="true">Decrescendo</string>
+          <string>Part</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string notr="true">Crescendo Line</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string notr="true">Decrescendo Line</string>
+          <string>System</string>
          </property>
         </item>
        </widget>
+      </item>
+      <item row="6" column="2">
+       <widget class="Ms::ResetButton" name="resetDynRange" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="accessibleName">
+         <string>Reset 'Dynamic range' value</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Dynamic range:</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+        </property>
+        <property name="buddy">
+         <cstring>dynRange</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="12" column="0">
+       <widget class="QLabel" name="labelVeloChangeMethod">
+        <property name="text">
+         <string>Dynamics method:</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+        </property>
+        <property name="buddy">
+         <cstring>veloChangeMethod</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="11" column="0" colspan="2">
+       <widget class="QCheckBox" name="hairpinPianoStyle">
+        <property name="text">
+         <string>Piano-style layout</string>
+        </property>
+       </widget>
+      </item>
+      <item row="11" column="2">
+       <widget class="Ms::ResetButton" name="resetPianoStyle" native="true"/>
       </item>
      </layout>
     </widget>
@@ -490,7 +499,7 @@
   <customwidget>
    <class>Ms::ResetButton</class>
    <extends>QWidget</extends>
-   <header>inspector/resetButton.h</header>
+   <header location="global">inspector/resetButton.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
