@@ -18,8 +18,10 @@
 #include "zoombox.h"
 
 #include "libmscore/chordrest.h"
+#include "libmscore/hairpin.h"
 #include "libmscore/keysig.h"
 #include "libmscore/measure.h"
+#include "libmscore/pedal.h"
 #include "libmscore/repeatlist.h"
 #include "libmscore/score.h"
 #include "libmscore/segment.h"
@@ -1248,6 +1250,17 @@ void ScoreView::changeState(ViewState s)
                   break;
             }
 
+      // De-activate active lines (Hairpin/Pedal) after any change-state
+      if (_score->inputState().dynamicLine()) {
+            _score->inputState().dynamicLine()->setSelected(false);
+            _score->inputState().setDynamicLine(nullptr);
+            }
+      if ( _score->inputState().pedalLine() &&
+           (state == ViewState::EDIT || state == ViewState::NOTE_ENTRY) ) {
+            _score->inputState().pedalLine()->setColor(MScore::defaultColor);
+            _score->inputState().pedalLine()->setLineColor(MScore::defaultColor);
+            _score->inputState().setPedalLine(nullptr);
+            }
       state = s;
       mscore->changeState(mscoreState());
       if (mscoreState() & STATE_ALLTEXTUAL_EDIT)

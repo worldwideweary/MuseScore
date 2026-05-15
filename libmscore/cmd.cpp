@@ -40,6 +40,7 @@
 #include "ottava.h"
 #include "page.h"
 #include "part.h"
+#include "pedal.h"
 #include "pitchspelling.h"
 #include "rehearsalmark.h"
 #include "repeat.h"
@@ -893,6 +894,30 @@ Segment* Score::setNoteRest(Segment* segment, int track, NoteVal nval, Fraction 
       if (tie)
             connectTies();
       if (nr) {
+            // Extend active hairpin
+            Hairpin* hp = is.dynamicLine();
+            if (hp) {
+                  Element* start = hp->startElement();
+                  Element* end = nr;
+                  if (start && end) {
+                        if (end->nextSegmentElement()) { 
+                              hp->undoChangeProperty(Pid::SPANNER_TICKS, (end->nextSegmentElement()->tick()) - hp->startElement()->tick());
+                              hp->score()->undo(new ChangeSpannerElements(hp, start, end));
+                              }
+                        }
+                  }
+            // Extend active pedal when placing note/rest
+            Pedal* pedal = is.pedalLine();
+            if (pedal) {
+                  Element* start = pedal->startElement();
+                  Element* end = nr;
+                  if (start && end) {
+                        if (end->nextSegmentElement()) {
+                              pedal->undoChangeProperty(Pid::SPANNER_TICKS, (end->nextSegmentElement()->tick()) - pedal->startElement()->tick());
+                              pedal->score()->undo(new ChangeSpannerElements(pedal, start, end));
+                              }
+                        }
+                  }
             if (is.slur() && nr->type() == ElementType::NOTE) {
                   // If the start element was the same as the end element when the slur was created,
                   // the end grip of the front slur segment was given an x-offset of 3.0 * spatium().
@@ -2827,6 +2852,66 @@ void Score::cmdIncDecDuration(int nSteps, bool stepDotted)
                         select(e, SelectType::ADD);
                   }
             }
+
+      Element* el = selection().element();
+      if (el == 0)
+            return;
+      if (el->isNote())
+            el = el->parent();
+      if (!el->isChordRest())
+            return;
+
+      ChordRest* cr = toChordRest(el);
+
+      // if measure rest is selected as input, then the correct initialDuration will be the
+      // duration of the measure's time signature, else is just the input state's duration
+      TDuration initialDuration;
+      if (cr->durationType() == TDuration::DurationType::V_MEASURE) {
+            initialDuration = TDuration(cr->measure()->timesig(), true);
+
+            if (initialDuration.fraction() < cr->measure()->timesig() && nSteps > 0) {
+                  // Duration already shortened by truncation; shorten one step less
+                  --nSteps;
+                  }
+            }
+      else {
+            initialDuration = _is.duration();
+            }
+      TDuration d = (nSteps != 0) ? initialDuration.shiftRetainDots(nSteps, stepDotted) : initialDuration;
+      if (!d.isValid())
+            return;
+      if (cr->isChord() && (toChord(cr)->noteType() != NoteType::NORMAL)) {
+            //
+            // handle appoggiatura and acciaccatura
+            //
+            undoChangeChordRestLen(cr, d);
+            }
+      else
+            changeCRlen(cr, d);
+      _is.setDuration(d);
+      // Update an active hairpin in note-entry during inc/dec also
+      Hairpin* hp = _is.dynamicLine();
+      if (noteEntryMode() && hp) {
+            Element* start = hp->startElement();
+            Element* end = el;
+            Element* next = end->nextSegmentElement();
+            if (next) {
+                  hp->undoChangeProperty(Pid::SPANNER_TICKS, next->tick() - start->tick());
+                  hp->score()->undo(new ChangeSpannerElements(hp, start, end));
+                  }
+            }
+      // Update active pedal during Dec/Inc
+      Pedal* pedal = _is.pedalLine();
+      if (noteEntryMode() && pedal) {
+            Element* start = pedal->startElement();
+            Element* end = el;
+            Element* next = end->nextSegmentElement();
+            if (next) {
+                  pedal->undoChangeProperty(Pid::SPANNER_TICKS, next->tick() - start->tick());
+                  pedal->score()->undo(new ChangeSpannerElements(pedal, start, end));
+                  }
+            }
+      nextInputPos(cr, false);
       }
 
 //---------------------------------------------------------
