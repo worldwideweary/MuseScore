@@ -194,6 +194,7 @@ static constexpr PropertyMetaData propertyList[] = {
       { Pid::LINE_STYLE,                P_TYPE::INT,            true,  "lineStyle",              DUMMY_QT_TRANSLATE_NOOP("propertyName", "line style")                                    },
       { Pid::LINE_WIDTH,                P_TYPE::SP_REAL,        false, "lineWidth",              DUMMY_QT_TRANSLATE_NOOP("propertyName", "line width")                                    },
       { Pid::LINE_WIDTH_SPATIUM,        P_TYPE::SPATIUM,        false, "lineWidth",              DUMMY_QT_TRANSLATE_NOOP("propertyName", "line width (spatium)")                          },
+      { Pid::LINE_COLOR,                P_TYPE::COLOR,          false, "lineColor",              DUMMY_QT_TRANSLATE_NOOP("propertyName", "line color")                                    },
       { Pid::LASSO_POS,                 P_TYPE::POINT_MM,       false, 0,                        DUMMY_QT_TRANSLATE_NOOP("propertyName", "lasso position")                                },
       { Pid::LASSO_SIZE,                P_TYPE::SIZE_MM,        false, 0,                        DUMMY_QT_TRANSLATE_NOOP("propertyName", "lasso size")                                    },
       { Pid::TIME_STRETCH,              P_TYPE::REAL,           true,  "timeStretch",            DUMMY_QT_TRANSLATE_NOOP("propertyName", "time stretch")                                  },

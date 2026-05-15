@@ -130,6 +130,7 @@ Element* SpannerSegment::propertyDelegate(Pid pid)
       {
       switch (pid) {
             case Pid::COLOR:
+            case Pid::LINE_COLOR:
             case Pid::PLACEMENT:
             case Pid::SPANNER_TICK:
             case Pid::SPANNER_TICKS:
