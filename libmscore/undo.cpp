@@ -1887,12 +1887,14 @@ void InsertRemoveMeasures::insertMeasures()
                   key->staff()->setKey(key->segment()->tick(), key->keySigEvent());
             }
 
-      const auto prevMeasure = fm->prevMeasureMM();
-      const auto startTick  = prevMeasure ? prevMeasure->tick() : fm->tick();
-      const auto nextMeasure = lm->nextMeasure() ? lm->nextMeasure()->nextLayoutBreakMeasure() : nullptr;
-      const auto endTick = nextMeasure ? nextMeasure->endTick() : lm->endTick();
-
-      score->doLayoutRange(startTick, endTick);
+      if (!score->printing()) {
+            const auto prevMeasure = fm->prevMeasureMM();
+            const auto startTick  = prevMeasure ? prevMeasure->tick() : fm->tick();
+            const auto nextMeasure = lm->nextMeasure() ? lm->nextMeasure()->nextLayoutBreakMeasure() : nullptr;
+            const auto endTick = nextMeasure ? nextMeasure->endTick() : lm->endTick();
+            score->cmdState().setTick(startTick);
+            score->cmdState().setTick(endTick);
+            }
       score->updateMeasureNumbers();
 
       //
@@ -2006,12 +2008,15 @@ void InsertRemoveMeasures::removeMeasures()
                   }
             }
 
-      const auto prevMeasure = fm->prevMeasureMM();
-      const auto startTick  = prevMeasure ? prevMeasure->tick() : fm->tick();
-      const auto nextMeasure = lm->nextMeasure() ? lm->nextMeasure()->nextLayoutBreakMeasure() : nullptr;
-      const auto endTick = nextMeasure ? nextMeasure->endTick() : lm->endTick();
+      if (!score->printing()) {
+            const auto prevMeasure = fm->prevMeasureMM();
+            const auto startTick  = prevMeasure ? prevMeasure->tick() : fm->tick();
+            const auto nextMeasure = lm->nextMeasure() ? lm->nextMeasure()->nextLayoutBreakMeasure() : nullptr;
+            const auto endTick = nextMeasure ? nextMeasure->endTick() : lm->endTick();
+            score->cmdState().setTick(startTick);
+            score->cmdState().setTick(endTick);
+            }
 
-      score->doLayoutRange(startTick, endTick);
       score->updateMeasureNumbers();
       }
 
