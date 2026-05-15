@@ -300,6 +300,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_UI_SCORE_INVISIBLE_COLOR,                        new ColorPreference(QColor(Qt::gray))},
             {PREF_UI_SCORE_LASSO_COLOR,                            new ColorPreference(QColor(0, 0, 50, 50))},
             {PREF_UI_SCORE_LASSO_BORDER_ENABLED,                   new BoolPreference(true)},
+            {PREF_SCORE_GRIPS_COLOR,                               new ColorPreference(QColor(100, 100, 100, 50))},
 
             {PREF_SCORE_COMPARISON_SELECTION_COLOR,                new ColorPreference(QColor(Qt::green))},
             {PREF_SCORE_COMPARISON_SELECTION_COLOR_ENABLED,        new BoolPreference(false)},
