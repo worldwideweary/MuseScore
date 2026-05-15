@@ -495,6 +495,7 @@ void Excerpt::cloneStaves(Score* oscore, Score* score, const QList<int>& map, QM
                   nm->setNo(m->no());
                   nm->setNoOffset(m->noOffset());
                   nm->setBreakMultiMeasureRest(m->breakMultiMeasureRest());
+                  nm->setCenterSingleChord(m->centerSingleChord());
 
                   for (int dstStaffIdx = 0; dstStaffIdx < map.size(); ++dstStaffIdx) {
                         nm->setStaffStemless(dstStaffIdx, m->stemless(map[dstStaffIdx]));

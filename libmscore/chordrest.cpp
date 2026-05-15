@@ -1344,6 +1344,17 @@ Shape ChordRest::shape() const
       }
 
 //---------------------------------------------------------
+//   isCentered
+//---------------------------------------------------------
+
+bool ChordRest::isCentered() const
+      {
+      bool entireMeasure = (ticks() == measure()->ticks());
+      bool haveCenteredSingleCR = entireMeasure && measure()->centerSingleChord();
+      return haveCenteredSingleCR && !isFullMeasureRest();
+      }
+
+//---------------------------------------------------------
 //   lyrics
 //---------------------------------------------------------
 
