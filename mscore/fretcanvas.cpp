@@ -21,10 +21,12 @@
 #include "musescore.h"
 #include "preferences.h"
 
+#include "libmscore/chord.h"
 #include "libmscore/fret.h"
 #include "libmscore/measure.h"
 #include "libmscore/note.h"
 #include "libmscore/score.h"
+#include "libmscore/system.h"
 #include "libmscore/undo.h"
 
 namespace Ms {
@@ -49,6 +51,7 @@ FretCanvas::FretCanvas(QWidget* parent)
 
 void FretCanvas::paintEvent(QPaintEvent* ev)
       {
+      bool isHorizontal = diagram->isHorizontal();
       double mag        = 1.5;
       double _spatium   = 20.0 * mag;
       double lw1        = _spatium * 0.08;
@@ -61,9 +64,9 @@ void FretCanvas::paintEvent(QPaintEvent* ev)
       double dotd       = stringDist * .6 + lw1;
 
       double w  = (_strings - 1) * stringDist;
-      double xo = (width() - w) * .5;
-      double h  = (_frets * fretDist) + fretDist * .5;
-      double yo = (height() - h) * .5;
+      double xo = isHorizontal ? (fretDist * 1.5) : (width() - w) * 0.5; // Horizontal = Left Aligned
+      double h  = (_frets * fretDist) + (fretDist * 0.5); (void) h;      // UNUSED: Total height of Diagram
+      double yo = fretDist * 1.5;
 
       QFont font("FreeSans");
       int size = (int)lrint(18.0 * mag);
@@ -74,12 +77,20 @@ void FretCanvas::paintEvent(QPaintEvent* ev)
       p.setRenderHint(QPainter::TextAntialiasing, true);
       p.translate(xo, yo);
 
+      // Horizontal version:
+      QPointF translation = -QPointF(w, 0);
+      if (diagram->getProperty(Pid::ORIENTATION).toBool()) {
+            p.save();
+            p.rotate(-90);
+            p.translate(translation);
+            }
+
       QPen pen(p.pen());
       pen.setWidthF(lw2);
       pen.setCapStyle(Qt::FlatCap);
       p.setPen(pen);
       p.setBrush(pen.color());
-      double x2 = (_strings-1) * stringDist;
+      const double x2 = w;
       p.drawLine(QLineF(-lw1 * .5, 0.0, x2 + lw1 * .5, 0.0));
 
       pen.setWidthF(lw1);
@@ -88,7 +99,8 @@ void FretCanvas::paintEvent(QPaintEvent* ev)
 
       QPen symPen(pen);
       symPen.setCapStyle(Qt::RoundCap);
-      symPen.setWidthF(lw1 * 1.2);
+      const qreal stringWidthPen = lw1 * 1.2;
+      symPen.setWidthF(stringWidthPen);
 
       // Draw strings and frets
       for (int i = 0; i < _strings; ++i) {
@@ -131,15 +143,38 @@ void FretCanvas::paintEvent(QPaintEvent* ev)
             int startString = i.second.startString;
             int endString   = i.second.endString;
 
-            qreal x1   = stringDist * startString;
-            qreal newX2 = endString == -1 ? x2 : stringDist * endString;
-
-            qreal y    = fretDist * (fret - 1) + fretDist * .5;
+            qreal x1    = stringDist * startString;
+            qreal newX2 = (endString == -1) ? x2 : (stringDist * endString);
+            qreal y     = fretDist * (fret - 1) + (fretDist * 0.5);
             pen.setWidthF(dotd * diagram->score()->styleD(Sid::barreLineWidth));      // don't use style barreLineWidth - why not?
             pen.setCapStyle(Qt::RoundCap);
             p.setPen(pen);
             p.drawLine(QLineF(x1, y, newX2, y));
             }
+
+       // Draw Guides:
+       if (diagram->showGuides()) {
+            const qreal smallDotD = dotd / 2;
+            QColor passiveColor = pen.color();
+            passiveColor.setAlpha(150);
+            p.setBrush(passiveColor);
+            p.setPen(symPen);
+            p.setPen(Qt::NoPen);
+
+            for (int i = 1; i <= _frets; ++i) {
+                const int fret = i + (diagram->fretOffset());
+                const double x = (w * 0.5) - lw1;
+                const double y = (fretDist * (i - 1)) + (fretDist * 0.5) - (smallDotD * 0.5);
+
+                // Standard 6-String Guitar guides:
+                if (fret==3 || fret==5 || fret==7 || fret==9 || fret==15 || fret== 17)
+                    p.drawEllipse(x, y, smallDotD, smallDotD);
+                else if (fret==12) {
+                    p.drawEllipse(x + (stringDist), y, smallDotD, smallDotD);
+                    p.drawEllipse(x - (stringDist), y, smallDotD, smallDotD);
+                    }
+                }
+        }
 
       // Draw 'hover' dot
       if ((cfret > 0) && (cfret <= _frets) && (cstring >= 0) && (cstring < _strings)) {
@@ -163,6 +198,7 @@ void FretCanvas::paintEvent(QPaintEvent* ev)
             paintDotSymbol(p, symPen, x, y, dotd, dtype);
             }
 
+      // Draw numerical fret offset
       if (fretOffset > 0) {
             qreal fretNumMag = 2.0; // TODO: get the value from Sid::fretNumMag
             QFont scaledFont(font);
@@ -217,16 +253,21 @@ void FretCanvas::getPosition(const QPointF& p, int* string, int* fret)
       double mag = 1.5;
       double _spatium   = 20.0 * mag;
       int _strings      = diagram->strings();
-      int _frets        = diagram->frets();
       double stringDist = _spatium * .7;
       double fretDist   = _spatium * .8;
 
       double w  = (_strings - 1) * stringDist;
-      double xo = (width() - w) * .5;
-      double h  = (_frets * fretDist) + fretDist * .5;
-      double yo = (height() - h) * .5;
-      *fret  = (p.y() - yo + fretDist) / fretDist;
-      *string = (p.x() - xo + stringDist * .5) / stringDist;
+      double xo = diagram->isHorizontal() ? (fretDist * 1.5) : (width() - w) * 0.5;
+      double yo = fretDist * 1.5;
+      if (diagram->isHorizontal()) {
+            *fret   = (p.x() - xo + fretDist) / fretDist;
+            *string = (p.y() - yo + stringDist * 0.5) / stringDist;
+            *string = (_strings - 1) - *string;
+            }
+      else {
+            *fret  = (p.y() - yo + fretDist) / fretDist;
+            *string = (p.x() - xo + stringDist * 0.5) / stringDist;
+            }
       }
 
 //---------------------------------------------------------
@@ -237,6 +278,7 @@ void FretCanvas::mousePressEvent(QMouseEvent* ev)
       {
       int string;
       int fret;
+      const auto button = ev->button();
       getPosition(ev->pos(), &string, &fret);
 
       int _strings = diagram->strings();
@@ -273,47 +315,21 @@ void FretCanvas::mousePressEvent(QMouseEvent* ev)
             // Click on an existing dot
             if (thisDot.exists() && !haveShift)
                   diagram->undoSetFretDot(string, haveCtrl ? fret : 0, haveCtrl);
-            else {
-                  // Shift adds a barre
-                  if (haveShift)
+            else if (haveShift) {
+                  if (haveCtrl)
+                        diagram->undoSetFretDot(string, fret, haveCtrl, FretDotType::SQUARE); // ROOT
+                  else
                         diagram->undoSetFretBarre(string, fret, haveCtrl);
-                  else {
-                        FretDotType dtype = FretDotType::NORMAL;
-                        if (_automaticDotType && haveCtrl && diagram->dot(string)[0].exists()) {
-                              dtype = FretDotType::TRIANGLE;
+                  }
+            else {
+                  // Multiple dots is default placement behavior
+                  // Right-click provides ROOT
+                  // Ctrl-click removes all markers on string and places one at current position
+                  // Applying a Fret Marker will also remove all dots
+                  FretDotType dtype = (button == Qt::RightButton) ? FretDotType::SQUARE : _currentDtype;
 
-                              std::vector<FretDotType> dtypes {
-                                    FretDotType::NORMAL,
-                                    FretDotType::CROSS,
-                                    FretDotType::SQUARE,
-                                    FretDotType::TRIANGLE
-                              };
-
-                              // Find the lowest dot type that doesn't already exist on the string
-                              for (size_t i = 0; i < dtypes.size(); i++) {
-                                    FretDotType t = dtypes[i];
-
-                                    bool hasThisType = false;
-                                    for (auto const& dot : diagram->dot(string)) {
-                                          if (dot.dtype == t) {
-                                                hasThisType = true;
-                                                break;
-                                                }
-                                          }
-
-                                    if (hasThisType)
-                                          continue;
-
-                                    dtype = t;
-                                    break;
-                                    }
-                              }
-                        else if (!_automaticDotType)
-                              dtype = _currentDtype;
-
-                        // Ctrl adds a dot without removing other dots on a string
-                        diagram->undoSetFretDot(string, fret, haveCtrl, dtype);
-                        }
+                  // Observation: markers.size() increases here, yet there's no correlated phenomenon
+                  diagram->undoSetFretDot(string, fret, !haveCtrl, dtype);
                   }
             }
       diagram->triggerLayout();
