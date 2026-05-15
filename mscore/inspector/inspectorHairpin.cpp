@@ -51,6 +51,7 @@ InspectorHairpin::InspectorHairpin(QWidget* parent)
             { Pid::HAIRPIN_CONT_HEIGHT,  0, h.hairpinContHeight,   h.resetHairpinContHeight },
             { Pid::SINGLE_NOTE_DYNAMICS, 0, h.singleNoteDynamics,  h.resetSingleNoteDynamics},
             { Pid::VELO_CHANGE_METHOD,   0, h.veloChangeMethod,    h.resetVeloChangeMethod  },
+            { Pid::HAIRPIN_PIANO_STYLE,  0, h.hairpinPianoStyle,   h.resetPianoStyle        },
             };
       const std::vector<InspectorPanel> ppList = {
             { h.title, h.panel }
