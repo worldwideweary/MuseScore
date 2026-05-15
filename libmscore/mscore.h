@@ -375,6 +375,7 @@ class MScore {
       static bool   highlightRests;
       static bool   highlightMore;
       static bool   highlightLyrics;
+      static bool   honorEnPassantVisibility;
 
       static bool noteInputOctaveTendencyIsTopNote;
       static bool noteInputOctaveUpwardFifth;
