@@ -5048,7 +5048,8 @@ void Score::cmd(const QAction* a, EditData& ed)
                   return;
                   }
             }
-      qDebug("unknown cmd <%s>", qPrintable(cmd));
+      if (cmd != "")
+            qDebug("unknown cmd <%s>", qPrintable(cmd));
       }
 
 
