@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>363</width>
-    <height>244</height>
+    <height>303</height>
    </rect>
   </property>
   <property name="accessibleName">
@@ -49,7 +49,6 @@
      </property>
      <property name="font">
       <font>
-       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -76,6 +75,13 @@
       <property name="spacing">
        <number>3</number>
       </property>
+      <item row="2" column="0" colspan="2">
+       <widget class="QCheckBox" name="playArticulation">
+        <property name="text">
+         <string>Play</string>
+        </property>
+       </widget>
+      </item>
       <item row="0" column="0">
        <widget class="QLabel" name="label">
         <property name="text">
@@ -86,6 +92,65 @@
         </property>
         <property name="buddy">
          <cstring>direction</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="Ms::ResetButton" name="resetPlayArticulation" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="accessibleName">
+         <string>Reset 'Play' value</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="Ms::ResetButton" name="resetDirection" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="accessibleName">
+         <string>Reset 'Direction' value</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Anchor:</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+        </property>
+        <property name="buddy">
+         <cstring>anchor</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="Ms::ResetButton" name="resetAnchor" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="accessibleName">
+         <string>Reset 'Anchor' value</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0" colspan="3">
+       <widget class="QPushButton" name="properties">
+        <property name="text">
+         <string>Properties</string>
         </property>
        </widget>
       </item>
@@ -117,29 +182,10 @@
         </item>
        </widget>
       </item>
-      <item row="0" column="2">
-       <widget class="Ms::ResetButton" name="resetDirection" native="true">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="accessibleName">
-         <string>Reset 'Direction' value</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_4">
-        <property name="text">
-         <string>Anchor:</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-        </property>
-        <property name="buddy">
-         <cstring>anchor</cstring>
+      <item row="3" column="0" colspan="2">
+       <widget class="Line" name="line">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
         </property>
        </widget>
       </item>
@@ -181,33 +227,7 @@
         </item>
        </widget>
       </item>
-      <item row="1" column="2">
-       <widget class="Ms::ResetButton" name="resetAnchor" native="true">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="accessibleName">
-         <string>Reset 'Anchor' value</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="2">
-       <widget class="Ms::ResetButton" name="resetPlayArticulation" native="true">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="accessibleName">
-         <string>Reset 'Play' value</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0" colspan="3">
+      <item row="4" column="0" colspan="3">
        <widget class="QWidget" name="gridWidget" native="true">
         <layout class="QGridLayout" name="gridLayout_2">
          <property name="leftMargin">
@@ -225,6 +245,117 @@
          <property name="spacing">
           <number>3</number>
          </property>
+         <item row="3" column="2">
+          <widget class="QSpinBox" name="velocityOffset">
+           <property name="minimum">
+            <number>-1000</number>
+           </property>
+           <property name="maximum">
+            <number>1000</number>
+           </property>
+           <property name="singleStep">
+            <number>5</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QSpinBox" name="gateTime">
+           <property name="suffix">
+            <string comment="%" extracomment="%"/>
+           </property>
+           <property name="prefix">
+            <string/>
+           </property>
+           <property name="minimum">
+            <number>-1000</number>
+           </property>
+           <property name="maximum">
+            <number>1000</number>
+           </property>
+           <property name="singleStep">
+            <number>10</number>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="2">
+          <widget class="QComboBox" name="ornamentStyle">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="accessibleName">
+            <string>Ornament style</string>
+           </property>
+           <item>
+            <property name="text">
+             <string>Default</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Baroque</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QLabel" name="label_6">
+           <property name="toolTip">
+            <string extracomment="OnTime signifies how much gap to leave before note renders"/>
+           </property>
+           <property name="text">
+            <string>OnTime Offset:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QDoubleSpinBox" name="timeStretch">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="accessibleName">
+            <string>Time stretch</string>
+           </property>
+           <property name="minimum">
+            <double>0.100000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLabel" name="label_5">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="text">
+            <string>Length:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="1">
+          <widget class="QLabel" name="label_3">
+           <property name="text">
+            <string>Ornament style:</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QLabel" name="label_7">
+           <property name="toolTip">
+            <string extracomment="TrailTime signifies how much gap to leave after the note to allow for graceNotesAfter to be rendered"/>
+           </property>
+           <property name="text">
+            <string>Velocity +/-:</string>
+           </property>
+          </widget>
+         </item>
          <item row="0" column="3">
           <widget class="Ms::ResetButton" name="resetTimeStretch" native="true">
            <property name="sizePolicy">
@@ -248,56 +379,23 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="2">
-          <widget class="QDoubleSpinBox" name="timeStretch">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="accessibleName">
-            <string>Time stretch</string>
+         <item row="2" column="2">
+          <widget class="QSpinBox" name="onTime">
+           <property name="suffix">
+            <string comment="%" extracomment="%"/>
            </property>
            <property name="minimum">
-            <double>0.100000000000000</double>
+            <number>-1000</number>
+           </property>
+           <property name="maximum">
+            <number>1000</number>
+           </property>
+           <property name="singleStep">
+            <number>10</number>
            </property>
           </widget>
          </item>
-         <item row="1" column="1">
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>Ornament style:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="2">
-          <widget class="QComboBox" name="ornamentStyle">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="accessibleName">
-            <string>Ornament style</string>
-           </property>
-           <item>
-            <property name="text">
-             <string>Default</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Baroque</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item row="1" column="3">
+         <item row="5" column="3">
           <widget class="Ms::ResetButton" name="resetOrnamentStyle" native="true">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -310,21 +408,23 @@
            </property>
           </widget>
          </item>
+         <item row="4" column="1" colspan="2">
+          <widget class="Line" name="line_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="3">
+          <widget class="Ms::ResetButton" name="resetVelocityOffset" native="true"/>
+         </item>
+         <item row="2" column="3">
+          <widget class="Ms::ResetButton" name="resetOnTime" native="true"/>
+         </item>
+         <item row="1" column="3">
+          <widget class="Ms::ResetButton" name="resetGateTime" native="true"/>
+         </item>
         </layout>
-       </widget>
-      </item>
-      <item row="4" column="0" colspan="3">
-       <widget class="QPushButton" name="properties">
-        <property name="text">
-         <string>Properties</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0" colspan="2">
-       <widget class="QCheckBox" name="playArticulation">
-        <property name="text">
-         <string>Play</string>
-        </property>
        </widget>
       </item>
      </layout>
