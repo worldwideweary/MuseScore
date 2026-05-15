@@ -246,6 +246,7 @@ enum class Sid : short {
       hairpinDecrescContText,
       hairpinLineStyle,
       hairpinLineLineStyle,
+      hairpinPianoStyle,
 
       pedalPlacement,
       pedalPosAbove,
