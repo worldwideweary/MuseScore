@@ -474,6 +474,7 @@ void updateExternalValuesFromPreferences() {
       MScore::selectColor[2] = preferences.getColor(PREF_UI_SCORE_VOICE3_COLOR);
       MScore::selectColor[3] = preferences.getColor(PREF_UI_SCORE_VOICE4_COLOR);
       MScore::cursorColor    = preferences.getColor(PREF_UI_SCORE_CURSOR_COLOR);
+      MScore::invisibleElementsColor = preferences.getColor(PREF_UI_SCORE_INVISIBLE_COLOR);
 
       MScore::cursorMoveByBeat = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_MOVE_BY_BEAT);
       MScore::cursorMoveByMeasure = preferences.getBool(PREF_SCORE_PLAYBACK_CURSOR_ENTIRE_MEASURE);
