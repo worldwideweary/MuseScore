@@ -342,6 +342,9 @@ class MScore {
       static QColor singleNoteSelectionColor;
       static bool   singleNoteSelectionColorEnabled;
       static QColor gripsColor;
+
+      static QColor overrideStaffLinesColor;
+
       static bool   cursorResetToStart;
       static bool   selectionFollowsCursor;
 
