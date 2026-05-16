@@ -347,7 +347,9 @@ class MScore {
 
       static QColor overrideBarlinesColor;
       static QColor overrideBracketsColor;
+      static QColor overrideSlursColor;
       static QColor overrideStaffLinesColor;
+      static QColor overrideTiesColor;
 
       static bool   cursorResetToStart;
       static bool   selectionFollowsCursor;
