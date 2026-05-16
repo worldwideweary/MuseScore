@@ -685,16 +685,6 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
                   }
             }
 
-      if (isNote()) {
-            auto n = toNote(this);
-            marked = n->mark();
-            }
-
-      if (isRest() && MScore::highlightRests) {
-            auto r = toRest(this);
-            marked = r->mark();
-            }
-
       if (selected() || marked ) {
             QColor originalColor;
             if (score()->selection().isComparison() && preferences.getBool(PREF_SCORE_COMPARISON_SELECTION_COLOR_ENABLED))
