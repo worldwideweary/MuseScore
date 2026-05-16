@@ -333,6 +333,7 @@ const std::list<const char*> MuseScore::_allToggleOptionsMenuEntries {
             "toggle-options-upward-fifth-entry",
             "toggle-options-retain-augmentation-rhythmMode",
             "toggle-options-reset-entry-NewSystemOrCourtesy",
+            "toggle-options-note-entry-information",
 
             "separator-Playback",
             "toggle-options-playback-highlight-notes",
@@ -879,6 +880,8 @@ void MuseScore::populateToggleOptionsMenu()
                         choice = MScore::cursorResetToStart;
                   else if (0==strcmp(option, "mouse-hover"))
                         choice = MScore::hoverColorEnabled;
+                  else if (0==strcmp(option, "note-entry-information"))
+                        choice = MScore::noteEntryInformationEnabled;
                   else if (0==strcmp(option, "noteheads-behind-staff"))
                         choice = MScore::noteheadsBehindStaff;
                   else if (0==strcmp(option, "noteheads-behind-ledger"))
