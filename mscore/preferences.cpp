@@ -308,7 +308,9 @@ void Preferences::init(bool storeInMemoryOnly)
 
             {PREF_UI_SCORE_OVERRIDE_BARLINES_COLOR,                new ColorPreference(QColor(Qt::black))},
             {PREF_UI_SCORE_OVERRIDE_BRACKETS_COLOR,                new ColorPreference(QColor(Qt::black))},
+            {PREF_UI_SCORE_OVERRIDE_SLURS_COLOR,                   new ColorPreference(QColor(Qt::black))},
             {PREF_UI_SCORE_OVERRIDE_STAFFLINES_COLOR,              new ColorPreference(QColor(Qt::black))},
+            {PREF_UI_SCORE_OVERRIDE_TIES_COLOR,                    new ColorPreference(QColor(Qt::black))},
 
             {PREF_SCORE_COMPARISON_SELECTION_COLOR,                new ColorPreference(QColor(Qt::green))},
             {PREF_SCORE_COMPARISON_SELECTION_COLOR_ENABLED,        new BoolPreference(false)},
