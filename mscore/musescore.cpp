@@ -337,6 +337,7 @@ const std::list<const char*> MuseScore::_allToggleOptionsMenuEntries {
             "toggle-options-playback-highlight-rests",
             "toggle-options-playback-highlight-lyrics",
             "toggle-options-playback-highlight-more",
+            "toggle-options-honor-en-passant-visibility",
 
             "toggle-options-move-cursor-by-beat",
             "toggle-options-move-cursor-by-measure",
@@ -860,6 +861,8 @@ void MuseScore::populateToggleOptionsMenu()
                         choice = MScore::fingeringTextOmitTightening;
                   else if (0==strcmp(option, "fingering-voicing-layout"))
                         choice = MScore::fingeringTextOmitVoicing;
+                  else if (0==strcmp(option, "honor-en-passant-visibility"))
+                        choice = MScore::honorEnPassantVisibility;
                   else if (0==strcmp(option, "lasso-border"))
                         choice = MScore::lassoBorderEnabled;
                   else if (0==strcmp(option, "move-cursor-by-beat"))
