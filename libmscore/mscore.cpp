@@ -151,6 +151,7 @@ bool    MScore::hoverColorEnabled;
 int     MScore::pedalEventsMinTicks;
 bool    MScore::fadeFocus;
 bool    MScore::currentSystemAlwaysTop;
+bool    MScore::currentSystemAlwaysTopSkyline;
 bool    MScore::omitAddingLinkedLines;
 
 bool    MScore::bypassAltMenu;

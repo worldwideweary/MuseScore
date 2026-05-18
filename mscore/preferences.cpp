@@ -230,6 +230,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT,            new BoolPreference(false, true)},
             {PREF_UI_SCORE_FADE_FOCUS,                             new BoolPreference(false, true)},
             {PREF_UI_SCORE_CURRENT_SYS_ON_TOP,                     new BoolPreference(false, true)},
+            {PREF_UI_SCORE_CURRENT_SYS_ON_TOP_SKYLINE,             new BoolPreference(false, true)},
             {PREF_UI_SCORE_BYPASS_ALT_MENU,                        new BoolPreference(false, true)},
             {PREF_UI_SCORE_IJKL_NUDGE_MOVEMENT,                    new BoolPreference(false, true)},
             {PREF_UI_SCORE_OMIT_ADDING_LINKED_LINES,               new BoolPreference(false, true)},

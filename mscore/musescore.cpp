@@ -362,6 +362,7 @@ const std::list<const char*> MuseScore::_allToggleOptionsMenuEntries {
             "toggle-options-lasso-annotations",
             "toggle-options-fade-focus",
             "toggle-options-current-system-on-top",
+            "toggle-options-current-system-on-top-skyline",
             };
 
 const std::list<const char*> MuseScore::_allFileOperationEntries {
@@ -555,6 +556,7 @@ void updateExternalValuesFromPreferences() {
       MScore::pedalEventsMinTicks = preferences.getInt(PREF_IO_MIDI_PEDAL_EVENTS_MIN_TICKS);
       MScore::fadeFocus = preferences.getBool(PREF_UI_SCORE_FADE_FOCUS);
       MScore::currentSystemAlwaysTop = preferences.getBool(PREF_UI_SCORE_CURRENT_SYS_ON_TOP);
+      MScore::currentSystemAlwaysTopSkyline = preferences.getBool(PREF_UI_SCORE_CURRENT_SYS_ON_TOP_SKYLINE);
       MScore::omitAddingLinkedLines = preferences.getBool(PREF_UI_SCORE_OMIT_ADDING_LINKED_LINES);
 
       MScore::bypassAltMenu = preferences.getBool(PREF_UI_SCORE_BYPASS_ALT_MENU);
@@ -868,6 +870,8 @@ void MuseScore::populateToggleOptionsMenu()
                         choice = MScore::noteheadsAlterationColorsEnabled;
                   else if (0==strcmp(option, "current-system-on-top"))
                         choice = MScore::currentSystemAlwaysTop;
+                  else if (0==strcmp(option, "current-system-on-top-skyline"))
+                        choice = MScore::currentSystemAlwaysTopSkyline;
                   else if (0==strcmp(option, "fade-focus"))
                         choice = MScore::fadeFocus;
                   else if (0==strcmp(option, "fingering-tightening-layout"))

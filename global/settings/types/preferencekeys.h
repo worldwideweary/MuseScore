@@ -132,6 +132,7 @@
 #define PREF_UI_SCORE_LASSO_ANNOTATIONS                     "ui/score/mouse/behavior/lasso/annotations"
 #define PREF_UI_SCORE_FADE_FOCUS                            "ui/score/fadeFocusUsesInvisibleColor"
 #define PREF_UI_SCORE_CURRENT_SYS_ON_TOP                    "ui/score/currentSystemAlwaysOnTop"
+#define PREF_UI_SCORE_CURRENT_SYS_ON_TOP_SKYLINE            "ui/score/currentSystemAlwaysOnTop/considerSkylines"
 #define PREF_UI_SCORE_OMIT_ADDING_LINKED_LINES              "ui/score/lines/linked/omit"
 #define PREF_SCORE_NOTE_INPUT_OCTAVE_TENDENCY               "ui/score/noteEntry/octaveTendencyIsTopNote"
 #define PREF_SCORE_NOTE_INPUT_FIFTH_IS_UPWARD               "ui/score/noteEntry/octaveUpwardFifth"
