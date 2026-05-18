@@ -355,6 +355,7 @@ class MScore {
       static QColor overrideFingeringTextColor;
       static QColor overrideHarmonyTextColor;
       static QColor overrideLedgerLinesColor;
+      static bool   overrideOnlyAllColor;
       static QColor overrideSlursColor;
       static QColor overrideStaffLinesColor;
       static QColor overrideStaffTextColor;
