@@ -423,10 +423,13 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
       //
       auto mb = findMeasureBase();
       bool isFrame = mb && mb->isBox();
-      
+
       QColor overrideColor = normalColor;
 
-      if (isBarLine())
+      if (MScore::overrideOnlyAllColor)
+            overrideColor = MScore::overrideAllColor;
+
+      else if (isBarLine())
             overrideColor = MScore::overrideBarlinesColor;
 
       else if (isBracket() || isBracketItem())
@@ -544,7 +547,7 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
       // ... override unspecified... //
       if (!userDefined(overrideColor))
             overrideColor = MScore::overrideAllColor;
-      
+
       if (score() && score()->printing())
             return isDefault ? overrideColor : normalColor;
 
