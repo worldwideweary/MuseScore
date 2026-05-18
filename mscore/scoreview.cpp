@@ -5463,8 +5463,13 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       // Utilize skyline to include elements (spanners/etc) above system bbox
       qreal sysTop = 0.0;
       if (alwaysTop) {
-            for (auto& s : score()->systems())
-                  sysTop = std::max(s->minTop(), sysTop);
+            if (MScore::currentSystemAlwaysTopSkyline) {
+                  for (auto& s : score()->systems()) {
+                        sysTop = std::max(s->minTop(), sysTop);
+                        }
+                  }
+            else sysTop = sys->minTop();
+
             sysRect.adjust(0.0, -sysTop, 0.0, 0.0);
             showHeight += sysTop;
             showHeight += sys->minBottom();

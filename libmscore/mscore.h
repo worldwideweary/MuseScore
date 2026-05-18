@@ -413,6 +413,7 @@ class MScore {
 
       static bool fadeFocus;
       static bool currentSystemAlwaysTop;
+      static bool currentSystemAlwaysTopSkyline;
       static bool omitAddingLinkedLines;
 
       static bool bypassAltMenu;
