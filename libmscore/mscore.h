@@ -341,6 +341,8 @@ class MScore {
       static bool   lassoBorderEnabled;
       static QColor defaultColor;
       static QColor invisibleElementsColor;
+      static QColor singleNoteSelectionColor;
+      static bool   singleNoteSelectionColorEnabled;
       static QColor gripsColor;
       static bool   cursorResetToStart;
       static bool   selectionFollowsCursor;
