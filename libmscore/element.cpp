@@ -571,6 +571,9 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
             QColor originalColor;
             if (score()->selection().isComparison() && preferences.getBool(PREF_SCORE_COMPARISON_SELECTION_COLOR_ENABLED))
                   originalColor = preferences.getColor(PREF_SCORE_COMPARISON_SELECTION_COLOR);
+
+            if (MScore::singleNoteSelectionColorEnabled)
+                  originalColor = MScore::singleNoteSelectionColor;
             else if (track() == -1)
                   originalColor = MScore::selectColor[0];
             else

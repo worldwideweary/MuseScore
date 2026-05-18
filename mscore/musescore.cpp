@@ -477,6 +477,9 @@ void updateExternalValuesFromPreferences() {
       MScore::cursorColor    = preferences.getColor(PREF_UI_SCORE_CURSOR_COLOR);
       MScore::invisibleElementsColor = preferences.getColor(PREF_UI_SCORE_INVISIBLE_COLOR);
 
+      MScore::singleNoteSelectionColor = preferences.getColor(PREF_SCORE_SINGLE_SELECTION_COLOR);
+      MScore::singleNoteSelectionColorEnabled = preferences.getBool(PREF_SCORE_SINGLE_SELECTION_COLOR_ENABLED);
+
       MScore::lassoColor = preferences.getColor(PREF_UI_SCORE_LASSO_COLOR);
       MScore::lassoBorderEnabled = preferences.getBool(PREF_UI_SCORE_LASSO_BORDER_ENABLED);
       MScore::gripsColor = preferences.getColor(PREF_SCORE_GRIPS_COLOR);
