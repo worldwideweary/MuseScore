@@ -2877,6 +2877,17 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::MAIN_WINDOW,
          STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-current-system-on-top-skyline",
+         QT_TRANSLATE_NOOP("action","Score View: Current System Is Always Top: Consider Skylines"),
+         QT_TRANSLATE_NOOP("action","Score View: Current System Is Always Top: Consider Skylines"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
          "toggle-options-move-cursor-to-playback-position",
          QT_TRANSLATE_NOOP("action","Move Score Selection to Playback Cursor on Stop"),
          QT_TRANSLATE_NOOP("action","Move Score Selection to Playback Cursor on Stop"),
