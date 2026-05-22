@@ -3319,8 +3319,16 @@ void ScoreView::cmd(const char* s)
                   cv->cmdAddLine(true);
                   }},
             {{"chord-text"}, [](ScoreView* cv, const QByteArray&) {
-                  cv->changeState(ViewState::NORMAL);
-                  cv->cmdAddChordName(HarmonyType::STANDARD);
+                  auto e = cv->score()->selection().element();
+                  bool vboxElementSelected = (e && e->findMeasureBase() && e->findMeasureBase()->isVBox());
+                  bool vboxSelected = e && (e->isVBox() || vboxElementSelected);
+                  if (vboxSelected) {
+                        cv->cmdAddText(Tid::COMPOSER);
+                        }
+                  else {
+                        cv->changeState(ViewState::NORMAL);
+                        cv->cmdAddChordName(HarmonyType::STANDARD);
+                        }
                   }},
             {{"roman-numeral-text"}, [](ScoreView* cv, const QByteArray&) {
                   cv->changeState(ViewState::NORMAL);
@@ -3352,10 +3360,16 @@ void ScoreView::cmd(const char* s)
                   cv->cmdAddText(Tid::SYSTEM);
                   }},
             {{"staff-text"}, [](ScoreView* cv, const QByteArray&) {
-                  cv->cmdAddText(Tid::STAFF);
+                  auto e = cv->score()->selection().element();
+                  bool vboxElementSelected = (e && e->findMeasureBase() && e->findMeasureBase()->isVBox());
+                  bool vboxSelected = e && (e->isVBox() || vboxElementSelected);
+                  cv->cmdAddText(vboxSelected ? Tid::FRAME : Tid::STAFF);
                   }},
             {{"expression-text"}, [](ScoreView* cv, const QByteArray&) {
-                  cv->cmdAddText(Tid::EXPRESSION);
+                  auto e = cv->score()->selection().element();
+                  bool vboxElementSelected = (e && e->findMeasureBase() && e->findMeasureBase()->isVBox());
+                  bool vboxSelected = e && (e->isVBox() || vboxElementSelected);
+                  cv->cmdAddText(vboxSelected ? Tid::TITLE : Tid::EXPRESSION);
                   }},
             {{"rehearsalmark-text"}, [](ScoreView* cv, const QByteArray&) {
                   cv->cmdAddText(Tid::REHEARSAL_MARK);
@@ -3364,7 +3378,10 @@ void ScoreView::cmd(const char* s)
                   cv->cmdAddText(Tid::INSTRUMENT_CHANGE);
                   }},
             {{"fingering-text"}, [](ScoreView* cv, const QByteArray&) {
-                  cv->cmdAddText(Tid::FINGERING);
+                  auto e = cv->score()->selection().element();
+                  bool vboxElementSelected = (e && e->findMeasureBase() && e->findMeasureBase()->isVBox());
+                  bool vboxSelected = e && (e->isVBox() || vboxElementSelected);
+                  cv->cmdAddText(vboxSelected ? Tid::SUBTITLE : Tid::FINGERING);
                   }},
             {{"sticking-text"}, [](ScoreView* cv, const QByteArray&) {
                   cv->cmdAddText(Tid::STICKING);
@@ -7234,13 +7251,28 @@ void ScoreView::cmdAddText(Tid tid, Tid customTid, PropertyFlags pf, Placement p
             case Tid::POET:
             case Tid::INSTRUMENT_EXCERPT:
                   {
+                  MeasureBase* currMeasure{0};
+                  if (auto e = _score->selection().element()) {
+                        if (e->isMeasureBase()) {
+                              currMeasure = toMeasureBase(e);
+                              }
+                        else if (e->isTextBase()) {
+                              if (auto mb = e->findMeasureBase()) {
+                                    if (mb->isVBoxBase()) {
+                                          currMeasure = mb;
+                                          }
+                                    }
+                              }
+                        }
+
                   MeasureBase* measure = _score->first();
-                  if (!measure->isVBox()) {
+                  if (!measure->isVBox() && !currMeasure)  {
                         _score->insertMeasure(ElementType::VBOX, measure);
                         measure = measure->prev();
+                        currMeasure = measure;
                         }
                   s = new Text(_score, tid);
-                  s->setParent(measure);
+                  s->setParent(currMeasure);
                   _score->undoAddElement(s);
                   }
                   break;
