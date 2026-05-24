@@ -429,7 +429,7 @@ void Inspector::update(Score* s)
                         }
                   }
             }
-      if (ie && differentElement)
+      if (ie)
             ie->setElement();
       }
 

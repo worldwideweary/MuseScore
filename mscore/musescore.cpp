@@ -6679,6 +6679,7 @@ void MuseScore::cmd(QAction* a)
 
 void MuseScore::endCmd(bool undoRedo)
       {
+      const bool commandWasInspectorEdit = inspector() ? inspector()->isInspectorEdit() : false;
 #ifdef SCRIPT_INTERFACE
       getPluginEngine()->beginEndCmd(this, undoRedo);
 #endif
@@ -6765,9 +6766,11 @@ void MuseScore::endCmd(bool undoRedo)
             selectionChanged(SelState::NONE);
             }
       // Suffer the inspector a slight (ms) programmable delay to smooth navigation
-      QTimer::singleShot(preferences.getInt(PREF_UI_APP_INSPECTOR_DELAY_MS), this, [&]() {
-            updateInspector();
-            });
+      if (!commandWasInspectorEdit) {
+            QTimer::singleShot(preferences.getInt(PREF_UI_APP_INSPECTOR_DELAY_MS), this, [&]() {
+                  updateInspector();
+                  });
+            }
 
       updatePaletteBeamMode();
 #ifdef SCRIPT_INTERFACE
