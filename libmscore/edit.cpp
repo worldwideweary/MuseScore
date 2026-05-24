@@ -31,6 +31,7 @@
 #include "keysig.h"
 #include "lyrics.h"
 #include "measure.h"
+#include "musescoreCore.h"
 #include "navigate.h"
 #include "note.h"
 #include "ottava.h"
@@ -5238,6 +5239,7 @@ void Score::undoAddElement(Element* element)
                         qDebug("undoAddElement: unhandled: <%s>", element->name());
                   }
             }
+      MuseScoreCore::mscoreCore->updateInspector();
       }
 
 //---------------------------------------------------------
@@ -5412,6 +5414,7 @@ void Score::undoRemoveElement(Element* element)
                         undo(new RemoveElement(s));
                   }
             }
+      MuseScoreCore::mscoreCore->updateInspector();
       }
 
 //---------------------------------------------------------

@@ -198,6 +198,10 @@ void Inspector::update(Score* s)
                   }
             }
       bool differentElement = oe != element() || (oSameTypes != sameTypes) || (oSameSubtypes != sameSubtypes);
+      // Caution:
+      // Want Inspector to be updated when, e.g., applying an articulation that will change onTime/Length,
+      // but don't want adverse effects:
+      differentElement = true;
       if (differentElement) {
             ie  = 0;
             oe  = element();
@@ -429,7 +433,7 @@ void Inspector::update(Score* s)
                         }
                   }
             }
-      if (ie && differentElement)
+      if (ie)
             ie->setElement();
       }
 
