@@ -202,6 +202,8 @@ private:
       void pitchChanged(int);
       void trackingPosChanged(const Pos&);
       void selectionChanged();
+      void onTimeDragged(int);
+      void tickLenDragged(int);
       void showNoteTweakerRequest();
 
    public slots:
