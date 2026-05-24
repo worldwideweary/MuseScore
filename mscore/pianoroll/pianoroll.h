@@ -98,6 +98,8 @@ class PianorollEditor : public QMainWindow, public MuseScoreView {
       void changeSelection(SelState);
       void handleAction(QAction*);
       void showNoteTweaker();
+      void setOnTime(int);
+      void setTickLen(int);
 
    public:
       PianorollEditor(QWidget* parent = 0);

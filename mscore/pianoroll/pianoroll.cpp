@@ -320,11 +320,13 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       tbTweak->addWidget(new QLabel(tr("OnTime:")));
       tbTweak->addWidget((onTime = new QSpinBox));
-      onTime->setRange(-2000, 2000);
+      onTime->setRange(-60000, +60000);
+      onTime->setSingleStep(50);
 
       tbTweak->addWidget(new QLabel(tr("Len:")));
       tbTweak->addWidget((tickLen = new QSpinBox));
       tickLen->setRange(-2000, 60000);
+      tickLen->setSingleStep(50);
 
 
       // --------------------------------------------------
@@ -429,6 +431,8 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(pianoLevels,        SIGNAL(locatorMoved(int,Pos&)),        SLOT(moveLocator(int,Pos&)));
       connect(veloType,           SIGNAL(activated(int)),                SLOT(veloTypeChanged(int)));
       connect(velocity,           SIGNAL(valueChanged(int)),             SLOT(velocityChanged(int)));
+      connect(pianoView,          SIGNAL(onTimeDragged(int)),     this,  SLOT(setOnTime(int)));
+      connect(pianoView,          SIGNAL(tickLenDragged(int)),    this,  SLOT(setTickLen(int)));
       connect(onTime,             SIGNAL(valueChanged(int)),             SLOT(onTimeChanged(int)));
       connect(tickLen,            SIGNAL(valueChanged(int)),             SLOT(tickLenChanged(int)));
       connect(pianoView,          SIGNAL(selectionChanged()),            SLOT(selectionChanged()));
@@ -547,6 +551,28 @@ void PianorollEditor::handleAction(QAction* a)
 void PianorollEditor::showNoteTweaker()
       {
       noteTweakerDlg->show();
+      }
+
+//---------------------------------------------------------
+//   setOnTime
+//---------------------------------------------------------
+
+void PianorollEditor::setOnTime(int v)
+      {
+      onTime->blockSignals(true);
+      onTime->setValue(v);;
+      onTime->blockSignals(false);
+      }
+
+//---------------------------------------------------------
+//   setTickLen
+//---------------------------------------------------------
+
+void PianorollEditor::setTickLen(int v)
+      {
+      tickLen->blockSignals(true);
+      tickLen->setValue(v);
+      tickLen->blockSignals(false);
       }
 
 //---------------------------------------------------------
