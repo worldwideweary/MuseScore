@@ -432,6 +432,9 @@ Score* MuseScore::openScore(const QString& fn, bool switchTab, const bool consid
                         setCurrentScoreView(tabIdx);
                   writeSessionFile(false);
                   }
+
+            EventMap events;
+            score->renderMidi(&events, synthesizerState());
             }
       return score;
       }
