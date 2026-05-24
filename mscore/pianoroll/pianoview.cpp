@@ -2652,6 +2652,16 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                               int track = (int)_staff->idx() * VOICES + voice;
 
                               drawDraggedNote(painter, startNew, lenNew, pitch, track, _colorNoteDrag);
+
+                              // Same as finishNoteEventAdjustDrag:
+                              int evtOntimeNew = int(((startNew - start) / ticks).toDouble() * 1000);
+                              int evtLenNew = int((lenNew / ticks).toDouble() * 1000);
+                              if (evtLenNew < 1) {
+                                    evtLenNew = 1;
+                                    }
+
+                              emit onTimeDragged(evtOntimeNew);
+                              emit tickLenDragged(evtLenNew);
                               }
                         }
                   }
