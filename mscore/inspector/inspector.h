@@ -404,6 +404,7 @@ class Inspector : public QDockWidget {
       Element* element() const;
       const QList<Element*>* el() const;
       void setInspectorEdit(bool val)     { _inspectorEdit = val;  }
+      bool isInspectorEdit()              { return _inspectorEdit; }
 
       friend class InspectorScriptEntry;
       };
