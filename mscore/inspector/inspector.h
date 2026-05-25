@@ -149,6 +149,8 @@ class InspectorArticulation : public InspectorElementBase {
 
    private slots:
       void propertiesClicked();
+      void resetGateTime();
+      void resetOnTime();
 
    public:
       InspectorArticulation(QWidget* parent);

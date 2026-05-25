@@ -71,6 +71,9 @@
 #include "libmscore/tuplet.h"
 #include "libmscore/undo.h"
 
+#include <ranges>
+#include <algorithm>
+
 namespace Ms {
 
 //---------------------------------------------------------
@@ -662,7 +665,9 @@ InspectorArticulation::InspectorArticulation(QWidget* parent)
             };
       const std::vector<InspectorPanel> ppList = { { ar.title, ar.panel } };
       mapSignals(iiList, ppList);
-      connect(ar.properties, SIGNAL(clicked()), SLOT(propertiesClicked()));
+      connect(ar.properties,        &QPushButton::clicked,        this, &InspectorArticulation::propertiesClicked);
+      connect(ar.resetGateTime,     &ResetButton::resetClicked,   this, &InspectorArticulation::resetGateTime);
+      connect(ar.resetOnTime,       &ResetButton::resetClicked,   this, &InspectorArticulation::resetOnTime);
       }
 
 //---------------------------------------------------------
@@ -677,6 +682,43 @@ void InspectorArticulation::propertiesClicked()
       mscore->currentScoreView()->editArticulationProperties(a);
       a->triggerLayoutAll();
       score->endCmd();
+      }
+
+//---------------------------------------------------------
+//   resetGateTime
+//   QSpinBox set as non-zero default value
+//---------------------------------------------------------
+
+void InspectorArticulation::resetGateTime()
+      {
+      auto a = toArticulation(inspector->element());
+      auto name = a->articulationName();
+      auto tick = a->chordRest()->tick();
+      auto part = a->part();
+            if (!part) return;
+      auto instrument = part->instrument(tick);
+            if (!instrument) return;
+
+      const auto arts = instrument->articulation();
+      using t = const MidiArticulation&;
+      auto it = std::ranges::find_if(arts, [&](t& ma) { return ma.name == name; });
+      int defaultGate = (it != arts.end()) ? (*it).gateTime : 0;
+      ar.gateTime->setValue(defaultGate);
+
+      if (auto c = a->chord())
+            a->score()->createPlayEvents(c);
+      }
+
+//---------------------------------------------------------
+//   resetOnTime
+//---------------------------------------------------------
+
+void InspectorArticulation::resetOnTime()
+      {
+      auto a = toArticulation(inspector->element());
+      ar.onTime->setValue(0);
+      if (auto c = a->chord())
+            a->score()->createPlayEvents(c);
       }
 
 //---------------------------------------------------------
