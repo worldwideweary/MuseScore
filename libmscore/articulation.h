@@ -145,6 +145,7 @@ class Articulation final : public Element {
             { return _veloStaff; }
 
       ChordRest* chordRest() const;
+      Chord* chord() const;
       Segment* segment() const;
       Measure* measure() const;
       System* system() const;
