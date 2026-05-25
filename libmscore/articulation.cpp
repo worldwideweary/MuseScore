@@ -269,6 +269,17 @@ ChordRest* Articulation::chordRest() const
       return 0;
       }
 
+//---------------------------------------------------------
+//   chord
+//---------------------------------------------------------
+
+Chord* Articulation::chord() const
+      {
+      if (parent() && parent()->isChord())
+            return toChord(parent());
+      return 0;
+      }
+
 Segment* Articulation::segment() const
       {
       ChordRest* cr = chordRest();
