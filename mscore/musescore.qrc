@@ -244,5 +244,6 @@
         <file>data/icons/color_all.svg</file>
         <file>data/icons/empty.svg</file>
         <file>data/icons/options.svg</file>
+        <file>data/icons/document-reload.svg</file>
     </qresource>
 </RCC>
