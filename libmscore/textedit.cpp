@@ -143,13 +143,20 @@ void TextBase::endEdit(EditData& ed)
       if (actualPlainText.isEmpty() && removeTextIfEmpty) {
             qDebug("actual text is empty");
 
+            const bool emptyUndo = undo->empty();
+            if (emptyUndo) {
+                  // Workaround for some empty undo stack that may happen during Finger Text Entry:
+                  newlyAdded = true;
+                  }
+
             // If this assertion fails, no undo command relevant to this text
             // resides on undo stack and reopen() would corrupt the previous
             // command. Text shouldn't happen to be empty in other cases though.
             Q_ASSERT(newlyAdded || textWasEdited);
 
             setXmlText(ted->oldXmlText);    // reset text to value before editing
-            undo->reopen();
+            if (!emptyUndo)
+                  undo->reopen();
             score()->undoRemoveElement(this);
             ed.element = 0;
 
@@ -160,7 +167,7 @@ void TextBase::endEdit(EditData& ed)
                   Filter::Link,
                   };
 
-            if (newlyAdded && !undo->current()->hasUnfilteredChildren(filters, this)) {
+            if (!emptyUndo && newlyAdded && !undo->current()->hasUnfilteredChildren(filters, this)) {
                   for (Filter f : filters)
                         undo->current()->filterChildren(f, this);
 
