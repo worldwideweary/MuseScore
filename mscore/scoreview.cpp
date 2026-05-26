@@ -4301,8 +4301,8 @@ void ScoreView::textTab(bool back)
       TextBase* ot = toTextBase(oe);
 
       const System* oeSys = ot->findMeasureBase() ? ot->findMeasureBase()->system() : nullptr;
-      const System* oeNextSys{0};
-      if (oeSys) if (auto nmb = oeSys->lastMeasure()->findMeasureBase()->next())
+      const System* oeNextSys = nullptr;
+      if (oeSys) if (auto nmb = back ? oeSys->firstMeasure()->findMeasureBase()->prev() : oeSys->lastMeasure()->findMeasureBase()->next())
             oeNextSys = nmb->system();
 
       if (oe->isHarmony()) {
@@ -4346,10 +4346,20 @@ void ScoreView::textTab(bool back)
       int staffIdx;
       Tid defaultTid;
       Tid tid;
-      auto nextElement = back ? score()->prevElement() : score()->nextElement();
-      if (nextElement) {
-            // qDebug() << "nextElement: " << nextElement->name() << nextElement->tick().print();
+
+      // Situation:
+      // 1) prev/nextElement()        cycles through chord, but won't move to next chord properly with grace notes
+      // 2) prev/nextChordRest()      won't cycle through chord notes properly, but moves to next chord/grace notes properly:
+      Element* nextElement = back ? score()->prevElement() : score()->nextElement();
+      if (isFingering && op->isNote()) {
+            auto n = toNote(op);
+            auto c = n->chord();
+            auto ncr = back ? prevChordRest(c) : nextChordRest(c);
+
+            if (!nextElement->isNote() || (toNote(nextElement)->chord() != c) || back)
+                  nextElement = ncr;
             }
+
       bool sameParent = false;
       if (originalEl && nextElement && (originalEl->parent() == nextElement->parent())) {
             sameParent = true;
@@ -4420,15 +4430,14 @@ void ScoreView::textTab(bool back)
             score()->select(el);
             Element* el2 = back ? score()->prevElement() : score()->nextElement();
 
-            // SITUATION: On last note of penultimate measure of system: place fingering -- auto move forward
-            /// last measure of system has whole note... and this is skipped for some reason
             if (!el2) {
                   auto ns = back ? cr->segment()->prev1(SegmentType::ChordRest) : cr->segment()->next1(SegmentType::ChordRest);
-                  ChordRest* ncr = ns ? ns->nextChordRest(trackZeroVoice(cr->track()), back) : nullptr;
+                  auto ncr = ns ? ns->nextChordRest(trackZeroVoice(cr->track()), back) : nullptr;
                   if (ncr) {
                         if (ncr->isChord())
                               el2 = toChord(ncr)->upNote();
-                        else el2 = ncr;
+                        else
+                              el2 = ncr;
                         }
                   }
 
@@ -4450,6 +4459,7 @@ void ScoreView::textTab(bool back)
                   score()->deselectAll();
             return;
             }
+
       Note* nn = toNote(el);
 
       const auto gotoSys = nn->chord()->measure()->system();
@@ -4457,7 +4467,10 @@ void ScoreView::textTab(bool back)
       if (gotoIsBeyondNextSys) {
             // Safeguard jumping too far away from current position by finalizing onto
             // original (current) text selection
-            score()->select(oe);
+            if (op->isNote())
+                  score()->select(toNote(op));
+            else
+                  score()->select(oe);
             return;
             }
 
