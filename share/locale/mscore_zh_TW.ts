@@ -22330,8 +22330,8 @@ Do you want to overwrite it?</source>
     </message>
     <message>
         <location filename="../../mscore/scorecmp/scorecmp_tool.ui" line="156"/>
-        <source>Specify:</source>
-        <translation type="unfinished"></translation>
+        <source>Color:</source>
+        <translation type="unfinished">顏色：</translation>
     </message>
     <message>
         <location filename="../../mscore/scorecmp/scorecmp_tool.ui" line="175"/>

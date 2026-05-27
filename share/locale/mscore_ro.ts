@@ -22290,8 +22290,8 @@ Doriți să-l suprascrieți?</translation>
     </message>
     <message>
         <location filename="../../mscore/scorecmp/scorecmp_tool.ui" line="156"/>
-        <source>Specify:</source>
-        <translation type="unfinished"></translation>
+        <source>Color:</source>
+        <translation type="unfinished">Culoare:</translation>
     </message>
     <message>
         <location filename="../../mscore/scorecmp/scorecmp_tool.ui" line="175"/>

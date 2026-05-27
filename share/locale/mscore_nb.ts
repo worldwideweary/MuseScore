@@ -22327,8 +22327,8 @@ Vil du overskrive den?</translation>
     </message>
     <message>
         <location filename="../../mscore/scorecmp/scorecmp_tool.ui" line="156"/>
-        <source>Specify:</source>
-        <translation type="unfinished"></translation>
+        <source>Color:</source>
+        <translation type="unfinished">Farge:</translation>
     </message>
     <message>
         <location filename="../../mscore/scorecmp/scorecmp_tool.ui" line="175"/>
