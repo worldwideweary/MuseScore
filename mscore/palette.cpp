@@ -468,6 +468,9 @@ static void applyDrop(Score* score, ScoreView* viewer, Element* target, Element*
       dropData.modifiers   = modifiers;
       dropData.dropElement = e;
 
+      if (target->isText() && target->parent()->isBox())
+            target = target->parent();
+
       if (target->acceptDrop(dropData)) {
             // use same code path as drag&drop
 
@@ -484,12 +487,14 @@ static void applyDrop(Score* score, ScoreView* viewer, Element* target, Element*
             dropData.dropElement->read(n);
             dropData.dropElement->styleChanged();   // update to local style
 
-            Element* el = target->drop(dropData);
-            if (el && el->isInstrumentChange()) {
-                  mscore->currentScoreView()->selectInstrument(toInstrumentChange(el));
+            if (auto newlyDropped = target->drop(dropData)) {
+                  if (newlyDropped->isInstrumentChange())
+                        mscore->currentScoreView()->selectInstrument(toInstrumentChange(newlyDropped));
+                  if (!viewer->noteEntryMode())
+                        score->select(newlyDropped);
+                  if (newlyDropped->isText() && target->isBox())
+                        viewer->startEditMode(newlyDropped);
                   }
-            if (el && !viewer->noteEntryMode())
-                  score->select(el, SelectType::SINGLE, 0);
             dropData.dropElement = 0;
             }
       }

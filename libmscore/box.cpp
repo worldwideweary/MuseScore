@@ -655,6 +655,16 @@ Element* Box::drop(EditData& data)
                   break;
 
             case ElementType::TEXT:
+                  {
+                  const auto paletteItemText = toTextBase(e);
+                  auto newText = new Text(score(), paletteItemText->tid());
+                  newText->setParent(this);
+                  newText->setXmlText(paletteItemText->xmlText());
+                  score()->startCmd();
+                  score()->undoAddElement(newText);
+                  score()->endCmd();
+                  return newText;
+                  }
             case ElementType::IMAGE:
             case ElementType::SYMBOL:
                   e->setParent(this);
