@@ -5764,7 +5764,7 @@ By default, they will be placed such as that their right end are at the same lev
 <context>
     <name>GreendotButton</name>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="5908"/>
+        <location filename="../../mscore/musescore.cpp" line="5902"/>
         <source>Record</source>
         <translation>Kayıt</translation>
     </message>
@@ -11710,7 +11710,7 @@ Bunu sadece bir kez yapmanız gerekir.
     <message>
         <location filename="../../mscore/masterpalette.cpp" line="196"/>
         <location filename="../../mscore/masterpalette.cpp" line="229"/>
-        <location filename="../../mscore/musescore.cpp" line="6332"/>
+        <location filename="../../mscore/musescore.cpp" line="6334"/>
         <source>Symbols</source>
         <translation>Simgeler</translation>
     </message>
@@ -13848,82 +13848,82 @@ Ses: %5</translation>
     <name>Ms::MuseScore</name>
     <message>
         <location filename="../../mscore/exportaudio.cpp" line="343"/>
-        <location filename="../../mscore/musescore.cpp" line="7244"/>
+        <location filename="../../mscore/musescore.cpp" line="7246"/>
         <source>Cancel</source>
         <translation>İptal</translation>
     </message>
     <message>
         <location filename="../../mscore/exportaudio.cpp" line="344"/>
-        <location filename="../../mscore/musescore.cpp" line="7245"/>
+        <location filename="../../mscore/musescore.cpp" line="7247"/>
         <source>Exporting…</source>
         <translation>Dışa Aktarılıyor…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7166"/>
-        <location filename="../../mscore/musescore.cpp" line="7178"/>
+        <location filename="../../mscore/musescore.cpp" line="7168"/>
+        <location filename="../../mscore/musescore.cpp" line="7180"/>
         <source>Error Opening LAME library</source>
         <translation>LAME kitaplığı açılırken hata oluştu</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7167"/>
+        <location filename="../../mscore/musescore.cpp" line="7169"/>
         <source>Could not open MP3 encoding library!</source>
         <translation>MP3 kodlama kitaplığı açılamadı!</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7179"/>
+        <location filename="../../mscore/musescore.cpp" line="7181"/>
         <source>Not a valid or supported MP3 encoding library!</source>
         <translation>Geçerli veya desteklenen bir MP3 kodlama kitaplığı değil!</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7127"/>
-        <location filename="../../mscore/musescore.cpp" line="7203"/>
-        <location filename="../../mscore/musescore.cpp" line="7354"/>
+        <location filename="../../mscore/musescore.cpp" line="7129"/>
+        <location filename="../../mscore/musescore.cpp" line="7205"/>
+        <location filename="../../mscore/musescore.cpp" line="7356"/>
         <source>Encoding Error</source>
         <translation>Kodlama Hatası</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4496"/>
+        <location filename="../../mscore/musescore.cpp" line="4490"/>
         <source>Insert mode</source>
         <translation>Mod Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4520"/>
+        <location filename="../../mscore/musescore.cpp" line="4514"/>
         <source>Drumset input mode</source>
         <translation>Davul seti giriş modu</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6055"/>
+        <location filename="../../mscore/musescore.cpp" line="6049"/>
         <source>Invalid Command</source>
         <translation>Geçersiz komut</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6056"/>
+        <location filename="../../mscore/musescore.cpp" line="6050"/>
         <source>Command %1 not valid in current state</source>
         <translation>%1 komutu mevcut durumda geçerli değil</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6947"/>
+        <location filename="../../mscore/musescore.cpp" line="6949"/>
         <source>Find / Go to:</source>
         <translation>Bul / Git</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7204"/>
+        <location filename="../../mscore/musescore.cpp" line="7206"/>
         <source>Unable to initialize MP3 stream</source>
         <translation>MP3 akışı başlatılamıyor</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7128"/>
+        <location filename="../../mscore/musescore.cpp" line="7130"/>
         <source>Unable to open target file for writing</source>
         <translation>Hedef dosya yazmak için açılamıyor</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7355"/>
+        <location filename="../../mscore/musescore.cpp" line="7357"/>
         <source>Error %1 returned from MP3 encoder</source>
         <translation>MP3 kodlayıcıdan %1 hatası döndürüldü</translation>
     </message>
     <message>
         <location filename="../../mscore/file.cpp" line="252"/>
-        <location filename="../../mscore/musescore.cpp" line="5372"/>
+        <location filename="../../mscore/musescore.cpp" line="5366"/>
         <location filename="../../mscore/plugin/mscorePlugins.cpp" line="444"/>
         <source>MuseScore</source>
         <translation>MuseScore</translation>
@@ -14044,7 +14044,7 @@ kaydetmek ister misiniz?</translation>
     <message>
         <location filename="../../mscore/file.cpp" line="1240"/>
         <location filename="../../mscore/file.cpp" line="1267"/>
-        <location filename="../../mscore/musescore.cpp" line="6484"/>
+        <location filename="../../mscore/musescore.cpp" line="6486"/>
         <source>Load Style</source>
         <translation>Stil Yükle</translation>
     </message>
@@ -14057,7 +14057,7 @@ kaydetmek ister misiniz?</translation>
         <location filename="../../mscore/file.cpp" line="1247"/>
         <location filename="../../mscore/file.cpp" line="1284"/>
         <location filename="../../mscore/file.cpp" line="1367"/>
-        <location filename="../../mscore/musescore.cpp" line="6475"/>
+        <location filename="../../mscore/musescore.cpp" line="6477"/>
         <source>Save Style</source>
         <translation>Stili Kaydet</translation>
     </message>
@@ -14323,291 +14323,291 @@ Değiştirmek ister misiniz?
         <translation>Kılavuz</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2197"/>
+        <location filename="../../mscore/musescore.cpp" line="2191"/>
         <source>&amp;Add</source>
         <translation>&amp;Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2198"/>
+        <location filename="../../mscore/musescore.cpp" line="2192"/>
         <source>&amp;Measures</source>
         <translation>&amp;Ölçüler</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2199"/>
+        <location filename="../../mscore/musescore.cpp" line="2193"/>
         <source>&amp;Frames</source>
         <translation>&amp;Çerçeveler</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2200"/>
+        <location filename="../../mscore/musescore.cpp" line="2194"/>
         <source>&amp;Text</source>
         <translation>Me&amp;tin</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2201"/>
+        <location filename="../../mscore/musescore.cpp" line="2195"/>
         <source>&amp;Lines</source>
         <translation>&amp;Çizgiler</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="328"/>
+        <location filename="../../mscore/musescore.cpp" line="329"/>
         <source>No measure selected:
 Please select a measure and try again</source>
         <translation>Hiçbir ölçü seçili değil:
 Lütfen bir ölçü seçin ve tekrar deneyin</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2131"/>
+        <location filename="../../mscore/musescore.cpp" line="2125"/>
         <source>Measure:Beat:Tick</source>
         <translation>Ölçü:Vuruş:Tik</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1143"/>
+        <location filename="../../mscore/musescore.cpp" line="1144"/>
         <source>Switch layer</source>
         <translation>Katmanı değiştir</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1148"/>
+        <location filename="../../mscore/musescore.cpp" line="1149"/>
         <source>Switch play mode</source>
         <translation>Oynatma modunu değiştir</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2173"/>
+        <location filename="../../mscore/musescore.cpp" line="2167"/>
         <source>Show MIDI import panel</source>
         <translation>MIDI içe aktarma panelini göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2146"/>
+        <location filename="../../mscore/musescore.cpp" line="2140"/>
         <source>File Operations</source>
         <translation>Dosya İşlemleri</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1020"/>
-        <location filename="../../mscore/musescore.cpp" line="2164"/>
+        <location filename="../../mscore/musescore.cpp" line="1021"/>
+        <location filename="../../mscore/musescore.cpp" line="2158"/>
         <source>View Mode</source>
         <translation>Görünüm Modu</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1021"/>
-        <location filename="../../mscore/musescore.cpp" line="2165"/>
+        <location filename="../../mscore/musescore.cpp" line="1022"/>
+        <location filename="../../mscore/musescore.cpp" line="2159"/>
         <source>Page View</source>
         <translation>Sayfa Görünümü</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1022"/>
-        <location filename="../../mscore/musescore.cpp" line="2166"/>
+        <location filename="../../mscore/musescore.cpp" line="1023"/>
+        <location filename="../../mscore/musescore.cpp" line="2160"/>
         <source>Continuous View</source>
         <translation>Sürekli Görünüm</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2147"/>
+        <location filename="../../mscore/musescore.cpp" line="2141"/>
         <source>Playback Controls</source>
         <translation>Oynatma Kontrolleri</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2148"/>
+        <location filename="../../mscore/musescore.cpp" line="2142"/>
         <source>Concert Pitch</source>
         <translation>Konser Perdesi</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2149"/>
+        <location filename="../../mscore/musescore.cpp" line="2143"/>
         <source>Image Capture</source>
         <translation>Görüntü yakalama</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2150"/>
+        <location filename="../../mscore/musescore.cpp" line="2144"/>
         <source>Note Input</source>
         <translation>Nota Girişi</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="606"/>
+        <location filename="../../mscore/musescore.cpp" line="607"/>
         <source>Note Entry Methods</source>
         <translation>Nota Girişi Metodları</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2191"/>
+        <location filename="../../mscore/musescore.cpp" line="2185"/>
         <source>&amp;File</source>
         <translation>&amp;Dosya</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2192"/>
+        <location filename="../../mscore/musescore.cpp" line="2186"/>
         <source>Open &amp;Recent</source>
         <translation>&amp;Son Kullanılanlar</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2193"/>
+        <location filename="../../mscore/musescore.cpp" line="2187"/>
         <source>&amp;Edit</source>
         <translation>D&amp;üzen</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2209"/>
+        <location filename="../../mscore/musescore.cpp" line="2203"/>
         <source>&amp;Measure</source>
         <translation>&amp;Ölçü</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2207"/>
+        <location filename="../../mscore/musescore.cpp" line="2201"/>
         <source>&amp;Tools</source>
         <translation>&amp;Araçlar</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2208"/>
+        <location filename="../../mscore/musescore.cpp" line="2202"/>
         <source>&amp;Voices</source>
         <translation>&amp;Sesler</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2196"/>
+        <location filename="../../mscore/musescore.cpp" line="2190"/>
         <source>W&amp;orkspaces</source>
         <translation>&amp;Çalışma alanları</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2132"/>
+        <location filename="../../mscore/musescore.cpp" line="2126"/>
         <source>&amp;Preferences…</source>
         <translation>&amp;Tercihler…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2194"/>
+        <location filename="../../mscore/musescore.cpp" line="2188"/>
         <source>&amp;View</source>
         <translation>&amp;Görünüm</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2195"/>
+        <location filename="../../mscore/musescore.cpp" line="2189"/>
         <source>&amp;Toolbars</source>
         <translation>A&amp;raç Çubukları</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2204"/>
+        <location filename="../../mscore/musescore.cpp" line="2198"/>
         <source>T&amp;uplets</source>
         <translation>T&amp;uplets</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2211"/>
+        <location filename="../../mscore/musescore.cpp" line="2205"/>
         <source>&amp;Plugins</source>
         <translation>&amp;Eklentiler</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2216"/>
+        <location filename="../../mscore/musescore.cpp" line="2210"/>
         <source>&amp;Help</source>
         <translation>&amp;Yardım</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2136"/>
+        <location filename="../../mscore/musescore.cpp" line="2130"/>
         <source>&amp;Online Handbook</source>
         <translation>&amp;Çevrimiçi Yardım</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2133"/>
+        <location filename="../../mscore/musescore.cpp" line="2127"/>
         <source>&amp;About…</source>
         <translation>&amp;Hakkında…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1023"/>
-        <location filename="../../mscore/musescore.cpp" line="2167"/>
+        <location filename="../../mscore/musescore.cpp" line="1024"/>
+        <location filename="../../mscore/musescore.cpp" line="2161"/>
         <source>Single Page</source>
         <translation>Tek sayfa</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1146"/>
+        <location filename="../../mscore/musescore.cpp" line="1147"/>
         <source>Synthesizer</source>
         <translation>Sentezleyici</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1147"/>
+        <location filename="../../mscore/musescore.cpp" line="1148"/>
         <source>Audio track</source>
         <translation>Ses izi</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1740"/>
-        <location filename="../../mscore/musescore.cpp" line="2206"/>
+        <location filename="../../mscore/musescore.cpp" line="1734"/>
+        <location filename="../../mscore/musescore.cpp" line="2200"/>
         <source>&amp;Stretch</source>
         <translation>&amp;Esneme</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2202"/>
+        <location filename="../../mscore/musescore.cpp" line="2196"/>
         <source>N&amp;otes</source>
         <translation>N&amp;otalar</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2203"/>
+        <location filename="../../mscore/musescore.cpp" line="2197"/>
         <source>&amp;Intervals</source>
         <translation>&amp;Aralıklar</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2205"/>
+        <location filename="../../mscore/musescore.cpp" line="2199"/>
         <source>F&amp;ormat</source>
         <translation>&amp;Biçim</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2217"/>
+        <location filename="../../mscore/musescore.cpp" line="2211"/>
         <source>&amp;Tours</source>
         <translation>&amp;Turlar</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2134"/>
+        <location filename="../../mscore/musescore.cpp" line="2128"/>
         <source>About &amp;Qt…</source>
         <translation>&amp;Qt Hakkında…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2135"/>
+        <location filename="../../mscore/musescore.cpp" line="2129"/>
         <source>About &amp;MusicXML…</source>
         <translation>&amp;MusicXML Hakkında</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2138"/>
+        <location filename="../../mscore/musescore.cpp" line="2132"/>
         <source>Check for &amp;Update</source>
         <translation>&amp;Güncelleştirmeleri Kontrol Et</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2139"/>
+        <location filename="../../mscore/musescore.cpp" line="2133"/>
         <source>Ask for Help</source>
         <translation>Yardım isteyin</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2140"/>
+        <location filename="../../mscore/musescore.cpp" line="2134"/>
         <source>Report a Bug</source>
         <translation>Hata Bildirin</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2144"/>
+        <location filename="../../mscore/musescore.cpp" line="2138"/>
         <source>Revert to Factory Settings</source>
         <translation>Fabrika Ayarlarına Dön</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2142"/>
-        <location filename="../../mscore/musescore.cpp" line="2152"/>
+        <location filename="../../mscore/musescore.cpp" line="2136"/>
+        <location filename="../../mscore/musescore.cpp" line="2146"/>
         <source>Feedback</source>
         <translation>Geri bildirim</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="784"/>
+        <location filename="../../mscore/musescore.cpp" line="785"/>
         <source>Please wait; unpacking extension…</source>
         <translation>Lütfen bekle; uzantı paketinden çıkarılıyor…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="863"/>
+        <location filename="../../mscore/musescore.cpp" line="864"/>
         <source>Please wait; loading SoundFonts…</source>
         <translation>Lütfen bekle; SoundFonts yükleniyor…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1027"/>
-        <location filename="../../mscore/musescore.cpp" line="2171"/>
+        <location filename="../../mscore/musescore.cpp" line="1028"/>
+        <location filename="../../mscore/musescore.cpp" line="2165"/>
         <source>Floating</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2049"/>
+        <location filename="../../mscore/musescore.cpp" line="2043"/>
         <source>No login credentials stored. Please sign in via the GUI.</source>
         <translation>Oturum açma kimlik bilgileri saklanmadı. Lütfen GUI aracılığıyla oturum açın.</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2154"/>
+        <location filename="../../mscore/musescore.cpp" line="2148"/>
         <source>Workspaces</source>
         <translation>Çalışma Alanları</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2368"/>
+        <location filename="../../mscore/musescore.cpp" line="2362"/>
         <source>Are you sure?</source>
         <translation>Emin misiniz?</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2369"/>
+        <location filename="../../mscore/musescore.cpp" line="2363"/>
         <source>This will reset all your preferences.
 Custom palettes, custom shortcuts, and the list of recent scores will be deleted. MuseScore will restart with its default settings.
 Reverting will not remove any scores from your computer.
@@ -14618,104 +14618,104 @@ Geri döndürmek, bilgisayarınızdaki herhangi bir partisyonu silmez.
 Devam etmek istediğinizden emin misiniz?</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2622"/>
+        <location filename="../../mscore/musescore.cpp" line="2616"/>
         <source>Clear Recent Files</source>
         <translation>Son Dosyaları Temizle</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2627"/>
+        <location filename="../../mscore/musescore.cpp" line="2621"/>
         <source>No recent files</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4213"/>
+        <location filename="../../mscore/musescore.cpp" line="4207"/>
         <source>System</source>
         <extracomment>The default language of the operating system. NOT a music system.</extracomment>
         <translation>Sistem</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4221"/>
+        <location filename="../../mscore/musescore.cpp" line="4215"/>
         <source>Error reading language file %s at line %d column %d: %s
 </source>
         <translation>%D. Satır %d sütununda %s dil dosyası okunurken hata oluştu: %s</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4462"/>
+        <location filename="../../mscore/musescore.cpp" line="4456"/>
         <source>No score</source>
         <translation>Partisyon yok</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4468"/>
+        <location filename="../../mscore/musescore.cpp" line="4462"/>
         <source>Normal mode</source>
         <translation>Normal mod</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4476"/>
+        <location filename="../../mscore/musescore.cpp" line="4470"/>
         <source>Repitch input mode</source>
         <translation>Perdesini değiştirme modu</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4481"/>
+        <location filename="../../mscore/musescore.cpp" line="4475"/>
         <source>Rhythm input mode</source>
         <translation>Ritim giriş modu</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4486"/>
+        <location filename="../../mscore/musescore.cpp" line="4480"/>
         <source>Realtime (automatic) note input mode</source>
         <translation>Gerçek zamanlı (otomatik) nota giriş modu</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4491"/>
+        <location filename="../../mscore/musescore.cpp" line="4485"/>
         <source>Realtime (manual) note input mode</source>
         <translation>Gerçek zamanlı (manuel) nota giriş modu</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4501"/>
+        <location filename="../../mscore/musescore.cpp" line="4495"/>
         <source>Steptime note input mode</source>
         <translation>Adım adım nota girişi modu</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4542"/>
+        <location filename="../../mscore/musescore.cpp" line="4536"/>
         <source>TAB input mode</source>
         <translation>TAB giriş modu</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4545"/>
+        <location filename="../../mscore/musescore.cpp" line="4539"/>
         <source>Edit mode</source>
         <translation>Düzenleme Modu</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4548"/>
+        <location filename="../../mscore/musescore.cpp" line="4542"/>
         <source>Text edit mode</source>
         <translation>Metin düzenleme modu</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4551"/>
+        <location filename="../../mscore/musescore.cpp" line="4545"/>
         <source>Lyrics edit mode</source>
         <translation>Şarkı sözü düzenleme modu</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4554"/>
+        <location filename="../../mscore/musescore.cpp" line="4548"/>
         <source>Chord symbol/figured bass edit mode</source>
         <translation>Akor sembolü / şifreli bas düzenleme modu</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4557"/>
+        <location filename="../../mscore/musescore.cpp" line="4551"/>
         <source>Play</source>
         <translation>Oynat</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4560"/>
+        <location filename="../../mscore/musescore.cpp" line="4554"/>
         <source>Image capture mode</source>
         <translation>Görüntü yakalama modu</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4564"/>
+        <location filename="../../mscore/musescore.cpp" line="4558"/>
         <source>Score locked</source>
         <translation>Partisyon kilitlendi</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="5373"/>
+        <location filename="../../mscore/musescore.cpp" line="5367"/>
         <source>The previous session quit unexpectedly.
 
 Restore session?</source>
@@ -14724,87 +14724,87 @@ Restore session?</source>
 Oturum geri yüklensin mi?</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6000"/>
+        <location filename="../../mscore/musescore.cpp" line="5994"/>
         <source>Invalid selection. Cannot realize chord symbol</source>
         <translation>Geçersiz seçim. Akor sembolü uygulanamıyor</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6016"/>
+        <location filename="../../mscore/musescore.cpp" line="6010"/>
         <source>No chord symbol selected. Cannot realize chord symbol</source>
         <translation>Akor sembolü seçilmedi. Akor sembolü uygulanamıyor</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6485"/>
+        <location filename="../../mscore/musescore.cpp" line="6487"/>
         <source>MuseScore may not be able to load this style file: %1</source>
         <translation>MuseScore bu stil dosyasını yükleyemeyebilir: %1</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6788"/>
+        <location filename="../../mscore/musescore.cpp" line="6790"/>
         <source>Warning</source>
         <translation>Uyarı</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6789"/>
+        <location filename="../../mscore/musescore.cpp" line="6791"/>
         <source>Cannot create tuplet: Note value is too short</source>
         <translation>Tuplet oluşturulamıyor: Nota değeri çok kısa</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8121"/>
+        <location filename="../../mscore/musescore.cpp" line="8123"/>
         <source>Initializing sequencer and audio driver…</source>
         <translation>Sıralayıcı ve ses sürücüsü başlatılıyor…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8130"/>
+        <location filename="../../mscore/musescore.cpp" line="8132"/>
         <source>Loading SoundFonts…</source>
         <translation>SoundFontlar yükleniyor…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8173"/>
+        <location filename="../../mscore/musescore.cpp" line="8175"/>
         <source>Initializing workspace…</source>
         <translation>Çalışma alanı başlatılıyor…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8177"/>
+        <location filename="../../mscore/musescore.cpp" line="8179"/>
         <source>Creating main window…</source>
         <translation>Ana pencere oluşturuluyor…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8194"/>
+        <location filename="../../mscore/musescore.cpp" line="8196"/>
         <source>Reading translations…</source>
         <translation>Çeviriler okunuyor…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8201"/>
+        <location filename="../../mscore/musescore.cpp" line="8203"/>
         <source>Initializing startup wizard…</source>
         <translation>Başlangıç sihirbazı başlatılıyor…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8217"/>
+        <location filename="../../mscore/musescore.cpp" line="8219"/>
         <source>Initializing preferences…</source>
         <translation>Tercihler başlatılıyor…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8258"/>
+        <location filename="../../mscore/musescore.cpp" line="8260"/>
         <source>Initializing main window…</source>
         <translation>Ana pencere başlatılıyor…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8282"/>
+        <location filename="../../mscore/musescore.cpp" line="8284"/>
         <source>Restoring session…</source>
         <translation>Oturum geri yükleniyor…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8313"/>
+        <location filename="../../mscore/musescore.cpp" line="8315"/>
         <source>Loading scores…</source>
         <translation>Partisyonlar yükleniyor…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8324"/>
+        <location filename="../../mscore/musescore.cpp" line="8326"/>
         <source>Initializing start center…</source>
         <translation>Başlangıç merkezi başlatılıyor…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8346"/>
+        <location filename="../../mscore/musescore.cpp" line="8348"/>
         <source>Initializing tours…</source>
         <translation>Turlar başlatılıyor…</translation>
     </message>
@@ -14868,22 +14868,22 @@ This plugin requires an open score to run.</source>
 <context>
     <name>Ms::MuseScoreApplication</name>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7802"/>
+        <location filename="../../mscore/musescore.cpp" line="7804"/>
         <source>Must specify at least one score to save online.</source>
         <translation>Çevrimiçi kaydetmek için en az bir Partisyon belirtilmelidir.</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7863"/>
+        <location filename="../../mscore/musescore.cpp" line="7865"/>
         <source>--run-test-script is incompatible with --diff and --raw-diff</source>
         <translation>--run-test-script, --diff ve --raw-diff ile uyumsuz</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7898"/>
+        <location filename="../../mscore/musescore.cpp" line="7900"/>
         <source>Only two scores are needed for performing a comparison</source>
         <translation>Bir karşılaştırma yapmak için yalnızca iki partisyona ihtiyaç vardır</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7903"/>
+        <location filename="../../mscore/musescore.cpp" line="7905"/>
         <source>Please specify scripts to execute</source>
         <translation>Lütfen yürütülecek komut dosyalarını belirtin</translation>
     </message>
@@ -16038,7 +16038,7 @@ failed: %2</source>
 başarısız: %2</translation>
     </message>
     <message>
-        <location filename="../../libmscore/edit.cpp" line="3324"/>
+        <location filename="../../libmscore/edit.cpp" line="3332"/>
         <source>Please select the complete tuplet and retry the command</source>
         <translation>Lütfen tüm tupleti seçin ve komutu yeniden deneyin</translation>
     </message>
@@ -16153,12 +16153,12 @@ başarısız: %2</translation>
 <context>
     <name>Ms::ScoreComparisonTool</name>
     <message>
-        <location filename="../../mscore/scorecmp/scorecmp.cpp" line="146"/>
+        <location filename="../../mscore/scorecmp/scorecmp.cpp" line="153"/>
         <source>Comparison of &quot;%1&quot; and &quot;%2&quot;</source>
         <translation>&quot;%1&quot; ve &quot;%2&quot; karşılaştırması</translation>
     </message>
     <message>
-        <location filename="../../mscore/scorecmp/scorecmp.cpp" line="150"/>
+        <location filename="../../mscore/scorecmp/scorecmp.cpp" line="157"/>
         <source>Comparison</source>
         <translation>Karşılaştırma</translation>
     </message>
@@ -17113,9 +17113,9 @@ please choose a different name:</source>
 <context>
     <name>Ms::ZoomBox</name>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2157"/>
-        <location filename="../../mscore/musescore.cpp" line="2158"/>
-        <location filename="../../mscore/musescore.cpp" line="2159"/>
+        <location filename="../../mscore/musescore.cpp" line="2151"/>
+        <location filename="../../mscore/musescore.cpp" line="2152"/>
+        <location filename="../../mscore/musescore.cpp" line="2153"/>
         <location filename="../../mscore/zoombox.cpp" line="92"/>
         <location filename="../../mscore/zoombox.cpp" line="93"/>
         <location filename="../../mscore/zoombox.cpp" line="94"/>
@@ -17624,7 +17624,7 @@ please choose a different name:</source>
     <message>
         <location filename="../../mscore/masterpalette.cpp" line="227"/>
         <location filename="../../mscore/menus.cpp" line="549"/>
-        <location filename="../../mscore/musescore.cpp" line="6328"/>
+        <location filename="../../mscore/musescore.cpp" line="6330"/>
         <source>Key Signatures</source>
         <translation>Donanımlar</translation>
     </message>
@@ -18210,7 +18210,7 @@ please choose a different name:</source>
     <message>
         <location filename="../../mscore/masterpalette.cpp" line="228"/>
         <location filename="../../mscore/menus.cpp" line="1769"/>
-        <location filename="../../mscore/musescore.cpp" line="6330"/>
+        <location filename="../../mscore/musescore.cpp" line="6332"/>
         <source>Time Signatures</source>
         <translation>Ölçü Sayıları</translation>
     </message>
@@ -20736,7 +20736,7 @@ Gecikmeyi ayarlamak, MIDI donanımınızı MuseScore&apos;un dahili ses sentezle
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../../libmscore/chordlist.cpp" line="1851"/>
+        <location filename="../../libmscore/chordlist.cpp" line="1856"/>
         <source>Cannot open chord description:
 %1
 %2</source>
@@ -20745,7 +20745,7 @@ Gecikmeyi ayarlamak, MIDI donanımınızı MuseScore&apos;un dahili ses sentezle
 %2</translation>
     </message>
     <message>
-        <location filename="../../libmscore/chordlist.cpp" line="1886"/>
+        <location filename="../../libmscore/chordlist.cpp" line="1891"/>
         <source>Open chord description
 %1
 failed: %2</source>
@@ -20754,13 +20754,13 @@ failed: %2</source>
 başarısız: %2</translation>
     </message>
     <message>
-        <location filename="../../libmscore/chordlist.cpp" line="1897"/>
+        <location filename="../../libmscore/chordlist.cpp" line="1902"/>
         <source>Write chord description failed: %1</source>
         <translation>Akor açıklaması yazılamadı: %1</translation>
     </message>
     <message>
         <location filename="../../libmscore/durationtype.cpp" line="795"/>
-        <location filename="../../libmscore/hairpin.cpp" line="902"/>
+        <location filename="../../libmscore/hairpin.cpp" line="904"/>
         <location filename="../../libmscore/jump.cpp" line="95"/>
         <location filename="../../libmscore/scoreOrder.cpp" line="397"/>
         <source>Custom</source>
@@ -21216,12 +21216,12 @@ En son sürümü edinmek için %1MuseScore web sitesini %2 ziyaret edin.</transl
         <translation>Tel numarası</translation>
     </message>
     <message>
-        <location filename="../../libmscore/hairpin.cpp" line="896"/>
+        <location filename="../../libmscore/hairpin.cpp" line="898"/>
         <source>Crescendo</source>
         <translation>Crescendo</translation>
     </message>
     <message>
-        <location filename="../../libmscore/hairpin.cpp" line="899"/>
+        <location filename="../../libmscore/hairpin.cpp" line="901"/>
         <source>Decrescendo</source>
         <translation>Decrescendo</translation>
     </message>
@@ -21476,12 +21476,12 @@ En son sürümü edinmek için %1MuseScore web sitesini %2 ziyaret edin.</transl
         <translation>Sağ</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4640"/>
+        <location filename="../../mscore/shortcut.cpp" line="4655"/>
         <source>Load Shortcuts</source>
         <translation>Kısayolları Yükle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4640"/>
+        <location filename="../../mscore/shortcut.cpp" line="4655"/>
         <source>Can&apos;t load shortcuts file: %1</source>
         <translation>Kısayol dosyası yüklenemiyor: %1</translation>
     </message>
@@ -21892,17 +21892,17 @@ En son sürümü edinmek için %1MuseScore web sitesini %2 ziyaret edin.</transl
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/element.cpp" line="2648"/>
+        <location filename="../../libmscore/element.cpp" line="2652"/>
         <source>Measure: %1</source>
         <translation type="unfinished">Ölçü: %1</translation>
     </message>
     <message>
-        <location filename="../../libmscore/element.cpp" line="2650"/>
+        <location filename="../../libmscore/element.cpp" line="2654"/>
         <source>Beat: %1</source>
         <translation type="unfinished">Vuruş: %1</translation>
     </message>
     <message>
-        <location filename="../../libmscore/element.cpp" line="2653"/>
+        <location filename="../../libmscore/element.cpp" line="2657"/>
         <source>Staff: %1</source>
         <translation type="unfinished">Dizek: %1</translation>
     </message>
@@ -21919,7 +21919,7 @@ En son sürümü edinmek için %1MuseScore web sitesini %2 ziyaret edin.</transl
         <location filename="../../importexport/capella/capella.cpp" line="2786"/>
         <location filename="../../importexport/midiimport/importmidi.cpp" line="1206"/>
         <location filename="../../mscore/instrdialog.cpp" line="166"/>
-        <location filename="../../mscore/musescore.cpp" line="4226"/>
+        <location filename="../../mscore/musescore.cpp" line="4220"/>
         <source>Quit</source>
         <translation>Çıkış</translation>
     </message>
@@ -21972,65 +21972,65 @@ Do you want to overwrite it?</source>
         <translation>Stil Yükleme Hatası</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="683"/>
-        <location filename="../../mscore/musescore.cpp" line="689"/>
-        <location filename="../../mscore/musescore.cpp" line="719"/>
-        <location filename="../../mscore/musescore.cpp" line="724"/>
-        <location filename="../../mscore/musescore.cpp" line="729"/>
-        <location filename="../../mscore/musescore.cpp" line="744"/>
-        <location filename="../../mscore/musescore.cpp" line="762"/>
-        <location filename="../../mscore/musescore.cpp" line="771"/>
-        <location filename="../../mscore/musescore.cpp" line="803"/>
+        <location filename="../../mscore/musescore.cpp" line="684"/>
+        <location filename="../../mscore/musescore.cpp" line="690"/>
+        <location filename="../../mscore/musescore.cpp" line="720"/>
+        <location filename="../../mscore/musescore.cpp" line="725"/>
+        <location filename="../../mscore/musescore.cpp" line="730"/>
+        <location filename="../../mscore/musescore.cpp" line="745"/>
+        <location filename="../../mscore/musescore.cpp" line="763"/>
+        <location filename="../../mscore/musescore.cpp" line="772"/>
+        <location filename="../../mscore/musescore.cpp" line="804"/>
         <source>Import Extension File</source>
         <translation>Uzantı Dosyasını İçe Aktar</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="683"/>
+        <location filename="../../mscore/musescore.cpp" line="684"/>
         <source>Cannot import extension on read-only storage: %1</source>
         <translation>Uzantı salt okunur depolamada içe aktarılamıyor: %1</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="689"/>
+        <location filename="../../mscore/musescore.cpp" line="690"/>
         <source>Cannot import extension: storage %1 is full</source>
         <translation>Uzantı içe aktarılamıyor: %1 depolama alanı dolu</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="719"/>
+        <location filename="../../mscore/musescore.cpp" line="720"/>
         <source>Corrupted extension: no metadata.json</source>
         <translation>Bozuk uzantı: metadata.json yok</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="724"/>
+        <location filename="../../mscore/musescore.cpp" line="725"/>
         <source>Corrupted extension: unsupported directories in root directory</source>
         <translation>Bozuk uzantı: kök dizinde desteklenmeyen dizinler</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="729"/>
+        <location filename="../../mscore/musescore.cpp" line="730"/>
         <source>Corrupted extension: unsupported files in root directory</source>
         <translation>Bozuk uzantı: kök dizininde desteklenmeyen dosyalar</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="744"/>
+        <location filename="../../mscore/musescore.cpp" line="745"/>
         <source>Corrupted extension: corrupted metadata.json</source>
         <translation>Bozuk uzantı: bozuk metadata.json</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="762"/>
+        <location filename="../../mscore/musescore.cpp" line="763"/>
         <source>A newer version is already installed</source>
         <translation>Daha yeni bir sürüm zaten kurulu</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="771"/>
+        <location filename="../../mscore/musescore.cpp" line="772"/>
         <source>Error while deleting previous version of the extension: %1</source>
         <translation>Uzantının önceki sürümü silinirken hata oluştu: %1</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="803"/>
+        <location filename="../../mscore/musescore.cpp" line="804"/>
         <source>Unable to extract files from the extension</source>
         <translation>Uzantıdan dosyalar çıkarılamıyor</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4224"/>
+        <location filename="../../mscore/musescore.cpp" line="4218"/>
         <source>Load Languages Failed:</source>
         <translation>Dilleri Yükleme Başarısız:</translation>
     </message>
@@ -22125,7 +22125,7 @@ Do you want to overwrite it?</source>
 <context>
     <name>RecordButton</name>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="5897"/>
+        <location filename="../../mscore/musescore.cpp" line="5891"/>
         <source>Record</source>
         <translation>Kayıt</translation>
     </message>
@@ -22312,7 +22312,12 @@ Do you want to overwrite it?</source>
         <translation>Akıllı</translation>
     </message>
     <message>
-        <location filename="../../mscore/scorecmp/scorecmp_tool.ui" line="151"/>
+        <location filename="../../mscore/scorecmp/scorecmp_tool.ui" line="156"/>
+        <source>Specify:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/scorecmp/scorecmp_tool.ui" line="175"/>
         <source>Comparison</source>
         <translation>Karşılaştırma</translation>
     </message>
@@ -24803,1927 +24808,1927 @@ failed</source>
         <translation>Mevcut partisyonu kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="137"/>
+        <location filename="../../mscore/shortcut.cpp" line="147"/>
         <source>New…</source>
         <translation>Yeni…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="139"/>
+        <location filename="../../mscore/shortcut.cpp" line="149"/>
         <source>Create new score</source>
         <translation>Yeni partisyon oluştur</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="148"/>
+        <location filename="../../mscore/shortcut.cpp" line="158"/>
         <source>Print</source>
         <translation>Yazdır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="158"/>
-        <location filename="../../mscore/shortcut.cpp" line="159"/>
+        <location filename="../../mscore/shortcut.cpp" line="168"/>
+        <location filename="../../mscore/shortcut.cpp" line="169"/>
         <source>Undo</source>
         <translation>Geri al</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="160"/>
+        <location filename="../../mscore/shortcut.cpp" line="170"/>
         <source>Undo last change</source>
         <translation>Son değişikliği geri al</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="169"/>
-        <location filename="../../mscore/shortcut.cpp" line="170"/>
+        <location filename="../../mscore/shortcut.cpp" line="179"/>
+        <location filename="../../mscore/shortcut.cpp" line="180"/>
         <source>Redo</source>
         <translation>İleri Al</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="171"/>
+        <location filename="../../mscore/shortcut.cpp" line="181"/>
         <source>Redo last undo</source>
         <translation>Son geri almayı yinele</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="181"/>
+        <location filename="../../mscore/shortcut.cpp" line="191"/>
         <source>Cut</source>
         <translation>Kes</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="191"/>
+        <location filename="../../mscore/shortcut.cpp" line="201"/>
         <source>Copy</source>
         <translation>Kopyala</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="201"/>
+        <location filename="../../mscore/shortcut.cpp" line="211"/>
         <source>Paste</source>
         <translation>Yapıştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="252"/>
+        <location filename="../../mscore/shortcut.cpp" line="262"/>
         <source>Swap with Clipboard</source>
         <translation>Pano ile Değiştir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="253"/>
+        <location filename="../../mscore/shortcut.cpp" line="263"/>
         <source>Swap with clipboard</source>
         <translation>Pano ile Değiştir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="262"/>
+        <location filename="../../mscore/shortcut.cpp" line="272"/>
         <source>Instruments…</source>
         <translation>Çalgılar…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="263"/>
+        <location filename="../../mscore/shortcut.cpp" line="273"/>
         <source>Show instruments dialog</source>
         <translation>Çalgılar diyaloğunu göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="269"/>
-        <location filename="../../mscore/shortcut.cpp" line="2192"/>
+        <location filename="../../mscore/shortcut.cpp" line="279"/>
+        <location filename="../../mscore/shortcut.cpp" line="2202"/>
         <source>Note Input</source>
         <translation>Nota Girişi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="271"/>
+        <location filename="../../mscore/shortcut.cpp" line="281"/>
         <source>Enter notes with a mouse or keyboard</source>
         <translation>Fare veya klavye ile notaları girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="282"/>
+        <location filename="../../mscore/shortcut.cpp" line="292"/>
         <source>Enter notes in Step-time</source>
         <translation>Adım adım nota girişi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="291"/>
+        <location filename="../../mscore/shortcut.cpp" line="301"/>
         <source>Re-Pitch</source>
         <translation>Perdesini değiştir </translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="293"/>
+        <location filename="../../mscore/shortcut.cpp" line="303"/>
         <source>Replace pitches without changing rhythms</source>
         <translation>Ritimleri değiştirmeden perdeleri değiştirin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="302"/>
+        <location filename="../../mscore/shortcut.cpp" line="312"/>
         <source>Rhythm</source>
         <translation>Ritmini değiştir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="304"/>
+        <location filename="../../mscore/shortcut.cpp" line="314"/>
         <source>Enter durations with a single click or keypress</source>
         <translation>Tek bir tıklama veya tuşa basarak süreleri girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="363"/>
+        <location filename="../../mscore/shortcut.cpp" line="373"/>
         <source>Second Above</source>
         <translation>İkili üstü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="364"/>
+        <location filename="../../mscore/shortcut.cpp" line="374"/>
         <source>Enter second above</source>
         <translation>Yukarı ikili aralık girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="370"/>
+        <location filename="../../mscore/shortcut.cpp" line="380"/>
         <source>Third Above</source>
         <translation>Üçlü üstü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="371"/>
+        <location filename="../../mscore/shortcut.cpp" line="381"/>
         <source>Enter third above</source>
         <translation>Yukarı üçlü aralık girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="377"/>
+        <location filename="../../mscore/shortcut.cpp" line="387"/>
         <source>Fourth Above</source>
         <translation>Dörtlü üstü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="378"/>
+        <location filename="../../mscore/shortcut.cpp" line="388"/>
         <source>Enter fourth above</source>
         <translation>Yukarı dörtlü aralık girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="384"/>
+        <location filename="../../mscore/shortcut.cpp" line="394"/>
         <source>Fifth Above</source>
         <translation>Beşli üstü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="385"/>
+        <location filename="../../mscore/shortcut.cpp" line="395"/>
         <source>Enter fifth above</source>
         <translation>Yukarı beşli aralık girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="391"/>
+        <location filename="../../mscore/shortcut.cpp" line="401"/>
         <source>Sixth Above</source>
         <translation>Altılı üstü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="392"/>
+        <location filename="../../mscore/shortcut.cpp" line="402"/>
         <source>Enter sixth above</source>
         <translation>Yukarı altılı aralık girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="398"/>
+        <location filename="../../mscore/shortcut.cpp" line="408"/>
         <source>Seventh Above</source>
         <translation>Yedili üstü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="399"/>
+        <location filename="../../mscore/shortcut.cpp" line="409"/>
         <source>Enter seventh above</source>
         <translation>Yukarı yedili aralık girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="405"/>
+        <location filename="../../mscore/shortcut.cpp" line="415"/>
         <source>Octave Above</source>
         <translation>Sekizli üstü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="406"/>
+        <location filename="../../mscore/shortcut.cpp" line="416"/>
         <source>Enter octave above</source>
         <translation>Yukarı oktav girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="412"/>
+        <location filename="../../mscore/shortcut.cpp" line="422"/>
         <source>Ninth Above</source>
         <translation>Dokuzlu üstü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="413"/>
+        <location filename="../../mscore/shortcut.cpp" line="423"/>
         <source>Enter ninth above</source>
         <translation>Yukarı dokuzlu aralık girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="426"/>
+        <location filename="../../mscore/shortcut.cpp" line="436"/>
         <source>Second Below</source>
         <translation>İkili altı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="427"/>
+        <location filename="../../mscore/shortcut.cpp" line="437"/>
         <source>Enter second below</source>
         <translation>Aşağı ikili aralık girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="433"/>
+        <location filename="../../mscore/shortcut.cpp" line="443"/>
         <source>Third Below</source>
         <translation>Üçlü altı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="434"/>
+        <location filename="../../mscore/shortcut.cpp" line="444"/>
         <source>Enter third below</source>
         <translation>Aşağı üçlü aralık girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="440"/>
+        <location filename="../../mscore/shortcut.cpp" line="450"/>
         <source>Fourth Below</source>
         <translation>Dörtlü altı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="441"/>
+        <location filename="../../mscore/shortcut.cpp" line="451"/>
         <source>Enter fourth below</source>
         <translation>Aşağı dörtlü aralık girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="447"/>
+        <location filename="../../mscore/shortcut.cpp" line="457"/>
         <source>Fifth Below</source>
         <translation>Beşli altı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="448"/>
+        <location filename="../../mscore/shortcut.cpp" line="458"/>
         <source>Enter fifth below</source>
         <translation>Aşağı beşli aralık girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="454"/>
+        <location filename="../../mscore/shortcut.cpp" line="464"/>
         <source>Sixth Below</source>
         <translation>Altılı altı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="455"/>
+        <location filename="../../mscore/shortcut.cpp" line="465"/>
         <source>Enter sixth below</source>
         <translation>Aşağı altılı aralık girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="461"/>
+        <location filename="../../mscore/shortcut.cpp" line="471"/>
         <source>Seventh Below</source>
         <translation>Yedili altı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="462"/>
+        <location filename="../../mscore/shortcut.cpp" line="472"/>
         <source>Enter seventh below</source>
         <translation>Aşağı yedili aralık girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="468"/>
+        <location filename="../../mscore/shortcut.cpp" line="478"/>
         <source>Octave Below</source>
         <translation>Sekizli altı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="469"/>
+        <location filename="../../mscore/shortcut.cpp" line="479"/>
         <source>Enter octave below</source>
         <translation>Aşağı oktav girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="475"/>
+        <location filename="../../mscore/shortcut.cpp" line="485"/>
         <source>Ninth Below</source>
         <translation>Dokuzlu altı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="476"/>
+        <location filename="../../mscore/shortcut.cpp" line="486"/>
         <source>Enter ninth below</source>
         <translation>Aşağı dokuzlu aralık girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="489"/>
+        <location filename="../../mscore/shortcut.cpp" line="499"/>
         <source>A</source>
         <translation>La</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="490"/>
+        <location filename="../../mscore/shortcut.cpp" line="500"/>
         <source>Enter note A</source>
         <translation>A notasını girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="496"/>
+        <location filename="../../mscore/shortcut.cpp" line="506"/>
         <source>B</source>
         <translation>Si</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="497"/>
+        <location filename="../../mscore/shortcut.cpp" line="507"/>
         <source>Enter note B</source>
         <translation>B notasını girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="503"/>
+        <location filename="../../mscore/shortcut.cpp" line="513"/>
         <source>C</source>
         <translation>Do</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="504"/>
+        <location filename="../../mscore/shortcut.cpp" line="514"/>
         <source>Enter note C</source>
         <translation>C notasını girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="510"/>
+        <location filename="../../mscore/shortcut.cpp" line="520"/>
         <source>D</source>
         <translation>Re</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="511"/>
+        <location filename="../../mscore/shortcut.cpp" line="521"/>
         <source>Enter note D</source>
         <translation>D notasını girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="517"/>
+        <location filename="../../mscore/shortcut.cpp" line="527"/>
         <source>E</source>
         <translation>Mi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="518"/>
+        <location filename="../../mscore/shortcut.cpp" line="528"/>
         <source>Enter note E</source>
         <translation>E notasını girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="524"/>
+        <location filename="../../mscore/shortcut.cpp" line="534"/>
         <source>F</source>
         <translation>Fa</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="525"/>
+        <location filename="../../mscore/shortcut.cpp" line="535"/>
         <source>Enter note F</source>
         <translation>F notasını girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="531"/>
+        <location filename="../../mscore/shortcut.cpp" line="541"/>
         <source>G</source>
         <translation>Sol</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="532"/>
+        <location filename="../../mscore/shortcut.cpp" line="542"/>
         <source>Enter note G</source>
         <translation>G notasını girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="539"/>
+        <location filename="../../mscore/shortcut.cpp" line="549"/>
         <source>Add note A to chord</source>
         <translation>Akora A notasını ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="546"/>
+        <location filename="../../mscore/shortcut.cpp" line="556"/>
         <source>Add note B to chord</source>
         <translation>Akora B notasını ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="553"/>
+        <location filename="../../mscore/shortcut.cpp" line="563"/>
         <source>Add note C to chord</source>
         <translation>Akora C notasını ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="560"/>
+        <location filename="../../mscore/shortcut.cpp" line="570"/>
         <source>Add note D to chord</source>
         <translation>Akora D notasını ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="567"/>
+        <location filename="../../mscore/shortcut.cpp" line="577"/>
         <source>Add note E to chord</source>
         <translation>Akora E notasını ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="574"/>
+        <location filename="../../mscore/shortcut.cpp" line="584"/>
         <source>Add note F to chord</source>
         <translation>Akora F notasını ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="581"/>
+        <location filename="../../mscore/shortcut.cpp" line="591"/>
         <source>Add note G to chord</source>
         <translation>Akora G notasını ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="594"/>
+        <location filename="../../mscore/shortcut.cpp" line="604"/>
         <source>Insert A</source>
         <translation>A Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="595"/>
+        <location filename="../../mscore/shortcut.cpp" line="605"/>
         <source>Insert note A</source>
         <translation>A notasını ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="601"/>
+        <location filename="../../mscore/shortcut.cpp" line="611"/>
         <source>Insert B</source>
         <translation>B ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="602"/>
+        <location filename="../../mscore/shortcut.cpp" line="612"/>
         <source>Insert note B</source>
         <translation>B notasını ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="608"/>
+        <location filename="../../mscore/shortcut.cpp" line="618"/>
         <source>Insert C</source>
         <translation>C ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="609"/>
+        <location filename="../../mscore/shortcut.cpp" line="619"/>
         <source>Insert note C</source>
         <translation>C notasını ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="615"/>
+        <location filename="../../mscore/shortcut.cpp" line="625"/>
         <source>Insert D</source>
         <translation>D ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="616"/>
+        <location filename="../../mscore/shortcut.cpp" line="626"/>
         <source>Insert note D</source>
         <translation>D notasını ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="622"/>
+        <location filename="../../mscore/shortcut.cpp" line="632"/>
         <source>Insert E</source>
         <translation>E ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="623"/>
+        <location filename="../../mscore/shortcut.cpp" line="633"/>
         <source>Insert note E</source>
         <translation>E notasını ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="629"/>
+        <location filename="../../mscore/shortcut.cpp" line="639"/>
         <source>Insert F</source>
         <translation>F ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="630"/>
+        <location filename="../../mscore/shortcut.cpp" line="640"/>
         <source>Insert note F</source>
         <translation>F notasını ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="636"/>
+        <location filename="../../mscore/shortcut.cpp" line="646"/>
         <source>Insert G</source>
         <translation>G ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="637"/>
+        <location filename="../../mscore/shortcut.cpp" line="647"/>
         <source>Insert note G</source>
         <translation>G notasını ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="643"/>
-        <location filename="../../mscore/shortcut.cpp" line="1718"/>
-        <location filename="../../mscore/shortcut.cpp" line="1720"/>
+        <location filename="../../mscore/shortcut.cpp" line="653"/>
+        <location filename="../../mscore/shortcut.cpp" line="1728"/>
+        <location filename="../../mscore/shortcut.cpp" line="1730"/>
         <source>Rest</source>
         <translation>Sus</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="644"/>
+        <location filename="../../mscore/shortcut.cpp" line="654"/>
         <source>Enter rest</source>
         <translation>Sus girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="653"/>
+        <location filename="../../mscore/shortcut.cpp" line="663"/>
         <source>Move the cursor forward in real-time input mode</source>
         <translation>İmleci gerçek zamanlı giriş modunda ileri hareket ettirin </translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="660"/>
+        <location filename="../../mscore/shortcut.cpp" line="670"/>
         <source>Staccato</source>
         <translation>Staccato</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="661"/>
+        <location filename="../../mscore/shortcut.cpp" line="671"/>
         <source>Toggle staccato</source>
         <translation>Stakato&apos;yu aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="690"/>
+        <location filename="../../mscore/shortcut.cpp" line="700"/>
         <source>Tenuto</source>
         <translation>Tenuto</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="691"/>
+        <location filename="../../mscore/shortcut.cpp" line="701"/>
         <source>Toggle tenuto</source>
         <translation>Tenuto&apos;yu aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="700"/>
+        <location filename="../../mscore/shortcut.cpp" line="710"/>
         <source>Trill</source>
         <translation>Tril</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="701"/>
+        <location filename="../../mscore/shortcut.cpp" line="711"/>
         <source>Toggle trill</source>
         <translation>Tril&apos;i aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="710"/>
+        <location filename="../../mscore/shortcut.cpp" line="720"/>
         <source>Marcato</source>
         <translation>Marcato</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="711"/>
+        <location filename="../../mscore/shortcut.cpp" line="721"/>
         <source>Toggle marcato</source>
         <translation>Marcato&apos;yu aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="670"/>
+        <location filename="../../mscore/shortcut.cpp" line="680"/>
         <source>Up Bow</source>
         <translation>Yay yukarı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="671"/>
+        <location filename="../../mscore/shortcut.cpp" line="681"/>
         <source>Toggle up bow</source>
         <translation>Yukarı eğim Aç / Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="680"/>
+        <location filename="../../mscore/shortcut.cpp" line="690"/>
         <source>Down Bow</source>
         <translation>Yay aşağı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="681"/>
+        <location filename="../../mscore/shortcut.cpp" line="691"/>
         <source>Toggle down bow</source>
         <translation>Aşağı eğim Aç / Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="730"/>
+        <location filename="../../mscore/shortcut.cpp" line="740"/>
         <source>Increase Layout Stretch</source>
         <translation>Düzen Uzatmayı Arttır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="731"/>
+        <location filename="../../mscore/shortcut.cpp" line="741"/>
         <source>Increase layout stretch</source>
         <translation>Düzen Uzatmayı Arttır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="732"/>
+        <location filename="../../mscore/shortcut.cpp" line="742"/>
         <source>Increase layout stretch factor of selected measures</source>
         <translation>Seçili ölçülerin düzen uzatma faktörünü Arttırın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="740"/>
+        <location filename="../../mscore/shortcut.cpp" line="750"/>
         <source>Decrease Layout Stretch</source>
         <translation>Düzen Uzatmayı Azalt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="741"/>
+        <location filename="../../mscore/shortcut.cpp" line="751"/>
         <source>Decrease layout stretch</source>
         <translation>Düzen Uzatmayı Azalt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="742"/>
+        <location filename="../../mscore/shortcut.cpp" line="752"/>
         <source>Decrease layout stretch factor of selected measures</source>
         <translation>Seçili ölçülerin düzen uzatma faktörünü azalt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="780"/>
+        <location filename="../../mscore/shortcut.cpp" line="790"/>
         <source>Regroup Rhythms</source>
         <translation>Ritimleri yeniden gurupla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="781"/>
+        <location filename="../../mscore/shortcut.cpp" line="791"/>
         <source>Regroup rhythms</source>
         <translation>Ritimleri yeniden gurupla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="782"/>
+        <location filename="../../mscore/shortcut.cpp" line="792"/>
         <source>Combine rests and tied notes from selection and resplit at rhythmical locations</source>
         <translation>Seçimlerden gelen Sus ve bağlı notaları bir araya getirin ve ritmik konumlarda yeniden yazın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="790"/>
+        <location filename="../../mscore/shortcut.cpp" line="800"/>
         <source>Flip Direction</source>
         <translation>Çevirme Yönü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="791"/>
+        <location filename="../../mscore/shortcut.cpp" line="801"/>
         <source>Flip direction</source>
         <translation>Çevirme yönü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="800"/>
+        <location filename="../../mscore/shortcut.cpp" line="810"/>
         <source>Up</source>
         <translation>Yukarı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="801"/>
+        <location filename="../../mscore/shortcut.cpp" line="811"/>
         <source>Pitch up or move text or articulation up</source>
         <translation>Perdeyi veya metni ya da artikülasyonu yukarı taşı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="810"/>
+        <location filename="../../mscore/shortcut.cpp" line="820"/>
         <source>Diatonic Up</source>
         <translation>Diyatonik Yukarı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="811"/>
+        <location filename="../../mscore/shortcut.cpp" line="821"/>
         <source>Diatonic pitch up</source>
         <translation>Diyatonik perde yukarı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="832"/>
+        <location filename="../../mscore/shortcut.cpp" line="842"/>
         <source>Up Octave</source>
         <translation>Üst oktav</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="833"/>
+        <location filename="../../mscore/shortcut.cpp" line="843"/>
         <source>Pitch up octave</source>
         <translation>Bir oktav yukarı çık</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="834"/>
+        <location filename="../../mscore/shortcut.cpp" line="844"/>
         <source>Pitch up by an octave or move text or articulation up</source>
         <translation>Bir oktav yukarı çıkın veya metni ya da artikülasyonu yukarı hareket ettirin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="842"/>
+        <location filename="../../mscore/shortcut.cpp" line="852"/>
         <source>Up Note in Chord</source>
         <translation>Akorda yukarı nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="843"/>
+        <location filename="../../mscore/shortcut.cpp" line="853"/>
         <source>Go to higher pitched note in chord</source>
         <translation>Akorda daha yüksek perdeli notaya git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="852"/>
+        <location filename="../../mscore/shortcut.cpp" line="862"/>
         <source>Top Note in Chord</source>
         <translation>Akorda En Üst Nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="853"/>
+        <location filename="../../mscore/shortcut.cpp" line="863"/>
         <source>Go to top note in chord</source>
         <translation>Akorda en üst notaya git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="862"/>
+        <location filename="../../mscore/shortcut.cpp" line="872"/>
         <source>Move Up</source>
         <translation>Yukarı Taşı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="873"/>
+        <location filename="../../mscore/shortcut.cpp" line="883"/>
         <source>Down</source>
         <translation>Aşağı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="874"/>
+        <location filename="../../mscore/shortcut.cpp" line="884"/>
         <source>Pitch down or move text or articulation down</source>
         <translation>Metni aşağı kaydırın veya metni ya da artikülasyonu aşağı kaydırın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="883"/>
+        <location filename="../../mscore/shortcut.cpp" line="893"/>
         <source>Diatonic Down</source>
         <translation>Diyatonik Aşağı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="884"/>
+        <location filename="../../mscore/shortcut.cpp" line="894"/>
         <source>Diatonic pitch down</source>
         <translation>Diyatonik perde aşağı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="905"/>
+        <location filename="../../mscore/shortcut.cpp" line="915"/>
         <source>Down Octave</source>
         <translation>Aşağı Oktav</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="906"/>
+        <location filename="../../mscore/shortcut.cpp" line="916"/>
         <source>Pitch down octave</source>
         <translation>Bir oktav aşağı git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="907"/>
+        <location filename="../../mscore/shortcut.cpp" line="917"/>
         <source>Pitch down by an octave or move text or articulation down</source>
         <translation>Bir oktav aşağı inin veya metni ya da artikülasyonu aşağı hareket ettirin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="916"/>
+        <location filename="../../mscore/shortcut.cpp" line="926"/>
         <source>Down Note in Chord</source>
         <translation>Akorda Aşağı Nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="917"/>
+        <location filename="../../mscore/shortcut.cpp" line="927"/>
         <source>Go to lower pitched note in chord</source>
         <translation>Akorda daha düşük perdeli notaya git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="927"/>
+        <location filename="../../mscore/shortcut.cpp" line="937"/>
         <source>Next Segment Element</source>
         <translation>Sonraki Segment Öğesi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="928"/>
+        <location filename="../../mscore/shortcut.cpp" line="938"/>
         <source>Accessibility: Next segment element</source>
         <translation>Erişilebilirlik: Sonraki segment öğesi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="938"/>
+        <location filename="../../mscore/shortcut.cpp" line="948"/>
         <source>Previous Segment Element</source>
         <translation>Önceki Segment Öğesi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="939"/>
+        <location filename="../../mscore/shortcut.cpp" line="949"/>
         <source>Accessibility: Previous segment element</source>
         <translation>Erişilebilirlik: Önceki segment öğesi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="949"/>
+        <location filename="../../mscore/shortcut.cpp" line="959"/>
         <source>Next Element</source>
         <translation>Sonraki Öğe</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="950"/>
+        <location filename="../../mscore/shortcut.cpp" line="960"/>
         <source>Accessibility: Next element</source>
         <translation>Erişilebilirlik: Sonraki öğe</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="960"/>
+        <location filename="../../mscore/shortcut.cpp" line="970"/>
         <source>Previous Element</source>
         <translation>Önceki Öğe</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="961"/>
+        <location filename="../../mscore/shortcut.cpp" line="971"/>
         <source>Accessibility: Previous element</source>
         <translation>Erişilebilirlik: Önceki öğe</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="982"/>
-        <location filename="../../mscore/shortcut.cpp" line="983"/>
-        <location filename="../../mscore/shortcut.cpp" line="984"/>
+        <location filename="../../mscore/shortcut.cpp" line="992"/>
+        <location filename="../../mscore/shortcut.cpp" line="993"/>
+        <location filename="../../mscore/shortcut.cpp" line="994"/>
         <source>Palette Search</source>
         <translation>Palet Araması</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="993"/>
+        <location filename="../../mscore/shortcut.cpp" line="1003"/>
         <source>Apply Current Palette Element</source>
         <translation>Mevcut Palet Öğesini Uygula</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="994"/>
+        <location filename="../../mscore/shortcut.cpp" line="1004"/>
         <source>Apply current palette element</source>
         <translation>Mevcut palet öğesini uygula</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1004"/>
+        <location filename="../../mscore/shortcut.cpp" line="1014"/>
         <source>First Element</source>
         <translation>İlk Öğe</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1005"/>
+        <location filename="../../mscore/shortcut.cpp" line="1015"/>
         <source>Go to the first element</source>
         <translation>İlk öğeye git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1015"/>
+        <location filename="../../mscore/shortcut.cpp" line="1025"/>
         <source>Last Element</source>
         <translation>Son Öğe</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1016"/>
+        <location filename="../../mscore/shortcut.cpp" line="1026"/>
         <source>Go to the last element</source>
         <translation>Son öğeye git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1026"/>
+        <location filename="../../mscore/shortcut.cpp" line="1036"/>
         <source>Bottom Note in Chord</source>
         <translation>Akorda Alt Nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1027"/>
+        <location filename="../../mscore/shortcut.cpp" line="1037"/>
         <source>Go to bottom note in chord</source>
         <translation>Akorda alt notaya git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1037"/>
+        <location filename="../../mscore/shortcut.cpp" line="1047"/>
         <source>Move Down</source>
         <translation>Aşağı Taşı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1048"/>
+        <location filename="../../mscore/shortcut.cpp" line="1058"/>
         <source>Previous Chord</source>
         <translation>Önceki Akor</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1049"/>
+        <location filename="../../mscore/shortcut.cpp" line="1059"/>
         <source>Go to previous chord or move text left</source>
         <translation>Önceki akora git veya metni sola taşı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1055"/>
+        <location filename="../../mscore/shortcut.cpp" line="1065"/>
         <source>Previous Measure</source>
         <translation>Önceki Ölçü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1056"/>
+        <location filename="../../mscore/shortcut.cpp" line="1066"/>
         <source>Go to previous measure or move text left</source>
         <translation>Önceki ölçüye git veya metni sola taşı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1083"/>
+        <location filename="../../mscore/shortcut.cpp" line="1093"/>
         <source>Previous Staff or Voice</source>
         <translation>Önceki Dizek veya Ses</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1084"/>
+        <location filename="../../mscore/shortcut.cpp" line="1094"/>
         <source>Previous staff or voice</source>
         <translation>Önceki dizek veya ses</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1090"/>
+        <location filename="../../mscore/shortcut.cpp" line="1100"/>
         <source>Next Chord</source>
         <translation>Sonraki Akor</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1091"/>
+        <location filename="../../mscore/shortcut.cpp" line="1101"/>
         <source>Go to next chord or move text right</source>
         <translation>Sonraki akora git veya metni sağa taşı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1097"/>
+        <location filename="../../mscore/shortcut.cpp" line="1107"/>
         <source>Next Measure</source>
         <translation>Sonraki Ölçü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1098"/>
+        <location filename="../../mscore/shortcut.cpp" line="1108"/>
         <source>Go to next measure or move text right</source>
         <translation>Sonraki ölçüye git veya metni sağa taşı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1146"/>
+        <location filename="../../mscore/shortcut.cpp" line="1156"/>
         <source>Next Staff or Voice</source>
         <translation>Sonraki Dizek veya Ses</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1147"/>
+        <location filename="../../mscore/shortcut.cpp" line="1157"/>
         <source>Next staff or voice</source>
         <translation>Sonraki dizek veya ses</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1153"/>
+        <location filename="../../mscore/shortcut.cpp" line="1163"/>
         <source>Add Previous Chord to Selection</source>
         <translation>Seçime Önceki Akoru Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1154"/>
+        <location filename="../../mscore/shortcut.cpp" line="1164"/>
         <source>Add previous chord to selection</source>
         <translation>Seçime önceki akoru ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1160"/>
+        <location filename="../../mscore/shortcut.cpp" line="1170"/>
         <source>Select to Beginning of Measure</source>
         <translation>Ölçünün Başlangıcına kadar Seçin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1161"/>
+        <location filename="../../mscore/shortcut.cpp" line="1171"/>
         <source>Select to beginning of measure</source>
         <translation>Ölçünün başlangıcına kadar seçin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1167"/>
+        <location filename="../../mscore/shortcut.cpp" line="1177"/>
         <source>Add Next Chord to Selection</source>
         <translation>Sonraki Akoru Seçime Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1168"/>
+        <location filename="../../mscore/shortcut.cpp" line="1178"/>
         <source>Add next chord to selection</source>
         <translation>Seçime sonraki akoru ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1174"/>
+        <location filename="../../mscore/shortcut.cpp" line="1184"/>
         <source>Select Section</source>
         <translation>Bölüm Seçin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1175"/>
+        <location filename="../../mscore/shortcut.cpp" line="1185"/>
         <source>Select section</source>
         <translation>Bölüm seçin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1181"/>
+        <location filename="../../mscore/shortcut.cpp" line="1191"/>
         <source>Move Chord/Rest Right</source>
         <translation>Akoru Taşı / Sağa Sus</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1182"/>
+        <location filename="../../mscore/shortcut.cpp" line="1192"/>
         <source>Move chord/rest right</source>
         <translation>Sağa akoru/susu taşı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1188"/>
+        <location filename="../../mscore/shortcut.cpp" line="1198"/>
         <source>Move Chord/Rest left</source>
         <translation>Akoru Taşı/Sol Sus</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1189"/>
+        <location filename="../../mscore/shortcut.cpp" line="1199"/>
         <source>Move chord/rest left</source>
         <translation>Sola akoru/susu taşı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1195"/>
+        <location filename="../../mscore/shortcut.cpp" line="1205"/>
         <source>Select to End of Measure</source>
         <translation>Ölçünün Sonuna Kadar Seçin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1196"/>
+        <location filename="../../mscore/shortcut.cpp" line="1206"/>
         <source>Select to end of measure</source>
         <translation>Ölçünün sonuna kadar seçin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1202"/>
+        <location filename="../../mscore/shortcut.cpp" line="1212"/>
         <source>Select to Beginning of Line</source>
         <translation>Satırın Başına kadar Seçin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1203"/>
+        <location filename="../../mscore/shortcut.cpp" line="1213"/>
         <source>Select to beginning of line</source>
         <translation>Satırın başına kadar seçin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1209"/>
+        <location filename="../../mscore/shortcut.cpp" line="1219"/>
         <source>Select to End of Line</source>
         <translation>Satırın Sonuna Kadar Seçin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1210"/>
+        <location filename="../../mscore/shortcut.cpp" line="1220"/>
         <source>Select to end of line</source>
         <translation>Satırın sonuna kadar seç</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1216"/>
+        <location filename="../../mscore/shortcut.cpp" line="1226"/>
         <source>Select to Beginning of Score</source>
         <translation>Partisyonun Başına kadar Seçin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1217"/>
+        <location filename="../../mscore/shortcut.cpp" line="1227"/>
         <source>Select to beginning of score</source>
         <translation>Partisyonun başına kadar seç</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1223"/>
+        <location filename="../../mscore/shortcut.cpp" line="1233"/>
         <source>Select to End of Score</source>
         <translation>Partisyonun Sonuna kadar Seçin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1224"/>
+        <location filename="../../mscore/shortcut.cpp" line="1234"/>
         <source>Select to end of score</source>
         <translation>Partisyonun sonuna kadar seç</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1230"/>
+        <location filename="../../mscore/shortcut.cpp" line="1240"/>
         <source>Add Staff Above to Selection</source>
         <translation>Seçimin Üstüne Dizek Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1231"/>
+        <location filename="../../mscore/shortcut.cpp" line="1241"/>
         <source>Add staff above to selection</source>
         <translation>Seçimin üstüne dizek ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1237"/>
+        <location filename="../../mscore/shortcut.cpp" line="1247"/>
         <source>Add Staff Below to Selection</source>
         <translation>Seçimin Altına Dizek Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1238"/>
+        <location filename="../../mscore/shortcut.cpp" line="1248"/>
         <source>Add staff below to selection</source>
         <translation>Seçimin altına dizek ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1256"/>
+        <location filename="../../mscore/shortcut.cpp" line="1266"/>
         <source>Page: Previous</source>
         <translation>Sayfa: Önceki</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1262"/>
+        <location filename="../../mscore/shortcut.cpp" line="1272"/>
         <source>Page: Next</source>
         <translation>Sayfa: Sonraki</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1268"/>
+        <location filename="../../mscore/shortcut.cpp" line="1278"/>
         <source>Page: Top</source>
         <translation>Sayfa: Üstteki</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1274"/>
+        <location filename="../../mscore/shortcut.cpp" line="1284"/>
         <source>Page: End</source>
         <translation>Sayfa: Sondaki</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1280"/>
+        <location filename="../../mscore/shortcut.cpp" line="1290"/>
         <source>Slur</source>
         <translation>Bağ</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1281"/>
+        <location filename="../../mscore/shortcut.cpp" line="1291"/>
         <source>Add slur</source>
         <translation>Bağ ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1287"/>
+        <location filename="../../mscore/shortcut.cpp" line="1297"/>
         <source>Crescendo</source>
         <translation>Büyüyerek</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1288"/>
+        <location filename="../../mscore/shortcut.cpp" line="1298"/>
         <source>Add crescendo</source>
         <translation>Crescendo ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1297"/>
+        <location filename="../../mscore/shortcut.cpp" line="1307"/>
         <source>Decrescendo</source>
         <translation>Küçülerek</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1298"/>
+        <location filename="../../mscore/shortcut.cpp" line="1308"/>
         <source>Add decrescendo</source>
         <translation>Decrescendo ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1328"/>
+        <location filename="../../mscore/shortcut.cpp" line="1338"/>
         <source>Escape</source>
         <translation>Çıkış</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1334"/>
-        <location filename="../../mscore/shortcut.cpp" line="1335"/>
+        <location filename="../../mscore/shortcut.cpp" line="1344"/>
+        <location filename="../../mscore/shortcut.cpp" line="1345"/>
         <source>Delete</source>
         <translation>Sil</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1344"/>
+        <location filename="../../mscore/shortcut.cpp" line="1354"/>
         <source>Full Measure Rest</source>
         <translation>Tam Ölçü sus</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1345"/>
+        <location filename="../../mscore/shortcut.cpp" line="1355"/>
         <source>Full measure rest</source>
         <translation>Tam Ölçü sus</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1364"/>
+        <location filename="../../mscore/shortcut.cpp" line="1374"/>
         <source>Append One Measure</source>
         <translation>Sonuna Bir Ölçü Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1365"/>
+        <location filename="../../mscore/shortcut.cpp" line="1375"/>
         <source>Append one measure</source>
         <translation>Sonuna bir ölçü ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1371"/>
+        <location filename="../../mscore/shortcut.cpp" line="1381"/>
         <source>Append Measures…</source>
         <translation>Sonuna Ölçüler Ekle…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1372"/>
+        <location filename="../../mscore/shortcut.cpp" line="1382"/>
         <source>Append measures</source>
         <translation>Sonuna ölçüler ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1378"/>
+        <location filename="../../mscore/shortcut.cpp" line="1388"/>
         <source>Insert One Measure</source>
         <translation>Araya Bir Ölçü Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1379"/>
+        <location filename="../../mscore/shortcut.cpp" line="1389"/>
         <source>Insert one measure</source>
         <translation>Araya bir ölçü ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1387"/>
+        <location filename="../../mscore/shortcut.cpp" line="1397"/>
         <source>Insert Measures…</source>
         <translation>Araya Ölçüler Ekle…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1388"/>
+        <location filename="../../mscore/shortcut.cpp" line="1398"/>
         <source>Insert measures</source>
         <translation>Araya ölçüler ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1394"/>
+        <location filename="../../mscore/shortcut.cpp" line="1404"/>
         <source>Insert Horizontal Frame</source>
         <translation>Önüne Yatay Çerçeve Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1395"/>
+        <location filename="../../mscore/shortcut.cpp" line="1405"/>
         <source>Insert horizontal frame</source>
         <translation>Önüne yatay çerçeve ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1403"/>
+        <location filename="../../mscore/shortcut.cpp" line="1413"/>
         <source>Insert Text Frame</source>
         <translation>Araya Metin Çerçevesi Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1404"/>
+        <location filename="../../mscore/shortcut.cpp" line="1414"/>
         <source>Insert text frame</source>
         <translation>Araya metin çerçevesi ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1412"/>
+        <location filename="../../mscore/shortcut.cpp" line="1422"/>
         <source>Append Text Frame</source>
         <translation>Sonuna Metin Çerçevesi Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1413"/>
+        <location filename="../../mscore/shortcut.cpp" line="1423"/>
         <source>Append text frame</source>
         <translation>Sonuna metin çerçevesi ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1419"/>
+        <location filename="../../mscore/shortcut.cpp" line="1429"/>
         <source>Insert Fretboard Diagram Frame</source>
         <translation>Klavye Şeması Çerçevesi Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1420"/>
+        <location filename="../../mscore/shortcut.cpp" line="1430"/>
         <source>Insert fretboard diagram frame</source>
         <translation>Klavye şeması çerçevesi ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1428"/>
+        <location filename="../../mscore/shortcut.cpp" line="1438"/>
         <source>Insert Vertical Frame</source>
         <translation>Dikey Çerçeve Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1429"/>
+        <location filename="../../mscore/shortcut.cpp" line="1439"/>
         <source>Insert vertical frame</source>
         <translation>Dikey çerçeve ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1437"/>
+        <location filename="../../mscore/shortcut.cpp" line="1447"/>
         <source>Append Horizontal Frame</source>
         <translation>En Sona Yatay Çerçeve Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1438"/>
+        <location filename="../../mscore/shortcut.cpp" line="1448"/>
         <source>Append horizontal frame</source>
         <translation>En sona yatay çerçeve ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1444"/>
+        <location filename="../../mscore/shortcut.cpp" line="1454"/>
         <source>Append Vertical Frame</source>
         <translation>Dikey Çerçeve Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1445"/>
+        <location filename="../../mscore/shortcut.cpp" line="1455"/>
         <source>Append vertical frame</source>
         <translation>Dikey çerçeve ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1451"/>
+        <location filename="../../mscore/shortcut.cpp" line="1461"/>
         <source>Duplet</source>
         <translation>İkileme</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1457"/>
+        <location filename="../../mscore/shortcut.cpp" line="1467"/>
         <source>Triplet</source>
         <translation>Üçleme</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1463"/>
+        <location filename="../../mscore/shortcut.cpp" line="1473"/>
         <source>Quadruplet</source>
         <translation>Dörtleme</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1469"/>
+        <location filename="../../mscore/shortcut.cpp" line="1479"/>
         <source>Quintuplet</source>
         <translation>Beşleme</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1475"/>
+        <location filename="../../mscore/shortcut.cpp" line="1485"/>
         <source>Sextuplet</source>
         <translation>Altılama</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1481"/>
+        <location filename="../../mscore/shortcut.cpp" line="1491"/>
         <source>Septuplet</source>
         <translation>Yedileme</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1487"/>
+        <location filename="../../mscore/shortcut.cpp" line="1497"/>
         <source>Octuplet</source>
         <translation>Sekizleme</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1493"/>
+        <location filename="../../mscore/shortcut.cpp" line="1503"/>
         <source>Nonuplet</source>
         <translation>Dokuzlama</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1499"/>
+        <location filename="../../mscore/shortcut.cpp" line="1509"/>
         <source>Other…</source>
         <translation>Diğer…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1500"/>
+        <location filename="../../mscore/shortcut.cpp" line="1510"/>
         <source>Other tuplets</source>
         <translation>Diğer tupletler</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1506"/>
-        <location filename="../../mscore/shortcut.cpp" line="1508"/>
+        <location filename="../../mscore/shortcut.cpp" line="1516"/>
+        <location filename="../../mscore/shortcut.cpp" line="1518"/>
         <source>Longa</source>
         <translation>Longa</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1507"/>
+        <location filename="../../mscore/shortcut.cpp" line="1517"/>
         <source>Note duration: Longa</source>
         <translation>Nota süresi: Longa</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1517"/>
+        <location filename="../../mscore/shortcut.cpp" line="1527"/>
         <source>Double Whole Note</source>
         <translation>Çift birlik nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1518"/>
+        <location filename="../../mscore/shortcut.cpp" line="1528"/>
         <source>Note duration: Double whole</source>
         <translation>Nota süresi: Çift Birlik</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1519"/>
-        <location filename="../../mscore/shortcut.cpp" line="3405"/>
+        <location filename="../../mscore/shortcut.cpp" line="1529"/>
+        <location filename="../../mscore/shortcut.cpp" line="3415"/>
         <source>Double whole note</source>
         <translation>Çift birlik nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1528"/>
+        <location filename="../../mscore/shortcut.cpp" line="1538"/>
         <source>Whole Note</source>
         <translation>Birlik nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1529"/>
+        <location filename="../../mscore/shortcut.cpp" line="1539"/>
         <source>Note duration: Whole</source>
         <translation>Nota süresi: Birlik</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1530"/>
-        <location filename="../../mscore/shortcut.cpp" line="3415"/>
+        <location filename="../../mscore/shortcut.cpp" line="1540"/>
+        <location filename="../../mscore/shortcut.cpp" line="3425"/>
         <source>Whole note</source>
         <translation>Birlik nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1539"/>
+        <location filename="../../mscore/shortcut.cpp" line="1549"/>
         <source>Half Note</source>
         <translation>İkilik Nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1540"/>
+        <location filename="../../mscore/shortcut.cpp" line="1550"/>
         <source>Note duration: Half</source>
         <translation>Nota süresi: İkilik</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1541"/>
-        <location filename="../../mscore/shortcut.cpp" line="3425"/>
+        <location filename="../../mscore/shortcut.cpp" line="1551"/>
+        <location filename="../../mscore/shortcut.cpp" line="3435"/>
         <source>Half note</source>
         <translation>İkilik Nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1550"/>
+        <location filename="../../mscore/shortcut.cpp" line="1560"/>
         <source>Quarter Note</source>
         <translation>Dörtlük Nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1551"/>
+        <location filename="../../mscore/shortcut.cpp" line="1561"/>
         <source>Note duration: Quarter</source>
         <translation>Nota süresi: Dörtlük</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1552"/>
-        <location filename="../../mscore/shortcut.cpp" line="3435"/>
+        <location filename="../../mscore/shortcut.cpp" line="1562"/>
+        <location filename="../../mscore/shortcut.cpp" line="3445"/>
         <source>Quarter note</source>
         <translation>Dörtlük Nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1561"/>
+        <location filename="../../mscore/shortcut.cpp" line="1571"/>
         <source>Eighth Note</source>
         <translation>Sekizinci Nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1562"/>
+        <location filename="../../mscore/shortcut.cpp" line="1572"/>
         <source>Note duration: Eighth</source>
         <translation>Nota süresi: Sekizlik</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1563"/>
-        <location filename="../../mscore/shortcut.cpp" line="3445"/>
+        <location filename="../../mscore/shortcut.cpp" line="1573"/>
+        <location filename="../../mscore/shortcut.cpp" line="3455"/>
         <source>Eighth note</source>
         <translation>Sekizlik nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1572"/>
+        <location filename="../../mscore/shortcut.cpp" line="1582"/>
         <source>16th Note</source>
         <translation>16lık nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1573"/>
+        <location filename="../../mscore/shortcut.cpp" line="1583"/>
         <source>Note duration: 16th</source>
         <translation>Nota süresi: 16lık</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1574"/>
-        <location filename="../../mscore/shortcut.cpp" line="3455"/>
+        <location filename="../../mscore/shortcut.cpp" line="1584"/>
+        <location filename="../../mscore/shortcut.cpp" line="3465"/>
         <source>16th note</source>
         <translation>16lık nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1583"/>
+        <location filename="../../mscore/shortcut.cpp" line="1593"/>
         <source>32nd Note</source>
         <translation>32lik nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1584"/>
+        <location filename="../../mscore/shortcut.cpp" line="1594"/>
         <source>Note duration: 32nd</source>
         <translation>Nota süresi: 32lik</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1585"/>
-        <location filename="../../mscore/shortcut.cpp" line="3465"/>
+        <location filename="../../mscore/shortcut.cpp" line="1595"/>
+        <location filename="../../mscore/shortcut.cpp" line="3475"/>
         <source>32nd note</source>
         <translation>32lik nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1594"/>
+        <location filename="../../mscore/shortcut.cpp" line="1604"/>
         <source>64th Note</source>
         <translation>64lük nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1595"/>
+        <location filename="../../mscore/shortcut.cpp" line="1605"/>
         <source>Note duration: 64th</source>
         <translation>Nota süresi: 64lük</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1596"/>
-        <location filename="../../mscore/shortcut.cpp" line="3475"/>
+        <location filename="../../mscore/shortcut.cpp" line="1606"/>
+        <location filename="../../mscore/shortcut.cpp" line="3485"/>
         <source>64th note</source>
         <translation>64lük nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1605"/>
+        <location filename="../../mscore/shortcut.cpp" line="1615"/>
         <source>128th Note</source>
         <translation>128&apos;lik nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1606"/>
+        <location filename="../../mscore/shortcut.cpp" line="1616"/>
         <source>Note duration: 128th</source>
         <translation>Nota süresi: 128lik</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1607"/>
-        <location filename="../../mscore/shortcut.cpp" line="3485"/>
+        <location filename="../../mscore/shortcut.cpp" line="1617"/>
+        <location filename="../../mscore/shortcut.cpp" line="3495"/>
         <source>128th note</source>
         <translation>128&apos;lik nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1649"/>
+        <location filename="../../mscore/shortcut.cpp" line="1659"/>
         <source>Increase Active Duration</source>
         <translation>Aktif Süreyi Artırın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1650"/>
+        <location filename="../../mscore/shortcut.cpp" line="1660"/>
         <source>Increase active duration</source>
         <translation>Aktif süreyi artırın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1656"/>
+        <location filename="../../mscore/shortcut.cpp" line="1666"/>
         <source>Decrease Active Duration</source>
         <translation>Aktif Süreyi Azaltın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1657"/>
+        <location filename="../../mscore/shortcut.cpp" line="1667"/>
         <source>Decrease active duration</source>
         <translation>Aktif süreyi azaltın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1663"/>
+        <location filename="../../mscore/shortcut.cpp" line="1673"/>
         <source>Augmentation Dot</source>
         <translation>Uzatma Noktası</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1664"/>
+        <location filename="../../mscore/shortcut.cpp" line="1674"/>
         <source>Note duration: Augmentation dot</source>
         <translation>Nota süresi: Uzatma Noktası</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1665"/>
+        <location filename="../../mscore/shortcut.cpp" line="1675"/>
         <source>Augmentation dot</source>
         <translation>Uzatma noktası</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1674"/>
+        <location filename="../../mscore/shortcut.cpp" line="1684"/>
         <source>Double Augmentation Dot</source>
         <translation>Çift Uzatma Noktası</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1675"/>
+        <location filename="../../mscore/shortcut.cpp" line="1685"/>
         <source>Note duration: Double augmentation dot</source>
         <translation>Nota süresi: Çift Uzatma Noktası</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1676"/>
+        <location filename="../../mscore/shortcut.cpp" line="1686"/>
         <source>Double augmentation dot</source>
         <translation>Çift Uzatma noktası</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1685"/>
+        <location filename="../../mscore/shortcut.cpp" line="1695"/>
         <source>Triple Augmentation Dot</source>
         <translation>Üçlü Uzatma Noktası</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1686"/>
+        <location filename="../../mscore/shortcut.cpp" line="1696"/>
         <source>Note duration: Triple augmentation dot</source>
         <translation>Nota süresi: Üçlü Uzatma Noktası</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1687"/>
+        <location filename="../../mscore/shortcut.cpp" line="1697"/>
         <source>Triple augmentation dot</source>
         <translation>Üçlü Uzatma Noktası</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1696"/>
+        <location filename="../../mscore/shortcut.cpp" line="1706"/>
         <source>Quadruple Augmentation Dot</source>
         <translation>Dörtlü Uzatma Noktası</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1697"/>
+        <location filename="../../mscore/shortcut.cpp" line="1707"/>
         <source>Note duration: Quadruple augmentation dot</source>
         <translation>Nota süresi: Dörtlü Uzatma Noktası</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1698"/>
+        <location filename="../../mscore/shortcut.cpp" line="1708"/>
         <source>Quadruple augmentation dot</source>
         <translation>Dörtlü uzatma noktası</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1707"/>
-        <location filename="../../mscore/shortcut.cpp" line="1709"/>
+        <location filename="../../mscore/shortcut.cpp" line="1717"/>
+        <location filename="../../mscore/shortcut.cpp" line="1719"/>
         <source>Tie</source>
         <translation>Uzatma Bağı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1708"/>
+        <location filename="../../mscore/shortcut.cpp" line="1718"/>
         <source>Note duration: Tie</source>
         <translation>Nota süresi: Uzatma Bağı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1719"/>
+        <location filename="../../mscore/shortcut.cpp" line="1729"/>
         <source>Note input: Rest</source>
         <translation>Nota Girişi: Sus</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1839"/>
-        <location filename="../../mscore/shortcut.cpp" line="1841"/>
+        <location filename="../../mscore/shortcut.cpp" line="1849"/>
+        <location filename="../../mscore/shortcut.cpp" line="1851"/>
         <source>Acciaccatura</source>
         <translation>Çarpma</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1840"/>
+        <location filename="../../mscore/shortcut.cpp" line="1850"/>
         <source>Add acciaccatura</source>
         <translation>Acciaccatura ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1850"/>
-        <location filename="../../mscore/shortcut.cpp" line="1852"/>
+        <location filename="../../mscore/shortcut.cpp" line="1860"/>
+        <location filename="../../mscore/shortcut.cpp" line="1862"/>
         <source>Appoggiatura</source>
         <translation>Abantı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1851"/>
+        <location filename="../../mscore/shortcut.cpp" line="1861"/>
         <source>Add appoggiatura</source>
         <translation>Appoggiatura ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1862"/>
+        <location filename="../../mscore/shortcut.cpp" line="1872"/>
         <source>Grace: Quarter</source>
         <translation>Süsleme: Dörtük</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1863"/>
+        <location filename="../../mscore/shortcut.cpp" line="1873"/>
         <source>Add quarter grace note</source>
         <translation>Çeyrek süsleme notası ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1864"/>
+        <location filename="../../mscore/shortcut.cpp" line="1874"/>
         <source>Grace: quarter</source>
         <translation>Süsleme: dörtük</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1874"/>
-        <location filename="../../mscore/shortcut.cpp" line="1876"/>
+        <location filename="../../mscore/shortcut.cpp" line="1884"/>
+        <location filename="../../mscore/shortcut.cpp" line="1886"/>
         <source>Grace: 16th</source>
         <translation>Süsleme: 16&apos;lık</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1875"/>
+        <location filename="../../mscore/shortcut.cpp" line="1885"/>
         <source>Add 16th grace note</source>
         <translation>16&apos;lık süsleme notası ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1886"/>
-        <location filename="../../mscore/shortcut.cpp" line="1888"/>
+        <location filename="../../mscore/shortcut.cpp" line="1896"/>
+        <location filename="../../mscore/shortcut.cpp" line="1898"/>
         <source>Grace: 32nd</source>
         <translation>Süsleme: 32&apos;lik</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1887"/>
+        <location filename="../../mscore/shortcut.cpp" line="1897"/>
         <source>Add 32nd grace note</source>
         <translation>32&apos;lik süsleme notası ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1899"/>
+        <location filename="../../mscore/shortcut.cpp" line="1909"/>
         <source>Add Eighth grace note after</source>
         <translation>Sonrasına Sekizlik süsleme notası ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1900"/>
+        <location filename="../../mscore/shortcut.cpp" line="1910"/>
         <source>Grace: eighth after</source>
         <translation>Süsleme: Sonrasına Sekizlik</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1912"/>
+        <location filename="../../mscore/shortcut.cpp" line="1922"/>
         <source>Grace: 16th after</source>
         <translation>Süsleme: Sonrasına 16&apos;lık</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1911"/>
+        <location filename="../../mscore/shortcut.cpp" line="1921"/>
         <source>Add 16th grace note after</source>
         <translation>Sonrasına 16&apos;lık süsleme notası ekle </translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1924"/>
+        <location filename="../../mscore/shortcut.cpp" line="1934"/>
         <source>Grace: 32nd after</source>
         <translation>Süsleme: Sonrasına 32&apos;lik</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1923"/>
+        <location filename="../../mscore/shortcut.cpp" line="1933"/>
         <source>Add 32nd grace note after</source>
         <translation>Sonrasına 32&apos;lik süsleme notası ekle </translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1933"/>
+        <location filename="../../mscore/shortcut.cpp" line="1943"/>
         <source>1</source>
         <translation>1</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1934"/>
+        <location filename="../../mscore/shortcut.cpp" line="1944"/>
         <source>Voice 1</source>
         <translation>Ses 1</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1941"/>
+        <location filename="../../mscore/shortcut.cpp" line="1951"/>
         <source>2</source>
         <translation>2</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1942"/>
+        <location filename="../../mscore/shortcut.cpp" line="1952"/>
         <source>Voice 2</source>
         <translation>Ses 2</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1949"/>
+        <location filename="../../mscore/shortcut.cpp" line="1959"/>
         <source>3</source>
         <translation>3</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1950"/>
+        <location filename="../../mscore/shortcut.cpp" line="1960"/>
         <source>Voice 3</source>
         <translation>Ses 3</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1957"/>
+        <location filename="../../mscore/shortcut.cpp" line="1967"/>
         <source>4</source>
         <translation>4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1958"/>
+        <location filename="../../mscore/shortcut.cpp" line="1968"/>
         <source>Voice 4</source>
         <translation>Ses 4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1994"/>
+        <location filename="../../mscore/shortcut.cpp" line="2004"/>
         <source>MIDI Input</source>
         <translation>MIDI Girişi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1995"/>
+        <location filename="../../mscore/shortcut.cpp" line="2005"/>
         <source>Toggle &apos;MIDI Input&apos;</source>
         <translation>&apos;MIDI Girişi&apos;ni aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2100"/>
+        <location filename="../../mscore/shortcut.cpp" line="2110"/>
         <source>Toggle &apos;Play Panel&apos;</source>
         <translation>&apos;Oynatma Paneli&apos;ni aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2140"/>
+        <location filename="../../mscore/shortcut.cpp" line="2150"/>
         <source>Toggle &apos;MIDI Import Panel&apos;</source>
         <translation>&apos;MIDI İçe Aktarma Paneli&apos;ni aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2172"/>
+        <location filename="../../mscore/shortcut.cpp" line="2182"/>
         <source>Toggle &apos;Playback Controls&apos; toolbar</source>
         <translation>&apos;Oynatma Kontrolleri&apos; araç çubuğunu aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2179"/>
+        <location filename="../../mscore/shortcut.cpp" line="2189"/>
         <source>Toggle &apos;Concert Pitch&apos; toolbar</source>
         <translation>&apos;Konser Perdesi&apos; araç çubuğunu aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2186"/>
+        <location filename="../../mscore/shortcut.cpp" line="2196"/>
         <source>Toggle &apos;Image Capture&apos; toolbar</source>
         <translation>Görüntü yakalama</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2216"/>
+        <location filename="../../mscore/shortcut.cpp" line="2226"/>
         <source>Toggle &apos;Status Bar&apos;</source>
         <translation>&apos;Durum Çubuğu&apos;nu aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2376"/>
+        <location filename="../../mscore/shortcut.cpp" line="2386"/>
         <source>Image</source>
         <translation>Görüntü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2377"/>
+        <location filename="../../mscore/shortcut.cpp" line="2387"/>
         <source>Add image</source>
         <translation>Resim ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2384"/>
+        <location filename="../../mscore/shortcut.cpp" line="2394"/>
         <source>Player: play</source>
         <translation>Oynatıcı: oynat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2434"/>
+        <location filename="../../mscore/shortcut.cpp" line="2444"/>
         <source>Seek to Begin</source>
         <translation>Başa doğru ara</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2435"/>
+        <location filename="../../mscore/shortcut.cpp" line="2445"/>
         <source>Player: seek to begin</source>
         <translation>Oynatıcı: Başa git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2445"/>
+        <location filename="../../mscore/shortcut.cpp" line="2455"/>
         <source>Player: rewind</source>
         <translation>Oynatıcı: geri sar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2453"/>
+        <location filename="../../mscore/shortcut.cpp" line="2463"/>
         <source>Seek to End</source>
         <translation>Sona doğru ara</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2454"/>
+        <location filename="../../mscore/shortcut.cpp" line="2464"/>
         <source>Player: seek to end</source>
         <translation>Oynatıcı: Sona Git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2461"/>
+        <location filename="../../mscore/shortcut.cpp" line="2471"/>
         <source>Toggle &apos;Play Repeats&apos;</source>
         <translation>&quot;Tekrarları Oynat&quot;ı aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2471"/>
+        <location filename="../../mscore/shortcut.cpp" line="2481"/>
         <source>Pan Score</source>
         <translation>Partisyon denge seviyesi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2472"/>
+        <location filename="../../mscore/shortcut.cpp" line="2482"/>
         <source>Toggle &apos;Pan Score&apos;</source>
         <translation>&apos;Partisyon Pan değeri&apos; Aç / Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2473"/>
+        <location filename="../../mscore/shortcut.cpp" line="2483"/>
         <source>Pan score automatically</source>
         <translation>Otomatik olarak kaydır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2606"/>
+        <location filename="../../mscore/shortcut.cpp" line="2616"/>
         <source>Toggle &apos;Concert Pitch&apos;</source>
         <translation>&apos;Konser Perdesi&apos; aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2607"/>
+        <location filename="../../mscore/shortcut.cpp" line="2617"/>
         <source>Switch between concert/sounding pitch and transposing/written pitch</source>
         <translation>Konser / ses perdesi ve transpoze / yazılı perde arasında geçiş yapın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2636"/>
+        <location filename="../../mscore/shortcut.cpp" line="2646"/>
         <source>Toggle &apos;System Break&apos;</source>
         <translation>&apos;Sistem Boşluğunu&apos; Aç/Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2646"/>
+        <location filename="../../mscore/shortcut.cpp" line="2656"/>
         <source>Toggle &apos;Page Break&apos;</source>
         <translation>&apos;Sayfa Boşluğunu&apos; Aç/Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2656"/>
+        <location filename="../../mscore/shortcut.cpp" line="2666"/>
         <source>Toggle &apos;Section Break&apos;</source>
         <translation>&apos;Bölüm Sonu&apos;nu aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2672"/>
+        <location filename="../../mscore/shortcut.cpp" line="2682"/>
         <source>Reset Shapes and Positions</source>
         <translation>Şekilleri ve Konumları Sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2673"/>
+        <location filename="../../mscore/shortcut.cpp" line="2683"/>
         <source>Reset shapes and positions</source>
         <translation>Şekilleri ve konumları sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2674"/>
+        <location filename="../../mscore/shortcut.cpp" line="2684"/>
         <source>Reset shapes and positions of selected elements to their defaults</source>
         <translation>Seçili öğelerin şekillerini ve konumlarını varsayılan değerlerine sıfırlayın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2686"/>
+        <location filename="../../mscore/shortcut.cpp" line="2696"/>
         <source>Reset Layout Stretch</source>
         <translation>Düzen Uzatmayı Sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2687"/>
+        <location filename="../../mscore/shortcut.cpp" line="2697"/>
         <source>Reset layout stretch</source>
         <translation>Düzen uzatmayı sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2688"/>
+        <location filename="../../mscore/shortcut.cpp" line="2698"/>
         <source>Reset layout stretch factor of selected measures or entire score</source>
         <translation>Seçilen ölçülerin veya tüm partisyonun düzen genişletme faktörünü sıfırlayın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2740"/>
+        <location filename="../../mscore/shortcut.cpp" line="2750"/>
         <source>Mark Irregular Measures</source>
         <translation>Düzgün Olmayan Ölçüleri İşaretle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2741"/>
+        <location filename="../../mscore/shortcut.cpp" line="2751"/>
         <source>Mark irregular measures</source>
         <translation>Düzgün olmayan ölçüleri işaretle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2799"/>
+        <location filename="../../mscore/shortcut.cpp" line="2809"/>
         <source>Find / Go To</source>
         <translation>Bul / Git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2800"/>
+        <location filename="../../mscore/shortcut.cpp" line="2810"/>
         <source>Find / Go to</source>
         <translation>Bul / Git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2828"/>
+        <location filename="../../mscore/shortcut.cpp" line="2838"/>
         <source>Zoom to Page Width or Previous Magnification Level</source>
         <translation>Sayfa Genişliğine veya Önceki Büyütme Düzeyine Yakınlaştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2829"/>
+        <location filename="../../mscore/shortcut.cpp" line="2839"/>
         <source>Zoom to page-width / previous magnification level</source>
         <translation>Sayfa genişliğine / önceki büyütme seviyesine yakınlaştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2845"/>
+        <location filename="../../mscore/shortcut.cpp" line="2855"/>
         <source>Style…</source>
         <translation>Stil…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2846"/>
+        <location filename="../../mscore/shortcut.cpp" line="2856"/>
         <source>Edit style</source>
         <translation>Stili düzenle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2883"/>
+        <location filename="../../mscore/shortcut.cpp" line="2893"/>
         <source>All Similar Elements with More Options</source>
         <translation>Daha Fazla Seçenekli Tüm Benzer Öğeler</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2974"/>
+        <location filename="../../mscore/shortcut.cpp" line="2984"/>
         <source>Par&amp;ts…</source>
         <translation>Par&amp;tiler…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2982"/>
+        <location filename="../../mscore/shortcut.cpp" line="2992"/>
         <source>Change enharmonic spelling (both modes)</source>
         <translation>Enarmonik yazımı değiştir (her iki mod)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2983"/>
+        <location filename="../../mscore/shortcut.cpp" line="2993"/>
         <source>Change enharmonic note (alters the spelling in concert pitch and transposed mode)</source>
         <translation>Enarmonik notayı değiştir (konser perdesinde ve transpoze modda yazımı değiştirir)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2990"/>
+        <location filename="../../mscore/shortcut.cpp" line="3000"/>
         <source>Change enharmonic spelling (current mode)</source>
         <translation>Enarmonik Yazımı Değiştir (Geçerli Mod)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2991"/>
+        <location filename="../../mscore/shortcut.cpp" line="3001"/>
         <source>Change enharmonic note (alters the spelling in the current mode only)</source>
         <translation>Enarmonik notayı değiştir (yazımı yalnızca mevcut modda değiştirir)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3005"/>
+        <location filename="../../mscore/shortcut.cpp" line="3015"/>
         <source>Toggle &apos;Image Capture&apos;</source>
         <translation>Görüntü yakalama</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3016"/>
+        <location filename="../../mscore/shortcut.cpp" line="3026"/>
         <source>Show PDF Image</source>
         <translation>PDF Görüntüsünü Göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3017"/>
+        <location filename="../../mscore/shortcut.cpp" line="3027"/>
         <source>Show PDF image</source>
         <translation>PDF Görüntüsünü Göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3067"/>
+        <location filename="../../mscore/shortcut.cpp" line="3077"/>
         <source>Score Comparison Tool</source>
         <translation>Partisyon Karşılaştırma Aracı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3068"/>
+        <location filename="../../mscore/shortcut.cpp" line="3078"/>
         <source>Score comparison tool</source>
         <translation>Partisyon karşılaştırma aracı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3081"/>
+        <location filename="../../mscore/shortcut.cpp" line="3091"/>
         <source>Split Measure Before Selected Note/Rest</source>
         <translation>Seçili Nota / Sustan Önce Ölçüyü Böl</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3082"/>
+        <location filename="../../mscore/shortcut.cpp" line="3092"/>
         <source>Split measure before selected note/rest</source>
         <translation>Seçili nota / sustan önce ölçüyü böl</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3170"/>
+        <location filename="../../mscore/shortcut.cpp" line="3180"/>
         <source>&amp;Resource Manager…</source>
         <translation>&amp;Kaynak Yöneticisi…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3181"/>
+        <location filename="../../mscore/shortcut.cpp" line="3191"/>
         <source>PDF Transcribing Assistant</source>
         <translation>PDF Transkripsiyon Yardımcısı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3182"/>
+        <location filename="../../mscore/shortcut.cpp" line="3192"/>
         <source>Show PDF transcribing assistant</source>
         <translation>PDF transkripsiyon yardımcısını göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3189"/>
+        <location filename="../../mscore/shortcut.cpp" line="3199"/>
         <source>Loop Playback</source>
         <translation>Oynatma Döngüsü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3190"/>
+        <location filename="../../mscore/shortcut.cpp" line="3200"/>
         <source>Toggle &apos;Loop Playback&apos;</source>
         <translation>Oynatma Döngüsü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3232"/>
+        <location filename="../../mscore/shortcut.cpp" line="3242"/>
         <source>Toggle &apos;Count-In&apos; playback</source>
         <translation>&apos;Count-In&apos; çalmayı aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3332"/>
+        <location filename="../../mscore/shortcut.cpp" line="3342"/>
         <source>Toggle &apos;View Mode&apos;</source>
         <translation>&apos;Görünüm Modunu&apos; değiştirin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3357"/>
+        <location filename="../../mscore/shortcut.cpp" line="3367"/>
         <source>Toggle &apos;Visibility&apos;</source>
         <translation>&apos;Görünürlük&apos; aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3766"/>
+        <location filename="../../mscore/shortcut.cpp" line="3776"/>
         <source>Add Brackets to Accidental</source>
         <translation>tesadüfen gelen bemol ya da diyeze Parantez Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3767"/>
+        <location filename="../../mscore/shortcut.cpp" line="3777"/>
         <source>Add brackets to accidental</source>
         <translation>tesadüfen gelen bemol ya da diyeze Parantez Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3776"/>
+        <location filename="../../mscore/shortcut.cpp" line="3786"/>
         <source>Add Parentheses to Element</source>
         <translation>Öğeye Parantez Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3777"/>
+        <location filename="../../mscore/shortcut.cpp" line="3787"/>
         <source>Add parentheses to element</source>
         <translation>Öğeye parantez ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3796"/>
-        <location filename="../../mscore/shortcut.cpp" line="3797"/>
+        <location filename="../../mscore/shortcut.cpp" line="3806"/>
+        <location filename="../../mscore/shortcut.cpp" line="3807"/>
         <source>Toggle &apos;Create Multimeasure Rest&apos;</source>
         <translation>&apos;Çok Ölçülü Sus Oluştur&apos; seçeneğini aç / Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3806"/>
-        <location filename="../../mscore/shortcut.cpp" line="3807"/>
+        <location filename="../../mscore/shortcut.cpp" line="3816"/>
+        <location filename="../../mscore/shortcut.cpp" line="3817"/>
         <source>Toggle &apos;Hide Empty Staves&apos;</source>
         <translation>&apos;Boş Dizekleri Gizle&apos; Aç / Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3904"/>
+        <location filename="../../mscore/shortcut.cpp" line="3914"/>
         <source>Toggle &apos;Rhythmic Slash Notation&apos;</source>
         <translation>Ritmik Eğik Çizgi Notasyonunu Aç / Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3913"/>
+        <location filename="../../mscore/shortcut.cpp" line="3923"/>
         <source>Add/Remove System Breaks…</source>
         <translation>Satır Atlama Ekle/Çıkar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3914"/>
+        <location filename="../../mscore/shortcut.cpp" line="3924"/>
         <source>Add/remove system breaks</source>
         <translation>Satır Atlama Ekle/Çıkar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2005"/>
+        <location filename="../../mscore/shortcut.cpp" line="2015"/>
         <source>Beam Start</source>
         <translation>Kiriş Başlangıcı</translation>
     </message>
@@ -26773,2696 +26778,2711 @@ failed</source>
         <translation>Dosya &gt; Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="138"/>
+        <location filename="../../mscore/shortcut.cpp" line="148"/>
         <source>File &gt; New</source>
         <translation>Dosya &gt; Yeni</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="147"/>
+        <location filename="../../mscore/shortcut.cpp" line="157"/>
         <source>&amp;Print…</source>
         <translation>&amp;Yazdır…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="149"/>
+        <location filename="../../mscore/shortcut.cpp" line="159"/>
         <source>Print score/part</source>
         <translation>Yazdır partisyon/parti</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="221"/>
+        <location filename="../../mscore/shortcut.cpp" line="231"/>
         <source>Paste Half Duration</source>
         <translation>Yarı Süreyi Yapıştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="222"/>
+        <location filename="../../mscore/shortcut.cpp" line="232"/>
         <source>Paste half duration</source>
         <translation>Yarı süreyi yapıştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="231"/>
+        <location filename="../../mscore/shortcut.cpp" line="241"/>
         <source>Paste Double Duration</source>
         <translation>Çift Süreyi Yapıştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="232"/>
+        <location filename="../../mscore/shortcut.cpp" line="242"/>
         <source>Paste double duration</source>
         <translation>Çift süreyi yapıştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="241"/>
+        <location filename="../../mscore/shortcut.cpp" line="251"/>
         <source>Paste Special</source>
         <translation>Özel Yapıştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="242"/>
+        <location filename="../../mscore/shortcut.cpp" line="252"/>
         <source>Paste special</source>
         <translation>Özel yapıştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="270"/>
+        <location filename="../../mscore/shortcut.cpp" line="280"/>
         <source>Note input: Toggle Entry/Normal mode</source>
         <translation>Nota girişi: Giriş/Normal modu değiştir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="280"/>
+        <location filename="../../mscore/shortcut.cpp" line="290"/>
         <source>Step-Time (Default)</source>
         <translation>Adım Adım (Varsayılan)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="281"/>
+        <location filename="../../mscore/shortcut.cpp" line="291"/>
         <source>Note input: Enter Step-Time mode</source>
         <translation>Nota girişi: Adım-Zaman moduna girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="292"/>
+        <location filename="../../mscore/shortcut.cpp" line="302"/>
         <source>Note input: Enter Re-Pitch mode</source>
         <translation>Nota Girişi: Yeniden-Perde moduna gir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="303"/>
+        <location filename="../../mscore/shortcut.cpp" line="313"/>
         <source>Note input: Enter Rhythm mode</source>
         <translation>Nota girişi: Ritim moduna girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="313"/>
+        <location filename="../../mscore/shortcut.cpp" line="323"/>
         <source>Real-Time (Automatic)</source>
         <translation>Gerçek Zamanlı (Otomatik)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="314"/>
+        <location filename="../../mscore/shortcut.cpp" line="324"/>
         <source>Note input: Enter Real-Time (Automatic) mode</source>
         <translation>Nota girişi: Gerçek Zamanlı (Otomatik) moda girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="315"/>
+        <location filename="../../mscore/shortcut.cpp" line="325"/>
         <source>Enter notes at a fixed tempo indicated by a metronome beat</source>
         <translation>Bir metronom vuruşu ile gösterilen sabit bir tempoda notaları girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="324"/>
+        <location filename="../../mscore/shortcut.cpp" line="334"/>
         <source>Real-Time (Manual)</source>
         <translation>Gerçek Zamanlı (Manuel)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="325"/>
+        <location filename="../../mscore/shortcut.cpp" line="335"/>
         <source>Note input: Enter Real-Time (Manual) mode</source>
         <translation>Nota girişi: Gerçek Zamanlı (Manuel) moda girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="326"/>
+        <location filename="../../mscore/shortcut.cpp" line="336"/>
         <source>Enter notes while tapping a key or pedal to set the tempo</source>
         <translation>Tempoyu ayarlamak için bir tuşa veya pedala dokunurken notaları girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="335"/>
+        <location filename="../../mscore/shortcut.cpp" line="345"/>
         <source>Insert</source>
         <translation>Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="336"/>
+        <location filename="../../mscore/shortcut.cpp" line="346"/>
         <source>Note input: Enter Insert mode</source>
         <translation>Not girişi: Ekleme moduna girin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="337"/>
+        <location filename="../../mscore/shortcut.cpp" line="347"/>
         <source>Insert notes by increasing measure duration</source>
         <translation>Ölçü süresini artırarak not ekleyin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="538"/>
+        <location filename="../../mscore/shortcut.cpp" line="548"/>
         <source>Add A to Chord</source>
         <translation>Akora La Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="545"/>
+        <location filename="../../mscore/shortcut.cpp" line="555"/>
         <source>Add B to Chord</source>
         <translation>Akora Si Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="552"/>
+        <location filename="../../mscore/shortcut.cpp" line="562"/>
         <source>Add C to Chord</source>
         <translation>Akora Do Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="559"/>
+        <location filename="../../mscore/shortcut.cpp" line="569"/>
         <source>Add D to Chord</source>
         <translation>Akora De Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="566"/>
+        <location filename="../../mscore/shortcut.cpp" line="576"/>
         <source>Add E to Chord</source>
         <translation>Akora Mi Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="573"/>
+        <location filename="../../mscore/shortcut.cpp" line="583"/>
         <source>Add F to Chord</source>
         <translation>Akora Fa Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="580"/>
+        <location filename="../../mscore/shortcut.cpp" line="590"/>
         <source>Add G to Chord</source>
         <translation>Akora Sol Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="587"/>
+        <location filename="../../mscore/shortcut.cpp" line="597"/>
         <source>Add Tied Note to Chord</source>
         <translation>Akora Bağlı Nota Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="588"/>
+        <location filename="../../mscore/shortcut.cpp" line="598"/>
         <source>Add tied note to chord</source>
         <translation>Akora bağlı nota ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="652"/>
+        <location filename="../../mscore/shortcut.cpp" line="662"/>
         <source>Real-Time Advance</source>
         <translation>Gerçek Zamanlı İlerleme</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="720"/>
+        <location filename="../../mscore/shortcut.cpp" line="730"/>
         <source>Accent</source>
         <translation>Aksan</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="721"/>
+        <location filename="../../mscore/shortcut.cpp" line="731"/>
         <source>Toggle accent</source>
         <translation>Aksan aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="750"/>
+        <location filename="../../mscore/shortcut.cpp" line="760"/>
         <source>Reset Beams</source>
         <translation>Kirişleri Sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="751"/>
+        <location filename="../../mscore/shortcut.cpp" line="761"/>
         <source>Reset beams</source>
         <translation>Kirişleri sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="752"/>
+        <location filename="../../mscore/shortcut.cpp" line="762"/>
         <source>Reset beams of selected measures</source>
         <translation>Seçili Ölçülerdeki kirişleri sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="760"/>
+        <location filename="../../mscore/shortcut.cpp" line="770"/>
         <source>Reset Style</source>
         <translation>Stili Sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="761"/>
+        <location filename="../../mscore/shortcut.cpp" line="771"/>
         <source>Reset style</source>
         <translation>Stili sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="762"/>
+        <location filename="../../mscore/shortcut.cpp" line="772"/>
         <source>Reset all style values to default</source>
         <translation>Tüm stilleri varsayılana sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="770"/>
+        <location filename="../../mscore/shortcut.cpp" line="780"/>
         <source>Reset Text Style Overrides</source>
         <translation>Metin Stili Geçersiz Kılmalarını Sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="771"/>
+        <location filename="../../mscore/shortcut.cpp" line="781"/>
         <source>Reset text style overrides</source>
         <translation>Metin stili geçersiz kılmalarını sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="772"/>
+        <location filename="../../mscore/shortcut.cpp" line="782"/>
         <source>Reset all text style overrides to default</source>
         <translation>Tüm metin stili geçersiz kılmalarını varsayılana sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="821"/>
+        <location filename="../../mscore/shortcut.cpp" line="831"/>
         <source>Diatonic Up (Keep Degree Alterations)</source>
         <translation>Diyatonik Yukarı (Derece değişikliklerini koruyun)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="822"/>
+        <location filename="../../mscore/shortcut.cpp" line="832"/>
         <source>Diatonic pitch up (Keep degree alterations)</source>
         <translation>Perdeyi Diyatonik Yukarı (Derece değişikliklerini koruyun)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="863"/>
+        <location filename="../../mscore/shortcut.cpp" line="873"/>
         <source>Move chord/rest to staff above</source>
         <translation>Akoru/Susu yukarıdaki dizeğe taşı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="894"/>
+        <location filename="../../mscore/shortcut.cpp" line="904"/>
         <source>Diatonic Down (Keep Degree Alterations)</source>
         <translation>Diyatonik Aşağı (Derece değişikliklerini koruyun)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="895"/>
+        <location filename="../../mscore/shortcut.cpp" line="905"/>
         <source>Diatonic pitch down (Keep degree alterations)</source>
         <translation>Perdeyi Diyatonik Aşağı (Derece değişikliklerini koruyun)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="971"/>
+        <location filename="../../mscore/shortcut.cpp" line="981"/>
         <source>Get Location</source>
         <translation>Konumu Al</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="972"/>
+        <location filename="../../mscore/shortcut.cpp" line="982"/>
         <source>Accessibility: Get location</source>
         <translation>Erişilebilirlik: Konumu al</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1038"/>
+        <location filename="../../mscore/shortcut.cpp" line="1048"/>
         <source>Move chord/rest to staff below</source>
         <translation>Akoru/Susu yukarıdaki dizeğe taşı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1062"/>
+        <location filename="../../mscore/shortcut.cpp" line="1072"/>
         <source>Previous System</source>
         <translation>Önceki Sistem</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1063"/>
+        <location filename="../../mscore/shortcut.cpp" line="1073"/>
         <source>Go to previous system</source>
         <translation>Önceki sisteme git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1069"/>
+        <location filename="../../mscore/shortcut.cpp" line="1079"/>
         <source>Previous Frame</source>
         <translation>Önceki Çerçeve</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1070"/>
+        <location filename="../../mscore/shortcut.cpp" line="1080"/>
         <source>Go to previous frame</source>
         <translation>Önceki çerçeveye git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1076"/>
+        <location filename="../../mscore/shortcut.cpp" line="1086"/>
         <source>Previous Section</source>
         <translation>Önceki Bölüm</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1077"/>
+        <location filename="../../mscore/shortcut.cpp" line="1087"/>
         <source>Go to previous section</source>
         <translation>Önceki bölüme git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1104"/>
+        <location filename="../../mscore/shortcut.cpp" line="1114"/>
         <source>Next System</source>
         <translation>Sonraki Sistem</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1105"/>
+        <location filename="../../mscore/shortcut.cpp" line="1115"/>
         <source>Go to next system</source>
         <translation>Sonraki sisteme git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1111"/>
+        <location filename="../../mscore/shortcut.cpp" line="1121"/>
         <source>Next Frame</source>
         <translation>Sonraki Çerçeve</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1112"/>
+        <location filename="../../mscore/shortcut.cpp" line="1122"/>
         <source>Go to next frame</source>
         <translation>Sonraki çerçeveye git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1118"/>
+        <location filename="../../mscore/shortcut.cpp" line="1128"/>
         <source>Next Section</source>
         <translation>Sonraki Bölüm</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1119"/>
+        <location filename="../../mscore/shortcut.cpp" line="1129"/>
         <source>Go to next section</source>
         <translation>Sonraki Bölüme Git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1125"/>
+        <location filename="../../mscore/shortcut.cpp" line="1135"/>
         <source>Top Staff</source>
         <translation>Üsteki Dizek</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1126"/>
+        <location filename="../../mscore/shortcut.cpp" line="1136"/>
         <source>Go to top staff</source>
         <translation>Üsteki dizeğe git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1132"/>
+        <location filename="../../mscore/shortcut.cpp" line="1142"/>
         <source>Playback Cursor Position</source>
         <translation>Oynatma İmleci Konumu</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1133"/>
+        <location filename="../../mscore/shortcut.cpp" line="1143"/>
         <source>Go to recent playback cursor position</source>
         <translation>Son oynatma imleci konumuna git</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1139"/>
+        <location filename="../../mscore/shortcut.cpp" line="1149"/>
         <source>First Empty Trailing Measure</source>
         <translation>Sondaki ilk boş Ölçü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1140"/>
+        <location filename="../../mscore/shortcut.cpp" line="1150"/>
         <source>Go to first empty trailing measure</source>
         <translation>Sondaki ilk boş ölçüye git </translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1244"/>
+        <location filename="../../mscore/shortcut.cpp" line="1254"/>
         <source>Screen: Previous</source>
         <translation>Ekran: Önceki</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1250"/>
+        <location filename="../../mscore/shortcut.cpp" line="1260"/>
         <source>Screen: Next</source>
         <translation>Ekran: Sonraki</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1307"/>
+        <location filename="../../mscore/shortcut.cpp" line="1317"/>
         <source>Ottava 8va alta</source>
         <translation>Bir oktav üstten</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1308"/>
+        <location filename="../../mscore/shortcut.cpp" line="1318"/>
         <source>Add ottava 8va alta</source>
         <translation>Bir oktav üstten ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1317"/>
+        <location filename="../../mscore/shortcut.cpp" line="1327"/>
         <source>Ottava 8va bassa</source>
         <translation>Bir oktav alttan</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1318"/>
+        <location filename="../../mscore/shortcut.cpp" line="1328"/>
         <source>Add ottava 8va bassa</source>
         <translation>Bir oktav alttan ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1336"/>
+        <location filename="../../mscore/shortcut.cpp" line="1346"/>
         <source>Delete the selected element(s)</source>
         <translation>Seçili elementi(leri) sil</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1346"/>
+        <location filename="../../mscore/shortcut.cpp" line="1356"/>
         <source>Convert the measure to a full measure rest</source>
         <translation>Ölçüyü tam bir sus ölçüsüne çevir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1354"/>
+        <location filename="../../mscore/shortcut.cpp" line="1364"/>
         <source>Remove Selected Range</source>
         <translation>Seçili Aralığı Kaldır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1355"/>
+        <location filename="../../mscore/shortcut.cpp" line="1365"/>
         <source>Remove selected range</source>
         <translation>Seçili aralığı kaldır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1356"/>
+        <location filename="../../mscore/shortcut.cpp" line="1366"/>
         <source>Remove element and duration</source>
         <translation>Öğeyi ve süreyi kaldır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1616"/>
+        <location filename="../../mscore/shortcut.cpp" line="1626"/>
         <source>256th Note</source>
         <translation>256lık Nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1617"/>
+        <location filename="../../mscore/shortcut.cpp" line="1627"/>
         <source>Note duration: 256th</source>
         <translation>Nota süresi: 256lık</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1618"/>
-        <location filename="../../mscore/shortcut.cpp" line="3495"/>
+        <location filename="../../mscore/shortcut.cpp" line="1628"/>
+        <location filename="../../mscore/shortcut.cpp" line="3505"/>
         <source>256th note</source>
         <translation>256lık Nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1627"/>
+        <location filename="../../mscore/shortcut.cpp" line="1637"/>
         <source>512th Note</source>
         <translation>512lik Nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1628"/>
+        <location filename="../../mscore/shortcut.cpp" line="1638"/>
         <source>Note duration: 512th</source>
         <translation>Nota süresi: 512lik</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1629"/>
-        <location filename="../../mscore/shortcut.cpp" line="3505"/>
+        <location filename="../../mscore/shortcut.cpp" line="1639"/>
+        <location filename="../../mscore/shortcut.cpp" line="3515"/>
         <source>512th note</source>
         <translation>512lik Nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1638"/>
+        <location filename="../../mscore/shortcut.cpp" line="1648"/>
         <source>1024th Note</source>
         <translation>1024lük Nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1639"/>
+        <location filename="../../mscore/shortcut.cpp" line="1649"/>
         <source>Note duration: 1024th</source>
         <translation>Nota süresi: 1024lük</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1640"/>
-        <location filename="../../mscore/shortcut.cpp" line="3515"/>
+        <location filename="../../mscore/shortcut.cpp" line="1650"/>
+        <location filename="../../mscore/shortcut.cpp" line="3525"/>
         <source>1024th note</source>
         <translation>1024lük Nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1729"/>
-        <location filename="../../mscore/shortcut.cpp" line="1731"/>
+        <location filename="../../mscore/shortcut.cpp" line="1739"/>
+        <location filename="../../mscore/shortcut.cpp" line="1741"/>
         <source>Double ♯</source>
         <translation>Çift Diyez</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1730"/>
+        <location filename="../../mscore/shortcut.cpp" line="1740"/>
         <source>Note input: Double ♯</source>
         <translation>Nota Girişi: Çift ♯</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1740"/>
-        <location filename="../../mscore/shortcut.cpp" line="1742"/>
+        <location filename="../../mscore/shortcut.cpp" line="1750"/>
+        <location filename="../../mscore/shortcut.cpp" line="1752"/>
         <source>♯</source>
         <translation>Diyez</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1741"/>
+        <location filename="../../mscore/shortcut.cpp" line="1751"/>
         <source>Note input: ♯</source>
         <translation>Nota girişi:  ♯</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1751"/>
-        <location filename="../../mscore/shortcut.cpp" line="1753"/>
+        <location filename="../../mscore/shortcut.cpp" line="1761"/>
+        <location filename="../../mscore/shortcut.cpp" line="1763"/>
         <source>♮</source>
         <translation>Natürel</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1752"/>
+        <location filename="../../mscore/shortcut.cpp" line="1762"/>
         <source>Note input: ♮</source>
         <translation>Nota Girişi: ♮</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1762"/>
-        <location filename="../../mscore/shortcut.cpp" line="1764"/>
+        <location filename="../../mscore/shortcut.cpp" line="1772"/>
+        <location filename="../../mscore/shortcut.cpp" line="1774"/>
         <source>♭</source>
         <translation>Bemol</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1763"/>
+        <location filename="../../mscore/shortcut.cpp" line="1773"/>
         <source>Note input: ♭</source>
         <translation>Nota girişi: ♭</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1773"/>
-        <location filename="../../mscore/shortcut.cpp" line="1775"/>
+        <location filename="../../mscore/shortcut.cpp" line="1783"/>
+        <location filename="../../mscore/shortcut.cpp" line="1785"/>
         <source>Double ♭</source>
         <translation>Çift Bemol</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1774"/>
+        <location filename="../../mscore/shortcut.cpp" line="1784"/>
         <source>Note input: Double ♭</source>
         <translation>Nota Girişi: Çift ♭</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1784"/>
-        <location filename="../../mscore/shortcut.cpp" line="1786"/>
+        <location filename="../../mscore/shortcut.cpp" line="1794"/>
+        <location filename="../../mscore/shortcut.cpp" line="1796"/>
         <source>Double ♯ (non-toggle)</source>
         <translation>Çift ♯ (geçişsiz)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1785"/>
+        <location filename="../../mscore/shortcut.cpp" line="1795"/>
         <source>Note input (non-toggle): Double ♯</source>
         <translation>Nota girişi (geçişsiz): Çift ♯</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1795"/>
-        <location filename="../../mscore/shortcut.cpp" line="1797"/>
+        <location filename="../../mscore/shortcut.cpp" line="1805"/>
+        <location filename="../../mscore/shortcut.cpp" line="1807"/>
         <source>♯ (non-toggle)</source>
         <translation>♯ (Geçişsiz)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1796"/>
+        <location filename="../../mscore/shortcut.cpp" line="1806"/>
         <source>Note input (non-toggle): ♯</source>
         <translation>Nota girişi (Geçişsiz): ♯</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1806"/>
-        <location filename="../../mscore/shortcut.cpp" line="1808"/>
+        <location filename="../../mscore/shortcut.cpp" line="1816"/>
+        <location filename="../../mscore/shortcut.cpp" line="1818"/>
         <source>♮ (non-toggle)</source>
         <translation>♮ (Geçişsiz)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1807"/>
+        <location filename="../../mscore/shortcut.cpp" line="1817"/>
         <source>Note input (non-toggle): ♮</source>
         <translation>Nota girişi (Geçişsiz): ♮</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1817"/>
-        <location filename="../../mscore/shortcut.cpp" line="1819"/>
+        <location filename="../../mscore/shortcut.cpp" line="1827"/>
+        <location filename="../../mscore/shortcut.cpp" line="1829"/>
         <source>♭ (non-toggle)</source>
         <translation>♯ (Geçişsiz)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1818"/>
+        <location filename="../../mscore/shortcut.cpp" line="1828"/>
         <source>Note input (non-toggle): ♭</source>
         <translation>Nota girişi (Geçişsiz): ♯</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1828"/>
-        <location filename="../../mscore/shortcut.cpp" line="1830"/>
+        <location filename="../../mscore/shortcut.cpp" line="1838"/>
+        <location filename="../../mscore/shortcut.cpp" line="1840"/>
         <source>Double ♭ (non-toggle)</source>
         <translation>Çift ♭ (geçişsiz)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1829"/>
+        <location filename="../../mscore/shortcut.cpp" line="1839"/>
         <source>Note input (non-toggle): Double ♭</source>
         <translation>Nota girişi (geçişsiz): Çift ♭</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1898"/>
+        <location filename="../../mscore/shortcut.cpp" line="1908"/>
         <source>Grace: Eighth After</source>
         <translation>Süsleme: Sonrasına Sekizlik</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1910"/>
+        <location filename="../../mscore/shortcut.cpp" line="1920"/>
         <source>Grace: 16th After</source>
         <translation>Süsleme: Sonrasına 16&apos;lık</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1922"/>
+        <location filename="../../mscore/shortcut.cpp" line="1932"/>
         <source>Grace: 32nd After</source>
         <translation>Süsleme: Sonrasına 32&apos;lik</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2006"/>
+        <location filename="../../mscore/shortcut.cpp" line="2016"/>
         <source>Beam start</source>
         <translation>Kiriş başlangıcı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2016"/>
+        <location filename="../../mscore/shortcut.cpp" line="2026"/>
         <source>Beam Middle</source>
         <translation>Kiriş Ortası</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2017"/>
+        <location filename="../../mscore/shortcut.cpp" line="2027"/>
         <source>Beam middle</source>
         <translation>Kiriş ortası</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2027"/>
+        <location filename="../../mscore/shortcut.cpp" line="2037"/>
         <source>No Beam</source>
         <translation>Kiriş Yok</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2028"/>
+        <location filename="../../mscore/shortcut.cpp" line="2038"/>
         <source>No beam</source>
         <translation>Nota-kirişi yok</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2038"/>
+        <location filename="../../mscore/shortcut.cpp" line="2048"/>
         <source>Beam 16th Sub</source>
         <translation>Kiriş 16&apos;lık Alt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2039"/>
+        <location filename="../../mscore/shortcut.cpp" line="2049"/>
         <source>Beam 16th sub</source>
         <translation>Kiriş 16&apos;lık Alt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2049"/>
+        <location filename="../../mscore/shortcut.cpp" line="2059"/>
         <source>Beam 32nd Sub</source>
         <translation>Kiriş 32&apos;lik Alt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2050"/>
+        <location filename="../../mscore/shortcut.cpp" line="2060"/>
         <source>Beam 32nd sub</source>
         <translation>Kiriş 32&apos;lik Alt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2060"/>
+        <location filename="../../mscore/shortcut.cpp" line="2070"/>
         <source>Auto Beam</source>
         <translation>Otomatik Nota Kirişi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2061"/>
+        <location filename="../../mscore/shortcut.cpp" line="2071"/>
         <source>Auto beam</source>
         <translation>Otomatik nota kirişi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2071"/>
+        <location filename="../../mscore/shortcut.cpp" line="2081"/>
         <source>Feathered Beam, Slower</source>
         <translation>Tüylü Kiriş, Daha Yavaş</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2072"/>
+        <location filename="../../mscore/shortcut.cpp" line="2082"/>
         <source>Feathered beam, slower</source>
         <translation>Tüylü kiriş, Yavaş</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2080"/>
+        <location filename="../../mscore/shortcut.cpp" line="2090"/>
         <source>Feathered Beam, Faster</source>
         <translation>Tüylü Kiriş, Daha Hızlı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2081"/>
+        <location filename="../../mscore/shortcut.cpp" line="2091"/>
         <source>Feathered beam, faster</source>
         <translation>Tüylü kiriş, Daha Hızlı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2089"/>
+        <location filename="../../mscore/shortcut.cpp" line="2099"/>
         <source>Palettes</source>
         <translation>Paletler</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2090"/>
+        <location filename="../../mscore/shortcut.cpp" line="2100"/>
         <source>Toggle &apos;Palettes&apos;</source>
         <translation>&apos;Paletleri&apos; aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2099"/>
+        <location filename="../../mscore/shortcut.cpp" line="2109"/>
         <source>Play Panel</source>
         <translation>Oynatma Paneli</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2109"/>
+        <location filename="../../mscore/shortcut.cpp" line="2119"/>
         <source>Selection Filter</source>
         <translation>Seçim Filtresi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2110"/>
+        <location filename="../../mscore/shortcut.cpp" line="2120"/>
         <source>Toggle &apos;Selection Filter&apos;</source>
         <translation>&apos;Seçim Filtresi&apos;ni aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2119"/>
+        <location filename="../../mscore/shortcut.cpp" line="2129"/>
         <source>Navigator</source>
         <translation>Gezgin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2120"/>
+        <location filename="../../mscore/shortcut.cpp" line="2130"/>
         <source>Toggle &apos;Navigator&apos;</source>
         <translation>&apos;Gezgini&apos; aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2129"/>
+        <location filename="../../mscore/shortcut.cpp" line="2139"/>
         <source>Timeline</source>
         <translation>Zaman çizelgesi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2130"/>
+        <location filename="../../mscore/shortcut.cpp" line="2140"/>
         <source>Toggle &apos;Timeline&apos;</source>
         <translation>&apos;Zaman Çizelgesi&apos;ni aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2139"/>
+        <location filename="../../mscore/shortcut.cpp" line="2149"/>
         <source>MIDI Import Panel</source>
         <translation>MIDI İçe Aktarma Paneli</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2154"/>
+        <location filename="../../mscore/shortcut.cpp" line="2164"/>
         <source>Mixer</source>
         <translation>Mikser</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2155"/>
+        <location filename="../../mscore/shortcut.cpp" line="2165"/>
         <source>Toggle &apos;Mixer&apos;</source>
         <translation>&apos;Mikser&apos;i aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2164"/>
+        <location filename="../../mscore/shortcut.cpp" line="2174"/>
         <source>File Operations</source>
         <translation>Dosya İşlemleri</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2165"/>
+        <location filename="../../mscore/shortcut.cpp" line="2175"/>
         <source>Toggle &apos;File Operations&apos; toolbar</source>
         <translation>&apos;Dosya İşlemleri&apos; araç çubuğunu aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2171"/>
+        <location filename="../../mscore/shortcut.cpp" line="2181"/>
         <source>Playback Controls</source>
         <translation>Oynatma Kontrolleri</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2178"/>
-        <location filename="../../mscore/shortcut.cpp" line="2605"/>
+        <location filename="../../mscore/shortcut.cpp" line="2188"/>
+        <location filename="../../mscore/shortcut.cpp" line="2615"/>
         <source>Concert Pitch</source>
         <translation>Konser Perdesi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2185"/>
-        <location filename="../../mscore/shortcut.cpp" line="3004"/>
+        <location filename="../../mscore/shortcut.cpp" line="2195"/>
+        <location filename="../../mscore/shortcut.cpp" line="3014"/>
         <source>Image Capture</source>
         <translation>Görüntü yakalama</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2193"/>
+        <location filename="../../mscore/shortcut.cpp" line="2203"/>
         <source>Toggle &apos;Note Input&apos; toolbar</source>
         <translation>&apos;Nota Girişi&apos; araç çubuğunu aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2200"/>
-        <location filename="../../mscore/shortcut.cpp" line="4040"/>
+        <location filename="../../mscore/shortcut.cpp" line="2210"/>
+        <location filename="../../mscore/shortcut.cpp" line="4050"/>
         <source>Feedback</source>
         <translation>Geri bildirim</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2201"/>
+        <location filename="../../mscore/shortcut.cpp" line="2211"/>
         <source>Toggle &apos;Feedback&apos; toolbar</source>
         <translation>&apos;Geri Bildirim&apos; araç çubuğunu açın / kapatın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2208"/>
+        <location filename="../../mscore/shortcut.cpp" line="2218"/>
         <source>Workspaces</source>
         <translation>Çalışma Alanları</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2209"/>
+        <location filename="../../mscore/shortcut.cpp" line="2219"/>
         <source>Toggle &apos;Workspaces&apos; toolbar</source>
         <translation>&quot;Çalışma alanları&quot; araç çubuğu Aç / Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2215"/>
+        <location filename="../../mscore/shortcut.cpp" line="2225"/>
         <source>Status Bar</source>
         <translation>Durum çubuğu</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2223"/>
+        <location filename="../../mscore/shortcut.cpp" line="2233"/>
         <source>Add new workspace</source>
         <translation>Yeni çalışma alanı ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2229"/>
+        <location filename="../../mscore/shortcut.cpp" line="2239"/>
         <source>Quit</source>
         <translation>Çıkış</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2235"/>
+        <location filename="../../mscore/shortcut.cpp" line="2245"/>
         <source>Zoom Canvas</source>
         <translation>Tuvali Yakınlaştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2236"/>
+        <location filename="../../mscore/shortcut.cpp" line="2246"/>
         <source>Zoom canvas</source>
         <translation>Tuvali yakınlaştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2242"/>
+        <location filename="../../mscore/shortcut.cpp" line="2252"/>
         <source>Lyrics</source>
         <translation>Sözler</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2243"/>
+        <location filename="../../mscore/shortcut.cpp" line="2253"/>
         <source>Add lyrics</source>
         <translation>Söz ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2253"/>
+        <location filename="../../mscore/shortcut.cpp" line="2263"/>
         <source>Tempo Marking</source>
         <translation>Tempo</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2254"/>
+        <location filename="../../mscore/shortcut.cpp" line="2264"/>
         <source>Add tempo marking</source>
         <translation>Tempo işaretleme ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2264"/>
+        <location filename="../../mscore/shortcut.cpp" line="2274"/>
         <source>System Text</source>
         <translation>Sistem Metni</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2265"/>
+        <location filename="../../mscore/shortcut.cpp" line="2275"/>
         <source>Add system text</source>
         <translation>Sistem metni ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2271"/>
+        <location filename="../../mscore/shortcut.cpp" line="2281"/>
         <source>Staff Text</source>
         <translation>Dizek Metni</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2272"/>
+        <location filename="../../mscore/shortcut.cpp" line="2282"/>
         <source>Add staff text</source>
         <translation>Dizek metni ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2278"/>
+        <location filename="../../mscore/shortcut.cpp" line="2288"/>
         <source>Expression Text</source>
         <translation>İfade Metni</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2279"/>
+        <location filename="../../mscore/shortcut.cpp" line="2289"/>
         <source>Expression text</source>
         <translation>İfade metni</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2285"/>
+        <location filename="../../mscore/shortcut.cpp" line="2295"/>
         <source>Text</source>
         <translation>Metin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2286"/>
+        <location filename="../../mscore/shortcut.cpp" line="2296"/>
         <source>Add frame text</source>
         <translation>Çerçeve metni ekleyin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2292"/>
+        <location filename="../../mscore/shortcut.cpp" line="2302"/>
         <source>Title</source>
         <translation>Başlık</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2293"/>
+        <location filename="../../mscore/shortcut.cpp" line="2303"/>
         <source>Add title text</source>
         <translation>Başlık metni ekleyin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2299"/>
+        <location filename="../../mscore/shortcut.cpp" line="2309"/>
         <source>Subtitle</source>
         <translation>Altbaşlık</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2300"/>
+        <location filename="../../mscore/shortcut.cpp" line="2310"/>
         <source>Add subtitle text</source>
         <translation>Altbaşlık metni ekleyin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2306"/>
+        <location filename="../../mscore/shortcut.cpp" line="2316"/>
         <source>Composer</source>
         <translation>Besteci</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2307"/>
+        <location filename="../../mscore/shortcut.cpp" line="2317"/>
         <source>Add composer text</source>
         <translation>Besteci metni ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2313"/>
+        <location filename="../../mscore/shortcut.cpp" line="2323"/>
         <source>Lyricist</source>
         <translation>Söz yazarı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2314"/>
+        <location filename="../../mscore/shortcut.cpp" line="2324"/>
         <source>Add lyricist text</source>
         <translation>Söz yazarı metni ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2320"/>
+        <location filename="../../mscore/shortcut.cpp" line="2330"/>
         <source>Part Name</source>
         <translation>Bölüm Adı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2321"/>
+        <location filename="../../mscore/shortcut.cpp" line="2331"/>
         <source>Add part name</source>
         <translation>Bölüm adı ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2327"/>
+        <location filename="../../mscore/shortcut.cpp" line="2337"/>
         <source>Chord Symbol</source>
         <translation>Akor Simgesi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2328"/>
+        <location filename="../../mscore/shortcut.cpp" line="2338"/>
         <source>Add chord symbol</source>
         <translation>Akor sembolü ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2334"/>
+        <location filename="../../mscore/shortcut.cpp" line="2344"/>
         <source>Roman Numeral Analysis</source>
         <translation>Roma Rakamı Çözümlemesi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2335"/>
+        <location filename="../../mscore/shortcut.cpp" line="2345"/>
         <source>Add Roman numeral analysis</source>
         <translation>Roma rakamı analizi ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2341"/>
+        <location filename="../../mscore/shortcut.cpp" line="2351"/>
         <source>Nashville Number</source>
         <translation>Nashville Numarası</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2342"/>
+        <location filename="../../mscore/shortcut.cpp" line="2352"/>
         <source>Add Nashville number</source>
         <translation>Nashville numarası ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2348"/>
+        <location filename="../../mscore/shortcut.cpp" line="2358"/>
         <source>Rehearsal Mark</source>
         <translation>Prova İşareti</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2349"/>
+        <location filename="../../mscore/shortcut.cpp" line="2359"/>
         <source>Add rehearsal mark</source>
         <translation>Prova işareti ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2355"/>
+        <location filename="../../mscore/shortcut.cpp" line="2365"/>
         <source>Instrument Change</source>
         <translation>Çalgı Değişimi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2356"/>
+        <location filename="../../mscore/shortcut.cpp" line="2366"/>
         <source>Add instrument change</source>
         <translation>Enstrüman değişikliği ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2362"/>
+        <location filename="../../mscore/shortcut.cpp" line="2372"/>
         <source>Fingering</source>
         <translation>Parmak Numaraları</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2363"/>
+        <location filename="../../mscore/shortcut.cpp" line="2373"/>
         <source>Add fingering</source>
         <translation>Parmak numarası ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2369"/>
+        <location filename="../../mscore/shortcut.cpp" line="2379"/>
         <source>Sticking</source>
         <translation>Yapışkan</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2370"/>
+        <location filename="../../mscore/shortcut.cpp" line="2380"/>
         <source>Add sticking</source>
         <translation>Yapışkan Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4033"/>
+        <location filename="../../mscore/shortcut.cpp" line="4043"/>
         <source>Apply Input State</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4034"/>
+        <location filename="../../mscore/shortcut.cpp" line="4044"/>
         <source>Apply input state</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4050"/>
+        <location filename="../../mscore/shortcut.cpp" line="4060"/>
         <source>Zoom In Horizontally</source>
         <translation>Yatay Olarak Yakınlaştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4051"/>
+        <location filename="../../mscore/shortcut.cpp" line="4061"/>
         <source>Zoom in horizontally - piano roll editor</source>
         <translation>Yatay olarak yakınlaştır - piyano roll editörü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4059"/>
+        <location filename="../../mscore/shortcut.cpp" line="4069"/>
         <source>Zoom Out Horizontally</source>
         <translation>Yatay Olarak Uzaklaştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4060"/>
+        <location filename="../../mscore/shortcut.cpp" line="4070"/>
         <source>Zoom out horizontally - piano roll editor</source>
         <translation>Yatay olarak uzaklaştır - piyano Roll Editörü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4068"/>
+        <location filename="../../mscore/shortcut.cpp" line="4078"/>
         <source>Zoom In Vertically</source>
         <translation>Dikey Olarak Yakınlaştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4069"/>
+        <location filename="../../mscore/shortcut.cpp" line="4079"/>
         <source>Zoom in vertically - piano roll editor</source>
         <translation>Dikey olarak yakınlaştır - piano roll editörü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4077"/>
+        <location filename="../../mscore/shortcut.cpp" line="4087"/>
         <source>Zoom Out Vertically</source>
         <translation>Dikey Olarak Uzaklaştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4078"/>
+        <location filename="../../mscore/shortcut.cpp" line="4088"/>
         <source>Zoom out vertically - piano roll editor</source>
         <translation>Dikey olarak uzaklaştır - piano roll editörü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2383"/>
+        <location filename="../../mscore/shortcut.cpp" line="2393"/>
         <source>Play</source>
         <translation>Oynat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="211"/>
+        <location filename="../../mscore/shortcut.cpp" line="137"/>
+        <source>Reload Current Score</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="138"/>
+        <source>File &gt; Reload Current Score</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="139"/>
+        <source>Reload current score</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="221"/>
         <source>Paste (Clone)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="346"/>
+        <location filename="../../mscore/shortcut.cpp" line="356"/>
         <source>&amp;Optimize Enharmonic Spellings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="347"/>
+        <location filename="../../mscore/shortcut.cpp" line="357"/>
         <source>Optimize enharmonic spellings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="356"/>
+        <location filename="../../mscore/shortcut.cpp" line="366"/>
         <source>Unison</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="357"/>
+        <location filename="../../mscore/shortcut.cpp" line="367"/>
         <source>Enter unison</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="419"/>
+        <location filename="../../mscore/shortcut.cpp" line="429"/>
         <source>Tenth Above</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="420"/>
+        <location filename="../../mscore/shortcut.cpp" line="430"/>
         <source>Enter tenth above</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="482"/>
+        <location filename="../../mscore/shortcut.cpp" line="492"/>
         <source>Tenth Below</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="483"/>
+        <location filename="../../mscore/shortcut.cpp" line="493"/>
         <source>Enter tenth below</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1965"/>
-        <location filename="../../mscore/shortcut.cpp" line="1966"/>
+        <location filename="../../mscore/shortcut.cpp" line="1975"/>
+        <location filename="../../mscore/shortcut.cpp" line="1976"/>
         <source>Cycle through voices in range-selection</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1972"/>
-        <location filename="../../mscore/shortcut.cpp" line="1973"/>
+        <location filename="../../mscore/shortcut.cpp" line="1982"/>
+        <location filename="../../mscore/shortcut.cpp" line="1983"/>
         <source>Toggle mouse for note entry</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1983"/>
-        <location filename="../../mscore/shortcut.cpp" line="1984"/>
+        <location filename="../../mscore/shortcut.cpp" line="1993"/>
+        <location filename="../../mscore/shortcut.cpp" line="1994"/>
         <source>Toggle editing sound playback</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2385"/>
+        <location filename="../../mscore/shortcut.cpp" line="2395"/>
         <source>Start or stop playback</source>
         <translation>Oynatmayı başlat veya durdur</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2394"/>
+        <location filename="../../mscore/shortcut.cpp" line="2404"/>
         <source>Play Previous Chord</source>
         <translation>Önceki Akoru Çal</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2395"/>
+        <location filename="../../mscore/shortcut.cpp" line="2405"/>
         <source>Play previous chord</source>
         <translation>Önceki akoru çal</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2404"/>
+        <location filename="../../mscore/shortcut.cpp" line="2414"/>
         <source>Play Previous Measure</source>
         <translation>Önceki Ölçüyü Çal</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2405"/>
+        <location filename="../../mscore/shortcut.cpp" line="2415"/>
         <source>Play previous measure</source>
         <translation>Önceki ölçüyü çal</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2414"/>
+        <location filename="../../mscore/shortcut.cpp" line="2424"/>
         <source>Play Next Chord</source>
         <translation>Sonraki Akoru Çal</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2415"/>
+        <location filename="../../mscore/shortcut.cpp" line="2425"/>
         <source>Play next chord</source>
         <translation>Sonraki akoru çal</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2424"/>
+        <location filename="../../mscore/shortcut.cpp" line="2434"/>
         <source>Play Next Measure</source>
         <translation>Sonraki Ölçüyü Çal</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2425"/>
+        <location filename="../../mscore/shortcut.cpp" line="2435"/>
         <source>Play next measure</source>
         <translation>Sonraki ölçüyü çal</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2444"/>
+        <location filename="../../mscore/shortcut.cpp" line="2454"/>
         <source>Rewind</source>
         <translation>Geri Sar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2446"/>
+        <location filename="../../mscore/shortcut.cpp" line="2456"/>
         <source>Rewind to start position</source>
         <translation>Başlangıç konumuna geri sar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2460"/>
+        <location filename="../../mscore/shortcut.cpp" line="2470"/>
         <source>Play Repeats</source>
         <translation>Tekrarları Oynat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2462"/>
+        <location filename="../../mscore/shortcut.cpp" line="2472"/>
         <source>Play repeats</source>
         <translation>Tekrarları oynat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2482"/>
+        <location filename="../../mscore/shortcut.cpp" line="2492"/>
         <source>Load Style…</source>
         <translation>Stil Yükle…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2483"/>
+        <location filename="../../mscore/shortcut.cpp" line="2493"/>
         <source>Load style</source>
         <translation>Stil Yükle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2493"/>
+        <location filename="../../mscore/shortcut.cpp" line="2503"/>
         <source>Save Style…</source>
         <translation>Stili Kaydet…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2494"/>
+        <location filename="../../mscore/shortcut.cpp" line="2504"/>
         <source>Save style</source>
         <translation>Stili Kaydet</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2504"/>
+        <location filename="../../mscore/shortcut.cpp" line="2514"/>
         <source>Select All</source>
         <translation>Tümünü Seç</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2505"/>
+        <location filename="../../mscore/shortcut.cpp" line="2515"/>
         <source>Select all</source>
         <translation>Tümünü seç</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2514"/>
+        <location filename="../../mscore/shortcut.cpp" line="2524"/>
         <source>&amp;Transpose…</source>
         <translation>&amp;Transpoze…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2515"/>
+        <location filename="../../mscore/shortcut.cpp" line="2525"/>
         <source>Transpose</source>
         <translation>Aktarım</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2525"/>
+        <location filename="../../mscore/shortcut.cpp" line="2535"/>
         <source>Treble Clef</source>
         <translation>Sol Açkısı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2526"/>
+        <location filename="../../mscore/shortcut.cpp" line="2536"/>
         <source>Add treble clef</source>
         <translation>Sol açkısı ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2535"/>
+        <location filename="../../mscore/shortcut.cpp" line="2545"/>
         <source>Bass Clef</source>
         <translation>Fa Açkısı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2536"/>
+        <location filename="../../mscore/shortcut.cpp" line="2546"/>
         <source>Add bass clef</source>
         <translation>Fa Açkısı ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2545"/>
+        <location filename="../../mscore/shortcut.cpp" line="2555"/>
         <source>Exchange Voice 1-2</source>
         <translation>Sesleri Değiştir 1-2</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2546"/>
+        <location filename="../../mscore/shortcut.cpp" line="2556"/>
         <source>Exchange voice 1-2</source>
         <translation>Sesleri değiştir 1-2</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2555"/>
+        <location filename="../../mscore/shortcut.cpp" line="2565"/>
         <source>Exchange Voice 1-3</source>
         <translation>Sesleri Değiştir 1-3</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2556"/>
+        <location filename="../../mscore/shortcut.cpp" line="2566"/>
         <source>Exchange voice 1-3</source>
         <translation>Sesleri değiştir 1-3</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2565"/>
+        <location filename="../../mscore/shortcut.cpp" line="2575"/>
         <source>Exchange Voice 1-4</source>
         <translation>Sesleri Değiştir 1-4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2566"/>
+        <location filename="../../mscore/shortcut.cpp" line="2576"/>
         <source>Exchange voice 1-4</source>
         <translation>Sesleri değiştir 1-4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2575"/>
+        <location filename="../../mscore/shortcut.cpp" line="2585"/>
         <source>Exchange Voice 2-3</source>
         <translation>Sesleri Değiştir 2-3</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2576"/>
+        <location filename="../../mscore/shortcut.cpp" line="2586"/>
         <source>Exchange voice 2-3</source>
         <translation>Sesleri değiştir 2-3</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2585"/>
+        <location filename="../../mscore/shortcut.cpp" line="2595"/>
         <source>Exchange Voice 2-4</source>
         <translation>Sesleri Değiştir 2-4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2586"/>
+        <location filename="../../mscore/shortcut.cpp" line="2596"/>
         <source>Exchange voice 2-4</source>
         <translation>Sesleri değiştir 2-4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2595"/>
+        <location filename="../../mscore/shortcut.cpp" line="2605"/>
         <source>Exchange Voice 3-4</source>
         <translation>Sesleri Değiştir 3-4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2596"/>
+        <location filename="../../mscore/shortcut.cpp" line="2606"/>
         <source>Exchange voice 3-4</source>
         <translation>Sesleri değiştir 3-4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2615"/>
+        <location filename="../../mscore/shortcut.cpp" line="2625"/>
         <source>Repeat Last Command</source>
         <translation>Son Komutu Tekrarla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2616"/>
+        <location filename="../../mscore/shortcut.cpp" line="2626"/>
         <source>Repeat last command</source>
         <translation>Son komutu tekrarla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2624"/>
+        <location filename="../../mscore/shortcut.cpp" line="2634"/>
         <source>Score Properties…</source>
         <translation>Partisyon Özellikleri…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2625"/>
+        <location filename="../../mscore/shortcut.cpp" line="2635"/>
         <source>Edit score properties</source>
         <translation>Partisyon özelliklerini düzenle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2635"/>
+        <location filename="../../mscore/shortcut.cpp" line="2645"/>
         <source>Toggle System Break</source>
         <translation>Sistem Boşluğunu Aç/Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2645"/>
+        <location filename="../../mscore/shortcut.cpp" line="2655"/>
         <source>Toggle Page Break</source>
         <translation>Sayfa Boşluğunu Aç/Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2655"/>
+        <location filename="../../mscore/shortcut.cpp" line="2665"/>
         <source>Toggle Section Break</source>
         <translation>Bölüm Sonunu Aç/Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2665"/>
+        <location filename="../../mscore/shortcut.cpp" line="2675"/>
         <source>Edit Element</source>
         <translation>Öğeyi Düzenle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2666"/>
+        <location filename="../../mscore/shortcut.cpp" line="2676"/>
         <source>Edit element</source>
         <translation>Öğeyi düzenle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2680"/>
+        <location filename="../../mscore/shortcut.cpp" line="2690"/>
         <source>Debugger</source>
         <translation>Hata ayıklayıcı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2696"/>
+        <location filename="../../mscore/shortcut.cpp" line="2706"/>
         <source>Show Invisible</source>
         <translation>Gizlenmişleri Göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2697"/>
+        <location filename="../../mscore/shortcut.cpp" line="2707"/>
         <source>Show invisible</source>
         <translation>Gizlenmişleri göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2707"/>
+        <location filename="../../mscore/shortcut.cpp" line="2717"/>
         <source>Show Unprintable</source>
         <translation>Yazılmayacakları Göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2708"/>
+        <location filename="../../mscore/shortcut.cpp" line="2718"/>
         <source>Show unprintable</source>
         <translation>Yazılmayacakları göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2718"/>
+        <location filename="../../mscore/shortcut.cpp" line="2728"/>
         <source>Show Frames</source>
         <translation>Çerçeveleri Göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2719"/>
+        <location filename="../../mscore/shortcut.cpp" line="2729"/>
         <source>Show frames</source>
         <translation>Çerçeveleri göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2729"/>
+        <location filename="../../mscore/shortcut.cpp" line="2739"/>
         <source>Show Page Margins</source>
         <translation>Sayfa Kenar Boşluklarını Göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2730"/>
+        <location filename="../../mscore/shortcut.cpp" line="2740"/>
         <source>Show page margins</source>
         <translation>Sayfa kenar boşluklarını göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2751"/>
+        <location filename="../../mscore/shortcut.cpp" line="2761"/>
         <source>Insert Special Characters…</source>
         <translation>Özel Karakterler Ekle…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2752"/>
+        <location filename="../../mscore/shortcut.cpp" line="2762"/>
         <source>Insert special characters</source>
         <translation>Özel karakterler ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2760"/>
+        <location filename="../../mscore/shortcut.cpp" line="2770"/>
         <source>Whole Rest</source>
         <translation>Birlik Sus</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2761"/>
+        <location filename="../../mscore/shortcut.cpp" line="2771"/>
         <source>Note input: Whole rest</source>
         <translation>Nota girişi: Birlik Sus</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2767"/>
+        <location filename="../../mscore/shortcut.cpp" line="2777"/>
         <source>Half Rest</source>
         <translation>İkilik Sus</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2768"/>
+        <location filename="../../mscore/shortcut.cpp" line="2778"/>
         <source>Note input: Half rest</source>
         <translation>Nota girişi: İkilik Sus</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2774"/>
+        <location filename="../../mscore/shortcut.cpp" line="2784"/>
         <source>Quarter Rest</source>
         <translation>Dörtlük Sus</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2775"/>
+        <location filename="../../mscore/shortcut.cpp" line="2785"/>
         <source>Note input: Quarter rest</source>
         <translation>Nota girişi: Dörtlük Sus</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2781"/>
+        <location filename="../../mscore/shortcut.cpp" line="2791"/>
         <source>Eighth Rest</source>
         <translation>Sekizlik Sus</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2782"/>
+        <location filename="../../mscore/shortcut.cpp" line="2792"/>
         <source>Note input: Eighth rest</source>
         <translation>Nota girişi: Sekizlik Sus</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2788"/>
+        <location filename="../../mscore/shortcut.cpp" line="2798"/>
         <source>Backspace</source>
         <translation>Backspace</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2806"/>
+        <location filename="../../mscore/shortcut.cpp" line="2816"/>
         <source>Zoom In</source>
         <translation>Yakınlaştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2807"/>
+        <location filename="../../mscore/shortcut.cpp" line="2817"/>
         <source>Zoom in</source>
         <translation>Yakınlaştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2814"/>
+        <location filename="../../mscore/shortcut.cpp" line="2824"/>
         <source>Zoom Out</source>
         <translation>Uzaklaştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2815"/>
+        <location filename="../../mscore/shortcut.cpp" line="2825"/>
         <source>Zoom out</source>
         <translation>Uzaklaştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2821"/>
-        <location filename="../../mscore/shortcut.cpp" line="2822"/>
+        <location filename="../../mscore/shortcut.cpp" line="2831"/>
+        <location filename="../../mscore/shortcut.cpp" line="2832"/>
         <source>Zoom to 100%</source>
         <translation>% 100 Yakınlaştır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2835"/>
+        <location filename="../../mscore/shortcut.cpp" line="2845"/>
         <source>Mirror Notehead</source>
         <translation>Nota kuyruğu görünümü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2836"/>
+        <location filename="../../mscore/shortcut.cpp" line="2846"/>
         <source>Mirror notehead</source>
         <translation>Nota kuyruğu görünümü</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2855"/>
+        <location filename="../../mscore/shortcut.cpp" line="2865"/>
         <source>Chord Symbols…</source>
         <translation>Akor Sembolleri…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2856"/>
+        <location filename="../../mscore/shortcut.cpp" line="2866"/>
         <source>Edit chord symbols style</source>
         <translation>Akor sembolleri stilini düzenle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2862"/>
+        <location filename="../../mscore/shortcut.cpp" line="2872"/>
         <source>All Similar Elements</source>
         <translation>Tüm Benzer Öğeler</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2863"/>
+        <location filename="../../mscore/shortcut.cpp" line="2873"/>
         <source>Select all similar elements</source>
         <translation>Tüm benzer öğeleri seçin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2869"/>
+        <location filename="../../mscore/shortcut.cpp" line="2879"/>
         <source>All Similar Elements in Same Staff</source>
         <translation>Aynı Dizekteki Tüm Benzer Öğeler</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2870"/>
+        <location filename="../../mscore/shortcut.cpp" line="2880"/>
         <source>Select all similar elements in same staff</source>
         <translation>Aynı dizekteki tüm benzer öğeleri seçin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2876"/>
+        <location filename="../../mscore/shortcut.cpp" line="2886"/>
         <source>All Similar Elements in Range Selection</source>
         <translation>Seçili Aralıktaki Tüm Benzer Öğeleri</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2877"/>
+        <location filename="../../mscore/shortcut.cpp" line="2887"/>
         <source>Select all similar elements in the range selection</source>
         <translation>Aralık seçimindeki tüm benzer öğeleri seçin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2884"/>
+        <location filename="../../mscore/shortcut.cpp" line="2894"/>
         <source>Select all similar elements with more options</source>
         <translation>Daha fazla seçenekle tüm benzer öğeleri seçin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2890"/>
+        <location filename="../../mscore/shortcut.cpp" line="2900"/>
         <source>Synthesizer</source>
         <translation>Sentezleyici</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2900"/>
+        <location filename="../../mscore/shortcut.cpp" line="2910"/>
         <source>Double Duration</source>
         <translation>Çift Süre</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2901"/>
+        <location filename="../../mscore/shortcut.cpp" line="2911"/>
         <source>Double duration</source>
         <translation>Çift süre</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2910"/>
+        <location filename="../../mscore/shortcut.cpp" line="2920"/>
         <source>Half Duration</source>
         <translation>İkilik Süre</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2911"/>
+        <location filename="../../mscore/shortcut.cpp" line="2921"/>
         <source>Half duration</source>
         <translation>İkilik süre</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2920"/>
+        <location filename="../../mscore/shortcut.cpp" line="2930"/>
         <source>Increase Duration Dotted</source>
         <translation>Noktalı Süreyi Artır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2921"/>
+        <location filename="../../mscore/shortcut.cpp" line="2931"/>
         <source>Increase duration dotted</source>
         <translation>Noktalı süreyi artır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2930"/>
+        <location filename="../../mscore/shortcut.cpp" line="2940"/>
         <source>Decrease Duration Dotted</source>
         <translation>Noktalı Süreyi Azalt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2931"/>
+        <location filename="../../mscore/shortcut.cpp" line="2941"/>
         <source>Decrease duration dotted</source>
         <translation>Noktalı süreyi azalt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2940"/>
+        <location filename="../../mscore/shortcut.cpp" line="2950"/>
         <source>Repeat Selection</source>
         <translation>Seçimi Tekrarla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2941"/>
+        <location filename="../../mscore/shortcut.cpp" line="2951"/>
         <source>Repeat selection</source>
         <translation>Seçileni tekrarla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2949"/>
+        <location filename="../../mscore/shortcut.cpp" line="2959"/>
         <source>Pan Piano Roll</source>
         <translation>Denge Piyano Klavyesi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2950"/>
+        <location filename="../../mscore/shortcut.cpp" line="2960"/>
         <source>Toggle pan piano roll</source>
         <translation>Piyano klavyesi panelini aç/kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2951"/>
+        <location filename="../../mscore/shortcut.cpp" line="2961"/>
         <source>Pan roll during playback</source>
         <translation>Oynatma sırasında kaydırma</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2960"/>
+        <location filename="../../mscore/shortcut.cpp" line="2970"/>
         <source>Documents Side by Side</source>
         <translation>Yan Yana Belgeler</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2961"/>
+        <location filename="../../mscore/shortcut.cpp" line="2971"/>
         <source>Display documents side by side</source>
         <translation>Belgeleri yan yana görüntüleyin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2967"/>
+        <location filename="../../mscore/shortcut.cpp" line="2977"/>
         <source>Documents Stacked</source>
         <translation>Alt alta Belgeler</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2968"/>
+        <location filename="../../mscore/shortcut.cpp" line="2978"/>
         <source>Display documents stacked</source>
         <translation>Belgeleri alt alta görüntüleyin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2975"/>
+        <location filename="../../mscore/shortcut.cpp" line="2985"/>
         <source>Manage parts</source>
         <translation>Bölümleri düzenle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2981"/>
+        <location filename="../../mscore/shortcut.cpp" line="2991"/>
         <source>Change Enharmonic Spelling (&amp;Both Modes)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2989"/>
+        <location filename="../../mscore/shortcut.cpp" line="2999"/>
         <source>Change Enharmonic Spelling (&amp;Current Mode)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2997"/>
+        <location filename="../../mscore/shortcut.cpp" line="3007"/>
         <source>Create New Revision</source>
         <translation>Yeni Düzeltme Oluştur</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2998"/>
+        <location filename="../../mscore/shortcut.cpp" line="3008"/>
         <source>Create new revision</source>
         <translation>Yeni düzeltme oluştur</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3024"/>
+        <location filename="../../mscore/shortcut.cpp" line="3034"/>
         <source>Full Screen</source>
         <translation>Tam Ekran</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3025"/>
+        <location filename="../../mscore/shortcut.cpp" line="3035"/>
         <source>Full screen</source>
         <translation>Tam ekran</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3031"/>
+        <location filename="../../mscore/shortcut.cpp" line="3041"/>
         <source>Enable Snap to Horizontal Grid</source>
         <translation>Yatay Izgaraya Tutturmayı Etkinleştir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3032"/>
+        <location filename="../../mscore/shortcut.cpp" line="3042"/>
         <source>Enable snap to horizontal grid</source>
         <translation>Yatay ızgaraya tutturmayı etkinleştir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3042"/>
+        <location filename="../../mscore/shortcut.cpp" line="3052"/>
         <source>Enable Snap to Vertical Grid</source>
         <translation>Dikey Izgaraya Tutturmayı Etkinleştir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3043"/>
+        <location filename="../../mscore/shortcut.cpp" line="3053"/>
         <source>Enable snap to vertical grid</source>
         <translation>Dikey ızgaraya tutturmayı etkinleştir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3053"/>
+        <location filename="../../mscore/shortcut.cpp" line="3063"/>
         <source>Configure Grid</source>
         <translation>Izgarayı yapılandır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3054"/>
+        <location filename="../../mscore/shortcut.cpp" line="3064"/>
         <source>Configure grid</source>
         <translation>Izgarayı yapılandır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3060"/>
+        <location filename="../../mscore/shortcut.cpp" line="3070"/>
         <source>Piano Keyboard</source>
         <translation>Piyano Klavyesi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3061"/>
+        <location filename="../../mscore/shortcut.cpp" line="3071"/>
         <source>Piano keyboard</source>
         <translation>Piyano klavyesi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3074"/>
+        <location filename="../../mscore/shortcut.cpp" line="3084"/>
         <source>Additional Media…</source>
         <translation>Ek Medya…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3075"/>
+        <location filename="../../mscore/shortcut.cpp" line="3085"/>
         <source>Show media dialog</source>
         <translation>Medya iletişim kutusunu göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3088"/>
+        <location filename="../../mscore/shortcut.cpp" line="3098"/>
         <source>Join Selected Measures</source>
         <translation>Seçili Ölçüleri Birleştir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3089"/>
+        <location filename="../../mscore/shortcut.cpp" line="3099"/>
         <source>Join selected measures</source>
         <translation>Seçili ölçüleri birleştir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3095"/>
+        <location filename="../../mscore/shortcut.cpp" line="3105"/>
         <source>Page Settings…</source>
         <translation>Sayfa Ayarları…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3096"/>
+        <location filename="../../mscore/shortcut.cpp" line="3106"/>
         <source>Page settings</source>
         <translation>Sayfa ayarları</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3102"/>
+        <location filename="../../mscore/shortcut.cpp" line="3112"/>
         <source>Album…</source>
         <translation>Albüm</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3103"/>
+        <location filename="../../mscore/shortcut.cpp" line="3113"/>
         <source>Album</source>
         <translation>Albüm</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3112"/>
+        <location filename="../../mscore/shortcut.cpp" line="3122"/>
         <source>Layers…</source>
         <translation>Katmanlar…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3113"/>
+        <location filename="../../mscore/shortcut.cpp" line="3123"/>
         <source>Layers</source>
         <translation>Katmanlar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3122"/>
+        <location filename="../../mscore/shortcut.cpp" line="3132"/>
         <source>Next Score</source>
         <translation>Sonraki Partisyon</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3123"/>
+        <location filename="../../mscore/shortcut.cpp" line="3133"/>
         <source>Next score</source>
         <translation>Sonraki partisyon</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3132"/>
+        <location filename="../../mscore/shortcut.cpp" line="3142"/>
         <source>Previous Score</source>
         <translation>Önceki Partisyon</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3133"/>
+        <location filename="../../mscore/shortcut.cpp" line="3143"/>
         <source>Previous score</source>
         <translation>Önceki partisyon</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3143"/>
+        <location filename="../../mscore/shortcut.cpp" line="3153"/>
         <source>Plugin Creator…</source>
         <translation>Eklenti Oluşturucu…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3144"/>
+        <location filename="../../mscore/shortcut.cpp" line="3154"/>
         <source>Plugin creator</source>
         <translation>Eklenti oluşturucu</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3153"/>
+        <location filename="../../mscore/shortcut.cpp" line="3163"/>
         <source>Plugin Manager…</source>
         <translation>Eklenti Yöneticisi…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3154"/>
+        <location filename="../../mscore/shortcut.cpp" line="3164"/>
         <source>Plugin manager</source>
         <translation>Eklenti yöneticisi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3163"/>
+        <location filename="../../mscore/shortcut.cpp" line="3173"/>
         <source>Inspector</source>
         <translation>Denetçi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3164"/>
+        <location filename="../../mscore/shortcut.cpp" line="3174"/>
         <source>Show inspector</source>
         <translation>Denetçiyi Göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3171"/>
+        <location filename="../../mscore/shortcut.cpp" line="3181"/>
         <source>Resource manager</source>
         <translation>Kaynak yöneticisi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3200"/>
+        <location filename="../../mscore/shortcut.cpp" line="3210"/>
         <source>Loop In</source>
         <translation>Döngü Başlangıcı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3201"/>
+        <location filename="../../mscore/shortcut.cpp" line="3211"/>
         <source>Set loop in position</source>
         <translation>Döngü başlangıcı konumunu ayarlayın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3210"/>
+        <location filename="../../mscore/shortcut.cpp" line="3220"/>
         <source>Loop Out</source>
         <translation>Döngü Bitişi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3211"/>
+        <location filename="../../mscore/shortcut.cpp" line="3221"/>
         <source>Set loop out position</source>
         <translation>Döngü bitişi konumunu ayarlayın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3220"/>
+        <location filename="../../mscore/shortcut.cpp" line="3230"/>
         <source>Metronome</source>
         <translation>Metronom</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3221"/>
+        <location filename="../../mscore/shortcut.cpp" line="3231"/>
         <source>Toggle metronome playback</source>
         <translation>Metronom oynatmayı aç/kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3222"/>
+        <location filename="../../mscore/shortcut.cpp" line="3232"/>
         <source>Play metronome during playback</source>
         <translation>Oynatma sırasında metronom çal</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3231"/>
+        <location filename="../../mscore/shortcut.cpp" line="3241"/>
         <source>Count-In</source>
         <translation>Count-In</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3233"/>
+        <location filename="../../mscore/shortcut.cpp" line="3243"/>
         <source>Play count-in at playback start</source>
         <translation>Çalmadan önce bir ölçü say</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3242"/>
+        <location filename="../../mscore/shortcut.cpp" line="3252"/>
         <source>Increase Playback Speed</source>
         <translation>Oynatma Hızını Arttır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3243"/>
+        <location filename="../../mscore/shortcut.cpp" line="3253"/>
         <source>Increase playback speed</source>
         <translation>Oynatma Hızını Arttır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3244"/>
+        <location filename="../../mscore/shortcut.cpp" line="3254"/>
         <source>Increase the playback speed</source>
         <translation>Oynatma Hızını Arttır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3250"/>
+        <location filename="../../mscore/shortcut.cpp" line="3260"/>
         <source>Decrease Playback Speed</source>
         <translation>Oynatma Hızını Azalt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3251"/>
+        <location filename="../../mscore/shortcut.cpp" line="3261"/>
         <source>Decrease playback speed</source>
         <translation>Oynatma Hızını Azalt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3252"/>
+        <location filename="../../mscore/shortcut.cpp" line="3262"/>
         <source>Decrease the playback speed</source>
         <translation>Oynatma Hızını Azalt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3258"/>
+        <location filename="../../mscore/shortcut.cpp" line="3268"/>
         <source>Reset Playback Speed</source>
         <translation>Oynatma Hızını Sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3259"/>
+        <location filename="../../mscore/shortcut.cpp" line="3269"/>
         <source>Reset playback speed</source>
         <translation>Oynatma Hızını Sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3260"/>
+        <location filename="../../mscore/shortcut.cpp" line="3270"/>
         <source>Reset the playback speed to 100%</source>
         <translation>Oynatma hızını%100&apos;e sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3266"/>
+        <location filename="../../mscore/shortcut.cpp" line="3276"/>
         <source>Figured Bass</source>
         <translation>Şifreli Bas</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3267"/>
+        <location filename="../../mscore/shortcut.cpp" line="3277"/>
         <source>Add figured bass</source>
         <translation>Şifreli bas ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3277"/>
+        <location filename="../../mscore/shortcut.cpp" line="3287"/>
         <source>Transpose Up</source>
         <translation>Transpoze Yukarı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3278"/>
+        <location filename="../../mscore/shortcut.cpp" line="3288"/>
         <source>Transpose up</source>
         <translation>Transpoze yukarı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3284"/>
+        <location filename="../../mscore/shortcut.cpp" line="3294"/>
         <source>Transpose Down</source>
         <translation>Transpoze Aşağı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3285"/>
+        <location filename="../../mscore/shortcut.cpp" line="3295"/>
         <source>Transpose down</source>
         <translation>Aşağı transpoze edin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3291"/>
+        <location filename="../../mscore/shortcut.cpp" line="3301"/>
         <source>Master Palette…</source>
         <translation>Ana Palet…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3292"/>
+        <location filename="../../mscore/shortcut.cpp" line="3302"/>
         <source>Show master palette</source>
         <translation>Ana paleti göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3301"/>
+        <location filename="../../mscore/shortcut.cpp" line="3311"/>
         <source>Key Signatures…</source>
         <translation>Donanımlar…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3302"/>
+        <location filename="../../mscore/shortcut.cpp" line="3312"/>
         <source>Show key signature palette</source>
         <translation>Donanım paletini göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3311"/>
+        <location filename="../../mscore/shortcut.cpp" line="3321"/>
         <source>Time Signatures…</source>
         <translation>Ölçü Sayıları…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3312"/>
+        <location filename="../../mscore/shortcut.cpp" line="3322"/>
         <source>Show time signature palette</source>
         <translation>Ölçü sayısı paletini göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3321"/>
+        <location filename="../../mscore/shortcut.cpp" line="3331"/>
         <source>Symbols…</source>
         <translation>Simgeler…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3322"/>
+        <location filename="../../mscore/shortcut.cpp" line="3332"/>
         <source>Show symbol palette</source>
         <translation>Sembol paletini göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3331"/>
+        <location filename="../../mscore/shortcut.cpp" line="3341"/>
         <source>Toggle View Mode</source>
         <translation>Görünüm Modunu Aç/Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3342"/>
+        <location filename="../../mscore/shortcut.cpp" line="3352"/>
         <source>Next Syllable</source>
         <translation>Sonraki Hece</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3343"/>
+        <location filename="../../mscore/shortcut.cpp" line="3353"/>
         <source>Next syllable</source>
         <translation>Sonraki hece</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3349"/>
+        <location filename="../../mscore/shortcut.cpp" line="3359"/>
         <source>Previous Syllable</source>
         <translation>Önceki Hece</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3350"/>
+        <location filename="../../mscore/shortcut.cpp" line="3360"/>
         <source>Previous syllable</source>
         <translation>Önceki hece</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3356"/>
+        <location filename="../../mscore/shortcut.cpp" line="3366"/>
         <source>Toggle Visibility</source>
         <translation>Görünürlüğü aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3363"/>
+        <location filename="../../mscore/shortcut.cpp" line="3373"/>
         <source>Set Visible</source>
         <translation>Görünür Kıl</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3364"/>
+        <location filename="../../mscore/shortcut.cpp" line="3374"/>
         <source>Set visible</source>
         <translation>Görünür olarak ayarla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3370"/>
+        <location filename="../../mscore/shortcut.cpp" line="3380"/>
         <source>Set Invisible</source>
         <translation>Görünmez Kıl</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3371"/>
+        <location filename="../../mscore/shortcut.cpp" line="3381"/>
         <source>Set invisible</source>
         <translation>Görünmez olarak ayarla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3377"/>
+        <location filename="../../mscore/shortcut.cpp" line="3387"/>
         <source>Note Anchored Line</source>
         <translation>nota bağlantılı çizgi </translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3378"/>
+        <location filename="../../mscore/shortcut.cpp" line="3388"/>
         <source>Note anchored line</source>
         <translation>Nota bağlantılı çizgi </translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3384"/>
+        <location filename="../../mscore/shortcut.cpp" line="3394"/>
         <source>Lock Score</source>
         <translation>Partisyonu kilitle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3385"/>
+        <location filename="../../mscore/shortcut.cpp" line="3395"/>
         <source>Lock score</source>
         <translation>Partisyonu kilitle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3393"/>
+        <location filename="../../mscore/shortcut.cpp" line="3403"/>
         <source>Longa (TAB)</source>
         <translation>Longa (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3394"/>
+        <location filename="../../mscore/shortcut.cpp" line="3404"/>
         <source>Note duration: Longa (TAB)</source>
         <translation>Nota süresi: Longa (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3395"/>
+        <location filename="../../mscore/shortcut.cpp" line="3405"/>
         <source>Longa note</source>
         <translation>Longa nota</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3403"/>
+        <location filename="../../mscore/shortcut.cpp" line="3413"/>
         <source>Double Whole Note (TAB)</source>
         <translation>Çift birlik nota (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3404"/>
+        <location filename="../../mscore/shortcut.cpp" line="3414"/>
         <source>Note duration: Double whole (TAB)</source>
         <translation>Nota süresi: Çift Birlik (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3413"/>
+        <location filename="../../mscore/shortcut.cpp" line="3423"/>
         <source>Whole Note (TAB)</source>
         <translation>Birlik Nota (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3414"/>
+        <location filename="../../mscore/shortcut.cpp" line="3424"/>
         <source>Note duration: Whole (TAB)</source>
         <translation>Nota süresi: Birlik (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3423"/>
+        <location filename="../../mscore/shortcut.cpp" line="3433"/>
         <source>Half Note (TAB)</source>
         <translation>İkilik Nota (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3424"/>
+        <location filename="../../mscore/shortcut.cpp" line="3434"/>
         <source>Note duration: Half (TAB)</source>
         <translation>Nota süresi: İkilik (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3433"/>
+        <location filename="../../mscore/shortcut.cpp" line="3443"/>
         <source>Quarter Note (TAB)</source>
         <translation>Dörtlük Nota (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3434"/>
+        <location filename="../../mscore/shortcut.cpp" line="3444"/>
         <source>Note duration: Quarter (TAB)</source>
         <translation>Nota süresi: Dörtlük (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3443"/>
+        <location filename="../../mscore/shortcut.cpp" line="3453"/>
         <source>Eighth Note (TAB)</source>
         <translation>Sekizlik Nota (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3444"/>
+        <location filename="../../mscore/shortcut.cpp" line="3454"/>
         <source>Note duration: Eighth (TAB)</source>
         <translation>Nota süresi: Sekizlik (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3453"/>
+        <location filename="../../mscore/shortcut.cpp" line="3463"/>
         <source>16th Note (TAB)</source>
         <translation>16&apos;lık Nota (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3454"/>
+        <location filename="../../mscore/shortcut.cpp" line="3464"/>
         <source>Note duration: 16th (TAB)</source>
         <translation>Nota süresi: 16&apos;lık (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3463"/>
+        <location filename="../../mscore/shortcut.cpp" line="3473"/>
         <source>32nd Note (TAB)</source>
         <translation>32&apos;lik Nota (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3464"/>
+        <location filename="../../mscore/shortcut.cpp" line="3474"/>
         <source>Note duration: 32nd (TAB)</source>
         <translation>Nota süresi: 32&apos;lik (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3473"/>
+        <location filename="../../mscore/shortcut.cpp" line="3483"/>
         <source>64th Note (TAB)</source>
         <translation>64&apos;lük Nota (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3474"/>
+        <location filename="../../mscore/shortcut.cpp" line="3484"/>
         <source>Note duration: 64th (TAB)</source>
         <translation>Nota süresi: 64&apos;lük (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3483"/>
+        <location filename="../../mscore/shortcut.cpp" line="3493"/>
         <source>128th Note (TAB)</source>
         <translation>128&apos;lik Nota (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3484"/>
+        <location filename="../../mscore/shortcut.cpp" line="3494"/>
         <source>Note duration: 128th (TAB)</source>
         <translation>Nota süresi: 128&apos;lik (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3493"/>
+        <location filename="../../mscore/shortcut.cpp" line="3503"/>
         <source>256th Note (TAB)</source>
         <translation>256&apos;lık Nota (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3494"/>
+        <location filename="../../mscore/shortcut.cpp" line="3504"/>
         <source>Note duration: 256th (TAB)</source>
         <translation>Nota süresi: 256&apos;lık (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3503"/>
+        <location filename="../../mscore/shortcut.cpp" line="3513"/>
         <source>512th Note (TAB)</source>
         <translation>512&apos;lik Nota (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3504"/>
+        <location filename="../../mscore/shortcut.cpp" line="3514"/>
         <source>Note duration: 512th (TAB)</source>
         <translation>Nota süresi: 512&apos;lik (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3513"/>
+        <location filename="../../mscore/shortcut.cpp" line="3523"/>
         <source>1024th Note (TAB)</source>
         <translation>1024&apos;lük Nota (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3514"/>
+        <location filename="../../mscore/shortcut.cpp" line="3524"/>
         <source>Note duration: 1024th (TAB)</source>
         <translation>Nota süresi: 1024&apos;lük (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3523"/>
+        <location filename="../../mscore/shortcut.cpp" line="3533"/>
         <source>Increase Active Duration (TAB)</source>
         <translation>Aktif Süreyi Arttır (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3524"/>
+        <location filename="../../mscore/shortcut.cpp" line="3534"/>
         <source>Increase active duration (TAB)</source>
         <translation>Etkin süreyi arttır (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3530"/>
+        <location filename="../../mscore/shortcut.cpp" line="3540"/>
         <source>Decrease Active Duration (TAB)</source>
         <translation>Etkin Süreyi Azalt (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3531"/>
+        <location filename="../../mscore/shortcut.cpp" line="3541"/>
         <source>Decrease active duration (TAB)</source>
         <translation>Etkin süreyi azalt (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3537"/>
-        <location filename="../../mscore/shortcut.cpp" line="3546"/>
+        <location filename="../../mscore/shortcut.cpp" line="3547"/>
+        <location filename="../../mscore/shortcut.cpp" line="3556"/>
         <source>Rest (TAB)</source>
         <translation>Sus (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3538"/>
+        <location filename="../../mscore/shortcut.cpp" line="3548"/>
         <source>Enter rest (TAB)</source>
         <translation>Sus girin (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3547"/>
+        <location filename="../../mscore/shortcut.cpp" line="3557"/>
         <source>Note input: Rest (TAB)</source>
         <translation>Nota girişi: Sus (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3553"/>
+        <location filename="../../mscore/shortcut.cpp" line="3563"/>
         <source>String Above (TAB)</source>
         <translation>Üst Tel (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3554"/>
+        <location filename="../../mscore/shortcut.cpp" line="3564"/>
         <source>Select string above (TAB only)</source>
         <translation>Yukarıdaki teli seçin (yalnızca TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3560"/>
+        <location filename="../../mscore/shortcut.cpp" line="3570"/>
         <source>String Below (TAB)</source>
         <translation>Alt Tel (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3561"/>
+        <location filename="../../mscore/shortcut.cpp" line="3571"/>
         <source>Select string below (TAB only)</source>
         <translation>Aşağıdaki teli seçin (yalnızca TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3567"/>
+        <location filename="../../mscore/shortcut.cpp" line="3577"/>
         <source>Fret 0 (TAB)</source>
         <translation>Perde 0 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3568"/>
+        <location filename="../../mscore/shortcut.cpp" line="3578"/>
         <source>Add fret 0 on current string (TAB only)</source>
         <translation>Mevcut tele perde 0 ekle (yalnızca TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3574"/>
+        <location filename="../../mscore/shortcut.cpp" line="3584"/>
         <source>Fret 1 (TAB)</source>
         <translation>Perde 1 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3575"/>
+        <location filename="../../mscore/shortcut.cpp" line="3585"/>
         <source>Add fret 1 on current string (TAB only)</source>
         <translation>Mevcut tele perde 1 ekle (yalnızca TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3581"/>
+        <location filename="../../mscore/shortcut.cpp" line="3591"/>
         <source>Fret 2 (TAB)</source>
         <translation>Perde 2 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3582"/>
+        <location filename="../../mscore/shortcut.cpp" line="3592"/>
         <source>Add fret 2 on current string (TAB only)</source>
         <translation>Mevcut tele perde 2 ekle (yalnızca TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3588"/>
+        <location filename="../../mscore/shortcut.cpp" line="3598"/>
         <source>Fret 3 (TAB)</source>
         <translation>Perde 3 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3589"/>
+        <location filename="../../mscore/shortcut.cpp" line="3599"/>
         <source>Add fret 3 on current string (TAB only)</source>
         <translation>Mevcut tele perde 3 ekle (yalnızca TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3595"/>
+        <location filename="../../mscore/shortcut.cpp" line="3605"/>
         <source>Fret 4 (TAB)</source>
         <translation>Perde 4 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3596"/>
+        <location filename="../../mscore/shortcut.cpp" line="3606"/>
         <source>Add fret 4 on current string (TAB only)</source>
         <translation>Mevcut tele perde 4 ekle (yalnızca Tab)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3602"/>
+        <location filename="../../mscore/shortcut.cpp" line="3612"/>
         <source>Fret 5 (TAB)</source>
         <translation>Perde 5 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3603"/>
+        <location filename="../../mscore/shortcut.cpp" line="3613"/>
         <source>Add fret 5 on current string (TAB only)</source>
         <translation>Mevcut tele perde 5 ekle (yalnızca Tab)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3609"/>
+        <location filename="../../mscore/shortcut.cpp" line="3619"/>
         <source>Fret 6 (TAB)</source>
         <translation>Perde 6 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3610"/>
+        <location filename="../../mscore/shortcut.cpp" line="3620"/>
         <source>Add fret 6 on current string (TAB only)</source>
         <translation>Mevcut tele perde 6 ekle (yalnızca Tab)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3616"/>
+        <location filename="../../mscore/shortcut.cpp" line="3626"/>
         <source>Fret 7 (TAB)</source>
         <translation>Perde 7 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3617"/>
+        <location filename="../../mscore/shortcut.cpp" line="3627"/>
         <source>Add fret 7 on current string (TAB only)</source>
         <translation>Mevcut tele perde 7 ekle (yalnızca Tab)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3623"/>
+        <location filename="../../mscore/shortcut.cpp" line="3633"/>
         <source>Fret 8 (TAB)</source>
         <translation>Perde 8 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3624"/>
+        <location filename="../../mscore/shortcut.cpp" line="3634"/>
         <source>Add fret 8 on current string (TAB only)</source>
         <translation>Mevcut tele perde 8 ekle (yalnızca Tab)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3630"/>
+        <location filename="../../mscore/shortcut.cpp" line="3640"/>
         <source>Fret 9 (TAB)</source>
         <translation>Perde 9 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3631"/>
+        <location filename="../../mscore/shortcut.cpp" line="3641"/>
         <source>Add fret 9 on current string (TAB only)</source>
         <translation>Mevcut tele perde 9 ekle (yalnızca Tab)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3637"/>
+        <location filename="../../mscore/shortcut.cpp" line="3647"/>
         <source>Fret 10 (TAB)</source>
         <translation>Perde 10 (Tab)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3638"/>
+        <location filename="../../mscore/shortcut.cpp" line="3648"/>
         <source>Add fret 10 on current string (TAB only)</source>
         <translation>Mevcut tele perde 10 ekle (yalnızca Tab)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3644"/>
+        <location filename="../../mscore/shortcut.cpp" line="3654"/>
         <source>Fret 11 (TAB)</source>
         <translation>Perde 11 (Tab)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3645"/>
+        <location filename="../../mscore/shortcut.cpp" line="3655"/>
         <source>Add fret 11 on current string (TAB only)</source>
         <translation>Mevcut tele perde 11 ekle (yalnızca Tab)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3651"/>
+        <location filename="../../mscore/shortcut.cpp" line="3661"/>
         <source>Fret 12 (TAB)</source>
         <translation>Perde 12 (Tab)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3652"/>
+        <location filename="../../mscore/shortcut.cpp" line="3662"/>
         <source>Add fret 12 on current string (TAB only)</source>
         <translation>Mevcut tele perde 12 ekle (yalnızca Tab)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3658"/>
+        <location filename="../../mscore/shortcut.cpp" line="3668"/>
         <source>Fret 13 (TAB)</source>
         <translation>Perde 13 (Tab)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3659"/>
+        <location filename="../../mscore/shortcut.cpp" line="3669"/>
         <source>Add fret 13 on current string (TAB only)</source>
         <translation>Mevcut tele perde 13 ekle (yalnızca Tab)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3665"/>
+        <location filename="../../mscore/shortcut.cpp" line="3675"/>
         <source>Fret 14 (TAB)</source>
         <translation>Perde 14 (Tab)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3666"/>
+        <location filename="../../mscore/shortcut.cpp" line="3676"/>
         <source>Add fret 14 on current string (TAB only)</source>
         <translation>Mevcut tele perde 14 ekle (yalnızca Tab)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3675"/>
+        <location filename="../../mscore/shortcut.cpp" line="3685"/>
         <source>Longa Advance (F.B./Chord Symbol)</source>
         <translation>Longa İlerleme (F.B./Akor Sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3676"/>
+        <location filename="../../mscore/shortcut.cpp" line="3686"/>
         <source>Advance of a longa (Figured bass/Chord symbol only)</source>
         <translation>Bir longa geliştir (Yalnızca figürlü bas / Akor sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3682"/>
+        <location filename="../../mscore/shortcut.cpp" line="3692"/>
         <source>Breve Advance (F.B./Chord Symbol)</source>
         <translation>Çift birlik nota İlerleme (F.B./Akor Sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3683"/>
+        <location filename="../../mscore/shortcut.cpp" line="3693"/>
         <source>Advance of a double whole note (Figured bass/Chord symbol only)</source>
         <translation>Çift birlik notanın ilerlemesi (Yalnızca figürlü bas / Akor sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3689"/>
+        <location filename="../../mscore/shortcut.cpp" line="3699"/>
         <source>Whole Note Advance (F.B./Chord Symbol)</source>
         <translation>Birlik nota ilerlemesi (F.B./Akor Sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3690"/>
+        <location filename="../../mscore/shortcut.cpp" line="3700"/>
         <source>Advance of a whole note (Figured bass/Chord symbol only)</source>
         <translation>bir Birlik notanın ilerlemesi (yalnızca Figürlü bas / Akor sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3696"/>
+        <location filename="../../mscore/shortcut.cpp" line="3706"/>
         <source>Half Note Advance (F.B./Chord Symbol)</source>
         <translation>İkilik Nota İlerlemesi (F.B./Akor Sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3697"/>
+        <location filename="../../mscore/shortcut.cpp" line="3707"/>
         <source>Advance of a half note (Figured bass/Chord symbol only)</source>
         <translation>Bir ikilik notanın ilerlemesi (yalnızca Figürlü bas / Akor sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3703"/>
+        <location filename="../../mscore/shortcut.cpp" line="3713"/>
         <source>Quarter Note Advance (F.B./Chord Symbol)</source>
         <translation>Dörtlük Nota ilerlemesi (F.B./Akor Sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3704"/>
+        <location filename="../../mscore/shortcut.cpp" line="3714"/>
         <source>Advance of a quarter note (Figured bass/Chord symbol only)</source>
         <translation>Bir Dörtlük notanın ilerlemesi (yalnızca Figürlü bas / Akor sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3710"/>
+        <location filename="../../mscore/shortcut.cpp" line="3720"/>
         <source>Eighth Note Advance (F.B./Chord Symbol)</source>
         <translation>Sekizlik Nota İlerlemesi (F.B./Akor Sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3711"/>
+        <location filename="../../mscore/shortcut.cpp" line="3721"/>
         <source>Advance of an eighth note (Figured bass/Chord symbol only)</source>
         <translation>Bir Sekizlik notanın ilerlemesi (yalnızca Figürlü bas / Akor sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3717"/>
+        <location filename="../../mscore/shortcut.cpp" line="3727"/>
         <source>16th Note Advance (F.B./Chord Symbol)</source>
         <translation>16&apos;lık Nota İlerlemesi (F.B./Akor Sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3718"/>
+        <location filename="../../mscore/shortcut.cpp" line="3728"/>
         <source>Advance of a 16th note (Figured bass/Chord symbol only)</source>
         <translation>Bir 16&apos;lık notanın ilerlemesi (yalnızca Figürlü bas / Akor sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3724"/>
+        <location filename="../../mscore/shortcut.cpp" line="3734"/>
         <source>32nd Note Advance (F.B./Chord Symbol)</source>
         <translation>32&apos;lik Nota İlerlemesi (F.B./Akor Sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3725"/>
+        <location filename="../../mscore/shortcut.cpp" line="3735"/>
         <source>Advance of a 32nd note (Figured bass/Chord symbol only)</source>
         <translation>Bir 32&apos;lik notanın ilerlemesi (yalnızca Figürlü bas / Akor sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3731"/>
+        <location filename="../../mscore/shortcut.cpp" line="3741"/>
         <source>64th Note Advance (F.B./Chord Symbol)</source>
         <translation>64&apos;lük Nota İlerlemesi (F.B./Akor Sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3732"/>
+        <location filename="../../mscore/shortcut.cpp" line="3742"/>
         <source>Advance of a 64th note (Figured bass/Chord symbol only)</source>
         <translation>Bir 64&apos;lük Notanın İlerlemesi (F.B./Akor Sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3738"/>
+        <location filename="../../mscore/shortcut.cpp" line="3748"/>
         <source>Previous Measure (F.B./Chord Symbol)</source>
         <translation>Önceki Ölçü (F.B./Akor Sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3739"/>
+        <location filename="../../mscore/shortcut.cpp" line="3749"/>
         <source>Previous measure (Figured bass/Chord symbol only)</source>
         <translation>Önceki ölçü (Yalnızca şifreli bas/Akor sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3745"/>
+        <location filename="../../mscore/shortcut.cpp" line="3755"/>
         <source>Next Measure (F.B./Chord Symbol)</source>
         <translation>Sonraki Ölçü (F.B./Akor Sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3746"/>
+        <location filename="../../mscore/shortcut.cpp" line="3756"/>
         <source>Next measure (Figured bass/Chord symbol only)</source>
         <translation>Sokraki ölçü (Yalnızca şifreli bas / Akor sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3752"/>
+        <location filename="../../mscore/shortcut.cpp" line="3762"/>
         <source>Previous Beat (Chord Symbol)</source>
         <translation>Önceki Vuruş (Akor Sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3753"/>
+        <location filename="../../mscore/shortcut.cpp" line="3763"/>
         <source>Previous beat (Chord symbol)</source>
         <translation>Önceki vuruş (Akor sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3759"/>
+        <location filename="../../mscore/shortcut.cpp" line="3769"/>
         <source>Next Beat (Chord Symbol)</source>
         <translation>Sonraki Vuruş (Akor Sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3760"/>
+        <location filename="../../mscore/shortcut.cpp" line="3770"/>
         <source>Next beat (Chord symbol)</source>
         <translation>Sonraki vuruş (Akor sembolü)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3786"/>
+        <location filename="../../mscore/shortcut.cpp" line="3796"/>
         <source>Add Braces to Element</source>
         <translation>Öğeye Parantez Ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3787"/>
+        <location filename="../../mscore/shortcut.cpp" line="3797"/>
         <source>Add Braces to element</source>
         <translation>Öğeye Parantez ekle</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3835"/>
+        <location filename="../../mscore/shortcut.cpp" line="3845"/>
         <source>Strike-through</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3873"/>
+        <location filename="../../mscore/shortcut.cpp" line="3883"/>
         <source>Realize Chord Symbols</source>
         <translation>Akor Sembollerini Uygulayın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3874"/>
+        <location filename="../../mscore/shortcut.cpp" line="3884"/>
         <source>Realize chord symbols</source>
         <translation>Akor sembollerini uygulayın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3875"/>
+        <location filename="../../mscore/shortcut.cpp" line="3885"/>
         <source>Convert chord symbols into notes</source>
         <translation>Akor sembollerini notalara dönüştürün</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3945"/>
+        <location filename="../../mscore/shortcut.cpp" line="3955"/>
         <source>Start Center…</source>
         <translation>Başlangıç Merkezi…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3955"/>
+        <location filename="../../mscore/shortcut.cpp" line="3965"/>
         <source>Customize Toolbars…</source>
         <translation>Araç Çubuklarını Özelleştir…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3956"/>
+        <location filename="../../mscore/shortcut.cpp" line="3966"/>
         <source>Customize toolbars</source>
         <translation>Araç çubuklarını özelleştir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3965"/>
+        <location filename="../../mscore/shortcut.cpp" line="3975"/>
         <source>Remove Empty Trailing Measures</source>
         <translation>Sondaki Boş Ölçüleri Kaldır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3966"/>
+        <location filename="../../mscore/shortcut.cpp" line="3976"/>
         <source>Remove empty trailing measures</source>
         <translation>Sondaki boş ölçüleri kaldır</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3975"/>
-        <location filename="../../mscore/shortcut.cpp" line="3976"/>
+        <location filename="../../mscore/shortcut.cpp" line="3985"/>
+        <location filename="../../mscore/shortcut.cpp" line="3986"/>
         <source>Unroll Repeats</source>
         <translation>Tekrarları Genişlet</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3985"/>
+        <location filename="../../mscore/shortcut.cpp" line="3995"/>
         <source>Show Tours</source>
         <translation>Turları Göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3986"/>
+        <location filename="../../mscore/shortcut.cpp" line="3996"/>
         <source>Show tours</source>
         <translation>Turları göster</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3987"/>
+        <location filename="../../mscore/shortcut.cpp" line="3997"/>
         <source>Toggle display of tours</source>
         <translation>Turların görünümünü aç / kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3996"/>
+        <location filename="../../mscore/shortcut.cpp" line="4006"/>
         <source>Reset Tours</source>
         <translation>Turları Sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3997"/>
+        <location filename="../../mscore/shortcut.cpp" line="4007"/>
         <source>Reset tours</source>
         <translation>Turları sıfırla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4006"/>
+        <location filename="../../mscore/shortcut.cpp" line="4016"/>
         <source>Toggle Automatic Placement</source>
         <translation>Otomatik Yerleşimi Aç / Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4007"/>
+        <location filename="../../mscore/shortcut.cpp" line="4017"/>
         <source>Toggle &apos;Automatic Placement&apos; for selected elements</source>
         <translation>Seçili öğeler için &apos;Otomatik Yerleştirme&apos; Aç / Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4013"/>
+        <location filename="../../mscore/shortcut.cpp" line="4023"/>
         <source>Toggle Automatic Placement Globally</source>
         <translation>Global Olarak Otomatik Yerleştirme Aç / Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4014"/>
+        <location filename="../../mscore/shortcut.cpp" line="4024"/>
         <source>Toggle &apos;Automatic Placement&apos; globally</source>
         <translation>Global olarak &quot;Otomatik Yerleştirme&quot; Aç / Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4023"/>
+        <location filename="../../mscore/shortcut.cpp" line="4033"/>
         <source>Report a Bug</source>
         <translation>Yazılım Hatası Rapor Et</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4024"/>
+        <location filename="../../mscore/shortcut.cpp" line="4034"/>
         <source>Report a bug</source>
         <translation>Hata Bildirin</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4041"/>
+        <location filename="../../mscore/shortcut.cpp" line="4051"/>
         <source>Leave feedback</source>
         <translation>Geri bildirim bırakın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3816"/>
+        <location filename="../../mscore/shortcut.cpp" line="3826"/>
         <source>Bold Face</source>
         <translation>Kalın Yüz</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3817"/>
+        <location filename="../../mscore/shortcut.cpp" line="3827"/>
         <source>Bold face</source>
         <translation>Kalın Yüz</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3823"/>
+        <location filename="../../mscore/shortcut.cpp" line="3833"/>
         <source>Italic</source>
         <translation>İtalic</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3829"/>
+        <location filename="../../mscore/shortcut.cpp" line="3839"/>
         <source>Underline</source>
         <translation>Altını çizili</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3841"/>
+        <location filename="../../mscore/shortcut.cpp" line="3851"/>
         <source>Move Word Left</source>
         <translation>Kelimeyi Sola Taşı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3842"/>
+        <location filename="../../mscore/shortcut.cpp" line="3852"/>
         <source>Move word left</source>
         <translation>Kelimeyi sola taşı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3852"/>
+        <location filename="../../mscore/shortcut.cpp" line="3862"/>
         <source>Move Word Right</source>
         <translation>Kelimeyi Sağa Taşı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3853"/>
+        <location filename="../../mscore/shortcut.cpp" line="3863"/>
         <source>Move word right</source>
         <translation>Kelimeyi sağa taşı</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3863"/>
-        <location filename="../../mscore/shortcut.cpp" line="3864"/>
+        <location filename="../../mscore/shortcut.cpp" line="3873"/>
+        <location filename="../../mscore/shortcut.cpp" line="3874"/>
         <source>Explode</source>
         <translation>Akoru Partilere Dağıt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3865"/>
+        <location filename="../../mscore/shortcut.cpp" line="3875"/>
         <source>Explode contents of top selected staff into staves below</source>
         <translation>En iyi seçilmiş dizeğin içeriğini aşağıdaki noktalara patlatın</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3883"/>
-        <location filename="../../mscore/shortcut.cpp" line="3884"/>
+        <location filename="../../mscore/shortcut.cpp" line="3893"/>
+        <location filename="../../mscore/shortcut.cpp" line="3894"/>
         <source>Implode</source>
         <translation>Partileri Akora Topla</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3885"/>
+        <location filename="../../mscore/shortcut.cpp" line="3895"/>
         <source>Implode contents of selected staves into top selected staff</source>
         <translation>Seçilen notaların içeriğini en iyi seçilen dizeğe yerleştir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3893"/>
+        <location filename="../../mscore/shortcut.cpp" line="3903"/>
         <source>Fill With Slashes</source>
         <translation>Eğik Çizgilerle Doldur</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3894"/>
+        <location filename="../../mscore/shortcut.cpp" line="3904"/>
         <source>Fill with slashes</source>
         <translation>Eğik çizgilerle doldur</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3903"/>
+        <location filename="../../mscore/shortcut.cpp" line="3913"/>
         <source>Toggle Rhythmic Slash Notation</source>
         <translation>Ritmik Eğik Çizgi Notasyonunu Aç / Kapat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3924"/>
+        <location filename="../../mscore/shortcut.cpp" line="3934"/>
         <source>Resequence Rehearsal Marks</source>
         <translation>Prova İşaretlerini Yeniden Sırala</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3925"/>
+        <location filename="../../mscore/shortcut.cpp" line="3935"/>
         <source>Resequence rehearsal marks</source>
         <translation>Prova işaretlerini yeniden sırala</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3934"/>
+        <location filename="../../mscore/shortcut.cpp" line="3944"/>
         <source>Copy Lyrics to Clipboard</source>
         <translation>Şarkı Sözlerini Panoya Kopyala</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3935"/>
+        <location filename="../../mscore/shortcut.cpp" line="3945"/>
         <source>Copy lyrics to clipboard</source>
         <translation>Şarkı sözlerini panoya kopyala</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3946"/>
+        <location filename="../../mscore/shortcut.cpp" line="3956"/>
         <source>Start center</source>
         <translation>Başlangıç merkezi</translation>
     </message>
@@ -31788,7 +31808,7 @@ This score already has part scores. Changing local time signatures while part sc
 <context>
     <name>extensions_directory</name>
     <message>
-        <location filename="../../mscore/preferences.cpp" line="141"/>
+        <location filename="../../mscore/preferences.cpp" line="143"/>
         <source>Extensions</source>
         <translation>Uzantılar</translation>
     </message>
@@ -31839,7 +31859,7 @@ This score already has part scores. Changing local time signatures while part sc
 <context>
     <name>images_directory</name>
     <message>
-        <location filename="../../mscore/preferences.cpp" line="133"/>
+        <location filename="../../mscore/preferences.cpp" line="135"/>
         <source>Images</source>
         <translation>Görüntüler</translation>
     </message>
@@ -32003,19 +32023,19 @@ This score already has part scores. Changing local time signatures while part sc
 <context>
     <name>magTable</name>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2160"/>
+        <location filename="../../mscore/musescore.cpp" line="2154"/>
         <location filename="../../mscore/zoombox.cpp" line="44"/>
         <source>Page Width</source>
         <translation>Sayfa Genişliği</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2161"/>
+        <location filename="../../mscore/musescore.cpp" line="2155"/>
         <location filename="../../mscore/zoombox.cpp" line="45"/>
         <source>Whole Page</source>
         <translation>Tek Sayfa</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2162"/>
+        <location filename="../../mscore/musescore.cpp" line="2156"/>
         <location filename="../../mscore/zoombox.cpp" line="46"/>
         <source>Two Pages</source>
         <translation>İki Sayfa</translation>
@@ -32528,7 +32548,7 @@ This score already has part scores. Changing local time signatures while part sc
 <context>
     <name>plugins_directory</name>
     <message>
-        <location filename="../../mscore/preferences.cpp" line="134"/>
+        <location filename="../../mscore/preferences.cpp" line="136"/>
         <source>Plugins</source>
         <translation>Eklentiler</translation>
     </message>
@@ -32536,7 +32556,7 @@ This score already has part scores. Changing local time signatures while part sc
 <context>
     <name>scorefonts_directory</name>
     <message>
-        <location filename="../../mscore/preferences.cpp" line="135"/>
+        <location filename="../../mscore/preferences.cpp" line="137"/>
         <source>Score Fonts</source>
         <translation type="unfinished"></translation>
     </message>
@@ -32544,7 +32564,7 @@ This score already has part scores. Changing local time signatures while part sc
 <context>
     <name>scores_directory</name>
     <message>
-        <location filename="../../mscore/preferences.cpp" line="136"/>
+        <location filename="../../mscore/preferences.cpp" line="138"/>
         <source>Scores</source>
         <translation>Partisyonlar</translation>
     </message>
@@ -32675,7 +32695,7 @@ This score already has part scores. Changing local time signatures while part sc
 <context>
     <name>shortcuts_directory</name>
     <message>
-        <location filename="../../mscore/preferences.cpp" line="138"/>
+        <location filename="../../mscore/preferences.cpp" line="140"/>
         <source>Shortcuts</source>
         <translation>Kısayollar</translation>
     </message>
@@ -32683,7 +32703,7 @@ This score already has part scores. Changing local time signatures while part sc
 <context>
     <name>soundfonts_directory</name>
     <message>
-        <location filename="../../mscore/preferences.cpp" line="137"/>
+        <location filename="../../mscore/preferences.cpp" line="139"/>
         <source>SoundFonts</source>
         <translation>SoundFontlar</translation>
     </message>
@@ -32709,7 +32729,7 @@ This score already has part scores. Changing local time signatures while part sc
 <context>
     <name>styles_directory</name>
     <message>
-        <location filename="../../mscore/preferences.cpp" line="139"/>
+        <location filename="../../mscore/preferences.cpp" line="141"/>
         <source>Styles</source>
         <translation>Stiller</translation>
     </message>
@@ -34685,7 +34705,7 @@ This score already has part scores. Changing local time signatures while part sc
 <context>
     <name>templates_directory</name>
     <message>
-        <location filename="../../mscore/preferences.cpp" line="140"/>
+        <location filename="../../mscore/preferences.cpp" line="142"/>
         <source>Templates</source>
         <translation>Şablonlar</translation>
     </message>
