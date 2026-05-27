@@ -189,6 +189,12 @@
 			<key>LSHandlerRank</key>
    			<string>Owner</string>
 		</dict>
+		<!--
+			THIRD-PARTY FORMATS
+
+			Removed MuseData (.md) files to avoid conflicts with Markdown.
+			See https://github.com/musescore/MuseScore/issues/25330
+		-->
 		<dict>
 			<key>CFBundleTypeName</key>
 			<string>Uncompressed MusicXML File</string>
@@ -344,16 +350,6 @@
 			<key>CFBundleTypeExtensions</key>
 			<array>
 				<string>MGU</string>
-			</array>
-			<key>CFBundleTypeRole</key>
-			<string>Viewer</string>
-		</dict>
-		<dict>
-			<key>CFBundleTypeName</key>
-			<string>MuseData File</string>
-			<key>CFBundleTypeExtensions</key>
-			<array>
-				<string>md</string>
 			</array>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
