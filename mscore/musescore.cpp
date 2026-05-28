@@ -7743,10 +7743,8 @@ void MuseScore::endSearch()
       {
       if (_searchDialog)
             _searchDialog->hide();
-      if (searchCombo) {
-            auto txt = searchCombo->currentText();
-            searchCombo->editTextChanged(txt);
-            }
+      if (searchCombo)
+            searchCombo->performSearch();
       if (cv)
             cv->setFocus();
       }
