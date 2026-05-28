@@ -471,6 +471,11 @@ static void applyDrop(Score* score, ScoreView* viewer, Element* target, Element*
       if (target->isText() && target->parent()->isBox())
             target = target->parent();
 
+      if (target->isNote() || target->isRest())
+            if (e->isJump() || e->isMarker() || e->isTimeSig() || e->isBracket())
+                  if (auto m = target->findMeasure())
+                        target = m;
+
       if (target->acceptDrop(dropData)) {
             // use same code path as drag&drop
 
