@@ -27,6 +27,7 @@
 
 #include "libmscore/musescoreCore.h"
 #include "libmscore/score.h"
+#include "searchComboBox.h"
 
 #include "singleapp/src/QtSingleApplication"
 
@@ -325,7 +326,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       ExportDialog* exportDialog           { 0 };
 
       QWidget* _searchDialog               { 0 };
-      QComboBox* searchCombo;
+      SearchComboBox* searchCombo;
 
       PlayPanel* playPanel                 { 0 };
       Mixer* mixer                         { 0 };
@@ -578,7 +579,6 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void inputMethodKeyboardRectangleChanged();
       void inputMethodLocaleChanged();
       void inputMethodVisibleChanged();
-      void endSearch();
       void saveScoreDialogFilterSelected(const QString&);
 #ifdef OSC
       void oscIntMessage(int);
@@ -646,6 +646,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void startPreferenceDialog();
       void restartAudioEngine();
       void updateTimer();
+      void endSearch();
 
    public:
       MuseScore();
