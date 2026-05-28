@@ -14,7 +14,9 @@ SearchComboBox::SearchComboBox(QWidget* p) : QComboBox(p)
       setInsertPolicy(QComboBox::InsertAtTop);
       _found = false;
       _searchType = SearchType::NO_SEARCH;
-      connect(this, SIGNAL(editTextChanged(QString)), this, SLOT(searchTextChanged(QString)));
+
+      connect(lineEdit(), &QLineEdit::returnPressed,
+              mscore, &MuseScore::endSearch);
       }
 
 void SearchComboBox::searchInit()
@@ -28,8 +30,22 @@ void SearchComboBox::setSearchType(SearchType s)
       _searchType = s;
       }
 
-void SearchComboBox::searchTextChanged(const QString& s)
+void SearchComboBox::keyPressEvent(QKeyEvent *e)
       {
+      // Note: [enter/return] will finalize and focus upon ScoreView via signal
+      if (e->key() == Qt::Key_Up    ||
+          e->key() == Qt::Key_Down  ||
+          e->key() == Qt::Key_Left  ||
+          e->key() == Qt::Key_Right ||
+          e->modifiers() == Qt::ControlModifier)
+            performSearch();
+
+      QComboBox::keyPressEvent(e);
+      }
+
+void SearchComboBox::performSearch()
+      {
+      const QString& s = currentText();
       searchInit();
       if (s.isEmpty())
             return;
