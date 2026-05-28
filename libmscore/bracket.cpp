@@ -413,9 +413,18 @@ Element* Bracket::drop(EditData& data)
 
 bool Bracket::edit(EditData& ed)
       {
-      if (!(ed.modifiers & Qt::ShiftModifier))
+      if (!isEditable())
             return false;
 
+      auto span = this->span();
+      if (ed.key == Qt::Key_Up && span > 1) {
+            bracketItem()->undoChangeProperty(Pid::BRACKET_SPAN, span - 1);
+            return true;
+            }
+      if (ed.key == Qt::Key_Down && _lastStaff < system()->staves()->size() - 1) {
+            bracketItem()->undoChangeProperty(Pid::BRACKET_SPAN, span + 1);
+            return true;
+            }
       if (ed.key == Qt::Key_Left) {
             bracketItem()->undoChangeProperty(Pid::BRACKET_COLUMN, bracketItem()->column()+1);
             return true;
