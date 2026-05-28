@@ -18,8 +18,9 @@ private:
       bool _found;
       void searchInit();
       void setSearchType(SearchType s);
-private slots:
-      void searchTextChanged(const QString& s);
+public slots:
+      void keyPressEvent(QKeyEvent *e) override;
+      void performSearch();
 public:
       SearchType searchType() { return _searchType; }
       bool found()            { return _found;      }
