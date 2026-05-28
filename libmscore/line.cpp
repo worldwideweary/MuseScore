@@ -492,14 +492,16 @@ LineSegment* LineSegment::rebaseAnchor(Grip grip, Segment* newSeg)
       if (!newSeg || oldSeg == newSeg)
             return nullptr;
 
+      const Fraction lineStartTick = l->startSegment()->tick();
       Fraction startTick = left ? newSeg->tick() : l->tick();
       Fraction endTick = left ? l->tick2() : lastSegmentEndTick(newSeg, l);
 
       if (endTick <= startTick) {
             if (left)
                   endTick = lastSegmentEndTick(newSeg, l);
-            else
+            else if (startTick > lineStartTick)
                   startTick = newSeg->tick();
+            else return nullptr;
             }
 
       bool anchorChanged = false;
@@ -547,10 +549,11 @@ void LineSegment::rebaseAnchors(EditData& ed, Grip grip)
       if (!line()->autoplace())
             return;
 
-      // don't change anchors on keyboard adjustment or if Ctrl is pressed
-      // (Ctrl+Left/Right is handled elsewhere!)
+      // Omit anchor changes of standard nudge. Ctrl+Nudge handled elsewhere!
       if (ed.key == Qt::Key_Left  || (ed.key == Qt::Key_J && MScore::nudgeUsesIJKL) ||
           ed.key == Qt::Key_Right || (ed.key == Qt::Key_L && MScore::nudgeUsesIJKL) ||
+          ed.key == Qt::Key_Up    || (ed.key == Qt::Key_I && MScore::nudgeUsesIJKL) ||
+          ed.key == Qt::Key_Down  || (ed.key == Qt::Key_K && MScore::nudgeUsesIJKL) ||
           ed.modifiers & Qt::ControlModifier)
             return;
 
