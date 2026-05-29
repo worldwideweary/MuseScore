@@ -2524,7 +2524,7 @@ void Note::setTrack(int val)
 void Note::reset()
       {
       undoChangeProperty(Pid::OFFSET, QPointF());
-      undoResetProperty(Pid::LEADING_SPACE);
+      chord()->segment()->undoResetProperty(Pid::LEADING_SPACE);
       chord()->undoChangeProperty(Pid::OFFSET, QPointF());
       chord()->undoChangeProperty(Pid::STEM_DIRECTION, QVariant::fromValue<Direction>(Direction::AUTO));
       undoChangeProperty(Pid::GATE_TIME, propertyDefault(Pid::GATE_TIME));

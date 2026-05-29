@@ -1056,6 +1056,16 @@ void Rest::resetProperty(Pid id)
       }
 
 //————————————————————————————
+//   reset
+//————————————————————————————
+
+void Rest::reset()
+      {
+      segment()->undoResetProperty(Pid::LEADING_SPACE);
+      undoChangeProperty(Pid::OFFSET, QPointF());
+      }
+
+//————————————————————————————
 //   getPropertyStyle
 //————————————————————————————
 
