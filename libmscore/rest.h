@@ -105,6 +105,7 @@ class Rest : public ChordRest {
 
       void localSpatiumChanged(qreal oldValue, qreal newValue) override;
       QVariant propertyDefault(Pid) const override;
+      void reset() override;
       void resetProperty(Pid id);
       bool setProperty(Pid propertyId, const QVariant& v) override;
       QVariant getProperty(Pid propertyId) const override;
