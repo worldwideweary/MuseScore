@@ -646,6 +646,27 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
                               c = toChord(cr);
                         }
                   }
+            else if (isTremolo()) {
+                  auto e = toTremolo(this);
+                  if (auto c = e->chord1()) {
+                        const auto ns = c->notes();
+                        for (auto n : ns) {
+                              marked = n->mark();
+                              if (marked)
+                                    break;
+                              }
+                        }
+                  if (!marked) {
+                        if (auto c = e->chord2()) {
+                              const auto ns = c->notes();
+                              for (auto n : ns) {
+                                    marked = n->mark();
+                                    if (marked)
+                                          break;
+                                    }
+                              }
+                        }
+                  }
 
             if (c) {
                   for (auto n : c->notes()) {
