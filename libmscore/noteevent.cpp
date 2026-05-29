@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "note.h"
 #include "noteevent.h"
 #include "xml.h"
 

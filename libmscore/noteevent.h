@@ -17,6 +17,7 @@ namespace Ms {
 
 class XmlWriter;
 class XmlReader;
+class Note;
 
 //---------------------------------------------------------
 //    NoteEvent
@@ -27,6 +28,7 @@ class NoteEvent {
       int _ontime;  // one unit is 1/1000 of nominal note len
       int _len;     // one unit is 1/1000 of nominal note len
       int _vOffset; // an attempt to allow variation within tremolos
+      const Note* _n = {nullptr};
 
    public:
       constexpr static int NOTE_LENGTH = 1000;
@@ -37,6 +39,9 @@ class NoteEvent {
             {}
       NoteEvent(int pitch, int onTime, int length, int velocityOffset)
             : _pitch(pitch), _ontime(onTime), _len(length), _vOffset(velocityOffset)
+            {}
+      NoteEvent(int pitch, int onTime, int length, int velocityOffset, Note* el)
+            : _pitch(pitch), _ontime(onTime), _len(length), _vOffset(velocityOffset), _n(el)
             {}
 
       void read(XmlReader&);
@@ -51,6 +56,8 @@ class NoteEvent {
       void setOntime(int v)  { _ontime = v; }
       void setLen(int v)     { _len = v;    }
       void setVeloOff(int v) { _vOffset = v;}
+      const Note* getNote() const { return _n; }
+      void setNote(const Note* n) { _n = n; }
       bool operator==(const NoteEvent&) const;
       };
 
