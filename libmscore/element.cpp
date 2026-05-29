@@ -2358,6 +2358,17 @@ void Element::drawEditMode(QPainter* p, EditData& ed)
             qreal adj = 5.0;
             p->drawRect(ed.grip[i].adjusted(-adj, -adj, +adj, +adj));
             }
+      if (!ed.grips) {
+            color = MScore::invisibleElementsColor;
+            const int opaque = 255;
+            if (color.alpha() == opaque) {
+                  const int semiTransparent = 50;
+                  color.setAlpha(semiTransparent);
+                  }
+            p->setBrush(color);
+            qreal adj = 15.0;
+            p->drawRect(this->canvasBoundingRect().adjusted(-adj, -adj, +adj, +adj));
+            }
       }
 
 //---------------------------------------------------------
