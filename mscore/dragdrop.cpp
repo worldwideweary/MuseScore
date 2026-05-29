@@ -425,6 +425,7 @@ void ScoreView::dropEvent(QDropEvent* event)
 
       editData.pos       = pos;
       editData.modifiers = event->keyboardModifiers();
+      bool beginEditing = false;
 
       if (editData.dropElement) {
             bool firstStaffOnly = false;
@@ -451,10 +452,12 @@ void ScoreView::dropEvent(QDropEvent* event)
                   case ElementType::PALM_MUTE:
                   case ElementType::HAIRPIN:
                         {
-                        Spanner* spanner = static_cast<Spanner*>(editData.dropElement);
+                        auto spanner = toSpanner(editData.dropElement);
                         score()->cmdAddSpanner(spanner, pos, firstStaffOnly);
                         score()->setUpdateAll();
                         event->acceptProposedAction();
+                        editData.element = spanner->frontSegment();
+                        beginEditing = true;
                         }
                         break;
                   case ElementType::SYMBOL:
@@ -587,6 +590,8 @@ void ScoreView::dropEvent(QDropEvent* event)
                   moveCursor();
             if (triggerSpannerDropApplyTour)
                   TourHandler::startTour("spanner-drop-apply");
+            if (beginEditing)
+                  startEditMode(editData.element);
             return;
             }
 
