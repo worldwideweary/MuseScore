@@ -786,7 +786,7 @@ class Score : public QObject, public ScoreElement {
       virtual inline void setUpdateAllNoLayout();
       inline void setLayoutAll(int staff = -1, const Element* e = nullptr);
       inline void setLayout(const Fraction& tick, int staff, const Element* e = nullptr);
-      inline void setLayout(const Fraction& tick1, const Fraction& tick2, int staff1, int staff2, const Element* e = nullptr);
+      inline void setLayout(const Fraction& tick1, const Fraction& tick2, int staff1 = 0, int staff2 = 0, const Element* e = nullptr);
       virtual inline CmdState& cmdState();
       virtual inline const CmdState& cmdState() const;
       virtual inline void addLayoutFlags(LayoutFlags);

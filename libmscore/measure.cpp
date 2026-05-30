@@ -2618,15 +2618,15 @@ LayoutBreak* Measure::nextSectionBreak() const
 //    or end
 //---------------------------------------------------------
 
-const MeasureBase* Measure::nextLayoutBreakMeasure() const
+const Measure* Measure::nextLayoutBreakMeasure() const
       {
-      auto mb = toMeasureBase(this);
-      while (mb && mb->noBreak()) {
-            if (const auto nmb = mb->next()) {
-                  mb = (mb != nmb) ? nmb : nullptr;
+      auto m = nextMeasure();
+      while (m && m->noBreak()) {
+            if (const auto nm = m->nextMeasure()) {
+                  m = (m != nm) ? nm : nullptr;
                   }
             }
-      return mb;
+      return m;
       }
 
 //---------------------------------------------------------

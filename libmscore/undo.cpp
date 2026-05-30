@@ -2012,9 +2012,14 @@ void InsertRemoveMeasures::removeMeasures()
             const auto prevMeasure = fm->prevMeasureMM();
             const auto startTick  = prevMeasure ? prevMeasure->tick() : fm->tick();
             const auto nextMeasure = lm->nextMeasure() ? lm->nextMeasure()->nextLayoutBreakMeasure() : nullptr;
-            const auto endTick = nextMeasure ? nextMeasure->endTick() : lm->endTick();
-            score->cmdState().setTick(startTick);
-            score->cmdState().setTick(endTick);
+
+            // Note: going to nextMeasure's end tick works often, but not always when there are page breaks, so
+            // will do full layout:
+            auto endTick = nextMeasure ? nextMeasure->endTick() : lm->endTick();
+            endTick = score->measures()->last() ? score->measures()->last()->endTick() : Fraction(0,1);
+            qDebug() << "Relayout Score" << " - from: "<< startTick.print() << "to: " << endTick.print();
+
+            score->setLayout(startTick, endTick);
             }
 
       score->updateMeasureNumbers();
