@@ -234,7 +234,7 @@ class Measure final : public MeasureBase {
       bool visible(int staffIdx) const;
       bool stemless(int staffIdx) const;
       LayoutBreak* nextSectionBreak() const;
-      const MeasureBase* nextLayoutBreakMeasure() const;
+      const Measure* nextLayoutBreakMeasure() const;
       bool isAnacrusis() const;
       bool isFirstInSystem() const;
       bool isFirstInSection() const;
