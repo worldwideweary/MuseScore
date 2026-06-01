@@ -166,6 +166,8 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
       std::vector<Chord*> chords;
       std::vector<Note*> upStemNotes;
       std::vector<Note*> downStemNotes;
+      std::vector<Note*> upStemNotesVisible;
+      std::vector<Note*> downStemNotesVisible;
       int upVoices       = 0;
       int downVoices     = 0;
       double nominalWidth = noteHeadWidth() * staff->mag(tick);
@@ -199,6 +201,10 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
                   if (chord->up()) {
                         ++upVoices;
                         upStemNotes.insert(upStemNotes.end(), chord->notes().begin(), chord->notes().end());
+
+                        std::copy_if(upStemNotes.begin(), upStemNotes.end(), std::back_inserter(upStemNotesVisible),
+                                     [](Note* n) { return n->visible(); });
+
                         upDots   = std::max(upDots, chord->dots());
                         maxUpMag = std::max(maxUpMag, chord->mag());
 
@@ -210,6 +216,10 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
                   else {
                         ++downVoices;
                         downStemNotes.insert(downStemNotes.end(), chord->notes().begin(), chord->notes().end());
+
+                        std::copy_if(downStemNotes.begin(), downStemNotes.end(), std::back_inserter(downStemNotesVisible),
+                                     [](Note* n) { return (n->visible()); });
+
                         downDots = std::max(downDots, chord->dots());
                         maxDownMag = std::max(maxDownMag, chord->mag());
 
@@ -323,6 +333,9 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
                   Note* topDownNote  = downStemNotes.back();
                   int separation = topDownNote->line() - bottomUpNote->line();
 
+                  bottomUpNote->setStaffConflict(false);
+                  topDownNote->setStaffConflict(false);
+
                   std::vector<Note*> overlapNotes;
                   overlapNotes.reserve(8);
 
@@ -348,14 +361,18 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
 
                         // build list of overlapping notes
                         for (size_t i = 0, n = upStemNotes.size(); i < n; ++i) {
-                              if (upStemNotes[i]->line() >= topDownNote->line() - 1)
+                              if (upStemNotes[i]->line() >= topDownNote->line() - 1) {
                                     overlapNotes.push_back(upStemNotes[i]);
+                                    upStemNotes[i]->setStaffConflict(true);
+                                    }
                               else
                                     break;
                               }
                         for (size_t i = downStemNotes.size(); i > 0; --i) { // loop most probably needs to be in this reverse order
-                              if (downStemNotes[i - 1]->line() <= bottomUpNote->line() + 1)
+                              if (downStemNotes[i - 1]->line() <= bottomUpNote->line() + 1) {
                                     overlapNotes.push_back(downStemNotes[i - 1]);
+                                    downStemNotes[i-1]->setStaffConflict(true);
+                                    }
                               else
                                     break;
                               }
