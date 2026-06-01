@@ -172,8 +172,12 @@ class Articulation final : public Element {
       bool isMarcato() const;
       bool isLuteFingering() const;
       bool isOrnament() const;
+      bool isBasicArticulation() const;
+      bool isOnCrossBeamSide() const;
 
-      void doAutoplace();
+      double opticalCenter() const;
+
+      void doAutoplace(bool above);
       int vStaffIdx() const override { return chordRest()->vStaffIdx(); }
       };
 

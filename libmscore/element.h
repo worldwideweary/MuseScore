@@ -367,6 +367,9 @@ class Element : public ScoreElement {
       bool onTabStaff() const;
       Part* part() const;
 
+      QPointF staffOffset() const;
+      QPointF systemPos() const;
+
       virtual void add(Element*);
       virtual void remove(Element*);
       virtual void change(Element* o, Element* n);

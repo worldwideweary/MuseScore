@@ -31,7 +31,7 @@ class Fingering final : public TextBase {
       ElementType type() const override { return ElementType::FINGERING; }
 
       Note* note() const { return toNote(parent()); }
-      ElementType layoutType();
+      ElementType layoutType() const;
       Placement calculatePlacement() const;
 
       void draw(QPainter*) const override;
@@ -40,6 +40,7 @@ class Fingering final : public TextBase {
       QVariant propertyDefault(Pid id) const override;
 
       QString accessibleInfo() const override;
+      bool isOnCrossBeamSide() const;
       };
 
 

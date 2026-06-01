@@ -10,6 +10,8 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "global/log.h"
+
 #include "accidental.h"
 #include "arpeggio.h"
 #include "articulation.h"
@@ -3704,128 +3706,188 @@ void Chord::layoutArticulations()
 //    To be finished after laying out slurs
 //---------------------------------------------------------
 
-void Chord::layoutArticulations2()
+void Chord::layoutArticulations2(bool layoutOnCrossBeamSide)
       {
+      auto isFuzzyLessThanOrEqual = [](double a, double b) -> bool {
+            return a < b || qFuzzyCompare(a, b);
+            };
+      auto isFuzzyGreaterThanOrEqual = [](double a, double b) -> bool {
+            return a > b || qFuzzyCompare(a, b);
+            };
+
       for (Chord*& gc : graceNotes())
             gc->layoutArticulations2();
 
       if (_articulations.empty())
             return;
-      qreal _spatium  = spatium();
-      qreal x = centerX();
-      const Note* note = up() ? upNote(true) : downNote(true);
-      qreal overlapMirror = 0.0;
-      if (stem())
-            overlapMirror = stem()->lineWidth();
-      else if (durationType().headType() == NoteHead::Type::HEAD_WHOLE)
-            overlapMirror = styleP(Sid::stemWidth) * this->mag();
-      qreal dx = up() ? overlapMirror : -overlapMirror;
-      // Counter mirror from layoutChords3()
-      if (note->mirror()) {
-            x += dx;
+
+      auto headSideX = centerX();
+      auto stemSideX = headSideX;
+
+      if (stem()) {
+            if (up()) {
+                  stemSideX = downNote()->pos().x() + downNote()->bboxRightPos() - stemSideX;
+                  }
             }
 
-      qreal distance0 = score()->styleP(Sid::propertyDistance);
-      qreal distance2 = score()->styleP(Sid::propertyDistanceStem);
+      auto stacAccentKern = 0.5 * spatium();
+      auto minDist = score()->styleS(Sid::articulationMinDistance).val() * spatium();
+      auto staffDist = score()->styleS(Sid::propertyDistance).val() * spatium();
+      auto stemDist = score()->styleS(Sid::propertyDistanceStem).val() * spatium();
+      auto noteDist = score()->styleS(Sid::propertyDistanceHead).val() * spatium();
 
-      qreal chordTopY = upPos();    // note position of highest note
-      qreal chordBotY = downPos();  // note position of lowest note
+      auto yOffset = staffOffset().y();
 
-      qreal staffTopY = -distance2;
-      qreal staffBotY = staff()->height() + distance2;
+
+      auto chordTopY = upPos() - 0.5 * upNote()->headHeight() + yOffset;       // note position of highest note
+      auto chordBotY = downPos() + 0.5 * upNote()->headHeight() + yOffset;     // note position of lowest note
+
+      auto staffTopY = -staffDist + yOffset;
+      auto staffBotY = staff()->height() + staffDist + yOffset;
 
       // avoid collisions of staff articulations with chord notes:
       // gap between note and staff articulation is distance0 + 0.5 spatium
 
       if (stem()) {
-            qreal y = stem()->pos().y() + pos().y() + stem()->stemLen();
-            if (beam()) {
-                  qreal bw = score()->styleS(Sid::beamWidth).val() * _spatium;
-                  y += up() ? -bw : bw;
+            // Check if there's a hook, because the tip of the hook always extends slightly past the end of the stem
+            // Observation:
+            //   MSS4 has 3 different positions for beams: up/down, and then the "centered" beam
+            //   MS3 has nothing of the sort except by manually draggin a beam to attain UP/DOWN appearance
+            //   TODO: Backport that hopefully
+            //   Because of that, there's going to be miscalculations with this code since it relies on that,
+            //   so user will need to perform manual direction shift ('x' command) of the beam to fix.
+            if (up()) {
+                  double tip = hook()
+                        ? hook()->bbox().translated(hook()->pos()).top()
+                        : stem()->bbox().translated(stem()->pos()).top();
+
+                  chordTopY = tip + yOffset;
                   }
-            if (up())
-                  chordTopY = y;
-            else
-                  chordBotY = y;
+            else {
+                  double tip = hook()
+                        ? hook()->bbox().translated(hook()->pos()).bottom()
+                        : stem()->bbox().translated(stem()->pos()).bottom();
+
+                  chordBotY = tip + yOffset;
+                  }
             }
 
       //
       //    place all articulations with anchor at chord/rest
       //
-      qreal distance1 = score()->styleP(Sid::propertyDistanceHead);
-      chordTopY -= up() ? 0.5 * _spatium : distance1;
-      chordBotY += up() ? distance1 : 0.5 * _spatium;
-      for (Articulation* a : qAsConst(_articulations)) {
+      chordTopY -= up() ? stemDist : noteDist;
+      chordBotY += up() ? noteDist : stemDist;
+      // add space for staccato and tenuto marks which may have been previously laid out
+      for (Articulation* a : articulations()) {
             ArticulationAnchor aa = a->anchor();
-            if (aa != ArticulationAnchor::CHORD && aa != ArticulationAnchor::TOP_CHORD && aa != ArticulationAnchor::BOTTOM_CHORD)
+            if (a->layoutCloseToNote() && a->visible() && aa == ArticulationAnchor::CHORD) {
+                  if (a->up())
+                        chordTopY = a->y() - a->height() - minDist + yOffset;
+                  else
+                        chordBotY = a->y() + a->height() + minDist + yOffset;
+                  }
+            }
+
+      for (Articulation* a : articulations()) {
+            if (layoutOnCrossBeamSide && !a->isOnCrossBeamSide())
+                  continue;
+            if (!a->layoutCloseToNote())
+                  continue;
+            if (a->visible()) {
+                  if (a->up())
+                        chordTopY = a->y() - a->height() - minDist + yOffset;
+                  else
+                        chordBotY = a->y() + a->height() + minDist + yOffset;
+                  }
+            }
+      //
+      //    now place all articulations with staff top or bottom anchor, or chord anchor for artics that don't layout close to note
+      //
+      staffTopY = std::min(staffTopY, chordTopY);
+      staffBotY = std::max(staffBotY, chordBotY);
+      Articulation* stacc = nullptr;
+      for (Articulation* a : articulations()) {
+            double kearnHeight = 0.0;
+            if ((layoutOnCrossBeamSide && !a->isOnCrossBeamSide()) /*|| a->isLaissezVib()*/)
                   continue;
 
-            qreal counter = a->isAccent() ? 0.5 * _spatium : 0.0;
-            if (a->up()) {
-                  if (!a->layoutCloseToNote()) {
-                        a->layout();
-                        chordTopY += counter;
-                        a->setPos(x, chordTopY);
-                        a->doAutoplace();
-                        }
-                  if (a->visible())
-                        chordTopY = a->y() - a->height() - 0.5 * _spatium - counter;
+            if (a->isStaccato())
+                  stacc = a;
+            else if (stacc && a->isAccent() && stacc->up() == a->up()
+                     && (isFuzzyLessThanOrEqual(stacc->pos().y(), 0.0) || isFuzzyGreaterThanOrEqual(stacc->pos().y(), staff()->height()))) {
+                  // obviously, the accent doesn't have a cutout, so this value just artificially moves the stacc
+                  // and accent closer to each other to simulate some kind of kerning. Looks great using all musescore fonts,
+                  // though there is a possibility that a different font which has vertically-asymmetrical accents
+                  // could make this look bad.
+                  // MS3: Omitting for now
+                  kearnHeight = stacAccentKern;
+                  stacc = nullptr;
                   }
-            else {
-                  if (!a->layoutCloseToNote()) {
-                        a->layout();
-                        chordBotY -= counter;
-                        a->setPos(x, chordBotY);
-                        a->doAutoplace();
-                        }
-                  if (a->visible())
-                        chordBotY = a->y() + a->height() + 0.5 * _spatium + counter ;
-                  }
-            }
-      //
-      //    now place all articulations with staff top or bottom anchor
-      //
+            else
+                  stacc = nullptr;
 
-      staffTopY = qMin(staffTopY, chordTopY - distance0 - 0.5 * _spatium);
-      staffBotY = qMax(staffBotY, chordBotY + distance0 + 0.5 * _spatium);
-      for (Articulation* a : qAsConst(_articulations)) {
-            ArticulationAnchor aa = a->anchor();
-            if (aa == ArticulationAnchor::TOP_STAFF || aa == ArticulationAnchor::BOTTOM_STAFF) {
+            if (!a->layoutCloseToNote()) {
                   a->layout();
+                  stemSideX = headSideX; // TODO: stemSideX implementation via ArticulationStemSideAlign
                   if (a->up()) {
-                        a->setPos(x, staffTopY);
+                        a->setPos(!up() || !a->isBasicArticulation() ? headSideX : stemSideX, staffTopY + kearnHeight - yOffset);
                         if (a->visible())
-                              staffTopY -= distance0;
+                              staffTopY = a->y() - a->height() - minDist + yOffset;
                         }
                   else {
-                        a->setPos(x, staffBotY);
+                        a->setPos(up() || !a->isBasicArticulation() ? headSideX : stemSideX, staffBotY - kearnHeight - yOffset);
                         if (a->visible())
-                              staffBotY += distance0;
+                              staffBotY = a->y() + a->height() + minDist + yOffset;
                         }
-                  a->doAutoplace();
+                  }
+
+            // Conforms to eda47665ee ("Include Articulations and Fermatas in horizontal spacing calculations", 2025-05-12):
+            if (!a->isOnCrossBeamSide()) {
+                  if (a->layoutCloseToNote()) {
+                        if (auto sys = a->measure()->system()) {
+                              auto point   = a->systemPos() + staffOffset();
+                              auto staff   = sys->staff(a->vStaffIdx());
+                              auto skyline = staff->skyline();
+                              auto shape   = a->shape().translated(point);
+
+                              skyline.add(shape);
+                              }
+                        }
+                  else {
+                        a->doAutoplace(a->up());
+                        }
+
+                  if (a->addToSkyline()) {
+                        auto staff  = a->vStaffIdx();
+                        auto point  = a->pos() + pos() + staffOffset();
+                        auto shape  = a->shape().translated(point);
+                        a->segment()->staffShape(staff).add(shape);
+                        }
                   }
             }
-      for (Articulation* a : qAsConst(_articulations)) {
-            if (a->addToSkyline()) {
+
+      for (Articulation* a : articulations()) {
+            if (a->addToSkyline() && !a->isOnCrossBeamSide()) {
                   // the segment shape has already been calculated
                   // so measure width and spacing is already determined
                   // in line mode, we cannot add to segment shape without throwing this off
                   // but adding to skyline is always good
                   Segment* s = segment();
                   Measure* m = s->measure();
-                  QRectF r = a->bbox().translated(a->pos() + pos());
+                  Shape sh = a->shape().translated(a->pos() + pos());
                   // TODO: limit to width of chord
                   // this avoids "staircase" effect due to space not having been allocated already
                   // ANOTHER alternative is to allocate the space in layoutPitched() / layoutTablature()
-                  //qreal w = qMin(r.width(), width());
+                  //double w = std::min(r.width(), width());
                   //r.translate((r.width() - w) * 0.5, 0.0);
                   //r.setWidth(w);
-                  if (!score()->lineMode())
-                        s->staffShape(staffIdx()).add(r);
-                  r.translate(s->pos() + m->pos());
-                  m->system()->staff(vStaffIdx())->skyline().add(r);
+                  if (score()->lineMode())
+                        s->staffShape(staffIdx()).add(sh);
+                  sh.translate(s->pos() + m->pos());
+                  m->system()->staff(vStaffIdx())->skyline().add(sh);
                   }
             }
+
       }
 
 //---------------------------------------------------------
