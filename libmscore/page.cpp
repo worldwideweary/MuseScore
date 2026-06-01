@@ -713,6 +713,15 @@ QRectF Page::tbbox(MeasureBase* firstMeasure,  MeasureBase* lastMeasure)
       }
 
 //---------------------------------------------------------
+//   startTick
+//---------------------------------------------------------
+
+Fraction Page::startTick() const
+      {
+      return _systems.empty() ? Fraction(-1,1) : _systems.front()->measures().front()->tick();
+      }
+
+//---------------------------------------------------------
 //   endTick
 //---------------------------------------------------------
 
