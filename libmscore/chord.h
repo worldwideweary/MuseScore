@@ -204,7 +204,7 @@ class Chord final : public ChordRest {
       TremoloChordType tremoloChordType() const;
 
       void layoutArticulations();
-      void layoutArticulations2();
+      void layoutArticulations2(bool layoutOnCrossBeamSide = false);
       void layoutArticulations3(Slur* s);
 
       QVector<Articulation*>& articulations()             { return _articulations; }

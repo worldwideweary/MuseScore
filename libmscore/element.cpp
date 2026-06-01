@@ -15,6 +15,8 @@
  Implementation of Element, ElementList
 */
 
+#include "global/log.h"
+
 #include "accidental.h"
 #include "ambitus.h"
 #include "arpeggio.h"
@@ -385,6 +387,35 @@ Part* Element::part() const
       {
       Staff* s = staff();
       return s ? s->part() : 0;
+      }
+
+//---------------------------------------------------------
+//   staffOffset
+//---------------------------------------------------------
+
+QPointF Element::staffOffset() const
+      {
+      const StaffType* st = staffType();
+      const double yOffset = st ? st->yoffset().val() * spatium() : 0.0;
+      return QPointF{0.0, yOffset};
+      }
+
+//---------------------------------------------------------
+//   systemPos
+//---------------------------------------------------------
+
+QPointF Element::systemPos() const
+      {
+      IF_ASSERT_FAILED(findAncestor(ElementType::SYSTEM))
+            return QPointF{};
+      QPointF result = pos();
+      Element* ancestor = parent();
+      while (ancestor && !ancestor->isSystem()) {
+            result += ancestor->pos();
+            ancestor = ancestor->parent();
+            }
+
+      return result;
       }
 
 //---------------------------------------------------------
