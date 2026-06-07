@@ -22355,7 +22355,7 @@ Voulez-vous le remplacer ?</translation>
     <message>
         <location filename="../../mscore/scorecmp/scorecmp_tool.ui" line="156"/>
         <source>Color:</source>
-        <translation type="unfinished">Couleur :</translation>
+        <translation>Couleur :</translation>
     </message>
     <message>
         <location filename="../../mscore/scorecmp/scorecmp_tool.ui" line="175"/>
@@ -27852,17 +27852,17 @@ a échoué</translation>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="137"/>
         <source>Reload Current Score</source>
-        <translation type="unfinished"></translation>
+        <translation>Recharger la partition actuelle</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="138"/>
         <source>File &gt; Reload Current Score</source>
-        <translation type="unfinished"></translation>
+        <translation>Fichier &gt;Recharger la partition actuelle</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="139"/>
         <source>Reload current score</source>
-        <translation type="unfinished"></translation>
+        <translation>Recharger la partition actuelle</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="221"/>
