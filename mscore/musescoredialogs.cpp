@@ -158,20 +158,20 @@ AboutBoxDialog::AboutBoxDialog()
       revisionLabel->setText(tr("Revision: %1").arg(revision));
       setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
-      auto compilerDateISO = []() -> std::string {
+      auto compilerDateISO = []() -> QString {
             // Attempt to convert __DATE__ into ISO 8601 format (YYYY-MM-DD)
             QDate date = QDate::fromString(__DATE__, "MMM dd yyyy");
             if (!date.isValid())
-                  date = QDate::fromString(__DATE__, "MMM d yyyy");
-            return date.isValid() ? date.toString(Qt::ISODate).toStdString() : std::string(__DATE__);
+                  date = QDate::fromString(__DATE__, "MMM  d yyyy");
+            return date.isValid() ? date.toString(Qt::ISODate) : __DATE__;
             };
 
-      std::string dateTime;
+      QString dateTime;
       dateTime += preferences.getBool(PREF_UI_APP_BUILD_DATE_ISO) ? compilerDateISO() : __DATE__;
       dateTime += " ";
       dateTime += __TIME__;
 
-      buildDateLabel->setText(tr("Build date: %1").arg(dateTime.c_str()));
+      buildDateLabel->setText(tr("Build date: %1").arg(dateTime));
 
       QString visitAndDonateString;
 #if !defined(FOR_WINSTORE) && 0
