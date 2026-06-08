@@ -8839,7 +8839,7 @@ namespace Ms {
 int runApplication(int& argc, char** av)
       {
 #ifndef NDEBUG
-      qSetMessagePattern("%{file}:%{function}: %{message}");
+      qSetMessagePattern("%{function}: %{message}");
       Ms::checkStyles();
 #endif
 
