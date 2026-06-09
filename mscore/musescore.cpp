@@ -8463,7 +8463,7 @@ MuseScoreApplication* MuseScoreApplication::initApplication(int& argc, char** ar
             }
       else {
             appName2 = "mscore3";
-            appName  = "MuseScore3";
+            appName  = "MuseScore3Evolution-WWW"; // to maintain separate .ini file in ~/.config etc
             }
 
       //! NOTE Disable cache for all platforms
