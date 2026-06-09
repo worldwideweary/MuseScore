@@ -320,8 +320,26 @@ void Score::update(bool resetCmdState)
             ms->deletePostponed();
             if (!printing()) {
                   if (cs.layoutRange()) {
-                        for (Score*& s : ms->scoreList())
-                              s->doLayoutRange(cs.startTick(), cs.endTick());
+                        for (Score*& s : ms->scoreList()) {
+                              auto layoutStart = cs.startTick();
+                              auto layoutEnd = cs.endTick();
+                              const bool fullPageLayout = true;
+                              if (fullPageLayout) {
+                                    for (auto page : s->pages()) {
+                                          if (page->startTick() > cs.startTick())
+                                                continue;
+                                          layoutStart = page->startTick();
+                                          break;
+                                          }
+                                    for (auto page : s->pages()) {
+                                          if (page->endTick() < cs.endTick())
+                                                continue;
+                                          layoutEnd = page->endTick();
+                                          break;
+                                          }
+                                    }
+                              s->doLayoutRange(layoutStart, layoutEnd);
+                              }
                         updateAll = true;
                         }
                   }
