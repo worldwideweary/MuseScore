@@ -217,16 +217,23 @@ void Fingering::layout()
                         }
                   }
             else if (tid() == Tid::LH_GUITAR_FINGERING) {
-                  // place to left of note
-                  qreal left = n->shape().left();
-                  if (left - n->x() > 0.0)
-                        rxpos() -= left;
-                  else
-                        rxpos() -= n->x();
+                  const bool placeRight = placeBelow();
+                  if (!placeRight) {
+                        const qreal left = n->shape().left();
+                        if (left - n->x() > 0.0)
+                              rxpos() -= left;
+                        else
+                              rxpos() -= n->x();
 
-                  qreal arpWidth = chord->arpeggio() ? chord->arpeggio()->bbox().width() : 0.0;
-                  rxpos() -= arpWidth;
-                  rxpos() -= (arpWidth * 0.25);
+                        qreal arpWidth = chord->arpeggio() ? chord->arpeggio()->bbox().width() : 0.0;
+                        rxpos() -= arpWidth;
+                        rxpos() -= (arpWidth * 0.25);
+                        }
+                  else {
+                        const qreal right = n->shape().right();
+                        const bool haveAugmentations = !note()->dots().empty();
+                        rxpos() = right + (n->headWidth() * (haveAugmentations ? 1.25 : 1.44));
+                        }
                   }
             // for other fingering styles, do not autoplace
 
