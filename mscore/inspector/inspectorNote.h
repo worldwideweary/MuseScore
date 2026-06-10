@@ -44,10 +44,13 @@ class InspectorNote : public InspectorElementBase {
       void stemClicked();
       void beamClicked();
       void tupletClicked();
+      void resetOnTimeClicked();
+      void resetLengthClicked();
 
    public:
       InspectorNote(QWidget* parent);
       virtual void setElement() override;
+      virtual void valueChanged(int idx) override;
       };
 
 
