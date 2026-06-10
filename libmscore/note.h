@@ -490,6 +490,12 @@ class Note final : public Element {
       void setOnTimeOffset(int v);
       void setOffTimeOffset(int v);
 
+      int getOntime() const;
+      int getLength() const;
+      int getDefaultLength() const;
+      void resetOntime();
+      void resetLength();
+
       int customizeVelocity(int velo) const;
       NoteDot* dot(int n)                         { return _dots[n];          }
       const QVector<NoteDot*>& dots() const       { return _dots;             }

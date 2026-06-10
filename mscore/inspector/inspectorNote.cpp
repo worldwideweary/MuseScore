@@ -107,6 +107,8 @@ InspectorNote::InspectorNote(QWidget* parent)
             { Pid::TUNING,         0, n.tuning,        n.resetTuning        },
             { Pid::VELO_TYPE,      0, n.velocityType,  n.resetVelocityType  },
             { Pid::VELO_OFFSET,    0, n.velocity,      n.resetVelocity      },
+            { Pid::GATE_TIME,      0, n.length,        n.resetLength        },
+            { Pid::ON_TIME,        0, n.onTime,        n.resetOnTime        },
             { Pid::FIXED,          0, n.fixed,         n.resetFixed         },
             { Pid::FIXED_LINE,     0, n.fixedLine,     n.resetFixedLine     },
 
@@ -135,6 +137,9 @@ InspectorNote::InspectorNote(QWidget* parent)
       connect(n.stem,     SIGNAL(clicked()),     SLOT(stemClicked()));
       connect(n.beam,     SIGNAL(clicked()),     SLOT(beamClicked()));
       connect(n.tuplet,   SIGNAL(clicked()),     SLOT(tupletClicked()));
+
+      connect(n.resetOnTime, &ResetButton::resetClicked, this, &InspectorNote::resetOnTimeClicked);
+      connect(n.resetLength, &ResetButton::resetClicked, this, &InspectorNote::resetOnTimeClicked);
       }
 
 //---------------------------------------------------------
@@ -175,6 +180,20 @@ void InspectorNote::setElement()
             n.fixedLine->setEnabled(false);
       if (!n.play->isChecked())
             n.playWidget->setVisible(false);
+      }
+
+//---------------------------------------------------------
+//   valueChanged
+//---------------------------------------------------------
+
+void InspectorNote::valueChanged(int idx)
+      {
+      // Update Score/PlayEvents
+      InspectorElementBase::valueChanged(idx);
+      if (auto note = toNote(inspector->element())) {
+            auto score = note->score();
+            score->createPlayEvents(note->chord());
+            }
       }
 
 //---------------------------------------------------------
@@ -327,6 +346,30 @@ void InspectorNote::tupletClicked()
       if (tuplet) {
             note->score()->select(tuplet);
             note->score()->update();
+            inspector->update();
+            }
+      }
+
+//---------------------------------------------------------
+//   resetOnTimeClicked
+//---------------------------------------------------------
+
+void InspectorNote::resetOnTimeClicked()
+      {
+      if (auto note = toNote(inspector->element())) {
+            note->resetOntime();
+            inspector->update();
+            }
+      }
+
+//---------------------------------------------------------
+//   resetLengthClicked
+//---------------------------------------------------------
+
+void InspectorNote::resetLengthClicked()
+      {
+      if (auto note = toNote(inspector->element())) {
+            note->resetLength();
             inspector->update();
             }
       }
