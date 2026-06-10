@@ -38,6 +38,7 @@
 #include "hook.h"
 #include "icon.h"
 #include "image.h"
+#include "instrument.h"
 #include "measure.h"
 #include "note.h"
 #include "notedot.h"
@@ -1524,6 +1525,10 @@ bool Note::readProperties(XmlReader& e)
             readProperty(e, Pid::HEAD_GROUP);
       else if (tag == "velocity")
             setVeloOffset(e.readInt());
+      else if (tag == "onTime")
+            setOnTimeOffset(e.readInt());
+      else if (tag == "length")
+            setOffTimeOffset(e.readInt());
       else if (tag == "play")
             setPlay(e.readInt());
       else if (tag == "tuning")
@@ -2486,6 +2491,8 @@ void Note::reset()
       undoResetProperty(Pid::LEADING_SPACE);
       chord()->undoChangeProperty(Pid::OFFSET, QPointF());
       chord()->undoChangeProperty(Pid::STEM_DIRECTION, QVariant::fromValue<Direction>(Direction::AUTO));
+      undoChangeProperty(Pid::GATE_TIME, propertyDefault(Pid::GATE_TIME));
+      undoChangeProperty(Pid::ON_TIME, propertyDefault(Pid::ON_TIME));
       }
 
 //---------------------------------------------------------
@@ -2987,6 +2994,10 @@ QVariant Note::getProperty(Pid propertyId) const
                   return int(headType());
             case Pid::VELO_TYPE:
                   return int(veloType());
+            case Pid::GATE_TIME:
+                  return int(getLength());
+            case Pid::ON_TIME:
+                  return int(getOntime());
             case Pid::PLAY:
                   return play();
             case Pid::LINE:
@@ -3042,6 +3053,14 @@ bool Note::setProperty(Pid propertyId, const QVariant& v)
                   break;
             case Pid::VELO_OFFSET:
                   setVeloOffset(v.toInt());
+                  score()->setPlaylistDirty();
+                  break;
+            case Pid::ON_TIME:
+                  setOnTimeOffset(v.toInt());
+                  score()->setPlaylistDirty();
+                  break;
+            case Pid::GATE_TIME:
+                  setOffTimeOffset(v.toInt());
                   score()->setPlaylistDirty();
                   break;
             case Pid::TUNING:
@@ -3136,6 +3155,10 @@ QVariant Note::propertyDefault(Pid propertyId) const
                   return int(NoteHead::Type::HEAD_AUTO);
             case Pid::VELO_TYPE:
                   return int (ValueType::OFFSET_VAL);
+            case Pid::GATE_TIME:
+                  return getDefaultLength();
+            case Pid::ON_TIME:
+                  return 0;
             case Pid::PLAY:
                   return true;
             case Pid::FIXED:
@@ -3189,6 +3212,9 @@ void Note::setHeadType(NoteHead::Type t)
 
 void Note::setOnTimeOffset(int val)
       {
+      if (_playEvents.empty())
+            return;
+
       _playEvents[0].setOntime(val);
       chord()->setPlayEventType(PlayEventType::User);
       }
@@ -3199,8 +3225,64 @@ void Note::setOnTimeOffset(int val)
 
 void Note::setOffTimeOffset(int val)
       {
+      if (_playEvents.empty())
+            return;
+
       _playEvents[0].setLen(val - _playEvents[0].ontime());
       chord()->setPlayEventType(PlayEventType::User);
+      }
+
+//---------------------------------------------------------
+//   getOntime
+//---------------------------------------------------------
+
+int Note::getOntime() const
+      {
+      return !_playEvents.empty() ? _playEvents[0].ontime() : 0;
+      }
+
+//---------------------------------------------------------
+//   getLength
+//---------------------------------------------------------
+
+int Note::getLength() const
+      {
+      return !_playEvents.empty() ? _playEvents[0].len() : getDefaultLength();
+      }
+
+//---------------------------------------------------------
+//   getDefaultLength
+//    E.g. Piano @ 950
+//---------------------------------------------------------
+
+int Note::getDefaultLength() const
+      {
+      const auto c = chord();
+      auto instrument = c->part()->instrument(c->tick());
+      int defaultGateTime;
+      instrument->updateGateTime(&defaultGateTime, 0, "");
+      return (defaultGateTime * 10);
+      }
+
+//---------------------------------------------------------
+//   resetOntime
+//---------------------------------------------------------
+
+void Note::resetOntime()
+      {
+      _playEvents[0].setOntime(propertyDefault(Pid::ON_TIME).toInt());
+      chord()->setPlayEventType(PlayEventType::Auto);
+      }
+
+//---------------------------------------------------------
+//   resetLength
+//---------------------------------------------------------
+
+void Note::resetLength()
+      {
+      const int gateTime = getDefaultLength();
+      _playEvents[0].setLen(gateTime);
+      chord()->setPlayEventType(PlayEventType::Auto);
       }
 
 //---------------------------------------------------------
