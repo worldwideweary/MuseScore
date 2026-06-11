@@ -349,24 +349,28 @@ AccidentalVal Measure::findAccidental(Note* note) const
       AccidentalState tversatz;  // state of already set accidentals for this measure
       tversatz.init(vStaff->keySigEvent(tick()), chord->staff()->clef(tick()));
 
+      int startTrack = vStaff->part()->startTrack();
+      int mainTrack = chord->vStaffIdx() * VOICES;
+      int endTrack = vStaff->part()->endTrack();
+
       for (Segment* segment = first(); segment; segment = segment->next()) {
-            int startTrack = chord->vStaffIdx() * VOICES;
             if (segment->isKeySigType()) {
-                  KeySig* ks = toKeySig(segment->element(startTrack));
+                  KeySig* ks = toKeySig(segment->element(mainTrack));
                   if (!ks)
                         continue;
                   tversatz.init(vStaff->keySigEvent(segment->tick()), chord->staff()->clef(segment->tick()));
                   }
             else if (segment->segmentType() == SegmentType::ChordRest) {
-                  int endTrack   = startTrack + VOICES;
                   for (int track = startTrack; track < endTrack; ++track) {
                         Element* e = segment->element(track);
                         if (!e || !e->isChord())
                               continue;
                         Chord* crd = toChord(e);
                         for (Chord*& chord1 : crd->graceNotes()) {
+                              if (chord1->vStaffIdx() != chord->vStaffIdx())
+                                    continue;
                               for (Note* note1 : chord1->notes()) {
-                                    if (note1->tieBack() && note1->accidental() == 0)
+                                    if (note1->tieBack() && !note1->accidental())
                                           continue;
                                     //
                                     // compute accidental
@@ -379,8 +383,10 @@ AccidentalVal Measure::findAccidental(Note* note) const
                                     tversatz.setAccidentalVal(line, tpc2alter(tpc));
                                     }
                               }
+                        if (crd->vStaffIdx() != chord->vStaffIdx())
+                              continue;
                         for (Note* note1 : crd->notes()) {
-                              if (note1->tieBack() && note1->accidental() == 0)
+                              if (note1->tieBack() && !note1->accidental())
                                     continue;
                               //
                               // compute accidental
@@ -412,8 +418,8 @@ AccidentalVal Measure::findAccidental(Segment* s, int staffIdx, int line, bool &
       tversatz.init(staff->keySigEvent(tick()), staff->clef(tick()));
 
       SegmentType st = SegmentType::ChordRest;
-      int startTrack = staffIdx * VOICES;
-      int endTrack   = startTrack + VOICES;
+      int startTrack = staff->part()->startTrack();
+      int endTrack = staff->part()->endTrack();
       for (Segment* segment = first(st); segment; segment = segment->next(st)) {
             if (segment == s && staff->isPitchedStaff(tick())) {
                   ClefType clef = staff->clef(s->tick());
@@ -426,8 +432,10 @@ AccidentalVal Measure::findAccidental(Segment* s, int staffIdx, int line, bool &
                         continue;
                   Chord* chord = toChord(e);
                   for (Chord*& chord1 : chord->graceNotes()) {
+                        if (chord1->vStaffIdx() != staffIdx)
+                              continue;
                         for (Note* note : chord1->notes()) {
-                              if (note->tieBack() && note->accidental() == 0)
+                              if (note->tieBack() && !note->accidental())
                                     continue;
                               int tpc  = note->tpc();
                               int l    = absStep(tpc, note->epitch());
@@ -435,8 +443,10 @@ AccidentalVal Measure::findAccidental(Segment* s, int staffIdx, int line, bool &
                               }
                         }
 
+                  if (chord->vStaffIdx() != staffIdx)
+                        continue;
                   for (Note* note : chord->notes()) {
-                        if (note->tieBack() && note->accidental() == 0)
+                        if (note->tieBack() && !note->accidental())
                               continue;
                         int tpc    = note->tpc();
                         int l      = absStep(tpc, note->epitch());
