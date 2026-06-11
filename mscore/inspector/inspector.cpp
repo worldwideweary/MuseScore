@@ -71,7 +71,6 @@
 #include "libmscore/tuplet.h"
 #include "libmscore/undo.h"
 
-#include <ranges>
 #include <algorithm>
 
 namespace Ms {
@@ -703,7 +702,8 @@ void InspectorArticulation::resetGateTime()
 
       const auto arts = instrument->articulation();
       using t = const MidiArticulation&;
-      auto it = std::ranges::find_if(arts, [&](t& ma) { return ma.name == name; });
+      auto it = std::find_if(arts.begin(), arts.end(), [&](const t& ma) { return ma.name == name; });
+
       int defaultGate = (it != arts.end()) ? (*it).gateTime : 0;
       ar.gateTime->setValue(defaultGate);
 
