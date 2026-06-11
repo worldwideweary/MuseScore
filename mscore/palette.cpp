@@ -592,6 +592,10 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
             else if (element->isSlur()) {
                   viewer->cmdAddSlur(toSlur(element));
                   }
+            else if (element->isMeasureNumber()) {
+                  if (auto m = sel.findMeasure())
+                        m->undoChangeProperty(Pid::MEASURE_NUMBER_MODE, static_cast<int>(MeasureNumberMode::SHOW));
+                  }
             else if (element->isSLine() && !element->isGlissando() && addSingle) {
                   Segment* startSegment = cr1->segment();
                   Segment* endSegment = cr2->segment();
@@ -755,6 +759,10 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                         spanner->styleChanged();
                         score->cmdAddSpanner(spanner, i, startSegment, endSegment);
                         }
+                  }
+            else if (element->isMeasureNumber()) {
+                  if (auto m = sel.startSegment()->measure())
+                        m->undoChangeProperty(Pid::MEASURE_NUMBER_MODE, static_cast<int>(MeasureNumberMode::SHOW));
                   }
             else if (element->isTextBase()) {
                   Ms::Segment* firstSegment = sel.startSegment();
