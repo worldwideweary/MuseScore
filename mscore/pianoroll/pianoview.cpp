@@ -33,8 +33,6 @@
 #include "libmscore/undo.h"
 #include "libmscore/utils.h"
 
-#include <ranges>
-
 namespace Ms {
 
 extern MuseScore* mscore;
@@ -985,47 +983,55 @@ void PianoView::finishNoteEventAdjustDrag()
       Score* curScore = _staff->score();
       Fraction dx = Fraction::fromTicks(pixelXToTick(_lastMousePos.x()) - pixelXToTick(_mouseDownPos.x()));
 
-      for (auto item : _noteList | std::views::filter([](PianoItem* pi) { return pi->note()->selected(); })) {
-            Note* note = item->note();
-            for (NoteEvent& e : note->playEvents()) {
-                  const auto chord = note->chord();
-                  auto ticks = chord->ticks();
-                  if (auto tup = chord->tuplet())
-                        ticks *= tup->ratio().inverse();
+      for (int i = 0; i < _noteList.size(); ++i) {
+            PianoItem* pi = _noteList[i];
+            if (pi->note()->selected()) {
+                  for (NoteEvent& e : pi->note()->playEvents()) {
+                        Chord* chord = pi->note()->chord();
+                        Fraction ticks = chord->ticks();
+                        Tuplet* tup = chord->tuplet();
+                        if (tup) {
+                              Fraction frac = tup->ratio();
+                              ticks = ticks * frac.inverse();
+                              }
 
-                  const Fraction start    = chord->tick();
-                  const Fraction startAdj = start + ticks * e.ontime() / 1000;
-                  const Fraction lenAdj   = ticks * e.len() / 1000;
-                  Fraction startNew;
-                  Fraction lenNew;
-                  switch (_dragStyle) {
-                        case DragStyle::EVENT_ONTIME:
-                              startNew = startAdj + dx;
-                              lenNew = lenAdj - dx;
-                              break;
-                        case DragStyle::EVENT_MOVE:
-                              startNew = startAdj + dx;
-                              lenNew = lenAdj;
-                              break;
-                        default:
-                        case DragStyle::EVENT_LENGTH:
-                              startNew = startAdj;
-                              lenNew = lenAdj + dx;
-                              break;
+                        Fraction start = pi->note()->chord()->tick();
+                        Fraction startAdj = start + ticks * e.ontime() / 1000;
+                        Fraction lenAdj = ticks * e.len() / 1000;
+
+                        //Calc start, duration of where we dragged to
+                        Fraction startNew;
+                        Fraction lenNew;
+                        switch (_dragStyle) {
+                              case DragStyle::EVENT_ONTIME:
+                                    startNew = startAdj + dx;
+                                    lenNew = lenAdj - dx;
+                                    break;
+                              case DragStyle::EVENT_MOVE:
+                                    startNew = startAdj + dx;
+                                    lenNew = lenAdj;
+                                    break;
+                              default:
+                              case DragStyle::EVENT_LENGTH:
+                                    startNew = startAdj;
+                                    lenNew = lenAdj + dx;
+                                    break;
+                              }
+
+                        int evtOntimeNew = int(((startNew - start) / ticks).toDouble() * 1000);
+                        int evtLenNew = int((lenNew / ticks).toDouble() * 1000);
+                        if (evtLenNew < 1) {
+                              evtLenNew = 1;
+                              }
+
+                        NoteEvent ne = e;
+                        ne.setOntime(evtOntimeNew);
+                        ne.setLen(evtLenNew);
+
+                        curScore->startCmd();
+                        curScore->undo(new ChangeNoteEvent(pi->note(), &e, ne));
+                        curScore->endCmd();
                         }
-
-                  int evtOntimeNew = int(((startNew - start) / ticks).toDouble() * 1000);
-                  int evtLenNew = int((lenNew / ticks).toDouble() * 1000);
-                  if (evtLenNew < 1)
-                        evtLenNew = 1;
-
-                  NoteEvent newEvent = e;
-                  newEvent.setOntime(evtOntimeNew);
-                  newEvent.setLen(evtLenNew);
-
-                  curScore->startCmd();
-                  curScore->undo(new ChangeNoteEvent(note, &e, newEvent));
-                  curScore->endCmd();
                   }
             }
 
