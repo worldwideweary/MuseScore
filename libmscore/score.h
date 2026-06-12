@@ -1109,6 +1109,7 @@ class Score : public QObject, public ScoreElement {
       void layoutChords3(std::vector<Note*>&, const Staff*, Segment*);
 
       static void layoutChordBaseFingering(Chord* chord, System* system, bool fromCollectPage = false);
+      static void layoutVoicedFingering(Segment* s, System* system);
 
       SynthesizerState& synthesizerState()     { return _synthesizerState; }
       void setSynthesizerState(const SynthesizerState& s);

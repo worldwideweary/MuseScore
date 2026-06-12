@@ -1362,7 +1362,6 @@ void Score::layoutChordBaseFingering(Chord* chord, System* system, bool fromColl
       (void) fromCollectPage;
       std::set<int> shapesToRecreate;
 
-      // TODO: pitch-ordered voicing // search for: for (int voice = 3; voice >= 0; voice--) {
 
       std::list<Note*> notes;
       Segment* segment = chord->segment();
@@ -1399,6 +1398,69 @@ void Score::layoutChordBaseFingering(Chord* chord, System* system, bool fromColl
       for (int staffIdx : shapesToRecreate)
             segment->createShape(staffIdx);
       }
+
+//---------------------------------------------------------
+//   layoutChordBaseFingering
+//    Works only for non-crossbeam/moved chords
+//---------------------------------------------------------
+
+void Score::layoutVoicedFingering(Segment* s, System* system)
+      {
+      auto score = s->score();
+      std::set<int> shapesToRecreate;
+      std::vector<Fingering*> belowFingerings;
+      std::vector<Fingering*> aboveFingerings;
+
+      // Accumulate:
+      for (Element* e : s->elist()) {
+            if (!e || !e->isChord() || !score->staff(e->staffIdx())->show())
+                  continue;
+
+            Chord* c = toChord(e);
+            bool crossedOver = c->beam() && (c->beam()->cross() || c->staffMove() != 0);
+            if (crossedOver)
+                  continue;
+
+            for (auto f : c->getFingerings(Direction::DOWN))
+                  belowFingerings.emplace_back(f);
+
+            for (auto f : c->getFingerings(Direction::UP))
+                  aboveFingerings.emplace_back(f);
+            }
+
+      // Sort via pitch:
+      std::sort(belowFingerings.begin(),
+                belowFingerings.end(),
+                [](const Fingering* a, const Fingering* b) -> bool { return a->note()->pitch() > b->note()->pitch();
+                });
+
+      std::sort(aboveFingerings.begin(),
+                aboveFingerings.end(),
+                [](const Fingering* a, const Fingering* b) -> bool { return a->note()->pitch() < b->note()->pitch();
+                });
+
+      auto layoutFingering = [&](std::vector<Fingering*>& fingers) -> void {
+            for (auto f : fingers) {
+                  f->layout();
+                  if (f->addToSkyline()) {
+                        Note* n = f->note();
+                        auto r = f->bbox().translated(f->pos() + n->pos() + n->chord()->pos() + s->pos() + s->measure()->pos());
+                        system->staff(f->note()->chord()->vStaffIdx())->skyline().add(r);
+                        }
+                  shapesToRecreate.insert(f->staffIdx());
+                  }
+            };
+
+      layoutFingering(belowFingerings);
+      layoutFingering(aboveFingerings);
+
+      for (auto staffIdx : shapesToRecreate)
+            s->createShape(staffIdx);
+      }
+
+//---------------------------------------------------------
+//   beamNoContinue
+//---------------------------------------------------------
 
 #define beamModeMid(a) (a == Beam::Mode::MID || a == Beam::Mode::BEGIN32 || a == Beam::Mode::BEGIN64)
 
@@ -4773,7 +4835,7 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
             }
 
       //-------------------------------------------------------------
-      // layout articulations and fingering (4.x includes stretch bends here)
+      // layout articulations
       //-------------------------------------------------------------
 
       for (Segment* s : sl) {
@@ -4781,14 +4843,17 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
                   if (!e || !e->isChord() || !score()->staff(e->staffIdx())->show())
                         continue;
                   Chord* c = toChord(e);
-
                   c->layoutArticulations();
                   c->layoutArticulations2();
-
-                  bool crossedOver = c->beam() && (c->beam()->cross() || c->staffMove() != 0);
-                  if (!crossedOver)
-                        score()->layoutChordBaseFingering(c, system);
                   }
+            }
+
+      //-------------------------------------------------------------
+      // layout fingerings
+      //-------------------------------------------------------------
+
+      for (Segment* s : sl) {
+            score()->layoutVoicedFingering(s, system);
             }
 
       //-------------------------------------------------------------
