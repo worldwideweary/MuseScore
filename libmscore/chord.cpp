@@ -3173,6 +3173,42 @@ QVector<Chord*> Chord::graceNotesAfter() const
       }
 
 //---------------------------------------------------------
+//   getFingerings
+//    Direction:: dictates either
+//          AUTO : indiscriminate
+//          UP   : placeAbove
+//          DOWN : placeBelow
+//---------------------------------------------------------
+
+std::vector<Fingering*> Chord::getFingerings(Direction dir) const
+      {
+      std::vector<Note*> nn;
+      for (const auto gc : graceNotes()) {
+            for (const auto n : gc->notes()) {
+                  nn.push_back(n);
+                  }
+            }
+      for (auto n : this->notes())
+            nn.push_back(n);
+
+      std::vector<Fingering*> fingerings;
+      const bool either = (dir == Direction::AUTO);
+      for (auto n : nn) {
+            for (auto el : n->el()) {
+                  if (el->isFingering()) {
+                        Fingering* f = toFingering(el);
+                        const bool below = (dir == Direction::DOWN) && f->placeBelow();
+                        const bool above = (dir == Direction::UP) && f->placeAbove();
+                        if (below || above || either) {
+                              fingerings.push_back(f);
+                              }
+                        }
+                  }
+            }
+      return fingerings;
+      }
+
+//---------------------------------------------------------
 //   sortNotes
 //---------------------------------------------------------
 

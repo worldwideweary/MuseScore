@@ -2462,6 +2462,22 @@ QString Note::noteTypeUserName() const
       }
 
 //---------------------------------------------------------
+//   getFingerings
+//---------------------------------------------------------
+
+std::vector<Fingering*> Note::getFingerings() const
+      {
+      std::vector<Fingering*> fingerings;
+      for (auto e : el()) {
+            if (e->isFingering()) {
+                  auto f = toFingering(e);
+                  fingerings.emplace_back(f);
+                  }
+            }
+      return fingerings;
+      }
+
+//---------------------------------------------------------
 //   scanElements
 //---------------------------------------------------------
 
