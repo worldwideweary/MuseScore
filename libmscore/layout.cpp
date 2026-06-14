@@ -1355,6 +1355,7 @@ void Score::layoutChords3(std::vector<Note*>& notes, const Staff* staff, Segment
 
 //---------------------------------------------------------
 //   layoutChordBaseFingering
+//    Omits layout of crossbeamed fingerings
 //---------------------------------------------------------
 
 void Score::layoutChordBaseFingering(Chord* chord, System* system, bool fromCollectPage)
@@ -1400,7 +1401,7 @@ void Score::layoutChordBaseFingering(Chord* chord, System* system, bool fromColl
       }
 
 //---------------------------------------------------------
-//   layoutChordBaseFingering
+//   layoutVoicedFingering
 //    Works only for non-crossbeam/moved chords
 //---------------------------------------------------------
 
@@ -1415,25 +1416,24 @@ void Score::layoutVoicedFingering(Segment* s, System* system)
       for (Element* e : s->elist()) {
             if (!e || !e->isChord() || !score->staff(e->staffIdx())->show())
                   continue;
-
             Chord* c = toChord(e);
-            bool crossedOver = c->beam() && (c->beam()->cross() || c->staffMove() != 0);
-            if (crossedOver)
-                  continue;
-
-            for (auto f : c->getFingerings(Direction::DOWN))
-                  belowFingerings.emplace_back(f);
-
-            for (auto f : c->getFingerings(Direction::UP))
-                  aboveFingerings.emplace_back(f);
+            for (auto f : c->getFingerings(Direction::DOWN)) {
+                  if (!f->isOnCrossBeamSide()) {
+                        belowFingerings.emplace_back(f);
+                        }
+                  }
+            for (auto f : c->getFingerings(Direction::UP)) {
+                  if (!f->isOnCrossBeamSide()) {
+                        aboveFingerings.emplace_back(f);
+                        }
+                  }
             }
 
-      // Sort via pitch:
+      // Pitch-based sort:
       std::sort(belowFingerings.begin(),
                 belowFingerings.end(),
                 [](const Fingering* a, const Fingering* b) -> bool { return a->note()->pitch() > b->note()->pitch();
                 });
-
       std::sort(aboveFingerings.begin(),
                 aboveFingerings.end(),
                 [](const Fingering* a, const Fingering* b) -> bool { return a->note()->pitch() < b->note()->pitch();
@@ -4654,6 +4654,18 @@ void Score::updateMeasureNumbers() {
 
 void Score::layoutSystemElements(System* system, LayoutContext& lc)
       {
+
+      //-------------------------------------------------------------
+      //    detach spanners:
+      //          not relying on destructor for this in order
+      //          to be able to perform a dual layout
+      //-------------------------------------------------------------
+
+      for (SpannerSegment*& ss : system->spannerSegments()) {
+            if (ss->system() == system)
+                  ss->setParent(nullptr);
+            }
+
       //-------------------------------------------------------------
       //    create cr segment list to speed up computations
       //-------------------------------------------------------------
@@ -5459,12 +5471,7 @@ void LayoutContext::collectPage()
                                                 if (t->twoNotes() && c1 && c2 && (c1->staffMove() || c2->staffMove()))
                                                       t->layout();
                                                 }
-
-                                          c->layoutArticulations();
-                                          c->layoutArticulations2();
-
-                                          if (c->beam() && (c->beam()->cross() || c->staffMove() != 0))
-                                                score->layoutChordBaseFingering(c, s, true);
+                                          // Layout articulations / fingerings wuz here
                                           }
                                     }
                               else if (e->isBarLine())
@@ -5473,6 +5480,9 @@ void LayoutContext::collectPage()
                         }
                   m->layout2();
                   }
+
+            // Re-layout entire system to correct articulation/fingering layout after cross-beams updating
+            currentScore->layoutSystemElements(s, *this);
             }
 
       // If this is the last page we layout, we must also relayout the first barlines of the
