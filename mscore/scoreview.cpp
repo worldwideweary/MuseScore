@@ -4224,11 +4224,10 @@ void ScoreView::cmd(const char* s)
 
                   const auto ee = cv->getEditElement();
                   if (ee && ee->isSpannerSegment()) {
-                        auto sseg = toSpannerSegment(ee);
-                        auto span = sseg->spanner();
-                        cv->score()->deleteItem(span);
+                        auto ss = toSpannerSegment(ee);
+                        cv->score()->select(ss);
                         }
-                  else cv->score()->cmdDeleteSelection();
+                  cv->score()->cmdDeleteSelection();
 
                   cv->score()->endCmd();
 
