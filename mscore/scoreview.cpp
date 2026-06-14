@@ -2850,6 +2850,10 @@ void ScoreView::selectSlur(bool backward)
             auto theLogic = [&](const auto& it, bool& foundSelf) -> SpannerSegment* {
                   const auto rejected = nullptr;
                   const auto s = it->second;
+
+                  if (s->segmentsEmpty())
+                        return rejected;
+
                   const int begin = it->first;
 
                   const int selectedPos = selectedSpanner ? selectedSpanner->tick().ticks() : selected->tick().ticks();
@@ -2874,6 +2878,7 @@ void ScoreView::selectSlur(bool backward)
                   if (sameType && sameStaff) {
                         if (!foundSelf && (begin == selectedPos))
                               return rejected;
+
                         else return backward ? s->backSegment() : s->frontSegment();
                         }
                   else return rejected;
@@ -5430,9 +5435,18 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             auto spanner = ss->spanner();
             auto start = spanner->startElement();
             auto end = spanner->endElement();
-            auto terminus = (spanner->frontSegment() == ss) ? start : end;
-            m = toMeasure(terminus->findMeasure());
-            el = terminus;
+            if (!spanner->segmentsEmpty()) {
+                  if (auto fs = spanner->frontSegment()) {
+                        if (auto terminus = (fs == ss) ? start : end) {
+                              m = toMeasure(terminus->findMeasure());
+                              el = terminus;
+                              }
+                        }
+                  }
+            else {
+                  m = end->findMeasure();
+                  el = start;
+                  }
             }
       else if (el->isSpanner()) {
             Element* se = static_cast<const Spanner*>(el)->startElement();
