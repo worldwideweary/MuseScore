@@ -840,9 +840,13 @@ void Articulation::doAutoplace(bool above)
                   if (above)
                         yd *= -1.0;
 
-                  // Rebasing without checking if offsetChanged() fixes "accumulated skylines" for articulation
-                  if (rebaseMinDistance(md, yd, sp, rebase, above, true))
-                        r.translate(0.0, rebase);
+                  if (offsetChanged() != OffsetChange::NONE) {
+                        // user moved element within the skyline
+                        // we may need to adjust minDistance, yd, and/or offset
+                        //bool inStaff = placeAbove() ? r.bottom() + rebase > 0.0 : r.top() + rebase < staff()->height();
+                        if (rebaseMinDistance(md, yd, sp, rebase, above, true))
+                              r.translate(0.0, rebase);
+                        }
 
                   rypos() += yd;
                   r.translate(QPointF(0.0, yd));
