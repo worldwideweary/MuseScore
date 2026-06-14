@@ -3903,7 +3903,10 @@ void Chord::layoutArticulations2(bool layoutOnCrossBeamSide)
             }
 
       for (Articulation* a : articulations()) {
-            if (a->addToSkyline() && !a->isOnCrossBeamSide()) {
+            if (a->addToSkyline()) {
+                  // As of 2026.05--MSS4 checks  [&& !a->isOnCrossBeamSide()], but seems to be okay here
+                  // and allows for fingering on beam-side to apply ontop of articulations
+
                   // the segment shape has already been calculated
                   // so measure width and spacing is already determined
                   // in line mode, we cannot add to segment shape without throwing this off
