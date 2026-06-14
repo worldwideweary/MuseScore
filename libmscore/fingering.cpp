@@ -168,12 +168,13 @@ void Fingering::layout()
                               top -= md;
                               qreal diff = (bbox().bottom() + ipos().y() + yd + n->y()) - top;
                               if (diff > 0.0) {
-                                    if (auto beam = chord->beam())
-                                          if (beam->up()) {
+                                    if (auto beam = chord->beam()) {
+                                          if (beam->up() || stem->up()) {
                                                 yd -= diff;
                                                 qreal beamLineProp = 0.33 * point(score()->styleS(Sid::beamWidth)) * chord->chordMag();
                                                 yd += beamLineProp;
                                                 }
+                                          }
                                     }
                               if (offsetChanged() != OffsetChange::NONE) {
                                     // user moved element within the skyline
@@ -210,12 +211,13 @@ void Fingering::layout()
                               bottom += md;
                               qreal diff = bottom - (bbox().top() + ipos().y() + yd + n->y());
                               if (diff > 0.0) {
-                                    if (auto beam = chord->beam())
-                                          if (!beam->up()) {
+                                    if (auto beam = chord->beam()) {
+                                          if (!beam->up() && !stem->up()) {
                                                 yd += diff;
                                                 qreal beamLineProp = 0.33 * point(score()->styleS(Sid::beamWidth)) * chord->chordMag();
                                                 yd -= beamLineProp;
                                                 }
+                                          }
                                     }
                               if (offsetChanged() != OffsetChange::NONE) {
                                     // user moved element within the skyline
