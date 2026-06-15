@@ -469,6 +469,8 @@ class Note final : public Element {
       ElementList& el()                           { return _el; }
       const ElementList& el() const               { return _el; }
 
+      std::vector<Fingering*> getFingerings() const;
+
       int subchannel() const                    { return _subchannel; }
       void setSubchannel(int val)               { _subchannel = val;  }
 

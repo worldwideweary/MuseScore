@@ -252,7 +252,7 @@
           <Beam>
             <StemDirection>down</StemDirection>
             <l1>14</l1>
-            <l2>12</l2>
+            <l2>13</l2>
             </Beam>
           <Chord>
             <BeamMode>begin</BeamMode>
@@ -299,8 +299,8 @@
             </Chord>
           <Beam>
             <StemDirection>down</StemDirection>
-            <l1>17</l1>
-            <l2>13</l2>
+            <l1>18</l1>
+            <l2>14</l2>
             </Beam>
           <Chord>
             <BeamMode>begin</BeamMode>

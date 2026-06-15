@@ -78,6 +78,7 @@ class Page final : public Element {
       QPointF pagePos() const override { return QPointF(); }     ///< position in page coordinates
       QList<Element*> elements();               ///< list of visible elements
       QRectF tbbox(MeasureBase* firstMeasure=nullptr, MeasureBase* lastMeasure=nullptr);
+      Fraction startTick() const;
       Fraction endTick() const;
       };
 

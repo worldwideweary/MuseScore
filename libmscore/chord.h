@@ -155,6 +155,8 @@ class Chord final : public ChordRest {
       int graceIndex() const                        { return _graceIndex; }
       void setGraceIndex(int val)                   { _graceIndex = val;  }
 
+      std::vector<Fingering*> getFingerings(Direction) const;
+
       int upLine() const override;
       int downLine() const override;
       int upLine(bool omitInvisible) const;
@@ -204,7 +206,7 @@ class Chord final : public ChordRest {
       TremoloChordType tremoloChordType() const;
 
       void layoutArticulations();
-      void layoutArticulations2();
+      void layoutArticulations2(bool layoutOnCrossBeamSide = false);
       void layoutArticulations3(Slur* s);
 
       QVector<Articulation*>& articulations()             { return _articulations; }

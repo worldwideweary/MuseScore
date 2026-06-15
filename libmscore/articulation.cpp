@@ -736,6 +736,63 @@ bool Articulation::isOrnament() const
       }
 
 //---------------------------------------------------------
+//   isBasicArticulation
+//---------------------------------------------------------
+
+bool Articulation::isBasicArticulation() const
+      {
+      static const std::set<SymId> articulations {
+            SymId::articAccentAbove, SymId::articAccentBelow,
+            SymId::articStaccatoAbove, SymId::articStaccatoBelow,
+            SymId::articTenutoAbove, SymId::articTenutoBelow,
+            SymId::articMarcatoAbove, SymId::articMarcatoBelow,
+
+            SymId::articAccentStaccatoAbove, SymId::articAccentStaccatoBelow,
+            SymId::articMarcatoStaccatoAbove, SymId::articMarcatoStaccatoBelow,
+            SymId::articMarcatoTenutoAbove, SymId::articMarcatoTenutoBelow,
+            SymId::articTenutoStaccatoAbove, SymId::articTenutoStaccatoBelow,
+            SymId::articTenutoAccentAbove, SymId::articTenutoAccentBelow,
+            SymId::articStaccatissimoAbove, SymId::articStaccatissimoBelow,
+            SymId::articStaccatissimoStrokeAbove, SymId::articStaccatissimoStrokeBelow,
+            SymId::articStaccatissimoWedgeAbove, SymId::articStaccatissimoWedgeBelow,
+            SymId::articStressAbove, SymId::articStressBelow
+            };
+      SymId symId = static_cast<SymId>(subtype());
+      return articulations.find(symId) != articulations.end();
+      }
+
+//---------------------------------------------------------
+//   isOnCrossBeamSide
+//---------------------------------------------------------
+
+bool Articulation::isOnCrossBeamSide() const
+      {
+      ChordRest* cr = chordRest();
+      if (!cr || !cr->isChord())
+            return false;
+      Chord* chord = toChord(cr);
+      return chord->beam() && (chord->beam()->cross() || chord->staffMove() != 0) && (up() == chord->up());
+      }
+
+//---------------------------------------------------------
+//   opticalCenter
+//---------------------------------------------------------
+
+double Articulation::opticalCenter() const
+      {
+      switch (symId()) {
+            case SymId::handbellsMartellatoLift:
+                  return 0.5 * symWidth(SymId::handbellsMartellato);
+            case SymId::handbellsMalletLft:
+                  return 0.5 * symWidth(SymId::handbellsMalletBellOnTable);
+            case SymId::handbellsPluckLift:
+                  return 0.5 * symWidth(SymId::articStaccatoAbove);
+            default:
+                  return 0.5 * bbox().width();
+            }
+      }
+
+//---------------------------------------------------------
 //   accessibleInfo
 //---------------------------------------------------------
 
@@ -749,7 +806,7 @@ QString Articulation::accessibleInfo() const
 //    check for collisions
 //---------------------------------------------------------
 
-void Articulation::doAutoplace()
+void Articulation::doAutoplace(bool above)
       {
       // rebase vertical offset on drag
       qreal rebase = 0.0;
@@ -768,7 +825,6 @@ void Articulation::doAutoplace()
             QRectF r = bbox().translated(chordRest()->pos() + m->pos() + s->pos() + pos());
 
             qreal d;
-            bool above = up(); // (anchor() == ArticulationAnchor::TOP_STAFF || anchor() == ArticulationAnchor::TOP_CHORD);
             SkylineLine sk(!above);
             if (above) {
                   sk.add(r.x(), r.bottom(), r.width());
@@ -783,6 +839,7 @@ void Articulation::doAutoplace()
                   qreal yd = d + md;
                   if (above)
                         yd *= -1.0;
+
                   if (offsetChanged() != OffsetChange::NONE) {
                         // user moved element within the skyline
                         // we may need to adjust minDistance, yd, and/or offset
@@ -790,6 +847,7 @@ void Articulation::doAutoplace()
                         if (rebaseMinDistance(md, yd, sp, rebase, above, true))
                               r.translate(0.0, rebase);
                         }
+
                   rypos() += yd;
                   r.translate(QPointF(0.0, yd));
                   }

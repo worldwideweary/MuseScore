@@ -219,8 +219,15 @@ void InspectorBase::setValue(const InspectorItem& ii, QVariant val)
                               break;
                               }
                         }
-                  if (!found)
-                        qDebug("ComboBox item not found: pid <%s> data <%d>", propertyName(id), ival);
+                  if (!found) {
+                        const QString propName(propertyName(id));
+                        const auto start = static_cast<int>(Tid::DEFAULT);
+                        const auto end = static_cast<int>(Tid::IGNORED_STYLES);
+                        if (ival >= start && ival <= end && propName == "style")
+                              ; // Ignore: this is checking TextBase with specific Text ID
+                        else
+                              qDebug("ComboBox item not found: pid <%s> data <%d>", propertyName(id), ival);
+                        }
                   }
             else
                   cb->setCurrentIndex(ival);

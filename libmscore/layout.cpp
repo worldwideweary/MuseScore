@@ -10,6 +10,8 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "global/log.h"
+
 #include "accidental.h"
 #include "ambitus.h"
 #include "arpeggio.h"
@@ -1351,6 +1353,115 @@ void Score::layoutChords3(std::vector<Note*>& notes, const Staff* staff, Segment
             }
       }
 
+//---------------------------------------------------------
+//   layoutChordBaseFingering
+//    Omits layout of crossbeamed fingerings
+//---------------------------------------------------------
+
+void Score::layoutChordBaseFingering(Chord* chord, System* system, bool fromCollectPage)
+      {
+      (void) fromCollectPage;
+      std::set<int> shapesToRecreate;
+
+
+      std::list<Note*> notes;
+      Segment* segment = chord->segment();
+      for (auto gc : chord->graceNotes()) {
+            for (auto n : gc->notes())
+                  notes.push_back(n);
+            }
+      for (auto n : chord->notes())
+            notes.push_back(n);
+      std::list<Fingering*> fingerings;
+      for (auto note : notes) {
+            for (auto el : note->el()) {
+                  if (el->isFingering()) {
+                        Fingering* f = toFingering(el);
+                        bool perform = f->layoutType() == ElementType::CHORD && (!f->isOnCrossBeamSide()); // || preLayoutNoteheadSide);
+                        if (perform) {
+                              if (f->placeAbove())
+                                    fingerings.push_back(f);
+                              else
+                                    fingerings.push_front(f);
+                              }
+                        }
+                  }
+            }
+      for (Fingering* f : fingerings) {
+            f->layout();
+            if (f->addToSkyline()) {
+                  Note* n = f->note();
+                  auto r = f->bbox().translated(f->pos() + n->pos() + n->chord()->pos() + segment->pos() + segment->measure()->pos());
+                  system->staff(f->note()->chord()->vStaffIdx())->skyline().add(r);
+                  }
+            shapesToRecreate.insert(f->staffIdx());
+            }
+      for (int staffIdx : shapesToRecreate)
+            segment->createShape(staffIdx);
+      }
+
+//---------------------------------------------------------
+//   layoutVoicedFingering
+//    Works only for non-crossbeam/moved chords
+//---------------------------------------------------------
+
+void Score::layoutVoicedFingering(Segment* s, System* system)
+      {
+      auto score = s->score();
+      std::set<int> shapesToRecreate;
+      std::vector<Fingering*> belowFingerings;
+      std::vector<Fingering*> aboveFingerings;
+
+      // Accumulate:
+      for (Element* e : s->elist()) {
+            if (!e || !e->isChord() || !score->staff(e->staffIdx())->show())
+                  continue;
+            Chord* c = toChord(e);
+            for (auto f : c->getFingerings(Direction::DOWN)) {
+                  if (!f->isOnCrossBeamSide()) {
+                        belowFingerings.emplace_back(f);
+                        }
+                  }
+            for (auto f : c->getFingerings(Direction::UP)) {
+                  if (!f->isOnCrossBeamSide()) {
+                        aboveFingerings.emplace_back(f);
+                        }
+                  }
+            }
+
+      // Pitch-based sort:
+      std::sort(belowFingerings.begin(),
+                belowFingerings.end(),
+                [](const Fingering* a, const Fingering* b) -> bool { return a->note()->pitch() > b->note()->pitch();
+                });
+      std::sort(aboveFingerings.begin(),
+                aboveFingerings.end(),
+                [](const Fingering* a, const Fingering* b) -> bool { return a->note()->pitch() < b->note()->pitch();
+                });
+
+      auto layoutFingering = [&](std::vector<Fingering*>& fingers) -> void {
+            for (auto f : fingers) {
+                  f->layout();
+                  if (f->addToSkyline()) {
+                        Note* n = f->note();
+                        auto r = f->bbox().translated(f->pos() + n->pos() + n->chord()->pos() + s->pos() + s->measure()->pos());
+                        system->staff(f->note()->chord()->vStaffIdx())->skyline().add(r);
+                        }
+                  shapesToRecreate.insert(f->staffIdx());
+                  }
+            };
+
+      layoutFingering(belowFingerings);
+      layoutFingering(aboveFingerings);
+
+      for (auto staffIdx : shapesToRecreate)
+            s->createShape(staffIdx);
+      }
+
+//---------------------------------------------------------
+//   beamNoContinue
+//---------------------------------------------------------
+
 #define beamModeMid(a) (a == Beam::Mode::MID || a == Beam::Mode::BEGIN32 || a == Beam::Mode::BEGIN64)
 
 bool beamNoContinue(Beam::Mode mode)
@@ -2013,6 +2124,115 @@ void LayoutContext::distributeStaves(Page* page, qreal footerPadding)
             system->layoutInstrumentNames();
             }
       vgdl.deleteAll();
+      }
+
+//---------------------------------------------------------
+//   layoutCrossStaffElements
+//---------------------------------------------------------
+
+void LayoutContext::layoutCrossStaffElements(Page* page)
+      {
+      for (System* system : page->systems()) {
+            if (!system->firstMeasure())
+                  continue;
+
+            Fraction stick = system->firstMeasure()->tick();
+            Fraction etick = system->endTick();
+
+            IF_ASSERT_FAILED(stick < etick)
+                  continue;
+
+            // edited for page start/end tick
+            if (etick <= page->startTick() || etick > page->endTick())
+                  continue;
+
+            layoutCrossStaffSlurs(system);
+            layoutArticAndFingeringOnCrossStaffBeams(system);
+            }
+      }
+
+//---------------------------------------------------------
+//   layoutCrossStaffSlurs
+//    TODO
+//    023c08c2e2 ("Fix cross-staff fingering layout and tidy up code", 2024-09-18)
+//---------------------------------------------------------
+
+void LayoutContext::layoutCrossStaffSlurs(System* system)
+      {
+      (void)system;
+
+#if 0
+      Fraction stick = system->firstMeasure()->tick();
+      Fraction etick = system->endTick();
+
+      // processedSpanners or score spanner map?
+      auto spanners = system->score()->spannerMap().findOverlapping(stick.ticks(), etick.ticks());
+      for (auto interval : spanners) {
+            Spanner* sp = interval.value;
+            if (!sp->isSlur() || sp->tick() == system->endTick())
+                  continue;
+            Slur* slur = toSlur(sp);
+            // isCrossStaff not implemented yet
+            // hasCrossBeams not implemented yet
+            if (slur->isCrossStaff() || slur->hasCrossBeams()) {
+                  slur->layoutSystem(system, slur);
+
+                  ChordRest* scr = toChordRest(slur->startElement());
+                  ChordRest* ecr = toChordRest(slur->endElement());
+                  if (scr && scr->isChord())
+                        toChord(scr)->layoutArticulations3(slur);
+                  if (ecr && ecr->isChord())
+                        toChord(ecr)->layoutArticulations3(slur);
+                  }
+            }
+#endif
+      }
+
+//---------------------------------------------------------
+//   layoutArticAndFingeringOnCrossStaffBeams
+//---------------------------------------------------------
+
+void LayoutContext::layoutArticAndFingeringOnCrossStaffBeams(System* system)
+      {
+      for (const auto mb : system->measures()) {
+            if (!mb->isMeasure())
+                  continue;
+            for (const auto& segment : toMeasure(mb)->segments()) {
+                  if (!segment.isChordRestType())
+                        continue;
+                  for (auto item : segment.elist()) {
+                        if (!item || !item->isChord())
+                              continue;
+
+                        auto c = toChord(item);
+
+                        bool hasCrossBeam = c->beam() && (c->beam()->cross() || c->staffMove());
+                        if (!hasCrossBeam) {
+                              continue;
+                              }
+
+                        c->layoutArticulations();
+                        c->layoutArticulations2(true);
+
+                        for (auto note : c->notes()) {
+                              for (auto e : note->el()) {
+                                    if (!e || !e->isFingering())
+                                          continue;
+                                    auto fingering = toFingering(e);
+                                    if (fingering->isOnCrossBeamSide()) {
+                                          fingering->layout();
+                                          if (fingering->addToSkyline()) {
+                                                const auto n = fingering->note();
+                                                const auto r = fingering->bbox().translated(
+                                                fingering->pos() + n->pos() + n->chord()->pos() + segment.pos() + segment.measure()->pos());
+                                                system->staff(fingering->note()->chord()->vStaffIdx())->skyline().add(r);
+                                                }
+                                          }
+                                    }
+                              }
+                        }
+                  }
+            }
       }
 
 //---------------------------------------------------------
@@ -4434,6 +4654,19 @@ void Score::updateMeasureNumbers() {
 
 void Score::layoutSystemElements(System* system, LayoutContext& lc)
       {
+
+      //-------------------------------------------------------------
+      //    detach spanners:
+      //          not relying on destructor for this in order
+      //          to be able to perform a dual layout
+      //-------------------------------------------------------------
+
+      for (SpannerSegment*& ss : system->spannerSegments()) {
+            // Test: indiscrimiantely set to nullptr. don't think it's needed though
+            if (ss->system() == system)
+                  ss->setParent(nullptr);
+            }
+
       //-------------------------------------------------------------
       //    create cr segment list to speed up computations
       //-------------------------------------------------------------
@@ -4562,32 +4795,6 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
                                     if (e->addToSkyline() || e->isChord())
                                           skyline.add(e->shape().translated(e->pos() + p));
 
-                                    // Allow tuplets to get skyline even when "avoid staves" is disabled
-                                    // (still want to avoid elements via auto-place, e.g. hairpins...)
-                                    if (e->isChordRest()) {
-                                          if (auto t = toChordRest(e)->tuplet()) {
-                                                bool addToSky = true;
-
-                                                // Omit skyline if any cross-staffed elements:
-                                                for (auto& te : t->elements()) {
-
-                                                      if (te->staffIdx() != te->vStaffIdx()) {
-                                                            addToSky = false;
-                                                            // TODO: Figure how to do something like this while finding the right formula
-                                                                // SysStaff* ss = system->staff(e->vStaffIdx());
-                                                                // Skyline& vSkyline = ss->skyline();
-                                                                // vSkyline.add(t->shape().translated(m->pos()));
-                                                            }
-                                                      }
-                                                if (t->addToSkyline() && addToSky) {
-                                                      // Note: layout isn't 100% realtime:
-                                                      QPointF offset(m->pos());
-                                                      offset.rx() += t->offset().x();
-                                                      offset.ry() += t->offset().y();
-                                                      skyline.add(t->shape().translated(offset));
-                                                      }
-                                                }
-                                          }
 
                                     // add tremolo to skyline
                                     if (e->isChord() && toChord(e)->tremolo()) {
@@ -4598,6 +4805,15 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
                                                 if (t->chord() == e && t->addToSkyline())
                                                       skyline.add(t->shape().translated(t->pos() + e->pos() + p));
                                                 }
+                                          }
+
+                                    // add beams to skline
+                                    if (e->isChordRest()) {
+                                         ChordRest* cr = toChordRest(e);
+                                         if (isTopBeam(cr)) {
+                                               Beam* b = cr->beam();
+                                               b->addSkyline(skyline);
+                                               }
                                           }
                                     }
                               }
@@ -4611,85 +4827,20 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
 
       for (Segment* s : sl) {
             for (Element* e : s->elist()) {
-                  if (!e || !e->isChordRest() || !score()->staff(e->staffIdx())->show())
+                  if (!e || !e->isChord() || !score()->staff(e->staffIdx())->show())
                         continue;
-                  ChordRest* cr = toChordRest(e);
-                  // articulations
-                  if (cr->isChord()) {
-                        Chord* c = toChord(cr);
-                        c->layoutArticulations();
-                        c->layoutArticulations2();
-                        }
+                  Chord* c = toChord(e);
+                  c->layoutArticulations();
+                  c->layoutArticulations2();
                   }
             }
 
       //-------------------------------------------------------------
-      // layout fingerings, add beams to skylines
+      // layout fingerings
       //-------------------------------------------------------------
 
       for (Segment* s : sl) {
-            std::set<int> recreateShapes;
-
-            // Fingering should always be ordered top-down. Best would be by pitch, but by voice will suffice
-            for (int voice = 3; voice >= 0; voice--) {
-                  for (Element* e : s->elist()) {
-                        if (!e || !e->isChordRest() || !score()->staff(e->staffIdx())->show())
-                              continue;
-
-                        ChordRest* cr = toChordRest(e);
-
-                        // add beam to skyline
-                        if (isTopBeam(cr)) {
-                              Beam* b = cr->beam();
-                              b->addSkyline(system->staff(b->staffIdx())->skyline());
-                              }
-
-                        // layout chord-based fingerings
-                        if (e->isChord()) {
-                              Chord* c = toChord(e);
-                              std::list<Note*> notes;
-                              for (auto gc : c->graceNotes()) {
-                                    for (auto n : gc->notes()) {
-                                          notes.push_back(n);
-                                          }
-                                    }
-                              for (auto n : c->notes()) {
-                                    notes.push_back(n);
-                                    }
-                              std::list<Fingering*> fingerings;
-                              for (Note* note : notes) {
-                                    for (Element* el : note->el()) {
-                                          if (el->isFingering()) {
-                                                Fingering* f = toFingering(el);
-                                                if (f->layoutType() == ElementType::CHORD) {
-                                                      if (f->placeAbove())
-                                                            fingerings.push_back(f);
-                                                      else
-                                                            fingerings.push_front(f);
-                                                      }
-                                                }
-                                          }
-                                    }
-
-                              for (Fingering* f : fingerings) {
-                                    auto test = f->placeBelow() ? (3 - voice) : voice;
-                                    if (f->voice() != test)
-                                          continue;
-
-                                    f->layout();
-
-                                    if (f->addToSkyline()) {
-                                          Note* n = f->note();
-                                          QRectF r = f->bbox().translated(f->pos() + n->pos() + n->chord()->pos() + s->pos() + s->measure()->pos());
-                                          system->staff(f->note()->chord()->vStaffIdx())->skyline().add(r);
-                                          }
-                                    recreateShapes.insert(f->staffIdx());
-                                    }
-                              }
-                        }
-                  }
-            for (auto staffIdx : recreateShapes)
-                  s->createShape(staffIdx);
+            score()->layoutVoicedFingering(s, system);
             }
 
       //-------------------------------------------------------------
@@ -4708,6 +4859,15 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
                         Tuplet* t = de->tuplet();
                         t->layout();
                         de = t;
+
+                        // Add tuplet to skyline after layout to avoid other score elements
+                        if (!t->addToSkyline())
+                              continue;
+                        auto m = s->measure();
+                        auto offset(m->pos());
+                        offset += t->offset();
+                        auto shape = t->shape().translated(offset);
+                        system->staff(t->staffIdx())->skyline().add(shape);
                         }
                   }
             }
@@ -4742,12 +4902,13 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
             lc.processedSpanners.insert(sp);
             if (sp->tick() < etick && sp->tick2() >= stick) {
                   if (sp->isSlur()) {
-                        // skip cross-staff slurs
                         ChordRest* scr = sp->startCR();
                         ChordRest* ecr = sp->endCR();
                         int idx = sp->vStaffIdx();
-                        if (scr && ecr && (scr->vStaffIdx() != idx || ecr->vStaffIdx() != idx))
-                              continue;
+                        const bool crossStaff = (scr && ecr && (scr->vStaffIdx() != idx || ecr->vStaffIdx() != idx));
+                        if (crossStaff) {
+                              // Update: don't skip now that there's a two-pass system
+                              }
                         spanner.push_back(sp);
                         }
                   }
@@ -5261,8 +5422,10 @@ void LayoutContext::collectPage()
                                     if (!currentScore->staff(track2staff(track))->show())
                                           continue;
                                     ChordRest* cr = toChordRest(e);
-                                    if (notTopBeam(cr))                 // layout cross staff beams
+                                    if (notTopBeam(cr)) {
+                                          // layout cross staff beams
                                           cr->beam()->layout();
+                                          }
                                     if (notTopTuplet(cr)) {
                                           // fix layout of tuplets
                                           DurationElement* de = cr;
@@ -5293,6 +5456,7 @@ void LayoutContext::collectPage()
                                                 if (t->twoNotes() && c1 && c2 && (c1->staffMove() || c2->staffMove()))
                                                       t->layout();
                                                 }
+                                          // Layout articulations / fingerings wuz here
                                           }
                                     }
                               else if (e->isBarLine())
@@ -5301,6 +5465,9 @@ void LayoutContext::collectPage()
                         }
                   m->layout2();
                   }
+
+            // Re-layout entire system to correct articulation/fingering layout after cross-beams updating
+            currentScore->layoutSystemElements(s, *this);
             }
 
       // If this is the last page we layout, we must also relayout the first barlines of the
@@ -5323,6 +5490,14 @@ void LayoutContext::collectPage()
             qreal height = s ? s->pos().y() + s->height() + s->minBottom() : page->tm();
             page->bbox().setRect(0.0, 0.0, score->loWidth(), height + page->bm());
             }
+
+      // Fingering and articulations on top of cross-staff beams must be laid out here
+      layoutCrossStaffElements(page);
+
+#if 0 // MSS4 performs the following:
+      for (const System* system : page->systems())
+            SystemLayout::centerElementsBetweenStaves(system);
+#endif
 
       page->rebuildBspTree();
       }

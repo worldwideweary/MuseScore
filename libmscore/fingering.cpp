@@ -56,7 +56,7 @@ Fingering::Fingering(Score* s, ElementFlags ef)
 //   layoutType
 //---------------------------------------------------------
 
-ElementType Fingering::layoutType()
+ElementType Fingering::layoutType() const
       {
       switch (tid()) {
             case Tid::FINGERING:
@@ -149,6 +149,7 @@ void Fingering::layout()
                               }
                         else {
                               QRectF r = bbox().translated(m->pos() + s->pos() + chord->pos() + n->pos() + pos());
+
                               SkylineLine sk(false);
                               sk.add(r.x(), r.bottom(), r.width());
                               qreal d = sk.minDistance(ss->skyline().north());
@@ -166,9 +167,15 @@ void Fingering::layout()
                                     }
                               top -= md;
                               qreal diff = (bbox().bottom() + ipos().y() + yd + n->y()) - top;
-                              if (diff > 0.0)
-                                    if (chord->beam())
-                                          yd -= diff;
+                              if (diff > 0.0) {
+                                    if (auto beam = chord->beam()) {
+                                          if (beam->up() || stem->up()) {
+                                                yd -= diff;
+                                                qreal beamLineProp = 0.33 * point(score()->styleS(Sid::beamWidth)) * chord->chordMag();
+                                                yd += beamLineProp;
+                                                }
+                                          }
+                                    }
                               if (offsetChanged() != OffsetChange::NONE) {
                                     // user moved element within the skyline
                                     // we may need to adjust minDistance, yd, and/or offset
@@ -203,9 +210,15 @@ void Fingering::layout()
                                     }
                               bottom += md;
                               qreal diff = bottom - (bbox().top() + ipos().y() + yd + n->y());
-                              if (diff > 0.0)
-                                    if (chord->beam())
-                                          yd += diff;
+                              if (diff > 0.0) {
+                                    if (auto beam = chord->beam()) {
+                                          if (!beam->up() && !stem->up()) {
+                                                yd += diff;
+                                                qreal beamLineProp = 0.33 * point(score()->styleS(Sid::beamWidth)) * chord->chordMag();
+                                                yd -= beamLineProp;
+                                                }
+                                          }
+                                    }
                               if (offsetChanged() != OffsetChange::NONE) {
                                     // user moved element within the skyline
                                     // we may need to adjust minDistance, yd, and/or offset
@@ -267,6 +280,20 @@ QString Fingering::accessibleInfo() const
       if (tid() == Tid::STRING_NUMBER)
             rez += " " + QObject::tr("String number");
       return QString("%1: %2").arg(rez, plainText());
+      }
+
+//---------------------------------------------------------
+//   isOnCrossBeamSide
+//---------------------------------------------------------
+
+bool Fingering::isOnCrossBeamSide() const
+      {
+      Chord* chord = note() ? note()->chord() : nullptr;
+      if (!chord)
+            return false;
+      return layoutType() == ElementType::CHORD
+           && chord->beam() && (chord->beam()->cross() || chord->staffMove() != 0)
+           && placeAbove() == chord->up();
       }
 
 //---------------------------------------------------------
