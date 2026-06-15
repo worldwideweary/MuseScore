@@ -4686,6 +4686,7 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       //-------------------------------------------------------------
 
       for (SpannerSegment*& ss : system->spannerSegments()) {
+            // Test: indiscrimiantely set to nullptr. don't think it's needed though
             if (ss->system() == system)
                   ss->setParent(nullptr);
             }
@@ -4925,12 +4926,13 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
             lc.processedSpanners.insert(sp);
             if (sp->tick() < etick && sp->tick2() >= stick) {
                   if (sp->isSlur()) {
-                        // skip cross-staff slurs
                         ChordRest* scr = sp->startCR();
                         ChordRest* ecr = sp->endCR();
                         int idx = sp->vStaffIdx();
-                        if (scr && ecr && (scr->vStaffIdx() != idx || ecr->vStaffIdx() != idx))
-                              continue;
+                        const bool crossStaff = (scr && ecr && (scr->vStaffIdx() != idx || ecr->vStaffIdx() != idx));
+                        if (crossStaff) {
+                              // Update: don't skip now that there's a two-pass system
+                              }
                         spanner.push_back(sp);
                         }
                   }
