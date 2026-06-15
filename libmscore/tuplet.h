@@ -99,6 +99,8 @@ class Tuplet final : public DurationElement {
       void clear()                                          { _elements.clear(); }
       bool contains(const DurationElement* el) const { return std::find(_elements.begin(), _elements.end(), el) != _elements.end(); }
 
+      bool containsCrossStaffElements() const;
+
       void layout() override;
       void scanElements(void* data, void (*func)(void*, Element*), bool all=true) override;
 
