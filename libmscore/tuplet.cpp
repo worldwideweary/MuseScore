@@ -173,6 +173,22 @@ void Tuplet::resetNumberProperty()
       }
 
 //---------------------------------------------------------
+//   containsCrossStaffElements
+//---------------------------------------------------------
+
+bool Tuplet::containsCrossStaffElements() const
+      {
+      bool rv = false;
+      for (const DurationElement* e : elements()) {
+            if (e->staffIdx() != e->vStaffIdx()) {
+                  rv = true;
+                  break;
+                  }
+            }
+      return rv;
+      }
+
+//---------------------------------------------------------
 //   layout
 //---------------------------------------------------------
 
