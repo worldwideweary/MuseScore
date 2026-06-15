@@ -946,8 +946,8 @@
             <durationType>quarter</durationType>
             </Rest>
           <Beam>
-            <l1>-10</l1>
-            <l2>-10</l2>
+            <l1>-9</l1>
+            <l2>-9</l2>
             </Beam>
           <Chord>
             <small>1</small>
@@ -981,8 +981,8 @@
               </Note>
             </Chord>
           <Beam>
-            <l1>-10</l1>
-            <l2>-10</l2>
+            <l1>-9</l1>
+            <l2>-9</l2>
             </Beam>
           <Chord>
             <small>1</small>
