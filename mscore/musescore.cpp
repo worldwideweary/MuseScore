@@ -287,6 +287,42 @@ const std::list<const char*> MuseScore::_allNoteInputMenuEntries {
             "voice-4"
             };
 
+const std::list<const char*> MuseScore::_allColorControlMenuEntries {
+            "color-override-all",
+            "color-override-single-note-selection",
+            "color-override-noteheads",
+            "color-override-stafflines",
+            "color-override-ledgerlines",
+            "color-override-dynamics",
+            "color-override-fingeringtext",
+            "color-override-stafftext",
+            "color-override-expressiontext",
+            "color-override-harmonytext",
+            "color-override-textlines",
+            "color-override-boxtext",
+            "color-override-slurs",
+            "color-override-ties",
+            "color-override-barlines",
+            "color-override-brackets",
+            "color-override-lowerednoteheads",
+            "color-override-raisednoteheads",
+            "color-override-even-staff",
+            "color-override-grips",
+            "color-override-framemargins",
+            "color-override-layout-break",
+            "color-override-pianohighlight",
+            "color-override-piano-black-keys",
+            "color-override-piano-white-keys",
+            "color-override-lasso",
+            "color-override-invisible",
+            "color-override-voice-1",
+            "color-override-voice-2",
+            "color-override-voice-3",
+            "color-override-voice-4",
+            "color-override-hover", // Max Alpha: Hover "behind everything", else over everything
+            "color-override-cursor",
+            };
+
 const std::list<const char*> MuseScore::_allFileOperationEntries {
             "file-new",
             "file-open",
@@ -718,6 +754,33 @@ void MuseScore::populateNoteInputMenu()
                   entryTools->addWidget(w);
                   }
             }
+      }
+
+//---------------------------------------------------------
+//   populateColorControlMenu
+//---------------------------------------------------------
+
+void MuseScore::populateColorControlMenu()
+      {
+      colorTools->clear();
+      QActionGroup* colorOptionMethods = new QActionGroup(colorTools);
+      QWidget* w;
+      for (const auto s : _colorControlMenuEntries) {
+            if (!*s) {
+                  colorTools->addSeparator();
+                  }
+            else {
+                  colorOptionMethods->addAction(getAction(s));
+                  }
+            }
+      connect(colorOptionMethods, SIGNAL(triggered(QAction*)), this, SLOT(cmd(QAction*)));
+      w = new ToolButtonMenu(tr("Color Override Options"),
+                             getAction("color-override-all"),     // default
+                             colorOptionMethods,                  // alternatives
+                             this,
+                             true);
+      w->setObjectName("color-options");
+      colorTools->addWidget(w);
       }
 
 //---------------------------------------------------------
@@ -1455,6 +1518,15 @@ MuseScore::MuseScore()
       getAction("toggle-edit-playback")->setChecked(preferences.getBool(PREF_SCORE_NOTE_PLAYONCLICK));
 
       //-------------------------------
+      //    Color Control Tool Bar
+      //-------------------------------
+
+      colorTools = addToolBar("");
+      colorTools->setObjectName("color-tools");
+
+      populateColorControlMenu();
+
+      //-------------------------------
       //    Workspaces Tool Bar
       //-------------------------------
 
@@ -1665,6 +1737,12 @@ MuseScore::MuseScore()
       a->setCheckable(true);
       a->setChecked(entryTools->isVisible());
       connect(entryTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
+      menuToolbars->addAction(a);
+
+      a = getAction("toggle-colorcontrol");
+      a->setCheckable(true);
+      a->setChecked(colorTools->isVisible());
+      connect(colorTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
       menuToolbars->addAction(a);
 
       a = getAction("toggle-workspaces-toolbar");
@@ -2242,9 +2320,7 @@ void MuseScore::retranslate()
       cpitchTools->setWindowTitle(tr("Concert Pitch"));
       fotoTools->setWindowTitle(tr("Image Capture"));
       entryTools->setWindowTitle(tr("Note Input"));
-#if 0
-      feedbackTools->setWindowTitle(tr("Feedback"));
-#endif
+      colorTools->setWindowTitle(tr("Color Control"));
       workspacesTools->setWindowTitle(tr("Workspaces"));
 
       // keep translatable (con)texts in sync with those from zoombox.cpp
@@ -4593,6 +4669,7 @@ void MuseScore::changeState(ScoreState val)
       cpitchTools->setEnabled(enable);
       zoomBox->setEnabled(enable);
       entryTools->setEnabled(enable);
+      colorTools->setEnabled(enable);
 
       if (_sstate == STATE_FOTO)
             updateInspector();
@@ -4953,6 +5030,9 @@ void MuseScore::readSettings()
 
       a = getAction("toggle-noteinput");
       a->setChecked(!entryTools->isHidden());
+
+      a = getAction("toggle-colorcontrol");
+      a->setChecked(!colorTools->isHidden());
       }
 
 //---------------------------------------------------------
@@ -6619,10 +6699,8 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             fotoTools->setVisible(!fotoTools->isVisible());
       else if (cmd == "toggle-noteinput")
             entryTools->setVisible(!entryTools->isVisible());
-#if 0
-      else if (cmd == "toggle-feedback")
-            feedbackTools->setVisible(!feedbackTools->isVisible());
-#endif
+      else if (cmd == "toggle-colorcontrol")
+            colorTools->setVisible(!colorTools->isVisible());
       else if (cmd == "toggle-workspaces-toolbar")
             workspacesTools->setVisible(!workspacesTools->isVisible());
       else if (cmd == "create-new-workspace") {
@@ -6853,6 +6931,13 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             reportBug("panel");
       else if (cmd == "leave-feedback")
             leaveFeedback("panel");
+      else if (cmd.startsWith("color-override-")) {
+            std::string ss = cmd.toStdString();
+            const char* token = &(ss.c_str())[15];
+            cv->score()->cmdOverrideColor(token);
+            genIcons();
+            Shortcut::refreshIcons();
+            }
 #ifndef NDEBUG
       else if (cmd == "no-horizontal-stretch") {
             MScore::noHorizontalStretch = a->isChecked();
