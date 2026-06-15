@@ -138,30 +138,27 @@ qreal Arpeggio::calcTop() const
       if (!parent())
             return top;
 
+      int  upNoteLine       = chord()->upNote(false)->line();
+      int  downNoteLine     = chord()->downNote(false)->line();
+      bool differenceIsEven = (upNoteLine + downNoteLine + 1) % 2;
+      float redux           = 0.50;
+
       switch (arpeggioType()) {
             case ArpeggioType::BRACKET: {
-                  qreal lineWidth = score()->styleP(Sid::arpeggioLineWidth);
-                  return top - lineWidth / 2.0;
+                  top -= (score()->styleP(Sid::arpeggioLineWidth) * redux);
+                  redux = differenceIsEven ? 0.65 : 0.45;
+                  top += (spatium() * redux);
+                  break;
                   }
             case ArpeggioType::NORMAL:
             case ArpeggioType::UP:
-            case ArpeggioType::DOWN: {
-                  // if the top is in the staff on a space, move it up
-                  // if the bottom note is on a line, the distance is 0.25 spaces
-                  // if the bottom note is on a space, the distance is 0.5 spaces
-                  int topNoteLine = chord()->upNote()->line();
-                  int lines = staff()->lines(tick());
-                  int bottomLine = (lines - 1) * 2;
-                  if (topNoteLine <= 0 || topNoteLine % 2 == 0 || topNoteLine >= bottomLine)
-                        return top;
-                  int downNoteLine = chord()->downNote()->line();
-                  if (downNoteLine % 2 == 1 && downNoteLine < bottomLine)
-                        return top - 0.4 * spatium();
-                  return top - 0.25 * spatium();
-                  }
+            case ArpeggioType::DOWN:
+                  redux = differenceIsEven ? 0.35 : 0.15;
+                  top -= (spatium() * redux);
             default:
-                  return top - spatium() / 4;
+                  break;
             }
+      return top;
       }
 
 //---------------------------------------------------------
