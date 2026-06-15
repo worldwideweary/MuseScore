@@ -7028,41 +7028,43 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             seq->seekEnd();
       else if (cmd == "keys")
             showKeyEditor();
-      else if (cmd == "file-new")
-            newFile();
-      else if (cmd == "file-open")
-            openFiles();
-      else if (cmd == "file-close")
-            closeScore(cs);
-      else if (cmd == "file-close-all") {
-            for (auto _score : scores())
-                  closeScore(_score);
-            }
-      else if (cmd == "file-save")
-            saveFile();
-      else if (cmd == "file-save-as")
-            saveAs(cs, false);
-      else if (cmd == "file-save-a-copy")
-            saveAs(cs, true);
-      else if (cmd == "file-save-selection")
-            saveSelection(cs);
-      else if (cmd == "file-open-archived-tabs")
-            loadOpenScoresList();
-      else if (cmd == "file-archive-tabs")
-            saveOpenScoresList();
-      else if (cmd == saveOnlineMenuItem)
-            showUploadScoreDialog();
-      else if (cmd == "file-import-pdf")
-            importScore();
-      else if (cmd == "file-export")
-            showExportDialog();
-      else if (cmd == "file-reload") {
-            saveFile();
-            const auto ms = cs->masterScore();
-            const auto fi = ms->fileInfo();
-            const auto fn = fi->absoluteFilePath();
-            closeScore(cs);
-            openScore(fn);
+      else if (cmd.startsWith("file-")) {
+            if (cmd == "file-new")
+                  newFile();
+            else if (cmd == "file-open")
+                  openFiles();
+            else if (cmd == "file-close")
+                  closeScore(cs);
+            else if (cmd == "file-close-all") {
+                  for (auto _score : scores())
+                        closeScore(_score);
+                  }
+            else if (cmd == "file-save")
+                  saveFile();
+            else if (cmd == "file-save-as")
+                  saveAs(cs, false);
+            else if (cmd == "file-save-a-copy")
+                  saveAs(cs, true);
+            else if (cmd == "file-save-selection")
+                  saveSelection(cs);
+            else if (cmd == "file-open-archived-tabs")
+                  loadOpenScoresList();
+            else if (cmd == "file-archive-tabs")
+                  saveOpenScoresList();
+            else if (cmd == saveOnlineMenuItem)
+                  showUploadScoreDialog();
+            else if (cmd == "file-import-pdf")
+                  importScore();
+            else if (cmd == "file-export")
+                  showExportDialog();
+            else if (cmd == "file-reload") {
+                  saveFile();
+                  const auto ms = cs->masterScore();
+                  const auto fi = ms->fileInfo();
+                  const auto fn = fi->absoluteFilePath();
+                  closeScore(cs);
+                  openScore(fn);
+                  }
             }
       else if (cmd == "unroll-repeats")
             scoreUnrolled(cs->masterScore());
