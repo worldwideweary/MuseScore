@@ -105,7 +105,10 @@ void Stem::layout()
                   }
             else {                              // non-TAB
                   // move stem start to note attach point
-                  Note* n  = up() ? chord()->downNote() : chord()->upNote();
+                  bool arp = chord()->arpeggio() ? true : false;
+                  Note* un = arp ? chord()->upNote(true)   : chord()->upNote(false);
+                  Note* dn = arp ? chord()->downNote(true) : chord()->downNote(false);
+                  Note* n  = up() ? dn : un;
                   if ((up() && !n->mirror()) || (!up() && n->mirror()))
                         y1 += n->stemUpSE().y();
                   else
