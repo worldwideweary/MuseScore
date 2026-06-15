@@ -166,6 +166,8 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
       std::vector<Chord*> chords;
       std::vector<Note*> upStemNotes;
       std::vector<Note*> downStemNotes;
+      std::vector<Note*> upStemNotesVisible;
+      std::vector<Note*> downStemNotesVisible;
       int upVoices       = 0;
       int downVoices     = 0;
       double nominalWidth = noteHeadWidth() * staff->mag(tick);
@@ -344,7 +346,6 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
                               }
                         }
                   else if (separation < 1) {
-
                         // overlap (possibly unison)
 
                         // build list of overlapping notes
