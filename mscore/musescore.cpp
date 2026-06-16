@@ -6692,6 +6692,16 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                         cs->update();
                         }
                   }
+            else if (cmd == "show-debug") {
+                  MScore::showCorruptedMeasures = a->isChecked();
+                  MScore::showBoundingRect = a->isChecked();
+                  MScore::showSegmentShapes = a->isChecked();
+                  MScore::showSkylines = a->isChecked();
+                  if (cs) {
+                        cs->setLayoutAll();
+                        cs->update();
+                        }
+                  }
             }
 #ifndef NDEBUG
       else if (cmd == "qml-reload-source") {
