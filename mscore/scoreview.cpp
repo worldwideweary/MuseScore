@@ -335,10 +335,8 @@ void ScoreView::objectPopup(const QPoint& pos, Element* obj)
       a = popup->addAction(tr("Help"));
       a->setData("help");
 
-#ifndef NDEBUG
       popup->addSeparator();
       popup->addAction("Debugger")->setData("list");
-#endif
 
       popupActive = true;
       a = popup->exec(pos);
@@ -472,9 +470,7 @@ void ScoreView::measurePopup(QContextMenuEvent* ev, Measure* obj)
       a->setEnabled(!obj->isMMRest());
       popup->addSeparator();
 
-#ifndef NDEBUG
       popup->addAction("Object Debugger")->setData("list");
-#endif
 
       a = popup->exec(gpos);
       if (a == 0)
@@ -1446,7 +1442,6 @@ void ScoreView::paintPageBorder(QPainter& p, Page* page)
             }
       }
 
-#ifndef NDEBUG
 //---------------------------------------------------------
 //   drawDebugInfo
 //---------------------------------------------------------
@@ -1496,7 +1491,6 @@ static void drawDebugInfo(QPainter& p, const Element* _e)
                   }
             }
       }
-#endif
 
 //---------------------------------------------------------
 //   drawHoverHighlight
@@ -1732,10 +1726,8 @@ void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* ed
             painter.translate(pos);
             e->draw(&painter);
             painter.translate(-pos);
-#ifndef NDEBUG
             if (e->selected())
                   drawDebugInfo(painter, e);
-#endif
             }
 
       if (MScore::noteheadsBehindLedger) {
@@ -1939,7 +1931,6 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                   // Page Elements
                   drawElements(p, ell, editElement);
 
-#ifndef NDEBUG
                   if (!score()->printing()) {
                         if (MScore::showSystemBoundingRect) {
                               for (const System* system : qAsConst(page->systems())) {
@@ -2005,7 +1996,6 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                                     }
                               }
                         }
-#endif
 
                   p.translate(-pos);
                   r1 -= _matrix.mapRect(pr).toAlignedRect();

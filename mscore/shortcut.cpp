@@ -5179,7 +5179,6 @@ Shortcut Shortcut::_sc[] = {
          Qt::ApplicationShortcut
          },
 #endif
-#ifndef NDEBUG
       {
          MsWidget::MAIN_WINDOW,
          STATE_ALL,
@@ -5270,7 +5269,6 @@ Shortcut Shortcut::_sc[] = {
          Icons::Invalid_ICON,
          Qt::ApplicationShortcut
          },
-#endif
       };
 
 
