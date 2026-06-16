@@ -7483,6 +7483,17 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   w->setSource(QUrl(urlString));
                   }
             }
+      else if (cmd == "show-debug") {
+            // MScore::showSystemBoundingRect = a->isChecked();
+            MScore::showCorruptedMeasures = a->isChecked();
+            MScore::showBoundingRect = a->isChecked();
+            MScore::showSegmentShapes = a->isChecked();
+            MScore::showSkylines = a->isChecked();
+            if (cs) {
+                  cs->setLayoutAll();
+                  cs->update();
+                  }
+            }
       else {
             if (cv) {
                   //isAncestorOf is called to see if a widget from inspector has focus
