@@ -461,7 +461,7 @@ SymId Note::noteHead(int direction, NoteHead::Group group, NoteHead::Type t)
       return noteHeads[direction][int(group)][int(t)];
       }
 
-SymId Note::noteHead(int direction, NoteHead::Group group, NoteHead::Type t, int tpc, Key key, NoteHead::Scheme scheme)
+SymId Note::noteHead(int direction, NoteHead::Group group, NoteHead::Type t, NoteHead::Scheme scheme, int tpc, Key key, KeyMode mode)
       {
       // shortcut
       if (scheme == NoteHead::Scheme::HEAD_NORMAL)
@@ -577,42 +577,44 @@ SymId Note::noteHead(int direction, NoteHead::Group group, NoteHead::Type t, int
                   }
             }
       else if (scheme == NoteHead::Scheme::HEAD_SOLFEGE) {
+            // Moveable Do
+            using NG = NoteHead::Group;
+            AccidentalVal acci = static_cast<AccidentalVal>(tpc2alterByKey(tpc, key));
             int degree = tpc2degree(tpc, key);
-            int alteration = tpc2alterByKey(tpc, key);
-            if (degree == 0 && alteration == 0)
-                group = NoteHead::Group::HEAD_DO_NAME;
-            else if (degree == 0 && alteration == 1)
-                group = NoteHead::Group::HEAD_DI_NAME;
-            else if (degree == 1 && alteration == -1)
-                group = NoteHead::Group::HEAD_RA_NAME;
-            else if (degree == 1 && alteration == 0)
-                group = NoteHead::Group::HEAD_RE_NAME;
-            else if (degree == 1 && alteration == 1)
-                group = NoteHead::Group::HEAD_RI_NAME;
-            else if (degree == 2 && alteration == -1)
-                group = NoteHead::Group::HEAD_ME_NAME;
-            else if (degree == 2 && alteration == 0)
-                group = NoteHead::Group::HEAD_MI_NAME;
-            else if (degree == 3 && alteration == 0)
-                group = NoteHead::Group::HEAD_FA_NAME;
-            else if (degree == 3 && alteration == 1)
-                group = NoteHead::Group::HEAD_FI_NAME;
-            else if (degree == 4 && alteration == -1)
-                group = NoteHead::Group::HEAD_SE_NAME;
-            else if (degree == 4 && alteration == 0)
-                group = NoteHead::Group::HEAD_SOL_NAME;
-            else if (degree == 4 && alteration == 1)
-                group = NoteHead::Group::HEAD_SI_NAME;
-            else if (degree == 5 && alteration == -1)
-                group = NoteHead::Group::HEAD_LE_NAME;
-            else if (degree == 5 && alteration == 0)
-                group = NoteHead::Group::HEAD_LA_NAME;
-            else if (degree == 5 && alteration == 1)
-                group = NoteHead::Group::HEAD_LI_NAME;
-            else if (degree == 6 && alteration == -1)
-                group = NoteHead::Group::HEAD_TE_NAME;
-            else if (degree == 6 && alteration == 0)
-                group = NoteHead::Group::HEAD_TI_NAME;
+            const bool natural = (acci == AccidentalVal::NATURAL);
+            const bool sharp = (acci >= AccidentalVal::SHARP);
+            if(0){}
+            else if (mode == KeyMode::LOCRIAN)
+                  degree += 1;
+            else if (mode == KeyMode::AEOLIAN || mode == KeyMode::MINOR)
+                  degree += 2;
+            else if (mode == KeyMode::MIXOLYDIAN)
+                  degree += 3;
+            else if (mode == KeyMode::LYDIAN)
+                  degree += 4;
+            else if (mode == KeyMode::PHRYGIAN)
+                  degree += 5;
+            else if (mode == KeyMode::DORIAN)
+                  degree += 6;
+
+            const int maxDegree = 7;
+            degree = 1 + (degree % maxDegree);
+
+            // Double/Triple alterations will also result in Solfege note unlike 3.6.2
+            switch (degree) {
+            case 1:  group = sharp   ? NG::HEAD_DI_NAME : NG::HEAD_DO_NAME;                                 break;
+            case 2:  group = sharp   ? NG::HEAD_RI_NAME : natural ? NG::HEAD_RE_NAME  : NG::HEAD_RA_NAME;   break;
+            case 3:  group = natural ? NG::HEAD_MI_NAME : NG::HEAD_ME_NAME;                                 break;
+            case 4:  group = sharp   ? NG::HEAD_FI_NAME : NG::HEAD_FA_NAME;                                 break;
+            case 5:  group = sharp   ? NG::HEAD_SI_NAME : natural ? NG::HEAD_SOL_NAME : NG::HEAD_SE_NAME;   break;
+            case 6:  group = sharp   ? NG::HEAD_LI_NAME : natural ? NG::HEAD_LA_NAME  : NG::HEAD_LE_NAME;   break;
+            case 7:  group = natural ? NG::HEAD_TI_NAME : NG::HEAD_TE_NAME;                                 break;
+            default:
+                  group = NG::HEAD_C;
+                  break;
+                  }
+
+            return noteHeads[direction][int(group)][int(t)];
             }
       else if (scheme == NoteHead::Scheme::HEAD_SOLFEGE_FIXED) {
             QString stepName = tpc2stepName(tpc);
@@ -978,18 +980,22 @@ SymId Note::noteHead() const
             }
 
       Key key = Key::C;
+      KeyMode mode = KeyMode::UNKNOWN;
       NoteHead::Scheme scheme = _headScheme;
       if (st) {
             Fraction tick = chord()->tick();
             if (tick >= Fraction(0,1)) {
-                  key    = st->key(tick);
+                  key = st->key(tick);
+                  auto kse = st->keySigEvent(tick);
+                  mode = kse.mode();
                   if (scheme == NoteHead::Scheme::HEAD_AUTO)
                         scheme = st->staffTypeForElement(chord())->noteHeadScheme();
                   }
             }
       if (scheme == NoteHead::Scheme::HEAD_AUTO)
             scheme = NoteHead::Scheme::HEAD_NORMAL;
-      SymId t = noteHead(up, headGroup, ht, tpc(), key, scheme);
+
+      SymId t = noteHead(up, headGroup, ht, scheme, tpc(), key, mode);
       if (t == SymId::noSym) {
             qDebug("invalid notehead %d/%d", int(headGroup), int(ht));
             t = noteHead(up, NoteHead::Group::HEAD_NORMAL, ht);

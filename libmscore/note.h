@@ -537,7 +537,7 @@ class Note final : public Element {
       void addParentheses();
 
       SymId noteHead() const;
-      static SymId noteHead(int direction, NoteHead::Group, NoteHead::Type, int tpc, Key key, NoteHead::Scheme scheme);
+      static SymId noteHead(int direction, NoteHead::Group, NoteHead::Type, NoteHead::Scheme scheme, int tpc, Key key,  KeyMode mode=KeyMode::MAJOR);
       static SymId noteHead(int direction, NoteHead::Group, NoteHead::Type);
       NoteVal noteVal() const;
 
