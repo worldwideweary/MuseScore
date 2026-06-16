@@ -94,9 +94,7 @@ class MStaff {
                                           ///< this changes some layout rules
       bool _visible          { true  };
       bool _stemless         { false };
-#ifndef NDEBUG
       bool _corrupted        { false };
-#endif
 
    public:
       MStaff()  {}
@@ -129,10 +127,8 @@ class MStaff {
       bool stemless() const          { return _stemless; }
       void setStemless(bool val)     { _stemless = val;  }
 
-#ifndef NDEBUG
       bool corrupted() const         { return _corrupted; }
       void setCorrupted(bool val)    { _corrupted = val; }
-#endif
       };
 
 MStaff::~MStaff()
@@ -154,9 +150,7 @@ MStaff::MStaff(const MStaff& m)
       _vspacerDown = 0;
       _visible     = m._visible;
       _stemless  = m._stemless;
-#ifndef NDEBUG
       _corrupted   = m._corrupted;
-#endif
       }
 
 //---------------------------------------------------------
@@ -303,10 +297,8 @@ Spacer* Measure::vspacerUp(int staffIdx) const                  { return _mstave
 void Measure::setStaffVisible(int staffIdx, bool visible)       { _mstaves[staffIdx]->setVisible(visible); }
 void Measure::setStaffStemless(int staffIdx, bool stemless)     { _mstaves[staffIdx]->setStemless(stemless); }
 
-#ifndef NDEBUG
 bool Measure::corrupted(int staffIdx) const                     { return _mstaves[staffIdx]->corrupted(); }
 void Measure::setCorrupted(int staffIdx, bool val)              { _mstaves[staffIdx]->setCorrupted(val); }
-#endif
 
 void Measure::setNoText(int staffIdx, MeasureNumber* t)         { _mstaves[staffIdx]->setNoText(t); }
 MeasureNumber* Measure::noText(int staffIdx) const              { return _mstaves[staffIdx]->noText(); }

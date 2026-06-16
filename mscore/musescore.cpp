@@ -1031,9 +1031,7 @@ void MuseScore::populateFileOperations()
       viewModeCombo->addItem(tr("Page View"), int(LayoutMode::PAGE));
       viewModeCombo->addItem(tr("Continuous View"), int(LayoutMode::LINE));
       viewModeCombo->addItem(tr("Single Page"), int(LayoutMode::SYSTEM));
-#ifdef NDEBUG
       if (enableExperimental)
-#endif
             viewModeCombo->addItem(tr("Floating"), int(LayoutMode::FLOAT));
 
       // Restore the saved view-mode combobox index, if any.
@@ -1469,14 +1467,10 @@ MuseScore::MuseScore()
 
       menuEdit->addAction(getAction("instruments"));
 
-#ifdef NDEBUG
       if (enableExperimental) {
-#endif
             menuEdit->addSeparator();
             menuEdit->addAction(getAction("debugger"));
-#ifdef NDEBUG
             }
-#endif
 
       menuEdit->addSeparator();
       pref = new QAction("", 0);
@@ -1832,7 +1826,6 @@ MuseScore::MuseScore()
       //    Menu Debug
       //---------------------
 
-#ifndef NDEBUG
       menuDebug = mb->addMenu("Debug");
       menuDebug->setObjectName("Debug");
       a = getAction("no-horizontal-stretch");
@@ -1864,7 +1857,6 @@ MuseScore::MuseScore()
       a = getAction("qml-reload-source");
       menuDebug->addAction(a);
       Workspace::addMenuAndString(menuDebug, "menu-debug");
-#endif
 
       //---------------------
       //    Menu Help
@@ -2214,9 +2206,7 @@ void MuseScore::setMenuTitles()
 #ifdef SCRIPT_INTERFACE
             { menuPlugins,          tr("&Plugins")          },
 #endif
-#ifndef NDEBUG
             { menuDebug,            "Debug"                 }, // not translated
-#endif
             { menuHelp,             tr("&Help")             },
             { menuTours,            tr("&Tours")            }
             };
@@ -2271,9 +2261,7 @@ void MuseScore::updateMenus()
 #endif
       updateMenu(menuHelp,        "menu-help",         "Help");
       updateMenu(menuTours,       "menu-tours",        "");
-#ifndef NDEBUG
       updateMenu(menuDebug,       "menu-debug",        "Debug");
-#endif
       connect(openRecent,     SIGNAL(aboutToShow()),       SLOT(openRecentMenu()));
       connect(openRecent,     SIGNAL(triggered(QAction*)), SLOT(selectScore(QAction*)));
       connect(menuWorkspaces, SIGNAL(aboutToShow()),       SLOT(showWorkspaceMenu()));

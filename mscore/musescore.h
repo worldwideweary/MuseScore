@@ -305,9 +305,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       QMenu* menuPlugins;
       QMenu* menuHelp;
       QMenu* menuTours;
-#ifndef NDEBUG
       QMenu* menuDebug;
-#endif
       AlbumManager* albumManager           { 0 };
       ExportDialog* exportDialog           { 0 };
 
