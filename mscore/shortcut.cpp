@@ -94,6 +94,24 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
+         "start-preference-dialog",
+         QT_TRANSLATE_NOOP("action","Start Preferences Dialog…"),
+         QT_TRANSLATE_NOOP("action","start preferences dialog"),
+         0,
+         Icons::preferences_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_SCORE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
+         "reset-input-octave",
+         QT_TRANSLATE_NOOP("action","Reset input octave to default"),
+         QT_TRANSLATE_NOOP("action","Reset input octave to default")
+         },
+      {
+         MsWidget::MAIN_WINDOW,
          STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT | STATE_PLAY,
          "file-save-a-copy",
          QT_TRANSLATE_NOOP("action","Save a Copy…"),
@@ -270,7 +288,11 @@ Shortcut Shortcut::_sc[] = {
          STATE_NORMAL | STATE_NOTE_ENTRY,
          "instruments",
          QT_TRANSLATE_NOOP("action","Instruments…"),
-         QT_TRANSLATE_NOOP("action","Show instruments dialog")
+         QT_TRANSLATE_NOOP("action","Show instruments dialog"),
+         0,
+         Icons::showInstruments_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_SCORE
          },
       {
          MsWidget::MAIN_WINDOW,
@@ -790,8 +812,9 @@ Shortcut Shortcut::_sc[] = {
          QT_TRANSLATE_NOOP("action","Regroup Rhythms"),
          QT_TRANSLATE_NOOP("action","Regroup rhythms"),
          QT_TRANSLATE_NOOP("action","Combine rests and tied notes from selection and resplit at rhythmical locations"),
-         Icons::Invalid_ICON,
-         Qt::WindowShortcut
+         Icons::regroupRhythms_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_SCORE
          },
       {
          MsWidget::SCORE_TAB,
@@ -1364,8 +1387,9 @@ Shortcut Shortcut::_sc[] = {
          QT_TRANSLATE_NOOP("action","Remove Selected Range"),
          QT_TRANSLATE_NOOP("action","Remove selected range"),
          QT_TRANSLATE_NOOP("action","Remove element and duration"),
-         Icons::Invalid_ICON,
-         Qt::WindowShortcut
+         Icons::removeRange_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_SCORE
          },
       {
          MsWidget::SCORE_TAB,
@@ -2214,6 +2238,13 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::MAIN_WINDOW,
          STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT ,
+         "toggle-alternative",
+         QT_TRANSLATE_NOOP("action","Alternative Options"),
+         QT_TRANSLATE_NOOP("action","Toggle 'Alternative Options' toolbar")
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT ,
          "toggle-workspaces-toolbar",
          QT_TRANSLATE_NOOP("action","Workspaces"),
          QT_TRANSLATE_NOOP("action","Toggle 'Workspaces' toolbar"),
@@ -2706,8 +2737,9 @@ Shortcut Shortcut::_sc[] = {
          QT_TRANSLATE_NOOP("action","Reset Layout Stretch"),
          QT_TRANSLATE_NOOP("action","Reset layout stretch"),
          QT_TRANSLATE_NOOP("action","Reset layout stretch factor of selected measures or entire score"),
-         Icons::Invalid_ICON,
-         Qt::WindowShortcut
+         Icons::resetStretch_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_SCORE
          },
       {
          MsWidget::MAIN_WINDOW,
@@ -2717,6 +2749,17 @@ Shortcut Shortcut::_sc[] = {
          QT_TRANSLATE_NOOP("action","Show invisible"),
          0,
          Icons::Invalid_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_SCORE | ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_PLAY,
+         "show-debug",
+         QT_TRANSLATE_NOOP("action","Toggle Debug Options"),
+         QT_TRANSLATE_NOOP("action","Toggle Debug Options"),
+         0,
+         Icons::showDebug_ICON,
          Qt::WindowShortcut,
          ShortcutFlags::A_SCORE | ShortcutFlags::A_CHECKABLE
          },
@@ -2865,8 +2908,9 @@ Shortcut Shortcut::_sc[] = {
          QT_TRANSLATE_NOOP("action","Style…"),
          QT_TRANSLATE_NOOP("action","Edit style"),
          0,
-         Icons::Invalid_ICON,
-         Qt::WindowShortcut
+         Icons::styleSettingsICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_SCORE
          },
       {
          MsWidget::SCORE_TAB,
@@ -3078,7 +3122,11 @@ Shortcut Shortcut::_sc[] = {
          STATE_NORMAL | STATE_NOTE_ENTRY | STATE_PLAY | STATE_FOTO | STATE_EDIT,
          "toggle-piano",
          QT_TRANSLATE_NOOP("action","Piano Keyboard"),
-         QT_TRANSLATE_NOOP("action","Piano keyboard")
+         QT_TRANSLATE_NOOP("action","Piano keyboard"),
+         0,
+         Icons::onscreenKeyboard_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_SCORE
          },
       {
          MsWidget::MAIN_WINDOW,
@@ -3124,7 +3172,11 @@ Shortcut Shortcut::_sc[] = {
          STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT | STATE_PLAY | STATE_FOTO,
          "page-settings",
          QT_TRANSLATE_NOOP("action","Page Settings…"),
-         QT_TRANSLATE_NOOP("action","Page settings")
+         QT_TRANSLATE_NOOP("action","Page settings"),
+         0,
+         Icons::pageSettings_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_SCORE
          },
       {
          MsWidget::MAIN_WINDOW,
@@ -3945,7 +3997,7 @@ Shortcut Shortcut::_sc[] = {
          QT_TRANSLATE_NOOP("action","Toggle Rhythmic Slash Notation"),
          QT_TRANSLATE_NOOP("action","Toggle 'Rhythmic Slash Notation'"),
          0,
-         Icons::Invalid_ICON,
+         Icons::rhythmicSlash_ICON,
          Qt::WindowShortcut
          },
       {

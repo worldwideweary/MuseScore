@@ -316,6 +316,22 @@ const std::list<const char*> MuseScore::_allPlaybackControlEntries {
             "countin"
             };
 
+const std::list<const char*> MuseScore::_allAlternativeEntries {
+            "start-preference-dialog",
+            "page-settings",
+            "edit-style",
+            "instruments",
+            "", // Observation: at least one separator must be present if user-defined positions of separators are to be saved/reloaded
+            "show-debug",
+            "",
+            "reset-groupings",
+            "slash-rhythm",
+            "reset-stretch",
+            "time-delete",
+            "",
+            "toggle-piano",
+            };
+
 extern TextPalette* textPalette;
 
 static const char* saveOnlineMenuItem = "file-save-online";
@@ -642,6 +658,26 @@ void MuseScore::populateNoteInputMenu()
                         w->setObjectName(s);
                         }
                   entryTools->addWidget(w);
+                  }
+            }
+      }
+
+//---------------------------------------------------------
+//   populateAlternativeOperations
+//---------------------------------------------------------
+
+void MuseScore::populateAlternativeOperations()
+      {
+      alternativeTools->clear();
+      for (const auto s : _alternativeEntries) {
+            if (!*s)
+                  alternativeTools->addSeparator();
+            else {
+                  QAction* a = getAction(s);
+                  QWidget* w;
+                  w = new AccessibleToolButton(alternativeTools, a);
+                  w->setObjectName(s);
+                  alternativeTools->addWidget(w);
                   }
             }
       }
@@ -1367,6 +1403,14 @@ MuseScore::MuseScore()
 
       getAction("toggle-mouse-entry")->setChecked(!preferences.getBool(PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT));
       getAction("toggle-edit-playback")->setChecked(preferences.getBool(PREF_SCORE_NOTE_PLAYONCLICK));
+
+      //---------------------------------------------------
+      //    Alternative Options Tool Bar
+      //---------------------------------------------------
+
+      alternativeTools = addToolBar("");
+      alternativeTools->setObjectName("alternative-operations");
+      populateAlternativeOperations();
 
       //-------------------------------
       //    Workspaces Tool Bar
@@ -2162,6 +2206,7 @@ void MuseScore::retranslate()
 #if 0
       feedbackTools->setWindowTitle(tr("Feedback"));
 #endif
+      alternativeTools->setWindowTitle(tr("Alternative Options"));
       workspacesTools->setWindowTitle(tr("Workspaces"));
 
       // keep translatable (con)texts in sync with those from zoombox.cpp
@@ -4465,6 +4510,7 @@ void MuseScore::changeState(ScoreState val)
       cpitchTools->setEnabled(enable);
       zoomBox->setEnabled(enable);
       entryTools->setEnabled(enable);
+      alternativeTools->setEnabled(enable);
 
       if (_sstate == STATE_FOTO)
             updateInspector();
@@ -4849,6 +4895,9 @@ void MuseScore::readSettings()
 
       a = getAction("toggle-noteinput");
       a->setChecked(!entryTools->isHidden());
+
+      a = getAction("toggle-alternative");
+      a->setChecked(!alternativeTools->isHidden());
       }
 
 //---------------------------------------------------------
@@ -6537,6 +6586,8 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
 #endif
       else if (cmd == "toggle-workspaces-toolbar")
             workspacesTools->setVisible(!workspacesTools->isVisible());
+      else if (cmd == "toggle-alternative")
+            alternativeTools->setVisible(!alternativeTools->isVisible());
       else if (cmd == "create-new-workspace") {
             mscore->createNewWorkspace();
             emit mscore->workspacesChanged();
@@ -6731,7 +6782,6 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             reportBug("panel");
       else if (cmd == "leave-feedback")
             leaveFeedback("panel");
-#ifndef NDEBUG
       else if (cmd == "no-horizontal-stretch") {
             MScore::noHorizontalStretch = a->isChecked();
             if (cs) {
@@ -6781,6 +6831,17 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   cs->update();
                   }
             }
+      else if (cmd == "show-debug") {
+            MScore::showCorruptedMeasures = a->isChecked();
+            MScore::showBoundingRect = a->isChecked();
+            MScore::showSegmentShapes = a->isChecked();
+            MScore::showSkylines = a->isChecked();
+            if (cs) {
+                  cs->setLayoutAll();
+                  cs->update();
+                  }
+            }
+#ifndef NDEBUG
       else if (cmd == "qml-reload-source") {
             const QList<QmlDockWidget*> qmlWidgets = findChildren<QmlDockWidget*>();
 
