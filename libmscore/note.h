@@ -500,6 +500,7 @@ class Note final : public Element {
       void resetLength();
 
       int customizeVelocity(int velo) const;
+      int actualPlayVelocity() const;
       NoteDot* dot(int n)                         { return _dots[n];          }
       const QVector<NoteDot*>& dots() const       { return _dots;             }
       QVector<NoteDot*>& dots()                   { return _dots;             }
