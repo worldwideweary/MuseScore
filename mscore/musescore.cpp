@@ -1810,14 +1810,10 @@ MuseScore::MuseScore()
 
       menuEdit->addAction(getAction("instruments"));
 
-#ifdef NDEBUG
       if (enableExperimental) {
-#endif
             menuEdit->addSeparator();
             menuEdit->addAction(getAction("debugger"));
-#ifdef NDEBUG
             }
-#endif
 
       menuEdit->addSeparator();
       pref = new QAction("", 0);
@@ -2187,7 +2183,6 @@ MuseScore::MuseScore()
       //    Menu Debug
       //---------------------
 
-#ifndef NDEBUG
       menuDebug = mb->addMenu("Debug");
       menuDebug->setObjectName("Debug");
       a = getAction("no-horizontal-stretch");
@@ -2219,7 +2214,6 @@ MuseScore::MuseScore()
       a = getAction("qml-reload-source");
       menuDebug->addAction(a);
       Workspace::addMenuAndString(menuDebug, "menu-debug");
-#endif
 
       //---------------------
       //    Menu Help
@@ -2525,9 +2519,7 @@ void MuseScore::retranslate()
       viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::PAGE)), tr("Page View"));
       viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::LINE)), tr("Continuous View"));
       viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::SYSTEM)), tr("Single Page"));
-#ifdef NDEBUG
       if (enableExperimental)
-#endif
             viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::FLOAT)), tr("Floating"));
 
       showMidiImportButton->setText(tr("Show MIDI import panel"));
@@ -2571,9 +2563,7 @@ void MuseScore::setMenuTitles()
 #ifdef SCRIPT_INTERFACE
             { menuPlugins,          tr(MScore::bypassAltMenu ? "Plugins" : "&Plugins")          },
 #endif
-#ifndef NDEBUG
             { menuDebug,            "Debug"                 }, // not translated
-#endif
             { menuHelp,             tr(MScore::bypassAltMenu ? "Help" : "&Help")                },
             { menuTours,            tr(MScore::bypassAltMenu ? "Tours" : "&Tours")              }
             };
@@ -2630,9 +2620,7 @@ void MuseScore::updateMenus()
 #endif
       updateMenu(menuHelp,        "menu-help",         "Help");
       updateMenu(menuTours,       "menu-tours",        "");
-#ifndef NDEBUG
       updateMenu(menuDebug,       "menu-debug",        "Debug");
-#endif
       connect(openRecent,     SIGNAL(aboutToShow()),       SLOT(openRecentMenu()));
       connect(openRecent,     SIGNAL(triggered(QAction*)), SLOT(selectScore(QAction*)));
       connect(openArchivedScores,
@@ -8803,13 +8791,6 @@ MuseScoreApplication::CommandLineParseResult MuseScoreApplication::parseCommandL
                         return parseResult;
                         }
                   }
-#if NDEBUG // allow multiple instances when debugging (actually: when built in Debug mode)
-            else
-                  if (app->sendMessage(QString(""))) {
-                        parseResult.exit = true;
-                        return parseResult;
-                        }
-#endif
             }
       if (rawDiffMode || diffMode) {
             if (argv.size() != 2) {

@@ -46,7 +46,6 @@ namespace Ms {
 bool MScore::debugMode = false;
 bool MScore::testMode = false;
 
-// #ifndef NDEBUG
 bool MScore::showSegmentShapes   = false;
 bool MScore::showSkylines        = false;
 bool MScore::showMeasureShapes   = false;
@@ -56,7 +55,6 @@ bool MScore::showBoundingRect    = false;
 bool MScore::showSystemBoundingRect    = false;
 bool MScore::showCorruptedMeasures = true;
 bool MScore::useFallbackFont       = true;
-// #endif
 
 bool  MScore::saveTemplateMode = false;
 bool  MScore::noGui = false;
