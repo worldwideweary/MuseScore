@@ -2639,6 +2639,18 @@ int Note::customizeVelocity(int velo) const
       return limit(velo, 1, 127);
       }
 
+//----------------------------------------------------------
+//   actualPlayVelocity
+//      returns Absolute MIDI velocity on current tick of staff
+//      position joined with note velocity offset (final result)
+//----------------------------------------------------------
+
+int Note::actualPlayVelocity() const
+      {
+      const int staffDynamicVelocity = staff()->velocities().val(tick());
+      return customizeVelocity(staffDynamicVelocity);
+      }
+
 //---------------------------------------------------------
 //   startDrag
 //---------------------------------------------------------
