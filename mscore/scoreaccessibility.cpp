@@ -300,6 +300,8 @@ void ScoreAccessibility::currentInfoChanged(Element* hover)
                               optimizedBarsAndBeats += "; " + tr("Beat: %1").arg(QString::number(bar_beat.second));
                               }
                         barsAndBeats += "; Tick: " + el->tick().print();
+                        if (MScore::showSkylines)
+                              barsAndBeats += " (" + QString::number(el->tick().ticks()) + ")";
                         }
                   }
 
