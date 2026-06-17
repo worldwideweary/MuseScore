@@ -3717,6 +3717,17 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::MAIN_WINDOW,
          STATE_NORMAL | STATE_NOTE_ENTRY | STATE_PLAY,
+         "show-debug",
+         QT_TRANSLATE_NOOP("action","Toggle Debug Options"),
+         QT_TRANSLATE_NOOP("action","Toggle Debug Options"),
+         0,
+         Icons::Invalid_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_SCORE | ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_PLAY,
          "toggle-all-unprintable",
          QT_TRANSLATE_NOOP("action","Show All Invisible and Unprintable Elements"),
          QT_TRANSLATE_NOOP("action","Show all invisible and unprintable elements"),
@@ -5179,7 +5190,6 @@ Shortcut Shortcut::_sc[] = {
          Qt::ApplicationShortcut
          },
 #endif
-#ifndef NDEBUG
       {
          MsWidget::MAIN_WINDOW,
          STATE_ALL,
@@ -5270,7 +5280,6 @@ Shortcut Shortcut::_sc[] = {
          Icons::Invalid_ICON,
          Qt::ApplicationShortcut
          },
-#endif
       };
 
 

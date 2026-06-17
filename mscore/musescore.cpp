@@ -1331,9 +1331,7 @@ void MuseScore::populateFileOperations()
       viewModeCombo->addItem(tr("Page View"), int(LayoutMode::PAGE));
       viewModeCombo->addItem(tr("Continuous View"), int(LayoutMode::LINE));
       viewModeCombo->addItem(tr("Single Page"), int(LayoutMode::SYSTEM));
-#ifdef NDEBUG
       if (enableExperimental)
-#endif
             viewModeCombo->addItem(tr("Floating"), int(LayoutMode::FLOAT));
 
       // Restore the saved view-mode combobox index, if any.
@@ -7422,7 +7420,6 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             reportBug("panel");
       else if (cmd == "leave-feedback")
             leaveFeedback("panel");
-#ifndef NDEBUG
       else if (cmd == "no-horizontal-stretch") {
             MScore::noHorizontalStretch = a->isChecked();
             if (cs) {
@@ -7486,7 +7483,17 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   w->setSource(QUrl(urlString));
                   }
             }
-#endif
+      else if (cmd == "show-debug") {
+            // MScore::showSystemBoundingRect = a->isChecked();
+            MScore::showCorruptedMeasures = a->isChecked();
+            MScore::showBoundingRect = a->isChecked();
+            MScore::showSegmentShapes = a->isChecked();
+            MScore::showSkylines = a->isChecked();
+            if (cs) {
+                  cs->setLayoutAll();
+                  cs->update();
+                  }
+            }
       else {
             if (cv) {
                   //isAncestorOf is called to see if a widget from inspector has focus

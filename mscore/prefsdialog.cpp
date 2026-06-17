@@ -822,9 +822,7 @@ void PreferenceDialog::updateSCListView()
             if (enableExperimental
                         || (!s->key().startsWith("media")
                             && !s->key().startsWith("layer")
-#ifdef NDEBUG
                             && !s->key().startsWith("debugger")
-#endif
                             && !s->key().startsWith("edit_harmony")
                             && !s->key().startsWith("insert-fretframe"))) {
                   shortcutList->addTopLevelItem(newItem);

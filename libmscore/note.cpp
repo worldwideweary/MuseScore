@@ -2639,6 +2639,18 @@ int Note::customizeVelocity(int velo) const
       return limit(velo, 1, 127);
       }
 
+//----------------------------------------------------------
+//   actualPlayVelocity
+//      returns Absolute MIDI velocity on current tick of staff
+//      position joined with note velocity offset (final result)
+//----------------------------------------------------------
+
+int Note::actualPlayVelocity() const
+      {
+      const int staffDynamicVelocity = staff()->velocities().val(tick());
+      return customizeVelocity(staffDynamicVelocity);
+      }
+
 //---------------------------------------------------------
 //   startDrag
 //---------------------------------------------------------
@@ -3328,6 +3340,7 @@ QString Note::accessibleInfo() const
       QString voice = QObject::tr("Voice: %1").arg(QString::number(track() % VOICES + 1));
       QString pitchName;
       QString onofftime;
+      const int playVelocity = actualPlayVelocity();
       if (!_playEvents.empty()) {
             int on = _playEvents[0].ontime();
             int off = _playEvents[0].offtime();
@@ -3343,7 +3356,13 @@ QString Note::accessibleInfo() const
             pitchName = QObject::tr("%1; String: %2; Fret: %3").arg(tpcUserName(false), QString::number(string() + 1), QString::number(fret()));
       else
             pitchName = tpcUserName(false);
-      return QObject::tr("%1; Pitch: %2; Duration: %3%4%5").arg(noteTypeUserName(), pitchName, duration, onofftime, (chord()->isGrace() ? "" : QString("; %1").arg(voice)));
+      return QObject::tr("%1; Pitch: %2; Duration: %3%4%5; MIDI Velocity: %6")
+                        .arg(noteTypeUserName(),
+                         pitchName,
+                         duration,
+                         onofftime,
+                         (chord()->isGrace() ? "" : QString("; %1").arg(voice)),
+                         QString::number(playVelocity));
       }
 
 //---------------------------------------------------------
