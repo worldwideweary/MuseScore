@@ -3749,6 +3749,16 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::MAIN_WINDOW,
          STATE_NORMAL | STATE_NOTE_ENTRY,
+         "cycle-head-scheme",
+         QT_TRANSLATE_NOOP("action","Cycle through some common head-schemes"),
+         QT_TRANSLATE_NOOP("action","Cycle through some common head-schemes"),
+         0,
+         Icons::Invalid_ICON,
+         Qt::WindowShortcut,
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
          "toggle-visible-en-passant",
          QT_TRANSLATE_NOOP("action","Toggle Visibility Attribute of all En Passant Text Lines"),
          QT_TRANSLATE_NOOP("action","Toggle Visibility Attribute of all En Passant Text Lines"),
