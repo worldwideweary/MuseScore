@@ -5398,7 +5398,7 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             return;
             }
 
-      const MeasureBase* m;
+      const MeasureBase* m {nullptr};
       if (!el)
             return;
       else if (el->type() == ElementType::NOTE)
