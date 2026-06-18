@@ -17,6 +17,7 @@
 //  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 //=============================================================================
 
+#include "icons.h"
 #include "exportdialog.h"
 #include "musescore.h"
 #include "preferences.h"
@@ -63,6 +64,10 @@ ExportDialog::ExportDialog(Score* s, QWidget* parent)
 
       connect(listWidget, &QListWidget::itemChanged, this, &ExportDialog::setOkButtonEnabled);
       connect(fileTypeComboBox, SIGNAL(currentIndexChanged(int)), SLOT(fileTypeChosen(int)));
+
+      connect(pdfDirectoryButton, &QToolButton::clicked, this, &ExportDialog::selectPdfDirectory);
+      connect(pdfDirectoryEnabled, &QToolButton::clicked, this, &ExportDialog::enablePdfDirectory);
+      pdfDirectoryButton->setIcon(*icons[int(Icons::fileOpen_ICON)]);
 
       pdfSeparateOrSingleFiles = new QButtonGroup(this);
       pdfSeparateOrSingleFiles->addButton(pdfSeparateFilesRadioButton, 0);
@@ -209,6 +214,9 @@ void ExportDialog::loadValues()
                         break;
                   }
             }
+
+      pdfDirectoryEnabled->setChecked(preferences.getBool(PREF_EXPORT_PDF_DIRECTORY_ENABLED));
+      pdfDirectory->setText(preferences.getString(PREF_EXPORT_PDF_DIRECTORY));
       }
 
 //---------------------------------------------------------
@@ -278,6 +286,33 @@ void ExportDialog::clearSelection()
             ExportScoreItem* item = static_cast<ExportScoreItem*>(listWidget->item(i));
             item->setChecked(false);
             }
+      }
+
+//---------------------------------------------------------
+//   selectPdfDirectory
+//---------------------------------------------------------
+
+void ExportDialog::selectPdfDirectory()
+      {
+      QString s = QFileDialog::getExistingDirectory(
+            this,
+            tr("Choose Score Folder"),
+            pdfDirectory->text(),
+            QFileDialog::ShowDirsOnly | (preferences.getBool(PREF_UI_APP_USENATIVEDIALOGS)
+                  ? QFileDialog::Options()
+                  : QFileDialog::DontUseNativeDialog));
+
+      if (!s.isNull())
+            pdfDirectory->setText(s);
+      }
+
+//---------------------------------------------------------
+//   enablePdfDirectory
+//---------------------------------------------------------
+
+void ExportDialog::enablePdfDirectory()
+      {
+      pdfDirectory->setEnabled(pdfDirectoryEnabled->isChecked());
       }
 
 //---------------------------------------------------------
@@ -395,7 +430,14 @@ void ExportDialog::accept()
       
       // Ask for save name and location
       QString saveDirectory;
-      if (cs->masterScore()->fileInfo()->exists())
+
+      const bool useDirPref = pdfDirectoryEnabled->isChecked();
+      preferences.setPreference(PREF_EXPORT_PDF_DIRECTORY_ENABLED, useDirPref);
+      if (useDirPref) {
+            preferences.setPreference(PREF_EXPORT_PDF_DIRECTORY, pdfDirectory->text());
+            saveDirectory = pdfDirectory->text();
+            }
+      else if (cs->masterScore()->fileInfo()->exists())
             saveDirectory = cs->masterScore()->fileInfo()->dir().path();
       else {
             QSettings set;
