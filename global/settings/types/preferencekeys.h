@@ -67,6 +67,8 @@
 #define PREF_EXPORT_MUSICXML_EXPORTINVISIBLEELEMENTS        "export/musicXML/exportInvisibleElements"
 #define PREF_EXPORT_MUSICXML_MU3_COMPAT                     "export/musicXML/exportMu3Compat"
 #define PREF_EXPORT_PDF_DPI                                 "export/pdf/dpi"
+#define PREF_EXPORT_PDF_DIRECTORY                           "export/pdf/directory"
+#define PREF_EXPORT_PDF_DIRECTORY_ENABLED                   "export/pdf/directory/enabled"
 #define PREF_EXPORT_PNG_RESOLUTION                          "export/png/resolution"
 #define PREF_EXPORT_PNG_USETRANSPARENCY                     "export/png/useTransparency"
 #define PREF_EXPORT_BG_STYLE                                "export/bg/style"
