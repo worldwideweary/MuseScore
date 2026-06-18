@@ -373,6 +373,7 @@ class Note final : public Element {
       void setHeadScheme(NoteHead::Scheme val);
       void setHeadGroup(NoteHead::Group val);
       void setHeadType(NoteHead::Type t);
+      bool headSchemeHasAlphaNumerics() const;
 
       int subtype() const override { return int(_headGroup); }
       QString subtypeName() const override;
