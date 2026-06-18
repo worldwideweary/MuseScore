@@ -261,6 +261,7 @@ void XmlWriter::tag(const QString& name, QVariant data)
                   break;
             default: {
                   const char* type = data.typeName();
+                  QString st(type);
                   if (strcmp(type, "Ms::Spatium") == 0) {
                         *this << "<" << name << ">";
                         *this << data.value<Spatium>().val();
@@ -272,6 +273,15 @@ void XmlWriter::tag(const QString& name, QVariant data)
                         }
                   else if (strcmp(type, "Ms::Direction") == 0)
                         *this << QString("<%1>%2</%1>\n").arg(name, toString(data.value<Direction>()));
+                  else if (st == "Ms::SessionStart"                || st ==
+                                 "Ms::MuseScorePreferredStyleType" || st ==
+                                 "Ms::MuseScoreEffectiveStyleType" || st ==
+                                 "Ms::MusicxmlExportBreaks") {
+                        *this << "<" << name << ">";
+                        *this << data.toInt();
+                        *this << "</" << ename << ">\n";
+                        // See comment: "Stream operators for enum classes" in preferences.h
+                        }
                   else if (strcmp(type, "Ms::Align") == 0) {
                         // TODO: remove from here? (handled in Ms::propertyWritableValue())
                         Align a = Align(data.toInt());

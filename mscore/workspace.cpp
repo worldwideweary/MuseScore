@@ -291,11 +291,10 @@ void WorkspacesManager::initCurrentWorkspace()
       m_currentWorkspace = findByName(workspaceName);
       Q_ASSERT(!workspaces().empty());
       if (!m_currentWorkspace) {
-          m_currentWorkspace = findByTranslatableName(workspaceName);
-          if (!m_currentWorkspace) {
-              m_currentWorkspace = workspaces().at(0);
-          }
-      }
+            m_currentWorkspace = findByTranslatableName(workspaceName);
+            if (!m_currentWorkspace)
+                  m_currentWorkspace = workspaces().at(0);
+            }
       }
 
 void WorkspacesManager::remove(Workspace* workspace)
@@ -451,7 +450,7 @@ void Workspace::write()
             for (const QString& pref : preferences.getLocalPreferences().keys()) {
                   QVariant prefValue = preferences.getLocalPreferences().value(pref);
                   if (prefValue.isValid())
-                        xml.tag("Preference name=\"" + pref + "\"", preferences.getLocalPreferences().value(pref));
+                        xml.tag("Preference name=\"" + pref + "\"", prefValue);
                   }
             xml.etag();
             }
@@ -710,6 +709,10 @@ void WorkspacesManager::readWorkspaceFile(const QString& path, std::function<voi
             }
       }
 
+//---------------------------------------------------------
+//   read
+//---------------------------------------------------------
+
 void Workspace::read()
       {
       saveToolbars = saveMenuBar = saveComponents = false;
@@ -760,6 +763,71 @@ std::unique_ptr<PaletteTree> Workspace::getPaletteTree() const
             });
       return paletteTree;
       }
+
+//---------------------------------------------------------
+//   readPreferences
+//---------------------------------------------------------
+
+void Workspace::readPreferences(XmlReader& e) const
+      {
+      preferences.setUseLocalPreferences(true);
+
+      while (e.readNextStartElement()) {
+            QString preferenceName = e.attribute("name");
+
+            switch (preferences.defaultValue(preferenceName).type()) {
+                  case QVariant::Int:
+                        preferences.setLocalPreference(
+                              preferenceName, QVariant(e.readInt()));
+                        break;
+
+                  case QVariant::Color:
+                        preferences.setLocalPreference(
+                              preferenceName, QVariant(e.readColor()));
+                        break;
+
+                  case QVariant::String:
+                        preferences.setLocalPreference(
+                              preferenceName, QVariant(e.readXml()));
+                        break;
+
+                  case QVariant::Bool:
+                        preferences.setLocalPreference(
+                              preferenceName, QVariant(e.readBool()));
+                        break;
+
+                  case QVariant::LongLong:
+                        preferences.setLocalPreference(
+                              preferenceName, QVariant(e.readLongLong()));
+                        break;
+
+                  case QVariant::Double:
+                        preferences.setLocalPreference(
+                              preferenceName, QVariant(e.readDouble()));
+                        break;
+
+                  case QVariant::UserType:
+                        //
+                        // TODO: Should've been written as QVariant::Int,
+                        // but typeName shows as QWidget*.
+                        //
+                        preferences.setLocalPreference(
+                              preferenceName, QVariant(e.readInt()));
+                        break;
+
+                  default:
+                        qDebug() << preferenceName << ":"
+                                 << preferences.defaultValue(preferenceName).type()
+                                 << " not handled.";
+                        e.unknown();
+                        break;
+                  }
+            }
+      }
+
+//---------------------------------------------------------
+//   read
+//---------------------------------------------------------
 
 void Workspace::read(XmlReader& e)
       {
@@ -848,53 +916,8 @@ void Workspace::read(XmlReader& e)
                         toggleOptionsToolbar = true;
                         }
                   }
-            else if (tag == "Preferences") {
-                  preferences.setUseLocalPreferences(true);
-                  while (e.readNextStartElement()) {
-                        QString preference_name = e.attribute("name");
-                        switch (preferences.defaultValue(preference_name).type()) {
-                              case QVariant::Int:
-                                    {
-                                    int new_int = e.readInt();
-                                    preferences.setLocalPreference(preference_name, QVariant(new_int));
-                                    }
-                                    break;
-                              case QVariant::Color:
-                                    {
-                                    QColor new_color = e.readColor();
-                                    preferences.setLocalPreference(preference_name, QVariant(new_color));
-                                    }
-                                    break;
-                              case QVariant::String:
-                                    {
-                                    QString new_string = e.readXml();
-                                    preferences.setLocalPreference(preference_name, QVariant(new_string));
-                                    }
-                                    break;
-                              case QVariant::Bool:
-                                    {
-                                    bool new_bool = e.readBool();
-                                    preferences.setLocalPreference(preference_name, QVariant(new_bool));
-                                    }
-                                    break;
-                              case QVariant::LongLong:
-                                    {
-                                    auto new_longlong = e.readLongLong();
-                                    preferences.setLocalPreference(preference_name, QVariant(new_longlong));
-                                    break;
-                                    }
-                              case QVariant::Double:
-                                    {
-                                    auto new_double = e.readDouble();
-                                    preferences.setLocalPreference(preference_name, QVariant(new_double));
-                                    break;
-                                    }
-                              default:
-                                    qDebug() << preference_name << ":" << preferences.defaultValue(preference_name).type() << " not handled.";
-                                    e.unknown();
-                              }
-                        }
-                  }
+            else if (tag == "Preferences")
+                  readPreferences(e);
             else if (tag == "MenuBar") {
                   saveMenuBar = true;
                   QMenuBar* mb = mscore->menuBar();

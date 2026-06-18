@@ -551,8 +551,7 @@ bool Preferences::checkIfKeyExists(const QString key) const
       {
       bool exists = _allPreferences.contains(key);
       if (!exists) {
-            qDebug("Preference not found: %s", key.toUtf8().constData());
-            Q_ASSERT(exists);
+            qDebug("ATTENTION! Preference not found: %s", key.toUtf8().constData());
             }
       return exists;
       }
@@ -782,6 +781,30 @@ QMap<QString, QVariant> Preferences::getDefaultLocalPreferences() {
             }
       useLocalPrefs = tmp;
       return defaultLocalPreferences;
+      }
+
+
+QMap<QString, QVariant> Preferences::getStoredLocalPreferences() {
+      const bool oUseLocalPrefs = useLocalPrefs;
+      useLocalPrefs = false;
+      QMap<QString, QVariant> collection;
+      auto& cnt = _allPreferences;
+      for (auto it = cnt.constBegin(); it != cnt.constEnd(); ++it) { // Qt 5.9
+            QString key = it.key();
+            QVariant userValue = get(key);
+
+            // These preferences are required to locate/select the workspace itself,
+            // so they cannot be workspace-local:
+            if (key == PREF_APP_WORKSPACE
+                || key == PREF_APP_PATHS_MYEXTENSIONS)
+                  continue;
+
+            if (userValue.isValid())
+                  collection.insert(key, userValue);
+            }
+
+      useLocalPrefs = oUseLocalPrefs;
+      return collection;
       }
 
 void Preferences::setLocalPreference(QString key, QVariant value)
