@@ -45,6 +45,7 @@ class Workspace : public QObject {
       static void addRemainingFromMenu(QMenu* menu);
 
       void readMenu(XmlReader& e, QMenu* menu);
+      void readPreferences(XmlReader& e) const;
 
       void migrate(int uiVersion);
 

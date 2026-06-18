@@ -37,7 +37,7 @@ namespace Ms {
 
 extern QString mscoreGlobalShare;
 
-enum class SessionStart : char {
+enum class SessionStart : int {
       EMPTY, LAST, NEW, SCORE
       };
 
@@ -65,7 +65,7 @@ enum {
       };
 
 // The "theme" the user chooses in Preferences
-enum class MuseScorePreferredStyleType : char {
+enum class MuseScorePreferredStyleType : int {
       LIGHT_FUSION = 0,
       DARK_FUSION,
 #ifdef Q_OS_MAC
@@ -74,13 +74,13 @@ enum class MuseScorePreferredStyleType : char {
       };
 
 // The actual "theme", resulting from the user's choice
-enum class MuseScoreEffectiveStyleType : char {
+enum class MuseScoreEffectiveStyleType : int {
       LIGHT_FUSION = 0,
       DARK_FUSION
       };
 
 // MusicXML export break values
-enum class MusicxmlExportBreaks : char {
+enum class MusicxmlExportBreaks : int {
       ALL, MANUAL, NO
       };
 
@@ -190,6 +190,7 @@ class Preferences {
       // Used with workspace
       QMap<QString, QVariant> localPreferences;
       QMap<QString, QVariant> getDefaultLocalPreferences();
+      QMap<QString, QVariant> getStoredLocalPreferences();
       bool useLocalPrefs = false;
 
       QMap<ListenerID, OnSetListener> _onSetListeners;
@@ -250,7 +251,7 @@ class Preferences {
       void setLocalPreference(QString key, QVariant value);
       void setUseLocalPreferences(bool value)         { useLocalPrefs = value;   }
       bool getUseLocalPreferences()                   { return useLocalPrefs;    }
-      void updateLocalPreferences() { localPreferences = getDefaultLocalPreferences(); }
+      void updateLocalPreferences() { localPreferences = getStoredLocalPreferences(); }
       };
 
 // singleton
