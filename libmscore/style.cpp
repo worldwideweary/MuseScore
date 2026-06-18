@@ -4147,7 +4147,7 @@ bool  MStyle::readProperties460(XmlReader& e, int mscVersion)
 
 bool  MStyle::readProperties470(XmlReader& e, int mscVersion)
       {
-      if (/*mscVersion >= 500 && */readProperties500(e, mscVersion))
+      if (mscVersion >= 500 && readProperties500(e, mscVersion))
             return true;
 
       const QStringRef& tag(e.name());
@@ -4224,6 +4224,7 @@ bool  MStyle::readProperties500(XmlReader& e, int mscVersion)
 #else
       if (mscVersion > 500)
             qDebug("Yet unknown version detected");
+#endif
 
       const QStringRef& tag(e.name());
 
@@ -4243,7 +4244,6 @@ bool  MStyle::readProperties500(XmlReader& e, int mscVersion)
             return false;
       return true;
       }
-#endif
 // end 4.x compat
 
 void MStyle::applyNewDefaults(const MStyle& other, const int defaultsVersion)
