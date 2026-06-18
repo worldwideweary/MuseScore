@@ -3241,6 +3241,16 @@ void Note::setHeadType(NoteHead::Type t)
       }
 
 //---------------------------------------------------------
+//   headSchemeHasAlphaNumerics
+//---------------------------------------------------------
+
+bool Note::headSchemeHasAlphaNumerics() const
+      {
+      return _headScheme > NoteHead::Scheme::HEAD_NORMAL &&
+             _headScheme < NoteHead::Scheme::HEAD_SHAPE_NOTE_4;
+      }
+
+//---------------------------------------------------------
 //   setOnTimeOffset
 //---------------------------------------------------------
 

@@ -1745,6 +1745,25 @@ void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* ed
                   }
             }
 
+      // Always draw noteheads with information inside them (Solfegge/Pitch) on top of ledger/staff lines
+      if (MScore::noteheadsBehindStaff || MScore::noteheadsBehindLedger) {
+            for (const Element* e : el) {
+                  e->itemDiscovered = 0;
+                  if (!e->isNote())
+                        continue;
+                  if (!e->visible() && (score()->printing() || !score()->showInvisible()))
+                        continue;
+
+                  if (!(toNote(e)->headSchemeHasAlphaNumerics()))
+                        continue;
+
+                  QPointF pos(e->pagePos());
+                  painter.translate(pos);
+                  e->draw(&painter);
+                  painter.translate(-pos);
+            }
+      }
+
       if (haveHover && !hoverUnder) {
             if (state != ViewState::LASSO) {
                   drawHoverHighlight(painter, *dropTarget);
