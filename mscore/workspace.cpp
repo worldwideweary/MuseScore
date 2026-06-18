@@ -433,7 +433,7 @@ void Workspace::write()
             for (const QString& pref : preferences.getLocalPreferences().keys()) {
                   QVariant prefValue = preferences.getLocalPreferences().value(pref);
                   if (prefValue.isValid())
-                        xml.tag("Preference name=\"" + pref + "\"", preferences.getLocalPreferences().value(pref));
+                        xml.tag("Preference name=\"" + pref + "\"", prefValue);
                   }
             xml.etag();
             }
@@ -852,6 +852,10 @@ void Workspace::read(XmlReader& e)
                                     preferences.setLocalPreference(preference_name, QVariant(new_double));
                                     break;
                                     }
+                              case QVariant::UserType:
+                                    // TODO: Should've been written as an [QVariant::Int], but typeName shows as QWidget* of all things
+                                    preferences.setLocalPreference(preference_name, QVariant(e.readInt()));
+                                    break;
                               default:
                                     qDebug() << preference_name << ":" << preferences.defaultValue(preference_name).type() << " not handled.";
                                     e.unknown();
