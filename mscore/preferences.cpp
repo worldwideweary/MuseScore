@@ -511,8 +511,7 @@ bool Preferences::checkIfKeyExists(const QString key) const
       {
       bool exists = _allPreferences.contains(key);
       if (!exists) {
-            qDebug("Preference not found: %s", key.toUtf8().constData());
-            Q_ASSERT(exists);
+            qDebug("ATTENTION! Preference not found: %s", key.toUtf8().constData());
             }
       return exists;
       }
@@ -740,6 +739,19 @@ QMap<QString, QVariant> Preferences::getDefaultLocalPreferences() {
             }
       useLocalPrefs = tmp;
       return defaultLocalPreferences;
+      }
+
+
+QMap<QString, QVariant> Preferences::getStoredLocalPreferences() {
+      QMap<QString, QVariant> collection;
+      auto& cnt = _allPreferences;
+      for (auto it = cnt.constBegin(); it != cnt.constEnd(); ++it) { // Qt 5.9
+            QString key = it.key();
+            QVariant userValue = get(key);
+            if (userValue.isValid())
+                  collection.insert(key, userValue);
+            }
+      return collection;
       }
 
 void Preferences::setLocalPreference(QString key, QVariant value)

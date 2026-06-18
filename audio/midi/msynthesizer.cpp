@@ -445,7 +445,7 @@ void MasterSynthesizer::setGain(float f)
             _gain = f;
             emit gainChanged(_gain);
             }
-      preferences.setPreference(PREF_APP_PLAYBACK_DEFAULT_MASTER_VOLUME, f);
+      preferences.setPreference(PREF_APP_PLAYBACK_DEFAULT_MASTER_VOLUME, static_cast<double>(f));
       }
 
 
