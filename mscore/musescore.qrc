@@ -262,5 +262,6 @@
 
         <file>data/icons/options.svg</file>
         <file>data/icons/document-reload.svg</file>
+        <file>data/icons/document-export.svg</file>
     </qresource>
 </RCC>
