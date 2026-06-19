@@ -743,14 +743,23 @@ QMap<QString, QVariant> Preferences::getDefaultLocalPreferences() {
 
 
 QMap<QString, QVariant> Preferences::getStoredLocalPreferences() {
+      bool tmp = useLocalPrefs;
+      useLocalPrefs = false;
       QMap<QString, QVariant> collection;
       auto& cnt = _allPreferences;
       for (auto it = cnt.constBegin(); it != cnt.constEnd(); ++it) { // Qt 5.9
             QString key = it.key();
             QVariant userValue = get(key);
+
+            // Workspace must omit these preference(s):
+            if (key == PREF_APP_WORKSPACE)
+                  continue;
+
             if (userValue.isValid())
                   collection.insert(key, userValue);
             }
+
+      useLocalPrefs = tmp;
       return collection;
       }
 
