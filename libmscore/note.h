@@ -371,6 +371,7 @@ class Note final : public Element {
       void setHeadScheme(NoteHead::Scheme val);
       void setHeadGroup(NoteHead::Group val);
       void setHeadType(NoteHead::Type t);
+      bool headSchemeHasAlphaNumerics() const;
 
       int subtype() const override { return int(_headGroup); }
       QString subtypeName() const override;
@@ -537,7 +538,7 @@ class Note final : public Element {
       void addParentheses();
 
       SymId noteHead() const;
-      static SymId noteHead(int direction, NoteHead::Group, NoteHead::Type, int tpc, Key key, NoteHead::Scheme scheme);
+      static SymId noteHead(int direction, NoteHead::Group, NoteHead::Type, NoteHead::Scheme scheme, int tpc, Key key,  KeyMode mode=KeyMode::MAJOR);
       static SymId noteHead(int direction, NoteHead::Group, NoteHead::Type);
       NoteVal noteVal() const;
 
