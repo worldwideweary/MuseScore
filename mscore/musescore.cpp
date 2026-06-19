@@ -372,6 +372,7 @@ const std::list<const char*> MuseScore::_allFileOperationEntries {
             "file-save",
             "file-save-online",
             "file-reload",
+            "file-export",
             "print",
             "undo",
             "redo"
