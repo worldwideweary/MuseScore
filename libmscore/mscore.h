@@ -444,7 +444,6 @@ class MScore {
       static int defaultPlayDuration;
       static QString lastError;
 
-// #ifndef NDEBUG
       static bool noHorizontalStretch;
       static bool noVerticalStretch;
       static bool showSegmentShapes;
@@ -454,7 +453,6 @@ class MScore {
       static bool showSystemBoundingRect;
       static bool showCorruptedMeasures;
       static bool useFallbackFont;
-// #endif
       static bool debugMode;
       static bool testMode;
 

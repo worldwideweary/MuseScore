@@ -190,6 +190,7 @@ class Preferences {
       // Used with workspace
       QMap<QString, QVariant> localPreferences;
       QMap<QString, QVariant> getDefaultLocalPreferences();
+      QMap<QString, QVariant> getStoredLocalPreferences();
       bool useLocalPrefs = false;
 
       QMap<ListenerID, OnSetListener> _onSetListeners;
@@ -250,7 +251,7 @@ class Preferences {
       void setLocalPreference(QString key, QVariant value);
       void setUseLocalPreferences(bool value)         { useLocalPrefs = value;   }
       bool getUseLocalPreferences()                   { return useLocalPrefs;    }
-      void updateLocalPreferences() { localPreferences = getDefaultLocalPreferences(); }
+      void updateLocalPreferences() { localPreferences = getStoredLocalPreferences(); }
       };
 
 // singleton
