@@ -415,12 +415,19 @@ void Workspace::write()
             for (auto i : *mscore->noteInputMenuEntries())
                   xml.tag("action", i);
             xml.etag();
+
             xml.stag("Toolbar name=\"fileOperation\"");
             for (auto i : *mscore->fileOperationEntries())
                   xml.tag("action", i);
             xml.etag();
+
             xml.stag("Toolbar name=\"playbackControl\"");
             for (auto i : *mscore->playbackControlEntries())
+                  xml.tag("action", i);
+            xml.etag();
+
+            xml.stag("Toolbar name=\"alternativeOptions\"");
+            for (auto i : *mscore->alternativeEntries())
                   xml.tag("action", i);
             xml.etag();
             }
@@ -534,12 +541,19 @@ void Workspace::writeGlobalToolBar()
       for (auto i : *mscore->noteInputMenuEntries())
             xml.tag("action", i);
       xml.etag();
+
       xml.stag("Toolbar name=\"fileOperation\"");
       for (auto i : *mscore->fileOperationEntries())
             xml.tag("action", i);
       xml.etag();
+
       xml.stag("Toolbar name=\"playbackControl\"");
       for (auto i : *mscore->playbackControlEntries())
+            xml.tag("action", i);
+      xml.etag();
+
+      xml.stag("Toolbar name=\"alternativeOptions\"");
+      for (auto i : *mscore->alternativeEntries())
             xml.tag("action", i);
       xml.etag();
 
@@ -743,6 +757,7 @@ void Workspace::read(XmlReader& e)
       bool pcToolbar = false;
       bool colorToolbar = false;
       bool toggleOptionsToolbar = false;
+      bool alternativeToolbar = false;
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
             if (tag == "name")
@@ -767,6 +782,8 @@ void Workspace::read(XmlReader& e)
                         toolbarEntries = mscore->allColorControlMenuEntries();
                   else if (name == "toggleOptions")
                         toolbarEntries = mscore->allToggleOptionsMenuEntries();
+                  else if (name == "alternativeOptions")
+                        toolbarEntries = mscore->allAlternativeEntries();
                   else
                         qDebug() << "Error in loading workspace: " + name + " is not a toolbar";
 
@@ -809,6 +826,11 @@ void Workspace::read(XmlReader& e)
                         mscore->setToggleOptionsMenuEntries(l);
                         mscore->populateToggleOptionsMenu();
                         toggleOptionsToolbar = true;
+                        }
+                  else if (name == "alternativeOptions") {
+                        mscore->setAlternativeEntries(l);
+                        mscore->populateAlternativeOperations();
+                        alternativeToolbar = true;
                         }
                   }
             else if (tag == "Preferences") {
@@ -924,6 +946,10 @@ void Workspace::read(XmlReader& e)
             if (!toggleOptionsToolbar) {
                   mscore->setToggleOptionsMenuEntries(mscore->allToggleOptionsMenuEntries());
                   mscore->populateToggleOptionsMenu();
+                  }
+            if (!alternativeToolbar) {
+                  mscore->setAlternativeEntries(mscore->allAlternativeEntries());
+                  mscore->populateAlternativeOperations();
                   }
             }
       else {
@@ -1050,6 +1076,8 @@ void Workspace::readGlobalToolBar()
                                     toolbarEntries = mscore->allColorControlMenuEntries();
                               else if (name == "toggleOptions")
                                     toolbarEntries = mscore->allToggleOptionsMenuEntries();
+                              else if (name == "alternativeOptions")
+                                    toolbarEntries = mscore->allAlternativeEntries();
                               else
                                     qDebug() << "Error in loading workspace: " + name + " is not a toolbar";
 
@@ -1087,6 +1115,10 @@ void Workspace::readGlobalToolBar()
                               else if (name == "toggleOptions") {
                                     mscore->setToggleOptionsMenuEntries(l);
                                     mscore->populateToggleOptionsMenu();
+                                    }
+                              else if (name == "alternativeOptions") {
+                                    mscore->setAlternativeEntries(l);
+                                    mscore->populateAlternativeOperations();
                                     }
                               }
                         else

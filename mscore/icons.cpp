@@ -179,6 +179,10 @@ static const char* iconNames[] = {
       "note_timewise.svg",
       "arrowsMoveToTop.svg",
       "arrowsMoveToBottom.svg",
+
+                                    // Alternative Options
+      "debug.svg",                  // Toggle Skylines/Broken Measures/etc.
+
       "","","","", // voices
       "color_all.svg",              // override color icons
       "color_noteheads.svg",

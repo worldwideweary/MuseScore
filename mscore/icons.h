@@ -64,6 +64,8 @@ enum class Icons : short { Invalid_ICON = -1,
       noteTimewise_ICON,
       arrowsMoveToTop_ICON, arrowsMoveToBottom_ICON,
 
+      showDebug_ICON,
+
       // To be generated in genIcons:
       voice1_ICON, voice2_ICON, voice3_ICON, voice4_ICON,
 
