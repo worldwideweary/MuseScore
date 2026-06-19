@@ -3184,6 +3184,13 @@ Shortcut Shortcut::_sc[] = {
       {
          MsWidget::MAIN_WINDOW,
          STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT ,
+         "toggle-alternative",
+         QT_TRANSLATE_NOOP("action","Alternative Options"),
+         QT_TRANSLATE_NOOP("action","Toggle 'Alternative Options' toolbar")
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT ,
          "toggle-workspaces-toolbar",
          QT_TRANSLATE_NOOP("action","Workspaces"),
          QT_TRANSLATE_NOOP("action","Toggle 'Workspaces' toolbar"),
@@ -3731,7 +3738,7 @@ Shortcut Shortcut::_sc[] = {
          QT_TRANSLATE_NOOP("action","Toggle Debug Options"),
          QT_TRANSLATE_NOOP("action","Toggle Debug Options"),
          0,
-         Icons::Invalid_ICON,
+         Icons::showDebug_ICON,
          Qt::WindowShortcut,
          ShortcutFlags::A_SCORE | ShortcutFlags::A_CHECKABLE
          },

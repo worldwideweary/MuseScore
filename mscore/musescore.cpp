@@ -392,6 +392,11 @@ const std::list<const char*> MuseScore::_allPlaybackControlEntries {
             "countin"
             };
 
+const std::list<const char*> MuseScore::_allAlternativeEntries {
+            "show-debug",
+
+            };
+
 extern TextPalette* textPalette;
 
 static const char* saveOnlineMenuItem = "file-save-online";
@@ -941,6 +946,26 @@ void MuseScore::populateToggleOptionsMenu()
                              false);
       w->setObjectName("toggle-options");
       toggleTools->addWidget(w);
+      }
+
+//---------------------------------------------------------
+//   populateAlternativeOperations
+//---------------------------------------------------------
+
+void MuseScore::populateAlternativeOperations()
+      {
+      alternativeTools->clear();
+      for (const auto s : _alternativeEntries) {
+            if (!*s)
+                  alternativeTools->addSeparator();
+            else {
+                  QAction* a = getAction(s);
+                  QWidget* w;
+                  w = new AccessibleToolButton(alternativeTools, a);
+                  w->setObjectName(s);
+                  alternativeTools->addWidget(w);
+                  }
+            }
       }
 
 //---------------------------------------------------------
@@ -1703,6 +1728,14 @@ MuseScore::MuseScore()
 
       populateToggleOptionsMenu();
 
+      //---------------------------------------------------
+      //    Alternative Options Tool Bar
+      //---------------------------------------------------
+
+      alternativeTools = addToolBar("");
+      alternativeTools->setObjectName("alternative-operations");
+      populateAlternativeOperations();
+
       //-------------------------------
       //    Workspaces Tool Bar
       //-------------------------------
@@ -1927,6 +1960,12 @@ MuseScore::MuseScore()
       a->setCheckable(true);
       a->setChecked(toggleTools->isVisible());
       connect(toggleTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
+      menuToolbars->addAction(a);
+
+      a = getAction("toggle-alternative");
+      a->setCheckable(true);
+      a->setChecked(alternativeTools->isVisible());
+      connect(alternativeTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
       menuToolbars->addAction(a);
 
       a = getAction("toggle-workspaces-toolbar");
@@ -2506,6 +2545,7 @@ void MuseScore::retranslate()
       entryTools->setWindowTitle(tr("Note Input"));
       colorTools->setWindowTitle(tr("Color Control"));
       toggleTools->setWindowTitle(tr("Toggle Options"));
+      alternativeTools->setWindowTitle(tr("Alternative Options"));
       workspacesTools->setWindowTitle(tr("Workspaces"));
 
       // keep translatable (con)texts in sync with those from zoombox.cpp
@@ -4938,6 +4978,7 @@ void MuseScore::changeState(ScoreState val)
       entryTools->setEnabled(enable);
       colorTools->setEnabled(enable);
       toggleTools->setEnabled(enable);
+      alternativeTools->setEnabled(enable);
 
       if (_sstate == STATE_FOTO)
             updateInspector();
@@ -5303,6 +5344,9 @@ void MuseScore::readSettings()
 
       a = getAction("toggle-colorcontrol");
       a->setChecked(!colorTools->isHidden());
+
+      a = getAction("toggle-alternative");
+      a->setChecked(!alternativeTools->isHidden());
 
       a = getAction("toggle-optionscontrol");
       a->setChecked(!toggleTools->isHidden());
@@ -6922,6 +6966,8 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   colorTools->setVisible(!colorTools->isVisible());
             else if (cmd == "toggle-optionscontrol")
                   toggleTools->setVisible(!toggleTools->isVisible());
+            else if (cmd == "toggle-alternative")
+                  alternativeTools->setVisible(!alternativeTools->isVisible());
             else if (cmd == "toggle-workspaces-toolbar")
                   workspacesTools->setVisible(!workspacesTools->isVisible());
             else if (cmd == "toggle-piano")
