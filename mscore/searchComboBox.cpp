@@ -14,9 +14,6 @@ SearchComboBox::SearchComboBox(QWidget* p) : QComboBox(p)
       setInsertPolicy(QComboBox::InsertAtTop);
       _found = false;
       _searchType = SearchType::NO_SEARCH;
-
-      connect(lineEdit(), &QLineEdit::returnPressed,
-              mscore, &MuseScore::endSearch);
       }
 
 void SearchComboBox::searchInit()
@@ -93,7 +90,6 @@ QAccessibleInterface* AccessibleSearchBox::SearchBoxFactory(const QString &class
       {
           QAccessibleInterface *iface = 0;
           if (classname == QLatin1String("Ms::SearchComboBox") && object && object->isWidgetType()){
-                qDebug("Creating interface for SearchComboBox object");
                 SearchComboBox* s = static_cast<SearchComboBox*>(object);
                 AccessibleSearchBox* a = new AccessibleSearchBox(s);
                 QObject::connect(s, SIGNAL(currentSearchFinished()), a, SLOT(searchFinished()));
