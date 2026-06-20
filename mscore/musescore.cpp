@@ -1499,7 +1499,8 @@ MuseScore::MuseScore()
                   _statusBar->addPermanentWidget(new QLabel(tr("Find / Go to:")));
                   _statusBar->addPermanentWidget(searchCombo);
 
-                  connect(searchCombo->lineEdit(), SIGNAL(returnPressed()), SLOT(endSearch()));
+                  connect(searchCombo->lineEdit(), &QLineEdit::returnPressed, this, &MuseScore::endSearch);
+
                   searchCombo->clearEditText();
                   searchCombo->setFocus();
                   _statusBar->setFocusProxy(searchCombo);
@@ -1794,8 +1795,9 @@ MuseScore::MuseScore()
       connect(openRecent, SIGNAL(triggered(QAction*)), SLOT(selectScore(QAction*)));
 
       openArchivedScores = menuFile->addMenu("");
-      connect(openArchivedScores, SIGNAL(aboutToShow()), SLOT(openArchivedTabsMenu));
-      connect(openArchivedScores, SIGNAL(triggered(QAction*)), SLOT(selectArchivedScore(QAction*)));
+
+      connect(openArchivedScores, &QMenu::aboutToShow, this, &MuseScore::openArchivedTabsMenu);
+      connect(openArchivedScores, &QMenu::triggered, this, &MuseScore::selectArchivedScore);
 
       menuFile->addSeparator();
       menuFile->addAction(getAction("file-close"));
