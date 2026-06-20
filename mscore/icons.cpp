@@ -182,6 +182,16 @@ static const char* iconNames[] = {
 
                                     // Alternative Options
       "debug.svg",                  // Toggle Skylines/Broken Measures/etc.
+      "instruments.svg",
+      "preferences.svg",
+      "page-settings.svg",
+      "style-settings.svg",
+      "reset-stretch.svg",
+      "remove-range.svg",
+      "regroup-rhythm.svg",
+      "rhythmic-slash-notation.svg",
+      "keyboard.svg",
+
 
       "","","","", // voices
       "color_all.svg",              // override color icons

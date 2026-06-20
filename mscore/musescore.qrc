@@ -248,5 +248,14 @@
         <file>data/icons/document-reload.svg</file>
         <file>data/icons/document-export.svg</file>
         <file>data/icons/debug.svg</file>
+        <file>data/icons/regroup-rhythm.svg</file>
+        <file>data/icons/reset-stretch.svg</file>
+        <file>data/icons/preferences.svg</file>
+        <file>data/icons/remove-range.svg</file>
+        <file>data/icons/instruments.svg</file>
+        <file>data/icons/keyboard.svg</file>
+        <file>data/icons/rhythmic-slash-notation.svg</file>
+        <file>data/icons/style-settings.svg</file>
+        <file>data/icons/page-settings.svg</file>
     </qresource>
 </RCC>
