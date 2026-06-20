@@ -394,8 +394,19 @@ const std::list<const char*> MuseScore::_allPlaybackControlEntries {
             };
 
 const std::list<const char*> MuseScore::_allAlternativeEntries {
+            "start-preference-dialog",
+            "page-settings",
+            "edit-style",
+            "instruments",
+            "", // Observation: at least one separator must be present if user-defined positions of separators are to be saved/reloaded
             "show-debug",
-
+            "",
+            "reset-groupings",
+            "slash-rhythm",
+            "reset-stretch",
+            "time-delete",
+            "",
+            "toggle-piano",
             };
 
 extern TextPalette* textPalette;
