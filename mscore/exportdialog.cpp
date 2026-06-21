@@ -484,7 +484,7 @@ void ExportDialog::accept()
 
       QString filter;
       if (saveFormat == "mid")
-            filter = "*.mid;*.midi";
+            filter = "*.mid;*.midi;*.kar";
       else
             filter = QString("*.%1").arg(saveFormat);
 

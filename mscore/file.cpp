@@ -1971,8 +1971,8 @@ bool MuseScore::saveAs(Score* cs_, bool saveCopy, const QString& path, const QSt
             // save as compressed MusicXML *.mxl file
             rv = saveMxl(cs_, fn);
             }
-      else if ((ext == "mid") || (ext == "midi")) {
-            // save as midi file *.mid resp. *.midi
+      else if ((ext == "mid") || (ext == "midi")  || (ext == "kar")) {
+            // save as midi file *.mid resp. *.midi resp. *.kar
             rv = saveMidi(cs_, fn);
             }
       else if (ext == "pdf") {
