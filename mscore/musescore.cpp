@@ -495,6 +495,10 @@ static const int RECENT_LIST_SIZE = 20;
 
 void MuseScore::closeEvent(QCloseEvent* ev)
       {
+      // "back to normal" (TM), making sure any temporarily hidden toolbars are restored before saving workspace
+      if (isFullScreen())
+            cmd(getAction("fullscreen"));
+
       unloadPlugins();
       QList<MasterScore*> removeList;
       for (MasterScore* score : qAsConst(scoreList)) {
@@ -7274,39 +7278,44 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
       else if (cmd == "parts")
             startExcerptsDialog();
       else if (cmd == "fullscreen") {
+            static bool statusBarWasVisible = statusBar()->isVisible();
+            static bool wasMaximized = isMaximized();
+
+            const bool doFullScreen = !isFullScreen();
             _fullscreen = a->isChecked();
-            if (_fullscreen) {
-                  showFullScreen();
 
-                  if (preferences.getBool(PREF_UI_APP_FULLSCREEN_HIDES_MENU)) {
-                        // Hide Menubar + Tab Selectors + Toolbars if this adv. preference is enabled
-                        if (QWidget* menubar = mscore->menuWidget()) {
-                              menubar->hide();
-                              }
-                        tab1->getTab()->hide();
-                        }
-                  if (preferences.getBool(PREF_UI_APP_FULLSCREEN_HIDES_TOOLBARS)) {
-                        for (QToolBar* toolbar : { cpitchTools,fotoTools,fileTools,transportTools,entryTools,colorTools,toggleTools,workspacesTools,/*voiceTools,*/ }) {
-                              if (toolbar) {
-                                    toolbar->hide();
-                                    }
-                              }
-                        }
+            static auto allToolbars = { std::pair
+                  { cpitchTools,      cpitchTools->isVisible()      },
+                  { fotoTools,        fotoTools->isVisible()        },
+                  { fileTools,        fileTools->isVisible()        },
+                  { transportTools,   transportTools->isVisible()   },
+                  { entryTools,       entryTools->isVisible()       },
+                  { colorTools,       colorTools->isVisible()       },
+                  { toggleTools,      toggleTools->isVisible()      },
+                  { workspacesTools,  workspacesTools->isVisible()  },
+                  { alternativeTools, alternativeTools->isVisible() },
+                  // Observation: voice tools switching here will cause a crash
+                 };
+
+            doFullScreen ? showFullScreen() : wasMaximized ? showMaximized() : showNormal();
+
+            if (preferences.getBool(PREF_UI_APP_FULLSCREEN_HIDES_MENU)) {
+                  if (auto menubar = mscore->menuWidget())
+                        doFullScreen ? menubar->hide() : menubar->show();
+                  if (auto tab = tab1->getTab())
+                        doFullScreen ? tab->hide() : tab->show();
+                  if (doFullScreen)
+                        statusBar()->hide();
+                  else if (statusBarWasVisible)
+                        statusBar()->show();
                   }
-            else {
-                  showNormal();
-
-                  if (preferences.getBool(PREF_UI_APP_FULLSCREEN_HIDES_MENU)) {
-                        if (QWidget* menubar = mscore->menuWidget()) {
-                              menubar->show();
-                              }
-                        tab1->getTab()->show();
-                        }
-                  if (preferences.getBool(PREF_UI_APP_FULLSCREEN_HIDES_TOOLBARS)) {
-                        for (QToolBar* toolbar : { cpitchTools,fotoTools,fileTools,transportTools,entryTools,colorTools,toggleTools,workspacesTools,/*voiceTools,*/ }) {
-                              if (toolbar) {
+            if (preferences.getBool(PREF_UI_APP_FULLSCREEN_HIDES_TOOLBARS)) {
+                  for (const auto& [toolbar, wasVisible] : allToolbars) {
+                        if (toolbar) {
+                              if (doFullScreen)
+                                    toolbar->hide();
+                              else if (wasVisible)
                                     toolbar->show();
-                                    }
                               }
                         }
                   }
