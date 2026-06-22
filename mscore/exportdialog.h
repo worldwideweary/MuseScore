@@ -71,6 +71,8 @@ class ExportDialog : public AbstractDialog, public Ui::ExportDialog {
       void selectParts();
       void clearSelection();
       void setOkButtonEnabled();
+      void selectPdfDirectory();
+      void enablePdfDirectory();
 
    protected:
       virtual void retranslate();

@@ -147,6 +147,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_APP_PLAYBACK_SPEEDINCREMENT,                     new IntPreference(5)},
             {PREF_APP_PLAYBACK_LOOPTOSELECTIONONPLAY,              new BoolPreference(true)},
             {PREF_APP_PLAYBACK_DEFAULT_MASTER_VOLUME,              new DoublePreference(0.10)}, // results in -40dB
+            {PREF_APP_PLAYBACK_RESTART_MIDI_AUTOMATICALLY,         new BoolPreference(false)},
             {PREF_APP_USESINGLEPALETTE,                            new BoolPreference(false, false)},
             {PREF_APP_PALETTESCALE,                                new DoublePreference(1.0)},
             {PREF_APP_STARTUP_FIRSTSTART,                          new BoolPreference(true)},
@@ -172,6 +173,8 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_EXPORT_MUSICXML_EXPORTINVISIBLEELEMENTS,         new BoolPreference(false)},
             {PREF_EXPORT_MUSICXML_MU3_COMPAT,                      new BoolPreference(false)},
             {PREF_EXPORT_PDF_DPI,                                  new IntPreference(DPI, false)},
+            {PREF_EXPORT_PDF_DIRECTORY,                            new StringPreference("",  false)},
+            {PREF_EXPORT_PDF_DIRECTORY_ENABLED,                    new BoolPreference(false, false)},
             {PREF_EXPORT_PNG_RESOLUTION,                           new DoublePreference(DPI, false)},
             {PREF_EXPORT_PNG_USETRANSPARENCY,                      new BoolPreference(true, false)},
             {PREF_EXPORT_BG_STYLE,                                 new IntPreference(0, false)},

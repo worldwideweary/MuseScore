@@ -3247,7 +3247,9 @@ void ScoreView::cmd(const char* s)
                               // Start:
                               resetTempSpannerVisibility(_score);
 
-                              mscore->restartAudioEngine();
+                              if (preferences.getBool(PREF_APP_PLAYBACK_RESTART_MIDI_AUTOMATICALLY)) {
+                                    mscore->restartAudioEngine();
+                                    }
 
                               if (!_selection.isNone()) {
                                     _score->deselectAll();

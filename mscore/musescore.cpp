@@ -372,6 +372,7 @@ const std::list<const char*> MuseScore::_allFileOperationEntries {
             "file-save",
             "file-save-online",
             "file-reload",
+            "file-export",
             "print",
             "undo",
             "redo"
@@ -390,6 +391,22 @@ const std::list<const char*> MuseScore::_allPlaybackControlEntries {
             "pan",
             "metronome",
             "countin"
+            };
+
+const std::list<const char*> MuseScore::_allAlternativeEntries {
+            "start-preference-dialog",
+            "page-settings",
+            "edit-style",
+            "instruments",
+            "", // Observation: at least one separator must be present if user-defined positions of separators are to be saved/reloaded
+            "show-debug",
+            "",
+            "reset-groupings",
+            "slash-rhythm",
+            "reset-stretch",
+            "time-delete",
+            "",
+            "toggle-piano",
             };
 
 extern TextPalette* textPalette;
@@ -479,6 +496,10 @@ static const int RECENT_LIST_SIZE = 20;
 
 void MuseScore::closeEvent(QCloseEvent* ev)
       {
+      // "back to normal" (TM), making sure any temporarily hidden toolbars are restored before saving workspace
+      if (isFullScreen())
+            cmd(getAction("fullscreen"));
+
       unloadPlugins();
       QList<MasterScore*> removeList;
       for (MasterScore* score : qAsConst(scoreList)) {
@@ -941,6 +962,26 @@ void MuseScore::populateToggleOptionsMenu()
                              false);
       w->setObjectName("toggle-options");
       toggleTools->addWidget(w);
+      }
+
+//---------------------------------------------------------
+//   populateAlternativeOperations
+//---------------------------------------------------------
+
+void MuseScore::populateAlternativeOperations()
+      {
+      alternativeTools->clear();
+      for (const auto s : _alternativeEntries) {
+            if (!*s)
+                  alternativeTools->addSeparator();
+            else {
+                  QAction* a = getAction(s);
+                  QWidget* w;
+                  w = new AccessibleToolButton(alternativeTools, a);
+                  w->setObjectName(s);
+                  alternativeTools->addWidget(w);
+                  }
+            }
       }
 
 //---------------------------------------------------------
@@ -1463,7 +1504,8 @@ MuseScore::MuseScore()
                   _statusBar->addPermanentWidget(new QLabel(tr("Find / Go to:")));
                   _statusBar->addPermanentWidget(searchCombo);
 
-                  connect(searchCombo->lineEdit(), SIGNAL(returnPressed()), SLOT(endSearch()));
+                  connect(searchCombo->lineEdit(), &QLineEdit::returnPressed, this, &MuseScore::endSearch);
+
                   searchCombo->clearEditText();
                   searchCombo->setFocus();
                   _statusBar->setFocusProxy(searchCombo);
@@ -1703,6 +1745,14 @@ MuseScore::MuseScore()
 
       populateToggleOptionsMenu();
 
+      //---------------------------------------------------
+      //    Alternative Options Tool Bar
+      //---------------------------------------------------
+
+      alternativeTools = addToolBar("");
+      alternativeTools->setObjectName("alternative-operations");
+      populateAlternativeOperations();
+
       //-------------------------------
       //    Workspaces Tool Bar
       //-------------------------------
@@ -1750,8 +1800,9 @@ MuseScore::MuseScore()
       connect(openRecent, SIGNAL(triggered(QAction*)), SLOT(selectScore(QAction*)));
 
       openArchivedScores = menuFile->addMenu("");
-      connect(openArchivedScores, SIGNAL(aboutToShow()), SLOT(openArchivedTabsMenu));
-      connect(openArchivedScores, SIGNAL(triggered(QAction*)), SLOT(selectArchivedScore(QAction*)));
+
+      connect(openArchivedScores, &QMenu::aboutToShow, this, &MuseScore::openArchivedTabsMenu);
+      connect(openArchivedScores, &QMenu::triggered, this, &MuseScore::selectArchivedScore);
 
       menuFile->addSeparator();
       menuFile->addAction(getAction("file-close"));
@@ -1927,6 +1978,12 @@ MuseScore::MuseScore()
       a->setCheckable(true);
       a->setChecked(toggleTools->isVisible());
       connect(toggleTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
+      menuToolbars->addAction(a);
+
+      a = getAction("toggle-alternative");
+      a->setCheckable(true);
+      a->setChecked(alternativeTools->isVisible());
+      connect(alternativeTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
       menuToolbars->addAction(a);
 
       a = getAction("toggle-workspaces-toolbar");
@@ -2506,6 +2563,7 @@ void MuseScore::retranslate()
       entryTools->setWindowTitle(tr("Note Input"));
       colorTools->setWindowTitle(tr("Color Control"));
       toggleTools->setWindowTitle(tr("Toggle Options"));
+      alternativeTools->setWindowTitle(tr("Alternative Options"));
       workspacesTools->setWindowTitle(tr("Workspaces"));
 
       // keep translatable (con)texts in sync with those from zoombox.cpp
@@ -4938,6 +4996,7 @@ void MuseScore::changeState(ScoreState val)
       entryTools->setEnabled(enable);
       colorTools->setEnabled(enable);
       toggleTools->setEnabled(enable);
+      alternativeTools->setEnabled(enable);
 
       if (_sstate == STATE_FOTO)
             updateInspector();
@@ -5303,6 +5362,9 @@ void MuseScore::readSettings()
 
       a = getAction("toggle-colorcontrol");
       a->setChecked(!colorTools->isHidden());
+
+      a = getAction("toggle-alternative");
+      a->setChecked(!alternativeTools->isHidden());
 
       a = getAction("toggle-optionscontrol");
       a->setChecked(!toggleTools->isHidden());
@@ -6922,6 +6984,8 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   colorTools->setVisible(!colorTools->isVisible());
             else if (cmd == "toggle-optionscontrol")
                   toggleTools->setVisible(!toggleTools->isVisible());
+            else if (cmd == "toggle-alternative")
+                  alternativeTools->setVisible(!alternativeTools->isVisible());
             else if (cmd == "toggle-workspaces-toolbar")
                   workspacesTools->setVisible(!workspacesTools->isVisible());
             else if (cmd == "toggle-piano")
@@ -7215,39 +7279,44 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
       else if (cmd == "parts")
             startExcerptsDialog();
       else if (cmd == "fullscreen") {
+            static bool statusBarWasVisible = statusBar()->isVisible();
+            static bool wasMaximized = isMaximized();
+
+            const bool doFullScreen = !isFullScreen();
             _fullscreen = a->isChecked();
-            if (_fullscreen) {
-                  showFullScreen();
 
-                  if (preferences.getBool(PREF_UI_APP_FULLSCREEN_HIDES_MENU)) {
-                        // Hide Menubar + Tab Selectors + Toolbars if this adv. preference is enabled
-                        if (QWidget* menubar = mscore->menuWidget()) {
-                              menubar->hide();
-                              }
-                        tab1->getTab()->hide();
-                        }
-                  if (preferences.getBool(PREF_UI_APP_FULLSCREEN_HIDES_TOOLBARS)) {
-                        for (QToolBar* toolbar : { cpitchTools,fotoTools,fileTools,transportTools,entryTools,colorTools,toggleTools,workspacesTools,/*voiceTools,*/ }) {
-                              if (toolbar) {
-                                    toolbar->hide();
-                                    }
-                              }
-                        }
+            static auto allToolbars = { std::pair
+                  { cpitchTools,      cpitchTools->isVisible()      },
+                  { fotoTools,        fotoTools->isVisible()        },
+                  { fileTools,        fileTools->isVisible()        },
+                  { transportTools,   transportTools->isVisible()   },
+                  { entryTools,       entryTools->isVisible()       },
+                  { colorTools,       colorTools->isVisible()       },
+                  { toggleTools,      toggleTools->isVisible()      },
+                  { workspacesTools,  workspacesTools->isVisible()  },
+                  { alternativeTools, alternativeTools->isVisible() },
+                  // Observation: voice tools switching here will cause a crash
+                 };
+
+            doFullScreen ? showFullScreen() : wasMaximized ? showMaximized() : showNormal();
+
+            if (preferences.getBool(PREF_UI_APP_FULLSCREEN_HIDES_MENU)) {
+                  if (auto menubar = mscore->menuWidget())
+                        doFullScreen ? menubar->hide() : menubar->show();
+                  if (auto tab = tab1->getTab())
+                        doFullScreen ? tab->hide() : tab->show();
+                  if (doFullScreen)
+                        statusBar()->hide();
+                  else if (statusBarWasVisible)
+                        statusBar()->show();
                   }
-            else {
-                  showNormal();
-
-                  if (preferences.getBool(PREF_UI_APP_FULLSCREEN_HIDES_MENU)) {
-                        if (QWidget* menubar = mscore->menuWidget()) {
-                              menubar->show();
-                              }
-                        tab1->getTab()->show();
-                        }
-                  if (preferences.getBool(PREF_UI_APP_FULLSCREEN_HIDES_TOOLBARS)) {
-                        for (QToolBar* toolbar : { cpitchTools,fotoTools,fileTools,transportTools,entryTools,colorTools,toggleTools,workspacesTools,/*voiceTools,*/ }) {
-                              if (toolbar) {
+            if (preferences.getBool(PREF_UI_APP_FULLSCREEN_HIDES_TOOLBARS)) {
+                  for (const auto& [toolbar, wasVisible] : allToolbars) {
+                        if (toolbar) {
+                              if (doFullScreen)
+                                    toolbar->hide();
+                              else if (wasVisible)
                                     toolbar->show();
-                                    }
                               }
                         }
                   }
