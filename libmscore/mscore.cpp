@@ -56,6 +56,11 @@ bool MScore::showSystemBoundingRect    = false;
 bool MScore::showCorruptedMeasures = true;
 bool MScore::useFallbackFont       = true;
 
+bool MScore::showProgressBarForLayout = true;
+bool MScore::showProgressBarForPartialLayout = false;
+bool MScore::showProgressBarForSave = true;
+bool MScore::showProgressBarForAutosave = true;
+
 bool  MScore::saveTemplateMode = false;
 bool  MScore::noGui = false;
 

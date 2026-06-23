@@ -456,6 +456,11 @@ class MScore {
       static bool debugMode;
       static bool testMode;
 
+      static bool showProgressBarForLayout;
+      static bool showProgressBarForPartialLayout;
+      static bool showProgressBarForSave;
+      static bool showProgressBarForAutosave;
+
       static int division;
       static int sampleRate;
       static int mtcType;
