@@ -983,7 +983,7 @@ void Tuplet::add(Element* e)
 #ifndef NDEBUG
       for(DurationElement* el : _elements) {
             if (el == e) {
-                  qDebug("%p: %p %s already there", this, e, e->name());
+                  // qDebug("%p: %p %s already there", this, e, e->name());
                   return;
                   }
             }
