@@ -1080,8 +1080,9 @@ void System::add(Element* el)
                   {
                   SpannerSegment* ss = toSpannerSegment(el);
 #ifndef NDEBUG
-                  if (_spannerSegments.contains(ss))
-                        qDebug("System::add() %s %p already there", ss->name(), ss);
+                  if (_spannerSegments.contains(ss)) {
+                        // qDebug("System::add() %s %p already there", ss->name(), ss);
+                        }
                   else
 #endif
                   _spannerSegments.append(ss);
