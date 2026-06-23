@@ -125,7 +125,7 @@ jobs:
     runs-on: windows-2022
     steps:
     - name: Clone repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         submodules: 'true'
     - name: Configure workflow
@@ -203,7 +203,7 @@ jobs:
     runs-on: windows-2022
     steps:
     - name: Clone repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         submodules: 'true'
     - name: Configure workflow
@@ -281,7 +281,7 @@ jobs:
     runs-on: windows-2022
     steps:
     - name: Clone repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         submodules: 'true'
     - name: Configure workflow
@@ -358,7 +358,7 @@ jobs:
     runs-on: windows-2022
     steps:
     - name: Clone repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         submodules: 'true'
     - name: Configure workflow

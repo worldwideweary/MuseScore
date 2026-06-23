@@ -159,7 +159,7 @@ jobs:
     runs-on: macos-15
     steps:
     - name: Clone repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
     - name: Configure workflow
       env:
         pull_request_title: ${{ github.event.pull_request.title }}
@@ -244,7 +244,7 @@ jobs:
     runs-on: macos-15-intel
     steps:
     - name: Clone repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
     - name: Configure workflow
       env:
         pull_request_title: ${{ github.event.pull_request.title }}
