@@ -314,27 +314,39 @@ void CmdState::dump()
 
 void Score::update(bool resetCmdState)
       {
+      bool layoutEntirePage = false;
       bool updateAll = false;
       for (MasterScore* ms : *movements()) {
             CmdState& cs = ms->cmdState();
+            Fraction layoutStart = cs.startTick();
+            Fraction layoutEnd = cs.endTick();
+
+            if (auto singleElement = cs.element()) {
+                  if (singleElement->isFingering() ||
+                      singleElement->isArticulation()) {
+                        layoutEntirePage = true;
+                        }
+                  }
+
             ms->deletePostponed();
             if (!printing()) {
                   if (cs.layoutRange()) {
-                        for (Score*& s : ms->scoreList()) {
-                              auto layoutStart = cs.startTick();
-                              auto layoutEnd = cs.endTick();
-                              const bool fullPageLayout = true;
-                              if (fullPageLayout) {
+                        for (Score*& s : ms->scoreList()) {         
+                              if (layoutEntirePage) {
+                                    bool foundStartPageOfLayout = false;
                                     for (auto page : s->pages()) {
-                                          if (page->startTick() > cs.startTick())
+                                          auto pageStart = page->startTick();
+                                          auto pageEnd   = page->endTick();
+                                          if (pageEnd < layoutStart)
                                                 continue;
-                                          layoutStart = page->startTick();
-                                          break;
-                                          }
-                                    for (auto page : s->pages()) {
-                                          if (page->endTick() < cs.endTick())
+                                          else if (!foundStartPageOfLayout) {
+                                                layoutStart = pageStart;
+                                                foundStartPageOfLayout = true;
+                                                }
+                                          else if (layoutEnd > pageEnd)
                                                 continue;
-                                          layoutEnd = page->endTick();
+
+                                          layoutEnd = pageEnd;
                                           break;
                                           }
                                     }
