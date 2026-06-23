@@ -5428,7 +5428,9 @@ void LayoutContext::collectPage()
             }
 
       Fraction stick = Fraction(-1,1);
-      for (System* s : qAsConst(page->systems())) {
+      const auto& systems = page->systems();
+      for (auto s : systems) {
+            bool doSecondLayout = false;
             Score* currentScore = s->score();
             for (MeasureBase* mb : s->measures()) {
                   if (!mb->isMeasure())
@@ -5447,10 +5449,12 @@ void LayoutContext::collectPage()
                                           continue;
                                     ChordRest* cr = toChordRest(e);
                                     if (notTopBeam(cr)) {
+                                          doSecondLayout = true;
                                           // layout cross staff beams
                                           cr->beam()->layout();
                                           }
                                     if (notTopTuplet(cr)) {
+                                          doSecondLayout = true;
                                           // fix layout of tuplets
                                           DurationElement* de = cr;
                                           while (de->tuplet() && de->tuplet()->elements().front() == de) {
@@ -5462,6 +5466,8 @@ void LayoutContext::collectPage()
 
                                     if (cr->isChord()) {
                                           Chord* c = toChord(cr);
+                                          if (c->staffMove())
+                                                doSecondLayout = true;
                                           for (Chord* cc : qAsConst(c->graceNotes())) {
                                                 if (cc->beam() && cc->beam()->elements().front() == cc)
                                                       cc->beam()->layout();
@@ -5477,8 +5483,10 @@ void LayoutContext::collectPage()
                                                 Tremolo* t = c->tremolo();
                                                 Chord* c1 = t->chord1();
                                                 Chord* c2 = t->chord2();
-                                                if (t->twoNotes() && c1 && c2 && (c1->staffMove() || c2->staffMove()))
+                                                if (t->twoNotes() && c1 && c2 && (c1->staffMove() || c2->staffMove())) {
+                                                      doSecondLayout = true;
                                                       t->layout();
+                                                      }
                                                 }
                                           // Layout articulations / fingerings wuz here
                                           }
@@ -5491,7 +5499,9 @@ void LayoutContext::collectPage()
                   }
 
             // Re-layout entire system to correct articulation/fingering layout after cross-beams updating
-            currentScore->layoutSystemElements(s, *this);
+            if (doSecondLayout) {
+                  currentScore->layoutSystemElements(s, *this);
+                  }
             }
 
       // If this is the last page we layout, we must also relayout the first barlines of the
