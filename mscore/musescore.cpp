@@ -331,6 +331,8 @@ const std::list<const char*> MuseScore::_allAlternativeEntries {
             "",
             "toggle-piano",
             "toggle-piano-roll",
+            "",
+            "empty-trailing-measure"
             };
 
 extern TextPalette* textPalette;

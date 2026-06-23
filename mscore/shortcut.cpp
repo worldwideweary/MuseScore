@@ -1170,7 +1170,11 @@ Shortcut Shortcut::_sc[] = {
          STATE_NORMAL | STATE_NOTE_ENTRY,
          "empty-trailing-measure",
          QT_TRANSLATE_NOOP("action","First Empty Trailing Measure"),
-         QT_TRANSLATE_NOOP("action","Go to first empty trailing measure")
+         QT_TRANSLATE_NOOP("action","Go to first empty trailing measure"),
+         0,
+         Icons::emptyTrailingMeasure_ICON,
+         Qt::WindowShortcut,
+         ShortcutFlags::A_SCORE
          },
       {
          MsWidget::SCORE_TAB,
