@@ -1129,7 +1129,13 @@ void Spanner::setTick(const Fraction& v)
 
 void Spanner::setTick2(const Fraction& f)
       {
-      setTicks(f - _tick);
+      Fraction ticks { f - _tick };
+      if (!ticks.positive()) {
+            qDebug() << accessibleInfo() << "has negative ticks:" << ticks.print() << "from start:" << _tick.print() << "end:" << f.print();
+            ticks = -ticks;
+            }
+
+      setTicks(ticks);
       }
 
 //---------------------------------------------------------
