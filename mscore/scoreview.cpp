@@ -7964,6 +7964,27 @@ bool ScoreView::searchMeasure(int n)
       }
 
 //---------------------------------------------------------
+//   searchTick
+//---------------------------------------------------------
+
+bool ScoreView::searchTick(Fraction t)
+      {
+      bool rv = true;
+      Measure* m = nullptr;
+      for (m = _score->firstMeasureMM(); m; m = m->nextMeasureMM()) {
+            if (t > m->tick())
+                  continue;
+            break;
+            }
+      if (!m) {
+            m = score()->lastMeasureMM();
+            rv = false;
+            }
+      gotoMeasure(m);
+      return rv;
+      }
+
+//---------------------------------------------------------
 //   searchRehearsalMark
 //---------------------------------------------------------
 

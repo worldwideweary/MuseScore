@@ -47,7 +47,7 @@ void SearchComboBox::performSearch()
       if (s.isEmpty())
             return;
       ScoreView* cv = mscore->currentScoreView();
-      if (cv == 0)
+      if (!cv)
             return;
 
       bool ok;
@@ -65,8 +65,22 @@ void SearchComboBox::performSearch()
                         _found = cv->searchPage(n);
                         }
                   }
+            else {
+                  QStringList parts = s.split('/');
+                  if (parts.size() == 2) {
+                        bool okNumerator = false;
+                        bool okDenominator = false;
+                        int numerator = parts[0].trimmed().toInt(&okNumerator);
+                        int denominator = parts[1].trimmed().toInt(&okDenominator);
+                        if (okNumerator && okDenominator) {
+                              setSearchType(SearchType::SEARCH_TICK);
+                              Fraction tick { numerator, denominator };
+                              _found = cv->searchTick(tick);
+                              }
+                        }
+                  }
 
-            if (searchType() != SearchType::SEARCH_PAGE) {
+            if (searchType() != SearchType::SEARCH_PAGE && searchType() != SearchType::SEARCH_TICK) {
                   setSearchType(SearchType::SEARCH_REHEARSAL_MARK);
                   if (s.size() >= 2 && s[0].toLower() == 'r' && s[1].isNumber())
                         _found = cv->searchRehearsalMark(s.mid(1));

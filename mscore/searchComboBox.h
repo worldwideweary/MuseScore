@@ -11,6 +11,7 @@ public:
             SEARCH_MEASURE,
             SEARCH_PAGE,
             SEARCH_REHEARSAL_MARK,
+            SEARCH_TICK,
             NO_SEARCH
             };
 private:
