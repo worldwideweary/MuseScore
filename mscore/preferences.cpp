@@ -231,6 +231,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_SCORE_NOTE_DEFAULTPLAYDURATION,                  new IntPreference(300 /* ms */, false)},
             {PREF_SCORE_NOTE_WARNPITCHRANGE,                       new BoolPreference(true, false)},
             {PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT,            new BoolPreference(false, true)},
+            {PREF_SCORE_PRERENDER_MIDI_ON_LOAD,                    new BoolPreference(true, true)},
             {PREF_UI_SCORE_FADE_FOCUS,                             new BoolPreference(false, true)},
             {PREF_UI_SCORE_CURRENT_SYS_ON_TOP,                     new BoolPreference(false, true)},
             {PREF_UI_SCORE_CURRENT_SYS_ON_TOP_SKYLINE,             new BoolPreference(false, true)},
