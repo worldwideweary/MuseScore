@@ -2550,7 +2550,8 @@ Score::FileError readScore(MasterScore* score, QString name, bool ignoreVersionE
       score->updateChannel();
       score->updateExpressive(MuseScore::synthesizer("Fluid"));
       score->setSaved(false);
-      score->update();
+      // TEST: Omit updating here since MuseScore::openScore() performs full layout after this
+      // score->update();
       score->styleChanged();
 
       if (!ignoreVersionError && !MScore::noGui)
