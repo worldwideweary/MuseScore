@@ -473,6 +473,7 @@ class Score : public QObject, public ScoreElement {
       bool _showVBox              { true  };
       bool _printing              { false };      ///< True if we are drawing to a printer
       bool _autosaveDirty         { true  };
+      bool _isAutosaving          { false };
       bool _savedCapture          { false };      ///< True if we saved an image capture
       bool _saved                 { false };    ///< True if project was already saved; only on first
                                                 ///< save a backup file will be created, subsequent
@@ -914,6 +915,8 @@ class Score : public QObject, public ScoreElement {
       void setPrinting(bool val)     { _printing = val;      }
       void setAutosaveDirty(bool v)  { _autosaveDirty = v;    }
       bool autosaveDirty() const     { return _autosaveDirty; }
+      bool isAutosaving() const      { return _isAutosaving;  }
+      void setAutosaving(bool v)     { _isAutosaving = v;     }
       virtual bool playlistDirty() const;
       virtual void setPlaylistDirty();
 
