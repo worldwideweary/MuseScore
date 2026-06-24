@@ -131,6 +131,9 @@ QString AccessibleSearchBox::text(QAccessible::Text t) const
                   case SearchComboBox::SearchType::SEARCH_REHEARSAL_MARK:
                         type = tr("Rehearsal Mark");
                         break;
+                  case SearchComboBox::SearchType::SEARCH_TICK:
+                        type = tr("Tick");
+                        break;
                   }
             QString found = searchBox->found() ? "" : tr("Not found") + " ";
             return QString("%1 %2 %3%4").arg(type, value, found, mscore->currentScoreView()->score()->accessibleInfo());
