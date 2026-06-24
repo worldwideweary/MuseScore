@@ -104,16 +104,18 @@ qDebug("checkScore: remove empty ChordRest segment");
                         if (lcr) {
                               Fraction timeStretch = st->timeStretch(lcr->tick());
                               Fraction f = cr->globalTicks() * timeStretch;
-                              qDebug("Chord/Rest gap at tick %d(%s+%d)-%d(%s) staffIdx %d measure %d (len = %d)",
-                                 tick.ticks(), lcr->name(), f.ticks(),
-                                 s->tick().ticks(), cr->name(), staffIdx, cr->measure()->no(),
-                                 (cr->tick() - tick).ticks());
+                              qDebug().nospace().noquote()
+                                    << "Chord/Rest gap at tick " << tick.print()
+                                    << "(" << lcr->name() << "+" << f.print() << ")"
+                                    << "-" << s->tick().print() << "(" << cr->name() <<")"
+                                    << " staffIdx " << staffIdx << " measure " << cr->measure()->no()
+                                    << " (len = " << (cr->tick() - tick).print() << ")";
                               }
                         else {
-                              qDebug("Chord/Rest gap at tick %d-%d(%s) staffIdx %d measure %d (len = %d)",
-                                 tick.ticks(),
-                                 s->tick().ticks(), cr->name(), staffIdx, cr->measure()->no(),
-                                 (cr->tick() - tick).ticks());
+                              qDebug().nospace().noquote()
+                                    << "Chord/Rest gap at tick " << tick.print() << "-" << s->tick().print()
+                                    << "(" << cr->name() << ")" << " staffIdx " << staffIdx << " measure " << cr->measure()->no()
+                                    << " (len = " << (cr->tick() - tick).print() << ")";
                               }
 #if 0
                         if (cr->tick() > tick) {
@@ -262,8 +264,9 @@ bool Score::checkKeys()
                               k = toKeySig(element)->key();
                         }
                   if (staff(i)->key(m->tick()) != k) {
-                        qDebug("measure %d (tick %d) : key %d, map %d", m->no(), m->tick().ticks(), int(k),
-                           int(staff(i)->key(m->tick())));
+                        qDebug().nospace().noquote()
+                              << "measure " << m->no() << "(tick " << m->tick().print() <<") : "
+                              << "key " << int(k) << ", map " << int(staff(i)->key(m->tick()));
                         rc = false;
                         }
                   }
@@ -315,12 +318,9 @@ bool Score::checkClefs()
 
 void Measure::fillGap(const Fraction& pos, const Fraction& len, int track, const Fraction& stretch, bool useGapRests)
       {
-      qDebug("measure %6d pos %d, len %d/%d, stretch %d/%d track %d",
-         tick().ticks(),
-         pos.ticks(),
-         len.numerator(), len.denominator(),
-         stretch.numerator(), stretch.denominator(),
-         track);
+      qDebug().nospace().noquote()
+            << "measure " << tick().print() << " pos " << pos.print() << ", "
+            << "len " << len.print() << " stretch " << stretch.print() << " track " << track;
       TDuration d;
       d.setVal(len.ticks());
       if (d.isValid()) {
@@ -363,11 +363,17 @@ void Measure::checkMeasure(int staffIdx, bool useGapRests)
                   currentPos    = seg->rtick() * stretch;
 
                   if (currentPos < expectedPos) {
-                        qDebug("in measure overrun %6d at %d-%d track %d", tick().ticks(), (currentPos/stretch).ticks(), (expectedPos/stretch).ticks(), track);
+                        qDebug().nospace().noquote()
+                              << "in measure overrun" << tick().print()
+                              << "at " << (currentPos/stretch).ticks() << "-" << (expectedPos/stretch).ticks()
+                              << " track " << track;
                         break;
                         }
                   else if (currentPos > expectedPos) {
-                        qDebug("in measure underrun %6d at %d-%d track %d", tick().ticks(), (currentPos/stretch).ticks(), (expectedPos/stretch).ticks(), track);
+                        qDebug().nospace().noquote()
+                              << "in measure underrun " << tick().print()
+                              << " at " << (currentPos/stretch).ticks() << "-" << (expectedPos/stretch).ticks()
+                              << " track " << track;
                         fillGap(expectedPos, currentPos - expectedPos, track, stretch);
                         }
 
@@ -385,7 +391,10 @@ void Measure::checkMeasure(int staffIdx, bool useGapRests)
                         fillGap(expectedPos, f - expectedPos, track, stretch, useGapRests);
                   }
             else if (f < expectedPos)
-                  qDebug("measure overrun %6d, %d > %d, track %d", tick().ticks(), expectedPos.ticks(), f.ticks(), track);
+                  qDebug().nospace().noquote()
+                        << "measure overrun "<< tick().print() << ","
+                        << expectedPos.print() << " > " << f.print() << ", "
+                        << "track " << track;
             }
       }
 
