@@ -6350,6 +6350,7 @@ void MuseScore::autoSaveTimerTimeout()
       for (MasterScore* s : qAsConst(scoreList)) {
             if (s->autosaveDirty()) {
                   // qDebug("<%s>", qPrintable(s->fileInfo()->completeBaseName()));
+                  s->setAutosaving(true);
                   QString tmp = s->tmpName();
                   if (!tmp.isEmpty()) {
                         QFileInfo fi(tmp);
@@ -6374,6 +6375,7 @@ void MuseScore::autoSaveTimerTimeout()
                         sessionChanged = true;
                         }
                   s->setAutosaveDirty(false);
+                  s->setAutosaving(false);
                   }
             }
       if (sessionChanged)
