@@ -1711,7 +1711,9 @@ void Score::connectTies(bool silent)
                                     nnote = searchTieNote(n);
                               if (nnote == 0) {
                                     if (!silent) {
-                                          qDebug("next note at %d track %d for tie not found (version %d)", s->tick().ticks(), i, _mscVersion);
+                                          qDebug().nospace().noquote()
+                                                << "next note at " << s->tick().print()
+                                                <<" track " << i <<" for tie not found (version " << _mscoreVersion << ")";
                                           delete tie;
                                           n->setTieFor(0);
                                           }
@@ -4582,7 +4584,9 @@ System* Score::collectSystem(LayoutContext& lc)
 
 #ifndef NDEBUG
             if (!qFuzzyCompare(mw, minWidth))
-                  qDebug("==layoutSystem %6d old %.1f new %.1f", system->measures().front()->tick().ticks(), minWidth, mw);
+                  qDebug().nospace().noquote()
+                        << "==layoutSystem " << system->measures().front()->tick().print()
+                        << " old " << minWidth << " new " << mw;
 #endif
             rest = systemWidth - minWidth;
             //
