@@ -383,6 +383,7 @@ void MuseScore::askAboutApplyingEdwinIfNeed(const QString& fileSuffix)
 
 Score* MuseScore::openScore(const QString& fn, bool switchTab, const bool considerInCurrentSession, const QString& name)
       {
+      ScoreLoad sl;
       //
       // make sure we load a file only once
       //
@@ -2550,8 +2551,7 @@ Score::FileError readScore(MasterScore* score, QString name, bool ignoreVersionE
       score->updateChannel();
       score->updateExpressive(MuseScore::synthesizer("Fluid"));
       score->setSaved(false);
-      // TEST: Omit updating here since MuseScore::openScore() performs full layout after this
-      // score->update();
+      // TEST: Omitting score->update() since MuseScore::openScore() performs full layout after this
       score->styleChanged();
 
       if (!ignoreVersionError && !MScore::noGui)
