@@ -130,6 +130,7 @@
 #define PREF_SCORE_HOVER_COLOR                              "ui/score/mouse/behavior/hoverColor"
 #define PREF_SCORE_HOVER_COLOR_ENABLE                       "ui/score/mouse/behavior/hoverEnabled"
 #define PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT           "ui/score/noteEntry/disableMouseEntry"
+#define PREF_SCORE_PRERENDER_MIDI_ON_LOAD                   "ui/score/onScoreLoad/preRenderMIDI"
 #define PREF_UI_SCORE_DISABLE_NOTE_DRAG_VERTICAL            "ui/score/mouse/behavior/disableNoteDragVertical"
 #define PREF_UI_SCORE_LASSO_WITHOUT_SHIFT                   "ui/score/mouse/behavior/enableLassoWithoutShift"
 #define PREF_UI_SCORE_LASSO_ANNOTATIONS                     "ui/score/mouse/behavior/lasso/annotations"

@@ -434,7 +434,9 @@ Score* MuseScore::openScore(const QString& fn, bool switchTab, const bool consid
                   }
 
             EventMap events;
-            score->renderMidi(&events, synthesizerState());
+
+            if (preferences.getBool(PREF_SCORE_PRERENDER_MIDI_ON_LOAD))
+                  score->renderMidi(&events, synthesizerState());
             }
       return score;
       }
@@ -2547,7 +2549,8 @@ Score::FileError readScore(MasterScore* score, QString name, bool ignoreVersionE
       score->updateChannel();
       score->updateExpressive(MuseScore::synthesizer("Fluid"));
       score->setSaved(false);
-      score->update();
+      // TEST: Omit updating here since MuseScore::openScore() performs full layout after this
+      // score->update();
       score->styleChanged();
 
       if (!ignoreVersionError && !MScore::noGui)

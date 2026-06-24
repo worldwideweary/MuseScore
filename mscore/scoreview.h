@@ -495,6 +495,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       QRectF canvasViewport() const { return toLogical(geometry()); }
 
       bool searchMeasure(int i);
+      bool searchTick(Fraction);
       bool searchPage(int i);
       bool searchRehearsalMark(const QString& s);
       void gotoMeasure(Measure*);
