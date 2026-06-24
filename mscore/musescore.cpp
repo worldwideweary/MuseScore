@@ -407,6 +407,8 @@ const std::list<const char*> MuseScore::_allAlternativeEntries {
             "time-delete",
             "",
             "toggle-piano",
+            "",
+            "empty-trailing-measure"
             };
 
 extern TextPalette* textPalette;
