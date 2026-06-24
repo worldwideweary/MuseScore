@@ -63,7 +63,9 @@ Measure* Score::tick2measure(const Fraction& tick) const
       // check last measure
       if (lm && (tick >= lm->tick()) && (tick <= lm->endTick()))
             return lm;
-      qDebug("tick2measure %d (max %d) not found", tick.ticks(), lm ? lm->tick().ticks() : -1);
+      qDebug().nospace().noquote()
+            << "tick2measure " << tick.print() << " (max " << (lm ? lm->tick().print() : Fraction::fromTicks(-1).print()) << ") "
+            << "not found";
       return 0;
       }
 
@@ -91,7 +93,9 @@ Measure* Score::tick2measureMM(const Fraction& t) const
       // check last measure
       if (lm && (tick >= lm->tick()) && (tick <= lm->endTick()))
             return lm;
-      qDebug("tick2measureMM %d (max %d) not found", tick.ticks(), lm ? lm->tick().ticks() : -1);
+      qDebug().nospace().noquote()
+            << "tick2measureMM " << tick.print() << "(max " << (lm ? lm->tick().print() : Fraction::fromTicks(-1).print()) << ") "
+            << "not found";
       return 0;
       }
 
@@ -159,7 +163,9 @@ Segment* Score::tick2segment(const Fraction& t, bool first, SegmentType st, bool
                   }
             segment = nsegment;
             }
-      qDebug("no segment for tick %d (start search at %d (measure %d))", tick.ticks(), t.ticks(), m->tick().ticks());
+      qDebug().nospace().noquote()
+            << "no segment for tick " << tick.print() << " (start search at " << t.print()
+            << " (measure "<< m->tick().print() << "))";
       return 0;
       }
 

@@ -883,7 +883,9 @@ QPointF SLine::linePos(Grip grip, System** sys) const
                               // it is possible CR won't be in correct track
                               // prefer element in current track if available
                               if (!cr)
-                                    qDebug("no end for lyricsline segment - start %d, ticks %d", tick().ticks(), ticks().ticks());
+                                    qDebug().nospace().noquote()
+                                          << "no end for lyricsline segmente - start " << tick().print() << ", "
+                                          << "ticks " << ticks().print();
                               else if (cr->track() != track()) {
                                     Element* e = cr->segment()->element(track());
                                     if (e)
