@@ -17075,7 +17075,7 @@ Voleu veure aquests recorreguts?</translation>
         <translation>Avançat editat</translation>
     </message>
     <message>
-        <location filename="../../mscore/workspace.cpp" line="1095"/>
+        <location filename="../../mscore/workspace.cpp" line="1101"/>
         <source>%1 edited</source>
         <extracomment>Name of the edited read-only workspace, %1 is replaced with the old workspace name</extracomment>
         <translation>%1 editat</translation>
@@ -18229,7 +18229,7 @@ Trieu un altre nom:</translation>
         <translation>Diagrames d&apos;acord</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1535"/>
+        <location filename="../../mscore/palette.cpp" line="1543"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="483"/>
         <source>Writing Palette File
 %1
@@ -18239,7 +18239,7 @@ en escriure el fitxer
 de paleta %1:</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1536"/>
+        <location filename="../../mscore/palette.cpp" line="1544"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="484"/>
         <source>Writing Palette File</source>
         <translation>Escriptura del fitxer de paleta</translation>
@@ -21768,7 +21768,7 @@ Visiteu la %1pàgina web del MuseScore %2 per a obtindre&apos;n l&apos;última v
         </translation>
     </message>
     <message>
-        <location filename="../../libmscore/measure.cpp" line="2043"/>
+        <location filename="../../libmscore/measure.cpp" line="2053"/>
         <source>MSCX error at line %1: invalid measure length: %2</source>
         <translation type="unfinished"></translation>
     </message>

@@ -17081,7 +17081,7 @@ Ibilaldi horiek ikusi nahiko zenituzke?</translation>
         <translation>Aurreratua editatua</translation>
     </message>
     <message>
-        <location filename="../../mscore/workspace.cpp" line="1095"/>
+        <location filename="../../mscore/workspace.cpp" line="1101"/>
         <source>%1 edited</source>
         <extracomment>Name of the edited read-only workspace, %1 is replaced with the old workspace name</extracomment>
         <translation>%1 editatua</translation>
@@ -18235,7 +18235,7 @@ mesedez, izen ezberdina aukeratu:</translation>
         <translation>Gider diagramak</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1535"/>
+        <location filename="../../mscore/palette.cpp" line="1543"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="483"/>
         <source>Writing Palette File
 %1
@@ -18245,7 +18245,7 @@ paleta fitxategia idazteak
 huts egin du:</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1536"/>
+        <location filename="../../mscore/palette.cpp" line="1544"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="484"/>
         <source>Writing Palette File</source>
         <translation>Paleta fitxategia idazten</translation>
@@ -21770,7 +21770,7 @@ Bisitatu %1MuseScore-ren webgunea%2 azken bertsioa eskuratzeko.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../../libmscore/measure.cpp" line="2043"/>
+        <location filename="../../libmscore/measure.cpp" line="2053"/>
         <source>MSCX error at line %1: invalid measure length: %2</source>
         <translation>MSCXeko akatsa %1. lerroan: konpas luzera baliogabea: %2</translation>
     </message>

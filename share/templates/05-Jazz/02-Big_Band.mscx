@@ -861,6 +861,7 @@
         <maxPitchA>71</maxPitchA>
         <instrumentId>brass.trombone</instrumentId>
         <clef>F</clef>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -936,6 +937,7 @@
         <maxPitchA>71</maxPitchA>
         <instrumentId>brass.trombone</instrumentId>
         <clef>F</clef>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1011,6 +1013,7 @@
         <maxPitchA>71</maxPitchA>
         <instrumentId>brass.trombone</instrumentId>
         <clef>F</clef>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1085,6 +1088,7 @@
         <maxPitchA>71</maxPitchA>
         <instrumentId>brass.trombone</instrumentId>
         <clef>F</clef>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1168,6 +1172,8 @@
           <string>59</string>
           <string>64</string>
           </StringData>
+        <singleNoteDynamics>0</singleNoteDynamics>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1271,6 +1277,7 @@
         <maxPitchA>108</maxPitchA>
         <instrumentId>keyboard.piano</instrumentId>
         <clef staff="2">F</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>95</gateTime>
@@ -1435,6 +1442,7 @@
         <trackName>Drumset</trackName>
         <instrumentId>drum.group.set</instrumentId>
         <useDrumset>1</useDrumset>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Drum pitch="35">
           <head>normal</head>
           <line>7</line>

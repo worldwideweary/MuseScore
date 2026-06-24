@@ -63,6 +63,7 @@
         <minPitchA>40</minPitchA>
         <maxPitchA>79</maxPitchA>
         <instrumentId>voice.vocals</instrumentId>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -127,6 +128,7 @@
         <minPitchA>40</minPitchA>
         <maxPitchA>79</maxPitchA>
         <instrumentId>voice.vocals</instrumentId>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -203,6 +205,8 @@
           <string>59</string>
           <string>64</string>
           </StringData>
+        <singleNoteDynamics>0</singleNoteDynamics>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -296,6 +300,8 @@
           <string>59</string>
           <string>64</string>
           </StringData>
+        <singleNoteDynamics>0</singleNoteDynamics>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -453,6 +459,7 @@
         <trackName>Drumset</trackName>
         <instrumentId>drum.group.set</instrumentId>
         <useDrumset>1</useDrumset>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Drum pitch="35">
           <head>normal</head>
           <line>7</line>
@@ -636,6 +643,7 @@
           <stem>1</stem>
           </Drum>
         <clef>PERC</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>

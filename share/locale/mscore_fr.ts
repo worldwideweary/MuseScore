@@ -17095,7 +17095,7 @@ Souhaitez-vous voir ces visites guidées ?</translation>
         <translation>Avancé édité</translation>
     </message>
     <message>
-        <location filename="../../mscore/workspace.cpp" line="1095"/>
+        <location filename="../../mscore/workspace.cpp" line="1101"/>
         <source>%1 edited</source>
         <extracomment>Name of the edited read-only workspace, %1 is replaced with the old workspace name</extracomment>
         <translation>%1 édité</translation>
@@ -18249,7 +18249,7 @@ veuillez choisir un nom différent :</translation>
         <translation>Diagrammes d&apos;accord</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1535"/>
+        <location filename="../../mscore/palette.cpp" line="1543"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="483"/>
         <source>Writing Palette File
 %1
@@ -18259,7 +18259,7 @@ failed: </source>
 a échoué : </translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1536"/>
+        <location filename="../../mscore/palette.cpp" line="1544"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="484"/>
         <source>Writing Palette File</source>
         <translation>Écriture du fichier de palette</translation>
@@ -21788,7 +21788,7 @@ Allez sur le %1site de MuseScore%2 pour télécharger la dernière version.</tra
         </translation>
     </message>
     <message>
-        <location filename="../../libmscore/measure.cpp" line="2043"/>
+        <location filename="../../libmscore/measure.cpp" line="2053"/>
         <source>MSCX error at line %1: invalid measure length: %2</source>
         <translation>Erreur MSCX à la ligne %1 : longueur de mesure non valide : %2</translation>
     </message>

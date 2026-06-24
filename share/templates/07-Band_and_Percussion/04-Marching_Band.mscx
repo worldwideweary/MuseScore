@@ -1012,6 +1012,7 @@
         <maxPitchA>71</maxPitchA>
         <instrumentId>brass.trombone</instrumentId>
         <clef>F</clef>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1229,6 +1230,7 @@
         <instrumentId>pitched-percussion.glockenspiel</instrumentId>
         <concertClef>G15ma</concertClef>
         <transposingClef>G</transposingClef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1300,6 +1302,7 @@
         <instrumentId>pitched-percussion.xylophone</instrumentId>
         <concertClef>G8va</concertClef>
         <transposingClef>G</transposingClef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1365,6 +1368,7 @@
         <minPitchA>53</minPitchA>
         <maxPitchA>89</maxPitchA>
         <instrumentId>pitched-percussion.vibraphone</instrumentId>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1565,6 +1569,8 @@
         <maxPitchA>60</maxPitchA>
         <instrumentId>drum.timpani</instrumentId>
         <clef>F</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1783,6 +1789,7 @@
           <stem>1</stem>
           </Drum>
         <clef>PERC</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1936,6 +1943,7 @@
           <stem>1</stem>
           </Drum>
         <clef>PERC</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>

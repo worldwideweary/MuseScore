@@ -17077,7 +17077,7 @@ nivel musical, y gustos personales.</translation>
         <translation>Avanzado editado</translation>
     </message>
     <message>
-        <location filename="../../mscore/workspace.cpp" line="1095"/>
+        <location filename="../../mscore/workspace.cpp" line="1101"/>
         <source>%1 edited</source>
         <extracomment>Name of the edited read-only workspace, %1 is replaced with the old workspace name</extracomment>
         <translation>%1 editado</translation>
@@ -18231,7 +18231,7 @@ elija un nombre distinto:</translation>
         <translation>Diagramas de acorde</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1535"/>
+        <location filename="../../mscore/palette.cpp" line="1543"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="483"/>
         <source>Writing Palette File
 %1
@@ -18241,7 +18241,7 @@ failed: </source>
 falló:</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette.cpp" line="1536"/>
+        <location filename="../../mscore/palette.cpp" line="1544"/>
         <location filename="../../mscore/palette/palettetree.cpp" line="484"/>
         <source>Writing Palette File</source>
         <translation>Escribiendo Archivo de Paleta</translation>
@@ -21770,7 +21770,7 @@ Visite la %1web de MuseScore%2 para obtener la última versión.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../../libmscore/measure.cpp" line="2043"/>
+        <location filename="../../libmscore/measure.cpp" line="2053"/>
         <source>MSCX error at line %1: invalid measure length: %2</source>
         <translation>Error del MSCX en la línea %1: duración de compás inválida: %2</translation>
     </message>

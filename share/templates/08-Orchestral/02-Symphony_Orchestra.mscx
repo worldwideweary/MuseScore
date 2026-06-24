@@ -1000,6 +1000,7 @@
         <maxPitchA>71</maxPitchA>
         <instrumentId>brass.trombone</instrumentId>
         <clef>F</clef>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1075,6 +1076,7 @@
         <maxPitchA>71</maxPitchA>
         <instrumentId>brass.trombone</instrumentId>
         <clef>F</clef>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1217,6 +1219,8 @@
         <maxPitchA>60</maxPitchA>
         <instrumentId>drum.timpani</instrumentId>
         <clef>F</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1300,6 +1304,7 @@
           <shortcut>B</shortcut>
           </Drum>
         <clef>PERC</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1376,6 +1381,7 @@
           <shortcut>A</shortcut>
           </Drum>
         <clef>PERC</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1451,6 +1457,7 @@
           <shortcut>A</shortcut>
           </Drum>
         <clef>PERC</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1527,6 +1534,8 @@
         <maxPitchA>104</maxPitchA>
         <instrumentId>pluck.harp</instrumentId>
         <clef staff="2">F</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
+        <glissandoStyle>diatonic</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1606,6 +1615,7 @@
         <minPitchA>55</minPitchA>
         <maxPitchA>88</maxPitchA>
         <instrumentId>strings.group</instrumentId>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1689,6 +1699,7 @@
         <minPitchA>55</minPitchA>
         <maxPitchA>88</maxPitchA>
         <instrumentId>strings.group</instrumentId>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1774,6 +1785,7 @@
         <maxPitchA>79</maxPitchA>
         <instrumentId>strings.group</instrumentId>
         <clef>C3</clef>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1859,6 +1871,7 @@
         <maxPitchA>67</maxPitchA>
         <instrumentId>strings.group</instrumentId>
         <clef>F</clef>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1947,6 +1960,7 @@
         <instrumentId>strings.group</instrumentId>
         <concertClef>F8vb</concertClef>
         <transposingClef>F</transposingClef>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>

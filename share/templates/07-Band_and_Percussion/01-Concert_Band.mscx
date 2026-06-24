@@ -1641,6 +1641,7 @@
         <maxPitchA>71</maxPitchA>
         <instrumentId>brass.trombone</instrumentId>
         <clef>F</clef>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1716,6 +1717,7 @@
         <maxPitchA>71</maxPitchA>
         <instrumentId>brass.trombone</instrumentId>
         <clef>F</clef>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1793,6 +1795,7 @@ B. Tbn.</shortName>
         <maxPitchA>71</maxPitchA>
         <instrumentId>brass.trombone</instrumentId>
         <clef>F</clef>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -2008,6 +2011,7 @@ B. Tbn.</shortName>
         <instrumentId>strings.contrabass</instrumentId>
         <concertClef>F8vb</concertClef>
         <transposingClef>F</transposingClef>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -2092,6 +2096,8 @@ B. Tbn.</shortName>
         <maxPitchA>60</maxPitchA>
         <instrumentId>drum.timpani</instrumentId>
         <clef>F</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -2161,6 +2167,7 @@ B. Tbn.</shortName>
         <instrumentId>pitched-percussion.glockenspiel</instrumentId>
         <concertClef>G15ma</concertClef>
         <transposingClef>G</transposingClef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -2380,6 +2387,7 @@ B. Tbn.</shortName>
           <stem>1</stem>
           </Drum>
         <clef>PERC</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -2600,6 +2608,7 @@ B. Tbn.</shortName>
           <stem>1</stem>
           </Drum>
         <clef>PERC</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>

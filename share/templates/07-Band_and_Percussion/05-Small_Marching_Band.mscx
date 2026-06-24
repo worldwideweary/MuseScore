@@ -863,6 +863,7 @@
         <maxPitchA>71</maxPitchA>
         <instrumentId>brass.trombone</instrumentId>
         <clef>F</clef>
+        <glissandoStyle>portamento</glissandoStyle>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1078,6 +1079,7 @@
         <instrumentId>pitched-percussion.xylophone</instrumentId>
         <concertClef>G8va</concertClef>
         <transposingClef>G</transposingClef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1229,6 +1231,7 @@
           <stem>1</stem>
           </Drum>
         <clef>PERC</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
@@ -1477,6 +1480,7 @@
           <stem>1</stem>
           </Drum>
         <clef>PERC</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
         <Articulation>
           <velocity>100</velocity>
           <gateTime>100</gateTime>
