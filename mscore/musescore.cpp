@@ -8046,6 +8046,7 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
       else if (cmd == "cycle-head-scheme") {
             if (cs) {
                   using NHS = NoteHead::Scheme;
+                  cs->startCmd();
                   for (auto n : cs->selection().noteList()) {
                         const auto scheme = n->headScheme();
                         const auto beginScheme = NHS::HEAD_NORMAL;
@@ -8054,10 +8055,9 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                         const bool isPitch = (scheme == NHS::HEAD_PITCHNAME);
                         // Normal → Pitch → Solfeggio (Movable):
                         const auto next = isBegin ? NHS::HEAD_PITCHNAME : isPitch ? endScheme : beginScheme;
-                        n->setHeadScheme(next);
+                        n->undoChangeProperty(Pid::HEAD_SCHEME, QVariant::fromValue(next));
                         }
-                  cs->setLayoutAll();
-                  cs->update();
+                  cs->endCmd();
                   }
             }
       else if (cmd == "qml-reload-source") {
