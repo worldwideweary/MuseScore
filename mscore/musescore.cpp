@@ -7134,14 +7134,6 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   for (auto _score : scores())
                         closeScore(_score);
                   }
-            else if (cmd == "file-reload") {
-                  saveFile();
-                  const auto ms = cs->masterScore();
-                  const auto fi = ms->fileInfo();
-                  const auto fn = fi->absoluteFilePath();
-                  closeScore(cs);
-                  openScore(fn);
-                  }
             else if (cmd == "file-save")
                   saveFile();
             else if (cmd == "file-save-as")
