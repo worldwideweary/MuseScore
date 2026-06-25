@@ -1758,15 +1758,17 @@ void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* ed
                   if (!e->visible() && (score()->printing() || !score()->showInvisible()))
                         continue;
 
-                  if (!(toNote(e)->headSchemeHasAlphaNumerics()))
+                  auto n = toNote(e);
+                  if (!n->onTabStaff() && !n->headSchemeHasAlphaNumerics())
                         continue;
+
 
                   QPointF pos(e->pagePos());
                   painter.translate(pos);
                   e->draw(&painter);
                   painter.translate(-pos);
+                  }
             }
-      }
 
       if (haveHover && !hoverUnder) {
             if (state != ViewState::LASSO) {

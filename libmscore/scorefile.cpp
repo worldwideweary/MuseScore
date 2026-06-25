@@ -1176,6 +1176,28 @@ void Score::print(QPainter* painter, int pageNo)
                   painter->restore();
                   }
             }
+
+      // PASS #4 Always draw noteheads with information inside them (Solfegge/Pitch) on top of ledger/staff lines
+      // NOTE: Must be manually applied and not AUTO Notehead with staff properties, otherwise BehindStaff+BehindLedger
+      // will still be honored
+      if (MScore::noteheadsBehindStaff || MScore::noteheadsBehindLedger) {
+            for (const Element* e : elements) {
+                  if (!e->isNote())
+                        continue;
+                  if (!e->visible())
+                        continue;
+
+                  auto n = toNote(e);
+                  if (!n->onTabStaff() && !n->headSchemeHasAlphaNumerics())
+                        continue;
+
+                  painter->save();
+                     painter->translate(e->pagePos());
+                        e->draw(painter);
+                     painter->translate(-e->pagePos());
+                  painter->restore();
+                  }
+            }
       MScore::pdfPrinting = false;
       _printing = false;
       }
