@@ -299,6 +299,28 @@ bool TextBase::edit(EditData& ed)
 //printf("======%x\n", s.isEmpty() ? -1 : s[0].unicode());
 
             switch (ed.key) {
+                  case Qt::Key_QuoteDbl:
+                  case Qt::Key_Apostrophe:
+                        {
+                        // Use CTRL modifier for default vertical quotes (instead of undo stack à la 4.x)
+                        if (ed.control(true))
+                              break;
+
+                        const bool isSingle = (s == u"\'");
+                        bool useCloseQuote = false;
+                        const int row = _cursor->row();
+                        const int col = _cursor->column();
+
+                        if (col > 0) {
+                              const QString prev { _cursor->extractText(row, col - 1, row, col) };
+                              const bool spaceBeforeNewInput = (prev == QString(" "));
+                              useCloseQuote = !spaceBeforeNewInput;
+                              }
+                        auto curlyReplacement = isSingle ? QString(useCloseQuote ? u'’' : u'‘')
+                                                         : QString(useCloseQuote ? u'”' : u'“');
+                        s = curlyReplacement;
+                        break;
+                        }
                   case Qt::Key_Z:         // happens when the undo stack is empty
                         if (ed.modifiers == Qt::ControlModifier)
                               return true;
@@ -445,8 +467,8 @@ bool TextBase::edit(EditData& ed)
 
                   case Qt::Key_A:
                         if (ctrlPressed) {
-                              _cursor->movePosition(QTextCursor::Start, QTextCursor::MoveMode::MoveAnchor);
-                              _cursor->movePosition(QTextCursor::End, QTextCursor::MoveMode::KeepAnchor);
+                              _cursor->movePosition(QTextCursor::End, QTextCursor::MoveMode::MoveAnchor);
+                              _cursor->movePosition(QTextCursor::Start, QTextCursor::MoveMode::KeepAnchor);
                               s.clear();
                         }
                         break;
