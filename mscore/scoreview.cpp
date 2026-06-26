@@ -2340,8 +2340,9 @@ void ScoreView::updateHover(const QPointF& position)
       {
       QPoint point = position.toPoint();
 
-      auto selected     = score()->selection().element();
-      auto pastHover    = dropTarget;
+      bool noSelection = score()->selection().isNone();
+      auto selectedEl = score()->selection().element();
+      auto pastHover = dropTarget;
       const qreal zoomThresh  = 0.33;
       Element* presentHover = logicalZoomLevel() > zoomThresh ? elementNear(toLogical(point)) : nullptr;
 
@@ -2351,7 +2352,7 @@ void ScoreView::updateHover(const QPointF& position)
 
       QRectF view;
       if (pastHover != presentHover) {
-            if (presentHover && (presentHover != selected)) {
+            if (presentHover && (presentHover != selectedEl)) {
                   view = presentHover->canvasBoundingRect();
                   setDropTarget(presentHover, false /*no highlight*/);
                   ScoreAccessibility::instance()->currentInfoChanged(presentHover);
@@ -2359,12 +2360,13 @@ void ScoreView::updateHover(const QPointF& position)
             else if (pastHover) {
                   view = pastHover->canvasBoundingRect();
                   setDropTarget(nullptr);
+                  ScoreAccessibility::instance()->currentInfoChanged();
                   }
             const int margin = 2;
             update(toPhysical(view).adjusted(-margin, -margin, +margin, +margin));
             update();
             }
-      if (!selected && !presentHover) {
+      if (noSelection && !presentHover) {
             if (Page* currentPage = point2page(editData.startMove)) {
                   int currentPageNumber = currentPage->no() + 1;
                   int totalPages = score()->npages();
