@@ -5578,6 +5578,8 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       else if (editing){
             auto ry = sys->canvasBoundingRect().y();
             auto h = sys->canvasBoundingRect().height();
+            ry -= sys->minTop();
+            h  += sys->minBottom();
             showRect.setY(ry);
             showRect.setHeight(h);
             }
