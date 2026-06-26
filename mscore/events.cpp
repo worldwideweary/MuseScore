@@ -1101,8 +1101,10 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
                         mscore->endCmd();
                         return;
                         }
-                  if (textEdit)
+                  if (textEdit) {
                         mscore->textTools()->updateTools(editData);
+                        adjustCanvasPosition(e, false);
+                        }
                   return;
                   }
             }
