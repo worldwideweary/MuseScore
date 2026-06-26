@@ -236,6 +236,7 @@ void ScoreAccessibility::currentInfoChanged(Element* hover)
       {
       ScoreView* scoreView =  static_cast<MuseScore*>(mainWindow)->currentScoreView();
       Score* score = scoreView->score();
+      const Selection& sel = score->selection();
       int oldStaff = _oldStaff;
       int oldBar = _oldBar;
       _oldStaff = -1;
@@ -243,8 +244,24 @@ void ScoreAccessibility::currentInfoChanged(Element* hover)
       QString oldStatus = statusBarLabel->text();
       QString oldScreenReaderInfo = score->accessibleInfo();
       clearAccessibilityInfo();
-      if (score->selection().isSingle() || hover) {
-            Element* e = hover ? hover : score->selection().element();
+
+      Element* singleEl = sel.element();
+      QString listString(tr("List Selection"));
+      if (sel.isList() && !singleEl) {
+            for (auto el : sel.elements()) {
+                  if (!singleEl)
+                        singleEl = el;
+                  else if (el->type() != singleEl->type()) {
+                        singleEl = nullptr;
+                        break;
+                        }
+                  }
+            if (singleEl)
+                  listString += " " + tr("of") + " " + QString(singleEl->name()) + "s" + " " + tr("starting with") + ":";
+            }
+
+      if (singleEl || hover) {
+            Element* e = hover ? hover : singleEl;
             if (!e) {
                   return;
                   }
@@ -305,7 +322,13 @@ void ScoreAccessibility::currentInfoChanged(Element* hover)
                         }
                   }
 
-            QString rez = e->accessibleInfo();
+            QString rez;
+            if (hover)
+                  rez += tr("Hovering over");
+            else if (!sel.isSingle())
+                  rez += listString;
+            rez += " " + e->accessibleInfo();
+
             if (!barsAndBeats.isEmpty())
                   rez += "; " + barsAndBeats;
             else
@@ -362,13 +385,13 @@ void ScoreAccessibility::currentInfoChanged(Element* hover)
                   }
             score->setAccessibleInfo(screenReaderRez);
             }
-      else if (score->selection().isRange()) {
+      else if (sel.isRange()) {
             QString barsAndBeats = "";
             std::pair<int, float> bar_beat;
 
-            bar_beat = score->selection().startSegment()->barbeat();
+            bar_beat = sel.startSegment()->barbeat();
             barsAndBeats += " " + tr("Start Measure: %1; Start Beat: %2").arg(QString::number(bar_beat.first), QString::number(bar_beat.second));
-            Segment* endSegment = score->selection().endSegment();
+            Segment* endSegment = sel.endSegment();
 
             if (!endSegment)
                   endSegment = score->lastSegment();
@@ -380,9 +403,10 @@ void ScoreAccessibility::currentInfoChanged(Element* hover)
             statusBarLabel->setText(tr("Range Selection") + barsAndBeats);
             score->setAccessibleInfo(tr("Range Selection") + barsAndBeats);
             }
-      else if (score->selection().isList()) {
-            statusBarLabel->setText(tr("List Selection"));
-            score->setAccessibleInfo(tr("List Selection"));
+      else if (sel.isList()) {
+            listString += " " + tr("of varying types");
+            statusBarLabel->setText(listString);
+            score->setAccessibleInfo(listString);
             }
       }
 
