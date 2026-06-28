@@ -2248,7 +2248,7 @@ void LayoutContext::layoutArticAndFingeringOnCrossStaffBeams(System* system)
 void LayoutContext::layoutPage(Page* page, qreal restHeight, qreal footerPadding)
       {
       if (restHeight < 0.0) {
-            qDebug("restHeight < 0.0: %f\n", restHeight);
+            // qDebug("restHeight < 0.0: %f\n", restHeight);
             restHeight = 0;
             }
 

@@ -318,9 +318,9 @@ bool Score::checkClefs()
 
 void Measure::fillGap(const Fraction& pos, const Fraction& len, int track, const Fraction& stretch, bool useGapRests)
       {
-      qDebug().nospace().noquote()
-            << "measure " << tick().print() << " pos " << pos.print() << ", "
-            << "len " << len.print() << " stretch " << stretch.print() << " track " << track;
+      // qDebug().nospace().noquote()
+      //       << "measure " << tick().print() << " pos " << pos.print() << ", "
+      //       << "len " << len.print() << " stretch " << stretch.print() << " track " << track;
       TDuration d;
       d.setVal(len.ticks());
       if (d.isValid()) {
@@ -363,17 +363,17 @@ void Measure::checkMeasure(int staffIdx, bool useGapRests)
                   currentPos    = seg->rtick() * stretch;
 
                   if (currentPos < expectedPos) {
-                        qDebug().nospace().noquote()
-                              << "in measure overrun" << tick().print()
-                              << "at " << (currentPos/stretch).ticks() << "-" << (expectedPos/stretch).ticks()
-                              << " track " << track;
+                        // qDebug().nospace().noquote()
+                        //       << "in measure overrun" << tick().print()
+                        //       << "at " << (currentPos/stretch).ticks() << "-" << (expectedPos/stretch).ticks()
+                        //       << " track " << track;
                         break;
                         }
                   else if (currentPos > expectedPos) {
-                        qDebug().nospace().noquote()
-                              << "in measure underrun " << tick().print()
-                              << " at " << (currentPos/stretch).ticks() << "-" << (expectedPos/stretch).ticks()
-                              << " track " << track;
+                        // qDebug().nospace().noquote()
+                        //       << "in measure underrun " << tick().print()
+                        //       << " at " << (currentPos/stretch).ticks() << "-" << (expectedPos/stretch).ticks()
+                        //       << " track " << track;
                         fillGap(expectedPos, currentPos - expectedPos, track, stretch);
                         }
 
