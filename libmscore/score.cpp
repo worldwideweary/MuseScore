@@ -4390,7 +4390,7 @@ ChordRest* Score::findCR(Fraction tick, int track) const
       {
       Measure* m = tick2measureMM(tick);
       if (!m) {
-            qDebug("findCR: no measure for tick %d", tick.ticks());
+            // qDebug("findCR: no measure for tick %d", tick.ticks());
             return nullptr;
             }
       // attach to first rest all spanner when mmRest
@@ -4426,7 +4426,7 @@ ChordRest* Score::findCRinStaff(const Fraction& tick, int staffIdx) const
       Fraction ptick = tick - Fraction::fromTicks(1);
       Measure* m = tick2measureMM(ptick);
       if (!m) {
-            qDebug("findCRinStaff: no measure for tick %d", ptick.ticks());
+            // qDebug("findCRinStaff: no measure for tick %d", ptick.ticks());
             return 0;
             }
       // attach to first rest all spanner when mmRest
