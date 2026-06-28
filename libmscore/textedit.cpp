@@ -306,18 +306,18 @@ bool TextBase::edit(EditData& ed)
                         if (ed.control(true))
                               break;
 
-                        const bool isSingle = (s == u"\'");
+                        const bool isSingle = (s == QStringLiteral("'"));
                         bool useCloseQuote = false;
                         const int row = _cursor->row();
                         const int col = _cursor->column();
 
                         if (col > 0) {
                               const QString prev { _cursor->extractText(row, col - 1, row, col) };
-                              const bool spaceBeforeNewInput = (prev == QString(" "));
+                              const bool spaceBeforeNewInput = (prev == QStringLiteral(" "));
                               useCloseQuote = !spaceBeforeNewInput;
                               }
-                        auto curlyReplacement = isSingle ? QString(useCloseQuote ? u'’' : u'‘')
-                                                         : QString(useCloseQuote ? u'”' : u'“');
+                        auto curlyReplacement = isSingle ? QString(useCloseQuote ? QStringLiteral("’") : QStringLiteral("‘"))
+                                                         : QString(useCloseQuote ? QStringLiteral("”") : QStringLiteral("“"));
                         s = curlyReplacement;
                         break;
                         }
