@@ -147,7 +147,7 @@ Segment* Score::tick2segment(const Fraction& t, bool first, SegmentType st, bool
             m = tick2measure(tick);
 
       if (m == 0) {
-            qDebug("no measure for tick %d", tick.ticks());
+            // qDebug("no measure for tick %d", tick.ticks());
             return 0;
             }
       for (Segment* segment   = m->first(st); segment;) {
