@@ -38,7 +38,7 @@ const QRectF MsSplashScreen::designMiscTextRect     { 25.0, 326.0, 670.0, 56.0 }
 
 const double MsSplashScreen::gradientDitherAmount { 0.25 };
 
-const std::tuple<QColor, QColor> MsSplashScreen::stableBuildGradientColors   { "#508BFF", "#1043A9" };
+const std::tuple<QColor, QColor> MsSplashScreen::stableBuildGradientColors   { "#d6dfea", "#465c83" };
 const std::tuple<QColor, QColor> MsSplashScreen::unstableBuildGradientColors { "#3464C1", "#0C2B6B" };
 
 const QColor MsSplashScreen::textColor { 0xCCFFFFFF };
