@@ -123,6 +123,8 @@ void TextBase::endEdit(EditData& ed)
             // No text changes in "undo" part of undo stack,
             // hence nothing to merge and filter.
             undo->cleanRedoStack(); // prevent text editing commands from remaining in undo stack
+            if (!ed.element)
+                  return;
             }
 
       bool newlyAdded = false;
