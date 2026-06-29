@@ -1500,33 +1500,46 @@ static void drawDebugInfo(QPainter& p, const Element* _e)
 //   drawHoverHighlight
 //   Highlight the element "to be selected" with a little
 //   bounding box
+//
+//   If [playback cursor] (note entry cursor) is set to draw
+//   above staves in adv. pref, [highlight color] must have
+//   some alpha transparency for it to manifest and highlight
+//   over everything, including the cursor.
 //---------------------------------------------------------
 
 void ScoreView::drawHoverHighlight(QPainter& p, const Element& el)
       {
-      auto x = std::max(0.0, el.pagePos().x());
-      auto y = std::max(0.0, el.pagePos().y());
-      qreal adj = 5.0;
-      QPointF pos(x,y);
-      if (pos.isNull())
-            return;
-
-      p.translate(pos);
+      const qreal adj = el.isStaffLines() ? 0.0 : 6.0;
 
       // Highlight box:
-      p.setBrush(QBrush(MScore::hoverColor));
-      p.setPen(Qt::NoPen);
+            p.setBrush(QBrush(MScore::hoverColor));
+            p.setPen(Qt::NoPen);
 
       // Alternatively only draw border:
-      //    p.setBrush(Qt::NoBrush);
-      //    p.setPen(QPen(Qt::blue, 0.0)););
+            // p.setBrush(Qt::NoBrush);
+            // p.setPen(QPen(MScore::hoverColor, 5.0));
 
-      if (el.isSlurTieSegment())
-            el.shape().paint(p, +adj);
-      else
-            p.drawRect(el.bbox().adjusted(-adj, -adj, +adj, +adj));
+      if (el.isSlurTieSegment()) {
+            // canvasPos not valid here (acts like pagePos)
+            // Max function prob not required:
+            auto parentPos = QPointF(std::max(0.0, el.parent()->canvasPos().x()),
+                                     std::max(0.0, el.parent()->canvasPos().y()));
+            p.translate(parentPos);
+                  el.shape().paint(p, adj);
+            p.translate(-parentPos);
+            }
+      else {
+            auto x = std::max(0.0, el.canvasPos().x());
+            auto y = std::max(0.0, el.canvasPos().y());
+            QPointF pos(x,y);
+            if (pos.isNull())
+                  return;
 
-      p.translate(-pos);
+            p.translate(pos);
+                  p.drawRect(el.bbox().adjusted(-adj, -adj, +adj, +adj));
+            p.translate(-pos);
+            }
+
       }
 
 //---------------------------------------------------------
@@ -1670,12 +1683,6 @@ void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* ed
       bool opaqueHoverColor = (MScore::hoverColor.alpha() == 255); 
       bool hoverUnder = opaqueHoverColor;
       bool haveHover = MScore::hoverColorEnabled && dropTarget; 
-
-      if (haveHover && hoverUnder && state != ViewState::LASSO) {
-            if (el.contains(const_cast<Element*>(dropTarget))) {
-                  drawHoverHighlight(painter, *dropTarget);
-                  }
-            }
 
       // Option: Noteheads behind staff-lines
       // Requires stem to be drawn before noteheads, and a multi-pass approach
@@ -1916,8 +1923,16 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                         }
                   }
 
-            if (MScore::cursorDrawnBehindStaff)
+            if (MScore::cursorDrawnBehindStaff) {
+                  const bool opaqueHoverColor = (MScore::hoverColor.alpha() == 255);
+                  const bool hoverUnder = opaqueHoverColor;
+                  const bool haveHover = MScore::hoverColorEnabled && dropTarget;
+                  if (haveHover && hoverUnder && state != ViewState::LASSO) {
+                        drawHoverHighlight(p, *dropTarget);
+                        }
+
                   _cursor->paint(&p);
+                  }
 
             if (state == ViewState::LASSO) {
                   if (!lasso->bbox().isEmpty()) {
@@ -2345,6 +2360,9 @@ void ScoreView::updateHover(const QPointF& position)
       auto pastHover = dropTarget;
       const qreal zoomThresh  = 0.33;
       Element* presentHover = logicalZoomLevel() > zoomThresh ? elementNear(toLogical(point)) : nullptr;
+
+      if (noteEntryMode())
+            presentHover = nullptr;
 
       auto logicalPos = toLogical(point);
       editData.pos = logicalPos;
