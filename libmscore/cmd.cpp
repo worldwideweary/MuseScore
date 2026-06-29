@@ -300,10 +300,14 @@ void Score::endCmd(bool rollback)
 
 void CmdState::dump()
       {
-      qDebug("CmdState: mode %d %d-%d", int(_updateMode), _startTick.ticks(), _endTick.ticks());
+      qDebug().noquote().nospace()
+            << "CmdState: mode " << int(_updateMode) << " " << _startTick.print() << "-" << _endTick.print() << " "
+            << (_el ? _el->name() : "no element") << " "
+            << (_el ? _el->tick().print() : "") << " "
+            << "mbase: " << (_mb ? _mb->index() : 0)
+            ;
       // bool _excerptsChanged     { false };
       // bool _instrumentsChanged  { false };
-
       }
 #endif
 
