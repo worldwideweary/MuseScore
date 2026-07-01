@@ -264,8 +264,9 @@ enum class UpdateMode {
 
 
 enum class TickType {   // for explicit cmdState updates
-      StartTick,
-      EndTick,
+      Start,
+      End,
+      Both
       };
 
 //---------------------------------------------------------
