@@ -921,7 +921,8 @@ void ScoreView::mouseDoubleClickEvent(QMouseEvent* mouseEvent)
                   cmdAddText(Tid::FINGERING);
                   }
             else {
-                  startEditMode(clickedElement);
+                  if (!clickedElement->isStaffLines())
+                        startEditMode(clickedElement);
 
                   if (clickedElement->isTextBase()) {
                         setCursor(QCursor(Qt::IBeamCursor));
