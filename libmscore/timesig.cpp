@@ -520,10 +520,10 @@ bool TimeSig::setProperty(Pid propertyId, const QVariant& v)
                   }
 
             if (startTick >= zeroFrac) {
-                  score()->cmdState().setTick(TickType::StartTick, startTick);
+                  score()->cmdState().setTick(TickType::Start, startTick);
                   }
 
-            score()->cmdState().setTick(TickType::EndTick, endTick);
+            score()->cmdState().setTick(TickType::End, endTick);
             // Observation: seems a doLayoutRange() is unnecessary here (it's called elsewhere)
             }
 

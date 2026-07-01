@@ -114,7 +114,7 @@ ChordRest* Score::cmdJoinMeasure(Measure* m1, Measure* m2)
                         }
                   }
             }
-      cmdState().setTick(TickType::StartTick, tick1);
+      cmdState().setTick(TickType::Start, tick1);
       endCmd();
 
       auto rv = inserted ? inserted->findChordRest(inserted->tick(), 0) : nullptr;
