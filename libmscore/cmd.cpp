@@ -126,10 +126,12 @@ void CmdState::setTick(TickType tt, const Fraction& t)
             return;
             }
 
-      if (tt == TickType::StartTick)
+      if (tt == TickType::Start)
             _startTick = t;
-      else if (tt == TickType::EndTick)
+      else if (tt == TickType::End)
             _endTick = t;
+      else
+            _startTick = _endTick = t;
 
       setUpdateMode(UpdateMode::Layout);
       }
