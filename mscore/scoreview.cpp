@@ -1253,8 +1253,10 @@ void ScoreView::paintEvent(QPaintEvent* ev)
 
       // Let playback cursor overlay score elements
       // Warning: color is not necessarily transparent
-      if (!MScore::cursorDrawnBehindStaff)
+      if (!MScore::cursorDrawnBehindStaff) {
+            drawRangeSelection(vp, true, MScore::lassoBorderEnabled);
             _cursor->paint(&vp);
+            }
 
       if (_score->layoutMode() == LayoutMode::LINE)
             _controlCursor->paint(&vp);
@@ -1786,6 +1788,171 @@ void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* ed
       }
 
 //---------------------------------------------------------
+//   drawRangeSelection
+//    Old code from 3.6.2 - 3.7
+//---------------------------------------------------------
+
+void ScoreView::drawRangeSelection(QPainter &p) const
+      {
+      auto& sel = score()->selection();
+      if (!sel.isRange())
+            return;
+
+      Segment* ss = sel.startSegment();
+      Segment* es = sel.endSegment();
+      if (!ss)
+            return;
+
+      if (!ss->enabled())
+            ss = ss->next1MMenabled();
+      if (es && !es->enabled())
+            es = es->next1MMenabled();
+      if (es && ss->tick() > es->tick())  // start after end?
+            return;
+
+      if (!ss->measure()->system()) {
+            // segment is in a measure that has not been laid out yet
+            // this can happen in mmrests
+            // first chordrest segment of mmrest instead
+            const Measure* mmr = ss->measure()->coveringMMRestOrThis();
+            if (mmr && mmr->system())
+                  ss = mmr->first(SegmentType::ChordRest);
+            else
+                  return;                 // still no system?
+
+            if (!ss)
+                  return;                 // no chordrest segment?
+            }
+
+      p.setBrush(Qt::NoBrush);
+
+      QPen pen;
+      QColor rangeColor = MScore::lassoColor; // MScore::selectColor[0];
+      qreal rangeWidth = 5.0; // 2.0
+      pen.setColor(rangeColor);
+      pen.setWidthF(rangeWidth / p.worldTransform().m11());
+
+      pen.setStyle(Qt::SolidLine);
+
+      p.setPen(pen);
+      double _spatium = score()->spatium();
+      double x2      = ss->pagePos().x() - _spatium;
+      int staffStart = sel.staffStart();
+      int staffEnd   = sel.staffEnd();
+
+      System* system2 = ss->measure()->system();
+      QPointF pt      = ss->pagePos();
+      double y        = pt.y();
+      SysStaff* ss1   = system2->staff(staffStart);
+
+      // find last visible staff:
+      int lastStaff = 0;
+      for (int i = staffEnd-1; i >= 0; --i) {
+            if (score()->staff(i)->show()) {
+                  lastStaff = i;
+                  break;
+                  }
+            }
+      SysStaff* ss2 = system2->staff(lastStaff);
+
+      double y1 = ss1->y() - 2 * score()->staff(staffStart)->spatium(Fraction(0,1)) + y;
+      double y2 = ss2->y() + ss2->bbox().height() + 2 * score()->staff(lastStaff)->spatium(Fraction(0,1)) + y;
+
+      // drag vertical start line
+      p.drawLine(QLineF(x2, y1, x2, y2).translated(system2->page()->pos()));
+
+      double x1;
+
+      for (Segment* s = ss; s && (s != es); ) {
+            Segment* ns = s->next1MMenabled();
+            System* system1 = system2;
+            system2  = s->measure()->system();
+            if (!system2) {
+                  // as before, use mmrest if necessary
+                  const Measure* mmr = s->measure()->coveringMMRestOrThis();
+                  if (mmr)
+                        system2 = mmr->system();
+                  if (!system2)
+                        break;
+                  // extend rectangle to end of mmrest
+                  pt = mmr->last()->pagePos();
+                  }
+            else
+                  pt = s->pagePos();
+            x1  = x2;
+            x2  = pt.x() + _spatium * 2;
+
+            if (ns == 0 || ns == es) {    // last segment?
+                  // if any staff in selection has measure rest or repeat measure in last measure,
+                  // extend rectangle to bar line
+                  Segment* fs = s->measure()->first(SegmentType::ChordRest);
+                  if (fs) {
+                        for (int i = staffStart; i < staffEnd; ++i) {
+                              if (!score()->staff(i)->show())
+                                    continue;
+                              ChordRest* cr = static_cast<ChordRest*>(fs->element(i * VOICES));
+                              if (cr) {
+                                    bool haveSingleCenteredChord = (cr->ticks() == cr->measure()->ticks()) && cr->measure()->centerSingleChord();
+                                    if (cr->type() == ElementType::REPEAT_MEASURE || cr->isFullMeasureRest() || haveSingleCenteredChord) {
+                                          x2 = s->measure()->abbox().right() - _spatium * 0.5;
+                                          break;
+                                          }
+                                    }
+                              }
+                        }
+                  }
+
+            if (system2 != system1)
+                  x1  = x2 - 2 * _spatium;
+            y   = pt.y();
+            ss1 = system2->staff(staffStart);
+            ss2 = system2->staff(lastStaff);
+            y1  = ss1->y() - 2 * score()->staff(staffStart)->spatium(s->tick()) + y;
+            y2  = ss2->y() + ss2->bbox().height() + 2 * score()->staff(lastStaff)->spatium(s->tick()) + y;
+            p.drawLine(QLineF(x1, y1, x2, y1).translated(system2->page()->pos()));
+            p.drawLine(QLineF(x1, y2, x2, y2).translated(system2->page()->pos()));
+            s = ns;
+            }
+      //
+      // draw vertical end line
+      //
+      p.drawLine(QLineF(x2, y1, x2, y2).translated(system2->page()->pos()));
+      }
+
+//---------------------------------------------------------
+//   drawRangeSelection
+//    An alternative range selection based on highlighting
+//    staves/measures instead of a lasso-style
+//---------------------------------------------------------
+
+void ScoreView::drawRangeSelection(QPainter &p, bool highlight, bool border) const
+      {
+      auto& sel = score()->selection();
+      if (!sel.isRange())
+            return;
+
+      const auto& boxes = sel.encompassingBoxes();
+      QColor c;
+      if (highlight) {
+            c = MScore::lassoColor;
+            p.setBrush(QBrush(c));
+            p.setPen(Qt::NoPen);
+            p.drawRects(boxes.data(), boxes.size());
+            }
+
+      if (border) {
+            const int voice = score()->inputState().voice();
+            if (MScore::singleNoteSelectionColorEnabled)
+                  c = MScore::singleNoteSelectionColor;
+            else
+                  c = MScore::selectColor[voice];
+            qreal width = SPATIUM20 * 0.25;
+            p.setPen(QPen(c, width, Qt::SolidLine));
+            p.drawRects(boxes.data(), boxes.size());
+            }
+      }
+
+//---------------------------------------------------------
 //   paint
 //---------------------------------------------------------
 
@@ -1927,6 +2094,9 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                   const bool opaqueHoverColor = (MScore::hoverColor.alpha() == 255);
                   const bool hoverUnder = opaqueHoverColor;
                   const bool haveHover = MScore::hoverColorEnabled && dropTarget;
+
+                  drawRangeSelection(p, true, MScore::lassoBorderEnabled);
+
                   if (haveHover && hoverUnder && state != ViewState::LASSO) {
                         drawHoverHighlight(p, *dropTarget);
                         }
@@ -2044,131 +2214,6 @@ void ScoreView::paint(const QRect& r, QPainter& p)
 
       if (dropRectangle.isValid())
             p.fillRect(dropRectangle, QColor(80, 0, 0, 80));
-
-      const Selection& sel = _score->selection();
-
-      // RANGE SELECTION
-      if (sel.isRange()) {
-            Segment* ss = sel.startSegment();
-            Segment* es = sel.endSegment();
-
-            if (!ss)
-                  return;
-
-            if (!ss->enabled())
-                  ss = ss->next1MMenabled();
-            if (es && !es->enabled())
-                  es = es->next1MMenabled();
-            if (es && ss->tick() > es->tick())  // start after end?
-                  return;
-
-            if (!ss->measure()->system()) {
-                  // segment is in a measure that has not been laid out yet
-                  // this can happen in mmrests
-                  // first chordrest segment of mmrest instead
-                  const Measure* mmr = ss->measure()->coveringMMRestOrThis();
-                  if (mmr && mmr->system())
-                        ss = mmr->first(SegmentType::ChordRest);
-                  else
-                        return;                 // still no system?
-                  if (!ss)
-                        return;                 // no chordrest segment?
-                  }
-
-            p.setBrush(Qt::NoBrush);
-
-            QPen pen;
-            QColor rangeColor = MScore::lassoColor; // MScore::selectColor[0];
-            qreal rangeWidth = 5.0; // 2.0
-            pen.setColor(rangeColor);
-            pen.setWidthF(rangeWidth / p.worldTransform().m11());
-
-            pen.setStyle(Qt::SolidLine);
-
-            p.setPen(pen);
-            double _spatium = score()->spatium();
-            double x2      = ss->pagePos().x() - _spatium;
-            int staffStart = sel.staffStart();
-            int staffEnd   = sel.staffEnd();
-
-            System* system2 = ss->measure()->system();
-            QPointF pt      = ss->pagePos();
-            double y        = pt.y();
-            SysStaff* ss1   = system2->staff(staffStart);
-
-            // find last visible staff:
-            int lastStaff = 0;
-            for (int i = staffEnd-1; i >= 0; --i) {
-                  if (score()->staff(i)->show()) {
-                        lastStaff = i;
-                        break;
-                        }
-                  }
-            SysStaff* ss2 = system2->staff(lastStaff);
-
-            double y1 = ss1->y() - 2 * score()->staff(staffStart)->spatium(Fraction(0,1)) + y;
-            double y2 = ss2->y() + ss2->bbox().height() + 2 * score()->staff(lastStaff)->spatium(Fraction(0,1)) + y;
-
-            // drag vertical start line
-            p.drawLine(QLineF(x2, y1, x2, y2).translated(system2->page()->pos()));
-
-            double x1;
-
-            for (Segment* s = ss; s && (s != es); ) {
-                  Segment* ns = s->next1MMenabled();
-                  System* system1 = system2;
-                  system2  = s->measure()->system();
-                  if (!system2) {
-                        // as before, use mmrest if necessary
-                        const Measure* mmr = s->measure()->coveringMMRestOrThis();
-                        if (mmr)
-                              system2 = mmr->system();
-                        if (!system2)
-                              break;
-                        // extend rectangle to end of mmrest
-                        pt = mmr->last()->pagePos();
-                        }
-                  else
-                        pt = s->pagePos();
-                  x1  = x2;
-                  x2  = pt.x() + _spatium * 2;
-
-                  if (ns == 0 || ns == es) {    // last segment?
-                        // if any staff in selection has measure rest or repeat measure in last measure,
-                        // extend rectangle to bar line
-                        Segment* fs = s->measure()->first(SegmentType::ChordRest);
-                        if (fs) {
-                              for (int i = staffStart; i < staffEnd; ++i) {
-                                    if (!score()->staff(i)->show())
-                                          continue;
-                                    ChordRest* cr = static_cast<ChordRest*>(fs->element(i * VOICES));
-                                    if (cr) {
-                                          bool haveSingleCenteredChord = (cr->ticks() == cr->measure()->ticks()) && cr->measure()->centerSingleChord();
-                                          if (cr->type() == ElementType::REPEAT_MEASURE || cr->isFullMeasureRest() || haveSingleCenteredChord) {
-                                                x2 = s->measure()->abbox().right() - _spatium * 0.5;
-                                                break;
-                                                }
-                                          }
-                                    }
-                              }
-                        }
-
-                  if (system2 != system1)
-                        x1  = x2 - 2 * _spatium;
-                  y   = pt.y();
-                  ss1 = system2->staff(staffStart);
-                  ss2 = system2->staff(lastStaff);
-                  y1  = ss1->y() - 2 * score()->staff(staffStart)->spatium(s->tick()) + y;
-                  y2  = ss2->y() + ss2->bbox().height() + 2 * score()->staff(lastStaff)->spatium(s->tick()) + y;
-                  p.drawLine(QLineF(x1, y1, x2, y1).translated(system2->page()->pos()));
-                  p.drawLine(QLineF(x1, y2, x2, y2).translated(system2->page()->pos()));
-                  s = ns;
-                  }
-            //
-            // draw vertical end line
-            //
-            p.drawLine(QLineF(x2, y1, x2, y2).translated(system2->page()->pos()));
-            }
 
       // Regular Edit Mode (Grips take precedence)
       if (postponeEditMode)

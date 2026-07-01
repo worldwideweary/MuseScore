@@ -288,6 +288,8 @@ class ScoreView : public QWidget, public MuseScoreView {
       void drawHoverHighlight(QPainter&, const Element&);
       void drawNoteEntryInformation(QPainter& p, const QPointF& pt, int fontSz, bool showIntervals);
       void drawElements(QPainter& p,QList<Element*>& el, Element* editElement);
+      void drawRangeSelection(QPainter &p) const;
+      void drawRangeSelection(QPainter&, bool, bool) const;
       bool dragTimeAnchorElement(const QPointF& pos);
       bool dragMeasureAnchorElement(const QPointF& pos);
       virtual void lyricsTab(bool back, bool end, bool moveOnly) override;
