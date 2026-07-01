@@ -159,6 +159,9 @@ class Selection {
 
       QString _lockReason;
 
+      Direction _lastDirection = Direction::AUTO;
+      std::vector<QRectF> _encompassingBoxes;
+
       QByteArray staffMimeData() const;
       QByteArray symbolListMimeData() const;
       SelectionFilter selectionFilter() const;
@@ -238,6 +241,9 @@ class Selection {
       bool measureRange(Measure** m1, Measure** m2) const;
       void extendRangeSelection(ChordRest* cr);
       void extendRangeSelection(Segment* seg, Segment* segAfter, int staffIdx, const Fraction& tick, const Fraction& etick);
+      Direction lastRangeExtension() const;
+      const std::vector<QRectF>& encompassingBoxes() const;
+      void updateEncompassingBoxes();
       };
 
 

@@ -45,6 +45,7 @@
 #include "select.h"
 #include "sig.h"
 #include "staff.h"
+#include "stafflines.h"
 #include "stafftext.h"
 #include "stem.h"
 #include "stemslash.h"
@@ -362,6 +363,7 @@ void Selection::clear()
       _staffStart    = 0;
       _staffEnd      = 0;
       _activeTrack   = 0;
+      _encompassingBoxes.clear();
       setState(SelState::NONE);
       }
 
@@ -719,6 +721,7 @@ void Selection::update()
       for (Element* e : qAsConst(_el))
             e->setSelected(true);
       updateState();
+      updateEncompassingBoxes();
       }
 
 //---------------------------------------------------------
@@ -1419,10 +1422,14 @@ void Selection::extendRangeSelection(Segment* seg, Segment* segAfter, int staffI
       bool activeIsFirst = false;
       int activeStaff = _activeTrack / VOICES;
 
-      if (staffIdx < _staffStart)
+      if (staffIdx < _staffStart) {
+            _lastDirection = Direction::UP;
             _staffStart = staffIdx;
-      else if (staffIdx >= _staffEnd)
+            }
+      else if (staffIdx >= _staffEnd) {
+            _lastDirection = Direction::DOWN;
             _staffEnd = staffIdx + 1;
+            }
       else if (_staffEnd - _staffStart > 1) { // at least 2 staff selected
             if (staffIdx == _staffStart + 1 && activeStaff == _staffStart) // going down
                   _staffStart = staffIdx;
@@ -1431,10 +1438,12 @@ void Selection::extendRangeSelection(Segment* seg, Segment* segAfter, int staffI
             }
 
       if (tick < tickStart()) {
+            _lastDirection = Direction::LEFT;
             _startSegment = seg;
             activeIsFirst = true;
             }
       else if (etick >= tickEnd()) {
+            _lastDirection = Direction::RIGHT;
             _endSegment = segAfter;
             }
       else {
@@ -1458,6 +1467,93 @@ void Selection::extendRangeSelection(Segment* seg, Segment* segAfter, int staffI
 Direction Selection::lastRangeExtension() const
       {
       return _lastDirection;
+      }
+
+//---------------------------------------------------------
+// encompassingBoxes
+//---------------------------------------------------------
+
+const std::vector<QRectF>& Selection::encompassingBoxes() const
+      {
+      return _encompassingBoxes;
+      }
+
+//---------------------------------------------------------
+//    updateEncompassingBoxes
+//     bounding rectangles for staff-based range-selection
+//     TODO: Efficiency (not that important though)
+//          don't indiscriminately clear but be precise
+//          depending on the nature of last performed action
+//---------------------------------------------------------
+
+void Selection::updateEncompassingBoxes()
+      {
+      if (!isRange())
+            return;
+
+      _encompassingBoxes.clear();
+
+      auto fcr = firstChordRest();
+      auto lcr = lastChordRest();
+      if (!fcr || !lcr)
+            return;
+
+      std::set<StaffLines*> staffLines;
+      for (auto el : elements()) {
+            if (auto m = el->findMeasure()) {
+                  int staffIdx = el->staff()->idx();
+                  staffLines.insert(m->staffLines(staffIdx));
+                  }
+            }
+      auto beginOffset = fcr->segment()->pageBoundingRect().left();
+      auto endOffset = lcr->segment()->pageBoundingRect().right();
+
+      Measure* fm {nullptr};
+      Measure* lm {nullptr};
+      measureRange(&fm, &lm);
+
+      const bool startAtMeasureBegin = fm->tick() == fcr->tick();
+      const bool endAtMeasureEnd = lm->endTick() == lcr->endTick();
+
+      std::vector<System*> systems;
+      for (Measure* i = fm; i ; i = i->nextMeasure()) {
+            auto system = i->system();
+            if (std::find(systems.begin(), systems.end(), system) == systems.end())
+                  systems.push_back(system);
+            if (i == lm)
+                  break;
+            }
+
+      auto lastSys = !systems.empty() ? *systems.rbegin() : nullptr;
+      auto firstSys = !systems.empty() ? *systems.begin() : nullptr;
+      for (auto sys : systems) {
+            QRectF systemBox;
+            for (auto staffline : staffLines) {
+                  auto stafflineSys = staffline->measure()->system();
+                  auto stafflineBox = staffline->canvasBoundingRect();
+                  if (stafflineSys == firstSys) {
+                        if (!startAtMeasureBegin)
+                              stafflineBox.setLeft(beginOffset - SPATIUM20);
+                        }
+                  if (stafflineSys == lastSys) {
+                        if (!endAtMeasureEnd )
+                              stafflineBox.setRight(endOffset - SPATIUM20);
+                        }
+                  if (stafflineSys == sys) {
+                        if (systemBox.isEmpty())
+                              systemBox = stafflineBox;
+                        else
+                              systemBox = systemBox.united(stafflineBox);
+                        }
+                  }
+
+            auto begin = _encompassingBoxes.cbegin();
+            auto end = _encompassingBoxes.cend();
+            auto nope = _encompassingBoxes.cend();
+            if (std::find(begin, end, systemBox) == nope) {
+                  _encompassingBoxes.push_back(systemBox);
+                  }
+            }
       }
 
 //---------------------------------------------------------
