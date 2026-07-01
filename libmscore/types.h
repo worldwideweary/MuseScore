@@ -360,7 +360,7 @@ constexpr bool operator& (NoteType t1, NoteType t2) {
 
 enum class Direction : char {
       ///.\{
-      AUTO, UP, DOWN
+      AUTO, UP, DOWN, LEFT, RIGHT
       ///\}
       };
 
