@@ -1201,6 +1201,10 @@ SpannerSegment* Slur::layoutSystem(System* system)
                               }
                         }
                         break;
+                  case Direction::LEFT:
+                  case Direction::RIGHT:
+                  default:
+                        break;
                   }
             sst = tick2() < etick ? SpannerSegmentType::SINGLE : SpannerSegmentType::BEGIN;
             }
@@ -1368,6 +1372,9 @@ void Slur::layout()
                         }
                   }
                   break;
+            case Direction::LEFT:
+            case Direction::RIGHT:
+            default: break;
             }
 
       SlurPos sPos;

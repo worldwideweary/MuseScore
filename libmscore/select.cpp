@@ -1490,6 +1490,15 @@ void Selection::extendRangeSelection(Segment* seg, Segment* segAfter, int staffI
       }
 
 //---------------------------------------------------------
+// lastRangeExtension
+//---------------------------------------------------------
+
+Direction Selection::lastRangeExtension() const
+      {
+      return _lastDirection;
+      }
+
+//---------------------------------------------------------
 //   selectionFilter
 //---------------------------------------------------------
 
