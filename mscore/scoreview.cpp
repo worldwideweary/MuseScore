@@ -888,22 +888,21 @@ void ScoreView::moveCursor()
             // or this measure was skipped by a multi measure rest
             return;
             }
-      double x        = segment->canvasPos().x();
-      double y        = system->staffYpage(staffIdx) + system->page()->pos().y();
-      double _spatium = score()->spatium();
-      x              -= qMin(segment->pos().x() - score()->styleP(Sid::barNoteDistance), 0.0);
 
       update(_matrix.mapRect(_cursor->rect()).toRect().adjusted(-1,-1,1,1));
 
-      double h;
-      qreal mag               = _spatium / SPATIUM20;
-      double w                = _spatium * 2.0 + score()->scoreFont()->width(SymId::noteheadBlack, mag);
+      double _spatium = score()->spatium();
+      const double xOff = (0.5 * _spatium);
+      double x = segment->canvasPos().x() - xOff;
+      double y = system->staffYpage(staffIdx) + system->page()->pos().y();
+      double w = xOff;
+      double h = 0.0;
+
       Staff* staff            = score()->staff(staffIdx);
       const StaffType* staffType    = staff->staffType(is.tick());
       double lineDist         = staffType->lineDistance().val() * _spatium;
       int lines               = staffType->lines();
       int strg                = is.string();          // strg refers to an instrument physical string
-      x                       -= _spatium;
       int instrStrgs          = staff->part()->instrument(is.tick())->stringData()->strings();
       // if on a TAB staff and InputState::_string makes sense,
       // draw cursor around single string
@@ -959,8 +958,10 @@ void ScoreView::moveCursor()
       }
       // otherwise, draw cursor across whole staff
       else {
-            h = (lines - 1) * lineDist + 4 * _spatium;
-            y -= 2.0 * _spatium;
+            const auto staffHeight = (lines - 1) * lineDist;
+            const auto extraHeight = lineDist * 4;
+            h = staffHeight + extraHeight ;
+            y -= (extraHeight  * 0.5);
             }
       _cursor->setRect(QRectF(x, y, w, h));
       update(_matrix.mapRect(_cursor->rect()).toRect().adjusted(-1,-1,1,1));
