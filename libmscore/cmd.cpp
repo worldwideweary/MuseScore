@@ -4632,6 +4632,7 @@ void Score::cmd(const QAction* a, EditData& ed)
             { "system-break",               [](Score* cs, EditData&){ cs->cmdToggleLayoutBreak(LayoutBreak::Type::LINE);              }},
             { "page-break",                 [](Score* cs, EditData&){ cs->cmdToggleLayoutBreak(LayoutBreak::Type::PAGE);              }},
             { "section-break",              [](Score* cs, EditData&){ cs->cmdToggleLayoutBreak(LayoutBreak::Type::SECTION);           }},
+            { "no-break",                   [](Score* cs, EditData&){ cs->cmdToggleLayoutBreak(LayoutBreak::Type::NOBREAK);           }},
             { "relayout",                   [](Score* cs, EditData&){ cs->cmdRelayout();                                              }},
             { "toggle-autoplace",           [](Score* cs, EditData&){ cs->cmdToggleAutoplace(false);                                  }},
             { "autoplace-enabled",          [](Score* cs, EditData&){ cs->cmdToggleAutoplace(true);                                   }},

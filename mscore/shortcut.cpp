@@ -2670,6 +2670,16 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         "no-break",
+         QT_TRANSLATE_NOOP("action","Toggle Keep measures on the same system"),
+         QT_TRANSLATE_NOOP("action","Toggle 'Keep measures on the same system'"),
+         0,
+         Icons::Invalid_ICON,
+         Qt::WindowShortcut
+         },
+      {
+         MsWidget::SCORE_TAB,
          STATE_NORMAL,
          "edit-element",
          QT_TRANSLATE_NOOP("action","Edit Element"),
