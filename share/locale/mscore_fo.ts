@@ -12281,22 +12281,22 @@ Nótabólkurin fer um taktmarkið</translation>
         <translation>Scoop</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1203"/>
+        <location filename="../../mscore/menus.cpp" line="1201"/>
         <source>Slide out down</source>
         <translation>Glíðing út niður</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1208"/>
+        <location filename="../../mscore/menus.cpp" line="1206"/>
         <source>Slide out up</source>
         <translation>Glíðing út upp</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1213"/>
+        <location filename="../../mscore/menus.cpp" line="1211"/>
         <source>Slide in above</source>
         <translation>Glíðing inn omanfyri</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1218"/>
+        <location filename="../../mscore/menus.cpp" line="1216"/>
         <source>Slide in below</source>
         <translation>Glíðing inn niðanfyri</translation>
     </message>
@@ -17654,17 +17654,17 @@ vinarliga vel annað navn:</translation>
         <translation>Taktstrikur</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="796"/>
+        <location filename="../../mscore/menus.cpp" line="794"/>
         <source>Fingering</source>
         <translation>Fingrasetningur</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1146"/>
+        <location filename="../../mscore/menus.cpp" line="1144"/>
         <source>Breaths &amp; Pauses</source>
         <translation>Andadráttur &amp; Íhald</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1167"/>
+        <location filename="../../mscore/menus.cpp" line="1165"/>
         <source>Arpeggios &amp; Glissandi</source>
         <translation>Arpeggio &amp; Glissandi</translation>
     </message>
@@ -17699,100 +17699,100 @@ vinarliga vel annað navn:</translation>
         <translation>Beint arpeggio niður</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1601"/>
+        <location filename="../../mscore/menus.cpp" line="1599"/>
         <source>Staff Text</source>
         <translation>Nótalinju tekstur</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1602"/>
+        <location filename="../../mscore/menus.cpp" line="1600"/>
         <source>Staff text</source>
         <translation>Nótalinju tekstur</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1605"/>
+        <location filename="../../mscore/menus.cpp" line="1603"/>
         <source>Expression</source>
         <translation>Frágreiðing</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1608"/>
+        <location filename="../../mscore/menus.cpp" line="1606"/>
         <source>Expression text</source>
         <translation>Frágreiðingar tekstur</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1611"/>
+        <location filename="../../mscore/menus.cpp" line="1609"/>
         <source>Change Instr.</source>
         <translation>Broyt ljóðf.</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1612"/>
+        <location filename="../../mscore/menus.cpp" line="1610"/>
         <source>Instrument change</source>
         <translation>Ljóðføris broyting</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1615"/>
+        <location filename="../../mscore/menus.cpp" line="1613"/>
         <source>Staff type change</source>
         <translation>Nótalinjuslag broyting</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1619"/>
+        <location filename="../../mscore/menus.cpp" line="1617"/>
         <source>Rehearsal mark</source>
         <translation>Venjingar merki</translation>
     </message>
     <message>
+        <location filename="../../mscore/menus.cpp" line="1620"/>
         <location filename="../../mscore/menus.cpp" line="1622"/>
-        <location filename="../../mscore/menus.cpp" line="1624"/>
         <source>Swing</source>
         <translation>Swing</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1628"/>
-        <location filename="../../mscore/menus.cpp" line="1634"/>
+        <location filename="../../mscore/menus.cpp" line="1626"/>
+        <location filename="../../mscore/menus.cpp" line="1632"/>
         <source>Straight</source>
         <extracomment>System text to switch from swing rhythm back to straight rhythm</extracomment>
         <translation>Straight</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1637"/>
+        <location filename="../../mscore/menus.cpp" line="1635"/>
         <source>System Text</source>
         <translation>Skipanar tekstur</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1638"/>
+        <location filename="../../mscore/menus.cpp" line="1636"/>
         <source>System text</source>
         <translation>Skipanar tekstur</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1651"/>
+        <location filename="../../mscore/menus.cpp" line="1649"/>
         <source>pizz.</source>
         <translation>pizz.</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1656"/>
+        <location filename="../../mscore/menus.cpp" line="1654"/>
         <source>Pizzicato</source>
         <translation>Pizzicato</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1659"/>
+        <location filename="../../mscore/menus.cpp" line="1657"/>
         <source>arco</source>
         <translation>arco</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1664"/>
+        <location filename="../../mscore/menus.cpp" line="1662"/>
         <source>Arco</source>
         <translation>Arco</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1667"/>
+        <location filename="../../mscore/menus.cpp" line="1665"/>
         <source>tremolo</source>
         <translation>tremolo</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1672"/>
+        <location filename="../../mscore/menus.cpp" line="1670"/>
         <source>Tremolo</source>
         <translation>Tremolo</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="877"/>
+        <location filename="../../mscore/menus.cpp" line="875"/>
         <source>Noteheads</source>
         <translation>Nótahøvd</translation>
     </message>
@@ -17827,410 +17827,410 @@ vinarliga vel annað navn:</translation>
         <translation>Sektión reglubrot</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="764"/>
-        <source>Don&apos;t break</source>
-        <translation>Einki reglubrot</translation>
-    </message>
-    <message>
-        <location filename="../../mscore/menus.cpp" line="771"/>
+        <location filename="../../mscore/menus.cpp" line="769"/>
         <source>Staff spacer down</source>
         <translation>Nótalinju millumrúm niður</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="777"/>
+        <location filename="../../mscore/menus.cpp" line="775"/>
         <source>Staff spacer up</source>
         <translation>Nótalinju millumrúm upp</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="783"/>
+        <location filename="../../mscore/menus.cpp" line="781"/>
         <source>Staff spacer fixed down</source>
         <translation>Nótalinju millumrúm niður</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="805"/>
+        <location filename="../../mscore/menus.cpp" line="803"/>
         <source>Fingering %1</source>
         <translation>Fingrasetingur %1</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="811"/>
+        <location filename="../../mscore/menus.cpp" line="809"/>
         <source>RH Guitar Fingering %1</source>
         <translation>HH Guitar Fingrasetningur %1</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="817"/>
+        <location filename="../../mscore/menus.cpp" line="815"/>
         <source>LH Guitar Fingering %1</source>
         <translation>VH Guitar Fingrasetningur %1</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="823"/>
+        <location filename="../../mscore/menus.cpp" line="821"/>
         <source>String number %1</source>
         <translation>Streingja nummar %1</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="846"/>
+        <location filename="../../mscore/menus.cpp" line="844"/>
         <source>Tremolos</source>
         <translation>Tremolo</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="908"/>
+        <location filename="../../mscore/menus.cpp" line="906"/>
         <source>Articulations</source>
         <translation>Framburðir</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="976"/>
+        <location filename="../../mscore/menus.cpp" line="974"/>
         <source>Bend</source>
         <translation>Bend</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="982"/>
+        <location filename="../../mscore/menus.cpp" line="980"/>
         <source>Tremolo bar</source>
         <translation>Tremolo bjálki</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="994"/>
+        <location filename="../../mscore/menus.cpp" line="992"/>
         <source>Ornaments</source>
         <translation>Prýði</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1037"/>
+        <location filename="../../mscore/menus.cpp" line="1035"/>
         <source>Accordion</source>
         <translation>Akkordion</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1119"/>
+        <location filename="../../mscore/menus.cpp" line="1117"/>
         <source>Brackets</source>
         <translation>Klombur</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1125"/>
+        <location filename="../../mscore/menus.cpp" line="1123"/>
         <source>Bracket</source>
         <translation>Klombur</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1126"/>
+        <location filename="../../mscore/menus.cpp" line="1124"/>
         <source>Brace</source>
         <translation>Reim</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1127"/>
+        <location filename="../../mscore/menus.cpp" line="1125"/>
         <source>Square</source>
         <translation>Kvadrat</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1441"/>
+        <location filename="../../mscore/menus.cpp" line="1439"/>
         <source>Pedal (with ped and line)</source>
         <translation>Pedal (við ped og striku)</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1449"/>
+        <location filename="../../mscore/menus.cpp" line="1447"/>
         <source>Pedal (with ped and asterisk)</source>
         <translation>Peda (við ped og stjørnu)</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1455"/>
+        <location filename="../../mscore/menus.cpp" line="1453"/>
         <source>Pedal (straight hooks)</source>
         <translation>Pedal (Beint horn)</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1461"/>
+        <location filename="../../mscore/menus.cpp" line="1459"/>
         <source>Pedal (angled end hook)</source>
         <translation>Pedal (Horn endi vinklað)</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1467"/>
+        <location filename="../../mscore/menus.cpp" line="1465"/>
         <source>Pedal (both hooks angled)</source>
         <translation>Pedal (Horn bæði vinklaði)</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1473"/>
+        <location filename="../../mscore/menus.cpp" line="1471"/>
         <source>Pedal (angled start hook)</source>
         <translation>Pedal (Horn byrjan vinklað)</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1486"/>
+        <location filename="../../mscore/menus.cpp" line="1484"/>
         <source>Staff Text line</source>
         <translation>Nóta linju tekstur</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1492"/>
+        <location filename="../../mscore/menus.cpp" line="1490"/>
         <source>System Text line</source>
         <translation>Skipanar tekstur</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1536"/>
+        <location filename="../../mscore/menus.cpp" line="1534"/>
         <source>Half note = 80 BPM</source>
         <translation>Hálvur nóti = 80 SUM</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1537"/>
+        <location filename="../../mscore/menus.cpp" line="1535"/>
         <source>Quarter note = 80 BPM</source>
         <translation>Fjórðingsnóti = 80 SUM</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1538"/>
+        <location filename="../../mscore/menus.cpp" line="1536"/>
         <source>Eighth note = 80 BPM</source>
         <translation>8 prt. nóti = 80 SUM</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1539"/>
+        <location filename="../../mscore/menus.cpp" line="1537"/>
         <source>Dotted half note = 80 BPM</source>
         <translation>Prikkaður hálvnóti = 80 SUM</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1540"/>
+        <location filename="../../mscore/menus.cpp" line="1538"/>
         <source>Dotted quarter note = 80 BPM</source>
         <translation>Prikkaður fjórðingsnóti = 80 SUM</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1541"/>
+        <location filename="../../mscore/menus.cpp" line="1539"/>
         <source>Dotted eighth note = 80 BPM</source>
         <translation>Prikkaðir 8 prt. nóti = 80 SUM</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1558"/>
+        <location filename="../../mscore/menus.cpp" line="1556"/>
         <source>Quarter note = dotted quarter note metric modulation</source>
         <translation>Fjórðingsnóti = prikkaður fjórðingsnóti metrabroyting</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1559"/>
+        <location filename="../../mscore/menus.cpp" line="1557"/>
         <source>Dotted quarter note = quarter note metric modulation</source>
         <translation>Prikkaður fjórðingsnóti = fjórðingsnóti metrabroyting</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1560"/>
+        <location filename="../../mscore/menus.cpp" line="1558"/>
         <source>Half note = quarter note metric modulation</source>
         <translation>Hálvnóti = fjórðingsnóti metrabroyting</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1561"/>
+        <location filename="../../mscore/menus.cpp" line="1559"/>
         <source>Quarter note = half note metric modulation</source>
         <translation>Fjórðingsnóti = hálvnóti metrabroyting</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1562"/>
+        <location filename="../../mscore/menus.cpp" line="1560"/>
         <source>Eighth note = eighth note metric modulation</source>
         <translation>8 prt. nóti = 8 prt. nóti metrabroyting</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1563"/>
+        <location filename="../../mscore/menus.cpp" line="1561"/>
         <source>Quarter note = quarter note metric modulation</source>
         <translation>Fjórðingsnóti = fjórðingsnóti metrabroyting</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1564"/>
+        <location filename="../../mscore/menus.cpp" line="1562"/>
         <source>Dotted eighth note = quarter note metric modulation</source>
         <translation>Prikkaður 8 prt. nóti = fjórðingsnóti metrabroyting</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1646"/>
-        <location filename="../../mscore/menus.cpp" line="1647"/>
+        <location filename="../../mscore/menus.cpp" line="1644"/>
+        <location filename="../../mscore/menus.cpp" line="1645"/>
         <source>Measure Number</source>
         <translation>Takt nummar</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1676"/>
+        <location filename="../../mscore/menus.cpp" line="1674"/>
         <source>mute</source>
         <extracomment>For brass and plucked string instruments: staff text that prescribes to use mute while playing, see https://en.wikipedia.org/wiki/Mute_(music)</extracomment>
         <translation>mute</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1682"/>
+        <location filename="../../mscore/menus.cpp" line="1680"/>
         <source>Mute</source>
         <extracomment>For brass and plucked string instruments: staff text that prescribes to use mute while playing, see https://en.wikipedia.org/wiki/Mute_(music)</extracomment>
         <translation>Mute</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1686"/>
+        <location filename="../../mscore/menus.cpp" line="1684"/>
         <source>open</source>
         <extracomment>For brass and plucked string instruments: staff text that prescribes to play without mute, see https://en.wikipedia.org/wiki/Mute_(music)</extracomment>
         <translation>Opin</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1692"/>
+        <location filename="../../mscore/menus.cpp" line="1690"/>
         <source>Open</source>
         <extracomment>For brass and plucked string instruments: staff text that prescribes to play without mute, see https://en.wikipedia.org/wiki/Mute_(music)</extracomment>
         <translation>Opin</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1695"/>
+        <location filename="../../mscore/menus.cpp" line="1693"/>
         <source>S/A</source>
         <translation>S/A</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1701"/>
+        <location filename="../../mscore/menus.cpp" line="1699"/>
         <source>Soprano/Alto</source>
         <translation>Sopran/Alt</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1704"/>
+        <location filename="../../mscore/menus.cpp" line="1702"/>
         <source>T/B</source>
         <translation>T/B</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1710"/>
+        <location filename="../../mscore/menus.cpp" line="1708"/>
         <source>Tenor/Bass</source>
         <translation>Tenor/Bass</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1713"/>
+        <location filename="../../mscore/menus.cpp" line="1711"/>
         <source>T/L</source>
         <translation>T/H</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1719"/>
+        <location filename="../../mscore/menus.cpp" line="1717"/>
         <source>Tenor/Lead</source>
         <translation>Tenor/Høvuðs</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1722"/>
+        <location filename="../../mscore/menus.cpp" line="1720"/>
         <source>B/B</source>
         <translation>B/B</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1728"/>
+        <location filename="../../mscore/menus.cpp" line="1726"/>
         <source>Bari/Bass</source>
         <translation>Bari/Bass</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1230"/>
+        <location filename="../../mscore/menus.cpp" line="1228"/>
         <source>Clefs</source>
         <translation>Lyklar</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1276"/>
+        <location filename="../../mscore/menus.cpp" line="1274"/>
         <source>Grace Notes</source>
         <translation>Skreyt nótar</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1301"/>
+        <location filename="../../mscore/menus.cpp" line="1299"/>
         <source>Bagpipe Embellishments</source>
         <translation>Sekkjapípu príði</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1321"/>
+        <location filename="../../mscore/menus.cpp" line="1319"/>
         <source>Lines</source>
         <translation>Strikur</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1329"/>
+        <location filename="../../mscore/menus.cpp" line="1327"/>
         <source>Slur</source>
         <translation>Bindibogi</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1334"/>
+        <location filename="../../mscore/menus.cpp" line="1332"/>
         <source>Crescendo hairpin</source>
         <translation>Crescendo kíli</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1339"/>
+        <location filename="../../mscore/menus.cpp" line="1337"/>
         <source>Diminuendo hairpin</source>
         <translation>Diminoendo kíli</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1344"/>
+        <location filename="../../mscore/menus.cpp" line="1342"/>
         <source>Crescendo line</source>
         <translation>Crescendo-strika</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1349"/>
+        <location filename="../../mscore/menus.cpp" line="1347"/>
         <source>Diminuendo line</source>
         <translation>Diminuendo strika</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1358"/>
+        <location filename="../../mscore/menus.cpp" line="1356"/>
         <source>Dynamic + hairpin</source>
         <translation>Dynamikkur + kíli</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1367"/>
+        <location filename="../../mscore/menus.cpp" line="1365"/>
         <source>Prima volta</source>
         <translation>Prima volta</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1376"/>
+        <location filename="../../mscore/menus.cpp" line="1374"/>
         <source>Seconda volta</source>
         <translation>Seconda volta</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1385"/>
+        <location filename="../../mscore/menus.cpp" line="1383"/>
         <source>Terza volta</source>
         <translation>Terza volta</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1394"/>
+        <location filename="../../mscore/menus.cpp" line="1392"/>
         <source>Seconda volta, open</source>
         <translation>Seconda volta, opin</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1400"/>
+        <location filename="../../mscore/menus.cpp" line="1398"/>
         <source>8va alta</source>
         <translation>8va alta</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1407"/>
+        <location filename="../../mscore/menus.cpp" line="1405"/>
         <source>8va bassa</source>
         <translation>8va bassa</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1413"/>
+        <location filename="../../mscore/menus.cpp" line="1411"/>
         <source>15ma alta</source>
         <translation>15ma alta</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1420"/>
+        <location filename="../../mscore/menus.cpp" line="1418"/>
         <source>15ma bassa</source>
         <translation>15ma bassa</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1426"/>
+        <location filename="../../mscore/menus.cpp" line="1424"/>
         <source>22ma alta</source>
         <translation>22ma alta</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1433"/>
+        <location filename="../../mscore/menus.cpp" line="1431"/>
         <source>22ma bassa</source>
         <translation>22ma bassa</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1128"/>
-        <location filename="../../mscore/menus.cpp" line="1497"/>
+        <location filename="../../mscore/menus.cpp" line="1126"/>
+        <location filename="../../mscore/menus.cpp" line="1495"/>
         <source>Line</source>
         <translation>Strika</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1500"/>
+        <location filename="../../mscore/menus.cpp" line="763"/>
+        <source>Keep measures on the same system</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/menus.cpp" line="1498"/>
         <source>Ambitus</source>
         <translation>Ambitus</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1504"/>
+        <location filename="../../mscore/menus.cpp" line="1502"/>
         <source>Let Ring</source>
         <translation>Lat ljóma</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1515"/>
+        <location filename="../../mscore/menus.cpp" line="1513"/>
         <source>Palm Mute</source>
         <translation>Lógva doyving</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1527"/>
+        <location filename="../../mscore/menus.cpp" line="1525"/>
         <source>Tempo</source>
         <translation>Tempo</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1595"/>
+        <location filename="../../mscore/menus.cpp" line="1593"/>
         <source>Text</source>
         <translation>Tekstur</translation>
     </message>
     <message>
         <location filename="../../mscore/masterpalette.cpp" line="228"/>
-        <location filename="../../mscore/menus.cpp" line="1769"/>
+        <location filename="../../mscore/menus.cpp" line="1767"/>
         <location filename="../../mscore/musescore.cpp" line="6332"/>
         <source>Time Signatures</source>
         <translation>Takttekin</translation>
     </message>
     <message>
-        <location filename="../../mscore/menus.cpp" line="1789"/>
+        <location filename="../../mscore/menus.cpp" line="1787"/>
         <source>Fretboard Diagrams</source>
         <translation>Bandatalvur</translation>
     </message>
@@ -21502,12 +21502,12 @@ Vitja %1Musescore heimasíðuna%2 fyri at fáa nýggjastu versiónina</translati
         <translation>Høgra</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4655"/>
+        <location filename="../../mscore/shortcut.cpp" line="4665"/>
         <source>Load Shortcuts</source>
         <translation>Tak fram sniðvegir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4655"/>
+        <location filename="../../mscore/shortcut.cpp" line="4665"/>
         <source>Can&apos;t load shortcuts file: %1</source>
         <translation>Kann ei taka fram sniðvegsfílu: %1</translation>
     </message>
@@ -26055,7 +26055,7 @@ miseydnað</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="1529"/>
-        <location filename="../../mscore/shortcut.cpp" line="3415"/>
+        <location filename="../../mscore/shortcut.cpp" line="3425"/>
         <source>Double whole note</source>
         <translation>Dupultur heilnóti</translation>
     </message>
@@ -26071,7 +26071,7 @@ miseydnað</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="1540"/>
-        <location filename="../../mscore/shortcut.cpp" line="3425"/>
+        <location filename="../../mscore/shortcut.cpp" line="3435"/>
         <source>Whole note</source>
         <translation>Heilnóti</translation>
     </message>
@@ -26087,7 +26087,7 @@ miseydnað</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="1551"/>
-        <location filename="../../mscore/shortcut.cpp" line="3435"/>
+        <location filename="../../mscore/shortcut.cpp" line="3445"/>
         <source>Half note</source>
         <translation>Hálvnóti</translation>
     </message>
@@ -26103,7 +26103,7 @@ miseydnað</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="1562"/>
-        <location filename="../../mscore/shortcut.cpp" line="3445"/>
+        <location filename="../../mscore/shortcut.cpp" line="3455"/>
         <source>Quarter note</source>
         <translation>Fjórðingsnóti</translation>
     </message>
@@ -26119,7 +26119,7 @@ miseydnað</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="1573"/>
-        <location filename="../../mscore/shortcut.cpp" line="3455"/>
+        <location filename="../../mscore/shortcut.cpp" line="3465"/>
         <source>Eighth note</source>
         <translation>Áttandapartsnóti</translation>
     </message>
@@ -26135,7 +26135,7 @@ miseydnað</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="1584"/>
-        <location filename="../../mscore/shortcut.cpp" line="3465"/>
+        <location filename="../../mscore/shortcut.cpp" line="3475"/>
         <source>16th note</source>
         <translation>16prt nóti</translation>
     </message>
@@ -26151,7 +26151,7 @@ miseydnað</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="1595"/>
-        <location filename="../../mscore/shortcut.cpp" line="3475"/>
+        <location filename="../../mscore/shortcut.cpp" line="3485"/>
         <source>32nd note</source>
         <translation>32prt nóti</translation>
     </message>
@@ -26167,7 +26167,7 @@ miseydnað</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="1606"/>
-        <location filename="../../mscore/shortcut.cpp" line="3485"/>
+        <location filename="../../mscore/shortcut.cpp" line="3495"/>
         <source>64th note</source>
         <translation>64prt nóti</translation>
     </message>
@@ -26183,7 +26183,7 @@ miseydnað</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="1617"/>
-        <location filename="../../mscore/shortcut.cpp" line="3495"/>
+        <location filename="../../mscore/shortcut.cpp" line="3505"/>
         <source>128th note</source>
         <translation>128prt nóti</translation>
     </message>
@@ -26538,224 +26538,224 @@ miseydnað</translation>
         <translation>Skift &apos;sektión útgongd&apos;</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2682"/>
+        <location filename="../../mscore/shortcut.cpp" line="2692"/>
         <source>Reset Shapes and Positions</source>
         <translation>Nullstilla Formar og Støður</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2683"/>
+        <location filename="../../mscore/shortcut.cpp" line="2693"/>
         <source>Reset shapes and positions</source>
         <translation>Nullstilla formar og støður</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2684"/>
+        <location filename="../../mscore/shortcut.cpp" line="2694"/>
         <source>Reset shapes and positions of selected elements to their defaults</source>
         <translation>Skap og støður hjá valdu lutunum til forsett</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2696"/>
+        <location filename="../../mscore/shortcut.cpp" line="2706"/>
         <source>Reset Layout Stretch</source>
         <translation>Nullstilla spenni í uppseting</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2697"/>
+        <location filename="../../mscore/shortcut.cpp" line="2707"/>
         <source>Reset layout stretch</source>
         <translation>Nullstilla spenni í uppseting</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2698"/>
+        <location filename="../../mscore/shortcut.cpp" line="2708"/>
         <source>Reset layout stretch factor of selected measures or entire score</source>
         <translation>Nullstilla falditátt í uppseting í valdu taktunum ella øllum nótablaðnum</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2750"/>
+        <location filename="../../mscore/shortcut.cpp" line="2760"/>
         <source>Mark Irregular Measures</source>
         <translation>Marka óregluligar taktir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2751"/>
+        <location filename="../../mscore/shortcut.cpp" line="2761"/>
         <source>Mark irregular measures</source>
         <translation>Marka óregluligar taktir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2809"/>
+        <location filename="../../mscore/shortcut.cpp" line="2819"/>
         <source>Find / Go To</source>
         <translation>Leita / Far til</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2810"/>
+        <location filename="../../mscore/shortcut.cpp" line="2820"/>
         <source>Find / Go to</source>
         <translation>Leita / Far til</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2838"/>
+        <location filename="../../mscore/shortcut.cpp" line="2848"/>
         <source>Zoom to Page Width or Previous Magnification Level</source>
         <translation>Suma til síðuvídd ella undanfarnu økingar stødd</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2839"/>
+        <location filename="../../mscore/shortcut.cpp" line="2849"/>
         <source>Zoom to page-width / previous magnification level</source>
         <translation>Suma til síðu-vídd / undanfarnu økingar stødd</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2855"/>
+        <location filename="../../mscore/shortcut.cpp" line="2865"/>
         <source>Style…</source>
         <translation>Snið…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2856"/>
+        <location filename="../../mscore/shortcut.cpp" line="2866"/>
         <source>Edit style</source>
         <translation>Broyt snið</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2893"/>
+        <location filename="../../mscore/shortcut.cpp" line="2903"/>
         <source>All Similar Elements with More Options</source>
         <translation>Allir líknandi lutir við fleiri valum</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2984"/>
+        <location filename="../../mscore/shortcut.cpp" line="2994"/>
         <source>Par&amp;ts…</source>
         <translation>Par&amp;tar..</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2992"/>
+        <location filename="../../mscore/shortcut.cpp" line="3002"/>
         <source>Change enharmonic spelling (both modes)</source>
         <translation>Broyt enharmoniska staving (báðar støður)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2993"/>
+        <location filename="../../mscore/shortcut.cpp" line="3003"/>
         <source>Change enharmonic note (alters the spelling in concert pitch and transposed mode)</source>
         <translation>Broyt enharmoniskan nóta (broytir staving í kamartóna og í fluttum tónalagi)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3000"/>
+        <location filename="../../mscore/shortcut.cpp" line="3010"/>
         <source>Change enharmonic spelling (current mode)</source>
         <translation>Broyt enharmoniska staving (verandi støða)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3001"/>
+        <location filename="../../mscore/shortcut.cpp" line="3011"/>
         <source>Change enharmonic note (alters the spelling in the current mode only)</source>
         <translation>Broyt enharmoniskan nóta (broytir staving einans í verandi tónalagi)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3015"/>
+        <location filename="../../mscore/shortcut.cpp" line="3025"/>
         <source>Toggle &apos;Image Capture&apos;</source>
         <translation>Skift &apos;myndatøka&apos;</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3026"/>
+        <location filename="../../mscore/shortcut.cpp" line="3036"/>
         <source>Show PDF Image</source>
         <translation>Vís PDF Mynd</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3027"/>
+        <location filename="../../mscore/shortcut.cpp" line="3037"/>
         <source>Show PDF image</source>
         <translation>Vís PDF mynd</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3077"/>
+        <location filename="../../mscore/shortcut.cpp" line="3087"/>
         <source>Score Comparison Tool</source>
         <translation>Samanber nótabløð</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3078"/>
+        <location filename="../../mscore/shortcut.cpp" line="3088"/>
         <source>Score comparison tool</source>
         <translation>Samanber nótabløð</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3091"/>
+        <location filename="../../mscore/shortcut.cpp" line="3101"/>
         <source>Split Measure Before Selected Note/Rest</source>
         <translation>Kloyv takt áðrenn valda Nóta/Tøgn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3092"/>
+        <location filename="../../mscore/shortcut.cpp" line="3102"/>
         <source>Split measure before selected note/rest</source>
         <translation>Kloyv takt áðrenn valda nóta/tøgn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3180"/>
+        <location filename="../../mscore/shortcut.cpp" line="3190"/>
         <source>&amp;Resource Manager…</source>
         <translation>&amp;Tilfar umsitari…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3191"/>
+        <location filename="../../mscore/shortcut.cpp" line="3201"/>
         <source>PDF Transcribing Assistant</source>
         <translation>PDF umskrivingar hjálpari</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3192"/>
+        <location filename="../../mscore/shortcut.cpp" line="3202"/>
         <source>Show PDF transcribing assistant</source>
         <translation>Vís PDF umskrivara</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3199"/>
+        <location filename="../../mscore/shortcut.cpp" line="3209"/>
         <source>Loop Playback</source>
         <translation>Sloyfu spæl</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3200"/>
+        <location filename="../../mscore/shortcut.cpp" line="3210"/>
         <source>Toggle &apos;Loop Playback&apos;</source>
         <translation>Tendra/sløkk &apos;sloyfu spæl&apos;</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3242"/>
+        <location filename="../../mscore/shortcut.cpp" line="3252"/>
         <source>Toggle &apos;Count-In&apos; playback</source>
         <translation>Tendra/sløkk spæl við innteljing</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3342"/>
+        <location filename="../../mscore/shortcut.cpp" line="3352"/>
         <source>Toggle &apos;View Mode&apos;</source>
         <translation>Skift &apos;sýnishátt&apos;</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3367"/>
+        <location filename="../../mscore/shortcut.cpp" line="3377"/>
         <source>Toggle &apos;Visibility&apos;</source>
         <translation>Skift &apos;sýni&apos;</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3776"/>
+        <location filename="../../mscore/shortcut.cpp" line="3786"/>
         <source>Add Brackets to Accidental</source>
         <translation>Set klombur um Fortekn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3777"/>
+        <location filename="../../mscore/shortcut.cpp" line="3787"/>
         <source>Add brackets to accidental</source>
         <translation>Legg klombur um fortekn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3786"/>
+        <location filename="../../mscore/shortcut.cpp" line="3796"/>
         <source>Add Parentheses to Element</source>
         <translation>Set klombur um lut</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3787"/>
+        <location filename="../../mscore/shortcut.cpp" line="3797"/>
         <source>Add parentheses to element</source>
         <translation>Set klombur um lut</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3806"/>
-        <location filename="../../mscore/shortcut.cpp" line="3807"/>
+        <location filename="../../mscore/shortcut.cpp" line="3816"/>
+        <location filename="../../mscore/shortcut.cpp" line="3817"/>
         <source>Toggle &apos;Create Multimeasure Rest&apos;</source>
         <translation>Skift &apos;Stovna fleirtakta tøgn&apos;</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3816"/>
-        <location filename="../../mscore/shortcut.cpp" line="3817"/>
+        <location filename="../../mscore/shortcut.cpp" line="3826"/>
+        <location filename="../../mscore/shortcut.cpp" line="3827"/>
         <source>Toggle &apos;Hide Empty Staves&apos;</source>
         <translation>Skift &apos;goym tómar nótalinjur&apos;</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3914"/>
+        <location filename="../../mscore/shortcut.cpp" line="3924"/>
         <source>Toggle &apos;Rhythmic Slash Notation&apos;</source>
         <translation>Skift &apos;nótaskrift við skrástrikurútmu&apos;</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3923"/>
+        <location filename="../../mscore/shortcut.cpp" line="3933"/>
         <source>Add/Remove System Breaks…</source>
         <translation>Legg afturat/tak burtur skipanar reglubrot…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3924"/>
+        <location filename="../../mscore/shortcut.cpp" line="3934"/>
         <source>Add/remove system breaks</source>
         <translation>Legg afturat/tak burtur skipanar reglubrot</translation>
     </message>
@@ -27226,7 +27226,7 @@ miseydnað</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="1628"/>
-        <location filename="../../mscore/shortcut.cpp" line="3505"/>
+        <location filename="../../mscore/shortcut.cpp" line="3515"/>
         <source>256th note</source>
         <translation>256prt nóti</translation>
     </message>
@@ -27242,7 +27242,7 @@ miseydnað</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="1639"/>
-        <location filename="../../mscore/shortcut.cpp" line="3515"/>
+        <location filename="../../mscore/shortcut.cpp" line="3525"/>
         <source>512th note</source>
         <translation>512prt nóti</translation>
     </message>
@@ -27258,7 +27258,7 @@ miseydnað</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="1650"/>
-        <location filename="../../mscore/shortcut.cpp" line="3525"/>
+        <location filename="../../mscore/shortcut.cpp" line="3535"/>
         <source>1024th note</source>
         <translation>1024prt nóti</translation>
     </message>
@@ -27545,7 +27545,7 @@ miseydnað</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="2195"/>
-        <location filename="../../mscore/shortcut.cpp" line="3014"/>
+        <location filename="../../mscore/shortcut.cpp" line="3024"/>
         <source>Image Capture</source>
         <translation>Tak mynd</translation>
     </message>
@@ -27556,7 +27556,7 @@ miseydnað</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="2210"/>
-        <location filename="../../mscore/shortcut.cpp" line="4050"/>
+        <location filename="../../mscore/shortcut.cpp" line="4060"/>
         <source>Feedback</source>
         <translation>Afturboðan</translation>
     </message>
@@ -27781,52 +27781,52 @@ miseydnað</translation>
         <translation>Legg taktpinn afturat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4043"/>
+        <location filename="../../mscore/shortcut.cpp" line="4053"/>
         <source>Apply Input State</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4044"/>
+        <location filename="../../mscore/shortcut.cpp" line="4054"/>
         <source>Apply input state</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4060"/>
+        <location filename="../../mscore/shortcut.cpp" line="4070"/>
         <source>Zoom In Horizontally</source>
         <translation>Suma inn vatnrætt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4061"/>
+        <location filename="../../mscore/shortcut.cpp" line="4071"/>
         <source>Zoom in horizontally - piano roll editor</source>
         <translation>Suma inn vatnrætt - klaver ritil</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4069"/>
+        <location filename="../../mscore/shortcut.cpp" line="4079"/>
         <source>Zoom Out Horizontally</source>
         <translation>Suma út vatnrætt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4070"/>
+        <location filename="../../mscore/shortcut.cpp" line="4080"/>
         <source>Zoom out horizontally - piano roll editor</source>
         <translation>Sum út vatnrætt - klaver ritil</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4078"/>
+        <location filename="../../mscore/shortcut.cpp" line="4088"/>
         <source>Zoom In Vertically</source>
         <translation>Suma inn loddrætt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4079"/>
+        <location filename="../../mscore/shortcut.cpp" line="4089"/>
         <source>Zoom in vertically - piano roll editor</source>
         <translation>Suma inn loddrætt - klaver ritil</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4087"/>
+        <location filename="../../mscore/shortcut.cpp" line="4097"/>
         <source>Zoom Out Vertically</source>
         <translation>Suma út loddrætt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4088"/>
+        <location filename="../../mscore/shortcut.cpp" line="4098"/>
         <source>Zoom out vertically - piano roll editor</source>
         <translation>Suma út loddrætt - klaver ritil</translation>
     </message>
@@ -28135,1386 +28135,1396 @@ miseydnað</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="2675"/>
+        <source>Toggle Keep measures on the same system</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="2676"/>
+        <source>Toggle &apos;Keep measures on the same system&apos;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="2685"/>
         <source>Edit Element</source>
         <translation>Broyt lut</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2676"/>
+        <location filename="../../mscore/shortcut.cpp" line="2686"/>
         <source>Edit element</source>
         <translation>Broyt lut</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2690"/>
+        <location filename="../../mscore/shortcut.cpp" line="2700"/>
         <source>Debugger</source>
         <translation>Avlúsari</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2706"/>
+        <location filename="../../mscore/shortcut.cpp" line="2716"/>
         <source>Show Invisible</source>
         <translation>Vís ósjónligt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2707"/>
+        <location filename="../../mscore/shortcut.cpp" line="2717"/>
         <source>Show invisible</source>
         <translation>Vís ósjónligt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2717"/>
+        <location filename="../../mscore/shortcut.cpp" line="2727"/>
         <source>Show Unprintable</source>
         <translation>Vís Óprenta</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2718"/>
+        <location filename="../../mscore/shortcut.cpp" line="2728"/>
         <source>Show unprintable</source>
         <translation>Vís óprenta</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2728"/>
+        <location filename="../../mscore/shortcut.cpp" line="2738"/>
         <source>Show Frames</source>
         <translation>Vís rammur</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2729"/>
+        <location filename="../../mscore/shortcut.cpp" line="2739"/>
         <source>Show frames</source>
         <translation>Vís rammur</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2739"/>
+        <location filename="../../mscore/shortcut.cpp" line="2749"/>
         <source>Show Page Margins</source>
         <translation>Vís breddar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2740"/>
+        <location filename="../../mscore/shortcut.cpp" line="2750"/>
         <source>Show page margins</source>
         <translation>Vís breddar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2761"/>
+        <location filename="../../mscore/shortcut.cpp" line="2771"/>
         <source>Insert Special Characters…</source>
         <translation>Set in serstakt skriftsnið</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2762"/>
+        <location filename="../../mscore/shortcut.cpp" line="2772"/>
         <source>Insert special characters</source>
         <translation>Set in serstakt skriftsnið</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2770"/>
+        <location filename="../../mscore/shortcut.cpp" line="2780"/>
         <source>Whole Rest</source>
         <translation>Heil tøgn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2771"/>
+        <location filename="../../mscore/shortcut.cpp" line="2781"/>
         <source>Note input: Whole rest</source>
         <translation>Nótapennur: Heil tøgn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2777"/>
+        <location filename="../../mscore/shortcut.cpp" line="2787"/>
         <source>Half Rest</source>
         <translation>Hálv tøgn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2778"/>
+        <location filename="../../mscore/shortcut.cpp" line="2788"/>
         <source>Note input: Half rest</source>
         <translation>Nótapennur: Hálv tøgn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2784"/>
+        <location filename="../../mscore/shortcut.cpp" line="2794"/>
         <source>Quarter Rest</source>
         <translation>Fjórðings tøgn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2785"/>
+        <location filename="../../mscore/shortcut.cpp" line="2795"/>
         <source>Note input: Quarter rest</source>
         <translation>Nótapennur: Fjórðinga tøgn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2791"/>
+        <location filename="../../mscore/shortcut.cpp" line="2801"/>
         <source>Eighth Rest</source>
         <translation>Áttund tøgn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2792"/>
+        <location filename="../../mscore/shortcut.cpp" line="2802"/>
         <source>Note input: Eighth rest</source>
         <translation>Nótapennur: 8prta tøgn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2798"/>
+        <location filename="../../mscore/shortcut.cpp" line="2808"/>
         <source>Backspace</source>
         <translation>Millumrúm</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2816"/>
+        <location filename="../../mscore/shortcut.cpp" line="2826"/>
         <source>Zoom In</source>
         <translation>Suma inn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2817"/>
+        <location filename="../../mscore/shortcut.cpp" line="2827"/>
         <source>Zoom in</source>
         <translation>Suma inn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2824"/>
+        <location filename="../../mscore/shortcut.cpp" line="2834"/>
         <source>Zoom Out</source>
         <translation>Suma út</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2825"/>
+        <location filename="../../mscore/shortcut.cpp" line="2835"/>
         <source>Zoom out</source>
         <translation>Suma út</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2831"/>
-        <location filename="../../mscore/shortcut.cpp" line="2832"/>
+        <location filename="../../mscore/shortcut.cpp" line="2841"/>
+        <location filename="../../mscore/shortcut.cpp" line="2842"/>
         <source>Zoom to 100%</source>
         <translation>Suma til 100%</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2845"/>
+        <location filename="../../mscore/shortcut.cpp" line="2855"/>
         <source>Mirror Notehead</source>
         <translation>Spegla nótahøvd</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2846"/>
+        <location filename="../../mscore/shortcut.cpp" line="2856"/>
         <source>Mirror notehead</source>
         <translation>Spegla nótahøvd</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2865"/>
+        <location filename="../../mscore/shortcut.cpp" line="2875"/>
         <source>Chord Symbols…</source>
         <translation>Akkord tekin…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2866"/>
+        <location filename="../../mscore/shortcut.cpp" line="2876"/>
         <source>Edit chord symbols style</source>
         <translation>Broyt akkord tekin snið</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2872"/>
+        <location filename="../../mscore/shortcut.cpp" line="2882"/>
         <source>All Similar Elements</source>
         <translation>Allir líknandi lutir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2873"/>
+        <location filename="../../mscore/shortcut.cpp" line="2883"/>
         <source>Select all similar elements</source>
         <translation>Vel allar líknandi lutir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2879"/>
+        <location filename="../../mscore/shortcut.cpp" line="2889"/>
         <source>All Similar Elements in Same Staff</source>
         <translation>Allir líknandi lutir á somu nótalinju</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2880"/>
+        <location filename="../../mscore/shortcut.cpp" line="2890"/>
         <source>Select all similar elements in same staff</source>
         <translation>Vel allar líknandi lutir á somu nótalinju</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2886"/>
+        <location filename="../../mscore/shortcut.cpp" line="2896"/>
         <source>All Similar Elements in Range Selection</source>
         <translation>Allir líknandi lutir í økisvali</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2887"/>
+        <location filename="../../mscore/shortcut.cpp" line="2897"/>
         <source>Select all similar elements in the range selection</source>
         <translation>Vel allar líknandi lutir í økisvali</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2894"/>
+        <location filename="../../mscore/shortcut.cpp" line="2904"/>
         <source>Select all similar elements with more options</source>
         <translation>Vel allar líknandi lutir við fleiri valum</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2900"/>
+        <location filename="../../mscore/shortcut.cpp" line="2910"/>
         <source>Synthesizer</source>
         <translation>Syntesiesari</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2910"/>
+        <location filename="../../mscore/shortcut.cpp" line="2920"/>
         <source>Double Duration</source>
         <translation>Dupult Tíðarbil</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2911"/>
+        <location filename="../../mscore/shortcut.cpp" line="2921"/>
         <source>Double duration</source>
         <translation>Dupult tíðarbil</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2920"/>
+        <location filename="../../mscore/shortcut.cpp" line="2930"/>
         <source>Half Duration</source>
         <translation>Hálvt Tíðarbil</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2921"/>
+        <location filename="../../mscore/shortcut.cpp" line="2931"/>
         <source>Half duration</source>
         <translation>Hálvt tíðarbil</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2930"/>
+        <location filename="../../mscore/shortcut.cpp" line="2940"/>
         <source>Increase Duration Dotted</source>
         <translation>Long tíðarbil við Prikki</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2931"/>
+        <location filename="../../mscore/shortcut.cpp" line="2941"/>
         <source>Increase duration dotted</source>
         <translation>Long tíðarbil við prikki</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2940"/>
+        <location filename="../../mscore/shortcut.cpp" line="2950"/>
         <source>Decrease Duration Dotted</source>
         <translation>Stytt prikk tíðarbil</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2941"/>
+        <location filename="../../mscore/shortcut.cpp" line="2951"/>
         <source>Decrease duration dotted</source>
         <translation>Stytt prikk tíðarbil</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2950"/>
+        <location filename="../../mscore/shortcut.cpp" line="2960"/>
         <source>Repeat Selection</source>
         <translation>Endurtak úrval</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2951"/>
+        <location filename="../../mscore/shortcut.cpp" line="2961"/>
         <source>Repeat selection</source>
         <translation>Endurtak úrval</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2959"/>
+        <location filename="../../mscore/shortcut.cpp" line="2969"/>
         <source>Pan Piano Roll</source>
         <translation>Panorera klaver ritil</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2960"/>
+        <location filename="../../mscore/shortcut.cpp" line="2970"/>
         <source>Toggle pan piano roll</source>
         <translation>Skift panoering av klaver ritli</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2961"/>
+        <location filename="../../mscore/shortcut.cpp" line="2971"/>
         <source>Pan roll during playback</source>
         <translation>Fylg við tá spælt verður</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2970"/>
+        <location filename="../../mscore/shortcut.cpp" line="2980"/>
         <source>Documents Side by Side</source>
         <translation>Skjøl lið um lið</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2971"/>
+        <location filename="../../mscore/shortcut.cpp" line="2981"/>
         <source>Display documents side by side</source>
         <translation>Vís skjøl síðu um síðu</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2977"/>
+        <location filename="../../mscore/shortcut.cpp" line="2987"/>
         <source>Documents Stacked</source>
         <translation>Skjøl uppstáplaði</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2978"/>
+        <location filename="../../mscore/shortcut.cpp" line="2988"/>
         <source>Display documents stacked</source>
         <translation>Vís uppstáplaði skjøl</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2985"/>
+        <location filename="../../mscore/shortcut.cpp" line="2995"/>
         <source>Manage parts</source>
         <translation>Umsit partar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2991"/>
+        <location filename="../../mscore/shortcut.cpp" line="3001"/>
         <source>Change Enharmonic Spelling (&amp;Both Modes)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2999"/>
+        <location filename="../../mscore/shortcut.cpp" line="3009"/>
         <source>Change Enharmonic Spelling (&amp;Current Mode)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3007"/>
+        <location filename="../../mscore/shortcut.cpp" line="3017"/>
         <source>Create New Revision</source>
         <translation>Stovna nýggja endurskoðan</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3008"/>
+        <location filename="../../mscore/shortcut.cpp" line="3018"/>
         <source>Create new revision</source>
         <translation>Stovna nýggja rætting</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3034"/>
+        <location filename="../../mscore/shortcut.cpp" line="3044"/>
         <source>Full Screen</source>
         <translation>Fullur skermur</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3035"/>
+        <location filename="../../mscore/shortcut.cpp" line="3045"/>
         <source>Full screen</source>
         <translation>Fullur skermur</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3041"/>
+        <location filename="../../mscore/shortcut.cpp" line="3051"/>
         <source>Enable Snap to Horizontal Grid</source>
         <translation>Gilda fest við vatnrætt net</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3042"/>
+        <location filename="../../mscore/shortcut.cpp" line="3052"/>
         <source>Enable snap to horizontal grid</source>
         <translation>Gilda fest í vatnrætt net</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3052"/>
+        <location filename="../../mscore/shortcut.cpp" line="3062"/>
         <source>Enable Snap to Vertical Grid</source>
         <translation>Gilda samband við loddrætt net</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3053"/>
+        <location filename="../../mscore/shortcut.cpp" line="3063"/>
         <source>Enable snap to vertical grid</source>
         <translation>Gilda samband við Loddrætt net</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3063"/>
+        <location filename="../../mscore/shortcut.cpp" line="3073"/>
         <source>Configure Grid</source>
         <translation>Stilla grind</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3064"/>
+        <location filename="../../mscore/shortcut.cpp" line="3074"/>
         <source>Configure grid</source>
         <translation>Samanset netmynstur</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3070"/>
+        <location filename="../../mscore/shortcut.cpp" line="3080"/>
         <source>Piano Keyboard</source>
         <translation>Klaver klaviatur</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3071"/>
+        <location filename="../../mscore/shortcut.cpp" line="3081"/>
         <source>Piano keyboard</source>
         <translation>Klaver klaviatur</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3084"/>
+        <location filename="../../mscore/shortcut.cpp" line="3094"/>
         <source>Additional Media…</source>
         <translation>Eyka miðlar…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3085"/>
+        <location filename="../../mscore/shortcut.cpp" line="3095"/>
         <source>Show media dialog</source>
         <translation>Vís miðla vindeyga</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3098"/>
+        <location filename="../../mscore/shortcut.cpp" line="3108"/>
         <source>Join Selected Measures</source>
         <translation>Set valdu taktirnar saman</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3099"/>
+        <location filename="../../mscore/shortcut.cpp" line="3109"/>
         <source>Join selected measures</source>
         <translation>Set valdu taktirnar saman</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3105"/>
+        <location filename="../../mscore/shortcut.cpp" line="3115"/>
         <source>Page Settings…</source>
         <translation>Síðu stilling…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3106"/>
+        <location filename="../../mscore/shortcut.cpp" line="3116"/>
         <source>Page settings</source>
         <translation>Síðu stilling</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3112"/>
+        <location filename="../../mscore/shortcut.cpp" line="3122"/>
         <source>Album…</source>
         <translation>Savn…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3113"/>
+        <location filename="../../mscore/shortcut.cpp" line="3123"/>
         <source>Album</source>
         <translation>Savn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3122"/>
+        <location filename="../../mscore/shortcut.cpp" line="3132"/>
         <source>Layers…</source>
         <translation>Røddir…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3123"/>
+        <location filename="../../mscore/shortcut.cpp" line="3133"/>
         <source>Layers</source>
         <translation>Røddir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3132"/>
+        <location filename="../../mscore/shortcut.cpp" line="3142"/>
         <source>Next Score</source>
         <translation>Næsta nótablað</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3133"/>
+        <location filename="../../mscore/shortcut.cpp" line="3143"/>
         <source>Next score</source>
         <translation>Næsta nótablað</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3142"/>
+        <location filename="../../mscore/shortcut.cpp" line="3152"/>
         <source>Previous Score</source>
         <translation>Undanfarna nótablað</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3143"/>
+        <location filename="../../mscore/shortcut.cpp" line="3153"/>
         <source>Previous score</source>
         <translation>Undanfarna nótablað</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3153"/>
+        <location filename="../../mscore/shortcut.cpp" line="3163"/>
         <source>Plugin Creator…</source>
         <translation>Ískoytisforritari…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3154"/>
+        <location filename="../../mscore/shortcut.cpp" line="3164"/>
         <source>Plugin creator</source>
         <translation>Ískoytisforritari</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3163"/>
+        <location filename="../../mscore/shortcut.cpp" line="3173"/>
         <source>Plugin Manager…</source>
         <translation>Ískoytisforrit umsitari…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3164"/>
+        <location filename="../../mscore/shortcut.cpp" line="3174"/>
         <source>Plugin manager</source>
         <translation>Ískoytisforrit umsitari</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3173"/>
+        <location filename="../../mscore/shortcut.cpp" line="3183"/>
         <source>Inspector</source>
         <translation>Inspektor</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3174"/>
+        <location filename="../../mscore/shortcut.cpp" line="3184"/>
         <source>Show inspector</source>
         <translation>Vís inspektor</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3181"/>
+        <location filename="../../mscore/shortcut.cpp" line="3191"/>
         <source>Resource manager</source>
         <translation>Umsit tilfar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3210"/>
+        <location filename="../../mscore/shortcut.cpp" line="3220"/>
         <source>Loop In</source>
         <translation>Lykkja inn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3211"/>
+        <location filename="../../mscore/shortcut.cpp" line="3221"/>
         <source>Set loop in position</source>
         <translation>Áset sloyfu byrjan</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3220"/>
+        <location filename="../../mscore/shortcut.cpp" line="3230"/>
         <source>Loop Out</source>
         <translation>Lykkja út</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3221"/>
+        <location filename="../../mscore/shortcut.cpp" line="3231"/>
         <source>Set loop out position</source>
         <translation>Áset sloyfu enda</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3230"/>
+        <location filename="../../mscore/shortcut.cpp" line="3240"/>
         <source>Metronome</source>
         <translation>Metronomur</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3231"/>
+        <location filename="../../mscore/shortcut.cpp" line="3241"/>
         <source>Toggle metronome playback</source>
         <translation>Tendra/sløkk metronom spæl</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3232"/>
+        <location filename="../../mscore/shortcut.cpp" line="3242"/>
         <source>Play metronome during playback</source>
         <translation>Spæl metronom meðan spæl</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3241"/>
+        <location filename="../../mscore/shortcut.cpp" line="3251"/>
         <source>Count-In</source>
         <translation>Tel-inn</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3243"/>
+        <location filename="../../mscore/shortcut.cpp" line="3253"/>
         <source>Play count-in at playback start</source>
         <translation>Tel inn við spæl byrjan</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3252"/>
+        <location filename="../../mscore/shortcut.cpp" line="3262"/>
         <source>Increase Playback Speed</source>
         <translation>Hækka spæl ferð</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3253"/>
+        <location filename="../../mscore/shortcut.cpp" line="3263"/>
         <source>Increase playback speed</source>
         <translation>Hækka spæl ferð</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3254"/>
+        <location filename="../../mscore/shortcut.cpp" line="3264"/>
         <source>Increase the playback speed</source>
         <translation>Hækka spæl ferðina</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3260"/>
+        <location filename="../../mscore/shortcut.cpp" line="3270"/>
         <source>Decrease Playback Speed</source>
         <translation>Lækka spæl ferð</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3261"/>
+        <location filename="../../mscore/shortcut.cpp" line="3271"/>
         <source>Decrease playback speed</source>
         <translation>Lækka spæl ferð</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3262"/>
+        <location filename="../../mscore/shortcut.cpp" line="3272"/>
         <source>Decrease the playback speed</source>
         <translation>Lækka spælferðina</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3268"/>
+        <location filename="../../mscore/shortcut.cpp" line="3278"/>
         <source>Reset Playback Speed</source>
         <translation>Nullstilla spæl ferð</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3269"/>
+        <location filename="../../mscore/shortcut.cpp" line="3279"/>
         <source>Reset playback speed</source>
         <translation>Nullstilla spæl ferð</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3270"/>
+        <location filename="../../mscore/shortcut.cpp" line="3280"/>
         <source>Reset the playback speed to 100%</source>
         <translation>Nullstilla spæl ferð til 100%</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3276"/>
+        <location filename="../../mscore/shortcut.cpp" line="3286"/>
         <source>Figured Bass</source>
         <translation>Besiffraður bassur</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3277"/>
+        <location filename="../../mscore/shortcut.cpp" line="3287"/>
         <source>Add figured bass</source>
         <translation>Legg besifringsbass afturat</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3287"/>
+        <location filename="../../mscore/shortcut.cpp" line="3297"/>
         <source>Transpose Up</source>
         <translation>Flyt tónaleguna upp</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3288"/>
+        <location filename="../../mscore/shortcut.cpp" line="3298"/>
         <source>Transpose up</source>
         <translation>Flyt tónaleguna upp</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3294"/>
+        <location filename="../../mscore/shortcut.cpp" line="3304"/>
         <source>Transpose Down</source>
         <translation>Flyt tónaleguna niður</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3295"/>
+        <location filename="../../mscore/shortcut.cpp" line="3305"/>
         <source>Transpose down</source>
         <translation>Flyt tónaleguna niður</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3301"/>
+        <location filename="../../mscore/shortcut.cpp" line="3311"/>
         <source>Master Palette…</source>
         <translation>Høvuðs palett…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3302"/>
+        <location filename="../../mscore/shortcut.cpp" line="3312"/>
         <source>Show master palette</source>
         <translation>Vís høvuðs palett</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3311"/>
+        <location filename="../../mscore/shortcut.cpp" line="3321"/>
         <source>Key Signatures…</source>
         <translation>Tónaættir…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3312"/>
+        <location filename="../../mscore/shortcut.cpp" line="3322"/>
         <source>Show key signature palette</source>
         <translation>Vís palett við tónaættum</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3321"/>
+        <location filename="../../mscore/shortcut.cpp" line="3331"/>
         <source>Time Signatures…</source>
         <translation>Takttekin…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3322"/>
+        <location filename="../../mscore/shortcut.cpp" line="3332"/>
         <source>Show time signature palette</source>
         <translation>Vís palett við takt stevum</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3331"/>
+        <location filename="../../mscore/shortcut.cpp" line="3341"/>
         <source>Symbols…</source>
         <translation>Tekin…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3332"/>
+        <location filename="../../mscore/shortcut.cpp" line="3342"/>
         <source>Show symbol palette</source>
         <translation>Vís palett við teknum</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3341"/>
+        <location filename="../../mscore/shortcut.cpp" line="3351"/>
         <source>Toggle View Mode</source>
         <translation>Skift sýnishátt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3352"/>
+        <location filename="../../mscore/shortcut.cpp" line="3362"/>
         <source>Next Syllable</source>
         <translation>Næsta stavilsi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3353"/>
+        <location filename="../../mscore/shortcut.cpp" line="3363"/>
         <source>Next syllable</source>
         <translation>Næsta stavilsi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3359"/>
+        <location filename="../../mscore/shortcut.cpp" line="3369"/>
         <source>Previous Syllable</source>
         <translation>Undanfarna stavilsi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3360"/>
+        <location filename="../../mscore/shortcut.cpp" line="3370"/>
         <source>Previous syllable</source>
         <translation>Undanfarna stavilsi</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3366"/>
+        <location filename="../../mscore/shortcut.cpp" line="3376"/>
         <source>Toggle Visibility</source>
         <translation>Skift sýni</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3373"/>
+        <location filename="../../mscore/shortcut.cpp" line="3383"/>
         <source>Set Visible</source>
         <translation>Set Visible</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3374"/>
+        <location filename="../../mscore/shortcut.cpp" line="3384"/>
         <source>Set visible</source>
         <translation>Set sjónligt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3380"/>
+        <location filename="../../mscore/shortcut.cpp" line="3390"/>
         <source>Set Invisible</source>
         <translation>Set ósjónligt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3381"/>
+        <location filename="../../mscore/shortcut.cpp" line="3391"/>
         <source>Set invisible</source>
         <translation>Set ósjónligt</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3387"/>
+        <location filename="../../mscore/shortcut.cpp" line="3397"/>
         <source>Note Anchored Line</source>
         <translation>Nótafest strika</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3388"/>
+        <location filename="../../mscore/shortcut.cpp" line="3398"/>
         <source>Note anchored line</source>
         <translation>Nótafest strika</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3394"/>
+        <location filename="../../mscore/shortcut.cpp" line="3404"/>
         <source>Lock Score</source>
         <translation>Læs nótablað</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3395"/>
+        <location filename="../../mscore/shortcut.cpp" line="3405"/>
         <source>Lock score</source>
         <translation>Stong nótablað</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3403"/>
+        <location filename="../../mscore/shortcut.cpp" line="3413"/>
         <source>Longa (TAB)</source>
         <translation>Longa (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3404"/>
+        <location filename="../../mscore/shortcut.cpp" line="3414"/>
         <source>Note duration: Longa (TAB)</source>
         <translation>Nóta tíðarbil: Longa (TAB</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3405"/>
+        <location filename="../../mscore/shortcut.cpp" line="3415"/>
         <source>Longa note</source>
         <translation>Longa nóti</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3413"/>
+        <location filename="../../mscore/shortcut.cpp" line="3423"/>
         <source>Double Whole Note (TAB)</source>
         <translation>Dupul heilnóti (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3414"/>
+        <location filename="../../mscore/shortcut.cpp" line="3424"/>
         <source>Note duration: Double whole (TAB)</source>
         <translation>Nóta tíðarbil: Dupult heilt (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3423"/>
+        <location filename="../../mscore/shortcut.cpp" line="3433"/>
         <source>Whole Note (TAB)</source>
         <translation>Heilur nóti (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3424"/>
+        <location filename="../../mscore/shortcut.cpp" line="3434"/>
         <source>Note duration: Whole (TAB)</source>
         <translation>Nóta tíðarbil: heilt (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3433"/>
+        <location filename="../../mscore/shortcut.cpp" line="3443"/>
         <source>Half Note (TAB)</source>
         <translation>Hálvur nóti (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3434"/>
+        <location filename="../../mscore/shortcut.cpp" line="3444"/>
         <source>Note duration: Half (TAB)</source>
         <translation>Nóta tíðarbil: Hálvt (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3443"/>
+        <location filename="../../mscore/shortcut.cpp" line="3453"/>
         <source>Quarter Note (TAB)</source>
         <translation>Fjórðingsnóti (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3444"/>
+        <location filename="../../mscore/shortcut.cpp" line="3454"/>
         <source>Note duration: Quarter (TAB)</source>
         <translation>Nóta tíðarbil: Fjórðingur (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3453"/>
+        <location filename="../../mscore/shortcut.cpp" line="3463"/>
         <source>Eighth Note (TAB)</source>
         <translation>Áttund nóti (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3454"/>
+        <location filename="../../mscore/shortcut.cpp" line="3464"/>
         <source>Note duration: Eighth (TAB)</source>
         <translation>Nóta tíðarbil: Áttund (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3463"/>
+        <location filename="../../mscore/shortcut.cpp" line="3473"/>
         <source>16th Note (TAB)</source>
         <translation>16prt nóti (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3464"/>
+        <location filename="../../mscore/shortcut.cpp" line="3474"/>
         <source>Note duration: 16th (TAB)</source>
         <translation>Nóta tíðarbil: 16nd (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3473"/>
+        <location filename="../../mscore/shortcut.cpp" line="3483"/>
         <source>32nd Note (TAB)</source>
         <translation>32prt nóti (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3474"/>
+        <location filename="../../mscore/shortcut.cpp" line="3484"/>
         <source>Note duration: 32nd (TAB)</source>
         <translation>Nóta tíðarbil: 32nd (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3483"/>
+        <location filename="../../mscore/shortcut.cpp" line="3493"/>
         <source>64th Note (TAB)</source>
         <translation>64prt nóti (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3484"/>
+        <location filename="../../mscore/shortcut.cpp" line="3494"/>
         <source>Note duration: 64th (TAB)</source>
         <translation>Nóta tíðarbil: 64nd (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3493"/>
+        <location filename="../../mscore/shortcut.cpp" line="3503"/>
         <source>128th Note (TAB)</source>
         <translation>128prt nóti (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3494"/>
+        <location filename="../../mscore/shortcut.cpp" line="3504"/>
         <source>Note duration: 128th (TAB)</source>
         <translation>Nóta tíðarbil: 128nd (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3503"/>
+        <location filename="../../mscore/shortcut.cpp" line="3513"/>
         <source>256th Note (TAB)</source>
         <translation>256prt Nóti (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3504"/>
+        <location filename="../../mscore/shortcut.cpp" line="3514"/>
         <source>Note duration: 256th (TAB)</source>
         <translation>Tíðarbil: 256prt (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3513"/>
+        <location filename="../../mscore/shortcut.cpp" line="3523"/>
         <source>512th Note (TAB)</source>
         <translation>512prt Nóti (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3514"/>
+        <location filename="../../mscore/shortcut.cpp" line="3524"/>
         <source>Note duration: 512th (TAB)</source>
         <translation>Tíðarbil: 512prt (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3523"/>
+        <location filename="../../mscore/shortcut.cpp" line="3533"/>
         <source>1024th Note (TAB)</source>
         <translation>1024prt Nóti (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3524"/>
+        <location filename="../../mscore/shortcut.cpp" line="3534"/>
         <source>Note duration: 1024th (TAB)</source>
         <translation>Tíðarbil: 1024prt (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3533"/>
+        <location filename="../../mscore/shortcut.cpp" line="3543"/>
         <source>Increase Active Duration (TAB)</source>
         <translation>Long Virkna Tíðarbilið (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3534"/>
+        <location filename="../../mscore/shortcut.cpp" line="3544"/>
         <source>Increase active duration (TAB)</source>
         <translation>Long virkna tíðarbilið (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3540"/>
+        <location filename="../../mscore/shortcut.cpp" line="3550"/>
         <source>Decrease Active Duration (TAB)</source>
         <translation>Stytt Virkna Tíðarbilið (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3541"/>
+        <location filename="../../mscore/shortcut.cpp" line="3551"/>
         <source>Decrease active duration (TAB)</source>
         <translation>Stytt virkna tíðarbilið (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3547"/>
-        <location filename="../../mscore/shortcut.cpp" line="3556"/>
+        <location filename="../../mscore/shortcut.cpp" line="3557"/>
+        <location filename="../../mscore/shortcut.cpp" line="3566"/>
         <source>Rest (TAB)</source>
         <translation>Tøgn (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3548"/>
+        <location filename="../../mscore/shortcut.cpp" line="3558"/>
         <source>Enter rest (TAB)</source>
         <translation>Set inn Tøgn (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3557"/>
+        <location filename="../../mscore/shortcut.cpp" line="3567"/>
         <source>Note input: Rest (TAB)</source>
         <translation>Nótapennur: tøgn (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3563"/>
+        <location filename="../../mscore/shortcut.cpp" line="3573"/>
         <source>String Above (TAB)</source>
         <translation>Strongur omanfyri (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3564"/>
+        <location filename="../../mscore/shortcut.cpp" line="3574"/>
         <source>Select string above (TAB only)</source>
         <translation>Vel strong omanfyri (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3570"/>
+        <location filename="../../mscore/shortcut.cpp" line="3580"/>
         <source>String Below (TAB)</source>
         <translation>Strongur niðanfyri (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3571"/>
+        <location filename="../../mscore/shortcut.cpp" line="3581"/>
         <source>Select string below (TAB only)</source>
         <translation>Vel strong niðanfyri (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3577"/>
+        <location filename="../../mscore/shortcut.cpp" line="3587"/>
         <source>Fret 0 (TAB)</source>
         <translation>Band 0 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3578"/>
+        <location filename="../../mscore/shortcut.cpp" line="3588"/>
         <source>Add fret 0 on current string (TAB only)</source>
         <translation>Set inn band 0 á valda strong (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3584"/>
+        <location filename="../../mscore/shortcut.cpp" line="3594"/>
         <source>Fret 1 (TAB)</source>
         <translation>Band 1 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3585"/>
+        <location filename="../../mscore/shortcut.cpp" line="3595"/>
         <source>Add fret 1 on current string (TAB only)</source>
         <translation>Set inn band 1 á valda strong (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3591"/>
+        <location filename="../../mscore/shortcut.cpp" line="3601"/>
         <source>Fret 2 (TAB)</source>
         <translation>Band 2 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3592"/>
+        <location filename="../../mscore/shortcut.cpp" line="3602"/>
         <source>Add fret 2 on current string (TAB only)</source>
         <translation>Set inn band 2a valda strong (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3598"/>
+        <location filename="../../mscore/shortcut.cpp" line="3608"/>
         <source>Fret 3 (TAB)</source>
         <translation>Band 3 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3599"/>
+        <location filename="../../mscore/shortcut.cpp" line="3609"/>
         <source>Add fret 3 on current string (TAB only)</source>
         <translation>Set inn band 3 á valda strong (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3605"/>
+        <location filename="../../mscore/shortcut.cpp" line="3615"/>
         <source>Fret 4 (TAB)</source>
         <translation>Band 4 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3606"/>
+        <location filename="../../mscore/shortcut.cpp" line="3616"/>
         <source>Add fret 4 on current string (TAB only)</source>
         <translation>Legg 4 band afturat á valda strongin (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3612"/>
+        <location filename="../../mscore/shortcut.cpp" line="3622"/>
         <source>Fret 5 (TAB)</source>
         <translation>Band 5 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3613"/>
+        <location filename="../../mscore/shortcut.cpp" line="3623"/>
         <source>Add fret 5 on current string (TAB only)</source>
         <translation>Legg 5 band afturat á valda strongin (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3619"/>
+        <location filename="../../mscore/shortcut.cpp" line="3629"/>
         <source>Fret 6 (TAB)</source>
         <translation>Band 6 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3620"/>
+        <location filename="../../mscore/shortcut.cpp" line="3630"/>
         <source>Add fret 6 on current string (TAB only)</source>
         <translation>Legg 6 band afturat á valda strongin (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3626"/>
+        <location filename="../../mscore/shortcut.cpp" line="3636"/>
         <source>Fret 7 (TAB)</source>
         <translation>Band 7 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3627"/>
+        <location filename="../../mscore/shortcut.cpp" line="3637"/>
         <source>Add fret 7 on current string (TAB only)</source>
         <translation>Legg 7 band afturat á valda strongin (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3633"/>
+        <location filename="../../mscore/shortcut.cpp" line="3643"/>
         <source>Fret 8 (TAB)</source>
         <translation>Band 8 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3634"/>
+        <location filename="../../mscore/shortcut.cpp" line="3644"/>
         <source>Add fret 8 on current string (TAB only)</source>
         <translation>Legg 8 band afturat á valda strongin (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3640"/>
+        <location filename="../../mscore/shortcut.cpp" line="3650"/>
         <source>Fret 9 (TAB)</source>
         <translation>Band 9 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3641"/>
+        <location filename="../../mscore/shortcut.cpp" line="3651"/>
         <source>Add fret 9 on current string (TAB only)</source>
         <translation>Legg 9 band afturat á valda strongin (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3647"/>
+        <location filename="../../mscore/shortcut.cpp" line="3657"/>
         <source>Fret 10 (TAB)</source>
         <translation>Band 10 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3648"/>
+        <location filename="../../mscore/shortcut.cpp" line="3658"/>
         <source>Add fret 10 on current string (TAB only)</source>
         <translation>Legg 10 band afturat á valda strongin (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3654"/>
+        <location filename="../../mscore/shortcut.cpp" line="3664"/>
         <source>Fret 11 (TAB)</source>
         <translation>Band 11 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3655"/>
+        <location filename="../../mscore/shortcut.cpp" line="3665"/>
         <source>Add fret 11 on current string (TAB only)</source>
         <translation>Legg 11 band afturat á valda strongin (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3661"/>
+        <location filename="../../mscore/shortcut.cpp" line="3671"/>
         <source>Fret 12 (TAB)</source>
         <translation>Band 12 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3662"/>
+        <location filename="../../mscore/shortcut.cpp" line="3672"/>
         <source>Add fret 12 on current string (TAB only)</source>
         <translation>Legg 12 band afturat á valda strongin (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3668"/>
+        <location filename="../../mscore/shortcut.cpp" line="3678"/>
         <source>Fret 13 (TAB)</source>
         <translation>Band 13 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3669"/>
+        <location filename="../../mscore/shortcut.cpp" line="3679"/>
         <source>Add fret 13 on current string (TAB only)</source>
         <translation>Legg 13 band afturat á valda strongin (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3675"/>
+        <location filename="../../mscore/shortcut.cpp" line="3685"/>
         <source>Fret 14 (TAB)</source>
         <translation>Band 14 (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3676"/>
+        <location filename="../../mscore/shortcut.cpp" line="3686"/>
         <source>Add fret 14 on current string (TAB only)</source>
         <translation>Legg 14 band afturat á valda strongin (bert TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3685"/>
+        <location filename="../../mscore/shortcut.cpp" line="3695"/>
         <source>Longa Advance (F.B./Chord Symbol)</source>
         <translation>Longa hækking (b.f. bass/akk. symb.)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3686"/>
+        <location filename="../../mscore/shortcut.cpp" line="3696"/>
         <source>Advance of a longa (Figured bass/Chord symbol only)</source>
         <translation>Hækka við longa (bert besifringsbassur/akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3692"/>
+        <location filename="../../mscore/shortcut.cpp" line="3702"/>
         <source>Breve Advance (F.B./Chord Symbol)</source>
         <translation>Breve hækking (b.f.bass/akk. tekn.)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3693"/>
+        <location filename="../../mscore/shortcut.cpp" line="3703"/>
         <source>Advance of a double whole note (Figured bass/Chord symbol only)</source>
         <translation>Hækka við dupultum heilnóta (bert besifringsbassur/akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3699"/>
+        <location filename="../../mscore/shortcut.cpp" line="3709"/>
         <source>Whole Note Advance (F.B./Chord Symbol)</source>
         <translation>Hækka við heilum nóta (b.s. bass/akk. tekn.)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3700"/>
+        <location filename="../../mscore/shortcut.cpp" line="3710"/>
         <source>Advance of a whole note (Figured bass/Chord symbol only)</source>
         <translation>Hækka við heilum nóta (bert besifringsbass/akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3706"/>
+        <location filename="../../mscore/shortcut.cpp" line="3716"/>
         <source>Half Note Advance (F.B./Chord Symbol)</source>
         <translation>Hækka við hálvum nóta (b.f. bass/akk. tekn.)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3707"/>
+        <location filename="../../mscore/shortcut.cpp" line="3717"/>
         <source>Advance of a half note (Figured bass/Chord symbol only)</source>
         <translation>Hækka við hálvum nóta (bert besifringsbass/akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3713"/>
+        <location filename="../../mscore/shortcut.cpp" line="3723"/>
         <source>Quarter Note Advance (F.B./Chord Symbol)</source>
         <translation>Hækka við fjórðingsnóta (b.f. bass/akk. tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3714"/>
+        <location filename="../../mscore/shortcut.cpp" line="3724"/>
         <source>Advance of a quarter note (Figured bass/Chord symbol only)</source>
         <translation>Hækka við fjórðingsnóta (bert besifringsbass/akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3720"/>
+        <location filename="../../mscore/shortcut.cpp" line="3730"/>
         <source>Eighth Note Advance (F.B./Chord Symbol)</source>
         <translation>Hækka við áttund nóta (b.f. bass/akk. tekn.)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3721"/>
+        <location filename="../../mscore/shortcut.cpp" line="3731"/>
         <source>Advance of an eighth note (Figured bass/Chord symbol only)</source>
         <translation>Hækka við áttund nóta (bert besifringsbass/akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3727"/>
+        <location filename="../../mscore/shortcut.cpp" line="3737"/>
         <source>16th Note Advance (F.B./Chord Symbol)</source>
         <translation>Hækka við 16prt nóta (b.f. bass/akk. tekn.)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3728"/>
+        <location filename="../../mscore/shortcut.cpp" line="3738"/>
         <source>Advance of a 16th note (Figured bass/Chord symbol only)</source>
         <translation>Hækka við 16prt nóta (bert besifringsbass/Akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3734"/>
+        <location filename="../../mscore/shortcut.cpp" line="3744"/>
         <source>32nd Note Advance (F.B./Chord Symbol)</source>
         <translation>Hækka við 32prt nóta (b.f. bass/akk. tekn.)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3735"/>
+        <location filename="../../mscore/shortcut.cpp" line="3745"/>
         <source>Advance of a 32nd note (Figured bass/Chord symbol only)</source>
         <translation>Hækka við 32prt nóta (bert besifringsbass/akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3741"/>
+        <location filename="../../mscore/shortcut.cpp" line="3751"/>
         <source>64th Note Advance (F.B./Chord Symbol)</source>
         <translation>Hækka við 64prt nóta (b.f. bass/akk. tekn.)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3742"/>
+        <location filename="../../mscore/shortcut.cpp" line="3752"/>
         <source>Advance of a 64th note (Figured bass/Chord symbol only)</source>
         <translation>Hækka við 64prt nóta (bert besifringsbass/akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3748"/>
+        <location filename="../../mscore/shortcut.cpp" line="3758"/>
         <source>Previous Measure (F.B./Chord Symbol)</source>
         <translation>Undanfarna takt (F.B./akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3749"/>
+        <location filename="../../mscore/shortcut.cpp" line="3759"/>
         <source>Previous measure (Figured bass/Chord symbol only)</source>
         <translation>Undanfarna takt (bert besifrings bassur/akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3755"/>
+        <location filename="../../mscore/shortcut.cpp" line="3765"/>
         <source>Next Measure (F.B./Chord Symbol)</source>
         <translation>Næsta takt (F.B./akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3756"/>
+        <location filename="../../mscore/shortcut.cpp" line="3766"/>
         <source>Next measure (Figured bass/Chord symbol only)</source>
         <translation>Næsta takt (bert besifrings bassur/akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3762"/>
+        <location filename="../../mscore/shortcut.cpp" line="3772"/>
         <source>Previous Beat (Chord Symbol)</source>
         <translation>Undanfarna slag (Akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3763"/>
+        <location filename="../../mscore/shortcut.cpp" line="3773"/>
         <source>Previous beat (Chord symbol)</source>
         <translation>Undanfarna slag (Akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3769"/>
+        <location filename="../../mscore/shortcut.cpp" line="3779"/>
         <source>Next Beat (Chord Symbol)</source>
         <translation>Næsta slag (Akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3770"/>
+        <location filename="../../mscore/shortcut.cpp" line="3780"/>
         <source>Next beat (Chord symbol)</source>
         <translation>Næsta slag (Akkord tekin)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3796"/>
+        <location filename="../../mscore/shortcut.cpp" line="3806"/>
         <source>Add Braces to Element</source>
         <translation>Legg klombur afturat lutinum</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3797"/>
+        <location filename="../../mscore/shortcut.cpp" line="3807"/>
         <source>Add Braces to element</source>
         <translation>Legg klombur afturat lutinum</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3845"/>
+        <location filename="../../mscore/shortcut.cpp" line="3855"/>
         <source>Strike-through</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3883"/>
+        <location filename="../../mscore/shortcut.cpp" line="3893"/>
         <source>Realize Chord Symbols</source>
         <translation>Skriva akkordtónar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3884"/>
+        <location filename="../../mscore/shortcut.cpp" line="3894"/>
         <source>Realize chord symbols</source>
         <translation>Skriva akkordtónar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3885"/>
+        <location filename="../../mscore/shortcut.cpp" line="3895"/>
         <source>Convert chord symbols into notes</source>
         <translation>Broyt akkord tekin til nótar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3955"/>
+        <location filename="../../mscore/shortcut.cpp" line="3965"/>
         <source>Start Center…</source>
         <translation>Byrjunar depil…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3965"/>
+        <location filename="../../mscore/shortcut.cpp" line="3975"/>
         <source>Customize Toolbars…</source>
         <translation>Laga arbeiðsbjálkar til…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3966"/>
+        <location filename="../../mscore/shortcut.cpp" line="3976"/>
         <source>Customize toolbars</source>
         <translation>Laga arbeiðsbjálkar til</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3975"/>
+        <location filename="../../mscore/shortcut.cpp" line="3985"/>
         <source>Remove Empty Trailing Measures</source>
         <translation>Tak burtur seinastu tómu taktirnar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3976"/>
+        <location filename="../../mscore/shortcut.cpp" line="3986"/>
         <source>Remove empty trailing measures</source>
         <translation>Tak burtur seinastu tómu taktirnar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3985"/>
-        <location filename="../../mscore/shortcut.cpp" line="3986"/>
+        <location filename="../../mscore/shortcut.cpp" line="3995"/>
+        <location filename="../../mscore/shortcut.cpp" line="3996"/>
         <source>Unroll Repeats</source>
         <translation>Breið út endurtøkur</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3995"/>
+        <location filename="../../mscore/shortcut.cpp" line="4005"/>
         <source>Show Tours</source>
         <translation>Vís túrar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3996"/>
+        <location filename="../../mscore/shortcut.cpp" line="4006"/>
         <source>Show tours</source>
         <translation>Vís túrar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3997"/>
+        <location filename="../../mscore/shortcut.cpp" line="4007"/>
         <source>Toggle display of tours</source>
         <translation>Tendra/sløkk vís túrar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4006"/>
+        <location filename="../../mscore/shortcut.cpp" line="4016"/>
         <source>Reset Tours</source>
         <translation>Nullstilla túrar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4007"/>
+        <location filename="../../mscore/shortcut.cpp" line="4017"/>
         <source>Reset tours</source>
         <translation>Nullstilla túrar</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4016"/>
+        <location filename="../../mscore/shortcut.cpp" line="4026"/>
         <source>Toggle Automatic Placement</source>
         <translation>Skift Sjálvv. støðu</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4017"/>
+        <location filename="../../mscore/shortcut.cpp" line="4027"/>
         <source>Toggle &apos;Automatic Placement&apos; for selected elements</source>
         <translation>Skift &apos;Sjálvvirkandi støða&apos; hjá valdu lutunum</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4023"/>
+        <location filename="../../mscore/shortcut.cpp" line="4033"/>
         <source>Toggle Automatic Placement Globally</source>
         <translation>Skift Sjálvvirkandi støða heiltøka</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4024"/>
+        <location filename="../../mscore/shortcut.cpp" line="4034"/>
         <source>Toggle &apos;Automatic Placement&apos; globally</source>
         <translation>Skift &apos;Sjálvvirkandi støða&apos; heiltøka</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4033"/>
+        <location filename="../../mscore/shortcut.cpp" line="4043"/>
         <source>Report a Bug</source>
         <translation>Boða frá lús</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4034"/>
+        <location filename="../../mscore/shortcut.cpp" line="4044"/>
         <source>Report a bug</source>
         <translation>Boða frá lús</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4051"/>
+        <location filename="../../mscore/shortcut.cpp" line="4061"/>
         <source>Leave feedback</source>
         <translation>Afturboðan</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3826"/>
+        <location filename="../../mscore/shortcut.cpp" line="3836"/>
         <source>Bold Face</source>
         <translation>Høvd feitir stavir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3827"/>
+        <location filename="../../mscore/shortcut.cpp" line="3837"/>
         <source>Bold face</source>
         <translation>Høvd feitir stavir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3833"/>
+        <location filename="../../mscore/shortcut.cpp" line="3843"/>
         <source>Italic</source>
         <translation>Skákskriva</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3839"/>
+        <location filename="../../mscore/shortcut.cpp" line="3849"/>
         <source>Underline</source>
         <translation>Strika undir</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3851"/>
+        <location filename="../../mscore/shortcut.cpp" line="3861"/>
         <source>Move Word Left</source>
         <translation>Flyt orð til vinstru</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3852"/>
+        <location filename="../../mscore/shortcut.cpp" line="3862"/>
         <source>Move word left</source>
         <translation>Flyt orð til vinstru</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3862"/>
+        <location filename="../../mscore/shortcut.cpp" line="3872"/>
         <source>Move Word Right</source>
         <translation>Flyt orð til høgru</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3863"/>
+        <location filename="../../mscore/shortcut.cpp" line="3873"/>
         <source>Move word right</source>
         <translation>Flyt orð til høgru</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3873"/>
-        <location filename="../../mscore/shortcut.cpp" line="3874"/>
+        <location filename="../../mscore/shortcut.cpp" line="3883"/>
+        <location filename="../../mscore/shortcut.cpp" line="3884"/>
         <source>Explode</source>
         <translation>Breið út</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3875"/>
+        <location filename="../../mscore/shortcut.cpp" line="3885"/>
         <source>Explode contents of top selected staff into staves below</source>
         <translation>Breið innihald í ovastu valdu nótalinjuni út á nótalinjur niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3893"/>
-        <location filename="../../mscore/shortcut.cpp" line="3894"/>
+        <location filename="../../mscore/shortcut.cpp" line="3903"/>
+        <location filename="../../mscore/shortcut.cpp" line="3904"/>
         <source>Implode</source>
         <translation>Fell saman</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3895"/>
+        <location filename="../../mscore/shortcut.cpp" line="3905"/>
         <source>Implode contents of selected staves into top selected staff</source>
         <translation>Fell saman innihaldið í valdum nótalinjum í valdu nótalinjuna ovast</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3903"/>
+        <location filename="../../mscore/shortcut.cpp" line="3913"/>
         <source>Fill With Slashes</source>
         <translation>Fyll við skákstrikum</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3904"/>
+        <location filename="../../mscore/shortcut.cpp" line="3914"/>
         <source>Fill with slashes</source>
         <translation>Fyll við strikum</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3913"/>
+        <location filename="../../mscore/shortcut.cpp" line="3923"/>
         <source>Toggle Rhythmic Slash Notation</source>
         <translation>Skift nótaskrift við skrástrikurútmu</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3934"/>
+        <location filename="../../mscore/shortcut.cpp" line="3944"/>
         <source>Resequence Rehearsal Marks</source>
         <translation>Umskipa venjingar merki</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3935"/>
+        <location filename="../../mscore/shortcut.cpp" line="3945"/>
         <source>Resequence rehearsal marks</source>
         <translation>Umskipa venjingar merki</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3944"/>
+        <location filename="../../mscore/shortcut.cpp" line="3954"/>
         <source>Copy Lyrics to Clipboard</source>
         <translation>Avrita sangtekst til setiborð</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3945"/>
+        <location filename="../../mscore/shortcut.cpp" line="3955"/>
         <source>Copy lyrics to clipboard</source>
         <translation>Avrita sangtekst til setiborð</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3956"/>
+        <location filename="../../mscore/shortcut.cpp" line="3966"/>
         <source>Start center</source>
         <translation>Byrjan</translation>
     </message>
@@ -32771,1957 +32781,1957 @@ This score already has part scores. Changing local time signatures while part sc
 <context>
     <name>symUserNames</name>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3043"/>
+        <location filename="../../libmscore/sym.cpp" line="3042"/>
         <source>No symbol</source>
         <translation>Einki tekin</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3053"/>
+        <location filename="../../libmscore/sym.cpp" line="3052"/>
         <source>11 large diesis down, 3° down [46 EDO]</source>
         <translation>11 large diesis down, 3° down [46 EDO]</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3054"/>
+        <location filename="../../libmscore/sym.cpp" line="3053"/>
         <source>11 large diesis up, (11L), (sharp less 11M), 3° up [46 EDO]</source>
         <translation>11 large diesis up, (11L), (sharp less 11M), 3° up [46 EDO]</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3055"/>
+        <location filename="../../libmscore/sym.cpp" line="3054"/>
         <source>11 medium diesis down, 1°[17 31] 2°46 down, 1/4-tone down</source>
         <translation>11 medium diesis down, 1°[17 31] 2°46 down, 1/4-tone down</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3056"/>
+        <location filename="../../libmscore/sym.cpp" line="3055"/>
         <source>11 medium diesis up, (11M), 1°[17 31] 2°46 up, 1/4-tone up</source>
         <translation>11 medium diesis up, (11M), 1°[17 31] 2°46 up, 1/4-tone up</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3081"/>
+        <location filename="../../libmscore/sym.cpp" line="3080"/>
         <source>25 small diesis down, 2° down [53 EDO]</source>
         <translation>25 small diesis down, 2° down [53 EDO]</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3087"/>
+        <location filename="../../libmscore/sym.cpp" line="3086"/>
         <source>35 large diesis down, 2° down [50 EDO], 5/18-tone down</source>
         <translation>35 large diesis down, 2° down [50 EDO], 5/18-tone down</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3088"/>
+        <location filename="../../libmscore/sym.cpp" line="3087"/>
         <source>35 large diesis up, (35L, ~13L, ~125L, sharp less 35M), 2°50 up</source>
         <translation>35 large diesis up, (35L, ~13L, ~125L, sharp less 35M), 2°50 up</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3089"/>
+        <location filename="../../libmscore/sym.cpp" line="3088"/>
         <source>35 medium diesis down, 1°[50] 2°[27] down, 2/9-tone down</source>
         <translation>35 medium diesis down, 1°[50] 2°[27] down, 2/9-tone down</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3103"/>
+        <location filename="../../libmscore/sym.cpp" line="3102"/>
         <source>5 comma down, 1° down [22 27 29 34 41 46 53 96 EDOs], 1/12-tone down</source>
         <translation>5 comma down, 1° down [22 27 29 34 41 46 53 96 EDOs], 1/12-tone down</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3104"/>
+        <location filename="../../libmscore/sym.cpp" line="3103"/>
         <source>5 comma up, (5C), 1° up [22 27 29 34 41 46 53 96 EDOs], 1/12-tone up</source>
         <translation>5 comma up, (5C), 1° up [22 27 29 34 41 46 53 96 EDOs], 1/12-tone up</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3119"/>
+        <location filename="../../libmscore/sym.cpp" line="3118"/>
         <source>5:7 kleisma down</source>
         <translation>5:7 kleisma down</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3123"/>
+        <location filename="../../libmscore/sym.cpp" line="3122"/>
         <source>7 comma down, 1° down [43 EDO], 2° down [72 EDO], 1/6-tone down</source>
         <translation>7 comma down, 1° down [43 EDO], 2° down [72 EDO], 1/6-tone down</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3124"/>
+        <location filename="../../libmscore/sym.cpp" line="3123"/>
         <source>7 comma up, (7C), 1° up [43 EDO], 2° up [72 EDO], 1/6-tone up</source>
         <translation>7 comma up, (7C), 1° up [43 EDO], 2° up [72 EDO], 1/6-tone up</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3180"/>
+        <location filename="../../libmscore/sym.cpp" line="3179"/>
         <source>Flat, (apotome down)[almost all EDOs], 1/2-tone down</source>
         <translation>Flat, (apotome down)[almost all EDOs], 1/2-tone down</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3202"/>
+        <location filename="../../libmscore/sym.cpp" line="3201"/>
         <source>Flat 25S-up, 3° down [53 EDO]</source>
         <translation>Flat 25S-up, 3° down [53 EDO]</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3223"/>
+        <location filename="../../libmscore/sym.cpp" line="3222"/>
         <source>Flat 5:7k-up</source>
         <translation>Flat 5:7k-up</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3225"/>
+        <location filename="../../libmscore/sym.cpp" line="3224"/>
         <source>Flat 7C-up, 2° down [43 EDO], 4° down [72 EDO], 1/3-tone down</source>
         <translation>Flat 7C-up, 2° down [43 EDO], 4° down [72 EDO], 1/3-tone down</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3237"/>
+        <location filename="../../libmscore/sym.cpp" line="3236"/>
         <source>Sharp, (apotome up)[almost all EDOs], 1/2-tone up</source>
         <translation>Sharp, (apotome up)[almost all EDOs], 1/2-tone up</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3258"/>
+        <location filename="../../libmscore/sym.cpp" line="3257"/>
         <source>Sharp 25S-down, 3° up [53 EDO]</source>
         <translation>Sharp 25S-down, 3° up [53 EDO]</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3279"/>
+        <location filename="../../libmscore/sym.cpp" line="3278"/>
         <source>Sharp 5:7k-down</source>
         <translation>Sharp 5:7k-down</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3281"/>
+        <location filename="../../libmscore/sym.cpp" line="3280"/>
         <source>Sharp 7C-down, 2° up [43 EDO], 4° up [72 EDO], 1/3-tone up</source>
         <translation>Sharp 7C-down, 2° up [43 EDO], 4° up [72 EDO], 1/3-tone up</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3293"/>
+        <location filename="../../libmscore/sym.cpp" line="3292"/>
         <source>Combining accordion coupler dot</source>
         <translation>Combining accordion coupler dot</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3294"/>
+        <location filename="../../libmscore/sym.cpp" line="3293"/>
         <source>Combining left hand, 2 ranks, empty</source>
         <translation>Combining left hand, 2 ranks, empty</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3295"/>
+        <location filename="../../libmscore/sym.cpp" line="3294"/>
         <source>Combining left hand, 3 ranks, empty (square)</source>
         <translation>Combining left hand, 3 ranks, empty (square)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3296"/>
+        <location filename="../../libmscore/sym.cpp" line="3295"/>
         <source>Combining right hand, 3 ranks, empty</source>
         <translation>Combining right hand, 3 ranks, empty</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3297"/>
+        <location filename="../../libmscore/sym.cpp" line="3296"/>
         <source>Combining right hand, 4 ranks, empty</source>
         <translation>Combining right hand, 4 ranks, empty</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3298"/>
+        <location filename="../../libmscore/sym.cpp" line="3297"/>
         <source>Diatonic accordion clef</source>
         <translation>Diatonisk harmonika lykil</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3299"/>
+        <location filename="../../libmscore/sym.cpp" line="3298"/>
         <source>Left hand, 2 ranks, 16&apos; stop (round)</source>
         <translation>Left hand, 2 ranks, 16&apos; stop (round)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3300"/>
+        <location filename="../../libmscore/sym.cpp" line="3299"/>
         <source>Left hand, 2 ranks, 8&apos; stop + 16&apos; stop (round)</source>
         <translation>Left hand, 2 ranks, 8&apos; stop + 16&apos; stop (round)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3301"/>
+        <location filename="../../libmscore/sym.cpp" line="3300"/>
         <source>Left hand, 2 ranks, 8&apos; stop (round)</source>
         <translation>Left hand, 2 ranks, 8&apos; stop (round)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3302"/>
+        <location filename="../../libmscore/sym.cpp" line="3301"/>
         <source>Left hand, 2 ranks, full master (round)</source>
         <translation>Left hand, 2 ranks, full master (round)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3303"/>
+        <location filename="../../libmscore/sym.cpp" line="3302"/>
         <source>Left hand, 2 ranks, master + 16&apos; stop (round)</source>
         <translation>Left hand, 2 ranks, master + 16&apos; stop (round)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3304"/>
+        <location filename="../../libmscore/sym.cpp" line="3303"/>
         <source>Left hand, 2 ranks, master (round)</source>
         <translation>Left hand, 2 ranks, master (round)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3305"/>
+        <location filename="../../libmscore/sym.cpp" line="3304"/>
         <source>Left hand, 3 ranks, 2&apos; stop + 8&apos; stop (square)</source>
         <translation>Left hand, 3 ranks, 2&apos; stop + 8&apos; stop (square)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3306"/>
+        <location filename="../../libmscore/sym.cpp" line="3305"/>
         <source>Left hand, 3 ranks, 2&apos; stop (square)</source>
         <translation>Left hand, 3 ranks, 2&apos; stop (square)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3307"/>
+        <location filename="../../libmscore/sym.cpp" line="3306"/>
         <source>Left hand, 3 ranks, 8&apos; stop (square)</source>
         <translation>Left hand, 3 ranks, 8&apos; stop (square)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3308"/>
+        <location filename="../../libmscore/sym.cpp" line="3307"/>
         <source>Left hand, 3 ranks, double 8&apos; stop (square)</source>
         <translation>Left hand, 3 ranks, double 8&apos; stop (square)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3309"/>
+        <location filename="../../libmscore/sym.cpp" line="3308"/>
         <source>Left hand, 3 ranks, 2&apos; stop + double 8&apos; stop (tutti) (square)</source>
         <translation>Left hand, 3 ranks, 2&apos; stop + double 8&apos; stop (tutti) (square)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3310"/>
+        <location filename="../../libmscore/sym.cpp" line="3309"/>
         <source>Pull</source>
         <translation>Hála</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3311"/>
+        <location filename="../../libmscore/sym.cpp" line="3310"/>
         <source>Push</source>
         <translation>Skumpa</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3312"/>
+        <location filename="../../libmscore/sym.cpp" line="3311"/>
         <source>Right hand, 3 ranks, 8&apos; stop + upper tremolo 8&apos; stop + 16&apos; stop (accordion)</source>
         <translation>Right hand, 3 ranks, 8&apos; stop + upper tremolo 8&apos; stop + 16&apos; stop (accordion)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3313"/>
+        <location filename="../../libmscore/sym.cpp" line="3312"/>
         <source>Right hand, 3 ranks, lower tremolo 8&apos; stop + 8&apos; stop + upper tremolo 8&apos; stop (authentic musette)</source>
         <translation>Right hand, 3 ranks, lower tremolo 8&apos; stop + 8&apos; stop + upper tremolo 8&apos; stop (authentic musette)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3314"/>
+        <location filename="../../libmscore/sym.cpp" line="3313"/>
         <source>Right hand, 3 ranks, 8&apos; stop + 16&apos; stop (bandoneón)</source>
         <translation>Right hand, 3 ranks, 8&apos; stop + 16&apos; stop (bandoneón)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3315"/>
+        <location filename="../../libmscore/sym.cpp" line="3314"/>
         <source>Right hand, 3 ranks, 16&apos; stop (bassoon)</source>
         <translation>Right hand, 3 ranks, 16&apos; stop (bassoon)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3316"/>
+        <location filename="../../libmscore/sym.cpp" line="3315"/>
         <source>Right hand, 3 ranks, 8&apos; stop (clarinet)</source>
         <translation>Right hand, 3 ranks, 8&apos; stop (clarinet)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3317"/>
+        <location filename="../../libmscore/sym.cpp" line="3316"/>
         <source>Right hand, 3 ranks, lower tremolo 8&apos; stop + 8&apos; stop + upper tremolo 8&apos; stop + 16&apos; stop</source>
         <translation>Right hand, 3 ranks, lower tremolo 8&apos; stop + 8&apos; stop + upper tremolo 8&apos; stop + 16&apos; stop</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3318"/>
+        <location filename="../../libmscore/sym.cpp" line="3317"/>
         <source>Right hand, 3 ranks, 4&apos; stop + lower tremolo 8&apos; stop + 8&apos; stop + upper tremolo 8&apos; stop</source>
         <translation>Right hand, 3 ranks, 4&apos; stop + lower tremolo 8&apos; stop + 8&apos; stop + upper tremolo 8&apos; stop</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3319"/>
+        <location filename="../../libmscore/sym.cpp" line="3318"/>
         <source>Right hand, 3 ranks, 4&apos; stop + lower tremolo 8&apos; stop + 8&apos; stop + upper tremolo 8&apos; stop + 16&apos; stop</source>
         <translation>Right hand, 3 ranks, 4&apos; stop + lower tremolo 8&apos; stop + 8&apos; stop + upper tremolo 8&apos; stop + 16&apos; stop</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3320"/>
+        <location filename="../../libmscore/sym.cpp" line="3319"/>
         <source>Right hand, 3 ranks, 4&apos; stop + 8&apos; stop + 16&apos; stop (harmonium)</source>
         <translation>Right hand, 3 ranks, 4&apos; stop + 8&apos; stop + 16&apos; stop (harmonium)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3321"/>
+        <location filename="../../libmscore/sym.cpp" line="3320"/>
         <source>Right hand, 3 ranks, 4&apos; stop + 8&apos; stop + upper tremolo 8&apos; stop (imitation musette)</source>
         <translation>Right hand, 3 ranks, 4&apos; stop + 8&apos; stop + upper tremolo 8&apos; stop (imitation musette)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3322"/>
+        <location filename="../../libmscore/sym.cpp" line="3321"/>
         <source>Right hand, 3 ranks, lower tremolo 8&apos; stop</source>
         <translation>Right hand, 3 ranks, lower tremolo 8&apos; stop</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3323"/>
+        <location filename="../../libmscore/sym.cpp" line="3322"/>
         <source>Right hand, 3 ranks, 4&apos; stop + lower tremolo 8&apos; stop + upper tremolo 8&apos; stop + 16&apos; stop (master)</source>
         <translation>Right hand, 3 ranks, 4&apos; stop + lower tremolo 8&apos; stop + upper tremolo 8&apos; stop + 16&apos; stop (master)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3324"/>
+        <location filename="../../libmscore/sym.cpp" line="3323"/>
         <source>Right hand, 3 ranks, 4&apos; stop + 8&apos; stop (oboe)</source>
         <translation>Right hand, 3 ranks, 4&apos; stop + 8&apos; stop (oboe)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3325"/>
+        <location filename="../../libmscore/sym.cpp" line="3324"/>
         <source>Right hand, 3 ranks, 4&apos; stop + 16&apos; stop (organ)</source>
         <translation>Right hand, 3 ranks, 4&apos; stop + 16&apos; stop (organ)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3326"/>
+        <location filename="../../libmscore/sym.cpp" line="3325"/>
         <source>Right hand, 3 ranks, 4&apos; stop (piccolo)</source>
         <translation>Right hand, 3 ranks, 4&apos; stop (piccolo)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3327"/>
+        <location filename="../../libmscore/sym.cpp" line="3326"/>
         <source>Right hand, 3 ranks, lower tremolo 8&apos; stop + upper tremolo 8&apos; stop + 16&apos; stop</source>
         <translation>Right hand, 3 ranks, lower tremolo 8&apos; stop + upper tremolo 8&apos; stop + 16&apos; stop</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3328"/>
+        <location filename="../../libmscore/sym.cpp" line="3327"/>
         <source>Right hand, 3 ranks, 4&apos; stop + lower tremolo 8&apos; stop + upper tremolo 8&apos; stop</source>
         <translation>Right hand, 3 ranks, 4&apos; stop + lower tremolo 8&apos; stop + upper tremolo 8&apos; stop</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3329"/>
+        <location filename="../../libmscore/sym.cpp" line="3328"/>
         <source>Right hand, 3 ranks, lower tremolo 8&apos; stop + upper tremolo 8&apos; stop</source>
         <translation>Right hand, 3 ranks, lower tremolo 8&apos; stop + upper tremolo 8&apos; stop</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3330"/>
+        <location filename="../../libmscore/sym.cpp" line="3329"/>
         <source>Right hand, 3 ranks, upper tremolo 8&apos; stop</source>
         <translation>Right hand, 3 ranks, upper tremolo 8&apos; stop</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3331"/>
+        <location filename="../../libmscore/sym.cpp" line="3330"/>
         <source>Right hand, 3 ranks, 8&apos; stop + upper tremolo 8&apos; stop (violin)</source>
         <translation>Right hand, 3 ranks, 8&apos; stop + upper tremolo 8&apos; stop (violin)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3332"/>
+        <location filename="../../libmscore/sym.cpp" line="3331"/>
         <source>Right hand, 4 ranks, alto</source>
         <translation>Right hand, 4 ranks, alto</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3333"/>
+        <location filename="../../libmscore/sym.cpp" line="3332"/>
         <source>Right hand, 4 ranks, bass/alto</source>
         <translation>Right hand, 4 ranks, bass/alto</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3334"/>
+        <location filename="../../libmscore/sym.cpp" line="3333"/>
         <source>Right hand, 4 ranks, master</source>
         <translation>Right hand, 4 ranks, master</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3335"/>
+        <location filename="../../libmscore/sym.cpp" line="3334"/>
         <source>Right hand, 4 ranks, soft bass</source>
         <translation>Right hand, 4 ranks, soft bass</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3336"/>
+        <location filename="../../libmscore/sym.cpp" line="3335"/>
         <source>Right hand, 4 ranks, soft tenor</source>
         <translation>Right hand, 4 ranks, soft tenor</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3337"/>
+        <location filename="../../libmscore/sym.cpp" line="3336"/>
         <source>Right hand, 4 ranks, soprano</source>
         <translation>Right hand, 4 ranks, soprano</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3338"/>
+        <location filename="../../libmscore/sym.cpp" line="3337"/>
         <source>Right hand, 4 ranks, tenor</source>
         <translation>Right hand, 4 ranks, tenor</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3339"/>
+        <location filename="../../libmscore/sym.cpp" line="3338"/>
         <source>Ricochet (2 tones)</source>
         <translation>Ricochet (2 tones)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3340"/>
+        <location filename="../../libmscore/sym.cpp" line="3339"/>
         <source>Ricochet (3 tones)</source>
         <translation>Ricochet (3 tones)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3341"/>
+        <location filename="../../libmscore/sym.cpp" line="3340"/>
         <source>Ricochet (4 tones)</source>
         <translation>Ricochet (4 tones)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3342"/>
+        <location filename="../../libmscore/sym.cpp" line="3341"/>
         <source>Ricochet (5 tones)</source>
         <translation>Ricochet (5 tones)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3343"/>
+        <location filename="../../libmscore/sym.cpp" line="3342"/>
         <source>Ricochet (6 tones)</source>
         <translation>Ricochet (6 tones)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3344"/>
+        <location filename="../../libmscore/sym.cpp" line="3343"/>
         <source>Combining ricochet for stem (2 tones)</source>
         <translation>Combining ricochet for stem (2 tones)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3345"/>
+        <location filename="../../libmscore/sym.cpp" line="3344"/>
         <source>Combining ricochet for stem (3 tones)</source>
         <translation>Combining ricochet for stem (3 tones)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3346"/>
+        <location filename="../../libmscore/sym.cpp" line="3345"/>
         <source>Combining ricochet for stem (4 tones)</source>
         <translation>Combining ricochet for stem (4 tones)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3347"/>
+        <location filename="../../libmscore/sym.cpp" line="3346"/>
         <source>Combining ricochet for stem (5 tones)</source>
         <translation>Combining ricochet for stem (5 tones)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3348"/>
+        <location filename="../../libmscore/sym.cpp" line="3347"/>
         <source>Combining ricochet for stem (6 tones)</source>
         <translation>Combining ricochet for stem (6 tones)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3349"/>
+        <location filename="../../libmscore/sym.cpp" line="3348"/>
         <source>1-comma flat</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3350"/>
+        <location filename="../../libmscore/sym.cpp" line="3349"/>
         <source>1-comma sharp</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3351"/>
+        <location filename="../../libmscore/sym.cpp" line="3350"/>
         <source>2-comma flat</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3352"/>
+        <location filename="../../libmscore/sym.cpp" line="3351"/>
         <source>2-comma sharp</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3353"/>
+        <location filename="../../libmscore/sym.cpp" line="3352"/>
         <source>3-comma flat</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3354"/>
+        <location filename="../../libmscore/sym.cpp" line="3353"/>
         <source>3-comma sharp</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3355"/>
+        <location filename="../../libmscore/sym.cpp" line="3354"/>
         <source>4-comma flat</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3356"/>
+        <location filename="../../libmscore/sym.cpp" line="3355"/>
         <source>5-comma sharp</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3357"/>
+        <location filename="../../libmscore/sym.cpp" line="3356"/>
         <source>Arrow down (lower by one quarter-tone)</source>
         <translation>Pílur niður (lækka við kvart tóna)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3358"/>
+        <location filename="../../libmscore/sym.cpp" line="3357"/>
         <source>Arrow up (raise by one quarter-tone)</source>
         <translation>Pílur upp (hækka við kvart tóna)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3359"/>
+        <location filename="../../libmscore/sym.cpp" line="3358"/>
         <source>Bakiye (flat)</source>
         <translation>Bakiye (b fortekin)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3363"/>
+        <location filename="../../libmscore/sym.cpp" line="3362"/>
         <source>Büyük mücenneb (flat)</source>
         <translation>Büyük mücenneb (b fortekin)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3364"/>
+        <location filename="../../libmscore/sym.cpp" line="3363"/>
         <source>Büyük mücenneb (sharp)</source>
         <translation>Büyük mücenneb (krossur)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3366"/>
+        <location filename="../../libmscore/sym.cpp" line="3365"/>
         <source>Combining lower by one 17-limit schisma</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3367"/>
+        <location filename="../../libmscore/sym.cpp" line="3366"/>
         <source>Combining lower by one 19-limit schisma</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3370"/>
+        <location filename="../../libmscore/sym.cpp" line="3369"/>
         <source>Combining lower by one 31-limit schisma</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3375"/>
+        <location filename="../../libmscore/sym.cpp" line="3374"/>
         <source>Combining lower by one 53-limit comma</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3377"/>
+        <location filename="../../libmscore/sym.cpp" line="3376"/>
         <source>Combining raise by one 17-limit schisma</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3378"/>
+        <location filename="../../libmscore/sym.cpp" line="3377"/>
         <source>Combining raise by one 19-limit schisma</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3381"/>
+        <location filename="../../libmscore/sym.cpp" line="3380"/>
         <source>Combining raise by one 31-limit schisma</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3386"/>
+        <location filename="../../libmscore/sym.cpp" line="3385"/>
         <source>Combining raise by one 53-limit comma</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3389"/>
+        <location filename="../../libmscore/sym.cpp" line="3388"/>
         <source>Double flat</source>
         <translation>Dupult b</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3391"/>
+        <location filename="../../libmscore/sym.cpp" line="3390"/>
         <source>Double flat equal tempered semitone</source>
         <translation>Dupult b eins og tempereraður hálvtóni</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3392"/>
+        <location filename="../../libmscore/sym.cpp" line="3391"/>
         <source>Double flat lowered by one syntonic comma</source>
         <translation>Dupult b lækkað við diatoniskum komma</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3393"/>
+        <location filename="../../libmscore/sym.cpp" line="3392"/>
         <source>Double flat raised by one syntonic comma</source>
         <translation>Dupult b hækkað við diatoniskum komma</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3395"/>
+        <location filename="../../libmscore/sym.cpp" line="3394"/>
         <source>Double flat lowered by three syntonic commas</source>
         <translation>Dupult b lækkað við 3 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3396"/>
+        <location filename="../../libmscore/sym.cpp" line="3395"/>
         <source>Double flat raised by three syntonic commas</source>
         <translation>Dupult b hækkað við 3 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3398"/>
+        <location filename="../../libmscore/sym.cpp" line="3397"/>
         <source>Double flat lowered by two syntonic commas</source>
         <translation>Dupult b lækkað við 2 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3399"/>
+        <location filename="../../libmscore/sym.cpp" line="3398"/>
         <source>Double flat raised by two syntonic commas</source>
         <translation>Dupult b hækkað við 2 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3400"/>
+        <location filename="../../libmscore/sym.cpp" line="3399"/>
         <source>Double sharp</source>
         <translation>dupultur krossur</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3402"/>
+        <location filename="../../libmscore/sym.cpp" line="3401"/>
         <source>Double sharp equal tempered semitone</source>
         <translation>Dupul krossur væl tempereraður hálvtóni</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3403"/>
+        <location filename="../../libmscore/sym.cpp" line="3402"/>
         <source>Double sharp lowered by one syntonic comma</source>
         <translation>Dupultur krossur lækkaður við 1 diatoniskum komma</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3404"/>
+        <location filename="../../libmscore/sym.cpp" line="3403"/>
         <source>Double sharp raised by one syntonic comma</source>
         <translation>Dupultur krossur hækkaður við 1 diatoniskum komma</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3405"/>
+        <location filename="../../libmscore/sym.cpp" line="3404"/>
         <source>Double sharp lowered by three syntonic commas</source>
         <translation>Dupultur krossur lækkaður við 3 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3406"/>
+        <location filename="../../libmscore/sym.cpp" line="3405"/>
         <source>Double sharp raised by three syntonic commas</source>
         <translation>Dupultur krossur hækkaður við 3 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3407"/>
+        <location filename="../../libmscore/sym.cpp" line="3406"/>
         <source>Double sharp lowered by two syntonic commas</source>
         <translation>Dupultur krossur lækkaður við 2 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3408"/>
+        <location filename="../../libmscore/sym.cpp" line="3407"/>
         <source>Double sharp raised by two syntonic commas</source>
         <translation>Dupultur krossur hækkaður við 2 diatoniskum komma</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3409"/>
+        <location filename="../../libmscore/sym.cpp" line="3408"/>
         <source>Enharmonically reinterpret accidental almost equal to</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3410"/>
+        <location filename="../../libmscore/sym.cpp" line="3409"/>
         <source>Enharmonically reinterpret accidental equals</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3411"/>
+        <location filename="../../libmscore/sym.cpp" line="3410"/>
         <source>Enharmonically reinterpret accidental tilde</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3417"/>
+        <location filename="../../libmscore/sym.cpp" line="3416"/>
         <source>Five-quarter-tones flat</source>
         <translation>Lækkaður 5 kvarttónar </translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3418"/>
+        <location filename="../../libmscore/sym.cpp" line="3417"/>
         <source>Five-quarter-tones sharp</source>
         <translation>Hækkaður 5 kvarttónar</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3419"/>
+        <location filename="../../libmscore/sym.cpp" line="3418"/>
         <source>Flat</source>
         <translation>b fyri nótan</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3421"/>
+        <location filename="../../libmscore/sym.cpp" line="3420"/>
         <source>Flat equal tempered semitone</source>
         <translation>Lækkaður væltempereraður hálvtóni</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3423"/>
+        <location filename="../../libmscore/sym.cpp" line="3422"/>
         <source>Flat lowered by one syntonic comma</source>
         <translation>b lækkað við 1 diatoniskum komma</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3424"/>
+        <location filename="../../libmscore/sym.cpp" line="3423"/>
         <source>Flat raised by one syntonic comma</source>
         <translation>b hækkað við 1 diatoniskum komma</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3428"/>
+        <location filename="../../libmscore/sym.cpp" line="3427"/>
         <source>Flat lowered by three syntonic commas</source>
         <translation>b lækkað við 3 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3429"/>
+        <location filename="../../libmscore/sym.cpp" line="3428"/>
         <source>Flat raised by three syntonic commas</source>
         <translation>b hækkað við 3 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3431"/>
+        <location filename="../../libmscore/sym.cpp" line="3430"/>
         <source>Flat lowered by two syntonic commas</source>
         <translation>b lækkað við 2 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3432"/>
+        <location filename="../../libmscore/sym.cpp" line="3431"/>
         <source>Flat raised by two syntonic commas</source>
         <translation>b hækkað við 2 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3451"/>
+        <location filename="../../libmscore/sym.cpp" line="3450"/>
         <source>Koron (quarter tone flat)</source>
         <translation>Koron (lækkaður kvarttóni)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3453"/>
+        <location filename="../../libmscore/sym.cpp" line="3452"/>
         <source>Küçük mücenneb (sharp)</source>
         <translation>Küçük mücenneb (krossur)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3455"/>
+        <location filename="../../libmscore/sym.cpp" line="3454"/>
         <source>Lower by one septimal comma</source>
         <translation>Lækka við einum septimalum komma</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3456"/>
+        <location filename="../../libmscore/sym.cpp" line="3455"/>
         <source>Lower by one tridecimal quartertone</source>
         <translation>Lækka ein tridesimalan kvarttóna</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3457"/>
+        <location filename="../../libmscore/sym.cpp" line="3456"/>
         <source>Lower by one undecimal quartertone</source>
         <translation>Lækka ein undesimalan kvarttóna</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3458"/>
+        <location filename="../../libmscore/sym.cpp" line="3457"/>
         <source>Lower by two septimal commas</source>
         <translation>Lækka við tveimum septimalum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3462"/>
+        <location filename="../../libmscore/sym.cpp" line="3461"/>
         <source>Natural</source>
         <translation>Upploysn</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3464"/>
+        <location filename="../../libmscore/sym.cpp" line="3463"/>
         <source>Natural equal tempered semitone</source>
         <translation>Upploysn eins og stillaður hálvtóni</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3465"/>
+        <location filename="../../libmscore/sym.cpp" line="3464"/>
         <source>Natural flat</source>
         <translation>Upploysn b</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3467"/>
+        <location filename="../../libmscore/sym.cpp" line="3466"/>
         <source>Natural lowered by one syntonic comma</source>
         <translation>Upploysn lækkað við 1 diatoniskum komma</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3468"/>
+        <location filename="../../libmscore/sym.cpp" line="3467"/>
         <source>Natural raised by one syntonic comma</source>
         <translation>Upploysn hækkað við einum diatoniskum komma</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3471"/>
+        <location filename="../../libmscore/sym.cpp" line="3470"/>
         <source>Natural sharp</source>
         <translation>Upploysn krossur</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3472"/>
+        <location filename="../../libmscore/sym.cpp" line="3471"/>
         <source>Natural lowered by three syntonic commas</source>
         <translation>Upploysn lækkað við 3 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3473"/>
+        <location filename="../../libmscore/sym.cpp" line="3472"/>
         <source>Natural raised by three syntonic commas</source>
         <translation>Upploysn hækkað við 3 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3474"/>
+        <location filename="../../libmscore/sym.cpp" line="3473"/>
         <source>Natural lowered by two syntonic commas</source>
         <translation>Upploysn lækkað við 2 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3475"/>
+        <location filename="../../libmscore/sym.cpp" line="3474"/>
         <source>Natural raised by two syntonic commas</source>
         <translation>Upploysn hækkað við 2 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3486"/>
+        <location filename="../../libmscore/sym.cpp" line="3485"/>
         <source>Lower by one equal tempered quarter-tone</source>
         <translation>Lækka ein væltempereraðan kvarttóna</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3487"/>
+        <location filename="../../libmscore/sym.cpp" line="3486"/>
         <source>Raise by one equal tempered quarter tone</source>
         <translation>Hækka ein væltempereraðan kvarttóna</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3490"/>
-        <location filename="../../libmscore/sym.cpp" line="3492"/>
+        <location filename="../../libmscore/sym.cpp" line="3489"/>
+        <location filename="../../libmscore/sym.cpp" line="3491"/>
         <source>Quarter-tone flat</source>
         <translation>Lækkaður kvarttóni</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3494"/>
+        <location filename="../../libmscore/sym.cpp" line="3493"/>
         <source>Reversed flat (quarter-tone flat) (Stein)</source>
         <translation>Øvut b (kvartóna b) (stein)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3498"/>
-        <location filename="../../libmscore/sym.cpp" line="3500"/>
+        <location filename="../../libmscore/sym.cpp" line="3497"/>
+        <location filename="../../libmscore/sym.cpp" line="3499"/>
         <source>Quarter-tone sharp</source>
         <translation>Hækkaður kvarttóni</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3501"/>
+        <location filename="../../libmscore/sym.cpp" line="3500"/>
         <source>Half sharp (quarter-tone sharp) (Stein)</source>
         <translation>Hálvur krossur (hækkaður kvarttóni) (stein)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3503"/>
+        <location filename="../../libmscore/sym.cpp" line="3502"/>
         <source>Raise by one septimal comma</source>
         <translation>Hækka við einum septimalum komma</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3504"/>
+        <location filename="../../libmscore/sym.cpp" line="3503"/>
         <source>Raise by one tridecimal quartertone</source>
         <translation>Hækka ein tridesimalan kvarttóna</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3505"/>
+        <location filename="../../libmscore/sym.cpp" line="3504"/>
         <source>Raise by one undecimal quartertone</source>
         <translation>Hækka ein undesimalan kvarttóna</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3506"/>
+        <location filename="../../libmscore/sym.cpp" line="3505"/>
         <source>Raise by two septimal commas</source>
         <translation>Hækka við tveimum septimalum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3512"/>
+        <location filename="../../libmscore/sym.cpp" line="3511"/>
         <source>Sharp</source>
         <translation>krossur</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3514"/>
+        <location filename="../../libmscore/sym.cpp" line="3513"/>
         <source>Sharp equal tempered semitone</source>
         <translation>Hækkaður væltempereraður hálvtóni</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3516"/>
+        <location filename="../../libmscore/sym.cpp" line="3515"/>
         <source>Sharp lowered by one syntonic comma</source>
         <translation>Krossur lækkaður við 1 diatoniskum komma</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3517"/>
+        <location filename="../../libmscore/sym.cpp" line="3516"/>
         <source>Sharp raised by one syntonic comma</source>
         <translation>Krossur hækkaður við 1 diatoniskum komma</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3523"/>
+        <location filename="../../libmscore/sym.cpp" line="3522"/>
         <source>Sharp sharp</source>
         <translation>Krossur krossur</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3524"/>
+        <location filename="../../libmscore/sym.cpp" line="3523"/>
         <source>Sharp lowered by three syntonic commas</source>
         <translation>Krossur lækkaður við 3 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3525"/>
+        <location filename="../../libmscore/sym.cpp" line="3524"/>
         <source>Sharp raised by three syntonic commas</source>
         <translation>Krossur hækkaður við 3 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3526"/>
+        <location filename="../../libmscore/sym.cpp" line="3525"/>
         <source>Sharp lowered by two syntonic commas</source>
         <translation>Krossur lækkaður við 2 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3527"/>
+        <location filename="../../libmscore/sym.cpp" line="3526"/>
         <source>Sharp raised by two syntonic commas</source>
         <translation>Krossur hækkaður við 2 diatoniskum kommum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3534"/>
+        <location filename="../../libmscore/sym.cpp" line="3533"/>
         <source>Sori (quarter tone sharp)</source>
         <translation>Sori (hækkaður kvarttóni)</translation>
     </message>
     <message>
+        <location filename="../../libmscore/sym.cpp" line="3537"/>
         <location filename="../../libmscore/sym.cpp" line="3538"/>
-        <location filename="../../libmscore/sym.cpp" line="3539"/>
         <source>Three-quarter-tones flat</source>
         <translation>Lækka 3 kvarttónar</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3543"/>
+        <location filename="../../libmscore/sym.cpp" line="3542"/>
         <source>Reversed flat and flat (three-quarter-tones flat) (Zimmermann)</source>
         <translation>Øvut b og b (lækkaður 3 kvarttónar) (Zimmermann)</translation>
     </message>
     <message>
+        <location filename="../../libmscore/sym.cpp" line="3544"/>
         <location filename="../../libmscore/sym.cpp" line="3545"/>
-        <location filename="../../libmscore/sym.cpp" line="3546"/>
         <source>Three-quarter-tones sharp</source>
         <translation>Hækkaður 3 kvarttónar</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3548"/>
+        <location filename="../../libmscore/sym.cpp" line="3547"/>
         <source>One and a half sharps (three-quarter-tones sharp) (Stein)</source>
         <translation>Hækkaður ein og ein hálvur (hækkaður 3 kvarttónar) (Stein)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3550"/>
+        <location filename="../../libmscore/sym.cpp" line="3549"/>
         <source>Triple flat</source>
         <translation>Trífalda ‭b</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3551"/>
+        <location filename="../../libmscore/sym.cpp" line="3550"/>
         <source>Triple sharp</source>
         <translation>Trífalda #</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3560"/>
+        <location filename="../../libmscore/sym.cpp" line="3559"/>
         <source>5/6 tone flat (Wyschnegradsky)</source>
         <translation>Lækka 5/6 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3561"/>
+        <location filename="../../libmscore/sym.cpp" line="3560"/>
         <source>5/6 tone sharp (Wyschnegradsky)</source>
         <translation>Hækka 5/6 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3562"/>
+        <location filename="../../libmscore/sym.cpp" line="3561"/>
         <source>11/12 tone flat (Wyschnegradsky)</source>
         <translation>Lækka 11/12 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3563"/>
+        <location filename="../../libmscore/sym.cpp" line="3562"/>
         <source>11/12 tone sharp (Wyschnegradsky)</source>
         <translation>Hækka 11/12 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3564"/>
+        <location filename="../../libmscore/sym.cpp" line="3563"/>
         <source>1/12 tone flat (Wyschnegradsky)</source>
         <translation>Lækka 1/12 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3565"/>
+        <location filename="../../libmscore/sym.cpp" line="3564"/>
         <source>1/12 tone sharp (Wyschnegradsky)</source>
         <translation>Lækka 1/12 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3566"/>
+        <location filename="../../libmscore/sym.cpp" line="3565"/>
         <source>1/6 tone flat (Wyschnegradsky)</source>
         <translation>Lækka 1/6 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3567"/>
+        <location filename="../../libmscore/sym.cpp" line="3566"/>
         <source>1/6 tone sharp (Wyschnegradsky)</source>
         <translation>Lækka 1/6 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3568"/>
+        <location filename="../../libmscore/sym.cpp" line="3567"/>
         <source>1/4 tone flat (Wyschnegradsky)</source>
         <translation>Lækka 1/4 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3569"/>
+        <location filename="../../libmscore/sym.cpp" line="3568"/>
         <source>1/4 tone sharp (Wyschnegradsky)</source>
         <translation>Hækka 1/4 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3570"/>
+        <location filename="../../libmscore/sym.cpp" line="3569"/>
         <source>1/3 tone flat (Wyschnegradsky)</source>
         <translation>Lækka 1/3 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3571"/>
+        <location filename="../../libmscore/sym.cpp" line="3570"/>
         <source>1/3 tone sharp (Wyschnegradsky)</source>
         <translation>Hækka 1/3 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3572"/>
+        <location filename="../../libmscore/sym.cpp" line="3571"/>
         <source>5/12 tone flat (Wyschnegradsky)</source>
         <translation>Lækka 5/12 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3573"/>
+        <location filename="../../libmscore/sym.cpp" line="3572"/>
         <source>5/12 tone sharp (Wyschnegradsky)</source>
         <translation>Hækka 5/12 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3574"/>
+        <location filename="../../libmscore/sym.cpp" line="3573"/>
         <source>1/2 tone flat (Wyschnegradsky)</source>
         <translation>Lækka 1/2 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3575"/>
+        <location filename="../../libmscore/sym.cpp" line="3574"/>
         <source>1/2 tone sharp (Wyschnegradsky)</source>
         <translation>Hækka 1/2 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3576"/>
+        <location filename="../../libmscore/sym.cpp" line="3575"/>
         <source>7/12 tone flat (Wyschnegradsky)</source>
         <translation>Lækka 7/12 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3577"/>
+        <location filename="../../libmscore/sym.cpp" line="3576"/>
         <source>7/12 tone sharp (Wyschnegradsky)</source>
         <translation>Hækka 7/12 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3578"/>
+        <location filename="../../libmscore/sym.cpp" line="3577"/>
         <source>2/3 tone flat (Wyschnegradsky)</source>
         <translation>Lækka 2/3 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3579"/>
+        <location filename="../../libmscore/sym.cpp" line="3578"/>
         <source>2/3 tone sharp (Wyschnegradsky)</source>
         <translation>Hækka 2/3 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3580"/>
+        <location filename="../../libmscore/sym.cpp" line="3579"/>
         <source>3/4 tone flat (Wyschnegradsky)</source>
         <translation>Lækka 3/4 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3581"/>
+        <location filename="../../libmscore/sym.cpp" line="3580"/>
         <source>3/4 tone sharp (Wyschnegradsky)</source>
         <translation>Hækka 3/4 tóna (Wyschnegradsky)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3647"/>
+        <location filename="../../libmscore/sym.cpp" line="3646"/>
         <source>Accent above</source>
         <translation>Áherðsla omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3648"/>
+        <location filename="../../libmscore/sym.cpp" line="3647"/>
         <source>Accent below</source>
         <translation>Áherðsla niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3649"/>
+        <location filename="../../libmscore/sym.cpp" line="3648"/>
         <source>Accent-staccato above</source>
         <translation>Áherðslu-stakkato omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3650"/>
+        <location filename="../../libmscore/sym.cpp" line="3649"/>
         <source>Accent-staccato below</source>
         <translation>Áherðslu-stakkato niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3651"/>
+        <location filename="../../libmscore/sym.cpp" line="3650"/>
         <source>Laissez vibrer (l.v.) above</source>
         <translation>Laissez vibrer (l.v.) omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3652"/>
+        <location filename="../../libmscore/sym.cpp" line="3651"/>
         <source>Laissez vibrer (l.v.) below</source>
         <translation>Laissez vibrer (l.v.) niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3653"/>
+        <location filename="../../libmscore/sym.cpp" line="3652"/>
         <source>Marcato above</source>
         <translation>Markato omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3654"/>
+        <location filename="../../libmscore/sym.cpp" line="3653"/>
         <source>Marcato below</source>
         <translation>Markato niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3655"/>
+        <location filename="../../libmscore/sym.cpp" line="3654"/>
         <source>Marcato-staccato above</source>
         <translation>Markato-stakkato omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3656"/>
+        <location filename="../../libmscore/sym.cpp" line="3655"/>
         <source>Marcato-staccato below</source>
         <translation>Markato-stakkato niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3657"/>
+        <location filename="../../libmscore/sym.cpp" line="3656"/>
         <source>Marcato-tenuto above</source>
         <translation>Markato-tenuto omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3658"/>
+        <location filename="../../libmscore/sym.cpp" line="3657"/>
         <source>Marcato-tenuto below</source>
         <translation>Markato-tenuto niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3659"/>
+        <location filename="../../libmscore/sym.cpp" line="3658"/>
         <source>Soft accent above</source>
         <translation>Veik áherðsla omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3660"/>
+        <location filename="../../libmscore/sym.cpp" line="3659"/>
         <source>Soft accent below</source>
         <translation>Veik áherðsla niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3661"/>
+        <location filename="../../libmscore/sym.cpp" line="3660"/>
         <source>Soft accent-staccato above</source>
         <translation>Veikt áherðslu-sakkato omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3662"/>
+        <location filename="../../libmscore/sym.cpp" line="3661"/>
         <source>Soft accent-staccato below</source>
         <translation>Veikt áherðslu-stakkato niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3663"/>
+        <location filename="../../libmscore/sym.cpp" line="3662"/>
         <source>Soft accent-tenuto above</source>
         <translation>Veikt áherðslu-tenuto omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3664"/>
+        <location filename="../../libmscore/sym.cpp" line="3663"/>
         <source>Soft accent-tenuto below</source>
         <translation>Veikt áherðslu-tenuto niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3665"/>
+        <location filename="../../libmscore/sym.cpp" line="3664"/>
         <source>Soft accent-tenuto-staccato above</source>
         <translation>Veikt áherðslu-tenuto-stakkato omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3666"/>
+        <location filename="../../libmscore/sym.cpp" line="3665"/>
         <source>Soft accent-tenuto-staccato below</source>
         <translation>Veikt áherðslu-tenuto-stakkato niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3667"/>
+        <location filename="../../libmscore/sym.cpp" line="3666"/>
         <source>Staccatissimo above</source>
         <translation>Stakkatisimo omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3668"/>
+        <location filename="../../libmscore/sym.cpp" line="3667"/>
         <source>Staccatissimo below</source>
         <translation>Stakkatisimo niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3669"/>
+        <location filename="../../libmscore/sym.cpp" line="3668"/>
         <source>Staccatissimo stroke above</source>
         <translation>Stakkatisimo strok omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3670"/>
+        <location filename="../../libmscore/sym.cpp" line="3669"/>
         <source>Staccatissimo stroke below</source>
         <translation>Stakkatisimo strok niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3671"/>
+        <location filename="../../libmscore/sym.cpp" line="3670"/>
         <source>Staccatissimo wedge above</source>
         <translation>Stakkatisimo kíli omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3672"/>
+        <location filename="../../libmscore/sym.cpp" line="3671"/>
         <source>Staccatissimo wedge below</source>
         <translation>Stakkatisimo kíli niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3673"/>
+        <location filename="../../libmscore/sym.cpp" line="3672"/>
         <source>Staccato above</source>
         <translation>Stakkato omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3674"/>
+        <location filename="../../libmscore/sym.cpp" line="3673"/>
         <source>Staccato below</source>
         <translation>Stakkato niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3675"/>
+        <location filename="../../libmscore/sym.cpp" line="3674"/>
         <source>Stress above</source>
         <translation>Herðing omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3676"/>
+        <location filename="../../libmscore/sym.cpp" line="3675"/>
         <source>Stress below</source>
         <translation>Herðing niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3677"/>
+        <location filename="../../libmscore/sym.cpp" line="3676"/>
         <source>Tenuto above</source>
         <translation>Tenuto omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3678"/>
+        <location filename="../../libmscore/sym.cpp" line="3677"/>
         <source>Tenuto-accent above</source>
         <translation>Tenuto-áherðsla omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3679"/>
+        <location filename="../../libmscore/sym.cpp" line="3678"/>
         <source>Tenuto-accent below</source>
         <translation>Tenuto-áherðsla niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3680"/>
+        <location filename="../../libmscore/sym.cpp" line="3679"/>
         <source>Tenuto below</source>
         <translation>Tenuto niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3681"/>
+        <location filename="../../libmscore/sym.cpp" line="3680"/>
         <source>Louré (tenuto-staccato) above</source>
         <translation>Louré (tenuto-stakkato) omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3682"/>
+        <location filename="../../libmscore/sym.cpp" line="3681"/>
         <source>Louré (tenuto-staccato) below</source>
         <translation>Louré (tenuto-stakkato) niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3683"/>
+        <location filename="../../libmscore/sym.cpp" line="3682"/>
         <source>Unstress above</source>
         <translation>Herðingarleyst omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3684"/>
+        <location filename="../../libmscore/sym.cpp" line="3683"/>
         <source>Unstress below</source>
         <translation>Herðingarleyst niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3686"/>
+        <location filename="../../libmscore/sym.cpp" line="3685"/>
         <source>Dashed barline</source>
         <translation>Strokin taktstrika</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3687"/>
+        <location filename="../../libmscore/sym.cpp" line="3686"/>
         <source>Dotted barline</source>
         <translation>Prikkutt taktstrika</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3688"/>
+        <location filename="../../libmscore/sym.cpp" line="3687"/>
         <source>Double barline</source>
         <translation>Dupul taktstrika</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3689"/>
+        <location filename="../../libmscore/sym.cpp" line="3688"/>
         <source>Final barline</source>
         <translation>Seinasta taktstrika</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3690"/>
+        <location filename="../../libmscore/sym.cpp" line="3689"/>
         <source>Heavy barline</source>
         <translation>Tjúkk tanktstrika</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3691"/>
+        <location filename="../../libmscore/sym.cpp" line="3690"/>
         <source>Heavy double barline</source>
         <translation>Tjúkk dupul taktstrika</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3692"/>
+        <location filename="../../libmscore/sym.cpp" line="3691"/>
         <source>Reverse final barline</source>
         <translation>Umvend seinastu taktstriku</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3693"/>
+        <location filename="../../libmscore/sym.cpp" line="3692"/>
         <source>Short barline</source>
         <translation>Stutt taktstrika</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3694"/>
+        <location filename="../../libmscore/sym.cpp" line="3693"/>
         <source>Single barline</source>
         <translation>Støk taktstrika</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3695"/>
+        <location filename="../../libmscore/sym.cpp" line="3694"/>
         <source>Tick barline</source>
         <translation>Tjúkk taktstrika</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3741"/>
+        <location filename="../../libmscore/sym.cpp" line="3740"/>
         <source>Muted (closed)</source>
         <translation>Doyvt (læst)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3743"/>
+        <location filename="../../libmscore/sym.cpp" line="3742"/>
         <source>Open</source>
         <translation>Opna</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3748"/>
+        <location filename="../../libmscore/sym.cpp" line="3747"/>
         <source>Breath mark (comma)</source>
         <translation>Steðgur (Komma)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3749"/>
+        <location filename="../../libmscore/sym.cpp" line="3748"/>
         <source>Breath mark (Salzedo)</source>
         <translation>Steðgur (Salzedo)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3750"/>
+        <location filename="../../libmscore/sym.cpp" line="3749"/>
         <source>Breath mark (tick-like)</source>
         <translation>Steðgur (Klikk-líkur)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3751"/>
+        <location filename="../../libmscore/sym.cpp" line="3750"/>
         <source>Breath mark (upbow-like)</source>
         <translation>Steðgur (Uppstrok-líkur)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3754"/>
+        <location filename="../../libmscore/sym.cpp" line="3753"/>
         <source>C clef</source>
         <translation>C lykil</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3755"/>
+        <location filename="../../libmscore/sym.cpp" line="3754"/>
         <source>C clef ottava bassa</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3762"/>
-        <location filename="../../libmscore/sym.cpp" line="3772"/>
+        <location filename="../../libmscore/sym.cpp" line="3761"/>
+        <location filename="../../libmscore/sym.cpp" line="3771"/>
         <source>Caesura</source>
         <translation>Sesurur</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3763"/>
+        <location filename="../../libmscore/sym.cpp" line="3762"/>
         <source>Curved caesura</source>
         <translation>Bogin sesurur</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3764"/>
+        <location filename="../../libmscore/sym.cpp" line="3763"/>
         <source>Short caesura</source>
         <translation>Stuttur sesurur</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3765"/>
+        <location filename="../../libmscore/sym.cpp" line="3764"/>
         <source>Single stroke caesura</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3766"/>
+        <location filename="../../libmscore/sym.cpp" line="3765"/>
         <source>Thick caesura</source>
         <translation>Tjúkkur sesurur</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3837"/>
+        <location filename="../../libmscore/sym.cpp" line="3836"/>
         <source>Coda</source>
         <translation>Coda</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3838"/>
+        <location filename="../../libmscore/sym.cpp" line="3837"/>
         <source>Square coda</source>
         <translation>Ferhyrnt Coda</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3913"/>
+        <location filename="../../libmscore/sym.cpp" line="3912"/>
         <source>Forte</source>
         <translation>Forte</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3923"/>
+        <location filename="../../libmscore/sym.cpp" line="3922"/>
         <source>Mezzo</source>
         <translation>Mezzo</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3924"/>
+        <location filename="../../libmscore/sym.cpp" line="3923"/>
         <source>Niente</source>
         <translation>Niente</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3932"/>
+        <location filename="../../libmscore/sym.cpp" line="3931"/>
         <source>Piano</source>
         <translation>Klaver</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3933"/>
+        <location filename="../../libmscore/sym.cpp" line="3932"/>
         <source>Rinforzando</source>
         <translation>Rinforzando</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3936"/>
+        <location filename="../../libmscore/sym.cpp" line="3935"/>
         <source>Sforzando</source>
         <translation>Sforzando</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3943"/>
+        <location filename="../../libmscore/sym.cpp" line="3942"/>
         <source>Z</source>
         <translation>Z</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4009"/>
+        <location filename="../../libmscore/sym.cpp" line="4008"/>
         <source>F clef</source>
         <translation>F lykil</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4019"/>
+        <location filename="../../libmscore/sym.cpp" line="4018"/>
         <source>Fermata above</source>
         <translation>Fermata omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4020"/>
+        <location filename="../../libmscore/sym.cpp" line="4019"/>
         <source>Fermata below</source>
         <translation>Fermata niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4021"/>
+        <location filename="../../libmscore/sym.cpp" line="4020"/>
         <source>Long fermata above</source>
         <translation>Langt fermata omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4022"/>
+        <location filename="../../libmscore/sym.cpp" line="4021"/>
         <source>Long fermata below</source>
         <translation>Langt fermata niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4023"/>
+        <location filename="../../libmscore/sym.cpp" line="4022"/>
         <source>Long fermata (Henze) above</source>
         <translation>Langt fermata (Henze) omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4024"/>
+        <location filename="../../libmscore/sym.cpp" line="4023"/>
         <source>Long fermata (Henze) below</source>
         <translation>Langt fermata (Henze) niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4025"/>
+        <location filename="../../libmscore/sym.cpp" line="4024"/>
         <source>Short fermata above</source>
         <translation>Stutt fermata omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4026"/>
+        <location filename="../../libmscore/sym.cpp" line="4025"/>
         <source>Short fermata below</source>
         <translation>Stutt fermata niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4027"/>
+        <location filename="../../libmscore/sym.cpp" line="4026"/>
         <source>Short fermata (Henze) above</source>
         <translation>Stutt fermata (Henze) omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4028"/>
+        <location filename="../../libmscore/sym.cpp" line="4027"/>
         <source>Short fermata (Henze) below</source>
         <translation>Stutt fermata (Henze) niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4029"/>
+        <location filename="../../libmscore/sym.cpp" line="4028"/>
         <source>Very long fermata above</source>
         <translation>Sera langt fermata omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4030"/>
+        <location filename="../../libmscore/sym.cpp" line="4029"/>
         <source>Very long fermata below</source>
         <translation>Sera langt fermata niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4031"/>
+        <location filename="../../libmscore/sym.cpp" line="4030"/>
         <source>Very short fermata above</source>
         <translation>Sera stutt fermata omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4032"/>
+        <location filename="../../libmscore/sym.cpp" line="4031"/>
         <source>Very short fermata below</source>
         <translation>Sera stutt fermata niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4196"/>
+        <location filename="../../libmscore/sym.cpp" line="4195"/>
         <source>G clef</source>
         <translation>G lykil</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4222"/>
+        <location filename="../../libmscore/sym.cpp" line="4221"/>
         <source>Fade in</source>
         <translation>Fada inn</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4223"/>
+        <location filename="../../libmscore/sym.cpp" line="4222"/>
         <source>Fade out</source>
         <translation>Fada út</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4249"/>
+        <location filename="../../libmscore/sym.cpp" line="4248"/>
         <source>Volume swell</source>
         <translation>Styrki svella</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4458"/>
+        <location filename="../../libmscore/sym.cpp" line="4457"/>
         <source>Right-hand fingering, first finger</source>
         <translation>Fingrasetningur høgr-handar, peikifingur</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4459"/>
+        <location filename="../../libmscore/sym.cpp" line="4458"/>
         <source>Right-hand fingering, second finger</source>
         <translation>Fingrasetningur høgra hond, annar fingur</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4460"/>
+        <location filename="../../libmscore/sym.cpp" line="4459"/>
         <source>Right-hand fingering, third finger</source>
         <translation>Fingrasetningur høgra hond, triði fingur</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4461"/>
+        <location filename="../../libmscore/sym.cpp" line="4460"/>
         <source>Right-hand fingering, thumb</source>
         <translation>Fingrasetningur høgr-handar, tummil</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4546"/>
+        <location filename="../../libmscore/sym.cpp" line="4545"/>
         <source>Elision</source>
         <translation>Elisión</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4547"/>
+        <location filename="../../libmscore/sym.cpp" line="4546"/>
         <source>Narrow elision</source>
         <translation>Smøl elisión</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4548"/>
+        <location filename="../../libmscore/sym.cpp" line="4547"/>
         <source>Wide elision</source>
         <translation>Víð elisión</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4661"/>
+        <location filename="../../libmscore/sym.cpp" line="4660"/>
         <source>Tempus perfectum cum prolatione perfecta (9/8)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4662"/>
+        <location filename="../../libmscore/sym.cpp" line="4661"/>
         <source>Tempus imperfectum cum prolatione imperfecta diminution 4</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4663"/>
+        <location filename="../../libmscore/sym.cpp" line="4662"/>
         <source>Tempus imperfectum cum prolatione imperfecta diminution 5</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4664"/>
+        <location filename="../../libmscore/sym.cpp" line="4663"/>
         <source>Tempus perfectum cum prolatione imperfecta (3/4)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4665"/>
+        <location filename="../../libmscore/sym.cpp" line="4664"/>
         <source>Tempus perfectum cum prolatione imperfecta diminution 1 (3/8)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4666"/>
+        <location filename="../../libmscore/sym.cpp" line="4665"/>
         <source>Tempus perfectum cum prolatione perfecta diminution 2 (9/16)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4667"/>
+        <location filename="../../libmscore/sym.cpp" line="4666"/>
         <source>Tempus imperfectum cum prolatione perfecta (6/8)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4668"/>
+        <location filename="../../libmscore/sym.cpp" line="4667"/>
         <source>Tempus imperfectum cum prolatione imperfecta (2/4)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4669"/>
+        <location filename="../../libmscore/sym.cpp" line="4668"/>
         <source>Tempus imperfectum cum prolatione imperfecta diminution 1 (2/2)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4670"/>
+        <location filename="../../libmscore/sym.cpp" line="4669"/>
         <source>Tempus imperfectum cum prolatione imperfecta diminution 2 (6/16)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4671"/>
+        <location filename="../../libmscore/sym.cpp" line="4670"/>
         <source>Tempus imperfectum cum prolatione imperfecta diminution 3 (2/2)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4714"/>
+        <location filename="../../libmscore/sym.cpp" line="4713"/>
         <source>Augmentation dot</source>
         <translation>Økingar prikkur</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4716"/>
+        <location filename="../../libmscore/sym.cpp" line="4715"/>
         <source>1024th note (semihemidemisemihemidemisemiquaver) stem up</source>
         <translation>1024pt nóti (semihemidemisemihemidemisemiquaver) leggur upp</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4718"/>
+        <location filename="../../libmscore/sym.cpp" line="4717"/>
         <source>128th note (semihemidemisemiquaver) stem up</source>
         <translation>128pt nóti (semihemidemisemiquaver) leggur upp</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4720"/>
+        <location filename="../../libmscore/sym.cpp" line="4719"/>
         <source>16th note (semiquaver) stem up</source>
         <translation>16pt nóti (semiquaver) leggur upp</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4722"/>
+        <location filename="../../libmscore/sym.cpp" line="4721"/>
         <source>256th note (demisemihemidemisemiquaver) stem up</source>
         <translation>256pt nóti (demisemihemidemisemiquaver) leggur upp</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4724"/>
+        <location filename="../../libmscore/sym.cpp" line="4723"/>
         <source>32nd note (demisemiquaver) stem up</source>
         <translation>32pt nóti (demisemiquaver) leggur upp</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4726"/>
+        <location filename="../../libmscore/sym.cpp" line="4725"/>
         <source>512th note (hemidemisemihemidemisemiquaver) stem up</source>
         <translation>512pt nóti (hemidemisemihemidemisemiquaver) leggur upp</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4728"/>
+        <location filename="../../libmscore/sym.cpp" line="4727"/>
         <source>64th note (hemidemisemiquaver) stem up</source>
         <translation>64pt nóti (hemidemisemiquaver) leggur upp</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4730"/>
+        <location filename="../../libmscore/sym.cpp" line="4729"/>
         <source>Eighth note (quaver) stem up</source>
         <translation>Áttandaparts nóti (quaver) leggur upp</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4734"/>
+        <location filename="../../libmscore/sym.cpp" line="4733"/>
         <source>Half note (minim) stem up</source>
         <translation>Hálvnóti (minim) leggur upp</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4736"/>
+        <location filename="../../libmscore/sym.cpp" line="4735"/>
         <source>Quarter note (crotchet) stem up</source>
         <translation>Fjórðingsnóti (crotchet) leggur upp</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="4737"/>
+        <location filename="../../libmscore/sym.cpp" line="4736"/>
         <source>Whole note (semibreve)</source>
         <translation>Semibreve (heil nóti)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5197"/>
+        <location filename="../../libmscore/sym.cpp" line="5196"/>
         <source>Haydn ornament</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5215"/>
+        <location filename="../../libmscore/sym.cpp" line="5214"/>
         <source>Mordent</source>
         <translation>Mordent</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5221"/>
+        <location filename="../../libmscore/sym.cpp" line="5220"/>
         <source>Pincé (Couperin)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5235"/>
+        <location filename="../../libmscore/sym.cpp" line="5234"/>
         <source>Mordent with upper prefix</source>
         <translation>Mordent forskoyti omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5237"/>
+        <location filename="../../libmscore/sym.cpp" line="5236"/>
         <source>Slide</source>
         <translation>Glíðing</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5253"/>
+        <location filename="../../libmscore/sym.cpp" line="5252"/>
         <source>Shake</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5254"/>
+        <location filename="../../libmscore/sym.cpp" line="5253"/>
         <source>Shake (Muffat)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5257"/>
+        <location filename="../../libmscore/sym.cpp" line="5256"/>
         <source>Short trill</source>
         <translation>Stutt trilla</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5262"/>
+        <location filename="../../libmscore/sym.cpp" line="5261"/>
         <source>Tremblement</source>
         <translation>Tremblement</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5263"/>
+        <location filename="../../libmscore/sym.cpp" line="5262"/>
         <source>Tremblement appuyé (Couperin)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5264"/>
+        <location filename="../../libmscore/sym.cpp" line="5263"/>
         <source>Trill</source>
         <translation>Trilla</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5265"/>
+        <location filename="../../libmscore/sym.cpp" line="5264"/>
         <source>Turn</source>
         <translation>Dupultslag</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5266"/>
+        <location filename="../../libmscore/sym.cpp" line="5265"/>
         <source>Inverted turn</source>
         <translation>Umvent Dupultslag</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5267"/>
+        <location filename="../../libmscore/sym.cpp" line="5266"/>
         <source>Turn with slash</source>
         <translation>Vend við skákstriku</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5268"/>
+        <location filename="../../libmscore/sym.cpp" line="5267"/>
         <source>Turn up</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5269"/>
+        <location filename="../../libmscore/sym.cpp" line="5268"/>
         <source>Inverted turn up</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5458"/>
+        <location filename="../../libmscore/sym.cpp" line="5457"/>
         <source>Half-open 2 (Weinberg)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5565"/>
+        <location filename="../../libmscore/sym.cpp" line="5564"/>
         <source>Snap pizzicato above</source>
         <translation>Slept pizzicato omanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5566"/>
+        <location filename="../../libmscore/sym.cpp" line="5565"/>
         <source>Snap pizzicato below</source>
         <translation>Slept pizzicato niðanfyri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5572"/>
+        <location filename="../../libmscore/sym.cpp" line="5571"/>
         <source>Repeat last bar</source>
         <translation>Endurtak seinastu takt</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5573"/>
+        <location filename="../../libmscore/sym.cpp" line="5572"/>
         <source>Repeat last two bars</source>
         <translation>Eindurtak 2 seinastu taktir</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5574"/>
+        <location filename="../../libmscore/sym.cpp" line="5573"/>
         <source>Repeat last four bars</source>
         <translation>Endurtak 4 seinastu taktir</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5580"/>
+        <location filename="../../libmscore/sym.cpp" line="5579"/>
         <source>Left (start) repeat sign</source>
         <translation>Vinstra (byrjan) endurtøku strika</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5581"/>
+        <location filename="../../libmscore/sym.cpp" line="5580"/>
         <source>Right (end) repeat sign</source>
         <translation>Høgra (endi) endurtøku strika</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5582"/>
+        <location filename="../../libmscore/sym.cpp" line="5581"/>
         <source>Right and left repeat sign</source>
         <translation>Høgra og vinstra endurtøku strika</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5583"/>
+        <location filename="../../libmscore/sym.cpp" line="5582"/>
         <source>1024th rest</source>
         <translation>1024th tøgn</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5584"/>
+        <location filename="../../libmscore/sym.cpp" line="5583"/>
         <source>128th (semihemidemisemiquaver) rest</source>
         <translation>128pt (semihemidemisemiquaver) tøgn</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5585"/>
+        <location filename="../../libmscore/sym.cpp" line="5584"/>
         <source>16th (semiquaver) rest</source>
         <translation>16pt (semiquaver) tøgn</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5586"/>
+        <location filename="../../libmscore/sym.cpp" line="5585"/>
         <source>256th rest</source>
         <translation>256th tøgn</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5587"/>
+        <location filename="../../libmscore/sym.cpp" line="5586"/>
         <source>32nd (demisemiquaver) rest</source>
         <translation>32pt (demisemiquaver) tøgn</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5588"/>
+        <location filename="../../libmscore/sym.cpp" line="5587"/>
         <source>512th rest</source>
         <translation>512th tøgn</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5589"/>
+        <location filename="../../libmscore/sym.cpp" line="5588"/>
         <source>64th (hemidemisemiquaver) rest</source>
         <translation>64pt (hemidemisemiquaver) tøgn</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5590"/>
+        <location filename="../../libmscore/sym.cpp" line="5589"/>
         <source>Eighth (quaver) rest</source>
         <translation>Áttandaparts (quaver) tøgn</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5591"/>
+        <location filename="../../libmscore/sym.cpp" line="5590"/>
         <source>Double whole (breve) rest</source>
         <translation>Dupul heil (breve) tøgn</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5592"/>
+        <location filename="../../libmscore/sym.cpp" line="5591"/>
         <source>Double whole rest on leger lines</source>
         <translation>Dupul heil tøgn á eykalinjum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5597"/>
+        <location filename="../../libmscore/sym.cpp" line="5596"/>
         <source>Half (minim) rest</source>
         <translation>Hálv (minim) tøgn</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5598"/>
+        <location filename="../../libmscore/sym.cpp" line="5597"/>
         <source>Half rest on leger line</source>
         <translation>Hálv tøgn á eykalinjum</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5599"/>
+        <location filename="../../libmscore/sym.cpp" line="5598"/>
         <source>Longa rest</source>
         <translation>Longa tøgn</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5600"/>
+        <location filename="../../libmscore/sym.cpp" line="5599"/>
         <source>Maxima rest</source>
         <translation>Maxima tøgn</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5601"/>
+        <location filename="../../libmscore/sym.cpp" line="5600"/>
         <source>Quarter (crotchet) rest</source>
         <translation>Fjórðings (crotchet) tøgn</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5604"/>
+        <location filename="../../libmscore/sym.cpp" line="5603"/>
         <source>Whole (semibreve) rest</source>
         <translation>Heil (semibreve) tøgn</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5605"/>
+        <location filename="../../libmscore/sym.cpp" line="5604"/>
         <source>Whole rest on leger line</source>
         <translation>Heil tøgn á eykalinju</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5623"/>
+        <location filename="../../libmscore/sym.cpp" line="5622"/>
         <source>Segno</source>
         <translation>Segno</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5624"/>
+        <location filename="../../libmscore/sym.cpp" line="5623"/>
         <source>Segno (serpent)</source>
         <translation>Segno (serpent)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5702"/>
+        <location filename="../../libmscore/sym.cpp" line="5701"/>
         <source>Down bow</source>
         <translation>Boga niður</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5709"/>
+        <location filename="../../libmscore/sym.cpp" line="5708"/>
         <source>Harmonic</source>
         <translation>Yvirtóni</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5723"/>
+        <location filename="../../libmscore/sym.cpp" line="5722"/>
         <source>Thumb position</source>
         <translation>Tummil støða</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5727"/>
+        <location filename="../../libmscore/sym.cpp" line="5726"/>
         <source>Up bow</source>
         <translation>Boga upp</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5737"/>
+        <location filename="../../libmscore/sym.cpp" line="5736"/>
         <source>System divider</source>
         <translation>Skipan skiljari</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5738"/>
+        <location filename="../../libmscore/sym.cpp" line="5737"/>
         <source>Extra long system divider</source>
         <translation>Sera langur skipan skiljari</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5739"/>
+        <location filename="../../libmscore/sym.cpp" line="5738"/>
         <source>Long system divider</source>
         <translation>Langur skipan skiljari</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5804"/>
+        <location filename="../../libmscore/sym.cpp" line="5803"/>
         <source>Common time</source>
         <translation>Vanlig takt</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5807"/>
+        <location filename="../../libmscore/sym.cpp" line="5806"/>
         <source>Cut time (Bach)</source>
         <translation>Alla Breve (Bach)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5808"/>
+        <location filename="../../libmscore/sym.cpp" line="5807"/>
         <source>Cut triple time (9/8)</source>
         <translation>Trífalda Alla Breve (9/8)</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5809"/>
+        <location filename="../../libmscore/sym.cpp" line="5808"/>
         <source>Cut time</source>
         <translation>2/2 alla breve</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5835"/>
+        <location filename="../../libmscore/sym.cpp" line="5834"/>
         <source>Divide measured tremolo by 2</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5836"/>
+        <location filename="../../libmscore/sym.cpp" line="5835"/>
         <source>Divide measured tremolo by 3</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5837"/>
+        <location filename="../../libmscore/sym.cpp" line="5836"/>
         <source>Divide measured tremolo by 4</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5838"/>
+        <location filename="../../libmscore/sym.cpp" line="5837"/>
         <source>Divide measured tremolo by 6</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5849"/>
+        <location filename="../../libmscore/sym.cpp" line="5848"/>
         <source>Tuplet 3</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5903"/>
+        <location filename="../../libmscore/sym.cpp" line="5902"/>
         <source>Sawtooth line segment</source>
         <translation>Sawtooth linju stykki</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5905"/>
+        <location filename="../../libmscore/sym.cpp" line="5904"/>
         <source>Wide sawtooth line segment</source>
         <translation>Vítt Sawtooth linju petti</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5922"/>
+        <location filename="../../libmscore/sym.cpp" line="5921"/>
         <source>Vibrato large, faster</source>
         <translation>Stórt Vibrato, skjótari</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="5927"/>
+        <location filename="../../libmscore/sym.cpp" line="5926"/>
         <source>Vibrato large, slowest</source>
         <translation>Stórt Vibrato, seinri</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="6001"/>
+        <location filename="../../libmscore/sym.cpp" line="6000"/>
         <source>Prall mordent</source>
         <translation>Prall mordent</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="6002"/>
+        <location filename="../../libmscore/sym.cpp" line="6001"/>
         <source>Up prall</source>
         <translation>Upp prall</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="6003"/>
+        <location filename="../../libmscore/sym.cpp" line="6002"/>
         <source>Up mordent</source>
         <translation>Mordent upp</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="6004"/>
+        <location filename="../../libmscore/sym.cpp" line="6003"/>
         <source>Prall down</source>
         <translation>Prall niður</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="6022"/>
+        <location filename="../../libmscore/sym.cpp" line="6021"/>
         <source>Space</source>
         <translation>Millumrúm</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="6006"/>
+        <location filename="../../libmscore/sym.cpp" line="6005"/>
         <source>Down mordent</source>
         <translation>Mordent niður</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3082"/>
+        <location filename="../../libmscore/sym.cpp" line="3081"/>
         <source>25 small diesis up, (25S, ~5:13S, ~37S, 5C&#xa0;plus&#xa0;5C), 2° up [53 EDO]</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3090"/>
+        <location filename="../../libmscore/sym.cpp" line="3089"/>
         <source>35 medium diesis up, (35M, ~13M, ~125M, 5C&#xa0;plus&#xa0;7C), 2/9-tone up</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3120"/>
+        <location filename="../../libmscore/sym.cpp" line="3119"/>
         <source>5:7 kleisma up, (5:7k, ~11:13k, 7C&#xa0;less&#xa0;5C)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3212"/>
+        <location filename="../../libmscore/sym.cpp" line="3211"/>
         <source>Flat 5C-up, 2°[22 29] 3°[27 34 41] 4°[39 46 53] 5°72 7°[96] down, 5/12-tone down</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3268"/>
+        <location filename="../../libmscore/sym.cpp" line="3267"/>
         <source>Sharp 5C-down, 2°[22 29] 3°[27 34 41] 4°[39 46 53] 5°[72] 7°[96] up, 5/12-tone up</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3368"/>
+        <location filename="../../libmscore/sym.cpp" line="3367"/>
         <source>Combining lower by one 23-limit comma</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="3379"/>
+        <location filename="../../libmscore/sym.cpp" line="3378"/>
         <source>Combining raise by one 23-limit comma</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="6007"/>
+        <location filename="../../libmscore/sym.cpp" line="6006"/>
         <source>Prall up</source>
         <translation>Prall upp</translation>
     </message>
     <message>
-        <location filename="../../libmscore/sym.cpp" line="6008"/>
+        <location filename="../../libmscore/sym.cpp" line="6007"/>
         <source>Line prall</source>
         <translation>Linju prall</translation>
     </message>

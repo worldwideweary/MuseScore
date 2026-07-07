@@ -730,7 +730,7 @@ void Excerpt::cloneStaves(Score* oscore, Score* score, const QList<int>& map, QM
             for (Element* e : mb->el()) {
                   if (e->isLayoutBreak()) {
                         LayoutBreak::Type st = toLayoutBreak(e)->layoutBreakType();
-                        if (st == LayoutBreak::Type::PAGE || st == LayoutBreak::Type::LINE)
+                        if (st != LayoutBreak::Type::SECTION)
                               continue;
                         }
                   int track = -1;
