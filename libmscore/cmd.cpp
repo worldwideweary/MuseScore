@@ -207,6 +207,25 @@ const Element* CmdState::element() const
       }
 
 //---------------------------------------------------------
+//   bypassNextLayout
+//---------------------------------------------------------
+
+void CmdState::bypassNextLayout()
+      {
+      // _updateMode = UpdateMode::Update; // <--- this might be the more standard way of doing a layout bypass
+      _startTick = {-2, 1};
+      }
+
+//---------------------------------------------------------
+//   isLayoutBypassed
+//---------------------------------------------------------
+
+bool CmdState::isLayoutBypassed() const
+      {
+      return ( _startTick == Fraction{-2, 1} );
+      }
+
+//---------------------------------------------------------
 //   setUpdateMode
 //---------------------------------------------------------
 
@@ -324,6 +343,8 @@ void Score::update(bool resetCmdState)
       bool updateAll = false;
       for (MasterScore* ms : *movements()) {
             CmdState& cs = ms->cmdState();
+            if (cs.isLayoutBypassed())
+                  return;
             Fraction layoutStart = cs.startTick();
             Fraction layoutEnd = cs.endTick();
             const auto singleElement = cs.element();
