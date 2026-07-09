@@ -314,6 +314,8 @@ class CmdState {
       int startStaff() const { return _startStaff; }
       int endStaff() const { return _endStaff; }
       const Element* element() const;
+      void bypassNextLayout();
+      bool isLayoutBypassed() const;
 
       void lock() { _locked = true; }
       void unlock() { _locked = false; }
