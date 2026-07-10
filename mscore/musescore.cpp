@@ -861,29 +861,17 @@ void MuseScore::populateColorControlMenu()
       }
 
 //---------------------------------------------------------
-//   populateToggleOptionsMenu
+//   refreshToggleOptions
 //---------------------------------------------------------
 
-void MuseScore::populateToggleOptionsMenu()
+static void refreshToggleOptions(std::list<const char*>& entries)
       {
-      toggleTools->clear();
-      QActionGroup* toggleOptionMethods = new QActionGroup(toggleTools);
-      QWidget* w;
-      for (const auto s : _toggleOptionsMenuEntries) {
+      for (const auto s : entries) {
             if (!(strcmp(s, "toggle-options-null") == 0)) {
-                  if (strncmp ("separator", s, 9) == 0) {
-                        QAction* separator = new QAction;
-                        QString separatorTitle(&s[10]);
-                              separator->setSeparator(true);
-                              separator->setParent(toggleOptionMethods);
-                              separator->setText(separatorTitle);
-                              toggleOptionMethods->addAction(separator);
+                  if (strncmp ("separator", s, 9) == 0)
                         continue;
-                        }
 
                   const char* option = &s[15]; // toggle-options-*
-                  auto action = getAction(s);
-
                   bool choice = false;
 
                   // Maintain these with cmdToggleOptions():
@@ -949,6 +937,34 @@ void MuseScore::populateToggleOptionsMenu()
                         choice = MScore::disableVerticalMouseDragOfNotes;
 
                   Shortcut::getShortcut(s)->checkAction(choice);
+                  }
+            }
+      }
+
+//---------------------------------------------------------
+//   populateToggleOptionsMenu
+//---------------------------------------------------------
+
+void MuseScore::populateToggleOptionsMenu()
+      {
+      toggleTools->clear();
+
+      refreshToggleOptions(_toggleOptionsMenuEntries);
+
+      QActionGroup* toggleOptionMethods = new QActionGroup(toggleTools);
+      QWidget* w;
+      for (const auto s : _toggleOptionsMenuEntries) {
+            if (!(strcmp(s, "toggle-options-null") == 0)) {
+                  if (strncmp ("separator", s, 9) == 0) {
+                        QAction* separator = new QAction;
+                        QString separatorTitle(&s[10]);
+                              separator->setSeparator(true);
+                              separator->setParent(toggleOptionMethods);
+                              separator->setText(separatorTitle);
+                              toggleOptionMethods->addAction(separator);
+                        continue;
+                        }
+                  auto action = getAction(s);
                   toggleOptionMethods->addAction(action);
                   }
             }
@@ -9431,6 +9447,8 @@ void MuseScore::init(QStringList& argv)
       const bool lastSessionShowedPlayPanel = settings.value("showPlayPanel").toBool();
       settings.endGroup();
       mscore->showPlayPanel(forceShowPlayPanel || lastSessionShowedPlayPanel);
+
+      refreshToggleOptions(mscore->_toggleOptionsMenuEntries);
       }
 
 
