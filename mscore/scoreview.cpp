@@ -5045,6 +5045,10 @@ void ScoreView::doDragLasso(QMouseEvent* ev)
       r = _matrix.mapRect(_lassoRect);
       QSize sz(r.size().toSize());
       mscore->statusBar()->showMessage(QString("%1 x %2").arg(sz.width()).arg(sz.height()), 3000);
+
+      if (!MScore::lassoAnnotations)
+            _score->lassoSelect(lasso->bbox());
+
       _score->addRefresh(lasso->canvasBoundingRect());
       _score->update();
       }
@@ -5059,7 +5063,10 @@ void ScoreView::endLasso()
             (void) currentModifiers;
 
       keyMods = Qt::NoModifier;
-      _score->lassoSelect(lasso->bbox());
+
+      if (!MScore::lassoAnnotations)
+            _score->lassoSelect(lasso->bbox());
+
       _score->addRefresh(lasso->canvasBoundingRect());
 
       if (MScore::lassoAnnotations) {
@@ -5092,7 +5099,8 @@ void ScoreView::endLasso()
 
       dropTarget = nullptr;
       lasso->setbbox(QRectF());
-      MScore::lassoAnnotations ? _score->selection().clear() : _score->lassoSelectEnd();
+      if (!MScore::lassoAnnotations)
+            _score->lassoSelectEnd();
       _score->update();
       mscore->endCmd();
       }
