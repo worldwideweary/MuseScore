@@ -1389,8 +1389,7 @@ void MuseScore::populateFileOperations()
       viewModeCombo->addItem(tr("Page View"), int(LayoutMode::PAGE));
       viewModeCombo->addItem(tr("Continuous View"), int(LayoutMode::LINE));
       viewModeCombo->addItem(tr("Single Page"), int(LayoutMode::SYSTEM));
-      if (enableExperimental)
-            viewModeCombo->addItem(tr("Floating"), int(LayoutMode::FLOAT));
+      viewModeCombo->addItem(tr("Floating"), int(LayoutMode::FLOAT));
 
       // Restore the saved view-mode combobox index, if any.
       if (viewModeComboIndex != -1)
@@ -2609,8 +2608,7 @@ void MuseScore::retranslate()
       viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::PAGE)), tr("Page View"));
       viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::LINE)), tr("Continuous View"));
       viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::SYSTEM)), tr("Single Page"));
-      if (enableExperimental)
-            viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::FLOAT)), tr("Floating"));
+      viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::FLOAT)), tr("Floating"));
 
       showMidiImportButton->setText(tr("Show MIDI import panel"));
 
