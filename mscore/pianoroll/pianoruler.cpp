@@ -150,11 +150,11 @@ void PianoRuler::setXpos(int val)
 Pos PianoRuler::pix2pos(int x) const
       {
       int val = (x + _xpos) / _xZoom - MAP_OFFSET;
-      
+
       if (val < 0)
             val = 0;
       return Pos(_score->tempomap(), _score->sigmap(), val, _timeType);
-      
+
       }
 
 //---------------------------------------------------------
@@ -207,24 +207,24 @@ void PianoRuler::paintEvent(QPaintEvent* e)
 
       const int minBarGapSize = 48;
       const int minBeatGapSize = 30;
-      
+
       //Estimate bar width since changing time signatures can make this inconsistent.
       // Assuming 480 ticks per beat, 4 beats per bar
-      qreal pixPerBar = MScore::division * 4 * _xZoom;
-      qreal pixPerBeat = MScore::division * _xZoom;
-      
+      qreal pixPerBar = DIVISION * 4 * _xZoom;
+      qreal pixPerBeat = DIVISION * _xZoom;
+
       int barSkip = ceil(minBarGapSize / pixPerBar);
       barSkip = (int)pow(2, ceil(log(barSkip)/log(2)));
 
       int beatSkip = ceil(minBeatGapSize / pixPerBeat);
       beatSkip = (int)pow(2, ceil(log(beatSkip)/log(2)));
-      
+
       //Round down to first bar to be a multiple of barSkip
       bar1 = (bar1 / barSkip) * barSkip;
-      
+
       for (int bar = bar1; bar <= bar2; bar += barSkip) {
             Pos stick(_score->tempomap(), _score->sigmap(), bar, 0, 0);
-            
+
             SigEvent sig = stick.timesig();
             int z = sig.timesig().numerator();
             for (int beat1 = 0; beat1 < z; beat1 += beatSkip) {
@@ -255,7 +255,7 @@ void PianoRuler::paintEvent(QPaintEvent* e)
                   if (xp > 0)
                         p.drawLine(xp, y1, xp, y2);
                   }
-            
+
             }
       //
       //  draw mouse cursor marker
@@ -355,4 +355,3 @@ void PianoRuler::setXZoom(qreal xZoom)
       }
 
 }
-

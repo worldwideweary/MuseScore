@@ -235,7 +235,7 @@ void ExportMidi::writeHeader(MidiTrack& tempoTrack)
 
 bool ExportMidi::write(QIODevice* device, bool midiExpandRepeats, bool exportRPNs, const SynthesizerState& synthState)
       {
-      mf.setDivision(MScore::division);
+      mf.setDivision(DIVISION);
       mf.setFormat(1);
       QList<MidiTrack>& tracks = mf.tracks();
       MidiTrack tempoTrack;
@@ -478,7 +478,7 @@ void ExportMidi::PauseMap::calculate(const Score* s)
                         if (tick != startTick) {
                               Fraction timeSig(sigmap->timesig(tick).timesig());
                               qreal quarterNotesPerMeasure = (4.0 * timeSig.numerator()) / timeSig.denominator();
-                              int ticksPerMeasure =  quarterNotesPerMeasure * MScore::division; // store a full measure of ticks to keep barlines in same places
+                              int ticksPerMeasure =  quarterNotesPerMeasure * DIVISION; // store a full measure of ticks to keep barlines in same places
                               tempomapWithPauses->setTempo(this->addPauseTicks(utick), quarterNotesPerMeasure / it->second.pause); // new tempo for pause
                               this->insert(std::pair<const int, int> (utick, ticksPerMeasure + this->offsetAtUTick(utick))); // store running total of extra ticks
                               tempomapWithPauses->setTempo(this->addPauseTicks(utick), it->second.tempo); // restore previous tempo

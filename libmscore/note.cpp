@@ -1848,28 +1848,28 @@ Element* Note::drop(EditData& data)
                   {
                   switch (toIcon(e)->iconType()) {
                         case IconType::ACCIACCATURA:
-                              score()->setGraceNote(ch, pitch(), NoteType::ACCIACCATURA, MScore::division/2);
+                              score()->setGraceNote(ch, pitch(), NoteType::ACCIACCATURA, DIVISION/2);
                               break;
                         case IconType::APPOGGIATURA:
-                              score()->setGraceNote(ch, pitch(), NoteType::APPOGGIATURA, MScore::division/2);
+                              score()->setGraceNote(ch, pitch(), NoteType::APPOGGIATURA, DIVISION/2);
                               break;
                         case IconType::GRACE4:
-                              score()->setGraceNote(ch, pitch(), NoteType::GRACE4, MScore::division);
+                              score()->setGraceNote(ch, pitch(), NoteType::GRACE4, DIVISION);
                               break;
                         case IconType::GRACE16:
-                              score()->setGraceNote(ch, pitch(), NoteType::GRACE16,  MScore::division/4);
+                              score()->setGraceNote(ch, pitch(), NoteType::GRACE16,  DIVISION/4);
                               break;
                         case IconType::GRACE32:
-                              score()->setGraceNote(ch, pitch(), NoteType::GRACE32, MScore::division/8);
+                              score()->setGraceNote(ch, pitch(), NoteType::GRACE32, DIVISION/8);
                               break;
                         case IconType::GRACE8_AFTER:
-                              score()->setGraceNote(ch, pitch(), NoteType::GRACE8_AFTER, MScore::division/2);
+                              score()->setGraceNote(ch, pitch(), NoteType::GRACE8_AFTER, DIVISION/2);
                               break;
                         case IconType::GRACE16_AFTER:
-                              score()->setGraceNote(ch, pitch(), NoteType::GRACE16_AFTER, MScore::division/4);
+                              score()->setGraceNote(ch, pitch(), NoteType::GRACE16_AFTER, DIVISION/4);
                               break;
                         case IconType::GRACE32_AFTER:
-                              score()->setGraceNote(ch, pitch(), NoteType::GRACE32_AFTER, MScore::division/8);
+                              score()->setGraceNote(ch, pitch(), NoteType::GRACE32_AFTER, DIVISION/8);
                               break;
                         case IconType::SBEAM:
                         case IconType::MBEAM:
@@ -1897,7 +1897,7 @@ Element* Note::drop(EditData& data)
                   // before the current note
                   for (int i = nl.size() - 1; i >= 0; --i) {
                         int p = BagpipeEmbellishment::BagpipeNoteInfoList[nl.at(i)].pitch;
-                        score()->setGraceNote(ch, p, NoteType::GRACE32, MScore::division/8);
+                        score()->setGraceNote(ch, p, NoteType::GRACE32, DIVISION/8);
                         }
                   }
                   delete e;

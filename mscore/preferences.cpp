@@ -203,7 +203,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_IO_MIDI_SPACELYRICS,                             new BoolPreference(true, true)},
             {PREF_IO_MIDI_PEDAL_EVENTS_MIN_TICKS,                  new IntPreference(1)},
             {PREF_IO_MIDI_REALTIMEDELAY,                           new IntPreference(750 /* ms */, false)},
-            {PREF_IO_MIDI_SHORTESTNOTE,                            new IntPreference(MScore::division/4, false)},
+            {PREF_IO_MIDI_SHORTESTNOTE,                            new IntPreference(DIVISION/4, false)},
             {PREF_IO_MIDI_SHOWCONTROLSINMIXER,                     new BoolPreference(true, false)},
             {PREF_IO_MIDI_USEREMOTECONTROL,                        new BoolPreference(false, false)},
             {PREF_IO_OSC_PORTNUMBER,                               new IntPreference(5282, false)},

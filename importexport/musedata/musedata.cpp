@@ -253,7 +253,7 @@ void MuseData::readNote(Part* part, const QString& s)
             pitch = 0;
       if (pitch > 127)
             pitch = 127;
-      Fraction ticks = Fraction::fromTicks((s.midRef(5, 3).toInt() * MScore::division + _division/2) / _division);
+      Fraction ticks = Fraction::fromTicks((s.midRef(5, 3).toInt() * DIVISION + _division/2) / _division);
       Fraction tick  = curTick;
       curTick  += ticks;
 
@@ -470,7 +470,7 @@ QString MuseData::diacritical(QString s)
 
 void MuseData::readRest(Part* part, const QString& s)
       {
-      Fraction ticks = Fraction::fromTicks((s.midRef(5, 3).toInt() * MScore::division + _division/2) / _division);
+      Fraction ticks = Fraction::fromTicks((s.midRef(5, 3).toInt() * DIVISION + _division/2) / _division);
 
       Fraction tick  = curTick;
       curTick  += ticks;
@@ -513,7 +513,7 @@ void MuseData::readRest(Part* part, const QString& s)
 
 void MuseData::readBackup(const QString& s)
       {
-      Fraction ticks = Fraction::fromTicks((s.midRef(5, 3).toInt() * MScore::division + _division/2) / _division);
+      Fraction ticks = Fraction::fromTicks((s.midRef(5, 3).toInt() * DIVISION + _division/2) / _division);
       if (s[0] == 'b')
             curTick  -= ticks;
       else
@@ -776,4 +776,3 @@ Score::FileError importMuseData(MasterScore* score, const QString& name)
       return Score::FileError::FILE_NO_ERROR;
       }
 }
-

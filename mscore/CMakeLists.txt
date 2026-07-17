@@ -156,8 +156,8 @@ endif (APPLE)
 # Preferences is a target of its own so that the lower layers (libmscore, audio,
 # importexport) can read preferences without depending on the application.
 # It deliberately does not link libmscore: libmscore links preferences, and the
-# only thing preferences takes from libmscore is MScore::division, which
-# mscore.h defines as a constant.
+# only thing preferences takes from libmscore is DIVISION, which mscore.h
+# defines as a constant, so no symbol is needed for it.
 add_library(preferences STATIC
       preferences.cpp
       preferences.h

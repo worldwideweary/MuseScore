@@ -258,7 +258,7 @@ Score::Score()
 
       _scoreFont = ScoreFont::fontFactory("Leland");
 
-      _fileDivision           = MScore::division;
+      _fileDivision           = DIVISION;
       _style  = MScore::defaultStyle();
 //      accInfo = tr("No selection");     // ??
       accInfo = "No selection";
@@ -5605,4 +5605,3 @@ Movements::~Movements()
 int ScoreLoad::_loading = 0;
 
 }
-

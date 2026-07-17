@@ -866,7 +866,7 @@ class Score : public QObject, public ScoreElement {
       Element* getScoreElementOfMeasureBase(MeasureBase*) const;
 
       void cmd(const QAction*, EditData&);
-      int fileDivision(int t) const { return (t * MScore::division + _fileDivision / 2) / _fileDivision; }
+      int fileDivision(int t) const { return (t * DIVISION + _fileDivision / 2) / _fileDivision; }
       void setFileDivision(int t) { _fileDivision = t; }
 
       QString importedFilePath() const           { return _importedFilePath; }
@@ -1508,4 +1508,3 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(LayoutFlags);
 
 
 #endif
-

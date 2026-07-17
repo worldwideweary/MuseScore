@@ -211,7 +211,7 @@ void DrumView::drawBackground(QPainter* p, const QRectF& r)
                               else
                                     k = 32;
 
-                              int n = (MScore::division * 4) / stick.timesig().timesig().denominator();
+                              int n = (DIVISION * 4) / stick.timesig().timesig().denominator();
                               for (int i = 0; i < k; ++i) {
                                     Pos xx(_score->tempomap(), _score->sigmap(), bar, b, (n * i)/ k);
                                     int xp = pos2pix(xx);
@@ -500,4 +500,3 @@ void DrumView::ensureVisible(int tick)
       QGraphicsView::ensureVisible(qreal(tick), pt.y(), 240.0, 1.0);
       }
 }
-

@@ -93,7 +93,6 @@ qreal   MScore::nudgeStep50;
 int     MScore::defaultPlayDuration;
 
 QString MScore::lastError;
-constexpr int MScore::division;      // initialised in mscore.h, defined here for odr-uses
 int     MScore::sampleRate  = 44100;
 int     MScore::mtcType;
 
@@ -488,4 +487,3 @@ QPaintEngine* MPaintDevice::paintEngine() const
       }
 
 }
-

@@ -336,7 +336,7 @@ void MsScWriter::note(const QString pitch, const QVector<Bww::BeamType> beamList
             }
       StepAlterOct sao = stepAlterOctMap.value(pitch);
 
-      int ticks = 4 * Ms::MScore::division / type.toInt();
+      int ticks = 4 * Ms::DIVISION / type.toInt();
       if (dots) ticks = 3 * ticks / 2;
       qDebug() << "ticks:" << ticks;
       Ms::TDuration durationType(Ms::TDuration::DurationType::V_INVALID);
@@ -560,4 +560,3 @@ Score::FileError importBww(MasterScore* score, const QString& path)
       }
 
 } // namespace Ms
-

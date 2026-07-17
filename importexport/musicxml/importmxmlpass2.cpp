@@ -276,8 +276,8 @@ static void fillGap(Measure* measure, int track, const Fraction& tstart, const F
       Fraction restLen = tend - tstart;
       // qDebug("\nfillGIFV     fillGap(measure %p track %d tstart %d tend %d) restLen %d len",
       //        measure, track, tstart, tend, restLen);
-      // note: as MScore::division (#ticks in a quarter note) equals 480
-      // MScore::division / 64 (#ticks in a 256th note) equals 7.5 but is rounded down to 7
+      // note: as DIVISION (#ticks in a quarter note) equals 480
+      // DIVISION / 64 (#ticks in a 256th note) equals 7.5 but is rounded down to 7
       while (restLen > Fraction(1,256)) {
             Fraction len = restLen;
             TDuration d(TDuration::DurationType::V_INVALID);
@@ -3924,9 +3924,9 @@ void MusicXMLParserDirection::swing()
             else if (_e.name() == "swing-type") {
                   const QString swingType = _e.readElementText();
                   if (swingType == "eighth")
-                        swingUnit = MScore::division / 2;
+                        swingUnit = DIVISION / 2;
                   else if (swingType == "16th")
-                        swingUnit = MScore::division / 4;
+                        swingUnit = DIVISION / 4;
                   }
             else if (_e.name() == "swing-style") // unused
                   _e.skipCurrentElement();

@@ -92,6 +92,8 @@ static constexpr qreal DPMM      = DPI / INCH;
 
 static constexpr int MAX_STAVES  = 4;
 
+static constexpr int DIVISION    = 480; // 3840;   // pulses per quarter note (PPQ) // ticks per beat
+
 static constexpr int SHADOW_NOTE_LIGHT        = 135;
 
 static constexpr char mimeSymbolFormat[]      = "application/musescore/symbol";
@@ -369,9 +371,6 @@ class MScore {
       static bool debugMode;
       static bool testMode;
 
-      // Defined here rather than in mscore.cpp so that a constant expression
-      // is enough to read it, and users need not link libmscore for it.
-      static constexpr int division = 480; // 3840;   // pulses per quarter note (PPQ) // ticks per beat
       static int sampleRate;
       static int mtcType;
       static Sequencer* seq;

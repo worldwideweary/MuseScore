@@ -152,7 +152,7 @@ void Score::writeMovement(XmlWriter& xml, bool selectionOnly)
 
       if (pageNumberOffset())
             xml.tag("page-offset", pageNumberOffset());
-      xml.tag("Division", MScore::division);
+      xml.tag("Division", DIVISION);
       xml.setCurTrack(-1);
 
       if (isTopScore())                    // only top score
@@ -1450,4 +1450,3 @@ Tuplet* Score::searchTuplet(XmlReader& /*e*/, int /*id*/)
       }
 
 }
-

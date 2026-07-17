@@ -292,13 +292,13 @@ bool GuitarPro4::readNote(int string, int staffIdx, Note* note)
                   int transition = readUChar();       // grace transition
                   int duration = readUChar();         // grace duration
 
-                  int grace_len = MScore::division/8;
+                  int grace_len = DIVISION/8;
                   if (duration == 1)
-                        grace_len = MScore::division/8; //32th
+                        grace_len = DIVISION/8; //32th
                   else if (duration == 2)
-                        grace_len = MScore::division/6; //24th
+                        grace_len = DIVISION/6; //24th
                   else if (duration == 3)
-                        grace_len = MScore::division/4; //16th
+                        grace_len = DIVISION/4; //16th
 
                   Note* gn = new Note(score);
 
@@ -321,7 +321,7 @@ bool GuitarPro4::readNote(int string, int staffIdx, Note* note)
 
                   TDuration d;
                   d.setVal(grace_len);
-                  if(grace_len == MScore::division/6)
+                  if(grace_len == DIVISION/6)
                         d.setDots(1);
                   gc->setDurationType(d);
                   gc->setTicks(d.fraction());
