@@ -575,6 +575,9 @@ target_link_libraries (inspectorplugin ${QT_LIBRARIES} freetype)
 set_target_properties(inspectorplugin PROPERTIES EXCLUDE_FROM_ALL 1)
 
 if (BUILD_PCH)
+      target_use_pch(preferences)
+      target_use_pch(extension)
+      target_use_pch(icons)
       target_use_pch(mscoreapp)
       target_use_pch(inspectorplugin)
 
