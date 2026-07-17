@@ -33,6 +33,7 @@ target_link_libraries(
       ${QT_QTTEST_LIBRARY}
       testResources
       libmscore
+      mscoreapp   # was pulled in transitively via audio until audio stopped linking it
       audio
       qzip
       )

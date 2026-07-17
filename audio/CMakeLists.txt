@@ -36,10 +36,14 @@ target_include_directories(${MODULE}
       ${PROJECT_SOURCE_DIR}/thirdparty  # because include "mscore/musescore.h"
    )
 
+# Do not link mscoreapp here: mscoreapp links audio, and the resulting static
+# library cycle makes AUTOMOC unusable with the Xcode generator (CMake >= 4.4).
+# audio's sources include mscore/*.h, but those symbols are resolved when the
+# app or a test binary links mscoreapp itself.
 target_link_libraries (${MODULE}
       ${QT_LIBRARIES}
       audiofile
-      mscoreapp
+      libmscore   # for libmscore/*.h and the freetype include dirs it carries
       )
 
 if (BUILD_PCH)
