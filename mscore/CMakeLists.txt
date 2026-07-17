@@ -165,6 +165,19 @@ target_link_libraries(preferences
       ${COCOABRIDGE}
       )
 
+# Extensions are looked up by audio, to find the soundfonts and sfzs they
+# ship. Only preferences is needed for that, so this sits alongside it, well
+# below the application.
+add_library(extension STATIC
+      extension.cpp
+      extension.h
+      )
+
+target_link_libraries(extension
+      ${QT_LIBRARIES}
+      preferences
+      )
+
 # The icons are their own target for the same reason as preferences: audio's
 # synthesizer GUIs use them, and they have no business depending on the whole
 # application to do so. Unlike preferences, this does sit above libmscore,
@@ -194,7 +207,7 @@ add_library(mscoreapp STATIC
       drumroll.h drumtools.h drumview.h easeinoutcanvas.h editdrumset.h
       editinstrument.h editpitch.h editraster.h editstaff.h
       editstafftype.h editstringdata.h editstyle.h enableplayforwidget.h
-      exampleview.h excerptsdialog.h exportdialog.h extension.h
+      exampleview.h excerptsdialog.h exportdialog.h
       file.h fotomode.h fretcanvas.h greendotbutton.h
       harmonycanvas.h harmonyedit.h help.h helpBrowser.h
       instrdialog.h instrwidget.h
@@ -283,7 +296,6 @@ add_library(mscoreapp STATIC
       abstractdialog.cpp abstractdialog.h
       toolbuttonmenu.cpp
       preferenceslistwidget.cpp preferenceslistwidget.h
-      extension.cpp extension.h
       tourhandler.cpp
       script/script.cpp script/scriptentry.cpp script/testscript.cpp script/recorderwidget.cpp
       qml/msqmlengine.cpp qml/nativemenu.cpp qml/nativetooltip.cpp
@@ -319,6 +331,7 @@ target_link_libraries(mscoreapp
       ${QTSINGLEAPPLICATION_LIBRARIES}
       audio
       effects
+      extension
       icons
       libmscore
       preferences

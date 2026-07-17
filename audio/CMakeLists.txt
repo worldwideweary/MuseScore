@@ -46,6 +46,7 @@ target_link_libraries (${MODULE}
       libmscore   # for libmscore/*.h and the freetype include dirs it carries
       preferences
       icons       # for the fluid and zerberus settings GUIs
+      extension   # to find the soundfonts and sfzs extensions ship
       )
 
 if (BUILD_PCH)
