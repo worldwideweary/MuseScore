@@ -134,6 +134,10 @@ endif (OMR)
 
 if (APPLE)
       file(GLOB_RECURSE INCS "*.h")
+      # inspectorplugin.h belongs to the Qt Designer plugin, not to the
+      # application. Letting mscoreapp pick it up here makes AUTOMOC generate
+      # code for plugin classes that mscoreapp has no implementation of.
+      list(REMOVE_ITEM INCS "${CMAKE_CURRENT_SOURCE_DIR}/inspector/inspectorplugin.h")
       set(COCOABRIDGE "cocoabridge")
       if (SPARKLE_FOUND)
             set(MAC_SPARKLE_FILES "macos/SparkleAutoUpdater.mm")
@@ -537,9 +541,9 @@ add_library(
 #      ${qrc_files}
       )
 
-if (APPLE)
-      set_property(SOURCE inspector/inspectorplugin.cpp inspector/inspectorplugin.h PROPERTY SKIP_AUTOGEN ON)
-endif (APPLE)
+# NOTE: inspectorplugin.cpp/.h used to be excluded from AUTOGEN on APPLE, which
+# left the Q_OBJECT classes here without a vtable and could never have linked.
+# The classes need moc, so let it run.
 
 if (NOT MSVC)
    set_target_properties(inspectorplugin
@@ -563,7 +567,9 @@ endif (NOT MSVC)
 # target_link_libraries (itest inspectorplugin ${QT_LIBRARIES})
 # set_target_properties(itest PROPERTIES EXCLUDE_FROM_ALL 1)
 
-target_link_libraries (inspectorplugin ${QT_LIBRARIES})
+# freetype is only here for its include directories: icons.cpp reaches
+# libmscore/sym.h, which includes ft2build.h.
+target_link_libraries (inspectorplugin ${QT_LIBRARIES} freetype)
 set_target_properties(inspectorplugin PROPERTIES EXCLUDE_FROM_ALL 1)
 
 if (BUILD_PCH)
