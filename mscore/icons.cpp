@@ -28,7 +28,7 @@
 
 namespace Ms {
 
-extern QString iconPath;
+QString iconPath;
 QIcon* icons[int(Icons::ICONS)];
 
 //---------------------------------------------------------

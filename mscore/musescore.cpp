@@ -197,7 +197,6 @@ MasterSynthesizer* synti;
 bool enableExperimental = false;
 
 QString dataPath;
-QString iconPath;
 
 bool converterMode = false;
 static bool rawDiffMode = false;

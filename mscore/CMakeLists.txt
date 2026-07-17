@@ -165,6 +165,23 @@ target_link_libraries(preferences
       ${COCOABRIDGE}
       )
 
+# The icons are their own target for the same reason as preferences: audio's
+# synthesizer GUIs use them, and they have no business depending on the whole
+# application to do so. Unlike preferences, this does sit above libmscore,
+# since genIcons() reads MScore::selectColor.
+add_library(icons STATIC
+      icons.cpp
+      icons.h
+      miconengine.cpp
+      miconengine.h
+      )
+
+target_link_libraries(icons
+      ${QT_LIBRARIES}
+      libmscore
+      preferences
+      )
+
 add_library(mscoreapp STATIC
       ${qrc_files}
       ${ui_headers}
@@ -179,11 +196,11 @@ add_library(mscoreapp STATIC
       editstafftype.h editstringdata.h editstyle.h enableplayforwidget.h
       exampleview.h excerptsdialog.h exportdialog.h extension.h
       file.h fotomode.h fretcanvas.h greendotbutton.h
-      harmonycanvas.h harmonyedit.h help.h helpBrowser.h icons.h
+      harmonycanvas.h harmonyedit.h help.h helpBrowser.h
       instrdialog.h instrwidget.h
       keycanvas.h keyedit.h layer.h licence.h
       zoombox.h masterpalette.h
-      measureproperties.h mediadialog.h metaedit.h miconengine.h
+      measureproperties.h mediadialog.h metaedit.h
       mssplashscreen.h musescore.h navigator.h newwizard.h noteGroups.h
       omrpanel.h pagesettings.h palette.h partedit.h parteditbase.h
       pathlistdialog.h piano.h  pianotools.h
@@ -207,7 +224,6 @@ add_library(mscoreapp STATIC
       scoreview.cpp editharmony.cpp editfiguredbass.cpp events.cpp
       editinstrument.cpp editstyle.cpp easeinoutcanvas.cpp
       clickableLabel.cpp
-      icons.cpp
       instrdialog.cpp instrwidget.cpp
       debugger/debugger.cpp menus.cpp
       mssplashscreen.cpp musescore.cpp musescoredialogs.cpp navigator.cpp pagesettings.cpp palette.cpp
@@ -252,7 +268,6 @@ add_library(mscoreapp STATIC
       noteGroups.cpp
       pathlistdialog.cpp
       exampleview.cpp
-      miconengine.cpp
 
       palette/createpalettedialog.cpp
       palette/palettedialog.cpp palette/palettecelldialog.cpp
@@ -304,6 +319,7 @@ target_link_libraries(mscoreapp
       ${QTSINGLEAPPLICATION_LIBRARIES}
       audio
       effects
+      icons
       libmscore
       preferences
       qzip

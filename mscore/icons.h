@@ -22,6 +22,11 @@
 
 namespace Ms {
 
+// Where genIcons() reads the icon files from. Owned by this module, but left
+// for the application to fill in: it is the one that knows whether the icons
+// come from the share directory or from the built-in resources.
+extern QString iconPath;
+
 extern void genIcons();
 
 // keep in sync with iconNames[] in icons.cpp
