@@ -52,6 +52,7 @@ if (SCRIPT_INTERFACE)
     include(${CMAKE_CURRENT_LIST_DIR}/plugin/plugin.cmake)
 endif (SCRIPT_INTERFACE)
 
+include(${PROJECT_SOURCE_DIR}/audiodrivers/audiodrivers.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/mixer/mixer.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/pianoroll/pianoroll.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/cloud/cloud.cmake)
@@ -203,6 +204,7 @@ add_library(mscoreapp STATIC
       ${qrc_files}
       ${ui_headers}
       ${INCS}
+      ${AUDIODRIVERS_SRC}
 
       abstractdialog.h accessibletoolbutton.h albummanager.h
       analyse.h articulationprop.h

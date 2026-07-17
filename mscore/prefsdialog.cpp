@@ -29,9 +29,9 @@
 #include "timeline.h"
 #include "workspace.h"
 
-#include "audio/drivers/pa.h"
+#include "audiodrivers/pa.h"
 #ifdef USE_PORTMIDI
-#include "audio/drivers/pm.h"
+#include "audiodrivers/pm.h"
 #endif
 
 #ifdef AVSOMR

@@ -13,7 +13,6 @@
 set(MODULE audio)
 
 include (${CMAKE_CURRENT_LIST_DIR}/midi/midi.cmake)
-include (${CMAKE_CURRENT_LIST_DIR}/drivers/drivers.cmake)
 include (${CMAKE_CURRENT_LIST_DIR}/exports/exports.cmake)
 
 QT5_WRAP_UI (ui_headers
@@ -23,7 +22,6 @@ QT5_WRAP_UI (ui_headers
 add_library (${MODULE} STATIC
       ${ui_headers}
       ${MIDI_SRC}
-      ${DRIVERS_SRC}
       ${EXPORTS_SRC}
       )
 
