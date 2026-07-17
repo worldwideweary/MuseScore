@@ -33,8 +33,16 @@ target_link_libraries(
       ${QT_QTTEST_LIBRARY}
       testResources
       libmscore
-      mscoreapp   # was pulled in transitively via audio until audio stopped linking it
+      # mscoreapp is listed twice on purpose. audio's sources call into
+      # mscoreapp (Ms::Extension, preferences, ...) while mscoreapp calls into
+      # audio, and ld is single pass: whichever archive comes last would have
+      # its unresolved references dropped. mscoreapp used to be repeated
+      # automatically because audio linked it back, forming a static library
+      # cycle; that cycle had to go (see audio/CMakeLists.txt), so repeat it
+      # by hand instead. Both were pulled in transitively via audio before.
+      mscoreapp
       audio
+      mscoreapp
       qzip
       )
 
