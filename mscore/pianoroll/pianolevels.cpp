@@ -168,8 +168,8 @@ void PianoLevels::paintEvent(QPaintEvent* e)
 
       //Estimate bar width since changing time signatures can make this inconsistent.
       // Assuming 480 ticks per beat, 4 beats per bar
-      qreal pixPerBar = MScore::division * 4 * _xZoom;
-      qreal pixPerBeat = MScore::division * _xZoom;
+      qreal pixPerBar = DIVISION * 4 * _xZoom;
+      qreal pixPerBeat = DIVISION * _xZoom;
 
       int barSkip = ceil(minBeatGap / pixPerBar);
       barSkip = (int)pow(2, ceil(log(barSkip)/log(2)));
@@ -203,7 +203,7 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                   int subbeats = _tuplet * (1 << _subdiv);
 
                   for (int sub = 1; sub < subbeats; ++sub) {
-                        Pos subBeatPos(_score->tempomap(), _score->sigmap(), bar, beat1, sub * MScore::division / subbeats);
+                        Pos subBeatPos(_score->tempomap(), _score->sigmap(), bar, beat1, sub * DIVISION / subbeats);
                         xp = tickToPixelX(subBeatPos.time(TType::TICKS));
 
                         p.setPen(penLineSub);

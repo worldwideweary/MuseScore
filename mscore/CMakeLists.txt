@@ -52,6 +52,7 @@ if (SCRIPT_INTERFACE)
     include(${CMAKE_CURRENT_LIST_DIR}/plugin/plugin.cmake)
 endif (SCRIPT_INTERFACE)
 
+include(${PROJECT_SOURCE_DIR}/audiodrivers/audiodrivers.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/mixer/mixer.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/pianoroll/pianoroll.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/cloud/cloud.cmake)
@@ -134,6 +135,10 @@ endif (OMR)
 
 if (APPLE)
       file(GLOB_RECURSE INCS "*.h")
+      # inspectorplugin.h belongs to the Qt Designer plugin, not to the
+      # application. Letting mscoreapp pick it up here makes AUTOMOC generate
+      # code for plugin classes that mscoreapp has no implementation of.
+      list(REMOVE_ITEM INCS "${CMAKE_CURRENT_SOURCE_DIR}/inspector/inspectorplugin.h")
       set(COCOABRIDGE "cocoabridge")
       if (SPARKLE_FOUND)
             set(MAC_SPARKLE_FILES "macos/SparkleAutoUpdater.mm")
@@ -148,10 +153,58 @@ else (APPLE)
       set(MAC_SPARKLE_FILES  "")
 endif (APPLE)
 
+# Preferences is a target of its own so that the lower layers (libmscore, audio,
+# importexport) can read preferences without depending on the application.
+# It deliberately does not link libmscore: libmscore links preferences, and the
+# only thing preferences takes from libmscore is DIVISION, which mscore.h
+# defines as a constant, so no symbol is needed for it.
+add_library(preferences STATIC
+      preferences.cpp
+      preferences.h
+      globals.h
+      )
+
+target_link_libraries(preferences
+      ${QT_LIBRARIES}
+      global
+      ${COCOABRIDGE}
+      )
+
+# Extensions are looked up by audio, to find the soundfonts and sfzs they
+# ship. Only preferences is needed for that, so this sits alongside it, well
+# below the application.
+add_library(extension STATIC
+      extension.cpp
+      extension.h
+      )
+
+target_link_libraries(extension
+      ${QT_LIBRARIES}
+      preferences
+      )
+
+# The icons are their own target for the same reason as preferences: audio's
+# synthesizer GUIs use them, and they have no business depending on the whole
+# application to do so. Unlike preferences, this does sit above libmscore,
+# since genIcons() reads MScore::selectColor.
+add_library(icons STATIC
+      icons.cpp
+      icons.h
+      miconengine.cpp
+      miconengine.h
+      )
+
+target_link_libraries(icons
+      ${QT_LIBRARIES}
+      libmscore
+      preferences
+      )
+
 add_library(mscoreapp STATIC
       ${qrc_files}
       ${ui_headers}
       ${INCS}
+      ${AUDIODRIVERS_SRC}
 
       abstractdialog.h accessibletoolbutton.h albummanager.h
       analyse.h articulationprop.h
@@ -160,18 +213,18 @@ add_library(mscoreapp STATIC
       drumroll.h drumtools.h drumview.h easeinoutcanvas.h editdrumset.h
       editinstrument.h editpitch.h editraster.h editstaff.h
       editstafftype.h editstringdata.h editstyle.h enableplayforwidget.h
-      exampleview.h excerptsdialog.h exportdialog.h extension.h
-      file.h fotomode.h fretcanvas.h globals.h greendotbutton.h
-      harmonycanvas.h harmonyedit.h help.h helpBrowser.h icons.h
+      exampleview.h excerptsdialog.h exportdialog.h
+      file.h fotomode.h fretcanvas.h greendotbutton.h
+      harmonycanvas.h harmonyedit.h help.h helpBrowser.h
       instrdialog.h instrwidget.h
       keycanvas.h keyedit.h layer.h licence.h
       zoombox.h masterpalette.h
-      measureproperties.h mediadialog.h metaedit.h miconengine.h
+      measureproperties.h mediadialog.h metaedit.h
       mssplashscreen.h musescore.h navigator.h newwizard.h noteGroups.h
       omrpanel.h pagesettings.h palette.h partedit.h parteditbase.h
       pathlistdialog.h piano.h  pianotools.h
       openfilelocation.h
-      playpanel.h preferences.h preferenceslistwidget.h prefsdialog.h
+      playpanel.h preferenceslistwidget.h prefsdialog.h
       radiobuttongroupbox.h recordbutton.h resourceManager.h ruler.h scoreaccessibility.h
       scoreBrowser.h scoreInfo.h scorePreview.h scoretab.h scoreview.h searchComboBox.h
       selectdialog.h selectionwindow.h selectnotedialog.h selinstrument.h
@@ -190,14 +243,13 @@ add_library(mscoreapp STATIC
       scoreview.cpp editharmony.cpp editfiguredbass.cpp events.cpp
       editinstrument.cpp editstyle.cpp easeinoutcanvas.cpp
       clickableLabel.cpp
-      icons.cpp
       instrdialog.cpp instrwidget.cpp
       debugger/debugger.cpp menus.cpp
       mssplashscreen.cpp musescore.cpp musescoredialogs.cpp navigator.cpp pagesettings.cpp palette.cpp
       sessionstatusobserver.cpp
       timeline.cpp
       parteditbase.cpp playpanel.cpp selectionwindow.cpp
-      preferences.cpp measureproperties.cpp
+      measureproperties.cpp
       seq.cpp textpalette.cpp
       timedialog.cpp symboldialog.cpp shortcutcapturedialog.cpp
       radiobuttongroupbox.cpp simplebutton.cpp
@@ -235,7 +287,6 @@ add_library(mscoreapp STATIC
       noteGroups.cpp
       pathlistdialog.cpp
       exampleview.cpp
-      miconengine.cpp
 
       palette/createpalettedialog.cpp
       palette/palettedialog.cpp palette/palettecelldialog.cpp
@@ -251,7 +302,6 @@ add_library(mscoreapp STATIC
       abstractdialog.cpp abstractdialog.h
       toolbuttonmenu.cpp
       preferenceslistwidget.cpp preferenceslistwidget.h
-      extension.cpp extension.h
       tourhandler.cpp
       script/script.cpp script/scriptentry.cpp script/testscript.cpp script/recorderwidget.cpp
       qml/msqmlengine.cpp qml/nativemenu.cpp qml/nativetooltip.cpp
@@ -287,7 +337,10 @@ target_link_libraries(mscoreapp
       ${QTSINGLEAPPLICATION_LIBRARIES}
       audio
       effects
+      extension
+      icons
       libmscore
+      preferences
       qzip
       importexport
       ${COCOABRIDGE}
@@ -490,9 +543,9 @@ add_library(
 #      ${qrc_files}
       )
 
-if (APPLE)
-      set_property(SOURCE inspector/inspectorplugin.cpp inspector/inspectorplugin.h PROPERTY SKIP_AUTOGEN ON)
-endif (APPLE)
+# NOTE: inspectorplugin.cpp/.h used to be excluded from AUTOGEN on APPLE, which
+# left the Q_OBJECT classes here without a vtable and could never have linked.
+# The classes need moc, so let it run.
 
 if (NOT MSVC)
    set_target_properties(inspectorplugin
@@ -516,10 +569,15 @@ endif (NOT MSVC)
 # target_link_libraries (itest inspectorplugin ${QT_LIBRARIES})
 # set_target_properties(itest PROPERTIES EXCLUDE_FROM_ALL 1)
 
-target_link_libraries (inspectorplugin ${QT_LIBRARIES})
+# freetype is only here for its include directories: icons.cpp reaches
+# libmscore/sym.h, which includes ft2build.h.
+target_link_libraries (inspectorplugin ${QT_LIBRARIES} freetype)
 set_target_properties(inspectorplugin PROPERTIES EXCLUDE_FROM_ALL 1)
 
 if (BUILD_PCH)
+      target_use_pch(preferences)
+      target_use_pch(extension)
+      target_use_pch(icons)
       target_use_pch(mscoreapp)
       target_use_pch(inspectorplugin)
 

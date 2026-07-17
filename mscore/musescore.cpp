@@ -69,7 +69,7 @@
 #include "workspacecombobox.h"
 #include "zoombox.h"
 
-#include "audio/drivers/driver.h"
+#include "audiodrivers/driver.h"
 
 #ifdef USE_LAME
 #include "audio/exports/exportmp3.h"
@@ -197,7 +197,6 @@ MasterSynthesizer* synti;
 bool enableExperimental = false;
 
 QString dataPath;
-QString iconPath;
 
 bool converterMode = false;
 static bool rawDiffMode = false;

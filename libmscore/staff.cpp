@@ -308,7 +308,7 @@ ClefTypeList Staff::clefType(const Fraction& tick) const
       {
       ClefTypeList ct = clefs.clef(tick.ticks());
       if (ct._concertClef == ClefType::INVALID) {
-            // Clef compatibility based on instrument (override StaffGroup) 
+            // Clef compatibility based on instrument (override StaffGroup)
             StaffGroup staffGroup = staffType(tick)->group();
             if (staffGroup != StaffGroup::TAB)
                   staffGroup = part()->instrument(tick)->useDrumset() ? StaffGroup::PERCUSSION : StaffGroup::STANDARD;
@@ -861,9 +861,9 @@ SwingParameters Staff::swing(const Fraction& tick) const
       QString unit = score()->styleSt(Sid::swingUnit);
       int swingRatio = score()->styleI(Sid::swingRatio);
       if (unit == TDuration(TDuration::DurationType::V_EIGHTH).name())
-            swingUnit = MScore::division / 2;
+            swingUnit = DIVISION / 2;
       else if (unit == TDuration(TDuration::DurationType::V_16TH).name())
-            swingUnit = MScore::division / 4;
+            swingUnit = DIVISION / 4;
       else if (unit == TDuration(TDuration::DurationType::V_ZERO).name())
             swingUnit = 0;
       sp.swingRatio = swingRatio;
@@ -1588,4 +1588,3 @@ void Staff::setInvisible(const Fraction& tick, bool val)
       }
 
 }
-

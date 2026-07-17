@@ -166,7 +166,7 @@ Fraction Dynamic::velocityChangeLength() const
                   break;
             }
 
-      return Fraction::fromTicks(int(ratio * (speedMult * double(MScore::division))));
+      return Fraction::fromTicks(int(ratio * (speedMult * double(DIVISION))));
       }
 
 //---------------------------------------------------------
@@ -561,4 +561,3 @@ QString Dynamic::screenReaderInfo() const
       return QString("%1: %2").arg(Element::accessibleInfo(), s);
       }
 }
-

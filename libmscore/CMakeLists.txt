@@ -86,7 +86,7 @@ target_include_directories(libmscore
       ${PROJECT_SOURCE_DIR}/global
    )
 
-target_link_libraries(libmscore ${FREETYPE_LIBRARIES})
+target_link_libraries(libmscore ${FREETYPE_LIBRARIES} preferences)
 
 if (AVSOMR)
     target_link_libraries(libmscore avsomr)

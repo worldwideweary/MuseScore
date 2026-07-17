@@ -69,7 +69,7 @@ void NoteTweakerDialog::setNoteOffTime()
       QStringList parts = s.split("/");
       int num = parts[0].toInt();
       double denom = parts[1].toInt();
-      double gapTicks = MScore::division * num / denom;
+      double gapTicks = DIVISION * num / denom;
 
       Score* score = _staff->score();
 

@@ -3634,7 +3634,7 @@ static bool readScore(Score* score, XmlReader& e)
 
       score->connectTies();
 
-      score->setFileDivision(MScore::division);
+      score->setFileDivision(DIVISION);
 
       //
       //    sanity check for barLineSpan
@@ -3876,4 +3876,3 @@ MStyle* styleDefaults206()
       }
 
 }
-

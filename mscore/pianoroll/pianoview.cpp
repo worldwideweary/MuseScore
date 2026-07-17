@@ -462,7 +462,7 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
                   int subbeats = _tuplet * (1 << _subdiv);
 
                   for (int sub = 1; sub < subbeats; ++sub) {
-                        Pos subBeatPos(_score->tempomap(), _score->sigmap(), bar, beat1, sub * MScore::division / subbeats);
+                        Pos subBeatPos(_score->tempomap(), _score->sigmap(), bar, beat1, sub * DIVISION / subbeats);
                         x = tickToPixelX(subBeatPos.time(TType::TICKS));
 
                         p->setPen(penLineSub);
@@ -1393,7 +1393,7 @@ Fraction PianoView::roundToNearestBeat(int tick, bool down)  const
       {
       Score* _score = _staff->score();
       Pos barPos(_score->tempomap(), _score->sigmap(), tick, TType::TICKS);
-      
+
       int noteWithBeat = barPos.timesig().timesig().denominator();
 
       //Number of smaller pieces the beat is divided into
@@ -2683,7 +2683,7 @@ void PianoView::drawDraggedNotes(QPainter* painter)
 
       int dragToPitch = pixelYToPitch(_lastMousePos.y());
       int startPitch = pixelYToPitch(_mouseDownPos.y());
-      
+
       if (_dragStyle == DragStyle::NOTE_POSITION) {
             Fraction noteStartDraggedTick = _dragStartTick + dragOffsetTicks;
             Fraction noteStartDraggedAlignedTick = Fraction(noteStartDraggedTick.numerator() * divisions / noteStartDraggedTick.denominator(), divisions);
@@ -2701,7 +2701,7 @@ void PianoView::drawDraggedNotes(QPainter* painter)
             pasteTickOffset = noteStartDraggedAlignedTick - _dragStartTick;
             pasteLengthOffset = _dragStartTick - noteStartDraggedAlignedTick;
             }
-      
+
       //Iterate thorugh note data
       QXmlStreamReader xml(_dragNoteCache);
       Fraction firstTick;
@@ -2757,6 +2757,3 @@ void PianoView::drawDraggedNote(QPainter* painter, Fraction startTick, Fraction 
       }
 
 }
-
-
-

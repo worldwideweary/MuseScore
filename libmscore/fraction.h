@@ -118,7 +118,7 @@ class Fraction {
             if (g)
                   return Fraction(static_cast<int>(_numerator / g), static_cast<int>(_denominator / g));
             return Fraction(static_cast<int>(_numerator), static_cast<int>(_denominator));
-            }      
+            }
 
       // --- comparison --- //
 
@@ -240,7 +240,7 @@ class Fraction {
             {
             if (ticks == -1)
                   return Fraction(-1,1);  // HACK
-            return Fraction(ticks, MScore::division * 4).reduced();
+            return Fraction(ticks, DIVISION * 4).reduced();
             }
 
       //---------------------------------------------------------
@@ -248,7 +248,7 @@ class Fraction {
       ///   A very small fraction, corresponds to 1 MIDI tick
       //---------------------------------------------------------
 
-      static Fraction eps() { return Fraction(1, MScore::division * 4); }
+      static Fraction eps() { return Fraction(1, DIVISION * 4); }
 
       //---------------------------------------------------------
       //   ticks
@@ -259,11 +259,11 @@ class Fraction {
             if ((_numerator == -1 && _denominator == 1) || _denominator == 0)        // HACK
                   return -1;
 
-            // MScore::division     - ticks per quarter note
-            // MScore::division * 4 - ticks per whole note
-            // result: rounded (MScore::division * 4 * _numerator * 1.0 / _denominator) value
+            // DIVISION     - ticks per quarter note
+            // DIVISION * 4 - ticks per whole note
+            // result: rounded (DIVISION * 4 * _numerator * 1.0 / _denominator) value
             const int sgn = (_numerator < 0) ? -1 : 1;
-            const auto result = sgn * (static_cast<int_least64_t>(sgn * _numerator) * MScore::division * 4 + (_denominator/2)) / _denominator;
+            const auto result = sgn * (static_cast<int_least64_t>(sgn * _numerator) * DIVISION * 4 + (_denominator/2)) / _denominator;
             return static_cast<int>(result);
             }
 

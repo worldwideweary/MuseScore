@@ -4633,7 +4633,7 @@ void ExportMusicXml::swingSound(StaffTextBase const* const text, const bool offs
             const int swingDivisor = gcd(text->swingParameters()->swingRatio, 100);
             _xml.tag("first",  100 / swingDivisor);
             _xml.tag("second", swingPercentage / swingDivisor);
-            if (text->swingParameters()->swingUnit == MScore::division / 2)
+            if (text->swingParameters()->swingUnit == DIVISION / 2)
                   _xml.tag("swing-type", TDuration(TDuration::DurationType::V_EIGHTH).name());
             else
                   _xml.tag("swing-type", TDuration(TDuration::DurationType::V_16TH).name());

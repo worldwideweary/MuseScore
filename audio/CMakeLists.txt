@@ -13,7 +13,6 @@
 set(MODULE audio)
 
 include (${CMAKE_CURRENT_LIST_DIR}/midi/midi.cmake)
-include (${CMAKE_CURRENT_LIST_DIR}/drivers/drivers.cmake)
 include (${CMAKE_CURRENT_LIST_DIR}/exports/exports.cmake)
 
 QT5_WRAP_UI (ui_headers
@@ -23,7 +22,6 @@ QT5_WRAP_UI (ui_headers
 add_library (${MODULE} STATIC
       ${ui_headers}
       ${MIDI_SRC}
-      ${DRIVERS_SRC}
       ${EXPORTS_SRC}
       )
 
@@ -36,10 +34,17 @@ target_include_directories(${MODULE}
       ${PROJECT_SOURCE_DIR}/thirdparty  # because include "mscore/musescore.h"
    )
 
+# Do not link mscoreapp here: mscoreapp links audio, and the resulting static
+# library cycle makes AUTOMOC unusable with the Xcode generator (CMake >= 4.4).
+# audio's sources include mscore/*.h, but those symbols are resolved when the
+# app or a test binary links mscoreapp itself.
 target_link_libraries (${MODULE}
       ${QT_LIBRARIES}
       audiofile
-      mscoreapp
+      libmscore   # for libmscore/*.h and the freetype include dirs it carries
+      preferences
+      icons       # for the fluid and zerberus settings GUIs
+      extension   # to find the soundfonts and sfzs extensions ship
       )
 
 if (BUILD_PCH)

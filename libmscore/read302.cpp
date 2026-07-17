@@ -227,7 +227,7 @@ bool Score::read(XmlReader& e)
 
       connectTies();
 
-      _fileDivision = MScore::division;
+      _fileDivision = DIVISION;
 
 #if 0 // TODO:barline
       //
@@ -448,4 +448,3 @@ MStyle* styleDefaults301()
       return result;
       }
 }
-

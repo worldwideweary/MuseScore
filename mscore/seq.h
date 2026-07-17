@@ -26,7 +26,7 @@
 #include "libmscore/fifo.h"
 
 #include "audio/midi/event.h"
-#include "audio/drivers/driver.h"
+#include "audiodrivers/driver.h"
 
 class QTimer;
 

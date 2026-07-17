@@ -122,7 +122,7 @@ Beam::Mode Groups::beamMode(int tick, TDuration::DurationType d) const
             default:
                   return Beam::Mode::AUTO;
             }
-      const int dm = MScore::division / 8;
+      const int dm = DIVISION / 8;
       for (const GroupNode& e : *this) {
             if (e.pos * dm < tick)
                   continue;
@@ -261,4 +261,3 @@ void Groups::dump(const char* m) const
       }
 
 }
-

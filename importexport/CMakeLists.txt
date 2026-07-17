@@ -47,6 +47,7 @@ target_link_libraries(${MODULE}
     audio       # for midiimport
     beatroot    # for midiimport
     rtf2html    # for capella
+    preferences
     )
 
 if (BUILD_PCH)

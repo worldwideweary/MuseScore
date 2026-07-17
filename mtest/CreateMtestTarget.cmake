@@ -33,6 +33,7 @@ target_link_libraries(
       ${QT_QTTEST_LIBRARY}
       testResources
       libmscore
+      mscoreapp
       audio
       qzip
       )

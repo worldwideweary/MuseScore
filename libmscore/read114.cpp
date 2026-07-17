@@ -2848,7 +2848,7 @@ Score::FileError MasterScore::read114(XmlReader& e)
                         if (e.name() == "tempo") {
                               int tick   = e.attribute("tick").toInt();
                               double tmp = e.readElementText().toDouble();
-                              tick       = (tick * MScore::division + _fileDivision/2) / _fileDivision;
+                              tick       = (tick * DIVISION + _fileDivision/2) / _fileDivision;
                               auto pos   = tm.find(tick);
                               if (pos != tm.end())
                                     tm.erase(pos);
@@ -3173,7 +3173,7 @@ Score::FileError MasterScore::read114(XmlReader& e)
                   }
             }
 
-      _fileDivision = MScore::division;
+      _fileDivision = DIVISION;
 
       //
       //    sanity check for barLineSpan and update ottavas
@@ -3271,4 +3271,3 @@ Score::FileError MasterScore::read114(XmlReader& e)
       }
 
 }
-

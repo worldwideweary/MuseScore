@@ -1046,13 +1046,13 @@ bool GuitarPro5::readNoteEffects(Note* note)
                   note_type = NoteType::APPOGGIATURA;
 
 #if 0
-            int grace_len = MScore::division/8;
+            int grace_len = DIVISION/8;
             if (duration == 1)
-                  grace_len = MScore::division/8; //32th
+                  grace_len = DIVISION/8; //32th
             else if (duration == 2)
-                  grace_len = MScore::division/6; //24th
+                  grace_len = DIVISION/6; //24th
             else if (duration == 3)
-                  grace_len = MScore::division/4; //16th
+                  grace_len = DIVISION/4; //16th
             Note* gn = new Note(score);
 
             if (gflags & EFFECT_GHOST) {
@@ -1074,7 +1074,7 @@ bool GuitarPro5::readNoteEffects(Note* note)
 
             TDuration d;
             d.setVal(grace_len);
-            if (grace_len == MScore::division/6)
+            if (grace_len == DIVISION/6)
                   d.setDots(1);
             gc->setDurationType(d);
             gc->setTicks(d.fraction());
@@ -1083,7 +1083,7 @@ bool GuitarPro5::readNoteEffects(Note* note)
             note->chord()->add(gc);
             addDynamic(gn, dynamic);
 #endif
-		auto gnote = score->setGraceNote(note->chord(), grace_pitch, note_type, MScore::division / 2);
+		auto gnote = score->setGraceNote(note->chord(), grace_pitch, note_type, DIVISION / 2);
 		gnote->setString(note->string());
 		auto sd = note->part()->instrument()->stringData();
 		gnote->setFret(grace_pitch - sd->stringList().at(sd->stringList().size() - note->string() - 1).pitch);

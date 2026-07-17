@@ -2790,7 +2790,7 @@ void Score::createBeams(LayoutContext& lc, Measure* measure)
                         ChordRest* mcr = toChordRest(s->element(track));
                         if (mcr == 0)
                               continue;
-                        int beat = (mcr->rtick() * stretch).ticks() / MScore::division;
+                        int beat = (mcr->rtick() * stretch).ticks() / DIVISION;
                         if (beatSubdivision.contains(beat))
                               beatSubdivision[beat] = qMin(beatSubdivision[beat], mcr->durationType());
                         else
@@ -2851,8 +2851,8 @@ void Score::createBeams(LayoutContext& lc, Measure* measure)
                         if (checkBeats && cr->rtick().isNotZero()) {
                               Fraction tick = cr->rtick() * stretch;
                               // check if on the beat
-                              if ((tick.ticks() % MScore::division) == 0) {
-                                    int beat = tick.ticks() / MScore::division;
+                              if ((tick.ticks() % DIVISION) == 0) {
+                                    int beat = tick.ticks() / DIVISION;
                                     // get minimum duration for this & previous beat
                                     TDuration minDuration = qMin(beatSubdivision[beat], beatSubdivision[beat - 1]);
                                     // re-calculate beam as if this were the duration of current chordrest

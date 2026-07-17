@@ -1562,7 +1562,7 @@ void Score::upDown(bool up, UpDownMode mode)
             int fret     = oNote->fret();
 
             StaffGroup staffGroup = staff->staffType(oNote->chord()->tick())->group();
-            // if not tab, check for instrument instead of staffType (for pitched to unpitched instrument changes) 
+            // if not tab, check for instrument instead of staffType (for pitched to unpitched instrument changes)
             if ( staffGroup != StaffGroup::TAB)
                   staffGroup = staff->part()->instrument(oNote->tick())->useDrumset() ? StaffGroup::PERCUSSION : StaffGroup::STANDARD;
 
@@ -4595,14 +4595,14 @@ void Score::cmd(const QAction* a, EditData& ed)
             { "add-brackets",               [](Score* cs, EditData&){ cs->cmdAddBracket();                                            }},
             { "add-parentheses",            [](Score* cs, EditData&){ cs->cmdAddParentheses();                                        }},
             { "add-braces",                 [](Score* cs, EditData&){ cs->cmdAddBraces();                                        }},
-            { "acciaccatura",               [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::ACCIACCATURA, MScore::division / 2);  }},
-            { "appoggiatura",               [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::APPOGGIATURA, MScore::division / 2);  }},
-            { "grace4",                     [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::GRACE4, MScore::division);            }},
-            { "grace16",                    [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::GRACE16, MScore::division / 4);       }},
-            { "grace32",                    [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::GRACE32, MScore::division / 8);       }},
-            { "grace8after",                [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::GRACE8_AFTER, MScore::division / 2);  }},
-            { "grace16after",               [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::GRACE16_AFTER, MScore::division / 4); }},
-            { "grace32after",               [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::GRACE32_AFTER, MScore::division / 8); }},
+            { "acciaccatura",               [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::ACCIACCATURA, DIVISION / 2);  }},
+            { "appoggiatura",               [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::APPOGGIATURA, DIVISION / 2);  }},
+            { "grace4",                     [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::GRACE4, DIVISION);            }},
+            { "grace16",                    [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::GRACE16, DIVISION / 4);       }},
+            { "grace32",                    [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::GRACE32, DIVISION / 8);       }},
+            { "grace8after",                [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::GRACE8_AFTER, DIVISION / 2);  }},
+            { "grace16after",               [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::GRACE16_AFTER, DIVISION / 4); }},
+            { "grace32after",               [](Score* cs, EditData&){ cs->cmdAddGrace(NoteType::GRACE32_AFTER, DIVISION / 8); }},
             { "explode",                    [](Score* cs, EditData&){ cs->cmdExplode();                                               }},
             { "implode",                    [](Score* cs, EditData&){ cs->cmdImplode();                                               }},
             { "realize-chord-symbols",      [](Score* cs, EditData&){ cs->cmdRealizeChordSymbols();                                   }},
@@ -4654,4 +4654,3 @@ void Score::cmd(const QAction* a, EditData& ed)
 
 
 }
-

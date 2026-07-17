@@ -344,7 +344,7 @@ void JackAudio::timebase(jack_transport_state_t state, jack_nframes_t /*nframes*
             audio->seq->score()->sigmap()->tickValues(curTick, &bar, &beat, &tick);
             // Providing the final tempo
             pos->beats_per_minute = 60 * audio->seq->curTempo() * audio->seq->score()->tempomap()->relTempo();
-            pos->ticks_per_beat   = MScore::division;
+            pos->ticks_per_beat   = DIVISION;
             pos->tick             = tick;
             pos->bar              = bar+1;
             pos->beat             = beat+1;

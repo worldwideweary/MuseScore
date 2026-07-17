@@ -835,7 +835,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
 
                   if (inCountIn) {
                         qreal beatsPerSecond = curTempo() * cs->tempomap()->relTempo(); // relTempo needed here to ensure that bps changes as we slide the tempo bar
-                        qreal ticksPerSecond = beatsPerSecond * MScore::division;
+                        qreal ticksPerSecond = beatsPerSecond * DIVISION;
                         qreal playPosSeconds = playPosUTick / ticksPerSecond;
                         int playPosFrame = playPosSeconds * MScore::sampleRate;
                         if (playPosFrame >= periodEndFrame)
@@ -1791,9 +1791,9 @@ void Seq::setLoopSelection()
 
       if (score && score->selection().isRange()) {
             cs->setLoopInTick(score->selection().tickStart());
-            cs->setLoopOutTick(score->selection().tickEnd());      
+            cs->setLoopOutTick(score->selection().tickEnd());
             }
-      
+
       // add a dummy event to loop end if it is not already there
       // this is to let the playback reach the end completely before starting again
       if (!events.count(cs->loopOutTick().ticks())) {

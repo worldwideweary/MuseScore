@@ -484,7 +484,7 @@ PianorollEditor::~PianorollEditor()
 
 void PianorollEditor::setEditNoteLength(int len)
       {
-            pianoView->setEditNoteLength(Fraction::fromTicks(pow(2, len + 2) * MScore::division));
+            pianoView->setEditNoteLength(Fraction::fromTicks(pow(2, len + 2) * DIVISION));
       }
 
 //---------------------------------------------------------
@@ -769,7 +769,7 @@ void PianorollEditor::veloTypeChanged(int val)
                         newVelocity = static_cast<int>((newVelocity / (qreal)dynamicsVel - 1) * 100);
                         break;
                   }
-            
+
             _score->undo(new ChangeVelocity(note, Note::ValueType(val), newVelocity));
             updateVelocity(note);
             }
@@ -1047,7 +1047,7 @@ void PianorollEditor::onTimeChanged(int val)
 
             NoteEvent ne = *event;
             ne.setOntime(val);
-            
+
             _score->undo(new ChangeNoteEvent(note, event, ne));
             }
       _score->endCmd();
@@ -1076,7 +1076,7 @@ void PianorollEditor::tickLenChanged(int val)
 
             NoteEvent ne = *event;
             ne.setLen(val);
-            
+
             _score->undo(new ChangeNoteEvent(note, event, ne));
             }
       _score->endCmd();

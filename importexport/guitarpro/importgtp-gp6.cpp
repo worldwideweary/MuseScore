@@ -1579,7 +1579,7 @@ Fraction GuitarPro6::readBeats(QString beats, GPPartInfo* partInfo, Measure* mea
                                           auto chord = lyrNote->chord();
                                           // before beat grace notes have to be handled after the Tpc is set from pitch
                                           if (!graceNode.toElement().text().compare("OnBeat")) {
-                                                auto gNote = score->setGraceNote(chord, lyrNote->pitch(), NoteType::GRACE4, MScore::division / 2);
+                                                auto gNote = score->setGraceNote(chord, lyrNote->pitch(), NoteType::GRACE4, DIVISION / 2);
                                                 auto iter1  = slideMap.end();
                                                 for (auto beg = slideMap.begin(); beg != slideMap.end(); ++beg) {
                                                       if (beg->second == lyrNote) {
@@ -1598,7 +1598,7 @@ Fraction GuitarPro6::readBeats(QString beats, GPPartInfo* partInfo, Measure* mea
                                                       }
                                                 }
                                           else if (!graceNode.toElement().text().compare("BeforeBeat") && chord->type() == ElementType::CHORD) {
-                                                auto gNote = score->setGraceNote(chord, lyrNote->pitch(), NoteType::ACCIACCATURA, MScore::division / 2);
+                                                auto gNote = score->setGraceNote(chord, lyrNote->pitch(), NoteType::ACCIACCATURA, DIVISION / 2);
                                                 auto iter1  = slideMap.end();
                                                 for (auto beg = slideMap.begin(); beg != slideMap.end(); ++beg) {
                                                       if (beg->second == lyrNote) {

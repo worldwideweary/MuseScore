@@ -73,7 +73,7 @@ void TempoMap::normalize()
             if (!(e->second.type & (TempoType::FIX|TempoType::RAMP)))
                   e->second.tempo = tempo;
             int delta = e->first - tick;
-            time += qreal(delta) / (MScore::division * tempo * _relTempo);
+            time += qreal(delta) / (DIVISION * tempo * _relTempo);
             time += e->second.pause;
             e->second.time = time;
             tick  = e->first;
@@ -202,7 +202,7 @@ qreal TempoMap::tick2time(int tick) const
       else
             qDebug("TempoMap: empty");
 
-      time += delta / (MScore::division * tempo * _relTempo);
+      time += delta / (DIVISION * tempo * _relTempo);
       return time;
       }
 
@@ -229,10 +229,9 @@ int TempoMap::time2tick(qreal time) const
             tempo = e->second.tempo;
             }
       delta = time - delta;
-      tick += (int)lrint(delta * _relTempo * MScore::division * tempo);
+      tick += (int)lrint(delta * _relTempo * DIVISION * tempo);
 
       return tick;
       }
 
 }
-
