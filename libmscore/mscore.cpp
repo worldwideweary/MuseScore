@@ -93,7 +93,7 @@ qreal   MScore::nudgeStep50;
 int     MScore::defaultPlayDuration;
 
 QString MScore::lastError;
-int     MScore::division    = 480; // 3840;   // pulses per quarter note (PPQ) // ticks per beat
+constexpr int MScore::division;      // initialised in mscore.h, defined here for odr-uses
 int     MScore::sampleRate  = 44100;
 int     MScore::mtcType;
 

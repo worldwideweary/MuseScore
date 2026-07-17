@@ -44,6 +44,7 @@ target_link_libraries (${MODULE}
       ${QT_LIBRARIES}
       audiofile
       libmscore   # for libmscore/*.h and the freetype include dirs it carries
+      preferences
       )
 
 if (BUILD_PCH)

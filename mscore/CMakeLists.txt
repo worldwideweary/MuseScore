@@ -148,6 +148,23 @@ else (APPLE)
       set(MAC_SPARKLE_FILES  "")
 endif (APPLE)
 
+# Preferences is a target of its own so that the lower layers (libmscore, audio,
+# importexport) can read preferences without depending on the application.
+# It deliberately does not link libmscore: libmscore links preferences, and the
+# only thing preferences takes from libmscore is MScore::division, which
+# mscore.h defines as a constant.
+add_library(preferences STATIC
+      preferences.cpp
+      preferences.h
+      globals.h
+      )
+
+target_link_libraries(preferences
+      ${QT_LIBRARIES}
+      global
+      ${COCOABRIDGE}
+      )
+
 add_library(mscoreapp STATIC
       ${qrc_files}
       ${ui_headers}
@@ -161,7 +178,7 @@ add_library(mscoreapp STATIC
       editinstrument.h editpitch.h editraster.h editstaff.h
       editstafftype.h editstringdata.h editstyle.h enableplayforwidget.h
       exampleview.h excerptsdialog.h exportdialog.h extension.h
-      file.h fotomode.h fretcanvas.h globals.h greendotbutton.h
+      file.h fotomode.h fretcanvas.h greendotbutton.h
       harmonycanvas.h harmonyedit.h help.h helpBrowser.h icons.h
       instrdialog.h instrwidget.h
       keycanvas.h keyedit.h layer.h licence.h
@@ -171,7 +188,7 @@ add_library(mscoreapp STATIC
       omrpanel.h pagesettings.h palette.h partedit.h parteditbase.h
       pathlistdialog.h piano.h  pianotools.h
       openfilelocation.h
-      playpanel.h preferences.h preferenceslistwidget.h prefsdialog.h
+      playpanel.h preferenceslistwidget.h prefsdialog.h
       radiobuttongroupbox.h recordbutton.h resourceManager.h ruler.h scoreaccessibility.h
       scoreBrowser.h scoreInfo.h scorePreview.h scoretab.h scoreview.h searchComboBox.h
       selectdialog.h selectionwindow.h selectnotedialog.h selinstrument.h
@@ -197,7 +214,7 @@ add_library(mscoreapp STATIC
       sessionstatusobserver.cpp
       timeline.cpp
       parteditbase.cpp playpanel.cpp selectionwindow.cpp
-      preferences.cpp measureproperties.cpp
+      measureproperties.cpp
       seq.cpp textpalette.cpp
       timedialog.cpp symboldialog.cpp shortcutcapturedialog.cpp
       radiobuttongroupbox.cpp simplebutton.cpp
@@ -288,6 +305,7 @@ target_link_libraries(mscoreapp
       audio
       effects
       libmscore
+      preferences
       qzip
       importexport
       ${COCOABRIDGE}

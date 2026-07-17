@@ -369,7 +369,9 @@ class MScore {
       static bool debugMode;
       static bool testMode;
 
-      static int division;
+      // Defined here rather than in mscore.cpp so that a constant expression
+      // is enough to read it, and users need not link libmscore for it.
+      static constexpr int division = 480; // 3840;   // pulses per quarter note (PPQ) // ticks per beat
       static int sampleRate;
       static int mtcType;
       static Sequencer* seq;
