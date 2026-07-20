@@ -3809,7 +3809,10 @@ void Score::cloneVoice(int strack, int dtrack, Segment* sf, const Fraction& lTic
                                                 }
                                           }
                                     }
-                              undo(new AddElement(ns));
+                              if (link)
+                                    undo(new AddElement(ns));
+                              else
+                                    undoAddElement(ns);
                               }
                         }
                   }
