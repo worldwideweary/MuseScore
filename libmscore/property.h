@@ -125,6 +125,7 @@ enum class Pid : short {
       BOTTOM_MARGIN,
       LAYOUT_BREAK,
       AUTOSCALE,
+      BIND_TO_NEXT_SYSTEM,
       SIZE,
 
       SCALE,

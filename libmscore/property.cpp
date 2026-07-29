@@ -119,6 +119,7 @@ static constexpr PropertyMetaData propertyList[] = {
       { Pid::BOTTOM_MARGIN,             P_TYPE::REAL,           false, "bottomMargin",           DUMMY_QT_TRANSLATE_NOOP("propertyName", "bottom margin")                                 },
       { Pid::LAYOUT_BREAK,              P_TYPE::LAYOUT_BREAK,   false, "subtype",                DUMMY_QT_TRANSLATE_NOOP("propertyName", "subtype")                                       },
       { Pid::AUTOSCALE,                 P_TYPE::BOOL,           false, "autoScale",              DUMMY_QT_TRANSLATE_NOOP("propertyName", "autoscale")                                     },
+      { Pid::BIND_TO_NEXT_SYSTEM,       P_TYPE::BOOL,           false, "bindToNextSystem",       DUMMY_QT_TRANSLATE_NOOP("propertyName", "bind vbox to next system during layout")        },
       { Pid::SIZE,                      P_TYPE::SIZE,           false, "size",                   DUMMY_QT_TRANSLATE_NOOP("propertyName", "size")                                          },
 
       { Pid::SCALE,                     P_TYPE::SCALE,          false, "scale",                  DUMMY_QT_TRANSLATE_NOOP("propertyName", "scale")                                         },
