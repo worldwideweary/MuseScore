@@ -1418,6 +1418,10 @@ void ScoreView::changeState(ViewState s)
                         editData.element = nullptr; // editData.element will be determined by selection state in normal mode
                         _blockShowEdit = false;
                         }
+                  else if (state == ViewState::PLAY) {
+                        _score->setActivePlaybackMeasure(nullptr);
+                        _score->setIsPlaying(false);
+                        }
                   setCursor(QCursor(Qt::ArrowCursor));
                   break;
             case ViewState::DRAG:
@@ -1460,6 +1464,7 @@ void ScoreView::changeState(ViewState s)
                         _cursor->accidental = AccidentalType::NONE;
                         _cursor->duration   = TDuration::DurationType::V_INVALID;
                         }
+                  _score->setIsPlaying(true);
                   break;
             case ViewState::ENTRY_PLAY:
                   break;

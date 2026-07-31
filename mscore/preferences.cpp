@@ -357,6 +357,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_UI_SCORE_OVERRIDE_STAFF_TEXT_COLOR,              new ColorPreference(QColor(Qt::black))},
             {PREF_UI_SCORE_OVERRIDE_TEXT_LINES_COLOR,              new ColorPreference(QColor(Qt::black))},
             {PREF_UI_SCORE_OVERRIDE_TIES_COLOR,                    new ColorPreference(QColor(Qt::black))},
+            {PREF_UI_SCORE_OVERRIDE_INACTIVE_MEASURE_COLOR,        new ColorPreference(QColor(Qt::black))},
 
             {PREF_SCORE_COMPARISON_SELECTION_COLOR,                new ColorPreference(QColor(Qt::green))},
             {PREF_SCORE_COMPARISON_SELECTION_COLOR_ENABLED,        new BoolPreference(false)},
