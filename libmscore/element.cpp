@@ -438,16 +438,60 @@ QColor Element::curColor(bool isVisible) const
 
 QColor Element::curColor(bool isVisible, QColor normalColor) const
       {
+      if (MScore::testMode || MScore::noGui)
+            return normalColor;
+
       auto userDefined = [](QColor& c) -> bool {
             return c != MScore::defaultColor;
+            };
+
+      auto userDefinedOmittingAlpha = [](QColor& c) -> bool {
+            return c.rgb() != MScore::defaultColor.rgb();
             };
 
       bool marked = false;
       bool isDefault = !userDefined(normalColor);
 
-      // Leave as is for testing/cmd-line
-      if (MScore::testMode || MScore::noGui)
-            return normalColor;
+      // Experimental inactive view:
+      // alpha change will trigger this to true, but if only the alpha is changed, let that apply
+      // to whatever the final color is. Otherwise, use the full inactive color:
+      QColor inactiveColor = preferences.getColor(PREF_UI_SCORE_OVERRIDE_INACTIVE_MEASURE_COLOR);
+
+      const bool useInactiveColor = userDefined(inactiveColor) && !score()->selection().isRange();
+      const bool nem = score()->inputState().noteEntryMode();
+      bool withinActiveMeasure = false;
+      if (useInactiveColor) {
+         auto activeMeasure = score()->getActivePlaybackMeasure();
+         if (nem || activeMeasure) {
+            if (nem) {
+               if (auto iSeg = score()->inputState().segment())
+                     activeMeasure = iSeg->findMeasure();
+               }
+            if (activeMeasure) {
+               auto thisTick = tick();
+               auto mTick = activeMeasure->tick();
+               if (isBracket()) {
+                  auto b = toBracket(this);
+                  if (b->measure() == activeMeasure) {
+                     withinActiveMeasure = true;
+                     }
+                  }
+               else if (thisTick >= mTick) {
+                  if (this->isBarLine()) {
+                     const BarLine* bl = toBarLine(this);
+                     if (thisTick <= activeMeasure->endTick()) {
+                        if (activeMeasure->system() == bl->measure()->system()) {
+                           withinActiveMeasure = true;
+                           }
+                        }
+                     }
+                  else if (thisTick < activeMeasure->endTick() || (isBarLine() && thisTick == activeMeasure->endTick())) {
+                     withinActiveMeasure = true;
+                     }
+                  }
+               }
+            }
+         }
 
       //
       // Color Overrides:
@@ -806,6 +850,20 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
 
       if (!isVisible)
             return MScore::invisibleElementsColor;
+
+      // Experimental color-change of all non-current measure:
+      // TODO: Separate N.E./Play options
+      if (useInactiveColor && !withinActiveMeasure) {
+            if ( (score()->isPlaying() || nem) && !score()->selection().isRange() ) {
+                  if (!userDefinedOmittingAlpha(inactiveColor)) {
+                        normalColor.setAlpha(inactiveColor.alpha());
+                        overrideColor.setAlpha(inactiveColor.alpha());
+                        }
+                  else  {
+                        overrideColor = normalColor = inactiveColor;
+                        }
+                  }
+            }
 
       return isDefault ? overrideColor : normalColor;
       }
@@ -2926,12 +2984,12 @@ void Element::autoplaceSegmentElement(bool above, bool add)
             SysStaff* ss = m->system()->staff(si);
             QRectF r = bbox().translated(m->pos() + s->pos() + pos());
 
-            // Adjust bbox Y pos for staffType offset 
+            // Adjust bbox Y pos for staffType offset
             if (staffType()) {
                   qreal stYOffset = staffType()->yoffset().val() * sp;
                   r.translate(0.0, stYOffset);
                   }
-            
+
             SkylineLine sk(!above);
             qreal d;
             if (above) {
