@@ -5736,6 +5736,15 @@ void LayoutContext::layout()
       emit score->updateProgress(progressFormat, min, min, max);
 
       do {
+            if (openingScore && score->cmdState().layoutFlags & LayoutFlag::PENDING_CANCELLATION) {
+                  score->addLayoutFlags(LayoutFlag::REWIND);
+                  emit score->updateProgress(progressFormat, max, min, max);
+                  return;
+                  }
+
+            if (openingScore)
+                  QCoreApplication::processEvents();
+
             getNextPage();
             collectPage();
 

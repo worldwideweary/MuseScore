@@ -24,6 +24,7 @@
 #include <random>
 
 #include <QDate>
+#include <QShortcut>
 
 namespace Ms {
 
@@ -69,6 +70,10 @@ MsSplashScreen::MsSplashScreen()
 
       _logotypeRect = scaleSvgRect(designLogotypeRect, _logotypeRenderer);
 
+      show();
+      raise();
+      activateWindow();
+      // TODO: Is there a way to stop it from closing when clicking?
 
 #ifdef Q_OS_MAC
       // To have session dialog on top of splash screen on Mac.
@@ -108,24 +113,30 @@ void MsSplashScreen::drawContents(QPainter* painter)
 
       // Loading progress bar:
       if (_progress) {
-            const int barWidth = 333;
+            const int barWidth = 313;
             const int barHeight = 27;
             const int x = (width() - barWidth) / 2;
             const int y = height() - 50;
 
             // Progress: Background
+            QRect progressContainer { x, y, barWidth, barHeight };
             painter->setPen(Qt::NoPen);
             painter->setBrush(QColor(255, 255, 255));
-            painter->drawRect(x, y, barWidth, barHeight);
+            painter->drawRect(progressContainer);
 
             // Progress: Fill
             painter->setBrush(QColor(155, 202, 250));
             double ratio = double(_progress) / double(_maxProgress);
             int fillWidth = int(barWidth * ratio);
             painter->drawRect(x, y, fillWidth, barHeight);
+
+            // Escape message
+            painter->setPen(QPen(Qt::black));
+            painter->drawText(progressContainer, Qt::AlignCenter, "Pess Esc to cancel");
             }
 
       // Miscellaneous text (version information and Web site).
+      painter->setPen(textColor);
       painter->drawText(_miscTextRect, Qt::AlignRight | Qt::AlignBottom, _miscText);
 #if defined(WIN_PORTABLE)
       // Additional text for Windows Portable version.

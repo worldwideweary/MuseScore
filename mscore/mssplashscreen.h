@@ -58,6 +58,7 @@ class MsSplashScreen : public QSplashScreen {
       const QRectF _messageTextRect;
       const QRectF _miscTextRect;
 
+
       QRectF scaleRect(const QRectF& designRect) const;
       QRectF scaleSvgRect(const QRectF& designRect, const QSvgRenderer& renderer) const;
       qreal scaleX(const qreal designX) const;
@@ -72,6 +73,9 @@ public:
       void drawContents(QPainter* painter) override;
       void setProgress(int x) { _progress = x; }
       void setProgressMax(int x) { _maxProgress = x; }
+
+protected:
+      void mousePressEvent(QMouseEvent *event) override { Q_UNUSED(event); } // Prevent hide-on-click
       };
 
 }

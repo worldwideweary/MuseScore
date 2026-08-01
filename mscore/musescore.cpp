@@ -1488,6 +1488,12 @@ MuseScore::MuseScore()
       _progressBar->setMinimumWidth(300/*px*/);
       _progressBar->hide();
 
+      _progressEscape = new QLabel;
+      _progressEscape->setAutoFillBackground(false);
+      _progressEscape->setObjectName("progressEscape");
+      _progressEscape->setText(tr("Press Esc to cancel:"));
+      _progressEscape->hide();
+
       hRasterAction   = getAction("hraster");
       vRasterAction   = getAction("vraster");
       loopAction      = getAction("loop");
@@ -1500,6 +1506,7 @@ MuseScore::MuseScore()
       _statusBar = new QStatusBar;
             _statusBar->addPermanentWidget(new QWidget(this), 2);
             _statusBar->addPermanentWidget(new QWidget(this), 100);
+            _statusBar->addPermanentWidget(_progressEscape, 0);
             _statusBar->addPermanentWidget(_progressBar, 0);
             _statusBar->addPermanentWidget(_modeText, 0);
 
@@ -1803,8 +1810,6 @@ MuseScore::MuseScore()
       menuFile->addAction(getAction("file-open"));
 
       openRecent = menuFile->addMenu("");
-      connect(openRecent, SIGNAL(aboutToShow()), SLOT(openRecentMenu()));
-      connect(openRecent, SIGNAL(triggered(QAction*)), SLOT(selectScore(QAction*)));
 
       openArchivedScores = menuFile->addMenu("");
 
@@ -2690,13 +2695,25 @@ void MuseScore::updateMenus()
       updateMenu(menuHelp,        "menu-help",         "Help");
       updateMenu(menuTours,       "menu-tours",        "");
       updateMenu(menuDebug,       "menu-debug",        "Debug");
-      connect(openRecent,     SIGNAL(aboutToShow()),       SLOT(openRecentMenu()));
-      connect(openRecent,     SIGNAL(triggered(QAction*)), SLOT(selectScore(QAction*)));
-      connect(openArchivedScores,
-                              SIGNAL(aboutToShow()),       SLOT(openArchivedTabsMenu()));
-      connect(openArchivedScores,
-                              SIGNAL(triggered(QAction*)), SLOT(selectArchivedScore(QAction*)));
-      connect(menuWorkspaces, SIGNAL(aboutToShow()),       SLOT(showWorkspaceMenu()));
+
+      connect(openRecent, &QMenu::aboutToShow,
+              this, &MuseScore::openRecentMenu,
+              Qt::UniqueConnection);
+      connect(openRecent, &QMenu::triggered,
+              this, &MuseScore::selectScore,
+              Qt::UniqueConnection);
+
+      connect(openArchivedScores, &QMenu::aboutToShow,
+              this, &MuseScore::openArchivedTabsMenu,
+              Qt::UniqueConnection);
+      connect(openArchivedScores, &QMenu::triggered,
+              this, &MuseScore::selectArchivedScore,
+              Qt::UniqueConnection);
+
+      connect(menuWorkspaces, &QMenu::aboutToShow,
+              this, &MuseScore::showWorkspaceMenu,
+              Qt::UniqueConnection);
+
       setMenuTitles();
 #ifdef SCRIPT_INTERFACE
       addPluginMenuEntries();
@@ -4694,6 +4711,16 @@ bool MuseScore::eventFilter(QObject *obj, QEvent *event)
                               return true;
                               }
                         }
+                  if (ke->key() == Qt::Key_Escape) {
+                        if (auto score = currentScore()) {
+                              const LayoutFlags flags = score->cmdState().layoutFlags;
+                              const bool scoreLoad = flags & LayoutFlag::INIT_SCORE_LOADING;
+                              const bool midiRebuild = flags & LayoutFlag::REBUILD_MIDI_MAPPING;
+                              if ( (scoreLoad || midiRebuild) && _progressBar ) {
+                                    score->addLayoutFlags(LayoutFlag::PENDING_CANCELLATION);
+                                    }
+                              }
+                        }
                   break;
                   }
             default:
@@ -6018,11 +6045,17 @@ bool MuseScore::restoreSession(bool always)
                                     else if (t == "path") {
                                           Score* score = openScore(e.readElementText(), false, true, name);
                                           if (score) {
+                                                bool earlyCancellation = (score->cmdState().layoutFlags & LayoutFlag::REWIND);
+                                                if (earlyCancellation){
+                                                      closeScore(score);
+                                                      return true;
+                                                      }
                                                 if (cleanExit) {
                                                       // override if last session did a clean exit
                                                       created = false;
                                                       }
                                                 score->setCreated(created);
+                                                score->removeLayoutFlags(LayoutFlag::INIT_SCORE_LOADING);
                                                 }
                                           else {
                                                 //! NOTE Return true so that there is no attempt to open this file again
@@ -7849,7 +7882,8 @@ void MuseScore::endSearch()
 void MuseScore::updateProgress(const QString& format, int val, int min, int max)
       {
       if (sc) {
-            QString message = tr("Loading score:\n") + (cs ? cs->title() : "NO SCORE INFORMATION");
+            QString message = (format.startsWith("Rendering MIDI") ? tr("Rendering MIDI:") : tr("Loading score:"))
+                              + "\n" + (cs ? cs->title() : "NO SCORE INFORMATION");
             sc->showMessage(message);
             sc->setProgress(val);
             sc->setProgressMax(max);
@@ -7871,11 +7905,14 @@ void MuseScore::updateProgress(const QString& format, int val, int min, int max)
 
       if (val == max) {
             _progressBar->hide();
+            _progressEscape->hide();
             if (sc)
                   sc->setProgress(0);
             }
-      else if (_progressBar->isHidden())
+      else if (_progressBar->isHidden()) {
             _progressBar->show();
+            _progressEscape->show();
+            }
       }
 
 //---------------------------------------------------------

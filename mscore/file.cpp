@@ -390,9 +390,17 @@ Score* MuseScore::openScore(const QString& fn, bool switchTab, const bool consid
       QFileInfo fi(fn);
       QString path = fi.canonicalFilePath();
       for (Score* s : qAsConst(scoreList)) {
-            if (s->masterScore() && s->masterScore()->fileInfo()->canonicalFilePath() == path) {
+            const bool fileAlreadyOpen = (s->masterScore() && s->masterScore()->fileInfo()->canonicalFilePath() == path);
+            if (fileAlreadyOpen) {
                   if (switchTab && !isModalDialogOpen())
                         setCurrentScoreView(scoreList.indexOf(s->masterScore()));
+
+                  if (s->cmdState().layoutFlags & LayoutFlag::REWIND) {
+                        // Observation: openScore() occurs twice when opening a recent score,
+                        // and then returns early here on second pass. Why? Not sure, but must
+                        // make use of that fact to early terminate loading of score:
+                        closeScore(s->masterScore());
+                        }
                   return 0;
                   }
             }
@@ -429,11 +437,14 @@ Score* MuseScore::openScore(const QString& fn, bool switchTab, const bool consid
             score->updateCapo();
             score->update();
             score->styleChanged();
-            // Verify this flag 'naturally' resets
             score->addLayoutFlags(LayoutFlag::INIT_SCORE_LOADING);
             score->doLayout();
+            score->removeLayoutFlags(LayoutFlag::INIT_SCORE_LOADING);
 
-            disconnect(score, &Score::updateProgress, mscore, &MuseScore::updateProgress);
+            if (score->cmdState().layoutFlags & LayoutFlag::REWIND) {
+                  closeScore(score->masterScore());
+                  return {};
+                  }
 
             if (considerInCurrentSession) {
                   const int tabIdx = appendScore(score);
@@ -442,11 +453,14 @@ Score* MuseScore::openScore(const QString& fn, bool switchTab, const bool consid
                   writeSessionFile(false);
                   }
 
-            EventMap events;
-
-            if (preferences.getBool(PREF_SCORE_PRERENDER_MIDI_ON_LOAD))
+            if (preferences.getBool(PREF_SCORE_PRERENDER_MIDI_ON_LOAD)) {
+                  EventMap events;
                   score->renderMidi(&events, synthesizerState());
+                  }
+
+            score->cmdState().reset();
             }
+
       return score;
       }
 
