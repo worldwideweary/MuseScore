@@ -633,6 +633,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void restartAudioEngine();
       void updateTimer();
       void endSearch();
+      void updateProgress(const QString&, int, int, int);
 
    public:
       MuseScore();

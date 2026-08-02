@@ -252,6 +252,8 @@ void ScoreView::setScore(Score* s)
 
             connect(s, SIGNAL(posChanged(POS,unsigned,bool)), SLOT(posChanged(POS,unsigned,bool)));
             connect(this, SIGNAL(viewRectChanged()), this, SLOT(updateContinuousPanel()));
+
+            connect(_score, &Score::updateProgress, mscore, &MuseScore::updateProgress);
             }
       }
 
@@ -1235,6 +1237,10 @@ void ScoreView::paintEvent(QPaintEvent* ev)
       {
       if (!_score)
             return;
+
+      if (_score->undergoingLayout())
+            return;
+
       QPainter vp(this);
       vp.setRenderHint(QPainter::Antialiasing, preferences.getBool(PREF_UI_CANVAS_MISC_ANTIALIASEDDRAWING));
       vp.setRenderHint(QPainter::TextAntialiasing, true);

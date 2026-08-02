@@ -220,25 +220,12 @@ void Score::writeMovement(XmlWriter& xml, bool selectionOnly)
       xml.setCurTrack(0);
       xml.setTrackDiff(-staffStart * VOICES);
       if (measureStart) {
-
-            // progress bar
-            const bool showOnSave = (!isAutosaving() && MScore::showProgressBarForSave);
-            const bool showOnAutosave = (isAutosaving() && MScore::showProgressBarForAutosave);
             int currentMeasureIdx = 0;
-            QProgressDialog progress;
-            if (showOnSave || showOnAutosave) {
-                  int totalMeasuresByStaff = (staffEnd - staffStart) * score()->measures()->size();
-                  QString label = (showOnAutosave ? QObject::tr("Performing Autosave")
-                                                  : QObject::tr("Save File")) + ":\n"
-                                                      + score()->title() + "…";
-                  progress.setLabelText(label);
-                  progress.setWindowFlags(Qt::WindowFlags(Qt::Dialog | Qt::FramelessWindowHint));
-                  progress.setCancelButton(nullptr);
-                  progress.setRange(0, totalMeasuresByStaff);
-                  progress.setWindowModality(Qt::WindowModal);
-                  progress.setValue(0);
-                  progress.setMinimumDuration(0);
-                  }
+            const int totalMeasuresByStaff = (staffEnd - staffStart) * score()->measures()->size();
+            const int min = 0;
+            const int max = totalMeasuresByStaff;
+            const QString& progressFormat = isAutosaving() ? "Autosave: %p%" : "Saving: %p%";
+            emit updateProgress(progressFormat, min, min, max);
 
             for (int staffIdx = staffStart; staffIdx < staffEnd; ++staffIdx) {
                   xml.stag(staff(staffIdx), QString("id=\"%1\"").arg(staffIdx + 1 - staffStart));
@@ -259,16 +246,14 @@ void Score::writeMovement(XmlWriter& xml, bool selectionOnly)
                                     forceTimeSig = false;
                               }
 
-                        if (showOnSave || showOnAutosave)
-                              progress.setValue(++currentMeasureIdx);
+                        emit updateProgress(progressFormat, ++currentMeasureIdx, min, max);
 
                         // Largest consumption of time for file-saving:
                         writeMeasure(xml, m, staffIdx, writeSystemElements, forceTimeSig);
                         }
                   xml.etag();
                   }
-
-            progress.close();
+            emit updateProgress(progressFormat, max, min, max);
             }
       xml.setCurTrack(-1);
       if (isMaster()) {

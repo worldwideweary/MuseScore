@@ -422,10 +422,18 @@ Score* MuseScore::openScore(const QString& fn, bool switchTab, const bool consid
 
             migrator.migrateScore(score);
 
+            setCurrentScore(score);
+
+            connect(score, &Score::updateProgress, mscore, &MuseScore::updateProgress);
+
             score->updateCapo();
             score->update();
             score->styleChanged();
+            // Verify this flag 'naturally' resets
+            score->addLayoutFlags(LayoutFlag::INIT_SCORE_LOADING);
             score->doLayout();
+
+            disconnect(score, &Score::updateProgress, mscore, &MuseScore::updateProgress);
 
             if (considerInCurrentSession) {
                   const int tabIdx = appendScore(score);

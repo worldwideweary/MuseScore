@@ -5728,27 +5728,12 @@ void LayoutContext::layout()
       {
       MeasureBase* lmb;
 
-      QProgressDialog progress;
-      const bool layoutAll = (startTick <= Fraction(0,1) && (endTick < Fraction(0,1) || endTick >= score->last()->endTick()));
-
-      const bool showProgress = (MScore::showProgressBarForLayout && layoutAll) || (MScore::showProgressBarForPartialLayout);
-      if (showProgress) {
-            const int totalMeasures = score->measures() ? score->measures()->size() : 0;
-            QString label;
-            if (layoutAll)
-                  label = QObject::tr("Performing full layout") + QObject::tr(" for") + ":\n" + score->title() + "…";
-            else
-                  label = QObject::tr("Performing partial layout between ") + startTick.print() + " and " + endTick.print()
-                          + QObject::tr(" for") + ":\n" + score->title() + "…";
-
-            progress.setLabelText(label);
-            progress.setWindowFlags(Qt::WindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint));
-            progress.setRange(0, totalMeasures);
-            progress.setCancelButton(nullptr);
-            progress.setWindowModality(Qt::WindowModal);
-            progress.setValue(0);
-            progress.setMinimumDuration(0);
-            }
+      const int min = 0;
+      const int max = score->measures() ? score->measures()->size() : 0;
+      const bool openingScore = (score->cmdState().layoutFlags & LayoutFlag::INIT_SCORE_LOADING);
+      const QString progressFormat = openingScore ? "Loading: %p%" : "Layout: %p%";
+      int progressValue = min;
+      emit score->updateProgress(progressFormat, min, min, max);
 
       do {
             getNextPage();
@@ -5756,8 +5741,8 @@ void LayoutContext::layout()
 
             if (page && !page->systems().isEmpty()) {
                   lmb = page->systems().back()->measures().back();
-                  if (showProgress)
-                        progress.setValue(lmb->index());
+                  progressValue = lmb->index();
+                  emit score->updateProgress(progressFormat, progressValue, min, max);
                   }
             else
                   lmb = nullptr;
@@ -5774,7 +5759,8 @@ void LayoutContext::layout()
             } while (curSystem && !(rangeDone && lmb == pageOldMeasure));
             // && page->system(0)->measures().back()->tick() > endTick // FIXME: perhaps the first measure was meant? Or last system?
 
-      progress.close();
+      if (progressValue != max)
+            emit score->updateProgress(progressFormat, max, min, max);
 
       if (!curSystem) {
             // The end of the score. The remaining systems are not needed...

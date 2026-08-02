@@ -202,6 +202,8 @@ bool enableExperimental = false;
 
 QString dataPath;
 
+MsSplashScreen* sc { nullptr };
+
 bool converterMode = false;
 static bool rawDiffMode = false;
 static bool diffMode = false;
@@ -547,10 +549,6 @@ void updateExternalValuesFromPreferences() {
       MScore::bgColor = preferences.getColor(PREF_UI_CANVAS_BG_COLOR);
       MScore::dropColor = preferences.getColor(PREF_UI_SCORE_NOTE_DROPCOLOR);
       MScore::defaultColor = preferences.getColor(PREF_UI_SCORE_DEFAULTCOLOR);
-
-      MScore::showProgressBarForLayout = preferences.getBool(PREF_APP_SHOW_PROGRESS_LAYOUT);
-      MScore::showProgressBarForSave = preferences.getBool(PREF_APP_SHOW_PROGRESS_SAVE);
-      MScore::showProgressBarForAutosave = preferences.getBool(PREF_APP_SHOW_PROGRESS_AUTOSAVE);
 
       MScore::palettesHideWhenApplied = preferences.getBool(PREF_UI_APP_AUTOHIDE_PALETTES);
 
@@ -1487,6 +1485,11 @@ MuseScore::MuseScore()
       _modeText->setAutoFillBackground(false);
       _modeText->setObjectName("modeLabel");
 
+      _progressBar = new QProgressBar;
+      _progressBar->setObjectName("progressBar");
+      _progressBar->setMinimumWidth(300/*px*/);
+      _progressBar->hide();
+
       hRasterAction   = getAction("hraster");
       vRasterAction   = getAction("vraster");
       loopAction      = getAction("loop");
@@ -1499,6 +1502,7 @@ MuseScore::MuseScore()
       _statusBar = new QStatusBar;
             _statusBar->addPermanentWidget(new QWidget(this), 2);
             _statusBar->addPermanentWidget(new QWidget(this), 100);
+            _statusBar->addPermanentWidget(_progressBar, 0);
             _statusBar->addPermanentWidget(_modeText, 0);
 
             searchCombo = new SearchComboBox;
@@ -2489,6 +2493,9 @@ MuseScore::~MuseScore()
       // be deleted before paletteWorkspace.
       delete paletteWidget;
       paletteWidget = nullptr;
+
+      delete _progressBar;
+      _progressBar = nullptr;
       }
 
 //---------------------------------------------------------
@@ -7570,7 +7577,6 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             MScore::showBoundingRect = a->isChecked();
             MScore::showSegmentShapes = a->isChecked();
             MScore::showSkylines = a->isChecked();
-            MScore::showProgressBarForPartialLayout = MScore::showSkylines;
             if (cs) {
                   cs->setLayoutAll();
                   cs->update();
@@ -7836,6 +7842,42 @@ void MuseScore::endSearch()
             searchCombo->performSearch();
       if (cv)
             cv->setFocus();
+      }
+
+//---------------------------------------------------------
+//   updateProgress
+//---------------------------------------------------------
+
+void MuseScore::updateProgress(const QString& format, int val, int min, int max)
+      {
+      if (sc) {
+            QString message = tr("Loading score:\n") + (cs ? cs->title() : "NO SCORE INFORMATION");
+            sc->showMessage(message);
+            sc->setProgress(val);
+            sc->setProgressMax(max);
+            }
+
+      if (!_progressBar)
+            return;
+
+      const int curMin = _progressBar->minimum();
+      const int curMax = _progressBar->maximum();
+
+      if (curMin != min)
+            _progressBar->setMinimum(min);
+      if (curMax != max)
+            _progressBar->setMaximum(max);
+
+      _progressBar->setFormat(format);
+      _progressBar->setValue(val);
+
+      if (val == max) {
+            _progressBar->hide();
+            if (sc)
+                  sc->setProgress(0);
+            }
+      else if (_progressBar->isHidden())
+            _progressBar->show();
       }
 
 //---------------------------------------------------------
@@ -9092,7 +9134,6 @@ void MuseScore::init(QStringList& argv)
       if (!MScore::testMode)
             MScore::readDefaultStyle(preferences.getString(PREF_SCORE_STYLE_DEFAULTSTYLEFILE));
 
-      MsSplashScreen* sc = nullptr;
       if (!MScore::noGui && preferences.getBool(PREF_UI_APP_STARTUP_SHOWSPLASHSCREEN)) {
             sc = new MsSplashScreen();
             sc->show();
@@ -9344,6 +9385,8 @@ void MuseScore::init(QStringList& argv)
 
       if (sc) {
             sc->close();
+            sc->deleteLater();
+            sc = nullptr;
             qApp->processEvents();
             }
 
