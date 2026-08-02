@@ -4173,7 +4173,7 @@ void Score::cmdPadNoteDecreaseTAB(const EditData& ed)
 //   cmdToggleLayoutBreak
 //---------------------------------------------------------
 
-void Score::cmdToggleLayoutBreak(LayoutBreak::Type type)
+void Score::cmdToggleLayoutBreak(LayoutBreak::Type type, bool before, bool all)
       {
       // find measure(s)
       QList<MeasureBase*> mbl;
@@ -4209,8 +4209,19 @@ void Score::cmdToggleLayoutBreak(LayoutBreak::Type type)
                   mbl.append(endMeasure);
                   // if more than one measure selected,
                   // also toggle break *before* the range (to try to fit selection on a single line)
-                  if (startMeasure != endMeasure && startMeasure->prev())
-                        mbl.append(startMeasure->prev());
+                  if (before) {
+                        if (startMeasure != endMeasure && startMeasure->prev())
+                              mbl.append(startMeasure->prev());
+                        }
+
+                  // toggle breaks throughout the selection
+                  if (all) {
+                        for (Measure* m = startMeasure; m; m = m->nextMeasure()) {
+                              mbl.append(m);
+                              if (m == endMeasure)
+                                    break;
+                              }
+                        }
                   }
             }
       else {
