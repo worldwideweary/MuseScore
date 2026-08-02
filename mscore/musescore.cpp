@@ -548,6 +548,10 @@ void updateExternalValuesFromPreferences() {
       MScore::dropColor = preferences.getColor(PREF_UI_SCORE_NOTE_DROPCOLOR);
       MScore::defaultColor = preferences.getColor(PREF_UI_SCORE_DEFAULTCOLOR);
 
+      MScore::showProgressBarForLayout = preferences.getBool(PREF_APP_SHOW_PROGRESS_LAYOUT);
+      MScore::showProgressBarForSave = preferences.getBool(PREF_APP_SHOW_PROGRESS_SAVE);
+      MScore::showProgressBarForAutosave = preferences.getBool(PREF_APP_SHOW_PROGRESS_AUTOSAVE);
+
       MScore::palettesHideWhenApplied = preferences.getBool(PREF_UI_APP_AUTOHIDE_PALETTES);
 
       MScore::pianoHighlightColor = preferences.getColor(PREF_UI_PIANO_HIGHLIGHTCOLOR);
@@ -7566,6 +7570,7 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             MScore::showBoundingRect = a->isChecked();
             MScore::showSegmentShapes = a->isChecked();
             MScore::showSkylines = a->isChecked();
+            MScore::showProgressBarForPartialLayout = MScore::showSkylines;
             if (cs) {
                   cs->setLayoutAll();
                   cs->update();

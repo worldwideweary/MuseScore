@@ -17,6 +17,8 @@
 
 #include <set>
 
+#include <QProgressDialog>
+
 #include "arpeggio.h"
 #include "articulation.h"
 #include "bend.h"
@@ -2638,9 +2640,36 @@ void Score::renderMidi(EventMap* events, bool metronome, bool expandRepeats, con
 void MidiRenderer::renderScore(EventMap* events, const Context& ctx)
       {
       updateState();
+
+      int currentChunk = 0;
+      QProgressDialog progress;
+      if (MScore::showProgressBarForLayout) {
+            const int totalChunks = chunks.size();
+            QString label = QObject::tr("Rendering MIDI events") + " "
+                              + QObject::tr("for") + ":\n"
+                              + score->title() + "…\n"
+                              + QObject::tr("Safe to cancel early");
+
+            progress.setLabelText(label);
+            progress.setCancelButtonText(QObject::tr("Cancel"));
+            progress.setWindowFlags(Qt::WindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint));
+            progress.setRange(0, totalChunks);
+            progress.setWindowModality(Qt::WindowModal);
+            progress.setValue(0);
+            progress.setMinimumDuration(2500);
+            }
+
       for (const Chunk& chunk : chunks) {
+            if (MScore::showProgressBarForLayout) {
+                  progress.setValue(++currentChunk);
+                  // Allow user to prematurely break rendering:
+                  if (progress.wasCanceled())
+                        break;
+                  }
+
             renderChunk(chunk, events, ctx);
             }
+      progress.close();
       }
 
 void MidiRenderer::renderChunk(const Chunk& chunk, EventMap* events, const Context& ctx)
