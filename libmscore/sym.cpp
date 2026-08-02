@@ -6665,8 +6665,7 @@ void ScoreFont::scanUserFonts(const QString& path, bool isPrivate)
                   }
             }
 
-
-      qDebug("Found %d %s score font%s in \"%s\".", userfonts.count(), isPrivate ? "private" : "system", userfonts.count() > 1 ? "s" : "", qPrintable(path));
+      // qDebug("Found %d %s score font%s in \"%s\".", userfonts.count(), isPrivate ? "private" : "system", userfonts.count() > 1 ? "s" : "", qPrintable(path));
 
       // TODO: Check for fonts that duplicate built-in fonts
       if (isPrivate) // reset list when re-reading due to changed Preferences
