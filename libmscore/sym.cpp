@@ -6867,7 +6867,7 @@ void ScoreFont::load(bool isPrivate)
                   qDebug("No metadata file found for %s", qPrintable(facePath));
                   return;
                   }
-            qDebug("%s is the metadata file for %s", qPrintable(fi.fileName()), qPrintable(facePath));
+            // qDebug("%s is the metadata file for %s", qPrintable(fi.fileName()), qPrintable(facePath));
             }
       if (!fi.open(QIODevice::ReadOnly))
             qDebug("ScoreFont: open glyph metadata file <%s> failed", qPrintable(fi.fileName()));
