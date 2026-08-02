@@ -48,7 +48,7 @@ const QColor MsSplashScreen::textColor { 0xCCFFFFFF };
 //---------------------------------------------------------
 
 MsSplashScreen::MsSplashScreen()
-   : QSplashScreen(QPixmap(designSize))
+   : QSplashScreen(QPixmap(designSize), Qt::WindowStaysOnTopHint)
    , _bgImage(createBackgroundImage(width(), height(), MuseScore::unstable() ? unstableBuildGradientColors : stableBuildGradientColors))
    , _devBuildIconRenderer(QString(":/data/maintenance.svg"), this)
    , _miscText(QString(tr("Version %1")).arg(VERSION) + "\nwww.musescore.org")
