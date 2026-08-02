@@ -5327,21 +5327,21 @@ int Score::iconTypeToLen(IconType value)
       {
       switch(value)  {
             case IconType::ACCIACCATURA:
-                  return MScore::division/2;
+                  return DIVISION / 2;
             case IconType::APPOGGIATURA:
-                  return MScore::division/2;
+                  return DIVISION / 2;
             case IconType::GRACE4:
-                  return MScore::division;
+                  return DIVISION;
             case IconType::GRACE16:
-                  return MScore::division/4;
+                  return DIVISION / 4;
             case IconType::GRACE32:
-                  return MScore::division/8;
+                  return DIVISION / 8;
             case IconType::GRACE8_AFTER:
-                  return MScore::division/2;
+                  return DIVISION / 2;
             case IconType::GRACE16_AFTER:
-                  return MScore::division/4;
+                  return DIVISION / 4;
             case IconType::GRACE32_AFTER:
-                  return MScore::division/8;
+                  return DIVISION / 8;
             default:
                   return -1;
             }
