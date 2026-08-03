@@ -921,7 +921,8 @@ void ScoreView::mouseDoubleClickEvent(QMouseEvent* mouseEvent)
                   cmdAddText(Tid::FINGERING);
                   }
             else {
-                  startEditMode(clickedElement);
+                  if (!clickedElement->isStaffLines())
+                        startEditMode(clickedElement);
 
                   if (clickedElement->isTextBase()) {
                         setCursor(QCursor(Qt::IBeamCursor));
@@ -1101,8 +1102,10 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
                         mscore->endCmd();
                         return;
                         }
-                  if (textEdit)
+                  if (textEdit) {
                         mscore->textTools()->updateTools(editData);
+                        adjustCanvasPosition(e, false);
+                        }
                   return;
                   }
             }
@@ -1415,6 +1418,10 @@ void ScoreView::changeState(ViewState s)
                         editData.element = nullptr; // editData.element will be determined by selection state in normal mode
                         _blockShowEdit = false;
                         }
+                  else if (state == ViewState::PLAY) {
+                        _score->setActivePlaybackMeasure(nullptr);
+                        _score->setIsPlaying(false);
+                        }
                   setCursor(QCursor(Qt::ArrowCursor));
                   break;
             case ViewState::DRAG:
@@ -1457,6 +1464,7 @@ void ScoreView::changeState(ViewState s)
                         _cursor->accidental = AccidentalType::NONE;
                         _cursor->duration   = TDuration::DurationType::V_INVALID;
                         }
+                  _score->setIsPlaying(true);
                   break;
             case ViewState::ENTRY_PLAY:
                   break;

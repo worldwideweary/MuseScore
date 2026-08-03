@@ -17,6 +17,9 @@
 //  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 //=============================================================================
 
+#ifndef __MSSPLASHSCREEN_H__
+#define __MSSPLASHSCREEN_H__
+
 namespace Ms {
 
 //---------------------------------------------------------
@@ -46,11 +49,15 @@ class MsSplashScreen : public QSplashScreen {
       QSvgRenderer _logotypeRenderer;
       QString _miscText;
 
+      int _progress = 0;
+      int _maxProgress = 0;
+
       const QRectF _devBuildIconRect;
       const QRectF _devBuildTextRect;
       QRectF _logotypeRect;
       const QRectF _messageTextRect;
       const QRectF _miscTextRect;
+
 
       QRectF scaleRect(const QRectF& designRect) const;
       QRectF scaleSvgRect(const QRectF& designRect, const QSvgRenderer& renderer) const;
@@ -64,6 +71,12 @@ class MsSplashScreen : public QSplashScreen {
 public:
       MsSplashScreen();
       void drawContents(QPainter* painter) override;
+      void setProgress(int x) { _progress = x; }
+      void setProgressMax(int x) { _maxProgress = x; }
+
+protected:
+      void mousePressEvent(QMouseEvent *event) override { Q_UNUSED(event); } // Prevent hide-on-click
       };
 
 }
+#endif

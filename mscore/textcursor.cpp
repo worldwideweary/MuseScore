@@ -58,6 +58,9 @@ void PositionCursor::paint(QPainter* p)
       if (!visible())
             return;
       Score* s = _sv->score();
+      if (!s)
+            return;
+
       QPointF points[3];
       qreal h = s->spatium() * 2;
 
@@ -88,15 +91,12 @@ void PositionCursor::paint(QPainter* p)
                   break;
             default:                            // fill the rectangle and add TAB string marks, if required
                   p->fillRect(_rect, color());
-                  if (_sv && _sv->score() && _sv->score()->selection().isRange()) {
-                        // Signify the presence of range selection on Note Entry Cursor:
-                        QColor rangeColor = MScore::lassoColor;
-                        qreal rangeWidth = 5.0 / p->worldTransform().m11();
-                        p->setBrush(Qt::NoBrush);
-                        p->setPen(QPen(rangeColor, rangeWidth, Qt::SolidLine));
-                        p->drawRect(_rect);
-                        }
+
                   if (s->noteEntryMode()) {
+                        const int voice = s->inputState().voice();
+                        p->setPen(QPen(MScore::selectColor[voice], 5.0));
+                        p->fillRect(_rect.adjusted(0, 0, -(_rect.width() * 0.75), 0), MScore::selectColor[voice]);
+
                         int track = s->inputTrack();
                         if (track >= 0) {
                               Staff* staff = s->staff(track2staff(track));

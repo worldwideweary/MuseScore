@@ -164,9 +164,6 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_MIGRATION_DO_NOT_ASK_ME_AGAIN_XML,               new BoolPreference(false, false)},
             {PREF_APP_BACKUP_GENERATE_BACKUP,                      new BoolPreference(true)},
             {PREF_APP_BACKUP_SUBFOLDER,                            new StringPreference(".mscbackup")},
-            {PREF_APP_SHOW_PROGRESS_LAYOUT,                        new BoolPreference(true)},
-            {PREF_APP_SHOW_PROGRESS_SAVE,                          new BoolPreference(true)},
-            {PREF_APP_SHOW_PROGRESS_AUTOSAVE,                      new BoolPreference(true)},
             {PREF_EXPORT_AUDIO_NORMALIZE,                          new BoolPreference(true, false)},
             {PREF_EXPORT_AUDIO_SAMPLERATE,                         new IntPreference(44100, false)},
             {PREF_EXPORT_AUDIO_PCMRATE,                            new IntPreference(16)},
@@ -360,6 +357,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_UI_SCORE_OVERRIDE_STAFF_TEXT_COLOR,              new ColorPreference(QColor(Qt::black))},
             {PREF_UI_SCORE_OVERRIDE_TEXT_LINES_COLOR,              new ColorPreference(QColor(Qt::black))},
             {PREF_UI_SCORE_OVERRIDE_TIES_COLOR,                    new ColorPreference(QColor(Qt::black))},
+            {PREF_UI_SCORE_OVERRIDE_INACTIVE_MEASURE_COLOR,        new ColorPreference(QColor(Qt::black))},
 
             {PREF_SCORE_COMPARISON_SELECTION_COLOR,                new ColorPreference(QColor(Qt::green))},
             {PREF_SCORE_COMPARISON_SELECTION_COLOR_ENABLED,        new BoolPreference(false)},

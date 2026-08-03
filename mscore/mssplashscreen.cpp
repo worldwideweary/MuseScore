@@ -24,6 +24,7 @@
 #include <random>
 
 #include <QDate>
+#include <QShortcut>
 
 namespace Ms {
 
@@ -32,12 +33,12 @@ const QSize MsSplashScreen::designSize { 720, 405 };
 const QRectF MsSplashScreen::designDevBuildIconRect { 25.0,  51.0, 670.0, 38.0 };
 const QRectF MsSplashScreen::designDevBuildTextRect { 25.0,  98.0, 670.0, 46.0 };
 const QRectF MsSplashScreen::designLogotypeRect     { 25.0, 153.0, 670.0, 74.0 };
-const QRectF MsSplashScreen::designMessageTextRect  { 25.0, 270.0, 670.0, 56.0 };
+const QRectF MsSplashScreen::designMessageTextRect  { 25.0, 270.0, 670.0, 64.0 };
 const QRectF MsSplashScreen::designMiscTextRect     { 25.0, 326.0, 670.0, 56.0 };
 
 const double MsSplashScreen::gradientDitherAmount { 0.25 };
 
-const std::tuple<QColor, QColor> MsSplashScreen::stableBuildGradientColors   { "#508BFF", "#1043A9" };
+const std::tuple<QColor, QColor> MsSplashScreen::stableBuildGradientColors   { "#d6dfea", "#465c83" };
 const std::tuple<QColor, QColor> MsSplashScreen::unstableBuildGradientColors { "#3464C1", "#0C2B6B" };
 
 const QColor MsSplashScreen::textColor { 0xCCFFFFFF };
@@ -47,7 +48,7 @@ const QColor MsSplashScreen::textColor { 0xCCFFFFFF };
 //---------------------------------------------------------
 
 MsSplashScreen::MsSplashScreen()
-   : QSplashScreen(QPixmap(designSize))
+   : QSplashScreen(QPixmap(designSize), Qt::WindowStaysOnTopHint)
    , _bgImage(createBackgroundImage(width(), height(), MuseScore::unstable() ? unstableBuildGradientColors : stableBuildGradientColors))
    , _devBuildIconRenderer(QString(":/data/maintenance.svg"), this)
    , _miscText(QString(tr("Version %1")).arg(VERSION) + "\nwww.musescore.org")
@@ -69,6 +70,10 @@ MsSplashScreen::MsSplashScreen()
 
       _logotypeRect = scaleSvgRect(designLogotypeRect, _logotypeRenderer);
 
+      show();
+      raise();
+      activateWindow();
+      // TODO: Is there a way to stop it from closing when clicking?
 
 #ifdef Q_OS_MAC
       // To have session dialog on top of splash screen on Mac.
@@ -106,7 +111,32 @@ void MsSplashScreen::drawContents(QPainter* painter)
       painter->drawText(_messageTextRect, Qt::AlignHCenter | Qt::AlignTop, message());
       drawDebugRect(painter, _messageTextRect, 0x80, 0xFF, 0x80);
 
+      // Loading progress bar:
+      if (_progress) {
+            const int barWidth = 313;
+            const int barHeight = 27;
+            const int x = (width() - barWidth) / 2;
+            const int y = height() - 50;
+
+            // Progress: Background
+            QRect progressContainer { x, y, barWidth, barHeight };
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(QColor(255, 255, 255));
+            painter->drawRect(progressContainer);
+
+            // Progress: Fill
+            painter->setBrush(QColor(155, 202, 250));
+            double ratio = double(_progress) / double(_maxProgress);
+            int fillWidth = int(barWidth * ratio);
+            painter->drawRect(x, y, fillWidth, barHeight);
+
+            // Escape message
+            painter->setPen(QPen(Qt::black));
+            painter->drawText(progressContainer, Qt::AlignCenter, "Pess Esc to cancel");
+            }
+
       // Miscellaneous text (version information and Web site).
+      painter->setPen(textColor);
       painter->drawText(_miscTextRect, Qt::AlignRight | Qt::AlignBottom, _miscText);
 #if defined(WIN_PORTABLE)
       // Additional text for Windows Portable version.

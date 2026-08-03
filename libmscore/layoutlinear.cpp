@@ -98,6 +98,14 @@ void Score::resetSystems(bool layoutAll, LayoutContext& lc)
       System* system = systems().front();
       system->setInstrumentNames(/* longNames */ true);
 
+      // Continuous: initialize progress bar
+      const bool openingScore = (cmdState().layoutFlags & LayoutFlag::INIT_SCORE_LOADING);
+      const QString progressFormat = openingScore ? "Loading: %p%" : "Layout: %p%";
+      const int min = 0;
+      const int max = score()->measures()->size() * 10;
+      int val = min;
+      emit updateProgress(progressFormat, min, min, max);
+
       QPointF pos;
       bool firstMeasure = true;     //lc.startTick.isZero();
 
@@ -108,6 +116,7 @@ void Score::resetSystems(bool layoutAll, LayoutContext& lc)
       getNextMeasure(lc);
 
       while (lc.curMeasure) {
+            emit updateProgress(progressFormat, ++val, min, max);
             qreal ww = 0.0;
             if (lc.curMeasure->isVBox() || lc.curMeasure->isTBox()) {
                   lc.curMeasure->setParent(nullptr);
@@ -201,13 +210,21 @@ void Score::layoutLinear(bool layoutAll, LayoutContext& lc)
 
 void LayoutContext::layoutLinear()
       {
+      // Layout: Continuous View
       System* system = score->systems().front();
 
       score->layoutSystemElements(system, *this);
-
       system->layout2();   // compute staff distances
 
+      const bool openingScore = (score->cmdState().layoutFlags & LayoutFlag::INIT_SCORE_LOADING);
+      const QString progressFormat = openingScore ? "Loading: %p%" : "Layout: %p%";
+      const int qtyMeasures = score->measures()->size();
+      const int min = 0;
+      const int max = qtyMeasures;
+
       for (MeasureBase* mb : system->measures()) {
+            emit score->updateProgress(progressFormat, mb->index(), min, max);
+
             if (!mb->isMeasure())
                   continue;
             Measure* m = toMeasure(mb);
@@ -263,6 +280,7 @@ void LayoutContext::layoutLinear()
                   }
             m->layout2();
             }
+      emit score->updateProgress(progressFormat, max, min, max);
       page->setPos(0, 0);
       system->setPos(page->lm(), page->tm() + score->styleP(Sid::staffUpperBorder));
       page->setWidth(system->width() + system->pos().x());

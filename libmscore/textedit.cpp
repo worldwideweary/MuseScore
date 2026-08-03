@@ -123,6 +123,8 @@ void TextBase::endEdit(EditData& ed)
             // No text changes in "undo" part of undo stack,
             // hence nothing to merge and filter.
             undo->cleanRedoStack(); // prevent text editing commands from remaining in undo stack
+            if (!ed.element)
+                  return;
             }
 
       bool newlyAdded = false;
@@ -239,6 +241,7 @@ bool TextBase::edit(EditData& ed)
       {
       TextEditData* ted = static_cast<TextEditData*>(ed.getData(this));
       TextCursor* _cursor = &ted->cursor;
+      const bool atStartOfLine = (_cursor->column() == 0);
 
       // do nothing on Shift, it messes up IME on Windows. See #64046
       if (ed.key == Qt::Key_Shift)
@@ -299,6 +302,28 @@ bool TextBase::edit(EditData& ed)
 //printf("======%x\n", s.isEmpty() ? -1 : s[0].unicode());
 
             switch (ed.key) {
+                  case Qt::Key_QuoteDbl:
+                  case Qt::Key_Apostrophe:
+                        {
+                        // Use CTRL modifier for default vertical quotes (instead of undo stack à la 4.x)
+                        if (ed.control(true))
+                              break;
+
+                        const bool isSingle = (s == QStringLiteral("'"));
+                        bool useCloseQuote = false;
+                        const int row = _cursor->row();
+                        const int col = _cursor->column();
+
+                        if (col > 0) {
+                              const QString prev { _cursor->extractText(row, col - 1, row, col) };
+                              const bool spaceBeforeNewInput = (prev == QStringLiteral(" "));
+                              useCloseQuote = !spaceBeforeNewInput;
+                              }
+                        auto curlyReplacement = isSingle ? QString(useCloseQuote ? QStringLiteral("’") : QStringLiteral("‘"))
+                                                         : QString(useCloseQuote ? QStringLiteral("”") : QStringLiteral("“"));
+                        s = curlyReplacement;
+                        break;
+                        }
                   case Qt::Key_Z:         // happens when the undo stack is empty
                         if (ed.modifiers == Qt::ControlModifier)
                               return true;
@@ -308,7 +333,8 @@ bool TextBase::edit(EditData& ed)
                   case Qt::Key_Return:
                         deleteSelectedText(ed);
                         score()->undo(new SplitText(_cursor), &ed);
-                        return true;
+                        s.clear();
+                        break;
 
                   case Qt::Key_Delete:
                         if (!deleteSelectedText(ed)) {
@@ -329,7 +355,8 @@ bool TextBase::edit(EditData& ed)
                                     }
                               else score()->undo(new RemoveText(_cursor, QString(_cursor->currentCharacter())), &ed);
                               }
-                        return true;
+                        s.clear();
+                        break;
 
                   case Qt::Key_Backspace:
                         if (ctrlPressed) {
@@ -349,7 +376,8 @@ bool TextBase::edit(EditData& ed)
                                           }
                                     }
                               }
-                        return true;
+                        s.clear();
+                        break;
 
                   case Qt::Key_Left:
                         if (!_cursor->movePosition(ctrlPressed ? QTextCursor::WordLeft : QTextCursor::Left, mm) && type() == ElementType::LYRICS)
@@ -445,8 +473,8 @@ bool TextBase::edit(EditData& ed)
 
                   case Qt::Key_A:
                         if (ctrlPressed) {
-                              _cursor->movePosition(QTextCursor::Start, QTextCursor::MoveMode::MoveAnchor);
-                              _cursor->movePosition(QTextCursor::End, QTextCursor::MoveMode::KeepAnchor);
+                              _cursor->movePosition(QTextCursor::End, QTextCursor::MoveMode::MoveAnchor);
+                              _cursor->movePosition(QTextCursor::Start, QTextCursor::MoveMode::KeepAnchor);
                               s.clear();
                         }
                         break;
@@ -560,6 +588,16 @@ bool TextBase::edit(EditData& ed)
                   ed.view->textTab(backwards);
                   }
             }
+
+      // Speed hack:
+      if (!atStartOfLine) {
+            // Only layout this text item, not the score's systems
+            score()->cmdState().bypassNextLayout();
+            layout1();
+            triggerLayout();
+            score()->addRefresh(canvasBoundingRect());
+            }
+
       return true;
       }
 

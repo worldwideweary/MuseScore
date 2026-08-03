@@ -126,10 +126,12 @@ void CmdState::setTick(TickType tt, const Fraction& t)
             return;
             }
 
-      if (tt == TickType::StartTick)
+      if (tt == TickType::Start)
             _startTick = t;
-      else if (tt == TickType::EndTick)
+      else if (tt == TickType::End)
             _endTick = t;
+      else
+            _startTick = _endTick = t;
 
       setUpdateMode(UpdateMode::Layout);
       }
@@ -202,6 +204,25 @@ const Element* CmdState::element() const
       if (_oneMeasureBase)
             return _mb;
       return nullptr;
+      }
+
+//---------------------------------------------------------
+//   bypassNextLayout
+//---------------------------------------------------------
+
+void CmdState::bypassNextLayout()
+      {
+      // _updateMode = UpdateMode::Update; // <--- this might be the more standard way of doing a layout bypass
+      _startTick = {-2, 1};
+      }
+
+//---------------------------------------------------------
+//   isLayoutBypassed
+//---------------------------------------------------------
+
+bool CmdState::isLayoutBypassed() const
+      {
+      return ( _startTick == Fraction{-2, 1} );
       }
 
 //---------------------------------------------------------
@@ -300,10 +321,14 @@ void Score::endCmd(bool rollback)
 
 void CmdState::dump()
       {
-      qDebug("CmdState: mode %d %d-%d", int(_updateMode), _startTick.ticks(), _endTick.ticks());
+      qDebug().noquote().nospace()
+            << "CmdState: mode " << int(_updateMode) << " " << _startTick.print() << "-" << _endTick.print() << " "
+            << (_el ? _el->name() : "no element") << " "
+            << (_el ? _el->tick().print() : "") << " "
+            << "mbase: " << (_mb ? _mb->index() : 0)
+            ;
       // bool _excerptsChanged     { false };
       // bool _instrumentsChanged  { false };
-
       }
 #endif
 
@@ -318,10 +343,12 @@ void Score::update(bool resetCmdState)
       bool updateAll = false;
       for (MasterScore* ms : *movements()) {
             CmdState& cs = ms->cmdState();
+            if (cs.isLayoutBypassed())
+                  return;
             Fraction layoutStart = cs.startTick();
             Fraction layoutEnd = cs.endTick();
-
-            if (auto singleElement = cs.element()) {
+            const auto singleElement = cs.element();
+            if (singleElement) {
                   if (singleElement->isFingering() ||
                       singleElement->isArticulation()) {
                         layoutEntirePage = true;

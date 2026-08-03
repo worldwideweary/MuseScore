@@ -59,9 +59,6 @@
 #define PREF_APP_TELEMETRY_ALLOWED                          "application/telemetry/allowed"
 #define PREF_APP_BACKUP_GENERATE_BACKUP                     "application/backup/generateBackup"
 #define PREF_APP_BACKUP_SUBFOLDER                           "application/backup/subfolder"
-#define PREF_APP_SHOW_PROGRESS_LAYOUT                       "application/show/progressBar/layout"
-#define PREF_APP_SHOW_PROGRESS_SAVE                         "application/show/progressBar/save"
-#define PREF_APP_SHOW_PROGRESS_AUTOSAVE                     "application/show/progressBar/autosave"
 #define PREF_EXPORT_AUDIO_NORMALIZE                         "export/audio/normalize"
 #define PREF_EXPORT_AUDIO_SAMPLERATE                        "export/audio/sampleRate"
 #define PREF_EXPORT_AUDIO_PCMRATE                           "export/audio/PCMRate"
@@ -186,6 +183,7 @@
 #define PREF_UI_SCORE_OVERRIDE_STAFFLINES_COLOR             "ui/score/elements/override/color/staffLines"
 #define PREF_UI_SCORE_OVERRIDE_TEXT_LINES_COLOR             "ui/score/elements/override/color/textLines"
 #define PREF_UI_SCORE_OVERRIDE_TIES_COLOR                   "ui/score/elements/override/color/ties"
+#define PREF_UI_SCORE_OVERRIDE_INACTIVE_MEASURE_COLOR       "ui/score/elements/override/color/inactiveMeasure"
 
 #define PREF_UI_SCORE_BYPASS_ALT_MENU                       "ui/application/altMenu/bypass"
 #define PREF_UI_SCORE_IJKL_NUDGE_MOVEMENT                   "ui/application/nudge/ijkl"

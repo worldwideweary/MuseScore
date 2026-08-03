@@ -56,11 +56,6 @@ bool MScore::showSystemBoundingRect    = false;
 bool MScore::showCorruptedMeasures = true;
 bool MScore::useFallbackFont       = true;
 
-bool MScore::showProgressBarForLayout = true;
-bool MScore::showProgressBarForPartialLayout = false;
-bool MScore::showProgressBarForSave = true;
-bool MScore::showProgressBarForAutosave = true;
-
 bool  MScore::saveTemplateMode = false;
 bool  MScore::noGui = false;
 
@@ -263,6 +258,8 @@ const char* toString(Direction val)
             case Direction::AUTO: return "auto";
             case Direction::UP:   return "up";
             case Direction::DOWN: return "down";
+            case Direction::LEFT: return "left";
+            case Direction::RIGHT: return "right";
             }
       Q_UNREACHABLE();
       }
@@ -277,6 +274,8 @@ QString toUserString(Direction val)
             case Direction::AUTO: return qApp->translate("Direction", "Auto");
             case Direction::UP:   return qApp->translate("Direction", "Up");
             case Direction::DOWN: return qApp->translate("Direction", "Down");
+            case Direction::LEFT: return qApp->translate("Direction", "Left");
+            case Direction::RIGHT: return qApp->translate("Direction", "Right");
             }
       Q_UNREACHABLE();
       }
