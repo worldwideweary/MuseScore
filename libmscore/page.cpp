@@ -88,6 +88,18 @@ void Page::appendSystem(System* s)
       }
 
 //---------------------------------------------------------
+//   popSystem
+//---------------------------------------------------------
+
+void Page::popSystem()
+      {
+      if (!systems().isEmpty()) {
+            System* s = systems().takeLast();
+            s->setParent(nullptr);
+            }
+      }
+
+//---------------------------------------------------------
 //   draw
 //    bounding rectangle fr is relative to page QPointF
 //---------------------------------------------------------

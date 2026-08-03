@@ -5315,6 +5315,16 @@ void LayoutContext::collectPage()
       // re-calculate positions for systems before current
       // (they may have been filled on previous layout)
       int pSystems = page->systems().size();
+      if (deferredGroup.active()) {
+            deferredGroup.previousSystem = nullptr;
+            prevSystem = nullptr;
+
+            while (page->systems().size())
+                  page->popSystem();
+
+            pSystems = page->systems().size();
+            }
+
       if (pSystems > 0) {
             page->system(0)->restoreLayout2();
             y = page->system(0)->y() + page->system(0)->height();
@@ -5359,7 +5369,7 @@ void LayoutContext::collectPage()
                   distance = prevSystem->minDistance(curSystem);
             else {
                   // this is the first system on page
-                  if (curSystem->vbox()) {
+                  if (deferredGroup.active() || curSystem->vbox()) {
                         // if the header exists and there is a frame, move the frame downwards
                         // to avoid collisions
                         distance = headerExtension ? headerExtension + headerFooterPadding : 0.0;
@@ -5391,13 +5401,79 @@ void LayoutContext::collectPage()
                               distance = qMax(distance, top);
                               }
                         }
+                  if (deferredGroup.active()) {
+                        deferredGroup.startY = y;
+                        deferredGroup.startDistance = distance;
+                        deferredGroup.previousSystem = nullptr;
+                        }
                   }
 
+            Box* const box = curSystem->vbox();
+            const bool special = box && box->bindToNextSystem();
+
+            if (special && !deferredGroup.active())
+                  deferredGroup.saveState(this, box, y, distance);
+
             y += distance;
+
             curSystem->setPos(page->lm(), y);
             curSystem->restoreLayout2();
-            page->appendSystem(curSystem);
-            y += curSystem->height();
+
+            if (deferredGroup.active()) {
+                  deferredGroup.systems.push_back(curSystem);
+
+                  if (deferredGroup.remainingBoxes) {
+                        if (--deferredGroup.remainingBoxes == 0) {
+                              deferredGroup.waitingForTerminator = true;
+                              }
+                        }
+                  else if (deferredGroup.waitingForTerminator) {
+                        deferredGroup.waitingForTerminator = false;
+
+                        qreal required  = deferredGroup.startY;
+                              required += deferredGroup.startDistance;
+                              required += deferredGroup.extent();
+                              required += footerExtension > 0 ? footerExtension : 0;
+
+                        System* last = deferredGroup.systems.back();
+
+                        qreal margin = std::max(last->minBottom(),
+                                                last->spacerDistance(false));
+
+                              margin += (footerExtension > 0)
+                                          ? (footerExtension + headerFooterPadding)
+                                          : 0;
+
+                        required += std::max(margin, slb);
+
+                        const bool shouldDefer =
+                              (required >= endY) && breakPages;
+
+                        if (shouldDefer)
+                              deferredGroupBreak = true;
+                        else {
+                              y = deferredGroup.commitToPage(this);
+                              deferredGroup.clear();
+                              }
+                        }
+                  }
+            else {
+                  page->appendSystem(curSystem);
+                  y += curSystem->height();
+                  }
+
+            if (deferredGroupBreak) {
+                  pageOldMeasure = nullptr;
+
+                  y = deferredGroup.restoreState(this);
+
+                  if (!page->systems().empty())
+                        layoutPage(page, endY - y, footerExtension > 0 ? footerExtension + headerFooterPadding : 0.0);
+
+                  deferredGroup.clear();
+                  deferredGroupBreak = false;
+                  break;
+                  }
 
             //
             //  check for page break or if next system will fit on page
@@ -5457,12 +5533,12 @@ void LayoutContext::collectPage()
                               }
                         }
                   }
+
             prevSystem = curSystem;
             Q_ASSERT(curSystem != nextSystem);
             curSystem  = nextSystem;
 
             bool breakPage = !curSystem || (breakPages && prevSystem->pageBreak());
-
             if (!breakPage) {
                   qreal dist = prevSystem->minDistance(curSystem) + curSystem->height();
                   Box* vbox = curSystem->vbox();
@@ -5493,6 +5569,7 @@ void LayoutContext::collectPage()
                   // we need to collect next page in order to correctly set system positions
                   if (collected)
                         pageOldMeasure = nullptr;
+
                   break;
                   }
             }
@@ -5874,6 +5951,23 @@ LayoutContext::~LayoutContext()
 
       for (MuseScoreView* v : score->getViewer())
             v->layoutChanged();
+      }
+
+//---------------------------------------------------------
+//   LayoutContext::DeferredGroup::extent()
+//---------------------------------------------------------
+
+qreal LayoutContext::DeferredGroup::extent() const
+      {
+      qreal total = 0.0;
+
+      for (int i = 0; i < systems.size(); ++i) {
+            total += systems[i]->height();
+            if (i)
+                  total += systems[i - 1]->minDistance(systems[i]);
+            }
+
+      return total;
       }
 
 //---------------------------------------------------------
