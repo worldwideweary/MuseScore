@@ -7917,7 +7917,8 @@ void MuseScore::updateProgress(const QString& format, int val, int min, int max)
             }
       else if (_progressBar->isHidden()) {
             _progressBar->show();
-            _progressEscape->show();
+            if (format.startsWith("Loading"))
+                  _progressEscape->show();
             }
       }
 
