@@ -58,6 +58,7 @@ class Page final : public Element {
       void read(XmlReader&) override;
 
       void appendSystem(System* s);
+      void popSystem();
 
       int no() const                     { return _no;        }
       void setNo(int n)                  { _no = n;           }

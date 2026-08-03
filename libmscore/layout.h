@@ -14,6 +14,8 @@
 #define __LAYOUT_H__
 
 #include "system.h"
+#include "page.h"
+#include "box.h"
 
 namespace Ms {
 
@@ -102,6 +104,110 @@ struct LayoutContext {
       int measureNo            { 0 };
       Fraction startTick;
       Fraction endTick;
+
+      // Vertical/Text Box chaining:
+      struct DeferredGroup {
+            qreal startY = 0.0;
+            qreal startDistance = 0.0;
+            unsigned remainingBoxes = 0;
+            unsigned pageSystemCount = 0;
+            bool waitingForTerminator = false;
+            QVector<System*> systems;
+            Page* startPage = nullptr;
+            System* restartSystem = nullptr;
+            System* previousSystem = nullptr;
+            MeasureBase* restartPrevMeasure = nullptr;
+            MeasureBase* restartCurMeasure  = nullptr;
+            MeasureBase* restartNextMeasure = nullptr;
+            Fraction restartTick;
+            int restartMeasureNo;
+            bool restartRangeDone;
+
+            void saveState(LayoutContext* lc, MeasureBase* startingVBox, qreal y, qreal distance) {
+                  restartSystem      = lc->curSystem;
+                  previousSystem     = lc->prevSystem;
+                  restartPrevMeasure = lc->prevMeasure;
+                  restartCurMeasure  = lc->curMeasure;
+                  restartNextMeasure = lc->nextMeasure;
+                  restartTick        = lc->tick;
+                  restartMeasureNo   = lc->measureNo;
+                  restartRangeDone   = lc->rangeDone;
+                  pageSystemCount    = lc->page->systems().size();
+                  startPage          = lc->page;
+                  startY             = y;
+                  startDistance      = distance;
+
+                  const MeasureBase* mb = startingVBox;
+                  remainingBoxes = 1;
+                  while (true) {
+                        mb = mb->next();
+                        if (!mb || !mb->isVBoxBase())
+                              break;
+                        const Box* const nextBox = toBox(mb);
+                        if (!nextBox->bindToNextSystem())
+                              break;
+                        ++remainingBoxes;
+                        }
+                  }
+
+            qreal restoreState(LayoutContext* lc) {
+                  lc->prevSystem  = previousSystem;
+                  lc->curSystem   = restartSystem;
+                  lc->prevMeasure = restartPrevMeasure;
+                  lc->curMeasure  = restartCurMeasure;
+                  lc->nextMeasure = restartNextMeasure;
+                  lc->tick        = restartTick;
+                  lc->measureNo   = restartMeasureNo;
+                  lc->rangeDone   = restartRangeDone;
+
+                  return startY;
+                  }
+
+            qreal commitToPage(LayoutContext* lc) {
+                  qreal yy = startY;
+                  const System* prev = previousSystem;
+
+                  for (System* s : systems) {
+                        qreal dist = prev ? prev->minDistance(s) : startDistance;
+                        yy += dist;
+                        s->setPos(lc->page->lm(), yy);
+                        s->restoreLayout2();
+                        lc->page->appendSystem(s);
+                        yy += s->height();
+                        prev = s;
+                        }
+
+                  lc->curSystem = systems.last();
+                  lc->rangeDone = false;
+                  return yy; // return total height
+                  }
+
+            void clear() {
+                  startY = 0.0;
+                  startDistance = 0.0;
+                  remainingBoxes = 0;
+                  restartTick = {};
+                  waitingForTerminator = false;
+                  previousSystem = nullptr;
+                  restartSystem = nullptr;
+                  restartCurMeasure = nullptr;
+                  restartNextMeasure = nullptr;
+                  restartPrevMeasure = nullptr;
+                  pageSystemCount = 0;
+                  restartMeasureNo = 0;
+                  restartRangeDone = false;
+                  systems.clear();
+                  startPage = nullptr;
+                  }
+
+            bool active() const {
+                  return remainingBoxes || waitingForTerminator || !systems.empty();
+                  }
+            qreal extent() const;
+            };
+
+      DeferredGroup deferredGroup;
+      bool deferredGroupBreak = false;
 
       LayoutContext(Score* s);
       LayoutContext(const LayoutContext&) = delete;
