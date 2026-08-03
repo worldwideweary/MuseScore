@@ -4695,6 +4695,14 @@ void Score::updateMeasureNumbers() {
 
 void Score::layoutSystemElements(System* system, LayoutContext& lc)
       {
+      // Progress bar: piece-wise because it's only one system with multi-passes
+      const bool openingScore = (cmdState().layoutFlags & LayoutFlag::INIT_SCORE_LOADING);
+      const QString progressFormat = openingScore ? "Loading: %p%" : "Layout: %p%";
+      const bool continuous = layoutMode() == LayoutMode::LINE;
+      int min = 10;
+      int max = 31;
+      int idx = min;
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
 
       //-------------------------------------------------------------
       //    detach spanners:
@@ -4761,6 +4769,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       //-------------------------------------------------------------
       //    create skylines
       //-------------------------------------------------------------
+
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
 
       for (int staffIdx = 0; staffIdx < nstaves(); ++staffIdx) {
             SysStaff* ss = system->staff(staffIdx);
@@ -4866,6 +4876,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       // layout articulations
       //-------------------------------------------------------------
 
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
+
       for (Segment* s : sl) {
             for (Element* e : s->elist()) {
                   if (!e || !e->isChord() || !score()->staff(e->staffIdx())->show())
@@ -4880,6 +4892,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       // layout fingerings
       //-------------------------------------------------------------
 
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
+
       for (Segment* s : sl) {
             score()->layoutVoicedFingering(s, system);
             }
@@ -4887,6 +4901,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       //-------------------------------------------------------------
       // layout tuplets
       //-------------------------------------------------------------
+
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
 
       for (Segment* s : sl) {
             for (Element* e : s->elist()) {
@@ -4917,6 +4933,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       // Drumline sticking
       //-------------------------------------------------------------
 
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
+
       for (const Segment* s : sl) {
             for (Element* e : s->annotations()) {
                   if (e->isSticking())
@@ -4927,6 +4945,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       //-------------------------------------------------------------
       // layout slurs
       //-------------------------------------------------------------
+
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
 
       bool useRange = false;  // TODO: lineMode();
       Fraction stick = useRange ? lc.startTick : system->measures().front()->tick();
@@ -4968,6 +4988,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       //-------------------------------------------------------------
       // Trills
       //-------------------------------------------------------------
+
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
 
       std::vector<Spanner*> trills;
       for (auto interval : spanners) {
@@ -5024,6 +5046,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       // ottavas, pedals, voltas are collected here, but layouted later
       //-------------------------------------------------------------
 
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
+
       spanner.clear();
       std::vector<Spanner*> hairpins;
       std::vector<Spanner*> ottavas;
@@ -5070,6 +5094,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       // Fermata, TremoloBar
       //-------------------------------------------------------------
 
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
+
       for (const Segment* s : sl) {
             for (Element* e : s->annotations()) {
                   if (e->isFermata() || e->isTremoloBar())
@@ -5081,12 +5107,16 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       // Ottava, Pedal
       //-------------------------------------------------------------
 
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
+
       processLines(system, ottavas);
       processLines(system, pedal, /*align=*/ true);
 
       //-------------------------------------------------------------
       // Lyric
       //-------------------------------------------------------------
+
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
 
       layoutLyrics(system);
 
@@ -5103,6 +5133,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       //
       // We need to known if we have FretDiagrams in the system to decide when to layout the Harmonies
       //
+
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
 
       bool hasFretDiagram = false;
       for (const Segment* s : sl) {
@@ -5123,6 +5155,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       // above the volta, therefore we delay the layout.
       //-------------------------------------------------------------
 
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
+
       if (!hasFretDiagram) {
             layoutHarmonies(sl);
             alignHarmonies(system, sl, true, styleP(Sid::maxChordShiftAbove), styleP(Sid::maxChordShiftBelow));
@@ -5131,6 +5165,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       //-------------------------------------------------------------
       // StaffText, InstrumentChange
       //-------------------------------------------------------------
+
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
 
       for (const Segment* s : sl) {
             for (Element* e : s->annotations()) {
@@ -5142,6 +5178,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       //-------------------------------------------------------------
       // FretDiagram
       //-------------------------------------------------------------
+
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
 
       if (hasFretDiagram) {
             for (const Segment* s : sl) {
@@ -5169,6 +5207,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       //-------------------------------------------------------------
       // layout Voltas for current system
       //-------------------------------------------------------------
+
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
 
       processLines(system, voltas);
 
@@ -5215,6 +5255,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       // TempoText
       //-------------------------------------------------------------
 
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
+
       for (const Segment* s : sl) {
             for (Element* e : s->annotations()) {
                   if (e->isTempoText())
@@ -5225,6 +5267,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       //-------------------------------------------------------------
       // Jump, Marker
       //-------------------------------------------------------------
+
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
 
       for (MeasureBase* mb : system->measures()) {
             if (!mb->isMeasure())
@@ -5240,6 +5284,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       // RehearsalMark
       //-------------------------------------------------------------
 
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
+
       for (const Segment* s : sl) {
             for (Element* e : s->annotations()) {
                   if (e->isRehearsalMark())
@@ -5250,6 +5296,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       //-------------------------------------------------------------
       // Image
       //-------------------------------------------------------------
+
+      if (continuous) emit updateProgress(progressFormat, ++idx, min, max);
 
       for (const Segment* s : sl) {
             for (Element* e : s->annotations()) {
@@ -5297,7 +5345,25 @@ void LayoutContext::collectPage()
             y += cs->height();
             }
 
+      const bool bySystems =
+            score->layoutMode() == LayoutMode::SYSTEM ||
+            score->layoutMode() == LayoutMode::FLOAT
+            ;
+
+      const bool openingScore = (score->cmdState().layoutFlags & LayoutFlag::INIT_SCORE_LOADING);
+      const QString progressFormat = openingScore ? "Loading: %p%" : "Layout: %p%";
+      const int qtyMeasures = score->measures()->size();
+      const int min = 0;
+      const int max = qtyMeasures;
+
+      unsigned int idx = -1;
       for (;;) {
+            ++idx;
+            if (bySystems) {
+                  if (auto m = curSystem->measures().front()) {
+                        emit score->updateProgress(progressFormat, m->index(), min, max);
+                        }
+                  }
             //
             // calculate distance to previous system
             //
