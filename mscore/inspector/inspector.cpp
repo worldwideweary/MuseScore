@@ -580,14 +580,15 @@ InspectorVBox::InspectorVBox(QWidget* parent)
       vb.setupUi(addWidget());
 
       iList = {
-            { Pid::TOP_GAP,       0, vb.topGap,       vb.resetTopGap       },
-            { Pid::BOTTOM_GAP,    0, vb.bottomGap,    vb.resetBottomGap    },
-            { Pid::LEFT_MARGIN,   0, vb.leftMargin,   vb.resetLeftMargin   },
-            { Pid::RIGHT_MARGIN,  0, vb.rightMargin,  vb.resetRightMargin  },
-            { Pid::TOP_MARGIN,    0, vb.topMargin,    vb.resetTopMargin    },
-            { Pid::BOTTOM_MARGIN, 0, vb.bottomMargin, vb.resetBottomMargin },
-            { Pid::BOX_HEIGHT,    0, vb.height,       0                    },
-            { Pid::BOX_AUTOSIZE,  0, vb.enableAutoSize, vb.resetAutoSize   }
+            { Pid::TOP_GAP,              0, vb.topGap,            vb.resetTopGap            },
+            { Pid::BOTTOM_GAP,           0, vb.bottomGap,         vb.resetBottomGap         },
+            { Pid::LEFT_MARGIN,          0, vb.leftMargin,        vb.resetLeftMargin        },
+            { Pid::RIGHT_MARGIN,         0, vb.rightMargin,       vb.resetRightMargin       },
+            { Pid::TOP_MARGIN,           0, vb.topMargin,         vb.resetTopMargin         },
+            { Pid::BOTTOM_MARGIN,        0, vb.bottomMargin,      vb.resetBottomMargin      },
+            { Pid::BOX_HEIGHT,           0, vb.height,            0                         },
+            { Pid::BOX_AUTOSIZE,         0, vb.enableAutoSize,    vb.resetAutoSize          },
+            { Pid::BIND_TO_NEXT_SYSTEM,  0, vb.bindToNextSystem,  vb.resetBindToNextSystem  },
             };
       pList = { { vb.title, vb.panel } };
       mapSignals();
@@ -603,12 +604,13 @@ InspectorTBox::InspectorTBox(QWidget* parent)
       tb.setupUi(addWidget());
 
       iList = {
-            { Pid::TOP_GAP,       0, tb.topGap,       tb.resetTopGap       },
-            { Pid::BOTTOM_GAP,    0, tb.bottomGap,    tb.resetBottomGap    },
-            { Pid::LEFT_MARGIN,   0, tb.leftMargin,   tb.resetLeftMargin   },
-            { Pid::RIGHT_MARGIN,  0, tb.rightMargin,  tb.resetRightMargin  },
-            { Pid::TOP_MARGIN,    0, tb.topMargin,    tb.resetTopMargin    },
-            { Pid::BOTTOM_MARGIN, 0, tb.bottomMargin, tb.resetBottomMargin },
+            { Pid::TOP_GAP,             0, tb.topGap,       tb.resetTopGap               },
+            { Pid::BOTTOM_GAP,          0, tb.bottomGap,    tb.resetBottomGap            },
+            { Pid::LEFT_MARGIN,         0, tb.leftMargin,   tb.resetLeftMargin           },
+            { Pid::RIGHT_MARGIN,        0, tb.rightMargin,  tb.resetRightMargin          },
+            { Pid::TOP_MARGIN,          0, tb.topMargin,    tb.resetTopMargin            },
+            { Pid::BOTTOM_MARGIN,       0, tb.bottomMargin, tb.resetBottomMargin         },
+            { Pid::BIND_TO_NEXT_SYSTEM, 0, tb.bindToNextSystem, tb.resetBindToNextSystem },
             };
       pList = { { tb.title, tb.panel } };
       mapSignals();

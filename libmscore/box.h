@@ -41,6 +41,7 @@ class Box : public MeasureBase {
       qreal _rightMargin            { 0.0   };       // inner margins in metric mm
       qreal _topMargin              { 0.0   };
       qreal _bottomMargin           { 0.0   };
+      bool _bindToNextSystem        { false };
       bool _isAutoSizeEnabled       { true  };
       bool editMode                 { false };
 
@@ -82,6 +83,8 @@ class Box : public MeasureBase {
       void setTopGap(qreal val)       { _topGap = val;        }
       qreal bottomGap() const         { return _bottomGap;    }
       void setBottomGap(qreal val)    { _bottomGap = val;     }
+      bool bindToNextSystem() const   { return _bindToNextSystem; }
+      void setBindToNextSystem(bool v) { _bindToNextSystem = v; }
       bool isAutoSizeEnabled() const  { return _isAutoSizeEnabled; }
       void setAutoSizeEnabled(const bool val) { _isAutoSizeEnabled = val; }
       void copyValues(Box* origin);

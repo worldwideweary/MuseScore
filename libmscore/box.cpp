@@ -228,12 +228,24 @@ void Box::write(XmlWriter& xml) const
 
 void Box::writeProperties(XmlWriter& xml) const
       {
-      for (Pid id : {
-         Pid::BOX_HEIGHT, Pid::BOX_WIDTH, Pid::TOP_GAP, Pid::BOTTOM_GAP,
-         Pid::LEFT_MARGIN, Pid::RIGHT_MARGIN, Pid::TOP_MARGIN, Pid::BOTTOM_MARGIN, Pid::BOX_AUTOSIZE }) {
+      const auto boxIds = {
+            Pid::BOX_HEIGHT,
+            Pid::BOX_WIDTH,
+            Pid::TOP_GAP,
+            Pid::BOTTOM_GAP,
+            Pid::LEFT_MARGIN,
+            Pid::RIGHT_MARGIN,
+            Pid::TOP_MARGIN,
+            Pid::BOTTOM_MARGIN,
+            Pid::BOX_AUTOSIZE,
+            Pid::BIND_TO_NEXT_SYSTEM,
+            };
+
+      for (Pid id : boxIds)
             writeProperty(xml, id);
-            }
+
       Element::writeProperties(xml);
+
       for (const Element* e : el())
             e->write(xml);
       }
@@ -286,6 +298,8 @@ bool Box::readProperties(XmlReader& e)
             _topMargin = e.readDouble();
       else if (tag == "bottomMargin")
             _bottomMargin = e.readDouble();
+      else if (tag == "bindToNextSystem")
+          _bindToNextSystem = e.readBool();
       else if (tag == "boxAutoSize")
             _isAutoSizeEnabled = e.readBool();
       else if (tag == "Text") {
@@ -385,6 +399,8 @@ QVariant Box::getProperty(Pid propertyId) const
                   return _topMargin;
             case Pid::BOTTOM_MARGIN:
                   return _bottomMargin;
+            case Pid::BIND_TO_NEXT_SYSTEM:
+                  return _bindToNextSystem;
             case Pid::BOX_AUTOSIZE:
                   return (score()->mscVersion() >= 302) ? _isAutoSizeEnabled : false;
             default:
@@ -424,6 +440,9 @@ bool Box::setProperty(Pid propertyId, const QVariant& v)
             case Pid::BOTTOM_MARGIN:
                   _bottomMargin = v.toDouble();
                   break;
+            case Pid::BIND_TO_NEXT_SYSTEM:
+                  _bindToNextSystem = v.toBool();
+                  break;
             case Pid::BOX_AUTOSIZE:
                   _isAutoSizeEnabled = v.toBool();
                   break;
@@ -450,6 +469,8 @@ QVariant Box::propertyDefault(Pid id) const
             case Pid::BOTTOM_GAP:
                   return isHBox() ? 0.0 : score()->styleP(Sid::frameSystemDistance);
 
+            case Pid::BIND_TO_NEXT_SYSTEM:
+                  return false;
             case Pid::LEFT_MARGIN:
             case Pid::RIGHT_MARGIN:
             case Pid::TOP_MARGIN:
@@ -478,6 +499,7 @@ void Box::copyValues(Box* origin)
       _topMargin    = origin->topMargin() * factor;
       _leftMargin   = origin->leftMargin() * factor;
       _rightMargin  = origin->rightMargin() * factor;
+      _bindToNextSystem = origin->bindToNextSystem();
       }
 
 //---------------------------------------------------------
