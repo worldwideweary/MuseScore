@@ -2,11 +2,11 @@ name: 'Build: All'
 #run-name: "Build: All - ${{ inputs.build_mode }}"
 
 on:
-  schedule: # scheduled workflows will only run on the default branch. edit default values under gen1 below
-    - cron: '20 1 * * *' # At 01:20 on every day-of-month
+#  schedule: # scheduled workflows will only run on the default branch. edit default values under gen1 below
+#    - cron: '20 1 * * *' # At 01:20 on every day-of-month
   push: # push.inputs field does not exist, use gen1 below
     branches:
-      - 3.x
+      - 3.x-worldwideweary
   pull_request: # pull_request.inputs field does not exist, edit gen1 below
   workflow_dispatch: # triggered by github web ui run "build all" workflow button
     inputs:
