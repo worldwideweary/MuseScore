@@ -790,8 +790,9 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       MasterScore* readScore(const QString& name);
       NotesColors readNotesColors(const QString& filePath) const;
 
-      bool saveOpenScoresList();
-      bool loadOpenScoresList();
+      bool saveOpenScoresList(int);
+      bool loadOpenScoresList(int);
+      bool clearArchivedList(int);
 
       bool saveAs(Score*, bool saveCopy = false);
       bool saveSelection(Score*);
