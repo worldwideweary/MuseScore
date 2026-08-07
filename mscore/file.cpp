@@ -466,63 +466,130 @@ Score* MuseScore::openScore(const QString& fn, bool switchTab, const bool consid
 
 //---------------------------------------------------------
 //   saveOpenScoresList
+//    "archive-open-scores"
 //---------------------------------------------------------
 
-bool MuseScore::saveOpenScoresList()
+bool MuseScore::saveOpenScoresList(int selectIdx)
       {
+      (void) selectIdx;
       QDir dir;
       dir.mkpath(dataPath);
-      QFile f(dataPath + "/scorelist");
-      if (!f.open(QIODevice::WriteOnly)) {
-            qDebug("cannot create session file <%s>", qPrintable(f.fileName()));
+      QFile fileIn(dataPath + "/scorelist");
+      QFile fileOut(dataPath + "/tmpdata");
+
+      if (!fileIn.open(QIODevice::ReadOnly)) {
+            qDebug("Cannot open session file <%s>", qPrintable(fileIn.fileName()));
+            }
+
+      if (!fileOut.open(QIODevice::WriteOnly)) {
+            qDebug("cannot create session file <%s>", qPrintable(fileOut.fileName()));
             return false;
+            }      
+
+      QXmlStreamReader reader(&fileIn);
+      QXmlStreamWriter writer(&fileOut);
+
+      writer.setAutoFormatting(true);
+      writer.writeStartDocument();
+
+      if (!reader.hasError()) {
+            while (!reader.atEnd()) {
+                  reader.readNext();
+                  if (reader.isStartElement()) {
+                        /// TODO: maybe allow to update a set instead of making a new one each time:
+                        // if (reader.name() == "Archive") {
+                              // ++currentIdx;
+                              // if (currentIdx == discardIdx) {
+                              //       qDebug().nospace() << "Skipping Archive #" << currentIdx;
+                              //       reader.skipCurrentElement();   // discard this subtree
+                              //       continue;
+                              //       }
+                              // writer.writeStartElement(reader.name().toString());
+                              // }
+
+                        writer.writeStartElement(reader.name().toString());
+                        for (const auto &attr : reader.attributes()) {
+                              writer.writeAttribute(attr.name().toString(),
+                                                    attr.value().toString());
+                              }
+                        }
+                  else if (reader.isEndElement()) {
+                        if (reader.name() == "museScore") {
+                              // Now let's make new archive before closing off museScore:
+                              writer.writeStartElement("Archive");
+                              for (MasterScore*& score : scoreList) {
+                                    writer.writeStartElement("Score");
+                                    writer.writeTextElement("created", QString::number(score->created()));
+                                    QString path;
+                                    if (score->importedFilePath().isEmpty() || score->masterScore()->fileInfo()->exists()) {
+                                          // score was not imported from another format, e.g. MIDI file or was saved
+                                          path = score->masterScore()->fileInfo()->absoluteFilePath();
+                                          }
+                                    else {
+                                          // score was imported but not saved - store original file (e.g. MIDI) path
+                                          path = score->importedFilePath();
+                                          }
+
+                                    writer.writeTextElement("path", path);
+                                    writer.writeEndElement(); // Score
+                                    }
+                              writer.writeEndElement(); // Archive
+                              }
+                        writer.writeEndElement(); // museScore
+                        }
+                  else if (reader.isCharacters()) {
+                        if (!reader.isWhitespace()) {
+                              writer.writeCharacters(reader.text().toString());
+                              }
+                        }
+                  }
+            }
+      else {
+            // No existing archive file:
+            writer.writeStartElement(QStringLiteral("museScore version=\"" MSC_VERSION "\" full-version=\"%1\"").arg(fullVersion()));
+            writer.writeStartElement("Archive");
+            for (MasterScore*& score : scoreList) {
+                  writer.writeStartElement("Score");
+                  writer.writeTextElement("created", QString::number(score->created()));
+                  QString path;
+                  if (score->importedFilePath().isEmpty() || score->masterScore()->fileInfo()->exists()) {
+                        // score was not imported from another format, e.g. MIDI file or was saved
+                        path = score->masterScore()->fileInfo()->absoluteFilePath();
+                        }
+                  else {
+                        // score was imported but not saved - store original file (e.g. MIDI) path
+                        path = score->importedFilePath();
+                        }
+
+                  writer.writeTextElement("path", path);
+                  writer.writeEndElement(); // Score
+                  }
+            writer.writeEndElement(); // Archive
+            writer.writeEndElement(); // museScore
             }
 
-      XmlWriter xml(0, &f);
-      xml.header();
-      xml.stag(QStringLiteral("museScore version=\"" MSC_VERSION "\" full-version=\"%1\"").arg(fullVersion()));
 
+      fileIn.close();
+      fileOut.close();
 
-      for (MasterScore*& score : scoreList) {
-            xml.stag("Score");
-            xml.tag("created", score->created());
-            QString path;
-            if (score->importedFilePath().isEmpty()) {
-                  // score was not imported from another format, e.g. MIDI file
-                  path = score->masterScore()->fileInfo()->absoluteFilePath();
-                  }
-            else if (score->masterScore()->fileInfo()->exists()) {   // score was saved
-                  path = score->masterScore()->fileInfo()->absoluteFilePath();
-                  }
-            else {      // score was imported but not saved - store original file (e.g. MIDI) path
-                  path = score->importedFilePath();
-                  }
+      QFile::remove(fileIn.fileName());
+      QFile::rename(fileOut.fileName(), fileIn.fileName());
 
-            if (score->tmpName().isEmpty()) {
-                  xml.tag("path", path);
-                  }
-            else {
-                  xml.tag("name", path);
-                  xml.tag("path", score->tmpName());
-                  }
-            xml.etag();
-            qDebug() << "Path:" << path;
-            }
       return false;
       }
 
 //---------------------------------------------------------
 //   loadOpenScoresList
+//    "open-archived-scores"
 //---------------------------------------------------------
 
-bool MuseScore::loadOpenScoresList()
+bool MuseScore::loadOpenScoresList(int selectIdx)
       {
       QDir dir;
       dir.mkpath(dataPath);
       QFile f(dataPath + "/scorelist");
 
       bool cleanExit = false;
-      QString sessionFullVersion;
 
       if (!f.exists())
             return false;
@@ -532,47 +599,119 @@ bool MuseScore::loadOpenScoresList()
             return false;
             }
 
-      XmlReader e(&f);
-      while (e.readNextStartElement()) {
-            if (e.name() == "museScore") {
-                  sessionFullVersion = e.attribute("full-version");
-                  while (e.readNextStartElement()) {
-                        const QStringRef& tag(e.name());
-                        if (tag == "Score") {
-                              QString name;
-                              bool created = false;
-                              while (e.readNextStartElement()) {
-                                    const QStringRef& t(e.name());
-                                    if (t == "name")
-                                          name = e.readElementText();
-                                    else if (t == "created")
-                                          created = e.readInt();
-                                    else if (t == "dirty")
-                                          e.readInt();
-                                    else if (t == "path") {
-                                          auto txt = e.readElementText();
-                                          Score* score = openScore(txt, true, true, name);
+      int archiveIdx = -1;
 
+      XmlReader e(&f);
+      while (!e.atEnd()) {
+            e.readNext();
+            const bool target = (archiveIdx == selectIdx);
+            const QStringRef& tag(e.name());
+
+            if (e.isStartElement()) {
+                  if (tag == "Archive") {
+                        ++archiveIdx;
+                        }
+                  if (tag == "Score" && target) {
+                        QString name;
+                        bool created = false;
+                        while (e.readNextStartElement()) {
+                              const QStringRef& t(e.name());
+                              if (t == "name")
+                                    name = e.readElementText();
+                              else if (t == "created")
+                                    created = e.readInt();
+                              else if (t == "dirty")
+                                    e.readInt();
+                              else if (t == "path") {
+                                    auto txt = e.readElementText();
+                                    if (archiveIdx == selectIdx) {
+                                          Score* score = openScore(txt, true, true, name);
                                           if (score) {
-                                                if (cleanExit) {
-                                                      // override if last session did a clean exit
+                                                if (cleanExit)
                                                       created = false;
-                                                      }
                                                 score->setCreated(created);
                                                 }
-                                          else {
-                                                // qDebug() << txt << "invalid or already opened";
-                                                }
                                           }
-                                    else {
-                                          e.unknown();
-                                          return false;
-                                          }
+                                    }
+                              else {
+                                    qDebug() << "Error:" << "tag:" << t << "unknown";
+                                    e.unknown();
+                                    return false;
                                     }
                               }
                         }
                   }
             }
+      return true;
+      }
+
+//---------------------------------------------------------
+//   clearArchivedList
+//    "file-clear-archive"
+//---------------------------------------------------------
+
+bool MuseScore::clearArchivedList(int discardIdx)
+      {
+      QDir dir;
+      dir.mkpath(dataPath);
+      QFile fileIn(dataPath + "/scorelist");
+      QFile fileOut(dataPath + "/tmpdata");
+
+      if (!fileIn.exists())
+            return false;
+
+      if (!fileIn.open(QIODevice::ReadOnly)) {
+            qDebug("Cannot open session file <%s>", qPrintable(fileIn.fileName()));
+            return false;
+            }
+
+      if (!fileOut.open(QIODevice::WriteOnly)) {
+            qDebug("Cannot open temp file <%s>", qPrintable(fileOut.fileName()));
+            return false;
+            }
+
+      int archiveIdx = -1;
+
+      QXmlStreamReader reader(&fileIn);
+      QXmlStreamWriter writer(&fileOut);
+
+      writer.setAutoFormatting(true);
+      writer.writeStartDocument();
+      while (!reader.atEnd()) {
+            reader.readNext();
+            if (reader.isStartElement()) {
+                  const QStringRef& tag(reader.name());
+
+                  if (tag == "Archive") {
+                        ++archiveIdx;
+                        if (archiveIdx == discardIdx) {
+                              reader.skipCurrentElement();
+                              continue;
+                              }
+                        }
+
+                  writer.writeStartElement(tag.toString());
+                  for (const auto &attr : reader.attributes())
+                        writer.writeAttribute(attr.name().toString(), attr.value().toString());
+                  }
+            else if (reader.isEndElement())
+                  writer.writeEndElement();
+            else if (reader.isCharacters()) {
+                  if (!reader.isWhitespace()) {
+                        writer.writeCharacters(reader.text().toString());
+                        }
+                  }
+            }
+
+      fileIn.close();
+      fileOut.close();
+
+      if (!reader.hasError()) {
+            QFile::remove(fileIn.fileName());
+            QFile::rename(fileOut.fileName(), fileIn.fileName());
+            }
+      else qDebug() << "\tError:" << reader.errorString();
+
       return true;
       }
 
