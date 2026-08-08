@@ -316,8 +316,7 @@ bool TextBase::edit(EditData& ed)
 
                         if (col > 0) {
                               const QString prev { _cursor->extractText(row, col - 1, row, col) };
-                              const bool spaceBeforeNewInput = (prev == QStringLiteral(" "));
-                              useCloseQuote = !spaceBeforeNewInput;
+                              useCloseQuote = !prev.isEmpty() && !prev[0].isSpace();
                               }
                         auto curlyReplacement = isSingle ? QString(useCloseQuote ? QStringLiteral("’") : QStringLiteral("‘"))
                                                          : QString(useCloseQuote ? QStringLiteral("”") : QStringLiteral("“"));
