@@ -3956,7 +3956,7 @@ void MuseScore::removeTab(int i)
 
       QString tmpName = score->tmpName();
 
-      if (!scriptTestMode && !converterMode && checkDirty(score))
+      if (!scriptTestMode && !converterMode && !score->readOnly() && checkDirty(score))
             return;
       if (seq && seq->score() == score) {
             seq->stopWait();
@@ -7210,10 +7210,22 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             else if (cmd == "file-export")
                   showExportDialog();
             else if (cmd == "file-reload") {
-                  saveFile();
+                  const bool closeWithoutSaving =
+                        preferences.getBool(PREF_UI_SCORE_RELOAD_AUTO_DISCARD);
+
+                  const bool automaticallySave =
+                        !closeWithoutSaving;
+
+                  if (automaticallySave)
+                        saveFile();
+
                   const auto ms = cs->masterScore();
                   const auto fi = ms->fileInfo();
                   const auto fn = fi->absoluteFilePath();
+
+                  if (closeWithoutSaving)
+                        cs->masterScore()->setReadOnly(true);
+
                   closeScore(cs);
                   openScore(fn);
                   }
