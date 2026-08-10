@@ -31,6 +31,9 @@ class InspectorText : public InspectorTextBase {
 
    public:
       InspectorText(QWidget* parent);
+
+   private slots:
+      void on_hardcodeWordWrap_clicked();
       };
 
 }
