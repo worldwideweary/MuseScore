@@ -198,22 +198,22 @@ class TextBlock {
       TextBlock() {}
       bool operator ==(const TextBlock& x)         { return _fragments == x._fragments; }
       bool operator !=(const TextBlock& x)         { return _fragments != x._fragments; }
-      void draw(QPainter*, const TextBase*) const;
+      void draw(QPainter*, const TextBase*, bool softWrap = false) const;
       void layout(TextBase*);
       const QList<TextFragment>& fragments() const { return _fragments; }
       QList<TextFragment>& fragments()             { return _fragments; }
       QList<TextFragment>* fragmentsWithoutEmpty();
       const QRectF& boundingRect() const           { return _bbox; }
-      QRectF boundingRect(int col1, int col2, const TextBase*) const;
+      QRectF boundingRect(int col1, int col2, const TextBase*, bool softWrap = false) const;
       int columns() const;
       void insert(TextCursor*, const QString&);
       void insertEmptyFragmentIfNeeded(TextCursor*);
       void removeEmptyFragment();
       QString remove(int column, TextCursor*);
       QString remove(int start, int n, TextCursor*);
-      int column(qreal x, TextBase*) const;
+      int column(qreal x, TextBase*, bool softWrap = false) const;
       TextBlock split(int column, TextCursor* cursor);
-      qreal xpos(int col, const TextBase*) const;
+      qreal xpos(int col, const TextBase*, bool softWrap = false) const;
       const CharFormat* formatAt(int) const;
       const TextFragment* fragment(int col) const;
       QList<TextFragment>::iterator fragment(int column, int* rcol, int* ridx);
@@ -224,6 +224,8 @@ class TextBlock {
       bool eol() const          { return _eol; }
       void setEol(bool val)     { _eol = val; }
       void changeFormat(FormatId, QVariant val, int start, int n);
+      QChar character(int column) const;
+      QString dump() const;
       };
 
 //---------------------------------------------------------
@@ -275,6 +277,7 @@ class TextBase : public Element {
       void layoutFrame();
       void layoutEdit();
       void createLayout();
+      bool wrapTextBlock(TextCursor* cursor);
       void insertSym(EditData& ed, SymId id);
 
    public:
@@ -414,6 +417,9 @@ class TextBase : public Element {
       void setStrike(bool val)               { _fontStyle = val ? _fontStyle + FontStyle::Strike    : _fontStyle - FontStyle::Strike;    }
 
       bool hasCustomFormatting() const;
+
+      bool unwrapTextBlock(TextCursor* cursor);
+      bool bakeSoftWraps();
 
       friend class TextCursor;
       using ScoreElement::undoChangeProperty;
