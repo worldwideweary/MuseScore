@@ -237,6 +237,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_UI_SCORE_CURRENT_SYS_ON_TOP_SKYLINE,             new BoolPreference(false, true)},
             {PREF_UI_SCORE_BYPASS_ALT_MENU,                        new BoolPreference(false, true)},
             {PREF_UI_SCORE_IJKL_NUDGE_MOVEMENT,                    new BoolPreference(false, true)},
+            {PREF_UI_SCORE_RELOAD_AUTO_DISCARD,                    new BoolPreference(true, true)},
             {PREF_UI_SCORE_OMIT_ADDING_LINKED_LINES,               new BoolPreference(false, true)},
             {PREF_SCORE_HOVER_COLOR,                               new ColorPreference(QColor(0,0,0,0), true)},
             {PREF_SCORE_HOVER_COLOR_ENABLE,                        new BoolPreference(false, true)},
