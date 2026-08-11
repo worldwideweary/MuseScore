@@ -976,10 +976,10 @@ void TextBlock::draw(QPainter* p, const TextBase* t, bool softWrap) const
 
       if (softWrap &&
           !_fragments.isEmpty() &&
-          !_fragments.front().text.isEmpty() &&
-          _fragments.front().text.at(0).isSpace()) {
+          !_fragments.at(0).text.isEmpty() &&
+          _fragments.at(0).text.at(0).isSpace()) {
 
-            const TextFragment& first = _fragments.front();
+            const TextFragment& first = _fragments.at(0);
 
             suppressLeadingSpace = true;
 
@@ -1166,7 +1166,7 @@ qreal TextBlock::xpos(int column, const TextBase* t, bool softWrap) const
       if (softWrap &&
           column > 0 &&
           !_fragments.isEmpty()) {
-            const TextFragment& first = _fragments.front();
+            const TextFragment& first = _fragments.at(0);
 
             // Only compensate geometrically when removing the retained
             // soft-wrap space actually shifts visible text in this same
@@ -1277,7 +1277,7 @@ int TextBlock::columns() const
 int TextBlock::column(qreal x, TextBase* t, bool softWrap) const
       {
       if (softWrap && !_fragments.isEmpty()) {
-            const TextFragment& f = _fragments.front();
+            const TextFragment& f = _fragments.at(0);
 
             if (f.text.size() > 1 &&
                 f.text.at(0).isSpace()) {
