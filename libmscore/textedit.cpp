@@ -60,6 +60,8 @@ void TextBase::editInsertText(TextCursor* cursor, const QString& s)
       cursor->setColumn(cursor->column() + col);
       cursor->clearSelection();
 
+      wrapTextBlock(cursor);
+
       triggerLayout();
       }
 
@@ -621,7 +623,35 @@ void ChangeText::insertText(EditData* ed)
       {
       TextCursor tc = c;
       tc.setFormat(format); // To undo TextCursor::updateCursorFormat()
+
+      // Keep the undo command's cursor synchronized with wrapping
       c.text()->editInsertText(&tc, s);
+      removeCursor = tc;
+
+
+      int logicalColumn = removeCursor.column();
+
+      for (int r = removeCursor.row() - 1; r >= 0; --r) {
+            logicalColumn += c.text()->textBlockList()[r].columns();
+
+            if (c.text()->textBlockList()[r].eol())
+                  break;
+            }
+
+      removeCursor.setColumn(tc.column() - s.size());
+
+      removeLogicalPosition = removeCursor.column();
+
+      const QList<TextBlock>& blocks = c.text()->textBlockList();
+
+      for (int r = 0; r < removeCursor.row(); ++r) {
+            removeLogicalPosition += blocks[r].columns();
+
+            // Explicit newline also occupies a logical character position
+            if (blocks[r].eol())
+                  ++removeLogicalPosition;
+            }
+
       if (ed) {
             TextCursor* ttc = c.text()->cursor(*ed);
             *ttc = tc;
@@ -635,15 +665,62 @@ void ChangeText::insertText(EditData* ed)
 void ChangeText::removeText(EditData* ed)
       {
       TextCursor tc = c;
-      TextBlock& l  = c.curLine();
-      int column    = c.column();
-      format = *l.formatAt(column + s.size() - 1);
+
+      if (removeLogicalPosition >= 0) {
+            QList<TextBlock>& blocks = c.text()->textBlockList();
+
+            int remaining = removeLogicalPosition;
+            int row = 0;
+
+            for (; row < blocks.size(); ++row) {
+                  const int columns = blocks[row].columns();
+
+                  if (remaining <= columns)
+                        break;
+
+                  remaining -= columns;
+
+                  if (blocks[row].eol()) {
+                        if (remaining == 0) {
+                              ++row;
+                              break;
+                              }
+                        --remaining;
+                        }
+                  }
+
+            if (row >= blocks.size())
+                  row = blocks.size() - 1;
+
+            tc = removeCursor;
+            tc.setRow(row);
+            tc.setColumn(remaining);
+            }
+
+      TextBlock& l = tc.curLine();
+      int column = tc.column();
+
+      const int formatColumn = column + s.size() - 1;
+      const CharFormat* fmt = l.formatAt(formatColumn);
+
+      if (!fmt) {
+            return;
+            }
+
+      format = *fmt;
 
       for (int n = 0; n < s.size(); ++n)
-            l.remove(column, &c);
+            l.remove(column, &tc);
+
+      c.text()->unwrapTextBlock(&tc);
+
       c.text()->triggerLayout();
+
+      tc.clearSelection();
+
       if (ed)
             *c.text()->cursor(*ed) = tc;
+
       c.text()->setTextInvalid();
       }
 

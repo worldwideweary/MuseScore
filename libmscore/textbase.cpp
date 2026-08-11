@@ -172,6 +172,36 @@ int TextCursor::columns() const
       }
 
 //---------------------------------------------------------
+//   character
+//---------------------------------------------------------
+
+QChar TextBlock::character(int column) const
+      {
+      int col = 0;
+      for (const TextFragment& f : _fragments) {
+            for (const QChar& c : qAsConst(f.text)) {
+                  if (col == column)
+                        return c;
+                  if (!c.isHighSurrogate())
+                        ++col;
+                  }
+            }
+      return QChar();
+      }
+
+//---------------------------------------------------------
+//   dump
+//---------------------------------------------------------
+
+QString TextBlock::dump() const
+      {
+      QString text;
+      for (const TextFragment& f : _fragments)
+            text += f.text;
+      return text;
+      }
+
+//---------------------------------------------------------
 //   currentCharacter
 //---------------------------------------------------------
 
@@ -234,7 +264,11 @@ QRectF TextCursor::cursorRect() const
       QFont _font  = fragment ? fragment->font(_text) : _text->font();
       qreal ascent = QFontMetricsF(_font, MScore::paintDevice()).ascent();
       qreal h = ascent;
-      qreal x = tline.xpos(column(), _text);
+
+      const bool softWrap =
+            _row > 0 && !_text->textBlockList()[_row - 1].eol();
+
+      qreal x = tline.xpos(column(), _text, softWrap);
       qreal y = tline.y() - ascent * .9;
       return QRectF(x, y, 4.0, h);
       }
@@ -516,7 +550,10 @@ bool TextCursor::set(const QPointF& p, QTextCursor::MoveMode mode)
                   break;
                   }
             }
-      _column = curLine().column(pt.x(), _text);
+      const bool softWrap =
+            _row > 0 && !_text->_layout[_row - 1].eol();
+
+      _column = curLine().column(pt.x(), _text, softWrap);
 
       _text->score()->setUpdateAll();
       if (mode == QTextCursor::MoveAnchor)
@@ -929,12 +966,56 @@ QFont TextFragment::font(const TextBase* t) const
 //   draw
 //---------------------------------------------------------
 
-void TextBlock::draw(QPainter* p, const TextBase* t) const
+void TextBlock::draw(QPainter* p, const TextBase* t, bool softWrap) const
       {
       // Translate to V-alignment
       p->translate(0.0, _y);
-      for (const TextFragment& f : _fragments)
-            f.draw(p, t);
+
+      bool suppressLeadingSpace = false;
+      qreal subsequentFragmentOffset = 0.0;
+
+      if (softWrap &&
+          !_fragments.isEmpty() &&
+          !_fragments.front().text.isEmpty() &&
+          _fragments.front().text.at(0).isSpace()) {
+
+            const TextFragment& first = _fragments.front();
+
+            suppressLeadingSpace = true;
+
+            // If the leading space shares a fragment with visible
+            // text, removing it makes that fragment visually one
+            // space narrower.  Later fragments therefore need to
+            // move left by the same amount.
+            //
+            // If the leading space is a fragment by itself, however,
+            // TextBlock::layout() has already positioned subsequent
+            // fragments correctly, so no offset is needed.
+            if (first.text.size() > 1) {
+                  QFontMetricsF fm(first.font(t), MScore::paintDevice());
+                  subsequentFragmentOffset = fm.width(first.text.left(1));
+                  }
+            }
+
+      bool firstFragment = true;
+
+      for (const TextFragment& f : _fragments) {
+            TextFragment tf = f;
+
+            if (firstFragment) {
+                  if (suppressLeadingSpace)
+                        tf.text.remove(0, 1);
+                  }
+            else if (subsequentFragmentOffset != 0.0) {
+                  tf.pos.rx() -= subsequentFragmentOffset;
+                  }
+
+            if (!tf.text.isEmpty())
+                  tf.draw(p, t);
+
+            firstFragment = false;
+            }
+
       p->translate(0.0, -_y);
       }
 
@@ -951,6 +1032,7 @@ void TextBlock::layout(TextBase* t)
 
       qreal layoutWidth = 0;
       Element* e = t->parent();
+
       if (e && t->layoutToParentWidth()) {
             layoutWidth = e->width();
             switch(e->type()) {
@@ -1046,9 +1128,12 @@ void TextBlock::layout(TextBase* t)
             rx = (layoutWidth - (_bbox.left() + _bbox.right())) * .5;
       else  // Align::LEFT
             rx = -_bbox.left();
+
       rx += lm;
+
       for (TextFragment& f : _fragments)
             f.pos.rx() += rx;
+
       _bbox.translate(rx, 0.0);
       }
 
@@ -1074,24 +1159,49 @@ QList<TextFragment>* TextBlock::fragmentsWithoutEmpty()
 //   xpos
 //---------------------------------------------------------
 
-qreal TextBlock::xpos(int column, const TextBase* t) const
+qreal TextBlock::xpos(int column, const TextBase* t, bool softWrap) const
       {
+      qreal softWrapOffset = 0.0;
+
+      if (softWrap &&
+          column > 0 &&
+          !_fragments.isEmpty()) {
+            const TextFragment& first = _fragments.front();
+
+            // Only compensate geometrically when removing the retained
+            // soft-wrap space actually shifts visible text in this same
+            // fragment.  If the space occupies a fragment by itself,
+            // later fragments are already positioned correctly by layout().
+            if (first.text.size() > 1 &&
+                first.text.at(0).isSpace()) {
+                  QFontMetricsF fm(first.font(t), MScore::paintDevice());
+                  softWrapOffset = fm.width(first.text.left(1));
+                  }
+            }
+
       int col = 0;
       for (const TextFragment& f : _fragments) {
             if (column == col)
-                  return f.pos.x();
+                  return f.pos.x() - softWrapOffset;
+
             QFontMetricsF fm(f.font(t), MScore::paintDevice());
             int idx = 0;
+
             for (const QChar& c : qAsConst(f.text)) {
                   ++idx;
                   if (c.isHighSurrogate())
                         continue;
+
                   ++col;
+
                   if (column == col)
-                        return f.pos.x() + fm.width(f.text.left(idx));
+                        return f.pos.x()
+                               + fm.width(f.text.left(idx))
+                               - softWrapOffset;
                   }
             }
-      return _bbox.x();
+
+      return _bbox.x() - softWrapOffset;
       }
 
 //---------------------------------------------------------
@@ -1134,11 +1244,12 @@ const CharFormat* TextBlock::formatAt(int column) const
 //   boundingRect
 //---------------------------------------------------------
 
-QRectF TextBlock::boundingRect(int col1, int col2, const TextBase* t) const
+QRectF TextBlock::boundingRect(int col1, int col2, const TextBase* t, bool softWrap) const
       {
-      qreal x1 = xpos(col1, t);
-      qreal x2 = xpos(col2, t);
-      return QRectF(x1, _bbox.y(), x2-x1, _bbox.height());
+      qreal x1 = xpos(col1, t, softWrap);
+      qreal x2 = xpos(col2, t, softWrap);
+
+      return QRectF(x1, _bbox.y(), x2 - x1, _bbox.height());
       }
 
 //---------------------------------------------------------
@@ -1163,26 +1274,43 @@ int TextBlock::columns() const
 //    Text coordinate system
 //---------------------------------------------------------
 
-int TextBlock::column(qreal x, TextBase* t) const
+int TextBlock::column(qreal x, TextBase* t, bool softWrap) const
       {
+      if (softWrap && !_fragments.isEmpty()) {
+            const TextFragment& f = _fragments.front();
+
+            if (f.text.size() > 1 &&
+                f.text.at(0).isSpace()) {
+                  QFontMetricsF fm(f.font(t), MScore::paintDevice());
+                  x += fm.width(f.text.left(1));
+                  }
+            }
+
       int col = 0;
       for (const TextFragment& f : _fragments) {
             int idx = 0;
+
             if (x <= f.pos.x())
                   return col;
+
             qreal px = 0.0;
+
             for (const QChar& c : qAsConst(f.text)) {
                   ++idx;
                   if (c.isHighSurrogate())
                         continue;
+
                   QFontMetricsF fm(f.font(t), MScore::paintDevice());
                   qreal xo = fm.width(f.text.left(idx));
-                  if (x <= f.pos.x() + px + (xo-px)*.5)
+
+                  if (x <= f.pos.x() + px + (xo - px) * 0.5)
                         return col;
+
                   ++col;
                   px = xo;
                   }
             }
+
       return col;
       }
 
@@ -1807,7 +1935,262 @@ void TextBase::createLayout()
             }
       if (_layout.empty())
             _layout.append(TextBlock());
+
       layoutInvalid = false;
+
+      // Re-create automatic wrapping after rebuilding _layout
+      if (layoutToParentWidth() && parent() && parent()->isTBox()) {
+            TextCursor wrapCursor(this);
+            wrapCursor.init();
+
+            while (wrapTextBlock(&wrapCursor))
+                  ;
+            }
+      }
+
+//---------------------------------------------------------
+//   wrapTextBlock
+//----------------------------------------------------------
+
+bool TextBase::wrapTextBlock(TextCursor* cursor)
+      {
+
+      Element* e = parent();
+      if (!e || !layoutToParentWidth() || !e->isTBox())
+            return false;
+
+      Box* b = toBox(e);
+      const qreal width =
+            b->width() - (b->leftMargin() + b->rightMargin()) * DPMM;
+
+      const int cursorRow = cursor->row();
+      const int cursorColumn = cursor->column();
+
+      // Find the beginning of this logical paragraph
+      int firstRow = cursorRow;
+
+      while (firstRow > 0 && !_layout[firstRow - 1].eol())
+            --firstRow;
+
+      // Find the end of this logical paragraph
+      int lastRow = cursorRow;
+      while (lastRow < _layout.size() - 1 && !_layout[lastRow].eol())
+            ++lastRow;
+
+      // Find the first overflowing row in this paragraph
+      int breakRow = -1;
+      int breakLocalColumn = -1;
+
+      for (int r = firstRow; r <= lastRow; ++r) {
+            const TextBlock& block = _layout[r];
+
+            qreal textWidth = 0.0;
+            int breakColumn = -1;
+            int col = 0;
+            bool overflow = false;
+
+            for (const TextFragment& f : block.fragments()) {
+                  QFontMetricsF fm(f.font(this), MScore::paintDevice());
+
+                  for (int i = 0; i < f.text.size(); ) {
+                        QString s;
+
+                        if (f.text.at(i).isHighSurrogate() && i + 1 < f.text.size()) {
+                              s = f.text.mid(i, 2);
+                              i += 2;
+                              }
+                        else {
+                              s = f.text.mid(i, 1);
+                              ++i;
+                              }
+
+                        if (textWidth + fm.width(s) > width) {
+                              overflow = true;
+                              break;
+                              }
+
+                        if (s.at(0).isSpace())
+                              breakColumn = col;
+
+                        textWidth += fm.width(s);
+                        ++col;
+                        }
+
+                  if (overflow)
+                        break;
+                  }
+
+            if (overflow && breakColumn >= 0) {
+                  breakRow = r;
+                  breakLocalColumn = breakColumn;
+
+                  break;
+                  }
+            }
+
+      if (breakRow < 0 || breakLocalColumn < 0)
+            return false;
+
+      // Have an overflowing row - split it:
+      const int oldRow = breakRow;
+
+      TextBlock& block = _layout[oldRow];
+
+      const bool oldEol = block.eol();
+
+      TextCursor splitCursor = *cursor;
+      splitCursor.setRow(oldRow);
+      splitCursor.setColumn(breakLocalColumn);
+
+      TextBlock newBlock = block.split(breakLocalColumn, &splitCursor);
+
+      const bool hasLeadingSpace =
+            newBlock.columns() > 0 && newBlock.text(0, 1) == " ";
+      (void)hasLeadingSpace;
+
+      newBlock.setEol(oldEol);
+
+      if (oldRow + 1 < _layout.size()) {
+            TextBlock& nextBlock = _layout[oldRow + 1];
+
+            QList<TextFragment> combined = newBlock.fragments();
+            combined.append(nextBlock.fragments());
+            nextBlock.fragments() = combined;
+            }
+      else {
+            _layout.insert(oldRow + 1, newBlock);
+            }
+
+      // Adjust the cursor if it was in the portion moved to the new row
+      if (cursorRow == oldRow && cursorColumn > breakLocalColumn) {
+            cursor->setRow(oldRow + 1);
+            cursor->setColumn(cursorColumn - breakLocalColumn);
+            }
+      else {
+            cursor->setRow(cursorRow);
+            cursor->setColumn(cursorColumn);
+            }
+
+      cursor->clearSelection();
+
+      return true;
+      }
+
+//---------------------------------------------------------
+//   unwrapTextBlock
+//---------------------------------------------------------
+
+bool TextBase::unwrapTextBlock(TextCursor* cursor)
+      {
+      Element* e = parent();
+      if (!e || !layoutToParentWidth() || !e->isTBox())
+            return false;
+
+      if (_layout.size() < 2)
+            return false;
+
+      const int cursorRow = cursor->row();
+      const int cursorColumn = cursor->column();
+
+      // Find the beginning of the logical paragraph.
+      // A false eol() between two rows means that the row
+      // boundary is only an automatic "soft" wrap:
+      int firstRow = cursorRow;
+      while (firstRow > 0 && !_layout[firstRow - 1].eol())
+            --firstRow;
+
+      // Find the end of the same logical paragraph
+      int lastRow = cursorRow;
+      while (lastRow < _layout.size() - 1 && !_layout[lastRow].eol())
+            ++lastRow;
+
+      if (firstRow == lastRow)
+            return false;
+
+      // Save the cursor as an offset from the beginning of
+      // the logical paragraph.  Soft row boundaries contribute
+      // no character of their own.
+      int logicalColumn = cursorColumn;
+
+      for (int r = firstRow; r < cursorRow; ++r)
+            logicalColumn += _layout[r].columns();
+
+      // Preserve the eol state of the actual final row
+      const bool finalEol = _layout[lastRow].eol();
+
+      // Join all soft-wrapped continuation rows into firstRow.
+      // The leading spaces retained by wrapTextBlock() are
+      // preserved here - they are real characters in the
+      // logical text.
+      TextBlock& firstBlock = _layout[firstRow];
+
+      for (int r = firstRow + 1; r <= lastRow; ++r)
+            firstBlock.fragments().append(_layout[r].fragments());
+
+      firstBlock.setEol(finalEol);
+
+      // Remove the old continuation rows in reverse to maintain valid indexes
+      for (int r = lastRow; r > firstRow; --r)
+            _layout.removeAt(r);
+
+      // Restore cursor to the same logical text position
+      // in the single joined block
+      cursor->setRow(firstRow);
+      cursor->setColumn(logicalColumn);
+      cursor->clearSelection();
+
+      // Re-wrap the reconstructed paragraph to the current width
+      bool changed = false;
+      while (wrapTextBlock(cursor))
+            changed = true;
+
+      return changed;
+      }
+
+//---------------------------------------------------------
+//   bakeSoftWraps
+//---------------------------------------------------------
+
+bool TextBase::bakeSoftWraps()
+      {
+      if (!parent() || !parent()->isTBox() || _layout.size() < 2)
+            return false;
+
+      const QList<TextBlock> oldLayout = _layout;
+      const bool oldTextInvalid = textInvalid;
+
+      bool changed = false;
+
+      for (int row = 0; row < _layout.size() - 1; ++row) {
+            TextBlock& block = _layout[row];
+            TextBlock& nextBlock = _layout[row + 1];
+
+            if (block.eol())
+                  continue;
+
+            if (nextBlock.columns() > 0 &&
+                nextBlock.character(0).isSpace())
+                  nextBlock.remove(0, nullptr);
+
+            block.setEol(true);
+            changed = true;
+            }
+
+      if (!changed)
+            return false;
+
+      // Serialize the temporarily baked layout
+      textInvalid = true;
+      const QString bakedXmlText = xmlText();
+
+      // Put the live object back exactly as it was before baking
+      _layout = oldLayout;
+      textInvalid = oldTextInvalid;
+
+      // Make the actual score change
+      undoChangeProperty(Pid::TEXT, bakedXmlText);
+
+      return true;
       }
 
 //---------------------------------------------------------
@@ -3190,8 +3573,13 @@ void TextBase::draw(QPainter* p) const
             }
       p->setBrush(Qt::NoBrush);
       p->setPen(textColor());
-      for (const TextBlock& t : _layout)
-            t.draw(p, this);
+
+      for (int row = 0; row < _layout.size(); ++row) {
+            const bool softWrap =
+                  row > 0 && !_layout[row - 1].eol();
+
+            _layout[row].draw(p, this, softWrap);
+            }
       }
 
 //---------------------------------------------------------
@@ -3221,15 +3609,19 @@ void TextBase::drawEditMode(QPainter* p, EditData& ed)
             sort(r1, c1, r2, c2);
             int row = 0;
             for (const TextBlock& t : qAsConst(_layout)) {
-                  t.draw(p, this);
+                  const bool softWrap =
+                              row > 0 && !_layout[row - 1].eol();
+
+                  t.draw(p, this, softWrap);
+
                   if (row >= r1 && row <= r2) {
                         QRectF br;
                         if (row == r1 && r1 == r2)
-                              br = t.boundingRect(c1, c2, this);
+                              br = t.boundingRect(c1, c2, this, softWrap);
                         else if (row == r1)
-                              br = t.boundingRect(c1, t.columns(), this);
+                              br = t.boundingRect(c1, t.columns(), this, softWrap);
                         else if (row == r2)
-                              br = t.boundingRect(0, c2, this);
+                              br = t.boundingRect(0, c2, this, softWrap);
                         else
                               br = t.boundingRect();
                         br.translate(0.0, t.y());
