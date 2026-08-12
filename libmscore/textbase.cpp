@@ -469,6 +469,7 @@ bool TextCursor::movePosition(QTextCursor::MoveOperation op, QTextCursor::MoveMo
 
                   case QTextCursor::NextWord: {
                         int cols =  columns();
+                        // qDebug("NextWord start row=%d col=%d cols=%d", _row, _column, cols);
                         if (_column < cols) {
                               ++_column;
                               while (_column < cols && !currentCharacter().isSpace())
@@ -476,6 +477,7 @@ bool TextCursor::movePosition(QTextCursor::MoveOperation op, QTextCursor::MoveMo
                               while (_column < cols && currentCharacter().isSpace())
                                     ++_column;
                               }
+                        // qDebug("NextWord end row=%d col=%d", _row, _column);
                         }
 #if !defined(Q_OS_MAC)
                         if (mode == QTextCursor::MoveAnchor)
@@ -1135,6 +1137,20 @@ void TextBlock::layout(TextBase* t)
             f.pos.rx() += rx;
 
       _bbox.translate(rx, 0.0);
+
+      qDebug() << "BLOCK LAYOUT:"
+               << "bboxLeft=" << _bbox.left()
+               << "rx=" << rx
+               << "fragments=" << _fragments.size();
+
+      int n = 0;
+      for (const TextFragment& f : _fragments) {
+            qDebug() << "  frag" << n++
+                     << "text=[" << f.text << "]"
+                     << "posX=" << f.pos.x()
+                     << "bold=" << f.format.bold()
+                     << "italic=" << f.format.italic();
+            }
       }
 
 //---------------------------------------------------------
@@ -1593,12 +1609,24 @@ void TextFragment::changeFormat(FormatId id, QVariant data)
 
 TextBlock TextBlock::split(int column, Ms::TextCursor* cursor)
       {
+      bool tempOutput = false;
       TextBlock tl;
 
       int col = 0;
       for (auto i = _fragments.begin(); i != _fragments.end(); ++i) {
+            if (tempOutput) qDebug() << "Frag:" << qAsConst(i->text);
             int idx = 0;
             for (const QChar& c : qAsConst(i->text)) {
+                  if (tempOutput) {
+                        if (col == column) qDebug() << "SPLIT";
+                        qDebug().nospace().noquote()
+                              << "\t"
+                              << "col=" << col << " "
+                              // << "idx=" << idx << " "
+                              // << "column=" << column << " "
+                              << "char=[" << QString(c) << "]"
+                              ;
+                        }
                   if (col == column) {
                         if (idx) {
                               if (idx < i->text.size()) {
@@ -1954,6 +1982,7 @@ void TextBase::createLayout()
 
 bool TextBase::wrapTextBlock(TextCursor* cursor)
       {
+      bool logRowColEol = false;
 
       Element* e = parent();
       if (!e || !layoutToParentWidth() || !e->isTBox())
@@ -1976,6 +2005,15 @@ bool TextBase::wrapTextBlock(TextCursor* cursor)
       int lastRow = cursorRow;
       while (lastRow < _layout.size() - 1 && !_layout[lastRow].eol())
             ++lastRow;
+
+      if (logRowColEol) {
+            for (int r = 0; r < rows(); ++r) {
+                  qDebug().nospace()
+                        << "row=" << r << " "
+                        << "columns=" << _layout[r].columns()  << " "
+                        << "eol=" << _layout[r].eol();
+                  }
+            }
 
       // Find the first overflowing row in this paragraph
       int breakRow = -1;
@@ -2024,6 +2062,12 @@ bool TextBase::wrapTextBlock(TextCursor* cursor)
                   breakRow = r;
                   breakLocalColumn = breakColumn;
 
+                  if (logRowColEol)
+                        qDebug().nospace()
+                              << "wrap: "
+                              << "breakRow=" << breakRow << " "
+                              << "breakLocalColumn=" << breakLocalColumn;
+
                   break;
                   }
             }
@@ -2033,8 +2077,16 @@ bool TextBase::wrapTextBlock(TextCursor* cursor)
 
       // Have an overflowing row - split it:
       const int oldRow = breakRow;
+      const int oldColumn = cursorColumn;
 
       TextBlock& block = _layout[oldRow];
+
+      if (logRowColEol)
+            qDebug().nospace()
+                  << "wrap:"
+                  << "oldRow=" << oldRow << " "
+                  << "oldColumn=" << oldColumn << " "
+                  << "breakColumn=" << breakLocalColumn;
 
       const bool oldEol = block.eol();
 
@@ -2042,13 +2094,34 @@ bool TextBase::wrapTextBlock(TextCursor* cursor)
       splitCursor.setRow(oldRow);
       splitCursor.setColumn(breakLocalColumn);
 
+      const QString beforeSplit = block.dump();
+
       TextBlock newBlock = block.split(breakLocalColumn, &splitCursor);
+
+      if (logRowColEol)
+            qDebug().nospace()
+                  << "split result/wrapcheck" << "\n"
+                  << "before=[" << beforeSplit << "]" << "\n"
+                  << "old=[" << block.dump() << "]" << "\n"
+                  << "new=[" << newBlock.dump() << "]" << "\n"
+                  << "concat=[" << (block.dump() + newBlock.dump()) << "]";
 
       const bool hasLeadingSpace =
             newBlock.columns() > 0 && newBlock.text(0, 1) == " ";
       (void)hasLeadingSpace;
 
       newBlock.setEol(oldEol);
+
+      qDebug() << "REFLOW:"
+               << "oldRow=" << oldRow
+               << "old=[" << block.dump() << "]"
+               << "new=[" << newBlock.dump() << "]"
+               << "hasNext=" << (oldRow + 1 < _layout.size())
+               << "next=["
+               << (oldRow + 1 < _layout.size()
+                   ? _layout[oldRow + 1].dump()
+                   : QString())
+               << "]";
 
       if (oldRow + 1 < _layout.size()) {
             TextBlock& nextBlock = _layout[oldRow + 1];
@@ -2061,6 +2134,20 @@ bool TextBase::wrapTextBlock(TextCursor* cursor)
             _layout.insert(oldRow + 1, newBlock);
             }
 
+      if (logRowColEol) {
+            for (int r = 0; r < rows(); ++r) {
+                  QString rowText;
+                  for (const TextFragment& f : _layout[r].fragments()) {
+                        rowText += f.text;
+                        qDebug().nospace()
+                              << "row=" << r << " "
+                              << "columns=" << _layout[r].columns() << " "
+                              << "eol=" << _layout[r].eol() << " "
+                              << "text=[" << rowText << "]";
+                        }
+                  }
+            }
+
       // Adjust the cursor if it was in the portion moved to the new row
       if (cursorRow == oldRow && cursorColumn > breakLocalColumn) {
             cursor->setRow(oldRow + 1);
@@ -2070,6 +2157,12 @@ bool TextBase::wrapTextBlock(TextCursor* cursor)
             cursor->setRow(cursorRow);
             cursor->setColumn(cursorColumn);
             }
+
+      if (logRowColEol)
+            qDebug().nospace()
+                  << "wrap AFTER cursor adjustment:" << " "
+                  << "row=" << cursor->row()  << " "
+                  << "col=" << cursor->column();
 
       cursor->clearSelection();
 
