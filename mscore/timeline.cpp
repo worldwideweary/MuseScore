@@ -335,13 +335,13 @@ void TRowLabels::restrictScroll(int value)
             QGraphicsRectItem* graphicsRectItem = qgraphicsitem_cast<QGraphicsRectItem*>(graphicsItem);
             QGraphicsLineItem* graphicsLineItem = qgraphicsitem_cast<QGraphicsLineItem*>(graphicsItem);
             QGraphicsPixmapItem* graphicsPixmapItem = qgraphicsitem_cast<QGraphicsPixmapItem*>(graphicsItem);
-            int y = pairGraphicInt.second * 20;
+            int y = pairGraphicInt.second * parent->getGridHeight();
             int scrollbarValue = verticalScrollBar()->value();
 
             if (graphicsRectItem) {
                   QRectF rectf = graphicsRectItem->rect();
                   rectf.setY(qreal(scrollbarValue + y));
-                  rectf.setHeight(20);
+                  rectf.setHeight(parent->getGridHeight());
                   graphicsRectItem->setRect(rectf);
                   }
             else if (graphicsLineItem) {
@@ -440,7 +440,7 @@ void TRowLabels::updateLabels(std::vector<std::pair<QString, bool>> labels, int 
             }
       QGraphicsLineItem* graphicsLineItem = new QGraphicsLineItem(0,
                                                     height * numMetas + verticalScrollBar()->value() + 1,
-                                                    std::max(maxWidth + 20, 70),
+                                                    std::max(maxWidth + parent->getGridHeight(), 70),
                                                     height * numMetas + verticalScrollBar()->value() + 1);
       graphicsLineItem->setPen(QPen(QColor(150, 150, 150), 4));
       graphicsLineItem->setZValue(0);
@@ -456,7 +456,7 @@ void TRowLabels::updateLabels(std::vector<std::pair<QString, bool>> labels, int 
       _oldItemInfo = tmp;
 
       setMinimumWidth(measureWidth + 9);
-      setMaximumWidth(std::max(maxWidth + 20, 70));
+      setMaximumWidth(std::max(maxWidth + parent->getGridHeight(), 70));
       mouseOver(mapToScene(mapFromGlobal(QCursor::pos())));
       }
 
@@ -467,7 +467,7 @@ void TRowLabels::updateLabels(std::vector<std::pair<QString, bool>> labels, int 
 void TRowLabels::resizeEvent(QResizeEvent*)
       {
       std::vector<std::pair<QString, bool>> labels = parent->getLabels();
-      updateLabels(labels, 20);
+      updateLabels(labels, parent->getGridHeight());
       }
 
 //---------------------------------------------------------
@@ -483,8 +483,8 @@ void TRowLabels::mousePressEvent(QMouseEvent* event)
       unsigned numMetas = parent->nmetas();
 
       // Check if mouse position in scene is on the last meta
-      QPointF measureMetaTl = QPointF(0, (numMetas - 1) * 20 + verticalScrollBar()->value());
-      QPointF measureMetaBr = QPointF(width(), numMetas * 20 + verticalScrollBar()->value());
+      QPointF measureMetaTl = QPointF(0, (numMetas - 1) * parent->getGridHeight() + verticalScrollBar()->value());
+      QPointF measureMetaBr = QPointF(width(), numMetas * parent->getGridHeight() + verticalScrollBar()->value());
       if (QRectF(measureMetaTl, measureMetaBr).contains(scenePt) && (numMetas > 2 || parent->collapsed())) {
             if (std::get<0>(_oldItemInfo)) {
                   std::pair<QGraphicsItem*, int> p = std::make_pair(std::get<0>(_oldItemInfo), std::get<2>(_oldItemInfo));
@@ -647,11 +647,11 @@ void TRowLabels::mouseOver(QPointF scenePt)
 
                   // Draw arrow at correct location
                   if (row < parent->nmetas()) {
-                        graphicsPixmapItemArrow->setPos(width() - 12, verticalScrollBar()->value() + 1 + row * 20);
+                        graphicsPixmapItemArrow->setPos(width() - 12, verticalScrollBar()->value() + 1 + row * parent->getGridHeight());
                         graphicsPixmapItemArrow->setZValue(3);
                         }
                   else {
-                        graphicsPixmapItemArrow->setPos(width() - 13, row * 20 + 5);
+                        graphicsPixmapItemArrow->setPos(width() - 13, row * parent->getGridHeight() + 5);
                         graphicsPixmapItemArrow->setZValue(-1);
                         }
 
@@ -754,6 +754,8 @@ Timeline::Timeline(TDockWidget* dockWidget, QWidget* parent)
       _lightTheme.colorBoxColor        = QColor(Qt::gray);
       _lightTheme.metaValuePenColor    = QColor(Qt::black);
       _lightTheme.metaValueBrushColor  = QColor(Qt::gray);
+      _lightTheme.rehearsalContiguousPenColor   = QColor(Qt::black);
+      _lightTheme.rehearsalContiguousBrushColor = QColor(220, 230, 255);
 
       _darkTheme.backgroundColor       = QColor(35, 35, 35);
       _darkTheme.labelsColor1          = QColor(225, 225, 225);
@@ -768,6 +770,8 @@ Timeline::Timeline(TDockWidget* dockWidget, QWidget* parent)
       _darkTheme.colorBoxColor         = QColor(Qt::gray);
       _darkTheme.metaValuePenColor     = QColor(Qt::lightGray);
       _darkTheme.metaValueBrushColor   = QColor(Qt::darkGray);
+      _darkTheme.rehearsalContiguousPenColor   = QColor(220, 230, 255);
+      _darkTheme.rehearsalContiguousBrushColor = QColor(Qt::black);
 
       _scrollArea = dockWidget;
       QSplitter* split = static_cast<QSplitter*>(_scrollArea->widget());
@@ -1236,15 +1240,23 @@ void Timeline::rehearsalMeta(Segment* seg, int* stagger, int pos)
       {
       int row = getMetaRow(tr("Rehearsal Mark"));
 
+      const bool startPosition = _contiguousRM && seg && seg->tick().isZero();
+      if (startPosition)
+            _resetPosition = true;
+
       for (Element* element : seg->annotations()) {
             int x = pos + (*stagger) * _spacing;
             if (element->isRehearsalMark()) {
-
-                  RehearsalMark* rehersal_mark = toRehearsalMark(element);
-                  if (!rehersal_mark)
+                  RehearsalMark* const rm = toRehearsalMark(element);
+                  if (!rm)
                         continue;
 
-                  if (addMetaValue(x, pos, rehersal_mark->plainText(), row, ElementType::REHEARSAL_MARK, element, 0, seg->measure())) {
+                  if (_resetPosition) {
+                        x = pos = 0;
+                        _resetPosition = false;
+                        }
+
+                  if (addMetaValue(x, pos, rm->plainText(), row, ElementType::REHEARSAL_MARK, element, 0, seg->measure())) {
                         (*stagger)++;
                         _globalZValue++;
                         }
@@ -1564,7 +1576,7 @@ bool Timeline::addMetaValue(int x, int pos, QString metaText, int row, ElementTy
       bool isRehearsalMark = (elementType == ElementType::REHEARSAL_MARK);
 
       if (isRehearsalMark && _contiguousRM) {
-            if ((lastPositionEnd == 0) || (lastPositionEnd > pos)) {
+            if ( (lastPositionEnd == 0) || (lastPositionEnd > pos) ) {
                   x = 0;
                   lastPositionEnd = 0;
                   }
@@ -1697,6 +1709,11 @@ bool Timeline::addMetaValue(int x, int pos, QString metaText, int row, ElementTy
       graphicsRectItem->setPen(QPen(activeTheme().metaValuePenColor));
       graphicsRectItem->setBrush(QBrush(activeTheme().metaValueBrushColor));
 
+      if (isRehearsalMark && _contiguousRM) {
+            graphicsRectItem->setPen(QPen(activeTheme().rehearsalContiguousPenColor));
+            graphicsRectItem->setBrush(QBrush(activeTheme().rehearsalContiguousBrushColor));
+            }
+
       scene()->addItem(graphicsRectItem);
       scene()->addItem(itemToAdd);
 
@@ -1755,6 +1772,15 @@ int Timeline::getHeight() const
             return int((nstaves() + nmetas()) * _gridHeight + 3);
       else
             return 0;
+      }
+
+//---------------------------------------------------------
+//   Timeline::getGridHeight()
+//---------------------------------------------------------
+
+int Timeline::getGridHeight() const
+      {
+      return _gridHeight;
       }
 
 //---------------------------------------------------------
