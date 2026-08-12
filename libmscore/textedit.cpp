@@ -54,28 +54,13 @@ void TextBase::editInsertText(TextCursor* cursor, const QString& s)
             QString nonBreakingSpace = QString(QChar(0xa0));
             cursor->curLine().insert(cursor, nonBreakingSpace);
             }
-      else {
-            // qDebug().nospace() << "BEFORE INSERT: "
-            //          << "row=" << cursor->row() << " "
-            //          << "col=" << cursor->column() << " "
-            //          << "char=" << QString(cursor->curLine().character(cursor->column()));
-
+      else
             cursor->curLine().insert(cursor, s);
-
-            // qDebug().nospace() << "AFTER RAW INSERT: "
-            //          << "row=" << cursor->row()  << " "
-            //          << "col=" << cursor->column();
-            }
 
       cursor->setColumn(cursor->column() + col);
       cursor->clearSelection();
 
       wrapTextBlock(cursor);
-
-      // qDebug().nospace() << "AFTER WRAP: "
-      //          << "row=" << cursor->row() << " "
-      //          << "col=" << cursor->column() << " "
-      //          << "char=" << QString(cursor->curLine().character(cursor->column()));
 
       triggerLayout();
       }
@@ -653,15 +638,6 @@ void ChangeText::insertText(EditData* ed)
                   break;
             }
 
-      qDebug() << "INSERT REMOVE POSITION:"
-               << "row=" << removeCursor.row()
-               << "col=" << removeCursor.column()
-               << "logical=" << logicalColumn;
-
-
-      qDebug() << "\t" << "removeCursor column:" << tc.column() - s.size();
-
-      // suspicious:
       removeCursor.setColumn(tc.column() - s.size());
 
       removeLogicalPosition = removeCursor.column();
@@ -675,11 +651,6 @@ void ChangeText::insertText(EditData* ed)
             if (blocks[r].eol())
                   ++removeLogicalPosition;
             }
-
-      qDebug() << "stored remove position:"
-               << "row=" << removeCursor.row()
-               << "col=" << removeCursor.column()
-               << "logical=" << removeLogicalPosition;
 
       if (ed) {
             TextCursor* ttc = c.text()->cursor(*ed);
@@ -724,50 +695,15 @@ void ChangeText::removeText(EditData* ed)
             tc = removeCursor;
             tc.setRow(row);
             tc.setColumn(remaining);
-
-            qDebug() << "resolved remove position:"
-                     << "logical=" << removeLogicalPosition
-                     << "row=" << row
-                     << "col=" << remaining
-                     << "lineColumns=" << tc.curLine().columns();
             }
 
       TextBlock& l = tc.curLine();
       int column = tc.column();
 
-      int fi = 0;
-      for (const TextFragment& f : l.fragments()) {
-            qDebug("  fragment %d: text=[%s] size=%d",
-                   fi++, qPrintable(f.text), f.text.size());
-            }
-
       const int formatColumn = column + s.size() - 1;
       const CharFormat* fmt = l.formatAt(formatColumn);
 
-      // qDebug() << "UNDO REMOVE:"
-      //          << "s=[" << s << "]"
-      //          << "row=" << tc.row()
-      //          << "column=" << column
-      //          << "lineColumns=" << l.columns();
-
       if (!fmt) {
-            // int logicalColumn = removeCursor.column();
-
-            // for (int r = removeCursor.row() - 1; r >= 0; --r) {
-            //       logicalColumn += c.text()->textBlockList()[r].columns();
-
-            //       if (c.text()->textBlockList()[r].eol())
-            //             break;
-            //       }
-
-            qDebug() << "INVALID RESOLVED REMOVE:"
-                     << "logical=" << removeLogicalPosition
-                     // << "row=" << row
-                     << "column=" << column
-                     << "formatColumn=" << formatColumn
-                     << "lineColumns=" << l.columns()
-                     << "s=[" << s << "]";
-
             return;
             }
 
