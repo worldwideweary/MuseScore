@@ -1537,6 +1537,10 @@ MuseScore::MuseScore()
       a->setCheckable(true);
       menuView->addAction(a);
 
+      a = getAction("toggle-piano-roll");
+      a->setCheckable(true);
+      menuView->addAction(a);
+
       a = getAction("toggle-scorecmp-tool");
       a->setCheckable(true);
       menuView->addAction(a);
@@ -5162,11 +5166,15 @@ void MuseScore::handleMessage(const QString& message)
 
 void MuseScore::editInPianoroll(Staff* staff, Position* p)
       {
-      if (pianorollEditor == 0)
-            pianorollEditor = new PianorollEditor(this);
-      pianorollEditor->setScore(staff->score());
+      if (!staff)
+            return;
+
+      createPianoroll();
+
       pianorollEditor->setStaff(staff);
-      pianorollEditor->show();
+
+      reDisplayDockWidget(pianorollDock, true);
+
       pianorollEditor->focusOnPosition(p);
       }
 
@@ -5611,6 +5619,75 @@ void MuseScore::showPianoKeyboard(bool visible)
             if (_pianoTools)
                   _pianoTools->hide();
             }
+      }
+
+//---------------------------------------------------------
+//   createPianoroll
+//---------------------------------------------------------
+
+void MuseScore::createPianoroll()
+      {
+      if (pianorollEditor)
+            return;
+
+      QAction* a = getAction("toggle-piano-roll");
+
+      pianorollDock = new QDockWidget(tr("Piano Roll Editor"), this);
+      pianorollDock->setObjectName("pianoroll");
+
+      pianorollDock->setAllowedAreas(Qt::DockWidgetAreas(
+            Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea));
+
+      pianorollEditor = new PianorollEditor(pianorollDock);
+      pianorollDock->setWidget(pianorollEditor);
+
+      addDockWidget(Qt::BottomDockWidgetArea, pianorollDock);
+
+      connect(pianorollDock, &QDockWidget::visibilityChanged,
+              a, &QAction::setChecked);
+      }
+
+//---------------------------------------------------------
+//   showPianoroll
+//---------------------------------------------------------
+
+void MuseScore::showPianoroll(bool visible)
+      {
+      if (visible) {
+            if (!pianorollEditor) {
+                  createPianoroll();
+
+                  Staff* staff = nullptr;
+
+                  if (cs && !cs->staves().isEmpty()) {
+                        const Selection& selection = cs->selection();
+
+                        if (selection.state() == SelState::RANGE) {
+                              const int staffIdx = selection.staffStart();
+
+                              if (staffIdx >= 0 && staffIdx < cs->nstaves())
+                                    staff = cs->staff(staffIdx);
+                              }
+                        else if (selection.state() == SelState::LIST) {
+                              for (Element* e : selection.elements()) {
+                                    if (e && e->staff()) {
+                                          staff = e->staff();
+                                          break;
+                                          }
+                                    }
+                              }
+
+                        if (!staff)
+                              staff = cs->staff(0);
+                        }
+
+                  pianorollEditor->setStaff(staff);
+                  }
+
+            reDisplayDockWidget(pianorollDock, true);
+            }
+      else if (pianorollDock)
+            pianorollDock->hide();
       }
 
 //---------------------------------------------------------
@@ -6422,6 +6499,8 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             importmidiPanel->setVisible(a->isChecked());
       else if (cmd == "toggle-mixer")
             showMixer(a->isChecked());
+      else if (cmd == "toggle-piano-roll")
+            showPianoroll(a->isChecked());
       else if (cmd == "synth-control")
             showSynthControl(a->isChecked());
       else if (cmd == "toggle-selection-window")
