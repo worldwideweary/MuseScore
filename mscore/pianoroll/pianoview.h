@@ -93,10 +93,13 @@ class PianoView : public QGraphicsView {
 
 public:
       static const BarPattern barPatterns[];
+      void setScope(PianoRollScope scope);
 
 private:
       Staff* _staff;
       Chord* _chord;
+
+      PianoRollScope _scope;
       
       Pos _trackingPos;  //Track mouse position
       Pos* _locator;

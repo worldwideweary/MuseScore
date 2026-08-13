@@ -51,7 +51,7 @@ void PianoLevelsChooser::updateSetboxValue()
             Note* note = item->note();
 
             NoteEvent* event = item->getTweakNoteEvent();
-            int value = filter->value(_staff, note, event);
+            int value = filter->value(note->staff(), note, event);
             eventValSpinBox->setValue(value);
             }
 
