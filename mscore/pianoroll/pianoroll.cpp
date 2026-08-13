@@ -42,7 +42,7 @@ namespace Ms {
 //---------------------------------------------------------
 
 PianorollEditor::PianorollEditor(QWidget* parent)
-   : QMainWindow(parent)
+   : QWidget(parent)
       {
       setObjectName("Pianoroll");
       setWindowTitle(QString("MuseScore"));
@@ -61,7 +61,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
 
       QWidget* mainWidget = new QWidget;
-      QToolBar* tbMain = addToolBar("Toolbar Main");
+      QToolBar* tbMain = new QToolBar("Toolbar Main", this);
+      tbMain->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+
       if (qApp->layoutDirection() == Qt::LayoutDirection::LeftToRight) {
             tbMain->addAction(getAction("undo"));
             tbMain->addAction(getAction("redo"));
@@ -107,9 +109,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       //----
 
-      QToolBar* tbTool = addToolBar("Action Buttons");
+      QToolBar* tbTool = new QToolBar("Action Buttons", this);
       QButtonGroup* bngrpActionBns = new QButtonGroup();
-
+      tbTool->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
       struct ToolIconData
       {
@@ -171,8 +173,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             { "", 0, false },
             };
 
-      QToolBar* tbNoteLen = addToolBar("Toolbar Note Length");
+      QToolBar* tbNoteLen = new QToolBar("Toolbar Note Length", this);
       QButtonGroup* bngrpNoteLen = new QButtonGroup();
+      tbNoteLen->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
       for (LenIconData* p = _iconData; !p->_icon.isEmpty(); ++p) {
             QToolButton* bnLen = new QToolButton();
@@ -191,8 +194,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       //----
 
-      QToolBar* tbDots = addToolBar("Toolbar Dots");
+      QToolBar* tbDots = new QToolBar("Toolbar Dots", this);
       QButtonGroup* bngrpNoteDot = new QButtonGroup();
+      tbDots->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
       struct DotIconData
       {
@@ -227,8 +231,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       //----
 
-      QToolBar* tbVoices = addToolBar("Toolbar Voices");
+      QToolBar* tbVoices = new QToolBar("Toolbar Voices", this);
       QButtonGroup* bngrpVoices = new QButtonGroup();
+      tbVoices->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
       //bngrpNoteLen = new QButtonGroup();
 
       struct VoiceIconData
@@ -265,8 +270,8 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       // --------------------------------------------------
       // empty area for spacing
 
-      addToolBarBreak();
-      QToolBar* tbTweak = addToolBar("Toolbar Tweak");
+      QToolBar* tbTweak = new QToolBar("Toolbar Tweak", this);
+
 
       tbTweak->addWidget(new QLabel(tr("Cursor:")));
       pos = new Awl::PosLabel;
@@ -400,7 +405,25 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       layout->addWidget(editAreaSplitter, 1, 0, 1, 1);
 
       mainWidget->setLayout(layout);
-      setCentralWidget(mainWidget);
+
+      QVBoxLayout* mainLayout = new QVBoxLayout(this);
+      mainLayout->setContentsMargins(0, 0, 0, 0);
+      mainLayout->setSpacing(0);
+
+      QHBoxLayout* toolbarLayout = new QHBoxLayout;
+      toolbarLayout->setContentsMargins(0, 0, 0, 0);
+      toolbarLayout->setSpacing(0);
+
+      toolbarLayout->addWidget(tbMain);
+      toolbarLayout->addWidget(tbTool);
+      toolbarLayout->addWidget(tbNoteLen);
+      toolbarLayout->addWidget(tbDots);
+      toolbarLayout->addWidget(tbVoices);
+      toolbarLayout->addStretch(1);
+
+      mainLayout->addLayout(toolbarLayout);
+      mainLayout->addWidget(tbTweak);
+      mainLayout->addWidget(mainWidget);
 
       connect(pianoView->verticalScrollBar(),   SIGNAL(valueChanged(int)), pianoKbd, SLOT(setYpos(int)));
       connect(pianoView->horizontalScrollBar(), SIGNAL(valueChanged(int)), hsb,      SLOT(setValue(int)));
@@ -443,7 +466,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(noteTweakerDlg,     SIGNAL(notesChanged()),                SLOT(selectionChanged()));
       connect(pianoLevelsChooser, SIGNAL(notesChanged()),                SLOT(selectionChanged()));
 
-      readSettings();
+      // readSettings();
 
       actions.append(getAction("tie"));
       actions.append(getAction("play"));
