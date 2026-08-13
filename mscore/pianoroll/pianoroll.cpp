@@ -411,11 +411,11 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(pianoView,          SIGNAL(pitchChanged(int)),              pl,          SLOT(setPitch(int)));
       connect(pianoView,          SIGNAL(pitchChanged(int)),              pianoKbd,    SLOT(setPitch(int)));
       connect(pianoKbd,           SIGNAL(pitchChanged(int)),              pl,          SLOT(setPitch(int)));
-      connect(pianoView,          SIGNAL(trackingPosChanged(Pos&)),       pos,         SLOT(setValue(Pos&)));
-      connect(pianoView,          SIGNAL(trackingPosChanged(Pos&)),       ruler,       SLOT(setPos(Pos&)));
-      connect(pianoView,          SIGNAL(trackingPosChanged(Pos&)),       pianoLevels, SLOT(setPos(Pos&)));
-      connect(ruler,              SIGNAL(posChanged(Pos&)),               pos,         SLOT(setValue(Pos&)));
-      connect(pianoLevels,        SIGNAL(posChanged(Pos&)),               pos,         SLOT(setValue(Pos&)));
+      connect(pianoView,          &PianoView::trackingPosChanged, pos, &Awl::PosLabel::setValue);
+      connect(pianoView,          &PianoView::trackingPosChanged, ruler, &PianoRuler::setPos);
+      connect(pianoView,          &PianoView::trackingPosChanged, pianoLevels, &PianoLevels::setPos);
+      connect(ruler,              &PianoRuler::posChanged, pos, &Awl::PosLabel::setValue);
+      connect(pianoLevels,        &PianoLevels::posChanged, pos, &Awl::PosLabel::setValue);
       connect(tuplet,             SIGNAL(valueChanged(int)),              pianoView,   SLOT(setTuplet(int)));
       connect(tuplet,             SIGNAL(valueChanged(int)),              pianoLevels, SLOT(setTuplet(int)));
       connect(barPattern,         SIGNAL(activated(int)),                 pianoView,   SLOT(setBarPattern(int)));
@@ -427,8 +427,8 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(hsb,                              SIGNAL(valueChanged(int)),   SLOT(setXpos(int)));
       connect(pianoView->horizontalScrollBar(), SIGNAL(valueChanged(int)),   SLOT(setXpos(int)));
 
-      connect(ruler,              SIGNAL(locatorMoved(int,Pos&)),        SLOT(moveLocator(int,Pos&)));
-      connect(pianoLevels,        SIGNAL(locatorMoved(int,Pos&)),        SLOT(moveLocator(int,Pos&)));
+      connect(ruler,              &PianoRuler::locatorMoved,  this, &PianorollEditor::moveLocator);
+      connect(pianoLevels,        &PianoLevels::locatorMoved, this, &PianorollEditor::moveLocator);
       connect(veloType,           SIGNAL(activated(int)),                SLOT(veloTypeChanged(int)));
       connect(velocity,           SIGNAL(valueChanged(int)),             SLOT(velocityChanged(int)));
       connect(pianoView,          SIGNAL(onTimeDragged(int)),     this,  SLOT(setOnTime(int)));
@@ -612,7 +612,7 @@ void PianorollEditor::setStaff(Staff* st)
                   setLocator(POS::CURRENT, _score->pos(POS::CURRENT).ticks());
                   setLocator(POS::LEFT,    _score->pos(POS::LEFT).ticks());
                   setLocator(POS::RIGHT,   _score->pos(POS::RIGHT).ticks());
-                  connect(_score, SIGNAL(posChanged(POS,uint)), SLOT(posChanged(POS,uint)));
+                  connect(_score, &Score::posChanged, this, &PianorollEditor::posChanged);
                   connect(_score, SIGNAL(playlistChanged()), SLOT(playlistChanged()));
                   }
             }
