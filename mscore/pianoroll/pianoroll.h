@@ -42,7 +42,7 @@ class WaveView;
 //   PianorollEditor
 //---------------------------------------------------------
 
-class PianorollEditor : public QMainWindow, public MuseScoreView {
+class PianorollEditor : public QWidget, public MuseScoreView {
       Q_OBJECT
 
       PianoView* pianoView;
@@ -128,7 +128,7 @@ class PianorollEditor : public QMainWindow, public MuseScoreView {
       void setLocator(POS posi, int tick) { locator[int(posi)].setTick(tick); }
 
       void writeSettings();
-      virtual const QRect geometry() const override { return QMainWindow::geometry(); }
+      virtual const QRect geometry() const override { return QWidget::geometry(); }
 
       void zoom(int amount = 1, bool horiz = true);
       };
