@@ -118,6 +118,7 @@ struct TimelineTheme {
       QColor backgroundColor, labelsColor1, labelsColor2, labelsColor3, gridColor1, gridColor2;
       QColor measureMetaColor, selectionColor, nonVisiblePenColor, nonVisibleBrushColor, colorBoxColor;
       QColor metaValuePenColor, metaValueBrushColor;
+      QColor rehearsalContiguousPenColor, rehearsalContiguousBrushColor;
       };
 
 //---------------------------------------------------------
@@ -138,8 +139,10 @@ class Timeline : public QGraphicsView {
    private:
       static constexpr int keyItemType = 15;
 
+      bool _resetPosition = false;
+
       int _gridWidth = 20;
-      int _gridHeight = 20;
+      int _gridHeight = 30;
       int _maxZoom = 50;
       int _minZoom = 5;
       int _spacing = 5;
@@ -245,6 +248,8 @@ class Timeline : public QGraphicsView {
 
       int getWidth() const;
       int getHeight() const;
+      int getGridHeight() const;
+
       const TimelineTheme& activeTheme() const;
 
       void updateGridFull() { updateGrid(0, -1); }
