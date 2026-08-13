@@ -329,7 +329,7 @@ PianoView::PianoView()
       _mouseDown   = false;
       _dragStyle   = DragStyle::NONE;
       _inProgressUndoEvent = false;
-      _scope = PianoRollScope::STAFF;
+      _scope = PianoRollScope::PART;
 
       memset(_pitchHighlight, 0, 128);
       }

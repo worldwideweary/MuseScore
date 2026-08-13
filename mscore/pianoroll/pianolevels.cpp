@@ -56,7 +56,7 @@ PianoLevels::PianoLevels(QWidget *parent)
        levelLen   = 20;
        mouseDown  = false;
        dragging   = false;
-       _scope     = PianoRollScope::STAFF;
+       _scope     = PianoRollScope::PART;
        }
 
 //---------------------------------------------------------
