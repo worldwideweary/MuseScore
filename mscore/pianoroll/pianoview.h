@@ -14,6 +14,7 @@
 #define __PIANOVIEW_H__
 
 #include "pianorolledittool.h"
+#include "preferences.h"
 
 #include "libmscore/pos.h"
 
@@ -94,13 +95,15 @@ class PianoView : public QGraphicsView {
 public:
       static const BarPattern barPatterns[];
       void setScope(PianoRollScope scope);
-      PianoRollScope getScope() { return _scope; };
+      void setColoring(Coloring);
+      PianoRollScope getScope() { return _scope; }
 
 private:
       Staff* _staff;
       Chord* _chord;
 
       PianoRollScope _scope;
+      Coloring _coloring;
       
       Pos _trackingPos;  //Track mouse position
       Pos* _locator;
@@ -138,16 +141,35 @@ private:
       QList<PianoItem*> _noteList;
       quint8 _pitchHighlight[128];
 
-      QColor _colorNoteSel = QColor(0xffff00);
-      QColor _colorNoteVoice1 = QColor(0x9bcdff);
-      QColor _colorNoteVoice2 = QColor(0x80d580);
-      QColor _colorNoteVoice3 = QColor(0xffac85);
-      QColor _colorNoteVoice4 = QColor(0xff94db);
 
+      /// Need to reimplement the pianoroll color use: these override the user definitions
+      // Voice1-4 should've been definable if doing this
+
+      bool darkTheme = (preferences.effectiveGlobalStyle() == MuseScoreEffectiveStyleType::DARK_FUSION);
+
+      // TODO: Rip this shit out of here so that it updates instead of stuck in the constructor set since it doesn't destruct even when hidden
+      QColor _colorNoteSel = darkTheme ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
+                                       : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
+
+      QColor _colorNoteVoice1 = MScore::selectColor[0];
+      QColor _colorNoteVoice2 = MScore::selectColor[1];
+      QColor _colorNoteVoice3 = MScore::selectColor[2];
+      QColor _colorNoteVoice4 = MScore::selectColor[3];
+
+      bool todoUseVoices = true; // make option to omit coloring of voicings or not in which case use NOTE_UNSEL_COLOR
+
+      // Change Playback Length coloring… instead of hardcoding either make one color
+      // dark and light versions or perform a change to the selector like make it lighter or something
       QColor _colorTweaks = QColor(0xfd63fcc);
-      QColor _colorNoteDrag = QColor(0xffbb33);
-      QColor _colorText = QColor(0x111111);
-      QColor _colorTie = QColor(0xff0000);
+
+      QColor _colorNoteDrag = darkTheme ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_DRAG_COLOR)
+                                        : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_DRAG_COLOR);
+
+      QColor _colorText = darkTheme ? preferences.getColor(PREF_UI_PIANOROLL_DARK_BG_TEXT_COLOR)
+                                    : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_BG_TEXT_COLOR);
+
+      QColor _colorTie = darkTheme ? preferences.getColor(PREF_UI_PIANOROLL_DARK_BG_TIE_COLOR)
+                                    : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_BG_TIE_COLOR);
 
       float _noteRectRoundedRadius = 3;
 

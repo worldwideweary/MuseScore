@@ -196,6 +196,16 @@ void PianoView::setScope(PianoRollScope scope)
       }
 
 //---------------------------------------------------------
+//   setColoring
+//---------------------------------------------------------
+
+void PianoView::setColoring(Coloring c)
+      {
+      _coloring = c;
+      updateNotes();
+      }
+
+//---------------------------------------------------------
 //   getTweakNoteEvent
 //---------------------------------------------------------
 
@@ -221,10 +231,10 @@ void PianoItem::paintNoteBlock(QPainter* painter, NoteEvent* evt)
 
       bool even = false;
       Staff* const staff = _note->staff();
+
       if (_pianoView->getScope() == PianoRollScope::PART && staff && staff->part()) {
             const QList<Staff*>* staves = staff->part()->staves();
-            int staffPos = staves ? staves->indexOf(staff) : -1;
-            qDebug() << "StaffPos:" << staffPos;
+            int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
             even = (staffPos % 2 == 0);
             }
 
@@ -302,7 +312,6 @@ void PianoItem::paintNoteBlock(QPainter* painter, NoteEvent* evt)
 void PianoItem::paint(QPainter* painter)
       {
       painter->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
-
       if (_pianoView->playEventsView()) {
             for (NoteEvent& e : _note->playEvents())
                   paintNoteBlock(painter, &e);
@@ -310,7 +319,6 @@ void PianoItem::paint(QPainter* painter)
       else
             paintNoteBlock(painter, 0);
       }
-
 
 //---------------------------------------------------------
 //   PianoView
@@ -555,36 +563,42 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
             return;
             }
 
+      const bool darkTheme = (preferences.effectiveGlobalStyle() == MuseScoreEffectiveStyleType::DARK_FUSION);
+      const bool adjust = (_editNoteTool == PianoRollEditTool::EVENT_ADJUST);
+      const int v = note->voice();
       QColor noteColor;
-      if (_editNoteTool == PianoRollEditTool::EVENT_ADJUST) {
-            noteColor = _colorTweaks;
-            }
-      else {
-            switch (note->voice()) {
-                  case 0:
-                        noteColor = _colorNoteVoice1;
-                        break;
-                  case 1:
-                        noteColor = _colorNoteVoice2;
-                        break;
-                  case 2:
-                        noteColor = _colorNoteVoice3;
-                        break;
-                  case 3:
-                        noteColor = _colorNoteVoice4;
-                        break;
-                  }
-            }
 
       if (note->selected())
-            noteColor = _colorNoteSel;
+            noteColor = darkTheme ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
+                                  : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
+      else if (false && adjust)
+            noteColor = _colorTweaks;
+      else if (_coloring == Coloring::VOICING) {
+                 if (v==0) noteColor = MScore::selectColor[0];
+            else if (v==1) noteColor = MScore::selectColor[1];
+            else if (v==2) noteColor = MScore::selectColor[2];
+            else if (v==3) noteColor = MScore::selectColor[3];
+            }
+      else if (_coloring == Coloring::STAFF) {
+            bool even = false;
+            Staff* const staff = block->note()->staff();
+            if (staff && staff->part()) {
+                  const QList<Staff*>* staves = staff->part()->staves();
+                  int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
+                  even = (staffPos % 2 == 0);
+                  }
+            if (darkTheme)
+                  noteColor = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
+                                   : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
+            else
+                  noteColor = even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
+                                   : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
+            }
 
-      //if (block->staffIdx != m_activeStaff) {
-      //    noteColor = noteColor.lighter(150);
-      //}
 
+      const qreal outlineSize = 2;
       p->setBrush(noteColor);
-      p->setPen(QPen(noteColor.darker(250)));
+      p->setPen(QPen(noteColor.darker(250), outlineSize));
 
       for (NoteEvent& e : note->playEvents()) {
             QRect bounds = boundingRect(note, &e, _editNoteTool == PianoRollEditTool::EVENT_ADJUST);
