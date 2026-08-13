@@ -5847,6 +5847,14 @@ void MuseScore::editInPianoroll(Staff* staff, Position* p)
             pianorollDock->setWidget(pianorollEditor);
 
             addDockWidget(Qt::BottomDockWidgetArea, pianorollDock);
+
+            qDebug() << "PRE dock:"
+                     << "floating =" << pianorollDock->isFloating()
+                     << "visible =" << pianorollDock->isVisible()
+                     << "area =" << dockWidgetArea(pianorollDock)
+                     << "dock geometry =" << pianorollDock->geometry()
+                     << "editor window =" << pianorollEditor->isWindow()
+                     << "editor parent =" << pianorollEditor->parentWidget();
             }
 
       pianorollEditor->setScore(staff->score());
@@ -5854,6 +5862,14 @@ void MuseScore::editInPianoroll(Staff* staff, Position* p)
 
       pianorollDock->show();
       pianorollDock->raise();
+
+      qDebug() << "PRE after show:"
+               << "floating =" << pianorollDock->isFloating()
+               << "visible =" << pianorollDock->isVisible()
+               << "area =" << dockWidgetArea(pianorollDock)
+               << "dock geometry =" << pianorollDock->geometry()
+               << "editor visible =" << pianorollEditor->isVisible()
+               << "editor geometry =" << pianorollEditor->geometry();
 
       pianorollEditor->focusOnPosition(p);
       }
