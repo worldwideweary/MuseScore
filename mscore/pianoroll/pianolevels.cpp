@@ -252,7 +252,6 @@ void PianoLevels::paintEvent(QPaintEvent* e)
             if (_scope == PianoRollScope::PART && staff && staff->part()) {
                   const QList<Staff*>* staves = staff->part()->staves();
                   int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
-                  qDebug() << "StaffPos:" << staffPos;
                   even = (staffPos % 2 == 0);
                   }
 
@@ -262,17 +261,6 @@ void PianoLevels::paintEvent(QPaintEvent* e)
             else
                   noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
                                         : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
-
-
-            // bool even = false;
-            // if (_scope == PianoRollScope::PART && _staff && _staff->part()) {
-            //       const QList<Staff*>* staves = _staff->part()->staves();
-            //       int staffPos = staves ? staves->indexOf(_staff) : -1; // might be a problem in part view
-            //       qDebug() << "StaffPos:" << staffPos;
-            //       even = (staffPos % 2 == 0);
-            //       }
-            // noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
-            //                       : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
 
 
             if (filter->isPerEvent()) {

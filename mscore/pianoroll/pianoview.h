@@ -14,6 +14,7 @@
 #define __PIANOVIEW_H__
 
 #include "pianorolledittool.h"
+#include "preferences.h"
 
 #include "libmscore/pos.h"
 
@@ -94,13 +95,16 @@ class PianoView : public QGraphicsView {
 public:
       static const BarPattern barPatterns[];
       void setScope(PianoRollScope scope);
-      PianoRollScope getScope() { return _scope; };
+      void setColoring(Coloring);
+      PianoRollScope getScope() { return _scope; }
+      bool darkTheme() { return preferences.effectiveGlobalStyle() == MuseScoreEffectiveStyleType::DARK_FUSION; }
 
 private:
       Staff* _staff;
       Chord* _chord;
 
       PianoRollScope _scope;
+      Coloring _coloring;
       
       Pos _trackingPos;  //Track mouse position
       Pos* _locator;
@@ -137,17 +141,6 @@ private:
 
       QList<PianoItem*> _noteList;
       quint8 _pitchHighlight[128];
-
-      QColor _colorNoteSel = QColor(0xffff00);
-      QColor _colorNoteVoice1 = QColor(0x9bcdff);
-      QColor _colorNoteVoice2 = QColor(0x80d580);
-      QColor _colorNoteVoice3 = QColor(0xffac85);
-      QColor _colorNoteVoice4 = QColor(0xff94db);
-
-      QColor _colorTweaks = QColor(0xfd63fcc);
-      QColor _colorNoteDrag = QColor(0xffbb33);
-      QColor _colorText = QColor(0x111111);
-      QColor _colorTie = QColor(0xff0000);
 
       float _noteRectRoundedRadius = 3;
 

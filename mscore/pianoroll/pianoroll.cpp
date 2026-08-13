@@ -104,8 +104,8 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       partLabel = new QLabel(tr("Part:"));
       tbMain->addWidget(partLabel);
 
+      // Option: Scope
       tbMain->addSeparator();
-
       tbMain->addWidget(new QLabel(tr("View:")));
 
       QComboBox* scopeBox = new QComboBox;
@@ -125,6 +125,24 @@ PianorollEditor::PianorollEditor(QWidget* parent)
               [this, scopeBox](int index) {
                     setScope(PianoRollScope(scopeBox->itemData(index).toInt()));
                     });
+
+      // Option: Voice coloring / Unselect preference coloring:
+      QComboBox* coloringBox = new QComboBox;
+      coloringBox->addItem(tr("Voicing"),   int(Coloring::VOICING));
+      coloringBox->addItem(tr("Singular"),  int(Coloring::STAFF));
+
+      int coloringIndex = coloringBox->findData(int(_coloring));
+      if (coloringIndex != -1)
+            coloringBox->setCurrentIndex(coloringIndex);
+
+      tbMain->addWidget(coloringBox);
+
+      connect(coloringBox,
+              QOverload<int>::of(&QComboBox::activated),
+              this,
+              [this, coloringBox](int index) {
+            setColoring(Coloring(coloringBox->itemData(index).toInt()));
+      });
 
       // --------------------------------------------------
       // toolbars
@@ -680,6 +698,17 @@ void PianorollEditor::setScope(PianoRollScope scope)
       _scope = scope;
       pianoView->setScope(scope);
       pianoLevels->setScope(scope);
+      }
+
+//---------------------------------------------------------
+//   setColoring
+//---------------------------------------------------------
+
+void PianorollEditor::setColoring(Coloring c)
+      {
+      _coloring = c;
+      pianoView->setColoring(c);
+      // Maybe pianoLevels should have coloring scheme set also?
       }
 
 //---------------------------------------------------------
