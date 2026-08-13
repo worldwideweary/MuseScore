@@ -125,10 +125,12 @@ void PianoLevels::paintEvent(QPaintEvent* e)
       QColor colGridLine;
       QColor colText;
 
+      bool dark = false;
       switch (preferences.effectiveGlobalStyle()) {
             case MuseScoreEffectiveStyleType::DARK_FUSION:
+                  dark = true;
                   colPianoBg = QColor(preferences.getColor(PREF_UI_PIANOROLL_DARK_BG_BASE_COLOR));
-                  noteDeselected = QColor(preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR));
+                  noteDeselected = preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
                   noteSelected = QColor(preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR));
 
                   colGridLine = QColor(preferences.getColor(PREF_UI_PIANOROLL_DARK_BG_GRIDLINE_COLOR));
@@ -136,14 +138,13 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                   break;
             default:
                   colPianoBg = QColor(preferences.getColor(PREF_UI_PIANOROLL_LIGHT_BG_BASE_COLOR));
-                  noteDeselected = QColor(preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR));
+                  noteDeselected = preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
                   noteSelected = QColor(preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR));
 
                   colGridLine = QColor(preferences.getColor(PREF_UI_PIANOROLL_LIGHT_BG_GRIDLINE_COLOR));
                   colText = QColor(preferences.getColor(PREF_UI_PIANOROLL_LIGHT_BG_TEXT_COLOR));
                   break;
             }
-
 
       const QPen penLineMajor = QPen(colGridLine, 2.0, Qt::SolidLine);
       const QPen penLineMinor = QPen(colGridLine, 1.0, Qt::SolidLine);
@@ -245,6 +246,35 @@ void PianoLevels::paintEvent(QPaintEvent* e)
 
       for (int i = 0; i < noteList.size(); ++i) {
             Note* note = noteList[i];
+
+            bool even = false;
+            Staff* const staff = note->staff();
+            if (_scope == PianoRollScope::PART && staff && staff->part()) {
+                  const QList<Staff*>* staves = staff->part()->staves();
+                  int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
+                  qDebug() << "StaffPos:" << staffPos;
+                  even = (staffPos % 2 == 0);
+                  }
+
+            if (dark)
+                  noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
+                                        : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
+            else
+                  noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
+                                        : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
+
+
+            // bool even = false;
+            // if (_scope == PianoRollScope::PART && _staff && _staff->part()) {
+            //       const QList<Staff*>* staves = _staff->part()->staves();
+            //       int staffPos = staves ? staves->indexOf(_staff) : -1; // might be a problem in part view
+            //       qDebug() << "StaffPos:" << staffPos;
+            //       even = (staffPos % 2 == 0);
+            //       }
+            // noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
+            //                       : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
+
+
             if (filter->isPerEvent()) {
                   for (NoteEvent& ne : note->playEvents()) {
                         int x = tickToPixelX(noteStartTick(note, &ne));
