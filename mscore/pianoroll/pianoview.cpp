@@ -2032,22 +2032,25 @@ void PianoView::updateNotes()
             scene()->blockSignals(false);
             return;
             }
+      if (!part->staves())
+            return;
+
+      const QList<Staff*>* staves = part->staves();
+      if (!staves)
+            return;
 
       SegmentType st = SegmentType::ChordRest;
-      const QList<Staff*>* staves = part->staves();
-      if (staves) {
-            for (Segment* s = _staff->score()->firstSegment(st); s; s = s->next1(st)) {
-                  for (Staff* staff : *staves) {
-                        int staffIdx = staff->idx();
-                        if (staffIdx == -1)
-                              continue;
+      for (Segment* s = _staff->score()->firstSegment(st); s; s = s->next1(st)) {
+            for (Staff* staff : *staves) {
+                  int staffIdx = staff->idx();
+                  if (staffIdx == -1)
+                        continue;
 
-                        for (int voice = 0; voice < VOICES; ++voice) {
-                              int track = voice + staffIdx * VOICES;
-                              Element* e = s->element(track);
-                              if (e && e->isChord())
-                                    addChord(toChord(e), voice);
-                              }
+                  for (int voice = 0; voice < VOICES; ++voice) {
+                        int track = voice + staffIdx * VOICES;
+                        Element* e = s->element(track);
+                        if (e && e->isChord())
+                              addChord(toChord(e), voice);
                         }
                   }
             }

@@ -28,6 +28,7 @@
 #include "libmscore/chord.h"
 #include "libmscore/note.h"
 #include "libmscore/noteevent.h"
+#include "libmscore/part.h"
 #include "libmscore/score.h"
 #include "libmscore/segment.h"
 #include "libmscore/staff.h"
@@ -247,7 +248,7 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                   for (NoteEvent& ne : note->playEvents()) {
                         int x = tickToPixelX(noteStartTick(note, &ne));
 
-                        int val = filter->value(_staff, note, &ne);
+                        int val = filter->value(note->staff(), note, &ne);
                         p.setPen(QPen(note->selected() ? noteSelected : noteDeselected, 2));
                         int pixY = valToPixelY(val);
                         p.drawLine(x, pix0, x, pixY);
@@ -262,7 +263,7 @@ void PianoLevels::paintEvent(QPaintEvent* e)
             else {
                   int x = tickToPixelX(noteStartTick(note, 0));
 
-                  int val = filter->value(_staff, note, 0);
+                  int val = filter->value(note->staff(), note, 0);
 
                   p.setPen(QPen(note->selected() ? noteSelected : noteDeselected, 2));
                   int pixY = valToPixelY(val);
@@ -332,7 +333,7 @@ bool PianoLevels::pickNoteEvent(int x, int y, bool selectedOnly, Note*& pickedNo
             if (filter->isPerEvent()) {
                   for (NoteEvent& e : note->playEvents()) {
                         int noteX = tickToPixelX(noteStartTick(note, &e));
-                        int noteY = valToPixelY(filter->value(_staff, note, &e));
+                        int noteY = valToPixelY(filter->value(note->staff(), note, &e));
                         int dx = noteX - x;
                         int dy = noteY - y;
 
@@ -345,7 +346,7 @@ bool PianoLevels::pickNoteEvent(int x, int y, bool selectedOnly, Note*& pickedNo
                   }
             else {
                   int noteX = tickToPixelX(noteStartTick(note, nullptr));
-                  int noteY = valToPixelY(filter->value(_staff, note, nullptr));
+                  int noteY = valToPixelY(filter->value(note->staff(), note, nullptr));
                   int dx = noteX - x;
                   int dy = noteY - y;
 
@@ -370,7 +371,7 @@ void PianoLevels::adjustLevel(Note* note, NoteEvent* noteEvt, int value)
       {
       PianoLevelsFilter* filter = PianoLevelsFilter::FILTER_LIST[_levelsIndex];
 
-      filter->setValue(_staff, note, noteEvt, value);
+      filter->setValue(note->staff(), note, noteEvt, value);
 
       update();
       emit noteLevelsChanged();
@@ -405,7 +406,7 @@ void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, 
                               int value = tick0 == tick1 ? value0
                                     : (value1 - value0) * (tick - tick0) / (tick1 - tick0) + value0;
 
-                              filter->setValue(_staff, note, &e, value);
+                              filter->setValue(note->staff(), note, &e, value);
                               hitNote = true;
                               }
                         }
@@ -415,7 +416,7 @@ void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, 
                   if (tick0 <= tick && tick <= tick1) {
                         int value = tick0 == tick1 ? value0
                               : (value1 - value0) * (tick - tick0) / (tick1 - tick0) + value0;
-                        filter->setValue(_staff, note, 0, value);
+                        filter->setValue(note->staff(), note, 0, value);
                         hitNote = true;
                         }
                   }
@@ -609,21 +610,32 @@ void PianoLevels::updateNotes()
       {
       clearNoteData();
 
-      if (!_staff) {
+      if (!_staff)
             return;
-            }
 
-      int staffIdx = _staff->idx();
-      if (staffIdx == -1)
+      Part* part = _staff->part();
+      if (!part)
+            return;
+      if (!part->staves())
+            return;
+
+      const QList<Staff*>* staves = part->staves();
+      if (!staves)
             return;
 
       SegmentType st = SegmentType::ChordRest;
       for (Segment* s = _staff->score()->firstSegment(st); s; s = s->next1(st)) {
-            for (int voice = 0; voice < VOICES; ++voice) {
-                  int track = voice + staffIdx * VOICES;
-                  Element* e = s->element(track);
-                  if (e && e->isChord())
-                        addChord(toChord(e), voice);
+            for (Staff* staff : *staves) {
+                  int staffIdx = staff->idx();
+                  if (staffIdx == -1)
+                        continue;
+
+                  for (int voice = 0; voice < VOICES; ++voice) {
+                        int track = voice + staffIdx * VOICES;
+                        Element* e = s->element(track);
+                        if (e && e->isChord())
+                              addChord(toChord(e), voice);
+                        }
                   }
             }
 
