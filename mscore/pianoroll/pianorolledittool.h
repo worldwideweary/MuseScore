@@ -34,6 +34,11 @@ enum class PianoRollScope {
       SCORE
       };
 
+enum class Coloring {
+      VOICING,
+      STAFF
+      };
+
 } // namespace Ms
 
 #endif
