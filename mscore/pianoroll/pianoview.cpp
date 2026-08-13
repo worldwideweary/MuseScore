@@ -2268,8 +2268,8 @@ QString PianoView::serializeSelectedNotes()
 
                   Fraction startTick = note->chord()->tick();
                   int pitch = note->pitch();
-
                   int voice = note->voice();
+                  int staffIdx = note->staffIdx();
 
                   int veloOff = note->veloOffset();
                   Note::ValueType veloType = note->veloType();
@@ -2281,6 +2281,7 @@ QString PianoView::serializeSelectedNotes()
                   xml.writeAttribute("lenD", QString::number(flen.denominator()));
                   xml.writeAttribute("pitch", QString::number(pitch));
                   xml.writeAttribute("voice", QString::number(voice));
+                  xml.writeAttribute("staff", QString::number(staffIdx));
                   xml.writeAttribute("veloOff", QString::number(veloOff));
                   xml.writeAttribute("veloType", veloType == Note::ValueType::OFFSET_VAL ? "o" : "u");
 
@@ -2578,12 +2579,15 @@ QVector<Note*> PianoView::pasteNotes(const QString& copiedNotes, Fraction pasteS
 
                         int pitch = xml.attributes().value("pitch").toString().toInt();
                         int voice = xml.attributes().value("voice").toString().toInt();
-
                         int veloOff = xml.attributes().value("veloOff").toString().toInt();
                         QString veloTypeStrn = xml.attributes().value("veloType").toString();
                         Note::ValueType veloType = veloTypeStrn == "o" ? Note::ValueType::OFFSET_VAL : Note::ValueType::USER_VAL;
 
-                        int track = _staff->idx() * VOICES + voice;
+                        int staffIdx = _staff->idx();
+                        if (xml.attributes().hasAttribute("staff"))
+                              staffIdx = xml.attributes().value("staff").toString().toInt();
+
+                        int track = staffIdx * VOICES + voice;
 
                         Fraction pos = xIsOffset ? startTick + pasteStartTick : startTick - firstTick + pasteStartTick;
 
