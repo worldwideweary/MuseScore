@@ -365,6 +365,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       QTimer* autoSaveTimer;
       QList<QAction*> pluginActions;
 
+      QDockWidget* pianorollDock { 0 };
       PianorollEditor* pianorollEditor   { 0 };
       DrumrollEditor* drumrollEditor     { 0 };
       bool _splitScreen                  { false };
