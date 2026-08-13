@@ -219,6 +219,18 @@ void PianoItem::paintNoteBlock(QPainter* painter, NoteEvent* evt)
       QColor noteSelected;
       QColor tieColor;
 
+      bool even = false;
+      Staff* const staff = _note->staff();
+      if (_pianoView->getScope() == PianoRollScope::PART && staff && staff->part()) {
+            const QList<Staff*>* staves = staff->part()->staves();
+            int staffPos = staves ? staves->indexOf(staff) : -1;
+            qDebug() << "StaffPos:" << staffPos;
+            even = (staffPos % 2 == 0);
+            }
+
+      noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
+                            : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
+
       switch (preferences.effectiveGlobalStyle()) {
             case MuseScoreEffectiveStyleType::DARK_FUSION:
                   noteDeselected = QColor(preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR));
