@@ -185,13 +185,14 @@ bool PianoItem::intersects(int startTick, int endTick, int highPitch, int lowPit
 //---------------------------------------------------------
 //   setScope
 //---------------------------------------------------------
+
 void PianoView::setScope(PianoRollScope scope)
       {
       if (_scope == scope)
             return;
+
       _scope = scope;
       updateNotes();
-      scene()->update();
       }
 
 //---------------------------------------------------------
@@ -2017,7 +2018,7 @@ void PianoView::addChord(Chord* chrd, int voice)
 
 void PianoView::updateNotes()
       {
-      scene()->blockSignals(true);  // block changeSelection()
+      scene()->blockSignals(true);
       scene()->clearFocus();
       scene()->clear();
       clearNoteData();
@@ -2027,25 +2028,16 @@ void PianoView::updateNotes()
             return;
             }
 
-      Part* part = _staff->part();
-      if (!part) {
-            scene()->blockSignals(false);
-            return;
-            }
-      if (!part->staves())
-            return;
-
-      const QList<Staff*>* staves = part->staves();
-      if (!staves)
-            return;
-
       SegmentType st = SegmentType::ChordRest;
-      for (Segment* s = _staff->score()->firstSegment(st); s; s = s->next1(st)) {
-            for (Staff* staff : *staves) {
-                  int staffIdx = staff->idx();
-                  if (staffIdx == -1)
-                        continue;
 
+      if (_scope == PianoRollScope::STAFF) {
+            int staffIdx = _staff->idx();
+            if (staffIdx == -1) {
+                  scene()->blockSignals(false);
+                  return;
+                  }
+
+            for (Segment* s = _staff->score()->firstSegment(st); s; s = s->next1(st)) {
                   for (int voice = 0; voice < VOICES; ++voice) {
                         int track = voice + staffIdx * VOICES;
                         Element* e = s->element(track);
@@ -2054,9 +2046,35 @@ void PianoView::updateNotes()
                         }
                   }
             }
+      else if (_scope == PianoRollScope::PART) {
+            Part* part = _staff->part();
+            if (!part || !part->staves()) {
+                  scene()->blockSignals(false);
+                  return;
+                  }
+
+            const QList<Staff*>* staves = part->staves();
+
+            for (Segment* s = _staff->score()->firstSegment(st); s; s = s->next1(st)) {
+                  for (Staff* staff : *staves) {
+                        int staffIdx = staff->idx();
+                        if (staffIdx == -1)
+                              continue;
+
+                        for (int voice = 0; voice < VOICES; ++voice) {
+                              int track = voice + staffIdx * VOICES;
+                              Element* e = s->element(track);
+                              if (e && e->isChord())
+                                    addChord(toChord(e), voice);
+                              }
+                        }
+                  }
+            }
+      else if (_scope == PianoRollScope::SCORE) {
+            // TODO: full-score scope
+            }
 
       scene()->blockSignals(false);
-
       scene()->update(sceneRect());
       }
 

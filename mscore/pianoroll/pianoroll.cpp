@@ -51,6 +51,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       _score   = 0;
       staff    = 0;
 
+      _scope = PianoRollScope::STAFF;
 
       QActionGroup* ag = Shortcut::getActionGroupForWidget(MsWidget::PIANO_ROLL_EDITOR);
       ag->setParent(this);
@@ -659,8 +660,24 @@ void PianorollEditor::setStaff(Staff* st)
       pianoKbd->setStaff(staff);
       noteTweakerDlg->setStaff(staff);
 
+      setScope(PianoRollScope::PART);
+
       updateSelection();
       setEnabled(st);
+      }
+
+//---------------------------------------------------------
+//   setScope
+//---------------------------------------------------------
+
+void PianorollEditor::setScope(PianoRollScope scope)
+      {
+      if (_scope == scope)
+            return;
+
+      _scope = scope;
+      pianoView->setScope(scope);
+      pianoLevels->setScope(scope);
       }
 
 //---------------------------------------------------------

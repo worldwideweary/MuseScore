@@ -56,6 +56,7 @@ PianoLevels::PianoLevels(QWidget *parent)
        levelLen   = 20;
        mouseDown  = false;
        dragging   = false;
+       _scope     = PianoRollScope::STAFF;
        }
 
 //---------------------------------------------------------
@@ -604,6 +605,7 @@ void PianoLevels::addChord(Chord* chord, int voice)
 
 //---------------------------------------------------------
 //   updateNotes
+//    Todo: factor out updateNotes between pianolevels and pianoview
 //---------------------------------------------------------
 
 void PianoLevels::updateNotes()
@@ -613,23 +615,14 @@ void PianoLevels::updateNotes()
       if (!_staff)
             return;
 
-      Part* part = _staff->part();
-      if (!part)
-            return;
-      if (!part->staves())
-            return;
-
-      const QList<Staff*>* staves = part->staves();
-      if (!staves)
-            return;
-
       SegmentType st = SegmentType::ChordRest;
-      for (Segment* s = _staff->score()->firstSegment(st); s; s = s->next1(st)) {
-            for (Staff* staff : *staves) {
-                  int staffIdx = staff->idx();
-                  if (staffIdx == -1)
-                        continue;
 
+      if (_scope == PianoRollScope::STAFF) {
+            int staffIdx = _staff->idx();
+            if (staffIdx == -1)
+                  return;
+
+            for (Segment* s = _staff->score()->firstSegment(st); s; s = s->next1(st)) {
                   for (int voice = 0; voice < VOICES; ++voice) {
                         int track = voice + staffIdx * VOICES;
                         Element* e = s->element(track);
@@ -638,8 +631,42 @@ void PianoLevels::updateNotes()
                         }
                   }
             }
+      else if (_scope == PianoRollScope::PART) {
+            Part* part = _staff->part();
+            if (!part || !part->staves())
+                  return;
+
+            const QList<Staff*>* staves = part->staves();
+
+            for (Segment* s = _staff->score()->firstSegment(st); s; s = s->next1(st)) {
+                  for (Staff* staff : *staves) {
+                        int staffIdx = staff->idx();
+                        if (staffIdx == -1)
+                              continue;
+
+                        for (int voice = 0; voice < VOICES; ++voice) {
+                              int track = voice + staffIdx * VOICES;
+                              Element* e = s->element(track);
+                              if (e && e->isChord())
+                                    addChord(toChord(e), voice);
+                              }
+                        }
+                  }
+            }
 
       update();
+      }
+//---------------------------------------------------------
+//   setScope
+//---------------------------------------------------------
+
+void PianoLevels::setScope(PianoRollScope scope)
+      {
+      if (_scope == scope)
+            return;
+
+      _scope = scope;
+      updateNotes();
       }
 
 //---------------------------------------------------------
