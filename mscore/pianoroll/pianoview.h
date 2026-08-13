@@ -94,6 +94,7 @@ class PianoView : public QGraphicsView {
 public:
       static const BarPattern barPatterns[];
       void setScope(PianoRollScope scope);
+      PianoRollScope getScope() { return _scope; };
 
 private:
       Staff* _staff;
