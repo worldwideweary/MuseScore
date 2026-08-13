@@ -563,16 +563,17 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
             return;
             }
 
-      const bool darkTheme = (preferences.effectiveGlobalStyle() == MuseScoreEffectiveStyleType::DARK_FUSION);
       const bool adjust = (_editNoteTool == PianoRollEditTool::EVENT_ADJUST);
       const int v = note->voice();
       QColor noteColor;
 
       if (note->selected())
-            noteColor = darkTheme ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
-                                  : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
-      else if (false && adjust)
-            noteColor = _colorTweaks;
+            noteColor = darkTheme() ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
+                                    : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
+      else if (false && adjust) {
+            // _colorTweaks "purple edit" now unused
+            noteColor = QColor(0xfd63fc);
+            }
       else if (_coloring == Coloring::VOICING) {
                  if (v==0) noteColor = MScore::selectColor[0];
             else if (v==1) noteColor = MScore::selectColor[1];
@@ -580,6 +581,8 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
             else if (v==3) noteColor = MScore::selectColor[3];
             }
       else if (_coloring == Coloring::STAFF) {
+
+            // Check if relative staff of part is odd/even for color differentiation:
             bool even = false;
             Staff* const staff = block->note()->staff();
             if (staff && staff->part()) {
@@ -587,14 +590,14 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
                   int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
                   even = (staffPos % 2 == 0);
                   }
-            if (darkTheme)
+
+            if (darkTheme())
                   noteColor = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
                                    : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
             else
                   noteColor = even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
                                    : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
             }
-
 
       const qreal outlineSize = 2;
       p->setBrush(noteColor);
@@ -623,7 +626,10 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
             }
 
       if (_editNoteTool != PianoRollEditTool::EVENT_ADJUST) {
-            p->setPen(QPen(_colorTie));
+            QColor colorTie = darkTheme() ? preferences.getColor(PREF_UI_PIANOROLL_DARK_BG_TIE_COLOR)
+                                          : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_BG_TIE_COLOR);
+
+            p->setPen(QPen(colorTie));
             for (Tie* note_tie = note->tieFor(); note_tie != nullptr; note_tie = note_tie->endNote()->tieFor()) {
                   Fraction tieTime = note_tie->endNote()->tick();
                   float xpos = tickToPixelX(tieTime.ticks());
@@ -2676,7 +2682,7 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                   double pitch = pixelYToPitch(_mouseDownPos.y());
                   int track = (int)_staff->idx() * VOICES + _editNoteVoice;
 
-                  drawDraggedNote(painter, startTickFrac, endTickFrac - startTickFrac, pitch, track, _colorNoteDrag);
+                  drawDraggedNote(painter, startTickFrac, endTickFrac - startTickFrac, pitch, track, noteColor);
                   }
             return;
             }
@@ -2725,7 +2731,7 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                               int voice = pi->note()->voice();
                               int track = (int)_staff->idx() * VOICES + voice;
 
-                              drawDraggedNote(painter, startNew, lenNew, pitch, track, _colorNoteDrag);
+                              drawDraggedNote(painter, startNew, lenNew, pitch, track, noteColor);
 
                               // Same as finishNoteEventAdjustDrag:
                               int evtOntimeNew = int(((startNew - start) / ticks).toDouble() * 1000);

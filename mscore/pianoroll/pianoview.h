@@ -97,6 +97,7 @@ public:
       void setScope(PianoRollScope scope);
       void setColoring(Coloring);
       PianoRollScope getScope() { return _scope; }
+      bool darkTheme() { return preferences.effectiveGlobalStyle() == MuseScoreEffectiveStyleType::DARK_FUSION; }
 
 private:
       Staff* _staff;
@@ -140,36 +141,6 @@ private:
 
       QList<PianoItem*> _noteList;
       quint8 _pitchHighlight[128];
-
-
-      /// Need to reimplement the pianoroll color use: these override the user definitions
-      // Voice1-4 should've been definable if doing this
-
-      bool darkTheme = (preferences.effectiveGlobalStyle() == MuseScoreEffectiveStyleType::DARK_FUSION);
-
-      // TODO: Rip this shit out of here so that it updates instead of stuck in the constructor set since it doesn't destruct even when hidden
-      QColor _colorNoteSel = darkTheme ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
-                                       : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
-
-      QColor _colorNoteVoice1 = MScore::selectColor[0];
-      QColor _colorNoteVoice2 = MScore::selectColor[1];
-      QColor _colorNoteVoice3 = MScore::selectColor[2];
-      QColor _colorNoteVoice4 = MScore::selectColor[3];
-
-      bool todoUseVoices = true; // make option to omit coloring of voicings or not in which case use NOTE_UNSEL_COLOR
-
-      // Change Playback Length coloring… instead of hardcoding either make one color
-      // dark and light versions or perform a change to the selector like make it lighter or something
-      QColor _colorTweaks = QColor(0xfd63fcc);
-
-      QColor _colorNoteDrag = darkTheme ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_DRAG_COLOR)
-                                        : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_DRAG_COLOR);
-
-      QColor _colorText = darkTheme ? preferences.getColor(PREF_UI_PIANOROLL_DARK_BG_TEXT_COLOR)
-                                    : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_BG_TEXT_COLOR);
-
-      QColor _colorTie = darkTheme ? preferences.getColor(PREF_UI_PIANOROLL_DARK_BG_TIE_COLOR)
-                                    : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_BG_TIE_COLOR);
 
       float _noteRectRoundedRadius = 3;
 
