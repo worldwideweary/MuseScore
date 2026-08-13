@@ -1304,6 +1304,9 @@ QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pit
                   startTick += curDur;
                   duration -= curDur;
 
+                  if (duration <= Fraction(0, 1))
+                        break;
+
                   Segment* seg = curChordRest->nextSegmentAfterCR(SegmentType::ChordRest);
                   if (!seg)
                         break;
@@ -1367,8 +1370,8 @@ void PianoView::changeChordLength(const QPointF& pos) {
       PianoItem *pn = pickNote(pickTick, pickPitch);
 
       if (pn) {
-            Note* note = pn->note();
-            int track = _staff->idx() * VOICES + note->voice();
+            Note* const note = pn->note();
+            const int track = note->track();
             Fraction frac = noteEditLength();
             Chord* chord = note->chord();
             if (chord->ticks() != frac) {
@@ -2020,20 +2023,32 @@ void PianoView::updateNotes()
       clearNoteData();
 
       if (!_staff) {
+            scene()->blockSignals(false);
             return;
             }
 
-      int staffIdx = _staff->idx();
-      if (staffIdx == -1)
+      Part* part = _staff->part();
+      if (!part) {
+            scene()->blockSignals(false);
             return;
+            }
 
       SegmentType st = SegmentType::ChordRest;
-      for (Segment* s = _staff->score()->firstSegment(st); s; s = s->next1(st)) {
-            for (int voice = 0; voice < VOICES; ++voice) {
-                  int track = voice + staffIdx * VOICES;
-                  Element* e = s->element(track);
-                  if (e && e->isChord())
-                        addChord(toChord(e), voice);
+      const QList<Staff*>* staves = part->staves();
+      if (staves) {
+            for (Segment* s = _staff->score()->firstSegment(st); s; s = s->next1(st)) {
+                  for (Staff* staff : *staves) {
+                        int staffIdx = staff->idx();
+                        if (staffIdx == -1)
+                              continue;
+
+                        for (int voice = 0; voice < VOICES; ++voice) {
+                              int track = voice + staffIdx * VOICES;
+                              Element* e = s->element(track);
+                              if (e && e->isChord())
+                                    addChord(toChord(e), voice);
+                              }
+                        }
                   }
             }
 
@@ -2043,7 +2058,7 @@ void PianoView::updateNotes()
       }
 
 //---------------------------------------------------------
-//   updateNotes
+//   clearNoteData
 //---------------------------------------------------------
 
 void PianoView::clearNoteData()
@@ -2106,29 +2121,23 @@ void PianoView::showNoteTweaker()
 //   setVoices
 //---------------------------------------------------------
 
-void PianoView::setNotesToVoice(int voice) {
-      if (_noteList.isEmpty())
+void PianoView::setNotesToVoice(int voice)
+      {
+      if (!_staff || _noteList.isEmpty())
             return;
 
-      //Make a copy of the selection
-      QList<Note*> notes;
-      for (int i = 0; i < _noteList.size(); ++i)
-            if (_noteList.at(i)->note()->selected())
-                  notes.append(_noteList.at(i)->note());
-
-      Score* score = _staff->score();
-      score->startCmd();
-
-      for (int i = 0; i < notes.size(); ++i) {
-            Note* note = notes.at(i);
-
-            addNote(note->tick(), note->chord()->ticks(), note->pitch(), voice);
-            score->deleteItem(note);
+      bool hasSelection = false;
+      for (PianoItem* item : _noteList) {
+            if (item->note()->selected()) {
+                  hasSelection = true;
+                  break;
+                  }
             }
 
-      score->endCmd();
+      if (!hasSelection)
+            return;
 
-      scene()->update();
+      _staff->score()->changeVoice(voice);
       }
 
 
