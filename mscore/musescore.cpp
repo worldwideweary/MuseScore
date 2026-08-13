@@ -5838,11 +5838,23 @@ void MuseScore::updateTimer()
 
 void MuseScore::editInPianoroll(Staff* staff, Position* p)
       {
-      if (pianorollEditor == 0)
-            pianorollEditor = new PianorollEditor(this);
+      if (pianorollEditor == 0) {
+            pianorollDock = new QDockWidget(tr("Piano Roll Editor"), this);
+            pianorollDock->setObjectName("pianoroll");
+            pianorollDock->setAllowedAreas(Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
+
+            pianorollEditor = new PianorollEditor(pianorollDock);
+            pianorollDock->setWidget(pianorollEditor);
+
+            addDockWidget(Qt::BottomDockWidgetArea, pianorollDock);
+            }
+
       pianorollEditor->setScore(staff->score());
       pianorollEditor->setStaff(staff);
-      pianorollEditor->show();
+
+      pianorollDock->show();
+      pianorollDock->raise();
+
       pianorollEditor->focusOnPosition(p);
       }
 

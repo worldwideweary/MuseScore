@@ -42,7 +42,7 @@ namespace Ms {
 //---------------------------------------------------------
 
 PianorollEditor::PianorollEditor(QWidget* parent)
-   : QMainWindow(parent)
+   : QWidget(parent)
       {
       setObjectName("Pianoroll");
       setWindowTitle(QString("MuseScore"));
@@ -61,7 +61,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
 
       QWidget* mainWidget = new QWidget;
-      QToolBar* tbMain = addToolBar("Toolbar Main");
+      QToolBar* tbMain = new QToolBar("Toolbar Main", this);
+      tbMain->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+
       if (qApp->layoutDirection() == Qt::LayoutDirection::LeftToRight) {
             tbMain->addAction(getAction("undo"));
             tbMain->addAction(getAction("redo"));
@@ -107,9 +109,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       //----
 
-      QToolBar* tbTool = addToolBar("Action Buttons");
+      QToolBar* tbTool = new QToolBar("Action Buttons", this);
       QButtonGroup* bngrpActionBns = new QButtonGroup();
-
+      tbTool->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
       struct ToolIconData
       {
@@ -171,8 +173,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             { "", 0, false },
             };
 
-      QToolBar* tbNoteLen = addToolBar("Toolbar Note Length");
+      QToolBar* tbNoteLen = new QToolBar("Toolbar Note Length", this);
       QButtonGroup* bngrpNoteLen = new QButtonGroup();
+      tbNoteLen->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
       for (LenIconData* p = _iconData; !p->_icon.isEmpty(); ++p) {
             QToolButton* bnLen = new QToolButton();
@@ -191,8 +194,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       //----
 
-      QToolBar* tbDots = addToolBar("Toolbar Dots");
+      QToolBar* tbDots = new QToolBar("Toolbar Dots", this);
       QButtonGroup* bngrpNoteDot = new QButtonGroup();
+      tbDots->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
       struct DotIconData
       {
@@ -227,8 +231,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       //----
 
-      QToolBar* tbVoices = addToolBar("Toolbar Voices");
+      QToolBar* tbVoices = new QToolBar("Toolbar Voices", this);
       QButtonGroup* bngrpVoices = new QButtonGroup();
+      tbVoices->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
       //bngrpNoteLen = new QButtonGroup();
 
       struct VoiceIconData
@@ -265,8 +270,8 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       // --------------------------------------------------
       // empty area for spacing
 
-      addToolBarBreak();
-      QToolBar* tbTweak = addToolBar("Toolbar Tweak");
+      QToolBar* tbTweak = new QToolBar("Toolbar Tweak", this);
+
 
       tbTweak->addWidget(new QLabel(tr("Cursor:")));
       pos = new Awl::PosLabel;
@@ -400,7 +405,25 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       layout->addWidget(editAreaSplitter, 1, 0, 1, 1);
 
       mainWidget->setLayout(layout);
-      setCentralWidget(mainWidget);
+
+      QVBoxLayout* mainLayout = new QVBoxLayout(this);
+      mainLayout->setContentsMargins(0, 0, 0, 0);
+      mainLayout->setSpacing(0);
+
+      QHBoxLayout* toolbarLayout = new QHBoxLayout;
+      toolbarLayout->setContentsMargins(0, 0, 0, 0);
+      toolbarLayout->setSpacing(0);
+
+      toolbarLayout->addWidget(tbMain);
+      toolbarLayout->addWidget(tbTool);
+      toolbarLayout->addWidget(tbNoteLen);
+      toolbarLayout->addWidget(tbDots);
+      toolbarLayout->addWidget(tbVoices);
+      toolbarLayout->addStretch(1);
+
+      mainLayout->addLayout(toolbarLayout);
+      mainLayout->addWidget(tbTweak);
+      mainLayout->addWidget(mainWidget);
 
       connect(pianoView->verticalScrollBar(),   SIGNAL(valueChanged(int)), pianoKbd, SLOT(setYpos(int)));
       connect(pianoView->horizontalScrollBar(), SIGNAL(valueChanged(int)), hsb,      SLOT(setValue(int)));
@@ -411,11 +434,11 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(pianoView,          SIGNAL(pitchChanged(int)),              pl,          SLOT(setPitch(int)));
       connect(pianoView,          SIGNAL(pitchChanged(int)),              pianoKbd,    SLOT(setPitch(int)));
       connect(pianoKbd,           SIGNAL(pitchChanged(int)),              pl,          SLOT(setPitch(int)));
-      connect(pianoView,          SIGNAL(trackingPosChanged(Pos&)),       pos,         SLOT(setValue(Pos&)));
-      connect(pianoView,          SIGNAL(trackingPosChanged(Pos&)),       ruler,       SLOT(setPos(Pos&)));
-      connect(pianoView,          SIGNAL(trackingPosChanged(Pos&)),       pianoLevels, SLOT(setPos(Pos&)));
-      connect(ruler,              SIGNAL(posChanged(Pos&)),               pos,         SLOT(setValue(Pos&)));
-      connect(pianoLevels,        SIGNAL(posChanged(Pos&)),               pos,         SLOT(setValue(Pos&)));
+      connect(pianoView,          &PianoView::trackingPosChanged, pos, &Awl::PosLabel::setValue);
+      connect(pianoView,          &PianoView::trackingPosChanged, ruler, &PianoRuler::setPos);
+      connect(pianoView,          &PianoView::trackingPosChanged, pianoLevels, &PianoLevels::setPos);
+      connect(ruler,              &PianoRuler::posChanged, pos, &Awl::PosLabel::setValue);
+      connect(pianoLevels,        &PianoLevels::posChanged, pos, &Awl::PosLabel::setValue);
       connect(tuplet,             SIGNAL(valueChanged(int)),              pianoView,   SLOT(setTuplet(int)));
       connect(tuplet,             SIGNAL(valueChanged(int)),              pianoLevels, SLOT(setTuplet(int)));
       connect(barPattern,         SIGNAL(activated(int)),                 pianoView,   SLOT(setBarPattern(int)));
@@ -427,8 +450,8 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(hsb,                              SIGNAL(valueChanged(int)),   SLOT(setXpos(int)));
       connect(pianoView->horizontalScrollBar(), SIGNAL(valueChanged(int)),   SLOT(setXpos(int)));
 
-      connect(ruler,              SIGNAL(locatorMoved(int,Pos&)),        SLOT(moveLocator(int,Pos&)));
-      connect(pianoLevels,        SIGNAL(locatorMoved(int,Pos&)),        SLOT(moveLocator(int,Pos&)));
+      connect(ruler,              &PianoRuler::locatorMoved,  this, &PianorollEditor::moveLocator);
+      connect(pianoLevels,        &PianoLevels::locatorMoved, this, &PianorollEditor::moveLocator);
       connect(veloType,           SIGNAL(activated(int)),                SLOT(veloTypeChanged(int)));
       connect(velocity,           SIGNAL(valueChanged(int)),             SLOT(velocityChanged(int)));
       connect(pianoView,          SIGNAL(onTimeDragged(int)),     this,  SLOT(setOnTime(int)));
@@ -443,7 +466,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(noteTweakerDlg,     SIGNAL(notesChanged()),                SLOT(selectionChanged()));
       connect(pianoLevelsChooser, SIGNAL(notesChanged()),                SLOT(selectionChanged()));
 
-      readSettings();
+      // readSettings();
 
       actions.append(getAction("tie"));
       actions.append(getAction("play"));
@@ -612,7 +635,7 @@ void PianorollEditor::setStaff(Staff* st)
                   setLocator(POS::CURRENT, _score->pos(POS::CURRENT).ticks());
                   setLocator(POS::LEFT,    _score->pos(POS::LEFT).ticks());
                   setLocator(POS::RIGHT,   _score->pos(POS::RIGHT).ticks());
-                  connect(_score, SIGNAL(posChanged(POS,uint)), SLOT(posChanged(POS,uint)));
+                  connect(_score, &Score::posChanged, this, &PianorollEditor::posChanged);
                   connect(_score, SIGNAL(playlistChanged()), SLOT(playlistChanged()));
                   }
             }
