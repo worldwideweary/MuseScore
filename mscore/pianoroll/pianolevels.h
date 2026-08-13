@@ -22,6 +22,8 @@
 
 #include <QWidget>
 
+#include "pianorolledittool.h"
+
 #include "libmscore/pos.h"
 
 namespace Ms {
@@ -59,6 +61,8 @@ class PianoLevels : public QWidget
       int vMargin;
       int levelLen;
       int pickRadius = 4;
+
+      PianoRollScope _scope;
 
       bool mouseDown;
       QPointF mouseDownPos;
@@ -118,6 +122,8 @@ public:
       void updateNotes();
       int tuplet() const { return _tuplet; }
       int subdiv() const { return _subdiv; }
+
+      void setScope(PianoRollScope scope);
 
       int xpos() const { return _xpos; }
       qreal xZoom() const { return _xZoom; }

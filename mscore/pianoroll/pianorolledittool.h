@@ -28,6 +28,12 @@ enum PianoRollEditTool
       LAST  //Marker for end of list - not a tool
       };
 
+enum class PianoRollScope {
+      STAFF,
+      PART,
+      SCORE
+      };
+
 } // namespace Ms
 
 #endif

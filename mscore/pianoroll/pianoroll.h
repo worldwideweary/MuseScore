@@ -68,6 +68,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       WaveView* waveView;
       QSplitter* split;
       QList<QAction*> actions;
+      PianoRollScope _scope;
 
       bool updateScheduled = false;
       NoteTweakerDialog* noteTweakerDlg;
@@ -125,6 +126,8 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       virtual void drawBackground(QPainter* /*p*/, const QRectF& /*r*/) const override {}
 
       void setLocator(POS posi, int tick) { locator[int(posi)].setTick(tick); }
+
+      void setScope(PianoRollScope scope);
 
       void writeSettings();
       virtual const QRect geometry() const override { return QWidget::geometry(); }

@@ -51,6 +51,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       _score   = 0;
       staff    = 0;
 
+      _scope = PianoRollScope::PART;
 
       QActionGroup* ag = Shortcut::getActionGroupForWidget(MsWidget::PIANO_ROLL_EDITOR);
       ag->setParent(this);
@@ -102,6 +103,28 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       partLabel = new QLabel(tr("Part:"));
       tbMain->addWidget(partLabel);
+
+      tbMain->addSeparator();
+
+      tbMain->addWidget(new QLabel(tr("View:")));
+
+      QComboBox* scopeBox = new QComboBox;
+      scopeBox->addItem(tr("Staff"), int(PianoRollScope::STAFF));
+      scopeBox->addItem(tr("Part"),  int(PianoRollScope::PART));
+      // scopeBox->addItem(tr("Score"),  int(PianoRollScope::SCORE)); // TODO: implement
+
+      int scopeIndex = scopeBox->findData(int(_scope));
+      if (scopeIndex != -1)
+            scopeBox->setCurrentIndex(scopeIndex);
+
+      tbMain->addWidget(scopeBox);
+
+      connect(scopeBox,
+              QOverload<int>::of(&QComboBox::activated),
+              this,
+              [this, scopeBox](int index) {
+                    setScope(PianoRollScope(scopeBox->itemData(index).toInt()));
+                    });
 
       // --------------------------------------------------
       // toolbars
@@ -633,12 +656,30 @@ void PianorollEditor::setStaff(Staff* st)
       pianoView->setStaff(staff, locator);
       pianoLevels->setScore(_score, locator);
       pianoLevels->setStaff(staff, locator);
+
+      pianoView->setScope(_scope);
+      pianoLevels->setScope(_scope);
+
       pianoLevelsChooser->setStaff(staff);
       pianoKbd->setStaff(staff);
       noteTweakerDlg->setStaff(staff);
 
       updateSelection();
       setEnabled(st);
+      }
+
+//---------------------------------------------------------
+//   setScope
+//---------------------------------------------------------
+
+void PianorollEditor::setScope(PianoRollScope scope)
+      {
+      if (_scope == scope)
+            return;
+
+      _scope = scope;
+      pianoView->setScope(scope);
+      pianoLevels->setScope(scope);
       }
 
 //---------------------------------------------------------
