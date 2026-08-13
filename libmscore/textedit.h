@@ -58,13 +58,16 @@ class TextEditUndoCommand : public UndoCommand {
 class ChangeText : public TextEditUndoCommand {
       QString s;
       CharFormat format;
+      TextCursor removeCursor;
+      int removeLogicalPosition = -1;
 
    protected:
       void insertText(EditData*);
       void removeText(EditData*);
 
    public:
-      ChangeText(const TextCursor* tc, const QString& t) : TextEditUndoCommand(*tc), s(t), format(*tc->format()) {}
+      ChangeText(const TextCursor* tc, const QString& t)
+            : TextEditUndoCommand(*tc), s(t), format(*tc->format()), removeCursor(*tc) {}
       virtual void undo(EditData*) override = 0;
       virtual void redo(EditData*) override = 0;
       const TextCursor& cursor() const { return c; }

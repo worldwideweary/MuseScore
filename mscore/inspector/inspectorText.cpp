@@ -34,8 +34,27 @@ InspectorText::InspectorText(QWidget* parent)
             { f.title, f.panel }
             };
 
+      const Element* el = inspector->element();
+      const bool isTextFrameText = el->isText() && el->parent() && el->parent()->isTBox();
+      if (!isTextFrameText)
+            f.hardcodeWordWrap->hide();
+
       populateStyle(f.style);
       mapSignals(iiList, ppList);
+      connect (f.hardcodeWordWrap, &QPushButton::clicked,
+               this, &InspectorText::on_hardcodeWordWrap_clicked);
+      }
+
+//---------------------------------------------------------
+//   on_hardcodeWordWrap_clicked
+//---------------------------------------------------------
+
+void InspectorText::on_hardcodeWordWrap_clicked()
+      {
+      Score* s = inspector->element()->score();
+      s->startCmd();
+      s->cmdBakeSoftWrap();
+      s->endCmd();
       }
 
 }

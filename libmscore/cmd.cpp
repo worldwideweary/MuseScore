@@ -5240,6 +5240,21 @@ void Score::cmdAddPitch(Note* selectedNote, int step)
       }
 
 //---------------------------------------------------------
+//   cmdBakeSoftWrap
+//---------------------------------------------------------
+
+void Score::cmdBakeSoftWrap()
+      {
+      for (Element* e : selection().elements()) {
+            if (!e->isText())
+                  continue;
+
+            Text* text = toText(e);
+            text->bakeSoftWraps();
+            }
+      }
+
+//---------------------------------------------------------
 //   cmdToggleVisible
 //---------------------------------------------------------
 
@@ -5960,6 +5975,7 @@ void Score::cmd(const QAction* a, EditData& ed)
             { "fret-12",                    [](Score* cs, EditData&){ cs->cmdAddFret(12);                                             }},
             { "fret-13",                    [](Score* cs, EditData&){ cs->cmdAddFret(13);                                             }},
             { "fret-14",                    [](Score* cs, EditData&){ cs->cmdAddFret(14);                                             }},
+            { "bake-soft-wrap",             [](Score* cs, EditData&){ cs->cmdBakeSoftWrap();                                          }},
             { "toggle-visible",             [](Score* cs, EditData&){ cs->cmdToggleVisible();                                         }},
             { "reset-stretch",              [](Score* cs, EditData&){ cs->resetUserStretch();                                         }},
             { "mirror-note",                [](Score* cs, EditData&){ cs->cmdMirrorNoteHead();                                        }},

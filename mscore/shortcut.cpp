@@ -4473,6 +4473,13 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::SCORE_TAB,
+         STATE_NORMAL,
+         "bake-soft-wrap",
+         QT_TRANSLATE_NOOP("action","Convert automatically wrapped text into hard line breaks"),
+         QT_TRANSLATE_NOOP("action","Convert automatically wrapped text into hard line breaks")
+         },
+      {
+         MsWidget::SCORE_TAB,
          STATE_NORMAL | STATE_NOTE_ENTRY,
          "toggle-visible",
          QT_TRANSLATE_NOOP("action","Toggle Visibility"),
