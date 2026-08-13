@@ -182,6 +182,17 @@ bool PianoItem::intersects(int startTick, int endTick, int highPitch, int lowPit
 
       }
 
+//---------------------------------------------------------
+//   setScope
+//---------------------------------------------------------
+void PianoView::setScope(PianoRollScope scope)
+      {
+      if (_scope == scope)
+            return;
+      _scope = scope;
+      updateNotes();
+      scene()->update();
+      }
 
 //---------------------------------------------------------
 //   getTweakNoteEvent
@@ -317,6 +328,7 @@ PianoView::PianoView()
       _mouseDown   = false;
       _dragStyle   = DragStyle::NONE;
       _inProgressUndoEvent = false;
+      _scope = PianoRollScope::STAFF;
 
       memset(_pitchHighlight, 0, 128);
       }

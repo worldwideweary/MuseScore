@@ -52,6 +52,12 @@ enum class DragStyle : char {
       MOVE_VIEWPORT
       };
 
+enum class PianoRollScope {
+      STAFF,
+      PART,
+      SCORE // Maybe?
+      };
+
 struct BarPattern {
       QString name;
       char isWhiteKey[12];  //Set to 1 for white keys, 0 for black
@@ -93,10 +99,13 @@ class PianoView : public QGraphicsView {
 
 public:
       static const BarPattern barPatterns[];
+      void setScope(PianoRollScope scope);
 
 private:
       Staff* _staff;
       Chord* _chord;
+
+      PianoRollScope _scope;
       
       Pos _trackingPos;  //Track mouse position
       Pos* _locator;
