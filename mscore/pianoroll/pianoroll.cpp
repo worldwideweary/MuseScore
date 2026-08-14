@@ -52,6 +52,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       staff    = 0;
 
       _scope = PianoRollScope::PART;
+      _orientation = PianoRollOrientation::HORIZONTAL;
 
       QActionGroup* ag = Shortcut::getActionGroupForWidget(MsWidget::PIANO_ROLL_EDITOR);
       ag->setParent(this);
@@ -103,6 +104,31 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       partLabel = new QLabel(tr("Part:"));
       tbMain->addWidget(partLabel);
+
+
+      // Option: Orientation Horizonta/Vertical
+      tbMain->addSeparator();
+      tbMain->addWidget(new QLabel(tr("Orientation:")));
+
+      QComboBox* orientationBox = new QComboBox;
+      orientationBox->addItem(tr("Horizontal"), int(PianoRollOrientation::HORIZONTAL));
+      orientationBox->addItem(tr("Vertical"),   int(PianoRollOrientation::VERTICAL));
+
+      int orientationIndex = orientationBox->findData(int(_orientation));
+      if (orientationIndex != -1)
+            orientationBox->setCurrentIndex(orientationIndex);
+
+      tbMain->addWidget(orientationBox);
+
+      connect(orientationBox,
+              QOverload<int>::of(&QComboBox::activated),
+              this,
+              [this, orientationBox](int index) {
+                    setOrientation(
+                          PianoRollOrientation(
+                                orientationBox->itemData(index).toInt()));
+                    });
+
 
       // Option: Scope
       tbMain->addSeparator();
@@ -407,7 +433,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       // --------------------------------------------------
       // empty area for spacing
 
-      QWidget* topLeftSpacer = new QWidget;
+      topLeftSpacer = new QWidget;
       topLeftSpacer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
       topLeftSpacer->setFixedWidth(PIANO_KEYBOARD_WIDTH);
       topLeftSpacer->setFixedHeight(pianoRulerHeight);
@@ -437,9 +463,10 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       QWidget* noteAreaWidget = new QWidget;
 
-      QGridLayout* noteAreaLayout = new QGridLayout;
+      noteAreaLayout = new QGridLayout;
       noteAreaLayout->setContentsMargins(0, 0, 0, 0);
       noteAreaLayout->setSpacing(0);
+
       // TEMP change
       // noteAreaLayout->addWidget(topLeftSpacer,  0, 0, 1, 1);
       // noteAreaLayout->addWidget(ruler,          0, 1, 1, 1);
@@ -451,6 +478,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       noteAreaLayout->addWidget(pianoKbd,  1, 0);
 
       noteAreaWidget->setLayout(noteAreaLayout);
+      updateOrientationLayout();
 
       // levels area
       pianoLevelsChooser = new PianoLevelsChooser;
@@ -752,10 +780,88 @@ void PianorollEditor::setStaff(Staff* st)
       pianoKbd->setStaff(staff);
       noteTweakerDlg->setStaff(staff);
 
-      pianoView->setOrientation(PianoRollOrientation::VERTICAL);
-
       updateSelection();
       setEnabled(st);
+      }
+
+//---------------------------------------------------------
+//   updateOrientationLayout
+//---------------------------------------------------------
+
+void PianorollEditor::updateOrientationLayout()
+      {
+      while (QLayoutItem* item = noteAreaLayout->takeAt(0)) {
+            // Removes the layout item only. The widgets themselves
+            // remain alive and owned by their existing parents.
+            delete item;
+            }
+
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            //
+            // Widgets used only by horizontal orientation
+            //
+            topLeftSpacer->show();
+            ruler->show();
+            hsb->show();
+
+            //
+            // Release constraints left by vertical mode.
+            //
+            pianoKbd->setMinimumHeight(0);
+            pianoKbd->setMaximumHeight(QWIDGETSIZE_MAX);
+
+            pianoView->setOrientation(PianoRollOrientation::HORIZONTAL);
+            pianoKbd->setOrientation(PianoOrientation::VERTICAL);
+            pianoKbd->setSizePolicy(
+                  QSizePolicy::Fixed,
+                  QSizePolicy::Expanding);
+            pianoKbd->setFixedWidth(PIANO_KEYBOARD_WIDTH);
+
+            noteAreaLayout->addWidget(topLeftSpacer, 0, 0, 1, 1);
+            noteAreaLayout->addWidget(ruler,         0, 1, 1, 1);
+            noteAreaLayout->addWidget(pianoKbd,      1, 0, 1, 1);
+            noteAreaLayout->addWidget(pianoView,     1, 1, 1, 1);
+            noteAreaLayout->addWidget(hsb,           2, 1, 1, 1);
+            }
+      else { // VERTICAL
+            //
+            // Horizontal-only widgets are still children of
+            // noteAreaWidget even after being removed from the layout.
+            //
+            topLeftSpacer->hide();
+            ruler->hide();
+            hsb->hide();
+
+            //
+            // Release constraints left by horizontal mode.
+            //
+            pianoKbd->setMinimumWidth(0);
+            pianoKbd->setMaximumWidth(QWIDGETSIZE_MAX);
+
+            pianoView->setOrientation(PianoRollOrientation::VERTICAL);
+            pianoKbd->setOrientation(PianoOrientation::HORIZONTAL);
+            pianoKbd->setSizePolicy(
+                  QSizePolicy::Expanding,
+                  QSizePolicy::Fixed);
+            pianoKbd->setFixedHeight(PIANO_KEYBOARD_WIDTH);
+
+            noteAreaLayout->addWidget(pianoView, 0, 0);
+            noteAreaLayout->addWidget(pianoKbd,  1, 0);
+            }
+      }
+
+//---------------------------------------------------------
+//   setOrientation
+//---------------------------------------------------------
+
+void PianorollEditor::setOrientation(PianoRollOrientation orientation)
+      {
+      if (_orientation == orientation)
+            return;
+
+      _orientation = orientation;
+      updateOrientationLayout();
       }
 
 //---------------------------------------------------------
