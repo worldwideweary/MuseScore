@@ -50,6 +50,8 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       PianoLevels* pianoLevels;
       PianoLevelsChooser* pianoLevelsChooser;
       QScrollBar* hsb;        // horizontal scroll bar for pianoView
+      QGridLayout* noteAreaLayout { nullptr };
+      QWidget* topLeftSpacer { nullptr };
       Score* _score;
       Staff* staff;
       QLabel* partLabel;
@@ -69,6 +71,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       QSplitter* split;
       QList<QAction*> actions;
       PianoRollScope _scope;
+      PianoRollOrientation _orientation;
       Coloring _coloring;
 
       bool updateScheduled = false;
@@ -129,6 +132,8 @@ class PianorollEditor : public QWidget, public MuseScoreView {
 
       void setLocator(POS posi, int tick) { locator[int(posi)].setTick(tick); }
 
+      void updateOrientationLayout();
+      void setOrientation(PianoRollOrientation);
       void setScope(PianoRollScope scope);
       void setColoring(Coloring);
 

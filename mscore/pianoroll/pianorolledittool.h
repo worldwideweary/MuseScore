@@ -39,6 +39,16 @@ enum class Coloring {
       STAFF
       };
 
+enum class PianoRollOrientation {
+      HORIZONTAL,
+      VERTICAL
+      };
+
+enum class VerticalPitchLayout {
+      CHROMATIC,
+      KEYBOARD_ALIGNED
+      };
+
 } // namespace Ms
 
 #endif
