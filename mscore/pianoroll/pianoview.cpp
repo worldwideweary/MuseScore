@@ -714,21 +714,37 @@ void PianoView::moveLocator(int /*i*/)
 //   pixelXToTick
 //---------------------------------------------------------
 
-int PianoView::pixelXToTick(int pixX)
+int PianoView::pixelXToTick(int pixX) const
       {
       return static_cast<int>(pixX / _xZoom) - MAP_OFFSET;
       }
-
 
 //---------------------------------------------------------
 //   tickToPixelX
 //---------------------------------------------------------
 
-int PianoView::tickToPixelX(int tick)
+int PianoView::tickToPixelX(int tick) const
       {
       return static_cast<int>(tick + MAP_OFFSET) * _xZoom;
       }
 
+//---------------------------------------------------------
+//   pixelYToTick
+//---------------------------------------------------------
+
+int PianoView::pixelYToTick(int y) const
+      {
+      return _ticks - pixelXToTick(y);
+      }
+
+//---------------------------------------------------------
+//   tickToPixelY
+//---------------------------------------------------------
+
+int PianoView::tickToPixelY(int tick) const
+      {
+      return tickToPixelX(_ticks - tick);
+      }
 
 //---------------------------------------------------------
 //   zoomView

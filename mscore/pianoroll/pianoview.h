@@ -246,8 +246,10 @@ private:
       void setEditNoteDots(int dot) { _editNoteDots = dot; }
       void setEditNoteTool(PianoRollEditTool tool) { _editNoteTool = tool; updateNotes();  }
 
-      int pixelXToTick(int pixX);
-      int tickToPixelX(int tick);
+      int pixelXToTick(int pixX) const;
+      int tickToPixelX(int tick) const;
+      int pixelYToTick(int y) const;
+      int tickToPixelY(int tick) const;
       int pixelYToPitch(int pixY) { return (int)floor(128 - pixY / (qreal)_noteHeight); }
       int pitchToPixelY(int pitch) { return (128 - pitch) * _noteHeight; }
 
