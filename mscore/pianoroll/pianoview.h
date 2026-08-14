@@ -229,6 +229,7 @@ private:
    public:
       PianoView();
       ~PianoView();
+      void setVerticalPitchLayout(VerticalPitchLayout layout);
       void setOrientation(PianoRollOrientation orientation);
       Staff* staff() { return _staff; }
       void setStaff(Staff*, Pos* locator);

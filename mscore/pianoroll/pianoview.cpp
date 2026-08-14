@@ -351,7 +351,9 @@ PianoView::PianoView()
       _inProgressUndoEvent = false;
       _scope = PianoRollScope::PART;
       _orientation = PianoRollOrientation::HORIZONTAL;
-      _verticalPitchLayout = VerticalPitchLayout::KEYBOARD_ALIGNED;
+      _verticalPitchLayout = preferences.getBool(PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID)
+                  ? VerticalPitchLayout::KEYBOARD_ALIGNED
+                  : VerticalPitchLayout::CHROMATIC;
 
       memset(_pitchHighlight, 0, 128);
       }
@@ -2600,6 +2602,20 @@ void PianoView::updateBoundingSize()
                   _noteHeight * 128,
                   double((_ticks + MAP_OFFSET * 2) * _xZoom));
             }
+      }
+
+//---------------------------------------------------------
+//   setVerticalPitchLayout
+//---------------------------------------------------------
+
+void PianoView::setVerticalPitchLayout(VerticalPitchLayout layout)
+      {
+      if (_verticalPitchLayout == layout)
+            return;
+
+      _verticalPitchLayout = layout;
+
+      updateNotes();
       }
 
 //---------------------------------------------------------

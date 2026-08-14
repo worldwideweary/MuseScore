@@ -126,6 +126,35 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                     setScope(PianoRollScope(scopeBox->itemData(index).toInt()));
                     });
 
+
+      // Option: Keyboard alignment grid
+      tbMain->addSeparator();
+
+      QCheckBox* keyboardAlignedGrid =
+            new QCheckBox(tr("Keyboard-aligned grid"));
+
+      keyboardAlignedGrid->setToolTip(
+            tr("Align the vertical piano-roll pitch lanes with the keyboard"));
+
+      keyboardAlignedGrid->setChecked(
+            preferences.getBool(
+                  PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID));
+
+      tbMain->addWidget(keyboardAlignedGrid);
+
+      connect(keyboardAlignedGrid, &QCheckBox::toggled,
+            this, [this](bool checked) {
+                  preferences.setPreference(
+                        PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID,
+                        checked);
+
+                  pianoView->setVerticalPitchLayout(
+                        checked
+                              ? VerticalPitchLayout::KEYBOARD_ALIGNED
+                              : VerticalPitchLayout::CHROMATIC);
+                  });
+
+
       // Option: Voice coloring / Unselect preference coloring:
       QComboBox* coloringBox = new QComboBox;
       coloringBox->addItem(tr("Voicing"),   int(Coloring::VOICING));
