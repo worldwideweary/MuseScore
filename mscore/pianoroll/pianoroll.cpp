@@ -704,6 +704,8 @@ void PianorollEditor::setStaff(Staff* st)
       pianoKbd->setStaff(staff);
       noteTweakerDlg->setStaff(staff);
 
+      pianoView->setOrientation(PianoRollOrientation::VERTICAL);
+
       updateSelection();
       setEnabled(st);
       }

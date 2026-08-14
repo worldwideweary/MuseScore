@@ -105,6 +105,8 @@ private:
 
       PianoRollScope _scope;
       Coloring _coloring;
+
+      PianoRollOrientation _orientation;
       
       Pos _trackingPos;  //Track mouse position
       Pos* _locator;
@@ -226,6 +228,7 @@ private:
    public:
       PianoView();
       ~PianoView();
+      void setOrientation(PianoRollOrientation orientation);
       Staff* staff() { return _staff; }
       void setStaff(Staff*, Pos* locator);
       void ensureVisible(int tick);

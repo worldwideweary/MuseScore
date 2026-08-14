@@ -350,6 +350,7 @@ PianoView::PianoView()
       _dragStyle   = DragStyle::NONE;
       _inProgressUndoEvent = false;
       _scope = PianoRollScope::PART;
+      _orientation = PianoRollOrientation::HORIZONTAL;
 
       memset(_pitchHighlight, 0, 128);
       }
@@ -675,14 +676,28 @@ QRect PianoView::boundingRect(Note* note, NoteEvent* evt, bool applyEvents)
             len = ticks + tieLen;
             }
 
-      int x0 = tickToPixelX(start.ticks());
-      int y0 = pitchToPixelY(pitch + 1);
-      int x1 = tickToPixelX((start + len).ticks());
-      int y1 = pitchToPixelY(pitch);
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            int x0 = tickToPixelX(start.ticks());
+            int y0 = pitchToPixelY(pitch + 1);
+            int x1 = tickToPixelX((start + len).ticks());
+            int y1 = pitchToPixelY(pitch);
 
-      QRect rect;
-      rect.setRect(x0, y0, x1 - x0, y1 - y0);
-      return rect;
+            QRect rect;
+            rect.setRect(x0, y0, x1 - x0, y1 - y0);
+            return rect;
+            }
+      else {
+            int x0 = pitch * _noteHeight;
+            int x1 = (pitch + 1) * _noteHeight;
+
+            int y0 = tickToPixelX(_ticks - (start + len).ticks());
+            int y1 = tickToPixelX(_ticks - start.ticks());
+
+            QRect rect;
+            rect.setRect(x0, y0, x1 - x0, y1 - y0);
+            return rect;
+            }
+
       }
 
 //---------------------------------------------------------
@@ -1954,13 +1969,46 @@ void PianoView::ensureVisible(int tick)
 //---------------------------------------------------------
 //   updateBoundingSize
 //---------------------------------------------------------
+
 void PianoView::updateBoundingSize()
       {
+      if (!_staff || !_staff->score())
+            return;
+
       Measure* lm = _staff->score()->lastMeasure();
+      if (!lm)
+            return;
+
       _ticks = (lm->tick() + lm->ticks()).ticks();
-      scene()->setSceneRect(0.0, 0.0,
-                            double((_ticks + MAP_OFFSET * 2) * _xZoom),
-                            _noteHeight * 128);
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            scene()->setSceneRect(
+                  0.0,
+                  0.0,
+                  double((_ticks + MAP_OFFSET * 2) * _xZoom),
+                  _noteHeight * 128);
+            }
+      else {
+            scene()->setSceneRect(
+                  0.0,
+                  0.0,
+                  _noteHeight * 128,
+                  double((_ticks + MAP_OFFSET * 2) * _xZoom));
+            }
+      }
+
+//---------------------------------------------------------
+//   setOrientation
+//---------------------------------------------------------
+
+void PianoView::setOrientation(PianoRollOrientation orientation)
+      {
+      if (_orientation == orientation)
+            return;
+
+      _orientation = orientation;
+      updateBoundingSize();
+      updateNotes();
       }
 
 //---------------------------------------------------------
