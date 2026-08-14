@@ -2184,13 +2184,26 @@ void PianoView::leaveEvent(QEvent* event)
 void PianoView::ensureVisible(int tick)
       {
       QRectF rect = mapToScene(viewport()->geometry()).boundingRect();
+      const bool vertical = _orientation == PianoRollOrientation::VERTICAL;
+      const bool horizontal = _orientation == PianoRollOrientation::HORIZONTAL;
+      const int activationMargin = 100; // TODO: maybe a small pixel amount
 
-      qreal xpos = tickToPixelX(tick);
-      qreal margin = rect.width() / 2;
-      if (xpos < rect.x() + margin)
-            horizontalScrollBar()->setValue(qMax(xpos - margin, 0.0));
-      else if (xpos >= rect.x() + rect.width() - margin)
-            horizontalScrollBar()->setValue(qMax(xpos - rect.width() + margin, 0.0));
+      if (horizontal) {
+            qreal xpos = tickToPixelX(tick);
+            qreal margin = rect.width() / 2;
+            if (xpos < rect.x() + margin)
+                  horizontalScrollBar()->setValue(qMax(xpos - margin, 0.0));
+            else if (xpos >= rect.x() + rect.width() - margin)
+                  horizontalScrollBar()->setValue(qMax(xpos - rect.width() + margin, 0.0));
+            }
+      else if (vertical) {
+            qreal ypos = tickToPixelY(tick);
+
+            int viewportHeight = viewport()->height();
+            int target = ypos - viewportHeight + activationMargin;
+
+            verticalScrollBar()->setValue(target);
+            }
       }
 
 //---------------------------------------------------------
