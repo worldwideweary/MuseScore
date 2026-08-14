@@ -414,6 +414,144 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
       const QPen penLineMajor = QPen(colGridLine, 2.0, Qt::SolidLine);
       const QPen penLineMinor = QPen(colGridLine, 1.0, Qt::SolidLine);
       const QPen penLineSub   = QPen(colGridLine, 1.0, Qt::DotLine);
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            QRectF r1;
+            r1.setCoords(-DBL_MAX, 0.0, tickToPixelX(0), DBL_MAX);
+            QRectF r2;
+            r2.setCoords(tickToPixelX(_ticks), 0.0, DBL_MAX, DBL_MAX);
+
+            p->fillRect(r, colWhiteKeyBg);
+            if (r.intersects(r1))
+                  p->fillRect(r.intersected(r1), colGutter);
+            if (r.intersects(r2))
+                  p->fillRect(r.intersected(r2), colGutter);
+
+            //
+            // draw horizontal grid lines
+            //
+            qreal y1 = r.y();
+            qreal y2 = y1 + r.height();
+            qreal x1 = qMax(r.x(), (qreal)tickToPixelX(0));
+            qreal x2 = qMin(x1 + r.width(), (qreal)tickToPixelX(_ticks));
+
+            int topPitch = ceil((_noteHeight * 128 - y1) / _noteHeight);
+            int bmPitch = floor((_noteHeight * 128 - y2) / _noteHeight);
+
+            Part* part = _staff->part();
+            Interval transp = part->instrument()->transpose();
+
+            //MIDI notes span [0, 127] and map to pitches starting at C-1
+            for (int pitch = bmPitch; pitch <= topPitch; ++pitch) {
+                  int y = (127 - pitch) * _noteHeight;
+
+                  int degree = (pitch - transp.chromatic + 60) % 12;
+                  const BarPattern& pat = barPatterns[_barPattern];
+
+                  if (!pat.isWhiteKey[degree] || _pitchHighlight[pitch]) {
+                        qreal px0 = qMax(r.x(), (qreal)tickToPixelX(0));
+                        qreal px1 = qMin(r.x() + r.width(), (qreal)tickToPixelX(_ticks));
+                        QRectF hbar;
+
+                        hbar.setCoords(px0, y, px1, y + _noteHeight);
+                        p->fillRect(hbar,
+                                    _pitchHighlight[pitch] ? colHilightKeyBg : colBlackKeyBg);
+                        }
+
+                  //Lines between rows
+                  p->setPen(degree == 0 ? penLineMajor : penLineMinor);
+                  p->drawLine(QLineF(x1, y + _noteHeight, x2, y + _noteHeight));
+                  }
+
+            //
+            // draw vertical grid lines
+            //
+            Pos pos1(_score->tempomap(), _score->sigmap(), qMax(pixelXToTick(x1), 0), TType::TICKS);
+            Pos pos2(_score->tempomap(), _score->sigmap(), qMax(pixelXToTick(x2), 0), TType::TICKS);
+
+            int bar1, bar2, beat, tick;
+            pos1.mbt(&bar1, &beat, &tick);
+            pos2.mbt(&bar2, &beat, &tick);
+
+            //Draw bar lines
+            const int minBeatGap = 20;
+
+            for (int bar = bar1; bar <= bar2; ++bar) {
+                  Pos barPos(_score->tempomap(), _score->sigmap(), bar, 0, 0);
+
+                  //Beat lines
+                  int beatsInBar = barPos.timesig().timesig().numerator();
+                  int ticksPerBeat = barPos.timesig().timesig().beatTicks();
+                  double pixPerBeat = ticksPerBeat * _xZoom;
+                  int beatSkip = ceil(minBeatGap / pixPerBeat);
+
+                  //Round up to next power of 2
+                  beatSkip = (int)pow(2, ceil(log(beatSkip)/log(2)));
+
+                  for (int beat1 = 0; beat1 < beatsInBar; beat1 += beatSkip) {
+                        Pos beatPos(_score->tempomap(), _score->sigmap(), bar, beat1, 0);
+                        double x = tickToPixelX(beatPos.time(TType::TICKS));
+                        p->setPen(penLineMinor);
+                        p->drawLine(x, y1, x, y2);
+
+                        int subbeats = _tuplet * (1 << _subdiv);
+
+                        for (int sub = 1; sub < subbeats; ++sub) {
+                              Pos subBeatPos(_score->tempomap(), _score->sigmap(), bar, beat1, sub * DIVISION / subbeats);
+                              x = tickToPixelX(subBeatPos.time(TType::TICKS));
+
+                              p->setPen(penLineSub);
+                              p->drawLine(x, y1, x, y2);
+                              }
+
+                        }
+
+                  //Bar line
+                  double x = tickToPixelX(barPos.time(TType::TICKS));
+                  p->setPen(x > 0 ? penLineMajor : QPen(Qt::black, 2.0));
+                  p->drawLine(x, y1, x, y2);
+                  }
+
+            //----------------------------
+            //Draw notes
+            //p->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
+            //for (int i = 0; i < _noteList.size(); ++i)
+            //      _noteList[i]->paint(p);
+
+            p->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
+            for (PianoItem*& block : _noteList) {
+                  drawNoteBlock(p, block);
+                  }
+
+            if (_dragStyle == DragStyle::NOTE_POSITION || _dragStyle == DragStyle::NOTE_LENGTH_END
+                || _dragStyle == DragStyle::NOTE_LENGTH_START || _dragStyle == DragStyle::DRAW_NOTE
+                || _dragStyle == DragStyle::EVENT_LENGTH || _dragStyle == DragStyle::EVENT_MOVE
+                || _dragStyle == DragStyle::EVENT_ONTIME)
+                  drawDraggedNotes(p);
+
+            //Draw locators
+            for (int i = 0; i < 3; ++i) {
+                  if (_locator[i].valid())
+                        {
+                        p->setPen(QPen(i == 0 ? Qt::red : Qt::blue, 2));
+                        qreal x = tickToPixelX(_locator[i].time(TType::TICKS));
+                        p->drawLine(x, y1, x, y2);
+                        }
+                  }
+
+            //Draw drag selection box
+            if (_dragStarted && _dragStyle == DragStyle::SELECTION_RECT && _editNoteTool == PianoRollEditTool::SELECT) {
+                  int minX = qMin(_mouseDownPos.x(), _lastMousePos.x());
+                  int minY = qMin(_mouseDownPos.y(), _lastMousePos.y());
+                  int maxX = qMax(_mouseDownPos.x(), _lastMousePos.x());
+                  int maxY = qMax(_mouseDownPos.y(), _lastMousePos.y());
+                  QRectF rect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+
+                  p->setPen(QPen(colSelectionBox, 2));
+                  p->setBrush(QBrush(colSelectionBoxFill, Qt::SolidPattern));
+                  p->drawRect(rect);
+                  }
+            }
       }
 
 
