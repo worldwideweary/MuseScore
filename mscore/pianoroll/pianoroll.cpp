@@ -52,6 +52,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       staff    = 0;
 
       _scope = PianoRollScope::PART;
+      _orientation = PianoRollOrientation::HORIZONTAL;
 
       QActionGroup* ag = Shortcut::getActionGroupForWidget(MsWidget::PIANO_ROLL_EDITOR);
       ag->setParent(this);
@@ -104,6 +105,31 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       partLabel = new QLabel(tr("Part:"));
       tbMain->addWidget(partLabel);
 
+
+      // Option: Orientation Horizonta/Vertical
+      tbMain->addSeparator();
+      tbMain->addWidget(new QLabel(tr("Orientation:")));
+
+      QComboBox* orientationBox = new QComboBox;
+      orientationBox->addItem(tr("Horizontal"), int(PianoRollOrientation::HORIZONTAL));
+      orientationBox->addItem(tr("Vertical"),   int(PianoRollOrientation::VERTICAL));
+
+      int orientationIndex = orientationBox->findData(int(_orientation));
+      if (orientationIndex != -1)
+            orientationBox->setCurrentIndex(orientationIndex);
+
+      tbMain->addWidget(orientationBox);
+
+      connect(orientationBox,
+              QOverload<int>::of(&QComboBox::activated),
+              this,
+              [this, orientationBox](int index) {
+                    setOrientation(
+                          PianoRollOrientation(
+                                orientationBox->itemData(index).toInt()));
+                    });
+
+
       // Option: Scope
       tbMain->addSeparator();
       tbMain->addWidget(new QLabel(tr("View:")));
@@ -125,6 +151,35 @@ PianorollEditor::PianorollEditor(QWidget* parent)
               [this, scopeBox](int index) {
                     setScope(PianoRollScope(scopeBox->itemData(index).toInt()));
                     });
+
+
+      // Option: Keyboard alignment grid
+      tbMain->addSeparator();
+
+      QCheckBox* keyboardAlignedGrid =
+            new QCheckBox(tr("Keyboard-aligned grid"));
+
+      keyboardAlignedGrid->setToolTip(
+            tr("Align the vertical piano-roll pitch lanes with the keyboard"));
+
+      keyboardAlignedGrid->setChecked(
+            preferences.getBool(
+                  PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID));
+
+      tbMain->addWidget(keyboardAlignedGrid);
+
+      connect(keyboardAlignedGrid, &QCheckBox::toggled,
+            this, [this](bool checked) {
+                  preferences.setPreference(
+                        PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID,
+                        checked);
+
+                  pianoView->setVerticalPitchLayout(
+                        checked
+                              ? VerticalPitchLayout::KEYBOARD_ALIGNED
+                              : VerticalPitchLayout::CHROMATIC);
+                  });
+
 
       // Option: Voice coloring / Unselect preference coloring:
       QComboBox* coloringBox = new QComboBox;
@@ -378,7 +433,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       // --------------------------------------------------
       // empty area for spacing
 
-      QWidget* topLeftSpacer = new QWidget;
+      topLeftSpacer = new QWidget;
       topLeftSpacer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
       topLeftSpacer->setFixedWidth(PIANO_KEYBOARD_WIDTH);
       topLeftSpacer->setFixedHeight(pianoRulerHeight);
@@ -390,6 +445,13 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       pianoKbd = new PianoKeyboard;
       pianoKbd->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
       pianoKbd->setFixedWidth(PIANO_KEYBOARD_WIDTH);
+      pianoKbd->setOrientation(PianoOrientation::HORIZONTAL);
+      pianoKbd->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+      pianoKbd->setFixedHeight(PIANO_KEYBOARD_WIDTH);
+      pianoKbd->setMaximumWidth(QWIDGETSIZE_MAX);
+      pianoKbd->setMinimumWidth(0);
+
+
 
       pianoView = new PianoView;
       pianoView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -401,15 +463,22 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       QWidget* noteAreaWidget = new QWidget;
 
-      QGridLayout* noteAreaLayout = new QGridLayout;
+      noteAreaLayout = new QGridLayout;
       noteAreaLayout->setContentsMargins(0, 0, 0, 0);
       noteAreaLayout->setSpacing(0);
-      noteAreaLayout->addWidget(topLeftSpacer, 0, 0, 1, 1);
-      noteAreaLayout->addWidget(ruler, 0, 1, 1, 1);
-      noteAreaLayout->addWidget(pianoKbd, 1, 0, 1, 1);
-      noteAreaLayout->addWidget(pianoView, 1, 1, 1, 1);
-      noteAreaLayout->addWidget(hsb, 2, 1, 1, 1);
+
+      // TEMP change
+      // noteAreaLayout->addWidget(topLeftSpacer,  0, 0, 1, 1);
+      // noteAreaLayout->addWidget(ruler,          0, 1, 1, 1);
+      // noteAreaLayout->addWidget(pianoKbd,       1, 0, 1, 1);
+      // noteAreaLayout->addWidget(pianoView,      1, 1, 1, 1);
+      // noteAreaLayout->addWidget(hsb,            2, 1, 1, 1);
+
+      noteAreaLayout->addWidget(pianoView, 0, 0);
+      noteAreaLayout->addWidget(pianoKbd,  1, 0);
+
       noteAreaWidget->setLayout(noteAreaLayout);
+      updateOrientationLayout();
 
       // levels area
       pianoLevelsChooser = new PianoLevelsChooser;
@@ -466,7 +535,14 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       mainLayout->addWidget(tbTweak);
       mainLayout->addWidget(mainWidget);
 
-      connect(pianoView->verticalScrollBar(),   SIGNAL(valueChanged(int)), pianoKbd, SLOT(setYpos(int)));
+      // TEMPORARY:
+      // connect(pianoView->verticalScrollBar(),   SIGNAL(valueChanged(int)), pianoKbd, SLOT(setYpos(int)));
+
+      connect(pianoView->horizontalScrollBar(),
+              SIGNAL(valueChanged(int)),
+              pianoKbd,
+              SLOT(setYpos(int)));
+
       connect(pianoView->horizontalScrollBar(), SIGNAL(valueChanged(int)), hsb,      SLOT(setValue(int)));
 
       connect(pianoView,          SIGNAL(xZoomChanged(qreal)),            ruler,       SLOT(setXZoom(qreal)));
@@ -684,6 +760,90 @@ void PianorollEditor::setStaff(Staff* st)
 
       updateSelection();
       setEnabled(st);
+      }
+
+//---------------------------------------------------------
+//   updateOrientationLayout
+//---------------------------------------------------------
+
+void PianorollEditor::updateOrientationLayout()
+      {
+      while (QLayoutItem* item = noteAreaLayout->takeAt(0)) {
+            // Removes the layout item only. The widgets themselves
+            // remain alive and owned by their existing parents.
+            delete item;
+            }
+
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            //
+            // Widgets used only by horizontal orientation
+            //
+            topLeftSpacer->show();
+            ruler->show();
+            hsb->show();
+
+            //
+            // Release constraints left by vertical mode.
+            //
+            pianoKbd->setMinimumHeight(0);
+            pianoKbd->setMaximumHeight(QWIDGETSIZE_MAX);
+
+            pianoView->setOrientation(PianoRollOrientation::HORIZONTAL);
+            pianoKbd->setOrientation(PianoOrientation::VERTICAL);
+            pianoKbd->setSizePolicy(
+                  QSizePolicy::Fixed,
+                  QSizePolicy::Expanding);
+            pianoKbd->setFixedWidth(PIANO_KEYBOARD_WIDTH);
+
+            noteAreaLayout->addWidget(topLeftSpacer, 0, 0, 1, 1);
+            noteAreaLayout->addWidget(ruler,         0, 1, 1, 1);
+            noteAreaLayout->addWidget(pianoKbd,      1, 0, 1, 1);
+            noteAreaLayout->addWidget(pianoView,     1, 1, 1, 1);
+            noteAreaLayout->addWidget(hsb,           2, 1, 1, 1);
+            }
+      else { // VERTICAL
+            //
+            // Horizontal-only widgets are still children of
+            // noteAreaWidget even after being removed from the layout.
+            //
+            topLeftSpacer->hide();
+            ruler->hide();
+            hsb->hide();
+
+            //
+            // Release constraints left by horizontal mode.
+            //
+            pianoKbd->setMinimumWidth(0);
+            pianoKbd->setMaximumWidth(QWIDGETSIZE_MAX);
+
+            pianoView->setOrientation(PianoRollOrientation::VERTICAL);
+            pianoKbd->setOrientation(PianoOrientation::HORIZONTAL);
+            pianoKbd->setSizePolicy(
+                  QSizePolicy::Expanding,
+                  QSizePolicy::Fixed);
+            pianoKbd->setFixedHeight(PIANO_KEYBOARD_WIDTH);
+
+            noteAreaLayout->addWidget(pianoView, 0, 0);
+            noteAreaLayout->addWidget(pianoKbd,  1, 0);
+            }
+      }
+
+//---------------------------------------------------------
+//   setOrientation
+//---------------------------------------------------------
+
+void PianorollEditor::setOrientation(PianoRollOrientation orientation)
+      {
+      if (_orientation == orientation)
+            return;
+
+      const int referenceTick = pianoView->viewportReferenceTick();
+
+      _orientation = orientation;
+      updateOrientationLayout();
+
+      pianoView->positionViewportAtTick(referenceTick);
       }
 
 //---------------------------------------------------------
