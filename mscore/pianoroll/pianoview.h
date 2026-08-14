@@ -252,8 +252,8 @@ private:
       int tickToPixelX(int tick) const;
       int pixelYToTick(int y) const;
       int tickToPixelY(int tick) const;
-      int pixelYToPitch(int pixY) { return (int)floor(128 - pixY / (qreal)_noteHeight); }
-      int pitchToPixelY(int pitch) { return (128 - pitch) * _noteHeight; }
+      int pixelYToPitch(int pixY) const;
+      int pitchToPixelY(int pitch) const;
 
       QRectF keyboardAlignedPitchLane(int midiPitch) const;
 

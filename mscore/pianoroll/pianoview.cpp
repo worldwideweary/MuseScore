@@ -1104,6 +1104,24 @@ int PianoView::tickToPixelY(int tick) const
       }
 
 //---------------------------------------------------------
+//   pixelYtoPitch
+//---------------------------------------------------------
+
+int PianoView::pixelYToPitch(int pixY) const
+      {
+      return (int)floor(128 - pixY / (qreal)_noteHeight);
+      }
+
+//---------------------------------------------------------
+//   pixelToPixelY
+//---------------------------------------------------------
+
+int PianoView::pitchToPixelY(int pitch) const
+      {
+      return (128 - pitch) * _noteHeight;
+      }
+
+//---------------------------------------------------------
 //   keyboardAlignedPitchLane
 //---------------------------------------------------------
 
