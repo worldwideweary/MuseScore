@@ -552,6 +552,215 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
                   p->drawRect(rect);
                   }
             }
+      else {
+            //
+            // In vertical mode:
+            //
+            //    X = pitch, low -> high
+            //    Y = time, future -> past
+            //
+            // tick 0 is therefore at the bottom of the score
+            // and the final tick is at the top.
+            //
+
+            const qreal scoreTop    = tickToPixelY(_ticks);
+            const qreal scoreBottom = tickToPixelY(0);
+
+            //
+            // Background and gutters outside the score time range
+            //
+
+            p->fillRect(r, colWhiteKeyBg);
+
+            QRectF topGutter;
+            topGutter.setCoords(-DBL_MAX, -DBL_MAX, DBL_MAX, scoreTop);
+
+            QRectF bottomGutter;
+            bottomGutter.setCoords(-DBL_MAX, scoreBottom, DBL_MAX, DBL_MAX);
+
+            if (r.intersects(topGutter))
+                  p->fillRect(r.intersected(topGutter), colGutter);
+
+            if (r.intersects(bottomGutter))
+                  p->fillRect(r.intersected(bottomGutter), colGutter);
+
+            //
+            // Visible bounds within the actual score/pitch area
+            //
+
+            qreal x1 = qMax(r.left(), 0.0);
+            qreal x2 = qMin(r.right(), qreal(_noteHeight * 128));
+
+            qreal y1 = qMax(r.top(), scoreTop);
+            qreal y2 = qMin(r.bottom(), scoreBottom);
+
+            //
+            // Draw vertical pitch columns.
+            //
+            // The horizontal PRE draws each pitch as a row;
+            // here each pitch becomes a column.
+            //
+
+            int leftPitch  = qMax(0, int(floor(x1 / _noteHeight)));
+            int rightPitch = qMin(127, int(ceil(x2 / _noteHeight)));
+
+            Part* part = _staff->part();
+            Interval transp = part->instrument()->transpose();
+            const BarPattern& pat = barPatterns[_barPattern];
+
+            for (int pitch = leftPitch; pitch <= rightPitch; ++pitch) {
+                  int x = pitch * _noteHeight;
+
+                  int degree = (pitch - transp.chromatic + 60) % 12;
+
+                  if (!pat.isWhiteKey[degree] || _pitchHighlight[pitch]) {
+                        QRectF vbar;
+                        vbar.setCoords(x, y1, x + _noteHeight, y2);
+
+                        p->fillRect(vbar,
+                                    _pitchHighlight[pitch]
+                                          ? colHilightKeyBg
+                                          : colBlackKeyBg);
+                        }
+
+                  // Line between pitch columns
+                  p->setPen(degree == 0 ? penLineMajor : penLineMinor);
+                  p->drawLine(QLineF(x + _noteHeight, y1,
+                                     x + _noteHeight, y2));
+                  }
+
+            //
+            // Draw horizontal time grid lines.
+            //
+            // Since time runs backwards in screen Y, the bottom of
+            // the visible rectangle corresponds to the earlier tick.
+            //
+
+            int tick1 = qBound(0, pixelYToTick(int(y2)), _ticks);
+            int tick2 = qBound(0, pixelYToTick(int(y1)), _ticks);
+
+            if (tick2 < tick1)
+                  qSwap(tick1, tick2);
+
+            Pos pos1(_score->tempomap(), _score->sigmap(), tick1, TType::TICKS);
+            Pos pos2(_score->tempomap(), _score->sigmap(), tick2, TType::TICKS);
+
+            int bar1, bar2, beat, tick;
+            pos1.mbt(&bar1, &beat, &tick);
+            pos2.mbt(&bar2, &beat, &tick);
+
+            const int minBeatGap = 20;
+
+            for (int bar = bar1; bar <= bar2; ++bar) {
+                  Pos barPos(_score->tempomap(), _score->sigmap(), bar, 0, 0);
+
+                  int beatsInBar = barPos.timesig().timesig().numerator();
+                  int ticksPerBeat = barPos.timesig().timesig().beatTicks();
+                  double pixPerBeat = ticksPerBeat * _xZoom;
+                  int beatSkip = ceil(minBeatGap / pixPerBeat);
+
+                  // Round up to next power of 2
+                  beatSkip = (int)pow(2, ceil(log(beatSkip) / log(2)));
+
+                  for (int beat1 = 0; beat1 < beatsInBar; beat1 += beatSkip) {
+                        Pos beatPos(_score->tempomap(), _score->sigmap(),
+                                    bar, beat1, 0);
+
+                        double y = tickToPixelY(
+                              beatPos.time(TType::TICKS));
+
+                        p->setPen(penLineMinor);
+                        p->drawLine(x1, y, x2, y);
+
+                        int subbeats = _tuplet * (1 << _subdiv);
+
+                        for (int sub = 1; sub < subbeats; ++sub) {
+                              Pos subBeatPos(
+                                    _score->tempomap(),
+                                    _score->sigmap(),
+                                    bar,
+                                    beat1,
+                                    sub * DIVISION / subbeats);
+
+                              y = tickToPixelY(
+                                    subBeatPos.time(TType::TICKS));
+
+                              p->setPen(penLineSub);
+                              p->drawLine(x1, y, x2, y);
+                              }
+                        }
+
+                  //
+                  // Bar line
+                  //
+
+                  int barTick = barPos.time(TType::TICKS);
+                  double y = tickToPixelY(barTick);
+
+                  p->setPen(barTick > 0
+                            ? penLineMajor
+                            : QPen(Qt::black, 2.0));
+
+                  p->drawLine(x1, y, x2, y);
+                  }
+
+            //
+            // Draw notes
+            //
+
+            p->setRenderHints(
+                  QPainter::Antialiasing
+                  | QPainter::SmoothPixmapTransform
+                  | QPainter::TextAntialiasing);
+
+            for (PianoItem*& block : _noteList)
+                  drawNoteBlock(p, block);
+
+            //
+            // Draw temporary dragged notes
+            //
+
+            if (_dragStyle == DragStyle::NOTE_POSITION
+                || _dragStyle == DragStyle::NOTE_LENGTH_END
+                || _dragStyle == DragStyle::NOTE_LENGTH_START
+                || _dragStyle == DragStyle::DRAW_NOTE
+                || _dragStyle == DragStyle::EVENT_LENGTH
+                || _dragStyle == DragStyle::EVENT_MOVE
+                || _dragStyle == DragStyle::EVENT_ONTIME) {
+                  drawDraggedNotes(p);
+                  }
+
+            //
+            // Deliberately no locator lines in vertical mode.
+            //
+            // The bottom edge will eventually function as the fixed
+            // playback / activation position instead.
+            //
+
+            //
+            // Draw drag selection box.
+            //
+            // This remains in physical widget coordinates, so it does
+            // not need to be transposed.
+            //
+
+            if (_dragStarted
+                && _dragStyle == DragStyle::SELECTION_RECT
+                && _editNoteTool == PianoRollEditTool::SELECT) {
+                  int minX = qMin(_mouseDownPos.x(), _lastMousePos.x());
+                  int minY = qMin(_mouseDownPos.y(), _lastMousePos.y());
+                  int maxX = qMax(_mouseDownPos.x(), _lastMousePos.x());
+                  int maxY = qMax(_mouseDownPos.y(), _lastMousePos.y());
+
+                  QRectF rect(minX, minY,
+                              maxX - minX + 1,
+                              maxY - minY + 1);
+
+                  p->setPen(QPen(colSelectionBox, 2));
+                  p->setBrush(QBrush(colSelectionBoxFill, Qt::SolidPattern));
+                  p->drawRect(rect);
+                  }
+            }
       }
 
 
@@ -692,8 +901,8 @@ QRect PianoView::boundingRect(Note* note, NoteEvent* evt, bool applyEvents)
             int x0 = pitch * _noteHeight;
             int x1 = (pitch + 1) * _noteHeight;
 
-            int y0 = tickToPixelX(_ticks - (start + len).ticks());
-            int y1 = tickToPixelX(_ticks - start.ticks());
+            int y0 = tickToPixelY((start + len).ticks());
+            int y1 = tickToPixelY(start.ticks());
 
             QRect rect;
             rect.setRect(x0, y0, x1 - x0, y1 - y0);
