@@ -1122,6 +1122,56 @@ int PianoView::pitchToPixelY(int pitch) const
       }
 
 //---------------------------------------------------------
+//   scenePosToTick
+//---------------------------------------------------------
+
+int PianoView::scenePosToTick(const QPointF& pos) const
+      {
+      if (_orientation == PianoRollOrientation::VERTICAL)
+            return pixelYToTick(int(pos.y()));
+
+      return pixelXToTick(int(pos.x()));
+      }
+
+//---------------------------------------------------------
+//   scenePosToPitch
+//---------------------------------------------------------
+
+int PianoView::scenePosToPitch(const QPointF& pos) const
+      {
+      if (_orientation == PianoRollOrientation::HORIZONTAL)
+            return pixelYToPitch(pos.y());
+
+      //
+      // Vertical / chromatic mode:
+      // one equal-width lane per MIDI semitone.
+      //
+      if (_verticalPitchLayout == VerticalPitchLayout::CHROMATIC) {
+            int pitch = int(floor(pos.x() / _noteHeight));
+            return qBound(0, pitch, 127);
+            }
+
+      //
+      // Vertical / keyboard-aligned mode:
+      // determine which keyboard-aligned lane contains X.
+      //
+      for (int pitch = 0; pitch < 128; ++pitch) {
+            QRectF lane = keyboardAlignedPitchLane(pitch);
+
+            if (lane.width() <= 0.0)
+                  continue;
+
+            if (pos.x() >= lane.left() && pos.x() < lane.right())
+                  return pitch;
+            }
+
+      //
+      // Outside the represented pitch range.
+      //
+      return -1;
+      }
+
+//---------------------------------------------------------
 //   keyboardAlignedPitchLane
 //---------------------------------------------------------
 
@@ -1556,10 +1606,41 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                   qreal maxX = qMax(_mouseDownPos.x(), _lastMousePos.x());
                   qreal maxY = qMax(_mouseDownPos.y(), _lastMousePos.y());
 
-                  int startTick = pixelXToTick((int)minX);
-                  int endTick = pixelXToTick((int)maxX);
-                  int lowPitch = pixelYToPitch(maxY);
-                  int highPitch = pixelYToPitch(minY);
+                  int startTick;
+                  int endTick;
+                  int lowPitch;
+                  int highPitch;
+
+                  if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                        startTick = pixelXToTick(int(minX));
+                        endTick   = pixelXToTick(int(maxX));
+
+                        lowPitch  = pixelYToPitch(maxY);
+                        highPitch = pixelYToPitch(minY);
+                        }
+                  else {
+                        //
+                        // Time runs vertically and is reversed:
+                        // lower screen Y = earlier time.
+                        //
+                        startTick = pixelYToTick(int(maxY));
+                        endTick   = pixelYToTick(int(minY));
+
+                        //
+                        // Pitch runs left -> right.
+                        //
+                        lowPitch  = scenePosToPitch(QPointF(minX, minY));
+                        highPitch = scenePosToPitch(QPointF(maxX, maxY));
+
+                        if (lowPitch < 0 || highPitch < 0)
+                              return;
+                        }
+
+                  if (startTick > endTick)
+                        qSwap(startTick, endTick);
+
+                  if (lowPitch > highPitch)
+                        qSwap(lowPitch, highPitch);
 
                   selectNotes(startTick, endTick, lowPitch, highPitch, selType);
                   }
@@ -2142,8 +2223,11 @@ void PianoView::insertNote(int modifiers)
 
       Score* score = _staff->score();
 
-      int pickTick = pixelXToTick((int)_mouseDownPos.x());
-      int pickPitch = pixelYToPitch(_mouseDownPos.y());
+      int pickTick = scenePosToTick(_mouseDownPos);
+      int pickPitch = scenePosToPitch(_mouseDownPos);
+
+      if (pickPitch < 0)
+            return;
 
       if (bnShift) {
             //If shift is held, select note instead
@@ -2275,10 +2359,13 @@ void PianoView::handleSelectionClick()
 
       Score* score = _staff->score();
 
-      int pickTick = pixelXToTick((int)_mouseDownPos.x());
-      int pickPitch = pixelYToPitch(_mouseDownPos.y());
+      int pickTick = scenePosToTick(_mouseDownPos);
+      int pickPitch = scenePosToPitch(_mouseDownPos);
 
-      PianoItem *pn = pickNote(pickTick, pickPitch);
+      if (pickPitch < 0)
+            return;
+
+      PianoItem* pn = pickNote(pickTick, pickPitch);
 
       if (pn) {
             if (selType == NoteSelectType::REPLACE)

@@ -255,6 +255,9 @@ private:
       int pixelYToPitch(int pixY) const;
       int pitchToPixelY(int pitch) const;
 
+      int scenePosToTick(const QPointF& pos) const;
+      int scenePosToPitch(const QPointF& pos) const;
+
       QRectF keyboardAlignedPitchLane(int midiPitch) const;
 
       QRectF verticalPitchRect(int midiPitch) const;
