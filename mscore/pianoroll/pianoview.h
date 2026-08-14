@@ -253,6 +253,8 @@ private:
       int pixelYToPitch(int pixY) { return (int)floor(128 - pixY / (qreal)_noteHeight); }
       int pitchToPixelY(int pitch) { return (128 - pitch) * _noteHeight; }
 
+      QRectF verticalPitchRect(int midiPitch) const;
+
       PianoItem* pickNote(int tick, int pitch);
 
       QList<PianoItem*> getSelectedItems();

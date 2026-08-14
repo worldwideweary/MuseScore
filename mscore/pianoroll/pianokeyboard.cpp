@@ -114,7 +114,7 @@ void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
             qreal off1 = whiteKeyOffset[key] * noteHeight + (octave * 12 + transp.chromatic) * noteHeight;
             qreal off2 = whiteKeyOffset[key + 1] * noteHeight + (octave * 12 + transp.chromatic) * noteHeight;
             if (_orientation == PianoOrientation::HORIZONTAL) {
-                  QRectF rect(-_ypos + off2, 0, off2 - off1, height());
+                  QRectF rect(-_ypos + off1, 0, off2 - off1, height());
                   p.drawRect(rect);
 
                   if (preferences.getBool(PREF_UI_PIANO_SHOWPITCHHELP) && degree == 0 && noteHeight > fontSize + 2) {
@@ -175,7 +175,12 @@ void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
             p.setBrush(curPitch == midiPitch ? colKeySelect : Qt::black);
 
             if (_orientation == PianoOrientation::HORIZONTAL) {
-                  QRectF rect(offset, 0, noteHeight, blackKeyLen);
+                  QRectF rect(
+                        -_ypos + offset,
+                        0,
+                        noteHeight,
+                        blackKeyLen
+                        );
 
                   p.drawRect(rect);
 
@@ -183,7 +188,6 @@ void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
                         if (noteHeight > fontSize + 2) {
                               rect.setWidth(blackKeyLen);
                               rect.setHeight(noteHeight);
-
                               p.setPen(QPen(Qt::white));
                               p.drawText(rect, Qt::AlignLeft | Qt::AlignBottom, noteName);
                               }

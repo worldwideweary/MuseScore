@@ -897,15 +897,24 @@ QRect PianoView::boundingRect(Note* note, NoteEvent* evt, bool applyEvents)
             rect.setRect(x0, y0, x1 - x0, y1 - y0);
             return rect;
             }
-      else {
-            int x0 = pitch * _noteHeight;
-            int x1 = (pitch + 1) * _noteHeight;
+      else { // VERTICAL
+            QRectF pitchRect = verticalPitchRect(pitch);
 
+            qreal center = pitchRect.center().x();
+            qreal width = _noteHeight;
+
+            int x0 = qRound(center - width / 2.0);
             int y0 = tickToPixelY((start + len).ticks());
             int y1 = tickToPixelY(start.ticks());
 
             QRect rect;
-            rect.setRect(x0, y0, x1 - x0, y1 - y0);
+            rect.setRect(
+                  x0,
+                  y0,
+                  qRound(width),
+                  y1 - y0
+                  );
+
             return rect;
             }
 
@@ -955,6 +964,75 @@ int PianoView::pixelYToTick(int y) const
 int PianoView::tickToPixelY(int tick) const
       {
       return tickToPixelX(_ticks - tick);
+      }
+
+//---------------------------------------------------------
+//   verticalPitchRect
+//---------------------------------------------------------
+
+QRectF PianoView::verticalPitchRect(int midiPitch) const
+      {
+      static const qreal whiteKeyOffset[] = {
+            0.0, 1.5, 3.5, 5.0, 6.5, 8.5, 10.5, 12.0
+            };
+      static const int whiteKeyDegree[] = {
+            0, 2, 4, 5, 7, 9, 11
+            };
+
+      static const qreal blackKeyOffset[] = {
+            1.5, 3.5, 6.5, 8.5, 10.5
+            };
+      static const int blackKeyDegree[] = {
+            1, 3, 6, 8, 10
+            };
+
+      Interval transp;
+      if (_staff)
+            transp = _staff->part()->instrument()->transpose();
+
+      int instrPitch = midiPitch - transp.chromatic;
+      int octave = instrPitch / 12;
+      int degree = instrPitch % 12;
+
+      if (degree < 0)
+            degree += 12;
+
+      qreal octaveOffset =
+            (octave * 12 + transp.chromatic) * _noteHeight;
+
+      //
+      // White key
+      //
+      for (int i = 0; i < 7; ++i) {
+            if (whiteKeyDegree[i] == degree) {
+                  qreal x1 = whiteKeyOffset[i] * _noteHeight
+                             + octaveOffset;
+                  qreal x2 = whiteKeyOffset[i + 1] * _noteHeight
+                             + octaveOffset;
+
+                  return QRectF(x1, 0.0, x2 - x1, 0.0);
+                  }
+            }
+
+      //
+      // Black key
+      //
+      for (int i = 0; i < 5; ++i) {
+            if (blackKeyDegree[i] == degree) {
+                  qreal center =
+                        blackKeyOffset[i] * _noteHeight
+                        + octaveOffset;
+
+                  return QRectF(
+                        center - _noteHeight / 2.0,
+                        0.0,
+                        _noteHeight,
+                        0.0
+                        );
+                  }
+            }
+
+      return QRectF();
       }
 
 //---------------------------------------------------------

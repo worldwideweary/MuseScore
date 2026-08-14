@@ -390,6 +390,13 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       pianoKbd = new PianoKeyboard;
       pianoKbd->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
       pianoKbd->setFixedWidth(PIANO_KEYBOARD_WIDTH);
+      pianoKbd->setOrientation(PianoOrientation::HORIZONTAL);
+      pianoKbd->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+      pianoKbd->setFixedHeight(PIANO_KEYBOARD_WIDTH);
+      pianoKbd->setMaximumWidth(QWIDGETSIZE_MAX);
+      pianoKbd->setMinimumWidth(0);
+
+
 
       pianoView = new PianoView;
       pianoView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -404,11 +411,16 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       QGridLayout* noteAreaLayout = new QGridLayout;
       noteAreaLayout->setContentsMargins(0, 0, 0, 0);
       noteAreaLayout->setSpacing(0);
-      noteAreaLayout->addWidget(topLeftSpacer, 0, 0, 1, 1);
-      noteAreaLayout->addWidget(ruler, 0, 1, 1, 1);
-      noteAreaLayout->addWidget(pianoKbd, 1, 0, 1, 1);
-      noteAreaLayout->addWidget(pianoView, 1, 1, 1, 1);
-      noteAreaLayout->addWidget(hsb, 2, 1, 1, 1);
+      // TEMP change
+      // noteAreaLayout->addWidget(topLeftSpacer,  0, 0, 1, 1);
+      // noteAreaLayout->addWidget(ruler,          0, 1, 1, 1);
+      // noteAreaLayout->addWidget(pianoKbd,       1, 0, 1, 1);
+      // noteAreaLayout->addWidget(pianoView,      1, 1, 1, 1);
+      // noteAreaLayout->addWidget(hsb,            2, 1, 1, 1);
+
+      noteAreaLayout->addWidget(pianoView, 0, 0);
+      noteAreaLayout->addWidget(pianoKbd,  1, 0);
+
       noteAreaWidget->setLayout(noteAreaLayout);
 
       // levels area
@@ -466,7 +478,14 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       mainLayout->addWidget(tbTweak);
       mainLayout->addWidget(mainWidget);
 
-      connect(pianoView->verticalScrollBar(),   SIGNAL(valueChanged(int)), pianoKbd, SLOT(setYpos(int)));
+      // TEMPORARY:
+      // connect(pianoView->verticalScrollBar(),   SIGNAL(valueChanged(int)), pianoKbd, SLOT(setYpos(int)));
+
+      connect(pianoView->horizontalScrollBar(),
+              SIGNAL(valueChanged(int)),
+              pianoKbd,
+              SLOT(setYpos(int)));
+
       connect(pianoView->horizontalScrollBar(), SIGNAL(valueChanged(int)), hsb,      SLOT(setValue(int)));
 
       connect(pianoView,          SIGNAL(xZoomChanged(qreal)),            ruler,       SLOT(setXZoom(qreal)));
