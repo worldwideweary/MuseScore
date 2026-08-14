@@ -62,13 +62,15 @@ PianoKeyboard::PianoKeyboard(QWidget* parent)
 void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
       {
       QPainter p(this);
-      p.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
-      
+      p.setRenderHints(QPainter::Antialiasing
+                       | QPainter::SmoothPixmapTransform
+                       | QPainter::TextAntialiasing);
+
       const int fontSize = 8;
       QFont f("FreeSans", fontSize);
       p.setFont(f);
 
-      //Check for drumset, if any
+      // Check for drumset, if any
       Drumset* ds = nullptr;
       Interval transp;
       if (_staff) {
@@ -78,17 +80,48 @@ void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
             }
 
       p.setPen(QPen(Qt::black, 2));
-      
+
       int keyboardLen = 128 * noteHeight;
       const int blackKeyLen = BLACK_KEY_WIDTH;
 
-      const qreal whiteKeyOffset[] = {0, 1.5, 3.5, 5, 6.5, 8.5, 10.5, 12};
-      const int whiteKeyDegree[] = {0, 2, 4, 5, 7, 9, 11};
-      const qreal blackKeyOffset[] = {1.5, 3.5, 6.5, 8.5, 10.5};
-      const int blackKeyDegree[] = {1, 3, 6, 8, 10};
+      //
+      // The original offsets are retained for the existing
+      // VERTICAL keyboard implementation.
+      //
+      const qreal whiteKeyOffset[] = {
+            0, 1.5, 3.5, 5, 6.5, 8.5, 10.5, 12
+            };
 
-      //White keys
+      const int whiteKeyDegree[] = {
+            0, 2, 4, 5, 7, 9, 11
+            };
+
+      const qreal blackKeyOffset[] = {
+            1.5, 3.5, 6.5, 8.5, 10.5
+            };
+
+      const int blackKeyDegree[] = {
+            1, 3, 6, 8, 10
+            };
+
+      //
+      // In the horizontal keyboard, all seven white keys
+      // have equal width. These identify the white-key
+      // boundaries occupied by the five black keys.
+      //
+      const int blackKeyBoundary[] = {
+            1, 2, 4, 5, 6
+            };
+
+      const qreal horizontalWhiteKeyWidth =
+            12.0 * noteHeight / 7.0;
+
+      //---------------------------------------------------
+      // White keys
+      //---------------------------------------------------
+
       p.setPen(QPen(Qt::black));
+
       for (int midiPitch = 0; midiPitch < 128; ++midiPitch) {
             int instrPitch = midiPitch - transp.chromatic;
 
@@ -96,85 +129,189 @@ void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
             int degree = (instrPitch + 60) % 12;
 
             int key = -1;
-            for (int i = 0; i < 7; ++i)
+            for (int i = 0; i < 7; ++i) {
                   if (whiteKeyDegree[i] == degree) {
                         key = i;
                         break;
                         }
+                  }
 
             if (key == -1)
                   continue;
 
-            QString noteName = qApp->translate("utils", pitchNames[degree]) + QString::number(octave - 1);
-            if (ds)
-                  noteName = qApp->translate("drumset", ds->name(instrPitch).toUtf8().constData());
+            QString noteName =
+                  qApp->translate("utils", pitchNames[degree])
+                  + QString::number(octave - 1);
 
-            p.setBrush(curPitch == midiPitch ? colKeySelect : Qt::white);
+            if (ds) {
+                  noteName = qApp->translate(
+                        "drumset",
+                        ds->name(instrPitch).toUtf8().constData());
+                  }
 
-            qreal off1 = whiteKeyOffset[key] * noteHeight + (octave * 12 + transp.chromatic) * noteHeight;
-            qreal off2 = whiteKeyOffset[key + 1] * noteHeight + (octave * 12 + transp.chromatic) * noteHeight;
+            p.setBrush(curPitch == midiPitch
+                       ? colKeySelect
+                       : Qt::white);
+
             if (_orientation == PianoOrientation::HORIZONTAL) {
-                  QRectF rect(-_ypos + off1, 0, off2 - off1, height());
+                  //
+                  // Seven equal-width white keys occupy the
+                  // same 12 * noteHeight octave width.
+                  //
+                  qreal octaveOffset =
+                        (octave * 12 + transp.chromatic)
+                        * noteHeight;
+
+                  qreal x =
+                        octaveOffset
+                        + key * horizontalWhiteKeyWidth;
+
+                  QRectF rect(
+                        -_ypos + x,
+                        0,
+                        horizontalWhiteKeyWidth,
+                        height()
+                        );
+
                   p.drawRect(rect);
 
-                  if (preferences.getBool(PREF_UI_PIANO_SHOWPITCHHELP) && degree == 0 && noteHeight > fontSize + 2) {
-                        QRectF rectText(rect.x() + 1, rect.y(), rect.height() - 2, rect.width() - 2);
+                  if (preferences.getBool(PREF_UI_PIANO_SHOWPITCHHELP)
+                      && degree == 0
+                      && noteHeight > fontSize + 2) {
+                        QRectF rectText(
+                              rect.x() + 1,
+                              rect.y(),
+                              rect.height() - 2,
+                              rect.width() - 2);
+
                         QTransform xform = p.transform();
                         p.rotate(90);
-                        p.drawText(rectText,
-                                ds ?  Qt::AlignLeft | Qt::AlignBottom
+
+                        p.drawText(
+                              rectText,
+                              ds
+                                    ? Qt::AlignLeft | Qt::AlignBottom
                                     : Qt::AlignRight | Qt::AlignBottom,
-                                noteName);
+                              noteName);
+
                         p.setTransform(xform);
                         }
                   }
             else {
-                  QRectF rect(0, -_ypos + keyboardLen - off2, width(), off2 - off1);
+                  //
+                  // Original vertical keyboard geometry.
+                  //
+                  qreal off1 =
+                        whiteKeyOffset[key] * noteHeight
+                        + (octave * 12 + transp.chromatic)
+                              * noteHeight;
+
+                  qreal off2 =
+                        whiteKeyOffset[key + 1] * noteHeight
+                        + (octave * 12 + transp.chromatic)
+                              * noteHeight;
+
+                  QRectF rect(
+                        0,
+                        -_ypos + keyboardLen - off2,
+                        width(),
+                        off2 - off1
+                        );
 
                   p.drawRect(rect);
 
                   if (noteHeight > fontSize + 2) {
                         if (ds) {
-                              QRectF rectText(rect.x() + 1, -_ypos + keyboardLen - (instrPitch + 1) * noteHeight, rect.width() - 1, noteHeight);
+                              QRectF rectText(
+                                    rect.x() + 1,
+                                    -_ypos
+                                          + keyboardLen
+                                          - (instrPitch + 1)
+                                                * noteHeight,
+                                    rect.width() - 1,
+                                    noteHeight);
 
-                              p.drawText(rectText, Qt::AlignBottom | Qt::AlignLeft, noteName);
+                              p.drawText(
+                                    rectText,
+                                    Qt::AlignBottom | Qt::AlignLeft,
+                                    noteName);
                               }
-                        else if (preferences.getBool(PREF_UI_PIANO_SHOWPITCHHELP) && degree == 0) {
-                              QRectF rectText(rect.x(), rect.y(), rect.width() - 4, rect.height() - 1);
-                              p.drawText(rectText, Qt::AlignRight | Qt::AlignBottom, noteName);
+                        else if (preferences.getBool(
+                                       PREF_UI_PIANO_SHOWPITCHHELP)
+                                 && degree == 0) {
+                              QRectF rectText(
+                                    rect.x(),
+                                    rect.y(),
+                                    rect.width() - 4,
+                                    rect.height() - 1);
+
+                              p.drawText(
+                                    rectText,
+                                    Qt::AlignRight | Qt::AlignBottom,
+                                    noteName);
                               }
                         }
                   }
             }
 
-      //Black keys
+      //---------------------------------------------------
+      // Black keys
+      //---------------------------------------------------
+
       for (int midiPitch = 0; midiPitch < 128; ++midiPitch) {
             int instrPitch = midiPitch - transp.chromatic;
 
             int octave = instrPitch / 12;
             int degree = instrPitch % 12;
 
+            if (degree < 0)
+                  degree += 12;
+
             int key = -1;
-            for (int i = 0; i < 5; ++i)
+            for (int i = 0; i < 5; ++i) {
                   if (blackKeyDegree[i] == degree) {
                         key = i;
                         break;
                         }
+                  }
 
             if (key == -1)
                   continue;
 
-            QString noteName = qApp->translate("utils", pitchNames[blackKeyDegree[key]]) + QString::number(octave);
-            if (ds)
-                  noteName = qApp->translate("drumset", ds->name(instrPitch).toUtf8().constData());
+            QString noteName =
+                  qApp->translate(
+                        "utils",
+                        pitchNames[blackKeyDegree[key]])
+                  + QString::number(octave);
 
-            qreal center = blackKeyOffset[key] * noteHeight;
-            qreal offset = center - noteHeight / 2.0 + (octave * 12 + transp.chromatic) * noteHeight;
+            if (ds) {
+                  noteName = qApp->translate(
+                        "drumset",
+                        ds->name(instrPitch).toUtf8().constData());
+                  }
 
             p.setPen(QPen(Qt::black));
-            p.setBrush(curPitch == midiPitch ? colKeySelect : Qt::black);
+            p.setBrush(curPitch == midiPitch
+                       ? colKeySelect
+                       : Qt::black);
 
             if (_orientation == PianoOrientation::HORIZONTAL) {
+                  //
+                  // Center each black key on the appropriate
+                  // boundary between equal-width white keys.
+                  //
+                  qreal octaveOffset =
+                        (octave * 12 + transp.chromatic)
+                        * noteHeight;
+
+                  qreal center =
+                        octaveOffset
+                        + blackKeyBoundary[key]
+                              * horizontalWhiteKeyWidth;
+
+                  qreal offset =
+                        center - noteHeight / 2.0;
+
                   QRectF rect(
                         -_ypos + offset,
                         0,
@@ -184,24 +321,50 @@ void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
 
                   p.drawRect(rect);
 
-                  if (ds) {
-                        if (noteHeight > fontSize + 2) {
-                              rect.setWidth(blackKeyLen);
-                              rect.setHeight(noteHeight);
-                              p.setPen(QPen(Qt::white));
-                              p.drawText(rect, Qt::AlignLeft | Qt::AlignBottom, noteName);
-                              }
+                  if (ds && noteHeight > fontSize + 2) {
+                        QRectF rectText = rect;
+                        rectText.setWidth(blackKeyLen);
+                        rectText.setHeight(noteHeight);
+
+                        p.setPen(QPen(Qt::white));
+                        p.drawText(
+                              rectText,
+                              Qt::AlignLeft | Qt::AlignBottom,
+                              noteName);
                         }
                   }
             else {
-                  QRectF rect(0, -_ypos + keyboardLen - offset - noteHeight, blackKeyLen, noteHeight);
+                  //
+                  // Original vertical keyboard geometry.
+                  //
+                  qreal center =
+                        blackKeyOffset[key] * noteHeight;
+
+                  qreal offset =
+                        center
+                        - noteHeight / 2.0
+                        + (octave * 12 + transp.chromatic)
+                              * noteHeight;
+
+                  QRectF rect(
+                        0,
+                        -_ypos
+                              + keyboardLen
+                              - offset
+                              - noteHeight,
+                        blackKeyLen,
+                        noteHeight
+                        );
 
                   p.drawRect(rect);
 
                   if (noteHeight > fontSize + 2) {
                         if (ds) {
                               p.setPen(QPen(Qt::white));
-                              p.drawText(rect, Qt::AlignLeft | Qt::AlignBottom, noteName);
+                              p.drawText(
+                                    rect,
+                                    Qt::AlignLeft | Qt::AlignBottom,
+                                    noteName);
                               }
                         }
                   }

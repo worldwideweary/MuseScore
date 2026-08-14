@@ -972,18 +972,16 @@ int PianoView::tickToPixelY(int tick) const
 
 QRectF PianoView::verticalPitchRect(int midiPitch) const
       {
-      static const qreal whiteKeyOffset[] = {
-            0.0, 1.5, 3.5, 5.0, 6.5, 8.5, 10.5, 12.0
-            };
       static const int whiteKeyDegree[] = {
             0, 2, 4, 5, 7, 9, 11
             };
 
-      static const qreal blackKeyOffset[] = {
-            1.5, 3.5, 6.5, 8.5, 10.5
-            };
       static const int blackKeyDegree[] = {
             1, 3, 6, 8, 10
+            };
+
+      static const int blackKeyBoundary[] = {
+            1, 2, 4, 5, 6
             };
 
       Interval transp;
@@ -997,7 +995,10 @@ QRectF PianoView::verticalPitchRect(int midiPitch) const
       if (degree < 0)
             degree += 12;
 
-      qreal octaveOffset =
+      const qreal whiteKeyWidth =
+            12.0 * _noteHeight / 7.0;
+
+      const qreal octaveOffset =
             (octave * 12 + transp.chromatic) * _noteHeight;
 
       //
@@ -1005,12 +1006,15 @@ QRectF PianoView::verticalPitchRect(int midiPitch) const
       //
       for (int i = 0; i < 7; ++i) {
             if (whiteKeyDegree[i] == degree) {
-                  qreal x1 = whiteKeyOffset[i] * _noteHeight
-                             + octaveOffset;
-                  qreal x2 = whiteKeyOffset[i + 1] * _noteHeight
-                             + octaveOffset;
+                  qreal x =
+                        octaveOffset + i * whiteKeyWidth;
 
-                  return QRectF(x1, 0.0, x2 - x1, 0.0);
+                  return QRectF(
+                        x,
+                        0.0,
+                        whiteKeyWidth,
+                        0.0
+                        );
                   }
             }
 
@@ -1020,8 +1024,8 @@ QRectF PianoView::verticalPitchRect(int midiPitch) const
       for (int i = 0; i < 5; ++i) {
             if (blackKeyDegree[i] == degree) {
                   qreal center =
-                        blackKeyOffset[i] * _noteHeight
-                        + octaveOffset;
+                        octaveOffset
+                        + blackKeyBoundary[i] * whiteKeyWidth;
 
                   return QRectF(
                         center - _noteHeight / 2.0,
