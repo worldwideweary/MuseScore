@@ -44,6 +44,11 @@ enum class PianoRollOrientation {
       VERTICAL
       };
 
+enum class VerticalPitchLayout {
+      CHROMATIC,
+      KEYBOARD_ALIGNED
+      };
+
 } // namespace Ms
 
 #endif

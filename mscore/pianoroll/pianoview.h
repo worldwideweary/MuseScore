@@ -103,6 +103,7 @@ private:
       Staff* _staff;
       Chord* _chord;
 
+      VerticalPitchLayout _verticalPitchLayout;
       PianoRollScope _scope;
       Coloring _coloring;
 
@@ -252,6 +253,8 @@ private:
       int tickToPixelY(int tick) const;
       int pixelYToPitch(int pixY) { return (int)floor(128 - pixY / (qreal)_noteHeight); }
       int pitchToPixelY(int pitch) { return (128 - pitch) * _noteHeight; }
+
+      QRectF keyboardAlignedPitchLane(int midiPitch) const;
 
       QRectF verticalPitchRect(int midiPitch) const;
 

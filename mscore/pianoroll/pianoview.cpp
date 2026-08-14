@@ -351,6 +351,7 @@ PianoView::PianoView()
       _inProgressUndoEvent = false;
       _scope = PianoRollScope::PART;
       _orientation = PianoRollOrientation::HORIZONTAL;
+      _verticalPitchLayout = VerticalPitchLayout::KEYBOARD_ALIGNED;
 
       memset(_pitchHighlight, 0, 128);
       }
@@ -608,51 +609,122 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
             //
             // Draw vertical pitch grid.
             //
-            // Unlike the keyboard, the editing grid uses equal-width
-            // chromatic semitone columns.
-            //
 
-            for (int pitch = 0; pitch < 128; ++pitch) {
-                  qreal x = pitch * _noteHeight;
-
-                  int degree = (pitch - transp.chromatic + 60) % 12;
-                  if (degree < 0)
-                        degree += 12;
-
+            if (_verticalPitchLayout == VerticalPitchLayout::KEYBOARD_ALIGNED) {
                   //
-                  // Shade black-key pitches and highlighted pitches.
+                  // Black-pitch lanes match the physical black keys exactly.
+                  // White-pitch lanes fill the remaining space.
                   //
 
-                  if (!pat.isWhiteKey[degree] || _pitchHighlight[pitch]) {
-                        QRectF vbar(
-                              x,
-                              y1,
-                              _noteHeight,
-                              y2 - y1
-                              );
+                  for (int pitch = 0; pitch < 128; ++pitch) {
+                        QRectF lane = keyboardAlignedPitchLane(pitch);
 
-                        p->fillRect(
-                              vbar,
-                              _pitchHighlight[pitch]
-                                    ? colHilightKeyBg
-                                    : colBlackKeyBg
+                        if (lane.width() <= 0.0)
+                              continue;
+
+                        qreal laneLeft  = lane.left();
+                        qreal laneRight = lane.right();
+
+                        if (laneRight < r.left() || laneLeft > r.right())
+                              continue;
+
+                        int degree = (pitch - transp.chromatic + 60) % 12;
+                        if (degree < 0)
+                              degree += 12;
+
+                        //
+                        // Preserve the normal black-key shading and
+                        // pitch-highlight behavior.
+                        //
+
+                        if (!pat.isWhiteKey[degree] || _pitchHighlight[pitch]) {
+                              QRectF vbar(
+                                    laneLeft,
+                                    y1,
+                                    lane.width(),
+                                    y2 - y1
+                                    );
+
+                              p->fillRect(
+                                    vbar,
+                                    _pitchHighlight[pitch]
+                                          ? colHilightKeyBg
+                                          : colBlackKeyBg
+                                    );
+                              }
+
+                        //
+                        // Draw the boundary at the left side of each lane.
+                        // C gets the stronger octave boundary.
+                        //
+
+                        p->setPen(degree == 0 ? penLineMajor : penLineMinor);
+                        p->drawLine(
+                              QLineF(
+                                    laneLeft,
+                                    y1,
+                                    laneLeft,
+                                    y2
+                                    )
                               );
                         }
 
                   //
-                  // Line between semitone columns.
-                  // Make C/octave boundaries heavier.
+                  // Finish the right edge of the MIDI range.
                   //
 
-                  p->setPen(degree == 0 ? penLineMajor : penLineMinor);
-                  p->drawLine(
-                        QLineF(
-                              x + _noteHeight,
-                              y1,
-                              x + _noteHeight,
-                              y2
-                              )
-                        );
+                  QRectF lastLane = keyboardAlignedPitchLane(127);
+
+                  if (lastLane.width() > 0.0) {
+                        qreal x = lastLane.right();
+
+                        if (x >= r.left() && x <= r.right()) {
+                              p->setPen(penLineMinor);
+                              p->drawLine(QLineF(x, y1, x, y2));
+                              }
+                        }
+
+
+                  }
+            else {
+                  //
+                  // Normal chromatic layout:
+                  // every MIDI semitone occupies exactly one equal-width lane.
+                  //
+
+                  for (int pitch = 0; pitch < 128; ++pitch) {
+                        qreal x = pitch * _noteHeight;
+
+                        int degree = (pitch - transp.chromatic + 60) % 12;
+                        if (degree < 0)
+                              degree += 12;
+
+                        if (!pat.isWhiteKey[degree] || _pitchHighlight[pitch]) {
+                              QRectF vbar(
+                                    x,
+                                    y1,
+                                    _noteHeight,
+                                    y2 - y1
+                                    );
+
+                              p->fillRect(
+                                    vbar,
+                                    _pitchHighlight[pitch]
+                                          ? colHilightKeyBg
+                                          : colBlackKeyBg
+                                    );
+                              }
+
+                        p->setPen(degree == 0 ? penLineMajor : penLineMinor);
+                        p->drawLine(
+                              QLineF(
+                                    x + _noteHeight,
+                                    y1,
+                                    x + _noteHeight,
+                                    y2
+                                    )
+                              );
+                        }
                   }
 
             //
@@ -946,7 +1018,26 @@ QRect PianoView::boundingRect(Note* note, NoteEvent* evt, bool applyEvents)
             return rect;
             }
       else { // VERTICAL
-            int x0 = pitch * _noteHeight;
+            qreal center;
+            qreal width = _noteHeight;
+
+            if (_verticalPitchLayout == VerticalPitchLayout::KEYBOARD_ALIGNED) {
+                  QRectF lane = keyboardAlignedPitchLane(pitch);
+
+                  center = lane.center().x();
+
+                  //
+                  // All note items remain uniform width,
+                  // equal to the black-key width.
+                  //
+                  width = _noteHeight;
+                  }
+            else {
+                  center = (pitch + 0.5) * _noteHeight;
+                  width = _noteHeight;
+                  }
+
+            int x0 = qRound(center - width / 2.0);
 
             int y0 = tickToPixelY((start + len).ticks());
             int y1 = tickToPixelY(start.ticks());
@@ -955,7 +1046,7 @@ QRect PianoView::boundingRect(Note* note, NoteEvent* evt, bool applyEvents)
             rect.setRect(
                   x0,
                   y0,
-                  _noteHeight,
+                  qRound(width),
                   y1 - y0
                   );
 
@@ -1008,6 +1099,154 @@ int PianoView::pixelYToTick(int y) const
 int PianoView::tickToPixelY(int tick) const
       {
       return tickToPixelX(_ticks - tick);
+      }
+
+//---------------------------------------------------------
+//   keyboardAlignedPitchLane
+//---------------------------------------------------------
+
+QRectF PianoView::keyboardAlignedPitchLane(int midiPitch) const
+      {
+      static const int whiteKeyDegree[] = {
+            0, 2, 4, 5, 7, 9, 11
+            };
+
+      static const int blackKeyDegree[] = {
+            1, 3, 6, 8, 10
+            };
+
+      static const int blackKeyBoundary[] = {
+            1, 2, 4, 5, 6
+            };
+
+      Interval transp;
+      if (_staff)
+            transp = _staff->part()->instrument()->transpose();
+
+      int instrPitch = midiPitch - transp.chromatic;
+      int octave = instrPitch / 12;
+      int degree = instrPitch % 12;
+
+      if (degree < 0) {
+            degree += 12;
+            --octave;
+            }
+
+      const qreal whiteKeyWidth =
+            12.0 * _noteHeight / 7.0;
+
+      // Exact keyboard alignment uses * 1.0.
+      // Possible future experiment: attenuate to ~0.85-0.90 to give
+      // neighboring white lanes more room while keeping black lanes centered.
+      const qreal blackKeyWidth =
+            _noteHeight * 1.00;
+
+      const qreal octaveLeft =
+            (octave * 12 + transp.chromatic) * _noteHeight;
+
+      const qreal octaveRight =
+            octaveLeft + 12.0 * _noteHeight;
+
+      //
+      // Black pitch lanes exactly match the black keys.
+      //
+      for (int i = 0; i < 5; ++i) {
+            if (blackKeyDegree[i] == degree) {
+                  const qreal center =
+                        octaveLeft
+                        + blackKeyBoundary[i] * whiteKeyWidth;
+
+                  return QRectF(
+                        center - blackKeyWidth / 2.0,
+                        0.0,
+                        blackKeyWidth,
+                        0.0
+                        );
+                  }
+            }
+
+      //
+      // White pitch lanes occupy the remaining regions
+      // between adjacent black-key lanes / octave edges.
+      //
+      for (int i = 0; i < 7; ++i) {
+            if (whiteKeyDegree[i] != degree)
+                  continue;
+
+            qreal left;
+            qreal right;
+
+            switch (degree) {
+                  case 0: // C
+                        left = octaveLeft;
+                        right = octaveLeft
+                              + blackKeyBoundary[0] * whiteKeyWidth
+                              - blackKeyWidth / 2.0;
+                        break;
+
+                  case 2: // D
+                        left = octaveLeft
+                             + blackKeyBoundary[0] * whiteKeyWidth
+                             + blackKeyWidth / 2.0;
+                        right = octaveLeft
+                              + blackKeyBoundary[1] * whiteKeyWidth
+                              - blackKeyWidth / 2.0;
+                        break;
+
+                  case 4: // E
+                        left = octaveLeft
+                             + blackKeyBoundary[1] * whiteKeyWidth
+                             + blackKeyWidth / 2.0;
+                        right = octaveLeft
+                              + 3.0 * whiteKeyWidth;
+                        break;
+
+                  case 5: // F
+                        left = octaveLeft
+                             + 3.0 * whiteKeyWidth;
+                        right = octaveLeft
+                              + blackKeyBoundary[2] * whiteKeyWidth
+                              - blackKeyWidth / 2.0;
+                        break;
+
+                  case 7: // G
+                        left = octaveLeft
+                             + blackKeyBoundary[2] * whiteKeyWidth
+                             + blackKeyWidth / 2.0;
+                        right = octaveLeft
+                              + blackKeyBoundary[3] * whiteKeyWidth
+                              - blackKeyWidth / 2.0;
+                        break;
+
+                  case 9: // A
+                        left = octaveLeft
+                             + blackKeyBoundary[3] * whiteKeyWidth
+                             + blackKeyWidth / 2.0;
+                        right = octaveLeft
+                              + blackKeyBoundary[4] * whiteKeyWidth
+                              - blackKeyWidth / 2.0;
+                        break;
+
+                  case 11: // B
+                        left = octaveLeft
+                             + blackKeyBoundary[4] * whiteKeyWidth
+                             + blackKeyWidth / 2.0;
+                        right = octaveRight;
+                        break;
+
+                  default:
+                        return QRectF();
+                  }
+
+            return QRectF(
+                  left,
+                  0.0,
+                  right - left,
+                  0.0
+                  );
+            }
+
+      return QRectF();
       }
 
 //---------------------------------------------------------
