@@ -103,8 +103,11 @@ private:
       Staff* _staff;
       Chord* _chord;
 
+      VerticalPitchLayout _verticalPitchLayout;
       PianoRollScope _scope;
       Coloring _coloring;
+
+      PianoRollOrientation _orientation;
       
       Pos _trackingPos;  //Track mouse position
       Pos* _locator;
@@ -226,6 +229,8 @@ private:
    public:
       PianoView();
       ~PianoView();
+      void setVerticalPitchLayout(VerticalPitchLayout layout);
+      void setOrientation(PianoRollOrientation orientation);
       Staff* staff() { return _staff; }
       void setStaff(Staff*, Pos* locator);
       void ensureVisible(int tick);
@@ -243,10 +248,26 @@ private:
       void setEditNoteDots(int dot) { _editNoteDots = dot; }
       void setEditNoteTool(PianoRollEditTool tool) { _editNoteTool = tool; updateNotes();  }
 
-      int pixelXToTick(int pixX);
-      int tickToPixelX(int tick);
-      int pixelYToPitch(int pixY) { return (int)floor(128 - pixY / (qreal)_noteHeight); }
-      int pitchToPixelY(int pitch) { return (128 - pitch) * _noteHeight; }
+      int pixelXToTick(int pixX) const;
+      int tickToPixelX(int tick) const;
+      qreal tickToPixelXF(qreal tick) const;
+      int pixelYToTick(int y) const;
+      int tickToPixelY(int tick) const;
+      int pixelYToPitch(int pixY) const;
+      int pitchToPixelY(int pitch) const;
+
+      int scenePosToTick(const QPointF& pos) const;
+      int scenePosToPitch(const QPointF& pos) const;
+
+      int dragTickDelta(const QPointF& from, const QPointF& to) const;
+      int dragPitchDelta(const QPointF& from, const QPointF& to) const;
+
+      int viewportReferenceTick() const;
+      void positionViewportAtTick(int tick);
+
+      QRectF keyboardAlignedPitchLane(int midiPitch) const;
+
+      QRectF verticalPitchRect(int midiPitch) const;
 
       PianoItem* pickNote(int tick, int pitch);
 
