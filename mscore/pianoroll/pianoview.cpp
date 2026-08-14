@@ -606,60 +606,53 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
             const BarPattern& pat = barPatterns[_barPattern];
 
             //
-            // Pitch geometry
+            // Draw vertical pitch grid.
+            //
+            // Unlike the keyboard, the editing grid uses equal-width
+            // chromatic semitone columns.
             //
 
-            const qreal whiteKeyWidth = 12.0 * _noteHeight / 7.0;
+            for (int pitch = 0; pitch < 128; ++pitch) {
+                  qreal x = pitch * _noteHeight;
 
-            static const int blackKeyBoundary[] = {
-                  1, 2, 4, 5, 6
-                  };
+                  int degree = (pitch - transp.chromatic + 60) % 12;
+                  if (degree < 0)
+                        degree += 12;
 
-            //
-            // Shade black-key regions FIRST so grid lines are drawn over them.
-            //
+                  //
+                  // Shade black-key pitches and highlighted pitches.
+                  //
 
-            for (int octave = -1; octave <= 10; ++octave) {
-                  qreal octaveOffset =
-                        (octave * 12 + transp.chromatic) * _noteHeight;
-
-                  for (int key = 0; key < 5; ++key) {
-                        qreal center =
-                              octaveOffset
-                              + blackKeyBoundary[key] * whiteKeyWidth;
-
+                  if (!pat.isWhiteKey[degree] || _pitchHighlight[pitch]) {
                         QRectF vbar(
-                              center - _noteHeight / 2.0,
+                              x,
                               y1,
                               _noteHeight,
                               y2 - y1
                               );
 
-                        if (vbar.right() < r.left() || vbar.left() > r.right())
-                              continue;
-
-                        p->fillRect(vbar, colBlackKeyBg);
+                        p->fillRect(
+                              vbar,
+                              _pitchHighlight[pitch]
+                                    ? colHilightKeyBg
+                                    : colBlackKeyBg
+                              );
                         }
-                  }
 
-            //
-            // Draw white-key boundaries.
-            //
+                  //
+                  // Line between semitone columns.
+                  // Make C/octave boundaries heavier.
+                  //
 
-            for (int octave = -1; octave <= 10; ++octave) {
-                  qreal octaveOffset =
-                        (octave * 12 + transp.chromatic) * _noteHeight;
-
-                  for (int key = 0; key <= 7; ++key) {
-                        qreal x =
-                              octaveOffset + key * whiteKeyWidth;
-
-                        if (x < r.left() || x > r.right())
-                              continue;
-
-                        p->setPen(key == 0 ? penLineMajor : penLineMinor);
-                        p->drawLine(QLineF(x, y1, x, y2));
-                        }
+                  p->setPen(degree == 0 ? penLineMajor : penLineMinor);
+                  p->drawLine(
+                        QLineF(
+                              x + _noteHeight,
+                              y1,
+                              x + _noteHeight,
+                              y2
+                              )
+                        );
                   }
 
             //
@@ -953,12 +946,8 @@ QRect PianoView::boundingRect(Note* note, NoteEvent* evt, bool applyEvents)
             return rect;
             }
       else { // VERTICAL
-            QRectF pitchRect = verticalPitchRect(pitch);
+            int x0 = pitch * _noteHeight;
 
-            qreal center = pitchRect.center().x();
-            qreal width = _noteHeight;
-
-            int x0 = qRound(center - width / 2.0);
             int y0 = tickToPixelY((start + len).ticks());
             int y1 = tickToPixelY(start.ticks());
 
@@ -966,7 +955,7 @@ QRect PianoView::boundingRect(Note* note, NoteEvent* evt, bool applyEvents)
             rect.setRect(
                   x0,
                   y0,
-                  qRound(width),
+                  _noteHeight,
                   y1 - y0
                   );
 
