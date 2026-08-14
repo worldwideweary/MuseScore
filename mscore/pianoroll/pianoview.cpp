@@ -601,39 +601,69 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
             // here each pitch becomes a column.
             //
 
-            int leftPitch  = qMax(0, int(floor(x1 / _noteHeight)));
-            int rightPitch = qMin(127, int(ceil(x2 / _noteHeight)));
-
             Part* part = _staff->part();
             Interval transp = part->instrument()->transpose();
             const BarPattern& pat = barPatterns[_barPattern];
 
-            for (int pitch = leftPitch; pitch <= rightPitch; ++pitch) {
-                  int x = pitch * _noteHeight;
+            //
+            // Pitch geometry
+            //
 
-                  int degree = (pitch - transp.chromatic + 60) % 12;
+            const qreal whiteKeyWidth = 12.0 * _noteHeight / 7.0;
 
-                  if (!pat.isWhiteKey[degree] || _pitchHighlight[pitch]) {
-                        QRectF vbar;
-                        vbar.setCoords(x, y1, x + _noteHeight, y2);
+            static const int blackKeyBoundary[] = {
+                  1, 2, 4, 5, 6
+                  };
 
-                        p->fillRect(vbar,
-                                    _pitchHighlight[pitch]
-                                          ? colHilightKeyBg
-                                          : colBlackKeyBg);
+            //
+            // Shade black-key regions FIRST so grid lines are drawn over them.
+            //
+
+            for (int octave = -1; octave <= 10; ++octave) {
+                  qreal octaveOffset =
+                        (octave * 12 + transp.chromatic) * _noteHeight;
+
+                  for (int key = 0; key < 5; ++key) {
+                        qreal center =
+                              octaveOffset
+                              + blackKeyBoundary[key] * whiteKeyWidth;
+
+                        QRectF vbar(
+                              center - _noteHeight / 2.0,
+                              y1,
+                              _noteHeight,
+                              y2 - y1
+                              );
+
+                        if (vbar.right() < r.left() || vbar.left() > r.right())
+                              continue;
+
+                        p->fillRect(vbar, colBlackKeyBg);
                         }
-
-                  // Line between pitch columns
-                  p->setPen(degree == 0 ? penLineMajor : penLineMinor);
-                  p->drawLine(QLineF(x + _noteHeight, y1,
-                                     x + _noteHeight, y2));
                   }
 
             //
-            // Draw horizontal time grid lines.
+            // Draw white-key boundaries.
             //
-            // Since time runs backwards in screen Y, the bottom of
-            // the visible rectangle corresponds to the earlier tick.
+
+            for (int octave = -1; octave <= 10; ++octave) {
+                  qreal octaveOffset =
+                        (octave * 12 + transp.chromatic) * _noteHeight;
+
+                  for (int key = 0; key <= 7; ++key) {
+                        qreal x =
+                              octaveOffset + key * whiteKeyWidth;
+
+                        if (x < r.left() || x > r.right())
+                              continue;
+
+                        p->setPen(key == 0 ? penLineMajor : penLineMinor);
+                        p->drawLine(QLineF(x, y1, x, y2));
+                        }
+                  }
+
+            //
+            // Horizontal time grid.
             //
 
             int tick1 = qBound(0, pixelYToTick(int(y2)), _ticks);
@@ -642,8 +672,10 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
             if (tick2 < tick1)
                   qSwap(tick1, tick2);
 
-            Pos pos1(_score->tempomap(), _score->sigmap(), tick1, TType::TICKS);
-            Pos pos2(_score->tempomap(), _score->sigmap(), tick2, TType::TICKS);
+            Pos pos1(_score->tempomap(), _score->sigmap(),
+                     tick1, TType::TICKS);
+            Pos pos2(_score->tempomap(), _score->sigmap(),
+                     tick2, TType::TICKS);
 
             int bar1, bar2, beat, tick;
             pos1.mbt(&bar1, &beat, &tick);
@@ -652,29 +684,48 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
             const int minBeatGap = 20;
 
             for (int bar = bar1; bar <= bar2; ++bar) {
-                  Pos barPos(_score->tempomap(), _score->sigmap(), bar, 0, 0);
+                  Pos barPos(
+                        _score->tempomap(),
+                        _score->sigmap(),
+                        bar, 0, 0);
 
-                  int beatsInBar = barPos.timesig().timesig().numerator();
-                  int ticksPerBeat = barPos.timesig().timesig().beatTicks();
-                  double pixPerBeat = ticksPerBeat * _xZoom;
-                  int beatSkip = ceil(minBeatGap / pixPerBeat);
+                  int beatsInBar =
+                        barPos.timesig().timesig().numerator();
+
+                  int ticksPerBeat =
+                        barPos.timesig().timesig().beatTicks();
+
+                  double pixPerBeat =
+                        ticksPerBeat * _xZoom;
+
+                  int beatSkip =
+                        ceil(minBeatGap / pixPerBeat);
 
                   // Round up to next power of 2
-                  beatSkip = (int)pow(2, ceil(log(beatSkip) / log(2)));
+                  beatSkip =
+                        (int)pow(2, ceil(log(beatSkip) / log(2)));
 
-                  for (int beat1 = 0; beat1 < beatsInBar; beat1 += beatSkip) {
-                        Pos beatPos(_score->tempomap(), _score->sigmap(),
-                                    bar, beat1, 0);
+                  for (int beat1 = 0;
+                       beat1 < beatsInBar;
+                       beat1 += beatSkip) {
+                        Pos beatPos(
+                              _score->tempomap(),
+                              _score->sigmap(),
+                              bar, beat1, 0);
 
-                        double y = tickToPixelY(
-                              beatPos.time(TType::TICKS));
+                        double y =
+                              tickToPixelY(
+                                    beatPos.time(TType::TICKS));
 
                         p->setPen(penLineMinor);
                         p->drawLine(x1, y, x2, y);
 
-                        int subbeats = _tuplet * (1 << _subdiv);
+                        int subbeats =
+                              _tuplet * (1 << _subdiv);
 
-                        for (int sub = 1; sub < subbeats; ++sub) {
+                        for (int sub = 1;
+                             sub < subbeats;
+                             ++sub) {
                               Pos subBeatPos(
                                     _score->tempomap(),
                                     _score->sigmap(),
@@ -694,12 +745,16 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
                   // Bar line
                   //
 
-                  int barTick = barPos.time(TType::TICKS);
-                  double y = tickToPixelY(barTick);
+                  int barTick =
+                        barPos.time(TType::TICKS);
 
-                  p->setPen(barTick > 0
-                            ? penLineMajor
-                            : QPen(Qt::black, 2.0));
+                  double y =
+                        tickToPixelY(barTick);
+
+                  p->setPen(
+                        barTick > 0
+                              ? penLineMajor
+                              : QPen(Qt::black, 2.0));
 
                   p->drawLine(x1, y, x2, y);
                   }
