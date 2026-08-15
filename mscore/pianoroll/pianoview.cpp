@@ -901,6 +901,9 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
       const int v = note->voice();
       QColor noteColor;
 
+
+      // before setting by default to selected color check the index problem possibly
+
       if (note->selected())
             noteColor = darkTheme() ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
                                     : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
@@ -913,9 +916,9 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
             else if (v==1) noteColor = MScore::selectColor[1];
             else if (v==2) noteColor = MScore::selectColor[2];
             else if (v==3) noteColor = MScore::selectColor[3];
+            else qDebug() << "Voicing" << v;
             }
       else if (_coloring == Coloring::STAFF) {
-
             // Check if relative staff of part is odd/even for color differentiation:
             bool even = false;
             Staff* const staff = block->note()->staff();
@@ -924,6 +927,7 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
                   int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
                   even = (staffPos % 2 == 0);
                   }
+            else qDebug() << "Staff: with no staff";
 
             if (darkTheme())
                   noteColor = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
@@ -931,6 +935,11 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
             else
                   noteColor = even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
                                    : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
+            }
+      else {
+            static bool beenHere = false;
+            if (!beenHere) qDebug() << "HIT NONE color";
+            beenHere = true;
             }
 
       const qreal outlineSize = 2;

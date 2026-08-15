@@ -189,6 +189,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       int coloringIndex = coloringBox->findData(int(_coloring));
       if (coloringIndex != -1)
             coloringBox->setCurrentIndex(coloringIndex);
+      qDebug() << "coloringIndex:" << coloringIndex; // when black probably -1 ?
 
       tbMain->addWidget(coloringBox);
 
