@@ -2084,19 +2084,23 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
             }
 
 
-      //Update mouse tracker
+      // Update mouse tracker
       QPointF p(mapToScene(event->pos()));
-      int pitch = static_cast<int>((_noteHeight * 128 - p.y()) / _noteHeight);
+
+      int pitch = scenePosToPitch(p);
       emit pitchChanged(pitch);
 
-      int tick = pixelXToTick(p.x());
-      if (tick < 0) {
-            tick = 0;
+      int tick = scenePosToTick(p);
+
+      if (tick < 0 || tick > _ticks) {
+            tick = qBound(0, tick, _ticks);
             _trackingPos.setTick(tick);
             _trackingPos.setInvalid();
             }
-      else
+      else {
             _trackingPos.setTick(tick);
+            }
+
       emit trackingPosChanged(_trackingPos);
       }
 
