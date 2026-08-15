@@ -255,6 +255,7 @@ private:
 
       int pixelXToTick(int pixX) const;
       int tickToPixelX(int tick) const;
+      qreal tickToPixelXF(qreal tick) const;
       int pixelYToTick(int y) const;
       int tickToPixelY(int tick) const;
       int pixelYToPitch(int pixY) const;

@@ -1095,6 +1095,15 @@ int PianoView::tickToPixelX(int tick) const
       }
 
 //---------------------------------------------------------
+//   tickToPixelXF
+//---------------------------------------------------------
+
+qreal PianoView::tickToPixelXF(qreal tick) const
+      {
+      return tick * _xZoom + MAP_OFFSET * _xZoom;
+      }
+
+//---------------------------------------------------------
 //   pixelYToTick
 //---------------------------------------------------------
 
