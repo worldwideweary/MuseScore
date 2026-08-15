@@ -535,13 +535,21 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       mainLayout->addWidget(tbTweak);
       mainLayout->addWidget(mainWidget);
 
-      // TEMPORARY:
-      // connect(pianoView->verticalScrollBar(),   SIGNAL(valueChanged(int)), pianoKbd, SLOT(setYpos(int)));
+      connect(pianoView->verticalScrollBar(),
+              &QScrollBar::valueChanged,
+              this,
+              [this](int value) {
+                    if (_orientation == PianoRollOrientation::HORIZONTAL)
+                          pianoKbd->setYpos(value);
+                    });
 
       connect(pianoView->horizontalScrollBar(),
-              SIGNAL(valueChanged(int)),
-              pianoKbd,
-              SLOT(setYpos(int)));
+              &QScrollBar::valueChanged,
+              this,
+              [this](int value) {
+                    if (_orientation == PianoRollOrientation::VERTICAL)
+                          pianoKbd->setYpos(value);
+                    });
 
       connect(pianoView->horizontalScrollBar(), SIGNAL(valueChanged(int)), hsb,      SLOT(setValue(int)));
 
@@ -818,6 +826,8 @@ void PianorollEditor::updateOrientationLayout()
                   QSizePolicy::Expanding);
             pianoKbd->setFixedWidth(PIANO_KEYBOARD_WIDTH);
 
+            pianoKbd->setYpos(pianoView->verticalScrollBar()->value());
+
             noteAreaLayout->addWidget(topLeftSpacer, 0, 0, 1, 1);
             noteAreaLayout->addWidget(ruler,         0, 1, 1, 1);
             noteAreaLayout->addWidget(pianoKbd,      1, 0, 1, 1);
@@ -846,6 +856,8 @@ void PianorollEditor::updateOrientationLayout()
                   QSizePolicy::Fixed);
             pianoKbd->setFixedHeight(PIANO_KEYBOARD_WIDTH);
 
+            pianoKbd->setYpos(pianoView->horizontalScrollBar()->value());
+
             noteAreaLayout->addWidget(pianoView, 0, 0);
             noteAreaLayout->addWidget(pianoKbd,  1, 0);
             }
@@ -862,10 +874,49 @@ void PianorollEditor::setOrientation(PianoRollOrientation orientation)
 
       const int referenceTick = pianoView->viewportReferenceTick();
 
+      //
+      // Remember the pitch viewport belonging to the orientation
+      // we are leaving.
+      //
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            _horizontalPitchScrollPos =
+                  pianoView->verticalScrollBar()->value();
+
+            _horizontalPitchScrollValid = true;
+            }
+      else {
+            _verticalPitchScrollPos =
+                  pianoView->horizontalScrollBar()->value();
+
+            _verticalPitchScrollValid = true;
+            }
+
       _orientation = orientation;
       updateOrientationLayout();
 
+      //
+      // Time remains a shared musical reference between orientations.
+      //
+
       pianoView->positionViewportAtTick(referenceTick);
+
+      //
+      // Pitch viewport belongs independently to each orientation.
+      //
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            if (_horizontalPitchScrollValid) {
+                  pianoView->verticalScrollBar()->setValue(
+                        _horizontalPitchScrollPos);
+                  }
+            }
+      else {
+            if (_verticalPitchScrollValid) {
+                  pianoView->horizontalScrollBar()->setValue(
+                        _verticalPitchScrollPos);
+                  }
+            }
       }
 
 //---------------------------------------------------------
@@ -1017,6 +1068,23 @@ void PianorollEditor::selectionChanged()
 
 void PianorollEditor::changeSelection(SelState)
       {
+      if (!_score || !pianoView)
+            return;
+
+      //
+      // PianoItem uses the actual score Note::selected() state,
+      // so no separate selection transfer is required.
+      //
+      pianoView->scene()->update();
+      pianoLevels->update();
+
+      updateSelection();
+
+      //
+      // Selection by mouse should not disturb an already useful view.
+      // Keyboard/navigation selection that goes off-screen should follow.
+      //
+      pianoView->ensureSelectionVisible();
       }
 
 //---------------------------------------------------------

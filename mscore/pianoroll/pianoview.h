@@ -98,6 +98,8 @@ public:
       void setColoring(Coloring);
       PianoRollScope getScope() { return _scope; }
       bool darkTheme() { return preferences.effectiveGlobalStyle() == MuseScoreEffectiveStyleType::DARK_FUSION; }
+      void ensureSelectionVisible();
+      void ensureSelectionPitchVisible();
 
 private:
       Staff* _staff;
@@ -175,6 +177,7 @@ private:
       void dragSelectionNoteGroup();
       void finishNoteGroupDrag(QMouseEvent* event);
       void finishNoteEventAdjustDrag();
+      void updateTrackingPos(const QPoint& viewportPos);
       bool toolCanDragNotes() const {
             return _editNoteTool == PianoRollEditTool::SELECT || _editNoteTool == PianoRollEditTool::ADD ||
                   _editNoteTool == PianoRollEditTool::APPEND_NOTE || _editNoteTool == PianoRollEditTool::CUT ||
@@ -233,7 +236,7 @@ private:
       void setOrientation(PianoRollOrientation orientation);
       Staff* staff() { return _staff; }
       void setStaff(Staff*, Pos* locator);
-      void ensureVisible(int tick);
+      void ensureVisible(qreal tick);
       int noteHeight() { return _noteHeight; }
       qreal xZoom() { return _xZoom; }
       int tuplet() { return _tuplet; }
@@ -248,11 +251,20 @@ private:
       void setEditNoteDots(int dot) { _editNoteDots = dot; }
       void setEditNoteTool(PianoRollEditTool tool) { _editNoteTool = tool; updateNotes();  }
 
+// TODO: Any of these that can be private should be private:
+
+      qreal tickToPixelXF(qreal tick) const;
+      qreal tickToPixelYF(qreal tick) const;
+
       int pixelXToTick(int pixX) const;
       int tickToPixelX(int tick) const;
-      qreal tickToPixelXF(qreal tick) const;
+
       int pixelYToTick(int y) const;
       int tickToPixelY(int tick) const;
+
+      int pixelXToPitch(int pixX) const;
+      int pitchToPixelX(int pitch) const;
+
       int pixelYToPitch(int pixY) const;
       int pitchToPixelY(int pitch) const;
 
@@ -264,6 +276,8 @@ private:
 
       int viewportReferenceTick() const;
       void positionViewportAtTick(int tick);
+      int viewportReferencePitch() const;
+      void positionViewportAtPitch(int pitch);
 
       QRectF keyboardAlignedPitchLane(int midiPitch) const;
 

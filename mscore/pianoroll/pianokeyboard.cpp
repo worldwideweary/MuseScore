@@ -455,6 +455,20 @@ void PianoKeyboard::mouseMoveEvent(QMouseEvent* event)
 
       int pitch = offset / noteHeight;
 
+      if (pitch < 0 || pitch > 127) {
+            if (curKeyPressed != -1) {
+                  emit keyReleased(curKeyPressed);
+                  curKeyPressed = -1;
+                  }
+
+            if (curPitch != -1) {
+                  curPitch = -1;
+                  update();
+                  }
+
+            return;
+            }
+
       if (pitch != curPitch) {
             curPitch = pitch;
 

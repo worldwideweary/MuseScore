@@ -74,6 +74,11 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       PianoRollOrientation _orientation;
       Coloring _coloring;
 
+      int _horizontalPitchScrollPos { 0 };
+      int _verticalPitchScrollPos { 0 };
+      bool _horizontalPitchScrollValid { false };
+      bool _verticalPitchScrollValid { false };
+
       bool updateScheduled = false;
       NoteTweakerDialog* noteTweakerDlg;
 
