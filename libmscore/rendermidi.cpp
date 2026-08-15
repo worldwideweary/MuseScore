@@ -249,8 +249,17 @@ bool isGlissandoFor(const Note* note) {
 //---------------------------------------------------------
 //   playNote
 //---------------------------------------------------------
-static void playNote(EventMap* events, const Note* note, int channel, int pitch,
-   int velo, int onTime, int offTime, int staffIdx)
+
+static void playNote(EventMap* events,
+                     const Note* note, // score Note represented by the NPlayEvent
+                     const Note* noteEventOwner, // Note whose playEvents() contains noteEventIndex
+                     int noteEventIndex,
+                     int channel,
+                     int pitch,
+                     int velo,
+                     int onTime,
+                     int offTime,
+                     int staffIdx)
       {
       if (!note->play())
             return;
@@ -259,6 +268,8 @@ static void playNote(EventMap* events, const Note* note, int channel, int pitch,
       ev.setOriginatingStaff(staffIdx);
       ev.setTuning(note->tuning());
       ev.setNote(note);
+      ev.setNoteEventOwner(noteEventOwner);
+      ev.setNoteEventIndex(noteEventIndex);
       if (offTime < onTime)
             offTime = onTime;
       events->insert(std::pair<int, NPlayEvent>(onTime, ev));
@@ -427,7 +438,18 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
 
             // Velocity offset per-note is applied within playNote:
             auto eventNote = e.getNote() ? e.getNote() : note;
-            playNote(events, eventNote, channel, p, qBound(1, velo, 127), on, off, staffIdx);
+
+            playNote(events,
+                     eventNote,
+                     note,
+                     i,
+                     channel,
+                     p,
+                     qBound(1, velo, 127),
+                     on,
+                     off,
+                     staffIdx);
+
             }
 
       // Single-note dynamics

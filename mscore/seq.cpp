@@ -478,9 +478,34 @@ void Seq::unmarkNotes()
       markedNotes.clear();
       markedRests.clear();
 
+      _activePitches.clear();
+      _activeNoteEvents.clear();
+
+      PianorollEditor* pre = mscore->getPianorollEditor();
+      if (pre)
+            pre->clearPlaybackPitches();
+
       PianoTools* piano = mscore->pianoTools();
       if (piano && piano->isVisible())
             piano->setPlaybackNotes(markedNotes);
+      }
+
+//---------------------------------------------------------
+//   activePitches
+//---------------------------------------------------------
+
+const QHash<int, ActivePitchInfo>& Seq::activePitches() const
+      {
+      return _activePitches;
+      }
+
+//---------------------------------------------------------
+//   activeNoteEvents
+//---------------------------------------------------------
+
+const QList<ActiveNoteEventInfo>& Seq::activeNoteEvents() const
+      {
+      return _activeNoteEvents;
       }
 
 //---------------------------------------------------------
@@ -1809,6 +1834,35 @@ void Seq::heartBeatTimeout()
                         break;
             const NPlayEvent& n = guiPos->second;
             const bool playEventHasVelocity = n.velo();
+
+            // Piano Roll Editor:
+            if (n.type() == ME_NOTEON) {
+                  ActivePitchInfo& info = _activePitches[n.pitch()];
+
+                  if (playEventHasVelocity) {
+                        ++info.count;
+                        info.note = n.note();
+                        }
+                  else {
+                        if (--info.count <= 0)
+                        _activePitches.remove(n.pitch());
+                        }
+                  }
+            // Piano Roll Editor:
+            if (n.type() == ME_NOTEON && n.note() && n.noteEventIndex() >= 0) {
+                  ActiveNoteEventInfo info;
+                  info.owner = n.noteEventOwner();
+                  info.noteEventIndex = n.noteEventIndex();
+
+                  if (playEventHasVelocity) {
+                        if (!_activeNoteEvents.contains(info))
+                              _activeNoteEvents.append(info);
+                        }
+                  else {
+                        _activeNoteEvents.removeAll(info);
+                        }
+                  }
+
             if (n.type() == ME_CHORD && MScore::highlightRests) {
                   const auto rest = n.rest();
                   if (!rest)

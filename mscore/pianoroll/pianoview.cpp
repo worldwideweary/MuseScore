@@ -10,7 +10,6 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
-
 #include "musescore.h"
 #include "pianokeyboard.h"
 #include "pianoruler.h"
@@ -32,6 +31,7 @@
 #include "libmscore/tuplet.h"
 #include "libmscore/undo.h"
 #include "libmscore/utils.h"
+
 
 namespace Ms {
 
@@ -69,6 +69,129 @@ const BarPattern PianoView::barPatterns[] = {
       {"",              {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
 
+
+// //---------------------------------------------------------
+// //   getPianoRollNoteColor
+// //---------------------------------------------------------
+
+// QColor PianoView::getPianoRollNoteColor(Note* note, bool highlight) const
+//       {
+//       if (highlight) {
+//             if (note->mark()) {
+//                   return darkTheme()
+//                         ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
+//                         : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
+//                   }
+//             else if (note->selected()) {
+//                   return darkTheme()
+//                         ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
+//                         : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
+//                   }
+//             }
+//       else if (false && (_editNoteTool == PianoRollEditTool::EVENT_ADJUST)) {
+//             // _colorTweaks "purple edit" now unused to allow playback to show actual durations without
+//             // any purple notes
+//             return QColor(0xfd63fc);
+//             }
+//       else if (_coloring == Coloring::VOICING) {
+//             const int v = note->voice();
+//             if (v >= 0 && v <= 3)
+//                   return MScore::selectColor[v];
+//             }
+//       else if (_coloring == Coloring::STAFF) {
+//             bool even = false;
+//             Staff* const staff = note->staff();
+//             if (staff && staff->part()) {
+//                   const QList<Staff*>* staves = staff->part()->staves();
+//                   int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
+//                   even = (staffPos % 2 == 0);
+//                   }
+//             if (darkTheme())
+//                   return even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
+//                               : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
+//             else
+//                   return even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
+//                               : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
+//             }
+//       else {
+//             // Check idx of VOICE/STAFF in UI to fix if this hits
+//             static bool beenHere = false;
+//             if (!beenHere) {
+//                   qDebug() << "HIT NONE COLOR";
+//                   beenHere = true;
+//                   }
+//             return MScore::defaultColor;
+//             }
+//       }
+
+
+
+//---------------------------------------------------------
+//   pianoRollNoteColor
+//---------------------------------------------------------
+
+QColor pianoRollNoteColor(const Note* note,
+                          Coloring coloring,
+                          bool honorSelection)
+      {
+      if (!note)
+            return QColor();
+
+      if (honorSelection) {
+            if (note->selected()) {
+                  return darkTheme()
+                        ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
+                        : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
+                  }
+            }
+
+      if (coloring == Coloring::VOICING) {
+            const int voice = note->voice();
+
+            if (voice >= 0 && voice < VOICES)
+                  return MScore::selectColor[voice];
+            }
+
+      if (coloring == Coloring::STAFF) {
+            bool even = false;
+
+            Staff* staff = note->staff();
+            if (staff && staff->part()) {
+                  const QList<Staff*>* staves = staff->part()->staves();
+                  const int staffPos =
+                        staves ? staves->indexOf(staff) + 1 : -1;
+
+                  even = staffPos > 0 && staffPos % 2 == 0;
+                  }
+
+            if (darkTheme()) {
+                  return even
+                        ? preferences.getColor(
+                              PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
+                        : preferences.getColor(
+                              PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
+                  }
+            else {
+                  return even
+                        ? preferences.getColor(
+                              PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
+                        : preferences.getColor(
+                              PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
+                  }
+            }
+
+      return MScore::defaultColor;
+      }
+
+//---------------------------------------------------------
+//   darkTheme
+//---------------------------------------------------------
+
+bool darkTheme()
+      {
+      return preferences.effectiveGlobalStyle() == MuseScoreEffectiveStyleType::DARK_FUSION;
+      }
+
 //---------------------------------------------------------
 //   PianoItem
 //---------------------------------------------------------
@@ -77,7 +200,6 @@ PianoItem::PianoItem(Note* n, PianoView* pianoView)
       : _note(n), _pianoView(pianoView)
       {
       }
-
 
 //---------------------------------------------------------
 //   boundingRectTicks
@@ -183,6 +305,64 @@ bool PianoItem::intersects(int startTick, int endTick, int highPitch, int lowPit
       }
 
 //---------------------------------------------------------
+//   updatePlaybackHighlights
+//---------------------------------------------------------
+
+void PianoView::updatePlaybackHighlights()
+      {
+      QSet<Note*> markedNotes;
+
+      // ScoreElements only:
+      for (PianoItem* item : _noteList) {
+            Note* note = item->note();
+            if (note && note->mark())
+                  markedNotes.insert(note);
+            }
+
+      //
+      // Nothing changed visually.
+      //
+      if (markedNotes == _markedPlaybackNotes)
+            return;
+
+      QRectF dirtyRect;
+
+      //
+      // Notes that were marked before but are not marked now
+      // need repainting to remove their playback highlight.
+      //
+      for (Note* note : _markedPlaybackNotes) {
+            if (markedNotes.contains(note))
+                  continue;
+
+            for (NoteEvent& event : note->playEvents())
+                  dirtyRect |= boundingRect(note, &event, false);
+            }
+
+      //
+      // Newly marked notes need repainting to show their
+      // playback highlight.
+      //
+      for (Note* note : markedNotes) {
+            if (_markedPlaybackNotes.contains(note))
+                  continue;
+
+            for (NoteEvent& event : note->playEvents())
+                  dirtyRect |= boundingRect(note, &event, false);
+            }
+
+      _markedPlaybackNotes = markedNotes;
+
+      if (!dirtyRect.isNull()) {
+            //
+            // Include the note outline in the invalidated region.
+            //
+            dirtyRect.adjust(-3.0, -3.0, 3.0, 3.0);
+            scene()->update(dirtyRect);
+            }
+      }
+
+//---------------------------------------------------------
 //   setScope
 //---------------------------------------------------------
 
@@ -221,6 +401,7 @@ NoteEvent* PianoItem::getTweakNoteEvent()
 
 //---------------------------------------------------------
 //   paintNoteBlock
+//    Defunct?
 //---------------------------------------------------------
 
 void PianoItem::paintNoteBlock(QPainter* painter, NoteEvent* evt)
@@ -307,6 +488,7 @@ void PianoItem::paintNoteBlock(QPainter* painter, NoteEvent* evt)
 
 //---------------------------------------------------------
 //   paint
+//    Defunct?
 //---------------------------------------------------------
 
 void PianoItem::paint(QPainter* painter)
@@ -885,7 +1067,6 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
             }
       }
 
-
 //---------------------------------------------------------
 //   drawNoteBlock
 //---------------------------------------------------------
@@ -897,65 +1078,74 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
             return;
             }
 
-      const bool adjust = (_editNoteTool == PianoRollEditTool::EVENT_ADJUST);
-      const int v = note->voice();
-      QColor noteColor;
+      const qreal outlineSize = 2;
 
-      if (note->selected())
-            noteColor = darkTheme() ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
-                                    : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
-      else if (false && adjust) {
-            // _colorTweaks "purple edit" now unused
-            noteColor = QColor(0xfd63fc);
-            }
-      else if (_coloring == Coloring::VOICING) {
-                 if (v==0) noteColor = MScore::selectColor[0];
-            else if (v==1) noteColor = MScore::selectColor[1];
-            else if (v==2) noteColor = MScore::selectColor[2];
-            else if (v==3) noteColor = MScore::selectColor[3];
-            }
-      else if (_coloring == Coloring::STAFF) {
+      NoteEventList& playEvents = note->playEvents();
 
-            // Check if relative staff of part is odd/even for color differentiation:
-            bool even = false;
-            Staff* const staff = block->note()->staff();
-            if (staff && staff->part()) {
-                  const QList<Staff*>* staves = staff->part()->staves();
-                  int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
-                  even = (staffPos % 2 == 0);
+      for (int index = 0; index < playEvents.size(); ++index) {
+            NoteEvent& e = playEvents[index];
+
+            const bool playing =
+                  _playbackNoteEvents.value(note).contains(index);
+
+            QColor noteColor;
+
+            if (playing) {
+                  noteColor = darkTheme()
+                        ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
+                        : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
+                  }
+            else {
+                  noteColor = pianoRollNoteColor(note, _coloring, true);
                   }
 
-            if (darkTheme())
-                  noteColor = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
-                                   : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
-            else
-                  noteColor = even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
-                                   : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
-            }
+            p->setBrush(noteColor);
+            p->setPen(QPen(noteColor.darker(250), outlineSize));
 
-      const qreal outlineSize = 2;
-      p->setBrush(noteColor);
-      p->setPen(QPen(noteColor.darker(250), outlineSize));
+            QRect bounds =
+                  boundingRect(
+                        note,
+                        &e,
+                        _editNoteTool == PianoRollEditTool::EVENT_ADJUST);
 
-      for (NoteEvent& e : note->playEvents()) {
-            QRect bounds = boundingRect(note, &e, _editNoteTool == PianoRollEditTool::EVENT_ADJUST);
-            p->drawRoundedRect(bounds, _noteRectRoundedRadius, _noteRectRoundedRadius);
+            p->drawRoundedRect(
+                  bounds,
+                  _noteRectRoundedRadius,
+                  _noteRectRoundedRadius);
 
-            //Pitch name
+            //
+            // Existing pitch-name drawing stays here,
+            // still using this event's noteColor.
+            //
             if (bounds.width() >= 20 && bounds.height() >= 12) {
-                  QRectF textRect(bounds.x() + 2, bounds.y(), bounds.width() - 6, bounds.height() + 1);
-                  QRectF textHiliteRect(bounds.x() + 3, bounds.y() + 1, bounds.width() - 6, bounds.height());
+                  QRectF textRect(
+                        bounds.x() + 2,
+                        bounds.y(),
+                        bounds.width() - 6,
+                        bounds.height() + 1);
+
+                  QRectF textHiliteRect(
+                        bounds.x() + 3,
+                        bounds.y() + 1,
+                        bounds.width() - 6,
+                        bounds.height());
 
                   QFont f("FreeSans", 8);
                   p->setFont(f);
 
-                  //Note name
                   QString name = note->tpcUserName();
+
                   p->setPen(QPen(noteColor.lighter(130)));
-                  p->drawText(textHiliteRect, Qt::AlignLeft | Qt::AlignTop, name);
+                  p->drawText(
+                        textHiliteRect,
+                        Qt::AlignLeft | Qt::AlignTop,
+                        name);
 
                   p->setPen(QPen(noteColor.darker(180)));
-                  p->drawText(textRect, Qt::AlignLeft | Qt::AlignTop, name);
+                  p->drawText(
+                        textRect,
+                        Qt::AlignLeft | Qt::AlignTop,
+                        name);
                   }
             }
 
@@ -976,8 +1166,7 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
             }
       }
 
-
-QRect PianoView::boundingRect(Note* note, bool applyEvents)
+QRect PianoView::boundingRect(const Note* note, bool applyEvents)
       {
       if (note->playEvents().size())
             return boundingRect(note, &note->playEvents().first(), applyEvents);
@@ -985,7 +1174,7 @@ QRect PianoView::boundingRect(Note* note, bool applyEvents)
       }
 
 
-QRect PianoView::boundingRect(Note* note, NoteEvent* evt, bool applyEvents)
+QRect PianoView::boundingRect(const Note* note, const NoteEvent* evt, bool applyEvents)
       {
       Chord* chord = note->chord();
       int pitch = note->pitch() + (evt ? evt->pitch() : 0);
@@ -1064,6 +1253,69 @@ QRect PianoView::boundingRect(Note* note, NoteEvent* evt, bool applyEvents)
 void PianoView::moveLocator(int /*i*/)
       {
       scene()->update();
+      }
+
+//---------------------------------------------------------
+//   setPlaybackNoteEvents
+//---------------------------------------------------------
+
+void PianoView::setPlaybackNoteEvents(const QHash<const Note*, QSet<int>>& events)
+      {
+      if (_playbackNoteEvents == events)
+            return;
+
+      QRectF dirtyRect;
+
+      //
+      // Repaint both the previously-active and newly-active
+      // NoteEvents.  This removes old highlights and paints
+      // the new ones without invalidating the whole scene.
+      //
+
+      QSet<const Note*> notes;
+
+      for (auto it = _playbackNoteEvents.constBegin();
+           it != _playbackNoteEvents.constEnd(); ++it)
+            notes.insert(it.key());
+
+      for (auto it = events.constBegin();
+           it != events.constEnd(); ++it)
+            notes.insert(it.key());
+
+      for (const Note* note : notes) {
+            const NoteEventList& playEvents = note->playEvents();
+
+            QSet<int> indices = _playbackNoteEvents.value(note);
+            indices.unite(events.value(note));
+
+            for (int index : indices) {
+                  if (index < 0 || index >= playEvents.size())
+                        continue;
+
+                  const NoteEvent* event = &playEvents[index];
+
+                  dirtyRect |= boundingRect(
+                        note,
+                        event,
+                        _editNoteTool == PianoRollEditTool::EVENT_ADJUST);
+                  }
+            }
+
+      _playbackNoteEvents = events;
+
+      if (!dirtyRect.isNull()) {
+            dirtyRect.adjust(-3.0, -3.0, 3.0, 3.0);
+            scene()->update(dirtyRect);
+            }
+      }
+
+//---------------------------------------------------------
+//   clearPlaybackNoteEvents
+//---------------------------------------------------------
+
+void PianoView::clearPlaybackNoteEvents()
+      {
+      setPlaybackNoteEvents(QHash<const Note*, QSet<int>>());
       }
 
 
