@@ -149,6 +149,8 @@ private:
 
       float _noteRectRoundedRadius = 3;
 
+      int _lastLocatorPixel[3] { -1, -1, -1 };
+
       virtual void drawBackground(QPainter* painter, const QRectF& rect) override;
       void drawNoteBlock(QPainter* p, PianoItem* block);
       QRect boundingRect(Note* note, bool applyEvents);

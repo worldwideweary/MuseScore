@@ -2937,6 +2937,11 @@ void PianoView::ensureVisible(int tick)
 
 void PianoView::ensureSelectionVisible()
       {
+      const int xMargin = 20;
+      const int yMargin =
+            _orientation == PianoRollOrientation::VERTICAL ? 0
+                                                           : 20;
+
       QList<PianoItem*> selected = getSelectedItems();
       if (selected.isEmpty())
             return;
@@ -2953,7 +2958,7 @@ void PianoView::ensureSelectionVisible()
                   boundingRect(selected.first()->note(), nullptr, false);
 
             if (!visibleRect.contains(noteRect))
-                  QGraphicsView::ensureVisible(noteRect, 20, 20);
+                  QGraphicsView::ensureVisible(noteRect, xMargin, yMargin);
 
             return;
             }
@@ -2977,7 +2982,7 @@ void PianoView::ensureSelectionVisible()
       QRectF noteRect =
             boundingRect(selected.first()->note(), nullptr, false);
 
-      QGraphicsView::ensureVisible(noteRect, 20, 20);
+      QGraphicsView::ensureVisible(noteRect, xMargin, yMargin);
       }
 
 //---------------------------------------------------------
