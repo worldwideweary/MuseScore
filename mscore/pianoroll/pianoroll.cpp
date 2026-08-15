@@ -1030,6 +1030,23 @@ void PianorollEditor::selectionChanged()
 
 void PianorollEditor::changeSelection(SelState)
       {
+      if (!_score || !pianoView)
+            return;
+
+      //
+      // PianoItem uses the actual score Note::selected() state,
+      // so no separate selection transfer is required.
+      //
+      pianoView->scene()->update();
+      pianoLevels->update();
+
+      updateSelection();
+
+      //
+      // Selection by mouse should not disturb an already useful view.
+      // Keyboard/navigation selection that goes off-screen should follow.
+      //
+      pianoView->ensureSelectionVisible();
       }
 
 //---------------------------------------------------------

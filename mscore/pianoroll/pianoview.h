@@ -98,6 +98,7 @@ public:
       void setColoring(Coloring);
       PianoRollScope getScope() { return _scope; }
       bool darkTheme() { return preferences.effectiveGlobalStyle() == MuseScoreEffectiveStyleType::DARK_FUSION; }
+      void ensureSelectionVisible();
 
 private:
       Staff* _staff;

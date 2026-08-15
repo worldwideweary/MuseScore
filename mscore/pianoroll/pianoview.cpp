@@ -2923,6 +2923,55 @@ void PianoView::ensureVisible(int tick)
       }
 
 //---------------------------------------------------------
+//   ensureSelectionVisible
+//---------------------------------------------------------
+
+void PianoView::ensureSelectionVisible()
+      {
+      QList<PianoItem*> selected = getSelectedItems();
+      if (selected.isEmpty())
+            return;
+
+      QRectF visibleRect =
+            mapToScene(viewport()->rect()).boundingRect();
+
+      //
+      // With a single selected note, follow it only when it has
+      // actually gone outside the current viewport.
+      //
+      if (selected.size() == 1) {
+            QRectF noteRect =
+                  boundingRect(selected.first()->note(), nullptr, false);
+
+            if (!visibleRect.contains(noteRect))
+                  QGraphicsView::ensureVisible(noteRect, 20, 20);
+
+            return;
+            }
+
+      //
+      // For multi-selection, don't jump just because some selected
+      // notes extend beyond the viewport. Only move if none of the
+      // selected notes is currently visible.
+      //
+      for (PianoItem* item : selected) {
+            QRectF noteRect =
+                  boundingRect(item->note(), nullptr, false);
+
+            if (visibleRect.intersects(noteRect))
+                  return;
+            }
+
+      //
+      // Nothing selected is visible. Bring the first selected item in.
+      //
+      QRectF noteRect =
+            boundingRect(selected.first()->note(), nullptr, false);
+
+      QGraphicsView::ensureVisible(noteRect, 20, 20);
+      }
+
+//---------------------------------------------------------
 //   updateBoundingSize
 //---------------------------------------------------------
 
