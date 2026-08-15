@@ -1476,9 +1476,14 @@ void PianoView::zoomView(int step, bool horizontal, int centerX, int centerY)
                   qreal mouseYNote =
                         (centerY + int(viewRect.y())) / qreal(_noteHeight);
 
+                  int oldNoteHeight = _noteHeight;
+
                   _noteHeight = qMax(
                         qMin(_noteHeight + step, MAX_KEY_HEIGHT),
                         MIN_KEY_HEIGHT);
+
+                  if (_noteHeight == oldNoteHeight)
+                        return;
 
                   emit noteHeightChanged(_noteHeight);
 
