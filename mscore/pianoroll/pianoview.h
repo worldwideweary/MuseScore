@@ -99,6 +99,7 @@ public:
       PianoRollScope getScope() { return _scope; }
       bool darkTheme() { return preferences.effectiveGlobalStyle() == MuseScoreEffectiveStyleType::DARK_FUSION; }
       void ensureSelectionVisible();
+      void ensureSelectionPitchVisible();
 
 private:
       Staff* _staff;

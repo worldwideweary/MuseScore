@@ -879,6 +879,7 @@ void PianorollEditor::setOrientation(PianoRollOrientation orientation)
       updateOrientationLayout();
 
       pianoView->positionViewportAtTick(referenceTick);
+      pianoView->ensureSelectionPitchVisible();
       }
 
 //---------------------------------------------------------
