@@ -2813,6 +2813,12 @@ void PianoView::setOrientation(PianoRollOrientation orientation)
             return;
 
       _orientation = orientation;
+
+      if (_orientation == PianoRollOrientation::VERTICAL)
+            setAlignment(Qt::AlignLeft | Qt::AlignBottom);
+      else
+            setAlignment(Qt::AlignCenter);
+
       updateBoundingSize();
       updateNotes();
       }
