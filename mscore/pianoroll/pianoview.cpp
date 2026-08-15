@@ -2848,7 +2848,7 @@ void PianoView::ensureVisible(int tick)
       QRectF rect = mapToScene(viewport()->geometry()).boundingRect();
       const bool vertical = _orientation == PianoRollOrientation::VERTICAL;
       const bool horizontal = _orientation == PianoRollOrientation::HORIZONTAL;
-      const int activationMargin = 100; // TODO: maybe a small pixel amount
+      const int activationMargin = 0;
 
       if (horizontal) {
             qreal xpos = tickToPixelX(tick);
