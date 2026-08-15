@@ -2118,6 +2118,17 @@ QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pit
                         break;
 
                   curChordRest = seg->cr(track);
+
+                  //
+                  // Secondary voices are not guaranteed to have a ChordRest
+                  // at every ChordRest segment. Materialize the missing voice
+                  // with rests so the insertion can continue through the gap.
+                  //
+                  if (!curChordRest) {
+                        score->expandVoice(seg, track);
+                        curChordRest = seg->cr(track);
+                        }
+
                   if (!curChordRest)
                         break;
 
