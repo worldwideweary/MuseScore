@@ -1414,13 +1414,108 @@ QRectF PianoView::verticalPitchRect(int midiPitch) const
 //   zoomView
 //---------------------------------------------------------
 
+//---------------------------------------------------------
+//   zoomView
+//---------------------------------------------------------
+
 void PianoView::zoomView(int step, bool horizontal, int centerX, int centerY)
       {
-      if (horizontal) {
-            //Horizontal zoom
-            QRectF viewRect = mapToScene(viewport()->geometry()).boundingRect();
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            //
+            // Original PRE behavior.
+            //
 
-            int mouseXTick = pixelXToTick(centerX + (int)viewRect.x());
+            if (horizontal) {
+                  // Time zoom along X.
+                  QRectF viewRect =
+                        mapToScene(viewport()->geometry()).boundingRect();
+
+                  int mouseTick =
+                        pixelXToTick(centerX + int(viewRect.x()));
+
+                  _xZoom *= pow(X_ZOOM_RATIO, step);
+                  emit xZoomChanged(_xZoom);
+
+                  updateBoundingSize();
+                  updateNotes();
+
+                  int mousePixX = tickToPixelX(mouseTick);
+                  horizontalScrollBar()->setValue(mousePixX - centerX);
+                  }
+            else {
+                  // Pitch zoom along Y.
+                  QRectF viewRect =
+                        mapToScene(viewport()->geometry()).boundingRect();
+
+                  qreal mouseYNote =
+                        (centerY + int(viewRect.y())) / qreal(_noteHeight);
+
+                  _noteHeight = qMax(
+                        qMin(_noteHeight + step, MAX_KEY_HEIGHT),
+                        MIN_KEY_HEIGHT);
+
+                  emit noteHeightChanged(_noteHeight);
+
+                  updateBoundingSize();
+                  updateNotes();
+
+                  int mousePixY =
+                        static_cast<int>(mouseYNote * _noteHeight);
+
+                  verticalScrollBar()->setValue(mousePixY - centerY);
+                  }
+
+            scene()->update();
+            return;
+            }
+
+      //
+      // Vertical / falling PRE.
+      //
+
+      if (horizontal) {
+            //
+            // Physical X is pitch.
+            // Preserve the pitch under the mouse while changing
+            // _noteHeight.
+            //
+
+            QPointF oldScenePos = mapToScene(QPoint(centerX, centerY));
+            int pitch = scenePosToPitch(oldScenePos);
+
+            _noteHeight = qMax(
+                  qMin(_noteHeight + step, MAX_KEY_HEIGHT),
+                  MIN_KEY_HEIGHT);
+
+            emit noteHeightChanged(_noteHeight);
+
+            updateBoundingSize();
+            updateNotes();
+
+            if (pitch >= 0) {
+                  qreal newCenter;
+
+                  if (_verticalPitchLayout
+                        == VerticalPitchLayout::KEYBOARD_ALIGNED) {
+                        QRectF lane = keyboardAlignedPitchLane(pitch);
+                        newCenter = lane.center().x();
+                        }
+                  else {
+                        newCenter = (pitch + 0.5) * _noteHeight;
+                        }
+
+                  horizontalScrollBar()->setValue(
+                        qMax(int(newCenter - centerX), 0));
+                  }
+            }
+      else {
+            //
+            // Physical Y is time.
+            // Preserve the tick under the mouse while changing _xZoom.
+            //
+
+            QPointF oldScenePos = mapToScene(QPoint(centerX, centerY));
+            int mouseTick = scenePosToTick(oldScenePos);
 
             _xZoom *= pow(X_ZOOM_RATIO, step);
             emit xZoomChanged(_xZoom);
@@ -1428,28 +1523,13 @@ void PianoView::zoomView(int step, bool horizontal, int centerX, int centerY)
             updateBoundingSize();
             updateNotes();
 
-            int mousePixX = tickToPixelX(mouseXTick);
-            horizontalScrollBar()->setValue(mousePixX - centerX);
+            int mousePixY = tickToPixelY(mouseTick);
 
-            scene()->update();
-            }
-      else {
-            //Vertical zoom
-            QRectF viewRect = mapToScene(viewport()->geometry()).boundingRect();
-            qreal mouseYNote = (centerY + (int)viewRect.y()) / (qreal)_noteHeight;
-
-            _noteHeight = qMax(qMin(_noteHeight + step, MAX_KEY_HEIGHT), MIN_KEY_HEIGHT);
-            emit noteHeightChanged(_noteHeight);
-
-            updateBoundingSize();
-            updateNotes();
-
-            int mousePixY = static_cast<int>(mouseYNote * _noteHeight);
-            verticalScrollBar()->setValue(mousePixY - centerY);
-
-            scene()->update();
+            verticalScrollBar()->setValue(
+                  qMax(mousePixY - centerY, 0));
             }
 
+      scene()->update();
       }
 
 //---------------------------------------------------------
