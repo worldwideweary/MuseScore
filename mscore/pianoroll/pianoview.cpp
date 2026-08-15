@@ -1113,12 +1113,64 @@ int PianoView::tickToPixelY(int tick) const
       }
 
 //---------------------------------------------------------
+//   tickToPixelYF
+//---------------------------------------------------------
+
+qreal PianoView::tickToPixelYF(qreal tick) const
+      {
+      return tickToPixelXF(_ticks - tick);
+      }
+
+//---------------------------------------------------------
+//   pixelXtoPitch
+//---------------------------------------------------------
+
+int PianoView::pixelXToPitch(int pixX) const
+      {
+      if (_verticalPitchLayout == VerticalPitchLayout::KEYBOARD_ALIGNED) {
+            for (int pitch = 0; pitch < 128; ++pitch) {
+                  const QRectF lane = keyboardAlignedPitchLane(pitch);
+
+                  if (lane.width() <= 0.0)
+                        continue;
+
+                  if (pixX >= lane.left() && pixX < lane.right())
+                        return pitch;
+                  }
+
+            if (pixX < keyboardAlignedPitchLane(0).left())
+                  return 0;
+
+            return 127;
+            }
+
+      return qBound(
+            0,
+            int(floor(pixX / qreal(_noteHeight))),
+            127);
+      }
+
+//---------------------------------------------------------
 //   pixelYtoPitch
 //---------------------------------------------------------
 
 int PianoView::pixelYToPitch(int pixY) const
       {
       return (int)floor(128 - pixY / (qreal)_noteHeight);
+      }
+
+//---------------------------------------------------------
+//   pitchToPixelX
+//---------------------------------------------------------
+
+int PianoView::pitchToPixelX(int pitch) const
+      {
+      pitch = qBound(0, pitch, 127);
+
+      if (_verticalPitchLayout == VerticalPitchLayout::KEYBOARD_ALIGNED)
+            return qRound(keyboardAlignedPitchLane(pitch).left());
+
+      return pitch * _noteHeight;
       }
 
 //---------------------------------------------------------
@@ -1181,6 +1233,32 @@ int PianoView::scenePosToPitch(const QPointF& pos) const
       }
 
 //---------------------------------------------------------
+//   updateTrackingPos
+//---------------------------------------------------------
+
+void PianoView::updateTrackingPos(const QPoint& viewportPos)
+      {
+      QPointF p = mapToScene(viewportPos);
+
+      int pitch = scenePosToPitch(p);
+      if (pitch >= 0)
+            emit pitchChanged(pitch);
+
+      int tick = scenePosToTick(p);
+
+      if (tick < 0 || tick > _ticks) {
+            tick = qBound(0, tick, _ticks);
+            _trackingPos.setTick(tick);
+            _trackingPos.setInvalid();
+            }
+      else {
+            _trackingPos.setTick(tick);
+            }
+
+      emit trackingPosChanged(_trackingPos);
+      }
+
+//---------------------------------------------------------
 //   dragTickDelta
 //---------------------------------------------------------
 
@@ -1240,6 +1318,54 @@ void PianoView::positionViewportAtTick(int tick)
             //
             verticalScrollBar()->setValue(
                   qMax(0, y - viewport()->height()));
+            }
+      }
+
+//---------------------------------------------------------
+//   viewportReferencePitch
+//---------------------------------------------------------
+
+int PianoView::viewportReferencePitch() const
+      {
+      const QPointF center =
+            mapToScene(viewport()->rect().center());
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL)
+            return pixelYToPitch(qRound(center.y()));
+
+      return pixelXToPitch(qRound(center.x()));
+      }
+
+//---------------------------------------------------------
+//   positionViewportAtPitch
+//---------------------------------------------------------
+
+void PianoView::positionViewportAtPitch(int pitch)
+      {
+      pitch = qBound(0, pitch, 127);
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            const qreal y =
+                  pitchToPixelY(pitch)
+                  - _noteHeight / 2.0;
+
+            verticalScrollBar()->setValue(
+                  qRound(y - viewport()->height() / 2.0));
+            }
+      else {
+            qreal x;
+
+            if (_verticalPitchLayout
+                  == VerticalPitchLayout::KEYBOARD_ALIGNED) {
+                  x = keyboardAlignedPitchLane(pitch).center().x();
+                  }
+            else {
+                  x = pitchToPixelX(pitch)
+                        + _noteHeight / 2.0;
+                  }
+
+            horizontalScrollBar()->setValue(
+                  qRound(x - viewport()->width() / 2.0));
             }
       }
 
@@ -1504,9 +1630,14 @@ void PianoView::zoomView(int step, bool horizontal, int centerX, int centerY)
                   qreal mouseYNote =
                         (centerY + int(viewRect.y())) / qreal(_noteHeight);
 
+                  int oldNoteHeight = _noteHeight;
+
                   _noteHeight = qMax(
                         qMin(_noteHeight + step, MAX_KEY_HEIGHT),
                         MIN_KEY_HEIGHT);
+
+                  if (_noteHeight == oldNoteHeight)
+                        return;
 
                   emit noteHeightChanged(_noteHeight);
 
@@ -1592,40 +1723,50 @@ void PianoView::zoomView(int step, bool horizontal, int centerX, int centerY)
 
 void PianoView::wheelEvent(QWheelEvent* event)
       {
-      int step = event->angleDelta().y() / 120;
+      const int step = event->angleDelta().y() / 120;
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+      QPoint viewportPos = event->position().toPoint();
+#else
+      QPoint viewportPos = event->pos();
+#endif
 
       if (event->modifiers() == 0) {
-            //Vertical scroll
+            // Vertical scroll
             QGraphicsView::wheelEvent(event);
             }
       else if (event->modifiers() == Qt::ShiftModifier) {
-            //Horizontal scroll
+            // Horizontal scroll
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-            QWheelEvent we(event->position(), event->globalPosition(), event->pixelDelta().transposed(), event->angleDelta().transposed(),
-                           event->buttons(), Qt::NoModifier, Qt::ScrollPhase::NoScrollPhase, false);
+            QWheelEvent we(event->position(),
+                           event->globalPosition(),
+                           event->pixelDelta().transposed(),
+                           event->angleDelta().transposed(),
+                           event->buttons(),
+                           Qt::NoModifier,
+                           Qt::ScrollPhase::NoScrollPhase,
+                           false);
 #else
-            QWheelEvent we(event->pos(), event->delta(), event->buttons(), 0, Qt::Horizontal);
+            QWheelEvent we(event->pos(),
+                           event->delta(),
+                           event->buttons(),
+                           0,
+                           Qt::Horizontal);
 #endif
             QGraphicsView::wheelEvent(&we);
             }
       else if (event->modifiers() == Qt::ControlModifier) {
-            //Vertical zoom
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-            zoomView(step, false, event->position().x(), event->position().y());
-#else
-            zoomView(step, false, event->x(), event->y());
-#endif
+            // Vertical zoom
+            zoomView(step, false, viewportPos.x(), viewportPos.y());
             }
-      else if (event->modifiers() == (Qt::ShiftModifier | Qt::ControlModifier)) {
-            //Horizontal zoom
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-            zoomView(step, true, event->position().x(), event->position().y());
-#else
-            zoomView(step, true, event->x(), event->y());
-#endif
+      else if (event->modifiers()
+               == (Qt::ShiftModifier | Qt::ControlModifier)) {
+            // Horizontal zoom
+            zoomView(step, true, viewportPos.x(), viewportPos.y());
             }
-      }
 
+      updateTrackingPos(viewportPos);
+      }
 
 //---------------------------------------------------------
 //   showPopupMenu
@@ -1945,6 +2086,8 @@ void PianoView::finishNoteEventAdjustDrag()
       }
 
 
+
+
 //---------------------------------------------------------
 //   hoverMoveEvent
 //---------------------------------------------------------
@@ -2137,25 +2280,8 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                   }
             }
 
-
       // Update mouse tracker
-      QPointF p(mapToScene(event->pos()));
-
-      int pitch = scenePosToPitch(p);
-      emit pitchChanged(pitch);
-
-      int tick = scenePosToTick(p);
-
-      if (tick < 0 || tick > _ticks) {
-            tick = qBound(0, tick, _ticks);
-            _trackingPos.setTick(tick);
-            _trackingPos.setInvalid();
-            }
-      else {
-            _trackingPos.setTick(tick);
-            }
-
-      emit trackingPosChanged(_trackingPos);
+      updateTrackingPos(event->pos());
       }
 
 
@@ -2254,12 +2380,27 @@ QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pit
                   Segment* seg = curChordRest->nextSegmentAfterCR(SegmentType::ChordRest);
                   if (!seg)
                         break;
+
                   curChordRest = seg->cr(track);
+
+                  //
+                  // Secondary voices are not guaranteed to have a ChordRest
+                  // at every ChordRest segment. Materialize the missing voice
+                  // with rests so the insertion can continue through the gap.
+                  //
+                  if (!curChordRest) {
+                        score->expandVoice(seg, track);
+                        curChordRest = seg->cr(track);
+                        }
+
+                  if (!curChordRest)
+                        break;
+
                   curStartTick = curChordRest->tick();
                   curDur = curChordRest->ticks();
                   }
 
-            if (duration > Fraction(0, 1)) {
+            if (duration > Fraction(0, 1) && curChordRest) {
                   ChordRest* crMid = nullptr;
                   ChordRest* crEnd = nullptr;
 
@@ -2856,28 +2997,144 @@ void PianoView::leaveEvent(QEvent* event)
 //   ensureVisible
 //---------------------------------------------------------
 
-void PianoView::ensureVisible(int tick)
+void PianoView::ensureVisible(qreal tick)
       {
       QRectF rect = mapToScene(viewport()->geometry()).boundingRect();
       const bool vertical = _orientation == PianoRollOrientation::VERTICAL;
       const bool horizontal = _orientation == PianoRollOrientation::HORIZONTAL;
-      const int activationMargin = 100; // TODO: maybe a small pixel amount
+      const int activationMargin = 0;
 
       if (horizontal) {
-            qreal xpos = tickToPixelX(tick);
-            qreal margin = rect.width() / 2;
+            const qreal xpos = tickToPixelXF(tick);
+            const qreal margin = rect.width() / 2.0;
+
+            qreal target = horizontalScrollBar()->value();
+
             if (xpos < rect.x() + margin)
-                  horizontalScrollBar()->setValue(qMax(xpos - margin, 0.0));
+                  target = qMax(xpos - margin, 0.0);
             else if (xpos >= rect.x() + rect.width() - margin)
-                  horizontalScrollBar()->setValue(qMax(xpos - rect.width() + margin, 0.0));
+                  target = qMax(xpos - rect.width() + margin, 0.0);
+
+            horizontalScrollBar()->setValue(qRound(target));
             }
       else if (vertical) {
-            qreal ypos = tickToPixelY(tick);
+            qreal ypos = tickToPixelYF(tick);
 
             int viewportHeight = viewport()->height();
             int target = ypos - viewportHeight + activationMargin;
 
             verticalScrollBar()->setValue(target);
+            }
+      }
+
+//---------------------------------------------------------
+//   ensureSelectionVisible
+//---------------------------------------------------------
+
+void PianoView::ensureSelectionVisible()
+      {
+      QList<PianoItem*> selected = getSelectedItems();
+      if (selected.isEmpty())
+            return;
+
+      QRectF visibleRect =
+            mapToScene(viewport()->rect()).boundingRect();
+
+      //
+      // With a single selected note, follow it only when it has
+      // actually gone outside the current viewport.
+      //
+      if (selected.size() == 1) {
+            QRectF noteRect =
+                  boundingRect(selected.first()->note(), nullptr, false);
+
+            if (!visibleRect.contains(noteRect))
+                  QGraphicsView::ensureVisible(noteRect, 20, 20);
+
+            return;
+            }
+
+      //
+      // For multi-selection, don't jump just because some selected
+      // notes extend beyond the viewport. Only move if none of the
+      // selected notes is currently visible.
+      //
+      for (PianoItem* item : selected) {
+            QRectF noteRect =
+                  boundingRect(item->note(), nullptr, false);
+
+            if (visibleRect.intersects(noteRect))
+                  return;
+            }
+
+      //
+      // Nothing selected is visible. Bring the first selected item in.
+      //
+      QRectF noteRect =
+            boundingRect(selected.first()->note(), nullptr, false);
+
+      QGraphicsView::ensureVisible(noteRect, 20, 20);
+      }
+
+//---------------------------------------------------------
+//   ensureSelectionPitchVisible
+//---------------------------------------------------------
+
+void PianoView::ensureSelectionPitchVisible()
+      {
+      QList<PianoItem*> selected = getSelectedItems();
+      if (selected.isEmpty())
+            return;
+
+      QRectF selectionRect;
+      bool first = true;
+
+      for (PianoItem* item : selected) {
+            QRectF noteRect =
+                  boundingRect(item->note(), nullptr, false);
+
+            if (first) {
+                  selectionRect = noteRect;
+                  first = false;
+                  }
+            else
+                  selectionRect = selectionRect.united(noteRect);
+            }
+
+      QRectF visibleRect =
+            mapToScene(viewport()->rect()).boundingRect();
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            //
+            // Pitch is vertical. Leave the horizontal/time
+            // position completely untouched.
+            //
+            if (selectionRect.top() >= visibleRect.top()
+                && selectionRect.bottom() <= visibleRect.bottom())
+                  return;
+
+            qreal selectionCenter = selectionRect.center().y();
+
+            int target =
+                  int(selectionCenter - viewport()->height() / 2.0);
+
+            verticalScrollBar()->setValue(target);
+            }
+      else {
+            //
+            // Pitch is horizontal. Leave the vertical/time
+            // position completely untouched.
+            //
+            if (selectionRect.left() >= visibleRect.left()
+                && selectionRect.right() <= visibleRect.right())
+                  return;
+
+            qreal selectionCenter = selectionRect.center().x();
+
+            int target =
+                  int(selectionCenter - viewport()->width() / 2.0);
+
+            horizontalScrollBar()->setValue(target);
             }
       }
 
@@ -3283,8 +3540,8 @@ QString PianoView::serializeSelectedNotes()
 
                   Fraction startTick = note->chord()->tick();
                   int pitch = note->pitch();
-
                   int voice = note->voice();
+                  int staffIdx = note->staffIdx();
 
                   int veloOff = note->veloOffset();
                   Note::ValueType veloType = note->veloType();
@@ -3296,6 +3553,7 @@ QString PianoView::serializeSelectedNotes()
                   xml.writeAttribute("lenD", QString::number(flen.denominator()));
                   xml.writeAttribute("pitch", QString::number(pitch));
                   xml.writeAttribute("voice", QString::number(voice));
+                  xml.writeAttribute("staff", QString::number(staffIdx));
                   xml.writeAttribute("veloOff", QString::number(veloOff));
                   xml.writeAttribute("veloType", veloType == Note::ValueType::OFFSET_VAL ? "o" : "u");
 
@@ -3575,19 +3833,21 @@ void PianoView::finishNoteGroupDrag(QMouseEvent* event) {
 
 QVector<Note*> PianoView::pasteNotes(const QString& copiedNotes, Fraction pasteStartTick, Fraction lengthOffset, int pitchOffset, bool xIsOffset)
       {
-
       QXmlStreamReader xml(copiedNotes);
       Fraction firstTick;
       QVector<Note*> addedNotes;
+      QVector<Note*> currentNotes;
 
       while (!xml.atEnd()) {
             QXmlStreamReader::TokenType tt = xml.readNext();
-            if (tt == QXmlStreamReader::StartElement){
+
+            if (tt == QXmlStreamReader::StartElement) {
                   if (xml.name().toString() == "notes") {
                         int n = xml.attributes().value("firstN").toString().toInt();
                         int d = xml.attributes().value("firstD").toString().toInt();
                         firstTick = Fraction(n, d);
                         }
+
                   if (xml.name().toString() == "note") {
                         int sn = xml.attributes().value("startN").toString().toInt();
                         int sd = xml.attributes().value("startD").toString().toInt();
@@ -3596,37 +3856,54 @@ QVector<Note*> PianoView::pasteNotes(const QString& copiedNotes, Fraction pasteS
                         int tn = xml.attributes().value("lenN").toString().toInt();
                         int td = xml.attributes().value("lenD").toString().toInt();
                         Fraction tickLen = Fraction(tn, td);
+
                         tickLen += lengthOffset;
                         if (tickLen.numerator() <= 0) {
+                              currentNotes.clear();
                               continue;
                               }
 
                         int pitch = xml.attributes().value("pitch").toString().toInt();
                         int voice = xml.attributes().value("voice").toString().toInt();
-
                         int veloOff = xml.attributes().value("veloOff").toString().toInt();
+
                         QString veloTypeStrn = xml.attributes().value("veloType").toString();
+
                         Note::ValueType veloType = veloTypeStrn == "o" ? Note::ValueType::OFFSET_VAL : Note::ValueType::USER_VAL;
 
-                        int track = _staff->idx() * VOICES + voice;
+                        int staffIdx = _staff->idx();
+                        if (xml.attributes().hasAttribute("staff"))
+                              staffIdx = xml.attributes().value("staff").toString().toInt();
+
+                        int track = staffIdx * VOICES + voice;
 
                         Fraction pos = xIsOffset ? startTick + pasteStartTick : startTick - firstTick + pasteStartTick;
 
-                        addedNotes = addNote(pos, tickLen, pitch + pitchOffset, track);
-                        for (Note* note: qAsConst(addedNotes)) {
+                        currentNotes = addNote(pos, tickLen, pitch + pitchOffset,track);
+
+                        for (Note* note : qAsConst(currentNotes)) {
                               note->setVeloOffset(veloOff);
                               note->setVeloType(veloType);
                               }
+
+                        for (Note* note : qAsConst(currentNotes))
+                              addedNotes.append(note);
                         }
+
                   if (xml.name().toString() == "evt") {
                         int ontime = xml.attributes().value("ontime").toString().toInt();
+
                         int len = xml.attributes().value("len").toString().toInt();
 
                         NoteEvent ne;
                         ne.setOntime(ontime);
                         ne.setLen(len);
-                        for (Note* note: qAsConst(addedNotes)) {
+
+                        // Event data belongs only to the most recently
+                        // parsed <note>, not to every note pasted so far.
+                        for (Note* note : qAsConst(currentNotes)) {
                               NoteEventList& evtList = note->playEvents();
+
                               if (!evtList.isEmpty()) {
                                     NoteEvent* evt = note->noteEvent(evtList.length() - 1);
                                     _staff->score()->undo(new ChangeNoteEvent(note, evt, ne));
