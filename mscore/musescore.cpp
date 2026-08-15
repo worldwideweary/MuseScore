@@ -305,6 +305,7 @@ const std::list<const char*> MuseScore::_allPlaybackControlEntries {
             "repeat",
             "pan",
             "metronome",
+            "playback-highlight",
             "countin"
             };
 
@@ -493,6 +494,7 @@ void MuseScore::preferencesChanged(bool fromWorkspace, bool changeUI)
       getAction("repeat")->setChecked(MScore::playRepeats);
       getAction("pan")->setChecked(MScore::panPlayback);
       getAction("follow")->setChecked(preferences.getBool(PREF_APP_PLAYBACK_FOLLOWSONG));
+      getAction("playback-highlight")->setChecked(preferences.getBool(PREF_APP_PLAYBACK_HIGHLIGHT));
       getAction("midi-on")->setChecked(preferences.getBool(PREF_IO_MIDI_ENABLEINPUT));
       getAction("toggle-statusbar")->setChecked(preferences.getBool(PREF_UI_APP_SHOWSTATUSBAR));
       getAction("show-tours")->setChecked(preferences.getBool(PREF_UI_APP_STARTUP_SHOWTOURS));
@@ -1130,6 +1132,7 @@ MuseScore::MuseScore()
       loopInAction    = getAction("loop-in");
       loopOutAction   = getAction("loop-out");
       metronomeAction = getAction("metronome");
+      playbackHighlightAction = getAction("playback-highlight");
       countInAction   = getAction("countin");
       panAction       = getAction("pan");
 
@@ -6417,6 +6420,8 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             showContextHelp();
       else if (cmd == "follow")
             preferences.setPreference(PREF_APP_PLAYBACK_FOLLOWSONG, a->isChecked());
+      else if (cmd == "playback-highlight")
+            preferences.setPreference(PREF_APP_PLAYBACK_HIGHLIGHT, a->isChecked());
       else if (cmd == "split-h")
             splitWindow(true);
       else if (cmd == "split-v")
@@ -6540,6 +6545,8 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             loopAction->setChecked(true);
             }
       else if (cmd == "metronome")  // no action
+            ;
+      else if (cmd == "playback-highlight")  // no action
             ;
       else if (cmd == "countin")    // no action
             ;
