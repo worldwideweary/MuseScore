@@ -463,9 +463,35 @@ void Seq::unmarkNotes()
             cs->addRefresh(n->canvasBoundingRect());
             }
       markedNotes.clear();
+
+      _activePitches.clear();
+      _activeNoteEvents.clear();
+
+      PianorollEditor* pre = mscore->getPianorollEditor();
+      if (pre)
+            pre->clearPlaybackPitches();
+
       PianoTools* piano = mscore->pianoTools();
       if (piano && piano->isVisible())
             piano->setPlaybackNotes(markedNotes);
+      }
+
+//---------------------------------------------------------
+//   activePitches
+//---------------------------------------------------------
+
+const QHash<int, ActivePitchInfo>& Seq::activePitches() const
+      {
+      return _activePitches;
+      }
+
+//---------------------------------------------------------
+//   activeNoteEvents
+//---------------------------------------------------------
+
+const QList<ActiveNoteEventInfo>& Seq::activeNoteEvents() const
+      {
+      return _activeNoteEvents;
       }
 
 //---------------------------------------------------------
@@ -1650,6 +1676,33 @@ void Seq::heartBeatTimeout()
                   if (guiPos->first >= cs->repeatList().tick2utick(cs->loopOutTick().ticks()))
                         break;
             const NPlayEvent& n = guiPos->second;
+
+            const bool playEventHasVelocity = n.velo();
+
+            // Piano Roll Editor:
+            if (n.type() == ME_NOTEON) {
+                  ActivePitchInfo& info = _activePitches[n.pitch()];
+
+                  if (playEventHasVelocity) {
+                        ++info.count;
+                        info.note = n.note();
+                        }
+                  else if (--info.count <= 0) {
+                        _activePitches.remove(n.pitch());
+                        }
+
+                  if (n.note() && n.noteEventIndex() >= 0) {
+                        ActiveNoteEventInfo info;
+                        info.owner = n.noteEventOwner();
+                        info.noteEventIndex = n.noteEventIndex();
+
+                        if (playEventHasVelocity && !_activeNoteEvents.contains(info))
+                              _activeNoteEvents.append(info);
+                        else
+                              _activeNoteEvents.removeAll(info);
+                        }
+                  }
+
             if (n.type() == ME_NOTEON) {
                   const Note* note1 = n.note();
                   if (n.velo()) {

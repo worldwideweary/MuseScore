@@ -191,6 +191,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       int coloringIndex = coloringBox->findData(int(_coloring));
       if (coloringIndex != -1)
             coloringBox->setCurrentIndex(coloringIndex);
+      qDebug() << "coloringIndex:" << coloringIndex; // when black probably -1 ?
 
       tbMain->addWidget(coloringBox);
 
@@ -958,9 +959,30 @@ void PianorollEditor::setScope(PianoRollScope scope)
 
 void PianorollEditor::setColoring(Coloring c)
       {
+      if (_coloring == c)
+            return;
+
       _coloring = c;
+
       pianoView->setColoring(c);
-      // Maybe pianoLevels should have coloring scheme set also?
+      pianoKbd->setColoring(c);
+
+      update();
+      }
+
+//---------------------------------------------------------
+//   clearPlaybackPitches
+//---------------------------------------------------------
+
+void PianorollEditor::clearPlaybackPitches()
+      {
+      if (pianoKbd)
+            pianoKbd->setPlaybackNotes(QHash<int, const Note*>());
+
+      if (pianoView) {
+            pianoView->setPlaybackActive(false);
+            pianoView->clearPlaybackNoteEvents();
+            }
       }
 
 //---------------------------------------------------------
@@ -1250,6 +1272,27 @@ void PianorollEditor::heartBeat(Seq* s)
       //
       if (locator[0].tick() != tick)
             posChanged(POS::CURRENT, tick);
+
+
+      QHash<int, const Note*> playbackNotes;
+      const auto& active = s->activePitches();
+      for (auto it = active.constBegin(); it != active.constEnd(); ++it) {
+            if (it.value().count > 0 && it.value().note)
+                  playbackNotes.insert(it.key(), it.value().note);
+            }
+      pianoKbd->setPlaybackNotes(playbackNotes);
+
+
+      QHash<const Note*, QSet<int>> playbackNoteEvents;
+      const auto& activeNoteEvents = s->activeNoteEvents();
+      for (const ActiveNoteEventInfo& info : activeNoteEvents) {
+            if (info.owner && info.noteEventIndex >= 0)
+                  playbackNoteEvents[info.owner].insert(info.noteEventIndex);
+            }
+      pianoView->setPlaybackNoteEvents(playbackNoteEvents);
+
+
+      pianoView->updatePlaybackHighlights();
 
       //
       // Smooth viewport following is purely visual. It does not

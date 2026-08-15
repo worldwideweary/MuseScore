@@ -18,6 +18,8 @@
 
 #include "libmscore/pos.h"
 
+#include <QSet>
+
 namespace Ms {
 
 class Score;
@@ -95,11 +97,11 @@ class PianoView : public QGraphicsView {
 public:
       static const BarPattern barPatterns[];
       void setScope(PianoRollScope scope);
-      void setColoring(Coloring);
-      PianoRollScope getScope() { return _scope; }
-      bool darkTheme() { return preferences.effectiveGlobalStyle() == MuseScoreEffectiveStyleType::DARK_FUSION; }
+      void setColoring(Coloring c);
+      PianoRollScope getScope() { return _scope; }      
       void ensureSelectionVisible();
       void ensureSelectionPitchVisible();
+      void updatePlaybackHighlights();
 
 private:
       Staff* _staff;
@@ -153,10 +155,13 @@ private:
 
       int _lastLocatorPixel[3] { -1, -1, -1 };
 
+      QSet<Note*> _markedPlaybackNotes;
+      QHash<const Note*, QSet<int>> _playbackNoteEvents;
+
       virtual void drawBackground(QPainter* painter, const QRectF& rect) override;
       void drawNoteBlock(QPainter* p, PianoItem* block);
-      QRect boundingRect(Note* note, bool applyEvents);
-      QRect boundingRect(Note* note, NoteEvent* evt, bool applyEvents);
+      QRect boundingRect(const Note* note, bool applyEvents);
+      QRect boundingRect(const Note* note, const NoteEvent* evt, bool applyEvents);
 
       void addChord(Chord* _chord, int voice);
       QVector<Note*> getSegmentNotes(Segment* seg, int track);
@@ -254,6 +259,10 @@ private:
       void setEditNoteVoice(int voice) { _editNoteVoice = voice; }
       void setEditNoteDots(int dot) { _editNoteDots = dot; }
       void setEditNoteTool(PianoRollEditTool tool) { _editNoteTool = tool; updateNotes();  }
+
+      void setPlaybackActive(bool active) { _playbackActive = active; }
+      void setPlaybackNoteEvents(const QHash<const Note*, QSet<int>>& events);
+      void clearPlaybackNoteEvents();
 
 // TODO: Any of these that can be private should be private:
 
