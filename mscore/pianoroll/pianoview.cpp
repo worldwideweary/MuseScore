@@ -1752,7 +1752,8 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
 void PianoView::finishNoteEventAdjustDrag()
       {
       Score* curScore = _staff->score();
-      Fraction dx = Fraction::fromTicks(pixelXToTick(_lastMousePos.x()) - pixelXToTick(_mouseDownPos.x()));
+
+      Fraction tickDelta = Fraction::fromTicks(scenePosToTick(_lastMousePos) - scenePosToTick(_mouseDownPos));
 
       for (int i = 0; i < _noteList.size(); ++i) {
             PianoItem* pi = _noteList[i];
@@ -1775,17 +1776,17 @@ void PianoView::finishNoteEventAdjustDrag()
                         Fraction lenNew;
                         switch (_dragStyle) {
                               case DragStyle::EVENT_ONTIME:
-                                    startNew = startAdj + dx;
-                                    lenNew = lenAdj - dx;
+                                    startNew = startAdj + tickDelta;
+                                    lenNew = lenAdj - tickDelta;
                                     break;
                               case DragStyle::EVENT_MOVE:
-                                    startNew = startAdj + dx;
+                                    startNew = startAdj + tickDelta;
                                     lenNew = lenAdj;
                                     break;
                               default:
                               case DragStyle::EVENT_LENGTH:
                                     startNew = startAdj;
-                                    lenNew = lenAdj + dx;
+                                    lenNew = lenAdj + tickDelta;
                                     break;
                               }
 
@@ -3698,14 +3699,56 @@ void PianoView::drawDraggedNote(QPainter* painter, Fraction startTick, Fraction 
       {
       Q_UNUSED(track);
       painter->setBrush(color);
-
       painter->setPen(QPen(color.darker(250)));
-      int x0 = tickToPixelX(startTick.ticks());
-      int x1 = tickToPixelX((startTick + frac).ticks());
-      int y0 = pitchToPixelY(pitch);
 
-      QRectF bounds(x0, y0 - _noteHeight, x1 - x0, _noteHeight);
-      painter->drawRoundedRect(bounds, PianoItem::NOTE_BLOCK_CORNER_RADIUS, PianoItem::NOTE_BLOCK_CORNER_RADIUS);
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            int x0 = tickToPixelX(startTick.ticks());
+            int x1 = tickToPixelX((startTick + frac).ticks());
+            int y0 = pitchToPixelY(pitch);
+
+            QRectF bounds(
+                  x0,
+                  y0 - _noteHeight,
+                  x1 - x0,
+                  _noteHeight
+                  );
+
+            painter->drawRoundedRect(
+                  bounds,
+                  PianoItem::NOTE_BLOCK_CORNER_RADIUS,
+                  PianoItem::NOTE_BLOCK_CORNER_RADIUS
+                  );
+            }
+      else {
+            qreal center;
+
+            if (_verticalPitchLayout == VerticalPitchLayout::KEYBOARD_ALIGNED) {
+                  QRectF lane = keyboardAlignedPitchLane(pitch);
+                  center = lane.center().x();
+                  }
+            else {
+                  center = (pitch + 0.5) * _noteHeight;
+                  }
+
+            const qreal width = _noteHeight;
+            const qreal x0 = center - width / 2.0;
+
+            int y0 = tickToPixelY((startTick + frac).ticks());
+            int y1 = tickToPixelY(startTick.ticks());
+
+            QRectF bounds(
+                  x0,
+                  y0,
+                  width,
+                  y1 - y0
+                  );
+
+            painter->drawRoundedRect(
+                  bounds,
+                  PianoItem::NOTE_BLOCK_CORNER_RADIUS,
+                  PianoItem::NOTE_BLOCK_CORNER_RADIUS
+                  );
+            }
       }
 
 }
