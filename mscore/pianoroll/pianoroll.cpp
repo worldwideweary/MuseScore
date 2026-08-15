@@ -873,8 +873,12 @@ void PianorollEditor::setOrientation(PianoRollOrientation orientation)
       if (_orientation == orientation)
             return;
 
+      const int referenceTick = pianoView->viewportReferenceTick();
+
       _orientation = orientation;
       updateOrientationLayout();
+
+      pianoView->positionViewportAtTick(referenceTick);
       }
 
 //---------------------------------------------------------

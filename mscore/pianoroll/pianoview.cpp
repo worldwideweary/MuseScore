@@ -1225,6 +1225,51 @@ int PianoView::dragPitchDelta(const QPointF& from, const QPointF& to) const
       }
 
 //---------------------------------------------------------
+//   viewportReferenceTick
+//---------------------------------------------------------
+
+int PianoView::viewportReferenceTick() const
+      {
+      QRectF viewRect = mapToScene(viewport()->rect()).boundingRect();
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            qreal x = viewRect.center().x();
+            return qBound(0, pixelXToTick(int(x)), _ticks);
+            }
+
+      //
+      // In vertical mode the meaningful reference is the
+      // activation boundary at the bottom of the viewport.
+      //
+      qreal y = viewRect.bottom();
+      return qBound(0, pixelYToTick(int(y)), _ticks);
+      }
+
+//---------------------------------------------------------
+//   positionViewportAtTick
+//---------------------------------------------------------
+
+void PianoView::positionViewportAtTick(int tick)
+      {
+      tick = qBound(0, tick, _ticks);
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            int x = tickToPixelX(tick);
+            horizontalScrollBar()->setValue(
+                  qMax(0, x - viewport()->width() / 2));
+            }
+      else {
+            int y = tickToPixelY(tick);
+
+            //
+            // Put the requested tick at the bottom activation edge.
+            //
+            verticalScrollBar()->setValue(
+                  qMax(0, y - viewport()->height()));
+            }
+      }
+
+//---------------------------------------------------------
 //   keyboardAlignedPitchLane
 //---------------------------------------------------------
 

@@ -264,6 +264,9 @@ private:
       int dragTickDelta(const QPointF& from, const QPointF& to) const;
       int dragPitchDelta(const QPointF& from, const QPointF& to) const;
 
+      int viewportReferenceTick() const;
+      void positionViewportAtTick(int tick);
+
       QRectF keyboardAlignedPitchLane(int midiPitch) const;
 
       QRectF verticalPitchRect(int midiPitch) const;
