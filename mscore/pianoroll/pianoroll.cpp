@@ -535,13 +535,21 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       mainLayout->addWidget(tbTweak);
       mainLayout->addWidget(mainWidget);
 
-      // TEMPORARY:
-      // connect(pianoView->verticalScrollBar(),   SIGNAL(valueChanged(int)), pianoKbd, SLOT(setYpos(int)));
+      connect(pianoView->verticalScrollBar(),
+              &QScrollBar::valueChanged,
+              this,
+              [this](int value) {
+                    if (_orientation == PianoRollOrientation::HORIZONTAL)
+                          pianoKbd->setYpos(value);
+                    });
 
       connect(pianoView->horizontalScrollBar(),
-              SIGNAL(valueChanged(int)),
-              pianoKbd,
-              SLOT(setYpos(int)));
+              &QScrollBar::valueChanged,
+              this,
+              [this](int value) {
+                    if (_orientation == PianoRollOrientation::VERTICAL)
+                          pianoKbd->setYpos(value);
+                    });
 
       connect(pianoView->horizontalScrollBar(), SIGNAL(valueChanged(int)), hsb,      SLOT(setValue(int)));
 
@@ -818,6 +826,8 @@ void PianorollEditor::updateOrientationLayout()
                   QSizePolicy::Expanding);
             pianoKbd->setFixedWidth(PIANO_KEYBOARD_WIDTH);
 
+            pianoKbd->setYpos(pianoView->verticalScrollBar()->value());
+
             noteAreaLayout->addWidget(topLeftSpacer, 0, 0, 1, 1);
             noteAreaLayout->addWidget(ruler,         0, 1, 1, 1);
             noteAreaLayout->addWidget(pianoKbd,      1, 0, 1, 1);
@@ -845,6 +855,8 @@ void PianorollEditor::updateOrientationLayout()
                   QSizePolicy::Expanding,
                   QSizePolicy::Fixed);
             pianoKbd->setFixedHeight(PIANO_KEYBOARD_WIDTH);
+
+            pianoKbd->setYpos(pianoView->horizontalScrollBar()->value());
 
             noteAreaLayout->addWidget(pianoView, 0, 0);
             noteAreaLayout->addWidget(pianoKbd,  1, 0);
