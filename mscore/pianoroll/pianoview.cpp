@@ -1172,6 +1172,24 @@ int PianoView::scenePosToPitch(const QPointF& pos) const
       }
 
 //---------------------------------------------------------
+//   dragTickDelta
+//---------------------------------------------------------
+
+int PianoView::dragTickDelta(const QPointF& from, const QPointF& to) const
+      {
+      return scenePosToTick(to) - scenePosToTick(from);
+      }
+
+//---------------------------------------------------------
+//   dragPitchDelta
+//---------------------------------------------------------
+
+int PianoView::dragPitchDelta(const QPointF& from, const QPointF& to) const
+      {
+      return scenePosToPitch(to) - scenePosToPitch(from);
+      }
+
+//---------------------------------------------------------
 //   keyboardAlignedPitchLane
 //---------------------------------------------------------
 
@@ -3330,8 +3348,15 @@ void PianoView::pasteNotesAtCursor()
 void PianoView::finishNoteGroupDrag(QMouseEvent* event) {
       Score* score = _staff->score();
 
-      Fraction pos = Fraction::fromTicks(pixelXToTick(_lastMousePos.x()));
+      int currentTick = qBound(0,
+                               scenePosToTick(_lastMousePos),
+                               _ticks);
+
+      Fraction pos = Fraction::fromTicks(currentTick);
       Measure* m = score->tick2measure(pos);
+
+      if (!m)
+            return;
 
       Fraction timeSig = m->timesig();
       int noteWithBeat = timeSig.denominator();
@@ -3341,8 +3366,8 @@ void PianoView::finishNoteGroupDrag(QMouseEvent* event) {
       int divisions = noteWithBeat * subbeats;
 
       //Round down to nearest division
-      double dragToTick = pixelXToTick(_lastMousePos.x());
-      double startTick = pixelXToTick(_mouseDownPos.x());
+      double dragToTick = scenePosToTick(_lastMousePos);
+      double startTick = scenePosToTick(_mouseDownPos);
       Fraction dragOffsetTicks = Fraction::fromTicks(dragToTick - startTick);
 
       //Adjust offset so that note under cursor is aligned to note divistion
@@ -3350,8 +3375,11 @@ void PianoView::finishNoteGroupDrag(QMouseEvent* event) {
       Fraction pasteLengthOffset(0, 1);
       int pitchOffset = 0;
 
-      int dragToPitch = pixelYToPitch(_lastMousePos.y());
-      int startPitch = pixelYToPitch(_mouseDownPos.y());
+      int dragToPitch = scenePosToPitch(_lastMousePos);
+      int startPitch = scenePosToPitch(_mouseDownPos);
+
+      if (dragToPitch < 0 || startPitch < 0)
+            return;
 
       if (_dragStyle == DragStyle::NOTE_POSITION) {
             Fraction noteStartDraggedTick = _dragStartTick + dragOffsetTicks;
@@ -3474,6 +3502,7 @@ QVector<Note*> PianoView::pasteNotes(const QString& copiedNotes, Fraction pasteS
 //---------------------------------------------------------
 //   drawDraggedNotes
 //---------------------------------------------------------
+
 void PianoView::drawDraggedNotes(QPainter* painter)
       {
       QColor noteColor;
@@ -3489,8 +3518,8 @@ void PianoView::drawDraggedNotes(QPainter* painter)
       Score* score = _staff->score();
 
       if (_dragStyle == DragStyle::DRAW_NOTE) {
-            double startTick = pixelXToTick(_mouseDownPos.x());
-            double endTick = pixelXToTick(_lastMousePos.x());
+            double startTick = scenePosToTick(_mouseDownPos);
+            double endTick = scenePosToTick(_lastMousePos);
             if (startTick > endTick) {
                   std::swap(startTick, endTick);
                   }
@@ -3499,7 +3528,9 @@ void PianoView::drawDraggedNotes(QPainter* painter)
             Fraction endTickFrac = roundToNearestBeat(endTick, false);
 
             if (endTickFrac != startTickFrac) {
-                  double pitch = pixelYToPitch(_mouseDownPos.y());
+                  int pitch = scenePosToPitch(_mouseDownPos);
+                  if (pitch < 0)
+                        return;
                   int track = (int)_staff->idx() * VOICES + _editNoteVoice;
 
                   drawDraggedNote(painter, startTickFrac, endTickFrac - startTickFrac, pitch, track, noteColor);
@@ -3510,7 +3541,9 @@ void PianoView::drawDraggedNotes(QPainter* painter)
       if (_dragStyle == DragStyle::EVENT_LENGTH || _dragStyle == DragStyle::EVENT_MOVE
           || _dragStyle == DragStyle::EVENT_ONTIME) {
 
-            Fraction dx = Fraction::fromTicks(pixelXToTick(_lastMousePos.x()) - pixelXToTick(_mouseDownPos.x()));
+            Fraction tickDelta = Fraction::fromTicks(
+                  scenePosToTick(_lastMousePos)
+                  - scenePosToTick(_mouseDownPos));
 
             for (int i = 0; i < _noteList.size(); ++i) {
                   PianoItem* pi = _noteList[i];
@@ -3533,17 +3566,17 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                               Fraction lenNew;
                               switch (_dragStyle) {
                                     case DragStyle::EVENT_ONTIME:
-                                          startNew = startAdj + dx;
-                                          lenNew = lenAdj - dx;
+                                          startNew = startAdj + tickDelta;
+                                          lenNew = lenAdj - tickDelta;
                                           break;
                                     case DragStyle::EVENT_MOVE:
-                                          startNew = startAdj + dx;
+                                          startNew = startAdj + tickDelta;
                                           lenNew = lenAdj;
                                           break;
                                     default:
                                     case DragStyle::EVENT_LENGTH:
                                           startNew = startAdj;
-                                          lenNew = lenAdj + dx;
+                                          lenNew = lenAdj + tickDelta;
                                           break;
                                     }
 
@@ -3569,8 +3602,15 @@ void PianoView::drawDraggedNotes(QPainter* painter)
             return;
             }
 
-      Fraction pos = Fraction::fromTicks(pixelXToTick(_lastMousePos.x()));
+      int currentTick = qBound(0,
+                               scenePosToTick(_lastMousePos),
+                               _ticks);
+
+      Fraction pos = Fraction::fromTicks(currentTick);
       Measure* m = score->tick2measure(pos);
+
+      if (!m)
+            return;
 
       Fraction timeSig = m->timesig();
       int noteWithBeat = timeSig.denominator();
@@ -3580,8 +3620,9 @@ void PianoView::drawDraggedNotes(QPainter* painter)
       int divisions = noteWithBeat * subbeats;
 
       //Round down to nearest division
-      double dragToTick = pixelXToTick(_lastMousePos.x());
-      double startTick = pixelXToTick(_mouseDownPos.x());
+      double dragToTick = scenePosToTick(_lastMousePos);
+      double startTick = scenePosToTick(_mouseDownPos);
+
       Fraction dragOffsetTicks = Fraction::fromTicks(dragToTick - startTick);
 
       //Adjust offset so that note under cursor is aligned to note divistion
@@ -3589,8 +3630,11 @@ void PianoView::drawDraggedNotes(QPainter* painter)
       Fraction pasteLengthOffset(0, 1);
       int pitchOffset = 0;
 
-      int dragToPitch = pixelYToPitch(_lastMousePos.y());
-      int startPitch = pixelYToPitch(_mouseDownPos.y());
+      int dragToPitch = scenePosToPitch(_lastMousePos);
+      int startPitch = scenePosToPitch(_mouseDownPos);
+
+      if (dragToPitch < 0 || startPitch < 0)
+            return;
 
       if (_dragStyle == DragStyle::NOTE_POSITION) {
             Fraction noteStartDraggedTick = _dragStartTick + dragOffsetTicks;

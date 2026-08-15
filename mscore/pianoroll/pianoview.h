@@ -258,6 +258,9 @@ private:
       int scenePosToTick(const QPointF& pos) const;
       int scenePosToPitch(const QPointF& pos) const;
 
+      int dragTickDelta(const QPointF& from, const QPointF& to) const;
+      int dragPitchDelta(const QPointF& from, const QPointF& to) const;
+
       QRectF keyboardAlignedPitchLane(int midiPitch) const;
 
       QRectF verticalPitchRect(int midiPitch) const;
