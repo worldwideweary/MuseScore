@@ -3447,19 +3447,21 @@ void PianoView::finishNoteGroupDrag(QMouseEvent* event) {
 
 QVector<Note*> PianoView::pasteNotes(const QString& copiedNotes, Fraction pasteStartTick, Fraction lengthOffset, int pitchOffset, bool xIsOffset)
       {
-
       QXmlStreamReader xml(copiedNotes);
       Fraction firstTick;
       QVector<Note*> addedNotes;
+      QVector<Note*> currentNotes;
 
       while (!xml.atEnd()) {
             QXmlStreamReader::TokenType tt = xml.readNext();
-            if (tt == QXmlStreamReader::StartElement){
+
+            if (tt == QXmlStreamReader::StartElement) {
                   if (xml.name().toString() == "notes") {
                         int n = xml.attributes().value("firstN").toString().toInt();
                         int d = xml.attributes().value("firstD").toString().toInt();
                         firstTick = Fraction(n, d);
                         }
+
                   if (xml.name().toString() == "note") {
                         int sn = xml.attributes().value("startN").toString().toInt();
                         int sd = xml.attributes().value("startD").toString().toInt();
@@ -3468,15 +3470,20 @@ QVector<Note*> PianoView::pasteNotes(const QString& copiedNotes, Fraction pasteS
                         int tn = xml.attributes().value("lenN").toString().toInt();
                         int td = xml.attributes().value("lenD").toString().toInt();
                         Fraction tickLen = Fraction(tn, td);
+
                         tickLen += lengthOffset;
                         if (tickLen.numerator() <= 0) {
+                              currentNotes.clear();
                               continue;
                               }
 
                         int pitch = xml.attributes().value("pitch").toString().toInt();
                         int voice = xml.attributes().value("voice").toString().toInt();
+
                         int veloOff = xml.attributes().value("veloOff").toString().toInt();
+
                         QString veloTypeStrn = xml.attributes().value("veloType").toString();
+
                         Note::ValueType veloType = veloTypeStrn == "o" ? Note::ValueType::OFFSET_VAL : Note::ValueType::USER_VAL;
 
                         int staffIdx = _staff->idx();
@@ -3487,21 +3494,31 @@ QVector<Note*> PianoView::pasteNotes(const QString& copiedNotes, Fraction pasteS
 
                         Fraction pos = xIsOffset ? startTick + pasteStartTick : startTick - firstTick + pasteStartTick;
 
-                        addedNotes = addNote(pos, tickLen, pitch + pitchOffset, track);
-                        for (Note* note: qAsConst(addedNotes)) {
+                        currentNotes = addNote(pos, tickLen, pitch + pitchOffset,track);
+
+                        for (Note* note : qAsConst(currentNotes)) {
                               note->setVeloOffset(veloOff);
                               note->setVeloType(veloType);
                               }
+
+                        for (Note* note : qAsConst(currentNotes))
+                              addedNotes.append(note);
                         }
+
                   if (xml.name().toString() == "evt") {
                         int ontime = xml.attributes().value("ontime").toString().toInt();
+
                         int len = xml.attributes().value("len").toString().toInt();
 
                         NoteEvent ne;
                         ne.setOntime(ontime);
                         ne.setLen(len);
-                        for (Note* note: qAsConst(addedNotes)) {
+
+                        // Event data belongs only to the most recently
+                        // parsed <note>, not to every note pasted so far.
+                        for (Note* note : qAsConst(currentNotes)) {
                               NoteEventList& evtList = note->playEvents();
+
                               if (!evtList.isEmpty()) {
                                     NoteEvent* evt = note->noteEvent(evtList.length() - 1);
                                     _staff->score()->undo(new ChangeNoteEvent(note, evt, ne));
