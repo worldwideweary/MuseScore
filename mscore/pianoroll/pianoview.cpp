@@ -2116,12 +2116,16 @@ QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pit
                   Segment* seg = curChordRest->nextSegmentAfterCR(SegmentType::ChordRest);
                   if (!seg)
                         break;
+
                   curChordRest = seg->cr(track);
+                  if (!curChordRest)
+                        break;
+
                   curStartTick = curChordRest->tick();
                   curDur = curChordRest->ticks();
                   }
 
-            if (duration > Fraction(0, 1)) {
+            if (duration > Fraction(0, 1) && curChordRest) {
                   ChordRest* crMid = nullptr;
                   ChordRest* crEnd = nullptr;
 
