@@ -13,6 +13,10 @@
 #ifndef __PIANOROLLEDITTOOL_H__
 #define __PIANOROLLEDITTOOL_H__
 
+#include <QColor>
+
+#include "preferences.h"
+
 namespace Ms {
 
 enum PianoRollEditTool
@@ -48,6 +52,14 @@ enum class VerticalPitchLayout {
       CHROMATIC,
       KEYBOARD_ALIGNED
       };
+
+class Note;
+
+QColor pianoRollNoteColor(const Note* note,
+                          Coloring coloring,
+                          bool honorSelection);
+
+bool darkTheme();
 
 } // namespace Ms
 

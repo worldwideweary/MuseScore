@@ -24,14 +24,12 @@
 #include "libmscore/drumset.h"
 #include "preferences.h"
 
+#include <QColor>
 
 namespace Ms {
 
-const QColor colKeySelect = QColor(224, 170, 20);
-
 const char* PianoKeyboard::pitchNames[] =
             {"C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"}; // keep in sync with `valu` in limbscore/utils.cpp
-
 
 //---------------------------------------------------------
 //   PianoKeyboard
@@ -149,9 +147,13 @@ void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
                         ds->name(instrPitch).toUtf8().constData());
                   }
 
-            p.setBrush(curPitch == midiPitch
-                       ? colKeySelect
-                       : Qt::white);
+            const Note* playbackNote = _playbackNotes.value(midiPitch, nullptr);
+            if (playbackNote) {
+                  QColor color = pianoRollNoteColor(playbackNote, _coloring, false);
+                  p.setBrush(color);
+                  }
+            else
+                  p.setBrush(Qt::white);
 
             if (_orientation == PianoOrientation::HORIZONTAL) {
                   //
@@ -291,9 +293,14 @@ void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
                   }
 
             p.setPen(QPen(Qt::black));
-            p.setBrush(curPitch == midiPitch
-                       ? colKeySelect
-                       : Qt::black);
+
+            const Note* playbackNote = _playbackNotes.value(midiPitch, nullptr);
+            if (playbackNote) {
+                  QColor color = pianoRollNoteColor(playbackNote, _coloring, false);
+                  p.setBrush(color);
+                  }
+            else
+                  p.setBrush(Qt::black);
 
             if (_orientation == PianoOrientation::HORIZONTAL) {
                   //
@@ -525,6 +532,32 @@ void PianoKeyboard::setStaff(Staff* staff)
 void PianoKeyboard::setOrientation(PianoOrientation o)
       {
       _orientation = o;
+      update();
+      }
+
+//---------------------------------------------------------
+//   setColoring
+//---------------------------------------------------------
+
+void PianoKeyboard::setColoring(Coloring coloring)
+      {
+      if (_coloring == coloring)
+            return;
+
+      _coloring = coloring;
+      update();
+      }
+
+//---------------------------------------------------------
+//   setPlaybackNotes
+//---------------------------------------------------------
+
+void PianoKeyboard::setPlaybackNotes(const QHash<int, const Note*>& notes)
+      {
+      if (_playbackNotes == notes)
+            return;
+
+      _playbackNotes = notes;
       update();
       }
 }

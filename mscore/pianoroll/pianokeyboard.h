@@ -21,6 +21,9 @@
 #define __PIANO_KEYBOARD_H__
 
 #include "piano.h"
+#include "pianorolledittool.h"
+
+#include "libmscore/note.h"
 
 namespace Ms {
 
@@ -49,6 +52,8 @@ class PianoKeyboard : public QWidget {
       int yRange;
       int curPitch;
       int curKeyPressed;
+      QHash<int, const Note*> _playbackNotes;
+      Coloring _coloring { Coloring::STAFF };
       Staff* _staff;
 
       virtual void paintEvent(QPaintEvent*);
@@ -73,6 +78,9 @@ class PianoKeyboard : public QWidget {
       Staff* staff() { return _staff; }
       void setStaff(Staff* staff);
       void setOrientation(PianoOrientation);
+
+      void setPlaybackNotes(const QHash<int, const Note*>& notes);
+      void setColoring(Coloring c);
       };
 
 
