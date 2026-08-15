@@ -1172,6 +1172,32 @@ int PianoView::scenePosToPitch(const QPointF& pos) const
       }
 
 //---------------------------------------------------------
+//   updateTrackingPos
+//---------------------------------------------------------
+
+void PianoView::updateTrackingPos(const QPoint& viewportPos)
+      {
+      QPointF p = mapToScene(viewportPos);
+
+      int pitch = scenePosToPitch(p);
+      if (pitch >= 0)
+            emit pitchChanged(pitch);
+
+      int tick = scenePosToTick(p);
+
+      if (tick < 0 || tick > _ticks) {
+            tick = qBound(0, tick, _ticks);
+            _trackingPos.setTick(tick);
+            _trackingPos.setInvalid();
+            }
+      else {
+            _trackingPos.setTick(tick);
+            }
+
+      emit trackingPosChanged(_trackingPos);
+      }
+
+//---------------------------------------------------------
 //   dragTickDelta
 //---------------------------------------------------------
 
@@ -1538,40 +1564,50 @@ void PianoView::zoomView(int step, bool horizontal, int centerX, int centerY)
 
 void PianoView::wheelEvent(QWheelEvent* event)
       {
-      int step = event->angleDelta().y() / 120;
+      const int step = event->angleDelta().y() / 120;
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+      QPoint viewportPos = event->position().toPoint();
+#else
+      QPoint viewportPos = event->pos();
+#endif
 
       if (event->modifiers() == 0) {
-            //Vertical scroll
+            // Vertical scroll
             QGraphicsView::wheelEvent(event);
             }
       else if (event->modifiers() == Qt::ShiftModifier) {
-            //Horizontal scroll
+            // Horizontal scroll
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-            QWheelEvent we(event->position(), event->globalPosition(), event->pixelDelta().transposed(), event->angleDelta().transposed(),
-                           event->buttons(), Qt::NoModifier, Qt::ScrollPhase::NoScrollPhase, false);
+            QWheelEvent we(event->position(),
+                           event->globalPosition(),
+                           event->pixelDelta().transposed(),
+                           event->angleDelta().transposed(),
+                           event->buttons(),
+                           Qt::NoModifier,
+                           Qt::ScrollPhase::NoScrollPhase,
+                           false);
 #else
-            QWheelEvent we(event->pos(), event->delta(), event->buttons(), 0, Qt::Horizontal);
+            QWheelEvent we(event->pos(),
+                           event->delta(),
+                           event->buttons(),
+                           0,
+                           Qt::Horizontal);
 #endif
             QGraphicsView::wheelEvent(&we);
             }
       else if (event->modifiers() == Qt::ControlModifier) {
-            //Vertical zoom
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-            zoomView(step, false, event->position().x(), event->position().y());
-#else
-            zoomView(step, false, event->x(), event->y());
-#endif
+            // Vertical zoom
+            zoomView(step, false, viewportPos.x(), viewportPos.y());
             }
-      else if (event->modifiers() == (Qt::ShiftModifier | Qt::ControlModifier)) {
-            //Horizontal zoom
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-            zoomView(step, true, event->position().x(), event->position().y());
-#else
-            zoomView(step, true, event->x(), event->y());
-#endif
+      else if (event->modifiers()
+               == (Qt::ShiftModifier | Qt::ControlModifier)) {
+            // Horizontal zoom
+            zoomView(step, true, viewportPos.x(), viewportPos.y());
             }
-      }
 
+      updateTrackingPos(viewportPos);
+      }
 
 //---------------------------------------------------------
 //   showPopupMenu
@@ -1891,6 +1927,8 @@ void PianoView::finishNoteEventAdjustDrag()
       }
 
 
+
+
 //---------------------------------------------------------
 //   hoverMoveEvent
 //---------------------------------------------------------
@@ -2083,25 +2121,8 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                   }
             }
 
-
       // Update mouse tracker
-      QPointF p(mapToScene(event->pos()));
-
-      int pitch = scenePosToPitch(p);
-      emit pitchChanged(pitch);
-
-      int tick = scenePosToTick(p);
-
-      if (tick < 0 || tick > _ticks) {
-            tick = qBound(0, tick, _ticks);
-            _trackingPos.setTick(tick);
-            _trackingPos.setInvalid();
-            }
-      else {
-            _trackingPos.setTick(tick);
-            }
-
-      emit trackingPosChanged(_trackingPos);
+      updateTrackingPos(event->pos());
       }
 
 

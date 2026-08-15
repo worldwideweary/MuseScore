@@ -175,6 +175,7 @@ private:
       void dragSelectionNoteGroup();
       void finishNoteGroupDrag(QMouseEvent* event);
       void finishNoteEventAdjustDrag();
+      void updateTrackingPos(const QPoint& viewportPos);
       bool toolCanDragNotes() const {
             return _editNoteTool == PianoRollEditTool::SELECT || _editNoteTool == PianoRollEditTool::ADD ||
                   _editNoteTool == PianoRollEditTool::APPEND_NOTE || _editNoteTool == PianoRollEditTool::CUT ||
@@ -247,6 +248,8 @@ private:
       void setEditNoteVoice(int voice) { _editNoteVoice = voice; }
       void setEditNoteDots(int dot) { _editNoteDots = dot; }
       void setEditNoteTool(PianoRollEditTool tool) { _editNoteTool = tool; updateNotes();  }
+
+// TODO: Any of these that can be private should be private:
 
       int pixelXToTick(int pixX) const;
       int tickToPixelX(int tick) const;
