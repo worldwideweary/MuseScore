@@ -1796,6 +1796,10 @@ void PianoView::finishNoteEventAdjustDrag()
 //   hoverMoveEvent
 //---------------------------------------------------------
 
+//---------------------------------------------------------
+//   updateCursor
+//---------------------------------------------------------
+
 void PianoView::updateCursor()
       {
       if (_editNoteTool == PianoRollEditTool::SELECT
@@ -1803,17 +1807,33 @@ void PianoView::updateCursor()
           || _editNoteTool == PianoRollEditTool::EVENT_ADJUST) {
 
             QPointF pos = _lastMousePos;
-            int tick = pixelXToTick(pos.x());
-            int pitch = pixelYToPitch(pos.y());
-            PianoItem* pi = pickNote(tick, pitch);
 
-            if (pi) {
-                  QRect bounds = boundingRect(pi->note(), _editNoteTool == PianoRollEditTool::EVENT_ADJUST);
-                  if (bounds.contains(pos.x(), pos.y())) {
-                        if (pos.x() <= bounds.x() + _dragNoteLengthMargin
-                            || pos.x() >= bounds.x() + bounds.width() - _dragNoteLengthMargin) {
-                              setCursor(Qt::SizeHorCursor);
-                              return;
+            int tick = scenePosToTick(pos);
+            int pitch = scenePosToPitch(pos);
+
+            if (pitch >= 0) {
+                  PianoItem* pi = pickNote(tick, pitch);
+
+                  if (pi) {
+                        QRect bounds = boundingRect(
+                              pi->note(),
+                              _editNoteTool == PianoRollEditTool::EVENT_ADJUST);
+
+                        if (bounds.contains(pos.x(), pos.y())) {
+                              if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                                    if (pos.x() <= bounds.left() + _dragNoteLengthMargin
+                                        || pos.x() >= bounds.right() - _dragNoteLengthMargin) {
+                                          setCursor(Qt::SizeHorCursor);
+                                          return;
+                                          }
+                                    }
+                              else {
+                                    if (pos.y() <= bounds.top() + _dragNoteLengthMargin
+                                        || pos.y() >= bounds.bottom() - _dragNoteLengthMargin) {
+                                          setCursor(Qt::SizeVerCursor);
+                                          return;
+                                          }
+                                    }
                               }
                         }
                   }
@@ -1852,8 +1872,11 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                         }
                   else {
                         //Check for move note
-                        int tick = pixelXToTick(_mouseDownPos.x());
-                        int mouseDownPitch = pixelYToPitch(_mouseDownPos.y());
+                        int tick = scenePosToTick(_mouseDownPos);
+                        int mouseDownPitch = scenePosToPitch(_mouseDownPos);
+
+                        if (mouseDownPitch < 0)
+                              return;
 
                         PianoItem* pi = pickNote(tick, mouseDownPitch);
                         if (pi && (_editNoteTool == PianoRollEditTool::SELECT || _editNoteTool == PianoRollEditTool::ADD)) {
@@ -1861,16 +1884,28 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                                     selectNotes(tick, tick, mouseDownPitch, mouseDownPitch, NoteSelectType::REPLACE);
                                     }
 
-                              //QRect bounds = boundingRect(pi->note, false);
-                              QRect bounds = pi->boundingRect();
-                              if (_mouseDownPos.x() <= bounds.x() + _dragNoteLengthMargin) {
-                                    _dragStyle = DragStyle::NOTE_LENGTH_START;
-                                    }
-                              else if (_mouseDownPos.x() >= bounds.x() + bounds.width() - _dragNoteLengthMargin) {
-                                    _dragStyle = DragStyle::NOTE_LENGTH_END;
+                              QRect bounds = boundingRect(pi->note(), false);
+
+                              if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                                    if (_mouseDownPos.x() <= bounds.left() + _dragNoteLengthMargin)
+                                          _dragStyle = DragStyle::NOTE_LENGTH_START;
+                                    else if (_mouseDownPos.x() >= bounds.right() - _dragNoteLengthMargin)
+                                          _dragStyle = DragStyle::NOTE_LENGTH_END;
+                                    else
+                                          _dragStyle = DragStyle::NOTE_POSITION;
                                     }
                               else {
-                                    _dragStyle = DragStyle::NOTE_POSITION;
+                                    //
+                                    // Vertical time is reversed:
+                                    // top    = note end
+                                    // bottom = note start
+                                    //
+                                    if (_mouseDownPos.y() >= bounds.bottom() - _dragNoteLengthMargin)
+                                          _dragStyle = DragStyle::NOTE_LENGTH_START;
+                                    else if (_mouseDownPos.y() <= bounds.top() + _dragNoteLengthMargin)
+                                          _dragStyle = DragStyle::NOTE_LENGTH_END;
+                                    else
+                                          _dragStyle = DragStyle::NOTE_POSITION;
                                     }
 
                               _dragStartPitch = mouseDownPitch;
@@ -1884,15 +1919,26 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                                     }
 
                               QRect bounds = boundingRect(pi->note(), true);
-                              //QRect bounds = pi->boundingRect();
-                              if (_mouseDownPos.x() <= bounds.x() + _dragNoteLengthMargin) {
-                                    _dragStyle = DragStyle::EVENT_ONTIME;
-                                    }
-                              else if (_mouseDownPos.x() >= bounds.x() + bounds.width() - _dragNoteLengthMargin) {
-                                    _dragStyle = DragStyle::EVENT_LENGTH;
+                              if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                                    if (_mouseDownPos.x() <= bounds.left() + _dragNoteLengthMargin)
+                                          _dragStyle = DragStyle::EVENT_ONTIME;
+                                    else if (_mouseDownPos.x() >= bounds.right() - _dragNoteLengthMargin)
+                                          _dragStyle = DragStyle::EVENT_LENGTH;
+                                    else
+                                          _dragStyle = DragStyle::EVENT_MOVE;
                                     }
                               else {
-                                    _dragStyle = DragStyle::EVENT_MOVE;
+                                    //
+                                    // Vertical:
+                                    // bottom = event on-time
+                                    // top    = event end / length
+                                    //
+                                    if (_mouseDownPos.y() >= bounds.bottom() - _dragNoteLengthMargin)
+                                          _dragStyle = DragStyle::EVENT_ONTIME;
+                                    else if (_mouseDownPos.y() <= bounds.top() + _dragNoteLengthMargin)
+                                          _dragStyle = DragStyle::EVENT_LENGTH;
+                                    else
+                                          _dragStyle = DragStyle::EVENT_MOVE;
                                     }
                               }
                         else if (!pi && _editNoteTool == PianoRollEditTool::SELECT) {
