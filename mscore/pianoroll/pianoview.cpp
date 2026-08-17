@@ -183,6 +183,64 @@ bool PianoItem::intersects(int startTick, int endTick, int highPitch, int lowPit
       }
 
 //---------------------------------------------------------
+//   updatePlaybackHighlights
+//---------------------------------------------------------
+
+void PianoView::updatePlaybackHighlights()
+      {
+      QSet<Note*> markedNotes;
+
+      for (PianoItem* item : _noteList) {
+            Note* note = item->note();
+
+            if (note && note->mark())
+                  markedNotes.insert(note);
+            }
+
+      //
+      // Nothing changed visually.
+      //
+      if (markedNotes == _markedPlaybackNotes)
+            return;
+
+      QRectF dirtyRect;
+
+      //
+      // Notes that were marked before but are not marked now
+      // need repainting to remove their playback highlight.
+      //
+      for (Note* note : _markedPlaybackNotes) {
+            if (markedNotes.contains(note))
+                  continue;
+
+            for (NoteEvent& event : note->playEvents())
+                  dirtyRect |= boundingRect(note, &event, false);
+            }
+
+      //
+      // Newly marked notes need repainting to show their
+      // playback highlight.
+      //
+      for (Note* note : markedNotes) {
+            if (_markedPlaybackNotes.contains(note))
+                  continue;
+
+            for (NoteEvent& event : note->playEvents())
+                  dirtyRect |= boundingRect(note, &event, false);
+            }
+
+      _markedPlaybackNotes = markedNotes;
+
+      if (!dirtyRect.isNull()) {
+            //
+            // Include the note outline in the invalidated region.
+            //
+            dirtyRect.adjust(-3.0, -3.0, 3.0, 3.0);
+            scene()->update(dirtyRect);
+            }
+      }
+
+//---------------------------------------------------------
 //   setScope
 //---------------------------------------------------------
 
@@ -221,6 +279,7 @@ NoteEvent* PianoItem::getTweakNoteEvent()
 
 //---------------------------------------------------------
 //   paintNoteBlock
+//    Defunct?
 //---------------------------------------------------------
 
 void PianoItem::paintNoteBlock(QPainter* painter, NoteEvent* evt)
@@ -307,6 +366,7 @@ void PianoItem::paintNoteBlock(QPainter* painter, NoteEvent* evt)
 
 //---------------------------------------------------------
 //   paint
+//    Defunct?
 //---------------------------------------------------------
 
 void PianoItem::paint(QPainter* painter)
@@ -904,9 +964,14 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
 
       // before setting by default to selected color check the index problem possibly
 
-      if (note->selected())
+      if (note->mark()) {
             noteColor = darkTheme() ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
                                     : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
+            }
+      else if (note->selected()) {
+            noteColor = darkTheme() ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
+                                    : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
+            }
       else if (false && adjust) {
             // _colorTweaks "purple edit" now unused
             noteColor = QColor(0xfd63fc);

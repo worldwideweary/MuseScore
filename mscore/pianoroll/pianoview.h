@@ -18,6 +18,8 @@
 
 #include "libmscore/pos.h"
 
+#include <QSet>
+
 namespace Ms {
 
 class Score;
@@ -100,6 +102,7 @@ public:
       bool darkTheme() { return preferences.effectiveGlobalStyle() == MuseScoreEffectiveStyleType::DARK_FUSION; }
       void ensureSelectionVisible();
       void ensureSelectionPitchVisible();
+      void updatePlaybackHighlights();
 
 private:
       Staff* _staff;
@@ -150,6 +153,8 @@ private:
       float _noteRectRoundedRadius = 3;
 
       int _lastLocatorPixel[3] { -1, -1, -1 };
+
+      QSet<Note*> _markedPlaybackNotes;
 
       virtual void drawBackground(QPainter* painter, const QRectF& rect) override;
       void drawNoteBlock(QPainter* p, PianoItem* block);

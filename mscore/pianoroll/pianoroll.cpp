@@ -1234,6 +1234,8 @@ void PianorollEditor::heartBeat(Seq* s)
       if (locator[0].tick() != tick)
             posChanged(POS::CURRENT, tick);
 
+      pianoView->updatePlaybackHighlights();
+
       //
       // Smooth viewport following is purely visual. It does not
       // replace the authoritative locator/playback position above.
