@@ -478,9 +478,23 @@ void Seq::unmarkNotes()
       markedNotes.clear();
       markedRests.clear();
 
+      _activePitches.clear();
+      PianorollEditor* pre = mscore->getPianorollEditor();
+      if (pre)
+            pre->clearPlaybackPitches();
+
       PianoTools* piano = mscore->pianoTools();
       if (piano && piano->isVisible())
             piano->setPlaybackNotes(markedNotes);
+      }
+
+//---------------------------------------------------------
+//   activePitches
+//---------------------------------------------------------
+
+const QHash<int, ActivePitchInfo>& Seq::activePitches() const
+      {
+      return _activePitches;
       }
 
 //---------------------------------------------------------
@@ -1809,6 +1823,21 @@ void Seq::heartBeatTimeout()
                         break;
             const NPlayEvent& n = guiPos->second;
             const bool playEventHasVelocity = n.velo();
+
+            // for the piano roll editor:
+            if (n.type() == ME_NOTEON) {
+                  ActivePitchInfo& info = _activePitches[n.pitch()];
+
+                  if (playEventHasVelocity) {
+                        ++info.count;
+                        info.note = n.note();
+                        }
+                  else {
+                        if (--info.count <= 0)
+                        _activePitches.remove(n.pitch());
+                        }
+                  }
+
             if (n.type() == ME_CHORD && MScore::highlightRests) {
                   const auto rest = n.rest();
                   if (!rest)

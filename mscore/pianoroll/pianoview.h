@@ -97,9 +97,8 @@ class PianoView : public QGraphicsView {
 public:
       static const BarPattern barPatterns[];
       void setScope(PianoRollScope scope);
-      void setColoring(Coloring);
-      PianoRollScope getScope() { return _scope; }
-      bool darkTheme() { return preferences.effectiveGlobalStyle() == MuseScoreEffectiveStyleType::DARK_FUSION; }
+      void setColoring(Coloring c);
+      PianoRollScope getScope() { return _scope; }      
       void ensureSelectionVisible();
       void ensureSelectionPitchVisible();
       void updatePlaybackHighlights();

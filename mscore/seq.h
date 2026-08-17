@@ -97,6 +97,11 @@ enum class Transport : char {
       NET_STARTING=4
       };
 
+struct ActivePitchInfo {
+      int count { 0 };
+      const Note* note { nullptr };
+      };
+
 //---------------------------------------------------------
 //   Seq
 //    sequencer
@@ -155,6 +160,7 @@ class Seq : public QObject, public Sequencer {
 
       QList<const Note*> markedNotes;     // notes marked as sounding
       QList<const Rest*> markedRests;     // rests marked as "resting"
+      QHash<int, ActivePitchInfo> _activePitches;
 
       uint tackRemain;        // metronome state (remaining audio samples)
       uint tickRemain;
@@ -243,6 +249,9 @@ class Seq : public QObject, public Sequencer {
       void nextRehearsalMark(bool next=true);
       void prevMeasure();
       void prevChord();
+
+      const QHash<int, ActivePitchInfo>& activePitches() const;
+      // bool isPitchActive(int pitch) const; maybe do for activePitches
 
       void collectEvents(int utick, bool viaUserNavigation=false);
       void ensureBufferAsync(int utick);

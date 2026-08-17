@@ -943,9 +943,25 @@ void PianorollEditor::setScope(PianoRollScope scope)
 
 void PianorollEditor::setColoring(Coloring c)
       {
+      if (_coloring == c)
+            return;
+
       _coloring = c;
+
       pianoView->setColoring(c);
-      // Maybe pianoLevels should have coloring scheme set also?
+      pianoKbd->setColoring(c);
+
+      update();
+      }
+
+//---------------------------------------------------------
+//   clearPlaybackPitches
+//---------------------------------------------------------
+
+void PianorollEditor::clearPlaybackPitches()
+      {
+      if (pianoKbd)
+            pianoKbd->setPlaybackNotes(QHash<int, const Note*>());
       }
 
 //---------------------------------------------------------
@@ -1233,6 +1249,15 @@ void PianorollEditor::heartBeat(Seq* s)
       //
       if (locator[0].tick() != tick)
             posChanged(POS::CURRENT, tick);
+
+
+      QHash<int, const Note*> playbackNotes;
+      const auto& active = s->activePitches();
+      for (auto it = active.constBegin(); it != active.constEnd(); ++it) {
+            if (it.value().count > 0 && it.value().note)
+                  playbackNotes.insert(it.key(), it.value().note);
+            }
+      pianoKbd->setPlaybackNotes(playbackNotes);
 
       pianoView->updatePlaybackHighlights();
 

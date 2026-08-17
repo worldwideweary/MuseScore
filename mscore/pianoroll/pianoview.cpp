@@ -10,7 +10,6 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
-
 #include "musescore.h"
 #include "pianokeyboard.h"
 #include "pianoruler.h"
@@ -32,6 +31,7 @@
 #include "libmscore/tuplet.h"
 #include "libmscore/undo.h"
 #include "libmscore/utils.h"
+
 
 namespace Ms {
 
@@ -69,6 +69,135 @@ const BarPattern PianoView::barPatterns[] = {
       {"",              {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
 
+
+// //---------------------------------------------------------
+// //   getPianoRollNoteColor
+// //---------------------------------------------------------
+
+// QColor PianoView::getPianoRollNoteColor(Note* note, bool highlight) const
+//       {
+//       if (highlight) {
+//             if (note->mark()) {
+//                   return darkTheme()
+//                         ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
+//                         : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
+//                   }
+//             else if (note->selected()) {
+//                   return darkTheme()
+//                         ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
+//                         : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
+//                   }
+//             }
+//       else if (false && (_editNoteTool == PianoRollEditTool::EVENT_ADJUST)) {
+//             // _colorTweaks "purple edit" now unused to allow playback to show actual durations without
+//             // any purple notes
+//             return QColor(0xfd63fc);
+//             }
+//       else if (_coloring == Coloring::VOICING) {
+//             const int v = note->voice();
+//             if (v >= 0 && v <= 3)
+//                   return MScore::selectColor[v];
+//             }
+//       else if (_coloring == Coloring::STAFF) {
+//             bool even = false;
+//             Staff* const staff = note->staff();
+//             if (staff && staff->part()) {
+//                   const QList<Staff*>* staves = staff->part()->staves();
+//                   int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
+//                   even = (staffPos % 2 == 0);
+//                   }
+//             if (darkTheme())
+//                   return even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
+//                               : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
+//             else
+//                   return even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
+//                               : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
+//             }
+//       else {
+//             // Check idx of VOICE/STAFF in UI to fix if this hits
+//             static bool beenHere = false;
+//             if (!beenHere) {
+//                   qDebug() << "HIT NONE COLOR";
+//                   beenHere = true;
+//                   }
+//             return MScore::defaultColor;
+//             }
+//       }
+
+
+
+//---------------------------------------------------------
+//   pianoRollNoteColor
+//---------------------------------------------------------
+
+QColor pianoRollNoteColor(const Note* note,
+                          Coloring coloring,
+                          bool honorSelection)
+      {
+      if (!note)
+            return QColor();
+
+      if (honorSelection) {
+            if (note->selected()) {
+                  return darkTheme()
+                        ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
+                        : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
+                  }
+            else if (note->mark()) {
+                  // Duplicated for now, but may get visual difference so keeping branched
+                  return darkTheme()
+                        ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
+                        : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
+                  }
+            }
+
+      if (coloring == Coloring::VOICING) {
+            const int voice = note->voice();
+
+            if (voice >= 0 && voice < VOICES)
+                  return MScore::selectColor[voice];
+            }
+
+      if (coloring == Coloring::STAFF) {
+            bool even = false;
+
+            Staff* staff = note->staff();
+            if (staff && staff->part()) {
+                  const QList<Staff*>* staves = staff->part()->staves();
+                  const int staffPos =
+                        staves ? staves->indexOf(staff) + 1 : -1;
+
+                  even = staffPos > 0 && staffPos % 2 == 0;
+                  }
+
+            if (darkTheme()) {
+                  return even
+                        ? preferences.getColor(
+                              PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
+                        : preferences.getColor(
+                              PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
+                  }
+            else {
+                  return even
+                        ? preferences.getColor(
+                              PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
+                        : preferences.getColor(
+                              PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
+                  }
+            }
+
+      return MScore::defaultColor;
+      }
+
+//---------------------------------------------------------
+//   darkTheme
+//---------------------------------------------------------
+
+bool darkTheme()
+      {
+      return preferences.effectiveGlobalStyle() == MuseScoreEffectiveStyleType::DARK_FUSION;
+      }
+
 //---------------------------------------------------------
 //   PianoItem
 //---------------------------------------------------------
@@ -77,7 +206,6 @@ PianoItem::PianoItem(Note* n, PianoView* pianoView)
       : _note(n), _pianoView(pianoView)
       {
       }
-
 
 //---------------------------------------------------------
 //   boundingRectTicks
@@ -190,9 +318,9 @@ void PianoView::updatePlaybackHighlights()
       {
       QSet<Note*> markedNotes;
 
+      // ScoreElements only:
       for (PianoItem* item : _noteList) {
             Note* note = item->note();
-
             if (note && note->mark())
                   markedNotes.insert(note);
             }
@@ -945,7 +1073,6 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
             }
       }
 
-
 //---------------------------------------------------------
 //   drawNoteBlock
 //---------------------------------------------------------
@@ -957,55 +1084,7 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
             return;
             }
 
-      const bool adjust = (_editNoteTool == PianoRollEditTool::EVENT_ADJUST);
-      const int v = note->voice();
-      QColor noteColor;
-
-
-      // before setting by default to selected color check the index problem possibly
-
-      if (note->mark()) {
-            noteColor = darkTheme() ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
-                                    : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
-            }
-      else if (note->selected()) {
-            noteColor = darkTheme() ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
-                                    : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
-            }
-      else if (false && adjust) {
-            // _colorTweaks "purple edit" now unused
-            noteColor = QColor(0xfd63fc);
-            }
-      else if (_coloring == Coloring::VOICING) {
-                 if (v==0) noteColor = MScore::selectColor[0];
-            else if (v==1) noteColor = MScore::selectColor[1];
-            else if (v==2) noteColor = MScore::selectColor[2];
-            else if (v==3) noteColor = MScore::selectColor[3];
-            else qDebug() << "Voicing" << v;
-            }
-      else if (_coloring == Coloring::STAFF) {
-            // Check if relative staff of part is odd/even for color differentiation:
-            bool even = false;
-            Staff* const staff = block->note()->staff();
-            if (staff && staff->part()) {
-                  const QList<Staff*>* staves = staff->part()->staves();
-                  int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
-                  even = (staffPos % 2 == 0);
-                  }
-            else qDebug() << "Staff: with no staff";
-
-            if (darkTheme())
-                  noteColor = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
-                                   : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
-            else
-                  noteColor = even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
-                                   : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
-            }
-      else {
-            static bool beenHere = false;
-            if (!beenHere) qDebug() << "HIT NONE color";
-            beenHere = true;
-            }
+      QColor noteColor = pianoRollNoteColor(note, _coloring, true);
 
       const qreal outlineSize = 2;
       p->setBrush(noteColor);
