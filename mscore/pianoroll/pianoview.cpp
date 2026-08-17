@@ -1785,6 +1785,10 @@ void PianoView::wheelEvent(QWheelEvent* event)
 #endif
 
       if (event->modifiers() == 0) {
+
+            if (_playbackActive)
+                  return;
+
             // Vertical scroll
             QGraphicsView::wheelEvent(event);
             }
@@ -1909,7 +1913,11 @@ void PianoView::keyReleaseEvent(QKeyEvent* event) {
 void PianoView::mousePressEvent(QMouseEvent* event)
       {
       bool rightBn = event->button() == Qt::RightButton;
+
       if (!rightBn) {
+            if (_playbackActive)
+                  return;
+
             _mouseDown = true;
             _mouseDownScreenPos = event->pos();
             _mouseDownPos = mapToScene(event->pos());
@@ -1924,6 +1932,12 @@ void PianoView::mousePressEvent(QMouseEvent* event)
 
 void PianoView::mouseReleaseEvent(QMouseEvent* event)
       {
+      if (_playbackActive) {
+            _mouseDown = false;
+            _dragStarted = false;
+            return;
+            }
+
       if (_dragStyle == DragStyle::CANCELLED) {
             _dragStyle = DragStyle::NONE;
             _mouseDown = false;
@@ -2197,6 +2211,9 @@ void PianoView::updateCursor()
 
 void PianoView::mouseMoveEvent(QMouseEvent* event)
       {
+      if (_playbackActive)
+            return;
+
       if (_dragStyle == DragStyle::CANCELLED)
             return;
 

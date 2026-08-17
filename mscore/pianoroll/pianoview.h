@@ -107,6 +107,8 @@ private:
       Staff* _staff;
       Chord* _chord;
 
+      bool _playbackActive { false };
+
       VerticalPitchLayout _verticalPitchLayout;
       PianoRollScope _scope;
       Coloring _coloring;
@@ -256,6 +258,8 @@ private:
       void setEditNoteVoice(int voice) { _editNoteVoice = voice; }
       void setEditNoteDots(int dot) { _editNoteDots = dot; }
       void setEditNoteTool(PianoRollEditTool tool) { _editNoteTool = tool; updateNotes();  }
+
+      void setPlaybackActive(bool active) { _playbackActive = active; }
 
 // TODO: Any of these that can be private should be private:
 

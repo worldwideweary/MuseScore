@@ -962,6 +962,9 @@ void PianorollEditor::clearPlaybackPitches()
       {
       if (pianoKbd)
             pianoKbd->setPlaybackNotes(QHash<int, const Note*>());
+
+      if (pianoView)
+            pianoView->setPlaybackActive(false);
       }
 
 //---------------------------------------------------------
@@ -1242,6 +1245,8 @@ void PianorollEditor::heartBeat(Seq* s)
 
       if (score()->masterScore())
             tick = score()->masterScore()->repeatList().utick2tick(tick);
+
+      pianoView->setPlaybackActive(s->isPlaying());
 
       //
       // Keep the authoritative PRE playback position synchronized
