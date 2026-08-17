@@ -1279,10 +1279,24 @@ void PianorollEditor::heartBeat(Seq* s)
             + visualElapsed * _playbackFollowTicksPerSecond;
 
       //
-      // A backwards tick means playback has jumped: rewind,
-      // repeat boundary, seek to an earlier position, etc.
+      // Detect playback discontinuities.
       //
-      if (tick < _playbackFollowLastSampleTick) {
+      // Backward movement is always a discontinuity.  For forward
+      // movement, compare the authoritative sequencer position with
+      // the position predicted by the smooth visual clock.  Ordinary
+      // playback stays close to that prediction; seeks do not.
+      //
+      const qreal seekThreshold =
+            qMax<qreal>(DIVISION / 8.0,
+                        _playbackFollowTicksPerSecond * 0.10);
+
+      const bool backwardJump =
+            tick < _playbackFollowLastSampleTick;
+
+      const bool forwardJump =
+            qreal(tick) - predictedTick > seekThreshold;
+
+      if (backwardJump || forwardJump) {
             _playbackFollowBaseTick = qreal(tick);
             _playbackFollowLastSampleTick = tick;
             _playbackFollowTicksPerSecond = newTicksPerSecond;
