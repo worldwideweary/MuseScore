@@ -21,6 +21,8 @@
 #define __PIANO_RULER_H__
 
 #include "libmscore/pos.h"
+#include "pianoroll/pianorolledittool.h"
+#include "pianoroll/pianoview.h"
 
 namespace Ms {
 
@@ -36,6 +38,8 @@ static const int MAP_OFFSET = 480;
 class PianoRuler : public QWidget {
       Q_OBJECT
 
+      PianoView* _pianoView { nullptr };
+
       Score* _score;
       Pos _cursor;
       Pos* _locator;
@@ -45,14 +49,19 @@ class PianoRuler : public QWidget {
       TType _timeType;
       QFont _font1, _font2;
 
+      PianoRollOrientation _orientation { PianoRollOrientation::HORIZONTAL };
+
       static QPixmap* markIcon[3];
 
       virtual void paintEvent(QPaintEvent*);
       virtual void mousePressEvent(QMouseEvent*);
-      virtual void mouseMoveEvent(QMouseEvent* event);
+      virtual void mouseMoveEvent(QMouseEvent*);
       virtual void leaveEvent(QEvent*);
 
-      Pos pix2pos(int x) const;
+      void paintHorizontal(QPaintEvent*);
+      void paintVertical(QPaintEvent*);
+
+      Pos pix2pos(int) const;
       int pos2pix(const Pos& p) const;
       void moveLocator(QMouseEvent*);
 
@@ -70,6 +79,9 @@ class PianoRuler : public QWidget {
       void setScore(Score*, Pos* locator);
       int xpos() const { return _xpos; }
       qreal xZoom() const { return _xZoom; }
+
+      void setOrientation(PianoRollOrientation);
+      void setPianoView(PianoView*);
       };
 
 
