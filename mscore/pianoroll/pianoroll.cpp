@@ -1419,8 +1419,25 @@ void PianorollEditor::heartBeat(Seq* s)
 
 void PianorollEditor::moveLocator(int i, const Pos& p)
       {
-      if (locator[i].valid())
-            score()->setPos(POS(i), Fraction::fromTicks(p.tick()));
+      if (!locator[i].valid())
+            return;
+
+      const int tick = p.tick();
+
+      //
+      // Locator 0 is the current playback position.
+      // During playback, use the sequencer's real seek path rather
+      // than merely moving the score locator.
+      //
+      if (i == 0 && seq && seq->isPlaying()) {
+            const int uTick =
+                  score()->repeatList().tick2utick(tick);
+
+            seq->seek(uTick, true);
+            return;
+            }
+
+      score()->setPos(POS(i), Fraction::fromTicks(tick));
       }
 
 //---------------------------------------------------------
