@@ -1365,12 +1365,55 @@ int PianoView::tickToPixelY(int tick) const
       }
 
 //---------------------------------------------------------
+//   pixelXtoPitch
+//---------------------------------------------------------
+
+int PianoView::pixelXToPitch(int pixX) const
+      {
+      if (_verticalPitchLayout == VerticalPitchLayout::KEYBOARD_ALIGNED) {
+            for (int pitch = 0; pitch < 128; ++pitch) {
+                  const QRectF lane = keyboardAlignedPitchLane(pitch);
+
+                  if (lane.width() <= 0.0)
+                        continue;
+
+                  if (pixX >= lane.left() && pixX < lane.right())
+                        return pitch;
+                  }
+
+            if (pixX < keyboardAlignedPitchLane(0).left())
+                  return 0;
+
+            return 127;
+            }
+
+      return qBound(
+            0,
+            int(floor(pixX / qreal(_noteHeight))),
+            127);
+      }
+
+//---------------------------------------------------------
 //   pixelYtoPitch
 //---------------------------------------------------------
 
 int PianoView::pixelYToPitch(int pixY) const
       {
       return (int)floor(128 - pixY / (qreal)_noteHeight);
+      }
+
+//---------------------------------------------------------
+//   pitchToPixelX
+//---------------------------------------------------------
+
+int PianoView::pitchToPixelX(int pitch) const
+      {
+      pitch = qBound(0, pitch, 127);
+
+      if (_verticalPitchLayout == VerticalPitchLayout::KEYBOARD_ALIGNED)
+            return qRound(keyboardAlignedPitchLane(pitch).left());
+
+      return pitch * _noteHeight;
       }
 
 //---------------------------------------------------------
@@ -1518,6 +1561,54 @@ void PianoView::positionViewportAtTick(int tick)
             //
             verticalScrollBar()->setValue(
                   qMax(0, y - viewport()->height()));
+            }
+      }
+
+//---------------------------------------------------------
+//   viewportReferencePitch
+//---------------------------------------------------------
+
+int PianoView::viewportReferencePitch() const
+      {
+      const QPointF center =
+            mapToScene(viewport()->rect().center());
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL)
+            return pixelYToPitch(qRound(center.y()));
+
+      return pixelXToPitch(qRound(center.x()));
+      }
+
+//---------------------------------------------------------
+//   positionViewportAtPitch
+//---------------------------------------------------------
+
+void PianoView::positionViewportAtPitch(int pitch)
+      {
+      pitch = qBound(0, pitch, 127);
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            const qreal y =
+                  pitchToPixelY(pitch)
+                  - _noteHeight / 2.0;
+
+            verticalScrollBar()->setValue(
+                  qRound(y - viewport()->height() / 2.0));
+            }
+      else {
+            qreal x;
+
+            if (_verticalPitchLayout
+                  == VerticalPitchLayout::KEYBOARD_ALIGNED) {
+                  x = keyboardAlignedPitchLane(pitch).center().x();
+                  }
+            else {
+                  x = pitchToPixelX(pitch)
+                        + _noteHeight / 2.0;
+                  }
+
+            horizontalScrollBar()->setValue(
+                  qRound(x - viewport()->width() / 2.0));
             }
       }
 

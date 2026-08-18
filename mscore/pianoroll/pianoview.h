@@ -267,11 +267,17 @@ private:
 
 // TODO: Any of these that can be private should be private:
 
+      qreal tickToPixelXF(qreal tick) const; // TODO: probably erase this
+
       int pixelXToTick(int pixX) const;
       int tickToPixelX(int tick) const;
-      qreal tickToPixelXF(qreal tick) const;
+
       int pixelYToTick(int y) const;
       int tickToPixelY(int tick) const;
+
+      int pixelXToPitch(int pixX) const;
+      int pitchToPixelX(int pitch) const;
+
       int pixelYToPitch(int pixY) const;
       int pitchToPixelY(int pitch) const;
 
@@ -283,6 +289,8 @@ private:
 
       int viewportReferenceTick() const;
       void positionViewportAtTick(int tick);
+      int viewportReferencePitch() const;
+      void positionViewportAtPitch(int pitch);
 
       QRectF keyboardAlignedPitchLane(int midiPitch) const;
 

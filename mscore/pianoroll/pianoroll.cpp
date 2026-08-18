@@ -916,11 +916,49 @@ void PianorollEditor::setOrientation(PianoRollOrientation orientation)
 
       const int referenceTick = pianoView->viewportReferenceTick();
 
+      //
+      // Remember the pitch viewport belonging to the orientation
+      // we are leaving.
+      //
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            _horizontalPitchScrollPos =
+                  pianoView->verticalScrollBar()->value();
+
+            _horizontalPitchScrollValid = true;
+            }
+      else {
+            _verticalPitchScrollPos =
+                  pianoView->horizontalScrollBar()->value();
+
+            _verticalPitchScrollValid = true;
+            }
+
       _orientation = orientation;
       updateOrientationLayout();
 
+      //
+      // Time remains a shared musical reference between orientations.
+      //
+
       pianoView->positionViewportAtTick(referenceTick);
-      pianoView->ensureSelectionPitchVisible();
+
+      //
+      // Pitch viewport belongs independently to each orientation.
+      //
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            if (_horizontalPitchScrollValid) {
+                  pianoView->verticalScrollBar()->setValue(
+                        _horizontalPitchScrollPos);
+                  }
+            }
+      else {
+            if (_verticalPitchScrollValid) {
+                  pianoView->horizontalScrollBar()->setValue(
+                        _verticalPitchScrollPos);
+                  }
+            }
       }
 
 //---------------------------------------------------------

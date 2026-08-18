@@ -85,6 +85,11 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       qreal _playbackFollowTicksPerSecond { 0.0 };
       bool _playbackFollowVelocityValid { false };
 
+      int _horizontalPitchScrollPos { 0 };
+      int _verticalPitchScrollPos { 0 };
+      bool _horizontalPitchScrollValid { false };
+      bool _verticalPitchScrollValid { false };
+
       bool updateScheduled = false;
       NoteTweakerDialog* noteTweakerDlg;
 
