@@ -1166,8 +1166,7 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
             }
       }
 
-
-QRect PianoView::boundingRect(Note* note, bool applyEvents)
+QRect PianoView::boundingRect(const Note* note, bool applyEvents)
       {
       if (note->playEvents().size())
             return boundingRect(note, &note->playEvents().first(), applyEvents);
@@ -1175,7 +1174,7 @@ QRect PianoView::boundingRect(Note* note, bool applyEvents)
       }
 
 
-QRect PianoView::boundingRect(Note* note, NoteEvent* evt, bool applyEvents)
+QRect PianoView::boundingRect(const Note* note, const NoteEvent* evt, bool applyEvents)
       {
       Chord* chord = note->chord();
       int pitch = note->pitch() + (evt ? evt->pitch() : 0);
@@ -1283,22 +1282,17 @@ void PianoView::setPlaybackNoteEvents(const QHash<const Note*, QSet<int>>& event
            it != events.constEnd(); ++it)
             notes.insert(it.key());
 
-      for (const Note* constNote : notes) {
-
-            // TODO add const to bounding rect?
-
-            Note* note = const_cast<Note*>(constNote);
+      for (const Note* note : notes) {
             const NoteEventList& playEvents = note->playEvents();
 
-            QSet<int> indices = _playbackNoteEvents.value(constNote);
-            indices.unite(events.value(constNote));
+            QSet<int> indices = _playbackNoteEvents.value(note);
+            indices.unite(events.value(note));
 
             for (int index : indices) {
                   if (index < 0 || index >= playEvents.size())
                         continue;
 
-                  NoteEvent* event =
-                        const_cast<NoteEvent*>(&playEvents[index]);
+                  const NoteEvent* event = &playEvents[index];
 
                   dirtyRect |= boundingRect(
                         note,

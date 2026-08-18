@@ -160,8 +160,8 @@ private:
 
       virtual void drawBackground(QPainter* painter, const QRectF& rect) override;
       void drawNoteBlock(QPainter* p, PianoItem* block);
-      QRect boundingRect(Note* note, bool applyEvents);
-      QRect boundingRect(Note* note, NoteEvent* evt, bool applyEvents);
+      QRect boundingRect(const Note* note, bool applyEvents);
+      QRect boundingRect(const Note* note, const NoteEvent* evt, bool applyEvents);
 
       void addChord(Chord* _chord, int voice);
       QVector<Note*> getSegmentNotes(Segment* seg, int track);
