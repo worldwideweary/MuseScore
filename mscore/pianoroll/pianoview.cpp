@@ -1885,9 +1885,6 @@ void PianoView::wheelEvent(QWheelEvent* event)
 
       if (event->modifiers() == 0) {
 
-            if (_playbackActive)
-                  return;
-
             // Vertical scroll
             QGraphicsView::wheelEvent(event);
             }
