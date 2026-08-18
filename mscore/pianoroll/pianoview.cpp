@@ -363,6 +363,16 @@ void PianoView::updatePlaybackHighlights()
       }
 
 //---------------------------------------------------------
+//    selectionRectAllowed
+//---------------------------------------------------------
+
+bool PianoView::selectionRectAllowed() const
+      {
+      return _editNoteTool == PianoRollEditTool::SELECT
+            || _editNoteTool == PianoRollEditTool::EVENT_ADJUST;
+      }
+
+//---------------------------------------------------------
 //   setScope
 //---------------------------------------------------------
 
@@ -725,7 +735,9 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
                   }
 
             //Draw drag selection box
-            if (_dragStarted && _dragStyle == DragStyle::SELECTION_RECT && _editNoteTool == PianoRollEditTool::SELECT) {
+            if (_dragStarted
+                && _dragStyle == DragStyle::SELECTION_RECT
+                && selectionRectAllowed()) {
                   int minX = qMin(_mouseDownPos.x(), _lastMousePos.x());
                   int minY = qMin(_mouseDownPos.y(), _lastMousePos.y());
                   int maxX = qMax(_mouseDownPos.x(), _lastMousePos.x());
@@ -1050,7 +1062,7 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
 
             if (_dragStarted
                 && _dragStyle == DragStyle::SELECTION_RECT
-                && _editNoteTool == PianoRollEditTool::SELECT) {
+                && selectionRectAllowed()) {
                   int minX = qMin(_mouseDownPos.x(), _lastMousePos.x());
                   int minY = qMin(_mouseDownPos.y(), _lastMousePos.y());
                   int maxX = qMax(_mouseDownPos.x(), _lastMousePos.x());
@@ -2503,7 +2515,7 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                                           _dragStyle = DragStyle::EVENT_MOVE;
                                     }
                               }
-                        else if (!pi && _editNoteTool == PianoRollEditTool::SELECT) {
+                        else if (!pi && selectionRectAllowed()) {
                               _dragStyle = DragStyle::SELECTION_RECT;
                               }
                         else if (!pi && _editNoteTool == PianoRollEditTool::ADD) {
