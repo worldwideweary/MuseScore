@@ -103,6 +103,8 @@ public:
       void ensureSelectionPitchVisible();
       void updatePlaybackHighlights();
 
+      bool selectionRectAllowed() const;
+
 private:
       Staff* _staff;
       Chord* _chord;
