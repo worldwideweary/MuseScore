@@ -963,8 +963,10 @@ void PianorollEditor::clearPlaybackPitches()
       if (pianoKbd)
             pianoKbd->setPlaybackNotes(QHash<int, const Note*>());
 
-      if (pianoView)
+      if (pianoView) {
             pianoView->setPlaybackActive(false);
+            pianoView->clearPlaybackNoteEvents();
+            }
       }
 
 //---------------------------------------------------------
@@ -1263,6 +1265,16 @@ void PianorollEditor::heartBeat(Seq* s)
                   playbackNotes.insert(it.key(), it.value().note);
             }
       pianoKbd->setPlaybackNotes(playbackNotes);
+
+
+      QHash<const Note*, QSet<int>> playbackNoteEvents;
+      const auto& activeNoteEvents = s->activeNoteEvents();
+      for (const ActiveNoteEventInfo& info : activeNoteEvents) {
+            if (info.note && info.noteEventIndex >= 0)
+                  playbackNoteEvents[info.note].insert(info.noteEventIndex);
+            }
+      pianoView->setPlaybackNoteEvents(playbackNoteEvents);
+
 
       pianoView->updatePlaybackHighlights();
 

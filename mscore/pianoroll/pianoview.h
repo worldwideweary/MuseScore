@@ -156,6 +156,7 @@ private:
       int _lastLocatorPixel[3] { -1, -1, -1 };
 
       QSet<Note*> _markedPlaybackNotes;
+      QHash<const Note*, QSet<int>> _playbackNoteEvents;
 
       virtual void drawBackground(QPainter* painter, const QRectF& rect) override;
       void drawNoteBlock(QPainter* p, PianoItem* block);
@@ -260,6 +261,9 @@ private:
       void setEditNoteTool(PianoRollEditTool tool) { _editNoteTool = tool; updateNotes();  }
 
       void setPlaybackActive(bool active) { _playbackActive = active; }
+
+      void setPlaybackNoteEvents(const QHash<const Note*, QSet<int>>& events);
+      void clearPlaybackNoteEvents();
 
 // TODO: Any of these that can be private should be private:
 

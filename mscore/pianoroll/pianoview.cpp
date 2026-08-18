@@ -143,12 +143,6 @@ QColor pianoRollNoteColor(const Note* note,
                         ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
                         : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
                   }
-            else if (note->mark()) {
-                  // Duplicated for now, but may get visual difference so keeping branched
-                  return darkTheme()
-                        ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
-                        : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
-                  }
             }
 
       if (coloring == Coloring::VOICING) {
@@ -1084,31 +1078,74 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
             return;
             }
 
-      QColor noteColor = pianoRollNoteColor(note, _coloring, true);
-
       const qreal outlineSize = 2;
-      p->setBrush(noteColor);
-      p->setPen(QPen(noteColor.darker(250), outlineSize));
 
-      for (NoteEvent& e : note->playEvents()) {
-            QRect bounds = boundingRect(note, &e, _editNoteTool == PianoRollEditTool::EVENT_ADJUST);
-            p->drawRoundedRect(bounds, _noteRectRoundedRadius, _noteRectRoundedRadius);
+      NoteEventList& playEvents = note->playEvents();
 
-            //Pitch name
+      for (int index = 0; index < playEvents.size(); ++index) {
+            NoteEvent& e = playEvents[index];
+
+            const bool playing =
+                  _playbackNoteEvents.value(note).contains(index);
+
+            QColor noteColor;
+
+            if (playing) {
+                  noteColor = darkTheme()
+                        ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
+                        : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
+                  }
+            else {
+                  noteColor = pianoRollNoteColor(note, _coloring, true);
+                  }
+
+            p->setBrush(noteColor);
+            p->setPen(QPen(noteColor.darker(250), outlineSize));
+
+            QRect bounds =
+                  boundingRect(
+                        note,
+                        &e,
+                        _editNoteTool == PianoRollEditTool::EVENT_ADJUST);
+
+            p->drawRoundedRect(
+                  bounds,
+                  _noteRectRoundedRadius,
+                  _noteRectRoundedRadius);
+
+            //
+            // Existing pitch-name drawing stays here,
+            // still using this event's noteColor.
+            //
             if (bounds.width() >= 20 && bounds.height() >= 12) {
-                  QRectF textRect(bounds.x() + 2, bounds.y(), bounds.width() - 6, bounds.height() + 1);
-                  QRectF textHiliteRect(bounds.x() + 3, bounds.y() + 1, bounds.width() - 6, bounds.height());
+                  QRectF textRect(
+                        bounds.x() + 2,
+                        bounds.y(),
+                        bounds.width() - 6,
+                        bounds.height() + 1);
+
+                  QRectF textHiliteRect(
+                        bounds.x() + 3,
+                        bounds.y() + 1,
+                        bounds.width() - 6,
+                        bounds.height());
 
                   QFont f("FreeSans", 8);
                   p->setFont(f);
 
-                  //Note name
                   QString name = note->tpcUserName();
+
                   p->setPen(QPen(noteColor.lighter(130)));
-                  p->drawText(textHiliteRect, Qt::AlignLeft | Qt::AlignTop, name);
+                  p->drawText(
+                        textHiliteRect,
+                        Qt::AlignLeft | Qt::AlignTop,
+                        name);
 
                   p->setPen(QPen(noteColor.darker(180)));
-                  p->drawText(textRect, Qt::AlignLeft | Qt::AlignTop, name);
+                  p->drawText(
+                        textRect,
+                        Qt::AlignLeft | Qt::AlignTop,
+                        name);
                   }
             }
 
@@ -1217,6 +1254,74 @@ QRect PianoView::boundingRect(Note* note, NoteEvent* evt, bool applyEvents)
 void PianoView::moveLocator(int /*i*/)
       {
       scene()->update();
+      }
+
+//---------------------------------------------------------
+//   setPlaybackNoteEvents
+//---------------------------------------------------------
+
+void PianoView::setPlaybackNoteEvents(const QHash<const Note*, QSet<int>>& events)
+      {
+      if (_playbackNoteEvents == events)
+            return;
+
+      QRectF dirtyRect;
+
+      //
+      // Repaint both the previously-active and newly-active
+      // NoteEvents.  This removes old highlights and paints
+      // the new ones without invalidating the whole scene.
+      //
+
+      QSet<const Note*> notes;
+
+      for (auto it = _playbackNoteEvents.constBegin();
+           it != _playbackNoteEvents.constEnd(); ++it)
+            notes.insert(it.key());
+
+      for (auto it = events.constBegin();
+           it != events.constEnd(); ++it)
+            notes.insert(it.key());
+
+      for (const Note* constNote : notes) {
+
+            // TODO add const to bounding rect?
+
+            Note* note = const_cast<Note*>(constNote);
+            const NoteEventList& playEvents = note->playEvents();
+
+            QSet<int> indices = _playbackNoteEvents.value(constNote);
+            indices.unite(events.value(constNote));
+
+            for (int index : indices) {
+                  if (index < 0 || index >= playEvents.size())
+                        continue;
+
+                  NoteEvent* event =
+                        const_cast<NoteEvent*>(&playEvents[index]);
+
+                  dirtyRect |= boundingRect(
+                        note,
+                        event,
+                        _editNoteTool == PianoRollEditTool::EVENT_ADJUST);
+                  }
+            }
+
+      _playbackNoteEvents = events;
+
+      if (!dirtyRect.isNull()) {
+            dirtyRect.adjust(-3.0, -3.0, 3.0, 3.0);
+            scene()->update(dirtyRect);
+            }
+      }
+
+//---------------------------------------------------------
+//   clearPlaybackNoteEvents
+//---------------------------------------------------------
+
+void PianoView::clearPlaybackNoteEvents()
+      {
+      setPlaybackNoteEvents(QHash<const Note*, QSet<int>>());
       }
 
 
