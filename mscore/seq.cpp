@@ -1851,7 +1851,7 @@ void Seq::heartBeatTimeout()
             // Piano Roll Editor:
             if (n.type() == ME_NOTEON && n.note() && n.noteEventIndex() >= 0) {
                   ActiveNoteEventInfo info;
-                  info.note = n.note();
+                  info.owner = n.noteEventOwner();
                   info.noteEventIndex = n.noteEventIndex();
 
                   if (playEventHasVelocity) {

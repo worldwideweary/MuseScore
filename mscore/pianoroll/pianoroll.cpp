@@ -1270,8 +1270,8 @@ void PianorollEditor::heartBeat(Seq* s)
       QHash<const Note*, QSet<int>> playbackNoteEvents;
       const auto& activeNoteEvents = s->activeNoteEvents();
       for (const ActiveNoteEventInfo& info : activeNoteEvents) {
-            if (info.note && info.noteEventIndex >= 0)
-                  playbackNoteEvents[info.note].insert(info.noteEventIndex);
+            if (info.owner && info.noteEventIndex >= 0)
+                  playbackNoteEvents[info.owner].insert(info.noteEventIndex);
             }
       pianoView->setPlaybackNoteEvents(playbackNoteEvents);
 

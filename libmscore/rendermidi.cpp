@@ -251,7 +251,8 @@ bool isGlissandoFor(const Note* note) {
 //---------------------------------------------------------
 
 static void playNote(EventMap* events,
-                     const Note* note,
+                     const Note* note, // score Note represented by the NPlayEvent
+                     const Note* noteEventOwner, // Note whose playEvents() contains noteEventIndex
                      int noteEventIndex,
                      int channel,
                      int pitch,
@@ -267,6 +268,7 @@ static void playNote(EventMap* events,
       ev.setOriginatingStaff(staffIdx);
       ev.setTuning(note->tuning());
       ev.setNote(note);
+      ev.setNoteEventOwner(noteEventOwner);
       ev.setNoteEventIndex(noteEventIndex);
       if (offTime < onTime)
             offTime = onTime;
@@ -439,6 +441,7 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
 
             playNote(events,
                      eventNote,
+                     note,
                      i,
                      channel,
                      p,

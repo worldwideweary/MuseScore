@@ -103,12 +103,12 @@ struct ActivePitchInfo {
       };
 
 struct ActiveNoteEventInfo {
-      const Note* note { nullptr };
+      const Note* owner { nullptr };
       int noteEventIndex { -1 };
 
       bool operator==(const ActiveNoteEventInfo& other) const
             {
-            return note == other.note
+            return owner == other.owner
                   && noteEventIndex == other.noteEventIndex;
             }
       };
