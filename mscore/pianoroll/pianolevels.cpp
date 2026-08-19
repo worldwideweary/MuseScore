@@ -69,6 +69,27 @@ PianoLevels::~PianoLevels()
       }
 
 //---------------------------------------------------------
+//   setPianoView
+//---------------------------------------------------------
+
+void PianoLevels::setPianoView(PianoView* v)
+      {
+      _pianoView = v;
+      }
+
+//---------------------------------------------------------
+//   setOrientation
+//---------------------------------------------------------
+
+void PianoLevels::setOrientation(PianoRollOrientation o)
+      {
+      if (_orientation == o)
+            return;
+      _orientation = o;
+      update();
+      }
+
+//---------------------------------------------------------
 //   setScore
 //---------------------------------------------------------
 
@@ -160,8 +181,23 @@ void PianoLevels::paintEvent(QPaintEvent* e)
       if (!_score)
             return;
 
-      Pos pos1(_score->tempomap(), _score->sigmap(), qMax(pixelXToTick(r.x()), 0), TType::TICKS);
-      Pos pos2(_score->tempomap(), _score->sigmap(), qMax(pixelXToTick(r.x() + r.width()), 0), TType::TICKS);
+      const int timeStart = _orientation == PianoRollOrientation::HORIZONTAL
+            ? r.x()
+            : r.y();
+
+      const int timeEnd = _orientation == PianoRollOrientation::HORIZONTAL
+            ? r.x() + r.width()
+            : r.y() + r.height();
+
+      Pos pos1(_score->tempomap(),
+               _score->sigmap(),
+               qMax(pixelToTick(timeStart), 0),
+               TType::TICKS);
+
+      Pos pos2(_score->tempomap(),
+               _score->sigmap(),
+               qMax(pixelToTick(timeEnd), 0),
+               TType::TICKS);
 
       //draw vert lines
       int bar1, bar2, beat, tick;
@@ -190,8 +226,8 @@ void PianoLevels::paintEvent(QPaintEvent* e)
             int z = sig.timesig().numerator();
             for (int beat1 = 0; beat1 < z; beat1 += beatSkip) {
                   Pos beatPos(_score->tempomap(), _score->sigmap(), bar, beat1, 0);
-                  double xp = tickToPixelX(beatPos.time(TType::TICKS));
-                  if (xp < 0)
+                  int tp = tickToPixel(beatPos.time(TType::TICKS));
+                  if (tp < 0)
                         continue;
 
                   if (beat1 == 0) {
@@ -201,16 +237,23 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                         p.setPen(penLineMinor);
                         }
 
-                  p.drawLine(xp, 0, xp, height());
+                  if (_orientation == PianoRollOrientation::HORIZONTAL)
+                        p.drawLine(tp, 0, tp, height());
+                  else
+                        p.drawLine(0, tp, width(), tp);
 
                   int subbeats = _tuplet * (1 << _subdiv);
 
                   for (int sub = 1; sub < subbeats; ++sub) {
                         Pos subBeatPos(_score->tempomap(), _score->sigmap(), bar, beat1, sub * DIVISION / subbeats);
-                        xp = tickToPixelX(subBeatPos.time(TType::TICKS));
+                        tp = tickToPixel(subBeatPos.time(TType::TICKS));
 
                         p.setPen(penLineSub);
-                        p.drawLine(xp, 0, xp, height());
+
+                        if (_orientation == PianoRollOrientation::HORIZONTAL)
+                              p.drawLine(tp, 0, tp, height());
+                        else
+                              p.drawLine(0, tp, width(), tp);
                         }
                   }
             }
@@ -229,20 +272,30 @@ void PianoLevels::paintEvent(QPaintEvent* e)
       for (int i = minGuide; i <= maxGuide; ++i) {
             p.setPen(i == 0 || i == minGuide || i == maxGuide ? penLineMajor : penLineMinor);
 
-            int y = valToPixelY(i * div);
-            p.drawLine(0, y, width(), y);
+            int vp = valToPixel(i * div);
+
+            if (_orientation == PianoRollOrientation::HORIZONTAL)
+                  p.drawLine(0, vp, width(), vp);
+            else
+                  p.drawLine(vp, 0, vp, height());
 
             //labels
-            QRectF textRect(2, y - 12, width() - 2, 12);
-            p.setPen(QPen(colText));
-            p.drawText(textRect,
-                  Qt::AlignLeft | Qt::AlignBottom, QString::number(i * div));
+            if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                  QRectF textRect(2, vp - 12, width() - 2, 12);
+                  p.setPen(QPen(colText));
+                  p.drawText(textRect,
+                             Qt::AlignLeft | Qt::AlignBottom,
+                             QString::number(i * div));
+                  }
+            else {
+                  // TODO
+                  }
             }
 
 
       //Note lines
       p.setBrush(Qt::NoBrush);
-      int pix0 = valToPixelY(0);
+      int pix0 = valToPixel(0);
 
       for (int i = 0; i < noteList.size(); ++i) {
             Note* note = noteList[i];
@@ -265,33 +318,46 @@ void PianoLevels::paintEvent(QPaintEvent* e)
 
             if (filter->isPerEvent()) {
                   for (NoteEvent& ne : note->playEvents()) {
-                        int x = tickToPixelX(noteStartTick(note, &ne));
+                        int tp = tickToPixel(noteStartTick(note, &ne));
+                        int val = filter->value(_staff, note, &ne);
+                        int vp = valToPixel(val);
 
-                        int val = filter->value(note->staff(), note, &ne);
-                        p.setPen(QPen(note->selected() ? noteSelected : noteDeselected, 2));
-                        int pixY = valToPixelY(val);
-                        p.drawLine(x, pix0, x, pixY);
+                        p.setPen(QPen(note->selected()
+                              ? noteSelected
+                              : noteDeselected, 2));
 
-                        //hbar
-                        p.setPen(QPen(note->selected() ? noteSelected : noteDeselected, 2));
-                        p.drawLine(x, pixY, x + levelLen, pixY);
-                        p.drawEllipse(x - 1, pixY - 1, 3, 3);
+                        if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                              p.drawLine(tp, pix0, tp, vp);
+                              p.drawLine(tp, vp, tp + levelLen, vp);
+                              p.drawEllipse(tp - 1, vp - 1, 3, 3);
+                              }
+                        else {
+                              p.drawLine(pix0, tp, vp, tp);
+                              p.drawLine(vp, tp, vp, tp + levelLen);
+                              p.drawEllipse(vp - 1, tp - 1, 3, 3);
+                              }
                         }
 
                   }
             else {
-                  int x = tickToPixelX(noteStartTick(note, 0));
+                  int tp = tickToPixel(noteStartTick(note, 0));
+                  int val = filter->value(_staff, note, 0);
+                  int vp = valToPixel(val);
 
-                  int val = filter->value(note->staff(), note, 0);
+                  p.setPen(QPen(note->selected()
+                        ? noteSelected
+                        : noteDeselected, 2));
 
-                  p.setPen(QPen(note->selected() ? noteSelected : noteDeselected, 2));
-                  int pixY = valToPixelY(val);
-                  p.drawLine(x, pix0, x, pixY);
-
-                  //hbar
-                  p.setPen(QPen(note->selected() ? noteSelected : noteDeselected, 2));
-                  p.drawLine(x, pixY, x + levelLen, pixY);
-                  p.drawEllipse(x - 1, pixY - 1, 3, 3);
+                  if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                        p.drawLine(tp, pix0, tp, vp);
+                        p.drawLine(tp, vp, tp + levelLen, vp);
+                        p.drawEllipse(tp - 1, vp - 1, 3, 3);
+                        }
+                  else {
+                        p.drawLine(pix0, tp, vp, tp);
+                        p.drawLine(vp, tp, vp, tp + levelLen);
+                        p.drawEllipse(vp - 1, tp - 1, 3, 3);
+                        }
                   }
             }
       }
@@ -394,6 +460,94 @@ void PianoLevels::adjustLevel(Note* note, NoteEvent* noteEvt, int value)
 
       update();
       emit noteLevelsChanged();
+      }
+
+//---------------------------------------------------------
+//   pixelToTick
+//---------------------------------------------------------
+
+int PianoLevels::pixelToTick(int pixel) const
+      {
+      if (_orientation == PianoRollOrientation::HORIZONTAL)
+            return static_cast<int>((pixel + _xpos) / _xZoom) - MAP_OFFSET;
+
+      if (_pianoView) {
+            const QPointF scenePos =
+                  _pianoView->mapToScene(QPoint(0, pixel));
+
+            return _pianoView->pixelYToTick(qRound(scenePos.y()));
+            }
+
+      return 0;
+      }
+
+//---------------------------------------------------------
+//   tickToPixel
+//---------------------------------------------------------
+
+int PianoLevels::tickToPixel(int tick) const
+      {
+      if (_orientation == PianoRollOrientation::HORIZONTAL)
+            return static_cast<int>((tick + MAP_OFFSET) * _xZoom - _xpos);
+
+      if (_pianoView) {
+            const int sceneY = _pianoView->tickToPixelY(tick);
+
+            return _pianoView->mapFromScene(
+                  QPointF(0.0, sceneY)).y();
+            }
+
+      return 0;
+      }
+
+//---------------------------------------------------------
+//   valToPixel
+//---------------------------------------------------------
+
+int PianoLevels::valToPixel(int value) const
+      {
+      PianoLevelsFilter* filter =
+            PianoLevelsFilter::FILTER_LIST[_levelsIndex];
+
+      const int range =
+            filter->maxRange() - filter->minRange();
+
+      const qreal frac =
+            (value - filter->minRange()) / qreal(range);
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL)
+            return static_cast<int>(height() - vMargin * 2)
+                  * (1.0 - frac) + vMargin;
+
+      return static_cast<int>(width() - vMargin * 2)
+            * frac + vMargin;
+      }
+
+//---------------------------------------------------------
+//   pixelToVal
+//---------------------------------------------------------
+
+int PianoLevels::pixelToVal(int pixel) const
+      {
+      PianoLevelsFilter* filter =
+            PianoLevelsFilter::FILTER_LIST[_levelsIndex];
+
+      const int range =
+            filter->maxRange() - filter->minRange();
+
+      qreal frac;
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL)
+            frac = 1.0 -
+                  (pixel - vMargin)
+                  / qreal(height() - vMargin * 2);
+      else
+            frac =
+                  (pixel - vMargin)
+                  / qreal(width() - vMargin * 2);
+
+      return static_cast<int>(
+            frac * range + filter->minRange());
       }
 
 
