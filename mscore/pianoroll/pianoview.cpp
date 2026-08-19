@@ -726,12 +726,19 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
 
             //Draw locators
             for (int i = 0; i < 3; ++i) {
-                  if (_locator[i].valid())
-                        {
-                        p->setPen(QPen(i == 0 ? Qt::red : Qt::blue, 2));
-                        qreal x = tickToPixelX(_locator[i].time(TType::TICKS));
-                        p->drawLine(x, y1, x, y2);
-                        }
+                  if (!_locator[i].valid())
+                        continue;
+
+                  p->setPen(QPen(i == 0 ? Qt::red : Qt::blue, 2));
+
+                  qreal x;
+
+                  if (i == 0 && _playbackLocatorTickValid)
+                        x = tickToPixelXF(_playbackLocatorTick);
+                  else
+                        x = tickToPixelX(_locator[i].time(TType::TICKS));
+
+                  p->drawLine(x, y1, x, y2);
                   }
 
             //Draw drag selection box
@@ -1330,6 +1337,67 @@ void PianoView::clearPlaybackNoteEvents()
       setPlaybackNoteEvents(QHash<const Note*, QSet<int>>());
       }
 
+//---------------------------------------------------------
+//   setPlaybackLocatorTick
+//---------------------------------------------------------
+
+void PianoView::setPlaybackLocatorTick(qreal tick)
+      {
+      if (_orientation != PianoRollOrientation::HORIZONTAL)
+            return;
+
+      const qreal oldX = _playbackLocatorTickValid
+            ? tickToPixelXF(_playbackLocatorTick)
+            : -1.0;
+
+      const qreal newX = tickToPixelXF(tick);
+
+      _playbackLocatorTick = tick;
+      _playbackLocatorTickValid = true;
+
+      const QRectF sr = sceneRect();
+      const qreal margin = 3.0;
+
+      if (oldX >= 0.0) {
+            scene()->update(
+                  QRectF(oldX - margin,
+                         sr.top(),
+                         margin * 2.0 + 1.0,
+                         sr.height()));
+            }
+
+      scene()->update(
+            QRectF(newX - margin,
+                   sr.top(),
+                   margin * 2.0 + 1.0,
+                   sr.height()));
+      }
+
+//---------------------------------------------------------
+//   clearPlaybackLocatorTick
+//---------------------------------------------------------
+
+void PianoView::clearPlaybackLocatorTick()
+      {
+      if (!_playbackLocatorTickValid)
+            return;
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            const qreal oldX =
+                  tickToPixelXF(_playbackLocatorTick);
+
+            const QRectF sr = sceneRect();
+            const qreal margin = 3.0;
+
+            scene()->update(
+                  QRectF(oldX - margin,
+                         sr.top(),
+                         margin * 2.0 + 1.0,
+                         sr.height()));
+            }
+
+      _playbackLocatorTickValid = false;
+      }
 
 //---------------------------------------------------------
 //   pixelXToTick
