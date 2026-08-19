@@ -3324,6 +3324,15 @@ void PianoView::selectNotes(int startTick, int endTick, int lowPitch, int highPi
       score->update();
       score->endCmd();
 
+      QList<PianoItem*> selectedItems = getSelectedItems();
+
+      if (!selectedItems.isEmpty()) {
+            ScoreView* scoreView = mscore->currentScoreView();
+            if (scoreView)
+                  scoreView->adjustCanvasPosition(
+                        selectedItems.first()->note(), false);
+            }
+
       emit selectionChanged();
       }
 
