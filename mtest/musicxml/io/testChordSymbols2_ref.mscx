@@ -131,6 +131,7 @@
             <sigD>4</sigD>
             </TimeSig>
           <FretDiagram>
+            <frets>5</frets>
             <fretDiagram>
               <string no="0">
                 <marker>cross</marker>

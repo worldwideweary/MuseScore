@@ -127,7 +127,6 @@
             <sigD>4</sigD>
             </TimeSig>
           <FretDiagram>
-            <frets>4</frets>
             <fretDiagram>
               <string no="0">
                 <marker>cross</marker>
@@ -223,7 +222,6 @@
               </Note>
             </Chord>
           <FretDiagram>
-            <frets>4</frets>
             <fretDiagram>
               <string no="0">
                 <dot fret="3">normal</dot>
@@ -285,7 +283,6 @@
               </Note>
             </Chord>
           <FretDiagram>
-            <frets>4</frets>
             <fretDiagram>
               <string no="0">
                 <marker>cross</marker>
@@ -332,7 +329,6 @@
       <Measure>
         <voice>
           <FretDiagram>
-            <frets>4</frets>
             <fretDiagram>
               <string no="0">
                 <marker>cross</marker>
@@ -377,7 +373,6 @@
             </Chord>
           <FretDiagram>
             <fretOffset>4</fretOffset>
-            <frets>4</frets>
             <fretDiagram>
               <string no="0">
                 <dot fret="1">normal</dot>
@@ -440,7 +435,6 @@
             </Chord>
           <FretDiagram>
             <fretOffset>2</fretOffset>
-            <frets>4</frets>
             <fretDiagram>
               <string no="0">
                 <marker>cross</marker>
@@ -504,7 +498,6 @@
       <Measure>
         <voice>
           <FretDiagram>
-            <frets>4</frets>
             <fretDiagram>
               <string no="0">
                 <dot fret="3">normal</dot>
@@ -557,7 +550,6 @@
               </Note>
             </Chord>
           <FretDiagram>
-            <frets>4</frets>
             <fretDiagram>
               <string no="0">
                 <marker>cross</marker>
@@ -593,7 +585,6 @@
               </Note>
             </Chord>
           <FretDiagram>
-            <frets>4</frets>
             <fretDiagram>
               <string no="0">
                 <marker>cross</marker>
@@ -636,7 +627,6 @@
               </Note>
             </Chord>
           <FretDiagram>
-            <frets>4</frets>
             <fretDiagram>
               <string no="1">
                 <dot fret="4">normal</dot>
@@ -671,7 +661,6 @@
       <Measure>
         <voice>
           <FretDiagram>
-            <frets>4</frets>
             <fretDiagram>
               <string no="0">
                 <marker>cross</marker>
