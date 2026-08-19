@@ -4116,6 +4116,8 @@ void PianoView::finishNoteGroupDrag(QMouseEvent* event) {
       score->update();
       updateNotes();
       update();
+
+      emit selectionChanged();
       }
 
 //---------------------------------------------------------
