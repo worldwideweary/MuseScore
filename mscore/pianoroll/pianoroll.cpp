@@ -578,6 +578,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
                     pianoView->setPlaybackLocatorTick(predictedTick);
                     pianoView->ensureVisible(predictedTick);
+                    ruler->setPlaybackLocatorTick(predictedTick);
                     });
 
       connect(pianoView->verticalScrollBar(),
@@ -1274,6 +1275,7 @@ void PianorollEditor::stopPlaybackFollow()
       _playbackFollowTicksPerSecond = 0.0;
 
       pianoView->clearPlaybackLocatorTick();
+      ruler->clearPlaybackLocatorTick();
 
       if (_playbackFollowTimer->isActive())
             _playbackFollowTimer->stop();
