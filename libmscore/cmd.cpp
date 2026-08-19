@@ -2559,13 +2559,9 @@ Element* Score::move(const QString& cmd)
       ChordRest* firstCR = nullptr;
       ChordRest* lastCR = nullptr;
       if (isRange) {
-            auto track = -1;
-            if (!noteEntryMode()) {
-                  if (auto ccr = selection().currentCR()) {
-                        track = ccr->track();
-                        }
-                  }
-            else track = inputState().track();
+            const int track = noteEntryMode()
+                  ? inputState().track()
+                  : selection().activeTrack();
 
             firstCR = selection().firstChordRest(track);
             lastCR  = selection().lastChordRest(track);
