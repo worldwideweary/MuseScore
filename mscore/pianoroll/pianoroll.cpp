@@ -941,12 +941,6 @@ void PianorollEditor::setOrientation(PianoRollOrientation orientation)
       updateOrientationLayout();
 
       //
-      // Time remains a shared musical reference between orientations.
-      //
-
-      pianoView->positionViewportAtTick(referenceTick);
-
-      //
       // Pitch viewport belongs independently to each orientation.
       //
 
@@ -962,6 +956,14 @@ void PianorollEditor::setOrientation(PianoRollOrientation orientation)
                         _verticalPitchScrollPos);
                   }
             }
+
+      const bool hasSelection =
+            !pianoView->getSelectedItems().isEmpty();
+
+      if (hasSelection)
+            pianoView->centerSelectionTimeInView();
+      else
+            pianoView->positionViewportAtTick(referenceTick);
       }
 
 //---------------------------------------------------------
