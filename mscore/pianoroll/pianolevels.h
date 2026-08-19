@@ -23,6 +23,7 @@
 #include <QWidget>
 
 #include "pianorolledittool.h"
+#include "pianoroll/pianoview.h"
 
 #include "libmscore/pos.h"
 
@@ -34,6 +35,7 @@ class Chord;
 class Note;
 class NoteEvent;
 class PianoItem;
+enum PianoRollOrientation;
 
 
 
@@ -49,6 +51,8 @@ class PianoLevels : public QWidget
             LERP, OFFSET
             };
 
+      PianoView* _pianoView { nullptr };
+      PianoRollOrientation _orientation { PianoRollOrientation::HORIZONTAL };
       Score* _score;
       int _xpos;
       qreal _xZoom;
@@ -96,6 +100,12 @@ class PianoLevels : public QWidget
       void adjustLevelLerp(int tick0, int value0, int tick1, int value1, bool selectedOnly = true);
       void adjustLevel(Note* note, NoteEvent* noteEvt, int value);
 
+      int pixelToTick(int pixel) const;
+      int tickToPixel(int tick) const;
+
+      int valToPixel(int value) const;
+      int pixelToVal(int pixel) const;
+
 signals:
       void posChanged(const Pos&);
       void tupletChanged(int);
@@ -116,6 +126,8 @@ public:
       PianoLevels(QWidget *parent = 0);
       ~PianoLevels();
 
+      void setPianoView(PianoView*);
+      void setOrientation(PianoRollOrientation);
       void setScore(Score*, Pos* locator);
       Staff* staff() { return _staff; }
       void setStaff(Staff*, Pos* locator);

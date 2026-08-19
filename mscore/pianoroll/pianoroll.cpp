@@ -504,7 +504,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       pianoLevelsChooser->setFixedWidth(PIANO_KEYBOARD_WIDTH);
 
       pianoLevels = new PianoLevels;
+      pianoLevels->setPianoView(pianoView);
       pianoLevels->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+      pianoLevels->setOrientation(_orientation);
 
       levelsAreaWidget = new QWidget;
       QHBoxLayout* levelsAreaLayout = new QHBoxLayout;
@@ -889,6 +891,8 @@ void PianorollEditor::updateOrientationLayout()
             delete item;
             }
 
+      if (pianoLevels)
+            pianoLevels->setOrientation(_orientation);
 
       if (_orientation == PianoRollOrientation::HORIZONTAL) {
             //
