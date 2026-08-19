@@ -3374,10 +3374,81 @@ void PianoView::ensureVisible(qreal tick)
       }
 
 //---------------------------------------------------------
+//   centerSelectionInView
+//---------------------------------------------------------
+
+void PianoView::centerSelectionInView()
+      {
+      QList<PianoItem*> selected = getSelectedItems();
+      if (selected.isEmpty())
+            return;
+
+      QRectF selectionRect;
+      bool first = true;
+
+      for (PianoItem* item : selected) {
+            QRectF noteRect =
+                  boundingRect(item->note(), nullptr, false);
+
+            if (first) {
+                  selectionRect = noteRect;
+                  first = false;
+                  }
+            else
+                  selectionRect |= noteRect;
+            }
+
+      centerOn(selectionRect.center());
+      }
+
+//---------------------------------------------------------
+//   centerSelectionTimeInView
+//---------------------------------------------------------
+
+void PianoView::centerSelectionTimeInView()
+      {
+      QList<PianoItem*> selected = getSelectedItems();
+      if (selected.isEmpty())
+            return;
+
+      QRectF selectionRect;
+      bool first = true;
+
+      for (PianoItem* item : selected) {
+            QRectF noteRect =
+                  boundingRect(item->note(), nullptr, false);
+
+            if (first) {
+                  selectionRect = noteRect;
+                  first = false;
+                  }
+            else
+                  selectionRect |= noteRect;
+            }
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            const qreal targetX =
+                  selectionRect.center().x()
+                  - viewport()->width() / 2.0;
+
+            horizontalScrollBar()->setValue(
+                  qMax(0, qRound(targetX)));
+            }
+      else {
+            const qreal targetY =
+                  selectionRect.center().y()
+                  - viewport()->height() / 2.0;
+
+            verticalScrollBar()->setValue(
+                  qMax(0, qRound(targetY)));
+            }
+      }
+
+//---------------------------------------------------------
 //   ensureSelectionVisible
 //---------------------------------------------------------
 
-void PianoView::ensureSelectionVisible()
+void PianoView::ensureSelectionVisible(bool force)
       {
       const int xMargin = 20;
       const int yMargin =
@@ -3399,7 +3470,7 @@ void PianoView::ensureSelectionVisible()
             QRectF noteRect =
                   boundingRect(selected.first()->note(), nullptr, false);
 
-            if (!visibleRect.contains(noteRect))
+            if (force || !visibleRect.contains(noteRect))
                   QGraphicsView::ensureVisible(noteRect, xMargin, yMargin);
 
             return;
@@ -3410,12 +3481,14 @@ void PianoView::ensureSelectionVisible()
       // notes extend beyond the viewport. Only move if none of the
       // selected notes is currently visible.
       //
-      for (PianoItem* item : selected) {
-            QRectF noteRect =
-                  boundingRect(item->note(), nullptr, false);
+      if (!force) {
+            for (PianoItem* item : selected) {
+                  QRectF noteRect =
+                        boundingRect(item->note(), nullptr, false);
 
-            if (visibleRect.intersects(noteRect))
-                  return;
+                  if (visibleRect.intersects(noteRect))
+                        return;
+                  }
             }
 
       //

@@ -98,8 +98,10 @@ public:
       static const BarPattern barPatterns[];
       void setScope(PianoRollScope scope);
       void setColoring(Coloring c);
-      PianoRollScope getScope() { return _scope; }      
-      void ensureSelectionVisible();
+      PianoRollScope getScope() { return _scope; }
+      void centerSelectionTimeInView();
+      void centerSelectionInView();
+      void ensureSelectionVisible(bool force = false);
       void ensureSelectionPitchVisible();
       void updatePlaybackHighlights();
 
