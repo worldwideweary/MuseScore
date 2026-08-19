@@ -20,6 +20,7 @@
 #include "pianoview.h"
 #include "musescore.h"
 #include "seq.h"
+#include "scoreview.h"
 #include "preferences.h"
 #include "waveview.h"
 #include "notetweakerdialog.h"
@@ -193,6 +194,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                         checked
                               ? VerticalPitchLayout::KEYBOARD_ALIGNED
                               : VerticalPitchLayout::CHROMATIC);
+                  restoreScoreViewFocus();
                   });
 
 
@@ -472,6 +474,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       pianoView = new PianoView;
       pianoView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
       pianoView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+      pianoView->installEventFilter(this);
 
       ruler->setPianoView(pianoView);
 
@@ -612,6 +615,14 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                           pianoKbd->setYpos(value);
                     });
 
+
+      velocity->installEventFilter(this);
+      onTime->installEventFilter(this);
+      tickLen->installEventFilter(this);
+      subdiv->installEventFilter(this);
+      tuplet->installEventFilter(this);
+
+
       connect(pianoView->horizontalScrollBar(), SIGNAL(valueChanged(int)), hsb,      SLOT(setValue(int)));
 
       connect(pianoView,          SIGNAL(xZoomChanged(qreal)),            ruler,       SLOT(setXZoom(qreal)));
@@ -627,7 +638,15 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(pianoLevels,        &PianoLevels::posChanged, pos, &Awl::PosLabel::setValue);
       connect(tuplet,             SIGNAL(valueChanged(int)),              pianoView,   SLOT(setTuplet(int)));
       connect(tuplet,             SIGNAL(valueChanged(int)),              pianoLevels, SLOT(setTuplet(int)));
-      connect(barPattern,         SIGNAL(activated(int)),                 pianoView,   SLOT(setBarPattern(int)));
+
+      connect(barPattern,
+              QOverload<int>::of(&QComboBox::activated),
+              this,
+              [this](int index) {
+                    pianoView->setBarPattern(index);
+                    restoreScoreViewFocus();
+                    });
+
       connect(subdiv,             SIGNAL(valueChanged(int)),              pianoView,   SLOT(setSubdiv(int)));
       connect(subdiv,             SIGNAL(valueChanged(int)),              pianoLevels, SLOT(setSubdiv(int)));
       connect(pianoLevelsChooser, SIGNAL(levelsIndexChanged(int)),        pianoLevels, SLOT(setLevelsIndex(int)));
@@ -822,6 +841,42 @@ void PianorollEditor::focusOnPosition(Position* p)
 
       // move view so that view is centered on this element
       pianoView->ensureVisible(p->segment->tick().ticks());
+      }
+
+//---------------------------------------------------------
+//   eventFilter
+//---------------------------------------------------------
+
+bool PianorollEditor::eventFilter(QObject* obj, QEvent* event)
+      {
+      if (event->type() == QEvent::ShortcutOverride) {
+            QKeyEvent* const ke = static_cast<QKeyEvent*>(event);
+
+            const bool spinBoxHasFocus =
+                  qobject_cast<QAbstractSpinBox*>(obj);
+
+            const bool verticalArrowPress =
+                  ke->key() == Qt::Key_Up
+                  || ke->key() == Qt::Key_Down;
+
+            if (spinBoxHasFocus && verticalArrowPress) {
+                  event->accept();
+                  return true;
+                  }
+            }
+
+      return QWidget::eventFilter(obj, event);
+      }
+
+//---------------------------------------------------------
+//   restoreScoreViewFocus
+//---------------------------------------------------------
+
+void PianorollEditor::restoreScoreViewFocus()
+      {
+      ScoreView* scoreView = mscore->currentScoreView();
+      if (scoreView)
+            scoreView->setFocus();
       }
 
 //---------------------------------------------------------
@@ -1030,6 +1085,8 @@ void PianorollEditor::setOrientation(PianoRollOrientation orientation)
             pianoView->centerSelectionTimeInView();
       else
             pianoView->positionViewportAtTick(referenceTick);
+
+      restoreScoreViewFocus();
       }
 
 //---------------------------------------------------------
@@ -1044,6 +1101,7 @@ void PianorollEditor::setScope(PianoRollScope scope)
       _scope = scope;
       pianoView->setScope(scope);
       pianoLevels->setScope(scope);
+      restoreScoreViewFocus();
       }
 
 //---------------------------------------------------------
@@ -1061,6 +1119,8 @@ void PianorollEditor::setColoring(Coloring c)
       pianoKbd->setColoring(c);
 
       update();
+
+      restoreScoreViewFocus();
       }
 
 //---------------------------------------------------------
@@ -1259,6 +1319,8 @@ void PianorollEditor::veloTypeChanged(int val)
             updateVelocity(note);
             }
       _score->endCmd();
+
+      restoreScoreViewFocus();
       }
 
 //---------------------------------------------------------
