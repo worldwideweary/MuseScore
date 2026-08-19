@@ -130,6 +130,10 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       PianorollEditor(QWidget* parent = 0);
       virtual ~PianorollEditor();
 
+      bool eventFilter(QObject* obj, QEvent* event) override;
+
+      void restoreScoreViewFocus();
+
       void setStaff(Staff* staff);
       void focusOnPosition(Position* p);
       void heartBeat(Seq*);
