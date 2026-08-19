@@ -52,6 +52,9 @@ class PianoRuler : public QWidget {
 
       PianoRollOrientation _orientation { PianoRollOrientation::HORIZONTAL };
 
+      qreal _playbackLocatorTick { 0.0 };
+      bool _playbackLocatorTickValid { false };
+
       static QPixmap* markIcon[3];
 
       virtual void paintEvent(QPaintEvent*);
@@ -80,6 +83,11 @@ class PianoRuler : public QWidget {
       void setScore(Score*, Pos* locator);
       int xpos() const { return _xpos; }
       qreal xZoom() const { return _xZoom; }
+
+      void setPlaybackLocatorTick(qreal tick);
+      void clearPlaybackLocatorTick();
+
+      qreal tickToPixelF(qreal tick) const;
 
       void setOrientation(PianoRollOrientation);
       void setPianoView(PianoView*);

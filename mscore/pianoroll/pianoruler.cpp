@@ -187,7 +187,7 @@ int PianoRuler::pos2pix(const Pos& pos) const
       }
 
 //---------------------------------------------------------
-//
+//    pix2pos
 //---------------------------------------------------------
 
 Pos PianoRuler::pix2pos(int pixel) const
@@ -332,18 +332,30 @@ void PianoRuler::paintHorizontal(QPaintEvent* e)
             if (xp >= x && xp < x+w)
                   p.drawLine(xp, 0, xp, pianoRulerHeight);
             }
+
       static const QColor lcColors[3] = { Qt::red, Qt::blue, Qt::blue };
+
       for (int i = 0; i < 3; ++i) {
             if (!_locator[i].valid())
                   continue;
+
             p.setPen(lcColors[i]);
-            int xp      = pos2pix(_locator[i]);
+
+            qreal xp;
+
+            if (i == 0 && _playbackLocatorTickValid)
+                  xp = tickToPixelF(_playbackLocatorTick);
+            else
+                  xp = pos2pix(_locator[i]);
+
             QPixmap* pm = markIcon[i];
             int pw = pm->width() / 2;
-            int x1 = x - pw;
-            int x2 = x + w + pw;
+
+            qreal x1 = x - pw;
+            qreal x2 = x + w + pw;
+
             if (xp >= x1 && xp < x2)
-                  p.drawPixmap(xp - pw, y-2, *pm);
+                  p.drawPixmap(qRound(xp) - pw, y - 2, *pm);
             }
       }
 
@@ -495,6 +507,45 @@ void PianoRuler::paintVertical(QPaintEvent* e)
             //
             p.drawLine(0, yp, width(), yp);
             }
+      }
+
+//---------------------------------------------------------
+//   setPlaybackLocatorTick
+//---------------------------------------------------------
+
+void PianoRuler::setPlaybackLocatorTick(qreal tick)
+      {
+      _playbackLocatorTick = tick;
+      _playbackLocatorTickValid = true;
+      update();
+      }
+
+//---------------------------------------------------------
+//   clearPlaybackLocatorTick
+//---------------------------------------------------------
+
+void PianoRuler::clearPlaybackLocatorTick()
+      {
+      _playbackLocatorTickValid = false;
+      update();
+      }
+
+//---------------------------------------------------------
+//   tickToPixelF
+//---------------------------------------------------------
+
+qreal PianoRuler::tickToPixelF(qreal tick) const
+      {
+      if (_orientation == PianoRollOrientation::HORIZONTAL)
+            return (tick + MAP_OFFSET) * _xZoom - _xpos;
+
+      if (_pianoView) {
+            const qreal sceneY = _pianoView->tickToPixelYF(tick);
+            return _pianoView->mapFromScene(
+                  QPointF(0.0, sceneY)).y();
+            }
+
+      return 0.0;
       }
 
 //---------------------------------------------------------
