@@ -247,7 +247,7 @@ private:
       void setOrientation(PianoRollOrientation orientation);
       Staff* staff() { return _staff; }
       void setStaff(Staff*, Pos* locator);
-      void ensureVisible(int tick);
+      void ensureVisible(qreal tick);
       int noteHeight() { return _noteHeight; }
       qreal xZoom() { return _xZoom; }
       int tuplet() { return _tuplet; }
@@ -269,7 +269,8 @@ private:
 
 // TODO: Any of these that can be private should be private:
 
-      qreal tickToPixelXF(qreal tick) const; // TODO: probably erase this
+      qreal tickToPixelXF(qreal tick) const;
+      qreal tickToPixelYF(qreal tick) const;
 
       int pixelXToTick(int pixX) const;
       int tickToPixelX(int tick) const;

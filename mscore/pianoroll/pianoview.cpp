@@ -1377,6 +1377,15 @@ int PianoView::tickToPixelY(int tick) const
       }
 
 //---------------------------------------------------------
+//   tickToPixelYF
+//---------------------------------------------------------
+
+qreal PianoView::tickToPixelYF(qreal tick) const
+      {
+      return tickToPixelXF(_ticks - tick);
+      }
+
+//---------------------------------------------------------
 //   pixelXtoPitch
 //---------------------------------------------------------
 
@@ -3266,7 +3275,7 @@ void PianoView::leaveEvent(QEvent* event)
 //   ensureVisible
 //---------------------------------------------------------
 
-void PianoView::ensureVisible(int tick)
+void PianoView::ensureVisible(qreal tick)
       {
       QRectF rect = mapToScene(viewport()->geometry()).boundingRect();
       const bool vertical = _orientation == PianoRollOrientation::VERTICAL;
@@ -3274,15 +3283,20 @@ void PianoView::ensureVisible(int tick)
       const int activationMargin = 0;
 
       if (horizontal) {
-            qreal xpos = tickToPixelX(tick);
-            qreal margin = rect.width() / 2;
+            const qreal xpos = tickToPixelXF(tick);
+            const qreal margin = rect.width() / 2.0;
+
+            qreal target = horizontalScrollBar()->value();
+
             if (xpos < rect.x() + margin)
-                  horizontalScrollBar()->setValue(qMax(xpos - margin, 0.0));
+                  target = qMax(xpos - margin, 0.0);
             else if (xpos >= rect.x() + rect.width() - margin)
-                  horizontalScrollBar()->setValue(qMax(xpos - rect.width() + margin, 0.0));
+                  target = qMax(xpos - rect.width() + margin, 0.0);
+
+            horizontalScrollBar()->setValue(qRound(target));
             }
       else if (vertical) {
-            qreal ypos = tickToPixelY(tick);
+            qreal ypos = tickToPixelYF(tick);
 
             int viewportHeight = viewport()->height();
             int target = ypos - viewportHeight + activationMargin;

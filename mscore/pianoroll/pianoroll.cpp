@@ -576,7 +576,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                           _playbackFollowBaseTick
                           + elapsed * _playbackFollowTicksPerSecond;
 
-                    pianoView->ensureVisible(qRound(predictedTick));
+                    pianoView->ensureVisible(predictedTick);
                     });
 
       connect(pianoView->verticalScrollBar(),
