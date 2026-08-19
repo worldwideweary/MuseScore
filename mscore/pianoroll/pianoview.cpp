@@ -2188,6 +2188,10 @@ void PianoView::keyReleaseEvent(QKeyEvent* event) {
 
 void PianoView::mousePressEvent(QMouseEvent* event)
       {
+      // However, we may want keyboard focus for special PRE actions. Does this affect that?
+      if (mscore->currentScoreView())
+            mscore->currentScoreView()->setFocus();
+
       bool rightBn = event->button() == Qt::RightButton;
 
       if (!rightBn) {
