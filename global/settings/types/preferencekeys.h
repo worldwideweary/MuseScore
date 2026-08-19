@@ -201,6 +201,7 @@
 #define PREF_UI_PIANOROLL_LIGHT_BG_TEXT_COLOR               "ui/pianoroll/light/background/text/color"
 #define PREF_UI_PIANOROLL_LIGHT_BG_TIE_COLOR                "ui/pianoroll/light/background/tie/color"
 #define PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID    "ui/pianoroll/vertical/keyboardAlignedGrid"
+#define PREF_UI_PIANOROLL_SHOW_PITCH_TEXT                   "ui/pianoroll/pitchText/show"
 
 #define PREF_UI_BUTTON_HIGHLIGHT_COLOR_DISABLED_DARK_ON     "ui/button/highlight/color/disabled/dark/on"
 #define PREF_UI_BUTTON_HIGHLIGHT_COLOR_DISABLED_DARK_OFF    "ui/button/highlight/color/disabled/dark/off"
