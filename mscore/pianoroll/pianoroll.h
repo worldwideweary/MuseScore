@@ -52,6 +52,8 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       PianoKeyboard* pianoKbd;
       PianoLevels* pianoLevels;
       PianoLevelsChooser* pianoLevelsChooser;
+      QWidget* levelsAreaWidget { nullptr };
+      bool _showPianoLevels { true };
       QScrollBar* hsb;        // horizontal scroll bar for pianoView
       QGridLayout* noteAreaLayout { nullptr };
       QWidget* topLeftSpacer { nullptr };
@@ -122,6 +124,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       void showNoteTweaker();
       void setOnTime(int);
       void setTickLen(int);
+      void setPianoLevelsVisible(bool visible);
 
    public:
       PianorollEditor(QWidget* parent = 0);

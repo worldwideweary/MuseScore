@@ -155,6 +155,19 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                     });
 
 
+
+      // Option: Show levels editor
+      _showPianoLevels = preferences.getBool(PREF_UI_PIANOROLL_SHOW_LEVELS_EDITOR);
+      QAction* showLevelsAction = new QAction(tr("Levels Editor"), this);
+      showLevelsAction->setCheckable(true);
+      showLevelsAction->setChecked(_showPianoLevels);
+
+      connect(showLevelsAction, &QAction::toggled,
+              this, &PianorollEditor::setPianoLevelsVisible);
+
+      tbMain->addAction(showLevelsAction);
+
+
       // Option: Keyboard alignment grid
       tbMain->addSeparator();
 
@@ -492,9 +505,11 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       pianoLevelsChooser->setFixedWidth(PIANO_KEYBOARD_WIDTH);
 
       pianoLevels = new PianoLevels;
+      pianoLevels->setPianoView(pianoView);
       pianoLevels->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+      pianoLevels->setOrientation(_orientation);
 
-      QWidget* levelsAreaWidget = new QWidget;
+      levelsAreaWidget = new QWidget;
       QHBoxLayout* levelsAreaLayout = new QHBoxLayout;
       levelsAreaLayout->setContentsMargins(0, 0, 0, 0);
       levelsAreaLayout->setSpacing(0);
@@ -619,7 +634,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(pianoKbd,           SIGNAL(pitchHighlightToggled(int)),     pianoView,   SLOT(togglePitchHighlight(int)));
 
       connect(hsb,                              SIGNAL(valueChanged(int)),   SLOT(setXpos(int)));
-      connect(pianoView->horizontalScrollBar(), SIGNAL(valueChanged(int)),   SLOT(setXpos(int)));
+      // connect(pianoView->horizontalScrollBar(), SIGNAL(valueChanged(int)),   SLOT(setXpos(int))); // Extraneous
 
       connect(ruler,              &PianoRuler::locatorMoved,  this, &PianorollEditor::moveLocator);
       connect(pianoLevels,        &PianoLevels::locatorMoved, this, &PianorollEditor::moveLocator);
@@ -770,6 +785,33 @@ void PianorollEditor::setTickLen(int v)
       }
 
 //---------------------------------------------------------
+//   setPianoLevelsVisible
+//---------------------------------------------------------
+
+void PianorollEditor::setPianoLevelsVisible(bool visible)
+      {
+      if (_showPianoLevels == visible)
+            return;
+
+      _showPianoLevels = visible;
+
+      if (!levelsAreaWidget)
+            return;
+
+      levelsAreaWidget->setVisible(visible);
+
+      if (visible && pianoLevels) {
+            //
+            // Bring the view back into sync when it becomes visible.
+            //
+            pianoLevels->setXpos(
+                  pianoView->horizontalScrollBar()->value());
+
+            pianoLevels->update();
+            }
+      }
+
+//---------------------------------------------------------
 //   focusOnPosition
 //---------------------------------------------------------
 
@@ -850,6 +892,8 @@ void PianorollEditor::updateOrientationLayout()
             delete item;
             }
 
+      if (pianoLevels)
+            pianoLevels->setOrientation(_orientation);
 
       if (_orientation == PianoRollOrientation::HORIZONTAL) {
             //
@@ -1061,9 +1105,13 @@ void PianorollEditor::setXpos(int x)
       {
       pianoView->horizontalScrollBar()->setValue(x);
       ruler->setXpos(x);
-      pianoLevels->setXpos(x);
+
+      if (_showPianoLevels)
+            pianoLevels->setXpos(x);
+
       if (waveView && showWave->isChecked())
             waveView->setXpos(x);
+
       }
 
 //---------------------------------------------------------
@@ -1622,7 +1670,10 @@ void PianorollEditor::posChanged(POS p, unsigned tick)
                   waveView->moveLocator(int(p));
 
             ruler->update();
-            pianoLevels->update();
+
+            if (_showPianoLevels)
+                  pianoLevels->update();
+
             return;
             }
 
