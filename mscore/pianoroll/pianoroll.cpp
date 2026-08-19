@@ -473,7 +473,6 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       pianoView = new PianoView;
       pianoView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
       pianoView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-      pianoView->installEventFilter(this);
 
       ruler->setPianoView(pianoView);
 
