@@ -27,6 +27,7 @@
 namespace Ms {
 
 class Score;
+class PianoView;
 
 static const int pianoRulerHeight = 28;
 static const int MAP_OFFSET = 480;

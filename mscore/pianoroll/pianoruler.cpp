@@ -166,24 +166,6 @@ void PianoRuler::setXpos(int val)
       }
 
 //---------------------------------------------------------
-//   pix2pos
-//---------------------------------------------------------
-
-Pos PianoRuler::pix2pos(int pixel) const
-      {
-      int tick;
-
-      if (_orientation == PianoRollOrientation::HORIZONTAL)
-            tick = (pixel + _xpos) / _xZoom - MAP_OFFSET;
-      else
-            tick = _pianoView ? _pianoView->pixelYToTick(pixel) : 0;
-
-      tick = qMax(tick, 0);
-
-      return Pos(_score->tempomap(), _score->sigmap(), tick, _timeType);
-      }
-
-//---------------------------------------------------------
 //   pos2pix
 //---------------------------------------------------------
 
@@ -194,7 +176,48 @@ int PianoRuler::pos2pix(const Pos& pos) const
       if (_orientation == PianoRollOrientation::HORIZONTAL)
             return (tick + MAP_OFFSET) * _xZoom - _xpos;
 
-      return _pianoView ? _pianoView->tickToPixelY(tick) : 0;
+      if (_pianoView) {
+            const int sceneY = _pianoView->tickToPixelY(tick);
+
+            return _pianoView->mapFromScene(
+                  QPointF(0.0, sceneY)).y();
+            }
+
+      return 0;
+      }
+
+//---------------------------------------------------------
+//
+//---------------------------------------------------------
+
+Pos PianoRuler::pix2pos(int pixel) const
+      {
+      int tick = 0;
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            tick = (pixel + _xpos) / _xZoom - MAP_OFFSET;
+            }
+      else if (_pianoView) {
+            //
+            // Ruler Y corresponds directly to PianoView viewport Y.
+            // Convert that viewport position into scene coordinates,
+            // then let PianoView perform its authoritative
+            // scene-Y -> tick conversion.
+            //
+            const QPointF scenePos =
+                  _pianoView->mapToScene(QPoint(0, pixel));
+
+            tick = _pianoView->pixelYToTick(qRound(scenePos.y()));
+            }
+
+      if (tick < 0)
+            tick = 0;
+
+      return Pos(
+            _score->tempomap(),
+            _score->sigmap(),
+            tick,
+            _timeType);
       }
 
 //---------------------------------------------------------
@@ -330,113 +353,148 @@ void PianoRuler::paintHorizontal(QPaintEvent* e)
 
 void PianoRuler::paintVertical(QPaintEvent* e)
       {
-      QPainter p(this);
-      const QRect& r = e->rect();
-
-      int x  = r.x();
-      int w  = r.width();
-      int y  = pianoRulerHeight - 16;
-      int h  = 16; // 14;
-      int y1 = r.y();
-      int rh = r.height();
-      if (y1 < pianoRulerHeight) {
-            rh -= pianoRulerHeight - y1;
-            y1 = pianoRulerHeight;
-      }
-      int y2 = y1 + rh;
-
-      if (x < (-_xpos))
-            x = -_xpos;
-
-      if (!_score)
+      if (!_score || !_pianoView)
             return;
 
-      Pos pos1 = pix2pos(x);
-      Pos pos2 = pix2pos(x+w);
+      QPainter p(this);
 
-      //---------------------------------------------------
-      //    draw lines
-      //---------------------------------------------------
+      const QRect r = e->rect();
 
-      int bar1, bar2, beat, tick;
+      const int y1 = r.top();
+      const int y2 = r.bottom();
 
-      pos1.mbt(&bar1, &beat, &tick);
-      pos2.mbt(&bar2, &beat, &tick);
+      //
+      // Time increases upward in vertical PRE mode, so the
+      // top and bottom positions may arrive in reverse musical
+      // order. Normalize the bar range below.
+      //
 
-      const int minBarGapSize = 48;
+      Pos posTop    = pix2pos(y1);
+      Pos posBottom = pix2pos(y2);
+
+      int barTop, barBottom;
+      int beat, tick;
+
+      posTop.mbt(&barTop, &beat, &tick);
+      posBottom.mbt(&barBottom, &beat, &tick);
+
+      int bar1 = qMin(barTop, barBottom);
+      int bar2 = qMax(barTop, barBottom);
+
+      const int minBarGapSize  = 48;
       const int minBeatGapSize = 30;
 
-      //Estimate bar width since changing time signatures can make this inconsistent.
-      // Assuming 480 ticks per beat, 4 beats per bar
-      qreal pixPerBar = DIVISION * 4 * _xZoom;
+      //
+      // Vertical time uses the same time zoom value.
+      //
+      qreal pixPerBar  = DIVISION * 4 * _xZoom;
       qreal pixPerBeat = DIVISION * _xZoom;
 
       int barSkip = ceil(minBarGapSize / pixPerBar);
-      barSkip = (int)pow(2, ceil(log(barSkip)/log(2)));
+      barSkip = (int)pow(2, ceil(log(barSkip) / log(2)));
 
       int beatSkip = ceil(minBeatGapSize / pixPerBeat);
-      beatSkip = (int)pow(2, ceil(log(beatSkip)/log(2)));
+      beatSkip = (int)pow(2, ceil(log(beatSkip) / log(2)));
 
-      //Round down to first bar to be a multiple of barSkip
       bar1 = (bar1 / barSkip) * barSkip;
 
+      const int w = width();
+
       for (int bar = bar1; bar <= bar2; bar += barSkip) {
-            Pos stick(_score->tempomap(), _score->sigmap(), bar, 0, 0);
+            Pos stick(
+                  _score->tempomap(),
+                  _score->sigmap(),
+                  bar, 0, 0);
 
             SigEvent sig = stick.timesig();
-            int z = sig.timesig().numerator();
-            for (int beat1 = 0; beat1 < z; beat1 += beatSkip) {
-                  Pos xx(_score->tempomap(), _score->sigmap(), bar, beat1, 0);
-                  int xp = pos2pix(xx);
-                  if (xp < 0)
+            const int beatsInBar = sig.timesig().numerator();
+
+            for (int beat1 = 0;
+                 beat1 < beatsInBar;
+                 beat1 += beatSkip) {
+
+                  Pos beatPos(
+                        _score->tempomap(),
+                        _score->sigmap(),
+                        bar, beat1, 0);
+
+                  const int yp = pos2pix(beatPos);
+
+                  if (yp < r.top() || yp > r.bottom())
                         continue;
-                  QString s;
-                  QRect r1(xp+2, y + 1, 1000, h);
-                  int y3;
-                  int num;
-                  if (beat1 == 0) {
-                        num = bar + 1;
-                        y3  = y + 2;
-                        p.setFont(_font2);
-                  }
-                  else {
-                        num = beat1 + 1;
-                        y3  = y + 8;
-                        p.setFont(_font1);
-                        r1.moveTop(r1.top() + 1);
-                  }
-                  s.setNum(num);
+
+                  const bool barLine = beat1 == 0;
+
+                  p.setFont(barLine ? _font2 : _font1);
                   p.setPen(Qt::black);
-                  p.drawLine(xp, y3, xp, y+h);
-                  p.drawText(r1, Qt::AlignLeft | Qt::AlignVCenter, s);
-                  p.setPen(beat1 == 0 ? Qt::lightGray : Qt::gray);
-                  if (xp > 0)
-                        p.drawLine(xp, y1, xp, y2);
+
+                  //
+                  // Tick mark against the PianoView edge.
+                  //
+                  const int tickLength = barLine ? 14 : 8;
+
+                  p.drawLine(
+                        w - tickLength,
+                        yp,
+                        w,
+                        yp);
+
+                  QString text;
+                  text.setNum(barLine ? bar + 1
+                                      : beat1 + 1);
+
+                  QRect textRect(
+                        2,
+                        yp - 8,
+                        w - tickLength - 4,
+                        16);
+
+                  p.drawText(
+                        textRect,
+                        Qt::AlignRight | Qt::AlignVCenter,
+                        text);
+                  }
             }
 
-      }
       //
-      //  draw mouse cursor marker
+      // Mouse cursor marker.
       //
       p.setPen(Qt::black);
+
       if (_cursor.valid()) {
-            int xp = pos2pix(_cursor);
-            if (xp >= x && xp < x+w)
-                  p.drawLine(xp, 0, xp, pianoRulerHeight);
-      }
-      static const QColor lcColors[3] = { Qt::red, Qt::blue, Qt::blue };
+            const int yp = pos2pix(_cursor);
+
+            if (yp >= r.top() && yp <= r.bottom())
+                  p.drawLine(0, yp, width(), yp);
+            }
+
+      //
+      // Playback / locator markers.
+      //
+      static const QColor lcColors[3] = {
+            Qt::red,
+            Qt::blue,
+            Qt::blue
+            };
+
       for (int i = 0; i < 3; ++i) {
             if (!_locator[i].valid())
                   continue;
+
+            const int yp = pos2pix(_locator[i]);
+
+            if (yp < r.top() || yp > r.bottom())
+                  continue;
+
             p.setPen(lcColors[i]);
-            int xp      = pos2pix(_locator[i]);
-            QPixmap* pm = markIcon[i];
-            int pw = pm->width() / 2;
-            int x1 = x - pw;
-            int x2 = x + w + pw;
-            if (xp >= x1 && xp < x2)
-                  p.drawPixmap(xp - pw, y-2, *pm);
-      }
+
+            //
+            // Start simple with a line.  The horizontal markIcon
+            // pixmaps are oriented for a horizontal ruler and may
+            // not look appropriate here.
+            //
+            p.drawLine(0, yp, width(), yp);
+            }
       }
 
 //---------------------------------------------------------
@@ -496,14 +554,17 @@ void PianoRuler::leaveEvent(QEvent*)
 void PianoRuler::setPos(const Pos& pos)
       {
       if (_cursor != pos) {
-            int x1 = pos2pix(_cursor);
-            int x2 = pos2pix(pos);
-            if (x1 > x2) {
-                  int tmp = x2;
-                  x2 = x1;
-                  x1 = tmp;
-                  }
-            update(QRect(x1-1, 0, x2-x1+2, height()));
+            int p1 = pos2pix(_cursor);
+            int p2 = pos2pix(pos);
+
+            if (p1 > p2)
+                  qSwap(p1, p2);
+
+            if (_orientation == PianoRollOrientation::HORIZONTAL)
+                  update(QRect(p1 - 1, 0, p2 - p1 + 2, height()));
+            else
+                  update(QRect(0, p1 - 1, width(), p2 - p1 + 2));
+
             _cursor = pos;
             }
       }

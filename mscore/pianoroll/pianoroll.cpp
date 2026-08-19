@@ -460,6 +460,8 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       pianoView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
       pianoView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
+      ruler->setPianoView(pianoView);
+
       hsb = new QScrollBar(Qt::Horizontal);
       connect(pianoView->horizontalScrollBar(), SIGNAL(rangeChanged(int,int)),
             SLOT(rangeChanged(int,int)));
@@ -855,6 +857,16 @@ void PianorollEditor::updateOrientationLayout()
             ruler->show();
             hsb->show();
 
+            ruler->setOrientation(PianoRollOrientation::HORIZONTAL);
+
+            ruler->setSizePolicy(
+                  QSizePolicy::Expanding,
+                  QSizePolicy::Fixed);
+
+            ruler->setMinimumWidth(0);
+            ruler->setMaximumWidth(QWIDGETSIZE_MAX);
+            ruler->setFixedHeight(pianoRulerHeight);
+
             //
             // Release constraints left by vertical mode.
             //
@@ -882,8 +894,18 @@ void PianorollEditor::updateOrientationLayout()
             // noteAreaWidget even after being removed from the layout.
             //
             topLeftSpacer->hide();
-            ruler->hide();
+            ruler->show(); // Better not slow us down
             hsb->hide();
+
+            ruler->setOrientation(PianoRollOrientation::VERTICAL);
+
+            ruler->setSizePolicy(
+                  QSizePolicy::Fixed,
+                  QSizePolicy::Expanding);
+
+            ruler->setMinimumHeight(0);
+            ruler->setMaximumHeight(QWIDGETSIZE_MAX);
+            ruler->setFixedWidth(pianoRulerHeight);
 
             //
             // Release constraints left by horizontal mode.
@@ -900,8 +922,9 @@ void PianorollEditor::updateOrientationLayout()
 
             pianoKbd->setYpos(pianoView->horizontalScrollBar()->value());
 
-            noteAreaLayout->addWidget(pianoView, 0, 0);
-            noteAreaLayout->addWidget(pianoKbd,  1, 0);
+            noteAreaLayout->addWidget(ruler,     0, 0);
+            noteAreaLayout->addWidget(pianoView, 0, 1);
+            noteAreaLayout->addWidget(pianoKbd,  1, 1);
             }
       }
 
@@ -1585,10 +1608,6 @@ void PianorollEditor::posChanged(POS p, unsigned tick)
 
       setLocator(p, tick);
 
-      //
-      // Loop locators and other non-playback position changes retain
-      // the original full update behavior.
-      //
       if (p != POS::CURRENT) {
             pianoView->moveLocator(int(p));
 
@@ -1601,26 +1620,22 @@ void PianorollEditor::posChanged(POS p, unsigned tick)
             }
 
       //
-      // The normal horizontal PRE displays its playback locator and
-      // ruler, so keep those synchronized there.
+      // The PianoView playback locator itself is still
+      // horizontal-only.  Avoid the full scene update in
+      // vertical mode.
       //
-      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+      if (_orientation == PianoRollOrientation::HORIZONTAL)
             pianoView->moveLocator(int(p));
-            ruler->update();
-            }
 
       //
-      // WaveView has its own playback locator.  Only update it when
-      // the wave view actually exists.
+      // PianoRuler is now visible in both orientations.
       //
+      ruler->update();
+
       if (waveView)
             waveView->moveLocator(int(p));
 
-      //
-      // Do not continuously repaint PianoLevels merely because the
-      // playback position changed.  Its note-level display itself
-      // does not change with every playback heartbeat.
-      //
+      // No continuous pianoLevels->update() for POS::CURRENT.
       }
 
 //---------------------------------------------------------
