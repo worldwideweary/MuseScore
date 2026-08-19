@@ -3374,34 +3374,6 @@ void PianoView::ensureVisible(qreal tick)
       }
 
 //---------------------------------------------------------
-//   centerSelectionInView
-//---------------------------------------------------------
-
-void PianoView::centerSelectionInView()
-      {
-      QList<PianoItem*> selected = getSelectedItems();
-      if (selected.isEmpty())
-            return;
-
-      QRectF selectionRect;
-      bool first = true;
-
-      for (PianoItem* item : selected) {
-            QRectF noteRect =
-                  boundingRect(item->note(), nullptr, false);
-
-            if (first) {
-                  selectionRect = noteRect;
-                  first = false;
-                  }
-            else
-                  selectionRect |= noteRect;
-            }
-
-      centerOn(selectionRect.center());
-      }
-
-//---------------------------------------------------------
 //   centerSelectionTimeInView
 //---------------------------------------------------------
 
@@ -3500,67 +3472,6 @@ void PianoView::ensureSelectionVisible(bool force)
       QGraphicsView::ensureVisible(noteRect, xMargin, yMargin);
       }
 
-//---------------------------------------------------------
-//   ensureSelectionPitchVisible
-//---------------------------------------------------------
-
-void PianoView::ensureSelectionPitchVisible()
-      {
-      QList<PianoItem*> selected = getSelectedItems();
-      if (selected.isEmpty())
-            return;
-
-      QRectF selectionRect;
-      bool first = true;
-
-      for (PianoItem* item : selected) {
-            QRectF noteRect =
-                  boundingRect(item->note(), nullptr, false);
-
-            if (first) {
-                  selectionRect = noteRect;
-                  first = false;
-                  }
-            else
-                  selectionRect = selectionRect.united(noteRect);
-            }
-
-      QRectF visibleRect =
-            mapToScene(viewport()->rect()).boundingRect();
-
-      if (_orientation == PianoRollOrientation::HORIZONTAL) {
-            //
-            // Pitch is vertical. Leave the horizontal/time
-            // position completely untouched.
-            //
-            if (selectionRect.top() >= visibleRect.top()
-                && selectionRect.bottom() <= visibleRect.bottom())
-                  return;
-
-            qreal selectionCenter = selectionRect.center().y();
-
-            int target =
-                  int(selectionCenter - viewport()->height() / 2.0);
-
-            verticalScrollBar()->setValue(target);
-            }
-      else {
-            //
-            // Pitch is horizontal. Leave the vertical/time
-            // position completely untouched.
-            //
-            if (selectionRect.left() >= visibleRect.left()
-                && selectionRect.right() <= visibleRect.right())
-                  return;
-
-            qreal selectionCenter = selectionRect.center().x();
-
-            int target =
-                  int(selectionCenter - viewport()->width() / 2.0);
-
-            horizontalScrollBar()->setValue(target);
-            }
-      }
 
 //---------------------------------------------------------
 //   updateBoundingSize

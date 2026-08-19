@@ -100,9 +100,7 @@ public:
       void setColoring(Coloring c);
       PianoRollScope getScope() { return _scope; }
       void centerSelectionTimeInView();
-      void centerSelectionInView();
       void ensureSelectionVisible(bool force = false);
-      void ensureSelectionPitchVisible();
       void updatePlaybackHighlights();
 
       bool selectionRectAllowed() const;
