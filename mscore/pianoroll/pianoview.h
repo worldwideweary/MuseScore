@@ -106,8 +106,8 @@ public:
       bool selectionRectAllowed() const;
 
 private:
-      Staff* _staff;
-      Chord* _chord;
+      Staff* _staff { nullptr };
+      Chord* _chord { nullptr };
 
       bool _playbackActive { false };
 
@@ -118,7 +118,7 @@ private:
       PianoRollOrientation _orientation;
       
       Pos _trackingPos;  //Track mouse position
-      Pos* _locator;
+      Pos* _locator { nullptr };
       int _ticks;
       TType _timeType;
       int _noteHeight;

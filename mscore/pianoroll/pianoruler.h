@@ -41,9 +41,9 @@ class PianoRuler : public QWidget {
 
       PianoView* _pianoView { nullptr };
 
-      Score* _score;
+      Score* _score { nullptr };
       Pos _cursor;
-      Pos* _locator;
+      Pos* _locator { nullptr };
 
       qreal _xZoom;
       int _xpos;
