@@ -3398,10 +3398,34 @@ void PianoView::leaveEvent(QEvent* event)
       }
 
 //---------------------------------------------------------
+//   playbackFollowHorizontalOffset
+//---------------------------------------------------------
+
+qreal PianoView::playbackFollowHorizontalOffset(qreal tick) const
+      {
+      if (_orientation != PianoRollOrientation::HORIZONTAL)
+            return 0.0;
+
+      const QRectF rect =
+            mapToScene(viewport()->geometry()).boundingRect();
+
+      const qreal xpos = tickToPixelXF(tick);
+
+      //
+      // If playback already begins inside the visible viewport,
+      // preserve its current screen position initially.
+      //
+      if (xpos >= rect.left() && xpos <= rect.right())
+            return xpos - rect.center().x();
+
+      return 0.0;
+      }
+
+//---------------------------------------------------------
 //   ensureVisible
 //---------------------------------------------------------
 
-void PianoView::ensureVisible(qreal tick)
+void PianoView::ensureVisible(qreal tick, qreal horizontalOffset)
       {
       QRectF rect = mapToScene(viewport()->geometry()).boundingRect();
       const bool vertical = _orientation == PianoRollOrientation::VERTICAL;
@@ -3412,25 +3436,18 @@ void PianoView::ensureVisible(qreal tick)
             const qreal xpos = tickToPixelXF(tick);
 
             //
-            // Leave the viewport alone while the playback position is
-            // comfortably visible. Once it reaches the outer quarter of
-            // the view, scroll only enough to keep it on that boundary.
+            // horizontalOffset is zero during normal playback, which
+            // centers the playhead. At playback startup it initially
+            // represents the playhead's existing screen position and
+            // is gradually reduced to zero.
             //
-            const qreal margin = rect.width() / 4.0;
-            const qreal leftBoundary = rect.left() + margin;
-            const qreal rightBoundary = rect.right() - margin;
+            const qreal target =
+                  qMax(xpos
+                       - rect.width() / 2.0
+                       - horizontalOffset,
+                       0.0);
 
-            qreal target = horizontalScrollBar()->value();
-
-            if (xpos < leftBoundary)
-                  target -= leftBoundary - xpos;
-            else if (xpos > rightBoundary)
-                  target += xpos - rightBoundary;
-            else
-                  return;
-
-            horizontalScrollBar()->setValue(
-                  qMax(0, qRound(target)));
+            horizontalScrollBar()->setValue(qRound(target));
             }
       else if (vertical) {
             qreal ypos = tickToPixelYF(tick);

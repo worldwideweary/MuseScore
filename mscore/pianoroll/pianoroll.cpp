@@ -594,7 +594,20 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                           + elapsed * _playbackFollowTicksPerSecond;
 
                     pianoView->setPlaybackLocatorTick(predictedTick);
-                    pianoView->ensureVisible(predictedTick);
+
+                    //
+                    // Begin at the playhead's existing screen position and smoothly
+                    // converge to normal centered playback following.
+                    //
+                    const qreal settleTime = 0.75;
+                    const qreal settle =
+                          qBound<qreal>(0.0, elapsed / settleTime, 1.0);
+
+                    const qreal horizontalOffset =
+                          _playbackFollowHorizontalOffset * (1.0 - settle);
+
+                    pianoView->ensureVisible(predictedTick, horizontalOffset);
+
                     ruler->setPlaybackLocatorTick(predictedTick);
                     });
 
@@ -1460,6 +1473,7 @@ void PianorollEditor::stopPlaybackFollow()
       _playbackFollowActive = false;
       _playbackFollowVelocityValid = false;
       _playbackFollowTicksPerSecond = 0.0;
+      _playbackFollowHorizontalOffset = 0.0;
 
       pianoView->clearPlaybackLocatorTick();
       ruler->clearPlaybackLocatorTick();
@@ -1538,10 +1552,12 @@ void PianorollEditor::heartBeat(Seq* s)
             _playbackFollowLastSampleTick = tick;
             _playbackFollowTicksPerSecond = newTicksPerSecond;
 
+            _playbackFollowHorizontalOffset =
+                  pianoView->playbackFollowHorizontalOffset(tick);
+
             _playbackFollowElapsed.restart();
             _playbackFollowTimer->start();
 
-            pianoView->ensureVisible(tick);
             return;
             }
 

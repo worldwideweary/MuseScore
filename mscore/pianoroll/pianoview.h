@@ -252,7 +252,8 @@ private:
       void setOrientation(PianoRollOrientation orientation);
       Staff* staff() { return _staff; }
       void setStaff(Staff*, Pos* locator);
-      void ensureVisible(qreal tick);
+      qreal playbackFollowHorizontalOffset(qreal tick) const;
+      void ensureVisible(qreal tick, qreal horizontalOffset = 0.0);
       int noteHeight() { return _noteHeight; }
       qreal xZoom() { return _xZoom; }
       int tuplet() { return _tuplet; }
