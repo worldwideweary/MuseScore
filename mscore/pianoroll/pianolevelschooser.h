@@ -37,8 +37,8 @@ class PianoLevelsChooser : public QWidget, public Ui::PianoLevelsChooser
       Q_OBJECT
 
       int _levelsIndex;
-      Staff* _staff;
-      PianoView* _pianoView = nullptr;
+      Staff* _staff { nullptr };
+      PianoView* _pianoView { nullptr };
 
 public:
       Staff* staff() { return _staff; }
