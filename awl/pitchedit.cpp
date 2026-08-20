@@ -88,6 +88,11 @@ void PitchEdit::keyPressEvent(QKeyEvent* ev)
             return;
             }
 
+      if (_mixedPitch) {
+            _mixedPitch = false;
+            _typedTpc = Ms::TPC_INVALID;
+            }
+
       QSpinBox::keyPressEvent(ev);
       }
 
@@ -97,8 +102,19 @@ void PitchEdit::keyPressEvent(QKeyEvent* ev)
 
 void PitchEdit::setPitch(int p, int tpc)
       {
+      _mixedPitch = false;
       _typedTpc = tpc;
       setValue(p);
+      }
+
+//---------------------------------------------------------
+//   setMixedPitch
+//---------------------------------------------------------
+
+void PitchEdit::setMixedPitch()
+      {
+      _mixedPitch = true;
+      lineEdit()->clear();
       }
 
 //---------------------------------------------------------
@@ -107,6 +123,9 @@ void PitchEdit::setPitch(int p, int tpc)
 
 QString PitchEdit::textFromValue(int v) const
       {
+      if (_mixedPitch)
+            return QString();
+
       if (deltaMode)
             return QString("%1").arg(v);
 
@@ -129,6 +148,7 @@ QString PitchEdit::textFromValue(int v) const
 
 void PitchEdit::stepBy(int steps)
       {
+      _mixedPitch = false;
       QSpinBox::stepBy(steps);
 
       const int p = value();

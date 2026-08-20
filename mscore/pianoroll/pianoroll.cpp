@@ -1210,15 +1210,46 @@ void PianorollEditor::updateSelection()
       QList<PianoItem*> items = pianoView->getSelectedItems();
       bool enabled = false;
 
+      //
+      // Pitch can represent either a common selected pitch
+      // or a mixed selection.
+      //
+      if (!items.empty()) {
+            Note* first = items[0]->note();
+
+            const int firstPitch = first->pitch();
+            const int firstTpc = first->concertPitch()
+                  ? first->tpc1()
+                  : first->tpc2();
+
+            bool mixed = false;
+
+            for (int i = 1; i < items.size(); ++i) {
+                  Note* note = items[i]->note();
+
+                  const int noteTpc = note->concertPitch()
+                        ? note->tpc1()
+                        : note->tpc2();
+
+                  if (note->pitch() != firstPitch || noteTpc != firstTpc) {
+                        mixed = true;
+                        break;
+                        }
+                  }
+
+            if (mixed)
+                  pitch->setMixedPitch();
+            else
+                  pitch->setPitch(firstPitch, firstTpc);
+            }
+
+      //
+      // These fields still only have an unambiguous value
+      // when exactly one PianoItem is selected.
+      //
       if (items.size() == 1) {
             PianoItem* item = items[0];
             Note* note = item->note();
-
-            const int tpc = note->concertPitch()
-                  ? note->tpc1()
-                  : note->tpc2();
-
-            pitch->setPitch(note->pitch(), tpc);
 
             NoteEvent* event = item->getTweakNoteEvent();
             if (event) {
@@ -1232,7 +1263,7 @@ void PianorollEditor::updateSelection()
       // if all selected notes don't have the same veloType,
       // velocity field should be disabled
       bool sameVeloType = true;
-      if (items.size()) {
+      if (!items.empty()) {
             enabled = true;
 
             Note::ValueType vt = items[0]->note()->veloType();

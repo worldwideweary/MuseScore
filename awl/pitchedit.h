@@ -33,6 +33,7 @@ class PitchEdit : public QSpinBox {
 
       bool deltaMode;
       int _typedTpc { Ms::TPC_INVALID };
+      bool _mixedPitch { false };
 
    protected:
       virtual QString textFromValue(int v) const;
@@ -50,6 +51,7 @@ class PitchEdit : public QSpinBox {
       PitchEdit(QWidget* parent = 0);
       void setDeltaMode(bool);
       void setPitch(int pitch, int tpc);
+      void setMixedPitch();
       int typedTpc() const;
       };
 }
