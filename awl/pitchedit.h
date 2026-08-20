@@ -36,6 +36,7 @@ class PitchEdit : public QSpinBox {
 
    protected:
       virtual QString textFromValue(int v) const;
+      void stepBy(int steps) override;
       virtual int valueFromText(const QString& text) const;
       bool parsePitchText(const QString&, int&, int&) const;
       QValidator::State validate(QString& input, int& pos) const override;
@@ -48,6 +49,7 @@ class PitchEdit : public QSpinBox {
    public:
       PitchEdit(QWidget* parent = 0);
       void setDeltaMode(bool);
+      void setPitch(int pitch, int tpc);
       int typedTpc() const;
       };
 }

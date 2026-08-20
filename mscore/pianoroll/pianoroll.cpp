@@ -24,6 +24,7 @@
 #include "preferences.h"
 #include "waveview.h"
 #include "notetweakerdialog.h"
+#include "libmscore/accidental.h"
 #include "libmscore/staff.h"
 #include "libmscore/measure.h"
 #include "libmscore/note.h"
@@ -1213,7 +1214,11 @@ void PianorollEditor::updateSelection()
             PianoItem* item = items[0];
             Note* note = item->note();
 
-            pitch->setValue(note->pitch());
+            const int tpc = note->concertPitch()
+                  ? note->tpc1()
+                  : note->tpc2();
+
+            pitch->setPitch(note->pitch(), tpc);
 
             NoteEvent* event = item->getTweakNoteEvent();
             if (event) {
@@ -1746,6 +1751,9 @@ void PianorollEditor::applyPitchEdit()
                 && note->tpc2() == newTpc2)
                   continue;
 
+            if (note->accidental())
+                  _score->undoRemoveElement(note->accidental());
+
             _score->undoChangePitch(
                   note,
                   newPitch,
@@ -1761,6 +1769,7 @@ void PianorollEditor::applyPitchEdit()
       pianoView->updateNotes();
       pianoLevels->updateNotes();
       updateSelection();
+      pianoView->ensureSelectionVisible();
       }
 
 //---------------------------------------------------------

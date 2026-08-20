@@ -17,6 +17,7 @@
 //  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 //=============================================================================
 
+
 #include "pitchedit.h"
 #include "utils.h"
 
@@ -41,39 +42,19 @@ QValidator::State PitchEdit::validate(QString& input, int& /*pos*/) const
       {
       QString s = input.trimmed();
 
-      s.replace(QChar(0x266F), QChar('#')); // ♯ -> #
-      s.replace(QChar(0x266D), QChar('b')); // ♭ -> b
+      s.replace(QChar(0x266F), QChar('#'));
+      s.replace(QChar(0x266D), QChar('b'));
 
       if (s.isEmpty())
             return QValidator::Intermediate;
 
-      //
-      // Complete pitch name.
-      //
-      const QRegExp complete(
-            "^[A-Ga-g](#{0,3}|b{0,3})-?[0-9]$");
+      int parsedPitch;
+      int parsedTpc;
+      if (parsePitchText(s, parsedPitch, parsedTpc))
+            return QValidator::Acceptable;
 
-      if (complete.exactMatch(s)) {
-            int parsedPitch;
-            int parsedTpc;
-
-            if (parsePitchText(s, parsedPitch, parsedTpc))
-                  return QValidator::Acceptable;
-
-            return QValidator::Invalid;
-            }
-
-      //
-      // Legal partial input while typing:
-      // C
-      // C#
-      // C##
-      // C-
-      // etc.
-      //
-      const QRegExp partial(
-            "^[A-Ga-g](#{0,3}|b{0,3})?-?$");
-
+      // Permit incomplete/edit-in-progress pitch text.
+      const QRegExp partial("^[A-Ga-g#b0-9-]{0,6}$");
       if (partial.exactMatch(s))
             return QValidator::Intermediate;
 
@@ -111,6 +92,16 @@ void PitchEdit::keyPressEvent(QKeyEvent* ev)
       }
 
 //---------------------------------------------------------
+//   setPitch
+//---------------------------------------------------------
+
+void PitchEdit::setPitch(int p, int tpc)
+      {
+      _typedTpc = tpc;
+      setValue(p);
+      }
+
+//---------------------------------------------------------
 //   textFromValue
 //---------------------------------------------------------
 
@@ -118,8 +109,43 @@ QString PitchEdit::textFromValue(int v) const
       {
       if (deltaMode)
             return QString("%1").arg(v);
-      else
-            return pitch2string(v);
+
+      if (Ms::tpcIsValid(_typedTpc)) {
+            QString name = Ms::tpc2name(
+                  _typedTpc,
+                  Ms::NoteSpellingType::STANDARD,
+                  Ms::NoteCaseType::CAPITAL);
+
+            const int octave = (v / 12) - 1;
+            return name + QString::number(octave);
+            }
+
+      return pitch2string(v);
+      }
+
+//---------------------------------------------------------
+//   stepBy
+//---------------------------------------------------------
+
+void PitchEdit::stepBy(int steps)
+      {
+      QSpinBox::stepBy(steps);
+
+      const int p = value();
+
+      if (!Ms::pitchIsValid(p)) {
+            _typedTpc = Ms::TPC_INVALID;
+            return;
+            }
+
+      const Ms::Key neutralKey = static_cast<Ms::Key>(0); // Key::C
+
+      if (steps > 0)
+            _typedTpc = Ms::pitch2tpc(p, neutralKey, Ms::Prefer::SHARPS);
+      else if (steps < 0)
+            _typedTpc = Ms::pitch2tpc(p, neutralKey, Ms::Prefer::FLATS);
+
+      lineEdit()->setText(textFromValue(p));
       }
 
 //---------------------------------------------------------
