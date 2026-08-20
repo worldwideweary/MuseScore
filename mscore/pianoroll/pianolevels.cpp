@@ -297,68 +297,83 @@ void PianoLevels::paintEvent(QPaintEvent* e)
       p.setBrush(Qt::NoBrush);
       int pix0 = valToPixel(0);
 
-      for (int i = 0; i < noteList.size(); ++i) {
-            Note* note = noteList[i];
+      for (int pass = 0; pass < 2; ++pass) {
+            for (int i = 0; i < noteList.size(); ++i) {
+                  Note* note = noteList[i];
 
-            bool even = false;
-            Staff* const staff = note->staff();
-            if (_scope == PianoRollScope::PART && staff && staff->part()) {
-                  const QList<Staff*>* staves = staff->part()->staves();
-                  int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
-                  even = (staffPos % 2 == 0);
-                  }
+                  //
+                  // Draw unselected notes first, selected notes second,
+                  // so overlapping notes from another staff cannot obscure
+                  // the selection indication.
+                  //
+                  const bool selected = note->selected();
 
-            if (dark)
-                  noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
-                                        : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
-            else
-                  noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
-                                        : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
+                  if ((pass == 0 && selected)
+                      || (pass == 1 && !selected))
+                        continue;
+
+                  bool even = false;
+                  Staff* const staff = note->staff();
 
 
-            if (filter->isPerEvent()) {
-                  for (NoteEvent& ne : note->playEvents()) {
-                        int tp = tickToPixel(noteStartTick(note, &ne));
-                        int val = filter->value(_staff, note, &ne);
-                        int vp = valToPixel(val);
+                 if (_scope == PianoRollScope::PART && staff && staff->part()) {
+                       const QList<Staff*>* staves = staff->part()->staves();
+                       int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
+                       even = (staffPos % 2 == 0);
+                       }
 
-                        p.setPen(QPen(note->selected()
-                              ? noteSelected
-                              : noteDeselected, 2));
+                 if (dark)
+                       noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
+                                             : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
+                 else
+                       noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
+                                             : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
 
-                        if (_orientation == PianoRollOrientation::HORIZONTAL) {
-                              p.drawLine(tp, pix0, tp, vp);
-                              p.drawLine(tp, vp, tp + levelLen, vp);
-                              p.drawEllipse(tp - 1, vp - 1, 3, 3);
-                              }
-                        else {
-                              p.drawLine(pix0, tp, vp, tp);
-                              p.drawLine(vp, tp, vp, tp + levelLen);
-                              p.drawEllipse(vp - 1, tp - 1, 3, 3);
-                              }
-                        }
 
-                  }
-            else {
-                  int tp = tickToPixel(noteStartTick(note, 0));
-                  int val = filter->value(_staff, note, 0);
-                  int vp = valToPixel(val);
+                 if (filter->isPerEvent()) {
+                       for (NoteEvent& ne : note->playEvents()) {
+                             int tp = tickToPixel(noteStartTick(note, &ne));
+                             int val = filter->value(note->staff(), note, &ne);
+                             int vp = valToPixel(val);
 
-                  p.setPen(QPen(note->selected()
-                        ? noteSelected
-                        : noteDeselected, 2));
+                             p.setPen(QPen(selected
+                                   ? noteSelected
+                                   : noteDeselected, 2));
 
-                  if (_orientation == PianoRollOrientation::HORIZONTAL) {
-                        p.drawLine(tp, pix0, tp, vp);
-                        p.drawLine(tp, vp, tp + levelLen, vp);
-                        p.drawEllipse(tp - 1, vp - 1, 3, 3);
-                        }
-                  else {
-                        p.drawLine(pix0, tp, vp, tp);
-                        p.drawLine(vp, tp, vp, tp + levelLen);
-                        p.drawEllipse(vp - 1, tp - 1, 3, 3);
-                        }
-                  }
+                             if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                                   p.drawLine(tp, pix0, tp, vp);
+                                   p.drawLine(tp, vp, tp + levelLen, vp);
+                                   p.drawEllipse(tp - 1, vp - 1, 3, 3);
+                                   }
+                             else {
+                                   p.drawLine(pix0, tp, vp, tp);
+                                   p.drawLine(vp, tp, vp, tp + levelLen);
+                                   p.drawEllipse(vp - 1, tp - 1, 3, 3);
+                                   }
+                             }
+
+                       }
+                 else {
+                       int tp = tickToPixel(noteStartTick(note, nullptr));
+                       int val = filter->value(note->staff(), note, nullptr);
+                       int vp = valToPixel(val);
+
+                       p.setPen(QPen(selected
+                             ? noteSelected
+                             : noteDeselected, 2));
+
+                       if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                             p.drawLine(tp, pix0, tp, vp);
+                             p.drawLine(tp, vp, tp + levelLen, vp);
+                             p.drawEllipse(tp - 1, vp - 1, 3, 3);
+                             }
+                       else {
+                             p.drawLine(pix0, tp, vp, tp);
+                             p.drawLine(vp, tp, vp, tp + levelLen);
+                             p.drawEllipse(vp - 1, tp - 1, 3, 3);
+                             }
+                       }
+                 }
             }
       }
 
@@ -421,7 +436,7 @@ bool PianoLevels::pickNoteEvent(int x, int y, bool selectedOnly, Note*& pickedNo
                               tickToPixel(noteStartTick(note, &e));
 
                         const int noteVal =
-                              valToPixel(filter->value(_staff, note, &e));
+                              valToPixel(filter->value(note->staff(), note, &e));
 
                         const int noteX =
                               _orientation == PianoRollOrientation::HORIZONTAL
@@ -448,7 +463,7 @@ bool PianoLevels::pickNoteEvent(int x, int y, bool selectedOnly, Note*& pickedNo
                         tickToPixel(noteStartTick(note, nullptr));
 
                   const int noteVal =
-                        valToPixel(filter->value(_staff, note, nullptr));
+                        valToPixel(filter->value(note->staff(), note, nullptr));
 
                   const int noteX =
                         _orientation == PianoRollOrientation::HORIZONTAL
