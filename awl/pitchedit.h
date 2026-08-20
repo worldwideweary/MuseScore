@@ -20,6 +20,8 @@
 #ifndef __AWLPITCHEDIT_H__
 #define __AWLPITCHEDIT_H__
 
+#include "libmscore/pitchspelling.h"
+
 namespace Awl {
 
 //---------------------------------------------------------
@@ -30,10 +32,12 @@ class PitchEdit : public QSpinBox {
       Q_OBJECT
 
       bool deltaMode;
+      mutable int _typedTpc { Ms::TPC_INVALID };
 
    protected:
       virtual QString textFromValue(int v) const;
       virtual int valueFromText(const QString& text) const;
+      QValidator::State validate(QString& input, int& pos) const override;
       virtual void keyPressEvent(QKeyEvent*);
 
    signals:
@@ -43,6 +47,7 @@ class PitchEdit : public QSpinBox {
    public:
       PitchEdit(QWidget* parent = 0);
       void setDeltaMode(bool);
+      int typedTpc() const;
       };
 }
 

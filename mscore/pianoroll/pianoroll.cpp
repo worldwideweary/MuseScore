@@ -433,7 +433,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       tbTweak->addWidget(new QLabel(tr("Pitch:")));
       pitch = new Awl::PitchEdit;
-      pitch->setReadOnly(true);
+      pitch->setReadOnly(false);
       tbTweak->addWidget(pitch);
 
       tbTweak->addWidget(new QLabel(tr("OnTime:")));
@@ -615,6 +615,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
 
       velocity->installEventFilter(this);
+      pitch->installEventFilter(this);
       onTime->installEventFilter(this);
       tickLen->installEventFilter(this);
       subdiv->installEventFilter(this);
@@ -644,6 +645,14 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                     pianoView->setBarPattern(index);
                     restoreScoreViewFocus();
                     });
+
+      connect(pitch,
+            &Awl::PitchEdit::returnPressed,
+            this,
+            [this]() {
+                  applyPitchEdit();
+                  restoreScoreViewFocus();
+                  });
 
       connect(subdiv,             SIGNAL(valueChanged(int)),              pianoView,   SLOT(setSubdiv(int)));
       connect(subdiv,             SIGNAL(valueChanged(int)),              pianoLevels, SLOT(setSubdiv(int)));
@@ -858,6 +867,16 @@ bool PianorollEditor::eventFilter(QObject* obj, QEvent* event)
                   || ke->key() == Qt::Key_Down;
 
             if (spinBoxHasFocus && verticalArrowPress) {
+                  event->accept();
+                  return true;
+                  }
+
+            const bool pitchEnterPress =
+                  obj == pitch
+                  && (ke->key() == Qt::Key_Return
+                      || ke->key() == Qt::Key_Enter);
+
+            if (pitchEnterPress) {
                   event->accept();
                   return true;
                   }
@@ -1682,6 +1701,71 @@ void PianorollEditor::doUpdate()
       pianoView->updateNotes();
       pianoLevels->updateNotes();
       }
+
+//---------------------------------------------------------
+//   applyPitchEdit
+//---------------------------------------------------------
+
+void PianorollEditor::applyPitchEdit()
+      {
+      if (!_score)
+            return;
+
+      const int newPitch = pitch->value();
+      const int tpc = pitch->typedTpc();
+
+      if (!pitchIsValid(newPitch) || !tpcIsValid(tpc))
+            return;
+
+      std::list<Note*> notes = _score->selection().uniqueNotes();
+      if (notes.empty())
+            return;
+
+      _score->startCmd();
+
+      for (Note* note : notes) {
+            int newTpc1;
+            int newTpc2;
+
+            //
+            // The typed TPC describes the pitch spelling currently
+            // presented to the user. Derive the corresponding other
+            // TPC for concert/transposed representation.
+            //
+            if (note->concertPitch()) {
+                  newTpc1 = tpc;
+                  newTpc2 = note->transposeTpc(tpc);
+                  }
+            else {
+                  newTpc2 = tpc;
+                  newTpc1 = note->transposeTpc(tpc);
+                  }
+
+            if (note->pitch() == newPitch
+                && note->tpc1() == newTpc1
+                && note->tpc2() == newTpc2)
+                  continue;
+
+            _score->undoChangePitch(
+                  note,
+                  newPitch,
+                  newTpc1,
+                  newTpc2);
+            }
+
+      _score->endCmd();
+
+      //
+      // Refresh PRE note geometry and the tweak controls immediately.
+      //
+      pianoView->updateNotes();
+      pianoLevels->updateNotes();
+      updateSelection();
+      }
+
+//---------------------------------------------------------
+//   playlistChanged
+//---------------------------------------------------------
 
 void PianorollEditor::playlistChanged()
       {
