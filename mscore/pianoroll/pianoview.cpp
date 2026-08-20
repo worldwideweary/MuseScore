@@ -3410,16 +3410,27 @@ void PianoView::ensureVisible(qreal tick)
 
       if (horizontal) {
             const qreal xpos = tickToPixelXF(tick);
-            const qreal margin = rect.width() / 2.0;
+
+            //
+            // Leave the viewport alone while the playback position is
+            // comfortably visible. Once it reaches the outer quarter of
+            // the view, scroll only enough to keep it on that boundary.
+            //
+            const qreal margin = rect.width() / 4.0;
+            const qreal leftBoundary = rect.left() + margin;
+            const qreal rightBoundary = rect.right() - margin;
 
             qreal target = horizontalScrollBar()->value();
 
-            if (xpos < rect.x() + margin)
-                  target = qMax(xpos - margin, 0.0);
-            else if (xpos >= rect.x() + rect.width() - margin)
-                  target = qMax(xpos - rect.width() + margin, 0.0);
+            if (xpos < leftBoundary)
+                  target -= leftBoundary - xpos;
+            else if (xpos > rightBoundary)
+                  target += xpos - rightBoundary;
+            else
+                  return;
 
-            horizontalScrollBar()->setValue(qRound(target));
+            horizontalScrollBar()->setValue(
+                  qMax(0, qRound(target)));
             }
       else if (vertical) {
             qreal ypos = tickToPixelYF(tick);
