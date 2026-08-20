@@ -99,6 +99,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       void updateSelection();
       void readSettings();
       void doUpdate();
+      void applyPitchEdit();
 
       void stopPlaybackFollow();
 
