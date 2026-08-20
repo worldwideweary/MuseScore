@@ -48,32 +48,32 @@ class WaveView;
 class PianorollEditor : public QWidget, public MuseScoreView {
       Q_OBJECT
 
-      PianoView* pianoView;
-      PianoKeyboard* pianoKbd;
+      PianoView* pianoView { nullptr };
+      PianoKeyboard* pianoKbd { nullptr };
       PianoLevels* pianoLevels { nullptr };
-      PianoLevelsChooser* pianoLevelsChooser;
+      PianoLevelsChooser* pianoLevelsChooser { nullptr };
       QWidget* levelsAreaWidget { nullptr };
       bool _showPianoLevels { true };
-      QScrollBar* hsb;        // horizontal scroll bar for pianoView
+      QScrollBar* hsb { nullptr };        // horizontal scroll bar for pianoView
       QGridLayout* noteAreaLayout { nullptr };
       QWidget* topLeftSpacer { nullptr };
-      Score* _score;
-      Staff* staff;
-      QLabel* partLabel;
-      Awl::PitchEdit* pitch;
-      QSpinBox* velocity;
-      QSpinBox* onTime;
-      QSpinBox* tickLen;
+      Score* _score { nullptr };
+      Staff* staff { nullptr };
+      QLabel* partLabel { nullptr };
+      Awl::PitchEdit* pitch { nullptr };
+      QSpinBox* velocity { nullptr };
+      QSpinBox* onTime { nullptr };
+      QSpinBox* tickLen { nullptr };
       Pos locator[3];
-      QComboBox* barPattern;
-      QComboBox* veloType;
-      QSpinBox* subdiv;
-      QSpinBox* tuplet;
-      Awl::PosLabel* pos;
-      PianoRuler* ruler;
-      QAction* showWave;
-      WaveView* waveView;
-      QSplitter* split;
+      QComboBox* barPattern { nullptr };
+      QComboBox* veloType { nullptr };
+      QSpinBox* subdiv { nullptr };
+      QSpinBox* tuplet { nullptr };
+      Awl::PosLabel* pos { nullptr };
+      PianoRuler* ruler { nullptr };
+      QAction* showWave { nullptr };
+      WaveView* waveView { nullptr };
+      QSplitter* split { nullptr };
       QList<QAction*> actions;
       PianoRollScope _scope;
       PianoRollOrientation _orientation;
@@ -94,7 +94,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       bool _verticalPitchScrollValid { false };
 
       bool updateScheduled = false;
-      NoteTweakerDialog* noteTweakerDlg;
+      NoteTweakerDialog* noteTweakerDlg { nullptr };
 
       void updateVelocity(Note* note);
       void updateSelection();
