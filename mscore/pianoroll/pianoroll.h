@@ -50,7 +50,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
 
       PianoView* pianoView;
       PianoKeyboard* pianoKbd;
-      PianoLevels* pianoLevels;
+      PianoLevels* pianoLevels { nullptr };
       PianoLevelsChooser* pianoLevelsChooser;
       QWidget* levelsAreaWidget { nullptr };
       bool _showPianoLevels { true };
@@ -91,6 +91,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       bool _playbackFollowActive { false };
       qreal _playbackFollowTicksPerSecond { 0.0 };
       bool _playbackFollowVelocityValid { false };
+      qreal _playbackFollowHorizontalOffset { 0.0 };
 
       bool updateScheduled = false;
       NoteTweakerDialog* noteTweakerDlg;
