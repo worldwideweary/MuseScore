@@ -1571,8 +1571,21 @@ void PianoView::drawPitchText(QPainter* p,
             bounds.width() - 6,
             bounds.height());
 
-      QFont f("FreeSans", 12);
-      p->setFont(f);
+
+      //
+      // Scale pitch text with note height, while keeping it within
+      // sensible readable limits.
+      //
+      // const qreal pointSize = qBound<qreal>(8.0, bounds.height() * 0.55, 24.0);
+      const int fontSize =
+            qBound(8,
+                   qRound(bounds.height() * 0.65),
+                   28);
+
+      QFont font("FreeSans");
+      font.setPixelSize(fontSize);
+
+      p->setFont(font);
 
       p->setPen(QPen(noteColor.lighter(130)));
       p->drawText(
