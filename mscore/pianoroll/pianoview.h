@@ -197,6 +197,9 @@ private:
                   _editNoteTool == PianoRollEditTool::TIE;
             }
 
+      void drawPitchText(QPainter* p, const QRectF& bounds, const QString& name, const QColor& noteColor);
+      QString pitchNameForMidi(int) const;
+
       QAction* getAction(const char* id);
       void updateCursor();
 
@@ -236,7 +239,7 @@ private:
       QString serializeSelectedNotes();
       QVector<Note*> pasteNotes(const QString& copiedNotes, Fraction pasteStartTick, Fraction lengthOffset, int pitchOffset, bool xIsOffset = false);
       void drawDraggedNotes(QPainter* painter);
-      void drawDraggedNote(QPainter* painter, Fraction startTick, Fraction frac, int pitch, int track, QColor color);
+      void drawDraggedNote(QPainter* painter, Fraction startTick, Fraction frac, int pitch, int track, QColor color, const QString& pitchName = QString());
 
       void cutNotes();
       void copyNotes();
