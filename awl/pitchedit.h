@@ -32,11 +32,12 @@ class PitchEdit : public QSpinBox {
       Q_OBJECT
 
       bool deltaMode;
-      mutable int _typedTpc { Ms::TPC_INVALID };
+      int _typedTpc { Ms::TPC_INVALID };
 
    protected:
       virtual QString textFromValue(int v) const;
       virtual int valueFromText(const QString& text) const;
+      bool parsePitchText(const QString&, int&, int&) const;
       QValidator::State validate(QString& input, int& pos) const override;
       virtual void keyPressEvent(QKeyEvent*);
 
