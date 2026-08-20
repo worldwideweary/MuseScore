@@ -417,8 +417,22 @@ bool PianoLevels::pickNoteEvent(int x, int y, bool selectedOnly, Note*& pickedNo
 
             if (filter->isPerEvent()) {
                   for (NoteEvent& e : note->playEvents()) {
-                        int noteX = tickToPixelX(noteStartTick(note, &e));
-                        int noteY = valToPixelY(filter->value(note->staff(), note, &e));
+                        const int noteTick =
+                              tickToPixel(noteStartTick(note, &e));
+
+                        const int noteVal =
+                              valToPixel(filter->value(_staff, note, &e));
+
+                        const int noteX =
+                              _orientation == PianoRollOrientation::HORIZONTAL
+                              ? noteTick
+                              : noteVal;
+
+                        const int noteY =
+                              _orientation == PianoRollOrientation::HORIZONTAL
+                              ? noteVal
+                              : noteTick;
+
                         int dx = noteX - x;
                         int dy = noteY - y;
 
@@ -430,8 +444,22 @@ bool PianoLevels::pickNoteEvent(int x, int y, bool selectedOnly, Note*& pickedNo
                         }
                   }
             else {
-                  int noteX = tickToPixelX(noteStartTick(note, nullptr));
-                  int noteY = valToPixelY(filter->value(note->staff(), note, nullptr));
+                  const int noteTick =
+                        tickToPixel(noteStartTick(note, nullptr));
+
+                  const int noteVal =
+                        valToPixel(filter->value(_staff, note, nullptr));
+
+                  const int noteX =
+                        _orientation == PianoRollOrientation::HORIZONTAL
+                        ? noteTick
+                        : noteVal;
+
+                  const int noteY =
+                        _orientation == PianoRollOrientation::HORIZONTAL
+                        ? noteVal
+                        : noteTick;
+
                   int dx = noteX - x;
                   int dy = noteY - y;
 
@@ -637,9 +665,13 @@ void PianoLevels::mouseReleaseEvent(QMouseEvent* e)
                   //Handle click
                   lastMousePos = e->pos();
 
-                  int tick0 = pixelXToTick(lastMousePos.x() - 4);
-                  int tick1 = pixelXToTick(lastMousePos.x() + 4);
-                  int val = pixelYToVal(lastMousePos.y());
+                  const int timePixel = mouseTimePixel(lastMousePos);
+                  const int valuePixel = mouseValuePixel(lastMousePos);
+
+                  int tick0 = pixelToTick(timePixel - 4);
+                  int tick1 = pixelToTick(timePixel + 4);
+                  int val = pixelToVal(valuePixel);
+
                   adjustLevelLerp(tick0, val, tick1, val);
             }
 
@@ -669,24 +701,25 @@ void PianoLevels::mouseMoveEvent(QMouseEvent* e)
 
             if (dragging) {
                   if (dragStyle == DragStyle::OFFSET) {
-                        int val = pixelYToVal(lastMousePos.y());
+                        int val = pixelToVal(mouseValuePixel(lastMousePos));
                         adjustLevel(singleNoteDrag, singleNoteEventDrag, val);
                         }
                   else {
-                        int tick0 = pixelXToTick(lastMousePos.x());
-                        int tick1 = pixelXToTick(e->x());
+                        int tick0 =
+                              pixelToTick(mouseTimePixel(lastMousePos));
+                        int tick1 =
+                              pixelToTick(mouseTimePixel(e->pos()));
 
                         int val0;
                         int val1;
 
                         if (bnShift) {
-                              //If shift is held, set to value at mousedown
-                              val0 = pixelYToVal(mouseDownPos.y());
-                              val1 = pixelYToVal(mouseDownPos.y());
+                              val0 = pixelToVal(mouseValuePixel(mouseDownPos));
+                              val1 = val0;
                               }
                         else {
-                              val0 = pixelYToVal(lastMousePos.y());
-                              val1 = pixelYToVal(e->y());
+                              val0 = pixelToVal(mouseValuePixel(lastMousePos));
+                              val1 = pixelToVal(mouseValuePixel(e->pos()));
                               }
 
                         adjustLevelLerp(tick0, val0, tick1, val1);
@@ -704,7 +737,12 @@ void PianoLevels::mouseMoveEvent(QMouseEvent* e)
 
 void PianoLevels::moveLocator(QMouseEvent* e)
       {
-      Pos pos(_score->tempomap(), _score->sigmap(), qMax(pixelXToTick(e->pos().x()), 0), TType::TICKS);
+      Pos pos(
+            _score->tempomap(),
+            _score->sigmap(),
+            qMax(pixelToTick(mouseTimePixel(e->pos())), 0),
+            TType::TICKS);
+
       if (e->buttons() & Qt::LeftButton)
             emit locatorMoved(0, pos);
       else if (e->buttons() & Qt::MiddleButton)
@@ -841,6 +879,28 @@ void PianoLevels::setScope(PianoRollScope scope)
 
       _scope = scope;
       updateNotes();
+      }
+
+//---------------------------------------------------------
+//   mouseTimePixel
+//---------------------------------------------------------
+
+int PianoLevels::mouseTimePixel(const QPointF& pos) const
+      {
+      return _orientation == PianoRollOrientation::HORIZONTAL
+            ? qRound(pos.x())
+            : qRound(pos.y());
+      }
+
+//---------------------------------------------------------
+//   mouseValuePixel
+//---------------------------------------------------------
+
+int PianoLevels::mouseValuePixel(const QPointF& pos) const
+      {
+      return _orientation == PianoRollOrientation::HORIZONTAL
+            ? qRound(pos.y())
+            : qRound(pos.x());
       }
 
 //---------------------------------------------------------

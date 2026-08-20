@@ -137,6 +137,9 @@ public:
 
       void setScope(PianoRollScope scope);
 
+      int mouseTimePixel(const QPointF& pos) const;
+      int mouseValuePixel(const QPointF& pos) const;
+
       int xpos() const { return _xpos; }
       qreal xZoom() const { return _xZoom; }
 };
