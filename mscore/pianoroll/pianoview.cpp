@@ -1598,7 +1598,7 @@ QString PianoView::pitchNameForMidi(int pitch) const
             "F#", "G", "G#", "A", "A#", "B"
             };
 
-      if (pitch < 0 || pitch > 127)
+      if (!pitchIsValid(pitch))
             return QString();
 
       return QString("%1%2")
@@ -2351,7 +2351,9 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                   Fraction endTickFrac = roundToNearestBeat(endTick, false);
 
                   if (endTickFrac != startTickFrac) {
-                        double pitch = pixelYToPitch(_mouseDownPos.y());
+                        const int pitch = scenePosToPitch(_mouseDownPos);
+                        if (!pitchIsValid(pitch))
+                              return;
 
                         Score* curScore = _staff->score();
 
@@ -2365,7 +2367,7 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
 
                         //Do command
                         curScore->startCmd();
-                        addNote(startTickFrac, duration, (int)pitch, track);
+                        addNote(startTickFrac, duration, pitch, track);
                         curScore->endCmd();
 
                         updateNotes();
@@ -2731,11 +2733,12 @@ QVector<Note*> PianoView::getSegmentNotes(Segment* seg, int track)
 
 QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pitch, int track)
       {
-      NoteVal added_note_pitch(pitch);
+      QVector<Note*> addedNotes;
+      if (!pitchIsValid(pitch))
+            return addedNotes;
 
       Score* score = _staff->score();
-
-      QVector<Note*> addedNotes;
+      NoteVal added_note_pitch(pitch);
 
       ChordRest* curCr = score->findCR(startTick, track);
       if (curCr) {
