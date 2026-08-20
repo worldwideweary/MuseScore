@@ -1552,39 +1552,68 @@ void PianoView::drawPitchText(QPainter* p,
                               const QString& name,
                               const QColor& noteColor)
       {
-
       if (!preferences.getBool(PREF_UI_PIANOROLL_SHOW_PITCH_TEXT))
             return;
 
-      if (bounds.width() < 20 || bounds.height() < 12)
+      const qreal pitchThickness =
+            _orientation == PianoRollOrientation::HORIZONTAL
+            ? bounds.height()
+            : bounds.width();
+
+      const qreal timeLength =
+            _orientation == PianoRollOrientation::HORIZONTAL
+            ? bounds.width()
+            : bounds.height();
+
+      if (pitchThickness < 12.0 || timeLength < 20.0)
             return;
 
-      QRectF textRect(
-            bounds.x() + 2,
-            bounds.y(),
-            bounds.width() - 6,
-            bounds.height() + 1);
+      const int fontSize =
+            qBound(8,
+                   qRound(pitchThickness * 0.65),
+                   28);
 
-      QRectF textHiliteRect(
-            bounds.x() + 3,
-            bounds.y() + 1,
-            bounds.width() - 6,
-            bounds.height());
-
-      QFont f("FreeSans", 12);
+      QFont f("FreeSans");
+      f.setPixelSize(fontSize);
       p->setFont(f);
 
+      const qreal textInset =
+            qMax<qreal>(2.0, fontSize * 0.15);
+
+      const qreal shadowOffset =
+            qMax<qreal>(1.0, fontSize * 0.08);
+
+      QRectF textRect;
+      Qt::Alignment textAlign;
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            textRect = QRectF(
+                  bounds.x() + textInset,
+                  bounds.y(),
+                  bounds.width() - textInset * 2.0,
+                  bounds.height());
+
+            textAlign = Qt::Alignment(
+                  Qt::AlignLeft | Qt::AlignTop);
+            }
+      else {
+            textRect = QRectF(
+                  bounds.x(),
+                  bounds.y() + textInset,
+                  bounds.width(),
+                  bounds.height() - textInset * 2.0);
+
+            textAlign = Qt::Alignment(
+                  Qt::AlignHCenter | Qt::AlignBottom);
+            }
+
+      QRectF textHiliteRect = textRect.translated(shadowOffset, shadowOffset);
+
       p->setPen(QPen(noteColor.lighter(130)));
-      p->drawText(
-            textHiliteRect,
-            Qt::AlignLeft | Qt::AlignTop,
-            name);
+      p->drawText(textHiliteRect, textAlign, name);
 
       p->setPen(QPen(noteColor.darker(180)));
-      p->drawText(
-            textRect,
-            Qt::AlignLeft | Qt::AlignTop,
-            name);
+      p->drawText(textRect, textAlign, name);
       }
 
 //---------------------------------------------------------
