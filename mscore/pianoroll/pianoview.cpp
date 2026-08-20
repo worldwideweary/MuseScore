@@ -1059,6 +1059,14 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
                   }
             else {
                   noteColor = pianoRollNoteColor(note, _coloring, true);
+
+                  const bool ghostOriginal = _dragStarted && note->selected()
+                        && (_dragStyle != DragStyle::CANCELLED &&
+                            _dragStyle != DragStyle::SELECTION_RECT &&
+                            _dragStyle != DragStyle::MOVE_VIEWPORT);
+
+                  if (ghostOriginal)
+                        noteColor.setAlphaF(0.25);
                   }
 
             p->setBrush(noteColor);
@@ -1075,40 +1083,11 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
                   _noteRectRoundedRadius,
                   _noteRectRoundedRadius);
 
-            //
-            // Existing pitch-name drawing stays here,
-            // still using this event's noteColor.
-            //
-            if (bounds.width() >= 20 && bounds.height() >= 12) {
-                  QRectF textRect(
-                        bounds.x() + 2,
-                        bounds.y(),
-                        bounds.width() - 6,
-                        bounds.height() + 1);
-
-                  QRectF textHiliteRect(
-                        bounds.x() + 3,
-                        bounds.y() + 1,
-                        bounds.width() - 6,
-                        bounds.height());
-
-                  QFont f("FreeSans", 8);
-                  p->setFont(f);
-
-                  QString name = note->tpcUserName();
-
-                  p->setPen(QPen(noteColor.lighter(130)));
-                  p->drawText(
-                        textHiliteRect,
-                        Qt::AlignLeft | Qt::AlignTop,
-                        name);
-
-                  p->setPen(QPen(noteColor.darker(180)));
-                  p->drawText(
-                        textRect,
-                        Qt::AlignLeft | Qt::AlignTop,
-                        name);
-                  }
+            drawPitchText(
+                  p,
+                  bounds,
+                  note->tpcUserName(),
+                  noteColor);
             }
 
       if (_editNoteTool != PianoRollEditTool::EVENT_ADJUST) {
@@ -1505,6 +1484,69 @@ int PianoView::scenePosToPitch(const QPointF& pos) const
       // Outside the represented pitch range.
       //
       return -1;
+      }
+
+//---------------------------------------------------------
+//   drawPitchText
+//---------------------------------------------------------
+
+void PianoView::drawPitchText(QPainter* p,
+                              const QRectF& bounds,
+                              const QString& name,
+                              const QColor& noteColor)
+      {
+
+      if (!preferences.getBool(PREF_UI_PIANOROLL_SHOW_PITCH_TEXT))
+            return;
+
+      if (bounds.width() < 20 || bounds.height() < 12)
+            return;
+
+      QRectF textRect(
+            bounds.x() + 2,
+            bounds.y(),
+            bounds.width() - 6,
+            bounds.height() + 1);
+
+      QRectF textHiliteRect(
+            bounds.x() + 3,
+            bounds.y() + 1,
+            bounds.width() - 6,
+            bounds.height());
+
+      QFont f("FreeSans", 12);
+      p->setFont(f);
+
+      p->setPen(QPen(noteColor.lighter(130)));
+      p->drawText(
+            textHiliteRect,
+            Qt::AlignLeft | Qt::AlignTop,
+            name);
+
+      p->setPen(QPen(noteColor.darker(180)));
+      p->drawText(
+            textRect,
+            Qt::AlignLeft | Qt::AlignTop,
+            name);
+      }
+
+//---------------------------------------------------------
+//   pitchNameForMidi
+//---------------------------------------------------------
+
+QString PianoView::pitchNameForMidi(int pitch) const
+      {
+      static const char* names[] = {
+            "C", "C#", "D", "D#", "E", "F",
+            "F#", "G", "G#", "A", "A#", "B"
+            };
+
+      if (pitch < 0 || pitch > 127)
+            return QString();
+
+      return QString("%1%2")
+            .arg(names[pitch % 12])
+            .arg(pitch / 12 - 1);
       }
 
 //---------------------------------------------------------
@@ -4244,7 +4286,15 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                         return;
                   int track = (int)_staff->idx() * VOICES + _editNoteVoice;
 
-                  drawDraggedNote(painter, startTickFrac, endTickFrac - startTickFrac, pitch, track, noteColor);
+                  // DRAW_NOTE
+                  drawDraggedNote(painter,
+                                  startTickFrac,
+                                  endTickFrac - startTickFrac,
+                                  pitch,
+                                  track,
+                                  noteColor,
+                                  pitchNameForMidi(pitch));
+
                   }
             return;
             }
@@ -4295,7 +4345,13 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                               int voice = pi->note()->voice();
                               int track = (int)_staff->idx() * VOICES + voice;
 
-                              drawDraggedNote(painter, startNew, lenNew, pitch, track, noteColor);
+                              drawDraggedNote(painter,
+                                              startNew,
+                                              lenNew,
+                                              pitch,
+                                              track,
+                                              noteColor,
+                                              pi->note()->tpcUserName());
 
                               // Same as finishNoteEventAdjustDrag:
                               int evtOntimeNew = int(((startNew - start) / ticks).toDouble() * 1000);
@@ -4395,7 +4451,16 @@ void PianoView::drawDraggedNotes(QPainter* painter)
 
                         int track = _staff->idx() * VOICES + voice;
 
-                        drawDraggedNote(painter, fStartTick + pasteTickOffset, tickLen, pitch + pitchOffset, track, noteColor);
+                        // NOTE_POSITION / NOTE_LENGTH_*
+                        const int previewPitch = pitch + pitchOffset;
+
+                        drawDraggedNote(painter,
+                                        fStartTick + pasteTickOffset,
+                                        tickLen,
+                                        previewPitch,
+                                        track,
+                                        noteColor,
+                                        pitchNameForMidi(previewPitch));
                         }
                   }
             }
@@ -4405,7 +4470,13 @@ void PianoView::drawDraggedNotes(QPainter* painter)
 //   drawDraggedNote
 //---------------------------------------------------------
 
-void PianoView::drawDraggedNote(QPainter* painter, Fraction startTick, Fraction frac, int pitch, int track, QColor color)
+void PianoView::drawDraggedNote(QPainter* painter,
+                                Fraction startTick,
+                                Fraction frac,
+                                int pitch,
+                                int track,
+                                QColor color,
+                                const QString& pitchName)
       {
       Q_UNUSED(track);
       painter->setBrush(color);
@@ -4428,6 +4499,9 @@ void PianoView::drawDraggedNote(QPainter* painter, Fraction startTick, Fraction 
                   PianoItem::NOTE_BLOCK_CORNER_RADIUS,
                   PianoItem::NOTE_BLOCK_CORNER_RADIUS
                   );
+
+            if (!pitchName.isEmpty())
+                  drawPitchText(painter, bounds, pitchName, color);
             }
       else {
             qreal center;
@@ -4458,6 +4532,9 @@ void PianoView::drawDraggedNote(QPainter* painter, Fraction startTick, Fraction 
                   PianoItem::NOTE_BLOCK_CORNER_RADIUS,
                   PianoItem::NOTE_BLOCK_CORNER_RADIUS
                   );
+
+            if (!pitchName.isEmpty())
+                  drawPitchText(painter, bounds, pitchName, color);
             }
       }
 
