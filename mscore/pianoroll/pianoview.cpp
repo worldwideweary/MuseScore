@@ -3398,10 +3398,34 @@ void PianoView::leaveEvent(QEvent* event)
       }
 
 //---------------------------------------------------------
+//   playbackFollowHorizontalOffset
+//---------------------------------------------------------
+
+qreal PianoView::playbackFollowHorizontalOffset(qreal tick) const
+      {
+      if (_orientation != PianoRollOrientation::HORIZONTAL)
+            return 0.0;
+
+      const QRectF rect =
+            mapToScene(viewport()->geometry()).boundingRect();
+
+      const qreal xpos = tickToPixelXF(tick);
+
+      //
+      // If playback already begins inside the visible viewport,
+      // preserve its current screen position initially.
+      //
+      if (xpos >= rect.left() && xpos <= rect.right())
+            return xpos - rect.center().x();
+
+      return 0.0;
+      }
+
+//---------------------------------------------------------
 //   ensureVisible
 //---------------------------------------------------------
 
-void PianoView::ensureVisible(qreal tick)
+void PianoView::ensureVisible(qreal tick, qreal horizontalOffset)
       {
       QRectF rect = mapToScene(viewport()->geometry()).boundingRect();
       const bool vertical = _orientation == PianoRollOrientation::VERTICAL;
@@ -3410,14 +3434,18 @@ void PianoView::ensureVisible(qreal tick)
 
       if (horizontal) {
             const qreal xpos = tickToPixelXF(tick);
-            const qreal margin = rect.width() / 2.0;
 
-            qreal target = horizontalScrollBar()->value();
-
-            if (xpos < rect.x() + margin)
-                  target = qMax(xpos - margin, 0.0);
-            else if (xpos >= rect.x() + rect.width() - margin)
-                  target = qMax(xpos - rect.width() + margin, 0.0);
+            //
+            // horizontalOffset is zero during normal playback, which
+            // centers the playhead. At playback startup it initially
+            // represents the playhead's existing screen position and
+            // is gradually reduced to zero.
+            //
+            const qreal target =
+                  qMax(xpos
+                       - rect.width() / 2.0
+                       - horizontalOffset,
+                       0.0);
 
             horizontalScrollBar()->setValue(qRound(target));
             }
