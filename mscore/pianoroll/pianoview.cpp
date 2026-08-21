@@ -2530,6 +2530,7 @@ void PianoView::finishNoteEventAdjustDrag()
       _levelPreviewActive = false;
 
       update();
+      emit noteEventsChanged();
       }
 
 

@@ -248,6 +248,7 @@ private:
       void onTimeDragged(int);
       void tickLenDragged(int);
       void showNoteTweakerRequest();
+      void noteEventsChanged();
 
    public slots:
       void moveLocator(int);

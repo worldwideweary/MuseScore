@@ -635,6 +635,11 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                   pianoLevels->update();
             });
 
+      connect(pianoView, &PianoView::noteEventsChanged, this, [this]() {
+            pianoLevels->update();
+            updateSelection();
+            });
+
       velocity->installEventFilter(this);
       pitch->installEventFilter(this);
       onTime->installEventFilter(this);
