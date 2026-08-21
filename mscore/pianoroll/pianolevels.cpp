@@ -316,141 +316,131 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                   Staff* const staff = note->staff();
 
 
-                 if (_scope == PianoRollScope::PART && staff && staff->part()) {
-                       const QList<Staff*>* staves = staff->part()->staves();
-                       int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
-                       even = (staffPos % 2 == 0);
-                       }
+                  if (_scope == PianoRollScope::PART && staff && staff->part()) {
+                        const QList<Staff*>* staves = staff->part()->staves();
+                        int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
+                        even = (staffPos % 2 == 0);
+                        }
 
-                 if (dark)
-                       noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
+                  if (dark)
+                        noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
                                              : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
-                 else
-                       noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
+                  else
+                        noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
                                              : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
 
+                  if (filter->isPerEvent()) {
 
-                 if (filter->isPerEvent()) {
-                       for (NoteEvent& ne : note->playEvents()) {
-                             Fraction previewNoteTick = note->chord()->tick();
-                             Fraction previewNoteLen = note->chord()->ticks();
+                        for (NoteEvent& ne : note->playEvents()) {
+                              Fraction previewNoteTick = note->chord()->tick();
+                              Fraction previewNoteLen = note->chord()->ticks();
 
-                             if (_pianoView
-                                 && note->selected()
-                                 && _pianoView->levelPreviewResizesNotes()) {
-                                   previewNoteTick += _pianoView->levelPreviewTickOffset();
-                                   previewNoteLen += _pianoView->levelPreviewLengthOffset();
-                                   }
+                              if (_pianoView
+                              && note->selected()
+                              && _pianoView->levelPreviewResizesNotes()) {
+                                    previewNoteTick += _pianoView->levelPreviewTickOffset();
+                                    previewNoteLen += _pianoView->levelPreviewLengthOffset();
+                                    }
 
-                             int previewTick;
+                              int previewTick;
 
-                             if (_pianoView
-                                 && note->selected()
-                                 && _pianoView->levelPreviewResizesNotes()) {
-                                   Fraction eventTick =
-                                         previewNoteTick
-                                         + previewNoteLen * ne.ontime() / 1000;
+                              if (_pianoView
+                              && note->selected()
+                              && _pianoView->levelPreviewResizesNotes()) {
+                                    Fraction eventTick =
+                                          previewNoteTick
+                                          + previewNoteLen * ne.ontime() / 1000;
 
-                                   previewTick = eventTick.ticks();
-                                   }
-                             else {
-                                   previewTick = noteStartTick(note, &ne);
+                                    previewTick = eventTick.ticks();
+                                    }
+                              else {
+                                    previewTick = noteStartTick(note, &ne);
 
-                                   if (_pianoView && note->selected()) {
-                                         if (_pianoView->levelPreviewMovesNotes())
-                                               previewTick +=
-                                                     _pianoView->levelPreviewTickOffset().ticks();
-                                         else if (_pianoView->levelPreviewMovesEvents())
-                                               previewTick +=
-                                                     _pianoView->levelPreviewEventTickDelta().ticks();
-                                         }
-                                   }
+                                    if (_pianoView && note->selected()) {
+                                          if (_pianoView->levelPreviewMovesNotes())
+                                                previewTick += _pianoView->levelPreviewTickOffset().ticks();
+                                          else if (_pianoView->levelPreviewMovesEvents())
+                                                previewTick += _pianoView->levelPreviewEventTickDelta().ticks();\
+                                          }
+                                    }
 
-                             int tp = tickToPixel(previewTick);
+                              int tp = tickToPixel(previewTick);
+                              int val = filter->value(note->staff(), note, &ne);
 
-                             int val = filter->value(note->staff(), note, &ne);
+                              int previewOntime = ne.ontime();
+                              int previewLen = ne.len();
 
-                             int previewOntime = ne.ontime();
-                             int previewLen = ne.len();
+                              bool previewValueAvailable = false;
+                              if (_pianoView) {
+                                    if (_pianoView->levelEventPreview(&ne, previewOntime, previewLen)) {
+                                          previewValueAvailable = true;
+                                          }
 
-                             bool previewValueAvailable = false;
+                                    if (note->selected() && _pianoView->levelPreviewResizesNotes()) {
+                                          previewValueAvailable = true;
+                                          }
+                                    }
 
-                             if (_pianoView) {
-                                   if (_pianoView->levelEventPreview(
-                                         &ne,
-                                         previewOntime,
-                                         previewLen)) {
-                                         previewValueAvailable = true;
-                                         }
+                              if (previewValueAvailable) {
+                                    int previewVal;
 
-                                   if (note->selected()
-                                       && _pianoView->levelPreviewResizesNotes()) {
-                                         previewValueAvailable = true;
-                                         }
-                                   }
+                                    if (filter->previewValue(
+                                        note,
+                                        previewOntime,
+                                        previewLen,
+                                        previewNoteLen,
+                                        previewVal)) {
+                                          val = previewVal;
+                                          }
+                                    }
 
-                             if (previewValueAvailable) {
-                                   int previewVal;
+                              int vp = valToPixel(val);
 
-                                   if (filter->previewValue(
-                                         note,
-                                         previewOntime,
-                                         previewLen,
-                                         previewNoteLen,
-                                         previewVal)) {
-                                         val = previewVal;
-                                         }
-                                   }
+                              p.setPen(QPen(selected
+                                    ? noteSelected
+                                    : noteDeselected, 2));
 
-                             int vp = valToPixel(val);
+                              if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                                    p.drawLine(tp, pix0, tp, vp);
+                                    p.drawLine(tp, vp, tp + levelLen, vp);
+                                    p.drawEllipse(tp - 4, vp - 4, 9, 9);
+                                    }
+                              else {
+                                    p.drawLine(pix0, tp, vp, tp);
+                                    p.drawLine(vp, tp, vp, tp + levelLen);
+                                    p.drawEllipse(tp - 4, vp - 4, 9, 9);
+                                    }
+                              }
+                        }
+                  else {
+                        int previewTick = noteStartTick(note, nullptr);
 
-                             p.setPen(QPen(selected
-                                   ? noteSelected
-                                   : noteDeselected, 2));
+                        if (_pianoView
+                            && note->selected()
+                            && _pianoView->levelPreviewMovesNotes()) {
+                              previewTick += _pianoView->levelPreviewTickOffset().ticks();
+                              }
 
-                             if (_orientation == PianoRollOrientation::HORIZONTAL) {
-                                   p.drawLine(tp, pix0, tp, vp);
-                                   p.drawLine(tp, vp, tp + levelLen, vp);
-                                   p.drawEllipse(tp - 3, vp - 3, 7, 7);
-                                   }
-                             else {
-                                   p.drawLine(pix0, tp, vp, tp);
-                                   p.drawLine(vp, tp, vp, tp + levelLen);
-                                   p.drawEllipse(tp - 3, vp - 3, 7, 7);
-                                   }
-                             }
+                        int tp = tickToPixel(previewTick);
+                        int val = filter->value(note->staff(), note, nullptr);
+                        int vp = valToPixel(val);
 
-                       }
-                 else {
-                       int previewTick = noteStartTick(note, nullptr);
+                        p.setPen(QPen(selected
+                              ? noteSelected
+                              : noteDeselected, 2));
 
-                       if (_pianoView
-                           && note->selected()
-                           && _pianoView->levelPreviewMovesNotes()) {
-                             previewTick +=
-                                   _pianoView->levelPreviewTickOffset().ticks();
-                             }
-
-                       int tp = tickToPixel(previewTick);
-                       int val = filter->value(note->staff(), note, nullptr);
-                       int vp = valToPixel(val);
-
-                       p.setPen(QPen(selected
-                             ? noteSelected
-                             : noteDeselected, 2));
-
-                       if (_orientation == PianoRollOrientation::HORIZONTAL) {
-                             p.drawLine(tp, pix0, tp, vp);
-                             p.drawLine(tp, vp, tp + levelLen, vp);
-                             p.drawEllipse(tp - 3, vp - 3, 7, 7);
-                             }
-                       else {
-                             p.drawLine(pix0, tp, vp, tp);
-                             p.drawLine(vp, tp, vp, tp + levelLen);
-                             p.drawEllipse(tp - 3, vp - 3, 7, 7);
-                             }
-                       }
-                 }
+                        if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                              p.drawLine(tp, pix0, tp, vp);
+                              p.drawLine(tp, vp, tp + levelLen, vp);
+                              p.drawEllipse(tp - 4, vp - 4, 9, 9);
+                              }
+                        else {
+                              p.drawLine(pix0, tp, vp, tp);
+                              p.drawLine(vp, tp, vp, tp + levelLen);
+                              p.drawEllipse(tp - 4, vp - 4, 9, 9);
+                              }
+                        }
+                  }
             }
 
       if (_playbackLocatorValid) {
