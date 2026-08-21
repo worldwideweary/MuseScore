@@ -785,6 +785,9 @@ void PianorollEditor::setEditNoteDots(int value, QToolButton* bn)
 void PianorollEditor::setEditNoteTool(PianoRollEditTool value)
       {
       pianoView->setEditNoteTool(value);
+
+      pianoLevelsChooser->setPlaybackEditingEnabled(
+            value == PianoRollEditTool::EVENT_ADJUST);
       }
 
 //---------------------------------------------------------

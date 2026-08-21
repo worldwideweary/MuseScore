@@ -37,6 +37,32 @@ void PianoLevelsChooser::setPianoView(PianoView* pianoView)
       }
 
 //---------------------------------------------------------
+//   setPlaybackEditingEnabled
+//---------------------------------------------------------
+
+void PianoLevelsChooser::setPlaybackEditingEnabled(bool enabled)
+      {
+      _playbackEditingEnabled = enabled;
+      updateEditorEnabled();
+      }
+
+//---------------------------------------------------------
+//   updateEditorEnabled
+//---------------------------------------------------------
+
+void PianoLevelsChooser::updateEditorEnabled()
+      {
+      PianoLevelsFilter* filter =
+            PianoLevelsFilter::FILTER_LIST[_levelsIndex];
+
+      const bool enabled =
+            !filter->isPerEvent() || _playbackEditingEnabled;
+
+      eventValSpinBox->setEnabled(enabled);
+      setEventsBn->setEnabled(enabled);
+      }
+
+//---------------------------------------------------------
 //   updateSetboxValue
 //---------------------------------------------------------
 
@@ -74,6 +100,7 @@ void PianoLevelsChooser::setLevelsIndex(int index)
       if (_levelsIndex != index) {
             _levelsIndex = index;
             updateSetboxValue();
+            updateEditorEnabled();
             emit levelsIndexChanged(index);
             }
       }
