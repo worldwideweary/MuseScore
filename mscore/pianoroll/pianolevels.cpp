@@ -443,7 +443,7 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                               else {
                                     p.drawLine(pix0, tp, vp, tp);
                                     p.drawLine(vp, tp, vp, tp + levelLen);
-                                    p.drawEllipse(tp - 4, vp - 4, 9, 9);
+                                    p.drawEllipse(vp - 4, tp - 4, 9, 9);
                                     }
                               }
                         }
@@ -480,7 +480,7 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                         else {
                               p.drawLine(pix0, tp, vp, tp);
                               p.drawLine(vp, tp, vp, tp + levelLen);
-                              p.drawEllipse(tp - 4, vp - 4, 9, 9);
+                              p.drawEllipse(vp - 4, tp - 4, 9, 9);
                               }
                         }
                   }
