@@ -895,6 +895,24 @@ void PianoLevels::mousePressEvent(QMouseEvent* e)
                   }
             else {
                   dragStyle = DragStyle::LERP;
+                  const int epsilon = 4;
+                  const int timePixel = mouseTimePixel(lastMousePos);
+                  const int valuePixel = mouseValuePixel(lastMousePos);
+                  const int tick0 = pixelToTick(timePixel - epsilon);
+                  const int tick1 = pixelToTick(timePixel + epsilon);
+                  const int val = pixelToVal(valuePixel);
+
+                  if (_score && !_editCommandActive) {
+                        _score->startCmd();
+                        _editCommandActive = true;
+                        }
+
+                  adjustLevelLerp(
+                        tick0,
+                        val,
+                        tick1,
+                        val,
+                        hasSelectedNotes());
                   }
             update();
             }
@@ -910,26 +928,11 @@ void PianoLevels::mouseReleaseEvent(QMouseEvent* e)
       if (e->button() == Qt::LeftButton) {
 
             if (!dragging) {
-                  if (_score)
-                        _score->startCmd();
-
                   // Handle click
                   lastMousePos = e->pos();
-
-                  const int timePixel = mouseTimePixel(lastMousePos);
-                  const int valuePixel = mouseValuePixel(lastMousePos);
-
-                  int tick0 = pixelToTick(timePixel - 4);
-                  int tick1 = pixelToTick(timePixel + 4);
-                  int val = pixelToVal(valuePixel);
-
-                  adjustLevelLerp(tick0, val, tick1, val, hasSelectedNotes());
-
-                  if (_score)
-                        _score->endCmd();
                   }
 
-            if (_editCommandActive) {
+            if (_editCommandActive && _score) {
                   _score->endCmd();
                   _editCommandActive = false;
                   }
