@@ -69,6 +69,7 @@ class PianoLevels : public QWidget
 
       qreal _playbackLocatorTick { 0.0 };
       bool _playbackLocatorValid { false };
+      bool _editCommandActive { false };
 
       PianoRollScope _scope;
 

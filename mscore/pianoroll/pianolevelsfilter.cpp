@@ -73,9 +73,7 @@ void PianoLevelFilterOnTime::setValue(Staff* staff, Note* note, NoteEvent* evt, 
       NoteEvent ne = *evt;
       ne.setOntime(value);
 
-      score->startCmd();
       score->undo(new ChangeNoteEvent(note, evt, ne));
-      score->endCmd();
       }
 
 //---------------------------------------------------------
@@ -116,9 +114,7 @@ void PianoLevelFilterLenMultiplier::setValue(Staff* staff, Note* note, NoteEvent
       NoteEvent ne = *evt;
       ne.setLen(value);
 
-      score->startCmd();
       score->undo(new ChangeNoteEvent(note, evt, ne));
-      score->endCmd();
       }
 
 
@@ -189,9 +185,7 @@ void PianoLevelFilterLenWholenote::setValue(Staff* staff, Note* note, NoteEvent*
       NoteEvent ne = *evt;
       ne.setLen(evtLen);
 
-      score->startCmd();
       score->undo(new ChangeNoteEvent(note, evt, ne));
-      score->endCmd();
       }
 
 //---------------------------------------------------------
@@ -238,8 +232,6 @@ void PianoLevelFilterVeloOffset::setValue(Staff* staff, Note* note, NoteEvent* /
       {
       Score* score = staff->score();
 
-      score->startCmd();
-
       switch (Note::ValueType(note->veloType())) {
             case Note::ValueType::USER_VAL: {
                   int dynamicsVel = staff->velocities().val(note->tick());
@@ -255,8 +247,6 @@ void PianoLevelFilterVeloOffset::setValue(Staff* staff, Note* note, NoteEvent* /
                   break;
                   }
             }
-
-      score->endCmd();
       }
 
 
@@ -304,8 +294,6 @@ void PianoLevelFilterVeloUser::setValue(Staff* staff, Note* note, NoteEvent* /*e
       {
       Score* score = staff->score();
 
-      score->startCmd();
-
       switch (Note::ValueType(note->veloType())) {
             case Note::ValueType::USER_VAL:
                   score->undo(new ChangeVelocity(note, Note::ValueType::USER_VAL, value));
@@ -319,8 +307,6 @@ void PianoLevelFilterVeloUser::setValue(Staff* staff, Note* note, NoteEvent* /*e
                   break;
                   }
             }
-
-      score->endCmd();
       }
 
 }

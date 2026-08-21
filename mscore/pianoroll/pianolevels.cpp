@@ -823,7 +823,10 @@ void PianoLevels::mouseReleaseEvent(QMouseEvent* e)
       if (e->button() == Qt::LeftButton) {
 
             if (!dragging) {
-                  //Handle click
+                  if (_score)
+                        _score->startCmd();
+
+                  // Handle click
                   lastMousePos = e->pos();
 
                   const int timePixel = mouseTimePixel(lastMousePos);
@@ -834,6 +837,14 @@ void PianoLevels::mouseReleaseEvent(QMouseEvent* e)
                   int val = pixelToVal(valuePixel);
 
                   adjustLevelLerp(tick0, val, tick1, val, hasSelectedNotes());
+
+                  if (_score)
+                        _score->endCmd();
+                  }
+
+            if (_editCommandActive) {
+                  _score->endCmd();
+                  _editCommandActive = false;
                   }
 
             mouseDown = false;
@@ -856,8 +867,13 @@ void PianoLevels::mouseMoveEvent(QMouseEvent* e)
                   int dx = e->x() - mouseDownPos.x();
                   int dy = e->y() - mouseDownPos.y();
                   if (dx * dx + dy * dy > pickRadius * pickRadius) {
-                        //Start dragging
+                        // Start dragging
                         dragging = true;
+
+                        if (_score && !_editCommandActive) {
+                              _score->startCmd();
+                              _editCommandActive = true;
+                              }
                         }
                   }
 
