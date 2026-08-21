@@ -266,7 +266,7 @@ void PianoLevels::paintEvent(QPaintEvent* e)
       int minGuide = (int)floor(filter->minRange() / (qreal)div);
       int maxGuide = (int)ceil(filter->maxRange() / (qreal)div);
 
-      QFont f("FreeSans", 7);
+      QFont f("FreeSans", 9);
       p.setFont(f);
 
       for (int i = minGuide; i <= maxGuide; ++i) {
