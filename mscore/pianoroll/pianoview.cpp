@@ -2513,6 +2513,8 @@ void PianoView::finishNoteEventAdjustDrag()
 
       Fraction tickDelta = Fraction::fromTicks(scenePosToTick(_lastMousePos) - scenePosToTick(_mouseDownPos));
 
+      curScore->startCmd();
+
       for (int i = 0; i < _noteList.size(); ++i) {
             PianoItem* pi = _noteList[i];
             if (pi->note()->selected()) {
@@ -2558,12 +2560,12 @@ void PianoView::finishNoteEventAdjustDrag()
                         ne.setOntime(evtOntimeNew);
                         ne.setLen(evtLenNew);
 
-                        curScore->startCmd();
                         curScore->undo(new ChangeNoteEvent(pi->note(), &e, ne));
-                        curScore->endCmd();
                         }
                   }
             }
+
+      curScore->endCmd();
 
       _levelEventPreviews.clear();
       _levelPreviewActive = false;
