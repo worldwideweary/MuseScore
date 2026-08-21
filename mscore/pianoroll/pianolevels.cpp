@@ -69,6 +69,19 @@ PianoLevels::~PianoLevels()
       }
 
 //---------------------------------------------------------
+//   setColoring
+//---------------------------------------------------------
+
+void PianoLevels::setColoring(Coloring c)
+      {
+      if (_coloring == c)
+            return;
+
+      _coloring = c;
+      update();
+      }
+
+//---------------------------------------------------------
 //   setPianoView
 //---------------------------------------------------------
 
@@ -315,19 +328,25 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                   bool even = false;
                   Staff* const staff = note->staff();
 
-
                   if (_scope == PianoRollScope::PART && staff && staff->part()) {
                         const QList<Staff*>* staves = staff->part()->staves();
                         int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
                         even = (staffPos % 2 == 0);
                         }
 
-                  if (dark)
-                        noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
-                                             : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
-                  else
-                        noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
-                                             : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
+                  if (_coloring == Coloring::VOICING) {
+                        noteDeselected = MScore::selectColor[note->voice()];
+                        }
+                  else if (_coloring == Coloring::STAFF) {
+                        if (dark) {
+                              noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
+                                                    : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
+                              }
+                        else {
+                              noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
+                                                    : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
+                              }
+                        }
 
                   if (filter->isPerEvent()) {
 

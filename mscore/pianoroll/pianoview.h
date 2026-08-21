@@ -97,7 +97,7 @@ class PianoView : public QGraphicsView {
 public:
       static const BarPattern barPatterns[];
       void setScope(PianoRollScope scope);
-      void setColoring(Coloring c);
+      void setColoring(Coloring);
       Coloring getColoring() const;
 
       PianoRollScope getScope() { return _scope; }

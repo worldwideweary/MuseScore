@@ -69,63 +69,6 @@ const BarPattern PianoView::barPatterns[] = {
       {"",              {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
 
-
-// //---------------------------------------------------------
-// //   getPianoRollNoteColor
-// //---------------------------------------------------------
-
-// QColor PianoView::getPianoRollNoteColor(Note* note, bool highlight) const
-//       {
-//       if (highlight) {
-//             if (note->mark()) {
-//                   return darkTheme()
-//                         ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
-//                         : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
-//                   }
-//             else if (note->selected()) {
-//                   return darkTheme()
-//                         ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
-//                         : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
-//                   }
-//             }
-//       else if (false && (_editNoteTool == PianoRollEditTool::EVENT_ADJUST)) {
-//             // _colorTweaks "purple edit" now unused to allow playback to show actual durations without
-//             // any purple notes
-//             return QColor(0xfd63fc);
-//             }
-//       else if (_coloring == Coloring::VOICING) {
-//             const int v = note->voice();
-//             if (v >= 0 && v <= 3)
-//                   return MScore::selectColor[v];
-//             }
-//       else if (_coloring == Coloring::STAFF) {
-//             bool even = false;
-//             Staff* const staff = note->staff();
-//             if (staff && staff->part()) {
-//                   const QList<Staff*>* staves = staff->part()->staves();
-//                   int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
-//                   even = (staffPos % 2 == 0);
-//                   }
-//             if (darkTheme())
-//                   return even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
-//                               : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
-//             else
-//                   return even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
-//                               : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
-//             }
-//       else {
-//             // Check idx of VOICE/STAFF in UI to fix if this hits
-//             static bool beenHere = false;
-//             if (!beenHere) {
-//                   qDebug() << "HIT NONE COLOR";
-//                   beenHere = true;
-//                   }
-//             return MScore::defaultColor;
-//             }
-//       }
-
-
-
 //---------------------------------------------------------
 //   pianoRollNoteColor
 //---------------------------------------------------------
@@ -460,6 +403,9 @@ void PianoView::setScope(PianoRollScope scope)
 
 void PianoView::setColoring(Coloring c)
       {
+      if (_coloring == c)
+            return;
+
       _coloring = c;
       updateNotes();
       }

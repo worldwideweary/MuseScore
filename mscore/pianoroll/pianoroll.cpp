@@ -203,19 +203,19 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       coloringBox->addItem(tr("Voicing"),   int(Coloring::VOICING));
       coloringBox->addItem(tr("Singular"),  int(Coloring::STAFF));
 
-      int coloringIndex = coloringBox->findData(int(_coloring));
-      if (coloringIndex != -1)
-            coloringBox->setCurrentIndex(coloringIndex);
-      qDebug() << "coloringIndex:" << coloringIndex; // when black probably -1 ?
-
       tbMain->addWidget(coloringBox);
+
+      auto applyColoring = [this, coloringBox](int index) {
+            Coloring c = static_cast<Coloring>(coloringBox->itemData(index).toInt());
+            setColoring(c);
+            };
 
       connect(coloringBox,
               QOverload<int>::of(&QComboBox::activated),
               this,
-              [this, coloringBox](int index) {
-            setColoring(Coloring(coloringBox->itemData(index).toInt()));
-      });
+              applyColoring);
+      // Call applyColoring after other constructions later:
+
 
       // --------------------------------------------------
       // toolbars
@@ -642,6 +642,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       subdiv->installEventFilter(this);
       tuplet->installEventFilter(this);
 
+      applyColoring(coloringBox->currentIndex());
 
       connect(pianoView->horizontalScrollBar(), SIGNAL(valueChanged(int)), hsb,      SLOT(setValue(int)));
 
@@ -1153,16 +1154,18 @@ void PianorollEditor::setScope(PianoRollScope scope)
 
 void PianorollEditor::setColoring(Coloring c)
       {
-      if (_coloring == c)
-            return;
-
       _coloring = c;
 
-      pianoView->setColoring(c);
-      pianoKbd->setColoring(c);
+      if (pianoView)
+            pianoView->setColoring(c);
+
+      if (pianoKbd)
+            pianoKbd->setColoring(c);
+
+      if (pianoLevels)
+            pianoLevels->setColoring(c);
 
       update();
-
       restoreScoreViewFocus();
       }
 

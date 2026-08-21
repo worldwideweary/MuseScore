@@ -53,6 +53,7 @@ class PianoLevels : public QWidget
 
       PianoView* _pianoView { nullptr };
       PianoRollOrientation _orientation { PianoRollOrientation::HORIZONTAL };
+      Coloring _coloring;
       Score* _score { nullptr };
       int _xpos;
       qreal _xZoom;
@@ -78,6 +79,7 @@ class PianoLevels : public QWidget
       DragStyle dragStyle = DragStyle::OFFSET;
       Note* singleNoteDrag { nullptr };
       NoteEvent* singleNoteEventDrag { nullptr };
+
 
       int minBeatGap;
 
@@ -131,6 +133,7 @@ public:
       PianoLevels(QWidget *parent = 0);
       ~PianoLevels();
 
+      void setColoring(Coloring);
       void setPianoView(PianoView*);
       void setOrientation(PianoRollOrientation);
       void setScore(Score*, Pos* locator);
