@@ -118,9 +118,9 @@ class PianoLevelFilterVeloOffset : public PianoLevelsFilter {
 public:
       QString name() override;
       QString tooltip() override;
-      int maxRange() override { return 200; }
-      int minRange() override { return -200; }
-      int divisionGap() override { return 100; }
+      int maxRange() override { return +128; }
+      int minRange() override { return -128; }
+      int divisionGap() override { return 32; }
       bool isPerEvent() override { return false; }
       int value(Staff* staff, Note* note, NoteEvent* evt) override;
       void setValue(Staff* staff, Note* note, NoteEvent* evt, int value) override;
