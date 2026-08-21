@@ -396,6 +396,11 @@ void PianoLevels::paintEvent(QPaintEvent* e)
 
                               int vp = valToPixel(val);
 
+                              if (selected)
+                                    p.setBrush(QBrush(noteSelected));
+                              else
+                                    p.setBrush(Qt::NoBrush);
+
                               p.setPen(QPen(selected
                                     ? noteSelected
                                     : noteDeselected, 2));
@@ -424,6 +429,11 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                         int tp = tickToPixel(previewTick);
                         int val = filter->value(note->staff(), note, nullptr);
                         int vp = valToPixel(val);
+
+                        if (selected)
+                              p.setBrush(QBrush(noteSelected));
+                        else
+                              p.setBrush(Qt::NoBrush);
 
                         p.setPen(QPen(selected
                               ? noteSelected
