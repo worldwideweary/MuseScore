@@ -42,25 +42,28 @@ void PianoLevelsChooser::setPianoView(PianoView* pianoView)
 
 void PianoLevelsChooser::updateSetboxValue()
       {
+      PianoLevelsFilter* filter =
+            PianoLevelsFilter::FILTER_LIST[_levelsIndex];
+
+      eventValSpinBox->setRange(
+            filter->minRange(),
+            filter->maxRange());
+
       QList<PianoItem*> items = _pianoView->getSelectedItems();
 
       if (items.size() == 1) {
-            PianoLevelsFilter* filter = PianoLevelsFilter::FILTER_LIST[_levelsIndex];
-
             PianoItem* item = items[0];
             Note* note = item->note();
 
             NoteEvent* event = item->getTweakNoteEvent();
 
-            if (!event)
+            if (filter->isPerEvent() && !event)
                   return;
 
             int value = filter->value(note->staff(), note, event);
             eventValSpinBox->setValue(value);
             }
-
       }
-
 
 //---------------------------------------------------------
 //   setLevelsIndex
@@ -74,7 +77,6 @@ void PianoLevelsChooser::setLevelsIndex(int index)
             emit levelsIndexChanged(index);
             }
       }
-
 
 //---------------------------------------------------------
 //   setEventDataPressed
