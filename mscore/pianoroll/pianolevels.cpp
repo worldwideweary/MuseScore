@@ -675,6 +675,7 @@ void PianoLevels::mousePressEvent(QMouseEvent* e)
             else {
                   dragStyle = DragStyle::LERP;
                   }
+            update();
             }
       }
 
@@ -699,10 +700,11 @@ void PianoLevels::mouseReleaseEvent(QMouseEvent* e)
                   int val = pixelToVal(valuePixel);
 
                   adjustLevelLerp(tick0, val, tick1, val);
-            }
+                  }
 
             mouseDown = false;
             dragging = false;
+            update();
             }
       }
 
@@ -752,6 +754,7 @@ void PianoLevels::mouseMoveEvent(QMouseEvent* e)
                         }
 
                   lastMousePos = e->pos();
+                  update();
                   }
 
             }
