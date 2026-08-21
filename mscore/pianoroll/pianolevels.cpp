@@ -583,6 +583,7 @@ int PianoLevels::pixelYToVal(int pix) {
 bool PianoLevels::pickNoteEvent(int x, int y, bool selectedOnly, Note*& pickedNote, NoteEvent*& pickedNoteEvent)
       {
       PianoLevelsFilter* filter = PianoLevelsFilter::FILTER_LIST[_levelsIndex];
+      const int pix0 = valToPixel(0);
 
       for (int i = 0; i < noteList.size(); ++i) {
             Note* note = noteList[i];
@@ -610,16 +611,30 @@ bool PianoLevels::pickNoteEvent(int x, int y, bool selectedOnly, Note*& pickedNo
                         bool hit;
 
                         if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                              const int left = noteX - 2;
+                              const int right = noteX + levelLen + 2;
+
+                              const int top = qMin(pix0, noteY) - 2;
+                              const int bottom = qMax(pix0, noteY) + 2;
+
                               hit =
-                                    x >= noteX - 2
-                                    && x <= noteX + levelLen + 2
-                                    && qAbs(y - noteY) <= 6;
+                                    x >= left
+                                    && x <= right
+                                    && y >= top
+                                    && y <= bottom;
                               }
                         else {
+                              const int left = qMin(pix0, noteX) - 2;
+                              const int right = qMax(pix0, noteX) + 2;
+
+                              const int top = noteY - 2;
+                              const int bottom = noteY + levelLen + 2;
+
                               hit =
-                                    y >= noteY - 2
-                                    && y <= noteY + levelLen + 2
-                                    && qAbs(x - noteX) <= 6;
+                                    x >= left
+                                    && x <= right
+                                    && y >= top
+                                    && y <= bottom;
                               }
 
                         if (hit) {
