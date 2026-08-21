@@ -435,9 +435,47 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                               else
                                     p.setPen(QPen(selected ? noteSelected : noteDeselected, 2));
 
+
+                              QColor fillColor =
+                                    interactionHighlighted
+                                          ? interactionColor
+                                          : (selected ? noteSelected : noteDeselected);
+
+                              fillColor.setAlphaF(0.35);
+
                               if (_orientation == PianoRollOrientation::HORIZONTAL) {
-                                    p.drawLine(tp, pix0, tp, vp);
-                                    p.drawLine(tp, vp, tp + levelLen, vp);
+                                    const int top = qMin(pix0, vp);
+                                    const int bottom = qMax(pix0, vp);
+
+                                    QRect barRect(
+                                          tp,
+                                          top,
+                                          levelLen,
+                                          qMax(1, bottom - top));
+
+                                    QColor fillColor =
+                                          interactionHighlighted
+                                                ? interactionColor
+                                                : (selected ? noteSelected : noteDeselected);
+
+                                    fillColor.setAlphaF(0.35);
+
+                                    p.setBrush(fillColor);
+                                    p.setPen(QPen(
+                                          interactionHighlighted
+                                                ? interactionColor
+                                                : (selected ? noteSelected : noteDeselected),
+                                          1));
+
+                                    p.drawRect(barRect);
+
+                                    QColor pointColor =
+                                          interactionHighlighted
+                                                ? interactionColor
+                                                : (selected ? noteSelected : noteDeselected);
+
+                                    p.setBrush(pointColor);
+                                    p.setPen(QPen(pointColor, 2));
                                     p.drawEllipse(tp - 4, vp - 4, 9, 9);
                                     }
                               else {
