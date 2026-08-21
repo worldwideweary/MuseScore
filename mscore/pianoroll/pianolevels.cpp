@@ -332,16 +332,37 @@ void PianoLevels::paintEvent(QPaintEvent* e)
 
                  if (filter->isPerEvent()) {
                        for (NoteEvent& ne : note->playEvents()) {
-                             int previewTick = noteStartTick(note, &ne);
+                             Fraction previewNoteTick = note->chord()->tick();
+                             Fraction previewNoteLen = note->chord()->ticks();
 
-                             if (_pianoView && note->selected()) {
-                                   if (_pianoView->levelPreviewMovesNotes()) {
-                                         previewTick +=
-                                               _pianoView->levelPreviewTickOffset().ticks();
-                                         }
-                                   else if (_pianoView->levelPreviewMovesEvents()) {
-                                         previewTick +=
-                                               _pianoView->levelPreviewEventTickDelta().ticks();
+                             if (_pianoView
+                                 && note->selected()
+                                 && _pianoView->levelPreviewResizesNotes()) {
+                                   previewNoteTick += _pianoView->levelPreviewTickOffset();
+                                   previewNoteLen += _pianoView->levelPreviewLengthOffset();
+                                   }
+
+                             int previewTick;
+
+                             if (_pianoView
+                                 && note->selected()
+                                 && _pianoView->levelPreviewResizesNotes()) {
+                                   Fraction eventTick =
+                                         previewNoteTick
+                                         + previewNoteLen * ne.ontime() / 1000;
+
+                                   previewTick = eventTick.ticks();
+                                   }
+                             else {
+                                   previewTick = noteStartTick(note, &ne);
+
+                                   if (_pianoView && note->selected()) {
+                                         if (_pianoView->levelPreviewMovesNotes())
+                                               previewTick +=
+                                                     _pianoView->levelPreviewTickOffset().ticks();
+                                         else if (_pianoView->levelPreviewMovesEvents())
+                                               previewTick +=
+                                                     _pianoView->levelPreviewEventTickDelta().ticks();
                                          }
                                    }
 
@@ -349,20 +370,35 @@ void PianoLevels::paintEvent(QPaintEvent* e)
 
                              int val = filter->value(note->staff(), note, &ne);
 
+                             int previewOntime = ne.ontime();
+                             int previewLen = ne.len();
+
+                             bool previewValueAvailable = false;
+
                              if (_pianoView) {
-                                   int previewOntime;
-                                   int previewLen;
+                                   if (_pianoView->levelEventPreview(
+                                         &ne,
+                                         previewOntime,
+                                         previewLen)) {
+                                         previewValueAvailable = true;
+                                         }
 
-                                   if (_pianoView->levelEventPreview(&ne, previewOntime, previewLen)) {
-                                         int previewVal;
+                                   if (note->selected()
+                                       && _pianoView->levelPreviewResizesNotes()) {
+                                         previewValueAvailable = true;
+                                         }
+                                   }
 
-                                         if (filter->previewValue(
-                                               note,
-                                               previewOntime,
-                                               previewLen,
-                                               previewVal)) {
-                                               val = previewVal;
-                                               }
+                             if (previewValueAvailable) {
+                                   int previewVal;
+
+                                   if (filter->previewValue(
+                                         note,
+                                         previewOntime,
+                                         previewLen,
+                                         previewNoteLen,
+                                         previewVal)) {
+                                         val = previewVal;
                                          }
                                    }
 

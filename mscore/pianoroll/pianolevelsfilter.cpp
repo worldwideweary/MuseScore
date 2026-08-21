@@ -144,13 +144,11 @@ QString PianoLevelFilterLenWholenote::tooltip()
 //   previewValue
 //---------------------------------------------------------
 
-bool PianoLevelFilterLenWholenote::previewValue(Note* note, int /*previewOntime*/, int previewLen, int& value) const
+bool PianoLevelFilterLenWholenote::previewValue(Note* /*note*/, int /*previewOntime*/, int previewLen, const Fraction& previewNoteLen, int& value) const
       {
-      Chord* chord = note->chord();
-      Fraction noteLen = chord->ticks();
-
       Fraction offsetLen =
-            noteLen - (noteLen * previewLen / 1000);
+            previewNoteLen
+            - (previewNoteLen * previewLen / 1000);
 
       value =
             -offsetLen.numerator() * 1000

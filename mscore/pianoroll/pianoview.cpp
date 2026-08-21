@@ -373,12 +373,44 @@ bool PianoView::selectionRectAllowed() const
       }
 
 //---------------------------------------------------------
+//    levelPreviewTickOffset
+//---------------------------------------------------------
+
+Fraction PianoView::levelPreviewTickOffset() const
+      {
+      return _levelPreviewTickOffset;
+      }
+
+//---------------------------------------------------------
+//    levelPreviewEventTickDelta
+//---------------------------------------------------------
+
+Fraction PianoView::levelPreviewEventTickDelta() const
+      {
+      return _levelPreviewEventTickDelta;
+      }
+
+//---------------------------------------------------------
+//    levelPreviewMovesNotes
+//---------------------------------------------------------
+
+bool PianoView::levelPreviewMovesNotes() const
+      {
+      return _levelPreviewActive && _dragStyle == DragStyle::NOTE_POSITION;
+      }
+
+//---------------------------------------------------------
+//    levelPreviewMovesEvents
+//---------------------------------------------------------
+
+bool PianoView::levelPreviewMovesEvents() const
+      { return _levelPreviewActive && (_dragStyle == DragStyle::EVENT_ONTIME || _dragStyle == DragStyle::EVENT_MOVE); }
+
+//---------------------------------------------------------
 //   levelEventPreview
 //---------------------------------------------------------
 
-bool PianoView::levelEventPreview(const NoteEvent* event,
-                                  int& ontime,
-                                  int& len) const
+bool PianoView::levelEventPreview(const NoteEvent* event, int& ontime, int& len) const
       {
       auto it = _levelEventPreviews.constFind(event);
       if (it == _levelEventPreviews.constEnd())
@@ -387,6 +419,26 @@ bool PianoView::levelEventPreview(const NoteEvent* event,
       ontime = it.value().ontime;
       len = it.value().len;
       return true;
+      }
+
+//---------------------------------------------------------
+//   levelPreviewLengthOffset
+//---------------------------------------------------------
+
+Fraction PianoView::levelPreviewLengthOffset() const
+      {
+      return _levelPreviewLengthOffset;
+      }
+
+//---------------------------------------------------------
+//   levelPreviewResizesNotes
+//---------------------------------------------------------
+
+bool PianoView::levelPreviewResizesNotes() const
+      {
+      return _levelPreviewActive
+            && (_dragStyle == DragStyle::NOTE_LENGTH_START
+                || _dragStyle == DragStyle::NOTE_LENGTH_END);
       }
 
 //---------------------------------------------------------
@@ -4301,6 +4353,7 @@ void PianoView::finishNoteGroupDrag(QMouseEvent* event) {
 
       _levelPreviewActive = false;
       _levelPreviewTickOffset = Fraction(0, 1);
+      _levelPreviewLengthOffset = Fraction(0, 1);
       _levelPreviewEventTickDelta = Fraction(0, 1);
 
       score->update();
@@ -4421,6 +4474,7 @@ void PianoView::drawDraggedNotes(QPainter* painter)
 
       _levelPreviewActive = false;
       _levelEventPreviews.clear();
+      _levelPreviewLengthOffset = Fraction(0, 1);
 
       if (_dragStyle == DragStyle::DRAW_NOTE) {
             double startTick = scenePosToTick(_mouseDownPos);
@@ -4459,8 +4513,9 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                   - scenePosToTick(_mouseDownPos));
 
             _levelPreviewActive = true;
-            _levelPreviewEventTickDelta = tickDelta;
             _levelPreviewTickOffset = Fraction(0, 1);
+            _levelPreviewLengthOffset = Fraction(0, 1);
+            _levelPreviewEventTickDelta = tickDelta;
 
             for (int i = 0; i < _noteList.size(); ++i) {
                   PianoItem* pi = _noteList[i];
@@ -4585,6 +4640,7 @@ void PianoView::drawDraggedNotes(QPainter* painter)
 
       _levelPreviewActive = true;
       _levelPreviewTickOffset = pasteTickOffset;
+      _levelPreviewLengthOffset = pasteLengthOffset;
       _levelPreviewEventTickDelta = Fraction(0, 1);
 
       //Iterate thorugh note data

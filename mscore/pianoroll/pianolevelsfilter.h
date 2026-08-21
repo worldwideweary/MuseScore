@@ -25,8 +25,7 @@ namespace Ms {
 class Note;
 class NoteEvent;
 class Staff;
-
-
+class Fraction;
 
 //---------------------------------------------------------
 //   PianoLevelsFilter
@@ -45,11 +44,12 @@ public:
       virtual bool isPerEvent() = 0;
       virtual int value(Staff* staff, Note* note, NoteEvent* evt) = 0;
       virtual void setValue(Staff* staff, Note* note, NoteEvent* evt, int value) = 0;
-      virtual bool previewValue(Note* note, int previewOntime, int previewLen, int& value) const
+      virtual bool previewValue(Note* note, int previewOntime, int previewLen, const Fraction& previewNoteLen, int& value) const
             {
             Q_UNUSED(note);
             Q_UNUSED(previewOntime);
             Q_UNUSED(previewLen);
+            Q_UNUSED(previewNoteLen);
             Q_UNUSED(value);
             return false;
             }
@@ -72,7 +72,7 @@ public:
       bool isPerEvent() override { return true; }
       int value(Staff* staff, Note* note, NoteEvent* evt) override;
       void setValue(Staff* staff, Note* note, NoteEvent* evt, int value) override;
-      bool previewValue(Note* /*note*/, int previewOntime, int /*previewLen*/, int& value) const override
+      bool previewValue(Note* /*note*/, int previewOntime, int /*previewLen*/, const Fraction& /*previewNoteLen*/, int& value) const override
             {
             value = previewOntime;
             return true;
@@ -98,12 +98,11 @@ public:
       bool isPerEvent() override { return true; }
       int value(Staff* staff, Note* note, NoteEvent* evt) override;
       void setValue(Staff* staff, Note* note, NoteEvent* evt, int value) override;
-      bool previewValue(Note* /*note*/, int /*previewOntime*/, int previewLen, int& value) const override
+      bool previewValue(Note* /*note*/, int /*previewOntime*/, int previewLen, const Fraction& /*previewNoteLen*/, int& value) const override
             {
             value = previewLen;
             return true;
             }
-
       };
 
 
@@ -124,7 +123,7 @@ public:
       bool isPerEvent() override { return true; }
       int value(Staff* staff, Note* note, NoteEvent* evt) override;
       void setValue(Staff* staff, Note* note, NoteEvent* evt, int value) override;
-      bool previewValue(Note* note, int /*previewOntime*/, int previewLen, int& value) const override;
+      bool previewValue(Note* note, int previewOntime, int previewLen, const Fraction& previewNoteLen, int& value) const override;
       };
 
 

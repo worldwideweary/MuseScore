@@ -107,18 +107,15 @@ public:
 
       bool selectionRectAllowed() const;
 
-      Fraction levelPreviewTickOffset() const { return _levelPreviewTickOffset; }
-      Fraction levelPreviewEventTickDelta() const { return _levelPreviewEventTickDelta; }
+      Fraction levelPreviewTickOffset() const;
+      Fraction levelPreviewEventTickDelta() const;
 
-      bool levelPreviewMovesNotes() const
-            { return _levelPreviewActive && _dragStyle == DragStyle::NOTE_POSITION; }
+      bool levelPreviewMovesNotes() const;
+      bool levelPreviewMovesEvents() const;
+      bool levelEventPreview(const NoteEvent* event, int& ontime, int& len) const;
 
-      bool levelPreviewMovesEvents() const
-            { return _levelPreviewActive && (_dragStyle == DragStyle::EVENT_ONTIME || _dragStyle == DragStyle::EVENT_MOVE); }
-
-      bool levelEventPreview(const NoteEvent* event,
-                             int& ontime,
-                             int& len) const;
+      Fraction levelPreviewLengthOffset() const;
+      bool levelPreviewResizesNotes() const;
 
 private:
       Staff* _staff { nullptr };
@@ -158,6 +155,7 @@ private:
       int _dragNoteLengthMargin = 4;
       bool _inProgressUndoEvent;
 
+      Fraction _levelPreviewLengthOffset;
       Fraction _levelPreviewTickOffset;
       Fraction _levelPreviewEventTickDelta;
       bool _levelPreviewActive { false };
