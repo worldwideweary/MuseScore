@@ -630,7 +630,28 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                           pianoKbd->setYpos(value);
                     });
 
-      connect(pianoView, &PianoView::onTimeDragged, this, [this](int) {
+      connect(pianoView, &PianoView::onTimeDragged, this, [this](int value) {
+            _previewOnTime = value;
+
+            setOnTime(value);
+
+            pianoLevelsChooser->setEventPreviewValues(
+                  _previewOnTime,
+                  _previewLen);
+
+            if (_showPianoLevels && pianoLevels)
+                  pianoLevels->update();
+            });
+
+      connect(pianoView, &PianoView::tickLenDragged, this, [this](int value) {
+            _previewLen = value;
+
+            setTickLen(value);
+
+            pianoLevelsChooser->setEventPreviewValues(
+                  _previewOnTime,
+                  _previewLen);
+
             if (_showPianoLevels && pianoLevels)
                   pianoLevels->update();
             });
@@ -693,8 +714,6 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(pianoLevels,        &PianoLevels::locatorMoved, this, &PianorollEditor::moveLocator);
       connect(veloType,           SIGNAL(activated(int)),                SLOT(veloTypeChanged(int)));
       connect(velocity,           SIGNAL(valueChanged(int)),             SLOT(velocityChanged(int)));
-      connect(pianoView,          SIGNAL(onTimeDragged(int)),     this,  SLOT(setOnTime(int)));
-      connect(pianoView,          SIGNAL(tickLenDragged(int)),    this,  SLOT(setTickLen(int)));
       connect(onTime,             SIGNAL(valueChanged(int)),             SLOT(onTimeChanged(int)));
       connect(tickLen,            SIGNAL(valueChanged(int)),             SLOT(tickLenChanged(int)));
       connect(pianoView,          SIGNAL(selectionChanged()),            SLOT(selectionChanged()));
@@ -1291,6 +1310,8 @@ void PianorollEditor::updateSelection()
             if (event) {
                   onTime->setValue(event->ontime());
                   tickLen->setValue(event->len());
+                  _previewOnTime = event->ontime();
+                  _previewLen = event->len();
                   }
 
             updateVelocity(note);

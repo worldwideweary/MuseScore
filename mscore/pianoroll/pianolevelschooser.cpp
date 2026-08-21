@@ -2,6 +2,7 @@
 #include "pianolevelsfilter.h"
 #include "pianoview.h"
 
+#include "libmscore/chord.h"
 #include "libmscore/score.h"
 
 #include <limits>
@@ -62,6 +63,38 @@ void PianoLevelsChooser::updateEditorEnabled()
 
       eventValSpinBox->setEnabled(enabled);
       setEventsBn->setEnabled(enabled);
+      }
+
+//---------------------------------------------------------
+//   setEventPreviewValues
+//---------------------------------------------------------
+
+void PianoLevelsChooser::setEventPreviewValues(int ontime, int len)
+      {
+      PianoLevelsFilter* filter =
+            PianoLevelsFilter::FILTER_LIST[_levelsIndex];
+
+      if (!filter->isPerEvent())
+            return;
+
+      QList<PianoItem*> items = _pianoView->getSelectedItems();
+      if (items.isEmpty())
+            return;
+
+      Note* note = items.front()->note();
+      if (!note)
+            return;
+
+      Fraction noteLen = note->chord()->ticks();
+
+      int value;
+      if (filter->previewValue(note,
+                               ontime,
+                               len,
+                               noteLen,
+                               value)) {
+            eventValSpinBox->setValue(value);
+            }
       }
 
 //---------------------------------------------------------

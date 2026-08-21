@@ -47,6 +47,7 @@ public:
       void setPianoView(PianoView* pianoView);
       void setPlaybackEditingEnabled(bool enabled);
       void updateEditorEnabled();
+      void setEventPreviewValues(int ontime, int len);
 
 signals:
       void levelsIndexChanged(int);
