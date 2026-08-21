@@ -816,7 +816,8 @@ bool PianoLevels::hasSelectedNotes() const
 //       use it to set the value of the level.
 //---------------------------------------------------------
 
-void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, bool selectedOnly)
+void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, bool selectedOnly,
+                                  Note** singleHitNote, NoteEvent** singleHitEvent)
       {
       if (tick1 < tick0) {
             std::swap(tick0, tick1);
@@ -825,6 +826,17 @@ void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, 
 
       PianoLevelsFilter* filter = PianoLevelsFilter::FILTER_LIST[_levelsIndex];
       bool hitNote = false;
+
+      int hitCount = 0;
+      Note* uniqueNote = nullptr;
+      NoteEvent* uniqueEvent = nullptr;
+
+      if (singleHitNote)
+            *singleHitNote = nullptr;
+
+      if (singleHitEvent)
+            *singleHitEvent = nullptr;
+
 
       for (int i = 0; i < noteList.size(); ++i) {
             Note* note = noteList[i];
@@ -839,8 +851,20 @@ void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, 
                                     : (value1 - value0) * (tick - tick0) / (tick1 - tick0) + value0;
 
                               filter->setValue(note->staff(), note, &e, value);
+
                               _levelInteractionNotes.insert(note);
                               hitNote = true;
+
+                              ++hitCount;
+
+                              if (hitCount == 1) {
+                                    uniqueNote = note;
+                                    uniqueEvent = &e;
+                                    }
+                              else {
+                                    uniqueNote = nullptr;
+                                    uniqueEvent = nullptr;
+                                    }
                               }
                         }
                   }
@@ -849,11 +873,31 @@ void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, 
                   if (tick0 <= tick && tick <= tick1) {
                         int value = tick0 == tick1 ? value0
                               : (value1 - value0) * (tick - tick0) / (tick1 - tick0) + value0;
-                        filter->setValue(note->staff(), note, 0, value);
+                        filter->setValue(note->staff(), note, nullptr, value);
+
                         _levelInteractionNotes.insert(note);
                         hitNote = true;
+
+                        ++hitCount;
+
+                        if (hitCount == 1) {
+                              uniqueNote = note;
+                              uniqueEvent = nullptr;
+                              }
+                        else {
+                              uniqueNote = nullptr;
+                              uniqueEvent = nullptr;
+                              }
                         }
                   }
+            }
+
+      if (hitCount == 1) {
+            if (singleHitNote)
+                  *singleHitNote = uniqueNote;
+
+            if (singleHitEvent)
+                  *singleHitEvent = uniqueEvent;
             }
 
       if (hitNote) {
@@ -863,7 +907,6 @@ void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, 
             update();
             emit noteLevelsChanged();
             }
-
       }
 
 
@@ -895,11 +938,22 @@ void PianoLevels::mousePressEvent(QMouseEvent* e)
                   }
             else {
                   dragStyle = DragStyle::LERP;
-                  const int epsilon = 4;
-                  const int timePixel = mouseTimePixel(lastMousePos);
-                  const int valuePixel = mouseValuePixel(lastMousePos);
-                  const int tick0 = pixelToTick(timePixel - epsilon);
-                  const int tick1 = pixelToTick(timePixel + epsilon);
+
+                  const int timePixel = mouseTimePixel(mouseDownPos);
+                  const int valuePixel = mouseValuePixel(mouseDownPos);
+
+                  //
+                  // Give an initial LERP click a capture width related to
+                  // the visible level-bar width rather than a fixed 4 pixels.
+                  //
+                  const int lerpPickRadius = qMax(4, levelLen / 2);
+
+                  const int tick0 =
+                        pixelToTick(timePixel - lerpPickRadius);
+
+                  const int tick1 =
+                        pixelToTick(timePixel + lerpPickRadius);
+
                   const int val = pixelToVal(valuePixel);
 
                   if (_score && !_editCommandActive) {
@@ -907,12 +961,27 @@ void PianoLevels::mousePressEvent(QMouseEvent* e)
                         _editCommandActive = true;
                         }
 
+                  Note* hitNote = nullptr;
+                  NoteEvent* hitEvent = nullptr;
+
                   adjustLevelLerp(
                         tick0,
                         val,
                         tick1,
                         val,
-                        hasSelectedNotes());
+                        hasSelectedNotes(),
+                        &hitNote,
+                        &hitEvent);
+
+                  //
+                  // If the initial LERP operation affected exactly one
+                  // level, capture it and continue the gesture as OFFSET.
+                  //
+                  if (hitNote) {
+                        singleNoteDrag = hitNote;
+                        singleNoteEventDrag = hitEvent;
+                        dragStyle = DragStyle::OFFSET;
+                        }
                   }
             update();
             }
@@ -974,7 +1043,7 @@ void PianoLevels::mouseMoveEvent(QMouseEvent* e)
 
             if (dragging) {
                   if (dragStyle == DragStyle::OFFSET) {
-                        int val = pixelToVal(mouseValuePixel(lastMousePos));
+                        int val = pixelToVal(mouseValuePixel(e->pos()));
                         adjustLevel(singleNoteDrag, singleNoteEventDrag, val);
                         }
                   else {

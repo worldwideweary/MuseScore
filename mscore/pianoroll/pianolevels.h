@@ -103,7 +103,8 @@ class PianoLevels : public QWidget
 
       bool pickNoteEvent(int x, int y, bool selectedOnly,
                          Note*& pickedNote, NoteEvent*& pickedNoteEvent);
-      void adjustLevelLerp(int tick0, int value0, int tick1, int value1, bool selectedOnly = true);
+      void adjustLevelLerp(int tick0, int value0, int tick1, int value1, bool selectedOnly = true,
+                           Note** singleHitNote = nullptr, NoteEvent** singleHitEvent = nullptr);
       void adjustLevel(Note* note, NoteEvent* noteEvt, int value);
 
       int pixelToTick(int pixel) const;
