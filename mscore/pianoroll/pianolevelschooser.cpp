@@ -4,6 +4,8 @@
 
 #include "libmscore/score.h"
 
+#include <limits>
+
 namespace Ms {
 
 //---------------------------------------------------------
@@ -71,9 +73,16 @@ void PianoLevelsChooser::updateSetboxValue()
       PianoLevelsFilter* filter =
             PianoLevelsFilter::FILTER_LIST[_levelsIndex];
 
-      eventValSpinBox->setRange(
-            filter->minRange(),
-            filter->maxRange());
+      if (filter->isPerEvent()) {
+            eventValSpinBox->setRange(
+                  std::numeric_limits<int>::min(),
+                  std::numeric_limits<int>::max());
+            }
+      else {
+            eventValSpinBox->setRange(
+                  filter->minRange(),
+                  filter->maxRange());
+            }
 
       QList<PianoItem*> items = _pianoView->getSelectedItems();
 
