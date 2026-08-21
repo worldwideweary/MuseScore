@@ -332,8 +332,40 @@ void PianoLevels::paintEvent(QPaintEvent* e)
 
                  if (filter->isPerEvent()) {
                        for (NoteEvent& ne : note->playEvents()) {
-                             int tp = tickToPixel(noteStartTick(note, &ne));
+                             int previewTick = noteStartTick(note, &ne);
+
+                             if (_pianoView && note->selected()) {
+                                   if (_pianoView->levelPreviewMovesNotes()) {
+                                         previewTick +=
+                                               _pianoView->levelPreviewTickOffset().ticks();
+                                         }
+                                   else if (_pianoView->levelPreviewMovesEvents()) {
+                                         previewTick +=
+                                               _pianoView->levelPreviewEventTickDelta().ticks();
+                                         }
+                                   }
+
+                             int tp = tickToPixel(previewTick);
+
                              int val = filter->value(note->staff(), note, &ne);
+
+                             if (_pianoView) {
+                                   int previewOntime;
+                                   int previewLen;
+
+                                   if (_pianoView->levelEventPreview(&ne, previewOntime, previewLen)) {
+                                         int previewVal;
+
+                                         if (filter->previewValue(
+                                               note,
+                                               previewOntime,
+                                               previewLen,
+                                               previewVal)) {
+                                               val = previewVal;
+                                               }
+                                         }
+                                   }
+
                              int vp = valToPixel(val);
 
                              p.setPen(QPen(selected
@@ -354,7 +386,16 @@ void PianoLevels::paintEvent(QPaintEvent* e)
 
                        }
                  else {
-                       int tp = tickToPixel(noteStartTick(note, nullptr));
+                       int previewTick = noteStartTick(note, nullptr);
+
+                       if (_pianoView
+                           && note->selected()
+                           && _pianoView->levelPreviewMovesNotes()) {
+                             previewTick +=
+                                   _pianoView->levelPreviewTickOffset().ticks();
+                             }
+
+                       int tp = tickToPixel(previewTick);
                        int val = filter->value(note->staff(), note, nullptr);
                        int vp = valToPixel(val);
 

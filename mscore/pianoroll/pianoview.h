@@ -107,6 +107,19 @@ public:
 
       bool selectionRectAllowed() const;
 
+      Fraction levelPreviewTickOffset() const { return _levelPreviewTickOffset; }
+      Fraction levelPreviewEventTickDelta() const { return _levelPreviewEventTickDelta; }
+
+      bool levelPreviewMovesNotes() const
+            { return _levelPreviewActive && _dragStyle == DragStyle::NOTE_POSITION; }
+
+      bool levelPreviewMovesEvents() const
+            { return _levelPreviewActive && (_dragStyle == DragStyle::EVENT_ONTIME || _dragStyle == DragStyle::EVENT_MOVE); }
+
+      bool levelEventPreview(const NoteEvent* event,
+                             int& ontime,
+                             int& len) const;
+
 private:
       Staff* _staff { nullptr };
       Chord* _chord { nullptr };
@@ -145,6 +158,10 @@ private:
       int _dragNoteLengthMargin = 4;
       bool _inProgressUndoEvent;
 
+      Fraction _levelPreviewTickOffset;
+      Fraction _levelPreviewEventTickDelta;
+      bool _levelPreviewActive { false };
+
       //The length of the note we are using for editng purposes, expressed as a fraction of the measure.
       // Note length will be (2^_editNoteLength) of a measure
       Fraction _editNoteLength = Fraction(1, 4);
@@ -160,6 +177,13 @@ private:
       int _lastLocatorPixel[3] { -1, -1, -1 };
       qreal _playbackLocatorTick { 0.0 };
       bool _playbackLocatorTickValid { false };
+
+      struct LevelEventPreview {
+            int ontime;
+            int len;
+            };
+
+      QHash<const NoteEvent*, LevelEventPreview> _levelEventPreviews;
 
       QSet<Note*> _markedPlaybackNotes;
       QHash<const Note*, QSet<int>> _playbackNoteEvents;

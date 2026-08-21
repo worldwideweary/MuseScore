@@ -373,6 +373,23 @@ bool PianoView::selectionRectAllowed() const
       }
 
 //---------------------------------------------------------
+//   levelEventPreview
+//---------------------------------------------------------
+
+bool PianoView::levelEventPreview(const NoteEvent* event,
+                                  int& ontime,
+                                  int& len) const
+      {
+      auto it = _levelEventPreviews.constFind(event);
+      if (it == _levelEventPreviews.constEnd())
+            return false;
+
+      ontime = it.value().ontime;
+      len = it.value().len;
+      return true;
+      }
+
+//---------------------------------------------------------
 //   setScope
 //---------------------------------------------------------
 
@@ -2509,6 +2526,9 @@ void PianoView::finishNoteEventAdjustDrag()
                   }
             }
 
+      _levelEventPreviews.clear();
+      _levelPreviewActive = false;
+
       update();
       }
 
@@ -4279,6 +4299,10 @@ void PianoView::finishNoteGroupDrag(QMouseEvent* event) {
 
       _dragNoteCache = QByteArray();
 
+      _levelPreviewActive = false;
+      _levelPreviewTickOffset = Fraction(0, 1);
+      _levelPreviewEventTickDelta = Fraction(0, 1);
+
       score->update();
       updateNotes();
       update();
@@ -4395,6 +4419,9 @@ void PianoView::drawDraggedNotes(QPainter* painter)
 
       Score* score = _staff->score();
 
+      _levelPreviewActive = false;
+      _levelEventPreviews.clear();
+
       if (_dragStyle == DragStyle::DRAW_NOTE) {
             double startTick = scenePosToTick(_mouseDownPos);
             double endTick = scenePosToTick(_lastMousePos);
@@ -4430,6 +4457,10 @@ void PianoView::drawDraggedNotes(QPainter* painter)
             Fraction tickDelta = Fraction::fromTicks(
                   scenePosToTick(_lastMousePos)
                   - scenePosToTick(_mouseDownPos));
+
+            _levelPreviewActive = true;
+            _levelPreviewEventTickDelta = tickDelta;
+            _levelPreviewTickOffset = Fraction(0, 1);
 
             for (int i = 0; i < _noteList.size(); ++i) {
                   PianoItem* pi = _noteList[i];
@@ -4484,6 +4515,12 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                               if (evtLenNew < 1) {
                                     evtLenNew = 1;
                                     }
+
+                              LevelEventPreview preview;
+                              preview.ontime = evtOntimeNew;
+                              preview.len = evtLenNew;
+
+                              _levelEventPreviews.insert(&e, preview);
 
                               emit onTimeDragged(evtOntimeNew);
                               emit tickLenDragged(evtLenNew);
@@ -4545,6 +4582,10 @@ void PianoView::drawDraggedNotes(QPainter* painter)
             pasteTickOffset = noteStartDraggedAlignedTick - _dragStartTick;
             pasteLengthOffset = _dragStartTick - noteStartDraggedAlignedTick;
             }
+
+      _levelPreviewActive = true;
+      _levelPreviewTickOffset = pasteTickOffset;
+      _levelPreviewEventTickDelta = Fraction(0, 1);
 
       //Iterate thorugh note data
       QXmlStreamReader xml(_dragNoteCache);

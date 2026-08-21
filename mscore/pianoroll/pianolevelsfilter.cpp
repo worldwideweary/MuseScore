@@ -140,6 +140,24 @@ QString PianoLevelFilterLenWholenote::tooltip()
       return qApp->translate("PianoLevelsFilter", STRN_LEN_OFF_TT);
       }
 
+//---------------------------------------------------------
+//   previewValue
+//---------------------------------------------------------
+
+bool PianoLevelFilterLenWholenote::previewValue(Note* note, int /*previewOntime*/, int previewLen, int& value) const
+      {
+      Chord* chord = note->chord();
+      Fraction noteLen = chord->ticks();
+
+      Fraction offsetLen =
+            noteLen - (noteLen * previewLen / 1000);
+
+      value =
+            -offsetLen.numerator() * 1000
+            / offsetLen.denominator();
+
+      return true;
+      }
 
 //---------------------------------------------------------
 //   value

@@ -630,6 +630,10 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                           pianoKbd->setYpos(value);
                     });
 
+      connect(pianoView, &PianoView::onTimeDragged, this, [this](int) {
+            if (_showPianoLevels && pianoLevels)
+                  pianoLevels->update();
+            });
 
       velocity->installEventFilter(this);
       pitch->installEventFilter(this);
