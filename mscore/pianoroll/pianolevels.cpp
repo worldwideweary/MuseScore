@@ -705,6 +705,19 @@ int PianoLevels::pixelToVal(int pixel) const
             frac * range + filter->minRange());
       }
 
+//---------------------------------------------------------
+//   hasSelectedNotes
+//---------------------------------------------------------
+
+bool PianoLevels::hasSelectedNotes() const
+      {
+      for (Note* note : noteList) {
+            if (note->selected())
+                  return true;
+            }
+
+      return false;
+      }
 
 //---------------------------------------------------------
 //   adjustLevelLerp
@@ -770,7 +783,8 @@ void PianoLevels::mousePressEvent(QMouseEvent* e)
             mouseDownPos = e->pos();
             lastMousePos = mouseDownPos;
 
-            if (pickNoteEvent(mouseDownPos.x(), mouseDownPos.y(), true, singleNoteDrag, singleNoteEventDrag)) {
+            const bool selectedOnly = hasSelectedNotes();
+            if (pickNoteEvent(mouseDownPos.x(), mouseDownPos.y(), selectedOnly, singleNoteDrag, singleNoteEventDrag)) {
                   dragStyle = DragStyle::OFFSET;
                   }
             else {
@@ -800,7 +814,7 @@ void PianoLevels::mouseReleaseEvent(QMouseEvent* e)
                   int tick1 = pixelToTick(timePixel + 4);
                   int val = pixelToVal(valuePixel);
 
-                  adjustLevelLerp(tick0, val, tick1, val);
+                  adjustLevelLerp(tick0, val, tick1, val, hasSelectedNotes());
                   }
 
             mouseDown = false;
@@ -851,7 +865,7 @@ void PianoLevels::mouseMoveEvent(QMouseEvent* e)
                               val1 = pixelToVal(mouseValuePixel(e->pos()));
                               }
 
-                        adjustLevelLerp(tick0, val0, tick1, val1);
+                        adjustLevelLerp(tick0, val0, tick1, val1, hasSelectedNotes());
                         }
 
                   lastMousePos = e->pos();

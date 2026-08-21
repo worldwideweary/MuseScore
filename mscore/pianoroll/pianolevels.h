@@ -109,6 +109,8 @@ class PianoLevels : public QWidget
       int valToPixel(int value) const;
       int pixelToVal(int pixel) const;
 
+      bool hasSelectedNotes() const;
+
 signals:
       void posChanged(const Pos&);
       void tupletChanged(int);
