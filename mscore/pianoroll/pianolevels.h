@@ -66,6 +66,9 @@ class PianoLevels : public QWidget
       int levelLen;
       int pickRadius = 4;
 
+      qreal _playbackLocatorTick { 0.0 };
+      bool _playbackLocatorValid { false };
+
       PianoRollScope _scope;
 
       bool mouseDown;
@@ -134,6 +137,9 @@ public:
       void updateNotes();
       int tuplet() const { return _tuplet; }
       int subdiv() const { return _subdiv; }
+
+      void setPlaybackLocatorTick(qreal tick);
+      void clearPlaybackLocatorTick();
 
       void setScope(PianoRollScope scope);
 

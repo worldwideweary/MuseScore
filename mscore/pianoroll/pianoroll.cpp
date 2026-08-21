@@ -595,6 +595,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
                     pianoView->setPlaybackLocatorTick(predictedTick);
 
+                    if (_showPianoLevels && pianoLevels)
+                          pianoLevels->setPlaybackLocatorTick(predictedTick);
+
                     //
                     // Begin at the playhead's existing screen position and smoothly
                     // converge to normal centered playback following.
@@ -840,14 +843,19 @@ void PianorollEditor::setPianoLevelsVisible(bool visible)
 
       levelsAreaWidget->setVisible(visible);
 
-      if (visible && pianoLevels) {
-            //
-            // Bring the view back into sync when it becomes visible.
-            //
-            pianoLevels->setXpos(
-                  pianoView->horizontalScrollBar()->value());
+      if (pianoLevels) {
+            if (visible) {
+                  //
+                  // Bring the view back into sync when it becomes visible.
+                  //
+                  pianoLevels->setXpos(
+                        pianoView->horizontalScrollBar()->value());
 
-            pianoLevels->update();
+                  pianoLevels->update();
+                  }
+            else {
+                  pianoLevels->clearPlaybackLocatorTick();
+                  }
             }
       }
 
@@ -1477,6 +1485,8 @@ void PianorollEditor::stopPlaybackFollow()
 
       pianoView->clearPlaybackLocatorTick();
       ruler->clearPlaybackLocatorTick();
+      if (pianoLevels)
+            pianoLevels->clearPlaybackLocatorTick();
 
       if (_playbackFollowTimer->isActive())
             _playbackFollowTimer->stop();

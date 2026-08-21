@@ -375,6 +375,17 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                        }
                  }
             }
+
+      if (_playbackLocatorValid) {
+            const int tp = tickToPixel(qRound(_playbackLocatorTick));
+
+            p.setPen(QPen(Qt::red, 1));
+
+            if (_orientation == PianoRollOrientation::HORIZONTAL)
+                  p.drawLine(tp, 0, tp, height());
+            else
+                  p.drawLine(0, tp, width(), tp);
+            }
       }
 
 
@@ -883,6 +894,30 @@ void PianoLevels::updateNotes()
 
       update();
       }
+
+//---------------------------------------------------------
+//   setPlaybackLocatorTick
+//---------------------------------------------------------
+
+void PianoLevels::setPlaybackLocatorTick(qreal tick)
+      {
+      _playbackLocatorTick = tick;
+      _playbackLocatorValid = true;
+      update();
+      }
+
+//---------------------------------------------------------
+//   clearPlaybackLocatorTick
+//---------------------------------------------------------
+void PianoLevels::clearPlaybackLocatorTick()
+      {
+      if (!_playbackLocatorValid)
+            return;
+
+      _playbackLocatorValid = false;
+      update();
+      }
+
 //---------------------------------------------------------
 //   setScope
 //---------------------------------------------------------
