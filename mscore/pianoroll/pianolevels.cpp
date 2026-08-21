@@ -411,12 +411,12 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                              if (_orientation == PianoRollOrientation::HORIZONTAL) {
                                    p.drawLine(tp, pix0, tp, vp);
                                    p.drawLine(tp, vp, tp + levelLen, vp);
-                                   p.drawEllipse(tp - 1, vp - 1, 3, 3);
+                                   p.drawEllipse(tp - 3, vp - 3, 7, 7);
                                    }
                              else {
                                    p.drawLine(pix0, tp, vp, tp);
                                    p.drawLine(vp, tp, vp, tp + levelLen);
-                                   p.drawEllipse(vp - 1, tp - 1, 3, 3);
+                                   p.drawEllipse(tp - 3, vp - 3, 7, 7);
                                    }
                              }
 
@@ -442,12 +442,12 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                        if (_orientation == PianoRollOrientation::HORIZONTAL) {
                              p.drawLine(tp, pix0, tp, vp);
                              p.drawLine(tp, vp, tp + levelLen, vp);
-                             p.drawEllipse(tp - 1, vp - 1, 3, 3);
+                             p.drawEllipse(tp - 3, vp - 3, 7, 7);
                              }
                        else {
                              p.drawLine(pix0, tp, vp, tp);
                              p.drawLine(vp, tp, vp, tp + levelLen);
-                             p.drawEllipse(vp - 1, tp - 1, 3, 3);
+                             p.drawEllipse(tp - 3, vp - 3, 7, 7);
                              }
                        }
                  }
@@ -536,10 +536,22 @@ bool PianoLevels::pickNoteEvent(int x, int y, bool selectedOnly, Note*& pickedNo
                               ? noteVal
                               : noteTick;
 
-                        int dx = noteX - x;
-                        int dy = noteY - y;
+                        bool hit;
 
-                        if (dx * dx + dy * dy < pickRadius * pickRadius) {
+                        if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                              hit =
+                                    x >= noteX - 2
+                                    && x <= noteX + levelLen + 2
+                                    && qAbs(y - noteY) <= 6;
+                              }
+                        else {
+                              hit =
+                                    y >= noteY - 2
+                                    && y <= noteY + levelLen + 2
+                                    && qAbs(x - noteX) <= 6;
+                              }
+
+                        if (hit) {
                               pickedNote = note;
                               pickedNoteEvent = &e;
                               return true;
@@ -563,10 +575,22 @@ bool PianoLevels::pickNoteEvent(int x, int y, bool selectedOnly, Note*& pickedNo
                         ? noteVal
                         : noteTick;
 
-                  int dx = noteX - x;
-                  int dy = noteY - y;
+                  bool hit;
 
-                  if (dx * dx + dy * dy < pickRadius * pickRadius) {
+                  if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                        hit =
+                              x >= noteX - 2
+                              && x <= noteX + levelLen + 2
+                              && qAbs(y - noteY) <= 6;
+                        }
+                  else {
+                        hit =
+                              y >= noteY - 2
+                              && y <= noteY + levelLen + 2
+                              && qAbs(x - noteX) <= 6;
+                        }
+
+                  if (hit) {
                         pickedNote = note;
                         pickedNoteEvent = nullptr;
                         return true;
