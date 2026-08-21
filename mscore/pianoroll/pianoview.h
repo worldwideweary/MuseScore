@@ -117,6 +117,10 @@ public:
       Fraction levelPreviewLengthOffset() const;
       bool levelPreviewResizesNotes() const;
 
+      void setLevelInteractionNotes(const QSet<const Note*>& notes);
+      void clearLevelInteractionNotes();
+      bool levelInteractionHighlighted(const Note* note) const;
+
 private:
       Staff* _staff { nullptr };
       Chord* _chord { nullptr };
@@ -180,6 +184,8 @@ private:
             int ontime;
             int len;
             };
+
+      QSet<const Note*> _levelInteractionNotes;
 
       QHash<const NoteEvent*, LevelEventPreview> _levelEventPreviews;
 

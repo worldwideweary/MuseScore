@@ -325,6 +325,14 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                       || (pass == 1 && !selected))
                         continue;
 
+                  const bool interactionHighlighted =
+                        _pianoView && _pianoView->levelInteractionHighlighted(note);
+
+                  const QColor interactionColor =
+                        darkTheme()
+                              ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_DRAG_COLOR)
+                              : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_DRAG_COLOR);
+
                   bool even = false;
                   Staff* const staff = note->staff();
 
@@ -415,14 +423,17 @@ void PianoLevels::paintEvent(QPaintEvent* e)
 
                               int vp = valToPixel(val);
 
-                              if (selected)
+                              if (interactionHighlighted)
+                                    p.setBrush(QBrush(interactionColor));
+                              else if (selected)
                                     p.setBrush(QBrush(noteSelected));
                               else
                                     p.setBrush(Qt::NoBrush);
 
-                              p.setPen(QPen(selected
-                                    ? noteSelected
-                                    : noteDeselected, 2));
+                              if (interactionHighlighted)
+                                    p.setPen(QPen(interactionColor, 2));
+                              else
+                                    p.setPen(QPen(selected ? noteSelected : noteDeselected, 2));
 
                               if (_orientation == PianoRollOrientation::HORIZONTAL) {
                                     p.drawLine(tp, pix0, tp, vp);
@@ -449,14 +460,17 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                         int val = filter->value(note->staff(), note, nullptr);
                         int vp = valToPixel(val);
 
-                        if (selected)
+                        if (interactionHighlighted)
+                              p.setBrush(QBrush(interactionColor));
+                        else if (selected)
                               p.setBrush(QBrush(noteSelected));
                         else
                               p.setBrush(Qt::NoBrush);
 
-                        p.setPen(QPen(selected
-                              ? noteSelected
-                              : noteDeselected, 2));
+                        if (interactionHighlighted)
+                              p.setPen(QPen(interactionColor, 2));
+                        else
+                              p.setPen(QPen(selected ? noteSelected : noteDeselected, 2));
 
                         if (_orientation == PianoRollOrientation::HORIZONTAL) {
                               p.drawLine(tp, pix0, tp, vp);
@@ -632,6 +646,11 @@ void PianoLevels::adjustLevel(Note* note, NoteEvent* noteEvt, int value)
 
       filter->setValue(note->staff(), note, noteEvt, value);
 
+      _levelInteractionNotes.insert(note);
+
+      if (_pianoView)
+            _pianoView->setLevelInteractionNotes(_levelInteractionNotes);
+
       update();
       emit noteLevelsChanged();
       }
@@ -767,6 +786,7 @@ void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, 
                                     : (value1 - value0) * (tick - tick0) / (tick1 - tick0) + value0;
 
                               filter->setValue(note->staff(), note, &e, value);
+                              _levelInteractionNotes.insert(note);
                               hitNote = true;
                               }
                         }
@@ -777,12 +797,16 @@ void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, 
                         int value = tick0 == tick1 ? value0
                               : (value1 - value0) * (tick - tick0) / (tick1 - tick0) + value0;
                         filter->setValue(note->staff(), note, 0, value);
+                        _levelInteractionNotes.insert(note);
                         hitNote = true;
                         }
                   }
             }
 
       if (hitNote) {
+            if (_pianoView)
+                  _pianoView->setLevelInteractionNotes(_levelInteractionNotes);
+
             update();
             emit noteLevelsChanged();
             }
@@ -798,6 +822,11 @@ void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, 
 void PianoLevels::mousePressEvent(QMouseEvent* e)
       {
       if (e->button() == Qt::LeftButton) {
+            _levelInteractionNotes.clear();
+
+            if (_pianoView)
+                  _pianoView->clearLevelInteractionNotes();
+
             mouseDown = true;
             mouseDownPos = e->pos();
             lastMousePos = mouseDownPos;
@@ -805,6 +834,11 @@ void PianoLevels::mousePressEvent(QMouseEvent* e)
             const bool selectedOnly = hasSelectedNotes();
             if (pickNoteEvent(mouseDownPos.x(), mouseDownPos.y(), selectedOnly, singleNoteDrag, singleNoteEventDrag)) {
                   dragStyle = DragStyle::OFFSET;
+                  if (singleNoteDrag) {
+                        _levelInteractionNotes.insert(singleNoteDrag);
+                        if (_pianoView)
+                              _pianoView->setLevelInteractionNotes(_levelInteractionNotes);
+                        }
                   }
             else {
                   dragStyle = DragStyle::LERP;
@@ -846,6 +880,11 @@ void PianoLevels::mouseReleaseEvent(QMouseEvent* e)
                   _score->endCmd();
                   _editCommandActive = false;
                   }
+
+            _levelInteractionNotes.clear();
+
+            if (_pianoView)
+                  _pianoView->clearLevelInteractionNotes();
 
             mouseDown = false;
             dragging = false;

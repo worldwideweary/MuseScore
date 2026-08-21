@@ -80,7 +80,7 @@ class PianoLevels : public QWidget
       DragStyle dragStyle = DragStyle::OFFSET;
       Note* singleNoteDrag { nullptr };
       NoteEvent* singleNoteEventDrag { nullptr };
-
+      QSet<const Note*> _levelInteractionNotes;
 
       int minBeatGap;
 

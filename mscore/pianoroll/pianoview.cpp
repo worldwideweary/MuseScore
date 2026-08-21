@@ -385,6 +385,38 @@ bool PianoView::levelPreviewResizesNotes() const
       }
 
 //---------------------------------------------------------
+//   setLevelInteractionNotes
+//---------------------------------------------------------
+
+void PianoView::setLevelInteractionNotes(const QSet<const Note*>& notes)
+      {
+      _levelInteractionNotes = notes;
+      viewport()->update();
+      }
+
+//---------------------------------------------------------
+//   clearLevelInteractionNotes
+//---------------------------------------------------------
+
+void PianoView::clearLevelInteractionNotes()
+      {
+      if (_levelInteractionNotes.isEmpty())
+            return;
+
+      _levelInteractionNotes.clear();
+      viewport()->update();
+      }
+
+//---------------------------------------------------------
+//   levelInteractionHighlighted
+//---------------------------------------------------------
+
+bool PianoView::levelInteractionHighlighted(const Note* note) const
+      {
+      return _levelInteractionNotes.contains(note);
+      }
+
+//---------------------------------------------------------
 //   setScope
 //---------------------------------------------------------
 
@@ -1139,7 +1171,14 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
                         : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
                   }
             else {
-                  noteColor = pianoRollNoteColor(note, _coloring, true);
+                  if (levelInteractionHighlighted(note)) {
+                        noteColor = darkTheme()
+                              ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_DRAG_COLOR)
+                              : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_DRAG_COLOR);
+                        }
+                  else {
+                        noteColor = pianoRollNoteColor(note, _coloring, true);
+                        }
 
                   const bool ghostOriginal = _dragStarted && note->selected()
                         && (_dragStyle != DragStyle::CANCELLED &&
