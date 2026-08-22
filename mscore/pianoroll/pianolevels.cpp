@@ -690,6 +690,220 @@ bool PianoLevels::pickNoteEvent(int x, int y, bool selectedOnly, Note*& pickedNo
       }
 
 //---------------------------------------------------------
+//   pickNearestLevelInTimeBand
+//---------------------------------------------------------
+
+bool PianoLevels::pickNearestLevelInTimeBand(int timePixel,
+                                             int valuePixel,
+                                             int timeRadius,
+                                             bool selectedOnly,
+                                             Note*& pickedNote,
+                                             NoteEvent*& pickedEvent)
+      {
+      pickedNote = nullptr;
+      pickedEvent = nullptr;
+
+      PianoLevelsFilter* filter =
+            PianoLevelsFilter::FILTER_LIST[_levelsIndex];
+
+      int bestDistance = std::numeric_limits<int>::max();
+
+      for (Note* note : noteList) {
+            if (selectedOnly && !note->selected())
+                  continue;
+
+            if (filter->isPerEvent()) {
+                  for (NoteEvent& event : note->playEvents()) {
+                        const int tp =
+                              tickToPixel(noteStartTick(note, &event));
+
+                        if (std::abs(tp - timePixel) > timeRadius)
+                              continue;
+
+                        const int value =
+                              filter->value(
+                                    note->staff(),
+                                    note,
+                                    &event);
+
+                        const int vp = valToPixel(value);
+
+                        const int dt = tp - timePixel;
+                        const int dv = vp - valuePixel;
+
+                        const int distance =
+                              dt * dt + dv * dv;
+
+                        if (distance < bestDistance) {
+                              bestDistance = distance;
+                              pickedNote = note;
+                              pickedEvent = &event;
+                              }
+                        }
+                  }
+            else {
+                  const int tp =
+                        tickToPixel(noteStartTick(note, nullptr));
+
+                  if (std::abs(tp - timePixel) > timeRadius)
+                        continue;
+
+                  const int value =
+                        filter->value(
+                              note->staff(),
+                              note,
+                              nullptr);
+
+                  const int vp = valToPixel(value);
+
+                  const int dt = tp - timePixel;
+                  const int dv = vp - valuePixel;
+
+                  const int distance =
+                        dt * dt + dv * dv;
+
+                  if (distance < bestDistance) {
+                        bestDistance = distance;
+                        pickedNote = note;
+                        pickedEvent = nullptr;
+                        }
+                  }
+            }
+
+      return pickedNote != nullptr;
+      }
+
+//---------------------------------------------------------
+//   captureLevelDragTargets
+//---------------------------------------------------------
+
+void PianoLevels::captureLevelDragTargets(Note* anchorNote,
+                                          NoteEvent* anchorEvent,
+                                          bool selectedOnly)
+      {
+      _levelDragTargets.clear();
+
+      if (!anchorNote)
+            return;
+
+      PianoLevelsFilter* filter =
+            PianoLevelsFilter::FILTER_LIST[_levelsIndex];
+
+      const int anchorTick =
+            noteStartTick(anchorNote,
+                          filter->isPerEvent()
+                                ? anchorEvent
+                                : nullptr);
+
+      _levelDragAnchorValue =
+            filter->value(
+                  anchorNote->staff(),
+                  anchorNote,
+                  filter->isPerEvent()
+                        ? anchorEvent
+                        : nullptr);
+
+      //
+      // With no score selection, capture only the explicitly
+      // chosen node.  A selection is what turns simultaneous
+      // nodes into a group.
+      //
+      if (!selectedOnly) {
+            LevelDragTarget target;
+
+            target.note = anchorNote;
+            target.event =
+                  filter->isPerEvent()
+                        ? anchorEvent
+                        : nullptr;
+            target.startValue = _levelDragAnchorValue;
+
+            _levelDragTargets.append(target);
+            return;
+            }
+
+      //
+      // Capture every selected level at the anchor's effective
+      // time, preserving each one's original value.
+      //
+      for (Note* note : noteList) {
+            if (!note->selected())
+                  continue;
+
+            if (filter->isPerEvent()) {
+                  for (NoteEvent& event : note->playEvents()) {
+                        if (noteStartTick(note, &event) != anchorTick)
+                              continue;
+
+                        LevelDragTarget target;
+
+                        target.note = note;
+                        target.event = &event;
+                        target.startValue =
+                              filter->value(
+                                    note->staff(),
+                                    note,
+                                    &event);
+
+                        _levelDragTargets.append(target);
+                        }
+                  }
+            else {
+                  if (noteStartTick(note, nullptr) != anchorTick)
+                        continue;
+
+                  LevelDragTarget target;
+
+                  target.note = note;
+                  target.event = nullptr;
+                  target.startValue =
+                        filter->value(
+                              note->staff(),
+                              note,
+                              nullptr);
+
+                  _levelDragTargets.append(target);
+                  }
+            }
+      }
+
+//---------------------------------------------------------
+//   adjustCapturedLevels
+//---------------------------------------------------------
+
+void PianoLevels::adjustCapturedLevels(int value)
+      {
+      if (_levelDragTargets.isEmpty())
+            return;
+
+      PianoLevelsFilter* filter =
+            PianoLevelsFilter::FILTER_LIST[_levelsIndex];
+
+      const int delta =
+            value - _levelDragAnchorValue;
+
+      for (const LevelDragTarget& target : _levelDragTargets) {
+            if (!target.note)
+                  continue;
+
+            filter->setValue(
+                  target.note->staff(),
+                  target.note,
+                  target.event,
+                  target.startValue + delta);
+
+            _levelInteractionNotes.insert(target.note);
+            }
+
+      if (_pianoView)
+            _pianoView->setLevelInteractionNotes(
+                  _levelInteractionNotes);
+
+      update();
+      emit noteLevelsChanged();
+      }
+
+//---------------------------------------------------------
 //   adjustLevelLerp
 //---------------------------------------------------------
 
@@ -816,8 +1030,7 @@ bool PianoLevels::hasSelectedNotes() const
 //       use it to set the value of the level.
 //---------------------------------------------------------
 
-void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, bool selectedOnly,
-                                  Note** singleHitNote, NoteEvent** singleHitEvent)
+void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, bool selectedOnly)
       {
       if (tick1 < tick0) {
             std::swap(tick0, tick1);
@@ -826,17 +1039,6 @@ void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, 
 
       PianoLevelsFilter* filter = PianoLevelsFilter::FILTER_LIST[_levelsIndex];
       bool hitNote = false;
-
-      int hitCount = 0;
-      Note* uniqueNote = nullptr;
-      NoteEvent* uniqueEvent = nullptr;
-
-      if (singleHitNote)
-            *singleHitNote = nullptr;
-
-      if (singleHitEvent)
-            *singleHitEvent = nullptr;
-
 
       for (int i = 0; i < noteList.size(); ++i) {
             Note* note = noteList[i];
@@ -854,17 +1056,6 @@ void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, 
 
                               _levelInteractionNotes.insert(note);
                               hitNote = true;
-
-                              ++hitCount;
-
-                              if (hitCount == 1) {
-                                    uniqueNote = note;
-                                    uniqueEvent = &e;
-                                    }
-                              else {
-                                    uniqueNote = nullptr;
-                                    uniqueEvent = nullptr;
-                                    }
                               }
                         }
                   }
@@ -877,27 +1068,8 @@ void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, 
 
                         _levelInteractionNotes.insert(note);
                         hitNote = true;
-
-                        ++hitCount;
-
-                        if (hitCount == 1) {
-                              uniqueNote = note;
-                              uniqueEvent = nullptr;
-                              }
-                        else {
-                              uniqueNote = nullptr;
-                              uniqueEvent = nullptr;
-                              }
                         }
                   }
-            }
-
-      if (hitCount == 1) {
-            if (singleHitNote)
-                  *singleHitNote = uniqueNote;
-
-            if (singleHitEvent)
-                  *singleHitEvent = uniqueEvent;
             }
 
       if (hitNote) {
@@ -919,6 +1091,7 @@ void PianoLevels::mousePressEvent(QMouseEvent* e)
       {
       if (e->button() == Qt::LeftButton) {
             _levelInteractionNotes.clear();
+            _levelDragTargets.clear();
 
             if (_pianoView)
                   _pianoView->clearLevelInteractionNotes();
@@ -928,61 +1101,92 @@ void PianoLevels::mousePressEvent(QMouseEvent* e)
             lastMousePos = mouseDownPos;
 
             const bool selectedOnly = hasSelectedNotes();
-            if (pickNoteEvent(mouseDownPos.x(), mouseDownPos.y(), selectedOnly, singleNoteDrag, singleNoteEventDrag)) {
+
+            const int timePixel =
+                  mouseTimePixel(mouseDownPos);
+
+            const int valuePixel =
+                  mouseValuePixel(mouseDownPos);
+
+            const int val =
+                  pixelToVal(valuePixel);
+
+            Note* anchorNote = nullptr;
+            NoteEvent* anchorEvent = nullptr;
+
+            //
+            // First try the actual visible bar/node hit area.
+            //
+            if (pickNoteEvent(mouseDownPos.x(),
+                              mouseDownPos.y(),
+                              selectedOnly,
+                              anchorNote,
+                              anchorEvent)) {
                   dragStyle = DragStyle::OFFSET;
-                  if (singleNoteDrag) {
-                        _levelInteractionNotes.insert(singleNoteDrag);
-                        if (_pianoView)
-                              _pianoView->setLevelInteractionNotes(_levelInteractionNotes);
-                        }
                   }
             else {
-                  dragStyle = DragStyle::LERP;
+                  //
+                  // No direct bar hit.  Look for the nearest eligible level
+                  // within a forgiving time-axis band.
+                  //
+                  const int lerpPickRadius =
+                        qMax(4, levelLen / 2);
 
-                  const int timePixel = mouseTimePixel(mouseDownPos);
-                  const int valuePixel = mouseValuePixel(mouseDownPos);
+                  if (pickNearestLevelInTimeBand(
+                        timePixel,
+                        valuePixel,
+                        lerpPickRadius,
+                        selectedOnly,
+                        anchorNote,
+                        anchorEvent)) {
+                        dragStyle = DragStyle::OFFSET;
+                        }
+                  else {
+                        dragStyle = DragStyle::LERP;
+                        }
+                  }
+
+            if (_score && !_editCommandActive) {
+                  _score->startCmd();
+                  _editCommandActive = true;
+                  }
+
+            if (dragStyle == DragStyle::OFFSET) {
+                  singleNoteDrag = anchorNote;
+                  singleNoteEventDrag = anchorEvent;
+
+                  captureLevelDragTargets(
+                        anchorNote,
+                        anchorEvent,
+                        selectedOnly);
 
                   //
-                  // Give an initial LERP click a capture width related to
-                  // the visible level-bar width rather than a fixed 4 pixels.
+                  // Jump the anchor to the press value immediately.
+                  // All captured simultaneous selected levels follow
+                  // by the same delta.
                   //
-                  const int lerpPickRadius = qMax(4, levelLen / 2);
+                  adjustCapturedLevels(val);
+                  }
+            else {
+                  const int lerpPickRadius =
+                        qMax(4, levelLen / 2);
 
                   const int tick0 =
-                        pixelToTick(timePixel - lerpPickRadius);
+                        pixelToTick(
+                              timePixel - lerpPickRadius);
 
                   const int tick1 =
-                        pixelToTick(timePixel + lerpPickRadius);
-
-                  const int val = pixelToVal(valuePixel);
-
-                  if (_score && !_editCommandActive) {
-                        _score->startCmd();
-                        _editCommandActive = true;
-                        }
-
-                  Note* hitNote = nullptr;
-                  NoteEvent* hitEvent = nullptr;
+                        pixelToTick(
+                              timePixel + lerpPickRadius);
 
                   adjustLevelLerp(
                         tick0,
                         val,
                         tick1,
                         val,
-                        hasSelectedNotes(),
-                        &hitNote,
-                        &hitEvent);
-
-                  //
-                  // If the initial LERP operation affected exactly one
-                  // level, capture it and continue the gesture as OFFSET.
-                  //
-                  if (hitNote) {
-                        singleNoteDrag = hitNote;
-                        singleNoteEventDrag = hitEvent;
-                        dragStyle = DragStyle::OFFSET;
-                        }
+                        selectedOnly);
                   }
+
             update();
             }
       }
@@ -1007,6 +1211,7 @@ void PianoLevels::mouseReleaseEvent(QMouseEvent* e)
                   }
 
             _levelInteractionNotes.clear();
+            _levelDragTargets.clear();
 
             if (_pianoView)
                   _pianoView->clearLevelInteractionNotes();
@@ -1043,8 +1248,8 @@ void PianoLevels::mouseMoveEvent(QMouseEvent* e)
 
             if (dragging) {
                   if (dragStyle == DragStyle::OFFSET) {
-                        int val = pixelToVal(mouseValuePixel(e->pos()));
-                        adjustLevel(singleNoteDrag, singleNoteEventDrag, val);
+                        const int val = pixelToVal(mouseValuePixel(e->pos()));
+                        adjustCapturedLevels(val);
                         }
                   else {
                         int tick0 =

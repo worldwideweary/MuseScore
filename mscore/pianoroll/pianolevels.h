@@ -82,6 +82,15 @@ class PianoLevels : public QWidget
       NoteEvent* singleNoteEventDrag { nullptr };
       QSet<const Note*> _levelInteractionNotes;
 
+      struct LevelDragTarget {
+            Note* note { nullptr };
+            NoteEvent* event { nullptr };
+            int startValue { 0 };
+            };
+
+      QVector<LevelDragTarget> _levelDragTargets;
+      int _levelDragAnchorValue { 0 };
+
       int minBeatGap;
 
       QList<Note*> noteList;
@@ -103,9 +112,23 @@ class PianoLevels : public QWidget
 
       bool pickNoteEvent(int x, int y, bool selectedOnly,
                          Note*& pickedNote, NoteEvent*& pickedNoteEvent);
-      void adjustLevelLerp(int tick0, int value0, int tick1, int value1, bool selectedOnly = true,
-                           Note** singleHitNote = nullptr, NoteEvent** singleHitEvent = nullptr);
+
+      bool pickNearestLevelInTimeBand(int timePixel,
+                                      int valuePixel,
+                                      int timeRadius,
+                                      bool selectedOnly,
+                                      Note*& pickedNote,
+                                      NoteEvent*& pickedEvent);
+
+      void captureLevelDragTargets(Note* anchorNote,
+                                   NoteEvent* anchorEvent,
+                                   bool selectedOnly);
+
+      void adjustCapturedLevels(int value);
+
+      void adjustLevelLerp(int tick0, int value0, int tick1, int value1, bool selectedOnly = true);
       void adjustLevel(Note* note, NoteEvent* noteEvt, int value);
+
 
       int pixelToTick(int pixel) const;
       int tickToPixel(int tick) const;
