@@ -440,8 +440,14 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       tbTweak->addWidget(veloType);
 
       velocity = new QSpinBox;
-      velocity->setRange(-1000, 1000);
+      velocity->setRange(-127, 127);
       velocity->setReadOnly(true);
+
+      velocity->setPrefix("+");
+      const int velocityWidth = velocity->sizeHint().width();
+      velocity->setPrefix("");
+      velocity->setMinimumWidth(velocityWidth);
+
       tbTweak->addWidget(velocity);
 
       tbTweak->addWidget(new QLabel(tr("Pitch:")));
@@ -1486,6 +1492,20 @@ void PianorollEditor::veloTypeChanged(int val)
       if (!items.size())
             return;
 
+      const Note::ValueType vt = Note::ValueType(val);
+      switch (vt) {
+            case Note::ValueType::USER_VAL:
+                  velocity->setRange(0, 127);
+                  velocity->setPrefix("");
+                  break;
+
+            case Note::ValueType::OFFSET_VAL:
+                  velocity->setRange(-127, 127);
+                  velocity->setPrefix(
+                        velocity->value() > 0 ? "+" : "");
+                  break;
+            }
+
       _score->startCmd();
       for (int i = 0; i < items.size(); i++) {
             PianoItem* item = items[i];
@@ -1528,10 +1548,17 @@ void PianorollEditor::updateVelocity(Note* note)
       velocity->setReadOnly(false);
       velocity->setSuffix("");
 
-      if (vt == Note::ValueType::OFFSET_VAL && value > 0)
-            velocity->setPrefix("+");
-      else
-            velocity->setPrefix("");
+      switch (vt) {
+            case Note::ValueType::USER_VAL:
+                  velocity->setRange(0, 127);
+                  velocity->setPrefix("");
+                  break;
+
+            case Note::ValueType::OFFSET_VAL:
+                  velocity->setRange(-127, 127);
+                  velocity->setPrefix(value > 0 ? "+" : "");
+                  break;
+            }
 
       velocity->setValue(value);
 
