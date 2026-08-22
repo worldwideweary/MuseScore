@@ -1516,13 +1516,15 @@ void PianorollEditor::veloTypeChanged(int val)
             int newVelocity = note->veloOffset();
             int dynamicsVel = staff->velocities().val(note->tick());
 
-            // change velocity to equivalent in new metric
             switch (Note::ValueType(val)) {
                   case Note::ValueType::USER_VAL:
-                        newVelocity = static_cast<int>(dynamicsVel * (1 + newVelocity / 100.0));
+                        // relative offset -> absolute velocity
+                        newVelocity = qBound(0, dynamicsVel + newVelocity, 127);
                         break;
+
                   case Note::ValueType::OFFSET_VAL:
-                        newVelocity = static_cast<int>((newVelocity / (qreal)dynamicsVel - 1) * 100);
+                  // absolute velocity -> relative offset
+                        newVelocity = qBound(-127, newVelocity - dynamicsVel, 127);
                         break;
                   }
 
