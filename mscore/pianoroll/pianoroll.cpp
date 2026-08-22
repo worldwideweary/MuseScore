@@ -72,7 +72,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       QWidget* mainWidget = new QWidget;
       QToolBar* tbMain = new QToolBar("Toolbar Main", this);
-      tbMain->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+      tbMain->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbMain->setIconSize(toolbarIconSize);
 
       if (qApp->layoutDirection() == Qt::LayoutDirection::LeftToRight) {
@@ -228,7 +228,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       QToolBar* tbTool = new QToolBar("Action Buttons", this);
       QButtonGroup* bngrpActionBns = new QButtonGroup();
-      tbTool->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+      tbTool->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbTool->setIconSize(toolbarIconSize);
 
       struct ToolIconData
@@ -294,7 +294,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       QToolBar* tbNoteLen = new QToolBar("Toolbar Note Length", this);
       QButtonGroup* bngrpNoteLen = new QButtonGroup();
-      tbNoteLen->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+      tbNoteLen->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbNoteLen->setIconSize(toolbarIconSize);
 
       for (LenIconData* p = _iconData; !p->_icon.isEmpty(); ++p) {
@@ -317,7 +317,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       QToolBar* tbDots = new QToolBar("Toolbar Dots", this);
       QButtonGroup* bngrpNoteDot = new QButtonGroup();
-      tbDots->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+      tbDots->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbDots->setIconSize(toolbarIconSize);
 
       struct DotIconData
@@ -356,7 +356,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       QToolBar* tbVoices = new QToolBar("Toolbar Voices", this);
       QButtonGroup* bngrpVoices = new QButtonGroup();
-      tbVoices->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+      tbVoices->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbVoices->setIconSize(toolbarIconSize);
       //bngrpNoteLen = new QButtonGroup();
 
