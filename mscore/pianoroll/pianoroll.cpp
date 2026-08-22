@@ -702,14 +702,33 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                   restoreScoreViewFocus();
                   });
 
+      connect(pianoView->horizontalScrollBar(),
+              &QScrollBar::valueChanged,
+              this,
+              [this](int value) {
+                    if (_orientation == PianoRollOrientation::VERTICAL)
+                          pianoKbd->setYpos(value);
+                    });
+
+      connect(pianoView->verticalScrollBar(),
+              &QScrollBar::valueChanged,
+              this,
+              [this](int value) {
+                    if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                          pianoKbd->setYpos(value);
+                          }
+                    else if (_orientation == PianoRollOrientation::VERTICAL) {
+                          if (_showPianoLevels && pianoLevels)
+                                pianoLevels->update();
+                          }
+                    });
+
       connect(subdiv,             SIGNAL(valueChanged(int)),              pianoView,   SLOT(setSubdiv(int)));
       connect(subdiv,             SIGNAL(valueChanged(int)),              pianoLevels, SLOT(setSubdiv(int)));
       connect(pianoLevelsChooser, SIGNAL(levelsIndexChanged(int)),        pianoLevels, SLOT(setLevelsIndex(int)));
       connect(pianoKbd,           SIGNAL(pitchHighlightToggled(int)),     pianoView,   SLOT(togglePitchHighlight(int)));
 
-      connect(hsb,                              SIGNAL(valueChanged(int)),   SLOT(setXpos(int)));
-      // connect(pianoView->horizontalScrollBar(), SIGNAL(valueChanged(int)),   SLOT(setXpos(int))); // Extraneous
-
+      connect(hsb,                SIGNAL(valueChanged(int)),   SLOT(setXpos(int)));
       connect(ruler,              &PianoRuler::locatorMoved,  this, &PianorollEditor::moveLocator);
       connect(pianoLevels,        &PianoLevels::locatorMoved, this, &PianorollEditor::moveLocator);
       connect(veloType,           SIGNAL(activated(int)),                SLOT(veloTypeChanged(int)));
