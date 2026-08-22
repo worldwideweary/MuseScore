@@ -301,7 +301,29 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                              QString::number(i * div));
                   }
             else {
-                  // TODO
+                  const QString text = QString::number(i * div);
+                  const QFontMetrics fm(p.font());
+                  const int textWidth = fm.width(text);
+
+                  //
+                  // Center the label under its value guide while keeping
+                  // the first/last labels inside the widget.
+                  //
+                  const int x = qBound(
+                        2,
+                        vp - textWidth / 2,
+                        width() - textWidth - 2);
+
+                  QRectF textRect(
+                        x,
+                        height() - 14,
+                        textWidth,
+                        12);
+
+                  p.setPen(QPen(colText));
+                  p.drawText(textRect,
+                             Qt::AlignHCenter | Qt::AlignBottom,
+                             text);
                   }
             }
 
