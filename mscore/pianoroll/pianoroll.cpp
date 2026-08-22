@@ -174,7 +174,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       // Option: Keyboard alignment grid
       tbMain->addSeparator();
 
-      QCheckBox* keyboardAlignedGrid =
+      keyboardAlignedGrid =
             new QCheckBox(tr("Keyboard-aligned grid"));
 
       keyboardAlignedGrid->setToolTip(
@@ -184,7 +184,8 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             preferences.getBool(
                   PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID));
 
-      tbMain->addWidget(keyboardAlignedGrid);
+      keyboardAlignedGridAction =
+            tbMain->addWidget(keyboardAlignedGrid);
 
       connect(keyboardAlignedGrid, &QCheckBox::toggled,
             this, [this](bool checked) {
@@ -1049,6 +1050,11 @@ void PianorollEditor::updateOrientationLayout()
 
       if (pianoLevels)
             pianoLevels->setOrientation(_orientation);
+
+      if (keyboardAlignedGridAction) {
+            keyboardAlignedGridAction->setVisible(
+                  _orientation == PianoRollOrientation::VERTICAL);
+            }
 
       if (_orientation == PianoRollOrientation::HORIZONTAL) {
             //

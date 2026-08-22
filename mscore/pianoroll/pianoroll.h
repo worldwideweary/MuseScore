@@ -73,6 +73,8 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       PianoRuler* ruler { nullptr };
       QAction* showWave { nullptr };
       WaveView* waveView { nullptr };
+      QCheckBox* keyboardAlignedGrid { nullptr };
+      QAction* keyboardAlignedGridAction { nullptr };
       QSplitter* split { nullptr };
       QList<QAction*> actions;
       PianoRollScope _scope;
