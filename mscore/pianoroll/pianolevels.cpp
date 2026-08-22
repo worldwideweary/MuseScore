@@ -953,11 +953,18 @@ int PianoLevels::pixelToTick(int pixel) const
       if (_orientation == PianoRollOrientation::HORIZONTAL)
             return static_cast<int>((pixel + _xpos) / _xZoom) - MAP_OFFSET;
 
-      if (_pianoView) {
-            const QPointF scenePos =
-                  _pianoView->mapToScene(QPoint(0, pixel));
+      if (_pianoView && height() > 0 && _pianoView->viewport()->height() > 0) {
+            const qreal pianoY =
+                  qreal(pixel)
+                  * _pianoView->viewport()->height()
+                  / height();
 
-            return _pianoView->pixelYToTick(qRound(scenePos.y()));
+            const QPointF scenePos =
+                  _pianoView->mapToScene(
+                        QPoint(0, qRound(pianoY)));
+
+            return _pianoView->pixelYToTick(
+                  qRound(scenePos.y()));
             }
 
       return 0;
@@ -972,11 +979,18 @@ int PianoLevels::tickToPixel(int tick) const
       if (_orientation == PianoRollOrientation::HORIZONTAL)
             return static_cast<int>((tick + MAP_OFFSET) * _xZoom - _xpos);
 
-      if (_pianoView) {
-            const int sceneY = _pianoView->tickToPixelY(tick);
+      if (_pianoView && height() > 0 && _pianoView->viewport()->height() > 0) {
+            const int sceneY =
+                  _pianoView->tickToPixelY(tick);
 
-            return _pianoView->mapFromScene(
-                  QPointF(0.0, sceneY)).y();
+            const int pianoY =
+                  _pianoView->mapFromScene(
+                        QPointF(0.0, sceneY)).y();
+
+            return qRound(
+                  qreal(pianoY)
+                  * height()
+                  / _pianoView->viewport()->height());
             }
 
       return 0;
