@@ -18,13 +18,15 @@ PianoLevelsChooser::PianoLevelsChooser(QWidget *parent)
       {
       setupUi(this);
 
-      _levelsIndex = 0;
+      _levelsIndex = 2; // Velocity (relative)
 
       for (int i = 0; PianoLevelsFilter::FILTER_LIST[i]; ++i) {
             QString name = PianoLevelsFilter::FILTER_LIST[i]->name();
             levelsCombo->addItem(name, i);
             levelsCombo->setItemData(i, PianoLevelsFilter::FILTER_LIST[i]->tooltip(), Qt::ToolTipRole);
             }
+
+      levelsCombo->setCurrentIndex(_levelsIndex);
 
       connect(levelsCombo, SIGNAL(activated(int)), SLOT(setLevelsIndex(int)));
       connect(setEventsBn, SIGNAL(clicked(bool)), SLOT(setEventDataPressed()));
