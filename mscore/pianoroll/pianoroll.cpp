@@ -58,6 +58,10 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       _scope = PianoRollScope::PART;
       _orientation = PianoRollOrientation::HORIZONTAL;
 
+      const QSize toolbarIconSize(
+            preferences.getInt(PREF_UI_THEME_ICONWIDTH),
+            preferences.getInt(PREF_UI_THEME_ICONHEIGHT));
+
       QActionGroup* ag = Shortcut::getActionGroupForWidget(MsWidget::PIANO_ROLL_EDITOR);
       ag->setParent(this);
       addActions(ag->actions());
@@ -69,6 +73,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       QWidget* mainWidget = new QWidget;
       QToolBar* tbMain = new QToolBar("Toolbar Main", this);
       tbMain->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+      tbMain->setIconSize(toolbarIconSize);
 
       if (qApp->layoutDirection() == Qt::LayoutDirection::LeftToRight) {
             tbMain->addAction(getAction("undo"));
@@ -226,6 +231,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       QToolBar* tbTool = new QToolBar("Action Buttons", this);
       QButtonGroup* bngrpActionBns = new QButtonGroup();
       tbTool->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+      tbTool->setIconSize(toolbarIconSize);
 
       struct ToolIconData
       {
@@ -250,6 +256,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             QIcon icon;
             icon.addFile(p->_icon, QSize(), QIcon::Normal, QIcon::Off);
             bn->setIcon(icon);
+            bn->setIconSize(toolbarIconSize);
             bn->setCheckable(true);
             bn->setToolTip(p->_tooltip);
             PianoRollEditTool tool = p->_tool;
@@ -290,12 +297,14 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       QToolBar* tbNoteLen = new QToolBar("Toolbar Note Length", this);
       QButtonGroup* bngrpNoteLen = new QButtonGroup();
       tbNoteLen->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+      tbNoteLen->setIconSize(toolbarIconSize);
 
       for (LenIconData* p = _iconData; !p->_icon.isEmpty(); ++p) {
             QToolButton* bnLen = new QToolButton();
             QIcon icon;
             icon.addFile(p->_icon, QSize(), QIcon::Normal, QIcon::Off);
             bnLen->setIcon(icon);
+            bnLen->setIconSize(toolbarIconSize);
             bnLen->setCheckable(true);
             int length = p->_measureFrac;
             connect(bnLen, &QToolButton::clicked, this, [=, this](){this->setEditNoteLength(length);});
@@ -311,6 +320,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       QToolBar* tbDots = new QToolBar("Toolbar Dots", this);
       QButtonGroup* bngrpNoteDot = new QButtonGroup();
       tbDots->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+      tbDots->setIconSize(toolbarIconSize);
 
       struct DotIconData
       {
@@ -332,6 +342,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             QIcon icon;
             icon.addFile(p->_icon, QSize(), QIcon::Normal, QIcon::Off);
             bn->setIcon(icon);
+            bn->setIconSize(toolbarIconSize);
             bn->setCheckable(true);
             int length = p->_len;
             connect(bn, &QToolButton::clicked, this, [=, this](){this->setEditNoteDots(length, bn);});
@@ -348,6 +359,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       QToolBar* tbVoices = new QToolBar("Toolbar Voices", this);
       QButtonGroup* bngrpVoices = new QButtonGroup();
       tbVoices->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+      tbVoices->setIconSize(toolbarIconSize);
       //bngrpNoteLen = new QButtonGroup();
 
       struct VoiceIconData
@@ -370,6 +382,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             QIcon icon;
             icon.addFile(p->_icon, QSize(), QIcon::Normal, QIcon::Off);
             bn->setIcon(icon);
+            bn->setIconSize(toolbarIconSize);
             bn->setCheckable(true);
             bn->setToolTip(p->_tooltip);
             int voice = p->_voice;
@@ -385,6 +398,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       // empty area for spacing
 
       QToolBar* tbTweak = new QToolBar("Toolbar Tweak", this);
+      tbTweak->setIconSize(toolbarIconSize);
 
 
       tbTweak->addWidget(new QLabel(tr("Cursor:")));
