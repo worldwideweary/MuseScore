@@ -216,7 +216,6 @@ private:
       void toggleTie(const QPointF& pos);
       void toggleTie(Note*);
       void compactMeasures(QList<Measure*> measures);
-      void deleteSeletedNotes();
       void dragSelectionNoteGroup();
       void finishNoteGroupDrag(QMouseEvent* event);
       void finishNoteEventAdjustDrag();
@@ -293,6 +292,8 @@ private:
       PianoRollEditTool editTool() const { return _editNoteTool; }
       QList<QGraphicsItem*> items() { return scene()->selectedItems(); }
       int editNoteDots() const { return _editNoteDots; }
+
+      void deleteSelectedNotes();
 
       void setEditNoteLength(Fraction len) { _editNoteLength = len; }
       void setEditNoteVoice(int voice) { _editNoteVoice = voice; }
