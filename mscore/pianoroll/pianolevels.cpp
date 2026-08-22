@@ -50,7 +50,7 @@ PianoLevels::PianoLevels(QWidget *parent)
        _staff     = nullptr;
        _tuplet    = 1;
        _subdiv    = 0;
-       _levelsIndex = 0;
+       _levelsIndex = 2; // Velocity (relative)
        minBeatGap = 20;
        vMargin    = 10;
        levelLen   = 20;
@@ -385,8 +385,8 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                               Fraction previewNoteLen = note->chord()->ticks();
 
                               if (_pianoView
-                              && note->selected()
-                              && _pianoView->levelPreviewResizesNotes()) {
+                                  && note->selected()
+                                  && _pianoView->levelPreviewResizesNotes()) {
                                     previewNoteTick += _pianoView->levelPreviewTickOffset();
                                     previewNoteLen += _pianoView->levelPreviewLengthOffset();
                                     }
@@ -394,8 +394,8 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                               int previewTick;
 
                               if (_pianoView
-                              && note->selected()
-                              && _pianoView->levelPreviewResizesNotes()) {
+                                  && note->selected()
+                                  && _pianoView->levelPreviewResizesNotes()) {
                                     Fraction eventTick =
                                           previewNoteTick
                                           + previewNoteLen * ne.ontime() / 1000;
@@ -445,66 +445,12 @@ void PianoLevels::paintEvent(QPaintEvent* e)
 
                               int vp = valToPixel(val);
 
-                              if (interactionHighlighted)
-                                    p.setBrush(QBrush(interactionColor));
-                              else if (selected)
-                                    p.setBrush(QBrush(noteSelected));
-                              else
-                                    p.setBrush(Qt::NoBrush);
-
-                              if (interactionHighlighted)
-                                    p.setPen(QPen(interactionColor, 2));
-                              else
-                                    p.setPen(QPen(selected ? noteSelected : noteDeselected, 2));
-
-
-                              QColor fillColor =
+                              const QColor levelColor =
                                     interactionHighlighted
                                           ? interactionColor
                                           : (selected ? noteSelected : noteDeselected);
 
-                              fillColor.setAlphaF(0.35);
-
-                              if (_orientation == PianoRollOrientation::HORIZONTAL) {
-                                    const int top = qMin(pix0, vp);
-                                    const int bottom = qMax(pix0, vp);
-
-                                    QRect barRect(
-                                          tp,
-                                          top,
-                                          levelLen,
-                                          qMax(1, bottom - top));
-
-                                    QColor fillColor =
-                                          interactionHighlighted
-                                                ? interactionColor
-                                                : (selected ? noteSelected : noteDeselected);
-
-                                    fillColor.setAlphaF(0.35);
-
-                                    p.setBrush(fillColor);
-                                    p.setPen(QPen(
-                                          interactionHighlighted
-                                                ? interactionColor
-                                                : (selected ? noteSelected : noteDeselected),
-                                          1));
-
-                                    p.drawRect(barRect);
-
-                                    QColor pointColor =
-                                          interactionHighlighted
-                                                ? interactionColor
-                                                : (selected ? noteSelected : noteDeselected);
-
-                                    p.setBrush(pointColor);
-                                    p.setPen(QPen(pointColor, 2));
-                                    p.drawEllipse(tp - 4, vp - 4, 9, 9);
-                                    }
-                              else {
-                                    p.drawLine(pix0, tp, vp, tp);
-                                    p.drawLine(vp, tp, vp, tp + levelLen);
-                                    p.drawEllipse(vp - 4, tp - 4, 9, 9);
-                                    }
+                              drawLevelBar(p, tp, vp, pix0, levelColor);
                               }
                         }
                   else {
@@ -520,28 +466,12 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                         int val = filter->value(note->staff(), note, nullptr);
                         int vp = valToPixel(val);
 
-                        if (interactionHighlighted)
-                              p.setBrush(QBrush(interactionColor));
-                        else if (selected)
-                              p.setBrush(QBrush(noteSelected));
-                        else
-                              p.setBrush(Qt::NoBrush);
+                        const QColor levelColor =
+                              interactionHighlighted
+                                    ? interactionColor
+                                    : (selected ? noteSelected : noteDeselected);
 
-                        if (interactionHighlighted)
-                              p.setPen(QPen(interactionColor, 2));
-                        else
-                              p.setPen(QPen(selected ? noteSelected : noteDeselected, 2));
-
-                        if (_orientation == PianoRollOrientation::HORIZONTAL) {
-                              p.drawLine(tp, pix0, tp, vp);
-                              p.drawLine(tp, vp, tp + levelLen, vp);
-                              p.drawEllipse(tp - 4, vp - 4, 9, 9);
-                              }
-                        else {
-                              p.drawLine(pix0, tp, vp, tp);
-                              p.drawLine(vp, tp, vp, tp + levelLen);
-                              p.drawEllipse(vp - 4, tp - 4, 9, 9);
-                              }
+                        drawLevelBar(p, tp, vp, pix0, levelColor);
                         }
                   }
             }
@@ -667,35 +597,49 @@ bool PianoLevels::pickNoteEvent(int x, int y, bool selectedOnly, Note*& pickedNo
                         }
                   }
             else {
-                  const int noteTick =
-                        tickToPixel(noteStartTick(note, nullptr));
+                  const int noteTick = tickToPixel(noteStartTick(note, nullptr));
+                  const int noteVal = valToPixel(
+                        filter->value(note->staff(), note, nullptr));
 
-                  const int noteVal =
-                        valToPixel(filter->value(note->staff(), note, nullptr));
-
-                  const int noteX =
-                        _orientation == PianoRollOrientation::HORIZONTAL
-                        ? noteTick
-                        : noteVal;
-
-                  const int noteY =
-                        _orientation == PianoRollOrientation::HORIZONTAL
-                        ? noteVal
-                        : noteTick;
-
-                  bool hit;
+                  int noteX;
+                  int noteY;
 
                   if (_orientation == PianoRollOrientation::HORIZONTAL) {
-                        hit =
-                              x >= noteX - 2
-                              && x <= noteX + levelLen + 2
-                              && qAbs(y - noteY) <= 6;
+                        noteX = noteTick;
+                        noteY = noteVal;
                         }
                   else {
+                        noteX = noteVal;
+                        noteY = noteTick;
+                        }
+
+                  bool hit = false;
+
+                  if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                        const int left = noteX - 2;
+                        const int right = noteX + levelLen + 2;
+
+                        const int top = qMin(pix0, noteY) - 2;
+                        const int bottom = qMax(pix0, noteY) + 2;
+
                         hit =
-                              y >= noteY - 2
-                              && y <= noteY + levelLen + 2
-                              && qAbs(x - noteX) <= 6;
+                              x >= left
+                              && x <= right
+                              && y >= top
+                              && y <= bottom;
+                        }
+                  else if (_orientation == PianoRollOrientation::VERTICAL) {
+                        const int left = qMin(pix0, noteX) - 2;
+                        const int right = qMax(pix0, noteX) + 2;
+
+                        const int top = noteY - 2;
+                        const int bottom = noteY + levelLen + 2;
+
+                        hit =
+                              x >= left
+                              && x <= right
+                              && y >= top
+                              && y <= bottom;
                         }
 
                   if (hit) {
@@ -945,6 +889,57 @@ void PianoLevels::adjustLevel(Note* note, NoteEvent* noteEvt, int value)
       }
 
 //---------------------------------------------------------
+//   drawLevelBar
+//---------------------------------------------------------
+
+void PianoLevels::drawLevelBar(QPainter& p,
+                               int tp,
+                               int vp,
+                               int pix0,
+                               const QColor& color)
+      {
+      QColor fillColor = color;
+      fillColor.setAlphaF(0.35);
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            const int top = qMin(pix0, vp);
+            const int bottom = qMax(pix0, vp);
+
+            QRect barRect(
+                  tp,
+                  top,
+                  levelLen,
+                  qMax(1, bottom - top));
+
+            p.setBrush(fillColor);
+            p.setPen(QPen(color, 1));
+            p.drawRect(barRect);
+
+            p.setBrush(color);
+            p.setPen(QPen(color, 2));
+            p.drawEllipse(tp - 4, vp - 4, 9, 9);
+            }
+      else if (_orientation == PianoRollOrientation::VERTICAL) {
+            const int left = qMin(pix0, vp);
+            const int right = qMax(pix0, vp);
+
+            QRect barRect(
+                  left,
+                  tp,
+                  qMax(1, right - left),
+                  levelLen);
+
+            p.setBrush(fillColor);
+            p.setPen(QPen(color, 1));
+            p.drawRect(barRect);
+
+            p.setBrush(color);
+            p.setPen(QPen(color, 2));
+            p.drawEllipse(vp - 4, tp - 4, 9, 9);
+            }
+      }
+
+//---------------------------------------------------------
 //   pixelToTick
 //---------------------------------------------------------
 
@@ -953,11 +948,18 @@ int PianoLevels::pixelToTick(int pixel) const
       if (_orientation == PianoRollOrientation::HORIZONTAL)
             return static_cast<int>((pixel + _xpos) / _xZoom) - MAP_OFFSET;
 
-      if (_pianoView) {
-            const QPointF scenePos =
-                  _pianoView->mapToScene(QPoint(0, pixel));
+      if (_pianoView && height() > 0 && _pianoView->viewport()->height() > 0) {
+            const qreal pianoY =
+                  qreal(pixel)
+                  * _pianoView->viewport()->height()
+                  / height();
 
-            return _pianoView->pixelYToTick(qRound(scenePos.y()));
+            const QPointF scenePos =
+                  _pianoView->mapToScene(
+                        QPoint(0, qRound(pianoY)));
+
+            return _pianoView->pixelYToTick(
+                  qRound(scenePos.y()));
             }
 
       return 0;
@@ -972,11 +974,18 @@ int PianoLevels::tickToPixel(int tick) const
       if (_orientation == PianoRollOrientation::HORIZONTAL)
             return static_cast<int>((tick + MAP_OFFSET) * _xZoom - _xpos);
 
-      if (_pianoView) {
-            const int sceneY = _pianoView->tickToPixelY(tick);
+      if (_pianoView && height() > 0 && _pianoView->viewport()->height() > 0) {
+            const int sceneY =
+                  _pianoView->tickToPixelY(tick);
 
-            return _pianoView->mapFromScene(
-                  QPointF(0.0, sceneY)).y();
+            const int pianoY =
+                  _pianoView->mapFromScene(
+                        QPointF(0.0, sceneY)).y();
+
+            return qRound(
+                  qreal(pianoY)
+                  * height()
+                  / _pianoView->viewport()->height());
             }
 
       return 0;
@@ -1120,6 +1129,11 @@ void PianoLevels::mousePressEvent(QMouseEvent* e)
             mouseDownPos = e->pos();
             lastMousePos = mouseDownPos;
 
+            const Qt::KeyboardModifiers modifiers =
+                  QGuiApplication::keyboardModifiers();
+            const bool forceLerp =
+                  modifiers & Qt::ControlModifier;
+
             const bool selectedOnly = hasSelectedNotes();
 
             const int timePixel =
@@ -1137,42 +1151,47 @@ void PianoLevels::mousePressEvent(QMouseEvent* e)
             //
             // First try the actual visible bar/node hit area.
             //
-            const bool barHit =
-                  pickNoteEvent(mouseDownPos.x(),
-                                mouseDownPos.y(),
-                                selectedOnly,
-                                anchorNote,
-                                anchorEvent);
-
             const int lerpPickRadius =
                   qMax(4, levelLen / 2);
 
-            if (barHit) {
-                  //
-                  // More than one filled bar can overlap.  Use proximity
-                  // to the endpoint to choose the actual anchor.
-                  //
-                  pickNearestLevelInTimeBand(
-                        timePixel,
-                        valuePixel,
-                        qMax(lerpPickRadius, levelLen + 2),
-                        selectedOnly,
-                        anchorNote,
-                        anchorEvent);
-
-                  dragStyle = DragStyle::OFFSET;
+            if (forceLerp) {
+                  dragStyle = DragStyle::LERP;
                   }
-            else if (pickNearestLevelInTimeBand(
+            else {
+                  const bool barHit =
+                        pickNoteEvent(mouseDownPos.x(),
+                                      mouseDownPos.y(),
+                                      selectedOnly,
+                                      anchorNote,
+                                      anchorEvent);
+
+                  if (barHit) {
+                        //
+                        // More than one filled bar can overlap.  Use
+                        // proximity to choose the actual anchor.
+                        //
+                        pickNearestLevelInTimeBand(
+                              timePixel,
+                              valuePixel,
+                              qMax(lerpPickRadius, levelLen + 2),
+                              selectedOnly,
+                              anchorNote,
+                              anchorEvent);
+
+                        dragStyle = DragStyle::OFFSET;
+                        }
+                  else if (pickNearestLevelInTimeBand(
                         timePixel,
                         valuePixel,
                         lerpPickRadius,
                         selectedOnly,
                         anchorNote,
                         anchorEvent)) {
-                  dragStyle = DragStyle::OFFSET;
-                  }
-            else {
-                  dragStyle = DragStyle::LERP;
+                        dragStyle = DragStyle::OFFSET;
+                        }
+                  else {
+                        dragStyle = DragStyle::LERP;
+                        }
                   }
 
             if (_score && !_editCommandActive) {
