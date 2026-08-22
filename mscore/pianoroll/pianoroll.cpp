@@ -1520,27 +1520,20 @@ void PianorollEditor::veloTypeChanged(int val)
 
 void PianorollEditor::updateVelocity(Note* note)
       {
-      Note::ValueType vt = note->veloType();
-      veloType->setCurrentIndex(int(vt));
-      switch (vt) {
-            case Note::ValueType::USER_VAL:
-                  velocity->setReadOnly(false);
-                  velocity->setSuffix("");
-                  break;
-            case Note::ValueType::OFFSET_VAL:
-                  velocity->setReadOnly(false);
-                  velocity->setSuffix("%");
-                  break;
-            }
+      const Note::ValueType vt = note->veloType();
+      const int value = note->veloOffset();
 
-      switch (vt) {
-            case Note::ValueType::USER_VAL:
-                  velocity->setValue(note->veloOffset());
-                  break;
-            case Note::ValueType::OFFSET_VAL:
-                  velocity->setValue(note->veloOffset());
-                  break;
-            }
+      veloType->setCurrentIndex(int(vt));
+
+      velocity->setReadOnly(false);
+      velocity->setSuffix("");
+
+      if (vt == Note::ValueType::OFFSET_VAL && value > 0)
+            velocity->setPrefix("+");
+      else
+            velocity->setPrefix("");
+
+      velocity->setValue(value);
 
       pianoLevels->update();
       }
@@ -1554,6 +1547,14 @@ void PianorollEditor::velocityChanged(int val)
       QList<PianoItem*> items = pianoView->getSelectedItems();
       if (!items.size())
             return;
+
+      const Note::ValueType currentType =
+            Note::ValueType(veloType->currentIndex());
+
+      if (currentType == Note::ValueType::OFFSET_VAL && val > 0)
+            velocity->setPrefix("+");
+      else
+            velocity->setPrefix("");
 
       _score->startCmd();
       for (int i = 0; i < items.size(); i++) {
