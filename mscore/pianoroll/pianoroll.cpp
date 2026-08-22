@@ -107,18 +107,17 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       showWave->setCheckable(true);
       showWave->setChecked(false);
       connect(showWave, SIGNAL(toggled(bool)), SLOT(showWaveView(bool)));
-      tbMain->addAction(showWave);
+      // Wave view is currently defunct:
+      // tbMain->addAction(showWave);
 
       tbMain->addSeparator();
 
-      partLabel = new QLabel(tr("Part:"));
+      partLabel = new QLabel;
       tbMain->addWidget(partLabel);
 
 
-      // Option: Orientation Horizonta/Vertical
+      // Option: Orientation Horizontal/Vertical
       tbMain->addSeparator();
-      tbMain->addWidget(new QLabel(tr("Orientation:")));
-
       QComboBox* orientationBox = new QComboBox;
       orientationBox->addItem(tr("Horizontal"), int(PianoRollOrientation::HORIZONTAL));
       orientationBox->addItem(tr("Vertical"),   int(PianoRollOrientation::VERTICAL));
@@ -141,8 +140,6 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       // Option: Scope
       tbMain->addSeparator();
-      tbMain->addWidget(new QLabel(tr("View:")));
-
       QComboBox* scopeBox = new QComboBox;
       scopeBox->addItem(tr("Staff"), int(PianoRollScope::STAFF));
       scopeBox->addItem(tr("Part"),  int(PianoRollScope::PART));
@@ -993,7 +990,7 @@ void PianorollEditor::setStaff(Staff* st)
             return;
 
       if (st)
-            partLabel->setText(tr("Part: %1").arg(st->partName()));
+            partLabel->setText(st->partName());
 
       if ((st && st->score() != _score) || (!st && _score)) {
             if (_score) {
@@ -1019,7 +1016,6 @@ void PianorollEditor::setStaff(Staff* st)
             for (int i = 0; i < 3; ++i)
                   locator[i].setContext(tl, sl);
             pos->setContext(tl, sl);
-            showWave->setEnabled(_score->audio() != 0);
             }
       else
             setWindowTitle(tr("Piano roll editor"));
