@@ -72,7 +72,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       QWidget* mainWidget = new QWidget;
       QToolBar* tbMain = new QToolBar("Toolbar Main", this);
-      tbMain->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+      tbMain->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbMain->setIconSize(toolbarIconSize);
 
       if (qApp->layoutDirection() == Qt::LayoutDirection::LeftToRight) {
@@ -107,18 +107,17 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       showWave->setCheckable(true);
       showWave->setChecked(false);
       connect(showWave, SIGNAL(toggled(bool)), SLOT(showWaveView(bool)));
-      tbMain->addAction(showWave);
+      // Wave view is currently defunct:
+      // tbMain->addAction(showWave);
 
       tbMain->addSeparator();
 
-      partLabel = new QLabel(tr("Part:"));
+      partLabel = new QLabel;
       tbMain->addWidget(partLabel);
 
 
-      // Option: Orientation Horizonta/Vertical
+      // Option: Orientation Horizontal/Vertical
       tbMain->addSeparator();
-      tbMain->addWidget(new QLabel(tr("Orientation:")));
-
       QComboBox* orientationBox = new QComboBox;
       orientationBox->addItem(tr("Horizontal"), int(PianoRollOrientation::HORIZONTAL));
       orientationBox->addItem(tr("Vertical"),   int(PianoRollOrientation::VERTICAL));
@@ -138,11 +137,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                                 orientationBox->itemData(index).toInt()));
                     });
 
+      tbMain->addSeparator();
 
       // Option: Scope
-      tbMain->addSeparator();
-      tbMain->addWidget(new QLabel(tr("View:")));
-
       QComboBox* scopeBox = new QComboBox;
       scopeBox->addItem(tr("Staff"), int(PianoRollScope::STAFF));
       scopeBox->addItem(tr("Part"),  int(PianoRollScope::PART));
@@ -161,7 +158,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                     setScope(PianoRollScope(scopeBox->itemData(index).toInt()));
                     });
 
-
+      tbMain->addSeparator();
 
       // Option: Show levels editor
       _showPianoLevels = preferences.getBool(PREF_UI_PIANOROLL_SHOW_LEVELS_EDITOR);
@@ -174,35 +171,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       tbMain->addAction(showLevelsAction);
 
-
-      // Option: Keyboard alignment grid
       tbMain->addSeparator();
-
-      QCheckBox* keyboardAlignedGrid =
-            new QCheckBox(tr("Keyboard-aligned grid"));
-
-      keyboardAlignedGrid->setToolTip(
-            tr("Align the vertical piano-roll pitch lanes with the keyboard"));
-
-      keyboardAlignedGrid->setChecked(
-            preferences.getBool(
-                  PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID));
-
-      tbMain->addWidget(keyboardAlignedGrid);
-
-      connect(keyboardAlignedGrid, &QCheckBox::toggled,
-            this, [this](bool checked) {
-                  preferences.setPreference(
-                        PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID,
-                        checked);
-
-                  pianoView->setVerticalPitchLayout(
-                        checked
-                              ? VerticalPitchLayout::KEYBOARD_ALIGNED
-                              : VerticalPitchLayout::CHROMATIC);
-                  restoreScoreViewFocus();
-                  });
-
 
       // Option: Voice coloring / Unselect preference coloring:
       QComboBox* coloringBox = new QComboBox;
@@ -223,6 +192,37 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       // Call applyColoring after other constructions later:
 
 
+      // Option: Show pitch names
+      QAction* showPitchNamesAction = new QAction(
+            QIcon(":/data/icons/note-show-pitch.svg"),
+            tr("Show pitch names"),
+            this);
+
+      showPitchNamesAction->setCheckable(true);
+      showPitchNamesAction->setChecked(
+            preferences.getBool(PREF_UI_PIANOROLL_SHOW_PITCH_TEXT));
+
+      showPitchNamesAction->setToolTip(tr("Show pitch names"));
+      showPitchNamesAction->setStatusTip(tr("Show pitch names"));
+
+      connect(showPitchNamesAction,
+              &QAction::toggled,
+              this,
+              [this](bool checked) {
+                    preferences.setPreference(
+                          PREF_UI_PIANOROLL_SHOW_PITCH_TEXT,
+                          checked);
+
+                    if (pianoView)
+                          pianoView->viewport()->update();
+
+                    restoreScoreViewFocus();
+                    });
+
+      tbMain->addAction(showPitchNamesAction);
+
+
+
       // --------------------------------------------------
       // toolbars
 
@@ -231,7 +231,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       QToolBar* tbTool = new QToolBar("Action Buttons", this);
       QButtonGroup* bngrpActionBns = new QButtonGroup();
-      tbTool->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+      tbTool->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbTool->setIconSize(toolbarIconSize);
 
       struct ToolIconData
@@ -297,7 +297,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       QToolBar* tbNoteLen = new QToolBar("Toolbar Note Length", this);
       QButtonGroup* bngrpNoteLen = new QButtonGroup();
-      tbNoteLen->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+      tbNoteLen->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbNoteLen->setIconSize(toolbarIconSize);
 
       for (LenIconData* p = _iconData; !p->_icon.isEmpty(); ++p) {
@@ -320,7 +320,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       QToolBar* tbDots = new QToolBar("Toolbar Dots", this);
       QButtonGroup* bngrpNoteDot = new QButtonGroup();
-      tbDots->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+      tbDots->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbDots->setIconSize(toolbarIconSize);
 
       struct DotIconData
@@ -359,7 +359,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       QToolBar* tbVoices = new QToolBar("Toolbar Voices", this);
       QButtonGroup* bngrpVoices = new QButtonGroup();
-      tbVoices->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+      tbVoices->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbVoices->setIconSize(toolbarIconSize);
       //bngrpNoteLen = new QButtonGroup();
 
@@ -435,7 +435,40 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             }
       tbTweak->addWidget(barPattern);
 
+
+
+
+      // Option: Keyboard aligned grid
+      keyboardAlignedGridSeparator = tbTweak->addSeparator();
+
+      keyboardAlignedGrid =
+            new QCheckBox(tr("Keyboard-aligned grid"));
+
+      keyboardAlignedGrid->setToolTip(
+            tr("Align the vertical piano-roll pitch lanes with the keyboard"));
+      keyboardAlignedGrid->setChecked(
+            preferences.getBool(
+                  PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID));
+
+      keyboardAlignedGridAction =
+            tbTweak->addWidget(keyboardAlignedGrid);
+
+      connect(keyboardAlignedGrid, &QCheckBox::toggled,
+            this, [this](bool checked) {
+                  preferences.setPreference(
+                        PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID,
+                        checked);
+
+                  pianoView->setVerticalPitchLayout(
+                        checked
+                              ? VerticalPitchLayout::KEYBOARD_ALIGNED
+                              : VerticalPitchLayout::CHROMATIC);
+                  restoreScoreViewFocus();
+                  });
+
       tbTweak->addSeparator();
+
+      // Option: Velocity type
       tbTweak->addWidget(new QLabel(tr("Velocity:")));
       veloType = new QComboBox;
       veloType->addItem(tr("Offset"), int(Note::ValueType::OFFSET_VAL));
@@ -443,8 +476,14 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       tbTweak->addWidget(veloType);
 
       velocity = new QSpinBox;
-      velocity->setRange(-1000, 1000);
+      velocity->setRange(-127, 127);
       velocity->setReadOnly(true);
+
+      velocity->setPrefix("+");
+      const int velocityWidth = velocity->sizeHint().width();
+      velocity->setPrefix("");
+      velocity->setMinimumWidth(velocityWidth);
+
       tbTweak->addWidget(velocity);
 
       tbTweak->addWidget(new QLabel(tr("Pitch:")));
@@ -557,7 +596,12 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       mainLayout->setContentsMargins(0, 0, 0, 0);
       mainLayout->setSpacing(0);
 
-      QHBoxLayout* toolbarLayout = new QHBoxLayout;
+      QWidget* toolbarArea = new QWidget(this);
+      toolbarArea->setSizePolicy(
+            QSizePolicy::Preferred,
+            QSizePolicy::Fixed);
+
+      QHBoxLayout* toolbarLayout = new QHBoxLayout(toolbarArea);
       toolbarLayout->setContentsMargins(0, 0, 0, 0);
       toolbarLayout->setSpacing(0);
 
@@ -568,10 +612,51 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       toolbarLayout->addWidget(tbVoices);
       toolbarLayout->addStretch(1);
 
-      mainLayout->addLayout(toolbarLayout);
+      mainLayout->addWidget(toolbarArea);
       mainLayout->addWidget(tbTweak);
       mainLayout->addWidget(mainWidget);
 
+      // Re-enable right-click menu for enable/disable toolbars now with dockable widget
+      const QList<QToolBar*> toolbars {
+            tbMain,
+            tbNoteLen,
+            tbDots,
+            tbTool,
+            tbVoices,
+            tbTweak
+            };
+
+
+      for (QToolBar* toolbar : toolbars) {
+            toolbar->setContextMenuPolicy(Qt::CustomContextMenu);
+
+            connect(toolbar,
+                    &QToolBar::customContextMenuRequested,
+                    this,
+                    [toolbar, toolbars](const QPoint& pos) {
+                          QMenu menu;
+
+                          for (QToolBar* tb : toolbars)
+                                menu.addAction(tb->toggleViewAction());
+
+                          menu.exec(toolbar->mapToGlobal(pos));
+                          });
+            }
+
+      // And right-sided area
+      toolbarArea->setContextMenuPolicy(Qt::CustomContextMenu);
+
+      connect(toolbarArea,
+              &QWidget::customContextMenuRequested,
+              this,
+              [toolbarArea, toolbars](const QPoint& pos) {
+                    QMenu menu;
+
+                    for (QToolBar* tb : toolbars)
+                          menu.addAction(tb->toggleViewAction());
+
+                    menu.exec(toolbarArea->mapToGlobal(pos));
+                    });
 
       _playbackFollowTimer = new QTimer(this);
       _playbackFollowTimer->setTimerType(Qt::PreciseTimer);
@@ -981,7 +1066,7 @@ void PianorollEditor::setStaff(Staff* st)
             return;
 
       if (st)
-            partLabel->setText(tr("Part: %1").arg(st->partName()));
+            partLabel->setText(st->partName());
 
       if ((st && st->score() != _score) || (!st && _score)) {
             if (_score) {
@@ -1007,7 +1092,6 @@ void PianorollEditor::setStaff(Staff* st)
             for (int i = 0; i < 3; ++i)
                   locator[i].setContext(tl, sl);
             pos->setContext(tl, sl);
-            showWave->setEnabled(_score->audio() != 0);
             }
       else
             setWindowTitle(tr("Piano roll editor"));
@@ -1041,6 +1125,15 @@ void PianorollEditor::updateOrientationLayout()
 
       if (pianoLevels)
             pianoLevels->setOrientation(_orientation);
+
+      const bool vertical =
+            _orientation == PianoRollOrientation::VERTICAL;
+
+      if (keyboardAlignedGridSeparator)
+            keyboardAlignedGridSeparator->setVisible(vertical);
+
+      if (keyboardAlignedGridAction)
+            keyboardAlignedGridAction->setVisible(vertical);
 
       if (_orientation == PianoRollOrientation::HORIZONTAL) {
             //
@@ -1426,23 +1519,39 @@ void PianorollEditor::veloTypeChanged(int val)
       if (!items.size())
             return;
 
+      const Note::ValueType vt = Note::ValueType(val);
+      switch (vt) {
+            case Note::ValueType::USER_VAL:
+                  velocity->setRange(0, 127);
+                  velocity->setPrefix("");
+                  break;
+
+            case Note::ValueType::OFFSET_VAL:
+                  velocity->setRange(-127, 127);
+                  velocity->setPrefix(
+                        velocity->value() > 0 ? "+" : "");
+                  break;
+            }
+
       _score->startCmd();
       for (int i = 0; i < items.size(); i++) {
             PianoItem* item = items[i];
             Note* note = item->note();
             if (Note::ValueType(val) == note->veloType())
-                  return;
+                  continue;
 
             int newVelocity = note->veloOffset();
             int dynamicsVel = staff->velocities().val(note->tick());
 
-            // change velocity to equivalent in new metric
             switch (Note::ValueType(val)) {
                   case Note::ValueType::USER_VAL:
-                        newVelocity = static_cast<int>(dynamicsVel * (1 + newVelocity / 100.0));
+                        // relative offset -> absolute velocity
+                        newVelocity = qBound(0, dynamicsVel + newVelocity, 127);
                         break;
+
                   case Note::ValueType::OFFSET_VAL:
-                        newVelocity = static_cast<int>((newVelocity / (qreal)dynamicsVel - 1) * 100);
+                  // absolute velocity -> relative offset
+                        newVelocity = qBound(-127, newVelocity - dynamicsVel, 127);
                         break;
                   }
 
@@ -1460,27 +1569,27 @@ void PianorollEditor::veloTypeChanged(int val)
 
 void PianorollEditor::updateVelocity(Note* note)
       {
-      Note::ValueType vt = note->veloType();
+      const Note::ValueType vt = note->veloType();
+      const int value = note->veloOffset();
+
       veloType->setCurrentIndex(int(vt));
-      switch (vt) {
-            case Note::ValueType::USER_VAL:
-                  velocity->setReadOnly(false);
-                  velocity->setSuffix("");
-                  break;
-            case Note::ValueType::OFFSET_VAL:
-                  velocity->setReadOnly(false);
-                  velocity->setSuffix("%");
-                  break;
-            }
+
+      velocity->setReadOnly(false);
+      velocity->setSuffix("");
 
       switch (vt) {
             case Note::ValueType::USER_VAL:
-                  velocity->setValue(note->veloOffset());
+                  velocity->setRange(0, 127);
+                  velocity->setPrefix("");
                   break;
+
             case Note::ValueType::OFFSET_VAL:
-                  velocity->setValue(note->veloOffset());
+                  velocity->setRange(-127, 127);
+                  velocity->setPrefix(value > 0 ? "+" : "");
                   break;
             }
+
+      velocity->setValue(value);
 
       pianoLevels->update();
       }
@@ -1495,6 +1604,14 @@ void PianorollEditor::velocityChanged(int val)
       if (!items.size())
             return;
 
+      const Note::ValueType currentType =
+            Note::ValueType(veloType->currentIndex());
+
+      if (currentType == Note::ValueType::OFFSET_VAL && val > 0)
+            velocity->setPrefix("+");
+      else
+            velocity->setPrefix("");
+
       _score->startCmd();
       for (int i = 0; i < items.size(); i++) {
             PianoItem* item = items[i];
@@ -1502,7 +1619,7 @@ void PianorollEditor::velocityChanged(int val)
             Note::ValueType vt = note->veloType();
 
             if (val == note->veloOffset())
-                  return;
+                  continue;
 
             _score->undo(new ChangeVelocity(note, vt, val));
             }
