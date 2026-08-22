@@ -1511,7 +1511,7 @@ void PianorollEditor::veloTypeChanged(int val)
             PianoItem* item = items[i];
             Note* note = item->note();
             if (Note::ValueType(val) == note->veloType())
-                  return;
+                  continue;
 
             int newVelocity = note->veloOffset();
             int dynamicsVel = staff->velocities().val(note->tick());
@@ -1592,7 +1592,7 @@ void PianorollEditor::velocityChanged(int val)
             Note::ValueType vt = note->veloType();
 
             if (val == note->veloOffset())
-                  return;
+                  continue;
 
             _score->undo(new ChangeVelocity(note, vt, val));
             }
