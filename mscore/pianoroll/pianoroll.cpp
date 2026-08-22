@@ -615,21 +615,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                     ruler->setPlaybackLocatorTick(predictedTick);
                     });
 
-      connect(pianoView->verticalScrollBar(),
-              &QScrollBar::valueChanged,
-              this,
-              [this](int value) {
-                    if (_orientation == PianoRollOrientation::HORIZONTAL)
-                          pianoKbd->setYpos(value);
-                    });
 
-      connect(pianoView->horizontalScrollBar(),
-              &QScrollBar::valueChanged,
-              this,
-              [this](int value) {
-                    if (_orientation == PianoRollOrientation::VERTICAL)
-                          pianoKbd->setYpos(value);
-                    });
 
       connect(pianoView, &PianoView::onTimeDragged, this, [this](int value) {
             _previewOnTime = value;
@@ -703,15 +689,36 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                   restoreScoreViewFocus();
                   });
 
+      connect(pianoView->horizontalScrollBar(),
+              &QScrollBar::valueChanged,
+              this,
+              [this](int value) {
+                    if (_orientation == PianoRollOrientation::VERTICAL)
+                          pianoKbd->setYpos(value);
+                    });
+
+      connect(pianoView->verticalScrollBar(),
+              &QScrollBar::valueChanged,
+              this,
+              [this](int value) {
+                    if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                          pianoKbd->setYpos(value);
+                          }
+                    else if (_orientation == PianoRollOrientation::VERTICAL) {
+                          if (_showPianoLevels && pianoLevels)
+                                pianoLevels->update();
+                          }
+                    });
+
       connect(subdiv,             SIGNAL(valueChanged(int)),              pianoView,   SLOT(setSubdiv(int)));
       connect(subdiv,             SIGNAL(valueChanged(int)),              pianoLevels, SLOT(setSubdiv(int)));
       connect(pianoLevelsChooser, SIGNAL(levelsIndexChanged(int)),        pianoLevels, SLOT(setLevelsIndex(int)));
       connect(pianoKbd,           SIGNAL(pitchHighlightToggled(int)),     pianoView,   SLOT(togglePitchHighlight(int)));
 
-      connect(hsb,                              SIGNAL(valueChanged(int)),   SLOT(setXpos(int)));
-
       connect(ruler,              &PianoRuler::locatorMoved,  this, &PianorollEditor::moveLocator);
       connect(pianoLevels,        &PianoLevels::locatorMoved, this, &PianorollEditor::moveLocator);
+
+      connect(hsb,                SIGNAL(valueChanged(int)),             SLOT(setXpos(int)));
       connect(veloType,           SIGNAL(activated(int)),                SLOT(veloTypeChanged(int)));
       connect(velocity,           SIGNAL(valueChanged(int)),             SLOT(velocityChanged(int)));
       connect(pianoView,          SIGNAL(onTimeDragged(int)),     this,  SLOT(setOnTime(int)));
@@ -845,9 +852,8 @@ void PianorollEditor::showNoteTweaker()
 
 void PianorollEditor::setOnTime(int v)
       {
-      onTime->blockSignals(true);
+      QSignalBlocker blocker(onTime);
       onTime->setValue(v);;
-      onTime->blockSignals(false);
       }
 
 //---------------------------------------------------------
@@ -856,9 +862,8 @@ void PianorollEditor::setOnTime(int v)
 
 void PianorollEditor::setTickLen(int v)
       {
-      tickLen->blockSignals(true);
+      QSignalBlocker blocker(tickLen);
       tickLen->setValue(v);
-      tickLen->blockSignals(false);
       }
 
 //---------------------------------------------------------
