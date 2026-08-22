@@ -554,7 +554,12 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       mainLayout->setContentsMargins(0, 0, 0, 0);
       mainLayout->setSpacing(0);
 
-      QHBoxLayout* toolbarLayout = new QHBoxLayout;
+      QWidget* toolbarArea = new QWidget(this);
+      toolbarArea->setSizePolicy(
+            QSizePolicy::Preferred,
+            QSizePolicy::Fixed);
+
+      QHBoxLayout* toolbarLayout = new QHBoxLayout(toolbarArea);
       toolbarLayout->setContentsMargins(0, 0, 0, 0);
       toolbarLayout->setSpacing(0);
 
@@ -565,10 +570,51 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       toolbarLayout->addWidget(tbVoices);
       toolbarLayout->addStretch(1);
 
-      mainLayout->addLayout(toolbarLayout);
+      mainLayout->addWidget(toolbarArea);
       mainLayout->addWidget(tbTweak);
       mainLayout->addWidget(mainWidget);
 
+      // Re-enable right-click menu for enable/disable toolbars now with dockable widget
+      const QList<QToolBar*> toolbars {
+            tbMain,
+            tbNoteLen,
+            tbDots,
+            tbTool,
+            tbVoices,
+            tbTweak
+            };
+
+
+      for (QToolBar* toolbar : toolbars) {
+            toolbar->setContextMenuPolicy(Qt::CustomContextMenu);
+
+            connect(toolbar,
+                    &QToolBar::customContextMenuRequested,
+                    this,
+                    [toolbar, toolbars](const QPoint& pos) {
+                          QMenu menu;
+
+                          for (QToolBar* tb : toolbars)
+                                menu.addAction(tb->toggleViewAction());
+
+                          menu.exec(toolbar->mapToGlobal(pos));
+                          });
+            }
+
+      // And right-sided area
+      toolbarArea->setContextMenuPolicy(Qt::CustomContextMenu);
+
+      connect(toolbarArea,
+              &QWidget::customContextMenuRequested,
+              this,
+              [toolbarArea, toolbars](const QPoint& pos) {
+                    QMenu menu;
+
+                    for (QToolBar* tb : toolbars)
+                          menu.addAction(tb->toggleViewAction());
+
+                    menu.exec(toolbarArea->mapToGlobal(pos));
+                    });
 
       _playbackFollowTimer = new QTimer(this);
       _playbackFollowTimer->setTimerType(Qt::PreciseTimer);
