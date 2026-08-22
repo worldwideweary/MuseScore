@@ -541,26 +541,56 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                         int val = filter->value(note->staff(), note, nullptr);
                         int vp = valToPixel(val);
 
-                        if (interactionHighlighted)
-                              p.setBrush(QBrush(interactionColor));
-                        else if (selected)
-                              p.setBrush(QBrush(noteSelected));
-                        else
-                              p.setBrush(Qt::NoBrush);
-
-                        if (interactionHighlighted)
-                              p.setPen(QPen(interactionColor, 2));
-                        else
-                              p.setPen(QPen(selected ? noteSelected : noteDeselected, 2));
-
                         if (_orientation == PianoRollOrientation::HORIZONTAL) {
-                              p.drawLine(tp, pix0, tp, vp);
-                              p.drawLine(tp, vp, tp + levelLen, vp);
+                              const int top = qMin(pix0, vp);
+                              const int bottom = qMax(pix0, vp);
+
+                              QRect barRect(
+                                    tp,
+                                    top,
+                                    levelLen,
+                                    qMax(1, bottom - top));
+
+                              QColor pointColor =
+                                    interactionHighlighted
+                                          ? interactionColor
+                                          : (selected ? noteSelected : noteDeselected);
+
+                              QColor fillColor = pointColor;
+                              fillColor.setAlphaF(0.35);
+
+                              p.setBrush(fillColor);
+                              p.setPen(QPen(pointColor, 1));
+                              p.drawRect(barRect);
+
+                              p.setBrush(pointColor);
+                              p.setPen(QPen(pointColor, 2));
                               p.drawEllipse(tp - 4, vp - 4, 9, 9);
                               }
-                        else {
-                              p.drawLine(pix0, tp, vp, tp);
-                              p.drawLine(vp, tp, vp, tp + levelLen);
+                        else if (_orientation == PianoRollOrientation::VERTICAL) {
+                              const int left = qMin(pix0, vp);
+                              const int right = qMax(pix0, vp);
+
+                              QRect barRect(
+                                    left,
+                                    tp,
+                                    qMax(1, right - left),
+                                    levelLen);
+
+                              QColor pointColor =
+                                    interactionHighlighted
+                                          ? interactionColor
+                                          : (selected ? noteSelected : noteDeselected);
+
+                              QColor fillColor = pointColor;
+                              fillColor.setAlphaF(0.35);
+
+                              p.setBrush(fillColor);
+                              p.setPen(QPen(pointColor, 1));
+                              p.drawRect(barRect);
+
+                              p.setBrush(pointColor);
+                              p.setPen(QPen(pointColor, 2));
                               p.drawEllipse(vp - 4, tp - 4, 9, 9);
                               }
                         }
