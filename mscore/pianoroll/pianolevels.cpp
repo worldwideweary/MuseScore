@@ -1131,6 +1131,11 @@ void PianoLevels::mousePressEvent(QMouseEvent* e)
             mouseDownPos = e->pos();
             lastMousePos = mouseDownPos;
 
+            const Qt::KeyboardModifiers modifiers =
+                  QGuiApplication::keyboardModifiers();
+            const bool forceLerp =
+                  modifiers & Qt::ControlModifier;
+
             const bool selectedOnly = hasSelectedNotes();
 
             const int timePixel =
@@ -1148,42 +1153,47 @@ void PianoLevels::mousePressEvent(QMouseEvent* e)
             //
             // First try the actual visible bar/node hit area.
             //
-            const bool barHit =
-                  pickNoteEvent(mouseDownPos.x(),
-                                mouseDownPos.y(),
-                                selectedOnly,
-                                anchorNote,
-                                anchorEvent);
-
             const int lerpPickRadius =
                   qMax(4, levelLen / 2);
 
-            if (barHit) {
-                  //
-                  // More than one filled bar can overlap.  Use proximity
-                  // to the endpoint to choose the actual anchor.
-                  //
-                  pickNearestLevelInTimeBand(
-                        timePixel,
-                        valuePixel,
-                        qMax(lerpPickRadius, levelLen + 2),
-                        selectedOnly,
-                        anchorNote,
-                        anchorEvent);
-
-                  dragStyle = DragStyle::OFFSET;
+            if (forceLerp) {
+                  dragStyle = DragStyle::LERP;
                   }
-            else if (pickNearestLevelInTimeBand(
+            else {
+                  const bool barHit =
+                        pickNoteEvent(mouseDownPos.x(),
+                                      mouseDownPos.y(),
+                                      selectedOnly,
+                                      anchorNote,
+                                      anchorEvent);
+
+                  if (barHit) {
+                        //
+                        // More than one filled bar can overlap.  Use
+                        // proximity to choose the actual anchor.
+                        //
+                        pickNearestLevelInTimeBand(
+                              timePixel,
+                              valuePixel,
+                              qMax(lerpPickRadius, levelLen + 2),
+                              selectedOnly,
+                              anchorNote,
+                              anchorEvent);
+
+                        dragStyle = DragStyle::OFFSET;
+                        }
+                  else if (pickNearestLevelInTimeBand(
                         timePixel,
                         valuePixel,
                         lerpPickRadius,
                         selectedOnly,
                         anchorNote,
                         anchorEvent)) {
-                  dragStyle = DragStyle::OFFSET;
-                  }
-            else {
-                  dragStyle = DragStyle::LERP;
+                        dragStyle = DragStyle::OFFSET;
+                        }
+                  else {
+                        dragStyle = DragStyle::LERP;
+                        }
                   }
 
             if (_score && !_editCommandActive) {
