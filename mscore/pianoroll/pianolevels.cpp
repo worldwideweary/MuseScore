@@ -1117,33 +1117,42 @@ void PianoLevels::mousePressEvent(QMouseEvent* e)
             //
             // First try the actual visible bar/node hit area.
             //
-            if (pickNoteEvent(mouseDownPos.x(),
-                              mouseDownPos.y(),
-                              selectedOnly,
-                              anchorNote,
-                              anchorEvent)) {
+            const bool barHit =
+                  pickNoteEvent(mouseDownPos.x(),
+                                mouseDownPos.y(),
+                                selectedOnly,
+                                anchorNote,
+                                anchorEvent);
+
+            const int lerpPickRadius =
+                  qMax(4, levelLen / 2);
+
+            if (barHit) {
+                  //
+                  // More than one filled bar can overlap.  Use proximity
+                  // to the endpoint to choose the actual anchor.
+                  //
+                  pickNearestLevelInTimeBand(
+                        timePixel,
+                        valuePixel,
+                        qMax(lerpPickRadius, levelLen + 2),
+                        selectedOnly,
+                        anchorNote,
+                        anchorEvent);
+
                   dragStyle = DragStyle::OFFSET;
                   }
-            else {
-                  //
-                  // No direct bar hit.  Look for the nearest eligible level
-                  // within a forgiving time-axis band.
-                  //
-                  const int lerpPickRadius =
-                        qMax(4, levelLen / 2);
-
-                  if (pickNearestLevelInTimeBand(
+            else if (pickNearestLevelInTimeBand(
                         timePixel,
                         valuePixel,
                         lerpPickRadius,
                         selectedOnly,
                         anchorNote,
                         anchorEvent)) {
-                        dragStyle = DragStyle::OFFSET;
-                        }
-                  else {
-                        dragStyle = DragStyle::LERP;
-                        }
+                  dragStyle = DragStyle::OFFSET;
+                  }
+            else {
+                  dragStyle = DragStyle::LERP;
                   }
 
             if (_score && !_editCommandActive) {
