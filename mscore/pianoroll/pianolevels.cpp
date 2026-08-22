@@ -50,7 +50,7 @@ PianoLevels::PianoLevels(QWidget *parent)
        _staff     = nullptr;
        _tuplet    = 1;
        _subdiv    = 0;
-       _levelsIndex = 0;
+       _levelsIndex = 2; // Velocity (relative)
        minBeatGap = 20;
        vMargin    = 10;
        levelLen   = 20;
