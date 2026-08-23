@@ -2971,17 +2971,36 @@ QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pit
 //   eraseNote
 //---------------------------------------------------------
 
-void PianoView::eraseNote(const QPointF& pos) {
+void PianoView::eraseNote(const QPointF& pos)
+      {
       Score* score = _staff->score();
       int pickTick = pixelXToTick((int)pos.x());
       int pickPitch = pixelYToPitch(pos.y());
-      PianoItem *pn = pickNote(pickTick, pickPitch);
+      PianoItem* pn = pickNote(pickTick, pickPitch);
 
-      if (pn) {
-            score->startCmd();
-            score->deleteItem(pn->note());
-            score->endCmd();
+      if (!pn)
+            return;
+
+      Note* noteStart = pn->note();
+
+      while (noteStart->tieBack())
+            noteStart = noteStart->tieBack()->startNote();
+
+      QList<Note*> notesToDelete;
+      notesToDelete.append(noteStart);
+
+      for (Note* note = noteStart;
+           note->tieFor();
+           note = note->tieFor()->endNote()) {
+            notesToDelete.append(note->tieFor()->endNote());
             }
+
+      score->startCmd();
+
+      for (Note* note : notesToDelete)
+            score->deleteItem(note);
+
+      score->endCmd();
       }
 
 //---------------------------------------------------------
