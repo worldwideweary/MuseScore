@@ -2670,6 +2670,13 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                         if (pi && (_editNoteTool == PianoRollEditTool::SELECT || _editNoteTool == PianoRollEditTool::ADD)) {
                               if (!pi->note()->selected()) {
                                     selectNotes(tick, tick, mouseDownPitch, mouseDownPitch, NoteSelectType::REPLACE);
+
+                                    // Selection updating may rebuild _noteList
+                                    pi = pickNote(tick, mouseDownPitch);
+                                    if (!pi) {
+                                          _dragStyle = DragStyle::NONE;
+                                          return;
+                                          }
                                     }
 
                               QRect bounds = boundingRect(pi->note(), false);
@@ -2704,9 +2711,19 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                         else if (pi && _editNoteTool == PianoRollEditTool::EVENT_ADJUST) {
                               if (!pi->note()->selected()) {
                                     selectNotes(tick, tick, mouseDownPitch, mouseDownPitch, NoteSelectType::REPLACE);
+
+                                    // selectNotes() can cause PianoRollEditor::updateAll,
+                                    // which rebuilds _noteList and invalidates the PianoItem
+                                    // returned by pickNote() above
+                                    pi = pickNote(tick, mouseDownPitch);
+                                    if (!pi) {
+                                          _dragStyle = DragStyle::NONE;
+                                          return;
+                                          }
                                     }
 
                               QRect bounds = boundingRect(pi->note(), true);
+
                               if (_orientation == PianoRollOrientation::HORIZONTAL) {
                                     if (_mouseDownPos.x() <= bounds.left() + _dragNoteLengthMargin)
                                           _dragStyle = DragStyle::EVENT_ONTIME;
