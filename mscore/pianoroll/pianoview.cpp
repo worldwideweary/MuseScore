@@ -2839,14 +2839,30 @@ QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pit
       ChordRest* curCr = score->findCR(startTick, track);
       if (curCr) {
             ChordRest* cr0 = nullptr;
-            ChordRest* curChordRest = nullptr;
+            ChordRest* curChordRest = curCr;
 
-            //Cut first chord if new note starts inside of it
+            // Cut first chord/rest if the new note really starts inside it.
             if (startTick > curCr->tick()) {
-                  cutChordRest(curCr, track, startTick, cr0, curChordRest);  //Cut at the start of existing chord rest
+                  ChordRest* splitStart = nullptr;
+
+                  if (cutChordRest(curCr, track, startTick, cr0, splitStart))
+                        curChordRest = splitStart;
+                  else {
+                        //
+                        // The CR returned by findCR() may merely precede startTick.
+                        // Try to locate a CR that actually begins at startTick.
+                        //
+                        ChordRest* exactCR = score->findCR(startTick, track);
+
+                        if (exactCR && exactCR->tick() == startTick)
+                              curChordRest = exactCR;
+                        else
+                              curChordRest = nullptr;
+                        }
                   }
-            else
-                  curChordRest = curCr;  //We are inserting at start of chordrest
+
+            if (!curChordRest)
+                  return addedNotes;
 
             Fraction curStartTick = curChordRest->tick();
             Fraction curDur = curChordRest->ticks();
@@ -2892,19 +2908,52 @@ QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pit
                   }
 
             if (duration > Fraction(0, 1) && curChordRest) {
-                  ChordRest* crMid = nullptr;
+                  ChordRest* crMid = curChordRest;
                   ChordRest* crEnd = nullptr;
 
-                  cutChordRest(curChordRest, track, startTick + duration, crMid, crEnd);
+                  const Fraction endTick = startTick + duration;
+
+                  //
+                  // Split only when endTick actually falls inside curChordRest.
+                  //
+                  if (endTick > curChordRest->tick()
+                      && endTick < curChordRest->tick() + curChordRest->actualTicks()) {
+                        if (!cutChordRest(
+                                  curChordRest,
+                                  track,
+                                  endTick,
+                                  crMid,
+                                  crEnd)) {
+                              return addedNotes;
+                              }
+                        }
+
+                  if (!crMid)
+                        return addedNotes;
+
                   if (crMid->isChord()) {
                         Chord* ch = toChord(crMid);
-                        if (!std::any_of(ch->notes().begin(), ch->notes().end(), [pitch](Note* n) { return n->pitch() == pitch; }))
-                              addedNotes.append(score->addNote(ch, added_note_pitch));
+
+                        if (!std::any_of(
+                                  ch->notes().begin(),
+                                  ch->notes().end(),
+                                  [pitch](Note* n) {
+                                        return n->pitch() == pitch;
+                                        })) {
+                              addedNotes.append(
+                                    score->addNote(ch, added_note_pitch));
+                              }
                         }
                   else {
-                        Segment* newSeg = score->setNoteRest(crMid->segment(), track, added_note_pitch, duration);
+                        Segment* newSeg = score->setNoteRest(
+                              crMid->segment(),
+                              track,
+                              added_note_pitch,
+                              duration);
+
                         if (newSeg)
-                              addedNotes.append(getSegmentNotes(newSeg, track));
+                              addedNotes.append(
+                                    getSegmentNotes(newSeg, track));
                         }
                   }
             }
@@ -3171,8 +3220,8 @@ void PianoView::cutChord(const QPointF& pos) {
             Fraction startTick = e->tick();
 
             if (insertPosition != startTick) {
-                  ChordRest* cr0;
-                  ChordRest* cr1;
+                  ChordRest* cr0 = nullptr;
+                  ChordRest* cr1 = nullptr;
                   cutChordRest(e, track, insertPosition, cr0, cr1);
                   }
             score->endCmd();
@@ -3310,8 +3359,8 @@ void PianoView::handleSelectionClick()
                         Fraction startTick = e->tick();
 
                         if (insertPosition != startTick) {
-                              ChordRest* cr0;
-                              ChordRest* cr1;
+                              ChordRest* cr0 = nullptr;
+                              ChordRest* cr1 = nullptr;
                               cutChordRest(e, track, insertPosition, cr0, cr1);
                               }
                         score->endCmd();
@@ -3328,13 +3377,24 @@ void PianoView::handleSelectionClick()
 //   @return true if chord was cut
 //---------------------------------------------------------
 
-bool PianoView::cutChordRest(ChordRest* targetCr, int track, Fraction cutTick, ChordRest*& cr0, ChordRest*& cr1)
+bool PianoView::cutChordRest(ChordRest* targetCr,
+                             int track,
+                             Fraction cutTick,
+                             ChordRest*& cr0,
+                             ChordRest*& cr1)
       {
+      cr0 = targetCr;
+      cr1 = nullptr;
+
+      if (!targetCr)
+            return false;
+
       Fraction startTick = targetCr->segment()->tick();
       Fraction durationTuplet = targetCr->ticks();
 
       Fraction measureToTuplet(1, 1);
       Fraction tupletToMeasure(1, 1);
+
       if (targetCr->tuplet()) {
             Fraction ratio = targetCr->tuplet()->ratio();
             measureToTuplet = ratio;
@@ -3342,61 +3402,126 @@ bool PianoView::cutChordRest(ChordRest* targetCr, int track, Fraction cutTick, C
             }
 
       Fraction durationMeasure = durationTuplet * tupletToMeasure;
+      Fraction endTick = startTick + durationMeasure;
 
-      if (cutTick <= startTick || cutTick >= startTick + durationMeasure) {
-            cr0 = targetCr;
+      //
+      // There is nothing to split unless cutTick is strictly
+      // inside this ChordRest.
+      //
+      if (cutTick <= startTick || cutTick >= endTick)
+            return false;
+
+      //
+      // Preserve whether this was originally a chord.  targetCr may
+      // no longer be valid after setNoteRest() modifies the score.
+      //
+      const bool wasChord = targetCr->isChord();
+
+      //
+      // Save the original pitches before modifying the ChordRest.
+      //
+      QVector<NoteVal> chordNotes;
+
+      if (wasChord) {
+            Chord* chord = toChord(targetCr);
+
+            for (Note* note : chord->notes()) {
+                  chordNotes.append(note->noteVal());
+                  note->setSelected(false);
+                  }
+            }
+      else if (targetCr->isRest()) {
+            toRest(targetCr)->setSelected(false);
+            }
+
+      Score* score = _staff->score();
+
+      //
+      // Subdivide at cutTick by replacing the first portion with a rest.
+      //
+      NoteVal restValue(-1);
+
+      Segment* splitSegment = score->setNoteRest(
+            targetCr->segment(),
+            track,
+            restValue,
+            (cutTick - startTick) * measureToTuplet);
+
+      if (!splitSegment)
+            return false;
+
+      //
+      // findCR() means "at or before this tick", so a non-null result
+      // alone does not prove that a split was actually created here.
+      //
+      ChordRest* firstCR = score->findCR(startTick, track);
+      ChordRest* secondCR = score->findCR(cutTick, track);
+
+      if (!firstCR
+          || !secondCR
+          || firstCR->tick() != startTick
+          || secondCR->tick() != cutTick) {
+            cr0 = firstCR;
             cr1 = nullptr;
             return false;
             }
 
-      //Deselect note being cut
-      if (targetCr->isChord()) {
-            Chord* ch = toChord(targetCr);
-            for (Note* n: ch->notes()) {
-                  n->setSelected(false);
-                  }
-            }
-      else if (targetCr->isRest()) {
-            Rest* r = toRest(targetCr);
-            r->setSelected(false);
-            }
+      //
+      // If the original object was a chord, restore its notes into the
+      // first portion and tie them into the second chord.
+      //
+      if (wasChord && secondCR->isChord()) {
+            Chord* firstChord = nullptr;
 
-      //Subdivide at the cut tick
-      NoteVal nv(-1);
+            for (const NoteVal& notePitch : chordNotes) {
+                  if (!firstChord) {
+                        Segment* segment = score->setNoteRest(
+                              firstCR->segment(),
+                              track,
+                              notePitch,
+                              firstCR->ticks());
 
-      Score* score = _staff->score();
-      score->setNoteRest(targetCr->segment(), track, nv, (cutTick - targetCr->tick()) * measureToTuplet);
-      ChordRest *nextCR = score->findCR(cutTick, track);
+                        if (!segment)
+                              return false;
 
-      Chord* ch0 = 0;
+                        ChordRest* restoredCR = segment->cr(track);
+                        if (!restoredCR || !restoredCR->isChord())
+                              return false;
 
-      if (nextCR->isChord()) {
-            //Copy chord into initial segment
-            Chord* ch1 = toChord(nextCR);
+                        firstChord = toChord(restoredCR);
 
-            for (Note* n: ch1->notes()) {
-                  NoteVal notePitch = n->noteVal();
-                  if (!ch0) {
-                        ChordRest* cr = score->findCR(startTick, track);
-                        score->setNoteRest(cr->segment(), track, notePitch, cr->ticks());
-                        ch0 = toChord(score->findCR(startTick, track));
-                        Note* note = ch0->notes()[0];
-                        toggleTie(note);
+                        if (firstChord->notes().empty())
+                              return false;
+
+                        toggleTie(firstChord->notes().front());
                         }
                   else {
-                        Note* note = score->addNote(ch0, notePitch);
-                        toggleTie(note);
+                        Note* note = score->addNote(firstChord, notePitch);
+                        if (note)
+                              toggleTie(note);
                         }
                   }
-            cr0 = ch0;
-            }
-      else
-            cr0 = score->findCR(startTick, track);
 
-      cr1 = nextCR;
+            cr0 = firstChord;
+            }
+      else {
+            cr0 = score->findCR(startTick, track);
+            }
+
+      cr1 = score->findCR(cutTick, track);
+
+      //
+      // Enforce the advertised postcondition:
+      // true means that both resulting ChordRests exist and the
+      // second one starts exactly at cutTick.
+      //
+      if (!cr0 || !cr1 || cr1->tick() != cutTick) {
+            cr1 = nullptr;
+            return false;
+            }
+
       return true;
       }
-
 //---------------------------------------------------------
 //   selectNotes
 //---------------------------------------------------------
