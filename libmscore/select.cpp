@@ -363,6 +363,7 @@ void Selection::clear()
       _staffStart    = 0;
       _staffEnd      = 0;
       _activeTrack   = 0;
+      _source        = SelectionSource::NONE;
       _encompassingBoxes.clear();
       setState(SelState::NONE);
       }
