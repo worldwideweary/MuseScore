@@ -170,33 +170,6 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       tbMain->addAction(showLevelsAction);
 
-      // Option: Keyboard aligned grid
-      keyboardAlignedGrid =
-            new QCheckBox(tr("Keyboard-aligned grid"));
-
-      keyboardAlignedGrid->setToolTip(
-            tr("Align the vertical piano-roll pitch lanes with the keyboard"));
-
-      keyboardAlignedGrid->setChecked(
-            preferences.getBool(
-                  PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID));
-
-      keyboardAlignedGridAction =
-            tbMain->addWidget(keyboardAlignedGrid);
-
-      connect(keyboardAlignedGrid, &QCheckBox::toggled,
-            this, [this](bool checked) {
-                  preferences.setPreference(
-                        PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID,
-                        checked);
-
-                  pianoView->setVerticalPitchLayout(
-                        checked
-                              ? VerticalPitchLayout::KEYBOARD_ALIGNED
-                              : VerticalPitchLayout::CHROMATIC);
-                  restoreScoreViewFocus();
-                  });
-
       tbMain->addSeparator();
 
       // Option: Voice coloring / Unselect preference coloring:
@@ -461,7 +434,40 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             }
       tbTweak->addWidget(barPattern);
 
+
+
+
+      // Option: Keyboard aligned grid
+      keyboardAlignedGridSeparator = tbTweak->addSeparator();
+
+      keyboardAlignedGrid =
+            new QCheckBox(tr("Keyboard-aligned grid"));
+
+      keyboardAlignedGrid->setToolTip(
+            tr("Align the vertical piano-roll pitch lanes with the keyboard"));
+      keyboardAlignedGrid->setChecked(
+            preferences.getBool(
+                  PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID));
+
+      keyboardAlignedGridAction =
+            tbTweak->addWidget(keyboardAlignedGrid);
+
+      connect(keyboardAlignedGrid, &QCheckBox::toggled,
+            this, [this](bool checked) {
+                  preferences.setPreference(
+                        PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID,
+                        checked);
+
+                  pianoView->setVerticalPitchLayout(
+                        checked
+                              ? VerticalPitchLayout::KEYBOARD_ALIGNED
+                              : VerticalPitchLayout::CHROMATIC);
+                  restoreScoreViewFocus();
+                  });
+
       tbTweak->addSeparator();
+
+      // Option: Velocity type
       tbTweak->addWidget(new QLabel(tr("Velocity:")));
       veloType = new QComboBox;
       veloType->addItem(tr("Offset"), int(Note::ValueType::OFFSET_VAL));
@@ -1132,10 +1138,14 @@ void PianorollEditor::updateOrientationLayout()
       if (pianoLevels)
             pianoLevels->setOrientation(_orientation);
 
-      if (keyboardAlignedGridAction) {
-            keyboardAlignedGridAction->setVisible(
-                  _orientation == PianoRollOrientation::VERTICAL);
-            }
+      const bool vertical =
+            _orientation == PianoRollOrientation::VERTICAL;
+
+      if (keyboardAlignedGridSeparator)
+            keyboardAlignedGridSeparator->setVisible(vertical);
+
+      if (keyboardAlignedGridAction)
+            keyboardAlignedGridAction->setVisible(vertical);
 
       if (_orientation == PianoRollOrientation::HORIZONTAL) {
             //
