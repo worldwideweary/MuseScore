@@ -4251,7 +4251,7 @@ void PianoView::cutNotes()
       score->startCmd();
 
       //score->cmdDeleteSelection();
-      deleteSeletedNotes();
+      deleteSelectedNotes();
 
       score->endCmd();
       }
@@ -4334,10 +4334,10 @@ void PianoView::compactMeasures(QList<Measure*> measures)
       }
 
 //---------------------------------------------------------
-//   pasteNotesAtCursor
+//   deleteSelectedNotes
 //---------------------------------------------------------
 
-void PianoView::deleteSeletedNotes()
+void PianoView::deleteSelectedNotes()
       {
       Score* score = _staff->score();
 
@@ -4466,8 +4466,7 @@ void PianoView::finishNoteGroupDrag(QMouseEvent* event) {
       score->startCmd();
 
       if (!(event->modifiers() & Qt::ShiftModifier)) {
-            //score->cmdDeleteSelection();
-            deleteSeletedNotes();
+            deleteSelectedNotes();
             }
       QVector<Note*> notes = pasteNotes(_dragNoteCache, pasteTickOffset, pasteLengthOffset, pitchOffset, true);
 
