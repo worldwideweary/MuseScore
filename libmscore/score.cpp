@@ -3372,6 +3372,8 @@ void Score::deselect(Element* el)
 
 void Score::select(Element* e, SelectType type, int staffIdx)
       {
+      _selection.setSource(SelectionSource::SCORE);
+
       // Move the playhead to the selected element's preferred play position.
       if (e) {
             const auto playTick = e->playTick();
