@@ -137,9 +137,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                                 orientationBox->itemData(index).toInt()));
                     });
 
+      tbMain->addSeparator();
 
       // Option: Scope
-      tbMain->addSeparator();
       QComboBox* scopeBox = new QComboBox;
       scopeBox->addItem(tr("Staff"), int(PianoRollScope::STAFF));
       scopeBox->addItem(tr("Part"),  int(PianoRollScope::PART));
@@ -158,7 +158,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                     setScope(PianoRollScope(scopeBox->itemData(index).toInt()));
                     });
 
-
+      tbMain->addSeparator();
 
       // Option: Show levels editor
       QAction* showLevelsAction = new QAction(tr("Levels"), this);
@@ -170,10 +170,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       tbMain->addAction(showLevelsAction);
 
-
-      // Option: Keyboard alignment grid
-      tbMain->addSeparator();
-
+      // Option: Keyboard aligned grid
       keyboardAlignedGrid =
             new QCheckBox(tr("Keyboard-aligned grid"));
 
@@ -200,6 +197,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                   restoreScoreViewFocus();
                   });
 
+      tbMain->addSeparator();
 
       // Option: Voice coloring / Unselect preference coloring:
       QComboBox* coloringBox = new QComboBox;
@@ -218,6 +216,37 @@ PianorollEditor::PianorollEditor(QWidget* parent)
               this,
               applyColoring);
       // Call applyColoring after other constructions later:
+
+
+      // Option: Show pitch names
+      QAction* showPitchNamesAction = new QAction(
+            QIcon(":/data/icons/note-show-pitch.svg"),
+            tr("Show pitch names"),
+            this);
+
+      showPitchNamesAction->setCheckable(true);
+      showPitchNamesAction->setChecked(
+            preferences.getBool(PREF_UI_PIANOROLL_SHOW_PITCH_TEXT));
+
+      showPitchNamesAction->setToolTip(tr("Show pitch names"));
+      showPitchNamesAction->setStatusTip(tr("Show pitch names"));
+
+      connect(showPitchNamesAction,
+              &QAction::toggled,
+              this,
+              [this](bool checked) {
+                    preferences.setPreference(
+                          PREF_UI_PIANOROLL_SHOW_PITCH_TEXT,
+                          checked);
+
+                    if (pianoView)
+                          pianoView->viewport()->update();
+
+                    restoreScoreViewFocus();
+                    });
+
+      tbMain->addAction(showPitchNamesAction);
+
 
 
       // --------------------------------------------------
