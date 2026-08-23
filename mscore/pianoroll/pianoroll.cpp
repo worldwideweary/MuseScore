@@ -1492,6 +1492,10 @@ void PianorollEditor::selectionChanged()
                         _score->select(note, SelectType::ADD, 0);
                   }
             }
+
+      if (!_score->selection().isNone())
+            _score->selection().setSource(SelectionSource::PIANO_ROLL);
+
       for (MuseScoreView* view : score()->getViewer())
             view->updateAll();
 
