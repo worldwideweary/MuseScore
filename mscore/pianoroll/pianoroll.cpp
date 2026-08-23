@@ -2108,7 +2108,7 @@ void PianorollEditor::onTimeChanged(int val)
             Note* note = item->note();
             NoteEvent* event = item->getTweakNoteEvent();
             if (!event || event->ontime() == val)
-                  return;
+                  continue;
 
             NoteEvent ne = *event;
             ne.setOntime(val);
@@ -2137,7 +2137,7 @@ void PianorollEditor::tickLenChanged(int val)
             Note* note = item->note();
             NoteEvent* event = item->getTweakNoteEvent();
             if (!event || event->len() == val)
-                  return;
+                  continue;
 
             NoteEvent ne = *event;
             ne.setLen(val);
