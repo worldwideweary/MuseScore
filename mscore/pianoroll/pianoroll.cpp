@@ -1434,8 +1434,12 @@ void PianorollEditor::updateSelection()
 
             NoteEvent* event = item->getTweakNoteEvent();
             if (event) {
+                  QSignalBlocker onTimeBlocker(onTime);
+                  QSignalBlocker tickLenBlocker(tickLen);
+
                   onTime->setValue(event->ontime());
                   tickLen->setValue(event->len());
+
                   _previewOnTime = event->ontime();
                   _previewLen = event->len();
                   }
@@ -1583,6 +1587,9 @@ void PianorollEditor::updateVelocity(Note* note)
       {
       const Note::ValueType vt = note->veloType();
       const int value = note->veloOffset();
+
+      QSignalBlocker typeBlocker(veloType);
+      QSignalBlocker velocityBlocker(velocity);
 
       veloType->setCurrentIndex(int(vt));
 
