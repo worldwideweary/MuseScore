@@ -1062,8 +1062,21 @@ void PianorollEditor::setStaff(Staff* st)
       if (staff == st)
             return;
 
-      if (st)
-            partLabel->setText(st->partName());
+      if (st) {
+            QString label = st->partName();
+
+            Part* part = st->part();
+            if (part && part->nstaves() > 1) {
+                  const int staffIndex = part->staves()->indexOf(st);
+
+                  if (staffIndex >= 0)
+                        label += tr(": Staff %1").arg(staffIndex + 1);
+                  }
+
+            partLabel->setText(label);
+            }
+      else
+            partLabel->clear();
 
       if ((st && st->score() != _score) || (!st && _score)) {
             if (_score) {
