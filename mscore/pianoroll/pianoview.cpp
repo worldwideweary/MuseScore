@@ -1619,6 +1619,95 @@ int PianoView::scenePosToPitch(const QPointF& pos) const
       }
 
 //---------------------------------------------------------
+//   calculateNoteDragOffsets
+//---------------------------------------------------------
+
+bool PianoView::calculateNoteDragOffsets(Fraction& pasteTickOffset,
+                                         Fraction& pasteLengthOffset,
+                                         int& pitchOffset) const
+      {
+      pasteTickOffset = Fraction(0, 1);
+      pasteLengthOffset = Fraction(0, 1);
+      pitchOffset = 0;
+
+      if (!_staff)
+            return false;
+
+      Score* score = _staff->score();
+      if (!score)
+            return false;
+
+      int currentTick = qBound(0,
+                               scenePosToTick(_lastMousePos),
+                               _ticks);
+
+      Fraction pos = Fraction::fromTicks(currentTick);
+      Measure* m = score->tick2measure(pos);
+
+      if (!m)
+            return false;
+
+      Fraction timeSig = m->timesig();
+      int noteWithBeat = timeSig.denominator();
+
+      // Number of smaller pieces the beat is divided into
+      int subbeats = _tuplet * (1 << _subdiv);
+      int divisions = noteWithBeat * subbeats;
+
+      double dragToTick = scenePosToTick(_lastMousePos);
+      double startTick = scenePosToTick(_mouseDownPos);
+
+      Fraction dragOffsetTicks =
+            Fraction::fromTicks(dragToTick - startTick);
+
+      int dragToPitch = scenePosToPitch(_lastMousePos);
+      int startPitch = scenePosToPitch(_mouseDownPos);
+
+      if (dragToPitch < 0 || startPitch < 0)
+            return false;
+
+      if (_dragStyle == DragStyle::NOTE_POSITION) {
+            Fraction mouseStartGrid =
+                  roundToNearestBeat(scenePosToTick(_mouseDownPos), true);
+
+            Fraction mouseCurrentGrid =
+                  roundToNearestBeat(scenePosToTick(_lastMousePos), true);
+
+            pasteTickOffset = mouseCurrentGrid - mouseStartGrid;
+            pitchOffset = dragToPitch - startPitch;
+            }
+      else if (_dragStyle == DragStyle::NOTE_LENGTH_END) {
+            Fraction noteEndDraggedTick =
+                  _dragEndTick + dragOffsetTicks;
+
+            Fraction noteEndDraggedAlignedTick =
+                  Fraction(noteEndDraggedTick.numerator() * divisions
+                           / noteEndDraggedTick.denominator(),
+                           divisions);
+
+            pasteLengthOffset =
+                  noteEndDraggedAlignedTick - _dragEndTick;
+            }
+      else if (_dragStyle == DragStyle::NOTE_LENGTH_START) {
+            Fraction noteStartDraggedTick =
+                  _dragStartTick + dragOffsetTicks;
+
+            Fraction noteStartDraggedAlignedTick =
+                  Fraction(noteStartDraggedTick.numerator() * divisions
+                           / noteStartDraggedTick.denominator(),
+                           divisions);
+
+            pasteTickOffset =
+                  noteStartDraggedAlignedTick - _dragStartTick;
+
+            pasteLengthOffset =
+                  _dragStartTick - noteStartDraggedAlignedTick;
+            }
+
+      return true;
+      }
+
+//---------------------------------------------------------
 //   drawPitchText
 //---------------------------------------------------------
 
@@ -4438,64 +4527,14 @@ void PianoView::pasteNotesAtCursor()
 //---------------------------------------------------------
 
 void PianoView::finishNoteGroupDrag(QMouseEvent* event) {
+      Fraction pasteTickOffset;
+      Fraction pasteLengthOffset;
+      int pitchOffset { 0 };
+      if (!calculateNoteDragOffsets(pasteTickOffset, pasteLengthOffset, pitchOffset)) {
+            return;
+            }
+
       Score* score = _staff->score();
-
-      int currentTick = qBound(0,
-                               scenePosToTick(_lastMousePos),
-                               _ticks);
-
-      Fraction pos = Fraction::fromTicks(currentTick);
-      Measure* m = score->tick2measure(pos);
-
-      if (!m)
-            return;
-
-      Fraction timeSig = m->timesig();
-      int noteWithBeat = timeSig.denominator();
-
-      //Number of smaller pieces the beat is divided into
-      int subbeats = _tuplet * (1 << _subdiv);
-      int divisions = noteWithBeat * subbeats;
-
-      //Round down to nearest division
-      double dragToTick = scenePosToTick(_lastMousePos);
-      double startTick = scenePosToTick(_mouseDownPos);
-      Fraction dragOffsetTicks = Fraction::fromTicks(dragToTick - startTick);
-
-      //Adjust offset so that note under cursor is aligned to note divistion
-      Fraction pasteTickOffset(0, 1);
-      Fraction pasteLengthOffset(0, 1);
-      int pitchOffset = 0;
-
-      int dragToPitch = scenePosToPitch(_lastMousePos);
-      int startPitch = scenePosToPitch(_mouseDownPos);
-
-      if (dragToPitch < 0 || startPitch < 0)
-            return;
-
-      if (_dragStyle == DragStyle::NOTE_POSITION) {
-            Fraction mouseStartGrid =
-                  roundToNearestBeat(scenePosToTick(_mouseDownPos), true);
-
-            Fraction mouseCurrentGrid =
-                  roundToNearestBeat(scenePosToTick(_lastMousePos), true);
-
-            pasteTickOffset = mouseCurrentGrid - mouseStartGrid;
-            pitchOffset = dragToPitch - startPitch;
-            }
-      else if (_dragStyle == DragStyle::NOTE_LENGTH_END) {
-            Fraction noteEndDraggedTick = _dragEndTick + dragOffsetTicks;
-            Fraction noteEndDraggedAlignedTick = Fraction(noteEndDraggedTick.numerator() * divisions / noteEndDraggedTick.denominator(), divisions);
-            pasteLengthOffset = noteEndDraggedAlignedTick - _dragEndTick;
-            }
-      else if (_dragStyle == DragStyle::NOTE_LENGTH_START) {
-            Fraction noteStartDraggedTick = _dragStartTick + dragOffsetTicks;
-            Fraction noteStartDraggedAlignedTick = Fraction(noteStartDraggedTick.numerator() * divisions / noteStartDraggedTick.denominator(), divisions);
-            pasteTickOffset = noteStartDraggedAlignedTick - _dragStartTick;
-            pasteLengthOffset = _dragStartTick - noteStartDraggedAlignedTick;
-            }
-
-      //Do command
       score->startCmd();
 
       if (!(event->modifiers() & Qt::ShiftModifier)) {
@@ -4503,7 +4542,7 @@ void PianoView::finishNoteGroupDrag(QMouseEvent* event) {
             }
       QVector<Note*> notes = pasteNotes(_dragNoteCache, pasteTickOffset, pasteLengthOffset, pitchOffset, true);
 
-      //Select just pasted notes
+      // Select the resulting pasted notes
       Selection& selection = score->selection();
       selection.deselectAll();
       for (Note*& note : notes) {
@@ -4634,8 +4673,6 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                   break;
             }
 
-      Score* score = _staff->score();
-
       _levelPreviewActive = false;
       _levelEventPreviews.clear();
       _levelPreviewLengthOffset = Fraction(0, 1);
@@ -4750,60 +4787,11 @@ void PianoView::drawDraggedNotes(QPainter* painter)
             return;
             }
 
-      int currentTick = qBound(0,
-                               scenePosToTick(_lastMousePos),
-                               _ticks);
-
-      Fraction pos = Fraction::fromTicks(currentTick);
-      Measure* m = score->tick2measure(pos);
-
-      if (!m)
+      Fraction pasteTickOffset;
+      Fraction pasteLengthOffset;
+      int pitchOffset { 0 };
+      if (!calculateNoteDragOffsets(pasteTickOffset, pasteLengthOffset, pitchOffset)) {
             return;
-
-      Fraction timeSig = m->timesig();
-      int noteWithBeat = timeSig.denominator();
-
-      //Number of smaller pieces the beat is divided into
-      int subbeats = _tuplet * (1 << _subdiv);
-      int divisions = noteWithBeat * subbeats;
-
-      //Round down to nearest division
-      double dragToTick = scenePosToTick(_lastMousePos);
-      double startTick = scenePosToTick(_mouseDownPos);
-
-      Fraction dragOffsetTicks = Fraction::fromTicks(dragToTick - startTick);
-
-      //Adjust offset so that note under cursor is aligned to note divistion
-      Fraction pasteTickOffset(0, 1);
-      Fraction pasteLengthOffset(0, 1);
-      int pitchOffset = 0;
-
-      int dragToPitch = scenePosToPitch(_lastMousePos);
-      int startPitch = scenePosToPitch(_mouseDownPos);
-
-      if (dragToPitch < 0 || startPitch < 0)
-            return;
-
-      if (_dragStyle == DragStyle::NOTE_POSITION) {
-            Fraction mouseStartGrid =
-                  roundToNearestBeat(scenePosToTick(_mouseDownPos), true);
-
-            Fraction mouseCurrentGrid =
-                  roundToNearestBeat(scenePosToTick(_lastMousePos), true);
-
-            pasteTickOffset = mouseCurrentGrid - mouseStartGrid;
-            pitchOffset = dragToPitch - startPitch;
-            }
-      else if (_dragStyle == DragStyle::NOTE_LENGTH_END) {
-            Fraction noteEndDraggedTick = _dragEndTick + dragOffsetTicks;
-            Fraction noteEndDraggedAlignedTick = Fraction(noteEndDraggedTick.numerator() * divisions / noteEndDraggedTick.denominator(), divisions);
-            pasteLengthOffset = noteEndDraggedAlignedTick - _dragEndTick;
-            }
-      else if (_dragStyle == DragStyle::NOTE_LENGTH_START) {
-            Fraction noteStartDraggedTick = _dragStartTick + dragOffsetTicks;
-            Fraction noteStartDraggedAlignedTick = Fraction(noteStartDraggedTick.numerator() * divisions / noteStartDraggedTick.denominator(), divisions);
-            pasteTickOffset = noteStartDraggedAlignedTick - _dragStartTick;
-            pasteLengthOffset = _dragStartTick - noteStartDraggedAlignedTick;
             }
 
       _levelPreviewActive = true;
