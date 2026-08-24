@@ -71,7 +71,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
 
       QWidget* mainWidget = new QWidget;
-      QToolBar* tbMain = new QToolBar("Toolbar Main", this);
+      tbMain = new QToolBar("Toolbar Main", this);
       tbMain->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbMain->setIconSize(toolbarIconSize);
 
@@ -228,7 +228,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       //----
 
-      QToolBar* tbTool = new QToolBar("Action Buttons", this);
+      tbTool = new QToolBar("Action Buttons", this);
       QButtonGroup* bngrpActionBns = new QButtonGroup();
       tbTool->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbTool->setIconSize(toolbarIconSize);
@@ -294,7 +294,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             { "", 0, false },
             };
 
-      QToolBar* tbNoteLen = new QToolBar("Toolbar Note Length", this);
+      tbNoteLen = new QToolBar("Toolbar Note Length", this);
       QButtonGroup* bngrpNoteLen = new QButtonGroup();
       tbNoteLen->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbNoteLen->setIconSize(toolbarIconSize);
@@ -317,7 +317,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       //----
 
-      QToolBar* tbDots = new QToolBar("Toolbar Dots", this);
+      tbDots = new QToolBar("Toolbar Dots", this);
       QButtonGroup* bngrpNoteDot = new QButtonGroup();
       tbDots->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbDots->setIconSize(toolbarIconSize);
@@ -356,7 +356,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       //----
 
-      QToolBar* tbVoices = new QToolBar("Toolbar Voices", this);
+      tbVoices = new QToolBar("Toolbar Voices", this);
       QButtonGroup* bngrpVoices = new QButtonGroup();
       tbVoices->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbVoices->setIconSize(toolbarIconSize);
@@ -397,7 +397,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       // --------------------------------------------------
       // empty area for spacing
 
-      QToolBar* tbTweak = new QToolBar("Toolbar Tweak", this);
+      tbTweak = new QToolBar("Toolbar Tweak", this);
       tbTweak->setIconSize(toolbarIconSize);
 
 
@@ -1121,6 +1121,39 @@ void PianorollEditor::setStaff(Staff* st)
 
       updateSelection();
       setEnabled(st);
+      }
+
+//---------------------------------------------------------
+//   updateToolbarIconSize
+//---------------------------------------------------------
+
+void PianorollEditor::updateToolbarIconSize()
+      {
+      const QSize iconSize(
+            preferences.getInt(PREF_UI_THEME_ICONWIDTH),
+            preferences.getInt(PREF_UI_THEME_ICONHEIGHT));
+
+      const QList<QToolBar*> toolbars {
+            tbMain,
+            tbTool,
+            tbNoteLen,
+            tbDots,
+            tbVoices,
+            tbTweak
+            };
+
+      for (QToolBar* toolbar : toolbars) {
+            if (!toolbar)
+                  continue;
+
+            toolbar->setIconSize(iconSize);
+
+            const QList<QToolButton*> buttons =
+                  toolbar->findChildren<QToolButton*>();
+
+            for (QToolButton* button : buttons)
+                  button->setIconSize(iconSize);
+            }
       }
 
 //---------------------------------------------------------

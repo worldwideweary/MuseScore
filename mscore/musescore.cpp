@@ -771,6 +771,9 @@ void MuseScore::preferencesChanged(bool fromWorkspace, bool changeUI)
 
       if (seq)
             seq->preferencesChanged();
+
+      if (pianorollEditor)
+            pianorollEditor->updateToolbarIconSize();
       }
 
 //---------------------------------------------------------
