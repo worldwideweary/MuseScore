@@ -225,6 +225,9 @@ private:
                   _editNoteTool == PianoRollEditTool::APPEND_NOTE || _editNoteTool == PianoRollEditTool::CUT ||
                   _editNoteTool == PianoRollEditTool::TIE;
             }
+      bool calculateNoteDragOffsets(Fraction& pasteTickOffset,
+                                    Fraction& pasteLengthOffset,
+                                    int& pitchOffset) const;
 
       void drawPitchText(QPainter* p, const QRectF& bounds, const QString& name, const QColor& noteColor);
       QString pitchNameForMidi(int) const;
