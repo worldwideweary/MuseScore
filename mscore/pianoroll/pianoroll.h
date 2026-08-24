@@ -48,6 +48,13 @@ class WaveView;
 class PianorollEditor : public QWidget, public MuseScoreView {
       Q_OBJECT
 
+      QToolBar* tbMain { nullptr };
+      QToolBar* tbTool { nullptr };
+      QToolBar* tbNoteLen { nullptr };
+      QToolBar* tbDots { nullptr };
+      QToolBar* tbVoices { nullptr };
+      QToolBar* tbTweak { nullptr };
+
       PianoView* pianoView { nullptr };
       PianoKeyboard* pianoKbd { nullptr };
       PianoLevels* pianoLevels { nullptr };
@@ -165,6 +172,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
 
       void setLocator(POS posi, int tick) { locator[int(posi)].setTick(tick); }
 
+      void updateToolbarIconSize();
       void updateOrientationLayout();
       void setOrientation(PianoRollOrientation);
       void setScope(PianoRollScope scope);
