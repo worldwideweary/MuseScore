@@ -143,7 +143,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       QComboBox* scopeBox = new QComboBox;
       scopeBox->addItem(tr("Staff"), int(PianoRollScope::STAFF));
       scopeBox->addItem(tr("Part"),  int(PianoRollScope::PART));
-      // scopeBox->addItem(tr("Score"),  int(PianoRollScope::SCORE)); // TODO: implement
+      scopeBox->addItem(tr("Score"),  int(PianoRollScope::SCORE));
 
       int scopeIndex = scopeBox->findData(int(_scope));
       if (scopeIndex != -1)

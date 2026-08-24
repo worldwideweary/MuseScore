@@ -4087,6 +4087,8 @@ void PianoView::updateNotes()
             return;
             }
 
+      const Score* const score = _staff->score();
+
       SegmentType st = SegmentType::ChordRest;
 
       if (_scope == PianoRollScope::STAFF) {
@@ -4096,7 +4098,7 @@ void PianoView::updateNotes()
                   return;
                   }
 
-            for (Segment* s = _staff->score()->firstSegment(st); s; s = s->next1(st)) {
+            for (Segment* s = score->firstSegment(st); s; s = s->next1(st)) {
                   for (int voice = 0; voice < VOICES; ++voice) {
                         int track = voice + staffIdx * VOICES;
                         Element* e = s->element(track);
@@ -4114,7 +4116,7 @@ void PianoView::updateNotes()
 
             const QList<Staff*>* staves = part->staves();
 
-            for (Segment* s = _staff->score()->firstSegment(st); s; s = s->next1(st)) {
+            for (Segment* s = score->firstSegment(st); s; s = s->next1(st)) {
                   for (Staff* staff : *staves) {
                         int staffIdx = staff->idx();
                         if (staffIdx == -1)
@@ -4130,7 +4132,24 @@ void PianoView::updateNotes()
                   }
             }
       else if (_scope == PianoRollScope::SCORE) {
-            // TODO: full-score scope
+            for (Segment* s = score->firstSegment(st); s; s = s->next1(st)) {
+                  for (Staff* staff : score->staves()) {
+                        if (!staff)
+                              continue;
+
+                        int staffIdx = staff->idx();
+                        if (staffIdx == -1)
+                              continue;
+
+                        for (int voice = 0; voice < VOICES; ++voice) {
+                              int track = voice + staffIdx * VOICES;
+                              Element* e = s->element(track);
+
+                              if (e && e->isChord())
+                                    addChord(toChord(e), voice);
+                              }
+                        }
+                  }
             }
 
       scene()->blockSignals(false);
