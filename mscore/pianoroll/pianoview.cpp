@@ -236,7 +236,7 @@ bool PianoItem::intersectsBlock(int startTick, int endTick, int highPitch, int l
 
 bool PianoItem::intersects(int startTick, int endTick, int highPitch, int lowPitch)
       {
-      if (_pianoView->playEventsView()) {
+      if (_pianoView->eventsAdjustTool()) {
             for (NoteEvent& e : _note->playEvents())
                   if (intersectsBlock(startTick, endTick, highPitch, lowPitch, &e))
                         return true;
@@ -560,7 +560,7 @@ void PianoItem::paintNoteBlock(QPainter* painter, NoteEvent* evt)
 void PianoItem::paint(QPainter* painter)
       {
       painter->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
-      if (_pianoView->playEventsView()) {
+      if (_pianoView->eventsAdjustTool()) {
             for (NoteEvent& e : _note->playEvents())
                   paintNoteBlock(painter, &e);
             }
@@ -2437,6 +2437,30 @@ void PianoView::mousePressEvent(QMouseEvent* event)
             _mouseDownScreenPos = event->pos();
             _mouseDownPos = mapToScene(event->pos());
             _lastMousePos = _mouseDownPos;
+            _selectionHandledOnPress = false;
+
+            if (selectTool() || eventsAdjustTool()) {
+                  const Qt::KeyboardModifiers modifiers = event->modifiers();
+                  const bool hasSelectionModifier =
+                        modifiers & (Qt::ShiftModifier | Qt::ControlModifier);
+
+                  PianoItem* pressedItem = pickNote(_mouseDownPos);
+
+                  // A plain press on one member of an existing multi-selection
+                  // must not collapse that selection before we know whether the
+                  // user intends to drag the group.
+                  const bool deferExistingMultiSelection =
+                        !hasSelectionModifier
+                        && pressedItem
+                        && pressedItem->note()->selected()
+                        && getSelectedItems().size() > 1;
+
+                  if (!deferExistingMultiSelection) {
+                        handleSelectionClick();
+                        _selectionHandledOnPress = true;
+                        }
+                  }
+
             scene()->update();
             }
       }
@@ -2574,7 +2598,8 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
             switch (_editNoteTool) {
                   case SELECT:
                   case EVENT_ADJUST:
-                        handleSelectionClick();
+                        if (!_selectionHandledOnPress)
+                              handleSelectionClick();
                         break;
                   case ERASE:
                         eraseNote(_mouseDownPos);
@@ -2597,7 +2622,7 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
 
             }
 
-
+      _selectionHandledOnPress = false;
       _dragStyle = DragStyle::NONE;
       _mouseDown = false;
       scene()->update();
