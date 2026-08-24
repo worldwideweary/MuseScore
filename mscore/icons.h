@@ -81,6 +81,7 @@ enum class Icons : short { Invalid_ICON = -1,
       regroupRhythms_ICON,
       rhythmicSlash_ICON,
       onscreenKeyboard_ICON,
+      pianorollEditor_ICON,
 
       // To be generated in genIcons:
       voice1_ICON, voice2_ICON, voice3_ICON, voice4_ICON,
