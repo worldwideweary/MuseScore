@@ -159,10 +159,8 @@ void PianoLevels::paintEvent(QPaintEvent* e)
       QColor colGridLine;
       QColor colText;
 
-      bool dark = false;
       switch (preferences.effectiveGlobalStyle()) {
             case MuseScoreEffectiveStyleType::DARK_FUSION:
-                  dark = true;
                   colPianoBg = QColor(preferences.getColor(PREF_UI_PIANOROLL_DARK_BG_BASE_COLOR));
                   noteDeselected = preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
                   noteSelected = QColor(preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR));
@@ -355,28 +353,7 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                               ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_DRAG_COLOR)
                               : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_DRAG_COLOR);
 
-                  bool even = false;
-                  Staff* const staff = note->staff();
-
-                  if (_scope == PianoRollScope::PART && staff && staff->part()) {
-                        const QList<Staff*>* staves = staff->part()->staves();
-                        int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
-                        even = (staffPos % 2 == 0);
-                        }
-
-                  if (_coloring == Coloring::VOICING) {
-                        noteDeselected = MScore::selectColor[note->voice()];
-                        }
-                  else if (_coloring == Coloring::STAFF) {
-                        if (dark) {
-                              noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
-                                                    : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
-                              }
-                        else {
-                              noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
-                                                    : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
-                              }
-                        }
+                  noteDeselected = pianoRollNoteColor(note, _coloring, false);
 
                   if (filter->isPerEvent()) {
 

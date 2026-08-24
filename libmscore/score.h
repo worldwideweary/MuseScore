@@ -604,6 +604,7 @@ class Score : public QObject, public ScoreElement {
       inline virtual const Movements* movements() const;
 
    signals:
+      void partColorChanged();
       void posChanged(POS, unsigned, bool);
       void playlistChanged();
       void updateProgress(const QString&, int, int, int);
