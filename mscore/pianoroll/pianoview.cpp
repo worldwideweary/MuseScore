@@ -95,7 +95,7 @@ QColor pianoRollNoteColor(const Note* note,
                   return MScore::selectColor[voice];
             }
 
-      if (coloring == Coloring::STAFF) {
+      else if (coloring == Coloring::STAFF) {
             bool even = false;
 
             Staff* staff = note->staff();
@@ -121,6 +121,14 @@ QColor pianoRollNoteColor(const Note* note,
                         : preferences.getColor(
                               PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
                   }
+            }
+
+      else if (coloring == Coloring::INSTRUMENT) {
+            Staff* staff = note->staff();
+            Part* part = staff ? staff->part() : nullptr;
+
+            if (part)
+                  return QColor::fromRgb(part->masterPart()->color());
             }
 
       return MScore::defaultColor;

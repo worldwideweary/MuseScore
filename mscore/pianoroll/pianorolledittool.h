@@ -40,7 +40,8 @@ enum class PianoRollScope {
 
 enum class Coloring {
       VOICING,
-      STAFF
+      STAFF,
+      INSTRUMENT,
       };
 
 enum class PianoRollOrientation {
