@@ -3396,6 +3396,11 @@ void MuseScore::setCurrentScoreView(ScoreView* view)
             }
       ScoreAccessibility::instance()->updateAccessibilityInfo();
 
+      if (pianorollEditor) {
+            Staff* st = cs && !cs->staves().isEmpty() ? cs->staff(0) : nullptr;
+            pianorollEditor->setStaff(st);
+            }
+
       MasterScore* master = cs->masterScore();
       if (!scoreWasShown[master]) {
             scoreWasShown[master] = true;
