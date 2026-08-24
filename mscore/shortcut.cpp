@@ -3087,7 +3087,7 @@ Shortcut Shortcut::_sc[] = {
          QT_TRANSLATE_NOOP("action","Piano Roll Editor"),
          QT_TRANSLATE_NOOP("action","Piano roll editor"),
          0,
-         Icons::onscreenKeyboard_ICON,
+         Icons::pianorollEditor_ICON,
          Qt::WindowShortcut,
          ShortcutFlags::A_CHECKABLE
          },
