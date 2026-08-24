@@ -4474,9 +4474,13 @@ void PianoView::finishNoteGroupDrag(QMouseEvent* event) {
             return;
 
       if (_dragStyle == DragStyle::NOTE_POSITION) {
-            Fraction noteStartDraggedTick = _dragStartTick + dragOffsetTicks;
-            Fraction noteStartDraggedAlignedTick = Fraction(noteStartDraggedTick.numerator() * divisions / noteStartDraggedTick.denominator(), divisions);
-            pasteTickOffset = noteStartDraggedAlignedTick - _dragStartTick;
+            Fraction mouseStartGrid =
+                  roundToNearestBeat(scenePosToTick(_mouseDownPos), true);
+
+            Fraction mouseCurrentGrid =
+                  roundToNearestBeat(scenePosToTick(_lastMousePos), true);
+
+            pasteTickOffset = mouseCurrentGrid - mouseStartGrid;
             pitchOffset = dragToPitch - startPitch;
             }
       else if (_dragStyle == DragStyle::NOTE_LENGTH_END) {
@@ -4781,9 +4785,13 @@ void PianoView::drawDraggedNotes(QPainter* painter)
             return;
 
       if (_dragStyle == DragStyle::NOTE_POSITION) {
-            Fraction noteStartDraggedTick = _dragStartTick + dragOffsetTicks;
-            Fraction noteStartDraggedAlignedTick = Fraction(noteStartDraggedTick.numerator() * divisions / noteStartDraggedTick.denominator(), divisions);
-            pasteTickOffset = noteStartDraggedAlignedTick - _dragStartTick;
+            Fraction mouseStartGrid =
+                  roundToNearestBeat(scenePosToTick(_mouseDownPos), true);
+
+            Fraction mouseCurrentGrid =
+                  roundToNearestBeat(scenePosToTick(_lastMousePos), true);
+
+            pasteTickOffset = mouseCurrentGrid - mouseStartGrid;
             pitchOffset = dragToPitch - startPitch;
             }
       else if (_dragStyle == DragStyle::NOTE_LENGTH_END) {
