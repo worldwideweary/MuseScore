@@ -4571,6 +4571,14 @@ void PianoView::finishNoteGroupDrag(QMouseEvent* event) {
       updateNotes();
       update();
 
+      QList<PianoItem*> selectedItems = getSelectedItems();
+      if (!selectedItems.isEmpty()) {
+            ScoreView* scoreView = mscore->currentScoreView();
+            if (scoreView)
+                  scoreView->adjustCanvasPosition(
+                        selectedItems.first()->note(), false);
+            }
+
       emit selectionChanged();
       }
 
