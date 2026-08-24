@@ -1956,6 +1956,10 @@ MuseScore::MuseScore()
       a->setCheckable(true);
       menuView->addAction(a);
 
+      a = getAction("toggle-piano-roll");
+      a->setCheckable(true);
+      menuView->addAction(a);
+
       a = getAction("toggle-scorecmp-tool");
       a->setCheckable(true);
       menuView->addAction(a);
@@ -5846,38 +5850,14 @@ void MuseScore::updateTimer()
 
 void MuseScore::editInPianoroll(Staff* staff, Position* p)
       {
-      if (pianorollEditor == 0) {
-            pianorollDock = new QDockWidget(tr("Piano Roll Editor"), this);
-            pianorollDock->setObjectName("pianoroll");
-            pianorollDock->setAllowedAreas(Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
+      if (!staff)
+            return;
 
-            pianorollEditor = new PianorollEditor(pianorollDock);
-            pianorollDock->setWidget(pianorollEditor);
+      createPianoroll();
 
-            addDockWidget(Qt::BottomDockWidgetArea, pianorollDock);
-
-            qDebug() << "PRE dock:"
-                     << "floating =" << pianorollDock->isFloating()
-                     << "visible =" << pianorollDock->isVisible()
-                     << "area =" << dockWidgetArea(pianorollDock)
-                     << "dock geometry =" << pianorollDock->geometry()
-                     << "editor window =" << pianorollEditor->isWindow()
-                     << "editor parent =" << pianorollEditor->parentWidget();
-            }
-
-      pianorollEditor->setScore(staff->score());
       pianorollEditor->setStaff(staff);
 
-      pianorollDock->show();
-      pianorollDock->raise();
-
-      qDebug() << "PRE after show:"
-               << "floating =" << pianorollDock->isFloating()
-               << "visible =" << pianorollDock->isVisible()
-               << "area =" << dockWidgetArea(pianorollDock)
-               << "dock geometry =" << pianorollDock->geometry()
-               << "editor visible =" << pianorollEditor->isVisible()
-               << "editor geometry =" << pianorollEditor->geometry();
+      reDisplayDockWidget(pianorollDock, true);
 
       pianorollEditor->focusOnPosition(p);
       }
@@ -6333,6 +6313,53 @@ void MuseScore::showPianoKeyboard(bool visible)
             if (_pianoTools)
                   _pianoTools->hide();
             }
+      }
+
+//---------------------------------------------------------
+//   createPianoroll
+//---------------------------------------------------------
+
+void MuseScore::createPianoroll()
+      {
+      if (pianorollEditor)
+            return;
+
+      QAction* a = getAction("toggle-piano-roll");
+
+      pianorollDock = new QDockWidget(tr("Piano Roll Editor"), this);
+      pianorollDock->setObjectName("pianoroll");
+      pianorollDock->setAllowedAreas(Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
+
+      pianorollEditor = new PianorollEditor(pianorollDock);
+      pianorollDock->setWidget(pianorollEditor);
+
+      addDockWidget(Qt::BottomDockWidgetArea, pianorollDock);
+
+      connect(pianorollDock, &QDockWidget::visibilityChanged,
+              a, &QAction::setChecked);
+      }
+
+//---------------------------------------------------------
+//   showPianoroll
+//---------------------------------------------------------
+
+void MuseScore::showPianoroll(bool visible)
+      {
+      if (visible) {
+            if (!pianorollEditor) {
+                  createPianoroll();
+
+                  Staff* staff = nullptr;
+                  if (cs && !cs->staves().isEmpty())
+                        staff = cs->staff(0);
+
+                  pianorollEditor->setStaff(staff);
+                  }
+
+            reDisplayDockWidget(pianorollDock, true);
+            }
+      else if (pianorollDock)
+            pianorollDock->hide();
       }
 
 //---------------------------------------------------------
@@ -7126,6 +7153,8 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   workspacesTools->setVisible(!workspacesTools->isVisible());
             else if (cmd == "toggle-piano")
                   showPianoKeyboard(a->isChecked());
+            else if (cmd == "toggle-piano-roll")
+                  showPianoroll(a->isChecked());
             else if (cmd == "toggle-scorecmp-tool")
                   reDisplayDockWidget(scoreCmpTool, a->isChecked());
             #ifdef MSCORE_UNSTABLE

@@ -494,6 +494,8 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void initOsc();
       void editRaster();
       void showPianoKeyboard(bool);
+      void createPianoroll();
+      void showPianoroll(bool);
       void showMediaDialog();
       void showAlbumManager();
       void showLayerManager();
