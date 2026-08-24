@@ -191,6 +191,7 @@ static const char* iconNames[] = {
       "regroup-rhythm.svg",
       "rhythmic-slash-notation.svg",
       "keyboard.svg",
+      "keyboard-vertical.svg",
       "empty_trailing_measure.svg",
 
 
