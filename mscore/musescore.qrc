@@ -258,5 +258,6 @@
         <file>data/icons/page-settings.svg</file>
         <file>data/icons/empty_trailing_measure.svg</file>
         <file>data/icons/note-show-pitch.svg</file>
+        <file>data/icons/keyboard-vertical.svg</file>
     </qresource>
 </RCC>

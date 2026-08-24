@@ -79,6 +79,7 @@ enum class Icons : short { Invalid_ICON = -1,
       regroupRhythms_ICON,
       rhythmicSlash_ICON,
       onscreenKeyboard_ICON,
+      pianorollEditor_ICON,
       emptyTrailingMeasure_ICON,
 
       // To be generated in genIcons:

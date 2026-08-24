@@ -408,6 +408,7 @@ const std::list<const char*> MuseScore::_allAlternativeEntries {
             "time-delete",
             "",
             "toggle-piano",
+            "toggle-piano-roll",
             "",
             "empty-trailing-measure"
             };
