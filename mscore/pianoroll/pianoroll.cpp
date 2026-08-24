@@ -2072,7 +2072,7 @@ void PianorollEditor::applyPitchEdit()
 void PianorollEditor::redraw() const
       {
       if (pianoView)
-            pianoView->scene()->update();
+            pianoView->viewport()->update();
       if (pianoKbd)
             pianoKbd->update();
       if (pianoLevels)
