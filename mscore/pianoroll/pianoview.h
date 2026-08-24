@@ -158,6 +158,7 @@ private:
       Fraction _dragEndTick;
       int _dragNoteLengthMargin = 4;
       bool _inProgressUndoEvent;
+      bool _selectionHandledOnPress { false };
 
       Fraction _levelPreviewLengthOffset;
       Fraction _levelPreviewTickOffset;
@@ -350,7 +351,8 @@ private:
       
       void zoomView(int step, bool horizontal, int centerX, int centerY);
 
-      bool playEventsView() { return _editNoteTool == PianoRollEditTool::EVENT_ADJUST; }
+      bool eventsAdjustTool() { return _editNoteTool == PianoRollEditTool::EVENT_ADJUST; }
+      bool selectTool() { return _editNoteTool == PianoRollEditTool::SELECT; }
       };
 
 
