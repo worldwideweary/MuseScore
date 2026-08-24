@@ -581,6 +581,7 @@ class Score : public QObject, public ScoreElement {
 
    signals:
       void posChanged(POS, unsigned);
+      void partColorChanged();
       void playlistChanged();
 
    public:
