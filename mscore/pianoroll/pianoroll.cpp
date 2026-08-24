@@ -713,21 +713,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                     ruler->setPlaybackLocatorTick(predictedTick);
                     });
 
-      connect(pianoView->verticalScrollBar(),
-              &QScrollBar::valueChanged,
-              this,
-              [this](int value) {
-                    if (_orientation == PianoRollOrientation::HORIZONTAL)
-                          pianoKbd->setYpos(value);
-                    });
 
-      connect(pianoView->horizontalScrollBar(),
-              &QScrollBar::valueChanged,
-              this,
-              [this](int value) {
-                    if (_orientation == PianoRollOrientation::VERTICAL)
-                          pianoKbd->setYpos(value);
-                    });
 
       connect(pianoView, &PianoView::onTimeDragged, this, [this](int value) {
             _previewOnTime = value;
@@ -961,9 +947,8 @@ void PianorollEditor::showNoteTweaker()
 
 void PianorollEditor::setOnTime(int v)
       {
-      onTime->blockSignals(true);
+      QSignalBlocker blocker(onTime);
       onTime->setValue(v);;
-      onTime->blockSignals(false);
       }
 
 //---------------------------------------------------------
@@ -972,9 +957,8 @@ void PianorollEditor::setOnTime(int v)
 
 void PianorollEditor::setTickLen(int v)
       {
-      tickLen->blockSignals(true);
+      QSignalBlocker blocker(tickLen);
       tickLen->setValue(v);
-      tickLen->blockSignals(false);
       }
 
 //---------------------------------------------------------
