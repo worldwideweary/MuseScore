@@ -176,6 +176,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       QComboBox* coloringBox = new QComboBox;
       coloringBox->addItem(tr("Voicing"),   int(Coloring::VOICING));
       coloringBox->addItem(tr("Singular"),  int(Coloring::STAFF));
+      coloringBox->addItem(tr("Instrument"), int(Coloring::INSTRUMENT));
 
       tbMain->addWidget(coloringBox);
 
