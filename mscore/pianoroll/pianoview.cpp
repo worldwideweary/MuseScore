@@ -770,8 +770,14 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
             //      _noteList[i]->paint(p);
 
             p->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
-            for (PianoItem*& block : _noteList) {
-                  drawNoteBlock(p, block);
+
+            for (PianoItem* block : _noteList) {
+                  if (!block->note()->selected())
+                        drawNoteBlock(p, block);
+                  }
+            for (PianoItem* block : _noteList) {
+                  if (block->note()->selected())
+                        drawNoteBlock(p, block);
                   }
 
             if (_dragStyle == DragStyle::NOTE_POSITION || _dragStyle == DragStyle::NOTE_LENGTH_END
@@ -1092,8 +1098,14 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
                   | QPainter::SmoothPixmapTransform
                   | QPainter::TextAntialiasing);
 
-            for (PianoItem*& block : _noteList)
-                  drawNoteBlock(p, block);
+            for (PianoItem* block : _noteList) {
+                  if (!block->note()->selected())
+                        drawNoteBlock(p, block);
+                  }
+            for (PianoItem* block : _noteList) {
+                  if (block->note()->selected())
+                        drawNoteBlock(p, block);
+                  }
 
             //
             // Draw temporary dragged notes
