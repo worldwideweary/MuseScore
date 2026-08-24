@@ -3345,8 +3345,10 @@ void ScoreView::cmd(const char* s)
                                     cv->deselectAll();
 
                               if (MScore::selectionFollowsCursor) {
-                                    auto el = cv->chordRestFromCursor();
+                                    Element* const el = cv->chordRestFromCursor();
                                     _score->select(el);
+                                    // Also move playback cursor to beginning of chord/rest:
+                                    seq->seek(el->tick().ticks());
                                     }
                               else if (validOriginalSelection) {
                                     if (/*TODO*/ true) {
