@@ -1081,8 +1081,12 @@ void PianorollEditor::setStaff(Staff* st)
       if ((st && st->score() != _score) || (!st && _score)) {
             if (_score) {
                   _score->removeViewer(this);
-                  disconnect(_score, SIGNAL(posChanged(POS,unsigned)), this, SLOT(posChanged(POS,unsigned)));
-                  disconnect(_score, SIGNAL(playlistChanged()), this, SLOT(playlistChanged()));
+                  disconnect(_score, SIGNAL(posChanged(POS,unsigned)),
+                             this, SLOT(posChanged(POS,unsigned)));
+                  disconnect(_score, SIGNAL(playlistChanged()),
+                             this, SLOT(playlistChanged()));
+                  disconnect(_score->masterScore(), &Score::partColorChanged,
+                             this, &PianorollEditor::redraw);
                   }
             _score = st ? st->score() : nullptr;
             if (_score) {
@@ -1090,8 +1094,12 @@ void PianorollEditor::setStaff(Staff* st)
                   setLocator(POS::CURRENT, _score->pos(POS::CURRENT).ticks());
                   setLocator(POS::LEFT,    _score->pos(POS::LEFT).ticks());
                   setLocator(POS::RIGHT,   _score->pos(POS::RIGHT).ticks());
-                  connect(_score, &Score::posChanged, this, &PianorollEditor::posChanged);
-                  connect(_score, SIGNAL(playlistChanged()), SLOT(playlistChanged()));
+                  connect(_score, &Score::posChanged,
+                          this, &PianorollEditor::posChanged);
+                  connect(_score, SIGNAL(playlistChanged()),
+                          SLOT(playlistChanged()));
+                  connect(_score->masterScore(), &Score::partColorChanged,
+                          this, &PianorollEditor::redraw);
                   }
             }
       staff = st;
@@ -2055,6 +2063,20 @@ void PianorollEditor::applyPitchEdit()
       pianoLevels->updateNotes();
       updateSelection();
       pianoView->ensureSelectionVisible();
+      }
+
+//---------------------------------------------------------
+//   redraw
+//---------------------------------------------------------
+
+void PianorollEditor::redraw() const
+      {
+      if (pianoView)
+            pianoView->scene()->update();
+      if (pianoKbd)
+            pianoKbd->update();
+      if (pianoLevels)
+            pianoLevels->update();
       }
 
 //---------------------------------------------------------

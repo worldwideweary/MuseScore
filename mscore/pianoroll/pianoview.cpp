@@ -128,7 +128,7 @@ QColor pianoRollNoteColor(const Note* note,
             Part* part = staff ? staff->part() : nullptr;
 
             if (part)
-                  return QColor::fromRgb(part->color());
+                  return QColor::fromRgb(part->masterPart()->color());
             }
 
       return MScore::defaultColor;
