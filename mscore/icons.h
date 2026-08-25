@@ -68,6 +68,7 @@ enum class Icons : short { Invalid_ICON = -1,
       mail_ICON, bug_ICON, bin_ICON,
       noteTimewise_ICON,
       arrowsMoveToTop_ICON, arrowsMoveToBottom_ICON,
+      noteheadColor_ICON,
 
       showDebug_ICON,
       showInstruments_ICON,

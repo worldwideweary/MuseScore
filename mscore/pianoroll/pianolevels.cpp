@@ -69,6 +69,15 @@ PianoLevels::~PianoLevels()
       }
 
 //---------------------------------------------------------
+//   setUseNoteColors
+//---------------------------------------------------------
+
+void PianoLevels::setUseNoteColors(bool value)
+      {
+      _useNoteColors = value;
+      }
+
+//---------------------------------------------------------
 //   setColoring
 //---------------------------------------------------------
 
@@ -353,7 +362,7 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                               ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_DRAG_COLOR)
                               : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_DRAG_COLOR);
 
-                  noteDeselected = pianoRollNoteColor(note, _coloring, false);
+                  noteDeselected = pianoRollNoteColor(note, _coloring, false, _useNoteColors);
 
                   if (filter->isPerEvent()) {
 

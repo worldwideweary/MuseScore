@@ -88,6 +88,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       PianoRollScope _scope;
       PianoRollOrientation _orientation;
       Coloring _coloring;
+      bool _useNoteColors;
 
       int _previewOnTime { 0 };
       int _previewLen { 1000 };
@@ -182,6 +183,8 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       void setOrientation(PianoRollOrientation);
       void setScope(PianoRollScope scope);
       void setColoring(Coloring);
+      void setUseNoteColors(bool);
+
 
       void writeSettings();
       virtual const QRect geometry() const override { return QWidget::geometry(); }

@@ -54,6 +54,7 @@ class PianoLevels : public QWidget
       PianoView* _pianoView { nullptr };
       PianoRollOrientation _orientation { PianoRollOrientation::HORIZONTAL };
       Coloring _coloring;
+      bool _useNoteColors { false };
       Score* _score { nullptr };
       int _xpos;
       qreal _xZoom;
@@ -161,6 +162,7 @@ public:
       PianoLevels(QWidget *parent = 0);
       ~PianoLevels();
 
+      void setUseNoteColors(bool value);
       void setColoring(Coloring);
       void setPianoView(PianoView*);
       void setOrientation(PianoRollOrientation);
