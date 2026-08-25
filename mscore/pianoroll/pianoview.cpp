@@ -32,6 +32,8 @@
 #include "libmscore/undo.h"
 #include "libmscore/utils.h"
 
+#include <QColorDialog>
+
 
 namespace Ms {
 
@@ -2394,6 +2396,16 @@ void PianoView::showPopupMenu(const QPoint& posGlobal)
 
       popup.addSeparator();
 
+      act = new QAction(tr("Color..."));
+      connect(act, &QAction::triggered, this, &PianoView::setSelectedNoteColor);
+      popup.addAction(act);
+
+      act = new QAction(tr("Reset Color"));
+      connect(act, &QAction::triggered, this, &PianoView::resetSelectedNoteColor);
+      popup.addAction(act);
+
+      popup.addSeparator();
+
       QMenu* menuTuplet = new QMenu(tr("Tuplets"));
       for (auto i : { "duplet", "triplet", "quadruplet", "quintuplet", "sextuplet",
            "septuplet", "octuplet", "nonuplet", "tuplet-dialog" })
@@ -4253,6 +4265,85 @@ void PianoView::setNotesToVoice(int voice)
             return;
 
       _staff->score()->changeVoice(voice);
+      }
+
+//---------------------------------------------------------
+//   setSelectedNoteColor
+//---------------------------------------------------------
+
+void PianoView::setSelectedNoteColor()
+      {
+      if (!_staff || _noteList.isEmpty())
+            return;
+
+      QList<Note*> notes;
+
+      for (PianoItem* item : _noteList) {
+            if (!item)
+                  continue;
+
+            Note* note = item->note();
+            if (note && note->selected() && !notes.contains(note))
+                  notes.append(note);
+            }
+
+      if (notes.isEmpty())
+            return;
+
+      QColor initialColor = notes.front()->color();
+
+      QColor color = QColorDialog::getColor(
+            initialColor,
+            this,
+            tr("Select Note Color"),
+            QColorDialog::ShowAlphaChannel);
+
+      if (!color.isValid())
+            return;
+
+      Score* score = _staff->score();
+      score->startCmd();
+
+      for (Note* note : notes)
+            note->undoChangeProperty(Pid::COLOR, color);
+
+      score->endCmd();
+
+      scene()->update();
+      }
+
+//---------------------------------------------------------
+//   resetSelectedNoteColor
+//---------------------------------------------------------
+
+void PianoView::resetSelectedNoteColor()
+      {
+      if (!_staff || _noteList.isEmpty())
+            return;
+
+      QList<Note*> notes;
+
+      for (PianoItem* item : _noteList) {
+            if (!item)
+                  continue;
+
+            Note* note = item->note();
+            if (note && note->selected() && !notes.contains(note))
+                  notes.append(note);
+            }
+
+      if (notes.isEmpty())
+            return;
+
+      Score* score = _staff->score();
+      score->startCmd();
+
+      for (Note* note : notes)
+            note->undoChangeProperty(Pid::COLOR, MScore::defaultColor);
+
+      score->endCmd();
+
+      scene()->update();
       }
 
 
