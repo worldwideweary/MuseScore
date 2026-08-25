@@ -149,6 +149,8 @@ class PianorollEditor : public QWidget, public MuseScoreView {
 
       bool eventFilter(QObject* obj, QEvent* event) override;
 
+      Score* score() const { return _score; }
+
       void restoreScoreViewFocus();
 
       void setStaff(Staff* staff);
