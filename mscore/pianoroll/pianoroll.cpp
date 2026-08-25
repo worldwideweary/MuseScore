@@ -1539,8 +1539,6 @@ void PianorollEditor::selectionChanged()
       if (!_score->selection().isNone())
             _score->selection().setSource(SelectionSource::PIANO_ROLL);
 
-      for (MuseScoreView* view : score()->getViewer())
-            view->updateAll();
 
       pianoView->scene()->update();
       pianoLevels->update();
