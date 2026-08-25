@@ -67,6 +67,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       Score* _score { nullptr };
       Staff* staff { nullptr };
       QLabel* partLabel { nullptr };
+      QComboBox* staffBox { nullptr };
       Awl::PitchEdit* pitch { nullptr };
       QSpinBox* velocity { nullptr };
       QSpinBox* onTime { nullptr };
@@ -109,6 +110,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       bool updateScheduled = false;
       NoteTweakerDialog* noteTweakerDlg { nullptr };
 
+      void updateStaffBox();
       void updateVelocity(Note* note);
       void updateSelection();
       void readSettings();
