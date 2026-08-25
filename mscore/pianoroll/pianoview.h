@@ -199,6 +199,9 @@ private:
       QRect boundingRect(const Note* note, bool applyEvents);
       QRect boundingRect(const Note* note, const NoteEvent* evt, bool applyEvents);
 
+      void setSelectedNoteColor();
+      void resetSelectedNoteColor();
+
       void addChord(Chord* _chord, int voice);
       QVector<Note*> getSegmentNotes(Segment* seg, int track);
       void updateBoundingSize();
