@@ -43,7 +43,7 @@ int qt_ntfs_permission_lookup;
 
 namespace Ms {
 
-static constexpr int WORKSPACE_UI_VERSION = 0;
+static constexpr int WORKSPACE_UI_VERSION = 1;
 
 bool WorkspacesManager::isWorkspacesListDirty = true;
 Workspace* WorkspacesManager::m_currentWorkspace = nullptr;
@@ -1037,7 +1037,22 @@ void Workspace::ensureToolbarEntry(std::list<const char*>& entries,
 
 void Workspace::migrate(int uiVersion)
       {
-      Q_UNUSED(uiVersion);
+      if (uiVersion < 1) {
+            // 1: [toggle piano roll] menu and toolbar action
+            ensureMenuAction("menu-view",
+                             "toggle-piano-roll",
+                             "toggle-scorecmp-tool");
+
+            std::list<const char*>* entries = mscore->alternativeEntries();
+
+            if (entries) {
+                  ensureToolbarEntry(*entries,
+                                     "toggle-piano-roll",
+                                     "empty-trailing-measure");
+
+                  mscore->populateAlternativeOperations();
+                  }
+            }
       }
 
 //---------------------------------------------------------
