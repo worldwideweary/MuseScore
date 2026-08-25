@@ -115,6 +115,24 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       partLabel = new QLabel;
       tbMain->addWidget(partLabel);
 
+      staffBox = new QComboBox;
+      staffBox->setToolTip(tr("Editable staff"));
+      tbMain->addWidget(staffBox);
+
+      connect(staffBox,
+              QOverload<int>::of(&QComboBox::activated),
+              this,
+              [this](int index) {
+                    if (!_score)
+                          return;
+
+                    const int staffIdx = staffBox->itemData(index).toInt();
+
+                    if (staffIdx >= 0 && staffIdx < _score->nstaves())
+                          setStaff(_score->staff(staffIdx));
+
+                    restoreScoreViewFocus();
+                    });
 
       // Option: Orientation Horizontal/Vertical
       tbMain->addSeparator();
@@ -1104,8 +1122,19 @@ void PianorollEditor::setStaff(Staff* st)
                   connect(_score->masterScore(), &Score::partColorChanged,
                           this, &PianorollEditor::redraw);
                   }
+            updateStaffBox();
             }
       staff = st;
+
+      if (staffBox) {
+            QSignalBlocker blocker(staffBox);
+
+            const int index =
+                  staff ? staffBox->findData(staff->idx()) : -1;
+
+            staffBox->setCurrentIndex(index);
+            }
+
       if (staff) {
             setWindowTitle(tr("<%1> Staff: %2").arg(_score->masterScore()->fileInfo()->completeBaseName()).arg(st->idx()));
             TempoMap* tl = _score->tempomap();
@@ -1116,6 +1145,7 @@ void PianorollEditor::setStaff(Staff* st)
             }
       else
             setWindowTitle(tr("Piano roll editor"));
+
       ruler->setScore(_score, locator);
       pianoView->setStaff(staff, locator);
       pianoLevels->setScore(_score, locator);
@@ -1621,6 +1651,44 @@ void PianorollEditor::veloTypeChanged(int val)
       _score->endCmd();
 
       restoreScoreViewFocus();
+      }
+
+//---------------------------------------------------------
+//   updateStaffBox
+//---------------------------------------------------------
+
+void PianorollEditor::updateStaffBox()
+      {
+      if (!staffBox)
+            return;
+
+      QSignalBlocker blocker(staffBox);
+
+      staffBox->clear();
+
+      if (!_score) {
+            staffBox->setEnabled(false);
+            return;
+            }
+
+      for (Staff* st : _score->staves()) {
+            if (!st)
+                  continue;
+
+            QString label = st->partName();
+
+            Part* part = st->part();
+            if (part && part->nstaves() > 1) {
+                  const int staffIndex = part->staves()->indexOf(st);
+
+                  if (staffIndex >= 0)
+                        label += tr(": Staff %1").arg(staffIndex + 1);
+                  }
+
+            staffBox->addItem(label, st->idx());
+            }
+
+      staffBox->setEnabled(staffBox->count() > 0);
       }
 
 //---------------------------------------------------------
