@@ -32,6 +32,8 @@
 #include "thirdparty/qzip/qzipreader_p.h"
 #include "thirdparty/qzip/qzipwriter_p.h"
 
+#include <cstring>
+
 #if defined(FOR_WINSTORE)  // or even just Q_OS_WIN ?
 extern Q_CORE_EXPORT int qt_ntfs_permission_lookup;
 #else
@@ -39,6 +41,8 @@ int qt_ntfs_permission_lookup;
 #endif
 
 namespace Ms {
+
+static constexpr int WORKSPACE_UI_VERSION = 0;
 
 bool WorkspacesManager::isWorkspacesListDirty = true;
 Workspace* WorkspacesManager::m_currentWorkspace = nullptr;
@@ -403,6 +407,9 @@ void Workspace::write()
       // xml.tag("name", _name);
       if (!_sourceWorkspaceName.isEmpty())
             xml.tag("source", _sourceWorkspaceName);
+
+      xml.tag("uiVersion", WORKSPACE_UI_VERSION);
+
       const PaletteWorkspace* w = mscore->getPaletteWorkspace();
       w->write(xml);
 
@@ -735,6 +742,8 @@ std::unique_ptr<PaletteTree> Workspace::getPaletteTree() const
 
 void Workspace::read(XmlReader& e)
       {
+      int uiVersion = 0;
+
       bool niToolbar = false;
       bool foToolbar = false;
       bool pcToolbar = false;
@@ -744,6 +753,8 @@ void Workspace::read(XmlReader& e)
                   e.readElementText();
             else if (tag == "source")
                   _sourceWorkspaceName = e.readElementText();
+            else if (tag == "uiVersion")
+                  uiVersion = e.readInt();
             else if (tag == "PaletteBox") {
                   PaletteWorkspace* w = mscore->getPaletteWorkspace();
                   w->read(e);
@@ -903,8 +914,73 @@ void Workspace::read(XmlReader& e)
       if (!saveComponents)
             readGlobalGUIState();
 
+      migrate(uiVersion);
+
       if (const Workspace* src = sourceWorkspace())
             mscore->getPaletteWorkspace()->setDefaultPaletteTree(src->getPaletteTree());
+      }
+
+//---------------------------------------------------------
+//   ensureMenuAction
+//---------------------------------------------------------
+
+void Workspace::ensureMenuAction(const QString& menuId,
+                                 const QString& actionId,
+                                 const QString& beforeActionId)
+      {
+      QMenu* menu = findMenuFromString(menuId);
+      QAction* action = findActionFromString(actionId);
+
+      if (!menu || !action || menu->actions().contains(action))
+            return;
+
+      QAction* beforeAction = beforeActionId.isEmpty()
+                              ? nullptr
+                              : findActionFromString(beforeActionId);
+
+      if (beforeAction && menu->actions().contains(beforeAction))
+            menu->insertAction(beforeAction, action);
+      else
+            menu->addAction(action);
+      }
+
+//---------------------------------------------------------
+//   ensureToolbarEntry
+//---------------------------------------------------------
+
+void Workspace::ensureToolbarEntry(std::list<const char*>& entries,
+                                   const char* actionId,
+                                   const char* beforeActionId)
+      {
+      if (!actionId || !*actionId)
+            return;
+
+      for (const char* entry : entries) {
+            if (!strcmp(entry, actionId))
+                  return;
+            }
+
+      if (beforeActionId) {
+            for (auto it = entries.begin(); it != entries.end(); ++it) {
+                  if (!strcmp(*it, beforeActionId)) {
+                        entries.insert(it, actionId);
+                        return;
+                        }
+                  }
+            }
+
+      entries.push_back(actionId);
+      }
+
+//---------------------------------------------------------
+//   migrate
+//    add here: ensureMenuAction() and ensureToolbarEntry() calls
+//    with uiVersion < [most recent version]
+//---------------------------------------------------------
+
+void Workspace::migrate(int uiVersion)
+      {
+      Q_UNUSED(uiVersion);
       }
 
 //---------------------------------------------------------
