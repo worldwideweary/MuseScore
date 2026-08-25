@@ -6351,8 +6351,28 @@ void MuseScore::showPianoroll(bool visible)
                   createPianoroll();
 
                   Staff* staff = nullptr;
-                  if (cs && !cs->staves().isEmpty())
-                        staff = cs->staff(0);
+
+                  if (cs && !cs->staves().isEmpty()) {
+                        const Selection& selection = cs->selection();
+
+                        if (selection.state() == SelState::RANGE) {
+                              const int staffIdx = selection.staffStart();
+
+                              if (staffIdx >= 0 && staffIdx < cs->nstaves())
+                                    staff = cs->staff(staffIdx);
+                              }
+                        else if (selection.state() == SelState::LIST) {
+                              for (Element* e : selection.elements()) {
+                                    if (e && e->staff()) {
+                                          staff = e->staff();
+                                          break;
+                                          }
+                                    }
+                              }
+
+                        if (!staff)
+                              staff = cs->staff(0);
+                        }
 
                   pianorollEditor->setStaff(staff);
                   }
