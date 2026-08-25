@@ -112,9 +112,6 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       tbMain->addSeparator();
 
-      partLabel = new QLabel;
-      tbMain->addWidget(partLabel);
-
       staffBox = new QComboBox;
       staffBox->setToolTip(tr("Editable staff"));
       tbMain->addWidget(staffBox);
@@ -1082,22 +1079,6 @@ void PianorollEditor::setStaff(Staff* st)
       {
       if (staff == st)
             return;
-
-      if (st) {
-            QString label = st->partName();
-
-            Part* part = st->part();
-            if (part && part->nstaves() > 1) {
-                  const int staffIndex = part->staves()->indexOf(st);
-
-                  if (staffIndex >= 0)
-                        label += tr(": Staff %1").arg(staffIndex + 1);
-                  }
-
-            partLabel->setText(label);
-            }
-      else
-            partLabel->clear();
 
       if ((st && st->score() != _score) || (!st && _score)) {
             if (_score) {
