@@ -214,7 +214,12 @@ void Excerpt::createExcerpt(Excerpt* excerpt)
       VBox* titleFrameScore = toVBox(measure);
 
       measure = score->first();
-      Q_ASSERT(measure->isVBox());
+      if (!measure || !measure->isVBox()) {
+            score->insertMeasure(ElementType::VBOX, measure);
+            measure = score->first();
+            }
+
+      Q_ASSERT(measure && measure->isVBox());
 
       VBox* titleFramePart = toVBox(measure);
       titleFramePart->copyValues(titleFrameScore);
