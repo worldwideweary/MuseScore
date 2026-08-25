@@ -119,6 +119,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       // Option: Orientation Horizontal/Vertical
       tbMain->addSeparator();
       QComboBox* orientationBox = new QComboBox;
+      orientationBox->setToolTip(tr("View orientation"));
       orientationBox->addItem(tr("Horizontal"), int(PianoRollOrientation::HORIZONTAL));
       orientationBox->addItem(tr("Vertical"),   int(PianoRollOrientation::VERTICAL));
 
@@ -142,6 +143,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       // Option: Scope
       QComboBox* scopeBox = new QComboBox;
       scopeBox->addItem(tr("Staff"), int(PianoRollScope::STAFF));
+      scopeBox->setToolTip(tr("Displayed scope"));
       scopeBox->addItem(tr("Part"),  int(PianoRollScope::PART));
       scopeBox->addItem(tr("Score"),  int(PianoRollScope::SCORE));
 
@@ -174,6 +176,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       // Option: Voice coloring / Unselect preference coloring:
       QComboBox* coloringBox = new QComboBox;
+      coloringBox->setToolTip(tr("Coloring scheme"));
       coloringBox->addItem(tr("Voicing"),   int(Coloring::VOICING));
       coloringBox->addItem(tr("Singular"),  int(Coloring::STAFF));
       coloringBox->addItem(tr("Instrument"), int(Coloring::INSTRUMENT));
