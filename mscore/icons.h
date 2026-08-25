@@ -67,6 +67,7 @@ enum class Icons : short { Invalid_ICON = -1,
       noteTimewise_ICON,
       arrowsMoveToTop_ICON, arrowsMoveToBottom_ICON,
       pianorollEditor_ICON,
+      noteheadColor_ICON,
       voice1_ICON, voice2_ICON, voice3_ICON, voice4_ICON,
       ICONS
       };

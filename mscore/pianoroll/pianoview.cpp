@@ -75,7 +75,8 @@ const BarPattern PianoView::barPatterns[] = {
 
 QColor pianoRollNoteColor(const Note* note,
                           Coloring coloring,
-                          bool honorSelection)
+                          bool honorSelection,
+                          bool honorCustomColor)
       {
       if (!note)
             return QColor();
@@ -86,6 +87,13 @@ QColor pianoRollNoteColor(const Note* note,
                         ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
                         : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
                   }
+            }
+
+      if (honorCustomColor) {
+            const QColor color = note->color();
+
+            if (color != MScore::defaultColor)
+                  return color;
             }
 
       if (coloring == Coloring::VOICING) {
@@ -451,12 +459,12 @@ void PianoView::setColoring(Coloring c)
       }
 
 //---------------------------------------------------------
-//   getColoring
+//   setUseNoteColors
 //---------------------------------------------------------
 
-Coloring PianoView::getColoring() const
+void PianoView::setUseNoteColors(bool value)
       {
-      return _coloring;
+      _useNoteColors = value;
       }
 
 //---------------------------------------------------------
@@ -1197,7 +1205,7 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
                               : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_DRAG_COLOR);
                         }
                   else {
-                        noteColor = pianoRollNoteColor(note, _coloring, true);
+                        noteColor = pianoRollNoteColor(note, _coloring, true, _useNoteColors);
                         }
 
                   const bool ghostOriginal = _dragStarted && note->selected()

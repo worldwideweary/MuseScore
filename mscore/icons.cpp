@@ -178,6 +178,7 @@ static const char* iconNames[] = {
       "arrowsMoveToTop.svg",
       "arrowsMoveToBottom.svg",
       "keyboard-vertical.svg",
+      "note-coloring.svg",
       };
 
 //---------------------------------------------------------
