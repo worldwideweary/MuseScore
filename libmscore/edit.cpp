@@ -3277,7 +3277,7 @@ void Score::insertMeasure(ElementType type, MeasureBase* measure, bool createEmp
                               }
                         else {
                               for (ScoreElement*& m : *measure->links()) {
-                                    if (measure->score() == score) {
+                                    if (m->score() == score) {
                                           im = toMeasureBase(m);
                                           break;
                                           }
