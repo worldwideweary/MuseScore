@@ -210,6 +210,26 @@ PianorollEditor::PianorollEditor(QWidget* parent)
               applyColoring);
       // Call applyColoring after other constructions later:
 
+      QAction* useNoteColorsAction = new QAction(
+            *icons[int(Icons::noteheadColor_ICON)],
+            QString(),
+            this);
+
+      _useNoteColors = preferences.getBool(PREF_UI_PIANOROLL_USE_NOTE_COLORS);
+      useNoteColorsAction->setCheckable(true);
+      useNoteColorsAction->setChecked(_useNoteColors);
+      useNoteColorsAction->setToolTip(
+            tr("Honor user-defined note colors"));
+
+      connect(useNoteColorsAction,
+              &QAction::toggled,
+              this,
+              [this](bool checked) {
+                    setUseNoteColors(checked);
+                    restoreScoreViewFocus();
+                    });
+
+      tbMain->addAction(useNoteColorsAction);
 
       // Option: Show pitch names
       QAction* showPitchNamesAction = new QAction(
@@ -774,6 +794,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       tuplet->installEventFilter(this);
 
       applyColoring(coloringBox->currentIndex());
+      pianoView->setUseNoteColors(_useNoteColors);
+      pianoKbd->setUseNoteColors(_useNoteColors);
+      pianoLevels->setUseNoteColors(_useNoteColors);
 
       connect(pianoView->horizontalScrollBar(), SIGNAL(valueChanged(int)), hsb,      SLOT(setValue(int)));
 
@@ -1374,6 +1397,28 @@ void PianorollEditor::setColoring(Coloring c)
 
       update();
       restoreScoreViewFocus();
+      }
+
+//---------------------------------------------------------
+//   setUseNoteColors
+//---------------------------------------------------------
+
+void PianorollEditor::setUseNoteColors(bool value)
+      {
+      if (_useNoteColors == value)
+            return;
+
+      _useNoteColors = value;
+
+      preferences.setPreference(
+            PREF_UI_PIANOROLL_USE_NOTE_COLORS,
+            value);
+
+      pianoView->setUseNoteColors(value);
+      pianoKbd->setUseNoteColors(value);
+      pianoLevels->setUseNoteColors(value);
+
+      redraw();
       }
 
 //---------------------------------------------------------
