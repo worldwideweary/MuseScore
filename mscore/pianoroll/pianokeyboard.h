@@ -54,6 +54,7 @@ class PianoKeyboard : public QWidget {
       int curKeyPressed;
       QHash<int, const Note*> _playbackNotes;
       Coloring _coloring;
+      bool _useNoteColors { false };
       Staff* _staff { nullptr };
 
       virtual void paintEvent(QPaintEvent*);
@@ -81,6 +82,7 @@ class PianoKeyboard : public QWidget {
 
       void setPlaybackNotes(const QHash<int, const Note*>& notes);
       void setColoring(Coloring);
+      void setUseNoteColors(bool value);
       };
 
 

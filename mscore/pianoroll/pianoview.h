@@ -98,7 +98,7 @@ public:
       static const BarPattern barPatterns[];
       void setScope(PianoRollScope scope);
       void setColoring(Coloring);
-      Coloring getColoring() const;
+      void setUseNoteColors(bool);
 
       PianoRollScope getScope() { return _scope; }
       void centerSelectionTimeInView();
@@ -130,6 +130,7 @@ private:
       VerticalPitchLayout _verticalPitchLayout;
       PianoRollScope _scope;
       Coloring _coloring;
+      bool _useNoteColors { false };
 
       PianoRollOrientation _orientation;
       

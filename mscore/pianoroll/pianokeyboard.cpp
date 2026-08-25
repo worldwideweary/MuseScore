@@ -149,7 +149,7 @@ void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
 
             const Note* playbackNote = _playbackNotes.value(midiPitch, nullptr);
             if (playbackNote) {
-                  QColor color = pianoRollNoteColor(playbackNote, _coloring, false);
+                  QColor color = pianoRollNoteColor(playbackNote, _coloring, false, _useNoteColors);
                   p.setBrush(color);
                   }
             else
@@ -298,7 +298,7 @@ void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
 
             const Note* playbackNote = _playbackNotes.value(midiPitch, nullptr);
             if (playbackNote) {
-                  QColor color = pianoRollNoteColor(playbackNote, _coloring, false);
+                  QColor color = pianoRollNoteColor(playbackNote, _coloring, false, _useNoteColors);
                   p.setBrush(color);
                   }
             else
@@ -440,7 +440,7 @@ void PianoKeyboard::mousePressEvent(QMouseEvent* event)
       int pitch = curKeyPressed = offset / noteHeight;
       if (!pitchIsValid(pitch))
             pitch = -1;
-      
+
       uint modifiers = QGuiApplication::keyboardModifiers();
       bool bnCtrl = modifiers & Qt::ControlModifier;
       if (bnCtrl)
@@ -559,6 +559,15 @@ void PianoKeyboard::setColoring(Coloring c)
 
       _coloring = c;
       update();
+      }
+
+//---------------------------------------------------------
+//   setUseNoteColors
+//---------------------------------------------------------
+
+void PianoKeyboard::setUseNoteColors(bool value)
+      {
+      _useNoteColors = value;
       }
 
 //---------------------------------------------------------

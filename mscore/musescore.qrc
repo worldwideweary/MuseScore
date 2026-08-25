@@ -264,5 +264,6 @@
         <file>data/icons/document-export.svg</file>
         <file>data/icons/note-show-pitch.svg</file>
         <file>data/icons/keyboard-vertical.svg</file>
+        <file>data/icons/note-coloring.svg</file>
     </qresource>
 </RCC>

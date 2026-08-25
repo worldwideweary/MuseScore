@@ -58,7 +58,8 @@ class Note;
 
 QColor pianoRollNoteColor(const Note* note,
                           Coloring coloring,
-                          bool honorSelection);
+                          bool honorSelection,
+                          bool honorCustomColor);
 
 bool darkTheme();
 
