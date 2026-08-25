@@ -47,7 +47,7 @@ int qt_ntfs_permission_lookup;
 
 namespace Ms {
 
-static constexpr int WORKSPACE_UI_VERSION = 2;
+static constexpr int WORKSPACE_UI_VERSION = 3;
 
 bool WorkspacesManager::isWorkspacesListDirty = true;
 Workspace* WorkspacesManager::m_currentWorkspace = nullptr;
@@ -1125,6 +1125,20 @@ void Workspace::migrate(int uiVersion)
                                      "repeat",
                                      InsertPosition::AFTER);
                   mscore->populatePlaybackControls();
+                  }
+            }
+      if (uiVersion < 3) {
+            ensureMenuAction("menu-view",
+                             "toggle-piano-roll",
+                             "toggle-scorecmp-tool");
+
+            std::list<const char*>* entries = mscore->alternativeEntries();
+            if (entries) {
+                  ensureToolbarEntry(*entries,
+                                     "toggle-piano-roll",
+                                     "toggle-piano",
+                                     InsertPosition::AFTER);
+                  mscore->populateAlternativeOperations();
                   }
             }
       }
