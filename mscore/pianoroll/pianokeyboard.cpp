@@ -177,26 +177,28 @@ void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
 
                   p.drawRect(rect);
 
-                  if (preferences.getBool(PREF_UI_PIANO_SHOWPITCHHELP)
-                      && degree == 0
+                  if ((ds
+                       || (preferences.getBool(PREF_UI_PIANO_SHOWPITCHHELP)
+                           && degree == 0))
                       && noteHeight > fontSize + 2) {
+                        p.save();
+
+                        p.translate(rect.left() + 1,
+                                    rect.bottom() - 1);
+                        p.rotate(-90.0);
+
                         QRectF rectText(
-                              rect.x() + 1,
-                              rect.y(),
+                              0.0,
+                              0.0,
                               rect.height() - 2,
                               rect.width() - 2);
 
-                        QTransform xform = p.transform();
-                        p.rotate(90);
-
                         p.drawText(
                               rectText,
-                              ds
-                                    ? Qt::AlignLeft | Qt::AlignBottom
-                                    : Qt::AlignRight | Qt::AlignBottom,
+                              Qt::AlignLeft | Qt::AlignVCenter,
                               noteName);
 
-                        p.setTransform(xform);
+                        p.restore();
                         }
                   }
             else {
@@ -329,15 +331,26 @@ void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
                   p.drawRect(rect);
 
                   if (ds && noteHeight > fontSize + 2) {
-                        QRectF rectText = rect;
-                        rectText.setWidth(blackKeyLen);
-                        rectText.setHeight(noteHeight);
+                        p.save();
 
                         p.setPen(QPen(Qt::white));
+
+                        p.translate(rect.left() + 1,
+                                    rect.bottom() - 1);
+                        p.rotate(-90.0);
+
+                        QRectF rectText(
+                              0.0,
+                              0.0,
+                              rect.height() - 2,
+                              rect.width() - 2);
+
                         p.drawText(
                               rectText,
                               Qt::AlignLeft | Qt::AlignBottom,
                               noteName);
+
+                        p.restore();
                         }
                   }
             else {
