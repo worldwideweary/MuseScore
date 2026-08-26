@@ -50,6 +50,7 @@ enum class DragStyle : char {
       NOTE_LENGTH_END,
       DRAW_NOTE,
       CUT,
+      TIE,
       EVENT_ONTIME,
       EVENT_MOVE,
       EVENT_LENGTH,
@@ -152,6 +153,24 @@ private:
       QPointF _lastMousePos;
       QPointF _lastCutDragPos;
       bool _cutDragCommandActive { false };
+
+      struct TieDragTarget {
+            Fraction tick;
+            int track;
+            int pitch;
+
+            bool operator==(const TieDragTarget& other) const
+                  {
+                  return tick == other.tick
+                        && track == other.track
+                        && pitch == other.pitch;
+                  }
+            };
+
+      QVector<TieDragTarget> _tieDragTargets;
+      QPointF _lastTieDragPos;
+      bool _tieDragCommandActive { false };
+
       QPointF _mouseDownScreenPos;
       QPointF _lastMouseScreenPos;
       QPointF _viewportFocus;
@@ -224,7 +243,9 @@ private:
       bool cutChordAt(const Fraction& tick, int track);
       bool cutChordDragSegment(const QPointF& from, const QPointF& to);
       void toggleTie(const QPointF& pos);
-      void toggleTie(Note*);
+      bool toggleTie(Note*);
+      Note* tieNoteAt(const QPointF& pos);
+      bool toggleTieDragSegment(const QPointF& from, const QPointF& to);
       void compactMeasures(QList<Measure*> measures);
       void dragSelectionNoteGroup();
       void finishNoteGroupDrag(QMouseEvent* event);

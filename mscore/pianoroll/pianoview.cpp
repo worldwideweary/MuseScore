@@ -2464,6 +2464,10 @@ void PianoView::mousePressEvent(QMouseEvent* event)
             _mouseDownPos = mapToScene(event->pos());
             _lastMousePos = _mouseDownPos;
             _lastCutDragPos = _mouseDownPos;
+            _lastTieDragPos = _mouseDownPos;
+
+            _tieDragTargets.clear();
+
             _selectionHandledOnPress = false;
 
             if (selectTool() || eventsAdjustTool()) {
@@ -2518,6 +2522,18 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                         _staff->score()->endCmd();
                         _cutDragCommandActive = false;
                         }
+                  }
+            else if (_dragStyle == DragStyle::TIE) {
+                  const QPointF releasePos = mapToScene(event->pos());
+
+                  toggleTieDragSegment(_lastTieDragPos, releasePos);
+
+                  if (_tieDragCommandActive) {
+                        _staff->score()->endCmd();
+                        _tieDragCommandActive = false;
+                        }
+
+                  updateNotes();
                   }
             else if (_dragStyle == DragStyle::SELECTION_RECT) {
                   //Update selection
@@ -2649,6 +2665,9 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
       _dragStyle = DragStyle::NONE;
       _mouseDown = false;
       _cutDragCommandActive = false;
+      _tieDragCommandActive = false;
+      _tieDragTargets.clear();
+
       scene()->update();
       }
 
@@ -2824,6 +2843,17 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                                     _cutDragCommandActive = true;
                                     }
                               }
+                        else if (_editNoteTool == PianoRollEditTool::TIE) {
+                              _dragStyle = DragStyle::TIE;
+
+                              _tieDragTargets.clear();
+                              _lastTieDragPos = _mouseDownPos;
+
+                              if (!_tieDragCommandActive) {
+                                    _staff->score()->startCmd();
+                                    _tieDragCommandActive = true;
+                                    }
+                              }
                         else {
                               PianoItem* pi = pickNote(tick, mouseDownPitch);
                               if (pi && (_editNoteTool == PianoRollEditTool::SELECT || _editNoteTool == PianoRollEditTool::ADD)) {
@@ -2935,7 +2965,6 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                         case ADD:
                         case EVENT_ADJUST:
                         case APPEND_NOTE:
-                        case TIE:
                               scene()->update();
                               break;
 
@@ -2944,6 +2973,12 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                                     updateNotes();
 
                               _lastCutDragPos = _lastMousePos;
+                              scene()->update();
+                              break;
+
+                        case TIE:
+                              toggleTieDragSegment(_lastTieDragPos, _lastMousePos);
+                              _lastTieDragPos = _lastMousePos;
                               scene()->update();
                               break;
 
@@ -3364,18 +3399,22 @@ void PianoView::insertNote(int modifiers)
 //   toggleTie
 //---------------------------------------------------------
 
-void PianoView::toggleTie(const QPointF& pos) {
+void PianoView::toggleTie(const QPointF& pos)
+      {
+      if (!_staff)
+            return;
+
+      Note* note = tieNoteAt(pos);
+      if (!note)
+            return;
+
       Score* score = _staff->score();
 
-      int pickTick = pixelXToTick((int)pos.x());
-      int pickPitch = pixelYToPitch(pos.y());
-      PianoItem *pi = pickNote(pickTick, pickPitch);
+      score->startCmd();
+      toggleTie(note);
+      score->endCmd();
 
-      if (pi) {
-            score->startCmd();
-            toggleTie(pi->note());
-            score->endCmd();
-            }
+      updateNotes();
       }
 
 
@@ -3383,27 +3422,163 @@ void PianoView::toggleTie(const QPointF& pos) {
 //   toggleTie
 //---------------------------------------------------------
 
-void PianoView::toggleTie(Note* note) {
-      //Based on Score::cmdToggleTie()
+bool PianoView::toggleTie(Note* note)
+      {
+      if (!note || !_staff)
+            return false;
 
+      // Based on Score::cmdToggleTie()
       Score* score = _staff->score();
 
       Tie* tie = note->tieFor();
-      if (tie)
-            score->undoRemoveElement(tie);
-      else {
-            Note* note2 = searchTieNote(note);
 
-            if (note2) {
-                  tie = new Tie(score);
-                  tie->setStartNote(note);
-                  tie->setEndNote(note2);
-                  tie->setTrack(note->track());
-                  tie->setTick(note->chord()->segment()->tick());
-                  tie->setTicks(note2->chord()->segment()->tick() - note->chord()->segment()->tick());
-                  score->undoAddElement(tie);
+      if (tie) {
+            score->undoRemoveElement(tie);
+            return true;
+            }
+
+      Note* note2 = searchTieNote(note);
+      if (!note2)
+            return false;
+
+      tie = new Tie(score);
+      tie->setStartNote(note);
+      tie->setEndNote(note2);
+      tie->setTrack(note->track());
+      tie->setTick(note->chord()->segment()->tick());
+      tie->setTicks(
+            note2->chord()->segment()->tick()
+            - note->chord()->segment()->tick());
+
+      score->undoAddElement(tie);
+      return true;
+      }
+
+//---------------------------------------------------------
+//   tieNoteAt
+//---------------------------------------------------------
+
+Note* PianoView::tieNoteAt(const QPointF& pos)
+      {
+      if (!_staff)
+            return nullptr;
+
+      const int pickTick = scenePosToTick(pos);
+      const int pickPitch = scenePosToPitch(pos);
+
+      if (!pitchIsValid(pickPitch))
+            return nullptr;
+
+      //
+      // Use the visible PianoItem only to determine which track/voice
+      // the pointer is over.
+      //
+      PianoItem* item = pickNote(pickTick, pickPitch);
+      if (!item || !item->note())
+            return nullptr;
+
+      const int track = item->note()->track();
+      Score* score = _staff->score();
+
+      //
+      // Resolve the actual underlying ChordRest at this time.
+      // This matters for tied chains because continuation notes are
+      // omitted from _noteList and visually represented by the
+      // preceding PianoItem.
+      //
+      ChordRest* cr = score->findCR(
+            Fraction::fromTicks(pickTick),
+            track);
+
+      if (!cr || !cr->isChord())
+            return nullptr;
+
+      Chord* chord = toChord(cr);
+
+      //
+      // findCR() returns the most recent CR <= pickTick, so make sure
+      // the pointer is still inside this chord's duration.
+      //
+      if (Fraction::fromTicks(pickTick)
+            >= chord->tick() + chord->actualTicks())
+            return nullptr;
+
+      for (Note* note : chord->notes()) {
+            if (note && note->pitch() == pickPitch)
+                  return note;
+            }
+
+      return nullptr;
+      }
+
+//---------------------------------------------------------
+//   toggleTieDragSegment
+//---------------------------------------------------------
+
+bool PianoView::toggleTieDragSegment(const QPointF& from,
+                                     const QPointF& to)
+      {
+      if (!_staff)
+            return false;
+
+      bool changed = false;
+
+      const qreal dx = to.x() - from.x();
+      const qreal dy = to.y() - from.y();
+
+      const int steps = qMax(
+            1,
+            int(ceil(qMax(qAbs(dx), qAbs(dy)))));
+
+      for (int i = 0; i <= steps; ++i) {
+            const qreal amount = qreal(i) / steps;
+
+            const QPointF pos(
+                  from.x() + dx * amount,
+                  from.y() + dy * amount);
+
+            Note* note = tieNoteAt(pos);
+            if (!note)
+                  continue;
+
+            const TieDragTarget target {
+                  note->chord()->tick(),
+                  note->track(),
+                  note->pitch()
+                  };
+
+            bool alreadyHandled = false;
+
+            for (const TieDragTarget& handled : _tieDragTargets) {
+                  if (handled == target) {
+                        alreadyHandled = true;
+                        break;
+                        }
+                  }
+
+            if (alreadyHandled)
+                  continue;
+
+            //
+            // Record it before modifying the score so moving backward
+            // across this note cannot toggle it again.
+            //
+            _tieDragTargets.append(target);
+
+            if (toggleTie(note)) {
+                  changed = true;
+
+                  //
+                  // Ties affect which PianoItems are represented:
+                  // adding one can hide a continuation; removing one
+                  // can expose it. Rebuild immediately so the next
+                  // sampled position resolves correctly.
+                  //
+                  updateNotes();
                   }
             }
+
+      return changed;
       }
 
 //---------------------------------------------------------
