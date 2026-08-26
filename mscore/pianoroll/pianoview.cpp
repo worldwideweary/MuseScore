@@ -2656,7 +2656,10 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                         appendNoteToChord(_mouseDownPos);
                         break;
                   case CUT:
-                        cutChord(_mouseDownPos);
+                        if (bnShift)
+                              toggleTie(_mouseDownPos);
+                        else
+                              cutChord(_mouseDownPos);
                         break;
                   case TIE:
                         toggleTie(_mouseDownPos);
@@ -2843,11 +2846,24 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                               return;
 
                         if (_editNoteTool == PianoRollEditTool::CUT) {
-                              _dragStyle = DragStyle::CUT;
-                              _lastCutDragPos = _mouseDownPos;
+                              if (event->modifiers() & Qt::ShiftModifier) {
+                                    //
+                                    // Shift+Cut uses the note-specific Toggle Tie gesture.
+                                    //
+                                    _dragStyle = DragStyle::TIE;
+                                    _tieDragTargets.clear();
+                                    _lastTieDragPos = _mouseDownPos;
 
-                              _cutDragUndoStartIdx =
-                                    _staff->score()->undoStack()->getCurIdx();
+                                    _tieDragUndoStartIdx =
+                                          _staff->score()->undoStack()->getCurIdx();
+                                    }
+                              else {
+                                    _dragStyle = DragStyle::CUT;
+                                    _lastCutDragPos = _mouseDownPos;
+
+                                    _cutDragUndoStartIdx =
+                                          _staff->score()->undoStack()->getCurIdx();
+                                    }
                               }
                         else if (_editNoteTool == PianoRollEditTool::TIE) {
                               _dragStyle = DragStyle::TIE;
@@ -2964,35 +2980,41 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                   verticalScrollBar()->setValue(qMax(py - rect.height() / 2, 0.0));
                   }
             else {
-                  switch (_editNoteTool) {
-                        case SELECT:
-                        case ADD:
-                        case EVENT_ADJUST:
-                        case APPEND_NOTE:
-                              scene()->update();
-                              break;
+                  if (_dragStyle == DragStyle::CUT) {
+                        if (cutChordDragSegment(
+                              _lastCutDragPos,
+                              _lastMousePos)) {
+                              updateNotes();
+                              }
 
-                        case CUT:
-                              if (cutChordDragSegment(_lastCutDragPos, _lastMousePos))
-                                    updateNotes();
+                        _lastCutDragPos = _lastMousePos;
+                        scene()->update();
+                        }
+                  else if (_dragStyle == DragStyle::TIE) {
+                        toggleTieDragSegment(
+                              _lastTieDragPos,
+                              _lastMousePos);
 
-                              _lastCutDragPos = _lastMousePos;
-                              scene()->update();
-                              break;
+                        _lastTieDragPos = _lastMousePos;
+                        scene()->update();
+                        }
+                  else {
+                        switch (_editNoteTool) {
+                              case SELECT:
+                              case ADD:
+                              case EVENT_ADJUST:
+                              case APPEND_NOTE:
+                                    scene()->update();
+                                    break;
 
-                        case TIE:
-                              toggleTieDragSegment(_lastTieDragPos, _lastMousePos);
-                              _lastTieDragPos = _lastMousePos;
-                              scene()->update();
-                              break;
+                              case ERASE:
+                                    eraseNote(_lastMousePos);
+                                    scene()->update();
+                                    break;
 
-                        case ERASE:
-                              eraseNote(_lastMousePos);
-                              scene()->update();
-                              break;
-
-                        default:
-                              break;
+                              default:
+                                    break;
+                              }
                         }
                   }
             }
@@ -3608,8 +3630,11 @@ void PianoView::cutChord(const QPointF& pos)
       const Fraction insertPosition = roundToNearestBeat(pickTick);
 
       score->startCmd();
-      cutChordAt(insertPosition, track);
+      const bool changed = cutChordAt(insertPosition, track);
       score->endCmd();
+
+      if (changed)
+            updateNotes();
       }
 
 //---------------------------------------------------------
@@ -3623,21 +3648,73 @@ bool PianoView::cutChordAt(const Fraction& insertPosition, int track)
 
       Score* score = _staff->score();
 
+      //
+      // If a ChordRest already begins exactly here, there is nothing
+      // left to split. In Cut mode, treat an incoming tie at this
+      // existing boundary as the thing to cut instead.
+      //
+      ChordRest* cr = score->findCR(insertPosition, track);
+
+      if (cr && cr->tick() == insertPosition)
+            return removeTiesAtBoundary(insertPosition, track);
+
       Segment* seg = score->tick2segment(insertPosition);
       score->expandVoice(seg, track);
 
-      ChordRest* cr = score->findCR(insertPosition, track);
+      cr = score->findCR(insertPosition, track);
 
       if (!cr || cr->tuplet())
             return false;
 
+      //
+      // expandVoice() may itself have produced an exact boundary.
+      //
       if (insertPosition == cr->tick())
-            return false;
+            return removeTiesAtBoundary(insertPosition, track);
 
       ChordRest* cr0 = nullptr;
       ChordRest* cr1 = nullptr;
 
       return cutChordRest(cr, track, insertPosition, cr0, cr1);
+      }
+
+//---------------------------------------------------------
+//   removeTiesAtBoundary
+//---------------------------------------------------------
+
+bool PianoView::removeTiesAtBoundary(const Fraction& tick, int track)
+      {
+      if (!_staff)
+            return false;
+
+      Score* score = _staff->score();
+      ChordRest* cr = score->findCR(tick, track);
+
+      if (!cr
+          || cr->tick() != tick
+          || !cr->isChord())
+            return false;
+
+      bool changed = false;
+      Chord* chord = toChord(cr);
+
+      //
+      // Cut is voice-wide, so remove every tie entering this chord
+      // on this track rather than only the pitch under the mouse.
+      //
+      for (Note* note : chord->notes()) {
+            if (!note)
+                  continue;
+
+            Tie* tie = note->tieBack();
+            if (!tie)
+                  continue;
+
+            score->undoRemoveElement(tie);
+            changed = true;
+            }
+
+      return changed;
       }
 
 //---------------------------------------------------------
