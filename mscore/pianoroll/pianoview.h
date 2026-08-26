@@ -241,6 +241,7 @@ private:
       void appendNoteToChord(const QPointF& pos);
       void cutChord(const QPointF& pos);
       bool cutChordAt(const Fraction& tick, int track);
+      bool removeTiesAtBoundary(const Fraction& tick, int track);
       bool cutChordDragSegment(const QPointF& from, const QPointF& to);
       void toggleTie(const QPointF& pos);
       bool toggleTie(Note*);
