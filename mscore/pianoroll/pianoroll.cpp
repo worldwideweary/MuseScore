@@ -334,7 +334,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             };
 
       tbNoteLen = new QToolBar("Toolbar Note Length", this);
-      QButtonGroup* bngrpNoteLen = new QButtonGroup();
+      bngrpNoteLen = new QButtonGroup(this);
       tbNoteLen->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbNoteLen->setIconSize(toolbarIconSize);
 
@@ -345,8 +345,16 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             bnLen->setIcon(icon);
             bnLen->setIconSize(toolbarIconSize);
             bnLen->setCheckable(true);
+
             int length = p->_measureFrac;
-            connect(bnLen, &QToolButton::clicked, this, [=, this](){this->setEditNoteLength(length);});
+            bnLen->setProperty("measureFrac", length);
+
+            connect(bnLen,
+                    &QToolButton::clicked,
+                    this,
+                    [=, this]() {
+                          setEditNoteLength(length);
+                          });
 
             if (p->_selected)
                   bnLen->setChecked(true);
@@ -357,7 +365,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       //----
 
       tbDots = new QToolBar("Toolbar Dots", this);
-      QButtonGroup* bngrpNoteDot = new QButtonGroup();
+      bngrpNoteDot = new QButtonGroup(this);
       tbDots->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbDots->setIconSize(toolbarIconSize);
 
@@ -383,8 +391,16 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             bn->setIcon(icon);
             bn->setIconSize(toolbarIconSize);
             bn->setCheckable(true);
+
             int length = p->_len;
-            connect(bn, &QToolButton::clicked, this, [=, this](){this->setEditNoteDots(length, bn);});
+            bn->setProperty("dots", length);
+
+            connect(bn,
+                    &QToolButton::clicked,
+                    this,
+                    [=, this]() {
+                          setEditNoteDots(length, bn);
+                          });
 
             if (p->_selected)
                   bn->setChecked(true);
@@ -785,6 +801,11 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             updateSelection();
             });
 
+      connect(pianoView,
+              &PianoView::editNoteLengthChanged,
+              this,
+              &PianorollEditor::updateNoteLengthControls);
+
       velocity->installEventFilter(this);
       pitch->installEventFilter(this);
       onTime->installEventFilter(this);
@@ -915,7 +936,11 @@ PianorollEditor::~PianorollEditor()
 
 void PianorollEditor::setEditNoteLength(int len)
       {
-            pianoView->setEditNoteLength(Fraction::fromTicks(pow(2, len + 2) * DIVISION));
+      pianoView->setEditNoteLength(
+            Fraction::fromTicks(pow(2, len + 2) * DIVISION));
+
+      if (tbDots)
+            tbDots->setEnabled(true);
       }
 
 //---------------------------------------------------------
@@ -941,6 +966,101 @@ void PianorollEditor::setEditNoteDots(int value, QToolButton* bn)
             }
       else
             pianoView->setEditNoteDots(value);
+      }
+
+//---------------------------------------------------------
+//   updateNoteLengthControls
+//---------------------------------------------------------
+
+void PianorollEditor::updateNoteLengthControls(const Fraction& duration)
+      {
+      if (!bngrpNoteLen || !bngrpNoteDot)
+            return;
+
+      QToolButton* lengthButton = nullptr;
+      QToolButton* dotButton = nullptr;
+      int matchedMeasureFrac = 0;
+      int matchedDots = 0;
+
+      for (QAbstractButton* button : bngrpNoteLen->buttons()) {
+            QToolButton* toolButton = qobject_cast<QToolButton*>(button);
+            if (!toolButton)
+                  continue;
+
+            const int measureFrac =
+                  toolButton->property("measureFrac").toInt();
+
+            const Fraction base =
+                  Fraction::fromTicks(
+                        pow(2, measureFrac + 2) * DIVISION);
+
+            for (int dots = 0; dots <= 4; ++dots) {
+                  Fraction value = base;
+
+                  if (dots > 0) {
+                        const int denominator = 1 << dots;
+                        const int numerator =
+                              (1 << (dots + 1)) - 1;
+
+                        value *= Fraction(numerator, denominator);
+                        }
+
+                  if (value == duration) {
+                        lengthButton = toolButton;
+                        matchedMeasureFrac = measureFrac;
+                        matchedDots = dots;
+                        break;
+                        }
+                  }
+
+            if (lengthButton)
+                  break;
+            }
+
+      //
+      // Temporarily disable exclusivity so a custom duration can leave
+      // all duration and dot buttons unchecked.
+      //
+      bngrpNoteLen->setExclusive(false);
+      for (QAbstractButton* button : bngrpNoteLen->buttons())
+            button->setChecked(false);
+      bngrpNoteLen->setExclusive(true);
+
+      bngrpNoteDot->setExclusive(false);
+      for (QAbstractButton* button : bngrpNoteDot->buttons())
+            button->setChecked(false);
+      bngrpNoteDot->setExclusive(true);
+
+      if (!lengthButton) {
+            //
+            // Not representable by the duration/dot controls.
+            // Keep the exact dragged value as a custom duration.
+            //
+            pianoView->setEditNoteLength(duration);
+            pianoView->setEditNoteDots(0);
+            tbDots->setEnabled(false);
+            return;
+            }
+
+      lengthButton->setChecked(true);
+
+      if (matchedDots > 0) {
+            for (QAbstractButton* button : bngrpNoteDot->buttons()) {
+                  if (button->property("dots").toInt() == matchedDots) {
+                        dotButton = qobject_cast<QToolButton*>(button);
+                        break;
+                        }
+                  }
+
+            if (dotButton)
+                  dotButton->setChecked(true);
+            }
+
+      //
+      // Store the decoded base duration and dots in PianoView.
+      //
+      setEditNoteLength(matchedMeasureFrac);
+      pianoView->setEditNoteDots(matchedDots);
       }
 
 //---------------------------------------------------------
