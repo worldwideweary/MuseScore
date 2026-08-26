@@ -3463,7 +3463,7 @@ bool PianoView::toggleTie(Note* note)
             return true;
             }
 
-      Note* note2 = searchTieNote(note);
+      Note* note2 = score->findOrCreateTieTarget(note);
       if (!note2)
             return false;
 
