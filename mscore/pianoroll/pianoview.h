@@ -49,6 +49,7 @@ enum class DragStyle : char {
       NOTE_LENGTH_START,
       NOTE_LENGTH_END,
       DRAW_NOTE,
+      CUT,
       EVENT_ONTIME,
       EVENT_MOVE,
       EVENT_LENGTH,
@@ -149,6 +150,8 @@ private:
       QString _dragNoteCache;
       QPointF _mouseDownPos;
       QPointF _lastMousePos;
+      QPointF _lastCutDragPos;
+      bool _cutDragCommandActive { false };
       QPointF _mouseDownScreenPos;
       QPointF _lastMouseScreenPos;
       QPointF _viewportFocus;
@@ -218,6 +221,8 @@ private:
       void eraseNote(const QPointF& pos);
       void appendNoteToChord(const QPointF& pos);
       void cutChord(const QPointF& pos);
+      bool cutChordAt(const Fraction& tick, int track);
+      bool cutChordDragSegment(const QPointF& from, const QPointF& to);
       void toggleTie(const QPointF& pos);
       void toggleTie(Note*);
       void compactMeasures(QList<Measure*> measures);

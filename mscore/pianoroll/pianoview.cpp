@@ -2463,6 +2463,7 @@ void PianoView::mousePressEvent(QMouseEvent* event)
             _mouseDownScreenPos = event->pos();
             _mouseDownPos = mapToScene(event->pos());
             _lastMousePos = _mouseDownPos;
+            _lastCutDragPos = _mouseDownPos;
             _selectionHandledOnPress = false;
 
             if (selectTool() || eventsAdjustTool()) {
@@ -2507,7 +2508,18 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                                        : (bnCtrl ? NoteSelectType::ADD : NoteSelectType::REPLACE);
 
       if (_dragStarted) {
-            if (_dragStyle == DragStyle::SELECTION_RECT) {
+            if (_dragStyle == DragStyle::CUT) {
+                  const QPointF releasePos = mapToScene(event->pos());
+
+                  if (cutChordDragSegment(_lastCutDragPos, releasePos))
+                        updateNotes();
+
+                  if (_cutDragCommandActive) {
+                        _staff->score()->endCmd();
+                        _cutDragCommandActive = false;
+                        }
+                  }
+            else if (_dragStyle == DragStyle::SELECTION_RECT) {
                   //Update selection
                   qreal minX = qMin(_mouseDownPos.x(), _lastMousePos.x());
                   qreal minY = qMin(_mouseDownPos.y(), _lastMousePos.y());
@@ -2636,6 +2648,7 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
       _selectionHandledOnPress = false;
       _dragStyle = DragStyle::NONE;
       _mouseDown = false;
+      _cutDragCommandActive = false;
       scene()->update();
       }
 
@@ -2803,94 +2816,104 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                         if (mouseDownPitch < 0)
                               return;
 
-                        PianoItem* pi = pickNote(tick, mouseDownPitch);
-                        if (pi && (_editNoteTool == PianoRollEditTool::SELECT || _editNoteTool == PianoRollEditTool::ADD)) {
-                              if (!pi->note()->selected()) {
-                                    selectNotes(tick, tick, mouseDownPitch, mouseDownPitch, NoteSelectType::REPLACE);
+                        if (_editNoteTool == PianoRollEditTool::CUT) {
+                              _dragStyle = DragStyle::CUT;
 
-                                    // Selection updating may rebuild _noteList
-                                    pi = pickNote(tick, mouseDownPitch);
-                                    if (!pi) {
-                                          _dragStyle = DragStyle::NONE;
-                                          return;
+                              if (!_cutDragCommandActive) {
+                                    _staff->score()->startCmd();
+                                    _cutDragCommandActive = true;
+                                    }
+                              }
+                        else {
+                              PianoItem* pi = pickNote(tick, mouseDownPitch);
+                              if (pi && (_editNoteTool == PianoRollEditTool::SELECT || _editNoteTool == PianoRollEditTool::ADD)) {
+                                    if (!pi->note()->selected()) {
+                                          selectNotes(tick, tick, mouseDownPitch, mouseDownPitch, NoteSelectType::REPLACE);
+
+                                          // Selection updating may rebuild _noteList
+                                          pi = pickNote(tick, mouseDownPitch);
+                                          if (!pi) {
+                                                _dragStyle = DragStyle::NONE;
+                                                return;
+                                                }
+                                          }
+
+                                    QRect bounds = boundingRect(pi->note(), false);
+
+                                    if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                                          if (_mouseDownPos.x() <= bounds.left() + _dragNoteLengthMargin)
+                                                _dragStyle = DragStyle::NOTE_LENGTH_START;
+                                          else if (_mouseDownPos.x() >= bounds.right() - _dragNoteLengthMargin)
+                                                _dragStyle = DragStyle::NOTE_LENGTH_END;
+                                          else
+                                                _dragStyle = DragStyle::NOTE_POSITION;
+                                          }
+                                    else {
+                                          //
+                                          // Vertical time is reversed:
+                                          // top    = note end
+                                          // bottom = note start
+                                          //
+                                          if (_mouseDownPos.y() >= bounds.bottom() - _dragNoteLengthMargin)
+                                                _dragStyle = DragStyle::NOTE_LENGTH_START;
+                                          else if (_mouseDownPos.y() <= bounds.top() + _dragNoteLengthMargin)
+                                                _dragStyle = DragStyle::NOTE_LENGTH_END;
+                                          else
+                                                _dragStyle = DragStyle::NOTE_POSITION;
+                                          }
+
+                                    _dragStartPitch = mouseDownPitch;
+                                    _dragStartTick = pi->note()->tick();
+                                    _dragEndTick = _dragStartTick + pi->note()->chord()->ticks();
+                                    _dragNoteCache = serializeSelectedNotes();
+                                    }
+                              else if (pi && _editNoteTool == PianoRollEditTool::EVENT_ADJUST) {
+                                    if (!pi->note()->selected()) {
+                                          selectNotes(tick, tick, mouseDownPitch, mouseDownPitch, NoteSelectType::REPLACE);
+
+                                          // selectNotes() can cause PianoRollEditor::updateAll,
+                                          // which rebuilds _noteList and invalidates the PianoItem
+                                          // returned by pickNote() above
+                                          pi = pickNote(tick, mouseDownPitch);
+                                          if (!pi) {
+                                                _dragStyle = DragStyle::NONE;
+                                                return;
+                                                }
+                                          }
+
+                                    QRect bounds = boundingRect(pi->note(), true);
+
+                                    if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                                          if (_mouseDownPos.x() <= bounds.left() + _dragNoteLengthMargin)
+                                                _dragStyle = DragStyle::EVENT_ONTIME;
+                                          else if (_mouseDownPos.x() >= bounds.right() - _dragNoteLengthMargin)
+                                                _dragStyle = DragStyle::EVENT_LENGTH;
+                                          else
+                                                _dragStyle = DragStyle::EVENT_MOVE;
+                                          }
+                                    else {
+                                          //
+                                          // Vertical:
+                                          // bottom = event on-time
+                                          // top    = event end / length
+                                          //
+                                          if (_mouseDownPos.y() >= bounds.bottom() - _dragNoteLengthMargin)
+                                                _dragStyle = DragStyle::EVENT_ONTIME;
+                                          else if (_mouseDownPos.y() <= bounds.top() + _dragNoteLengthMargin)
+                                                _dragStyle = DragStyle::EVENT_LENGTH;
+                                          else
+                                                _dragStyle = DragStyle::EVENT_MOVE;
                                           }
                                     }
-
-                              QRect bounds = boundingRect(pi->note(), false);
-
-                              if (_orientation == PianoRollOrientation::HORIZONTAL) {
-                                    if (_mouseDownPos.x() <= bounds.left() + _dragNoteLengthMargin)
-                                          _dragStyle = DragStyle::NOTE_LENGTH_START;
-                                    else if (_mouseDownPos.x() >= bounds.right() - _dragNoteLengthMargin)
-                                          _dragStyle = DragStyle::NOTE_LENGTH_END;
-                                    else
-                                          _dragStyle = DragStyle::NOTE_POSITION;
+                              else if (!pi && selectionRectAllowed()) {
+                                    _dragStyle = DragStyle::SELECTION_RECT;
                                     }
-                              else {
-                                    //
-                                    // Vertical time is reversed:
-                                    // top    = note end
-                                    // bottom = note start
-                                    //
-                                    if (_mouseDownPos.y() >= bounds.bottom() - _dragNoteLengthMargin)
-                                          _dragStyle = DragStyle::NOTE_LENGTH_START;
-                                    else if (_mouseDownPos.y() <= bounds.top() + _dragNoteLengthMargin)
-                                          _dragStyle = DragStyle::NOTE_LENGTH_END;
-                                    else
-                                          _dragStyle = DragStyle::NOTE_POSITION;
+                              else if (!pi && _editNoteTool == PianoRollEditTool::ADD) {
+                                    _dragStyle = DragStyle::DRAW_NOTE;
                                     }
-
-                              _dragStartPitch = mouseDownPitch;
-                              _dragStartTick = pi->note()->tick();
-                              _dragEndTick = _dragStartTick + pi->note()->chord()->ticks();
-                              _dragNoteCache = serializeSelectedNotes();
+                              else
+                                    _dragStyle = DragStyle::NONE;
                               }
-                        else if (pi && _editNoteTool == PianoRollEditTool::EVENT_ADJUST) {
-                              if (!pi->note()->selected()) {
-                                    selectNotes(tick, tick, mouseDownPitch, mouseDownPitch, NoteSelectType::REPLACE);
-
-                                    // selectNotes() can cause PianoRollEditor::updateAll,
-                                    // which rebuilds _noteList and invalidates the PianoItem
-                                    // returned by pickNote() above
-                                    pi = pickNote(tick, mouseDownPitch);
-                                    if (!pi) {
-                                          _dragStyle = DragStyle::NONE;
-                                          return;
-                                          }
-                                    }
-
-                              QRect bounds = boundingRect(pi->note(), true);
-
-                              if (_orientation == PianoRollOrientation::HORIZONTAL) {
-                                    if (_mouseDownPos.x() <= bounds.left() + _dragNoteLengthMargin)
-                                          _dragStyle = DragStyle::EVENT_ONTIME;
-                                    else if (_mouseDownPos.x() >= bounds.right() - _dragNoteLengthMargin)
-                                          _dragStyle = DragStyle::EVENT_LENGTH;
-                                    else
-                                          _dragStyle = DragStyle::EVENT_MOVE;
-                                    }
-                              else {
-                                    //
-                                    // Vertical:
-                                    // bottom = event on-time
-                                    // top    = event end / length
-                                    //
-                                    if (_mouseDownPos.y() >= bounds.bottom() - _dragNoteLengthMargin)
-                                          _dragStyle = DragStyle::EVENT_ONTIME;
-                                    else if (_mouseDownPos.y() <= bounds.top() + _dragNoteLengthMargin)
-                                          _dragStyle = DragStyle::EVENT_LENGTH;
-                                    else
-                                          _dragStyle = DragStyle::EVENT_MOVE;
-                                    }
-                              }
-                        else if (!pi && selectionRectAllowed()) {
-                              _dragStyle = DragStyle::SELECTION_RECT;
-                              }
-                        else if (!pi && _editNoteTool == PianoRollEditTool::ADD) {
-                              _dragStyle = DragStyle::DRAW_NOTE;
-                              }
-                        else
-                              _dragStyle = DragStyle::NONE;
                         }
                   }
             }
@@ -2912,14 +2935,23 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                         case ADD:
                         case EVENT_ADJUST:
                         case APPEND_NOTE:
-                        case CUT:
                         case TIE:
                               scene()->update();
                               break;
+
+                        case CUT:
+                              if (cutChordDragSegment(_lastCutDragPos, _lastMousePos))
+                                    updateNotes();
+
+                              _lastCutDragPos = _lastMousePos;
+                              scene()->update();
+                              break;
+
                         case ERASE:
                               eraseNote(_lastMousePos);
                               scene()->update();
                               break;
+
                         default:
                               break;
                         }
@@ -3378,37 +3410,117 @@ void PianoView::toggleTie(Note* note) {
 //   cutChord
 //---------------------------------------------------------
 
-void PianoView::cutChord(const QPointF& pos) {
+void PianoView::cutChord(const QPointF& pos)
+      {
+      if (!_staff || _tuplet != 1)
+            return;
+
       Score* score = _staff->score();
 
-      int pickTick = pixelXToTick((int)pos.x());
-      int pickPitch = pixelYToPitch(pos.y());
-      PianoItem *pn = pickNote(pickTick, pickPitch);
+      const int pickTick = scenePosToTick(pos);
+      const int pickPitch = scenePosToPitch(pos);
 
-      int voice = pn ? pn->note()->voice() : _editNoteVoice;
+      if (!pitchIsValid(pickPitch))
+            return;
 
-      //Find best chord to add to
-      int track = _staff->idx() * VOICES + voice;
+      PianoItem* pn = pickNote(pickTick, pickPitch);
+      const int voice = pn ? pn->note()->voice() : _editNoteVoice;
+      const int track = _staff->idx() * VOICES + voice;
 
-      Fraction insertPosition = roundToNearestBeat(pickTick);
+      const Fraction insertPosition = roundToNearestBeat(pickTick);
+
+      score->startCmd();
+      cutChordAt(insertPosition, track);
+      score->endCmd();
+      }
+
+//---------------------------------------------------------
+//   cutChordAt
+//---------------------------------------------------------
+
+bool PianoView::cutChordAt(const Fraction& insertPosition, int track)
+      {
+      if (!_staff || _tuplet != 1)
+            return false;
+
+      Score* score = _staff->score();
 
       Segment* seg = score->tick2segment(insertPosition);
       score->expandVoice(seg, track);
 
-      ChordRest* e = score->findCR(insertPosition, track);
-      if (e && !e->tuplet() && _tuplet == 1) {
-            score->startCmd();
-            Fraction startTick = e->tick();
+      ChordRest* cr = score->findCR(insertPosition, track);
 
-            if (insertPosition != startTick) {
-                  ChordRest* cr0 = nullptr;
-                  ChordRest* cr1 = nullptr;
-                  cutChordRest(e, track, insertPosition, cr0, cr1);
-                  }
-            score->endCmd();
-            }
+      if (!cr || cr->tuplet())
+            return false;
+
+      if (insertPosition == cr->tick())
+            return false;
+
+      ChordRest* cr0 = nullptr;
+      ChordRest* cr1 = nullptr;
+
+      return cutChordRest(cr, track, insertPosition, cr0, cr1);
       }
 
+//---------------------------------------------------------
+//   cutChordDragSegment
+//---------------------------------------------------------
+
+bool PianoView::cutChordDragSegment(const QPointF& from,
+                                    const QPointF& to)
+      {
+      if (!_staff || _tuplet != 1)
+            return false;
+
+      //
+      // First collect plain tick/track values.  Do not modify the
+      // score while consulting PianoItems, since a cut can rebuild
+      // the note representation.
+      //
+      QVector<QPair<Fraction, int>> targets;
+
+      const qreal dx = to.x() - from.x();
+      const qreal dy = to.y() - from.y();
+
+      const int steps = qMax(1,
+            int(ceil(qMax(qAbs(dx), qAbs(dy)))));
+
+      for (int i = 0; i <= steps; ++i) {
+            const qreal amount = qreal(i) / steps;
+
+            const QPointF pos(
+                  from.x() + dx * amount,
+                  from.y() + dy * amount);
+
+            const int pickTick = scenePosToTick(pos);
+            const int pickPitch = scenePosToPitch(pos);
+
+            if (!pitchIsValid(pickPitch))
+                  continue;
+
+            const Fraction cutTick = roundToNearestBeat(pickTick);
+
+            PianoItem* pn = pickNote(pickTick, pickPitch);
+            const int voice = pn ? pn->note()->voice() : _editNoteVoice;
+            const int track = _staff->idx() * VOICES + voice;
+
+            const QPair<Fraction, int> target(cutTick, track);
+
+            if (!targets.isEmpty() && targets.back() == target)
+                  continue;
+
+            targets.append(target);
+            }
+
+      bool changed = false;
+
+      for (const QPair<Fraction, int>& target : targets) {
+            if (cutChordAt(target.first, target.second))
+                  changed = true;
+            }
+
+      return changed;
+      }
 
 //---------------------------------------------------------
 //   handleSelectionClick
