@@ -152,7 +152,7 @@ private:
       QPointF _mouseDownPos;
       QPointF _lastMousePos;
       QPointF _lastCutDragPos;
-      bool _cutDragCommandActive { false };
+      int _cutDragUndoStartIdx { -1 };
 
       struct TieDragTarget {
             Fraction tick;

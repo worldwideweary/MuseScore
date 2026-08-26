@@ -2518,9 +2518,13 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                   if (cutChordDragSegment(_lastCutDragPos, releasePos))
                         updateNotes();
 
-                  if (_cutDragCommandActive) {
-                        _staff->score()->endCmd();
-                        _cutDragCommandActive = false;
+                  Score* score = _staff->score();
+
+                  if (_cutDragUndoStartIdx >= 0) {
+                        score->undoStack()->mergeCommands(
+                              _cutDragUndoStartIdx);
+
+                        _cutDragUndoStartIdx = -1;
                         }
                   }
             else if (_dragStyle == DragStyle::TIE) {
@@ -2666,7 +2670,8 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
       _selectionHandledOnPress = false;
       _dragStyle = DragStyle::NONE;
       _mouseDown = false;
-      _cutDragCommandActive = false;
+
+      _cutDragUndoStartIdx = -1;
       _tieDragUndoStartIdx = -1;
       _tieDragTargets.clear();
 
@@ -2839,11 +2844,10 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
 
                         if (_editNoteTool == PianoRollEditTool::CUT) {
                               _dragStyle = DragStyle::CUT;
+                              _lastCutDragPos = _mouseDownPos;
 
-                              if (!_cutDragCommandActive) {
-                                    _staff->score()->startCmd();
-                                    _cutDragCommandActive = true;
-                                    }
+                              _cutDragUndoStartIdx =
+                                    _staff->score()->undoStack()->getCurIdx();
                               }
                         else if (_editNoteTool == PianoRollEditTool::TIE) {
                               _dragStyle = DragStyle::TIE;
@@ -3687,9 +3691,17 @@ bool PianoView::cutChordDragSegment(const QPointF& from,
             }
 
       bool changed = false;
+      Score* score = _staff->score();
 
       for (const QPair<Fraction, int>& target : targets) {
-            if (cutChordAt(target.first, target.second))
+            score->startCmd();
+
+            const bool cut =
+                  cutChordAt(target.first, target.second);
+
+            score->endCmd();
+
+            if (cut)
                   changed = true;
             }
 
