@@ -3966,7 +3966,7 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
 
       //
       // If the original object was a chord, restore its notes into the
-      // first portion and tie them into the second chord.
+      // first portion.
       //
       if (wasChord && secondCR->isChord()) {
             Chord* firstChord = nullptr;
@@ -3990,13 +3990,9 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
 
                         if (firstChord->notes().empty())
                               return false;
-
-                        toggleTie(firstChord->notes().front());
                         }
                   else {
-                        Note* note = score->addNote(firstChord, notePitch);
-                        if (note)
-                              toggleTie(note);
+                        score->addNote(firstChord, notePitch);
                         }
                   }
 
