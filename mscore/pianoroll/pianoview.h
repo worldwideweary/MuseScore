@@ -169,7 +169,7 @@ private:
 
       QVector<TieDragTarget> _tieDragTargets;
       QPointF _lastTieDragPos;
-      bool _tieDragCommandActive { false };
+      int _tieDragUndoStartIdx { -1 };
 
       QPointF _mouseDownScreenPos;
       QPointF _lastMouseScreenPos;

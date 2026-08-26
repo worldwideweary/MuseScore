@@ -2528,9 +2528,11 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
 
                   toggleTieDragSegment(_lastTieDragPos, releasePos);
 
-                  if (_tieDragCommandActive) {
-                        _staff->score()->endCmd();
-                        _tieDragCommandActive = false;
+                  Score* score = _staff->score();
+
+                  if (_tieDragUndoStartIdx >= 0) {
+                        score->undoStack()->mergeCommands(_tieDragUndoStartIdx);
+                        _tieDragUndoStartIdx = -1;
                         }
 
                   updateNotes();
@@ -2665,7 +2667,7 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
       _dragStyle = DragStyle::NONE;
       _mouseDown = false;
       _cutDragCommandActive = false;
-      _tieDragCommandActive = false;
+      _tieDragUndoStartIdx = -1;
       _tieDragTargets.clear();
 
       scene()->update();
@@ -2849,10 +2851,8 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                               _tieDragTargets.clear();
                               _lastTieDragPos = _mouseDownPos;
 
-                              if (!_tieDragCommandActive) {
-                                    _staff->score()->startCmd();
-                                    _tieDragCommandActive = true;
-                                    }
+                              _tieDragUndoStartIdx =
+                                    _staff->score()->undoStack()->getCurIdx();
                               }
                         else {
                               PianoItem* pi = pickNote(tick, mouseDownPitch);
@@ -3565,15 +3565,14 @@ bool PianoView::toggleTieDragSegment(const QPointF& from,
             //
             _tieDragTargets.append(target);
 
-            if (toggleTie(note)) {
-                  changed = true;
+            Score* score = _staff->score();
 
-                  //
-                  // Ties affect which PianoItems are represented:
-                  // adding one can hide a continuation; removing one
-                  // can expose it. Rebuild immediately so the next
-                  // sampled position resolves correctly.
-                  //
+            score->startCmd();
+            const bool toggled = toggleTie(note);
+            score->endCmd();
+
+            if (toggled) {
+                  changed = true;
                   updateNotes();
                   }
             }
