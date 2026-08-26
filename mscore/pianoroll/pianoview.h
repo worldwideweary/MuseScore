@@ -262,6 +262,7 @@ private:
       void tickLenDragged(int);
       void showNoteTweakerRequest();
       void noteEventsChanged();
+      void editNoteLengthChanged(const Fraction& duration);
 
    public slots:
       void moveLocator(int);
