@@ -303,7 +303,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
             if (p->_selected)
                   bn->setChecked(true);
-            bngrpActionBns->addButton(bn);
+            bngrpActionBns->addButton(bn, int(tool));
             tbTool->addWidget(bn);
             }
 
@@ -833,6 +833,31 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(pianoLevels,        &PianoLevels::posChanged, pos, &Awl::PosLabel::setValue);
       connect(tuplet,             SIGNAL(valueChanged(int)),              pianoView,   SLOT(setTuplet(int)));
       connect(tuplet,             SIGNAL(valueChanged(int)),              pianoLevels, SLOT(setTuplet(int)));
+
+      connect(tuplet,
+              QOverload<int>::of(&QSpinBox::valueChanged),
+              this,
+              [this, bngrpActionBns](int value) {
+                    QAbstractButton* cutButton =
+                          bngrpActionBns->button(int(PianoRollEditTool::CUT));
+
+                    if (!cutButton)
+                          return;
+
+                    const bool enabled = value == 1;
+                    cutButton->setEnabled(enabled);
+
+                    if (!enabled && cutButton->isChecked()) {
+                          QAbstractButton* adjustButton =
+                                bngrpActionBns->button(
+                                      int(PianoRollEditTool::EVENT_ADJUST));
+
+                          if (adjustButton)
+                                adjustButton->setChecked(true);
+
+                          setEditNoteTool(PianoRollEditTool::EVENT_ADJUST);
+                          }
+                    });
 
       connect(barPattern,
               QOverload<int>::of(&QComboBox::activated),
