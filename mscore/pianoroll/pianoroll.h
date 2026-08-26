@@ -55,6 +55,9 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       QToolBar* tbVoices { nullptr };
       QToolBar* tbTweak { nullptr };
 
+      QButtonGroup* bngrpNoteLen { nullptr };
+      QButtonGroup* bngrpNoteDot { nullptr };
+
       PianoView* pianoView { nullptr };
       PianoKeyboard* pianoKbd { nullptr };
       PianoLevels* pianoLevels { nullptr };
@@ -110,6 +113,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       bool updateScheduled = false;
       NoteTweakerDialog* noteTweakerDlg { nullptr };
 
+      void updateNoteLengthControls(const Fraction& duration);
       void updateStaffBox();
       void updateVelocity(Note* note);
       void updateSelection();

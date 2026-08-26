@@ -2607,8 +2607,10 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
 
                         Fraction duration = endTickFrac - startTickFrac;
 
-                        //Store duration as new length for future single-click note add events
+                        // Store duration as new length for future single-click note add events
                         _editNoteLength = duration;
+                        _editNoteDots = 0;
+                        emit editNoteLengthChanged(duration);
 
                         //Do command
                         curScore->startCmd();
@@ -3246,7 +3248,13 @@ Fraction PianoView::roundToNearestBeat(int tick, bool down)  const
 
 Fraction PianoView::noteEditLength() const
       {
-      return _editNoteLength;
+      if (_editNoteDots <= 0)
+            return _editNoteLength;
+
+      const int denominator = 1 << _editNoteDots;
+      const int numerator   = (1 << (_editNoteDots + 1)) - 1;
+
+      return _editNoteLength * Fraction(numerator, denominator);
       }
 
 
