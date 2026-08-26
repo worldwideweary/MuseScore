@@ -4014,6 +4014,87 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
             return false;
             }
 
+      //
+      // setNoteRest() may rhythmically decompose the remainder after
+      // cutTick into more than one ChordRest.  Those extra fragments
+      // are notation of the same untouched remainder, not additional
+      // cuts, so tie matching pitches between consecutive fragments.
+      //
+      // Do not tie cr0 to cr1: cutTick is the explicit new attack
+      // requested by the user.
+      //
+      if (wasChord && cr1->isChord()) {
+            ChordRest* currentCR = cr1;
+
+            while (currentCR && currentCR->isChord()) {
+                  Chord* currentChord = toChord(currentCR);
+
+                  const Fraction nextTick =
+                        currentChord->tick() + currentChord->actualTicks();
+
+                  //
+                  // Never tie beyond the end of the original ChordRest.
+                  //
+                  if (nextTick >= endTick)
+                        break;
+
+                  ChordRest* nextCR = score->findCR(nextTick, track);
+
+                  if (!nextCR
+                      || nextCR->tick() != nextTick
+                      || !nextCR->isChord())
+                        break;
+
+                  Chord* nextChord = toChord(nextCR);
+
+                  for (Note* note : currentChord->notes()) {
+                        if (!note)
+                              continue;
+
+                        Note* nextNote = nullptr;
+
+                        for (Note* candidate : nextChord->notes()) {
+                              if (candidate
+                                  && candidate->pitch() == note->pitch()) {
+                                    nextNote = candidate;
+                                    break;
+                                    }
+                              }
+
+                        if (!nextNote)
+                              continue;
+
+                        //
+                        // Do not disturb an existing tie relationship.
+                        //
+                        Tie* tie = note->tieFor();
+
+                        if (tie) {
+                              if (tie->endNote() == nextNote)
+                                    continue;
+
+                              continue;
+                              }
+
+                        if (nextNote->tieBack())
+                              continue;
+
+                        tie = new Tie(score);
+                        tie->setStartNote(note);
+                        tie->setEndNote(nextNote);
+                        tie->setTrack(note->track());
+                        tie->setTick(note->chord()->segment()->tick());
+                        tie->setTicks(
+                              nextNote->chord()->segment()->tick()
+                              - note->chord()->segment()->tick());
+
+                        score->undoAddElement(tie);
+                        }
+
+                  currentCR = nextCR;
+                  }
+            }
+
       return true;
       }
 //---------------------------------------------------------
