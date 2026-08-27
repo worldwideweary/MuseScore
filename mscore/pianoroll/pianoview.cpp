@@ -2595,8 +2595,25 @@ void PianoView::mousePressEvent(QMouseEvent* event)
             _selectionHandledOnPress = false;
 
             if (selectTool() || eventsAdjustTool()) {
-                  handleSelectionClick();
-                  _selectionHandledOnPress = true;
+                  const Qt::KeyboardModifiers modifiers = event->modifiers();
+                  const bool hasSelectionModifier =
+                        modifiers & (Qt::ShiftModifier | Qt::ControlModifier);
+
+                  PianoItem* pressedItem = pickNote(_mouseDownPos);
+
+                  // A plain press on one member of an existing multi-selection
+                  // must not collapse that selection before we know whether the
+                  // user intends to drag the group.
+                  const bool deferExistingMultiSelection =
+                        !hasSelectionModifier
+                        && pressedItem
+                        && pressedItem->note()->selected()
+                        && getSelectedItems().size() > 1;
+
+                  if (!deferExistingMultiSelection) {
+                        handleSelectionClick();
+                        _selectionHandledOnPress = true;
+                        }
                   }
 
             scene()->update();
