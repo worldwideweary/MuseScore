@@ -3331,6 +3331,54 @@ QVector<Note*> PianoView::getSegmentNotes(Segment* seg, int track)
       return notes;
       }
 
+//---------------------------------------------------------
+//   noteRangeContainsChord
+//---------------------------------------------------------
+
+bool PianoView::noteRangeContainsChord(const Fraction& startTick,
+                                       const Fraction& duration,
+                                       int track) const
+      {
+      if (!_staff || duration <= Fraction(0, 1))
+            return false;
+
+      Score* score = _staff->score();
+      const Fraction endTick = startTick + duration;
+
+      ChordRest* cr = score->findCR(startTick, track);
+
+      while (cr && cr->tick() < endTick) {
+            //
+            // findCR() may return a ChordRest beginning before startTick,
+            // so make sure it actually overlaps the requested interval.
+            //
+            if (cr->tick() + cr->actualTicks() > startTick
+                && cr->isChord()) {
+                  return true;
+                  }
+
+            Segment* seg =
+                  cr->nextSegmentAfterCR(SegmentType::ChordRest);
+
+            if (!seg)
+                  break;
+
+            cr = seg->cr(track);
+
+            //
+            // A missing ChordRest in a secondary voice does not
+            // represent existing note material, so keep scanning
+            // subsequent ChordRest segments.
+            //
+            while (!cr && seg) {
+                  seg = seg->next1(SegmentType::ChordRest);
+                  if (seg)
+                        cr = seg->cr(track);
+                  }
+            }
+
+      return false;
+      }
 
 //---------------------------------------------------------
 //   addNote
@@ -3339,11 +3387,19 @@ QVector<Note*> PianoView::getSegmentNotes(Segment* seg, int track)
 QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pitch, int track)
       {
       QVector<Note*> addedNotes;
-      if (!pitchIsValid(pitch))
+      if (!pitchIsValid(pitch) || duration <= Fraction{})
             return addedNotes;
 
       Score* score = _staff->score();
-      NoteVal added_note_pitch(pitch);
+      const NoteVal newPitch(pitch);
+
+      const Fraction requestedStartTick = startTick;
+      const Fraction requestedDuration = duration;
+
+      const bool preserveExistingRhythm =
+            noteRangeContainsChord(requestedStartTick,
+                                   requestedDuration,
+                                   track);
 
       ChordRest* curCr = score->findCR(startTick, track);
       if (curCr) {
@@ -3373,16 +3429,35 @@ QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pit
             if (!curChordRest)
                   return addedNotes;
 
+            if (!preserveExistingRhythm) {
+                  // Nothing in the requested interval contains existing note
+                  // material whose rhythmic boundaries need to be preserved, so
+                  // let setNoteRest() realize the requested PRE duration directly,
+                  // as with PRE in 3.6.2
+                  Segment* newSeg =
+                        score->setNoteRest(
+                              curChordRest->segment(),
+                              track,
+                              newPitch,
+                              requestedDuration);
+
+                  if (newSeg)
+                        addedNotes.append(
+                              getSegmentNotes(newSeg, track));
+
+                  return addedNotes;
+                  }
+
             Fraction curStartTick = curChordRest->tick();
             Fraction curDur = curChordRest->ticks();
             while (startTick + duration >= curStartTick + curDur) {
                   if (curChordRest->isChord()) {
                         Chord* ch = toChord(curChordRest);
                         if (!std::any_of(ch->notes().begin(), ch->notes().end(), [pitch](Note* n) { return n->pitch() == pitch; }))
-                              addedNotes.append(score->addNote(ch, added_note_pitch));
+                              addedNotes.append(score->addNote(ch, newPitch));
                         }
                   else {
-                        Segment* newSeg = score->setNoteRest(curChordRest->segment(), track, added_note_pitch, curDur);
+                        Segment* newSeg = score->setNoteRest(curChordRest->segment(), track, newPitch, curDur);
                         if (newSeg)
                               addedNotes.append(getSegmentNotes(newSeg, track));
                         }
@@ -3450,14 +3525,14 @@ QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pit
                                         return n->pitch() == pitch;
                                         })) {
                               addedNotes.append(
-                                    score->addNote(ch, added_note_pitch));
+                                    score->addNote(ch, newPitch));
                               }
                         }
                   else {
                         Segment* newSeg = score->setNoteRest(
                               crMid->segment(),
                               track,
-                              added_note_pitch,
+                              newPitch,
                               duration);
 
                         if (newSeg)
