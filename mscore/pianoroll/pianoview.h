@@ -171,6 +171,10 @@ private:
       QPointF _lastTieDragPos;
       int _tieDragUndoStartIdx { -1 };
 
+      int _drumPaintUndoStartIdx { -1 };
+      QPointF _lastDrumPaintPos;
+      QSet<int> _drumPaintedTicks;
+
       QPointF _mouseDownScreenPos;
       QPointF _lastMouseScreenPos;
       QPointF _viewportFocus;
@@ -270,6 +274,9 @@ private:
       bool calculateNoteDragOffsets(Fraction& pasteTickOffset,
                                     Fraction& pasteLengthOffset,
                                     int& pitchOffset) const;
+
+      bool paintDrumDragSegment(const QPointF& from,
+                                const QPointF& to);
 
       void drawPitchText(QPainter* p, const QRectF& bounds, const QString& name, const QColor& noteColor);
       QString pitchNameForMidi(int) const;

@@ -1850,6 +1850,58 @@ bool PianoView::calculateNoteDragOffsets(Fraction& pasteTickOffset,
       }
 
 //---------------------------------------------------------
+//   paintDrumDragSegment
+//---------------------------------------------------------
+
+bool PianoView::paintDrumDragSegment(const QPointF& from,
+                                     const QPointF& to)
+      {
+      if (!_staff)
+            return false;
+
+      Score* score = _staff->score();
+
+      const int pitch = scenePosToPitch(_mouseDownPos);
+      if (!pitchIsValid(pitch))
+            return false;
+
+      const int track =
+            _staff->idx() * VOICES + _editNoteVoice;
+
+      bool changed = false;
+
+      const QVector<Fraction> ticks =
+            drumPaintTicks(from, to);
+
+      for (const Fraction& tick : ticks) {
+            const int tickValue = tick.ticks();
+
+            // A sampled/interpolated segment may encounter the same
+            // grid position many times during one gesture
+            if (_drumPaintedTicks.contains(tickValue))
+                  continue;
+
+            const Fraction duration = gridLengthAt(tick);
+            if (duration <= Fraction(0, 1))
+                  continue;
+
+            _drumPaintedTicks.insert(tickValue);
+
+            score->startCmd();
+            addNote(
+                  tick,
+                  duration,
+                  pitch,
+                  track);
+            score->endCmd();
+
+            changed = true;
+            }
+
+      return changed;
+      }
+
+//---------------------------------------------------------
 //   drawPitchText
 //---------------------------------------------------------
 
@@ -2748,43 +2800,26 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                         return;
 
                   Score* score = _staff->score();
-                  const int track =
-                        _staff->idx() * VOICES + _editNoteVoice;
 
-                  const Fraction firstTick =
-                        roundToNearestBeat(
-                              scenePosToTick(_mouseDownPos),
-                              true);
+                  if (_drumPaintUndoStartIdx >= 0) {
+                        const QPointF releasePos =
+                              mapToScene(event->pos());
 
-                  const bool drumDiamond =
-                        _staff->isDrumStaff(firstTick);
-
-                  if (drumDiamond) {
-                        const QVector<Fraction> ticks =
-                              drumPaintTicks(_mouseDownPos, _lastMousePos);
-
-                        if (!ticks.isEmpty()) {
-                              score->startCmd();
-
-                              for (const Fraction& tick : ticks) {
-                                    const Fraction duration =
-                                          gridLengthAt(tick);
-
-                                    if (duration <= Fraction(0, 1))
-                                          continue;
-
-                                    addNote(
-                                          tick,
-                                          duration,
-                                          pitch,
-                                          track);
-                                    }
-
-                              score->endCmd();
+                        if (paintDrumDragSegment(
+                                    _lastDrumPaintPos,
+                                    releasePos)) {
                               updateNotes();
                               }
+
+                        score->undoStack()->mergeCommands(
+                              _drumPaintUndoStartIdx);
+
+                        _drumPaintUndoStartIdx = -1;
+                        _drumPaintedTicks.clear();
                         }
                   else {
+                        const int track = _staff->idx() * VOICES + _editNoteVoice;
+
                         double startTick =
                               scenePosToTick(_mouseDownPos);
                         double endTick =
@@ -2803,10 +2838,8 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                               Fraction duration =
                                     endTickFrac - startTickFrac;
 
-                              //
                               // Normal pitched-note dragging continues to establish
-                              // the insertion duration.
-                              //
+                              // the insertion duration:
                               _editNoteLength = duration;
                               _editNoteDots = 0;
                               emit editNoteLengthChanged(duration);
@@ -3159,6 +3192,25 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                                     }
                               else if (!pi && _editNoteTool == PianoRollEditTool::ADD) {
                                     _dragStyle = DragStyle::DRAW_NOTE;
+
+                                    const Fraction tick =
+                                          roundToNearestBeat(
+                                                scenePosToTick(_mouseDownPos),
+                                                true);
+
+                                    if (_staff->isDrumStaff(tick)) {
+                                          _drumPaintedTicks.clear();
+                                          _lastDrumPaintPos = _mouseDownPos;
+                                          _drumPaintUndoStartIdx =
+                                                _staff->score()->undoStack()->getCurIdx();
+
+                                          // Materialize the first crossed position immediately.
+                                          if (paintDrumDragSegment(
+                                                      _mouseDownPos,
+                                                      _mouseDownPos)) {
+                                                updateNotes();
+                                                }
+                                          }
                                     }
                               else
                                     _dragStyle = DragStyle::NONE;
@@ -3195,6 +3247,17 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                               _lastMousePos);
 
                         _lastTieDragPos = _lastMousePos;
+                        scene()->update();
+                        }
+                  else if (_dragStyle == DragStyle::DRAW_NOTE
+                           && _drumPaintUndoStartIdx >= 0) {
+                        if (paintDrumDragSegment(
+                                    _lastDrumPaintPos,
+                                    _lastMousePos)) {
+                              updateNotes();
+                              }
+
+                        _lastDrumPaintPos = _lastMousePos;
                         scene()->update();
                         }
                   else {
