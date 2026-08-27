@@ -3410,7 +3410,7 @@ QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pit
             if (startTick > curCr->tick()) {
                   ChordRest* splitStart = nullptr;
 
-                  if (cutChordRest(curCr, track, startTick, cr0, splitStart))
+                  if (cutChordRest(curCr, track, startTick, cr0, splitStart, true))
                         curChordRest = splitStart;
                   else {
                         //
@@ -3507,7 +3507,8 @@ QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pit
                                   track,
                                   endTick,
                                   crMid,
-                                  crEnd)) {
+                                  crEnd,
+                                  true)) {
                               return addedNotes;
                               }
                         }
@@ -4259,7 +4260,7 @@ void PianoView::handleSelectionClick()
                         if (!frac.isValid() || frac.isZero())
                               frac.set(1, 4);
 
-                        if (cutChordRest(e, track, insertPosition, cr0, cr1)) {
+                        if (cutChordRest(e, track, insertPosition, cr0, cr1, true)) {
                               score->setNoteRest(cr1->segment(), track, nv, frac);
                               }
                         else {
@@ -4348,7 +4349,8 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
                              int track,
                              Fraction cutTick,
                              ChordRest*& cr0,
-                             ChordRest*& cr1)
+                             ChordRest*& cr1,
+                             bool preserveOriginalDuration)
       {
       cr0 = targetCr;
       cr1 = nullptr;
@@ -4389,11 +4391,35 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
       //
       QVector<NoteVal> chordNotes;
 
+      QMap<int, QPair<Fraction, Fraction>> preservedTieRanges;
+
       if (wasChord) {
             Chord* chord = toChord(targetCr);
 
             for (Note* note : chord->notes()) {
                   chordNotes.append(note->noteVal());
+
+                  if (preserveOriginalDuration) {
+                        Note* first = note;
+                        while (first->tieBack())
+                              first = first->tieBack()->startNote();
+
+                        Note* last = note;
+                        while (last->tieFor())
+                              last = last->tieFor()->endNote();
+
+                        const Fraction logicalStart =
+                              first->chord()->tick();
+
+                        const Fraction logicalEnd =
+                              last->chord()->tick()
+                              + last->chord()->actualTicks();
+
+                        preservedTieRanges.insert(
+                              note->pitch(),
+                              qMakePair(logicalStart, logicalEnd));
+                        }
+
                   note->setSelected(false);
                   }
             }
@@ -4493,7 +4519,30 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
       // requested by the user.
       //
       if (wasChord && cr1->isChord()) {
-            ChordRest* currentCR = cr1;
+            Fraction preserveStartTick = cr1->tick();
+            Fraction preserveEndTick = endTick;
+
+            if (preserveOriginalDuration) {
+                  bool firstRange = true;
+
+                  for (auto it = preservedTieRanges.constBegin();
+                       it != preservedTieRanges.constEnd();
+                       ++it) {
+                        if (firstRange
+                            || it.value().first < preserveStartTick) {
+                              preserveStartTick = it.value().first;
+                              firstRange = false;
+                              }
+
+                        if (it.value().second > preserveEndTick)
+                              preserveEndTick = it.value().second;
+                        }
+                  }
+
+            ChordRest* currentCR =
+                  preserveOriginalDuration
+                        ? score->findCR(preserveStartTick, track)
+                        : cr1;
 
             while (currentCR && currentCR->isChord()) {
                   Chord* currentChord = toChord(currentCR);
@@ -4504,7 +4553,7 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
                   //
                   // Never tie beyond the end of the original ChordRest.
                   //
-                  if (nextTick >= endTick)
+                  if (nextTick >= preserveEndTick)
                         break;
 
                   ChordRest* nextCR = score->findCR(nextTick, track);
@@ -4532,6 +4581,29 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
 
                         if (!nextNote)
                               continue;
+
+                        if (preserveOriginalDuration) {
+                              auto rangeIt =
+                                    preservedTieRanges.constFind(note->pitch());
+
+                              if (rangeIt == preservedTieRanges.constEnd())
+                                    continue;
+
+                              const Fraction logicalStart =
+                                    rangeIt.value().first;
+                              const Fraction logicalEnd =
+                                    rangeIt.value().second;
+
+                              //
+                              // Different notes in the original chord may belong to
+                              // tie chains with different logical extents.
+                              //
+                              if (currentChord->tick() < logicalStart)
+                                    continue;
+
+                              if (nextTick >= logicalEnd)
+                                    continue;
+                              }
 
                         //
                         // Do not disturb an existing tie relationship.
