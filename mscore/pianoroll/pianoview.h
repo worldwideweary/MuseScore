@@ -225,6 +225,9 @@ private:
       QRect drumDiamondRect(const Note* note,
                             const NoteEvent* event = nullptr,
                             bool applyEvents = false) const;
+      QVector<Fraction> drumPaintTicks(const QPointF& from,
+                                       const QPointF& to) const;
+      Fraction gridLengthAt(const Fraction& tick) const;
 
       void setSelectedNoteColor();
       void resetSelectedNoteColor();

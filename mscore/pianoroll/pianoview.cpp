@@ -2742,41 +2742,87 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                   finishNoteEventAdjustDrag();
                   }
             else if (_dragStyle == DragStyle::DRAW_NOTE) {
-                  double startTick = pixelXToTick(_mouseDownPos.x());
-                  double endTick = pixelXToTick(_lastMousePos.x());
-                  if (startTick > endTick) {
-                        std::swap(startTick, endTick);
+                  const int pitch = scenePosToPitch(_mouseDownPos);
+
+                  if (!pitchIsValid(pitch))
+                        return;
+
+                  Score* score = _staff->score();
+                  const int track =
+                        _staff->idx() * VOICES + _editNoteVoice;
+
+                  const Fraction firstTick =
+                        roundToNearestBeat(
+                              scenePosToTick(_mouseDownPos),
+                              true);
+
+                  const bool drumDiamond =
+                        _staff->isDrumStaff(firstTick);
+
+                  if (drumDiamond) {
+                        const QVector<Fraction> ticks =
+                              drumPaintTicks(_mouseDownPos, _lastMousePos);
+
+                        if (!ticks.isEmpty()) {
+                              score->startCmd();
+
+                              for (const Fraction& tick : ticks) {
+                                    const Fraction duration =
+                                          gridLengthAt(tick);
+
+                                    if (duration <= Fraction(0, 1))
+                                          continue;
+
+                                    addNote(
+                                          tick,
+                                          duration,
+                                          pitch,
+                                          track);
+                                    }
+
+                              score->endCmd();
+                              updateNotes();
+                              }
                         }
+                  else {
+                        double startTick =
+                              scenePosToTick(_mouseDownPos);
+                        double endTick =
+                              scenePosToTick(_lastMousePos);
 
-                  Fraction startTickFrac = roundToNearestBeat(startTick);
-                  Fraction endTickFrac = roundToNearestBeat(endTick, false);
+                        if (startTick > endTick)
+                              std::swap(startTick, endTick);
 
-                  if (endTickFrac != startTickFrac) {
-                        const int pitch = scenePosToPitch(_mouseDownPos);
-                        if (!pitchIsValid(pitch))
-                              return;
+                        Fraction startTickFrac =
+                              roundToNearestBeat(startTick);
 
-                        Score* curScore = _staff->score();
+                        Fraction endTickFrac =
+                              roundToNearestBeat(endTick, false);
 
-                        int voice = _editNoteVoice;
-                        int track = (int)_staff->idx() * VOICES + voice;
+                        if (endTickFrac != startTickFrac) {
+                              Fraction duration =
+                                    endTickFrac - startTickFrac;
 
-                        Fraction duration = endTickFrac - startTickFrac;
+                              //
+                              // Normal pitched-note dragging continues to establish
+                              // the insertion duration.
+                              //
+                              _editNoteLength = duration;
+                              _editNoteDots = 0;
+                              emit editNoteLengthChanged(duration);
 
-                        // Store duration as new length for future single-click note add events
-                        _editNoteLength = duration;
-                        _editNoteDots = 0;
-                        emit editNoteLengthChanged(duration);
+                              score->startCmd();
+                              addNote(
+                                    startTickFrac,
+                                    duration,
+                                    pitch,
+                                    track);
+                              score->endCmd();
 
-                        //Do command
-                        curScore->startCmd();
-                        addNote(startTickFrac, duration, pitch, track);
-                        curScore->endCmd();
-
-                        updateNotes();
+                              updateNotes();
+                              }
                         }
                   }
-
             _dragStarted = false;
             }
       else {
@@ -3444,6 +3490,61 @@ void PianoView::changeChordLength(const QPointF& pos) {
             }
       }
 
+//---------------------------------------------------------
+//   gridLengthAt
+//---------------------------------------------------------
+
+Fraction PianoView::gridLengthAt(const Fraction& tick) const
+      {
+      // Move one tick beyond an exact grid boundary so ceil() gives
+      // us the following boundary rather than the same one.
+      const Fraction next =
+            roundToNearestBeat(tick.ticks() + 1, false);
+
+      if (next <= tick)
+            return Fraction(0, 1);
+
+      return next - tick;
+      }
+
+//---------------------------------------------------------
+//   drumPaintTicks
+//---------------------------------------------------------
+
+QVector<Fraction> PianoView::drumPaintTicks(const QPointF& from,
+                                            const QPointF& to) const
+      {
+      QVector<Fraction> ticks;
+
+      if (!_staff)
+            return ticks;
+
+      int fromTick = scenePosToTick(from);
+      int toTick   = scenePosToTick(to);
+
+      if (fromTick > toTick)
+            std::swap(fromTick, toTick);
+
+      const Fraction first =
+            roundToNearestBeat(fromTick, true);
+
+      const Fraction last =
+            roundToNearestBeat(toTick, true);
+
+      Fraction tick = first;
+
+      while (tick <= last) {
+            ticks.append(tick);
+
+            const Fraction length = gridLengthAt(tick);
+            if (length <= Fraction(0, 1))
+                  break;
+
+            tick += length;
+            }
+
+      return ticks;
+      }
 
 //---------------------------------------------------------
 //   roundToStartBeat
@@ -5567,34 +5668,77 @@ void PianoView::drawDraggedNotes(QPainter* painter)
       _levelPreviewLengthOffset = Fraction(0, 1);
 
       if (_dragStyle == DragStyle::DRAW_NOTE) {
-            double startTick = scenePosToTick(_mouseDownPos);
-            double endTick = scenePosToTick(_lastMousePos);
-            if (startTick > endTick) {
-                  std::swap(startTick, endTick);
+            const int pitch =
+                  scenePosToPitch(_mouseDownPos);
+
+            if (!pitchIsValid(pitch))
+                  return;
+
+            const int track =
+                  _staff->idx() * VOICES + _editNoteVoice;
+
+            const Fraction firstTick =
+                  roundToNearestBeat(
+                        scenePosToTick(_mouseDownPos),
+                        true);
+
+            const bool drumDiamond =
+                  _staff->isDrumStaff(firstTick);
+
+            if (drumDiamond) {
+                  const QVector<Fraction> ticks =
+                        drumPaintTicks(
+                              _mouseDownPos,
+                              _lastMousePos);
+
+                  for (const Fraction& tick : ticks) {
+                        const Fraction duration =
+                              gridLengthAt(tick);
+
+                        if (duration <= Fraction(0, 1))
+                              continue;
+
+                        drawDraggedNote(
+                              painter,
+                              tick,
+                              duration,
+                              pitch,
+                              track,
+                              noteColor,
+                              pitchNameForMidi(pitch));
+                        }
+
+                  return;
                   }
 
-            Fraction startTickFrac = roundToNearestBeat(startTick);
-            Fraction endTickFrac = roundToNearestBeat(endTick, false);
+            double startTick =
+                  scenePosToTick(_mouseDownPos);
+
+            double endTick =
+                  scenePosToTick(_lastMousePos);
+
+            if (startTick > endTick)
+                  std::swap(startTick, endTick);
+
+            Fraction startTickFrac =
+                  roundToNearestBeat(startTick);
+
+            Fraction endTickFrac =
+                  roundToNearestBeat(endTick, false);
 
             if (endTickFrac != startTickFrac) {
-                  int pitch = scenePosToPitch(_mouseDownPos);
-                  if (pitch < 0)
-                        return;
-                  int track = (int)_staff->idx() * VOICES + _editNoteVoice;
-
-                  // DRAW_NOTE
-                  drawDraggedNote(painter,
-                                  startTickFrac,
-                                  endTickFrac - startTickFrac,
-                                  pitch,
-                                  track,
-                                  noteColor,
-                                  pitchNameForMidi(pitch));
-
+                  drawDraggedNote(
+                        painter,
+                        startTickFrac,
+                        endTickFrac - startTickFrac,
+                        pitch,
+                        track,
+                        noteColor,
+                        pitchNameForMidi(pitch));
                   }
+
             return;
             }
-
       if (_dragStyle == DragStyle::EVENT_LENGTH || _dragStyle == DragStyle::EVENT_MOVE
           || _dragStyle == DragStyle::EVENT_ONTIME) {
 
