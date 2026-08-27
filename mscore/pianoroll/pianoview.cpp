@@ -1308,10 +1308,15 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
                         noteColor = pianoRollNoteColor(note, _coloring, true, _useNoteColors);
                         }
 
-                  const bool ghostOriginal = _dragStarted && note->selected()
-                        && (_dragStyle != DragStyle::CANCELLED &&
-                            _dragStyle != DragStyle::SELECTION_RECT &&
-                            _dragStyle != DragStyle::MOVE_VIEWPORT);
+                  const bool ghostOriginal =
+                        _dragStarted
+                        && note->selected()
+                        && (_dragStyle == DragStyle::NOTE_POSITION
+                            || _dragStyle == DragStyle::NOTE_LENGTH_START
+                            || _dragStyle == DragStyle::NOTE_LENGTH_END
+                            || _dragStyle == DragStyle::EVENT_ONTIME
+                            || _dragStyle == DragStyle::EVENT_MOVE
+                            || _dragStyle == DragStyle::EVENT_LENGTH);
 
                   if (ghostOriginal)
                         noteColor.setAlphaF(0.25);
