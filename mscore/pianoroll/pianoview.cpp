@@ -2896,11 +2896,10 @@ void PianoView::updateCursor()
 
             QPointF pos = _lastMousePos;
 
-            int tick = scenePosToTick(pos);
             int pitch = scenePosToPitch(pos);
 
             if (pitch >= 0) {
-                  PianoItem* pi = pickNote(tick, pitch);
+                  PianoItem* pi = pickNote(pos);
 
                   if (pi) {
                         QRect bounds = boundingRect(
@@ -3004,13 +3003,13 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                                     _staff->score()->undoStack()->getCurIdx();
                               }
                         else {
-                              PianoItem* pi = pickNote(tick, mouseDownPitch);
+                              PianoItem* pi = pickNote(_mouseDownPos);
                               if (pi && (_editNoteTool == PianoRollEditTool::SELECT || _editNoteTool == PianoRollEditTool::ADD)) {
                                     if (!pi->note()->selected()) {
                                           selectNotes(tick, tick, mouseDownPitch, mouseDownPitch, NoteSelectType::REPLACE);
 
                                           // Selection updating may rebuild _noteList
-                                          pi = pickNote(tick, mouseDownPitch);
+                                          pi = pickNote(_mouseDownPos);
                                           if (!pi) {
                                                 _dragStyle = DragStyle::NONE;
                                                 return;
@@ -3053,7 +3052,7 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                                           // selectNotes() can cause PianoRollEditor::updateAll,
                                           // which rebuilds _noteList and invalidates the PianoItem
                                           // returned by pickNote() above
-                                          pi = pickNote(tick, mouseDownPitch);
+                                          pi = pickNote(_mouseDownPos);
                                           if (!pi) {
                                                 _dragStyle = DragStyle::NONE;
                                                 return;
@@ -3949,21 +3948,19 @@ void PianoView::handleSelectionClick()
       if (pickPitch < 0)
             return;
 
-      PianoItem* pn = pickNote(pickTick, pickPitch);
+      PianoItem* pn = pickNote(_mouseDownPos);
 
       if (pn) {
-            if (selType == NoteSelectType::REPLACE)
-                  selType = NoteSelectType::FIRST;
-
             mscore->play(pn->note());
             score->setPlayNote(false);
 
-            selectNotes(pickTick, pickTick + 1, pickPitch, pickPitch, selType);
+            selectItem(pn, selType);
             }
       else {
             if (!bnShift && !bnCtrl) {
-                  //Select an empty pixel - should clear selection
-                  selectNotes(pickTick, pickTick + 1, pickPitch, pickPitch, selType);
+                  // Empty direct click clears selection. Do not route this
+                  // through duration-based note intersection.
+                  clearNoteSelection();
                   }
             else if (!bnShift && bnCtrl) {
 
@@ -4299,8 +4296,10 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
 
       return true;
       }
+
+
 //---------------------------------------------------------
-//   selectNotes
+//   pickNote
 //---------------------------------------------------------
 
 PianoItem* PianoView::pickNote(int tick, int pitch)
@@ -4313,6 +4312,134 @@ PianoItem* PianoView::pickNote(int tick, int pitch)
             }
 
       return 0;
+      }
+
+//---------------------------------------------------------
+//   pickNote
+//---------------------------------------------------------
+
+PianoItem* PianoView::pickNote(const QPointF& pos)
+      {
+      for (PianoItem* item : _noteList) {
+            if (!item || !item->note())
+                  continue;
+
+            Note* note = item->note();
+
+            if (_editNoteTool == PianoRollEditTool::EVENT_ADJUST) {
+                  for (const NoteEvent& event : note->playEvents()) {
+                        if (boundingRect(note, &event, true).contains(pos.toPoint()))
+                              return item;
+                        }
+                  }
+            else {
+                  if (boundingRect(note, false).contains(pos.toPoint()))
+                        return item;
+                  }
+            }
+
+      return nullptr;
+      }
+
+//---------------------------------------------------------
+//   clearNoteSelection
+//---------------------------------------------------------
+
+void PianoView::clearNoteSelection()
+      {
+      if (!_staff)
+            return;
+
+      Score* score = _staff->score();
+
+      score->startCmd();
+      score->selection().deselectAll();
+
+      for (MuseScoreView* view : score->getViewer())
+            view->updateAll();
+
+      scene()->update();
+      score->setUpdateAll();
+      score->update();
+      score->endCmd();
+
+      emit selectionChanged();
+      }
+
+//---------------------------------------------------------
+//   selectItem
+//---------------------------------------------------------
+
+void PianoView::selectItem(PianoItem* item, NoteSelectType selType)
+      {
+      if (!_staff || !item || !item->note())
+            return;
+
+      Score* score = _staff->score();
+
+      QSet<Note*> oldSelection;
+      for (PianoItem* pi : _noteList) {
+            if (pi && pi->note() && pi->note()->selected())
+                  oldSelection.insert(pi->note());
+            }
+
+      Note* clickedNote = item->note();
+
+      score->startCmd();
+
+      Selection& selection = score->selection();
+      selection.deselectAll();
+
+      for (PianoItem* pi : _noteList) {
+            if (!pi || !pi->note())
+                  continue;
+
+            Note* note = pi->note();
+            const bool wasSelected = oldSelection.contains(note);
+            const bool clicked = note == clickedNote;
+
+            bool selected = false;
+
+            switch (selType) {
+                  case NoteSelectType::REPLACE:
+                  case NoteSelectType::FIRST:
+                        selected = clicked;
+                        break;
+
+                  case NoteSelectType::XOR:
+                        selected = clicked ? !wasSelected : wasSelected;
+                        break;
+
+                  case NoteSelectType::ADD:
+                        selected = clicked || wasSelected;
+                        break;
+
+                  case NoteSelectType::SUBTRACT:
+                        selected = wasSelected && !clicked;
+                        break;
+                  }
+
+            if (selected)
+                  selection.add(note);
+            }
+
+      for (MuseScoreView* view : score->getViewer())
+            view->updateAll();
+
+      scene()->update();
+      score->setUpdateAll();
+      score->update();
+      score->endCmd();
+
+      QList<PianoItem*> selectedItems = getSelectedItems();
+      if (!selectedItems.isEmpty()) {
+            ScoreView* scoreView = mscore->currentScoreView();
+            if (scoreView)
+                  scoreView->adjustCanvasPosition(
+                        selectedItems.first()->note(), false);
+            }
+
+      emit selectionChanged();
       }
 
 //---------------------------------------------------------

@@ -233,6 +233,8 @@ private:
       QVector<Note*> getSegmentNotes(Segment* seg, int track);
       void updateBoundingSize();
       void clearNoteData();
+      void clearNoteSelection();
+      void selectItem(PianoItem* item, NoteSelectType selType);
       void selectNotes(int startTick, int endTick, int lowPitch, int highPitch, NoteSelectType selType);
       void showPopupMenu(const QPoint& pos);
       bool cutChordRest(ChordRest* targetCr, int track, Fraction cutTick, ChordRest*& cr0, ChordRest*& cr1);
@@ -382,6 +384,7 @@ private:
       QRectF verticalPitchRect(int midiPitch) const;
 
       PianoItem* pickNote(int tick, int pitch);
+      PianoItem* pickNote(const QPointF& pos);
 
       QList<PianoItem*> getSelectedItems();
       QList<PianoItem*> getItems();
