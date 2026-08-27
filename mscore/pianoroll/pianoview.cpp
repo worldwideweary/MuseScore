@@ -1225,7 +1225,18 @@ QRect PianoView::drumDiamondRect(const Note* note,
       // Diamond diameter is tied to pitch-lane thickness rather than
       // note duration. Keep it slightly smaller than the lane.
       //
-      const qreal size = qMax<qreal>(6.0, _noteHeight * 0.75);
+      const int subbeats = _tuplet * (1 << _subdiv);
+      const Fraction gridLength(1, 4 * subbeats);
+
+      const qreal gridPixels = qAbs(
+            tickToPixelXF((centerTick + gridLength).ticks())
+            - tickToPixelXF(centerTick.ticks()));
+
+      const qreal size =
+            qMax<qreal>(6.0,
+                        qMin<qreal>(qreal(_noteHeight),
+                                    gridPixels));
+
       const qreal half = size / 2.0;
 
       if (_orientation == PianoRollOrientation::HORIZONTAL) {
@@ -5591,9 +5602,62 @@ void PianoView::drawDraggedNote(QPainter* painter,
                                 QColor color,
                                 const QString& pitchName)
       {
-      Q_UNUSED(track);
+      Staff* staff = nullptr;
+      Score* score = _staff ? _staff->score() : nullptr;
+      if (score) {
+            const int staffIdx = track / VOICES;
+            if (staffIdx >= 0 && staffIdx < score->nstaves())
+                  staff = score->staff(staffIdx);
+            }
+
+      const bool drumDiamond =
+            staff && staff->isDrumStaff(startTick);
+
       painter->setBrush(color);
       painter->setPen(QPen(color.darker(250)));
+
+      if (drumDiamond) {
+            const int subbeats = _tuplet * (1 << _subdiv);
+            const Fraction gridLength(1, 4 * subbeats);
+
+            const qreal gridPixels = qAbs(
+                  tickToPixelXF((startTick + gridLength).ticks())
+                  - tickToPixelXF(startTick.ticks()));
+
+
+            const qreal size =
+                        qMax(6.0,
+                             qMin(static_cast<qreal>(_noteHeight), gridPixels));
+
+            const qreal half = size / 2.0;
+
+            qreal cx;
+            qreal cy;
+
+            if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                  cx = tickToPixelXF(startTick.ticks());
+                  cy = (pitchToPixelY(pitch)
+                        + pitchToPixelY(pitch + 1)) / 2.0;
+                  }
+            else {
+                  if (_verticalPitchLayout == VerticalPitchLayout::KEYBOARD_ALIGNED)
+                        cx = keyboardAlignedPitchLane(pitch).center().x();
+                  else
+                        cx = (pitch + 0.5) * _noteHeight;
+
+                  cy = tickToPixelYF(startTick.ticks());
+                  }
+
+            QPolygonF diamond;
+            diamond
+                  << QPointF(cx,        cy - half)
+                  << QPointF(cx + half, cy)
+                  << QPointF(cx,        cy + half)
+                  << QPointF(cx - half, cy);
+
+            painter->drawPolygon(diamond);
+            return;
+            }
 
       if (_orientation == PianoRollOrientation::HORIZONTAL) {
             int x0 = tickToPixelX(startTick.ticks());
