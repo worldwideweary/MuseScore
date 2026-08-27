@@ -171,6 +171,10 @@ private:
       QPointF _lastTieDragPos;
       int _tieDragUndoStartIdx { -1 };
 
+      int _drumPaintUndoStartIdx { -1 };
+      QPointF _lastDrumPaintPos;
+      QSet<int> _drumPaintedTicks;
+
       QPointF _mouseDownScreenPos;
       QPointF _lastMouseScreenPos;
       QPointF _viewportFocus;
@@ -221,6 +225,18 @@ private:
       QRect boundingRect(const Note* note, bool applyEvents);
       QRect boundingRect(const Note* note, const NoteEvent* evt, bool applyEvents);
 
+      bool useOnsetDiamond(const Staff* staff,
+                           const Fraction& tick) const;
+      bool useOnsetDiamond(const Note* note) const;
+
+      QRect onsetDiamondRect(const Note* note,
+                             const NoteEvent* event = nullptr,
+                             bool applyEvents = false) const;
+
+      QVector<Fraction> onsetPaintTicks(const QPointF& from,
+                                       const QPointF& to) const;
+      Fraction gridLengthAt(const Fraction& tick) const;
+
       void setSelectedNoteColor();
       void resetSelectedNoteColor();
 
@@ -228,6 +244,8 @@ private:
       QVector<Note*> getSegmentNotes(Segment* seg, int track);
       void updateBoundingSize();
       void clearNoteData();
+      void clearNoteSelection();
+      void selectItem(PianoItem* item, NoteSelectType selType);
       void selectNotes(int startTick, int endTick, int lowPitch, int highPitch, NoteSelectType selType);
       void showPopupMenu(const QPoint& pos);
       bool cutChordRest(ChordRest* targetCr, int track, Fraction cutTick, ChordRest*& cr0, ChordRest*& cr1);
@@ -260,6 +278,9 @@ private:
       bool calculateNoteDragOffsets(Fraction& pasteTickOffset,
                                     Fraction& pasteLengthOffset,
                                     int& pitchOffset) const;
+
+      bool paintOnsetDragSegment(const QPointF& from,
+                                 const QPointF& to);
 
       void drawPitchText(QPainter* p, const QRectF& bounds, const QString& name, const QColor& noteColor);
       QString pitchNameForMidi(int) const;
@@ -376,6 +397,7 @@ private:
       QRectF verticalPitchRect(int midiPitch) const;
 
       PianoItem* pickNote(int tick, int pitch);
+      PianoItem* pickNote(const QPointF& pos);
 
       QList<PianoItem*> getSelectedItems();
       QList<PianoItem*> getItems();
