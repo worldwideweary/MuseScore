@@ -7021,8 +7021,25 @@ void MuseScore::showDrumTools(const Drumset* drumset, Staff* staff)
                   _drumTools = new DrumTools(this);
                   addDockWidget(Qt::BottomDockWidgetArea, _drumTools);
                   }
-            if (timelineScrollArea())
-                  splitDockWidget(_drumTools, timelineScrollArea(), Qt::Vertical);
+
+            if (pianorollDock
+                && pianorollDock->isVisible()
+                && !pianorollDock->isFloating()
+                && dockWidgetArea(pianorollDock) == Qt::BottomDockWidgetArea) {
+                  splitDockWidget(
+                        pianorollDock,
+                        _drumTools,
+                        Qt::Vertical);
+                  }
+            else if (timelineScrollArea()
+                     && timelineScrollArea()->isVisible()
+                     && !timelineScrollArea()->isFloating()) {
+                  splitDockWidget(
+                        _drumTools,
+                        timelineScrollArea(),
+                        Qt::Vertical);
+                  }
+
             _drumTools->setDrumset(cs, staff, drumset);
             _drumTools->show();
             }
