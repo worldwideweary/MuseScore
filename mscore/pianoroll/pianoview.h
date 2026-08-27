@@ -245,10 +245,17 @@ private:
       void updateBoundingSize();
       void clearNoteData();
       void clearNoteSelection();
+
       void selectItem(PianoItem* item, NoteSelectType selType);
       void selectNotes(int startTick, int endTick, int lowPitch, int highPitch, NoteSelectType selType);
       void showPopupMenu(const QPoint& pos);
-      bool cutChordRest(ChordRest* targetCr, int track, Fraction cutTick, ChordRest*& cr0, ChordRest*& cr1);
+      bool cutChordRest(ChordRest* targetCr,
+                        int track,
+                        Fraction cutTick,
+                        ChordRest*& cr0,
+                        ChordRest*& cr1,
+                        bool preserveOriginalDuration = false);
+      bool noteRangeContainsChord(const Fraction& startTick, const Fraction& duration, int track) const;
       QVector<Note*> addNote(Fraction startTick, Fraction duration, int pitch, int track);
       void handleSelectionClick();
       void insertNote(int modifiers);
