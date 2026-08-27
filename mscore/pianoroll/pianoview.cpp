@@ -1335,10 +1335,15 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
                         noteColor = pianoRollNoteColor(note, _coloring, true, _useNoteColors);
                         }
 
-                  const bool ghostOriginal = _dragStarted && note->selected()
-                        && (_dragStyle != DragStyle::CANCELLED &&
-                            _dragStyle != DragStyle::SELECTION_RECT &&
-                            _dragStyle != DragStyle::MOVE_VIEWPORT);
+                  const bool ghostOriginal =
+                        _dragStarted
+                        && note->selected()
+                        && (_dragStyle == DragStyle::NOTE_POSITION
+                            || _dragStyle == DragStyle::NOTE_LENGTH_START
+                            || _dragStyle == DragStyle::NOTE_LENGTH_END
+                            || _dragStyle == DragStyle::EVENT_ONTIME
+                            || _dragStyle == DragStyle::EVENT_MOVE
+                            || _dragStyle == DragStyle::EVENT_LENGTH);
 
                   if (ghostOriginal)
                         noteColor.setAlphaF(0.25);
@@ -2968,8 +2973,14 @@ void PianoView::finishNoteEventAdjustDrag()
                               }
 
                         Fraction start = pi->note()->chord()->tick();
-                        Fraction startAdj = start + ticks * e.ontime() / 1000;
-                        Fraction lenAdj = ticks * e.len() / 1000;
+                        Fraction tieLen = pi->note()->playTicksFraction() - ticks;
+
+                        Fraction startAdj =
+                              start + ticks * e.ontime() / 1000;
+
+                        Fraction lenAdj =
+                              ticks * e.len() / 1000
+                              + tieLen;
 
                         //Calc start, duration of where we dragged to
                         Fraction startNew;
@@ -2991,7 +3002,8 @@ void PianoView::finishNoteEventAdjustDrag()
                               }
 
                         int evtOntimeNew = int(((startNew - start) / ticks).toDouble() * 1000);
-                        int evtLenNew = int((lenNew / ticks).toDouble() * 1000);
+                        int evtLenNew =
+                              int(((lenNew - tieLen) / ticks).toDouble() * 1000);
                         if (evtLenNew < 1) {
                               evtLenNew = 1;
                               }
@@ -3367,6 +3379,54 @@ QVector<Note*> PianoView::getSegmentNotes(Segment* seg, int track)
       return notes;
       }
 
+//---------------------------------------------------------
+//   noteRangeContainsChord
+//---------------------------------------------------------
+
+bool PianoView::noteRangeContainsChord(const Fraction& startTick,
+                                       const Fraction& duration,
+                                       int track) const
+      {
+      if (!_staff || duration <= Fraction(0, 1))
+            return false;
+
+      Score* score = _staff->score();
+      const Fraction endTick = startTick + duration;
+
+      ChordRest* cr = score->findCR(startTick, track);
+
+      while (cr && cr->tick() < endTick) {
+            //
+            // findCR() may return a ChordRest beginning before startTick,
+            // so make sure it actually overlaps the requested interval.
+            //
+            if (cr->tick() + cr->actualTicks() > startTick
+                && cr->isChord()) {
+                  return true;
+                  }
+
+            Segment* seg =
+                  cr->nextSegmentAfterCR(SegmentType::ChordRest);
+
+            if (!seg)
+                  break;
+
+            cr = seg->cr(track);
+
+            //
+            // A missing ChordRest in a secondary voice does not
+            // represent existing note material, so keep scanning
+            // subsequent ChordRest segments.
+            //
+            while (!cr && seg) {
+                  seg = seg->next1(SegmentType::ChordRest);
+                  if (seg)
+                        cr = seg->cr(track);
+                  }
+            }
+
+      return false;
+      }
 
 //---------------------------------------------------------
 //   addNote
@@ -3375,11 +3435,19 @@ QVector<Note*> PianoView::getSegmentNotes(Segment* seg, int track)
 QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pitch, int track)
       {
       QVector<Note*> addedNotes;
-      if (!pitchIsValid(pitch))
+      if (!pitchIsValid(pitch) || duration <= Fraction{})
             return addedNotes;
 
       Score* score = _staff->score();
-      NoteVal added_note_pitch(pitch);
+      const NoteVal newPitch(pitch);
+
+      const Fraction requestedStartTick = startTick;
+      const Fraction requestedDuration = duration;
+
+      const bool preserveExistingRhythm =
+            noteRangeContainsChord(requestedStartTick,
+                                   requestedDuration,
+                                   track);
 
       ChordRest* curCr = score->findCR(startTick, track);
       if (curCr) {
@@ -3390,7 +3458,7 @@ QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pit
             if (startTick > curCr->tick()) {
                   ChordRest* splitStart = nullptr;
 
-                  if (cutChordRest(curCr, track, startTick, cr0, splitStart))
+                  if (cutChordRest(curCr, track, startTick, cr0, splitStart, true))
                         curChordRest = splitStart;
                   else {
                         //
@@ -3409,16 +3477,35 @@ QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pit
             if (!curChordRest)
                   return addedNotes;
 
+            if (!preserveExistingRhythm) {
+                  // Nothing in the requested interval contains existing note
+                  // material whose rhythmic boundaries need to be preserved, so
+                  // let setNoteRest() realize the requested PRE duration directly,
+                  // as with PRE in 3.6.2
+                  Segment* newSeg =
+                        score->setNoteRest(
+                              curChordRest->segment(),
+                              track,
+                              newPitch,
+                              requestedDuration);
+
+                  if (newSeg)
+                        addedNotes.append(
+                              getSegmentNotes(newSeg, track));
+
+                  return addedNotes;
+                  }
+
             Fraction curStartTick = curChordRest->tick();
             Fraction curDur = curChordRest->ticks();
             while (startTick + duration >= curStartTick + curDur) {
                   if (curChordRest->isChord()) {
                         Chord* ch = toChord(curChordRest);
                         if (!std::any_of(ch->notes().begin(), ch->notes().end(), [pitch](Note* n) { return n->pitch() == pitch; }))
-                              addedNotes.append(score->addNote(ch, added_note_pitch));
+                              addedNotes.append(score->addNote(ch, newPitch));
                         }
                   else {
-                        Segment* newSeg = score->setNoteRest(curChordRest->segment(), track, added_note_pitch, curDur);
+                        Segment* newSeg = score->setNoteRest(curChordRest->segment(), track, newPitch, curDur);
                         if (newSeg)
                               addedNotes.append(getSegmentNotes(newSeg, track));
                         }
@@ -3468,7 +3555,8 @@ QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pit
                                   track,
                                   endTick,
                                   crMid,
-                                  crEnd)) {
+                                  crEnd,
+                                  true)) {
                               return addedNotes;
                               }
                         }
@@ -3486,14 +3574,14 @@ QVector<Note*> PianoView::addNote(Fraction startTick, Fraction duration, int pit
                                         return n->pitch() == pitch;
                                         })) {
                               addedNotes.append(
-                                    score->addNote(ch, added_note_pitch));
+                                    score->addNote(ch, newPitch));
                               }
                         }
                   else {
                         Segment* newSeg = score->setNoteRest(
                               crMid->segment(),
                               track,
-                              added_note_pitch,
+                              newPitch,
                               duration);
 
                         if (newSeg)
@@ -4220,7 +4308,7 @@ void PianoView::handleSelectionClick()
                         if (!frac.isValid() || frac.isZero())
                               frac.set(1, 4);
 
-                        if (cutChordRest(e, track, insertPosition, cr0, cr1)) {
+                        if (cutChordRest(e, track, insertPosition, cr0, cr1, true)) {
                               score->setNoteRest(cr1->segment(), track, nv, frac);
                               }
                         else {
@@ -4309,7 +4397,8 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
                              int track,
                              Fraction cutTick,
                              ChordRest*& cr0,
-                             ChordRest*& cr1)
+                             ChordRest*& cr1,
+                             bool preserveOriginalDuration)
       {
       cr0 = targetCr;
       cr1 = nullptr;
@@ -4350,11 +4439,35 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
       //
       QVector<NoteVal> chordNotes;
 
+      QMap<int, QPair<Fraction, Fraction>> preservedTieRanges;
+
       if (wasChord) {
             Chord* chord = toChord(targetCr);
 
             for (Note* note : chord->notes()) {
                   chordNotes.append(note->noteVal());
+
+                  if (preserveOriginalDuration) {
+                        Note* first = note;
+                        while (first->tieBack())
+                              first = first->tieBack()->startNote();
+
+                        Note* last = note;
+                        while (last->tieFor())
+                              last = last->tieFor()->endNote();
+
+                        const Fraction logicalStart =
+                              first->chord()->tick();
+
+                        const Fraction logicalEnd =
+                              last->chord()->tick()
+                              + last->chord()->actualTicks();
+
+                        preservedTieRanges.insert(
+                              note->pitch(),
+                              qMakePair(logicalStart, logicalEnd));
+                        }
+
                   note->setSelected(false);
                   }
             }
@@ -4454,7 +4567,30 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
       // requested by the user.
       //
       if (wasChord && cr1->isChord()) {
-            ChordRest* currentCR = cr1;
+            Fraction preserveStartTick = cr1->tick();
+            Fraction preserveEndTick = endTick;
+
+            if (preserveOriginalDuration) {
+                  bool firstRange = true;
+
+                  for (auto it = preservedTieRanges.constBegin();
+                       it != preservedTieRanges.constEnd();
+                       ++it) {
+                        if (firstRange
+                            || it.value().first < preserveStartTick) {
+                              preserveStartTick = it.value().first;
+                              firstRange = false;
+                              }
+
+                        if (it.value().second > preserveEndTick)
+                              preserveEndTick = it.value().second;
+                        }
+                  }
+
+            ChordRest* currentCR =
+                  preserveOriginalDuration
+                        ? score->findCR(preserveStartTick, track)
+                        : cr1;
 
             while (currentCR && currentCR->isChord()) {
                   Chord* currentChord = toChord(currentCR);
@@ -4465,7 +4601,7 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
                   //
                   // Never tie beyond the end of the original ChordRest.
                   //
-                  if (nextTick >= endTick)
+                  if (nextTick >= preserveEndTick)
                         break;
 
                   ChordRest* nextCR = score->findCR(nextTick, track);
@@ -4493,6 +4629,29 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
 
                         if (!nextNote)
                               continue;
+
+                        if (preserveOriginalDuration) {
+                              auto rangeIt =
+                                    preservedTieRanges.constFind(note->pitch());
+
+                              if (rangeIt == preservedTieRanges.constEnd())
+                                    continue;
+
+                              const Fraction logicalStart =
+                                    rangeIt.value().first;
+                              const Fraction logicalEnd =
+                                    rangeIt.value().second;
+
+                              //
+                              // Different notes in the original chord may belong to
+                              // tie chains with different logical extents.
+                              //
+                              if (currentChord->tick() < logicalStart)
+                                    continue;
+
+                              if (nextTick >= logicalEnd)
+                                    continue;
+                              }
 
                         //
                         // Do not disturb an existing tie relationship.
@@ -5877,8 +6036,14 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                                     }
 
                               Fraction start = pi->note()->chord()->tick();
-                              Fraction startAdj = start + ticks * e.ontime() / 1000;
-                              Fraction lenAdj = ticks * e.len() / 1000;
+                              Fraction tieLen = pi->note()->playTicksFraction() - ticks;
+
+                              Fraction startAdj =
+                                    start + ticks * e.ontime() / 1000;
+
+                              Fraction lenAdj =
+                                    ticks * e.len() / 1000
+                                    + tieLen;
 
                               //Calc start, duration of where we dragged to
                               Fraction startNew;
@@ -5899,6 +6064,14 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                                           break;
                                     }
 
+                              if (_dragStyle == DragStyle::EVENT_LENGTH) {
+                                    const Fraction minLen =
+                                          tieLen + ticks * Fraction(1, 1000);
+
+                                    if (lenNew < minLen)
+                                          lenNew = minLen;
+                                    }
+
                               int pitch = pi->note()->pitch();
                               int voice = pi->note()->voice();
                               int track = (int)_staff->idx() * VOICES + voice;
@@ -5913,7 +6086,8 @@ void PianoView::drawDraggedNotes(QPainter* painter)
 
                               // Same as finishNoteEventAdjustDrag:
                               int evtOntimeNew = int(((startNew - start) / ticks).toDouble() * 1000);
-                              int evtLenNew = int((lenNew / ticks).toDouble() * 1000);
+                              int evtLenNew =
+                                    int(((lenNew - tieLen) / ticks).toDouble() * 1000);
                               if (evtLenNew < 1) {
                                     evtLenNew = 1;
                                     }
