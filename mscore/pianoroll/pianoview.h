@@ -221,6 +221,11 @@ private:
       QRect boundingRect(const Note* note, bool applyEvents);
       QRect boundingRect(const Note* note, const NoteEvent* evt, bool applyEvents);
 
+      bool useDrumDiamond(const Note* note) const;
+      QRect drumDiamondRect(const Note* note,
+                            const NoteEvent* event = nullptr,
+                            bool applyEvents = false) const;
+
       void setSelectedNoteColor();
       void resetSelectedNoteColor();
 

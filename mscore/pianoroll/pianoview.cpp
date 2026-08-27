@@ -1173,6 +1173,93 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
       }
 
 //---------------------------------------------------------
+//   useDrumDiamond
+//---------------------------------------------------------
+
+bool PianoView::useDrumDiamond(const Note* note) const
+      {
+      if (!note)
+            return false;
+
+      Staff* staff = note->staff();
+      if (!staff)
+            return false;
+
+      return staff->isDrumStaff(note->tick());
+      }
+
+//---------------------------------------------------------
+//   drumDiamondRect
+//---------------------------------------------------------
+
+QRect PianoView::drumDiamondRect(const Note* note,
+                                 const NoteEvent* event,
+                                 bool applyEvents) const
+      {
+      if (!note)
+            return QRect();
+
+      Chord* chord = note->chord();
+      if (!chord)
+            return QRect();
+
+      Fraction ticks = chord->ticks();
+
+      if (Tuplet* tuplet = chord->tuplet())
+            ticks *= tuplet->ratio().inverse();
+
+      Fraction centerTick = chord->tick();
+
+      //
+      // In playback-event adjustment mode the event on-time moves
+      // the diamond itself.  Event length deliberately has no visual
+      // effect on a drum diamond.
+      //
+      if (event && applyEvents)
+            centerTick += ticks * event->ontime() / 1000;
+
+      const int pitch =
+            note->pitch() + (event && applyEvents ? event->pitch() : 0);
+
+      //
+      // Diamond diameter is tied to pitch-lane thickness rather than
+      // note duration. Keep it slightly smaller than the lane.
+      //
+      const qreal size = qMax<qreal>(6.0, _noteHeight * 0.75);
+      const qreal half = size / 2.0;
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            const qreal cx = tickToPixelXF(centerTick.ticks());
+
+            const qreal cy =
+                  (pitchToPixelY(pitch)
+                   + pitchToPixelY(pitch + 1)) / 2.0;
+
+            return QRect(
+                  qRound(cx - half),
+                  qRound(cy - half),
+                  qRound(size),
+                  qRound(size));
+            }
+      else {
+            qreal cx;
+
+            if (_verticalPitchLayout == VerticalPitchLayout::KEYBOARD_ALIGNED)
+                  cx = keyboardAlignedPitchLane(pitch).center().x();
+            else
+                  cx = (pitch + 0.5) * _noteHeight;
+
+            const qreal cy = tickToPixelYF(centerTick.ticks());
+
+            return QRect(
+                  qRound(cx - half),
+                  qRound(cy - half),
+                  qRound(size),
+                  qRound(size));
+            }
+      }
+
+//---------------------------------------------------------
 //   drawNoteBlock
 //---------------------------------------------------------
 
@@ -1222,25 +1309,48 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
             p->setBrush(noteColor);
             p->setPen(QPen(noteColor.darker(250), outlineSize));
 
+            const bool drumDiamond = useDrumDiamond(note);
+
             QRect bounds =
-                  boundingRect(
+                  drumDiamond
+                  ? drumDiamondRect(
+                        note,
+                        &e,
+                        _editNoteTool == PianoRollEditTool::EVENT_ADJUST)
+                  : boundingRect(
                         note,
                         &e,
                         _editNoteTool == PianoRollEditTool::EVENT_ADJUST);
 
-            p->drawRoundedRect(
-                  bounds,
-                  _noteRectRoundedRadius,
-                  _noteRectRoundedRadius);
+            if (drumDiamond) {
+                  const QPointF c = bounds.center();
 
-            drawPitchText(
-                  p,
-                  bounds,
-                  note->tpcUserName(),
-                  noteColor);
+                  QPolygonF diamond;
+                  diamond
+                        << QPointF(c.x(), bounds.top())
+                        << QPointF(bounds.right(), c.y())
+                        << QPointF(c.x(), bounds.bottom())
+                        << QPointF(bounds.left(), c.y());
+
+                  p->drawPolygon(diamond);
+                  }
+            else {
+                  p->drawRoundedRect(
+                        bounds,
+                        _noteRectRoundedRadius,
+                        _noteRectRoundedRadius);
+
+                  drawPitchText(
+                        p,
+                        bounds,
+                        note->tpcUserName(),
+                        noteColor);
+                  }
             }
 
-      if (_editNoteTool != PianoRollEditTool::EVENT_ADJUST) {
+      if (!useDrumDiamond(note)
+          && _editNoteTool != PianoRollEditTool::EVENT_ADJUST) {
+
             QColor colorTie = darkTheme() ? preferences.getColor(PREF_UI_PIANOROLL_DARK_BG_TIE_COLOR)
                                           : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_BG_TIE_COLOR);
 
@@ -1267,6 +1377,9 @@ QRect PianoView::boundingRect(const Note* note, bool applyEvents)
 
 QRect PianoView::boundingRect(const Note* note, const NoteEvent* evt, bool applyEvents)
       {
+      if (useDrumDiamond(note))
+            return drumDiamondRect(note, evt, applyEvents);
+
       Chord* chord = note->chord();
       int pitch = note->pitch() + (evt ? evt->pitch() : 0);
 
@@ -2783,6 +2896,11 @@ void PianoView::updateCursor()
                               pi->note(),
                               _editNoteTool == PianoRollEditTool::EVENT_ADJUST);
 
+                        if (useDrumDiamond(pi->note())) {
+                              setCursor(Qt::ArrowCursor);
+                              return;
+                              }
+
                         if (bounds.contains(pos.x(), pos.y())) {
                               if (_orientation == PianoRollOrientation::HORIZONTAL) {
                                     if (pos.x() <= bounds.left() + _dragNoteLengthMargin
@@ -2890,7 +3008,12 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
 
                                     QRect bounds = boundingRect(pi->note(), false);
 
-                                    if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                                    if (useDrumDiamond(pi->note())) {
+                                          // Drum diamonds represent onset only. They can move in
+                                          // time/pitch, but they have no duration handles.
+                                          _dragStyle = DragStyle::NOTE_POSITION;
+                                          }
+                                    else if (_orientation == PianoRollOrientation::HORIZONTAL) {
                                           if (_mouseDownPos.x() <= bounds.left() + _dragNoteLengthMargin)
                                                 _dragStyle = DragStyle::NOTE_LENGTH_START;
                                           else if (_mouseDownPos.x() >= bounds.right() - _dragNoteLengthMargin)
@@ -2899,11 +3022,6 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                                                 _dragStyle = DragStyle::NOTE_POSITION;
                                           }
                                     else {
-                                          //
-                                          // Vertical time is reversed:
-                                          // top    = note end
-                                          // bottom = note start
-                                          //
                                           if (_mouseDownPos.y() >= bounds.bottom() - _dragNoteLengthMargin)
                                                 _dragStyle = DragStyle::NOTE_LENGTH_START;
                                           else if (_mouseDownPos.y() <= bounds.top() + _dragNoteLengthMargin)
@@ -2933,7 +3051,15 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
 
                                     QRect bounds = boundingRect(pi->note(), true);
 
-                                    if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                                    if (useDrumDiamond(pi->note())) {
+                                          //
+                                          // A diamond has no displayed playback length. Dragging it in
+                                          // EVENT_ADJUST moves the event on-time and therefore moves the
+                                          // diamond center.
+                                          //
+                                          _dragStyle = DragStyle::EVENT_MOVE;
+                                          }
+                                    else if (_orientation == PianoRollOrientation::HORIZONTAL) {
                                           if (_mouseDownPos.x() <= bounds.left() + _dragNoteLengthMargin)
                                                 _dragStyle = DragStyle::EVENT_ONTIME;
                                           else if (_mouseDownPos.x() >= bounds.right() - _dragNoteLengthMargin)
@@ -3453,6 +3579,9 @@ bool PianoView::toggleTie(Note* note)
       if (!note || !_staff)
             return false;
 
+      if (useDrumDiamond(note))
+            return false;
+
       // Based on Score::cmdToggleTie()
       Score* score = _staff->score();
 
@@ -3624,6 +3753,10 @@ void PianoView::cutChord(const QPointF& pos)
             return;
 
       PianoItem* pn = pickNote(pickTick, pickPitch);
+
+      if (pn && useDrumDiamond(pn->note()))
+            return;
+
       const int voice = pn ? pn->note()->voice() : _editNoteVoice;
       const int track = _staff->idx() * VOICES + voice;
 
