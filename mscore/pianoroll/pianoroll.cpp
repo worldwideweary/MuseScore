@@ -210,6 +210,57 @@ PianorollEditor::PianorollEditor(QWidget* parent)
               applyColoring);
       // Call applyColoring after other constructions later:
 
+
+      // Option: Duration / onset note representation
+      noteShapeBox = new QComboBox;
+      noteShapeBox->setToolTip(
+            tr("Piano roll note representation for the editable instrument"));
+
+      noteShapeBox->addItem(
+            tr("Auto"),
+            int(PianoRollNoteShape::AUTO));
+
+      noteShapeBox->addItem(
+            tr("Duration"),
+            int(PianoRollNoteShape::RECTANGLE));
+
+      noteShapeBox->addItem(
+            tr("Onset"),
+            int(PianoRollNoteShape::DIAMOND));
+
+      noteShapeBox->setItemData(
+            0,
+            tr("Automatic: rectangles for pitched instruments, diamonds for drums"),
+            Qt::ToolTipRole);
+
+      noteShapeBox->setItemData(
+            1,
+            tr("Rectangle"),
+            Qt::ToolTipRole);
+
+      noteShapeBox->setItemData(
+            2,
+            tr("Diamond"),
+            Qt::ToolTipRole);
+
+      noteShapeBox->setEnabled(false);
+
+      tbMain->addWidget(noteShapeBox);
+
+      connect(noteShapeBox,
+              QOverload<int>::of(&QComboBox::activated),
+              this,
+              [this](int index) {
+                    const PianoRollNoteShape shape =
+                          PianoRollNoteShape(
+                                noteShapeBox->itemData(index).toInt());
+
+                    setPianoRollNoteShape(shape);
+                    restoreScoreViewFocus();
+                    });
+
+
+      // Option: custon note color to be honored or not
       QAction* useNoteColorsAction = new QAction(
             *icons[int(Icons::noteheadColor_ICON)],
             QString(),
@@ -230,6 +281,8 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                     });
 
       tbMain->addAction(useNoteColorsAction);
+
+      tbMain->addSeparator();
 
       // Option: Show pitch names
       QAction* showPitchNamesAction = new QAction(
@@ -1244,6 +1297,38 @@ void PianorollEditor::restoreScoreViewFocus()
       }
 
 //---------------------------------------------------------
+//   setEditableStaff
+//---------------------------------------------------------
+
+void PianorollEditor::setEditableStaff(Staff* st)
+      {
+      if (!st || st == staff)
+            return;
+
+      staff = st;
+
+      updateNoteShapeBox();
+
+      pianoView->setEditableStaff(st);
+      pianoLevels->setEditableStaff(st);
+
+      pianoLevelsChooser->setStaff(st);
+      pianoKbd->setStaff(st);
+      noteTweakerDlg->setStaff(st);
+
+      if (staffBox) {
+            const int index = staffBox->findData(st->idx());
+
+            if (index != -1) {
+                  QSignalBlocker blocker(staffBox);
+                  staffBox->setCurrentIndex(index);
+                  }
+            }
+
+      restoreScoreViewFocus();
+      }
+
+//---------------------------------------------------------
 //   setStaff
 //---------------------------------------------------------
 
@@ -1278,6 +1363,8 @@ void PianorollEditor::setStaff(Staff* st)
             updateStaffBox();
             }
       staff = st;
+
+      updateNoteShapeBox();
 
       if (staffBox) {
             QSignalBlocker blocker(staffBox);
@@ -1826,6 +1913,75 @@ void PianorollEditor::veloTypeChanged(int val)
       _score->endCmd();
 
       restoreScoreViewFocus();
+      }
+
+//---------------------------------------------------------
+//   updateNoteShapeBox
+//---------------------------------------------------------
+
+void PianorollEditor::updateNoteShapeBox()
+      {
+      if (!noteShapeBox)
+            return;
+
+      QSignalBlocker blocker(noteShapeBox);
+
+      if (!staff || !staff->part()) {
+            noteShapeBox->setCurrentIndex(-1);
+            noteShapeBox->setEnabled(false);
+            return;
+            }
+
+      const Instrument* instrument =
+            staff->part()->instrument();
+
+      if (!instrument) {
+            noteShapeBox->setCurrentIndex(-1);
+            noteShapeBox->setEnabled(false);
+            return;
+            }
+
+      const int index =
+            noteShapeBox->findData(
+                  int(instrument->pianoRollNoteShape()));
+
+      noteShapeBox->setCurrentIndex(index);
+      noteShapeBox->setEnabled(index != -1);
+      }
+
+//---------------------------------------------------------
+//   setPianoRollNoteShape
+//---------------------------------------------------------
+
+void PianorollEditor::setPianoRollNoteShape(
+      PianoRollNoteShape shape)
+      {
+      if (!_score || !staff || !staff->part())
+            return;
+
+      Part* part = staff->part();
+      Instrument* current = part->instrument();
+
+      if (!current
+          || current->pianoRollNoteShape() == shape) {
+            updateNoteShapeBox();
+            return;
+            }
+
+      _score->startCmd();
+
+      _score->undo(new ChangePianoRollNoteShape(current, shape));
+
+      _score->endCmd();
+
+      updateNoteShapeBox();
+
+      pianoView->updateNotes();
+
+      if (_showPianoLevels && pianoLevels)
+            pianoLevels->updateNotes();
+
+      redraw();
       }
 
 //---------------------------------------------------------

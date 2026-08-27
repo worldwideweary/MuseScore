@@ -41,6 +41,8 @@ class PianoRuler;
 class Seq;
 class WaveView;
 
+enum class PianoRollNoteShape : char;
+
 //---------------------------------------------------------
 //   PianorollEditor
 //---------------------------------------------------------
@@ -70,6 +72,8 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       Score* _score { nullptr };
       Staff* staff { nullptr };
       QComboBox* staffBox { nullptr };
+      QComboBox* scopeBox { nullptr };
+      QComboBox* noteShapeBox { nullptr };
       Awl::PitchEdit* pitch { nullptr };
       QSpinBox* velocity { nullptr };
       QSpinBox* onTime { nullptr };
@@ -114,6 +118,8 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       NoteTweakerDialog* noteTweakerDlg { nullptr };
 
       void updateNoteLengthControls(const Fraction& duration);
+      void updateNoteShapeBox();
+      void setPianoRollNoteShape(PianoRollNoteShape shape);
       void updateStaffBox();
       void updateVelocity(Note* note);
       void updateSelection();
