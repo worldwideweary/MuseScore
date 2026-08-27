@@ -373,9 +373,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       LenIconData _iconData[] = {
             { QStringLiteral(":/data/icons/note-longa.svg"), 2, false },
             { QStringLiteral(":/data/icons/note-breve.svg"), 1, false },
-            { QStringLiteral(":/data/icons/note-1.svg"), 0, true },
+            { QStringLiteral(":/data/icons/note-1.svg"), 0, false },
             { QStringLiteral(":/data/icons/note-2.svg"), -1, false },
-            { QStringLiteral(":/data/icons/note-4.svg"), -2, false },
+            { QStringLiteral(":/data/icons/note-4.svg"), -2, true }, // quarter-note is default
             { QStringLiteral(":/data/icons/note-8.svg"), -3, false },
             { QStringLiteral(":/data/icons/note-16.svg"), -4, false },
             { QStringLiteral(":/data/icons/note-32.svg"), -5, false },
