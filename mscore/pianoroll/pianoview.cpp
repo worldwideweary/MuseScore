@@ -3203,13 +3203,6 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                                           _lastDrumPaintPos = _mouseDownPos;
                                           _drumPaintUndoStartIdx =
                                                 _staff->score()->undoStack()->getCurIdx();
-
-                                          // Materialize the first crossed position immediately.
-                                          if (paintDrumDragSegment(
-                                                      _mouseDownPos,
-                                                      _mouseDownPos)) {
-                                                updateNotes();
-                                                }
                                           }
                                     }
                               else
@@ -3585,25 +3578,42 @@ QVector<Fraction> PianoView::drumPaintTicks(const QPointF& from,
       int fromTick = scenePosToTick(from);
       int toTick   = scenePosToTick(to);
 
-      if (fromTick > toTick)
-            std::swap(fromTick, toTick);
+      if (fromTick == toTick)
+            return ticks;
 
-      const Fraction first =
-            roundToNearestBeat(fromTick, true);
+      if (fromTick < toTick) {
+            Fraction tick =
+                  roundToNearestBeat(fromTick, false);
 
-      const Fraction last =
-            roundToNearestBeat(toTick, true);
+            while (tick.ticks() <= toTick) {
+                  if (tick.ticks() > fromTick)
+                        ticks.append(tick);
 
-      Fraction tick = first;
+                  const Fraction length = gridLengthAt(tick);
+                  if (length <= Fraction(0, 1))
+                        break;
 
-      while (tick <= last) {
-            ticks.append(tick);
+                  tick += length;
+                  }
+            }
+      else {
+            Fraction tick =
+                  roundToNearestBeat(fromTick, true);
 
-            const Fraction length = gridLengthAt(tick);
-            if (length <= Fraction(0, 1))
-                  break;
+            while (tick.ticks() >= toTick) {
+                  if (tick.ticks() < fromTick)
+                        ticks.append(tick);
 
-            tick += length;
+                  // For reverse traversal, obtain the previous
+                  // grid boundary rather than advancing forward:
+                  const Fraction previous =
+                        roundToNearestBeat(tick.ticks() - 1, true);
+
+                  if (previous >= tick)
+                        break;
+
+                  tick = previous;
+                  }
             }
 
       return ticks;
