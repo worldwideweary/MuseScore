@@ -48,8 +48,8 @@ DrumTools::DrumTools(QWidget* parent)
       setAllowedAreas(Qt::DockWidgetAreas(Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea));
 
       QWidget* w = new QWidget(this);
-      w->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
-      w->setMaximumHeight(100 * Palette::guiMag());
+      w->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding));
+
       QHBoxLayout* layout = new QHBoxLayout;
       w->setLayout(layout);
 
@@ -65,16 +65,16 @@ DrumTools::DrumTools(QWidget* parent)
       buttonLayout->setContentsMargins(5, 5, 5, 5);
       editButton = new QToolButton;
       editButton->setMinimumWidth(175);
-      editButton->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding));
+      editButton->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
       buttonLayout->addWidget(editButton);
       layout1->addLayout(buttonLayout);
       layout->addLayout(layout1);
 
       drumPalette = new Palette;
-      drumPalette->setMag(0.8);
+      drumPalette->setMag(1.75);
       drumPalette->setSelectable(true);
       drumPalette->setUseDoubleClickToActivate(true);
-      drumPalette->setGrid(28, 60);
+      drumPalette->setGrid(44, 150);
       PaletteScrollArea* sa = new PaletteScrollArea(drumPalette);
       sa->setFocusPolicy(Qt::NoFocus);
       layout->addWidget(sa);
