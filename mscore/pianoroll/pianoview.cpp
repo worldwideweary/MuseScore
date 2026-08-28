@@ -2932,8 +2932,14 @@ void PianoView::finishNoteEventAdjustDrag()
                               }
 
                         Fraction start = pi->note()->chord()->tick();
-                        Fraction startAdj = start + ticks * e.ontime() / 1000;
-                        Fraction lenAdj = ticks * e.len() / 1000;
+                        Fraction tieLen = pi->note()->playTicksFraction() - ticks;
+
+                        Fraction startAdj =
+                              start + ticks * e.ontime() / 1000;
+
+                        Fraction lenAdj =
+                              ticks * e.len() / 1000
+                              + tieLen;
 
                         //Calc start, duration of where we dragged to
                         Fraction startNew;
@@ -2955,7 +2961,8 @@ void PianoView::finishNoteEventAdjustDrag()
                               }
 
                         int evtOntimeNew = int(((startNew - start) / ticks).toDouble() * 1000);
-                        int evtLenNew = int((lenNew / ticks).toDouble() * 1000);
+                        int evtLenNew =
+                              int(((lenNew - tieLen) / ticks).toDouble() * 1000);
                         if (evtLenNew < 1) {
                               evtLenNew = 1;
                               }
@@ -5989,8 +5996,14 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                                     }
 
                               Fraction start = pi->note()->chord()->tick();
-                              Fraction startAdj = start + ticks * e.ontime() / 1000;
-                              Fraction lenAdj = ticks * e.len() / 1000;
+                              Fraction tieLen = pi->note()->playTicksFraction() - ticks;
+
+                              Fraction startAdj =
+                                    start + ticks * e.ontime() / 1000;
+
+                              Fraction lenAdj =
+                                    ticks * e.len() / 1000
+                                    + tieLen;
 
                               //Calc start, duration of where we dragged to
                               Fraction startNew;
@@ -6025,7 +6038,8 @@ void PianoView::drawDraggedNotes(QPainter* painter)
 
                               // Same as finishNoteEventAdjustDrag:
                               int evtOntimeNew = int(((startNew - start) / ticks).toDouble() * 1000);
-                              int evtLenNew = int((lenNew / ticks).toDouble() * 1000);
+                              int evtLenNew =
+                                    int(((lenNew - tieLen) / ticks).toDouble() * 1000);
                               if (evtLenNew < 1) {
                                     evtLenNew = 1;
                                     }
