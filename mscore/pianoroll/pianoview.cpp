@@ -5880,12 +5880,21 @@ void PianoView::copyNotes()
 //   compactMeasures
 //---------------------------------------------------------
 
-void PianoView::compactMeasures(QList<Measure*> measures)
+void PianoView::compactMeasures(
+      const QMap<Measure*, QSet<int>>& changedTracks)
       {
       Score* score = _staff->score();
 
-      for (Measure* m : measures) {
-            for (int track = 0; track < VOICES; ++track) {
+      for (auto it = changedTracks.constBegin();
+           it != changedTracks.constEnd(); ++it) {
+            Measure* m = it.key();
+
+            if (!m)
+                  continue;
+
+            for (int track : it.value()) {
+                  if (track < 0 || track >= score->ntracks())
+                        continue;
                   ChordRest* cr = m->findChordRest(m->tick(), track);
                   if (!cr)
                         continue;
@@ -5894,7 +5903,7 @@ void PianoView::compactMeasures(QList<Measure*> measures)
                         Fraction crTicks = cr->ticks();
 
                         Segment* segNext = cr->nextSegmentAfterCR(SegmentType::ChordRest);
-                        ChordRest* crNext = segNext->cr(track);
+                        ChordRest* crNext = segNext ? segNext->cr(track) : nullptr;
 
                         if (!crNext || crNext->measure() != m)
                               break;
@@ -5957,15 +5966,15 @@ void PianoView::deleteSelectedNotes()
       QList<Element*> el = score->selection().elements();
 
       QList<Note*> notesToDelete;
-      QList<Measure*> changedMeasures;
+      QMap<Measure*, QSet<int>> changedTracks;
 
       for (Element* e : el) {
             if (!e->isNote())
                   continue;
 
             Measure* m = e->findMeasure();
-            if (changedMeasures.indexOf(m) == -1)
-                  changedMeasures.append(m);
+            if (m)
+                  changedTracks[m].insert(e->track());
 
             Note* noteStart = toNote(e);
             while (noteStart->tieBack()) {
@@ -5977,15 +5986,15 @@ void PianoView::deleteSelectedNotes()
                   notesToDelete.append(note->tieFor()->endNote());
 
                   m = note->findMeasure();
-                  if (changedMeasures.indexOf(m) == -1)
-                        changedMeasures.append(m);
+                  if (m)
+                        changedTracks[m].insert(note->track());
                   }
             }
 
       for (Note* note : notesToDelete)
             score->deleteItem(note);
 
-      compactMeasures(changedMeasures);
+      compactMeasures(changedTracks);
 
       }
 

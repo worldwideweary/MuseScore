@@ -285,7 +285,7 @@ private:
       bool toggleTie(Note*);
       Note* tieNoteAt(const QPointF& pos);
       bool toggleTieDragSegment(const QPointF& from, const QPointF& to);
-      void compactMeasures(QList<Measure*> measures);
+      void compactMeasures(const QMap<Measure*, QSet<int>>& changedTracks);
       void dragSelectionNoteGroup();
       void finishNoteGroupDrag(QMouseEvent* event);
       void finishNoteEventAdjustDrag();
