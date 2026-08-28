@@ -2378,11 +2378,86 @@ void Score::cmdResetTextStyleOverrides()
 
 void Score::cmdResetNoteAndRestGroupings()
       {
-      bool noSelection = selection().isNone();
+      const bool noSelection = selection().isNone();
+      const bool listSelection = selection().isList();
+
       if (noSelection)
             cmdSelectAll();
-      else if (!selection().isRange()) {
-            qDebug("no system or staff selected");
+      else if (!selection().isRange() && !listSelection) {
+            qDebug("no system, staff, or note list selected");
+            return;
+            }
+
+      if (listSelection) {
+            QMap<int, QPair<Fraction, Fraction>> trackRanges;
+
+            for (Element* e : selection().elements()) {
+                  if (!e || !e->isNote())
+                        continue;
+
+                  Note* note = toNote(e);
+
+                  Note* first = note;
+                  while (first->tieBack())
+                        first = first->tieBack()->startNote();
+
+                  Note* last = note;
+                  while (last->tieFor())
+                        last = last->tieFor()->endNote();
+
+                  Chord* firstChord = first->chord();
+                  Chord* lastChord = last->chord();
+
+                  if (!firstChord || !lastChord)
+                        continue;
+
+                  const int track = note->track();
+
+                  const Fraction startTick =
+                        firstChord->tick();
+
+                  const Fraction endTick =
+                        lastChord->tick()
+                        + lastChord->actualTicks();
+
+                  auto it = trackRanges.find(track);
+
+                  if (it == trackRanges.end()) {
+                        trackRanges.insert(
+                              track,
+                              qMakePair(startTick, endTick));
+                        }
+                  else {
+                        if (startTick < it.value().first)
+                              it.value().first = startTick;
+
+                        if (endTick > it.value().second)
+                              it.value().second = endTick;
+                        }
+                  }
+
+            if (trackRanges.isEmpty()) {
+                  qDebug("no notes selected");
+                  return;
+                  }
+
+            startCmd();
+
+            for (auto it = trackRanges.constBegin();
+                 it != trackRanges.constEnd();
+                 ++it) {
+                  const int track = it.key();
+
+                  if (!selectionFilter().canSelectVoice(track))
+                        continue;
+
+                  regroupNotesAndRests(
+                        it.value().first,
+                        it.value().second,
+                        track);
+                  }
+
+            endCmd();
             return;
             }
 
