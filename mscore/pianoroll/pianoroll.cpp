@@ -749,19 +749,35 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             QSizePolicy::Preferred,
             QSizePolicy::Fixed);
 
-      QHBoxLayout* toolbarLayout = new QHBoxLayout(toolbarArea);
+      QVBoxLayout* toolbarLayout = new QVBoxLayout(toolbarArea);
       toolbarLayout->setContentsMargins(0, 0, 0, 0);
       toolbarLayout->setSpacing(0);
 
-      toolbarLayout->addWidget(tbMain);
-      toolbarLayout->addWidget(tbTool);
-      toolbarLayout->addWidget(tbNoteLen);
-      toolbarLayout->addWidget(tbDots);
-      toolbarLayout->addWidget(tbVoices);
-      toolbarLayout->addStretch(1);
+      QWidget* toolbarRow1 = new QWidget(toolbarArea);
+      QHBoxLayout* toolbarRow1Layout = new QHBoxLayout(toolbarRow1);
+      toolbarRow1Layout->setContentsMargins(0, 0, 0, 0);
+      toolbarRow1Layout->setSpacing(0);
+
+      toolbarRow1Layout->addWidget(tbMain);
+      toolbarRow1Layout->addStretch(1);
+
+      QWidget* toolbarRow2 = new QWidget(toolbarArea);
+      QHBoxLayout* toolbarRow2Layout = new QHBoxLayout(toolbarRow2);
+      toolbarRow2Layout->setContentsMargins(0, 0, 0, 0);
+      toolbarRow2Layout->setSpacing(0);
+
+      toolbarRow2Layout->addWidget(tbTool);
+      toolbarRow2Layout->addWidget(tbNoteLen);
+      toolbarRow2Layout->addWidget(tbDots);
+      toolbarRow2Layout->addWidget(tbVoices);
+      toolbarRow2Layout->addStretch(1);
+
+      toolbarLayout->addWidget(toolbarRow1);
+      toolbarLayout->addWidget(toolbarRow2);
 
       mainLayout->addWidget(toolbarArea);
       mainLayout->addWidget(tbTweak);
+
       mainLayout->addWidget(mainWidget);
 
       // Re-enable right-click menu for enable/disable toolbars now with dockable widget
