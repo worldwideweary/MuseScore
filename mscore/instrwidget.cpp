@@ -762,7 +762,6 @@ void InstrumentsWidget::on_partiturList_itemSelectionChanged()
             return;
             }
       QTreeWidgetItem* item = wi.front();
-      Q_ASSERT(partiturList->currentItem() == item);
       bool flag = item != nullptr;
 
       int count = 0; // item can be hidden
