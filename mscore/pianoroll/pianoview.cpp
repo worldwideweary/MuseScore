@@ -2865,19 +2865,30 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                               if (!measure)
                                     return;
 
-                              Segment* seg =
-                                    measure->undoGetSegment(
-                                          SegmentType::ChordRest,
-                                          startTickFrac);
-
-                              score->expandVoice(seg, track);
-
                               score->startCmd();
-                              addNote(
-                                    startTickFrac,
-                                    duration,
-                                    pitch,
-                                    track);
+
+                              ChordRest* cr =
+                                    score->findCR(startTickFrac, track);
+
+                              if (!cr) {
+                                    Segment* seg =
+                                          measure->undoGetSegment(
+                                                SegmentType::ChordRest,
+                                                startTickFrac);
+
+                                    score->expandVoice(seg, track);
+
+                                    cr = score->findCR(startTickFrac, track);
+                                    }
+
+                              if (cr) {
+                                    addNote(
+                                          startTickFrac,
+                                          duration,
+                                          pitch,
+                                          track);
+                                    }
+
                               score->endCmd();
 
                               updateNotes();
@@ -4029,23 +4040,25 @@ void PianoView::insertNote(int modifiers)
       if (!measure)
             return;
 
-      Segment* seg =
-            measure->undoGetSegment(
-                  SegmentType::ChordRest,
-                  insertPosition);
-
-      score->expandVoice(seg, track);
-
-      Fraction tupletRatio(_tuplet, 1 << _subdiv); // unused?
+      score->startCmd();
 
       ChordRest* e = score->findCR(insertPosition, track);
-      if (e) {
-            score->startCmd();
 
+      if (!e) {
+            Segment* seg =
+                  measure->undoGetSegment(
+                        SegmentType::ChordRest,
+                        insertPosition);
+
+            score->expandVoice(seg, track);
+
+            e = score->findCR(insertPosition, track);
+            }
+
+      if (e)
             addNote(insertPosition, noteLen, pickPitch, track);
 
-            score->endCmd();
-            }
+      score->endCmd();
       }
 
 
