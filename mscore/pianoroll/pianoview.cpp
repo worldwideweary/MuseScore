@@ -291,13 +291,16 @@ void PianoView::updatePlaybackHighlights()
       //
       // Notes that were marked before but are not marked now
       // need repainting to remove their playback highlight.
+      // Previously highlighted notes may no longer exist after
+      // score edits:
       //
-      for (Note* note : _markedPlaybackNotes) {
-            if (markedNotes.contains(note))
-                  continue;
+      bool removedPlaybackHighlights = false;
 
-            for (NoteEvent& event : note->playEvents())
-                  dirtyRect |= boundingRect(note, &event, false);
+      for (Note* note : _markedPlaybackNotes) {
+            if (!markedNotes.contains(note)) {
+                  removedPlaybackHighlights = true;
+                  break;
+                  }
             }
 
       //
@@ -314,10 +317,12 @@ void PianoView::updatePlaybackHighlights()
 
       _markedPlaybackNotes = markedNotes;
 
-      if (!dirtyRect.isNull()) {
-            //
-            // Include the note outline in the invalidated region.
-            //
+      if (removedPlaybackHighlights) {
+            // Can't safely derive old note bounds after removal, so
+            // repaint the view:
+            scene()->update(sceneRect());
+            }
+      else if (!dirtyRect.isNull()) {
             dirtyRect.adjust(-3.0, -3.0, 3.0, 3.0);
             scene()->update(dirtyRect);
             }
@@ -5576,6 +5581,8 @@ void PianoView::updateNotes()
 
 void PianoView::clearNoteData()
       {
+      _markedPlaybackNotes.clear();
+
       for (int i = 0; i < _noteList.size(); ++i)
             delete _noteList[i];
 
