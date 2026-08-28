@@ -5899,6 +5899,13 @@ void PianoView::compactMeasures(QList<Measure*> measures)
                         if (!crNext || crNext->measure() != m)
                               break;
 
+                        // Do not compact across tuplets: setNoteRest() may delete/rebuild
+                        // an entire tuplet while compactMeasures() is iterating ChordRests
+                        if (cr->tuplet() || crNext->tuplet()) {
+                              cr = crNext;
+                              continue;
+                              }
+
                         Fraction crNextTicks = crNext->ticks();
 
                         if (cr->isRest() && crNext->isRest()) {
