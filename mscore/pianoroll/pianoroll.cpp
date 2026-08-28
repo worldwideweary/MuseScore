@@ -299,7 +299,18 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             bn->setCheckable(true);
             bn->setToolTip(p->_tooltip);
             PianoRollEditTool tool = p->_tool;
-            connect(bn, &QToolButton::clicked, this, [=, this]() {this->setEditNoteTool(tool); });
+            connect(bn, &QToolButton::clicked,
+                  this, [=, this]() {
+                        this->setEditNoteTool(tool);
+
+                        const bool showAutoVoice =
+                              tool == PianoRollEditTool::ADD;
+
+                        if (automaticVoiceAction)
+                              automaticVoiceAction->setVisible(showAutoVoice);
+                        if (automaticVoiceSeparator)
+                              automaticVoiceSeparator->setVisible(showAutoVoice);
+                  });
 
             if (p->_selected)
                   bn->setChecked(true);
@@ -449,6 +460,24 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             tbVoices->addWidget(bn);
             }
 
+      automaticVoiceSeparator = tbVoices->addSeparator();
+
+      automaticVoiceAction =
+            new QAction(tr("Auto Voice"), this);
+
+      automaticVoiceAction->setCheckable(true);
+      automaticVoiceAction->setToolTip(
+            tr("Automatically choose a compatible voice when inserting notes"));
+
+      tbVoices->addAction(automaticVoiceAction);
+
+      const bool showAutoVoice =
+            bngrpActionBns->checkedId()
+            == int(PianoRollEditTool::ADD);
+
+      automaticVoiceSeparator->setVisible(showAutoVoice);
+      automaticVoiceAction->setVisible(showAutoVoice);
+
       // --------------------------------------------------
       // empty area for spacing
 
@@ -582,6 +611,17 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       pianoView = new PianoView;
       pianoView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
       pianoView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+      automaticVoiceAction->setChecked(
+            pianoView->automaticVoiceAssignment());
+
+      connect(automaticVoiceAction,
+              &QAction::toggled,
+              this,
+              [this](bool checked) {
+                    pianoView->setAutomaticVoiceAssignment(checked);
+                    restoreScoreViewFocus();
+                    });
 
       ruler->setPianoView(pianoView);
 
