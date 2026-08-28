@@ -2859,8 +2859,16 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                               const int track =
                                     _staff->idx() * VOICES + voice;
 
+                              Measure* measure =
+                                    score->tick2measure(startTickFrac);
+
+                              if (!measure)
+                                    return;
+
                               Segment* seg =
-                                    score->tick2segment(startTickFrac);
+                                    measure->undoGetSegment(
+                                          SegmentType::ChordRest,
+                                          startTickFrac);
 
                               score->expandVoice(seg, track);
 
@@ -4017,7 +4025,15 @@ void PianoView::insertNote(int modifiers)
 
       int track = _staff->idx() * VOICES + voice;
 
-      Segment* seg = score->tick2segment(insertPosition);
+      Measure* measure = score->tick2measure(insertPosition);
+      if (!measure)
+            return;
+
+      Segment* seg =
+            measure->undoGetSegment(
+                  SegmentType::ChordRest,
+                  insertPosition);
+
       score->expandVoice(seg, track);
 
       Fraction tupletRatio(_tuplet, 1 << _subdiv); // unused?
