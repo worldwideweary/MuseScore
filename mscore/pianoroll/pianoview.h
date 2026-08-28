@@ -431,8 +431,17 @@ private:
       
       void zoomView(int step, bool horizontal, int centerX, int centerY);
 
-      bool eventsAdjustTool() { return _editNoteTool == PianoRollEditTool::EVENT_ADJUST; }
-      bool selectTool() { return _editNoteTool == PianoRollEditTool::SELECT; }
+      bool isTool(PianoRollEditTool v) const
+            { return v == _editNoteTool; }
+      bool eventsAdjustTool() const
+            { return _editNoteTool == PianoRollEditTool::EVENT_ADJUST; }
+      bool selectTool() const
+            { return _editNoteTool == PianoRollEditTool::SELECT; }
+      bool addTool() const
+            { return _editNoteTool == PianoRollEditTool::ADD; }
+      bool eraseTool() const
+            { return _editNoteTool == PianoRollEditTool::ERASE; }
+
       };
 
 
