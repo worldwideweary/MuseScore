@@ -823,8 +823,7 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
 
             //Draw drag selection box
             if (_dragStarted
-                && _dragStyle == DragStyle::SELECTION_RECT
-                && selectionRectAllowed()) {
+                && _dragStyle == DragStyle::SELECTION_RECT) {
                   int minX = qMin(_mouseDownPos.x(), _lastMousePos.x());
                   int minY = qMin(_mouseDownPos.y(), _lastMousePos.y());
                   int maxX = qMax(_mouseDownPos.x(), _lastMousePos.x());
@@ -1154,8 +1153,7 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
             //
 
             if (_dragStarted
-                && _dragStyle == DragStyle::SELECTION_RECT
-                && selectionRectAllowed()) {
+                && _dragStyle == DragStyle::SELECTION_RECT) {
                   int minX = qMin(_mouseDownPos.x(), _lastMousePos.x());
                   int minY = qMin(_mouseDownPos.y(), _lastMousePos.y());
                   int maxX = qMax(_mouseDownPos.x(), _lastMousePos.x());
@@ -3040,6 +3038,13 @@ void PianoView::finishNoteEventAdjustDrag()
 
 void PianoView::updateCursor()
       {
+      if ((_dragStarted && _dragStyle == DragStyle::ERASE)
+          || (_editNoteTool == PianoRollEditTool::ADD
+              && (QApplication::keyboardModifiers() & Qt::ControlModifier))) {
+            setCursor(Qt::ArrowCursor);
+            return;
+            }
+
       if (_editNoteTool == PianoRollEditTool::SELECT
           || _editNoteTool == PianoRollEditTool::ADD
           || _editNoteTool == PianoRollEditTool::EVENT_ADJUST) {
