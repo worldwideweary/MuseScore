@@ -49,6 +49,7 @@ enum class DragStyle : char {
       NOTE_LENGTH_START,
       NOTE_LENGTH_END,
       DRAW_NOTE,
+      ERASE,
       CUT,
       TIE,
       EVENT_ONTIME,
