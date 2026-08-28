@@ -4010,12 +4010,12 @@ void PianoView::insertNote(int modifiers)
 
       if (bnShift) {
             //If shift is held, select note instead
-            PianoItem *pn = pickNote(pickTick, pickPitch);
+            PianoItem* pn = pickNote(_mouseDownPos);
             if (pn) {
                   mscore->play(pn->note());
                   score->setPlayNote(false);
 
-                  selectNotes(pickTick, pickTick + 1, pickPitch, pickPitch, NoteSelectType::REPLACE);
+                  selectItem(pn, NoteSelectType::REPLACE);
                   }
             return;
             }
