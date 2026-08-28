@@ -3428,6 +3428,29 @@ bool PianoView::voiceRangeIsFree(const Fraction& startTick,
       }
 
 //---------------------------------------------------------
+//   voiceHasMatchingChord
+//---------------------------------------------------------
+
+bool PianoView::voiceHasMatchingChord(const Fraction& startTick,
+                                      const Fraction& duration,
+                                      int track) const
+      {
+      if (!_staff || duration <= Fraction(0, 1))
+            return false;
+
+      Score* score = _staff->score();
+      ChordRest* cr = score->findCR(startTick, track);
+
+      if (!cr
+          || !cr->isChord()
+          || cr->tick() != startTick) {
+            return false;
+            }
+
+      return cr->actualTicks() == duration;
+      }
+
+//---------------------------------------------------------
 //   automaticVoiceForNote
 //---------------------------------------------------------
 
@@ -3441,16 +3464,6 @@ int PianoView::automaticVoiceForNote(const Fraction& startTick,
             return preferredVoice;
 
       Score* score = _staff->score();
-
-      //
-      // If the explicitly selected PRE voice can already accept this
-      // duration without disturbing existing notes, keep it.
-      //
-      const int preferredTrack =
-            staffIdx * VOICES + preferredVoice;
-
-      if (voiceRangeIsFree(startTick, duration, preferredTrack))
-            return preferredVoice;
 
       //
       // Determine whether the new note is primarily above or below
@@ -3505,16 +3518,38 @@ int PianoView::automaticVoiceForNote(const Fraction& startTick,
             candidates[3] = 3; // voice 4
             }
 
+      //
+      // First preference: join an existing chord whose rhythmic span
+      // exactly matches the requested PRE duration. This preserves a
+      // voice already expressing the same rhythmic layer instead of
+      // unnecessarily consuming another voice.
+      //
       for (int i = 0; i < VOICES; ++i) {
             const int voice = candidates[i];
-
-            if (voice == preferredVoice)
-                  continue;
-
             const int track = staffIdx * VOICES + voice;
 
-            if (voiceRangeIsFree(startTick, duration, track))
+            if (voiceHasMatchingChord(
+                        startTick,
+                        duration,
+                        track)) {
                   return voice;
+                  }
+            }
+
+      //
+      // Second preference: use a completely free voice over the
+      // requested interval.
+      //
+      for (int i = 0; i < VOICES; ++i) {
+            const int voice = candidates[i];
+            const int track = staffIdx * VOICES + voice;
+
+            if (voiceRangeIsFree(
+                        startTick,
+                        duration,
+                        track)) {
+                  return voice;
+                  }
             }
 
       //

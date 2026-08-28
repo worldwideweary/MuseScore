@@ -258,6 +258,10 @@ private:
                             const Fraction& duration,
                             int track) const;
 
+      bool voiceHasMatchingChord(const Fraction& startTick,
+                                 const Fraction& duration,
+                                 int track) const;
+
       int automaticVoiceForNote(const Fraction& startTick,
                                 const Fraction& duration,
                                 int pitch,
