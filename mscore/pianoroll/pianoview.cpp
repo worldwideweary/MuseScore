@@ -6024,6 +6024,14 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                                           break;
                                     }
 
+                              if (_dragStyle == DragStyle::EVENT_LENGTH) {
+                                    const Fraction minLen =
+                                          tieLen + ticks * Fraction(1, 1000);
+
+                                    if (lenNew < minLen)
+                                          lenNew = minLen;
+                                    }
+
                               int pitch = pi->note()->pitch();
                               int voice = pi->note()->voice();
                               int track = (int)_staff->idx() * VOICES + voice;
