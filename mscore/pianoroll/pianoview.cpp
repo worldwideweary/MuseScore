@@ -2823,8 +2823,6 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                         _drumPaintedTicks.clear();
                         }
                   else {
-                        const int track = _staff->idx() * VOICES + _editNoteVoice;
-
                         double startTick =
                               scenePosToTick(_mouseDownPos);
                         double endTick =
@@ -2843,11 +2841,28 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                               Fraction duration =
                                     endTickFrac - startTickFrac;
 
-                              // Normal pitched-note dragging continues to establish
-                              // the insertion duration:
                               _editNoteLength = duration;
                               _editNoteDots = 0;
                               emit editNoteLengthChanged(duration);
+
+                              int voice = _editNoteVoice;
+
+                              if (_automaticVoiceAssignment) {
+                                    voice = automaticVoiceForNote(
+                                          startTickFrac,
+                                          duration,
+                                          pitch,
+                                          _staff->idx(),
+                                          _editNoteVoice);
+                                    }
+
+                              const int track =
+                                    _staff->idx() * VOICES + voice;
+
+                              Segment* seg =
+                                    score->tick2segment(startTickFrac);
+
+                              score->expandVoice(seg, track);
 
                               score->startCmd();
                               addNote(
@@ -6089,9 +6104,6 @@ void PianoView::drawDraggedNotes(QPainter* painter)
             if (!pitchIsValid(pitch))
                   return;
 
-            const int track =
-                  _staff->idx() * VOICES + _editNoteVoice;
-
             const Fraction firstTick =
                   roundToNearestBeat(
                         scenePosToTick(_mouseDownPos),
@@ -6106,6 +6118,9 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                               _mouseDownPos,
                               _lastMousePos);
 
+                  const int drumTrack =
+                        _staff->idx() * VOICES + _editNoteVoice;
+
                   for (const Fraction& tick : ticks) {
                         const Fraction duration =
                               gridLengthAt(tick);
@@ -6118,7 +6133,7 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                               tick,
                               duration,
                               pitch,
-                              track,
+                              drumTrack,
                               noteColor,
                               pitchNameForMidi(pitch));
                         }
@@ -6142,10 +6157,27 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                   roundToNearestBeat(endTick, false);
 
             if (endTickFrac != startTickFrac) {
+                  const Fraction duration =
+                        endTickFrac - startTickFrac;
+
+                  int voice = _editNoteVoice;
+
+                  if (_automaticVoiceAssignment) {
+                        voice = automaticVoiceForNote(
+                              startTickFrac,
+                              duration,
+                              pitch,
+                              _staff->idx(),
+                              _editNoteVoice);
+                        }
+
+                  const int track =
+                        _staff->idx() * VOICES + voice;
+
                   drawDraggedNote(
                         painter,
                         startTickFrac,
-                        endTickFrac - startTickFrac,
+                        duration,
                         pitch,
                         track,
                         noteColor,
