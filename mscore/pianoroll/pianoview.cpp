@@ -5921,12 +5921,21 @@ void PianoView::copyNotes()
 //   compactMeasures
 //---------------------------------------------------------
 
-void PianoView::compactMeasures(QList<Measure*> measures)
+void PianoView::compactMeasures(
+      const QMap<Measure*, QSet<int>>& changedTracks)
       {
       Score* score = _staff->score();
 
-      for (Measure* m : measures) {
-            for (int track = 0; track < VOICES; ++track) {
+      for (auto it = changedTracks.constBegin();
+           it != changedTracks.constEnd(); ++it) {
+            Measure* m = it.key();
+
+            if (!m)
+                  continue;
+
+            for (int track : it.value()) {
+                  if (track < 0 || track >= score->ntracks())
+                        continue;
                   ChordRest* cr = m->findChordRest(m->tick(), track);
                   if (!cr)
                         continue;
@@ -5935,10 +5944,17 @@ void PianoView::compactMeasures(QList<Measure*> measures)
                         Fraction crTicks = cr->ticks();
 
                         Segment* segNext = cr->nextSegmentAfterCR(SegmentType::ChordRest);
-                        ChordRest* crNext = segNext->cr(track);
+                        ChordRest* crNext = segNext ? segNext->cr(track) : nullptr;
 
                         if (!crNext || crNext->measure() != m)
                               break;
+
+                        // Do not compact across tuplets: setNoteRest() may delete/rebuild
+                        // an entire tuplet while compactMeasures() is iterating ChordRests
+                        if (cr->tuplet() || crNext->tuplet()) {
+                              cr = crNext;
+                              continue;
+                              }
 
                         Fraction crNextTicks = crNext->ticks();
 
@@ -5979,6 +5995,134 @@ void PianoView::compactMeasures(QList<Measure*> measures)
       }
 
 //---------------------------------------------------------
+//   rangeTouchesTuplet
+//---------------------------------------------------------
+
+bool PianoView::rangeTouchesTuplet(const Fraction& startTick,
+                                   const Fraction& duration,
+                                   int track) const
+      {
+      if (!_staff || duration <= Fraction(0, 1))
+            return false;
+
+      Score* score = _staff->score();
+      if (!score || track < 0 || track >= score->ntracks())
+            return false;
+
+      const Fraction endTick = startTick + duration;
+
+      //
+      // Walk ChordRest segments that can overlap the requested range.
+      //
+      Segment* seg = score->tick2segment(startTick);
+
+      //
+      // tick2segment() can be null when there is no segment exactly
+      // at startTick. Start from the containing measure instead.
+      //
+      if (!seg) {
+            Measure* measure = score->tick2measure(startTick);
+            if (!measure)
+                  return false;
+
+            seg = measure->first(SegmentType::ChordRest);
+            }
+
+      for (; seg && seg->tick() < endTick;
+           seg = seg->next1(SegmentType::ChordRest)) {
+            ChordRest* cr = seg->cr(track);
+            if (!cr)
+                  continue;
+
+            const Fraction crStart = cr->tick();
+            const Fraction crEnd = crStart + cr->actualTicks();
+
+            if (crEnd <= startTick)
+                  continue;
+
+            if (cr->tuplet())
+                  return true;
+            }
+
+      return false;
+      }
+
+//---------------------------------------------------------
+//   pasteWouldTouchTuplet
+//---------------------------------------------------------
+
+bool PianoView::pasteWouldTouchTuplet(const QString& copiedNotes,
+                                      Fraction pasteStartTick,
+                                      Fraction lengthOffset,
+                                      bool xIsOffset) const
+      {
+      if (!_staff)
+            return false;
+
+      QXmlStreamReader xml(copiedNotes);
+      Fraction firstTick;
+
+      while (!xml.atEnd()) {
+            QXmlStreamReader::TokenType tt = xml.readNext();
+
+            if (tt != QXmlStreamReader::StartElement)
+                  continue;
+
+            if (xml.name().toString() == "notes") {
+                  const int n =
+                        xml.attributes().value("firstN").toString().toInt();
+                  const int d =
+                        xml.attributes().value("firstD").toString().toInt();
+
+                  firstTick = Fraction(n, d);
+                  continue;
+                  }
+
+            if (xml.name().toString() != "note")
+                  continue;
+
+            const int sn =
+                  xml.attributes().value("startN").toString().toInt();
+            const int sd =
+                  xml.attributes().value("startD").toString().toInt();
+
+            const Fraction startTick(sn, sd);
+
+            const int tn =
+                  xml.attributes().value("lenN").toString().toInt();
+            const int td =
+                  xml.attributes().value("lenD").toString().toInt();
+
+            Fraction tickLen(tn, td);
+            tickLen += lengthOffset;
+
+            if (tickLen <= Fraction(0, 1))
+                  continue;
+
+            const int voice =
+                  xml.attributes().value("voice").toString().toInt();
+
+            int staffIdx = _staff->idx();
+            if (xml.attributes().hasAttribute("staff")) {
+                  staffIdx =
+                        xml.attributes().value("staff").toString().toInt();
+                  }
+
+            const int track = staffIdx * VOICES + voice;
+
+            const Fraction pos =
+                  xIsOffset
+                        ? startTick + pasteStartTick
+                        : startTick - firstTick + pasteStartTick;
+
+            if (rangeTouchesTuplet(pos, tickLen, track))
+                  return true;
+            }
+
+      return false;
+      }
+
+//---------------------------------------------------------
 //   deleteSelectedNotes
 //---------------------------------------------------------
 
@@ -5991,15 +6135,15 @@ void PianoView::deleteSelectedNotes()
       QList<Element*> el = score->selection().elements();
 
       QList<Note*> notesToDelete;
-      QList<Measure*> changedMeasures;
+      QMap<Measure*, QSet<int>> changedTracks;
 
       for (Element* e : el) {
             if (!e->isNote())
                   continue;
 
             Measure* m = e->findMeasure();
-            if (changedMeasures.indexOf(m) == -1)
-                  changedMeasures.append(m);
+            if (m)
+                  changedTracks[m].insert(e->track());
 
             Note* noteStart = toNote(e);
             while (noteStart->tieBack()) {
@@ -6011,15 +6155,15 @@ void PianoView::deleteSelectedNotes()
                   notesToDelete.append(note->tieFor()->endNote());
 
                   m = note->findMeasure();
-                  if (changedMeasures.indexOf(m) == -1)
-                        changedMeasures.append(m);
+                  if (m)
+                        changedTracks[m].insert(note->track());
                   }
             }
 
       for (Note* note : notesToDelete)
             score->deleteItem(note);
 
-      compactMeasures(changedMeasures);
+      compactMeasures(changedTracks);
 
       }
 
@@ -6058,6 +6202,24 @@ void PianoView::finishNoteGroupDrag(QMouseEvent* event) {
       Fraction pasteLengthOffset;
       int pitchOffset { 0 };
       if (!calculateNoteDragOffsets(pasteTickOffset, pasteLengthOffset, pitchOffset)) {
+            return;
+            }
+
+      //
+      // Group drag is implemented as delete + recreate. Do not delete
+      // anything unless every destination note can be recreated without
+      // crossing tuplet material that setNoteRest()/makeGap() may destroy.
+      //
+      if (pasteWouldTouchTuplet(_dragNoteCache,
+                                pasteTickOffset,
+                                pasteLengthOffset,
+                                true)) {
+            _levelPreviewActive = false;
+            _levelPreviewTickOffset = Fraction(0, 1);
+            _levelPreviewLengthOffset = Fraction(0, 1);
+            _levelPreviewEventTickDelta = Fraction(0, 1);
+
+            update();
             return;
             }
 
