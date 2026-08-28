@@ -2782,7 +2782,12 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                   if (lowPitch > highPitch)
                         qSwap(lowPitch, highPitch);
 
-                  selectNotes(startTick, endTick, lowPitch, highPitch, selType);
+                  const NoteSelectType rectSelType =
+                        _editNoteTool == PianoRollEditTool::ADD
+                              ? NoteSelectType::REPLACE
+                              : selType;
+
+                  selectNotes(startTick, endTick, lowPitch, highPitch, rectSelType);
                   }
             else if (_dragStyle == DragStyle::NOTE_POSITION || _dragStyle == DragStyle::NOTE_LENGTH_START
                      || _dragStyle == DragStyle::NOTE_LENGTH_END) {
@@ -2909,7 +2914,10 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                         eraseNote(_mouseDownPos);
                         break;
                   case ADD:
-                        insertNote(modifiers);
+                        if (bnCtrl)
+                              eraseNote(_mouseDownPos);
+                        else
+                              insertNote(modifiers);
                         break;
                   case APPEND_NOTE:
                         appendNoteToChord(_mouseDownPos);
@@ -3115,7 +3123,28 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                         if (mouseDownPitch < 0)
                               return;
 
-                        if (_editNoteTool == PianoRollEditTool::CUT) {
+                        if (_editNoteTool == PianoRollEditTool::ADD
+                            && (event->modifiers() & Qt::ControlModifier)) {
+                              //
+                              // Ctrl temporarily turns ADD into the Erase tool for
+                              // the duration of this drag gesture.
+                              //
+                              _dragStyle = DragStyle::ERASE;
+
+                              //
+                              // Include the point where the gesture began.
+                              //
+                              eraseNote(_mouseDownPos);
+                              scene()->update();
+                              }
+                        else if (_editNoteTool == PianoRollEditTool::ADD
+                                 && (event->modifiers() & Qt::ShiftModifier)) {
+                              //
+                              // Shift temporarily turns ADD into rectangular selection.
+                              //
+                              _dragStyle = DragStyle::SELECTION_RECT;
+                              }
+                        else if (_editNoteTool == PianoRollEditTool::CUT) {
                               if (event->modifiers() & Qt::ShiftModifier) {
                                     //
                                     // Shift+Cut uses the note-specific Toggle Tie gesture.
@@ -3286,6 +3315,10 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                               _lastMousePos);
 
                         _lastTieDragPos = _lastMousePos;
+                        scene()->update();
+                        }
+                  else if (_dragStyle == DragStyle::ERASE) {
+                        eraseNote(_lastMousePos);
                         scene()->update();
                         }
                   else if (_dragStyle == DragStyle::DRAW_NOTE
