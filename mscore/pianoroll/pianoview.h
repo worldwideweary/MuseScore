@@ -286,6 +286,16 @@ private:
       Note* tieNoteAt(const QPointF& pos);
       bool toggleTieDragSegment(const QPointF& from, const QPointF& to);
       void compactMeasures(const QMap<Measure*, QSet<int>>& changedTracks);
+
+      bool rangeTouchesTuplet(const Fraction& startTick,
+                              const Fraction& duration,
+                              int track) const;
+
+      bool pasteWouldTouchTuplet(const QString& copiedNotes,
+                                 Fraction pasteStartTick,
+                                 Fraction lengthOffset,
+                                 bool xIsOffset) const;
+
       void dragSelectionNoteGroup();
       void finishNoteGroupDrag(QMouseEvent* event);
       void finishNoteEventAdjustDrag();
