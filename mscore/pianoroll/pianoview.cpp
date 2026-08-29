@@ -621,7 +621,8 @@ PianoView::PianoView()
       _dragStyle   = DragStyle::NONE;
       _inProgressUndoEvent = false;
       _scope = PianoRollScope::PART;
-      _orientation = PianoRollOrientation::HORIZONTAL;
+      _orientation = PianoRollOrientation::UNDEFINED;
+      setOrientation(_orientation);
       _verticalPitchLayout = preferences.getBool(PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID)
                   ? VerticalPitchLayout::KEYBOARD_ALIGNED
                   : VerticalPitchLayout::CHROMATIC;
@@ -5366,7 +5367,7 @@ void PianoView::setOrientation(PianoRollOrientation orientation)
       if (_orientation == PianoRollOrientation::VERTICAL)
             setAlignment(Qt::AlignLeft | Qt::AlignBottom);
       else
-            setAlignment(Qt::AlignCenter);
+            setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
       updateBoundingSize();
       updateNotes();
