@@ -55,7 +55,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       _score   = 0;
       staff    = 0;
 
-      _scope = PianoRollScope::PART;
+      _scope = PianoRollScope::SCORE;
       _orientation = PianoRollOrientation::HORIZONTAL;
 
       const QSize toolbarIconSize(
@@ -156,7 +156,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       tbMain->addSeparator();
 
       // Option: Scope
-      QComboBox* scopeBox = new QComboBox;
+      scopeBox = new QComboBox;
       scopeBox->addItem(tr("Staff"), int(PianoRollScope::STAFF));
       scopeBox->setToolTip(tr("Displayed scope"));
       scopeBox->addItem(tr("Part"),  int(PianoRollScope::PART));
@@ -171,7 +171,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(scopeBox,
               QOverload<int>::of(&QComboBox::activated),
               this,
-              [this, scopeBox](int index) {
+              [this](int index) {
                     setScope(PianoRollScope(scopeBox->itemData(index).toInt()));
                     });
 
@@ -1656,6 +1656,13 @@ void PianorollEditor::setScope(PianoRollScope scope)
             return;
 
       _scope = scope;
+
+      if (scopeBox) {
+            const int index = scopeBox->findData(int(scope));
+            if (index != -1)
+                  scopeBox->setCurrentIndex(index);
+            }
+
       pianoView->setScope(scope);
       pianoLevels->setScope(scope);
       restoreScoreViewFocus();

@@ -76,6 +76,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       Score* _score { nullptr };
       Staff* staff { nullptr };
       QComboBox* staffBox { nullptr };
+      QComboBox* scopeBox { nullptr };
       Awl::PitchEdit* pitch { nullptr };
       QSpinBox* velocity { nullptr };
       QSpinBox* onTime { nullptr };
