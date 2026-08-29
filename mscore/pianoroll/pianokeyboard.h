@@ -53,6 +53,7 @@ class PianoKeyboard : public QWidget {
       int curPitch;
       int curKeyPressed;
       QHash<int, const Note*> _playbackNotes;
+      QHash<int, const Note*> _selectionNotes;
       Coloring _coloring;
       bool _useNoteColors { false };
       Staff* _staff { nullptr };
@@ -80,6 +81,7 @@ class PianoKeyboard : public QWidget {
       void setStaff(Staff* staff);
       void setOrientation(PianoOrientation);
 
+      void setSelectionNotes(const QHash<int, const Note*>& notes);
       void setPlaybackNotes(const QHash<int, const Note*>& notes);
       void setColoring(Coloring);
       void setUseNoteColors(bool value);

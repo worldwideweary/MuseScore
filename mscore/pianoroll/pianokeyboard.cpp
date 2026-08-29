@@ -147,13 +147,33 @@ void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
                         ds->name(instrPitch).toUtf8().constData());
                   }
 
-            const Note* playbackNote = _playbackNotes.value(midiPitch, nullptr);
+            const Note* playbackNote =
+                  _playbackNotes.value(midiPitch, nullptr);
+
+            const Note* selectionNote =
+                  _selectionNotes.value(midiPitch, nullptr);
+
             if (playbackNote) {
-                  QColor color = pianoRollNoteColor(playbackNote, _coloring, false, _useNoteColors);
+                  QColor color =
+                        pianoRollNoteColor(
+                              playbackNote,
+                              _coloring,
+                              false,
+                              _useNoteColors);
                   p.setBrush(color);
                   }
-            else
+            else if (selectionNote) {
+                  QColor color =
+                        pianoRollNoteColor(
+                              selectionNote,
+                              _coloring,
+                              false, // use true if wanting to use selection color instead of color scheme here
+                              _useNoteColors);
+                  p.setBrush(color);
+                  }
+            else {
                   p.setBrush(Qt::white);
+                  }
 
             if (_orientation == PianoOrientation::HORIZONTAL) {
                   //
@@ -296,13 +316,33 @@ void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
 
             p.setPen(QPen(Qt::black));
 
-            const Note* playbackNote = _playbackNotes.value(midiPitch, nullptr);
+            const Note* playbackNote =
+                  _playbackNotes.value(midiPitch, nullptr);
+
+            const Note* selectionNote =
+                  _selectionNotes.value(midiPitch, nullptr);
+
             if (playbackNote) {
-                  QColor color = pianoRollNoteColor(playbackNote, _coloring, false, _useNoteColors);
+                  QColor color =
+                        pianoRollNoteColor(
+                              playbackNote,
+                              _coloring,
+                              false,
+                              _useNoteColors);
                   p.setBrush(color);
                   }
-            else
+            else if (selectionNote) {
+                  QColor color =
+                        pianoRollNoteColor(
+                              selectionNote,
+                              _coloring,
+                              false,
+                              _useNoteColors);
+                  p.setBrush(color);
+                  }
+            else {
                   p.setBrush(Qt::black);
+                  }
 
             if (_orientation == PianoOrientation::HORIZONTAL) {
                   //
@@ -568,6 +608,20 @@ void PianoKeyboard::setColoring(Coloring c)
 void PianoKeyboard::setUseNoteColors(bool value)
       {
       _useNoteColors = value;
+      }
+
+//---------------------------------------------------------
+//   setSelectionNotes
+//---------------------------------------------------------
+
+void PianoKeyboard::setSelectionNotes(
+      const QHash<int, const Note*>& notes)
+      {
+      if (_selectionNotes == notes)
+            return;
+
+      _selectionNotes = notes;
+      update();
       }
 
 //---------------------------------------------------------

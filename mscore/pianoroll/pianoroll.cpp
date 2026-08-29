@@ -1778,6 +1778,24 @@ void PianorollEditor::rangeChanged(int min, int max)
 void PianorollEditor::updateSelection()
       {
       QList<PianoItem*> items = pianoView->getSelectedItems();
+
+      QHash<int, const Note*> keyboardSelection;
+
+      if (preferences.getBool(PREF_UI_PIANOROLL_SELECTION_HIGHLIGHT_KEYBOARD)) {
+            for (PianoItem* item : items) {
+                  if (!item || !item->note())
+                        continue;
+
+                  Note* note = item->note();
+
+                  // One physical keyboard key can represent only one
+                  // selected note at a given pitch.
+                  if (!keyboardSelection.contains(note->pitch()))
+                        keyboardSelection.insert(note->pitch(), note);
+                  }
+            }
+
+      pianoKbd->setSelectionNotes(keyboardSelection);
       bool enabled = false;
 
       //
