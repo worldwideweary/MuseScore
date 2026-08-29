@@ -593,6 +593,32 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       topLeftSpacer->setFixedWidth(PIANO_KEYBOARD_WIDTH);
       topLeftSpacer->setFixedHeight(pianoRulerHeight);
 
+      verticalCornerSpacer = new QWidget;
+      verticalCornerSpacer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+      verticalCornerSpacer->setFixedWidth(pianoRulerHeight);
+      verticalCornerSpacer->setFixedHeight(PIANO_KEYBOARD_WIDTH);
+      verticalCornerSpacer->hide();
+
+      controlsChevronButton = new QToolButton;
+      controlsChevronButton->setText(QStringLiteral("⌃")); // "roll-up" the toolbar
+      controlsChevronButton->setToolTip(tr("Toggle piano roll controls"));
+      controlsChevronButton->setFixedSize(22, 22);
+      controlsChevronButton->setAutoRaise(false);
+      controlsChevronButton->setStyleSheet(
+            "QToolButton {"
+            "  border: 0px solid palette(dark);"
+            "  border-radius: 12px;"
+            "  background: transparent;"
+            "  padding: 0px;"
+            "}"
+            "QToolButton:hover {"
+            "  background: palette(midlight);"
+            "}"
+            "QToolButton:pressed {"
+            "  background: palette(dark);"
+            "}"
+            );
+
       ruler = new PianoRuler;
       ruler->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
       ruler->setFixedHeight(pianoRulerHeight);
@@ -690,7 +716,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       mainLayout->setContentsMargins(0, 0, 0, 0);
       mainLayout->setSpacing(0);
 
-      QWidget* toolbarArea = new QWidget(this);
+      toolbarArea = new QWidget(this);
       toolbarArea->setSizePolicy(
             QSizePolicy::Preferred,
             QSizePolicy::Fixed);
@@ -726,6 +752,28 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       mainLayout->addWidget(mainWidget);
 
+      connect(controlsChevronButton,
+              &QToolButton::clicked,
+              this,
+              [this]() {
+                    _controlsVisible = !_controlsVisible;
+
+                    toolbarArea->setVisible(_controlsVisible);
+                    tbTweak->setVisible(_controlsVisible);
+
+                    controlsChevronButton->setText(
+                          _controlsVisible
+                                ? QStringLiteral("⌃")
+                                : QStringLiteral("⌄"));
+
+                    controlsChevronButton->setToolTip(
+                          _controlsVisible
+                                ? tr("Hide piano roll controls")
+                                : tr("Show piano roll controls"));
+
+                    restoreScoreViewFocus();
+                    });
+
       // Re-enable right-click menu for enable/disable toolbars now with dockable widget
       const QList<QToolBar*> toolbars {
             tbMain,
@@ -759,7 +807,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(toolbarArea,
               &QWidget::customContextMenuRequested,
               this,
-              [toolbarArea, toolbars](const QPoint& pos) {
+              [this, toolbars](const QPoint& pos) {
                     QMenu menu;
 
                     for (QToolBar* tb : toolbars)
@@ -1429,6 +1477,16 @@ void PianorollEditor::updateOrientationLayout()
             // Widgets used only by horizontal orientation
             //
             topLeftSpacer->show();
+
+            controlsChevronButton->setParent(topLeftSpacer);
+            controlsChevronButton->move(
+                  (topLeftSpacer->width() - controlsChevronButton->width()) / 2,
+                  (topLeftSpacer->height() - controlsChevronButton->height()) / 2);
+            controlsChevronButton->show();
+            controlsChevronButton->raise();
+
+            verticalCornerSpacer->hide();
+
             ruler->show();
             hsb->show();
 
@@ -1469,6 +1527,21 @@ void PianorollEditor::updateOrientationLayout()
             // noteAreaWidget even after being removed from the layout.
             //
             topLeftSpacer->hide();
+
+            verticalCornerSpacer->show();
+
+            controlsChevronButton->setParent(verticalCornerSpacer);
+            controlsChevronButton->move(
+                  (verticalCornerSpacer->width() - controlsChevronButton->width()) / 2,
+                  (verticalCornerSpacer->height() - controlsChevronButton->height()) / 2);
+            controlsChevronButton->show();
+            controlsChevronButton->raise();
+
+            noteAreaLayout->addWidget(ruler,                0, 0);
+            noteAreaLayout->addWidget(pianoView,            0, 1);
+            noteAreaLayout->addWidget(verticalCornerSpacer, 1, 0);
+            noteAreaLayout->addWidget(pianoKbd,             1, 1);
+
             ruler->show(); // Better not slow us down
             hsb->hide();
 
@@ -1496,10 +1569,6 @@ void PianorollEditor::updateOrientationLayout()
             pianoKbd->setFixedHeight(PIANO_KEYBOARD_WIDTH);
 
             pianoKbd->setYpos(pianoView->horizontalScrollBar()->value());
-
-            noteAreaLayout->addWidget(ruler,     0, 0);
-            noteAreaLayout->addWidget(pianoView, 0, 1);
-            noteAreaLayout->addWidget(pianoKbd,  1, 1);
             }
       }
 

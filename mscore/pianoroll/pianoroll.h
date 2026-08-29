@@ -67,6 +67,12 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       QScrollBar* hsb { nullptr };        // horizontal scroll bar for pianoView
       QGridLayout* noteAreaLayout { nullptr };
       QWidget* topLeftSpacer { nullptr };
+
+      QToolButton* controlsChevronButton { nullptr };
+      QWidget* verticalCornerSpacer { nullptr };
+      QWidget* toolbarArea { nullptr };
+      bool _controlsVisible { true };
+
       Score* _score { nullptr };
       Staff* staff { nullptr };
       QComboBox* staffBox { nullptr };
