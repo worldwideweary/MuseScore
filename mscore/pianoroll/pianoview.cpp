@@ -5384,6 +5384,8 @@ void PianoView::setStaff(Staff* s, Pos* l)
       if (_staff == s)
             return;
 
+      Staff* const oldStaff = _staff;
+
       _staff = s;
       setEnabled(_staff != nullptr);
       if (!_staff) {
@@ -5394,48 +5396,68 @@ void PianoView::setStaff(Staff* s, Pos* l)
             return;
             }
 
+      bool repositionView = false;
+      switch (_scope) {
+            case PianoRollScope::STAFF:
+                  repositionView = true;
+                  break;
+
+            case PianoRollScope::PART:
+                  repositionView =
+                        !oldStaff
+                        || !s
+                        || oldStaff->part() != s->part();
+                  break;
+
+            case PianoRollScope::SCORE:
+                  repositionView = false;
+                  break;
+            }
+
       _trackingPos.setContext(_staff->score()->tempomap(), _staff->score()->sigmap());
       updateBoundingSize();
 
       updateNotes();
 
-      QRectF boundingRect;
-      bool brInit = false;
-      QRectF boundingRectSel;
-      bool brsInit = false;
+      if (repositionView) {
+            QRectF boundingRect;
+            bool brInit = false;
+            QRectF boundingRectSel;
+            bool brsInit = false;
 
-      foreach (PianoItem* item, _noteList) {
-            if (!brInit) {
-                  boundingRect = item->boundingRect();
-                  brInit = true;
-                  }
-            else
-                  boundingRect |= item->boundingRect();
-
-            if (item->note()->selected()) {
-                  if (!brsInit) {
-                        boundingRectSel = item->boundingRect();
-                        brsInit = true;
+            foreach (PianoItem* item, _noteList) {
+                  if (!brInit) {
+                        boundingRect = item->boundingRect();
+                        brInit = true;
                         }
                   else
-                        boundingRectSel |= item->boundingRect();
+                        boundingRect |= item->boundingRect();
+
+                  if (item->note()->selected()) {
+                        if (!brsInit) {
+                              boundingRectSel = item->boundingRect();
+                              brsInit = true;
+                              }
+                        else
+                              boundingRectSel |= item->boundingRect();
+                        }
+
                   }
 
-            }
+            QRectF viewRect = mapToScene(viewport()->geometry()).boundingRect();
 
-      QRectF viewRect = mapToScene(viewport()->geometry()).boundingRect();
-
-      if (brsInit) {
-            horizontalScrollBar()->setValue(boundingRectSel.x());
-            verticalScrollBar()->setValue(qMax(boundingRectSel.y() + (boundingRectSel.height() - viewRect.height()) / 2, 0.0));
-            }
-      else if (brInit) {
-            horizontalScrollBar()->setValue(boundingRect.x());
-            verticalScrollBar()->setValue(qMax(boundingRect.y() - (boundingRectSel.height() - viewRect.height()) / 2, 0.0));
-            }
-      else {
-            horizontalScrollBar()->setValue(0);
-            verticalScrollBar()->setValue(qMax(viewRect.y() - viewRect.height() / 2, 0.0));
+            if (brsInit) {
+                  horizontalScrollBar()->setValue(boundingRectSel.x());
+                  verticalScrollBar()->setValue(qMax(boundingRectSel.y() + (boundingRectSel.height() - viewRect.height()) / 2, 0.0));
+                  }
+            else if (brInit) {
+                  horizontalScrollBar()->setValue(boundingRect.x());
+                  verticalScrollBar()->setValue(qMax(boundingRect.y() - (boundingRectSel.height() - viewRect.height()) / 2, 0.0));
+                  }
+            else {
+                  horizontalScrollBar()->setValue(0);
+                  verticalScrollBar()->setValue(qMax(viewRect.y() - viewRect.height() / 2, 0.0));
+                  }
             }
       }
 
