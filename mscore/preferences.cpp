@@ -400,6 +400,13 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID,     new BoolPreference(false)},
             {PREF_UI_PIANOROLL_SHOW_PITCH_TEXT,                    new BoolPreference(true)},
             {PREF_UI_PIANOROLL_USE_NOTE_COLORS,                    new BoolPreference(false)},
+
+            {PREF_UI_PIANOROLL_SHOW_LEVELS_EDITOR,                 new BoolPreference(true)},
+            {PREF_UI_PIANOROLL_PLAYBACK_HIGHLIGHT_NOTES,           new BoolPreference(true)},
+            {PREF_UI_PIANOROLL_PLAYBACK_HIGHLIGHT_KEYBOARD,        new BoolPreference(true)},
+            {PREF_UI_PIANOROLL_PLAYBACK_SHOW_CURSOR,               new BoolPreference(true)},
+            {PREF_UI_PIANOROLL_SELECTION_HIGHLIGHT_KEYBOARD,       new BoolPreference(true)},
+
             {PREF_UI_BUTTON_HIGHLIGHT_COLOR_DISABLED_DARK_ON,      new ColorPreference(QColor(0x7F7F7F))},
             {PREF_UI_BUTTON_HIGHLIGHT_COLOR_DISABLED_DARK_OFF,     new ColorPreference(QColor(0xa0a0a0))},
             {PREF_UI_BUTTON_HIGHLIGHT_COLOR_DISABLED_LIGHT_ON,     new ColorPreference(QColor(0x7F7F7F))},
