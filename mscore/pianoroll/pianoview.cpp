@@ -585,7 +585,6 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
       if (_staff == 0)
             return;
       Score* _score = _staff->score();
-      setFrameShape(QFrame::NoFrame);
 
       QColor colSelectionBox;
 
@@ -626,6 +625,41 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
       const QPen penLineMajor = QPen(colGridLine, 2.0, Qt::SolidLine);
       const QPen penLineMinor = QPen(colGridLine, 1.0, Qt::SolidLine);
       const QPen penLineSub   = QPen(colGridLine, 1.0, Qt::DotLine);
+
+      // drawBackground() may be called for only a small exposed portion
+      // of the scene. Avoid running the complete note-painting path for
+      // notes which cannot affect that region:
+      const QRectF noteCullRect =
+            r.adjusted(-3.0, -3.0, 3.0, 3.0); // drawNoteBlock() currently uses a 2-pixel outline
+
+      const bool applyEvents = eventsAdjustTool();
+
+      auto noteBlockVisible =
+            [this, &noteCullRect, applyEvents](PianoItem* block) {
+                  if (!block)
+                        return false;
+
+                  Note* note = block->note();
+                  if (!note || note->tieBack())
+                        return false;
+
+                  const NoteEventList& playEvents = note->playEvents();
+
+                  if (playEvents.isEmpty()) {
+                        return noteCullRect.intersects(
+                              QRectF(boundingRect(note, nullptr, false)));
+                        }
+
+                  for (const NoteEvent& event : playEvents) {
+                        const QRectF bounds =
+                              boundingRect(note, &event, applyEvents);
+
+                        if (noteCullRect.intersects(bounds))
+                              return true;
+                        }
+
+                  return false;
+                  };
 
       if (_orientation == PianoRollOrientation::HORIZONTAL) {
             QRectF r1;
@@ -733,11 +767,14 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
             p->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
 
             for (PianoItem* block : _noteList) {
-                  if (!block->note()->selected())
+                  if (!block->note()->selected()
+                      && noteBlockVisible(block))
                         drawNoteBlock(p, block);
                   }
+
             for (PianoItem* block : _noteList) {
-                  if (block->note()->selected())
+                  if (block->note()->selected()
+                      && noteBlockVisible(block))
                         drawNoteBlock(p, block);
                   }
 
@@ -1062,11 +1099,14 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
                   | QPainter::TextAntialiasing);
 
             for (PianoItem* block : _noteList) {
-                  if (!block->note()->selected())
+                  if (!block->note()->selected()
+                      && noteBlockVisible(block))
                         drawNoteBlock(p, block);
                   }
+
             for (PianoItem* block : _noteList) {
-                  if (block->note()->selected())
+                  if (block->note()->selected()
+                      && noteBlockVisible(block))
                         drawNoteBlock(p, block);
                   }
 

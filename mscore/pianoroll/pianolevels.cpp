@@ -130,6 +130,9 @@ void PianoLevels::setScore(Score* s, Pos* lc)
 
 void PianoLevels::setXpos(int val)
       {
+      if (_xpos == val)
+            return;
+
       _xpos = val;
       update();
       }
@@ -195,8 +198,7 @@ void PianoLevels::paintEvent(QPaintEvent* e)
 
       p.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
 
-      p.setBrush(colPianoBg);
-      p.drawRect(0, 0, width(), height());
+      p.fillRect(r, colPianoBg);
 
       if (!_score)
             return;
@@ -208,6 +210,23 @@ void PianoLevels::paintEvent(QPaintEvent* e)
       const int timeEnd = _orientation == PianoRollOrientation::HORIZONTAL
             ? r.x() + r.width()
             : r.y() + r.height();
+
+      //
+      // Level bars extend from tp through tp + levelLen along the
+      // time axis, with the circular handle extending a few pixels
+      // before tp. Skip note/event work when that complete drawing
+      // cannot intersect the current dirty region.
+      //
+      const int levelTimeMargin = 5;
+
+      auto levelTimeVisible =
+            [this, timeStart, timeEnd, levelTimeMargin](int tp) {
+                  const int start = tp - levelTimeMargin;
+                  const int end = tp + levelLen + levelTimeMargin;
+
+                  return end >= timeStart
+                         && start <= timeEnd;
+                  };
 
       Pos pos1(_score->tempomap(),
                _score->sigmap(),
@@ -339,6 +358,11 @@ void PianoLevels::paintEvent(QPaintEvent* e)
       p.setBrush(Qt::NoBrush);
       int pix0 = valToPixel(0);
 
+      const QColor interactionColor =
+            darkTheme()
+                  ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_DRAG_COLOR)
+                  : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_DRAG_COLOR);
+
       for (int pass = 0; pass < 2; ++pass) {
             for (int i = 0; i < noteList.size(); ++i) {
                   Note* note = noteList[i];
@@ -356,11 +380,6 @@ void PianoLevels::paintEvent(QPaintEvent* e)
 
                   const bool interactionHighlighted =
                         _pianoView && _pianoView->levelInteractionHighlighted(note);
-
-                  const QColor interactionColor =
-                        darkTheme()
-                              ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_DRAG_COLOR)
-                              : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_DRAG_COLOR);
 
                   noteDeselected = pianoRollNoteColor(note, _coloring, false, _useNoteColors);
 
@@ -400,6 +419,10 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                                     }
 
                               int tp = tickToPixel(previewTick);
+
+                              if (!levelTimeVisible(tp))
+                                    continue;
+
                               int val = filter->value(note->staff(), note, &ne);
 
                               int previewOntime = ne.ontime();
@@ -449,6 +472,10 @@ void PianoLevels::paintEvent(QPaintEvent* e)
                               }
 
                         int tp = tickToPixel(previewTick);
+
+                        if (!levelTimeVisible(tp))
+                              continue;
+
                         int val = filter->value(note->staff(), note, nullptr);
                         int vp = valToPixel(val);
 
@@ -1361,6 +1388,9 @@ void PianoLevels::setPos(const Pos& pos)
 
 void PianoLevels::setXZoom(qreal xZoom)
       {
+      if (_xZoom == xZoom)
+            return;
+
       _xZoom = xZoom;
       update();
       }
@@ -1486,21 +1516,62 @@ void PianoLevels::updateNotes()
 
 void PianoLevels::setPlaybackLocatorTick(qreal tick)
       {
+      const int oldPos = _playbackLocatorValid
+            ? tickToPixel(qRound(_playbackLocatorTick))
+            : -1;
+
       _playbackLocatorTick = tick;
       _playbackLocatorValid = true;
-      update();
+
+      const int newPos = tickToPixel(qRound(tick));
+      const int margin = 2;
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            if (oldPos >= 0)
+                  update(QRect(oldPos - margin, 0,
+                               margin * 2 + 1, height()));
+
+            update(QRect(newPos - margin, 0,
+                         margin * 2 + 1, height()));
+            }
+      else {
+            if (oldPos >= 0)
+                  update(QRect(0, oldPos - margin,
+                               width(), margin * 2 + 1));
+
+            update(QRect(0, newPos - margin,
+                         width(), margin * 2 + 1));
+            }
       }
 
 //---------------------------------------------------------
 //   clearPlaybackLocatorTick
 //---------------------------------------------------------
+
 void PianoLevels::clearPlaybackLocatorTick()
       {
       if (!_playbackLocatorValid)
             return;
 
+      const int oldPos =
+            tickToPixel(qRound(_playbackLocatorTick));
+
       _playbackLocatorValid = false;
-      update();
+
+      const int margin = 2;
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            update(QRect(oldPos - margin,
+                         0,
+                         margin * 2 + 1,
+                         height()));
+            }
+      else {
+            update(QRect(0,
+                         oldPos - margin,
+                         width(),
+                         margin * 2 + 1));
+            }
       }
 
 //---------------------------------------------------------
