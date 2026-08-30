@@ -91,6 +91,8 @@ class PianoRuler : public QWidget {
 
       void setOrientation(PianoRollOrientation);
       void setPianoView(PianoView*);
+
+      bool playbackLocatorActive() const;
       };
 
 
