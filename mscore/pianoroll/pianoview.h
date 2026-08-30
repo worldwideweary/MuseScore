@@ -368,6 +368,7 @@ private:
       void setVerticalPitchLayout(VerticalPitchLayout layout);
       void setOrientation(PianoRollOrientation orientation);
       Staff* staff() { return _staff; }
+      void setEditableStaff(Staff* st);
       void setStaff(Staff*, Pos* locator);
       qreal playbackFollowHorizontalOffset(qreal tick) const;
       void ensureVisible(qreal tick, qreal horizontalOffset = 0.0);

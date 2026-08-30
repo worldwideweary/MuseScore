@@ -122,6 +122,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       bool updateScheduled = false;
       NoteTweakerDialog* noteTweakerDlg { nullptr };
 
+      QString staffDisplayName(Staff*) const;
       void updateNoteLengthControls(const Fraction& duration);
       void updateStaffBox();
       void updateVelocity(Note* note);
@@ -167,6 +168,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
 
       void restoreScoreViewFocus();
 
+      void setEditableStaff(Staff*);
       void setStaff(Staff* staff);
       void focusOnPosition(Position* p);
       void heartBeat(Seq*);

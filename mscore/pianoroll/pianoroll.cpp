@@ -1110,6 +1110,28 @@ void PianorollEditor::setEditNoteDots(int value, QToolButton* bn)
       }
 
 //---------------------------------------------------------
+//   staffDisplayName
+//---------------------------------------------------------
+
+QString PianorollEditor::staffDisplayName(Staff* st) const
+      {
+      if (!st)
+            return QString();
+
+      QString label = st->partName();
+
+      Part* part = st->part();
+      if (part && part->nstaves() > 1) {
+            const int staffIndex = part->staves()->indexOf(st);
+
+            if (staffIndex >= 0)
+                  label += tr(": Staff %1").arg(staffIndex + 1);
+            }
+
+      return label;
+      }
+
+//---------------------------------------------------------
 //   updateNoteLengthControls
 //---------------------------------------------------------
 
@@ -1355,6 +1377,36 @@ void PianorollEditor::restoreScoreViewFocus()
       ScoreView* scoreView = mscore->currentScoreView();
       if (scoreView)
             scoreView->setFocus();
+      }
+
+//---------------------------------------------------------
+//   setEditableStaff
+//---------------------------------------------------------
+
+void PianorollEditor::setEditableStaff(Staff* st)
+      {
+      if (!st || st == staff)
+            return;
+
+      staff = st;
+
+      pianoView->setEditableStaff(st);
+      pianoLevels->setEditableStaff(st);
+
+      pianoLevelsChooser->setStaff(st);
+      pianoKbd->setStaff(st);
+      noteTweakerDlg->setStaff(st);
+
+      if (staffBox) {
+            const int index = staffBox->findData(st->idx());
+
+            if (index != -1) {
+                  QSignalBlocker blocker(staffBox);
+                  staffBox->setCurrentIndex(index);
+                  }
+            }
+
+      restoreScoreViewFocus();
       }
 
 //---------------------------------------------------------
@@ -1779,6 +1831,17 @@ void PianorollEditor::updateSelection()
       {
       QList<PianoItem*> items = pianoView->getSelectedItems();
 
+      if (items.size() == 1) {
+            PianoItem* item = items.front();
+
+            if (item && item->note()) {
+                  Staff* selectedStaff = item->note()->staff();
+
+                  if (selectedStaff && selectedStaff != staff)
+                        setEditableStaff(selectedStaff);
+                  }
+            }
+
       QHash<int, const Note*> keyboardSelection;
 
       if (preferences.getBool(PREF_UI_PIANOROLL_SELECTION_HIGHLIGHT_KEYBOARD)) {
@@ -2010,17 +2073,7 @@ void PianorollEditor::updateStaffBox()
             if (!st)
                   continue;
 
-            QString label = st->partName();
-
-            Part* part = st->part();
-            if (part && part->nstaves() > 1) {
-                  const int staffIndex = part->staves()->indexOf(st);
-
-                  if (staffIndex >= 0)
-                        label += tr(": Staff %1").arg(staffIndex + 1);
-                  }
-
-            staffBox->addItem(label, st->idx());
+            staffBox->addItem(staffDisplayName(st), st->idx());
             }
 
       staffBox->setEnabled(staffBox->count() > 0);

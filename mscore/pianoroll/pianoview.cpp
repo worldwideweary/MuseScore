@@ -5374,6 +5374,15 @@ void PianoView::setOrientation(PianoRollOrientation orientation)
       }
 
 //---------------------------------------------------------
+//   setEditableStaff
+//---------------------------------------------------------
+
+void PianoView::setEditableStaff(Staff* st)
+      {
+      _staff = st;
+      }
+
+//---------------------------------------------------------
 //   setStaff
 //---------------------------------------------------------
 
