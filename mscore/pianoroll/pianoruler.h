@@ -52,6 +52,8 @@ class PianoRuler : public QWidget {
 
       PianoRollOrientation _orientation { PianoRollOrientation::HORIZONTAL };
 
+      bool _loopEnabled { false };
+
       qreal _playbackLocatorTick { 0.0 };
       bool _playbackLocatorTickValid { false };
 
@@ -93,6 +95,8 @@ class PianoRuler : public QWidget {
       void setPianoView(PianoView*);
 
       bool playbackLocatorActive() const;
+
+      void setLoopEnabled(bool);
       };
 
 
