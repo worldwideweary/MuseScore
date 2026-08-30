@@ -1160,28 +1160,55 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
       }
 
 //---------------------------------------------------------
-//   useDrumDiamond
+//   useOnsetDiamond
 //---------------------------------------------------------
 
-bool PianoView::useDrumDiamond(const Note* note) const
+bool PianoView::useOnsetDiamond(const Staff* staff,
+                                const Fraction& tick) const
+      {
+      if (!staff || !staff->part())
+            return false;
+
+      const Instrument* instrument =
+            staff->part()->instrument(tick);
+
+      if (!instrument)
+            return false;
+
+      switch (instrument->pianoRollNoteShape()) {
+            case PianoRollNoteShape::RECTANGLE:
+                  return false;
+
+            case PianoRollNoteShape::DIAMOND:
+                  return true;
+
+            case PianoRollNoteShape::AUTO:
+            default:
+                  return staff->isDrumStaff(tick);
+            }
+      }
+
+//---------------------------------------------------------
+//   useOnsetDiamond
+//---------------------------------------------------------
+
+bool PianoView::useOnsetDiamond(const Note* note) const
       {
       if (!note)
             return false;
 
-      Staff* staff = note->staff();
-      if (!staff)
-            return false;
-
-      return staff->isDrumStaff(note->tick());
+      return useOnsetDiamond(
+            note->staff(),
+            note->tick());
       }
 
 //---------------------------------------------------------
-//   drumDiamondRect
+//   onsetDiamondRect
 //---------------------------------------------------------
 
-QRect PianoView::drumDiamondRect(const Note* note,
-                                 const NoteEvent* event,
-                                 bool applyEvents) const
+QRect PianoView::onsetDiamondRect(const Note* note,
+                                  const NoteEvent* event,
+                                  bool applyEvents) const
       {
       if (!note)
             return QRect();
@@ -1321,11 +1348,11 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
             // Potential option to do a darker/lighter of the color of the note:
             // p->setPen(QPen(noteColor.darker(250), outlineSize));
 
-            const bool drumDiamond = useDrumDiamond(note);
+            const bool onsetDiamond = useOnsetDiamond(note);
 
             QRect bounds =
-                  drumDiamond
-                  ? drumDiamondRect(
+                  onsetDiamond
+                  ? onsetDiamondRect(
                         note,
                         &e,
                         _editNoteTool == PianoRollEditTool::EVENT_ADJUST)
@@ -1334,7 +1361,7 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
                         &e,
                         _editNoteTool == PianoRollEditTool::EVENT_ADJUST);
 
-            if (drumDiamond) {
+            if (onsetDiamond) {
                   const QPointF c = bounds.center();
 
                   QPolygonF diamond;
@@ -1360,7 +1387,7 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
                   }
             }
 
-      if (!useDrumDiamond(note)
+      if (!useOnsetDiamond(note)
           && _editNoteTool != PianoRollEditTool::EVENT_ADJUST) {
 
             QColor colorTie = darkTheme() ? preferences.getColor(PREF_UI_PIANOROLL_DARK_BG_TIE_COLOR)
@@ -1389,8 +1416,8 @@ QRect PianoView::boundingRect(const Note* note, bool applyEvents)
 
 QRect PianoView::boundingRect(const Note* note, const NoteEvent* evt, bool applyEvents)
       {
-      if (useDrumDiamond(note))
-            return drumDiamondRect(note, evt, applyEvents);
+      if (useOnsetDiamond(note))
+            return onsetDiamondRect(note, evt, applyEvents);
 
       Chord* chord = note->chord();
       int pitch = note->pitch() + (evt ? evt->pitch() : 0);
@@ -1860,10 +1887,10 @@ bool PianoView::calculateNoteDragOffsets(Fraction& pasteTickOffset,
       }
 
 //---------------------------------------------------------
-//   paintDrumDragSegment
+//   paintOnsetDragSegment
 //---------------------------------------------------------
 
-bool PianoView::paintDrumDragSegment(const QPointF& from,
+bool PianoView::paintOnsetDragSegment(const QPointF& from,
                                      const QPointF& to)
       {
       if (!_staff)
@@ -1880,14 +1907,26 @@ bool PianoView::paintDrumDragSegment(const QPointF& from,
 
       bool changed = false;
 
-      const QVector<Fraction> ticks =
-            drumPaintTicks(from, to);
+      QVector<Fraction> ticks =
+            onsetPaintTicks(from, to);
+
+      //
+      // onsetPaintTicks() returns grid boundaries crossed after "from".
+      // On the first segment of a draw gesture, also include the grid
+      // position where the gesture itself began.
+      //
+      if (_drumPaintedTicks.isEmpty()) {
+            const Fraction firstTick =
+                  roundToNearestBeat(
+                        scenePosToTick(_mouseDownPos),
+                        true);
+
+            ticks.prepend(firstTick);
+            }
 
       for (const Fraction& tick : ticks) {
             const int tickValue = tick.ticks();
 
-            // A sampled/interpolated segment may encounter the same
-            // grid position many times during one gesture
             if (_drumPaintedTicks.contains(tickValue))
                   continue;
 
@@ -2820,7 +2859,7 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                         const QPointF releasePos =
                               mapToScene(event->pos());
 
-                        if (paintDrumDragSegment(
+                        if (paintOnsetDragSegment(
                                     _lastDrumPaintPos,
                                     releasePos)) {
                               updateNotes();
@@ -3068,7 +3107,7 @@ void PianoView::updateCursor()
                               pi->note(),
                               _editNoteTool == PianoRollEditTool::EVENT_ADJUST);
 
-                        if (useDrumDiamond(pi->note())) {
+                        if (useOnsetDiamond(pi->note())) {
                               setCursor(Qt::ArrowCursor);
                               return;
                               }
@@ -3201,7 +3240,7 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
 
                                     QRect bounds = boundingRect(pi->note(), false);
 
-                                    if (useDrumDiamond(pi->note())) {
+                                    if (useOnsetDiamond(pi->note())) {
                                           // Drum diamonds represent onset only. They can move in
                                           // time/pitch, but they have no duration handles.
                                           _dragStyle = DragStyle::NOTE_POSITION;
@@ -3244,7 +3283,7 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
 
                                     QRect bounds = boundingRect(pi->note(), true);
 
-                                    if (useDrumDiamond(pi->note())) {
+                                    if (useOnsetDiamond(pi->note())) {
                                           //
                                           // A diamond has no displayed playback length. Dragging it in
                                           // EVENT_ADJUST moves the event on-time and therefore moves the
@@ -3285,7 +3324,7 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                                                 scenePosToTick(_mouseDownPos),
                                                 true);
 
-                                    if (_staff->isDrumStaff(tick)) {
+                                    if (useOnsetDiamond(_staff, tick)) {
                                           _drumPaintedTicks.clear();
                                           _lastDrumPaintPos = _mouseDownPos;
                                           _drumPaintUndoStartIdx =
@@ -3335,7 +3374,7 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                         }
                   else if (_dragStyle == DragStyle::DRAW_NOTE
                            && _drumPaintUndoStartIdx >= 0) {
-                        if (paintDrumDragSegment(
+                        if (paintOnsetDragSegment(
                                     _lastDrumPaintPos,
                                     _lastMousePos)) {
                               updateNotes();
@@ -3904,11 +3943,11 @@ Fraction PianoView::gridLengthAt(const Fraction& tick) const
       }
 
 //---------------------------------------------------------
-//   drumPaintTicks
+//   onsetPaintTicks
 //---------------------------------------------------------
 
-QVector<Fraction> PianoView::drumPaintTicks(const QPointF& from,
-                                            const QPointF& to) const
+QVector<Fraction> PianoView::onsetPaintTicks(const QPointF& from,
+                                             const QPointF& to) const
       {
       QVector<Fraction> ticks;
 
@@ -4142,7 +4181,7 @@ bool PianoView::toggleTie(Note* note)
       if (!note || !_staff)
             return false;
 
-      if (useDrumDiamond(note))
+      if (useOnsetDiamond(note))
             return false;
 
       // Based on Score::cmdToggleTie()
@@ -4317,7 +4356,7 @@ void PianoView::cutChord(const QPointF& pos)
 
       PianoItem* pn = pickNote(pickTick, pickPitch);
 
-      if (pn && useDrumDiamond(pn->note()))
+      if (pn && useOnsetDiamond(pn->note()))
             return;
 
       const int voice = pn ? pn->note()->voice() : _editNoteVoice;
@@ -6394,12 +6433,12 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                         scenePosToTick(_mouseDownPos),
                         true);
 
-            const bool drumDiamond =
-                  _staff->isDrumStaff(firstTick);
+            const bool onsetDiamond =
+                  useOnsetDiamond(_staff, firstTick);
 
-            if (drumDiamond) {
+            if (onsetDiamond) {
                   const QVector<Fraction> ticks =
-                        drumPaintTicks(
+                        onsetPaintTicks(
                               _mouseDownPos,
                               _lastMousePos);
 
@@ -6644,8 +6683,8 @@ void PianoView::drawDraggedNote(QPainter* painter,
                   staff = score->staff(staffIdx);
             }
 
-      const bool drumDiamond =
-            staff && staff->isDrumStaff(startTick);
+      const bool onsetDiamond =
+            staff && useOnsetDiamond(staff, startTick);
 
       painter->setBrush(color);
 
@@ -6656,7 +6695,7 @@ void PianoView::drawDraggedNote(QPainter* painter,
 
       painter->setPen(QPen(borderColor));
 
-      if (drumDiamond) {
+      if (onsetDiamond) {
             const int subbeats = _tuplet * (1 << _subdiv);
             const Fraction gridLength(1, 4 * subbeats);
 

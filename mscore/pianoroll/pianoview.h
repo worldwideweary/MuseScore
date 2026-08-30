@@ -225,11 +225,15 @@ private:
       QRect boundingRect(const Note* note, bool applyEvents);
       QRect boundingRect(const Note* note, const NoteEvent* evt, bool applyEvents);
 
-      bool useDrumDiamond(const Note* note) const;
-      QRect drumDiamondRect(const Note* note,
-                            const NoteEvent* event = nullptr,
-                            bool applyEvents = false) const;
-      QVector<Fraction> drumPaintTicks(const QPointF& from,
+      bool useOnsetDiamond(const Staff* staff,
+                           const Fraction& tick) const;
+      bool useOnsetDiamond(const Note* note) const;
+
+      QRect onsetDiamondRect(const Note* note,
+                             const NoteEvent* event = nullptr,
+                             bool applyEvents = false) const;
+
+      QVector<Fraction> onsetPaintTicks(const QPointF& from,
                                        const QPointF& to) const;
       Fraction gridLengthAt(const Fraction& tick) const;
 
@@ -307,8 +311,8 @@ private:
                                     Fraction& pasteLengthOffset,
                                     int& pitchOffset) const;
 
-      bool paintDrumDragSegment(const QPointF& from,
-                                const QPointF& to);
+      bool paintOnsetDragSegment(const QPointF& from,
+                                 const QPointF& to);
 
       void drawPitchText(QPainter* p, const QRectF& bounds, const QString& name, const QColor& noteColor);
       QString pitchNameForMidi(int) const;
