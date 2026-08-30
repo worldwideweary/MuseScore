@@ -64,6 +64,8 @@ class PianoKeyboard : public QWidget {
       virtual void mouseMoveEvent(QMouseEvent* event);
       virtual void leaveEvent(QEvent*);
 
+      QColor keyCurrentColor(int pitch, const QColor& defaultColor) const;
+
    signals:
       void pitchChanged(int);
       void keyPressed(int pitch);
