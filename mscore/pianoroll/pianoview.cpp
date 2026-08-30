@@ -266,69 +266,6 @@ bool PianoItem::intersects(int startTick, int endTick, int highPitch, int lowPit
       }
 
 //---------------------------------------------------------
-//   updatePlaybackHighlights
-//---------------------------------------------------------
-
-void PianoView::updatePlaybackHighlights()
-      {
-      QSet<Note*> markedNotes;
-
-      // ScoreElements only:
-      for (PianoItem* item : _noteList) {
-            Note* note = item->note();
-            if (note && note->mark())
-                  markedNotes.insert(note);
-            }
-
-      //
-      // Nothing changed visually.
-      //
-      if (markedNotes == _markedPlaybackNotes)
-            return;
-
-      QRectF dirtyRect;
-
-      //
-      // Notes that were marked before but are not marked now
-      // need repainting to remove their playback highlight.
-      // Previously highlighted notes may no longer exist after
-      // score edits:
-      //
-      bool removedPlaybackHighlights = false;
-
-      for (Note* note : _markedPlaybackNotes) {
-            if (!markedNotes.contains(note)) {
-                  removedPlaybackHighlights = true;
-                  break;
-                  }
-            }
-
-      //
-      // Newly marked notes need repainting to show their
-      // playback highlight.
-      //
-      for (Note* note : markedNotes) {
-            if (_markedPlaybackNotes.contains(note))
-                  continue;
-
-            for (NoteEvent& event : note->playEvents())
-                  dirtyRect |= boundingRect(note, &event, false);
-            }
-
-      _markedPlaybackNotes = markedNotes;
-
-      if (removedPlaybackHighlights) {
-            // Can't safely derive old note bounds after removal, so
-            // repaint the view:
-            scene()->update(sceneRect());
-            }
-      else if (!dirtyRect.isNull()) {
-            dirtyRect.adjust(-3.0, -3.0, 3.0, 3.0);
-            scene()->update(dirtyRect);
-            }
-      }
-
-//---------------------------------------------------------
 //    selectionRectAllowed
 //---------------------------------------------------------
 
@@ -5579,8 +5516,6 @@ void PianoView::updateNotes()
 
 void PianoView::clearNoteData()
       {
-      _markedPlaybackNotes.clear();
-
       for (int i = 0; i < _noteList.size(); ++i)
             delete _noteList[i];
 

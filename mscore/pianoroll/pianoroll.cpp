@@ -2229,7 +2229,6 @@ void PianorollEditor::heartBeat(Seq* s)
                   }
 
             pianoView->setPlaybackNoteEvents(playbackNoteEvents);
-            pianoView->updatePlaybackHighlights();
             }
       else {
             pianoView->clearPlaybackNoteEvents();

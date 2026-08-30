@@ -106,7 +106,6 @@ public:
       PianoRollScope getScope() { return _scope; }
       void centerSelectionTimeInView();
       void ensureSelectionVisible(bool force = false);
-      void updatePlaybackHighlights();
 
       bool selectionRectAllowed() const;
 
@@ -219,7 +218,6 @@ private:
 
       QHash<const NoteEvent*, LevelEventPreview> _levelEventPreviews;
 
-      QSet<Note*> _markedPlaybackNotes;
       QHash<const Note*, QSet<int>> _playbackNoteEvents;
 
       virtual void drawBackground(QPainter* painter, const QRectF& rect) override;
