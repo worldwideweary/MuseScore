@@ -106,30 +106,36 @@ QColor pianoRollNoteColor(const Note* note,
             }
 
       else if (coloring == Coloring::STAFF) {
-            bool even = false;
+            int staffIndex = 0;
 
             Staff* staff = note->staff();
             if (staff && staff->part()) {
                   const QList<Staff*>* staves = staff->part()->staves();
-                  const int staffPos =
-                        staves ? staves->indexOf(staff) + 1 : -1;
 
-                  even = staffPos > 0 && staffPos % 2 == 0;
+                  if (staves) {
+                        const int index = staves->indexOf(staff);
+
+                        if (index >= 0)
+                              staffIndex = index;
+                        }
                   }
 
-            if (darkTheme()) {
-                  return even
-                        ? preferences.getColor(
-                              PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
-                        : preferences.getColor(
-                              PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
-                  }
-            else {
-                  return even
-                        ? preferences.getColor(
-                              PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
-                        : preferences.getColor(
-                              PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
+            switch (staffIndex % 4) {
+                  case 1:
+                        return preferences.getColor(
+                              PREF_UI_PIANOROLL_NOTE_COLOR_STAFF2);
+
+                  case 2:
+                        return preferences.getColor(
+                              PREF_UI_PIANOROLL_NOTE_COLOR_STAFF3);
+
+                  case 3:
+                        return preferences.getColor(
+                              PREF_UI_PIANOROLL_NOTE_COLOR_STAFF4);
+
+                  default:
+                        return preferences.getColor(
+                              PREF_UI_PIANOROLL_NOTE_COLOR_STAFF1);
                   }
             }
 
@@ -432,30 +438,22 @@ NoteEvent* PianoItem::getTweakNoteEvent()
 
 void PianoItem::paintNoteBlock(QPainter* painter, NoteEvent* evt)
       {
-      QColor noteDeselected;
       QColor noteSelected;
       QColor tieColor;
 
-      bool even = false;
-      Staff* const staff = _note->staff();
-
-      if (_pianoView->getScope() == PianoRollScope::PART && staff && staff->part()) {
-            const QList<Staff*>* staves = staff->part()->staves();
-            int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
-            even = (staffPos % 2 == 0);
-            }
-
-      noteDeselected = even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
-                            : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
+      const QColor noteDeselected =
+            pianoRollNoteColor(
+                  _note,
+                  Coloring::STAFF,
+                  false,
+                  false);
 
       switch (preferences.effectiveGlobalStyle()) {
             case MuseScoreEffectiveStyleType::DARK_FUSION:
-                  noteDeselected = QColor(preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR));
                   noteSelected = QColor(preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR));
                   tieColor = QColor(preferences.getColor(PREF_UI_PIANOROLL_DARK_BG_TIE_COLOR));
                   break;
             default:
-                  noteDeselected = QColor(preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR));
                   noteSelected = QColor(preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR));
                   tieColor = QColor(preferences.getColor(PREF_UI_PIANOROLL_LIGHT_BG_TIE_COLOR));
                   break;
@@ -464,7 +462,12 @@ void PianoItem::paintNoteBlock(QPainter* painter, NoteEvent* evt)
       QColor noteColor = _note->selected() ? noteSelected : noteDeselected;
       painter->setBrush(noteColor);
 
-      painter->setPen(QPen(noteColor.darker(250)));
+      const QColor borderColor =
+            preferences.getBool(PREF_UI_PIANOROLL_NOTE_BORDER_COLOR_LIGHTER)
+                  ? noteColor.lighter(125)
+                  : noteColor.darker(175);
+
+      painter->setPen(QPen(borderColor));
       QRectF bounds = boundingRectPixels(evt);
       painter->drawRoundedRect(bounds, NOTE_BLOCK_CORNER_RADIUS, NOTE_BLOCK_CORNER_RADIUS);
 
@@ -1265,7 +1268,7 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
             return;
             }
 
-      const qreal outlineSize = 2;
+      const qreal outlineSize = 2.5;
 
       NoteEventList& playEvents = note->playEvents();
 
@@ -1307,8 +1310,16 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
                         noteColor.setAlphaF(0.25);
                   }
 
+            const QColor borderColor =
+                  preferences.getBool(PREF_UI_PIANOROLL_NOTE_BORDER_COLOR_LIGHTER)
+                        ? noteColor.lighter(125)
+                        : noteColor.darker(175);
+
             p->setBrush(noteColor);
-            p->setPen(QPen(noteColor.darker(250), outlineSize));
+            p->setPen(QPen(borderColor, outlineSize));
+
+            // Potential option to do a darker/lighter of the color of the note:
+            // p->setPen(QPen(noteColor.darker(250), outlineSize));
 
             const bool drumDiamond = useDrumDiamond(note);
 
@@ -6628,7 +6639,13 @@ void PianoView::drawDraggedNote(QPainter* painter,
             staff && staff->isDrumStaff(startTick);
 
       painter->setBrush(color);
-      painter->setPen(QPen(color.darker(250)));
+
+      const QColor borderColor =
+            preferences.getBool(PREF_UI_PIANOROLL_NOTE_BORDER_COLOR_LIGHTER)
+                  ? color.lighter(125)
+                  : color.darker(175);
+
+      painter->setPen(QPen(borderColor));
 
       if (drumDiamond) {
             const int subbeats = _tuplet * (1 << _subdiv);

@@ -174,17 +174,13 @@ void PianoLevels::paintEvent(QPaintEvent* e)
       switch (preferences.effectiveGlobalStyle()) {
             case MuseScoreEffectiveStyleType::DARK_FUSION:
                   colPianoBg = QColor(preferences.getColor(PREF_UI_PIANOROLL_DARK_BG_BASE_COLOR));
-                  noteDeselected = preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
                   noteSelected = QColor(preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR));
-
                   colGridLine = QColor(preferences.getColor(PREF_UI_PIANOROLL_DARK_BG_GRIDLINE_COLOR));
                   colText = QColor(preferences.getColor(PREF_UI_PIANOROLL_DARK_BG_TEXT_COLOR));
                   break;
             default:
                   colPianoBg = QColor(preferences.getColor(PREF_UI_PIANOROLL_LIGHT_BG_BASE_COLOR));
-                  noteDeselected = preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
                   noteSelected = QColor(preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR));
-
                   colGridLine = QColor(preferences.getColor(PREF_UI_PIANOROLL_LIGHT_BG_GRIDLINE_COLOR));
                   colText = QColor(preferences.getColor(PREF_UI_PIANOROLL_LIGHT_BG_TEXT_COLOR));
                   break;
