@@ -113,7 +113,6 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       bool _playbackFollowActive { false };
       qreal _playbackFollowTicksPerSecond { 0.0 };
       bool _playbackFollowVelocityValid { false };
-      qreal _playbackFollowHorizontalOffset { 0.0 };
 
       int _horizontalPitchScrollPos { 0 };
       int _verticalPitchScrollPos { 0 };

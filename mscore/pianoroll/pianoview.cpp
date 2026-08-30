@@ -5087,30 +5087,6 @@ void PianoView::leaveEvent(QEvent* event)
       }
 
 //---------------------------------------------------------
-//   playbackFollowHorizontalOffset
-//---------------------------------------------------------
-
-qreal PianoView::playbackFollowHorizontalOffset(qreal tick) const
-      {
-      if (_orientation != PianoRollOrientation::HORIZONTAL)
-            return 0.0;
-
-      const QRectF rect =
-            mapToScene(viewport()->geometry()).boundingRect();
-
-      const qreal xpos = tickToPixelXF(tick);
-
-      //
-      // If playback already begins inside the visible viewport,
-      // preserve its current screen position initially.
-      //
-      if (xpos >= rect.left() && xpos <= rect.right())
-            return xpos - rect.center().x();
-
-      return 0.0;
-      }
-
-//---------------------------------------------------------
 //   playbackTickBeyondCenter
 //---------------------------------------------------------
 
@@ -5160,6 +5136,30 @@ void PianoView::ensureVisible(qreal tick, qreal horizontalOffset)
             int target = ypos - viewportHeight + activationMargin;
 
             verticalScrollBar()->setValue(target);
+            }
+      }
+
+//---------------------------------------------------------
+//   ensurePlaybackTickVisible
+//---------------------------------------------------------
+
+void PianoView::ensurePlaybackTickVisible(qreal tick)
+      {
+      if (_orientation != PianoRollOrientation::HORIZONTAL)
+            return;
+
+      const QRectF rect =
+            mapToScene(viewport()->geometry()).boundingRect();
+
+      const qreal xpos = tickToPixelXF(tick);
+
+      if (xpos < rect.left()) {
+            horizontalScrollBar()->setValue(
+                  qMax(qRound(xpos), 0));
+            }
+      else if (xpos > rect.right()) {
+            horizontalScrollBar()->setValue(
+                  qMax(qRound(xpos - rect.width()), 0));
             }
       }
 

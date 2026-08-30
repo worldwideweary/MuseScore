@@ -874,8 +874,10 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                     // boundary, normal centered following takes over.
                     //
                     if (!_playbackFollowScrolling) {
-                          if (!pianoView->playbackTickBeyondCenter(predictedTick))
+                          if (!pianoView->playbackTickBeyondCenter(predictedTick)) {
+                                pianoView->ensurePlaybackTickVisible(predictedTick);
                                 return;
+                                }
 
                           _playbackFollowScrolling = true;
                           }
@@ -2176,7 +2178,6 @@ void PianorollEditor::stopPlaybackFollow()
       _playbackFollowActive = false;
       _playbackFollowVelocityValid = false;
       _playbackFollowTicksPerSecond = 0.0;
-      _playbackFollowHorizontalOffset = 0.0;
 
       pianoView->clearPlaybackLocatorTick();
       ruler->clearPlaybackLocatorTick();
@@ -2265,7 +2266,6 @@ void PianorollEditor::heartBeat(Seq* s)
             _playbackFollowBaseTick = qreal(tick);
             _playbackFollowLastSampleTick = tick;
             _playbackFollowTicksPerSecond = newTicksPerSecond;
-            _playbackFollowHorizontalOffset = 0.0;
 
             _playbackFollowElapsed.restart();
             _playbackFollowTimer->start();

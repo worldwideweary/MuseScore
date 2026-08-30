@@ -368,9 +368,9 @@ private:
       Staff* staff() { return _staff; }
       void setEditableStaff(Staff* st);
       void setStaff(Staff*, Pos* locator);
-      qreal playbackFollowHorizontalOffset(qreal tick) const;
       bool playbackTickBeyondCenter(qreal tick) const;
       void ensureVisible(qreal tick, qreal horizontalOffset = 0.0);
+      void ensurePlaybackTickVisible(qreal tick);
       int noteHeight() { return _noteHeight; }
       qreal xZoom() { return _xZoom; }
       int tuplet() { return _tuplet; }
