@@ -106,8 +106,8 @@ PianoRuler::PianoRuler(QWidget* parent)
       {
       if (markIcon[0] == 0) {
             markIcon[0] = new QPixmap(cmark_xpm);
-            markIcon[1] = new QPixmap(lmark_xpm);
-            markIcon[2] = new QPixmap(rmark_xpm);
+            markIcon[1] = new QPixmap(rmark_xpm);
+            markIcon[2] = new QPixmap(lmark_xpm);
             }
       setMouseTracking(true);
       _xpos       = 0;
@@ -164,6 +164,15 @@ bool PianoRuler::playbackLocatorActive() const
       {
       return _orientation == PianoRollOrientation::HORIZONTAL
              && _playbackLocatorTickValid;
+      }
+
+//---------------------------------------------------------
+//   setLoopEnabled
+//---------------------------------------------------------
+
+void PianoRuler::setLoopEnabled(bool enabled)
+      {
+      _loopEnabled = enabled;
       }
 
 //---------------------------------------------------------
@@ -596,6 +605,51 @@ qreal PianoRuler::tickToPixelF(qreal tick) const
 
 void PianoRuler::mousePressEvent(QMouseEvent* e)
       {
+      if (_loopEnabled && e->button() == Qt::LeftButton) {
+            const int pixel =
+                  _orientation == PianoRollOrientation::HORIZONTAL
+                        ? e->pos().x()
+                        : e->pos().y();
+
+            Pos pos(pix2pos(pixel));
+
+            // Ctrl+click sets loop-in; Shift+click sets loop-out.
+            // Ctrl wins if both modifiers are present.
+            if (e->modifiers() & Qt::ControlModifier) {
+                  if (_pianoView) {
+                        const int tick = pos.time(TType::TICKS);
+                        const Fraction snapped =
+                              _pianoView->snapTickToGrid(tick, Direction::DOWN);
+
+                        pos = Pos(
+                              _score->tempomap(),
+                              _score->sigmap(),
+                              snapped.ticks(),
+                              _timeType);
+                        }
+
+                  emit locatorMoved(1, pos);
+                  return;
+                  }
+
+            if (e->modifiers() & Qt::ShiftModifier) {
+                  if (_pianoView) {
+                        const int tick = pos.time(TType::TICKS);
+                        const Fraction snapped =
+                              _pianoView->snapTickToGrid(tick, Direction::UP);
+
+                        pos = Pos(
+                              _score->tempomap(),
+                              _score->sigmap(),
+                              snapped.ticks(),
+                              _timeType);
+                        }
+
+                  emit locatorMoved(2, pos);
+                  return;
+                  }
+            }
+
       moveLocator(e);
       }
 
@@ -605,6 +659,13 @@ void PianoRuler::mousePressEvent(QMouseEvent* e)
 
 void PianoRuler::mouseMoveEvent(QMouseEvent* e)
       {
+      if (_loopEnabled
+          && (e->buttons() & Qt::LeftButton)
+          && (e->modifiers()
+              & (Qt::ControlModifier | Qt::ShiftModifier))) {
+            return;
+            }
+
       moveLocator(e);
       }
 
