@@ -93,7 +93,8 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       tbMain->addAction(getAction("play"));
       tbMain->addSeparator();
 
-      tbMain->addAction(getAction("loop"));
+      QAction* loopAction = getAction("loop");
+      tbMain->addAction(loopAction);
       tbMain->addSeparator();
       tbMain->addAction(getAction("repeat"));
       QAction* followAction = getAction("follow");
@@ -651,6 +652,13 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                     });
 
       ruler->setPianoView(pianoView);
+
+      ruler->setLoopEnabled(loopAction->isChecked());
+
+      connect(loopAction,
+              &QAction::toggled,
+              ruler,
+              &PianoRuler::setLoopEnabled);
 
       hsb = new QScrollBar(Qt::Horizontal);
       connect(pianoView->horizontalScrollBar(), SIGNAL(rangeChanged(int,int)),
@@ -2358,17 +2366,19 @@ void PianorollEditor::moveLocator(int i, const Pos& p)
 
       const int tick = p.tick();
 
-      //
-      // Locator 0 is the current playback position.
-      // During playback, use the sequencer's real seek path rather
-      // than merely moving the score locator.
-      //
+      // Locator 0 is the current playback position
       if (i == 0 && seq && seq->isPlaying()) {
             const int uTick =
                   score()->repeatList().tick2utick(tick);
 
             seq->seek(uTick, true);
             return;
+            }
+
+      if (i == 1 || i == 2) {
+            preferences.setPreference(
+                  PREF_APP_PLAYBACK_LOOPTOSELECTIONONPLAY,
+                  false);
             }
 
       score()->setPos(POS(i), Fraction::fromTicks(tick));
