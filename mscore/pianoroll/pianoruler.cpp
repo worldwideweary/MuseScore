@@ -106,8 +106,8 @@ PianoRuler::PianoRuler(QWidget* parent)
       {
       if (markIcon[0] == 0) {
             markIcon[0] = new QPixmap(cmark_xpm);
-            markIcon[1] = new QPixmap(lmark_xpm);
-            markIcon[2] = new QPixmap(rmark_xpm);
+            markIcon[1] = new QPixmap(rmark_xpm);
+            markIcon[2] = new QPixmap(lmark_xpm);
             }
       setMouseTracking(true);
       _xpos       = 0;
