@@ -1624,6 +1624,15 @@ void PianoView::clearPlaybackLocatorTick()
       }
 
 //---------------------------------------------------------
+//   snapTickToGrid
+//---------------------------------------------------------
+
+Fraction PianoView::snapTickToGrid(int tick, Direction direction) const
+      {
+      return roundToNearestBeat(tick, direction == Direction::DOWN);
+      }
+
+//---------------------------------------------------------
 //   pixelXToTick
 //---------------------------------------------------------
 

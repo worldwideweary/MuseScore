@@ -404,6 +404,8 @@ private:
       void setPlaybackLocatorTick(qreal tick);
       void clearPlaybackLocatorTick();
 
+      Fraction snapTickToGrid(int tick, Direction) const;
+
 // TODO: Any of these that can be private should be private:
 
       qreal tickToPixelXF(qreal tick) const;

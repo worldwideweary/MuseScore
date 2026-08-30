@@ -1793,6 +1793,10 @@ double Seq::curTempo() const
 
 void Seq::setLoopIn()
       {
+      preferences.setPreference(
+            PREF_APP_PLAYBACK_LOOPTOSELECTIONONPLAY,
+            false);
+
       Fraction t;
       if (state == Transport::PLAY) {     // If in playback mode, set the In position where note is being played
             auto ppos = playPos;
@@ -1813,6 +1817,10 @@ void Seq::setLoopIn()
 
 void Seq::setLoopOut()
       {
+      preferences.setPreference(
+            PREF_APP_PLAYBACK_LOOPTOSELECTIONONPLAY,
+            false);
+
       Fraction t;
       if (state == Transport::PLAY) {    // If in playback mode, set the Out position where note is being played
             t = Fraction::fromTicks(cs->repeatList().utick2tick(playPos->first));
@@ -1846,6 +1854,29 @@ void Seq::setLoopSelection()
       if (score && score->selection().isRange()) {
             cs->setLoopInTick(score->selection().tickStart());
             cs->setLoopOutTick(score->selection().tickEnd());
+            }
+      else if (score && score->selection().isList()) {
+            const Selection& selection = score->selection();
+
+            if (selection.elements().size() > 1) {
+                  ChordRest* first = selection.firstChordRest();
+                  ChordRest* last = selection.lastChordRest();
+
+                  if (first && last) {
+                        ChordRest* longestLastChordRest =
+                              selection.longestChordRestAtTick(last->tick());
+
+                        if (longestLastChordRest) {
+                              const Fraction startTick = first->tick();
+                              const Fraction endTick = longestLastChordRest->endTick();
+
+                              if (startTick < endTick) {
+                                    cs->setLoopInTick(startTick);
+                                    cs->setLoopOutTick(endTick);
+                                    }
+                              }
+                        }
+                  }
             }
 
       // add a dummy event to loop end if it is not already there

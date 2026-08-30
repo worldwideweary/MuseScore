@@ -220,6 +220,7 @@ class Selection {
       Segment* firstChordRestSegment() const;
       ChordRest* firstChordRest(int track = -1) const;
       ChordRest* lastChordRest(int track = -1) const;
+      ChordRest* longestChordRestAtTick(const Fraction& tick, int track = -1) const;
       Measure* findMeasure() const;
       void update();
       void updateState();
