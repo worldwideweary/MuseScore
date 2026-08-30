@@ -4065,6 +4065,9 @@ void PianoView::insertNote(int modifiers)
 
                   selectItem(pn, NoteSelectType::REPLACE);
                   }
+            else {
+                  clearNoteSelection();
+                  }
             return;
             }
 
