@@ -5111,6 +5111,21 @@ qreal PianoView::playbackFollowHorizontalOffset(qreal tick) const
       }
 
 //---------------------------------------------------------
+//   playbackTickBeyondCenter
+//---------------------------------------------------------
+
+bool PianoView::playbackTickBeyondCenter(qreal tick) const
+      {
+      if (_orientation != PianoRollOrientation::HORIZONTAL)
+            return true;
+
+      const QRectF rect =
+            mapToScene(viewport()->geometry()).boundingRect();
+
+      return tickToPixelXF(tick) >= rect.center().x();
+      }
+
+//---------------------------------------------------------
 //   ensureVisible
 //---------------------------------------------------------
 

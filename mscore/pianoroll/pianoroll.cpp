@@ -869,17 +869,18 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                           }
 
                     //
-                    // Begin at the playhead's existing screen position and smoothly
-                    // converge to normal centered playback following.
+                    // Leave the viewport completely untouched until playback reaches
+                    // the center of the visible time range. Once it reaches that
+                    // boundary, normal centered following takes over.
                     //
-                    const qreal settleTime = 0.75;
-                    const qreal settle =
-                          qBound<qreal>(0.0, elapsed / settleTime, 1.0);
+                    if (!_playbackFollowScrolling) {
+                          if (!pianoView->playbackTickBeyondCenter(predictedTick))
+                                return;
 
-                    const qreal horizontalOffset =
-                          _playbackFollowHorizontalOffset * (1.0 - settle);
+                          _playbackFollowScrolling = true;
+                          }
 
-                    pianoView->ensureVisible(predictedTick, horizontalOffset);
+                    pianoView->ensureVisible(predictedTick, 0.0);
 
                     ruler->setPlaybackLocatorTick(predictedTick);
                     });
@@ -2171,6 +2172,7 @@ void PianorollEditor::keyReleased(int /*p*/)
 
 void PianorollEditor::stopPlaybackFollow()
       {
+      _playbackFollowScrolling = false;
       _playbackFollowActive = false;
       _playbackFollowVelocityValid = false;
       _playbackFollowTicksPerSecond = 0.0;
@@ -2258,13 +2260,12 @@ void PianorollEditor::heartBeat(Seq* s)
       if (!_playbackFollowActive) {
             _playbackFollowActive = true;
             _playbackFollowVelocityValid = true;
+            _playbackFollowScrolling = false;
 
             _playbackFollowBaseTick = qreal(tick);
             _playbackFollowLastSampleTick = tick;
             _playbackFollowTicksPerSecond = newTicksPerSecond;
-
-            _playbackFollowHorizontalOffset =
-                  pianoView->playbackFollowHorizontalOffset(tick);
+            _playbackFollowHorizontalOffset = 0.0;
 
             _playbackFollowElapsed.restart();
             _playbackFollowTimer->start();

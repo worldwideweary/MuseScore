@@ -105,6 +105,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       int _previewOnTime { 0 };
       int _previewLen { 1000 };
 
+      bool _playbackFollowScrolling { false };
       QTimer* _playbackFollowTimer { nullptr };
       QElapsedTimer _playbackFollowElapsed;
       qreal _playbackFollowBaseTick { 0.0 };
