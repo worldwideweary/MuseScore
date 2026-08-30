@@ -906,9 +906,11 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                           _playbackFollowBaseTick
                           + elapsed * _playbackFollowTicksPerSecond;
 
-                    if (preferences.getBool(PREF_UI_PIANOROLL_PLAYBACK_SHOW_CURSOR)) {
+                    const bool showPlaybackCursor =
+                          preferences.getBool(PREF_UI_PIANOROLL_PLAYBACK_SHOW_CURSOR);
+
+                    if (showPlaybackCursor) {
                           pianoView->setPlaybackLocatorTick(predictedTick);
-                          ruler->setPlaybackLocatorTick(predictedTick);
 
                           if (_showPianoLevels && pianoLevels)
                                 pianoLevels->setPlaybackLocatorTick(predictedTick);
@@ -929,6 +931,12 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                     if (!_playbackFollowScrolling) {
                           if (!pianoView->playbackTickBeyondCenter(predictedTick)) {
                                 pianoView->ensurePlaybackTickVisible(predictedTick);
+
+                                if (showPlaybackCursor
+                                    && _orientation == PianoRollOrientation::HORIZONTAL) {
+                                    ruler->setPlaybackLocatorTick(predictedTick);
+                                    }
+
                                 return;
                                 }
 
@@ -939,8 +947,6 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
                     ruler->setPlaybackLocatorTick(predictedTick);
                     });
-
-
 
       connect(pianoView, &PianoView::onTimeDragged, this, [this](int value) {
             _previewOnTime = value;
@@ -969,7 +975,8 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             });
 
       connect(pianoView, &PianoView::noteEventsChanged, this, [this]() {
-            pianoLevels->update();
+            if (_showPianoLevels && pianoLevels)
+                  pianoLevels->update();
             updateSelection();
             });
 
@@ -1365,9 +1372,8 @@ void PianorollEditor::setPianoLevelsVisible(bool visible)
 
       if (pianoLevels) {
             if (visible) {
-                  //
-                  // Bring the view back into sync when it becomes visible.
-                  //
+                  pianoLevels->updateNotes();
+
                   pianoLevels->setXpos(
                         pianoView->horizontalScrollBar()->value());
 
@@ -2031,7 +2037,10 @@ void PianorollEditor::selectionChanged()
 
 
       pianoView->scene()->update();
-      pianoLevels->update();
+
+      if (_showPianoLevels && pianoLevels)
+            pianoLevels->update();
+
       updateSelection();
       }
 
@@ -2049,7 +2058,9 @@ void PianorollEditor::changeSelection(SelState)
       // so no separate selection transfer is required.
       //
       pianoView->scene()->update();
-      pianoLevels->update();
+
+      if (_showPianoLevels && pianoLevels)
+            pianoLevels->update();
 
       updateSelection();
 
@@ -2242,7 +2253,8 @@ void PianorollEditor::updateVelocity(Note* note)
 
       velocity->setValue(value);
 
-      pianoLevels->update();
+      if (_showPianoLevels && pianoLevels)
+            pianoLevels->update();
       }
 
 //---------------------------------------------------------
@@ -2276,7 +2288,8 @@ void PianorollEditor::velocityChanged(int val)
             }
       _score->endCmd();
 
-      pianoLevels->update();
+      if (_showPianoLevels && pianoLevels)
+            pianoLevels->update();
       }
 
 //---------------------------------------------------------
@@ -2592,7 +2605,9 @@ void PianorollEditor::doUpdate()
             return;
             }
       pianoView->updateNotes();
-      pianoLevels->updateNotes();
+
+      if (_showPianoLevels && pianoLevels)
+            pianoLevels->updateNotes();
       }
 
 //---------------------------------------------------------
@@ -2655,7 +2670,9 @@ void PianorollEditor::applyPitchEdit()
       // Refresh PRE note geometry and the tweak controls immediately.
       //
       pianoView->updateNotes();
-      pianoLevels->updateNotes();
+      if (_showPianoLevels && pianoLevels)
+            pianoLevels->updateNotes();
+
       updateSelection();
       pianoView->ensureSelectionVisible();
       }
@@ -2670,7 +2687,7 @@ void PianorollEditor::redraw() const
             pianoView->viewport()->update();
       if (pianoKbd)
             pianoKbd->update();
-      if (pianoLevels)
+      if (pianoLevels && _showPianoLevels)
             pianoLevels->update();
       }
 
@@ -2726,7 +2743,7 @@ void PianorollEditor::posChanged(POS p, unsigned tick)
 
             ruler->update();
 
-            if (_showPianoLevels)
+            if (_showPianoLevels && pianoLevels)
                   pianoLevels->update();
 
             return;
@@ -2737,13 +2754,13 @@ void PianorollEditor::posChanged(POS p, unsigned tick)
       // horizontal-only.  Avoid the full scene update in
       // vertical mode.
       //
-      if (_orientation == PianoRollOrientation::HORIZONTAL)
+      if (_orientation == PianoRollOrientation::HORIZONTAL
+          && !_playbackFollowActive) {
             pianoView->moveLocator(int(p));
+            }
 
-      //
-      // PianoRuler is now visible in both orientations.
-      //
-      ruler->update();
+      if (!ruler->playbackLocatorActive())
+            ruler->update();
 
       if (waveView)
             waveView->moveLocator(int(p));
@@ -2777,7 +2794,9 @@ void PianorollEditor::onTimeChanged(int val)
       _score->endCmd();
 
       pianoView->updateNotes();
-      pianoLevels->updateNotes();
+
+      if (_showPianoLevels && pianoLevels)
+            pianoLevels->updateNotes();
       }
 
 //---------------------------------------------------------
@@ -2806,7 +2825,9 @@ void PianorollEditor::tickLenChanged(int val)
       _score->endCmd();
 
       pianoView->updateNotes();
-      pianoLevels->updateNotes();
+
+      if (_showPianoLevels && pianoLevels)
+            pianoLevels->updateNotes();
       }
 
 //---------------------------------------------------------

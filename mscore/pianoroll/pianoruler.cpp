@@ -142,6 +142,7 @@ void PianoRuler::setOrientation(PianoRollOrientation orientation)
       if (_orientation == orientation)
             return;
 
+      _playbackLocatorTickValid = false;
       _orientation = orientation;
       update();
       }
@@ -156,11 +157,24 @@ void PianoRuler::setPianoView(PianoView* view)
       }
 
 //---------------------------------------------------------
+//   playbackLocatorActive
+//---------------------------------------------------------
+
+bool PianoRuler::playbackLocatorActive() const
+      {
+      return _orientation == PianoRollOrientation::HORIZONTAL
+             && _playbackLocatorTickValid;
+      }
+
+//---------------------------------------------------------
 //   setXpos
 //---------------------------------------------------------
 
 void PianoRuler::setXpos(int val)
       {
+      if (_xpos == val)
+            return;
+
       _xpos = val;
       update();
       }
@@ -515,9 +529,34 @@ void PianoRuler::paintVertical(QPaintEvent* e)
 
 void PianoRuler::setPlaybackLocatorTick(qreal tick)
       {
+      if (_orientation != PianoRollOrientation::HORIZONTAL)
+            return;
+
+      const qreal oldX = _playbackLocatorTickValid
+            ? tickToPixelF(_playbackLocatorTick)
+            : -1.0;
+
       _playbackLocatorTick = tick;
       _playbackLocatorTickValid = true;
-      update();
+
+      const int pw = markIcon[0]->width() / 2;
+      const int margin = 2;
+
+      if (oldX >= 0.0) {
+            update(QRect(
+                  qRound(oldX) - pw - margin,
+                  0,
+                  markIcon[0]->width() + margin * 2,
+                  height()));
+            }
+
+      const qreal newX = tickToPixelF(tick);
+
+      update(QRect(
+            qRound(newX) - pw - margin,
+            0,
+            markIcon[0]->width() + margin * 2,
+            height()));
       }
 
 //---------------------------------------------------------
@@ -526,6 +565,9 @@ void PianoRuler::setPlaybackLocatorTick(qreal tick)
 
 void PianoRuler::clearPlaybackLocatorTick()
       {
+      if (!_playbackLocatorTickValid)
+            return;
+
       _playbackLocatorTickValid = false;
       update();
       }
