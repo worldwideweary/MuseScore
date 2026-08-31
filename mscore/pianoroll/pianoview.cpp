@@ -1909,6 +1909,9 @@ bool PianoView::paintOnsetDragSegment(const QPointF& from,
             onsetPaintTicks(from, to);
 
       for (const Fraction& tick : ticks) {
+
+            if (tick < Fraction{})
+                  continue;
             const int tickValue = tick.ticks();
 
             if (_drumPaintedTicks.contains(tickValue))
@@ -2869,7 +2872,6 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                   }
             else if (_dragStyle == DragStyle::DRAW_NOTE) {
                   const int pitch = scenePosToPitch(_mouseDownPos);
-
                   if (!pitchIsValid(pitch))
                         return;
 
@@ -2911,6 +2913,12 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                         Fraction endTickFrac =
                               roundToNearestBeat(endTick, false);
 
+                        startTickFrac =
+                              clampTickToScore(startTickFrac);
+
+                        endTickFrac =
+                              clampTickToScore(endTickFrac);
+
                         if (endTickFrac != startTickFrac) {
                               Fraction duration =
                                     endTickFrac - startTickFrac;
@@ -2933,36 +2941,35 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                               Measure* measure =
                                     score->tick2measure(startTickFrac);
 
-                              if (!measure)
-                                    return;
+                              if (measure) {
+                                    score->startCmd();
 
-                              score->startCmd();
+                                    ChordRest* cr =
+                                          score->findCR(startTickFrac, track);
 
-                              ChordRest* cr =
-                                    score->findCR(startTickFrac, track);
+                                    if (!cr) {
+                                          Segment* seg =
+                                                measure->undoGetSegment(
+                                                      SegmentType::ChordRest,
+                                                      startTickFrac);
 
-                              if (!cr) {
-                                    Segment* seg =
-                                          measure->undoGetSegment(
-                                                SegmentType::ChordRest,
-                                                startTickFrac);
+                                          score->expandVoice(seg, track);
 
-                                    score->expandVoice(seg, track);
+                                          cr = score->findCR(startTickFrac, track);
+                                          }
 
-                                    cr = score->findCR(startTickFrac, track);
+                                    if (cr) {
+                                          addNote(
+                                                startTickFrac,
+                                                duration,
+                                                pitch,
+                                                track);
+                                          }
+
+                                    score->endCmd();
+
+                                    updateNotes();
                                     }
-
-                              if (cr) {
-                                    addNote(
-                                          startTickFrac,
-                                          duration,
-                                          pitch,
-                                          track);
-                                    }
-
-                              score->endCmd();
-
-                              updateNotes();
                               }
                         }
                   }
@@ -4008,6 +4015,27 @@ Fraction PianoView::gridLengthAt(const Fraction& tick) const
             return Fraction(0, 1);
 
       return next - tick;
+      }
+
+//---------------------------------------------------------
+//   clampTickToScore
+//    negative       → 0
+//    inside score   → unchanged
+//    past score end → _ticks
+//---------------------------------------------------------
+
+Fraction PianoView::clampTickToScore(const Fraction& tick) const
+      {
+      if (tick < Fraction{})
+            return Fraction{};
+
+      const Fraction scoreEnd =
+            Fraction::fromTicks(_ticks);
+
+      if (tick > scoreEnd)
+            return scoreEnd;
+
+      return tick;
       }
 
 //---------------------------------------------------------
@@ -6492,10 +6520,13 @@ void PianoView::drawDraggedNotes(QPainter* painter)
             if (!pitchIsValid(pitch))
                   return;
 
-            const Fraction firstTick =
+            Fraction firstTick =
                   roundToNearestBeat(
                         scenePosToTick(_mouseDownPos),
                         true);
+
+            firstTick =
+                  clampTickToScore(firstTick);
 
             const bool onsetDiamond =
                   useOnsetDiamond(_staff, firstTick);
@@ -6507,6 +6538,11 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                               _lastMousePos);
 
                   for (const Fraction& tick : ticks) {
+                        if (tick < Fraction{} ||
+                            tick > Fraction::fromTicks(_ticks)) {
+                              continue;
+                              }
+
                         const Fraction duration =
                               gridLengthAt(tick);
 
@@ -6551,6 +6587,12 @@ void PianoView::drawDraggedNotes(QPainter* painter)
 
             Fraction endTickFrac =
                   roundToNearestBeat(endTick, false);
+
+            startTickFrac =
+                  clampTickToScore(startTickFrac);
+
+            endTickFrac =
+                  clampTickToScore(endTickFrac);
 
             if (endTickFrac != startTickFrac) {
                   const Fraction duration =
