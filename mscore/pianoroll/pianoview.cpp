@@ -3186,6 +3186,9 @@ PianoRollCursorMode PianoView::effectiveCursorMode() const
       //
       if (_dragStarted) {
             switch (_dragStyle) {
+                  case DragStyle::DRAW_NOTE:
+                        return PianoRollCursorMode::ADD;
+
                   case DragStyle::ERASE:
                         return PianoRollCursorMode::ERASE;
 
@@ -3197,6 +3200,12 @@ PianoRollCursorMode PianoView::effectiveCursorMode() const
 
                   case DragStyle::SELECTION_RECT:
                         return PianoRollCursorMode::SELECTION_RECT;
+
+                  case DragStyle::NOTE_LENGTH_START:
+                  case DragStyle::NOTE_LENGTH_END:
+                  case DragStyle::EVENT_ONTIME:
+                  case DragStyle::EVENT_LENGTH:
+                        return PianoRollCursorMode::RESIZE;
 
                   default:
                         break;
@@ -3321,6 +3330,13 @@ void PianoView::updateCursor()
 
             case PianoRollCursorMode::EVENT_ADJUST:
                   setCursor(Qt::ArrowCursor);
+                  break;
+
+            case PianoRollCursorMode::RESIZE:
+                  if (isHorizontal())
+                        setCursor(Qt::SizeHorCursor);
+                  else
+                        setCursor(Qt::SizeVerCursor);
                   break;
             }
       }

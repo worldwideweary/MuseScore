@@ -65,7 +65,8 @@ enum class PianoRollCursorMode : char {
       ERASE,
       CUT,
       TIE,
-      EVENT_ADJUST
+      EVENT_ADJUST,
+      RESIZE
       };
 
 struct BarPattern {
