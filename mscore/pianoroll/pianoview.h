@@ -237,6 +237,8 @@ private:
                                        const QPointF& to) const;
       Fraction gridLengthAt(const Fraction& tick) const;
 
+      Fraction clampTickToScore(const Fraction& tick) const;
+
       void setSelectedNoteColor();
       void resetSelectedNoteColor();
 
