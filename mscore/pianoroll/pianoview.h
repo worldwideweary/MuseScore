@@ -271,6 +271,12 @@ private:
                                 int staffIdx,
                                 int preferredVoice) const;
 
+      int insertionVoiceForNote(const Fraction& startTick,
+                                const Fraction& duration,
+                                int pitch,
+                                int staffIdx,
+                                int preferredVoice) const;
+
       QVector<Note*> addNote(Fraction startTick, Fraction duration, int pitch, int track);
       void handleSelectionClick();
       void insertNote(int modifiers);
