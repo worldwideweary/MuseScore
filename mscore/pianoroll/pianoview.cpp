@@ -1418,7 +1418,8 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
             QColor colorTie = darkTheme() ? preferences.getColor(PREF_UI_PIANOROLL_DARK_BG_TIE_COLOR)
                                           : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_BG_TIE_COLOR);
 
-            p->setPen(QPen(colorTie));
+            const qreal outlineTieSize = outlineSize * 1.25;
+            p->setPen(QPen(colorTie, outlineTieSize));
             for (Tie* note_tie = note->tieFor(); note_tie != nullptr; note_tie = note_tie->endNote()->tieFor()) {
                   Fraction tieTime = note_tie->endNote()->tick();
                   float xpos = tickToPixelX(tieTime.ticks());
