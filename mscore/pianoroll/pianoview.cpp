@@ -1934,17 +1934,40 @@ bool PianoView::paintOnsetDragSegment(const QPointF& from,
             if (duration <= Fraction(0, 1))
                   continue;
 
-            _drumPaintedTicks.insert(tickValue);
+            Measure* measure = score->tick2measure(tick);
+            if (!measure)
+                  continue;
 
             score->startCmd();
-            addNote(
-                  tick,
-                  duration,
-                  pitch,
-                  track);
-            score->endCmd();
 
-            changed = true;
+            ChordRest* cr = score->findCR(tick, track);
+
+            if (!cr) {
+                  Segment* seg =
+                        measure->undoGetSegment(
+                              SegmentType::ChordRest,
+                              tick);
+
+                  score->expandVoice(seg, track);
+
+                  cr = score->findCR(tick, track);
+                  }
+
+            if (cr) {
+                  const QVector<Note*> added =
+                        addNote(
+                              tick,
+                              duration,
+                              pitch,
+                              track);
+
+                  if (!added.isEmpty()) {
+                        _drumPaintedTicks.insert(tickValue);
+                        changed = true;
+                        }
+                  }
+
+            score->endCmd();
             }
 
       return changed;
@@ -2865,8 +2888,13 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                               updateNotes();
                               }
 
-                        score->undoStack()->mergeCommands(
-                              _drumPaintUndoStartIdx);
+                        const int curUndoIdx =
+                              score->undoStack()->getCurIdx();
+
+                        if (curUndoIdx > _drumPaintUndoStartIdx) {
+                              score->undoStack()->mergeCommands(
+                                    _drumPaintUndoStartIdx);
+                              }
 
                         _drumPaintUndoStartIdx = -1;
                         _drumPaintedTicks.clear();
