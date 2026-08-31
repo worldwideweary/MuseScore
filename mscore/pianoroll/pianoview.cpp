@@ -2878,8 +2878,13 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                   Score* score = _staff->score();
 
                   if (_cutDragUndoStartIdx >= 0) {
-                        score->undoStack()->mergeCommands(
-                              _cutDragUndoStartIdx);
+                        const int curUndoIdx =
+                              score->undoStack()->getCurIdx();
+
+                        if (curUndoIdx > _cutDragUndoStartIdx) {
+                              score->undoStack()->mergeCommands(
+                                    _cutDragUndoStartIdx);
+                              }
 
                         _cutDragUndoStartIdx = -1;
                         }
@@ -2892,7 +2897,14 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                   Score* score = _staff->score();
 
                   if (_tieDragUndoStartIdx >= 0) {
-                        score->undoStack()->mergeCommands(_tieDragUndoStartIdx);
+                        const int curUndoIdx =
+                              score->undoStack()->getCurIdx();
+
+                        if (curUndoIdx > _tieDragUndoStartIdx) {
+                              score->undoStack()->mergeCommands(
+                                    _tieDragUndoStartIdx);
+                              }
+
                         _tieDragUndoStartIdx = -1;
                         }
 
