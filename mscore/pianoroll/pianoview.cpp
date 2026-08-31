@@ -570,6 +570,25 @@ PianoView::PianoView()
 
       _cursorModifiers = QGuiApplication::keyboardModifiers();
 
+      QPixmap addCursorPixmap =
+            QIcon(":/data/icons/pianoroll-add.svg").pixmap(24, 24);
+      QPixmap eraseCursorPixmap =
+            QIcon(":/data/icons/pianoroll-erase.svg").pixmap(24, 24);
+      QPixmap scissorsCursorPixmap =
+            QIcon(":/data/icons/pianoroll-scissors.svg").pixmap(24, 24);
+      QPixmap tieCursorPixmap =
+            QIcon(":/data/icons/pianoroll-tie.svg").pixmap(24, 24);
+
+      const QPoint addNoteHotSpot(3, 3);
+      const QPoint eraseNoteHotSpot(3, 3);
+      const QPoint scissorsNoteHotSpot(12, 12);
+      const QPoint tieNoteHotSpot(12, 12);
+
+      _addNoteCursor = QCursor(addCursorPixmap, addNoteHotSpot.x(), addNoteHotSpot.y());
+      _eraseNoteCursor = QCursor(eraseCursorPixmap, eraseNoteHotSpot.x(), eraseNoteHotSpot.y());
+      _scissorsNoteCursor = QCursor(scissorsCursorPixmap, scissorsNoteHotSpot.x(), scissorsNoteHotSpot.y());
+      _tieNoteCursor = QCursor(tieCursorPixmap, tieNoteHotSpot.x(), tieNoteHotSpot.y());
+
       qApp->installEventFilter(this);
 
       memset(_pitchHighlight, 0, 128);
@@ -3216,6 +3235,10 @@ PianoRollCursorMode PianoView::effectiveCursorMode() const
                   case DragStyle::SELECTION_RECT:
                         return PianoRollCursorMode::SELECTION_RECT;
 
+                  case DragStyle::NOTE_POSITION:
+                        return PianoRollCursorMode::MOVE;
+
+                  case DragStyle::EVENT_MOVE:
                   case DragStyle::NOTE_LENGTH_START:
                   case DragStyle::NOTE_LENGTH_END:
                   case DragStyle::EVENT_ONTIME:
@@ -3331,19 +3354,19 @@ void PianoView::updateCursor()
                   break;
 
             case PianoRollCursorMode::ADD:
-                  setCursor(Qt::CrossCursor);
+                  setCursor(_addNoteCursor);
                   break;
 
             case PianoRollCursorMode::ERASE:
-                  setCursor(Qt::ForbiddenCursor);
+                  setCursor(_eraseNoteCursor);
                   break;
 
             case PianoRollCursorMode::CUT:
-                  setCursor(Qt::PointingHandCursor);
+                  setCursor(_scissorsNoteCursor);
                   break;
 
             case PianoRollCursorMode::TIE:
-                  setCursor(Qt::UpArrowCursor);
+                  setCursor(_tieNoteCursor);
                   break;
 
             case PianoRollCursorMode::EVENT_ADJUST:
@@ -3355,6 +3378,10 @@ void PianoView::updateCursor()
                         setCursor(Qt::SizeHorCursor);
                   else
                         setCursor(Qt::SizeVerCursor);
+                  break;
+
+            case PianoRollCursorMode::MOVE:
+                  setCursor(Qt::SizeAllCursor);
                   break;
             }
       }

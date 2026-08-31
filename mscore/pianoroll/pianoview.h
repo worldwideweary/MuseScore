@@ -66,7 +66,8 @@ enum class PianoRollCursorMode : char {
       CUT,
       TIE,
       EVENT_ADJUST,
-      RESIZE
+      RESIZE,
+      MOVE
       };
 
 struct BarPattern {
@@ -210,6 +211,10 @@ private:
       int _editNoteVoice = 0;
       PianoRollEditTool _editNoteTool = PianoRollEditTool::EVENT_ADJUST;
       Qt::KeyboardModifiers _cursorModifiers { Qt::NoModifier };
+      QCursor _addNoteCursor;
+      QCursor _eraseNoteCursor;
+      QCursor _scissorsNoteCursor;
+      QCursor _tieNoteCursor;
       bool _automaticVoiceAssignment { true }; // testing = true
 
       QList<PianoItem*> _noteList;
