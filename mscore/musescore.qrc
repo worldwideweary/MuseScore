@@ -227,5 +227,10 @@
         <file>data/icons/note-show-pitch.svg</file>
         <file>data/icons/keyboard-vertical.svg</file>
         <file>data/icons/note-coloring.svg</file>
+        <file>data/icons/pianoroll-erase.svg</file>
+        <file>data/icons/pianoroll-add.svg</file>
+        <file>data/icons/pianoroll-scissors.svg</file>
+        <file>data/icons/pianoroll-tie.svg</file>
+        <file>data/icons/pianoroll-consolidate-tie.svg</file>
     </qresource>
 </RCC>
