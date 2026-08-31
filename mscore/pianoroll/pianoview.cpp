@@ -1791,40 +1791,54 @@ bool PianoView::calculateNoteDragOffsets(Fraction& pasteTickOffset,
 
       if (_dragStyle == DragStyle::NOTE_POSITION) {
             Fraction mouseStartGrid =
-                  roundToNearestBeat(scenePosToTick(_mouseDownPos), true);
+                  roundToNearestBeat(
+                        scenePosToTick(_mouseDownPos),
+                        true);
 
             Fraction mouseCurrentGrid =
-                  roundToNearestBeat(scenePosToTick(_lastMousePos), true);
-
-            pasteTickOffset = mouseCurrentGrid - mouseStartGrid;
-            pitchOffset = dragToPitch - startPitch;
-            }
-      else if (_dragStyle == DragStyle::NOTE_LENGTH_END) {
-            Fraction noteEndDraggedTick =
-                  _dragEndTick + dragOffsetTicks;
-
-            Fraction noteEndDraggedAlignedTick =
-                  Fraction(noteEndDraggedTick.numerator() * divisions
-                           / noteEndDraggedTick.denominator(),
-                           divisions);
-
-            pasteLengthOffset =
-                  noteEndDraggedAlignedTick - _dragEndTick;
-            }
-      else if (_dragStyle == DragStyle::NOTE_LENGTH_START) {
-            Fraction noteStartDraggedTick =
-                  _dragStartTick + dragOffsetTicks;
-
-            Fraction noteStartDraggedAlignedTick =
-                  Fraction(noteStartDraggedTick.numerator() * divisions
-                           / noteStartDraggedTick.denominator(),
-                           divisions);
+                  roundToNearestBeat(
+                        scenePosToTick(_lastMousePos),
+                        true);
 
             pasteTickOffset =
-                  noteStartDraggedAlignedTick - _dragStartTick;
+                  mouseCurrentGrid - mouseStartGrid;
 
-            pasteLengthOffset =
-                  _dragStartTick - noteStartDraggedAlignedTick;
+            pitchOffset =
+                  dragToPitch - startPitch;
+            }
+      else if (_dragStyle == DragStyle::NOTE_LENGTH_END
+               || _dragStyle == DragStyle::NOTE_LENGTH_START) {
+            const qint64 scaledNumerator =
+                  dragOffsetTicks.numerator() * divisions;
+
+            const qint64 denominator =
+                  dragOffsetTicks.denominator();
+
+            qint64 alignedDivisions =
+                  scaledNumerator / denominator;
+
+            if (scaledNumerator % denominator) {
+                  if (scaledNumerator > 0)
+                        ++alignedDivisions;
+                  else
+                        --alignedDivisions;
+                  }
+
+            const Fraction alignedDragOffset(
+                  alignedDivisions,
+                  divisions);
+
+            if (_dragStyle == DragStyle::NOTE_LENGTH_END) {
+                  pasteLengthOffset =
+                        alignedDragOffset;
+                  }
+            else {
+                  pasteTickOffset =
+                        alignedDragOffset;
+
+                  pasteLengthOffset =
+                        Fraction{} - alignedDragOffset;
+                  }
             }
 
       return true;
