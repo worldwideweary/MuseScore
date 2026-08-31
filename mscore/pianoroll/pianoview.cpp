@@ -19,6 +19,7 @@
 #include "shortcut.h"
 
 #include "libmscore/chord.h"
+#include "libmscore/drumset.h"
 #include "libmscore/measure.h"
 #include "libmscore/note.h"
 #include "libmscore/noteevent.h"
@@ -1902,9 +1903,6 @@ bool PianoView::paintOnsetDragSegment(const QPointF& from,
       if (!pitchIsValid(pitch))
             return false;
 
-      const int track =
-            _staff->idx() * VOICES + _editNoteVoice;
-
       bool changed = false;
 
       const QVector<Fraction> ticks =
@@ -1919,6 +1917,17 @@ bool PianoView::paintOnsetDragSegment(const QPointF& from,
             const Fraction duration = gridLengthAt(tick);
             if (duration <= Fraction(0, 1))
                   continue;
+
+            const int voice =
+                  insertionVoiceForNote(
+                        tick,
+                        duration,
+                        pitch,
+                        _staff->idx(),
+                        _editNoteVoice);
+
+            const int track =
+                  _staff->idx() * VOICES + voice;
 
             Measure* measure = score->tick2measure(tick);
             if (!measure)
@@ -2910,16 +2919,13 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                               _editNoteDots = 0;
                               emit editNoteLengthChanged(duration);
 
-                              int voice = _editNoteVoice;
-
-                              if (_automaticVoiceAssignment) {
-                                    voice = automaticVoiceForNote(
+                              const int voice =
+                                    insertionVoiceForNote(
                                           startTickFrac,
                                           duration,
                                           pitch,
                                           _staff->idx(),
                                           _editNoteVoice);
-                                    }
 
                               const int track =
                                     _staff->idx() * VOICES + voice;
@@ -3695,6 +3701,52 @@ int PianoView::automaticVoiceForNote(const Fraction& startTick,
       }
 
 //---------------------------------------------------------
+//   insertionVoiceForNote
+//---------------------------------------------------------
+
+int PianoView::insertionVoiceForNote(const Fraction& startTick,
+                                     const Fraction& duration,
+                                     int pitch,
+                                     int staffIdx,
+                                     int preferredVoice) const
+      {
+      if (!_automaticVoiceAssignment || !_staff)
+            return preferredVoice;
+
+      Staff* staff = _staff->score()->staff(staffIdx);
+      if (!staff || !staff->part())
+            return automaticVoiceForNote(
+                  startTick,
+                  duration,
+                  pitch,
+                  staffIdx,
+                  preferredVoice);
+
+      const Instrument* instrument =
+            staff->part()->instrument(startTick);
+
+      if (instrument
+          && instrument->useDrumset()
+          && instrument->drumset()
+          && pitch >= 0
+          && pitch < DRUM_INSTRUMENTS
+          && instrument->drumset()->isValid(pitch)) {
+            const int drumVoice =
+                  instrument->drumset()->voice(pitch);
+
+            if (drumVoice >= 0 && drumVoice < VOICES)
+                  return drumVoice;
+            }
+
+      return automaticVoiceForNote(
+            startTick,
+            duration,
+            pitch,
+            staffIdx,
+            preferredVoice);
+      }
+
+//---------------------------------------------------------
 //   addNote
 //---------------------------------------------------------
 
@@ -4126,16 +4178,13 @@ void PianoView::insertNote(int modifiers)
       Fraction insertPosition = roundToNearestBeat(pickTick);
       Fraction noteLen = noteEditLength();
 
-      int voice = _editNoteVoice;
-
-      if (_automaticVoiceAssignment) {
-            voice = automaticVoiceForNote(
+      const int voice =
+            insertionVoiceForNote(
                   insertPosition,
                   noteLen,
                   pickPitch,
                   _staff->idx(),
                   _editNoteVoice);
-            }
 
       int track = _staff->idx() * VOICES + voice;
 
@@ -6457,15 +6506,23 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                               _mouseDownPos,
                               _lastMousePos);
 
-                  const int drumTrack =
-                        _staff->idx() * VOICES + _editNoteVoice;
-
                   for (const Fraction& tick : ticks) {
                         const Fraction duration =
                               gridLengthAt(tick);
 
                         if (duration <= Fraction(0, 1))
                               continue;
+
+                        const int voice =
+                              insertionVoiceForNote(
+                                    tick,
+                                    duration,
+                                    pitch,
+                                    _staff->idx(),
+                                    _editNoteVoice);
+
+                        const int drumTrack =
+                              _staff->idx() * VOICES + voice;
 
                         drawDraggedNote(
                               painter,
@@ -6499,16 +6556,13 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                   const Fraction duration =
                         endTickFrac - startTickFrac;
 
-                  int voice = _editNoteVoice;
-
-                  if (_automaticVoiceAssignment) {
-                        voice = automaticVoiceForNote(
+                  const int voice =
+                        insertionVoiceForNote(
                               startTickFrac,
                               duration,
                               pitch,
                               _staff->idx(),
                               _editNoteVoice);
-                        }
 
                   const int track =
                         _staff->idx() * VOICES + voice;
