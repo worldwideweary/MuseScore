@@ -180,7 +180,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       // Option: Show levels editor
       _showPianoLevels = preferences.getBool(PREF_UI_PIANOROLL_SHOW_LEVELS_EDITOR);
-      QAction* showLevelsAction = new QAction(tr("Levels"), this);
+      QAction* showLevelsAction = new QAction(tr("Levels Editor"), this);
       showLevelsAction->setCheckable(true);
       showLevelsAction->setChecked(_showPianoLevels);
 
