@@ -58,6 +58,19 @@ enum class DragStyle : char {
       MOVE_VIEWPORT
       };
 
+enum class PianoRollCursorMode : char {
+      SELECT,
+      SELECTION_RECT,
+      ADD,
+      ERASE,
+      CUT,
+      TIE,
+      EVENT_ADJUST,
+      RESIZE,
+      MOVE,
+      CONSOLIDATE_TIES
+      };
+
 struct BarPattern {
       QString name;
       char isWhiteKey[12];  //Set to 1 for white keys, 0 for black
@@ -71,7 +84,6 @@ class PianoItem {
       Note* _note;
       PianoView* _pianoView;
       
-      void paintNoteBlock(QPainter* painter, NoteEvent* evt);
       QRect boundingRectTicks(NoteEvent* evt);
       QRect boundingRectPixels(NoteEvent* evt);
       bool intersectsBlock(int startTick, int endTick, int highPitch, int lowPitch, NoteEvent* evt);
@@ -82,7 +94,6 @@ class PianoItem {
       PianoItem(Note*, PianoView*);
       ~PianoItem() {}
       Note* note() { return _note; }
-      void paint(QPainter* painter);
       bool intersects(int startTick, int endTick, int highPitch, int lowPitch);
       
       QRect boundingRect();
@@ -198,6 +209,12 @@ private:
       int _editNoteDots = 0;
       int _editNoteVoice = 0;
       PianoRollEditTool _editNoteTool = PianoRollEditTool::EVENT_ADJUST;
+      Qt::KeyboardModifiers _cursorModifiers { Qt::NoModifier };
+      QCursor _addNoteCursor;
+      QCursor _eraseNoteCursor;
+      QCursor _scissorsNoteCursor;
+      QCursor _tieNoteCursor;
+      QCursor _tieConsolidateNoteCursor;
       bool _automaticVoiceAssignment { true }; // testing = true
 
       QList<PianoItem*> _noteList;
@@ -289,6 +306,7 @@ private:
       void appendNoteToChord(const QPointF& pos);
       void cutChord(const QPointF& pos);
       bool cutChordAt(const Fraction& tick, int track);
+      void regroupNoteAt(const QPointF& pos);
       bool removeTiesAtBoundary(const Fraction& tick, int track);
       bool cutChordDragSegment(const QPointF& from, const QPointF& to);
       void toggleTie(const QPointF& pos);
@@ -326,9 +344,11 @@ private:
       QString pitchNameForMidi(int) const;
 
       QAction* getAction(const char* id);
+      PianoRollCursorMode effectiveCursorMode() const;
       void updateCursor();
 
-   protected:
+    protected:
+      bool eventFilter(QObject* watched, QEvent* event) override;
       void wheelEvent(QWheelEvent* event) override;
       void keyReleaseEvent(QKeyEvent* event) override;
       void mousePressEvent(QMouseEvent* event) override;
@@ -397,7 +417,7 @@ private:
       void setEditNoteLength(Fraction len) { _editNoteLength = len; }
       void setEditNoteVoice(int voice) { _editNoteVoice = voice; }
       void setEditNoteDots(int dot) { _editNoteDots = dot; }
-      void setEditNoteTool(PianoRollEditTool tool) { _editNoteTool = tool; updateNotes();  }
+      void setEditNoteTool(PianoRollEditTool);
 
       void setPlaybackActive(bool active) { _playbackActive = active; }
 
@@ -464,6 +484,11 @@ private:
             { return _editNoteTool == PianoRollEditTool::ADD; }
       bool eraseTool() const
             { return _editNoteTool == PianoRollEditTool::ERASE; }
+
+      bool isHorizontal() const
+            { return _orientation == PianoRollOrientation::HORIZONTAL; }
+      bool isVertical() const
+            { return _orientation == PianoRollOrientation::VERTICAL; }
 
       };
 

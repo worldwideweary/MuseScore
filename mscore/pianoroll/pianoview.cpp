@@ -431,107 +431,6 @@ NoteEvent* PianoItem::getTweakNoteEvent()
       return 0;
       }
 
-
-//---------------------------------------------------------
-//   paintNoteBlock
-//    Defunct?
-//---------------------------------------------------------
-
-void PianoItem::paintNoteBlock(QPainter* painter, NoteEvent* evt)
-      {
-      QColor noteSelected;
-      QColor tieColor;
-
-      const QColor noteDeselected =
-            pianoRollNoteColor(
-                  _note,
-                  Coloring::STAFF,
-                  false,
-                  false);
-
-      switch (preferences.effectiveGlobalStyle()) {
-            case MuseScoreEffectiveStyleType::DARK_FUSION:
-                  noteSelected = QColor(preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR));
-                  tieColor = QColor(preferences.getColor(PREF_UI_PIANOROLL_DARK_BG_TIE_COLOR));
-                  break;
-            default:
-                  noteSelected = QColor(preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR));
-                  tieColor = QColor(preferences.getColor(PREF_UI_PIANOROLL_LIGHT_BG_TIE_COLOR));
-                  break;
-            }
-
-      QColor noteColor = _note->selected() ? noteSelected : noteDeselected;
-      painter->setBrush(noteColor);
-
-      const QColor borderColor =
-            preferences.getBool(PREF_UI_PIANOROLL_NOTE_BORDER_COLOR_LIGHTER)
-                  ? noteColor.lighter(125)
-                  : noteColor.darker(175);
-
-      painter->setPen(QPen(borderColor));
-      QRectF bounds = boundingRectPixels(evt);
-      painter->drawRoundedRect(bounds, NOTE_BLOCK_CORNER_RADIUS, NOTE_BLOCK_CORNER_RADIUS);
-
-      //Tie markings
-      painter->setPen(QPen(tieColor));
-
-      for (Note* note = _note; note->tieFor(); note = note->tieFor()->endNote()) {
-            Chord* chord = note->chord();
-            int start = chord->tick().ticks();
-            int duration = chord->ticks().ticks();
-            int xpos = _pianoView->tickToPixelX(start + duration);
-
-            painter->drawLine(QLineF(xpos, bounds.y(), xpos, bounds.y() + bounds.height()));
-            }
-
-      //Pitch name
-      if (bounds.width() >= 20 && bounds.height() >= 12) {
-            QRectF textRect(bounds.x() + 2, bounds.y(), bounds.width() - 6, bounds.height() + 1);
-            QRectF textHiliteRect(bounds.x() + 3, bounds.y() + 1, bounds.width() - 6, bounds.height());
-
-            QFont f("FreeSans", 8);
-            painter->setFont(f);
-
-            //Note name
-            QString name = qApp->translate("InspectorAmbitus", tpc2name(_note->tpc(), NoteSpellingType::STANDARD, NoteCaseType::AUTO, false).replace("b", "♭").replace("#", "♯").toUtf8().constData());
-            painter->setPen(QPen(noteColor.lighter(130)));
-            painter->drawText(textHiliteRect,
-                              Qt::AlignLeft | Qt::AlignTop, name);
-
-            painter->setPen(QPen(noteColor.darker(180)));
-            painter->drawText(textRect,
-                              Qt::AlignLeft | Qt::AlignTop, name);
-
-            //Voice number
-            if (bounds.width() >= 26) {
-                  painter->setPen(QPen(noteColor.lighter(130)));
-                  painter->drawText(textHiliteRect,
-                                    Qt::AlignRight | Qt::AlignTop, QString::number(_note->voice() + 1));
-
-                  painter->setPen(QPen(noteColor.darker(180)));
-                  painter->drawText(textRect,
-                                    Qt::AlignRight | Qt::AlignTop, QString::number(_note->voice() + 1));
-                  }
-            }
-      }
-
-
-//---------------------------------------------------------
-//   paint
-//    Defunct?
-//---------------------------------------------------------
-
-void PianoItem::paint(QPainter* painter)
-      {
-      painter->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
-      if (_pianoView->eventsAdjustTool()) {
-            for (NoteEvent& e : _note->playEvents())
-                  paintNoteBlock(painter, &e);
-            }
-      else
-            paintNoteBlock(painter, 0);
-      }
-
 //---------------------------------------------------------
 //   PianoView
 //---------------------------------------------------------
@@ -568,6 +467,48 @@ PianoView::PianoView()
                   ? VerticalPitchLayout::KEYBOARD_ALIGNED
                   : VerticalPitchLayout::CHROMATIC;
 
+      _cursorModifiers = QGuiApplication::keyboardModifiers();
+
+      QPixmap addCursorPixmap =
+            QIcon(":/data/icons/pianoroll-add.svg").pixmap(24, 24);
+      QPixmap eraseCursorPixmap =
+            QIcon(":/data/icons/pianoroll-erase.svg").pixmap(24, 24);
+      QPixmap scissorsCursorPixmap =
+            QIcon(":/data/icons/pianoroll-scissors.svg").pixmap(24, 24);
+      QPixmap tieCursorPixmap =
+            QIcon(":/data/icons/pianoroll-tie.svg").pixmap(24, 24);
+      QPixmap tieConsolidateCursorPixmap =
+                  QIcon(":/data/icons/pianoroll-consolidate-tie.svg").pixmap(24, 24);
+
+      const QPoint addNoteHotSpot(3, 3);
+      const QPoint eraseNoteHotSpot(3, 3);
+      const QPoint scissorsNoteHotSpot(12, 12);
+      const QPoint tieNoteHotSpot(12, 12);
+      const QPoint tieConsolidateNoteHotSpot(12, 12);
+
+      _addNoteCursor = QCursor(
+            addCursorPixmap,
+            addNoteHotSpot.x(),
+            addNoteHotSpot.y());
+      _eraseNoteCursor = QCursor(
+            eraseCursorPixmap,
+            eraseNoteHotSpot.x(),
+            eraseNoteHotSpot.y());
+      _scissorsNoteCursor = QCursor(
+            scissorsCursorPixmap,
+            scissorsNoteHotSpot.x(),
+            scissorsNoteHotSpot.y());
+      _tieNoteCursor = QCursor(
+            tieCursorPixmap,
+            tieNoteHotSpot.x(),
+            tieNoteHotSpot.y());
+      _tieConsolidateNoteCursor = QCursor(
+            tieConsolidateCursorPixmap,
+            tieConsolidateNoteHotSpot.x(),
+            tieConsolidateNoteHotSpot.y());
+
+      qApp->installEventFilter(this);
+
       memset(_pitchHighlight, 0, 128);
       }
 
@@ -577,6 +518,7 @@ PianoView::PianoView()
 
 PianoView::~PianoView()
       {
+      qApp->removeEventFilter(this);
       clearNoteData();
       }
 
@@ -2675,6 +2617,56 @@ void PianoView::contextMenuEvent(QContextMenuEvent *event)
       }
 
 //---------------------------------------------------------
+//   eventFilter
+//---------------------------------------------------------
+
+bool PianoView::eventFilter(QObject* watched, QEvent* event)
+      {
+      if (event->type() == QEvent::KeyPress
+          || event->type() == QEvent::KeyRelease) {
+            QKeyEvent* keyEvent =
+                  static_cast<QKeyEvent*>(event);
+
+            Qt::KeyboardModifier modifier =
+                  Qt::NoModifier;
+
+            switch (keyEvent->key()) {
+                  case Qt::Key_Control:
+                        modifier = Qt::ControlModifier;
+                        break;
+
+                  case Qt::Key_Shift:
+                        modifier = Qt::ShiftModifier;
+                        break;
+
+                  case Qt::Key_Alt:
+                        modifier = Qt::AltModifier;
+                        break;
+
+                  case Qt::Key_Meta:
+                        modifier = Qt::MetaModifier;
+                        break;
+
+                  default:
+                        break;
+                  }
+
+            if (modifier != Qt::NoModifier) {
+                  if (event->type() == QEvent::KeyPress)
+                        _cursorModifiers |= modifier;
+                  else
+                        _cursorModifiers &= ~modifier;
+
+                  updateCursor();
+                  }
+            }
+
+      return QGraphicsView::eventFilter(
+            watched,
+            event);
+      }
+
+//---------------------------------------------------------
 //   keyReleaseEvent
 //---------------------------------------------------------
 
@@ -2697,6 +2689,10 @@ void PianoView::keyReleaseEvent(QKeyEvent* event) {
 
 void PianoView::mousePressEvent(QMouseEvent* event)
       {
+      _cursorModifiers = event->modifiers();
+
+      updateCursor();
+
       // However, we may want keyboard focus for special PRE actions. Does this affect that?
       if (mscore->currentScoreView())
             mscore->currentScoreView()->setFocus();
@@ -2750,6 +2746,8 @@ void PianoView::mousePressEvent(QMouseEvent* event)
 
 void PianoView::mouseReleaseEvent(QMouseEvent* event)
       {
+      _cursorModifiers = event->modifiers();
+
       if (_playbackActive) {
             _mouseDown = false;
             _dragStarted = false;
@@ -2786,8 +2784,13 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                   Score* score = _staff->score();
 
                   if (_cutDragUndoStartIdx >= 0) {
-                        score->undoStack()->mergeCommands(
-                              _cutDragUndoStartIdx);
+                        const int curUndoIdx =
+                              score->undoStack()->getCurIdx();
+
+                        if (curUndoIdx > _cutDragUndoStartIdx) {
+                              score->undoStack()->mergeCommands(
+                                    _cutDragUndoStartIdx);
+                              }
 
                         _cutDragUndoStartIdx = -1;
                         }
@@ -2800,7 +2803,14 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                   Score* score = _staff->score();
 
                   if (_tieDragUndoStartIdx >= 0) {
-                        score->undoStack()->mergeCommands(_tieDragUndoStartIdx);
+                        const int curUndoIdx =
+                              score->undoStack()->getCurIdx();
+
+                        if (curUndoIdx > _tieDragUndoStartIdx) {
+                              score->undoStack()->mergeCommands(
+                                    _tieDragUndoStartIdx);
+                              }
+
                         _tieDragUndoStartIdx = -1;
                         }
 
@@ -2996,7 +3006,9 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                         appendNoteToChord(_mouseDownPos);
                         break;
                   case CUT:
-                        if (bnShift)
+                        if (bnCtrl)
+                              regroupNoteAt(_mouseDownPos);
+                        else if (bnShift)
                               toggleTie(_mouseDownPos);
                         else
                               cutChord(_mouseDownPos);
@@ -3018,6 +3030,7 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
       _tieDragUndoStartIdx = -1;
       _tieDragTargets.clear();
 
+      updateCursor();
       scene()->update();
       }
 
@@ -3100,12 +3113,99 @@ void PianoView::finishNoteEventAdjustDrag()
       emit noteEventsChanged();
       }
 
-
-
-
 //---------------------------------------------------------
-//   hoverMoveEvent
+//   effectiveCursorMode
 //---------------------------------------------------------
+
+PianoRollCursorMode PianoView::effectiveCursorMode() const
+      {
+      // Resize intent is established on mouse press prior to
+      // promoting the gesture into an active drag via movement
+      if (_mouseDown) {
+            switch (_dragStyle) {
+                  case DragStyle::NOTE_LENGTH_START:
+                  case DragStyle::NOTE_LENGTH_END:
+                  case DragStyle::EVENT_ONTIME:
+                  case DragStyle::EVENT_LENGTH:
+                        return PianoRollCursorMode::RESIZE;
+
+                  default:
+                        break;
+                  }
+            }
+
+      // Once a drag has begun, the gesture's established drag style
+      // takes precedence over modifiers subsequently being changed:
+      if (_dragStarted) {
+            switch (_dragStyle) {
+                  case DragStyle::DRAW_NOTE:
+                        return PianoRollCursorMode::ADD;
+
+                  case DragStyle::ERASE:
+                        return PianoRollCursorMode::ERASE;
+
+                  case DragStyle::CUT:
+                        return PianoRollCursorMode::CUT;
+
+                  case DragStyle::TIE:
+                        return PianoRollCursorMode::TIE;
+
+                  case DragStyle::SELECTION_RECT:
+                        return PianoRollCursorMode::SELECTION_RECT;
+
+                  case DragStyle::NOTE_POSITION:
+                        return PianoRollCursorMode::MOVE;
+
+                  case DragStyle::EVENT_MOVE:
+                  case DragStyle::NOTE_LENGTH_START:
+                  case DragStyle::NOTE_LENGTH_END:
+                  case DragStyle::EVENT_ONTIME:
+                  case DragStyle::EVENT_LENGTH:
+                        return PianoRollCursorMode::RESIZE;
+
+                  default:
+                        break;
+                  }
+            }
+
+      const bool ctrlPressed = _cursorModifiers & Qt::ControlModifier;
+      const bool shiftPressed = _cursorModifiers & Qt::ShiftModifier;
+
+      switch (_editNoteTool) {
+            case PianoRollEditTool::ADD:
+                  // Match the precedence in mouseMoveEvent():
+                  // Ctrl+Add is Erase before Shift+Add is considered
+                  if (ctrlPressed)
+                        return PianoRollCursorMode::ERASE;
+
+                  if (shiftPressed)
+                        return PianoRollCursorMode::SELECTION_RECT;
+
+                  return PianoRollCursorMode::ADD;
+
+            case PianoRollEditTool::ERASE:
+                  return PianoRollCursorMode::ERASE;
+
+            case PianoRollEditTool::CUT:
+                  if (ctrlPressed)
+                        return PianoRollCursorMode::CONSOLIDATE_TIES;
+
+                  if (shiftPressed)
+                        return PianoRollCursorMode::TIE;
+
+                  return PianoRollCursorMode::CUT;
+
+            case PianoRollEditTool::TIE:
+                  return PianoRollCursorMode::TIE;
+
+            case PianoRollEditTool::EVENT_ADJUST:
+                  return PianoRollCursorMode::EVENT_ADJUST;
+
+            case PianoRollEditTool::SELECT:
+            default:
+                  return PianoRollCursorMode::SELECT;
+            }
+      }
 
 //---------------------------------------------------------
 //   updateCursor
@@ -3113,36 +3213,36 @@ void PianoView::finishNoteEventAdjustDrag()
 
 void PianoView::updateCursor()
       {
-      if ((_dragStarted && _dragStyle == DragStyle::ERASE)
-          || (_editNoteTool == PianoRollEditTool::ADD
-              && (QApplication::keyboardModifiers() & Qt::ControlModifier))) {
-            setCursor(Qt::ArrowCursor);
-            return;
-            }
+      const PianoRollCursorMode cursorMode =
+            effectiveCursorMode();
 
-      if (_editNoteTool == PianoRollEditTool::SELECT
-          || _editNoteTool == PianoRollEditTool::ADD
-          || _editNoteTool == PianoRollEditTool::EVENT_ADJUST) {
+      //
+      // Preserve note-edge resize cursors for modes which actually
+      // support note/event resizing.
+      //
+      if (cursorMode == PianoRollCursorMode::SELECT
+          || cursorMode == PianoRollCursorMode::ADD
+          || cursorMode == PianoRollCursorMode::EVENT_ADJUST) {
 
-            QPointF pos = _lastMousePos;
+            const QPointF pos = (_mouseDown && !_dragStarted)
+                  ? _mouseDownPos
+                  : _lastMousePos;
 
-            int pitch = scenePosToPitch(pos);
+            const int pitch = scenePosToPitch(pos);
 
             if (pitch >= 0) {
                   PianoItem* pi = pickNote(pos);
 
                   if (pi) {
-                        QRect bounds = boundingRect(
-                              pi->note(),
-                              _editNoteTool == PianoRollEditTool::EVENT_ADJUST);
+                        const bool eventAdjust =
+                              cursorMode == PianoRollCursorMode::EVENT_ADJUST;
 
-                        if (useOnsetDiamond(pi->note())) {
-                              setCursor(Qt::ArrowCursor);
-                              return;
-                              }
+                        const QRect bounds =
+                              boundingRect(pi->note(), eventAdjust);
 
-                        if (bounds.contains(pos.x(), pos.y())) {
-                              if (_orientation == PianoRollOrientation::HORIZONTAL) {
+                        if (!useOnsetDiamond(pi->note())
+                            && bounds.contains(pos.x(), pos.y())) {
+                              if (isHorizontal()) {
                                     if (pos.x() <= bounds.left() + _dragNoteLengthMargin
                                         || pos.x() >= bounds.right() - _dragNoteLengthMargin) {
                                           setCursor(Qt::SizeHorCursor);
@@ -3161,7 +3261,55 @@ void PianoView::updateCursor()
                   }
             }
 
-      setCursor(Qt::ArrowCursor);
+      //
+      // Placeholder cursors. These are deliberately temporary;
+      // later this switch becomes the one place where custom
+      // cursor pixmaps are installed.
+      //
+      switch (cursorMode) {
+            case PianoRollCursorMode::SELECT:
+                  setCursor(Qt::ArrowCursor);
+                  break;
+
+            case PianoRollCursorMode::SELECTION_RECT:
+                  setCursor(Qt::CrossCursor);
+                  break;
+
+            case PianoRollCursorMode::ADD:
+                  setCursor(_addNoteCursor);
+                  break;
+
+            case PianoRollCursorMode::ERASE:
+                  setCursor(_eraseNoteCursor);
+                  break;
+
+            case PianoRollCursorMode::CUT:
+                  setCursor(_scissorsNoteCursor);
+                  break;
+
+            case PianoRollCursorMode::TIE:
+                  setCursor(_tieNoteCursor);
+                  break;
+
+            case PianoRollCursorMode::CONSOLIDATE_TIES:
+                  setCursor(_tieConsolidateNoteCursor);
+                  break;
+
+            case PianoRollCursorMode::EVENT_ADJUST:
+                  setCursor(Qt::ArrowCursor);
+                  break;
+
+            case PianoRollCursorMode::RESIZE:
+                  if (isHorizontal())
+                        setCursor(Qt::SizeHorCursor);
+                  else
+                        setCursor(Qt::SizeVerCursor);
+                  break;
+
+            case PianoRollCursorMode::MOVE:
+                  setCursor(Qt::SizeAllCursor);
+                  break;
+            }
       }
 
 //---------------------------------------------------------
@@ -3179,7 +3327,7 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
       _lastMouseScreenPos = event->pos();
       _lastMousePos = mapToScene(event->pos());
 
-      updateCursor();
+      _cursorModifiers = event->modifiers();
 
       if (_mouseDown && !_dragStarted) {
             qreal dx = _lastMousePos.x() - _mouseDownPos.x();
@@ -3366,6 +3514,8 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                         }
                   }
             }
+
+      updateCursor();
 
       if (_dragStarted) {
             if (_dragStyle == DragStyle::MOVE_VIEWPORT) {
@@ -4504,6 +4654,71 @@ bool PianoView::cutChordAt(const Fraction& insertPosition, int track)
       ChordRest* cr1 = nullptr;
 
       return cutChordRest(cr, track, insertPosition, cr0, cr1);
+      }
+
+//---------------------------------------------------------
+//   regroupNoteAt
+//---------------------------------------------------------
+
+void PianoView::regroupNoteAt(const QPointF& pos)
+      {
+      if (!_staff)
+            return;
+
+      const int pickTick =
+            scenePosToTick(pos);
+
+      const int pickPitch =
+            scenePosToPitch(pos);
+
+      if (!pitchIsValid(pickPitch))
+            return;
+
+      PianoItem* item =
+            pickNote(pickTick, pickPitch);
+
+      if (!item || !item->note())
+            return;
+
+      Note* note = item->note();
+
+      Note* first = note;
+      while (first->tieBack())
+            first = first->tieBack()->startNote();
+
+      Note* last = note;
+      while (last->tieFor())
+            last = last->tieFor()->endNote();
+
+      Chord* firstChord = first->chord();
+      Chord* lastChord = last->chord();
+
+      if (!firstChord || !lastChord)
+            return;
+
+      Score* score = _staff->score();
+      const int track = note->track();
+
+      if (!score->selectionFilter().canSelectVoice(track))
+            return;
+
+      const Fraction startTick =
+            firstChord->tick();
+
+      const Fraction endTick =
+            lastChord->tick()
+            + lastChord->actualTicks();
+
+      score->startCmd();
+
+      score->regroupNotesAndRests(
+            startTick,
+            endTick,
+            track);
+
+      score->endCmd();
+
+      updateNotes();
       }
 
 //---------------------------------------------------------
@@ -6305,6 +6520,17 @@ void PianoView::deleteSelectedNotes()
 
       compactMeasures(changedTracks);
 
+      }
+
+//---------------------------------------------------------
+//   setEditNoteTool
+//---------------------------------------------------------
+
+void PianoView::setEditNoteTool(PianoRollEditTool tool)
+      {
+      _editNoteTool = tool;
+      updateCursor();
+      updateNotes();
       }
 
 //---------------------------------------------------------
