@@ -3180,6 +3180,21 @@ void PianoView::finishNoteEventAdjustDrag()
 
 PianoRollCursorMode PianoView::effectiveCursorMode() const
       {
+      // Resize intent is established on mouse press prior to
+      // promoting the gesture into an active drag via movement
+      if (_mouseDown) {
+            switch (_dragStyle) {
+                  case DragStyle::NOTE_LENGTH_START:
+                  case DragStyle::NOTE_LENGTH_END:
+                  case DragStyle::EVENT_ONTIME:
+                  case DragStyle::EVENT_LENGTH:
+                        return PianoRollCursorMode::RESIZE;
+
+                  default:
+                        break;
+                  }
+            }
+
       //
       // Once a drag has begun, the gesture's established drag style
       // takes precedence over modifiers subsequently being changed.
@@ -3264,7 +3279,10 @@ void PianoView::updateCursor()
           || cursorMode == PianoRollCursorMode::ADD
           || cursorMode == PianoRollCursorMode::EVENT_ADJUST) {
 
-            const QPointF pos = _lastMousePos;
+            const QPointF pos = (_mouseDown && !_dragStarted)
+                  ? _mouseDownPos
+                  : _lastMousePos;
+
             const int pitch = scenePosToPitch(pos);
 
             if (pitch >= 0) {
@@ -3357,8 +3375,6 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
       _lastMousePos = mapToScene(event->pos());
 
       _cursorModifiers = event->modifiers();
-
-      updateCursor();
 
       if (_mouseDown && !_dragStarted) {
             qreal dx = _lastMousePos.x() - _mouseDownPos.x();
@@ -3545,6 +3561,8 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                         }
                   }
             }
+
+      updateCursor();
 
       if (_dragStarted) {
             if (_dragStyle == DragStyle::MOVE_VIEWPORT) {
