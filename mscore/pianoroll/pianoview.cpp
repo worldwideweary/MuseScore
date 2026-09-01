@@ -2864,8 +2864,6 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                         _drumPaintedTicks.clear();
                         }
                   else {
-                        const int track = _staff->idx() * VOICES + _editNoteVoice;
-
                         double startTick =
                               scenePosToTick(_mouseDownPos);
                         double endTick =
@@ -2884,18 +2882,54 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                               Fraction duration =
                                     endTickFrac - startTickFrac;
 
-                              // Normal pitched-note dragging continues to establish
-                              // the insertion duration:
                               _editNoteLength = duration;
                               _editNoteDots = 0;
                               emit editNoteLengthChanged(duration);
 
+                              int voice = _editNoteVoice;
+
+                              if (_automaticVoiceAssignment) {
+                                    voice = automaticVoiceForNote(
+                                          startTickFrac,
+                                          duration,
+                                          pitch,
+                                          _staff->idx(),
+                                          _editNoteVoice);
+                                    }
+
+                              const int track =
+                                    _staff->idx() * VOICES + voice;
+
+                              Measure* measure =
+                                    score->tick2measure(startTickFrac);
+
+                              if (!measure)
+                                    return;
+
                               score->startCmd();
-                              addNote(
-                                    startTickFrac,
-                                    duration,
-                                    pitch,
-                                    track);
+
+                              ChordRest* cr =
+                                    score->findCR(startTickFrac, track);
+
+                              if (!cr) {
+                                    Segment* seg =
+                                          measure->undoGetSegment(
+                                                SegmentType::ChordRest,
+                                                startTickFrac);
+
+                                    score->expandVoice(seg, track);
+
+                                    cr = score->findCR(startTickFrac, track);
+                                    }
+
+                              if (cr) {
+                                    addNote(
+                                          startTickFrac,
+                                          duration,
+                                          pitch,
+                                          track);
+                                    }
+
                               score->endCmd();
 
                               updateNotes();
@@ -3429,6 +3463,179 @@ bool PianoView::noteRangeContainsChord(const Fraction& startTick,
       }
 
 //---------------------------------------------------------
+//   voiceRangeIsFree
+//---------------------------------------------------------
+
+bool PianoView::voiceRangeIsFree(const Fraction& startTick,
+                                 const Fraction& duration,
+                                 int track) const
+      {
+      if (!_staff || duration <= Fraction(0, 1))
+            return false;
+
+      Score* score = _staff->score();
+      const Fraction endTick = startTick + duration;
+
+      ChordRest* cr = score->findCR(startTick, track);
+
+      while (cr && cr->tick() < endTick) {
+            if (cr->tick() + cr->actualTicks() > startTick
+                && cr->isChord()) {
+                  return false;
+                  }
+
+            Segment* seg =
+                  cr->nextSegmentAfterCR(SegmentType::ChordRest);
+
+            if (!seg)
+                  break;
+
+            cr = seg->cr(track);
+
+            while (!cr && seg) {
+                  seg = seg->next1(SegmentType::ChordRest);
+                  if (seg)
+                        cr = seg->cr(track);
+                  }
+            }
+
+      return true;
+      }
+
+//---------------------------------------------------------
+//   voiceHasMatchingChord
+//---------------------------------------------------------
+
+bool PianoView::voiceHasMatchingChord(const Fraction& startTick,
+                                      const Fraction& duration,
+                                      int track) const
+      {
+      if (!_staff || duration <= Fraction(0, 1))
+            return false;
+
+      Score* score = _staff->score();
+      ChordRest* cr = score->findCR(startTick, track);
+
+      if (!cr
+          || !cr->isChord()
+          || cr->tick() != startTick) {
+            return false;
+            }
+
+      return cr->actualTicks() == duration;
+      }
+
+//---------------------------------------------------------
+//   automaticVoiceForNote
+//---------------------------------------------------------
+
+int PianoView::automaticVoiceForNote(const Fraction& startTick,
+                                     const Fraction& duration,
+                                     int pitch,
+                                     int staffIdx,
+                                     int preferredVoice) const
+      {
+      if (!_staff)
+            return preferredVoice;
+
+      Score* score = _staff->score();
+
+      //
+      // Determine whether the new note is primarily above or below
+      // existing material at the insertion position.
+      //
+      bool foundExistingPitch = false;
+      int lowestPitch = 127;
+      int highestPitch = 0;
+
+      for (int voice = 0; voice < VOICES; ++voice) {
+            const int track = staffIdx * VOICES + voice;
+            ChordRest* cr = score->findCR(startTick, track);
+
+            if (!cr
+                || !cr->isChord()
+                || startTick < cr->tick()
+                || startTick >= cr->tick() + cr->actualTicks()) {
+                  continue;
+                  }
+
+            Chord* chord = toChord(cr);
+
+            for (Note* note : chord->notes()) {
+                  if (!note)
+                        continue;
+
+                  lowestPitch = qMin(lowestPitch, note->pitch());
+                  highestPitch = qMax(highestPitch, note->pitch());
+                  foundExistingPitch = true;
+                  }
+            }
+
+      //
+      // MuseScore's conventional voice directions:
+      // voices 1 and 3 up; voices 2 and 4 down.
+      //
+      int candidates[VOICES];
+
+      if (foundExistingPitch && pitch < lowestPitch) {
+            // New note is below the existing material.
+            candidates[0] = 1; // voice 2
+            candidates[1] = 3; // voice 4
+            candidates[2] = 0; // voice 1
+            candidates[3] = 2; // voice 3
+            }
+      else {
+            // New note is above, within, or there was nothing useful
+            // to compare against.
+            candidates[0] = 0; // voice 1
+            candidates[1] = 2; // voice 3
+            candidates[2] = 1; // voice 2
+            candidates[3] = 3; // voice 4
+            }
+
+      //
+      // First preference: join an existing chord whose rhythmic span
+      // exactly matches the requested PRE duration. This preserves a
+      // voice already expressing the same rhythmic layer instead of
+      // unnecessarily consuming another voice.
+      //
+      for (int i = 0; i < VOICES; ++i) {
+            const int voice = candidates[i];
+            const int track = staffIdx * VOICES + voice;
+
+            if (voiceHasMatchingChord(
+                        startTick,
+                        duration,
+                        track)) {
+                  return voice;
+                  }
+            }
+
+      //
+      // Second preference: use a completely free voice over the
+      // requested interval.
+      //
+      for (int i = 0; i < VOICES; ++i) {
+            const int voice = candidates[i];
+            const int track = staffIdx * VOICES + voice;
+
+            if (voiceRangeIsFree(
+                        startTick,
+                        duration,
+                        track)) {
+                  return voice;
+                  }
+            }
+
+      //
+      // No alternate voice can accept the note intact. Let the
+      // existing PRE insertion algorithm handle it in the selected
+      // voice using its normal splitting/tie behavior.
+      //
+      return preferredVoice;
+      }
+
+//---------------------------------------------------------
 //   addNote
 //---------------------------------------------------------
 
@@ -3855,24 +4062,44 @@ void PianoView::insertNote(int modifiers)
             }
 
       Fraction insertPosition = roundToNearestBeat(pickTick);
-
-      int voice = _editNoteVoice;
-      int track = _staff->idx() * VOICES + voice;
       Fraction noteLen = noteEditLength();
 
-      Segment* seg = score->tick2segment(insertPosition);
-      score->expandVoice(seg, track);
+      int voice = _editNoteVoice;
 
-      Fraction tupletRatio(_tuplet, 1 << _subdiv);
+      if (_automaticVoiceAssignment) {
+            voice = automaticVoiceForNote(
+                  insertPosition,
+                  noteLen,
+                  pickPitch,
+                  _staff->idx(),
+                  _editNoteVoice);
+            }
+
+      int track = _staff->idx() * VOICES + voice;
+
+      Measure* measure = score->tick2measure(insertPosition);
+      if (!measure)
+            return;
+
+      score->startCmd();
 
       ChordRest* e = score->findCR(insertPosition, track);
-      if (e) {
-            score->startCmd();
 
+      if (!e) {
+            Segment* seg =
+                  measure->undoGetSegment(
+                        SegmentType::ChordRest,
+                        insertPosition);
+
+            score->expandVoice(seg, track);
+
+            e = score->findCR(insertPosition, track);
+            }
+
+      if (e)
             addNote(insertPosition, noteLen, pickPitch, track);
 
-            score->endCmd();
-            }
+      score->endCmd();
       }
 
 
@@ -5946,9 +6173,6 @@ void PianoView::drawDraggedNotes(QPainter* painter)
             if (!pitchIsValid(pitch))
                   return;
 
-            const int track =
-                  _staff->idx() * VOICES + _editNoteVoice;
-
             const Fraction firstTick =
                   roundToNearestBeat(
                         scenePosToTick(_mouseDownPos),
@@ -5963,6 +6187,9 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                               _mouseDownPos,
                               _lastMousePos);
 
+                  const int drumTrack =
+                        _staff->idx() * VOICES + _editNoteVoice;
+
                   for (const Fraction& tick : ticks) {
                         const Fraction duration =
                               gridLengthAt(tick);
@@ -5975,7 +6202,7 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                               tick,
                               duration,
                               pitch,
-                              track,
+                              drumTrack,
                               noteColor,
                               pitchNameForMidi(pitch));
                         }
@@ -5999,10 +6226,27 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                   roundToNearestBeat(endTick, false);
 
             if (endTickFrac != startTickFrac) {
+                  const Fraction duration =
+                        endTickFrac - startTickFrac;
+
+                  int voice = _editNoteVoice;
+
+                  if (_automaticVoiceAssignment) {
+                        voice = automaticVoiceForNote(
+                              startTickFrac,
+                              duration,
+                              pitch,
+                              _staff->idx(),
+                              _editNoteVoice);
+                        }
+
+                  const int track =
+                        _staff->idx() * VOICES + voice;
+
                   drawDraggedNote(
                         painter,
                         startTickFrac,
-                        endTickFrac - startTickFrac,
+                        duration,
                         pitch,
                         track,
                         noteColor,
