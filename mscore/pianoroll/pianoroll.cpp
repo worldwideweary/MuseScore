@@ -314,6 +314,93 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
       tbMain->addAction(showPitchNamesAction);
 
+      QAction* regroupVoicingAction = tbMain->addAction(tr("Regroup Voicing"));
+
+      regroupVoicingAction->setToolTip(
+            tr("Regroup existing voices by pitch order"));
+
+      connect(regroupVoicingAction, &QAction::triggered,
+              this, [this]() {
+                    if (!_score)
+                          return;
+
+                    const Selection& selection = _score->selection();
+
+                    Fraction startTick;
+                    Fraction endTick;
+                    int startStaff = -1;
+                    int endStaff   = -1;
+
+                    if (selection.isRange()) {
+                          startTick  = selection.tickStart();
+                          endTick    = selection.tickEnd();
+                          startStaff = selection.staffStart();
+                          endStaff   = selection.staffEnd();
+                          }
+                    else {
+                          bool found = false;
+
+                          for (Element* e : selection.elements()) {
+                                Chord* chord = nullptr;
+
+                                if (e->isNote())
+                                      chord = toNote(e)->chord();
+                                else if (e->isChord())
+                                      chord = toChord(e);
+
+                                if (!chord || chord->isGrace())
+                                      continue;
+
+                                const Fraction chordStart = chord->tick();
+                                const Fraction chordEnd =
+                                      chordStart + chord->actualTicks();
+
+                                const int staffIdx = chord->staffIdx();
+
+                                if (!found) {
+                                      startTick  = chordStart;
+                                      endTick    = chordEnd;
+                                      startStaff = staffIdx;
+                                      endStaff   = staffIdx + 1;
+                                      found = true;
+                                      }
+                                else {
+                                      if (chordStart < startTick)
+                                            startTick = chordStart;
+
+                                      if (chordEnd > endTick)
+                                            endTick = chordEnd;
+
+                                      if (staffIdx < startStaff)
+                                            startStaff = staffIdx;
+
+                                      if (staffIdx >= endStaff)
+                                            endStaff = staffIdx + 1;
+                                      }
+                                }
+
+                          if (!found)
+                                return;
+                          }
+
+                    _score->startCmd();
+
+                    bool changed = false;
+
+                    for (int staffIdx = startStaff;
+                         staffIdx < endStaff;
+                         ++staffIdx) {
+                          if (_score->regroupVoicing(
+                                    startTick,
+                                    endTick,
+                                    staffIdx)) {
+                                changed = true;
+                                (void)changed;
+                                }
+                          }
+
+                    _score->endCmd();
+                    });
 
 
       // --------------------------------------------------

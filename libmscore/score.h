@@ -826,6 +826,7 @@ class Score : public QObject, public ScoreElement {
       void deleteLater(ScoreElement* e)     { _updateState._deleteList.push_back(e); }
       void deletePostponed();
 
+      bool regroupVoicing(const Fraction& startTick, const Fraction& endTick, int staffIdx);
       void changeVoice(int);
       void cmdToggleMouseEntry(void);
       void cmdOverrideColor(const char*);
