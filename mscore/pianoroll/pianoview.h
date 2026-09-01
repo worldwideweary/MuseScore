@@ -83,7 +83,6 @@ class PianoItem {
       Note* _note;
       PianoView* _pianoView;
       
-      void paintNoteBlock(QPainter* painter, NoteEvent* evt);
       QRect boundingRectTicks(NoteEvent* evt);
       QRect boundingRectPixels(NoteEvent* evt);
       bool intersectsBlock(int startTick, int endTick, int highPitch, int lowPitch, NoteEvent* evt);
@@ -94,7 +93,6 @@ class PianoItem {
       PianoItem(Note*, PianoView*);
       ~PianoItem() {}
       Note* note() { return _note; }
-      void paint(QPainter* painter);
       bool intersects(int startTick, int endTick, int highPitch, int lowPitch);
       
       QRect boundingRect();
