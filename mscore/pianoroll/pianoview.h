@@ -198,6 +198,7 @@ private:
       int _editNoteDots = 0;
       int _editNoteVoice = 0;
       PianoRollEditTool _editNoteTool = PianoRollEditTool::EVENT_ADJUST;
+      bool _automaticVoiceAssignment { true }; // testing = true
 
       QList<PianoItem*> _noteList;
       quint8 _pitchHighlight[128];
@@ -256,6 +257,21 @@ private:
                         ChordRest*& cr1,
                         bool preserveOriginalDuration = false);
       bool noteRangeContainsChord(const Fraction& startTick, const Fraction& duration, int track) const;
+
+      bool voiceRangeIsFree(const Fraction& startTick,
+                            const Fraction& duration,
+                            int track) const;
+
+      bool voiceHasMatchingChord(const Fraction& startTick,
+                                 const Fraction& duration,
+                                 int track) const;
+
+      int automaticVoiceForNote(const Fraction& startTick,
+                                const Fraction& duration,
+                                int pitch,
+                                int staffIdx,
+                                int preferredVoice) const;
+
       QVector<Note*> addNote(Fraction startTick, Fraction duration, int pitch, int track);
       void handleSelectionClick();
       void insertNote(int modifiers);
@@ -365,6 +381,12 @@ private:
       void setEditNoteTool(PianoRollEditTool tool) { _editNoteTool = tool; updateNotes();  }
 
       void setPlaybackActive(bool active) { _playbackActive = active; }
+
+      void setAutomaticVoiceAssignment(bool value)
+            { _automaticVoiceAssignment = value; }
+      bool automaticVoiceAssignment() const
+            { return _automaticVoiceAssignment; }
+
       void setPlaybackNoteEvents(const QHash<const Note*, QSet<int>>& events);
       void clearPlaybackNoteEvents();
 
