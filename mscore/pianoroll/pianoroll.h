@@ -24,6 +24,9 @@ namespace Awl {
 #include "libmscore/select.h"
 #include "pianorolledittool.h"
 
+#include <QElapsedTimer>
+#include <QTimer>
+
 namespace Ms {
 
 class Score;
@@ -79,6 +82,14 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       bool _horizontalPitchScrollValid { false };
       bool _verticalPitchScrollValid { false };
 
+      QTimer* _playbackFollowTimer { nullptr };
+      QElapsedTimer _playbackFollowElapsed;
+      qreal _playbackFollowBaseTick { 0.0 };
+      unsigned _playbackFollowLastSampleTick { 0 };
+      bool _playbackFollowActive { false };
+      qreal _playbackFollowTicksPerSecond { 0.0 };
+      bool _playbackFollowVelocityValid { false };
+
       bool updateScheduled = false;
       NoteTweakerDialog* noteTweakerDlg;
 
@@ -87,6 +98,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       void readSettings();
       void doUpdate();
 
+      void stopPlaybackFollow();
 
    private slots:
       void selectionChanged();

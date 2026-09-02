@@ -27,6 +27,8 @@
 #include "libmscore/measure.h"
 #include "libmscore/note.h"
 #include "libmscore/repeatlist.h"
+#include "libmscore/score.h"
+#include "libmscore/tempo.h"
 #include "libmscore/undo.h"
 #include "libmscore/part.h"
 #include "libmscore/instrument.h"
@@ -534,6 +536,45 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       mainLayout->addLayout(toolbarLayout);
       mainLayout->addWidget(tbTweak);
       mainLayout->addWidget(mainWidget);
+
+
+      _playbackFollowTimer = new QTimer(this);
+      _playbackFollowTimer->setTimerType(Qt::PreciseTimer);
+      _playbackFollowTimer->setInterval(8);
+
+      connect(_playbackFollowTimer, &QTimer::timeout,
+              this, [this]() {
+                    if (!_playbackFollowActive)
+                          return;
+
+                    //
+                    // Stop visual following as soon as playback or Follow Song
+                    // is no longer active.
+                    //
+                    if (!seq
+                        || !seq->isPlaying()
+                        || !preferences.getBool(PREF_APP_PLAYBACK_FOLLOWSONG)) {
+                          stopPlaybackFollow();
+                          return;
+                          }
+
+                    //
+                    // One real sequencer interval is needed before we know
+                    // playback velocity.
+                    //
+                    if (!_playbackFollowVelocityValid)
+                          return;
+
+                    const qreal elapsed =
+                          _playbackFollowElapsed.nsecsElapsed()
+                          / 1000000000.0;
+
+                    const qreal predictedTick =
+                          _playbackFollowBaseTick
+                          + elapsed * _playbackFollowTicksPerSecond;
+
+                    pianoView->ensureVisible(qRound(predictedTick));
+                    });
 
       connect(pianoView->verticalScrollBar(),
               &QScrollBar::valueChanged,
@@ -1199,19 +1240,134 @@ void PianorollEditor::keyReleased(int /*p*/)
       }
 
 //---------------------------------------------------------
+//   stopPlaybackFollow
+//---------------------------------------------------------
+
+void PianorollEditor::stopPlaybackFollow()
+      {
+      _playbackFollowActive = false;
+      _playbackFollowVelocityValid = false;
+      _playbackFollowTicksPerSecond = 0.0;
+
+      if (_playbackFollowTimer->isActive())
+            _playbackFollowTimer->stop();
+      }
+
+//---------------------------------------------------------
 //   heartBeat
 //---------------------------------------------------------
 
 void PianorollEditor::heartBeat(Seq* s)
       {
       unsigned tick = s->getCurTick();
+
       if (score()->masterScore())
             tick = score()->masterScore()->repeatList().utick2tick(tick);
-      if (locator[0].tick() != tick) {
+
+      pianoView->setPlaybackActive(s->isPlaying());
+
+      //
+      // Keep the authoritative PRE playback position synchronized
+      // with the sequencer.
+      //
+      if (locator[0].tick() != tick)
             posChanged(POS::CURRENT, tick);
-            if (preferences.getBool(PREF_APP_PLAYBACK_FOLLOWSONG))
-                  pianoView->ensureVisible(tick);
+
+      //
+      // Smooth viewport following is purely visual. It does not
+      // replace the authoritative locator/playback position above.
+      //
+      if (!preferences.getBool(PREF_APP_PLAYBACK_FOLLOWSONG)
+          || !s->isPlaying()) {
+            stopPlaybackFollow();
+            return;
             }
+
+      const TempoMap* tempoMap = _score->tempomap();
+
+      const qreal newTicksPerSecond =
+            DIVISION
+            * tempoMap->tempo(tick)
+            * tempoMap->relTempo();
+
+      //
+      // First playback sample establishes both the visual time
+      // origin and the playback velocity.
+      //
+      if (!_playbackFollowActive) {
+            _playbackFollowActive = true;
+            _playbackFollowVelocityValid = true;
+
+            _playbackFollowBaseTick = qreal(tick);
+            _playbackFollowLastSampleTick = tick;
+            _playbackFollowTicksPerSecond = newTicksPerSecond;
+
+            _playbackFollowElapsed.restart();
+            _playbackFollowTimer->start();
+
+            pianoView->ensureVisible(tick);
+            return;
+            }
+
+      const qreal visualElapsed =
+            _playbackFollowElapsed.nsecsElapsed()
+            / 1000000000.0;
+
+      const qreal predictedTick =
+            _playbackFollowBaseTick
+            + visualElapsed * _playbackFollowTicksPerSecond;
+
+      //
+      // Detect playback discontinuities.
+      //
+      // Backward movement is always a discontinuity.  For forward
+      // movement, compare the authoritative sequencer position with
+      // the position predicted by the smooth visual clock.  Ordinary
+      // playback stays close to that prediction; seeks do not.
+      //
+      const qreal seekThreshold =
+            qMax<qreal>(DIVISION / 8.0,
+                        _playbackFollowTicksPerSecond * 0.10);
+
+      const bool backwardJump =
+            tick < _playbackFollowLastSampleTick;
+
+      const bool forwardJump =
+            qreal(tick) - predictedTick > seekThreshold;
+
+      if (backwardJump || forwardJump) {
+            _playbackFollowBaseTick = qreal(tick);
+            _playbackFollowLastSampleTick = tick;
+            _playbackFollowTicksPerSecond = newTicksPerSecond;
+            _playbackFollowVelocityValid = true;
+
+            _playbackFollowElapsed.restart();
+
+            pianoView->ensureVisible(tick);
+            return;
+            }
+
+      //
+      // Repeated sequencer ticks contain no new playback-position
+      // information.
+      //
+      if (tick == _playbackFollowLastSampleTick)
+            return;
+
+      //
+      // If the tempo has changed, preserve the current visual
+      // position exactly while changing the slope from this point.
+      //
+      if (!qFuzzyCompare(newTicksPerSecond,
+                         _playbackFollowTicksPerSecond)) {
+            _playbackFollowBaseTick = predictedTick;
+            _playbackFollowElapsed.restart();
+
+            _playbackFollowTicksPerSecond =
+                  newTicksPerSecond;
+            }
+
+      _playbackFollowLastSampleTick = tick;
       }
 
 //---------------------------------------------------------
@@ -1366,12 +1522,45 @@ void PianorollEditor::posChanged(POS p, unsigned tick)
       {
       if (locator[int(p)].tick() == unsigned(tick))
             return;
+
       setLocator(p, tick);
-      pianoView->moveLocator(int(p));
+
+      //
+      // Loop locators and other non-playback position changes retain
+      // the original full update behavior.
+      //
+      if (p != POS::CURRENT) {
+            pianoView->moveLocator(int(p));
+
+            if (waveView)
+                  waveView->moveLocator(int(p));
+
+            ruler->update();
+            pianoLevels->update();
+            return;
+            }
+
+      //
+      // The normal horizontal PRE displays its playback locator and
+      // ruler, so keep those synchronized there.
+      //
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            pianoView->moveLocator(int(p));
+            ruler->update();
+            }
+
+      //
+      // WaveView has its own playback locator.  Only update it when
+      // the wave view actually exists.
+      //
       if (waveView)
             waveView->moveLocator(int(p));
-      ruler->update();
-      pianoLevels->update();
+
+      //
+      // Do not continuously repaint PianoLevels merely because the
+      // playback position changed.  Its note-level display itself
+      // does not change with every playback heartbeat.
+      //
       }
 
 //---------------------------------------------------------
