@@ -163,6 +163,7 @@ void RepeatList::updateTempo()
             s->timeOffset = t - ct;
             utick        += s->len();
             t            += tl->tick2time(s->tick + s->len()) - ct;
+            t            += s->pause;
             }
       }
 
@@ -1006,7 +1007,7 @@ void RepeatList::unwind()
             Q_ASSERT((*repeatListElementIt)->repeatListElementType == RepeatListElementType::SECTION_BREAK);
 
             LayoutBreak const * const sectionBreak = toMeasureBase((*repeatListElementIt)->element)->sectionBreakElement();
-            if (sectionBreak != nullptr) {
+            if (sectionBreak) {
                   rs->pause = sectionBreak->pause();
                   }
             }
