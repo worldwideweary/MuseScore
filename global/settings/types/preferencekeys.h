@@ -204,6 +204,12 @@
 #define PREF_UI_PIANOROLL_SHOW_PITCH_TEXT                   "ui/pianoroll/pitchText/show"
 #define PREF_UI_PIANOROLL_USE_NOTE_COLORS                   "ui/pianoroll/coloring/honorNoteheadCustomColor"
 
+#define PREF_UI_PIANOROLL_SHOW_LEVELS_EDITOR                "ui/pianoroll/levelsEditor/show"
+#define PREF_UI_PIANOROLL_PLAYBACK_HIGHLIGHT_NOTES          "ui/pianoroll/playback/highlight/notes"
+#define PREF_UI_PIANOROLL_PLAYBACK_HIGHLIGHT_KEYBOARD       "ui/pianoroll/playback/highlight/keyboard"
+#define PREF_UI_PIANOROLL_PLAYBACK_SHOW_CURSOR              "ui/pianoroll/playback/cursor/show"
+#define PREF_UI_PIANOROLL_SELECTION_HIGHLIGHT_KEYBOARD      "ui/pianoroll/selection/highlight/keyboard"
+
 #define PREF_UI_BUTTON_HIGHLIGHT_COLOR_DISABLED_DARK_ON     "ui/button/highlight/color/disabled/dark/on"
 #define PREF_UI_BUTTON_HIGHLIGHT_COLOR_DISABLED_DARK_OFF    "ui/button/highlight/color/disabled/dark/off"
 #define PREF_UI_BUTTON_HIGHLIGHT_COLOR_DISABLED_LIGHT_ON    "ui/button/highlight/color/disabled/light/on"

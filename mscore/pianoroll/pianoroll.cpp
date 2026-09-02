@@ -746,6 +746,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       levelsAreaLayout->addWidget(pianoLevelsChooser);
       levelsAreaLayout->addWidget(pianoLevels);
       levelsAreaWidget->setLayout(levelsAreaLayout);
+      levelsAreaWidget->setVisible(_showPianoLevels);
 
       // layout
       QSplitter* editAreaSplitter = new QSplitter(Qt::Vertical);
@@ -905,10 +906,20 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                           _playbackFollowBaseTick
                           + elapsed * _playbackFollowTicksPerSecond;
 
-                    pianoView->setPlaybackLocatorTick(predictedTick);
+                    if (preferences.getBool(PREF_UI_PIANOROLL_PLAYBACK_SHOW_CURSOR)) {
+                          pianoView->setPlaybackLocatorTick(predictedTick);
+                          ruler->setPlaybackLocatorTick(predictedTick);
 
-                    if (_showPianoLevels && pianoLevels)
-                          pianoLevels->setPlaybackLocatorTick(predictedTick);
+                          if (_showPianoLevels && pianoLevels)
+                                pianoLevels->setPlaybackLocatorTick(predictedTick);
+                          }
+                    else {
+                          pianoView->clearPlaybackLocatorTick();
+                          ruler->clearPlaybackLocatorTick();
+
+                          if (pianoLevels)
+                                pianoLevels->clearPlaybackLocatorTick();
+                          }
 
                     //
                     // Begin at the playhead's existing screen position and smoothly
@@ -1319,6 +1330,8 @@ void PianorollEditor::setPianoLevelsVisible(bool visible)
             return;
 
       _showPianoLevels = visible;
+
+      preferences.setPreference(PREF_UI_PIANOROLL_SHOW_LEVELS_EDITOR, visible);
 
       if (!levelsAreaWidget)
             return;
@@ -2275,24 +2288,33 @@ void PianorollEditor::heartBeat(Seq* s)
 
 
       QHash<int, const Note*> playbackNotes;
-      const auto& active = s->activePitches();
-      for (auto it = active.constBegin(); it != active.constEnd(); ++it) {
-            if (it.value().count > 0 && it.value().note)
-                  playbackNotes.insert(it.key(), it.value().note);
+
+      if (preferences.getBool(PREF_UI_PIANOROLL_PLAYBACK_HIGHLIGHT_KEYBOARD)) {
+            const auto& active = s->activePitches();
+            for (auto it = active.constBegin(); it != active.constEnd(); ++it) {
+                  if (it.value().count > 0 && it.value().note)
+                        playbackNotes.insert(it.key(), it.value().note);
+                  }
             }
+
       pianoKbd->setPlaybackNotes(playbackNotes);
 
 
-      QHash<const Note*, QSet<int>> playbackNoteEvents;
-      const auto& activeNoteEvents = s->activeNoteEvents();
-      for (const ActiveNoteEventInfo& info : activeNoteEvents) {
-            if (info.owner && info.noteEventIndex >= 0)
-                  playbackNoteEvents[info.owner].insert(info.noteEventIndex);
+      if (preferences.getBool(PREF_UI_PIANOROLL_PLAYBACK_HIGHLIGHT_NOTES)) {
+            QHash<const Note*, QSet<int>> playbackNoteEvents;
+            const auto& activeNoteEvents = s->activeNoteEvents();
+            for (const ActiveNoteEventInfo& info : activeNoteEvents) {
+                  if (info.owner && info.noteEventIndex >= 0)
+                        playbackNoteEvents[info.owner].insert(
+                              info.noteEventIndex);
+                  }
+
+            pianoView->setPlaybackNoteEvents(playbackNoteEvents);
+            pianoView->updatePlaybackHighlights();
             }
-      pianoView->setPlaybackNoteEvents(playbackNoteEvents);
-
-
-      pianoView->updatePlaybackHighlights();
+      else {
+            pianoView->clearPlaybackNoteEvents();
+            }
 
       //
       // Smooth viewport following is purely visual. It does not
