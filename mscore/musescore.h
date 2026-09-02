@@ -257,21 +257,21 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
 
       QProgressBar* _progressBar           { 0 };
       PreferenceDialog* preferenceDialog   { 0 };
-      QToolBar* cpitchTools;
-      QToolBar* fotoTools;
-      QToolBar* fileTools;
-      QToolBar* transportTools;
-      QToolBar* entryTools;
+      QToolBar* cpitchTools                { 0 };
+      QToolBar* fotoTools                  { 0 };
+      QToolBar* fileTools                  { 0 };
+      QToolBar* transportTools             { 0 };
+      QToolBar* entryTools                 { 0 };
 #if 0
       QToolBar* feedbackTools;
 #endif
-      QToolBar* alternativeTools;
-      QToolBar* workspacesTools;
+      QToolBar* alternativeTools           { 0 };
+      QToolBar* workspacesTools            { 0 };
       TextTools* _textTools                { 0 };
       PianoTools* _pianoTools              { 0 };
       MediaDialog* _mediaDialog            { 0 };
       DrumTools* _drumTools                { 0 };
-      QToolBar* voiceTools;
+      QToolBar* voiceTools                 { 0 };
       InstrumentsDialog* instrList         { 0 };
       MeasuresDialog* measuresDialog       { 0 };
       InsertMeasuresDialog* insertMeasuresDialog { 0 };
