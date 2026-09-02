@@ -6506,10 +6506,6 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             showMasterPalette(qApp->translate("Palette", "Time Signatures"));
       else if (cmd == "symbols")
             showMasterPalette(qApp->translate("MasterPalette", "Symbols"));
-      else if (cmd == "toggle-statusbar") {
-            preferences.setPreference(PREF_UI_APP_SHOWSTATUSBAR, a->isChecked());
-            _statusBar->setVisible(a->isChecked());
-            }
       else if (cmd == "append-measures")
             cmdAppendMeasures();
       else if (cmd == "insert-measures")
@@ -6552,42 +6548,52 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
       else if (cmd == "omr")
             showOmrPanel(a->isChecked());
 #endif
-      else if (cmd == "toggle-playpanel")
-            showPlayPanel(a->isChecked());
-      else if (cmd == "toggle-navigator")
-            showNavigator(a->isChecked());
-      else if (cmd == "toggle-timeline")
-            showTimeline(a->isChecked());
-      else if (cmd == "toggle-midiimportpanel")
-            importmidiPanel->setVisible(a->isChecked());
-      else if (cmd == "toggle-mixer")
-            showMixer(a->isChecked());
-      else if (cmd == "toggle-piano-roll")
-            showPianoroll(a->isChecked());
+      else if (cmd.startsWith("toggle")) {
+            if (cmd == "toggle-statusbar") {
+                  preferences.setPreference(PREF_UI_APP_SHOWSTATUSBAR, a->isChecked());
+                  _statusBar->setVisible(a->isChecked());
+                  }
+            else if (cmd == "toggle-playpanel")
+                  showPlayPanel(a->isChecked());
+            else if (cmd == "toggle-navigator")
+                  showNavigator(a->isChecked());
+            else if (cmd == "toggle-timeline")
+                  showTimeline(a->isChecked());
+            else if (cmd == "toggle-midiimportpanel")
+                  importmidiPanel->setVisible(a->isChecked());
+            else if (cmd == "toggle-mixer")
+                  showMixer(a->isChecked());
+            else if (cmd == "toggle-piano-roll")
+                  showPianoroll(a->isChecked());
+            else if (cmd == "toggle-selection-window")
+                  showSelectionWindow(a->isChecked());
+            else if (cmd == "toggle-fileoperations")
+                  fileTools->setVisible(!fileTools->isVisible());
+            else if (cmd == "toggle-transport")
+                  transportTools->setVisible(!transportTools->isVisible());
+            else if (cmd == "toggle-concertpitch")
+                  cpitchTools->setVisible(!cpitchTools->isVisible());
+            else if (cmd == "toggle-imagecapture")
+                  fotoTools->setVisible(!fotoTools->isVisible());
+            else if (cmd == "toggle-noteinput")
+                  entryTools->setVisible(!entryTools->isVisible());
+            else if (cmd == "toggle-workspaces-toolbar")
+                  workspacesTools->setVisible(!workspacesTools->isVisible());
+            else if (cmd == "toggle-alternative")
+                  alternativeTools->setVisible(!alternativeTools->isVisible());
+            else if (cmd == "toggle-piano")
+                  showPianoKeyboard(a->isChecked());
+            else if (cmd == "toggle-scorecmp-tool")
+                  reDisplayDockWidget(scoreCmpTool, a->isChecked());
+            }
       else if (cmd == "synth-control")
             showSynthControl(a->isChecked());
-      else if (cmd == "toggle-selection-window")
-            showSelectionWindow(a->isChecked());
       else if (cmd == "show-keys")
             ;
-      else if (cmd == "toggle-fileoperations")
-            fileTools->setVisible(!fileTools->isVisible());
-      else if (cmd == "toggle-transport")
-            transportTools->setVisible(!transportTools->isVisible());
-      else if (cmd == "toggle-concertpitch")
-            cpitchTools->setVisible(!cpitchTools->isVisible());
-      else if (cmd == "toggle-imagecapture")
-            fotoTools->setVisible(!fotoTools->isVisible());
-      else if (cmd == "toggle-noteinput")
-            entryTools->setVisible(!entryTools->isVisible());
 #if 0
       else if (cmd == "toggle-feedback")
             feedbackTools->setVisible(!feedbackTools->isVisible());
 #endif
-      else if (cmd == "toggle-workspaces-toolbar")
-            workspacesTools->setVisible(!workspacesTools->isVisible());
-      else if (cmd == "toggle-alternative")
-            alternativeTools->setVisible(!alternativeTools->isVisible());
       else if (cmd == "create-new-workspace") {
             mscore->createNewWorkspace();
             emit mscore->workspacesChanged();
@@ -6625,10 +6631,6 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             editRaster();
       else if (cmd == "hraster" || cmd == "vraster")  // value in [hv]RasterAction already set
             ;
-      else if (cmd == "toggle-piano")
-            showPianoKeyboard(a->isChecked());
-      else if (cmd == "toggle-scorecmp-tool")
-            reDisplayDockWidget(scoreCmpTool, a->isChecked());
 #ifdef MSCORE_UNSTABLE
       else if (cmd == "toggle-script-recorder")
             scriptRecorder->setVisible(a->isChecked());
