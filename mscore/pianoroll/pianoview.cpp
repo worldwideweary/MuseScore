@@ -814,6 +814,9 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
                   if (!_locator[i].valid())
                         continue;
 
+                  if (i == 0 && !preferences.getBool(PREF_UI_PIANOROLL_PLAYBACK_SHOW_CURSOR))
+                        continue;
+
                   p->setPen(QPen(i == 0 ? Qt::red : Qt::blue, 2));
 
                   qreal x;
@@ -1319,7 +1322,8 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
             NoteEvent& e = playEvents[index];
 
             const bool playing =
-                  _playbackNoteEvents.value(note).contains(index);
+                  preferences.getBool(PREF_UI_PIANOROLL_PLAYBACK_HIGHLIGHT_NOTES)
+                  && _playbackNoteEvents.value(note).contains(index);
 
             QColor noteColor;
 
