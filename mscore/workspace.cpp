@@ -981,9 +981,12 @@ void Workspace::read(XmlReader& e)
 //   ensureMenuAction
 //---------------------------------------------------------
 
-void Workspace::ensureMenuAction(const QString& menuId,
-                                 const QString& actionId,
-                                 const QString& beforeActionId)
+void Workspace::ensureMenuAction(
+      const QString& menuId,
+      const QString& actionId,
+      const QString& anchorActionId,
+      InsertPosition position)
+
       {
       QMenu* menu = findMenuFromString(menuId);
       QAction* action = findActionFromString(actionId);
@@ -991,23 +994,40 @@ void Workspace::ensureMenuAction(const QString& menuId,
       if (!menu || !action || menu->actions().contains(action))
             return;
 
-      QAction* beforeAction = beforeActionId.isEmpty()
-                              ? nullptr
-                              : findActionFromString(beforeActionId);
+      QAction* anchorAction =
+            anchorActionId.isEmpty()
+            ? nullptr
+            : findActionFromString(anchorActionId);
 
-      if (beforeAction && menu->actions().contains(beforeAction))
-            menu->insertAction(beforeAction, action);
+      if (!anchorAction || !menu->actions().contains(anchorAction)) {
+            menu->addAction(action);
+            return;
+            }
+
+      if (position == InsertPosition::BEFORE) {
+            menu->insertAction(anchorAction, action);
+            return;
+            }
+
+      const QList<QAction*> actions = menu->actions();
+      const int index = actions.indexOf(anchorAction);
+
+      if (index >= 0 && index + 1 < actions.size())
+            menu->insertAction(actions[index + 1], action);
       else
             menu->addAction(action);
       }
 
 //---------------------------------------------------------
 //   ensureToolbarEntry
+//    anchorActionId: the actionId which will be immediately after
+//    or before the new placement of actionId, depending on [position]
 //---------------------------------------------------------
 
 void Workspace::ensureToolbarEntry(std::list<const char*>& entries,
                                    const char* actionId,
-                                   const char* beforeActionId)
+                                   const char* anchorActionId,
+                                   InsertPosition position)
       {
       if (!actionId || !*actionId)
             return;
@@ -1017,9 +1037,12 @@ void Workspace::ensureToolbarEntry(std::list<const char*>& entries,
                   return;
             }
 
-      if (beforeActionId) {
+      if (anchorActionId) {
             for (auto it = entries.begin(); it != entries.end(); ++it) {
-                  if (!strcmp(*it, beforeActionId)) {
+                  if (!strcmp(*it, anchorActionId)) {
+                        if (position == InsertPosition::AFTER)
+                              ++it;
+
                         entries.insert(it, actionId);
                         return;
                         }
@@ -1048,7 +1071,8 @@ void Workspace::migrate(int uiVersion)
             if (entries) {
                   ensureToolbarEntry(*entries,
                                      "toggle-piano-roll",
-                                     "empty-trailing-measure");
+                                     "empty-trailing-measure",
+                                     InsertPosition::BEFORE);
 
                   mscore->populateAlternativeOperations();
                   }
