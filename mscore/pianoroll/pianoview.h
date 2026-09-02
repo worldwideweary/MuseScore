@@ -105,6 +105,8 @@ private:
       Staff* _staff;
       Chord* _chord;
 
+      bool _playbackActive { false };
+
       VerticalPitchLayout _verticalPitchLayout;
       PianoRollScope _scope;
       Coloring _coloring;
@@ -148,6 +150,8 @@ private:
       quint8 _pitchHighlight[128];
 
       float _noteRectRoundedRadius = 3;
+
+      int _lastLocatorPixel[3] { -1, -1, -1 };
 
       virtual void drawBackground(QPainter* painter, const QRectF& rect) override;
       void drawNoteBlock(QPainter* p, PianoItem* block);
