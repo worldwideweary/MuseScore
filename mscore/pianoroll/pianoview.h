@@ -106,7 +106,6 @@ public:
       PianoRollScope getScope() { return _scope; }
       void centerSelectionTimeInView();
       void ensureSelectionVisible(bool force = false);
-      void updatePlaybackHighlights();
 
       bool selectionRectAllowed() const;
 
@@ -219,7 +218,6 @@ private:
 
       QHash<const NoteEvent*, LevelEventPreview> _levelEventPreviews;
 
-      QSet<Note*> _markedPlaybackNotes;
       QHash<const Note*, QSet<int>> _playbackNoteEvents;
 
       virtual void drawBackground(QPainter* painter, const QRectF& rect) override;
@@ -372,9 +370,11 @@ private:
       void setVerticalPitchLayout(VerticalPitchLayout layout);
       void setOrientation(PianoRollOrientation orientation);
       Staff* staff() { return _staff; }
+      void setEditableStaff(Staff* st);
       void setStaff(Staff*, Pos* locator);
-      qreal playbackFollowHorizontalOffset(qreal tick) const;
+      bool playbackTickBeyondCenter(qreal tick) const;
       void ensureVisible(qreal tick, qreal horizontalOffset = 0.0);
+      void ensurePlaybackTickVisible(qreal tick);
       int noteHeight() { return _noteHeight; }
       qreal xZoom() { return _xZoom; }
       int tuplet() { return _tuplet; }

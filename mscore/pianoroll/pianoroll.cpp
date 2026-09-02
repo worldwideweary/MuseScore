@@ -55,7 +55,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       _score   = 0;
       staff    = 0;
 
-      _scope = PianoRollScope::PART;
+      _scope = PianoRollScope::SCORE;
       _orientation = PianoRollOrientation::HORIZONTAL;
 
       const QSize toolbarIconSize(
@@ -156,7 +156,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       tbMain->addSeparator();
 
       // Option: Scope
-      QComboBox* scopeBox = new QComboBox;
+      scopeBox = new QComboBox;
       scopeBox->addItem(tr("Staff"), int(PianoRollScope::STAFF));
       scopeBox->setToolTip(tr("Displayed scope"));
       scopeBox->addItem(tr("Part"),  int(PianoRollScope::PART));
@@ -171,7 +171,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(scopeBox,
               QOverload<int>::of(&QComboBox::activated),
               this,
-              [this, scopeBox](int index) {
+              [this](int index) {
                     setScope(PianoRollScope(scopeBox->itemData(index).toInt()));
                     });
 
@@ -922,17 +922,20 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                           }
 
                     //
-                    // Begin at the playhead's existing screen position and smoothly
-                    // converge to normal centered playback following.
+                    // Leave the viewport completely untouched until playback reaches
+                    // the center of the visible time range. Once it reaches that
+                    // boundary, normal centered following takes over.
                     //
-                    const qreal settleTime = 0.75;
-                    const qreal settle =
-                          qBound<qreal>(0.0, elapsed / settleTime, 1.0);
+                    if (!_playbackFollowScrolling) {
+                          if (!pianoView->playbackTickBeyondCenter(predictedTick)) {
+                                pianoView->ensurePlaybackTickVisible(predictedTick);
+                                return;
+                                }
 
-                    const qreal horizontalOffset =
-                          _playbackFollowHorizontalOffset * (1.0 - settle);
+                          _playbackFollowScrolling = true;
+                          }
 
-                    pianoView->ensureVisible(predictedTick, horizontalOffset);
+                    pianoView->ensureVisible(predictedTick, 0.0);
 
                     ruler->setPlaybackLocatorTick(predictedTick);
                     });
@@ -1160,6 +1163,28 @@ void PianorollEditor::setEditNoteDots(int value, QToolButton* bn)
             }
       else
             pianoView->setEditNoteDots(value);
+      }
+
+//---------------------------------------------------------
+//   staffDisplayName
+//---------------------------------------------------------
+
+QString PianorollEditor::staffDisplayName(Staff* st) const
+      {
+      if (!st)
+            return QString();
+
+      QString label = st->partName();
+
+      Part* part = st->part();
+      if (part && part->nstaves() > 1) {
+            const int staffIndex = part->staves()->indexOf(st);
+
+            if (staffIndex >= 0)
+                  label += tr(": Staff %1").arg(staffIndex + 1);
+            }
+
+      return label;
       }
 
 //---------------------------------------------------------
@@ -1743,6 +1768,13 @@ void PianorollEditor::setScope(PianoRollScope scope)
             return;
 
       _scope = scope;
+
+      if (scopeBox) {
+            const int index = scopeBox->findData(int(scope));
+            if (index != -1)
+                  scopeBox->setCurrentIndex(index);
+            }
+
       pianoView->setScope(scope);
       pianoLevels->setScope(scope);
       restoreScoreViewFocus();
@@ -1858,6 +1890,35 @@ void PianorollEditor::rangeChanged(int min, int max)
 void PianorollEditor::updateSelection()
       {
       QList<PianoItem*> items = pianoView->getSelectedItems();
+
+      if (items.size() == 1) {
+            PianoItem* item = items.front();
+
+            if (item && item->note()) {
+                  Staff* selectedStaff = item->note()->staff();
+
+                  if (selectedStaff && selectedStaff != staff)
+                        setEditableStaff(selectedStaff);
+                  }
+            }
+
+      QHash<int, const Note*> keyboardSelection;
+
+      if (preferences.getBool(PREF_UI_PIANOROLL_SELECTION_HIGHLIGHT_KEYBOARD)) {
+            for (PianoItem* item : items) {
+                  if (!item || !item->note())
+                        continue;
+
+                  Note* note = item->note();
+
+                  // One physical keyboard key can represent only one
+                  // selected note at a given pitch.
+                  if (!keyboardSelection.contains(note->pitch()))
+                        keyboardSelection.insert(note->pitch(), note);
+                  }
+            }
+
+      pianoKbd->setSelectionNotes(keyboardSelection);
       bool enabled = false;
 
       //
@@ -2141,17 +2202,7 @@ void PianorollEditor::updateStaffBox()
             if (!st)
                   continue;
 
-            QString label = st->partName();
-
-            Part* part = st->part();
-            if (part && part->nstaves() > 1) {
-                  const int staffIndex = part->staves()->indexOf(st);
-
-                  if (staffIndex >= 0)
-                        label += tr(": Staff %1").arg(staffIndex + 1);
-                  }
-
-            staffBox->addItem(label, st->idx());
+            staffBox->addItem(staffDisplayName(st), st->idx());
             }
 
       staffBox->setEnabled(staffBox->count() > 0);
@@ -2249,10 +2300,10 @@ void PianorollEditor::keyReleased(int /*p*/)
 
 void PianorollEditor::stopPlaybackFollow()
       {
+      _playbackFollowScrolling = false;
       _playbackFollowActive = false;
       _playbackFollowVelocityValid = false;
       _playbackFollowTicksPerSecond = 0.0;
-      _playbackFollowHorizontalOffset = 0.0;
 
       pianoView->clearPlaybackLocatorTick();
       ruler->clearPlaybackLocatorTick();
@@ -2307,7 +2358,6 @@ void PianorollEditor::heartBeat(Seq* s)
                   }
 
             pianoView->setPlaybackNoteEvents(playbackNoteEvents);
-            pianoView->updatePlaybackHighlights();
             }
       else {
             pianoView->clearPlaybackNoteEvents();
@@ -2337,13 +2387,11 @@ void PianorollEditor::heartBeat(Seq* s)
       if (!_playbackFollowActive) {
             _playbackFollowActive = true;
             _playbackFollowVelocityValid = true;
+            _playbackFollowScrolling = false;
 
             _playbackFollowBaseTick = qreal(tick);
             _playbackFollowLastSampleTick = tick;
             _playbackFollowTicksPerSecond = newTicksPerSecond;
-
-            _playbackFollowHorizontalOffset =
-                  pianoView->playbackFollowHorizontalOffset(tick);
 
             _playbackFollowElapsed.restart();
             _playbackFollowTimer->start();

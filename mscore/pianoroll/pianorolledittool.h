@@ -45,6 +45,7 @@ enum class Coloring {
       };
 
 enum class PianoRollOrientation {
+      UNDEFINED = -1,
       HORIZONTAL,
       VERTICAL
       };

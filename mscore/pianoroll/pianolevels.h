@@ -168,6 +168,7 @@ public:
       void setOrientation(PianoRollOrientation);
       void setScore(Score*, Pos* locator);
       Staff* staff() { return _staff; }
+      void setEditableStaff(Staff* st);
       void setStaff(Staff*, Pos* locator);
       void updateNotes();
       int tuplet() const { return _tuplet; }
