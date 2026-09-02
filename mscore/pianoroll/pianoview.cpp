@@ -266,69 +266,6 @@ bool PianoItem::intersects(int startTick, int endTick, int highPitch, int lowPit
       }
 
 //---------------------------------------------------------
-//   updatePlaybackHighlights
-//---------------------------------------------------------
-
-void PianoView::updatePlaybackHighlights()
-      {
-      QSet<Note*> markedNotes;
-
-      // ScoreElements only:
-      for (PianoItem* item : _noteList) {
-            Note* note = item->note();
-            if (note && note->mark())
-                  markedNotes.insert(note);
-            }
-
-      //
-      // Nothing changed visually.
-      //
-      if (markedNotes == _markedPlaybackNotes)
-            return;
-
-      QRectF dirtyRect;
-
-      //
-      // Notes that were marked before but are not marked now
-      // need repainting to remove their playback highlight.
-      // Previously highlighted notes may no longer exist after
-      // score edits:
-      //
-      bool removedPlaybackHighlights = false;
-
-      for (Note* note : _markedPlaybackNotes) {
-            if (!markedNotes.contains(note)) {
-                  removedPlaybackHighlights = true;
-                  break;
-                  }
-            }
-
-      //
-      // Newly marked notes need repainting to show their
-      // playback highlight.
-      //
-      for (Note* note : markedNotes) {
-            if (_markedPlaybackNotes.contains(note))
-                  continue;
-
-            for (NoteEvent& event : note->playEvents())
-                  dirtyRect |= boundingRect(note, &event, false);
-            }
-
-      _markedPlaybackNotes = markedNotes;
-
-      if (removedPlaybackHighlights) {
-            // Can't safely derive old note bounds after removal, so
-            // repaint the view:
-            scene()->update(sceneRect());
-            }
-      else if (!dirtyRect.isNull()) {
-            dirtyRect.adjust(-3.0, -3.0, 3.0, 3.0);
-            scene()->update(dirtyRect);
-            }
-      }
-
-//---------------------------------------------------------
 //    selectionRectAllowed
 //---------------------------------------------------------
 
@@ -621,7 +558,8 @@ PianoView::PianoView()
       _dragStyle   = DragStyle::NONE;
       _inProgressUndoEvent = false;
       _scope = PianoRollScope::PART;
-      _orientation = PianoRollOrientation::HORIZONTAL;
+      _orientation = PianoRollOrientation::UNDEFINED;
+      setOrientation(_orientation);
       _verticalPitchLayout = preferences.getBool(PREF_UI_PIANOROLL_VERTICAL_KEYBOARD_ALIGNED_GRID)
                   ? VerticalPitchLayout::KEYBOARD_ALIGNED
                   : VerticalPitchLayout::CHROMATIC;
@@ -4105,6 +4043,9 @@ void PianoView::insertNote(int modifiers)
 
                   selectItem(pn, NoteSelectType::REPLACE);
                   }
+            else {
+                  clearNoteSelection();
+                  }
             return;
             }
 
@@ -5187,27 +5128,18 @@ void PianoView::leaveEvent(QEvent* event)
       }
 
 //---------------------------------------------------------
-//   playbackFollowHorizontalOffset
+//   playbackTickBeyondCenter
 //---------------------------------------------------------
 
-qreal PianoView::playbackFollowHorizontalOffset(qreal tick) const
+bool PianoView::playbackTickBeyondCenter(qreal tick) const
       {
       if (_orientation != PianoRollOrientation::HORIZONTAL)
-            return 0.0;
+            return true;
 
       const QRectF rect =
             mapToScene(viewport()->geometry()).boundingRect();
 
-      const qreal xpos = tickToPixelXF(tick);
-
-      //
-      // If playback already begins inside the visible viewport,
-      // preserve its current screen position initially.
-      //
-      if (xpos >= rect.left() && xpos <= rect.right())
-            return xpos - rect.center().x();
-
-      return 0.0;
+      return tickToPixelXF(tick) >= rect.center().x();
       }
 
 //---------------------------------------------------------
@@ -5245,6 +5177,30 @@ void PianoView::ensureVisible(qreal tick, qreal horizontalOffset)
             int target = ypos - viewportHeight + activationMargin;
 
             verticalScrollBar()->setValue(target);
+            }
+      }
+
+//---------------------------------------------------------
+//   ensurePlaybackTickVisible
+//---------------------------------------------------------
+
+void PianoView::ensurePlaybackTickVisible(qreal tick)
+      {
+      if (_orientation != PianoRollOrientation::HORIZONTAL)
+            return;
+
+      const QRectF rect =
+            mapToScene(viewport()->geometry()).boundingRect();
+
+      const qreal xpos = tickToPixelXF(tick);
+
+      if (xpos < rect.left()) {
+            horizontalScrollBar()->setValue(
+                  qMax(qRound(xpos), 0));
+            }
+      else if (xpos > rect.right()) {
+            horizontalScrollBar()->setValue(
+                  qMax(qRound(xpos - rect.width()), 0));
             }
       }
 
@@ -5407,10 +5363,19 @@ void PianoView::setOrientation(PianoRollOrientation orientation)
       if (_orientation == PianoRollOrientation::VERTICAL)
             setAlignment(Qt::Alignment(Qt::AlignLeft | Qt::AlignBottom));
       else
-            setAlignment(Qt::Alignment(Qt::AlignCenter));
+            setAlignment(Qt::Alignment(Qt::AlignLeft | Qt::AlignVCenter));
 
       updateBoundingSize();
       updateNotes();
+      }
+
+//---------------------------------------------------------
+//   setEditableStaff
+//---------------------------------------------------------
+
+void PianoView::setEditableStaff(Staff* st)
+      {
+      _staff = st;
       }
 
 //---------------------------------------------------------
@@ -5424,6 +5389,8 @@ void PianoView::setStaff(Staff* s, Pos* l)
       if (_staff == s)
             return;
 
+      Staff* const oldStaff = _staff;
+
       _staff = s;
       setEnabled(_staff != nullptr);
       if (!_staff) {
@@ -5434,48 +5401,68 @@ void PianoView::setStaff(Staff* s, Pos* l)
             return;
             }
 
+      bool repositionView = false;
+      switch (_scope) {
+            case PianoRollScope::STAFF:
+                  repositionView = true;
+                  break;
+
+            case PianoRollScope::PART:
+                  repositionView =
+                        !oldStaff
+                        || !s
+                        || oldStaff->part() != s->part();
+                  break;
+
+            case PianoRollScope::SCORE:
+                  repositionView = false;
+                  break;
+            }
+
       _trackingPos.setContext(_staff->score()->tempomap(), _staff->score()->sigmap());
       updateBoundingSize();
 
       updateNotes();
 
-      QRectF boundingRect;
-      bool brInit = false;
-      QRectF boundingRectSel;
-      bool brsInit = false;
+      if (repositionView) {
+            QRectF boundingRect;
+            bool brInit = false;
+            QRectF boundingRectSel;
+            bool brsInit = false;
 
-      foreach (PianoItem* item, _noteList) {
-            if (!brInit) {
-                  boundingRect = item->boundingRect();
-                  brInit = true;
-                  }
-            else
-                  boundingRect |= item->boundingRect();
-
-            if (item->note()->selected()) {
-                  if (!brsInit) {
-                        boundingRectSel = item->boundingRect();
-                        brsInit = true;
+            foreach (PianoItem* item, _noteList) {
+                  if (!brInit) {
+                        boundingRect = item->boundingRect();
+                        brInit = true;
                         }
                   else
-                        boundingRectSel |= item->boundingRect();
+                        boundingRect |= item->boundingRect();
+
+                  if (item->note()->selected()) {
+                        if (!brsInit) {
+                              boundingRectSel = item->boundingRect();
+                              brsInit = true;
+                              }
+                        else
+                              boundingRectSel |= item->boundingRect();
+                        }
+
                   }
 
-            }
+            QRectF viewRect = mapToScene(viewport()->geometry()).boundingRect();
 
-      QRectF viewRect = mapToScene(viewport()->geometry()).boundingRect();
-
-      if (brsInit) {
-            horizontalScrollBar()->setValue(boundingRectSel.x());
-            verticalScrollBar()->setValue(qMax(boundingRectSel.y() + (boundingRectSel.height() - viewRect.height()) / 2, 0.0));
-            }
-      else if (brInit) {
-            horizontalScrollBar()->setValue(boundingRect.x());
-            verticalScrollBar()->setValue(qMax(boundingRect.y() - (boundingRectSel.height() - viewRect.height()) / 2, 0.0));
-            }
-      else {
-            horizontalScrollBar()->setValue(0);
-            verticalScrollBar()->setValue(qMax(viewRect.y() - viewRect.height() / 2, 0.0));
+            if (brsInit) {
+                  horizontalScrollBar()->setValue(boundingRectSel.x());
+                  verticalScrollBar()->setValue(qMax(boundingRectSel.y() + (boundingRectSel.height() - viewRect.height()) / 2, 0.0));
+                  }
+            else if (brInit) {
+                  horizontalScrollBar()->setValue(boundingRect.x());
+                  verticalScrollBar()->setValue(qMax(boundingRect.y() - (boundingRectSel.height() - viewRect.height()) / 2, 0.0));
+                  }
+            else {
+                  horizontalScrollBar()->setValue(0);
+                  verticalScrollBar()->setValue(qMax(viewRect.y() - viewRect.height() / 2, 0.0));
+                  }
             }
       }
 
@@ -5585,8 +5572,6 @@ void PianoView::updateNotes()
 
 void PianoView::clearNoteData()
       {
-      _markedPlaybackNotes.clear();
-
       for (int i = 0; i < _noteList.size(); ++i)
             delete _noteList[i];
 
