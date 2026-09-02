@@ -51,7 +51,20 @@ PianoKeyboard::PianoKeyboard(QWidget* parent)
       _staff = 0;
       }
 
+//---------------------------------------------------------
+//   keyCurrentColor
+//---------------------------------------------------------
 
+QColor PianoKeyboard::keyCurrentColor(int pitch, const QColor& defaultColor) const
+      {
+      const Note* note = _playbackNotes.value(pitch, nullptr);
+
+      if (!note)
+            note = _selectionNotes.value(pitch, nullptr);
+
+      return note ? pianoRollNoteColor(note, _coloring, false, _useNoteColors)
+                  : defaultColor;
+      }
 
 //---------------------------------------------------------
 //   paint
@@ -147,13 +160,7 @@ void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
                         ds->name(instrPitch).toUtf8().constData());
                   }
 
-            const Note* playbackNote = _playbackNotes.value(midiPitch, nullptr);
-            if (playbackNote) {
-                  QColor color = pianoRollNoteColor(playbackNote, _coloring, false, _useNoteColors);
-                  p.setBrush(color);
-                  }
-            else
-                  p.setBrush(Qt::white);
+            p.setBrush(keyCurrentColor(midiPitch, Qt::white));
 
             if (_orientation == PianoOrientation::HORIZONTAL) {
                   //
@@ -294,15 +301,7 @@ void PianoKeyboard::paintEvent(QPaintEvent* /*event*/)
                         ds->name(instrPitch).toUtf8().constData());
                   }
 
-            p.setPen(QPen(Qt::black));
-
-            const Note* playbackNote = _playbackNotes.value(midiPitch, nullptr);
-            if (playbackNote) {
-                  QColor color = pianoRollNoteColor(playbackNote, _coloring, false, _useNoteColors);
-                  p.setBrush(color);
-                  }
-            else
-                  p.setBrush(Qt::black);
+            p.setBrush(keyCurrentColor(midiPitch, Qt::black));
 
             if (_orientation == PianoOrientation::HORIZONTAL) {
                   //
@@ -568,6 +567,20 @@ void PianoKeyboard::setColoring(Coloring c)
 void PianoKeyboard::setUseNoteColors(bool value)
       {
       _useNoteColors = value;
+      }
+
+//---------------------------------------------------------
+//   setSelectionNotes
+//---------------------------------------------------------
+
+void PianoKeyboard::setSelectionNotes(
+      const QHash<int, const Note*>& notes)
+      {
+      if (_selectionNotes == notes)
+            return;
+
+      _selectionNotes = notes;
+      update();
       }
 
 //---------------------------------------------------------

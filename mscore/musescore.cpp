@@ -5662,36 +5662,42 @@ void MuseScore::createPianoroll()
 void MuseScore::showPianoroll(bool visible)
       {
       if (visible) {
-            if (!pianorollEditor) {
-                  createPianoroll();
+            createPianoroll();
 
-                  Staff* staff = nullptr;
+            Staff* staff = nullptr;
+            bool staffFromSelection = false;
 
-                  if (cs && !cs->staves().isEmpty()) {
-                        const Selection& selection = cs->selection();
+            if (cs && !cs->staves().isEmpty()) {
+                  const Selection& selection = cs->selection();
 
-                        if (selection.state() == SelState::RANGE) {
-                              const int staffIdx = selection.staffStart();
+                  if (selection.state() == SelState::RANGE) {
+                        const int staffIdx = selection.staffStart();
 
-                              if (staffIdx >= 0 && staffIdx < cs->nstaves())
-                                    staff = cs->staff(staffIdx);
+                        if (staffIdx >= 0 && staffIdx < cs->nstaves()) {
+                              staff = cs->staff(staffIdx);
+                              staffFromSelection = true;
                               }
-                        else if (selection.state() == SelState::LIST) {
-                              for (Element* e : selection.elements()) {
-                                    if (e && e->staff()) {
-                                          staff = e->staff();
-                                          break;
-                                          }
+                        }
+                  else if (selection.state() == SelState::LIST) {
+                        for (Element* e : selection.elements()) {
+                              if (e && e->staff()) {
+                                    staff = e->staff();
+                                    staffFromSelection = true;
+                                    break;
                                     }
                               }
-
-                        if (!staff)
-                              staff = cs->staff(0);
                         }
 
-                  pianorollEditor->setStaff(staff);
+                  if (staffFromSelection) {
+                        pianorollEditor->setScope(PianoRollScope::PART);
+                        }
+                  else {
+                        staff = cs->staff(0);
+                        pianorollEditor->setScope(PianoRollScope::SCORE);
+                        }
                   }
 
+            pianorollEditor->setStaff(staff);
             reDisplayDockWidget(pianorollDock, true);
             }
       else if (pianorollDock)

@@ -113,6 +113,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       int _previewOnTime { 0 };
       int _previewLen { 1000 };
 
+      bool _playbackFollowScrolling { false };
       QTimer* _playbackFollowTimer { nullptr };
       QElapsedTimer _playbackFollowElapsed;
       qreal _playbackFollowBaseTick { 0.0 };
@@ -120,11 +121,11 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       bool _playbackFollowActive { false };
       qreal _playbackFollowTicksPerSecond { 0.0 };
       bool _playbackFollowVelocityValid { false };
-      qreal _playbackFollowHorizontalOffset { 0.0 };
 
       bool updateScheduled = false;
       NoteTweakerDialog* noteTweakerDlg { nullptr };
 
+      QString staffDisplayName(Staff*) const;
       void updateNoteLengthControls(const Fraction& duration);
       void updateNoteShapeBox();
       void setPianoRollNoteShape(PianoRollNoteShape shape);
@@ -172,6 +173,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
 
       void restoreScoreViewFocus();
 
+      void setEditableStaff(Staff*);
       void setStaff(Staff* staff);
       void focusOnPosition(Position* p);
       void heartBeat(Seq*);
