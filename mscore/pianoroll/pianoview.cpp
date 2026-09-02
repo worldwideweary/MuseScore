@@ -1907,22 +1907,8 @@ bool PianoView::paintOnsetDragSegment(const QPointF& from,
 
       bool changed = false;
 
-      QVector<Fraction> ticks =
+      const QVector<Fraction> ticks =
             onsetPaintTicks(from, to);
-
-      //
-      // onsetPaintTicks() returns grid boundaries crossed after "from".
-      // On the first segment of a draw gesture, also include the grid
-      // position where the gesture itself began.
-      //
-      if (_drumPaintedTicks.isEmpty()) {
-            const Fraction firstTick =
-                  roundToNearestBeat(
-                        scenePosToTick(_mouseDownPos),
-                        true);
-
-            ticks.prepend(firstTick);
-            }
 
       for (const Fraction& tick : ticks) {
             const int tickValue = tick.ticks();
