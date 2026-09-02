@@ -5993,11 +5993,15 @@ void MuseScore::removeSessionFile()
 
 void MuseScore::autoSaveTimerTimeout()
       {
+      const bool omitDuringPlayback = seq && seq->isPlaying();
+
       bool sessionChanged = false;
 
       ScoreLoad sl;           //disable debug message "no active command"
 
       for (MasterScore* s : qAsConst(scoreList)) {
+            if (omitDuringPlayback)
+                  break;
             if (s->autosaveDirty()) {
                   // qDebug("<%s>", qPrintable(s->fileInfo()->completeBaseName()));
                   s->setAutosaving(true);
