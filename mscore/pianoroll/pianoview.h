@@ -156,6 +156,8 @@ private:
       float _noteRectRoundedRadius = 3;
 
       int _lastLocatorPixel[3] { -1, -1, -1 };
+      qreal _playbackLocatorTick { 0.0 };
+      bool _playbackLocatorTickValid { false };
 
       QSet<Note*> _markedPlaybackNotes;
       QHash<const Note*, QSet<int>> _playbackNoteEvents;
@@ -265,6 +267,9 @@ private:
       void setPlaybackActive(bool active) { _playbackActive = active; }
       void setPlaybackNoteEvents(const QHash<const Note*, QSet<int>>& events);
       void clearPlaybackNoteEvents();
+
+      void setPlaybackLocatorTick(qreal tick);
+      void clearPlaybackLocatorTick();
 
 // TODO: Any of these that can be private should be private:
 
