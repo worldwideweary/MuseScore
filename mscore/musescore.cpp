@@ -671,7 +671,11 @@ void MuseScore::populateNoteInputMenu()
 
 void MuseScore::populateAlternativeOperations()
       {
+      if (!alternativeTools)
+            return;
+
       alternativeTools->clear();
+
       for (const auto s : _alternativeEntries) {
             if (!*s)
                   alternativeTools->addSeparator();
