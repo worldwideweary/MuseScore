@@ -97,13 +97,29 @@ class PianoView : public QGraphicsView {
 public:
       static const BarPattern barPatterns[];
       void setScope(PianoRollScope scope);
-      void setColoring(Coloring c);
+      void setColoring(Coloring);
+      Coloring getColoring() const;
+
       PianoRollScope getScope() { return _scope; }
       void centerSelectionTimeInView();
       void ensureSelectionVisible(bool force = false);
       void updatePlaybackHighlights();
 
       bool selectionRectAllowed() const;
+
+      Fraction levelPreviewTickOffset() const;
+      Fraction levelPreviewEventTickDelta() const;
+
+      bool levelPreviewMovesNotes() const;
+      bool levelPreviewMovesEvents() const;
+      bool levelEventPreview(const NoteEvent* event, int& ontime, int& len) const;
+
+      Fraction levelPreviewLengthOffset() const;
+      bool levelPreviewResizesNotes() const;
+
+      void setLevelInteractionNotes(const QSet<const Note*>& notes);
+      void clearLevelInteractionNotes();
+      bool levelInteractionHighlighted(const Note* note) const;
 
 private:
       Staff* _staff { nullptr };
@@ -143,6 +159,11 @@ private:
       int _dragNoteLengthMargin = 4;
       bool _inProgressUndoEvent;
 
+      Fraction _levelPreviewLengthOffset;
+      Fraction _levelPreviewTickOffset;
+      Fraction _levelPreviewEventTickDelta;
+      bool _levelPreviewActive { false };
+
       //The length of the note we are using for editng purposes, expressed as a fraction of the measure.
       // Note length will be (2^_editNoteLength) of a measure
       Fraction _editNoteLength = Fraction(1, 4);
@@ -158,6 +179,15 @@ private:
       int _lastLocatorPixel[3] { -1, -1, -1 };
       qreal _playbackLocatorTick { 0.0 };
       bool _playbackLocatorTickValid { false };
+
+      struct LevelEventPreview {
+            int ontime;
+            int len;
+            };
+
+      QSet<const Note*> _levelInteractionNotes;
+
+      QHash<const NoteEvent*, LevelEventPreview> _levelEventPreviews;
 
       QSet<Note*> _markedPlaybackNotes;
       QHash<const Note*, QSet<int>> _playbackNoteEvents;
@@ -224,6 +254,7 @@ private:
       void onTimeDragged(int);
       void tickLenDragged(int);
       void showNoteTweakerRequest();
+      void noteEventsChanged();
 
    public slots:
       void moveLocator(int);

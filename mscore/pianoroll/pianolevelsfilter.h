@@ -25,8 +25,7 @@ namespace Ms {
 class Note;
 class NoteEvent;
 class Staff;
-
-
+class Fraction;
 
 //---------------------------------------------------------
 //   PianoLevelsFilter
@@ -45,6 +44,15 @@ public:
       virtual bool isPerEvent() = 0;
       virtual int value(Staff* staff, Note* note, NoteEvent* evt) = 0;
       virtual void setValue(Staff* staff, Note* note, NoteEvent* evt, int value) = 0;
+      virtual bool previewValue(Note* note, int previewOntime, int previewLen, const Fraction& previewNoteLen, int& value) const
+            {
+            Q_UNUSED(note);
+            Q_UNUSED(previewOntime);
+            Q_UNUSED(previewLen);
+            Q_UNUSED(previewNoteLen);
+            Q_UNUSED(value);
+            return false;
+            }
       };
 
 
@@ -64,6 +72,12 @@ public:
       bool isPerEvent() override { return true; }
       int value(Staff* staff, Note* note, NoteEvent* evt) override;
       void setValue(Staff* staff, Note* note, NoteEvent* evt, int value) override;
+      bool previewValue(Note* /*note*/, int previewOntime, int /*previewLen*/, const Fraction& /*previewNoteLen*/, int& value) const override
+            {
+            value = previewOntime;
+            return true;
+            }
+
       };
 
 
@@ -84,6 +98,11 @@ public:
       bool isPerEvent() override { return true; }
       int value(Staff* staff, Note* note, NoteEvent* evt) override;
       void setValue(Staff* staff, Note* note, NoteEvent* evt, int value) override;
+      bool previewValue(Note* /*note*/, int /*previewOntime*/, int previewLen, const Fraction& /*previewNoteLen*/, int& value) const override
+            {
+            value = previewLen;
+            return true;
+            }
       };
 
 
@@ -104,6 +123,7 @@ public:
       bool isPerEvent() override { return true; }
       int value(Staff* staff, Note* note, NoteEvent* evt) override;
       void setValue(Staff* staff, Note* note, NoteEvent* evt, int value) override;
+      bool previewValue(Note* note, int previewOntime, int previewLen, const Fraction& previewNoteLen, int& value) const override;
       };
 
 
@@ -118,9 +138,9 @@ class PianoLevelFilterVeloOffset : public PianoLevelsFilter {
 public:
       QString name() override;
       QString tooltip() override;
-      int maxRange() override { return 200; }
-      int minRange() override { return -200; }
-      int divisionGap() override { return 100; }
+      int maxRange() override { return +128; }
+      int minRange() override { return -128; }
+      int divisionGap() override { return 32; }
       bool isPerEvent() override { return false; }
       int value(Staff* staff, Note* note, NoteEvent* evt) override;
       void setValue(Staff* staff, Note* note, NoteEvent* evt, int value) override;
