@@ -539,12 +539,12 @@ void PianoKeyboard::setOrientation(PianoOrientation o)
 //   setColoring
 //---------------------------------------------------------
 
-void PianoKeyboard::setColoring(Coloring coloring)
+void PianoKeyboard::setColoring(Coloring c)
       {
-      if (_coloring == coloring)
+      if (_coloring == c)
             return;
 
-      _coloring = coloring;
+      _coloring = c;
       update();
       }
 

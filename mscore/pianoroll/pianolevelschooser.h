@@ -39,11 +39,15 @@ class PianoLevelsChooser : public QWidget, public Ui::PianoLevelsChooser
       int _levelsIndex;
       Staff* _staff { nullptr };
       PianoView* _pianoView { nullptr };
+      bool _playbackEditingEnabled { true };
 
 public:
       Staff* staff() { return _staff; }
       void setStaff(Staff* staff) { _staff = staff; }
       void setPianoView(PianoView* pianoView);
+      void setPlaybackEditingEnabled(bool enabled);
+      void updateEditorEnabled();
+      void setEventPreviewValues(int ontime, int len);
 
 signals:
       void levelsIndexChanged(int);

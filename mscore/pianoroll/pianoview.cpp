@@ -69,63 +69,6 @@ const BarPattern PianoView::barPatterns[] = {
       {"",              {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
 
-
-// //---------------------------------------------------------
-// //   getPianoRollNoteColor
-// //---------------------------------------------------------
-
-// QColor PianoView::getPianoRollNoteColor(Note* note, bool highlight) const
-//       {
-//       if (highlight) {
-//             if (note->mark()) {
-//                   return darkTheme()
-//                         ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
-//                         : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
-//                   }
-//             else if (note->selected()) {
-//                   return darkTheme()
-//                         ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_SEL_COLOR)
-//                         : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
-//                   }
-//             }
-//       else if (false && (_editNoteTool == PianoRollEditTool::EVENT_ADJUST)) {
-//             // _colorTweaks "purple edit" now unused to allow playback to show actual durations without
-//             // any purple notes
-//             return QColor(0xfd63fc);
-//             }
-//       else if (_coloring == Coloring::VOICING) {
-//             const int v = note->voice();
-//             if (v >= 0 && v <= 3)
-//                   return MScore::selectColor[v];
-//             }
-//       else if (_coloring == Coloring::STAFF) {
-//             bool even = false;
-//             Staff* const staff = note->staff();
-//             if (staff && staff->part()) {
-//                   const QList<Staff*>* staves = staff->part()->staves();
-//                   int staffPos = staves ? (staves->indexOf(staff) + 1) : -1;
-//                   even = (staffPos % 2 == 0);
-//                   }
-//             if (darkTheme())
-//                   return even ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR_EVEN)
-//                               : preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_UNSEL_COLOR);
-//             else
-//                   return even ? preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR_EVEN)
-//                               : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_UNSEL_COLOR);
-//             }
-//       else {
-//             // Check idx of VOICE/STAFF in UI to fix if this hits
-//             static bool beenHere = false;
-//             if (!beenHere) {
-//                   qDebug() << "HIT NONE COLOR";
-//                   beenHere = true;
-//                   }
-//             return MScore::defaultColor;
-//             }
-//       }
-
-
-
 //---------------------------------------------------------
 //   pianoRollNoteColor
 //---------------------------------------------------------
@@ -373,6 +316,107 @@ bool PianoView::selectionRectAllowed() const
       }
 
 //---------------------------------------------------------
+//    levelPreviewTickOffset
+//---------------------------------------------------------
+
+Fraction PianoView::levelPreviewTickOffset() const
+      {
+      return _levelPreviewTickOffset;
+      }
+
+//---------------------------------------------------------
+//    levelPreviewEventTickDelta
+//---------------------------------------------------------
+
+Fraction PianoView::levelPreviewEventTickDelta() const
+      {
+      return _levelPreviewEventTickDelta;
+      }
+
+//---------------------------------------------------------
+//    levelPreviewMovesNotes
+//---------------------------------------------------------
+
+bool PianoView::levelPreviewMovesNotes() const
+      {
+      return _levelPreviewActive && _dragStyle == DragStyle::NOTE_POSITION;
+      }
+
+//---------------------------------------------------------
+//    levelPreviewMovesEvents
+//---------------------------------------------------------
+
+bool PianoView::levelPreviewMovesEvents() const
+      { return _levelPreviewActive && (_dragStyle == DragStyle::EVENT_ONTIME || _dragStyle == DragStyle::EVENT_MOVE); }
+
+//---------------------------------------------------------
+//   levelEventPreview
+//---------------------------------------------------------
+
+bool PianoView::levelEventPreview(const NoteEvent* event, int& ontime, int& len) const
+      {
+      auto it = _levelEventPreviews.constFind(event);
+      if (it == _levelEventPreviews.constEnd())
+            return false;
+
+      ontime = it.value().ontime;
+      len = it.value().len;
+      return true;
+      }
+
+//---------------------------------------------------------
+//   levelPreviewLengthOffset
+//---------------------------------------------------------
+
+Fraction PianoView::levelPreviewLengthOffset() const
+      {
+      return _levelPreviewLengthOffset;
+      }
+
+//---------------------------------------------------------
+//   levelPreviewResizesNotes
+//---------------------------------------------------------
+
+bool PianoView::levelPreviewResizesNotes() const
+      {
+      return _levelPreviewActive
+            && (_dragStyle == DragStyle::NOTE_LENGTH_START
+                || _dragStyle == DragStyle::NOTE_LENGTH_END);
+      }
+
+//---------------------------------------------------------
+//   setLevelInteractionNotes
+//---------------------------------------------------------
+
+void PianoView::setLevelInteractionNotes(const QSet<const Note*>& notes)
+      {
+      _levelInteractionNotes = notes;
+      viewport()->update();
+      }
+
+//---------------------------------------------------------
+//   clearLevelInteractionNotes
+//---------------------------------------------------------
+
+void PianoView::clearLevelInteractionNotes()
+      {
+      if (_levelInteractionNotes.isEmpty())
+            return;
+
+      _levelInteractionNotes.clear();
+      viewport()->update();
+      }
+
+//---------------------------------------------------------
+//   levelInteractionHighlighted
+//---------------------------------------------------------
+
+bool PianoView::levelInteractionHighlighted(const Note* note) const
+      {
+      return _levelInteractionNotes.contains(note);
+      }
+
+//---------------------------------------------------------
 //   setScope
 //---------------------------------------------------------
 
@@ -391,8 +435,20 @@ void PianoView::setScope(PianoRollScope scope)
 
 void PianoView::setColoring(Coloring c)
       {
+      if (_coloring == c)
+            return;
+
       _coloring = c;
       updateNotes();
+      }
+
+//---------------------------------------------------------
+//   getColoring
+//---------------------------------------------------------
+
+Coloring PianoView::getColoring() const
+      {
+      return _coloring;
       }
 
 //---------------------------------------------------------
@@ -1115,7 +1171,14 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
                         : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_SEL_COLOR);
                   }
             else {
-                  noteColor = pianoRollNoteColor(note, _coloring, true);
+                  if (levelInteractionHighlighted(note)) {
+                        noteColor = darkTheme()
+                              ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_DRAG_COLOR)
+                              : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_DRAG_COLOR);
+                        }
+                  else {
+                        noteColor = pianoRollNoteColor(note, _coloring, true);
+                        }
 
                   const bool ghostOriginal = _dragStarted && note->selected()
                         && (_dragStyle != DragStyle::CANCELLED &&
@@ -2502,7 +2565,11 @@ void PianoView::finishNoteEventAdjustDrag()
                   }
             }
 
+      _levelEventPreviews.clear();
+      _levelPreviewActive = false;
+
       update();
+      emit noteEventsChanged();
       }
 
 
@@ -4272,6 +4339,11 @@ void PianoView::finishNoteGroupDrag(QMouseEvent* event) {
 
       _dragNoteCache = QByteArray();
 
+      _levelPreviewActive = false;
+      _levelPreviewTickOffset = Fraction(0, 1);
+      _levelPreviewLengthOffset = Fraction(0, 1);
+      _levelPreviewEventTickDelta = Fraction(0, 1);
+
       score->update();
       updateNotes();
       update();
@@ -4387,6 +4459,10 @@ void PianoView::drawDraggedNotes(QPainter* painter)
 
       Score* score = _staff->score();
 
+      _levelPreviewActive = false;
+      _levelEventPreviews.clear();
+      _levelPreviewLengthOffset = Fraction(0, 1);
+
       if (_dragStyle == DragStyle::DRAW_NOTE) {
             double startTick = scenePosToTick(_mouseDownPos);
             double endTick = scenePosToTick(_lastMousePos);
@@ -4422,6 +4498,11 @@ void PianoView::drawDraggedNotes(QPainter* painter)
             Fraction tickDelta = Fraction::fromTicks(
                   scenePosToTick(_lastMousePos)
                   - scenePosToTick(_mouseDownPos));
+
+            _levelPreviewActive = true;
+            _levelPreviewTickOffset = Fraction(0, 1);
+            _levelPreviewLengthOffset = Fraction(0, 1);
+            _levelPreviewEventTickDelta = tickDelta;
 
             for (int i = 0; i < _noteList.size(); ++i) {
                   PianoItem* pi = _noteList[i];
@@ -4476,6 +4557,12 @@ void PianoView::drawDraggedNotes(QPainter* painter)
                               if (evtLenNew < 1) {
                                     evtLenNew = 1;
                                     }
+
+                              LevelEventPreview preview;
+                              preview.ontime = evtOntimeNew;
+                              preview.len = evtLenNew;
+
+                              _levelEventPreviews.insert(&e, preview);
 
                               emit onTimeDragged(evtOntimeNew);
                               emit tickLenDragged(evtLenNew);
@@ -4537,6 +4624,11 @@ void PianoView::drawDraggedNotes(QPainter* painter)
             pasteTickOffset = noteStartDraggedAlignedTick - _dragStartTick;
             pasteLengthOffset = _dragStartTick - noteStartDraggedAlignedTick;
             }
+
+      _levelPreviewActive = true;
+      _levelPreviewTickOffset = pasteTickOffset;
+      _levelPreviewLengthOffset = pasteLengthOffset;
+      _levelPreviewEventTickDelta = Fraction(0, 1);
 
       //Iterate thorugh note data
       QXmlStreamReader xml(_dragNoteCache);
