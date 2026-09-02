@@ -204,19 +204,19 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       coloringBox->addItem(tr("Voicing"),   int(Coloring::VOICING));
       coloringBox->addItem(tr("Singular"),  int(Coloring::STAFF));
 
-      int coloringIndex = coloringBox->findData(int(_coloring));
-      if (coloringIndex != -1)
-            coloringBox->setCurrentIndex(coloringIndex);
-      qDebug() << "coloringIndex:" << coloringIndex; // when black probably -1 ?
-
       tbMain->addWidget(coloringBox);
+
+      auto applyColoring = [this, coloringBox](int index) {
+            Coloring c = static_cast<Coloring>(coloringBox->itemData(index).toInt());
+            setColoring(c);
+            };
 
       connect(coloringBox,
               QOverload<int>::of(&QComboBox::activated),
               this,
-              [this, coloringBox](int index) {
-            setColoring(Coloring(coloringBox->itemData(index).toInt()));
-      });
+              applyColoring);
+      // Call applyColoring after other constructions later:
+
 
       // --------------------------------------------------
       // toolbars
@@ -596,6 +596,9 @@ PianorollEditor::PianorollEditor(QWidget* parent)
 
                     pianoView->setPlaybackLocatorTick(predictedTick);
 
+                    if (_showPianoLevels && pianoLevels)
+                          pianoLevels->setPlaybackLocatorTick(predictedTick);
+
                     //
                     // Begin at the playhead's existing screen position and smoothly
                     // converge to normal centered playback following.
@@ -628,6 +631,36 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                           pianoKbd->setYpos(value);
                     });
 
+      connect(pianoView, &PianoView::onTimeDragged, this, [this](int value) {
+            _previewOnTime = value;
+
+            setOnTime(value);
+
+            pianoLevelsChooser->setEventPreviewValues(
+                  _previewOnTime,
+                  _previewLen);
+
+            if (_showPianoLevels && pianoLevels)
+                  pianoLevels->update();
+            });
+
+      connect(pianoView, &PianoView::tickLenDragged, this, [this](int value) {
+            _previewLen = value;
+
+            setTickLen(value);
+
+            pianoLevelsChooser->setEventPreviewValues(
+                  _previewOnTime,
+                  _previewLen);
+
+            if (_showPianoLevels && pianoLevels)
+                  pianoLevels->update();
+            });
+
+      connect(pianoView, &PianoView::noteEventsChanged, this, [this]() {
+            pianoLevels->update();
+            updateSelection();
+            });
 
       velocity->installEventFilter(this);
       pitch->installEventFilter(this);
@@ -636,6 +669,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       subdiv->installEventFilter(this);
       tuplet->installEventFilter(this);
 
+      applyColoring(coloringBox->currentIndex());
 
       connect(pianoView->horizontalScrollBar(), SIGNAL(valueChanged(int)), hsb,      SLOT(setValue(int)));
 
@@ -681,8 +715,6 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(pianoLevels,        &PianoLevels::locatorMoved, this, &PianorollEditor::moveLocator);
       connect(veloType,           SIGNAL(activated(int)),                SLOT(veloTypeChanged(int)));
       connect(velocity,           SIGNAL(valueChanged(int)),             SLOT(velocityChanged(int)));
-      connect(pianoView,          SIGNAL(onTimeDragged(int)),     this,  SLOT(setOnTime(int)));
-      connect(pianoView,          SIGNAL(tickLenDragged(int)),    this,  SLOT(setTickLen(int)));
       connect(onTime,             SIGNAL(valueChanged(int)),             SLOT(onTimeChanged(int)));
       connect(tickLen,            SIGNAL(valueChanged(int)),             SLOT(tickLenChanged(int)));
       connect(pianoView,          SIGNAL(selectionChanged()),            SLOT(selectionChanged()));
@@ -773,6 +805,9 @@ void PianorollEditor::setEditNoteDots(int value, QToolButton* bn)
 void PianorollEditor::setEditNoteTool(PianoRollEditTool value)
       {
       pianoView->setEditNoteTool(value);
+
+      pianoLevelsChooser->setPlaybackEditingEnabled(
+            value == PianoRollEditTool::EVENT_ADJUST);
       }
 
 //---------------------------------------------------------
@@ -841,14 +876,19 @@ void PianorollEditor::setPianoLevelsVisible(bool visible)
 
       levelsAreaWidget->setVisible(visible);
 
-      if (visible && pianoLevels) {
-            //
-            // Bring the view back into sync when it becomes visible.
-            //
-            pianoLevels->setXpos(
-                  pianoView->horizontalScrollBar()->value());
+      if (pianoLevels) {
+            if (visible) {
+                  //
+                  // Bring the view back into sync when it becomes visible.
+                  //
+                  pianoLevels->setXpos(
+                        pianoView->horizontalScrollBar()->value());
 
-            pianoLevels->update();
+                  pianoLevels->update();
+                  }
+            else {
+                  pianoLevels->clearPlaybackLocatorTick();
+                  }
             }
       }
 
@@ -1142,16 +1182,18 @@ void PianorollEditor::setScope(PianoRollScope scope)
 
 void PianorollEditor::setColoring(Coloring c)
       {
-      if (_coloring == c)
-            return;
-
       _coloring = c;
 
-      pianoView->setColoring(c);
-      pianoKbd->setColoring(c);
+      if (pianoView)
+            pianoView->setColoring(c);
+
+      if (pianoKbd)
+            pianoKbd->setColoring(c);
+
+      if (pianoLevels)
+            pianoLevels->setColoring(c);
 
       update();
-
       restoreScoreViewFocus();
       }
 
@@ -1269,6 +1311,8 @@ void PianorollEditor::updateSelection()
             if (event) {
                   onTime->setValue(event->ontime());
                   tickLen->setValue(event->len());
+                  _previewOnTime = event->ontime();
+                  _previewLen = event->len();
                   }
 
             updateVelocity(note);
@@ -1478,6 +1522,8 @@ void PianorollEditor::stopPlaybackFollow()
 
       pianoView->clearPlaybackLocatorTick();
       ruler->clearPlaybackLocatorTick();
+      if (pianoLevels)
+            pianoLevels->clearPlaybackLocatorTick();
 
       if (_playbackFollowTimer->isActive())
             _playbackFollowTimer->stop();

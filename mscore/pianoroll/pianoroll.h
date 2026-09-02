@@ -84,6 +84,9 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       bool _horizontalPitchScrollValid { false };
       bool _verticalPitchScrollValid { false };
 
+      int _previewOnTime { 0 };
+      int _previewLen { 1000 };
+
       QTimer* _playbackFollowTimer { nullptr };
       QElapsedTimer _playbackFollowElapsed;
       qreal _playbackFollowBaseTick { 0.0 };
