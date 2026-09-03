@@ -13,6 +13,10 @@
 #ifndef __PIANOROLLEDITTOOL_H__
 #define __PIANOROLLEDITTOOL_H__
 
+#include <QColor>
+
+#include "preferences.h"
+
 namespace Ms {
 
 enum PianoRollEditTool
@@ -27,6 +31,38 @@ enum PianoRollEditTool
 
       LAST  //Marker for end of list - not a tool
       };
+
+enum class PianoRollScope {
+      STAFF,
+      PART,
+      SCORE
+      };
+
+enum class Coloring {
+      VOICING,
+      STAFF,
+      INSTRUMENT,
+      };
+
+enum class PianoRollOrientation {
+      UNDEFINED = -1,
+      HORIZONTAL,
+      VERTICAL
+      };
+
+enum class VerticalPitchLayout {
+      CHROMATIC,
+      KEYBOARD_ALIGNED
+      };
+
+class Note;
+
+QColor pianoRollNoteColor(const Note* note,
+                          Coloring coloring,
+                          bool honorSelection,
+                          bool honorCustomColor);
+
+bool darkTheme();
 
 } // namespace Ms
 

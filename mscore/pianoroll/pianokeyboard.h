@@ -21,6 +21,9 @@
 #define __PIANO_KEYBOARD_H__
 
 #include "piano.h"
+#include "pianorolledittool.h"
+
+#include "libmscore/note.h"
 
 namespace Ms {
 
@@ -28,9 +31,9 @@ class Staff;
 
 static const int PIANO_KEYBOARD_WIDTH = 100;
 static const int BLACK_KEY_WIDTH = PIANO_KEYBOARD_WIDTH * 9 / 14;
-const int MAX_KEY_HEIGHT = 20;
+const int MAX_KEY_HEIGHT = 48;
 const int MIN_KEY_HEIGHT = 8;
-const int DEFAULT_KEY_HEIGHT = 14;
+const int DEFAULT_KEY_HEIGHT = 18;
 const int BEAT_WIDTH_IN_PIXELS = 50;
 const double X_ZOOM_RATIO = 1.1;
 const double X_ZOOM_INITIAL = 0.1;
@@ -49,13 +52,19 @@ class PianoKeyboard : public QWidget {
       int yRange;
       int curPitch;
       int curKeyPressed;
-      Staff* _staff;
+      QHash<int, const Note*> _playbackNotes;
+      QHash<int, const Note*> _selectionNotes;
+      Coloring _coloring;
+      bool _useNoteColors { false };
+      Staff* _staff { nullptr };
 
       virtual void paintEvent(QPaintEvent*);
       virtual void mousePressEvent(QMouseEvent*);
       virtual void mouseReleaseEvent(QMouseEvent*);
       virtual void mouseMoveEvent(QMouseEvent* event);
       virtual void leaveEvent(QEvent*);
+
+      QColor keyCurrentColor(int pitch, const QColor& defaultColor) const;
 
    signals:
       void pitchChanged(int);
@@ -73,6 +82,11 @@ class PianoKeyboard : public QWidget {
       Staff* staff() { return _staff; }
       void setStaff(Staff* staff);
       void setOrientation(PianoOrientation);
+
+      void setSelectionNotes(const QHash<int, const Note*>& notes);
+      void setPlaybackNotes(const QHash<int, const Note*>& notes);
+      void setColoring(Coloring);
+      void setUseNoteColors(bool value);
       };
 
 

@@ -22,6 +22,9 @@
 
 #include <QWidget>
 
+#include "pianorolledittool.h"
+#include "pianoroll/pianoview.h"
+
 #include "libmscore/pos.h"
 
 namespace Ms {
@@ -32,6 +35,7 @@ class Chord;
 class Note;
 class NoteEvent;
 class PianoItem;
+enum class PianoRollOrientation;
 
 
 
@@ -47,12 +51,16 @@ class PianoLevels : public QWidget
             LERP, OFFSET
             };
 
-      Score* _score;
+      PianoView* _pianoView { nullptr };
+      PianoRollOrientation _orientation { PianoRollOrientation::HORIZONTAL };
+      Coloring _coloring;
+      bool _useNoteColors { false };
+      Score* _score { nullptr };
       int _xpos;
       qreal _xZoom;
       Pos _cursor;
-      Pos* _locator;
-      Staff* _staff;
+      Pos* _locator { nullptr };
+      Staff* _staff { nullptr };
       int _tuplet;
       int _subdiv;
       int _levelsIndex;
@@ -60,13 +68,29 @@ class PianoLevels : public QWidget
       int levelLen;
       int pickRadius = 4;
 
+      qreal _playbackLocatorTick { 0.0 };
+      bool _playbackLocatorValid { false };
+      bool _editCommandActive { false };
+
+      PianoRollScope _scope;
+
       bool mouseDown;
       QPointF mouseDownPos;
       QPointF lastMousePos;
       int dragging = false;
       DragStyle dragStyle = DragStyle::OFFSET;
-      Note* singleNoteDrag = nullptr;
-      NoteEvent* singleNoteEventDrag = nullptr;
+      Note* singleNoteDrag { nullptr };
+      NoteEvent* singleNoteEventDrag { nullptr };
+      QSet<const Note*> _levelInteractionNotes;
+
+      struct LevelDragTarget {
+            Note* note { nullptr };
+            NoteEvent* event { nullptr };
+            int startValue { 0 };
+            };
+
+      QVector<LevelDragTarget> _levelDragTargets;
+      int _levelDragAnchorValue { 0 };
 
       int minBeatGap;
 
@@ -89,8 +113,34 @@ class PianoLevels : public QWidget
 
       bool pickNoteEvent(int x, int y, bool selectedOnly,
                          Note*& pickedNote, NoteEvent*& pickedNoteEvent);
+
+      bool pickNearestLevelInTimeBand(int timePixel,
+                                      int valuePixel,
+                                      int timeRadius,
+                                      bool selectedOnly,
+                                      Note*& pickedNote,
+                                      NoteEvent*& pickedEvent);
+
+      void captureLevelDragTargets(Note* anchorNote,
+                                   NoteEvent* anchorEvent,
+                                   bool selectedOnly);
+
+      void adjustCapturedLevels(int value);
       void adjustLevelLerp(int tick0, int value0, int tick1, int value1, bool selectedOnly = true);
       void adjustLevel(Note* note, NoteEvent* noteEvt, int value);
+      void drawLevelBar(QPainter& painter,
+                        int timePixel,
+                        int valuePixel,
+                        int zeroPixel,
+                        const QColor& color);
+
+      int pixelToTick(int pixel) const;
+      int tickToPixel(int tick) const;
+
+      int valToPixel(int value) const;
+      int pixelToVal(int pixel) const;
+
+      bool hasSelectedNotes() const;
 
 signals:
       void posChanged(const Pos&);
@@ -112,12 +162,25 @@ public:
       PianoLevels(QWidget *parent = 0);
       ~PianoLevels();
 
+      void setUseNoteColors(bool value);
+      void setColoring(Coloring);
+      void setPianoView(PianoView*);
+      void setOrientation(PianoRollOrientation);
       void setScore(Score*, Pos* locator);
       Staff* staff() { return _staff; }
+      void setEditableStaff(Staff* st);
       void setStaff(Staff*, Pos* locator);
       void updateNotes();
       int tuplet() const { return _tuplet; }
       int subdiv() const { return _subdiv; }
+
+      void setPlaybackLocatorTick(qreal tick);
+      void clearPlaybackLocatorTick();
+
+      void setScope(PianoRollScope scope);
+
+      int mouseTimePixel(const QPointF& pos) const;
+      int mouseValuePixel(const QPointF& pos) const;
 
       int xpos() const { return _xpos; }
       qreal xZoom() const { return _xZoom; }

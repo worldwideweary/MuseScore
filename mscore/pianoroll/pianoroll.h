@@ -24,6 +24,9 @@ namespace Awl {
 #include "libmscore/select.h"
 #include "pianorolledittool.h"
 
+#include <QElapsedTimer>
+#include <QTimer>
+
 namespace Ms {
 
 class Score;
@@ -38,45 +41,103 @@ class PianoRuler;
 class Seq;
 class WaveView;
 
+enum class PianoRollNoteShape : char;
+
 //---------------------------------------------------------
 //   PianorollEditor
 //---------------------------------------------------------
 
-class PianorollEditor : public QMainWindow, public MuseScoreView {
+class PianorollEditor : public QWidget, public MuseScoreView {
       Q_OBJECT
 
-      PianoView* pianoView;
-      PianoKeyboard* pianoKbd;
-      PianoLevels* pianoLevels;
-      PianoLevelsChooser* pianoLevelsChooser;
-      QScrollBar* hsb;        // horizontal scroll bar for pianoView
-      Score* _score;
-      Staff* staff;
-      QLabel* partLabel;
-      Awl::PitchEdit* pitch;
-      QSpinBox* velocity;
-      QSpinBox* onTime;
-      QSpinBox* tickLen;
+      QToolBar* tbMain { nullptr };
+      QToolBar* tbTool { nullptr };
+      QToolBar* tbNoteLen { nullptr };
+      QToolBar* tbDots { nullptr };
+      QToolBar* tbVoices { nullptr };
+      QToolBar* tbTweak { nullptr };
+
+      QButtonGroup* bngrpNoteLen { nullptr };
+      QButtonGroup* bngrpNoteDot { nullptr };
+
+      PianoView* pianoView { nullptr };
+      PianoKeyboard* pianoKbd { nullptr };
+      PianoLevels* pianoLevels { nullptr };
+      PianoLevelsChooser* pianoLevelsChooser { nullptr };
+      QWidget* levelsAreaWidget { nullptr };
+      bool _showPianoLevels { true };
+      QScrollBar* hsb { nullptr };        // horizontal scroll bar for pianoView
+      QGridLayout* noteAreaLayout { nullptr };
+      QWidget* topLeftSpacer { nullptr };
+
+      QToolButton* controlsChevronButton { nullptr };
+      QWidget* verticalCornerSpacer { nullptr };
+      QWidget* toolbarArea { nullptr };
+      bool _controlsVisible { true };
+
+      Score* _score { nullptr };
+      Staff* staff { nullptr };
+      QComboBox* staffBox { nullptr };
+      QComboBox* scopeBox { nullptr };
+      QComboBox* noteShapeBox { nullptr };
+      Awl::PitchEdit* pitch { nullptr };
+      QSpinBox* velocity { nullptr };
+      QSpinBox* onTime { nullptr };
+      QSpinBox* tickLen { nullptr };
       Pos locator[3];
-      QComboBox* barPattern;
-      QComboBox* veloType;
-      QSpinBox* subdiv;
-      QSpinBox* tuplet;
-      Awl::PosLabel* pos;
-      PianoRuler* ruler;
-      QAction* showWave;
-      WaveView* waveView;
-      QSplitter* split;
+      QComboBox* barPattern { nullptr };
+      QComboBox* veloType { nullptr };
+      QSpinBox* subdiv { nullptr };
+      QSpinBox* tuplet { nullptr };
+      Awl::PosLabel* pos { nullptr };
+      PianoRuler* ruler { nullptr };
+      QAction* showWave { nullptr };
+      WaveView* waveView { nullptr };
+      QCheckBox* keyboardAlignedGrid { nullptr };
+      QAction* keyboardAlignedGridAction { nullptr };
+      QAction* keyboardAlignedGridSeparator { nullptr };
+      QAction* automaticVoiceAction { nullptr };
+      QAction* automaticVoiceSeparator { nullptr };
+      QSplitter* split { nullptr };
       QList<QAction*> actions;
+      PianoRollScope _scope;
+      PianoRollOrientation _orientation;
+      Coloring _coloring;
+      bool _useNoteColors;
+
+      int _horizontalPitchScrollPos { 0 };
+      int _verticalPitchScrollPos { 0 };
+      bool _horizontalPitchScrollValid { false };
+      bool _verticalPitchScrollValid { false };
+
+      int _previewOnTime { 0 };
+      int _previewLen { 1000 };
+
+      bool _playbackFollowScrolling { false };
+      QTimer* _playbackFollowTimer { nullptr };
+      QElapsedTimer _playbackFollowElapsed;
+      qreal _playbackFollowBaseTick { 0.0 };
+      unsigned _playbackFollowLastSampleTick { 0 };
+      bool _playbackFollowActive { false };
+      qreal _playbackFollowTicksPerSecond { 0.0 };
+      bool _playbackFollowVelocityValid { false };
 
       bool updateScheduled = false;
-      NoteTweakerDialog* noteTweakerDlg;
+      NoteTweakerDialog* noteTweakerDlg { nullptr };
 
+      QString staffDisplayName(Staff*) const;
+      void updateNoteLengthControls(const Fraction& duration);
+      void updateNoteShapeBox();
+      void setPianoRollNoteShape(PianoRollNoteShape shape);
+      void updateStaffBox();
       void updateVelocity(Note* note);
       void updateSelection();
       void readSettings();
       void doUpdate();
+      void applyPitchEdit();
+      void redraw() const;
 
+      void stopPlaybackFollow();
 
    private slots:
       void selectionChanged();
@@ -98,11 +159,21 @@ class PianorollEditor : public QMainWindow, public MuseScoreView {
       void changeSelection(SelState);
       void handleAction(QAction*);
       void showNoteTweaker();
+      void setOnTime(int);
+      void setTickLen(int);
+      void setPianoLevelsVisible(bool visible);
 
    public:
       PianorollEditor(QWidget* parent = 0);
       virtual ~PianorollEditor();
 
+      bool eventFilter(QObject* obj, QEvent* event) override;
+
+      Score* score() const { return _score; }
+
+      void restoreScoreViewFocus();
+
+      void setEditableStaff(Staff*);
       void setStaff(Staff* staff);
       void focusOnPosition(Position* p);
       void heartBeat(Seq*);
@@ -122,10 +193,20 @@ class PianorollEditor : public QMainWindow, public MuseScoreView {
       virtual Element* elementNear(QPointF) override;
       virtual void drawBackground(QPainter* /*p*/, const QRectF& /*r*/) const override {}
 
+      void clearPlaybackPitches();
+
       void setLocator(POS posi, int tick) { locator[int(posi)].setTick(tick); }
 
+      void updateToolbarIconSize();
+      void updateOrientationLayout();
+      void setOrientation(PianoRollOrientation);
+      void setScope(PianoRollScope scope);
+      void setColoring(Coloring);
+      void setUseNoteColors(bool);
+
+
       void writeSettings();
-      virtual const QRect geometry() const override { return QMainWindow::geometry(); }
+      virtual const QRect geometry() const override { return QWidget::geometry(); }
 
       void zoom(int amount = 1, bool horiz = true);
       };

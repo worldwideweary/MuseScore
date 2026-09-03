@@ -97,6 +97,22 @@ enum class Transport : char {
       NET_STARTING=4
       };
 
+struct ActivePitchInfo {
+      int count { 0 };
+      const Note* note { nullptr };
+      };
+
+struct ActiveNoteEventInfo {
+      const Note* owner { nullptr };
+      int noteEventIndex { -1 };
+
+      bool operator==(const ActiveNoteEventInfo& other) const
+            {
+            return owner == other.owner
+                  && noteEventIndex == other.noteEventIndex;
+            }
+      };
+
 //---------------------------------------------------------
 //   Seq
 //    sequencer
@@ -154,6 +170,9 @@ class Seq : public QObject, public Sequencer {
       EventMap::const_iterator guiPos;    // moved in gui thread
 
       QList<const Note*> markedNotes;     // notes marked as sounding
+
+      QHash<int, ActivePitchInfo> _activePitches;
+      QList<ActiveNoteEventInfo> _activeNoteEvents;
 
       uint tackRemain;        // metronome state (remaining audio samples)
       uint tickRemain;
@@ -242,6 +261,10 @@ class Seq : public QObject, public Sequencer {
       void prevChord();
 
       void collectEvents(int utick);
+
+      const QHash<int, ActivePitchInfo>& activePitches() const;
+      const QList<ActiveNoteEventInfo>& activeNoteEvents() const;
+
       void ensureBufferAsync(int utick);
       void guiStop();
       void stopWait();

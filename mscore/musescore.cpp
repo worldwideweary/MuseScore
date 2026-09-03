@@ -316,6 +316,25 @@ const std::list<const char*> MuseScore::_allPlaybackControlEntries {
             "countin"
             };
 
+const std::list<const char*> MuseScore::_allAlternativeEntries {
+            "start-preference-dialog",
+            "page-settings",
+            "edit-style",
+            "instruments",
+            "", // Observation: at least one separator must be present if user-defined positions of separators are to be saved/reloaded
+            "show-debug",
+            "",
+            "reset-groupings",
+            "slash-rhythm",
+            "reset-stretch",
+            "time-delete",
+            "",
+            "toggle-piano",
+            "toggle-piano-roll",
+            "",
+            "empty-trailing-measure"
+            };
+
 extern TextPalette* textPalette;
 
 static const char* saveOnlineMenuItem = "file-save-online";
@@ -581,6 +600,9 @@ void MuseScore::preferencesChanged(bool fromWorkspace, bool changeUI)
 
       if (seq)
             seq->preferencesChanged();
+
+      if (pianorollEditor)
+            pianorollEditor->updateToolbarIconSize();
       }
 
 //---------------------------------------------------------
@@ -639,6 +661,30 @@ void MuseScore::populateNoteInputMenu()
                         w->setObjectName(s);
                         }
                   entryTools->addWidget(w);
+                  }
+            }
+      }
+
+//---------------------------------------------------------
+//   populateAlternativeOperations
+//---------------------------------------------------------
+
+void MuseScore::populateAlternativeOperations()
+      {
+      if (!alternativeTools)
+            return;
+
+      alternativeTools->clear();
+
+      for (const auto s : _alternativeEntries) {
+            if (!*s)
+                  alternativeTools->addSeparator();
+            else {
+                  QAction* a = getAction(s);
+                  QWidget* w;
+                  w = new AccessibleToolButton(alternativeTools, a);
+                  w->setObjectName(s);
+                  alternativeTools->addWidget(w);
                   }
             }
       }
@@ -1365,6 +1411,14 @@ MuseScore::MuseScore()
       getAction("toggle-mouse-entry")->setChecked(!preferences.getBool(PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT));
       getAction("toggle-edit-playback")->setChecked(preferences.getBool(PREF_SCORE_NOTE_PLAYONCLICK));
 
+      //---------------------------------------------------
+      //    Alternative Options Tool Bar
+      //---------------------------------------------------
+
+      alternativeTools = addToolBar("");
+      alternativeTools->setObjectName("alternative-operations");
+      populateAlternativeOperations();
+
       //-------------------------------
       //    Workspaces Tool Bar
       //-------------------------------
@@ -1534,6 +1588,10 @@ MuseScore::MuseScore()
       menuView->addAction(a);
 
       a = getAction("toggle-piano");
+      a->setCheckable(true);
+      menuView->addAction(a);
+
+      a = getAction("toggle-piano-roll");
       a->setCheckable(true);
       menuView->addAction(a);
 
@@ -2155,6 +2213,7 @@ void MuseScore::retranslate()
 #if 0
       feedbackTools->setWindowTitle(tr("Feedback"));
 #endif
+      alternativeTools->setWindowTitle(tr("Alternative Options"));
       workspacesTools->setWindowTitle(tr("Workspaces"));
 
       // keep translatable (con)texts in sync with those from zoombox.cpp
@@ -2830,6 +2889,11 @@ void MuseScore::setCurrentScoreView(ScoreView* view)
             timeline()->setScoreView(view);
             }
       ScoreAccessibility::instance()->updateAccessibilityInfo();
+
+      if (pianorollEditor) {
+            Staff* st = cs && !cs->staves().isEmpty() ? cs->staff(0) : nullptr;
+            pianorollEditor->setStaff(st);
+            }
 
       MasterScore* master = cs->masterScore();
       if (!scoreWasShown[master]) {
@@ -4453,6 +4517,7 @@ void MuseScore::changeState(ScoreState val)
       cpitchTools->setEnabled(enable);
       zoomBox->setEnabled(enable);
       entryTools->setEnabled(enable);
+      alternativeTools->setEnabled(enable);
 
       if (_sstate == STATE_FOTO)
             updateInspector();
@@ -4837,6 +4902,9 @@ void MuseScore::readSettings()
 
       a = getAction("toggle-noteinput");
       a->setChecked(!entryTools->isHidden());
+
+      a = getAction("toggle-alternative");
+      a->setChecked(!alternativeTools->isHidden());
       }
 
 //---------------------------------------------------------
@@ -5162,11 +5230,15 @@ void MuseScore::handleMessage(const QString& message)
 
 void MuseScore::editInPianoroll(Staff* staff, Position* p)
       {
-      if (pianorollEditor == 0)
-            pianorollEditor = new PianorollEditor(this);
-      pianorollEditor->setScore(staff->score());
+      if (!staff)
+            return;
+
+      createPianoroll();
+
       pianorollEditor->setStaff(staff);
-      pianorollEditor->show();
+
+      reDisplayDockWidget(pianorollDock, true);
+
       pianorollEditor->focusOnPosition(p);
       }
 
@@ -5611,6 +5683,81 @@ void MuseScore::showPianoKeyboard(bool visible)
             if (_pianoTools)
                   _pianoTools->hide();
             }
+      }
+
+//---------------------------------------------------------
+//   createPianoroll
+//---------------------------------------------------------
+
+void MuseScore::createPianoroll()
+      {
+      if (pianorollEditor)
+            return;
+
+      QAction* a = getAction("toggle-piano-roll");
+
+      pianorollDock = new QDockWidget(tr("Piano Roll Editor"), this);
+      pianorollDock->setObjectName("pianoroll");
+
+      pianorollDock->setAllowedAreas(Qt::DockWidgetAreas(
+            Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea));
+
+      pianorollEditor = new PianorollEditor(pianorollDock);
+      pianorollDock->setWidget(pianorollEditor);
+
+      addDockWidget(Qt::BottomDockWidgetArea, pianorollDock);
+
+      connect(pianorollDock, &QDockWidget::visibilityChanged,
+              a, &QAction::setChecked);
+      }
+
+//---------------------------------------------------------
+//   showPianoroll
+//---------------------------------------------------------
+
+void MuseScore::showPianoroll(bool visible)
+      {
+      if (visible) {
+            createPianoroll();
+
+            Staff* staff = nullptr;
+            bool staffFromSelection = false;
+
+            if (cs && !cs->staves().isEmpty()) {
+                  const Selection& selection = cs->selection();
+
+                  if (selection.state() == SelState::RANGE) {
+                        const int staffIdx = selection.staffStart();
+
+                        if (staffIdx >= 0 && staffIdx < cs->nstaves()) {
+                              staff = cs->staff(staffIdx);
+                              staffFromSelection = true;
+                              }
+                        }
+                  else if (selection.state() == SelState::LIST) {
+                        for (Element* e : selection.elements()) {
+                              if (e && e->staff()) {
+                                    staff = e->staff();
+                                    staffFromSelection = true;
+                                    break;
+                                    }
+                              }
+                        }
+
+                  if (staffFromSelection) {
+                        pianorollEditor->setScope(PianoRollScope::PART);
+                        }
+                  else {
+                        staff = cs->staff(0);
+                        pianorollEditor->setScope(PianoRollScope::SCORE);
+                        }
+                  }
+
+            pianorollEditor->setStaff(staff);
+            reDisplayDockWidget(pianorollDock, true);
+            }
+      else if (pianorollDock)
+            pianorollDock->hide();
       }
 
 //---------------------------------------------------------
@@ -6366,10 +6513,6 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             showMasterPalette(qApp->translate("Palette", "Time Signatures"));
       else if (cmd == "symbols")
             showMasterPalette(qApp->translate("MasterPalette", "Symbols"));
-      else if (cmd == "toggle-statusbar") {
-            preferences.setPreference(PREF_UI_APP_SHOWSTATUSBAR, a->isChecked());
-            _statusBar->setVisible(a->isChecked());
-            }
       else if (cmd == "append-measures")
             cmdAppendMeasures();
       else if (cmd == "insert-measures")
@@ -6412,38 +6555,52 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
       else if (cmd == "omr")
             showOmrPanel(a->isChecked());
 #endif
-      else if (cmd == "toggle-playpanel")
-            showPlayPanel(a->isChecked());
-      else if (cmd == "toggle-navigator")
-            showNavigator(a->isChecked());
-      else if (cmd == "toggle-timeline")
-            showTimeline(a->isChecked());
-      else if (cmd == "toggle-midiimportpanel")
-            importmidiPanel->setVisible(a->isChecked());
-      else if (cmd == "toggle-mixer")
-            showMixer(a->isChecked());
+      else if (cmd.startsWith("toggle")) {
+            if (cmd == "toggle-statusbar") {
+                  preferences.setPreference(PREF_UI_APP_SHOWSTATUSBAR, a->isChecked());
+                  _statusBar->setVisible(a->isChecked());
+                  }
+            else if (cmd == "toggle-playpanel")
+                  showPlayPanel(a->isChecked());
+            else if (cmd == "toggle-navigator")
+                  showNavigator(a->isChecked());
+            else if (cmd == "toggle-timeline")
+                  showTimeline(a->isChecked());
+            else if (cmd == "toggle-midiimportpanel")
+                  importmidiPanel->setVisible(a->isChecked());
+            else if (cmd == "toggle-mixer")
+                  showMixer(a->isChecked());
+            else if (cmd == "toggle-piano-roll")
+                  showPianoroll(a->isChecked());
+            else if (cmd == "toggle-selection-window")
+                  showSelectionWindow(a->isChecked());
+            else if (cmd == "toggle-fileoperations")
+                  fileTools->setVisible(!fileTools->isVisible());
+            else if (cmd == "toggle-transport")
+                  transportTools->setVisible(!transportTools->isVisible());
+            else if (cmd == "toggle-concertpitch")
+                  cpitchTools->setVisible(!cpitchTools->isVisible());
+            else if (cmd == "toggle-imagecapture")
+                  fotoTools->setVisible(!fotoTools->isVisible());
+            else if (cmd == "toggle-noteinput")
+                  entryTools->setVisible(!entryTools->isVisible());
+            else if (cmd == "toggle-workspaces-toolbar")
+                  workspacesTools->setVisible(!workspacesTools->isVisible());
+            else if (cmd == "toggle-alternative")
+                  alternativeTools->setVisible(!alternativeTools->isVisible());
+            else if (cmd == "toggle-piano")
+                  showPianoKeyboard(a->isChecked());
+            else if (cmd == "toggle-scorecmp-tool")
+                  reDisplayDockWidget(scoreCmpTool, a->isChecked());
+            }
       else if (cmd == "synth-control")
             showSynthControl(a->isChecked());
-      else if (cmd == "toggle-selection-window")
-            showSelectionWindow(a->isChecked());
       else if (cmd == "show-keys")
             ;
-      else if (cmd == "toggle-fileoperations")
-            fileTools->setVisible(!fileTools->isVisible());
-      else if (cmd == "toggle-transport")
-            transportTools->setVisible(!transportTools->isVisible());
-      else if (cmd == "toggle-concertpitch")
-            cpitchTools->setVisible(!cpitchTools->isVisible());
-      else if (cmd == "toggle-imagecapture")
-            fotoTools->setVisible(!fotoTools->isVisible());
-      else if (cmd == "toggle-noteinput")
-            entryTools->setVisible(!entryTools->isVisible());
 #if 0
       else if (cmd == "toggle-feedback")
             feedbackTools->setVisible(!feedbackTools->isVisible());
 #endif
-      else if (cmd == "toggle-workspaces-toolbar")
-            workspacesTools->setVisible(!workspacesTools->isVisible());
       else if (cmd == "create-new-workspace") {
             mscore->createNewWorkspace();
             emit mscore->workspacesChanged();
@@ -6481,10 +6638,6 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             editRaster();
       else if (cmd == "hraster" || cmd == "vraster")  // value in [hv]RasterAction already set
             ;
-      else if (cmd == "toggle-piano")
-            showPianoKeyboard(a->isChecked());
-      else if (cmd == "toggle-scorecmp-tool")
-            reDisplayDockWidget(scoreCmpTool, a->isChecked());
 #ifdef MSCORE_UNSTABLE
       else if (cmd == "toggle-script-recorder")
             scriptRecorder->setVisible(a->isChecked());
@@ -6638,7 +6791,6 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             reportBug("panel");
       else if (cmd == "leave-feedback")
             leaveFeedback("panel");
-#ifndef NDEBUG
       else if (cmd == "no-horizontal-stretch") {
             MScore::noHorizontalStretch = a->isChecked();
             if (cs) {
@@ -6688,6 +6840,17 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   cs->update();
                   }
             }
+      else if (cmd == "show-debug") {
+            MScore::showCorruptedMeasures = a->isChecked();
+            MScore::showBoundingRect = a->isChecked();
+            MScore::showSegmentShapes = a->isChecked();
+            MScore::showSkylines = a->isChecked();
+            if (cs) {
+                  cs->setLayoutAll();
+                  cs->update();
+                  }
+            }
+#ifndef NDEBUG
       else if (cmd == "qml-reload-source") {
             const QList<QmlDockWidget*> qmlWidgets = findChildren<QmlDockWidget*>();
 
@@ -6934,8 +7097,25 @@ void MuseScore::showDrumTools(const Drumset* drumset, Staff* staff)
                   _drumTools = new DrumTools(this);
                   addDockWidget(Qt::BottomDockWidgetArea, _drumTools);
                   }
-            if (timelineScrollArea())
-                  splitDockWidget(_drumTools, timelineScrollArea(), Qt::Vertical);
+
+            if (pianorollDock
+                && pianorollDock->isVisible()
+                && !pianorollDock->isFloating()
+                && dockWidgetArea(pianorollDock) == Qt::BottomDockWidgetArea) {
+                  splitDockWidget(
+                        pianorollDock,
+                        _drumTools,
+                        Qt::Vertical);
+                  }
+            else if (timelineScrollArea()
+                     && timelineScrollArea()->isVisible()
+                     && !timelineScrollArea()->isFloating()) {
+                  splitDockWidget(
+                        _drumTools,
+                        timelineScrollArea(),
+                        Qt::Vertical);
+                  }
+
             _drumTools->setDrumset(cs, staff, drumset);
             _drumTools->show();
             }
