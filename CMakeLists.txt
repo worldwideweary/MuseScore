@@ -125,7 +125,7 @@ option(USE_SYSTEM_QTSINGLEAPPLICATION "Use system QtSingleApplication" OFF)
 option(USE_SYSTEM_FREETYPE "Use system FreeType"          OFF) # requires freetype >= 2.5.2, does not work on win
 option(USE_SYSTEM_POPPLER  "Use system Poppler for OMR"   OFF)
 option(BUILD_LAME    "Enable MP3 export"                  ON)  # Requires libmp3lame, call CMake with -DBUILD_LAME="OFF" to disable
-option(DOWNLOAD_SOUNDFONT "Download the latest soundfont version as part of the build process" OFF)
+option(DOWNLOAD_SOUNDFONT "Download the latest soundfont version as part of the build process" ON)
 
 # licence incompatibility, must never be distributed
 set(OCR OFF)
