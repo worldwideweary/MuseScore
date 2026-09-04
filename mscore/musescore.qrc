@@ -224,5 +224,6 @@
         <file>data/icons/mouse-entry.svg</file>
         <file>data/icons/edit-playback.svg</file>
         <file>data/icons/document-reload.svg</file>
+        <file>data/icons/document-export.svg</file>
     </qresource>
 </RCC>

@@ -117,7 +117,7 @@ Shortcut Shortcut::_sc[] = {
          QT_TRANSLATE_NOOP("action","&Export…"),
          QT_TRANSLATE_NOOP("action","Export score"),
          QT_TRANSLATE_NOOP("action","Save a copy of the score in various formats"),
-         Icons::fileSave_ICON,
+         Icons::fileExport_ICON,
          Qt::WindowShortcut,
          ShortcutFlags::A_SCORE
          },
