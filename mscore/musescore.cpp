@@ -2206,7 +2206,7 @@ void MuseScore::setMenuTitles()
 #ifdef SCRIPT_INTERFACE
             { menuPlugins,          tr("&Plugins")          },
 #endif
-            { menuDebug,            "Debug"                 }, // not translated
+            { menuDebug,            tr("Debug")             },
             { menuHelp,             tr("&Help")             },
             { menuTours,            tr("&Tours")            }
             };

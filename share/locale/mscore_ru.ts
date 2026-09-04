@@ -597,17 +597,17 @@
 <context>
     <name>Direction</name>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="185"/>
+        <location filename="../../libmscore/mscore.cpp" line="183"/>
         <source>Auto</source>
         <translation>Авто</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="186"/>
+        <location filename="../../libmscore/mscore.cpp" line="184"/>
         <source>Up</source>
         <translation>Вверх</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="187"/>
+        <location filename="../../libmscore/mscore.cpp" line="185"/>
         <source>Down</source>
         <translation>Вниз</translation>
     </message>
@@ -5410,107 +5410,107 @@ By default, they will be placed such as that their right end are at the same lev
         <translation>Экспортировать</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="250"/>
+        <location filename="../../mscore/exportdialog.ui" line="437"/>
         <source>Export each score</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="257"/>
+        <location filename="../../mscore/exportdialog.ui" line="451"/>
         <source>As a separate file</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="264"/>
+        <location filename="../../mscore/exportdialog.ui" line="444"/>
         <source>Combined into a single file</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="404"/>
+        <location filename="../../mscore/exportdialog.ui" line="362"/>
         <source>Export with transparent background</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="411"/>
+        <location filename="../../mscore/exportdialog.ui" line="369"/>
         <source>Export with background present in score</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="418"/>
+        <location filename="../../mscore/exportdialog.ui" line="376"/>
         <source>Export with custom background color</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="431"/>
+        <location filename="../../mscore/exportdialog.ui" line="389"/>
         <source>Background Options:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="646"/>
+        <location filename="../../mscore/exportdialog.ui" line="686"/>
         <source>Each selected score will be exported as a separate audio file.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="676"/>
+        <location filename="../../mscore/exportdialog.ui" line="716"/>
         <source>Each selected score will be exported as a separate MIDI file.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="902"/>
+        <location filename="../../mscore/exportdialog.ui" line="942"/>
         <source>Each selected score will be exported to a separate uncompressed MuseScore file.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="971"/>
+        <location filename="../../mscore/exportdialog.ui" line="1011"/>
         <source>Export To:</source>
         <translation>Экспортировать в:</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="979"/>
+        <location filename="../../mscore/exportdialog.ui" line="1019"/>
         <source>PDF File</source>
         <translation>Файл PDF</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="984"/>
+        <location filename="../../mscore/exportdialog.ui" line="1024"/>
         <source>PNG Images</source>
         <translation>PNG-изображения</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="989"/>
+        <location filename="../../mscore/exportdialog.ui" line="1029"/>
         <source>SVG Images</source>
         <translation>SVG-изображения</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="994"/>
+        <location filename="../../mscore/exportdialog.ui" line="1034"/>
         <source>MP3 Audio</source>
         <translation>Звуковой файл MP3 Audio</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="999"/>
+        <location filename="../../mscore/exportdialog.ui" line="1039"/>
         <source>WAV Audio</source>
         <translation>WAV-звуковой файл</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="1004"/>
+        <location filename="../../mscore/exportdialog.ui" line="1044"/>
         <source>FLAC Audio</source>
         <translation>Звуковой файл FLAC Audio</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="1009"/>
+        <location filename="../../mscore/exportdialog.ui" line="1049"/>
         <source>OGG Audio</source>
         <translation>OGG-звуковой файл</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="1014"/>
+        <location filename="../../mscore/exportdialog.ui" line="1054"/>
         <source>MIDI</source>
         <translation>MIDI</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="1019"/>
+        <location filename="../../mscore/exportdialog.ui" line="1059"/>
         <source>MusicXML</source>
         <translation>MusicXML</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="1024"/>
+        <location filename="../../mscore/exportdialog.ui" line="1064"/>
         <source>Uncompressed MuseScore File</source>
         <translation>Несжатый файл MuseScore</translation>
     </message>
@@ -5532,119 +5532,124 @@ By default, they will be placed such as that their right end are at the same lev
         <translation>DPI</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="317"/>
+        <location filename="../../mscore/exportdialog.ui" line="275"/>
         <source>Each page of the selected scores will be exported as a separate PNG file.</source>
         <translation>Каждая страница выбранных партитур будет экспортирована в отдельный PNG-файл.</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="367"/>
+        <location filename="../../mscore/exportdialog.ui" line="325"/>
         <source>Each page of the selected scores will be exported as a separate SVG file.</source>
         <translation>Каждая страница выбранных партитур будет экспортирована в отдельный SVG-файл.</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="465"/>
+        <location filename="../../mscore/exportdialog.ui" line="475"/>
+        <source>Location:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/exportdialog.ui" line="505"/>
         <source>Normalize</source>
         <translation>Нормировать</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="485"/>
+        <location filename="../../mscore/exportdialog.ui" line="525"/>
         <source>Sample rate</source>
         <translation>Частота семплирования</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="488"/>
+        <location filename="../../mscore/exportdialog.ui" line="528"/>
         <source>Choose sample rate</source>
         <translation>Выберите частоту семплирования</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="513"/>
+        <location filename="../../mscore/exportdialog.ui" line="553"/>
         <source>Hz</source>
         <extracomment>Hertz</extracomment>
         <translation>Гц</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="533"/>
+        <location filename="../../mscore/exportdialog.ui" line="573"/>
         <source>MP3 Bitrate</source>
         <translation>Скорость MP3-потока</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="536"/>
+        <location filename="../../mscore/exportdialog.ui" line="576"/>
         <source>Choose MP3 Bitrate</source>
         <translation>Выберите скорость потока (бит в секунду) для MP3:</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="539"/>
+        <location filename="../../mscore/exportdialog.ui" line="579"/>
         <source>128</source>
         <translation>128</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="619"/>
+        <location filename="../../mscore/exportdialog.ui" line="659"/>
         <source>kBit/s</source>
         <extracomment>Hertz</extracomment>
         <translation>кбит/с</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="626"/>
+        <location filename="../../mscore/exportdialog.ui" line="666"/>
         <source>MP3 Bitrate:</source>
         <translation>Скорость потока MP3:</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="633"/>
+        <location filename="../../mscore/exportdialog.ui" line="673"/>
         <source>Sample rate:</source>
         <translation>Частота семплирования:</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="663"/>
+        <location filename="../../mscore/exportdialog.ui" line="703"/>
         <source>Export RPNs</source>
         <translation>Экспорт RPN</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="686"/>
+        <location filename="../../mscore/exportdialog.ui" line="726"/>
         <source>Expand repeats</source>
         <translation>Раскрывать повторы</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="710"/>
+        <location filename="../../mscore/exportdialog.ui" line="750"/>
         <source>MusicXML file type:</source>
         <translation>Тип MusicXML-файла:</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="718"/>
+        <location filename="../../mscore/exportdialog.ui" line="758"/>
         <source>Compressed</source>
         <translation>Сжатый</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="723"/>
+        <location filename="../../mscore/exportdialog.ui" line="763"/>
         <source>Uncompressed</source>
         <translation>Несжатый</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="728"/>
+        <location filename="../../mscore/exportdialog.ui" line="768"/>
         <source>Uncompressed (outdated)</source>
         <translation>Несжатый (устаревший)</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="752"/>
+        <location filename="../../mscore/exportdialog.ui" line="792"/>
         <source>Include in export:</source>
         <translation>Включить в экспортируемое:</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="819"/>
+        <location filename="../../mscore/exportdialog.ui" line="859"/>
         <source>All layout</source>
         <translation>Весь макет</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="835"/>
+        <location filename="../../mscore/exportdialog.ui" line="875"/>
         <source>System and page breaks</source>
         <translation>Разрывы систем и страниц</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="851"/>
+        <location filename="../../mscore/exportdialog.ui" line="891"/>
         <source>Manually added system and page breaks only</source>
         <translation>Только разрывы систем и страниц, добавленные вручную</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.ui" line="867"/>
+        <location filename="../../mscore/exportdialog.ui" line="907"/>
         <source>No system or page breaks</source>
         <translation>Без разрывов систем или страниц</translation>
     </message>
@@ -5766,7 +5771,7 @@ By default, they will be placed such as that their right end are at the same lev
 <context>
     <name>GreendotButton</name>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="5936"/>
+        <location filename="../../mscore/musescore.cpp" line="5924"/>
         <source>Record</source>
         <translation>Запись</translation>
     </message>
@@ -11714,7 +11719,7 @@ Would you like to locate %2 now?</source>
     <message>
         <location filename="../../mscore/masterpalette.cpp" line="196"/>
         <location filename="../../mscore/masterpalette.cpp" line="229"/>
-        <location filename="../../mscore/musescore.cpp" line="6368"/>
+        <location filename="../../mscore/musescore.cpp" line="6358"/>
         <source>Symbols</source>
         <translation>Символы</translation>
     </message>
@@ -12887,184 +12892,189 @@ failed: %2</source>
 <context>
     <name>Ms::ExportDialog</name>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="50"/>
-        <location filename="../../mscore/exportdialog.cpp" line="140"/>
+        <location filename="../../mscore/exportdialog.cpp" line="51"/>
+        <location filename="../../mscore/exportdialog.cpp" line="145"/>
         <source>Full Score</source>
         <translation>Полная партитура</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="107"/>
+        <location filename="../../mscore/exportdialog.cpp" line="112"/>
         <source>32000</source>
         <translation>32000</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="108"/>
+        <location filename="../../mscore/exportdialog.cpp" line="113"/>
         <source>44100</source>
         <translation>44100</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="109"/>
+        <location filename="../../mscore/exportdialog.cpp" line="114"/>
         <source>48000</source>
         <translation>48000</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="112"/>
+        <location filename="../../mscore/exportdialog.cpp" line="117"/>
         <source>32</source>
         <translation>32</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="113"/>
+        <location filename="../../mscore/exportdialog.cpp" line="118"/>
         <source>40</source>
         <translation>40</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="114"/>
+        <location filename="../../mscore/exportdialog.cpp" line="119"/>
         <source>48</source>
         <translation>48</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="115"/>
+        <location filename="../../mscore/exportdialog.cpp" line="120"/>
         <source>56</source>
         <translation>56</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="116"/>
+        <location filename="../../mscore/exportdialog.cpp" line="121"/>
         <source>64</source>
         <translation>64</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="117"/>
+        <location filename="../../mscore/exportdialog.cpp" line="122"/>
         <source>80</source>
         <translation>80</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="118"/>
+        <location filename="../../mscore/exportdialog.cpp" line="123"/>
         <source>96</source>
         <translation>96</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="119"/>
+        <location filename="../../mscore/exportdialog.cpp" line="124"/>
         <source>112</source>
         <translation>112</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="120"/>
+        <location filename="../../mscore/exportdialog.cpp" line="125"/>
         <source>128</source>
         <translation>128</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="121"/>
+        <location filename="../../mscore/exportdialog.cpp" line="126"/>
         <source>160</source>
         <translation>160</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="122"/>
+        <location filename="../../mscore/exportdialog.cpp" line="127"/>
         <source>192</source>
         <translation>192</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="123"/>
+        <location filename="../../mscore/exportdialog.cpp" line="128"/>
         <source>224</source>
         <translation>224</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="124"/>
+        <location filename="../../mscore/exportdialog.cpp" line="129"/>
         <source>256</source>
         <translation>256</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="125"/>
+        <location filename="../../mscore/exportdialog.cpp" line="130"/>
         <source>320</source>
         <translation>320</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="142"/>
+        <location filename="../../mscore/exportdialog.cpp" line="147"/>
         <source>PDF File</source>
         <translation>Файл PDF</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="143"/>
+        <location filename="../../mscore/exportdialog.cpp" line="148"/>
         <source>PNG Images</source>
         <translation>PNG-изображения</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="144"/>
+        <location filename="../../mscore/exportdialog.cpp" line="149"/>
         <source>SVG Images</source>
         <translation>SVG-изображения</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="145"/>
+        <location filename="../../mscore/exportdialog.cpp" line="150"/>
         <source>MP3 Audio</source>
         <translation>Звуковой файл MP3 Audio</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="146"/>
+        <location filename="../../mscore/exportdialog.cpp" line="151"/>
         <source>WAV Audio</source>
         <translation>WAV-звуковой файл</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="147"/>
+        <location filename="../../mscore/exportdialog.cpp" line="152"/>
         <source>FLAC Audio</source>
         <translation>Звуковой файл FLAC Audio</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="148"/>
+        <location filename="../../mscore/exportdialog.cpp" line="153"/>
         <source>OGG Audio</source>
         <translation>OGG-звуковой файл</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="149"/>
+        <location filename="../../mscore/exportdialog.cpp" line="154"/>
         <source>MIDI</source>
         <translation>MIDI</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="150"/>
+        <location filename="../../mscore/exportdialog.cpp" line="155"/>
         <source>MusicXML</source>
         <translation>MusicXML</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="151"/>
+        <location filename="../../mscore/exportdialog.cpp" line="156"/>
         <source>Uncompressed MuseScore File</source>
         <translation>Несжатый файл MuseScore</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="153"/>
+        <location filename="../../mscore/exportdialog.cpp" line="158"/>
         <source>Compressed</source>
         <translation>Сжатый</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="154"/>
+        <location filename="../../mscore/exportdialog.cpp" line="159"/>
         <source>Uncompressed</source>
         <translation>Несжатый</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="155"/>
+        <location filename="../../mscore/exportdialog.cpp" line="160"/>
         <source>Uncompressed (outdated)</source>
         <translation>Несжатый (устаревший)</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="157"/>
+        <location filename="../../mscore/exportdialog.cpp" line="162"/>
         <source>Export…</source>
         <translation>Экспортировать…</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="497"/>
+        <location filename="../../mscore/exportdialog.cpp" line="299"/>
+        <source>Choose Score Folder</source>
+        <translation type="unfinished">Выберите каталог партитур</translation>
+    </message>
+    <message>
+        <location filename="../../mscore/exportdialog.cpp" line="539"/>
         <source>Score_and_Parts</source>
         <translation>Партитура_и_Партии</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="497"/>
+        <location filename="../../mscore/exportdialog.cpp" line="539"/>
         <source>Parts</source>
         <translation>Извлечь партии</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="504"/>
-        <location filename="../../mscore/exportdialog.cpp" line="514"/>
+        <location filename="../../mscore/exportdialog.cpp" line="546"/>
+        <location filename="../../mscore/exportdialog.cpp" line="556"/>
         <source>Export</source>
         <translation>Экспортировать</translation>
     </message>
     <message>
-        <location filename="../../mscore/exportdialog.cpp" line="514"/>
+        <location filename="../../mscore/exportdialog.cpp" line="556"/>
         <source>Cannot determine file type.</source>
         <translation>Не удаётся определить тип файла.</translation>
     </message>
@@ -13852,82 +13862,82 @@ Sound: %5</source>
     <name>Ms::MuseScore</name>
     <message>
         <location filename="../../mscore/exportaudio.cpp" line="343"/>
-        <location filename="../../mscore/musescore.cpp" line="7286"/>
+        <location filename="../../mscore/musescore.cpp" line="7290"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>
     <message>
         <location filename="../../mscore/exportaudio.cpp" line="344"/>
-        <location filename="../../mscore/musescore.cpp" line="7287"/>
+        <location filename="../../mscore/musescore.cpp" line="7291"/>
         <source>Exporting…</source>
         <translation>Экспортируется…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7208"/>
-        <location filename="../../mscore/musescore.cpp" line="7220"/>
+        <location filename="../../mscore/musescore.cpp" line="7212"/>
+        <location filename="../../mscore/musescore.cpp" line="7224"/>
         <source>Error Opening LAME library</source>
         <translation>Ошибка открытия библиотеи LAME</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7209"/>
+        <location filename="../../mscore/musescore.cpp" line="7213"/>
         <source>Could not open MP3 encoding library!</source>
         <translation>Невозможно открыть библиотеку кодирования MP3</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7221"/>
+        <location filename="../../mscore/musescore.cpp" line="7225"/>
         <source>Not a valid or supported MP3 encoding library!</source>
         <translation>Некорректная или не поддерживаемая библиотека кодирования MP3</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7169"/>
-        <location filename="../../mscore/musescore.cpp" line="7245"/>
-        <location filename="../../mscore/musescore.cpp" line="7396"/>
+        <location filename="../../mscore/musescore.cpp" line="7173"/>
+        <location filename="../../mscore/musescore.cpp" line="7249"/>
+        <location filename="../../mscore/musescore.cpp" line="7400"/>
         <source>Encoding Error</source>
         <translation>Ошибка кодирования</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4500"/>
+        <location filename="../../mscore/musescore.cpp" line="4488"/>
         <source>Insert mode</source>
         <translation>Режим вставки</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4524"/>
+        <location filename="../../mscore/musescore.cpp" line="4512"/>
         <source>Drumset input mode</source>
         <translation>Режим ввода нот набора ударных</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6083"/>
+        <location filename="../../mscore/musescore.cpp" line="6071"/>
         <source>Invalid Command</source>
         <translation>Неверная команда</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6084"/>
+        <location filename="../../mscore/musescore.cpp" line="6072"/>
         <source>Command %1 not valid in current state</source>
         <translation>Команда %1 недопустима в текущем состоянии</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6989"/>
+        <location filename="../../mscore/musescore.cpp" line="6993"/>
         <source>Find / Go to:</source>
         <translation>Поиск / Перейти к:</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7246"/>
+        <location filename="../../mscore/musescore.cpp" line="7250"/>
         <source>Unable to initialize MP3 stream</source>
         <translation>Не удалось инициализировать MP3 поток</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7170"/>
+        <location filename="../../mscore/musescore.cpp" line="7174"/>
         <source>Unable to open target file for writing</source>
         <translation>Невозможно открыть указанный файл для записи</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7397"/>
+        <location filename="../../mscore/musescore.cpp" line="7401"/>
         <source>Error %1 returned from MP3 encoder</source>
         <translation>Ошибка %1 MP3 кодировщика</translation>
     </message>
     <message>
         <location filename="../../mscore/file.cpp" line="252"/>
-        <location filename="../../mscore/musescore.cpp" line="5400"/>
+        <location filename="../../mscore/musescore.cpp" line="5388"/>
         <location filename="../../mscore/plugin/mscorePlugins.cpp" line="444"/>
         <source>MuseScore</source>
         <translation>MuseScore</translation>
@@ -14048,7 +14058,7 @@ before closing?</source>
     <message>
         <location filename="../../mscore/file.cpp" line="1241"/>
         <location filename="../../mscore/file.cpp" line="1268"/>
-        <location filename="../../mscore/musescore.cpp" line="6524"/>
+        <location filename="../../mscore/musescore.cpp" line="6514"/>
         <source>Load Style</source>
         <translation>Загрузить стиль</translation>
     </message>
@@ -14061,7 +14071,7 @@ before closing?</source>
         <location filename="../../mscore/file.cpp" line="1248"/>
         <location filename="../../mscore/file.cpp" line="1285"/>
         <location filename="../../mscore/file.cpp" line="1368"/>
-        <location filename="../../mscore/musescore.cpp" line="6515"/>
+        <location filename="../../mscore/musescore.cpp" line="6505"/>
         <source>Save Style</source>
         <translation>Сохранить стиль</translation>
     </message>
@@ -14326,27 +14336,27 @@ Do you want to replace it?
         <translation>Руководство</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2201"/>
+        <location filename="../../mscore/musescore.cpp" line="2193"/>
         <source>&amp;Add</source>
         <translation>&amp;Добавить</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2202"/>
+        <location filename="../../mscore/musescore.cpp" line="2194"/>
         <source>&amp;Measures</source>
         <translation>&amp;Такты</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2203"/>
+        <location filename="../../mscore/musescore.cpp" line="2195"/>
         <source>&amp;Frames</source>
         <translation>&amp;Рамки</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2204"/>
+        <location filename="../../mscore/musescore.cpp" line="2196"/>
         <source>&amp;Text</source>
         <translation>&amp;Текст</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2205"/>
+        <location filename="../../mscore/musescore.cpp" line="2197"/>
         <source>&amp;Lines</source>
         <translation>&amp;Линии</translation>
     </message>
@@ -14358,65 +14368,65 @@ Please select a measure and try again</source>
 Выделите такт и попробуйте снова</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2135"/>
+        <location filename="../../mscore/musescore.cpp" line="2127"/>
         <source>Measure:Beat:Tick</source>
         <translation>Такт:Доля:Тик</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1154"/>
+        <location filename="../../mscore/musescore.cpp" line="1152"/>
         <source>Switch layer</source>
         <translation>Переключить слой</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1159"/>
+        <location filename="../../mscore/musescore.cpp" line="1157"/>
         <source>Switch play mode</source>
         <translation>Переключить режим воспроизведения</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2177"/>
+        <location filename="../../mscore/musescore.cpp" line="2169"/>
         <source>Show MIDI import panel</source>
         <translation>Показать панель MIDI-импорта</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2150"/>
+        <location filename="../../mscore/musescore.cpp" line="2142"/>
         <source>File Operations</source>
         <translation>Операции с файлами</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1030"/>
-        <location filename="../../mscore/musescore.cpp" line="2168"/>
+        <location filename="../../mscore/musescore.cpp" line="2160"/>
         <source>View Mode</source>
         <translation>Режим просмотра</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1031"/>
-        <location filename="../../mscore/musescore.cpp" line="2169"/>
+        <location filename="../../mscore/musescore.cpp" line="2161"/>
         <source>Page View</source>
         <translation>В виде страниц</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1032"/>
-        <location filename="../../mscore/musescore.cpp" line="2170"/>
+        <location filename="../../mscore/musescore.cpp" line="2162"/>
         <source>Continuous View</source>
         <translation>В непрерывном виде</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2151"/>
+        <location filename="../../mscore/musescore.cpp" line="2143"/>
         <source>Playback Controls</source>
         <translation>Контроль воспроизведения</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2152"/>
+        <location filename="../../mscore/musescore.cpp" line="2144"/>
         <source>Concert Pitch</source>
         <translation>Концертный строй</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2153"/>
+        <location filename="../../mscore/musescore.cpp" line="2145"/>
         <source>Image Capture</source>
         <translation>Захват изображения</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2154"/>
+        <location filename="../../mscore/musescore.cpp" line="2146"/>
         <source>Note Input</source>
         <translation>Режим ввода нот</translation>
     </message>
@@ -14426,155 +14436,155 @@ Please select a measure and try again</source>
         <translation>Методы ввода нот</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2195"/>
+        <location filename="../../mscore/musescore.cpp" line="2187"/>
         <source>&amp;File</source>
         <translation>&amp;Файл</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2196"/>
+        <location filename="../../mscore/musescore.cpp" line="2188"/>
         <source>Open &amp;Recent</source>
         <translation>&amp;Открыть недавний</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2197"/>
+        <location filename="../../mscore/musescore.cpp" line="2189"/>
         <source>&amp;Edit</source>
         <translation>&amp;Правка</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2213"/>
+        <location filename="../../mscore/musescore.cpp" line="2205"/>
         <source>&amp;Measure</source>
         <translation>&amp;Такт</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2211"/>
+        <location filename="../../mscore/musescore.cpp" line="2203"/>
         <source>&amp;Tools</source>
         <translation>&amp;Инструменты</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2212"/>
+        <location filename="../../mscore/musescore.cpp" line="2204"/>
         <source>&amp;Voices</source>
         <translation>&amp;Голоса</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2200"/>
+        <location filename="../../mscore/musescore.cpp" line="2192"/>
         <source>W&amp;orkspaces</source>
         <translation>&amp;Набор палитр символов</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2136"/>
+        <location filename="../../mscore/musescore.cpp" line="2128"/>
         <source>&amp;Preferences…</source>
         <translation>&amp;Настройки</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2198"/>
+        <location filename="../../mscore/musescore.cpp" line="2190"/>
         <source>&amp;View</source>
         <translation>&amp;Вид</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2199"/>
+        <location filename="../../mscore/musescore.cpp" line="2191"/>
         <source>&amp;Toolbars</source>
         <translation>&amp;Панель инструментов</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2208"/>
+        <location filename="../../mscore/musescore.cpp" line="2200"/>
         <source>T&amp;uplets</source>
         <translation>&amp;Мультиоли</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2215"/>
+        <location filename="../../mscore/musescore.cpp" line="2207"/>
         <source>&amp;Plugins</source>
         <translation>Плаг&amp;ины</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2220"/>
+        <location filename="../../mscore/musescore.cpp" line="2210"/>
         <source>&amp;Help</source>
         <translation>Спр&amp;авка</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2140"/>
+        <location filename="../../mscore/musescore.cpp" line="2132"/>
         <source>&amp;Online Handbook</source>
         <translation>&amp;Онлайн-руководство</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2137"/>
+        <location filename="../../mscore/musescore.cpp" line="2129"/>
         <source>&amp;About…</source>
         <translation>О &amp;программе</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1033"/>
-        <location filename="../../mscore/musescore.cpp" line="2171"/>
+        <location filename="../../mscore/musescore.cpp" line="2163"/>
         <source>Single Page</source>
         <translation>Единая страница</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1157"/>
+        <location filename="../../mscore/musescore.cpp" line="1155"/>
         <source>Synthesizer</source>
         <translation>Синтезатор</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1158"/>
+        <location filename="../../mscore/musescore.cpp" line="1156"/>
         <source>Audio track</source>
         <translation>Аудиотрек</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1744"/>
-        <location filename="../../mscore/musescore.cpp" line="2210"/>
+        <location filename="../../mscore/musescore.cpp" line="1738"/>
+        <location filename="../../mscore/musescore.cpp" line="2202"/>
         <source>&amp;Stretch</source>
         <translation>&amp;Растянуть</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2206"/>
+        <location filename="../../mscore/musescore.cpp" line="2198"/>
         <source>N&amp;otes</source>
         <translation>&amp;Ноты</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2207"/>
+        <location filename="../../mscore/musescore.cpp" line="2199"/>
         <source>&amp;Intervals</source>
         <translation>&amp;Интервалы</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2209"/>
+        <location filename="../../mscore/musescore.cpp" line="2201"/>
         <source>F&amp;ormat</source>
         <translation>Фор&amp;мат</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2221"/>
+        <location filename="../../mscore/musescore.cpp" line="2211"/>
         <source>&amp;Tours</source>
         <translation>&amp;Туры</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2138"/>
+        <location filename="../../mscore/musescore.cpp" line="2130"/>
         <source>About &amp;Qt…</source>
         <translation>&amp;О Qt</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2139"/>
+        <location filename="../../mscore/musescore.cpp" line="2131"/>
         <source>About &amp;MusicXML…</source>
         <translation>О &amp;MusicXML</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2142"/>
+        <location filename="../../mscore/musescore.cpp" line="2134"/>
         <source>Check for &amp;Update</source>
         <translation>Проверить наличие &amp;обновлений</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2143"/>
+        <location filename="../../mscore/musescore.cpp" line="2135"/>
         <source>Ask for Help</source>
         <translation>Спросить на форуме</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2144"/>
+        <location filename="../../mscore/musescore.cpp" line="2136"/>
         <source>Report a Bug</source>
         <translation>Сообщить об ошибке</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2148"/>
+        <location filename="../../mscore/musescore.cpp" line="2140"/>
         <source>Revert to Factory Settings</source>
         <translation>Вернуться к начальным установкам</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2146"/>
-        <location filename="../../mscore/musescore.cpp" line="2156"/>
+        <location filename="../../mscore/musescore.cpp" line="2138"/>
+        <location filename="../../mscore/musescore.cpp" line="2148"/>
         <source>Feedback</source>
         <translation>Обратная связь</translation>
     </message>
@@ -14589,28 +14599,33 @@ Please select a measure and try again</source>
         <translation>Пожалуйста, подождите. Загружаются семплы Soundfont…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1037"/>
-        <location filename="../../mscore/musescore.cpp" line="2175"/>
+        <location filename="../../mscore/musescore.cpp" line="1035"/>
+        <location filename="../../mscore/musescore.cpp" line="2167"/>
         <source>Floating</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2053"/>
+        <location filename="../../mscore/musescore.cpp" line="2045"/>
         <source>No login credentials stored. Please sign in via the GUI.</source>
         <translation>Идентифицирующие данные для входа не сохранены. Пожалуйста, авторизуйтесь через графический интерфейс.</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2158"/>
+        <location filename="../../mscore/musescore.cpp" line="2150"/>
         <source>Workspaces</source>
         <translation>Рабочие пространства</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2372"/>
+        <location filename="../../mscore/musescore.cpp" line="2209"/>
+        <source>Debug</source>
+        <translation type="unfinished">Отладка</translation>
+    </message>
+    <message>
+        <location filename="../../mscore/musescore.cpp" line="2360"/>
         <source>Are you sure?</source>
         <translation>Вы уверены?</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2373"/>
+        <location filename="../../mscore/musescore.cpp" line="2361"/>
         <source>This will reset all your preferences.
 Custom palettes, custom shortcuts, and the list of recent scores will be deleted. MuseScore will restart with its default settings.
 Reverting will not remove any scores from your computer.
@@ -14620,105 +14635,105 @@ Are you sure you want to proceed?</source>
 Хотите продолжить?</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2626"/>
+        <location filename="../../mscore/musescore.cpp" line="2614"/>
         <source>Clear Recent Files</source>
         <translation>Очистить список недавних файлов</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2631"/>
+        <location filename="../../mscore/musescore.cpp" line="2619"/>
         <source>No recent files</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4217"/>
+        <location filename="../../mscore/musescore.cpp" line="4205"/>
         <source>System</source>
         <extracomment>The default language of the operating system. NOT a music system.</extracomment>
         <translation>Система</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4225"/>
+        <location filename="../../mscore/musescore.cpp" line="4213"/>
         <source>Error reading language file %s at line %d column %d: %s
 </source>
         <translation>Ошибка загрузки файла языка %s на строке %d колонке %d: %s
 </translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4466"/>
+        <location filename="../../mscore/musescore.cpp" line="4454"/>
         <source>No score</source>
         <translation>Нет открытой партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4472"/>
+        <location filename="../../mscore/musescore.cpp" line="4460"/>
         <source>Normal mode</source>
         <translation>Обычный режим</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4480"/>
+        <location filename="../../mscore/musescore.cpp" line="4468"/>
         <source>Repitch input mode</source>
         <translation>Режим перезаписи высоты нот</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4485"/>
+        <location filename="../../mscore/musescore.cpp" line="4473"/>
         <source>Rhythm input mode</source>
         <translation>Ритмический режим ввода</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4490"/>
+        <location filename="../../mscore/musescore.cpp" line="4478"/>
         <source>Realtime (automatic) note input mode</source>
         <translation>Режим ввода нот в Реальном времени (автоматически)</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4495"/>
+        <location filename="../../mscore/musescore.cpp" line="4483"/>
         <source>Realtime (manual) note input mode</source>
         <translation>Режим ввода нот в Реальном времени (вручную)</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4505"/>
+        <location filename="../../mscore/musescore.cpp" line="4493"/>
         <source>Steptime note input mode</source>
         <translation>Пошаговый режим ввода нот</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4546"/>
+        <location filename="../../mscore/musescore.cpp" line="4534"/>
         <source>TAB input mode</source>
         <translation>Режим ввода табулатуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4549"/>
+        <location filename="../../mscore/musescore.cpp" line="4537"/>
         <source>Edit mode</source>
         <translation>Режим правки</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4552"/>
+        <location filename="../../mscore/musescore.cpp" line="4540"/>
         <source>Text edit mode</source>
         <translation>Режим редактирования текста</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4555"/>
+        <location filename="../../mscore/musescore.cpp" line="4543"/>
         <source>Lyrics edit mode</source>
         <translation>Режим правки вокального текста</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4558"/>
+        <location filename="../../mscore/musescore.cpp" line="4546"/>
         <source>Chord symbol/figured bass edit mode</source>
         <translation>Режим редактирования символа аккорда/цифрованного баса</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4561"/>
+        <location filename="../../mscore/musescore.cpp" line="4549"/>
         <source>Play</source>
         <translation>Играть</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4564"/>
+        <location filename="../../mscore/musescore.cpp" line="4552"/>
         <source>Image capture mode</source>
         <translation>Режим захвата изображений</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4568"/>
+        <location filename="../../mscore/musescore.cpp" line="4556"/>
         <source>Score locked</source>
         <translation>Партитура заблокирована</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="5401"/>
+        <location filename="../../mscore/musescore.cpp" line="5389"/>
         <source>The previous session quit unexpectedly.
 
 Restore session?</source>
@@ -14727,87 +14742,87 @@ Restore session?</source>
 Восстановить сессию? </translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6028"/>
+        <location filename="../../mscore/musescore.cpp" line="6016"/>
         <source>Invalid selection. Cannot realize chord symbol</source>
         <translation>Неверное выделение. Невозможно записать символ аккорда нотами</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6044"/>
+        <location filename="../../mscore/musescore.cpp" line="6032"/>
         <source>No chord symbol selected. Cannot realize chord symbol</source>
         <translation>Не выбрано ни одного символа аккорда. Невозможно записать символы аккорда нотами</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6525"/>
+        <location filename="../../mscore/musescore.cpp" line="6515"/>
         <source>MuseScore may not be able to load this style file: %1</source>
         <translation>MuseScore не может загрузить этот файл стиля: %1</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6830"/>
+        <location filename="../../mscore/musescore.cpp" line="6834"/>
         <source>Warning</source>
         <translation>Предупреждение</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6831"/>
+        <location filename="../../mscore/musescore.cpp" line="6835"/>
         <source>Cannot create tuplet: Note value is too short</source>
         <translation>Невозможно создать мультиоль: Длительность ноты слишком коротка</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8163"/>
+        <location filename="../../mscore/musescore.cpp" line="8167"/>
         <source>Initializing sequencer and audio driver…</source>
         <translation>Инициализируется секвенсор и аудиодрайвер…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8172"/>
+        <location filename="../../mscore/musescore.cpp" line="8176"/>
         <source>Loading SoundFonts…</source>
         <translation>Загружаются семплы Soundfont…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8215"/>
+        <location filename="../../mscore/musescore.cpp" line="8219"/>
         <source>Initializing workspace…</source>
         <translation>Инициализируется рабочая среда…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8219"/>
+        <location filename="../../mscore/musescore.cpp" line="8223"/>
         <source>Creating main window…</source>
         <translation>Создаётся главное окно…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8236"/>
+        <location filename="../../mscore/musescore.cpp" line="8240"/>
         <source>Reading translations…</source>
         <translation>Считываются переводы…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8243"/>
+        <location filename="../../mscore/musescore.cpp" line="8247"/>
         <source>Initializing startup wizard…</source>
         <translation>Инициализируется мастер начала работы…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8259"/>
+        <location filename="../../mscore/musescore.cpp" line="8263"/>
         <source>Initializing preferences…</source>
         <translation>Инициализируются сохранённые настройки…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8300"/>
+        <location filename="../../mscore/musescore.cpp" line="8304"/>
         <source>Initializing main window…</source>
         <translation>Инициализируется главное окно…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8324"/>
+        <location filename="../../mscore/musescore.cpp" line="8328"/>
         <source>Restoring session…</source>
         <translation>Восстанавливается сессия…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8358"/>
+        <location filename="../../mscore/musescore.cpp" line="8362"/>
         <source>Loading scores…</source>
         <translation>Загружаются партитуры…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8369"/>
+        <location filename="../../mscore/musescore.cpp" line="8373"/>
         <source>Initializing start center…</source>
         <translation>Инициализируется центр начала работы…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8391"/>
+        <location filename="../../mscore/musescore.cpp" line="8395"/>
         <source>Initializing tours…</source>
         <translation>Инициализируются вводные руководства…</translation>
     </message>
@@ -14871,22 +14886,22 @@ This plugin requires an open score to run.</source>
 <context>
     <name>Ms::MuseScoreApplication</name>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7844"/>
+        <location filename="../../mscore/musescore.cpp" line="7848"/>
         <source>Must specify at least one score to save online.</source>
         <translation>Необходимо указать хотя бы одну партитуру для онлайн-сохранения.</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7905"/>
+        <location filename="../../mscore/musescore.cpp" line="7909"/>
         <source>--run-test-script is incompatible with --diff and --raw-diff</source>
         <translation>Параметр --run-test-script несовместим с --diff and --raw-diff</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7940"/>
+        <location filename="../../mscore/musescore.cpp" line="7944"/>
         <source>Only two scores are needed for performing a comparison</source>
         <translation>Для сравнения нужно только две партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7945"/>
+        <location filename="../../mscore/musescore.cpp" line="7949"/>
         <source>Please specify scripts to execute</source>
         <translation>Пожалуйста, укажите скрипты для выполнения</translation>
     </message>
@@ -15743,153 +15758,153 @@ This plugin requires an open score to run.</source>
         <translation>Сочетание клавиш не задано</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="860"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="858"/>
         <source>Save Shortcuts</source>
         <translation>Сохранить файл с сочетаниями клавиш</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="860"/>
-        <location filename="../../mscore/prefsdialog.cpp" line="871"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="858"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="869"/>
         <source>MuseScore Shortcuts File</source>
         <translation>Файл сочетания клавиш MuseScore</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="871"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="869"/>
         <source>Load Shortcuts</source>
         <translation>Загрузить файл с сочетаниями клавиш</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="947"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="945"/>
         <source>Choose Notepaper</source>
         <translation>Выберите фон страницы</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="960"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="958"/>
         <source>Choose Background Wallpaper</source>
         <translation>Выберите фон рабочего поля</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="973"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="971"/>
         <source>Choose Default Style</source>
         <translation>Выберите стиль по умолчанию</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="984"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="982"/>
         <source>Choose Default Style for Parts</source>
         <translation>Выберите стиль по умолчанию для партий</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="997"/>
-        <location filename="../../mscore/prefsdialog.cpp" line="1015"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="995"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1013"/>
         <source>Choose Instrument List</source>
         <translation>Выберите список инструментов</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="999"/>
-        <location filename="../../mscore/prefsdialog.cpp" line="1017"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="997"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1015"/>
         <source>Instrument List</source>
         <translation>Список инструментов</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1033"/>
-        <location filename="../../mscore/prefsdialog.cpp" line="1051"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1031"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1049"/>
         <source>Choose Score Order List</source>
         <translation>Выберите список с порядком партитур</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1035"/>
-        <location filename="../../mscore/prefsdialog.cpp" line="1053"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1033"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1051"/>
         <source>Score Order List</source>
         <translation>Список с порядком партитур</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1079"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1077"/>
         <source>Choose Starting Score</source>
         <translation>Выберите начальную партитуру</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1081"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1079"/>
         <source>MuseScore Files</source>
         <translation>Файлы MuseScore</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1081"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1079"/>
         <source>All</source>
         <translation>Все</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1380"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1378"/>
         <source>Applying…</source>
         <translation>Применение…</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1473"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1471"/>
         <source>Possible MIDI Loopback</source>
         <translation>Возможный MIDI возврат</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1475"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1473"/>
         <source>Warning: You used the same CoreMIDI IAC bus for input and output. This will cause problematic loopback, whereby MuseScore&apos;s output MIDI messages will be sent back to MuseScore as input, causing confusion. To avoid this problem, access Audio MIDI Setup via Spotlight to create a dedicated virtual port for MuseScore&apos;s MIDI output, restart MuseScore, return to Preferences, and select your new virtual port for MuseScore&apos;s MIDI output. Other programs may then use that dedicated virtual port to receive MuseScore&apos;s MIDI output.</source>
         <translation>Предупреждение: вы использовали одну и ту же шину CoreMIDI IAC для ввода и вывода. Это приведёт к проблемам, так как выходные MIDI-сообщения будут направляться обратно в MuseScore в качестве входного сигнала. Чтобы этого избежать, откройте программу &quot;Настройка Audio-MIDI&quot; через Spotlight, создайте выделенный виртуальный порт для MIDI-выхода MuseScore, вернитесь в настройки и выберите  созданный виртуальный порт для MIDI-выхода MuseScore. Другие программы смогут получать выходной MIDI-сигнал от MuseScore через этот порт.</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1515"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1513"/>
         <source>Apply</source>
         <translation>Применить</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1543"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1541"/>
         <source>Choose Default Style for Imports</source>
         <translation>Выберите стиль по умолчанию для импота</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1629"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1627"/>
         <source>Choose Score Folder</source>
         <translation>Выберите каталог партитур</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1645"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1643"/>
         <source>Choose Style Folder</source>
         <translation>Выберите каталог стилей</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1661"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1659"/>
         <source>Choose Score Fonts Folder</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1677"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1675"/>
         <source>Choose Template Folder</source>
         <translation>Выберите каталог шаблонов</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1693"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1691"/>
         <source>Choose Plugin Folder</source>
         <translation>Выберите каталог плагинов</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1709"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1707"/>
         <source>Choose Image Folder</source>
         <translation>Выберите каталог изображений</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1724"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1722"/>
         <source>SoundFont Folders</source>
         <translation>Каталоги SoundFont</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1738"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1736"/>
         <source>Choose Extensions Folder</source>
         <translation>Выберите каталог расширений</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1798"/>
-        <location filename="../../mscore/prefsdialog.cpp" line="1838"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1796"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1836"/>
         <source>MuseScore Shortcuts</source>
         <translation>Сочетания клавиш MuseScore</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1802"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1800"/>
         <source>Print Shortcuts</source>
         <translation>Распечатать сочетания клавиш MuseScore</translation>
     </message>
@@ -16303,7 +16318,7 @@ failed: %2</source>
         <location filename="../../mscore/propertymenu.cpp" line="127"/>
         <location filename="../../mscore/propertymenu.cpp" line="133"/>
         <location filename="../../mscore/propertymenu.cpp" line="140"/>
-        <location filename="../../mscore/scoreview.cpp" line="441"/>
+        <location filename="../../mscore/scoreview.cpp" line="439"/>
         <source>Add</source>
         <translation>Добавить</translation>
     </message>
@@ -16341,7 +16356,7 @@ failed: %2</source>
         <location filename="../../mscore/propertymenu.cpp" line="225"/>
         <location filename="../../mscore/propertymenu.cpp" line="243"/>
         <location filename="../../mscore/propertymenu.cpp" line="268"/>
-        <location filename="../../mscore/scoreview.cpp" line="420"/>
+        <location filename="../../mscore/scoreview.cpp" line="418"/>
         <source>Staff/Part Properties…</source>
         <translation>Свойства нотоносца/партии…</translation>
     </message>
@@ -16368,21 +16383,21 @@ failed: %2</source>
     <message>
         <location filename="../../mscore/propertymenu.cpp" line="224"/>
         <location filename="../../mscore/propertymenu.cpp" line="242"/>
-        <location filename="../../mscore/scoreview.cpp" line="412"/>
+        <location filename="../../mscore/scoreview.cpp" line="410"/>
         <source>Staff</source>
         <translation>Нотоносец</translation>
     </message>
     <message>
         <location filename="../../mscore/propertymenu.cpp" line="230"/>
         <location filename="../../mscore/propertymenu.cpp" line="248"/>
-        <location filename="../../mscore/scoreview.cpp" line="426"/>
+        <location filename="../../mscore/scoreview.cpp" line="424"/>
         <source>Measure</source>
         <translation>Такт</translation>
     </message>
     <message>
         <location filename="../../mscore/propertymenu.cpp" line="231"/>
         <location filename="../../mscore/propertymenu.cpp" line="249"/>
-        <location filename="../../mscore/scoreview.cpp" line="450"/>
+        <location filename="../../mscore/scoreview.cpp" line="448"/>
         <source>Measure Properties…</source>
         <translation>Свойства такта…</translation>
     </message>
@@ -16432,27 +16447,27 @@ failed: %2</source>
         <translation>Справка</translation>
     </message>
     <message>
-        <location filename="../../mscore/scoreview.cpp" line="413"/>
+        <location filename="../../mscore/scoreview.cpp" line="411"/>
         <source>Edit Drumset…</source>
         <translation>Свойства набора ударных…</translation>
     </message>
     <message>
-        <location filename="../../mscore/scoreview.cpp" line="417"/>
+        <location filename="../../mscore/scoreview.cpp" line="415"/>
         <source>Piano Roll Editor…</source>
         <translation>Матричный редактор…</translation>
     </message>
     <message>
-        <location filename="../../mscore/scoreview.cpp" line="422"/>
+        <location filename="../../mscore/scoreview.cpp" line="420"/>
         <source>Split Staff…</source>
         <translation>Разделить нотоносец…</translation>
     </message>
     <message>
-        <location filename="../../mscore/scoreview.cpp" line="2100"/>
+        <location filename="../../mscore/scoreview.cpp" line="2090"/>
         <source>Invalid source score.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/scoreview.cpp" line="4976"/>
+        <location filename="../../mscore/scoreview.cpp" line="4969"/>
         <source>No staves found:
 Please use the instruments dialog to
 first create some staves</source>
@@ -16461,24 +16476,24 @@ first create some staves</source>
 для создания нотных станов</translation>
     </message>
     <message>
-        <location filename="../../mscore/scoreview.cpp" line="1922"/>
+        <location filename="../../mscore/scoreview.cpp" line="1912"/>
         <source>Please select the complete tuplet/tremolo and retry the command</source>
         <translation>Выделите всю мультиоль/тремоло  и повторите команду</translation>
     </message>
     <message>
-        <location filename="../../mscore/scoreview.cpp" line="2095"/>
+        <location filename="../../mscore/scoreview.cpp" line="2085"/>
         <source>An active range/single source selection is required for cloning.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/scoreview.cpp" line="2928"/>
+        <location filename="../../mscore/scoreview.cpp" line="2921"/>
         <source>No measures selected:
 Please select a range of measures to join and try again</source>
         <translation>Не выбраны такты:
 Выберите несколько тактов для объединения и попробуйте еще раз</translation>
     </message>
     <message>
-        <location filename="../../mscore/scoreview.cpp" line="5058"/>
+        <location filename="../../mscore/scoreview.cpp" line="5051"/>
         <source>No measure selected:
 Please select a measure and try again</source>
         <translation>Такт не выделен:
@@ -17129,9 +17144,9 @@ please choose a different name:</source>
 <context>
     <name>Ms::ZoomBox</name>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2161"/>
-        <location filename="../../mscore/musescore.cpp" line="2162"/>
-        <location filename="../../mscore/musescore.cpp" line="2163"/>
+        <location filename="../../mscore/musescore.cpp" line="2153"/>
+        <location filename="../../mscore/musescore.cpp" line="2154"/>
+        <location filename="../../mscore/musescore.cpp" line="2155"/>
         <location filename="../../mscore/zoombox.cpp" line="92"/>
         <location filename="../../mscore/zoombox.cpp" line="93"/>
         <location filename="../../mscore/zoombox.cpp" line="94"/>
@@ -17640,7 +17655,7 @@ please choose a different name:</source>
     <message>
         <location filename="../../mscore/masterpalette.cpp" line="227"/>
         <location filename="../../mscore/menus.cpp" line="549"/>
-        <location filename="../../mscore/musescore.cpp" line="6364"/>
+        <location filename="../../mscore/musescore.cpp" line="6354"/>
         <source>Key Signatures</source>
         <translation>Ключевые знаки</translation>
     </message>
@@ -18226,7 +18241,7 @@ please choose a different name:</source>
     <message>
         <location filename="../../mscore/masterpalette.cpp" line="228"/>
         <location filename="../../mscore/menus.cpp" line="1767"/>
-        <location filename="../../mscore/musescore.cpp" line="6366"/>
+        <location filename="../../mscore/musescore.cpp" line="6356"/>
         <source>Time Signatures</source>
         <translation>Тактовые размеры</translation>
     </message>
@@ -21146,12 +21161,12 @@ Visit the %1MuseScore website%2 to obtain the latest version.</source>
         <translation>%1 конец %2</translation>
     </message>
     <message>
-        <location filename="../../libmscore/check.cpp" line="200"/>
+        <location filename="../../libmscore/check.cpp" line="198"/>
         <source>Measure %1, staff %2 incomplete. Expected: %3; Found: %4</source>
         <translation>Такт %1, стана %2 неполон. Ожидалось: %3; Найдено: %4</translation>
     </message>
     <message>
-        <location filename="../../libmscore/check.cpp" line="217"/>
+        <location filename="../../libmscore/check.cpp" line="213"/>
         <source>Measure %1, staff %2, voice %3 too long. Expected: %4; Found: %5</source>
         <translation>Такт %1, нотоносец %2, голос %3 слишком длинный. Ожидается: %4; Сейчас: %5</translation>
     </message>
@@ -21505,12 +21520,12 @@ Visit the %1MuseScore website%2 to obtain the latest version.</source>
         <translation>Справа</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4676"/>
+        <location filename="../../mscore/shortcut.cpp" line="4692"/>
         <source>Load Shortcuts</source>
         <translation>Загрузить файл с сочетаниями клавиш</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4676"/>
+        <location filename="../../mscore/shortcut.cpp" line="4692"/>
         <source>Can&apos;t load shortcuts file: %1</source>
         <translation>Не удалось загрузить файл с сочетаниями клавиш: %1</translation>
     </message>
@@ -21779,7 +21794,7 @@ Visit the %1MuseScore website%2 to obtain the latest version.</source>
         </translation>
     </message>
     <message>
-        <location filename="../../libmscore/measure.cpp" line="2053"/>
+        <location filename="../../libmscore/measure.cpp" line="2045"/>
         <source>MSCX error at line %1: invalid measure length: %2</source>
         <translation>Ошибка MSCX в строке %1: некорректная длина такта: %2</translation>
     </message>
@@ -21900,17 +21915,17 @@ Visit the %1MuseScore website%2 to obtain the latest version.</source>
         <translation>%1, добавлено %2, убрано %3</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1214"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1212"/>
         <source>Use local OMR engine</source>
         <translation>Использовать локальный движок оптического распознавания музыки</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1216"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1214"/>
         <source>Installed</source>
         <translation>Установлено</translation>
     </message>
     <message>
-        <location filename="../../mscore/prefsdialog.cpp" line="1218"/>
+        <location filename="../../mscore/prefsdialog.cpp" line="1216"/>
         <source>Not installed, needs internet connection for installing</source>
         <translation>Не удалось установить, так как для установки необходимо интернет-соединение</translation>
     </message>
@@ -21952,7 +21967,7 @@ Visit the %1MuseScore website%2 to obtain the latest version.</source>
         <location filename="../../importexport/capella/capella.cpp" line="2786"/>
         <location filename="../../importexport/midiimport/importmidi.cpp" line="1206"/>
         <location filename="../../mscore/instrdialog.cpp" line="166"/>
-        <location filename="../../mscore/musescore.cpp" line="4230"/>
+        <location filename="../../mscore/musescore.cpp" line="4218"/>
         <source>Quit</source>
         <translation>Выйти из приложения</translation>
     </message>
@@ -22062,7 +22077,7 @@ Do you want to overwrite it?</source>
         <translation>Невозможно извлечь файл из расширения</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4228"/>
+        <location filename="../../mscore/musescore.cpp" line="4216"/>
         <source>Load Languages Failed:</source>
         <translation>Ошибка загрузки языков:</translation>
     </message>
@@ -22157,7 +22172,7 @@ Do you want to overwrite it?</source>
 <context>
     <name>RecordButton</name>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="5925"/>
+        <location filename="../../mscore/musescore.cpp" line="5913"/>
         <source>Record</source>
         <translation>Записать</translation>
     </message>
@@ -24818,1972 +24833,1972 @@ failed</source>
         <translation>Сохранить выделенное как новую партитуру</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="99"/>
+        <location filename="../../mscore/shortcut.cpp" line="106"/>
         <source>Save a Copy…</source>
         <translation>Сохранить копию…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="101"/>
+        <location filename="../../mscore/shortcut.cpp" line="108"/>
         <source>Save a copy of the score in addition to the current file</source>
         <translation>Сохранить копию партитуры в дополнение к текущему файлу</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="111"/>
+        <location filename="../../mscore/shortcut.cpp" line="118"/>
         <source>Export score</source>
         <translation>Экспортировать партитуру</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="112"/>
+        <location filename="../../mscore/shortcut.cpp" line="119"/>
         <source>Save a copy of the score in various formats</source>
         <translation>Сохранить копию партитуры в различных форматах</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="121"/>
+        <location filename="../../mscore/shortcut.cpp" line="128"/>
         <source>Import PDF…</source>
         <translation>Конвертировать PDF в mscz…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="122"/>
+        <location filename="../../mscore/shortcut.cpp" line="129"/>
         <source>Import PDF</source>
         <translation>Конвертировать PDF в mscz</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="123"/>
+        <location filename="../../mscore/shortcut.cpp" line="130"/>
         <source>Import a PDF file with an experimental service on musescore.com</source>
         <translation>Конвертация PDF файла с помощью экспериментального сервиса на musescore.com</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="129"/>
+        <location filename="../../mscore/shortcut.cpp" line="136"/>
         <source>Close</source>
         <translation>Закрыть партитуру</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="131"/>
+        <location filename="../../mscore/shortcut.cpp" line="138"/>
         <source>Close current score</source>
         <translation>Закрыть текущую партитуру</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="147"/>
+        <location filename="../../mscore/shortcut.cpp" line="154"/>
         <source>New…</source>
         <translation>Создать…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="149"/>
+        <location filename="../../mscore/shortcut.cpp" line="156"/>
         <source>Create new score</source>
         <translation>Создать новую партитуру</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="158"/>
+        <location filename="../../mscore/shortcut.cpp" line="165"/>
         <source>Print</source>
         <translation>Распечатать</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="168"/>
-        <location filename="../../mscore/shortcut.cpp" line="169"/>
+        <location filename="../../mscore/shortcut.cpp" line="175"/>
+        <location filename="../../mscore/shortcut.cpp" line="176"/>
         <source>Undo</source>
         <translation>Отменить</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="170"/>
+        <location filename="../../mscore/shortcut.cpp" line="177"/>
         <source>Undo last change</source>
         <translation>Отменить последнее действие</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="179"/>
-        <location filename="../../mscore/shortcut.cpp" line="180"/>
+        <location filename="../../mscore/shortcut.cpp" line="186"/>
+        <location filename="../../mscore/shortcut.cpp" line="187"/>
         <source>Redo</source>
         <translation>Повторить</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="181"/>
+        <location filename="../../mscore/shortcut.cpp" line="188"/>
         <source>Redo last undo</source>
         <translation>Повторить отменённое действие</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="191"/>
+        <location filename="../../mscore/shortcut.cpp" line="198"/>
         <source>Cut</source>
         <translation>Вырезать</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="201"/>
+        <location filename="../../mscore/shortcut.cpp" line="208"/>
         <source>Copy</source>
         <translation>Скопировать</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="211"/>
+        <location filename="../../mscore/shortcut.cpp" line="218"/>
         <source>Paste</source>
         <translation>Вставить</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="262"/>
+        <location filename="../../mscore/shortcut.cpp" line="269"/>
         <source>Swap with Clipboard</source>
         <translation>Поменять с буфером обмена</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="263"/>
+        <location filename="../../mscore/shortcut.cpp" line="270"/>
         <source>Swap with clipboard</source>
         <translation>Обменять с буфером обмена</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="272"/>
+        <location filename="../../mscore/shortcut.cpp" line="279"/>
         <source>Instruments…</source>
         <translation>Инструменты…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="273"/>
+        <location filename="../../mscore/shortcut.cpp" line="280"/>
         <source>Show instruments dialog</source>
         <translation>Показать диалог управления инструментами</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="279"/>
-        <location filename="../../mscore/shortcut.cpp" line="2202"/>
+        <location filename="../../mscore/shortcut.cpp" line="286"/>
+        <location filename="../../mscore/shortcut.cpp" line="2209"/>
         <source>Note Input</source>
         <translation>Режим ввода нот</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="281"/>
+        <location filename="../../mscore/shortcut.cpp" line="288"/>
         <source>Enter notes with a mouse or keyboard</source>
         <translation>Вводить ноты мышью или с клавиатуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="292"/>
+        <location filename="../../mscore/shortcut.cpp" line="299"/>
         <source>Enter notes in Step-time</source>
         <translation>Ввод нот в пошаговом режиме</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="301"/>
+        <location filename="../../mscore/shortcut.cpp" line="308"/>
         <source>Re-Pitch</source>
         <translation>Пересчёт высоты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="303"/>
+        <location filename="../../mscore/shortcut.cpp" line="310"/>
         <source>Replace pitches without changing rhythms</source>
         <translation>Изменить высоту не меняя ритм</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="312"/>
+        <location filename="../../mscore/shortcut.cpp" line="319"/>
         <source>Rhythm</source>
         <translation>Ритм</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="314"/>
+        <location filename="../../mscore/shortcut.cpp" line="321"/>
         <source>Enter durations with a single click or keypress</source>
         <translation>Вводите длительности одинарным щелчком или нажатием клавиши</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="373"/>
+        <location filename="../../mscore/shortcut.cpp" line="380"/>
         <source>Second Above</source>
         <translation>Секунда вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="374"/>
+        <location filename="../../mscore/shortcut.cpp" line="381"/>
         <source>Enter second above</source>
         <translation>Добавить секунду вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="380"/>
+        <location filename="../../mscore/shortcut.cpp" line="387"/>
         <source>Third Above</source>
         <translation>Терция вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="381"/>
+        <location filename="../../mscore/shortcut.cpp" line="388"/>
         <source>Enter third above</source>
         <translation>Добавить терцию вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="387"/>
+        <location filename="../../mscore/shortcut.cpp" line="394"/>
         <source>Fourth Above</source>
         <translation>Кварта вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="388"/>
+        <location filename="../../mscore/shortcut.cpp" line="395"/>
         <source>Enter fourth above</source>
         <translation>Добавить кварту вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="394"/>
+        <location filename="../../mscore/shortcut.cpp" line="401"/>
         <source>Fifth Above</source>
         <translation>Квинта вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="395"/>
+        <location filename="../../mscore/shortcut.cpp" line="402"/>
         <source>Enter fifth above</source>
         <translation>Добавить квинту вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="401"/>
+        <location filename="../../mscore/shortcut.cpp" line="408"/>
         <source>Sixth Above</source>
         <translation>Секста вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="402"/>
+        <location filename="../../mscore/shortcut.cpp" line="409"/>
         <source>Enter sixth above</source>
         <translation>Добавить сексту вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="408"/>
+        <location filename="../../mscore/shortcut.cpp" line="415"/>
         <source>Seventh Above</source>
         <translation>Септима вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="409"/>
+        <location filename="../../mscore/shortcut.cpp" line="416"/>
         <source>Enter seventh above</source>
         <translation>Добавить септиму вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="415"/>
+        <location filename="../../mscore/shortcut.cpp" line="422"/>
         <source>Octave Above</source>
         <translation>Октава вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="416"/>
+        <location filename="../../mscore/shortcut.cpp" line="423"/>
         <source>Enter octave above</source>
         <translation>Добавить октаву вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="422"/>
+        <location filename="../../mscore/shortcut.cpp" line="429"/>
         <source>Ninth Above</source>
         <translation>Нона вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="423"/>
+        <location filename="../../mscore/shortcut.cpp" line="430"/>
         <source>Enter ninth above</source>
         <translation>Добавить нону вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="436"/>
+        <location filename="../../mscore/shortcut.cpp" line="443"/>
         <source>Second Below</source>
         <translation>Секунда вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="437"/>
+        <location filename="../../mscore/shortcut.cpp" line="444"/>
         <source>Enter second below</source>
         <translation>Добавить секунду вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="443"/>
+        <location filename="../../mscore/shortcut.cpp" line="450"/>
         <source>Third Below</source>
         <translation>Терция вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="444"/>
+        <location filename="../../mscore/shortcut.cpp" line="451"/>
         <source>Enter third below</source>
         <translation>Добавить терцию вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="450"/>
+        <location filename="../../mscore/shortcut.cpp" line="457"/>
         <source>Fourth Below</source>
         <translation>Кварта вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="451"/>
+        <location filename="../../mscore/shortcut.cpp" line="458"/>
         <source>Enter fourth below</source>
         <translation>Добавить кварту вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="457"/>
+        <location filename="../../mscore/shortcut.cpp" line="464"/>
         <source>Fifth Below</source>
         <translation>Квинта вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="458"/>
+        <location filename="../../mscore/shortcut.cpp" line="465"/>
         <source>Enter fifth below</source>
         <translation>Добавить квинту вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="464"/>
+        <location filename="../../mscore/shortcut.cpp" line="471"/>
         <source>Sixth Below</source>
         <translation>Секста вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="465"/>
+        <location filename="../../mscore/shortcut.cpp" line="472"/>
         <source>Enter sixth below</source>
         <translation>Добавить сексту вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="471"/>
+        <location filename="../../mscore/shortcut.cpp" line="478"/>
         <source>Seventh Below</source>
         <translation>Септима вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="472"/>
+        <location filename="../../mscore/shortcut.cpp" line="479"/>
         <source>Enter seventh below</source>
         <translation>Добавить септиму вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="478"/>
+        <location filename="../../mscore/shortcut.cpp" line="485"/>
         <source>Octave Below</source>
         <translation>Октава вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="479"/>
+        <location filename="../../mscore/shortcut.cpp" line="486"/>
         <source>Enter octave below</source>
         <translation>Добавить октаву вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="485"/>
+        <location filename="../../mscore/shortcut.cpp" line="492"/>
         <source>Ninth Below</source>
         <translation>Нона вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="486"/>
+        <location filename="../../mscore/shortcut.cpp" line="493"/>
         <source>Enter ninth below</source>
         <translation>Добавить нону вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="499"/>
+        <location filename="../../mscore/shortcut.cpp" line="506"/>
         <source>A</source>
         <translation>Ля</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="500"/>
+        <location filename="../../mscore/shortcut.cpp" line="507"/>
         <source>Enter note A</source>
         <translation>Ввести ноту ля</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="506"/>
+        <location filename="../../mscore/shortcut.cpp" line="513"/>
         <source>B</source>
         <translation>Си</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="507"/>
+        <location filename="../../mscore/shortcut.cpp" line="514"/>
         <source>Enter note B</source>
         <translation>Ввести ноту си</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="513"/>
+        <location filename="../../mscore/shortcut.cpp" line="520"/>
         <source>C</source>
         <translation>До</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="514"/>
+        <location filename="../../mscore/shortcut.cpp" line="521"/>
         <source>Enter note C</source>
         <translation>Ввести ноту до</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="520"/>
+        <location filename="../../mscore/shortcut.cpp" line="527"/>
         <source>D</source>
         <translation>Ре</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="521"/>
+        <location filename="../../mscore/shortcut.cpp" line="528"/>
         <source>Enter note D</source>
         <translation>Ввести ноту ре</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="527"/>
+        <location filename="../../mscore/shortcut.cpp" line="534"/>
         <source>E</source>
         <translation>Ми</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="528"/>
+        <location filename="../../mscore/shortcut.cpp" line="535"/>
         <source>Enter note E</source>
         <translation>Ввести ноту ми</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="534"/>
+        <location filename="../../mscore/shortcut.cpp" line="541"/>
         <source>F</source>
         <translation>Фа</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="535"/>
+        <location filename="../../mscore/shortcut.cpp" line="542"/>
         <source>Enter note F</source>
         <translation>Ввести ноту фа</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="541"/>
+        <location filename="../../mscore/shortcut.cpp" line="548"/>
         <source>G</source>
         <translation>Соль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="542"/>
+        <location filename="../../mscore/shortcut.cpp" line="549"/>
         <source>Enter note G</source>
         <translation>Ввести ноту соль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="549"/>
+        <location filename="../../mscore/shortcut.cpp" line="556"/>
         <source>Add note A to chord</source>
         <translation>Добавить ноту Ля в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="556"/>
+        <location filename="../../mscore/shortcut.cpp" line="563"/>
         <source>Add note B to chord</source>
         <translation>Добавить ноту Си в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="563"/>
+        <location filename="../../mscore/shortcut.cpp" line="570"/>
         <source>Add note C to chord</source>
         <translation>Добавить ноту До в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="570"/>
+        <location filename="../../mscore/shortcut.cpp" line="577"/>
         <source>Add note D to chord</source>
         <translation>Добавить ноту Ре в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="577"/>
+        <location filename="../../mscore/shortcut.cpp" line="584"/>
         <source>Add note E to chord</source>
         <translation>Добавить ноту Ми в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="584"/>
+        <location filename="../../mscore/shortcut.cpp" line="591"/>
         <source>Add note F to chord</source>
         <translation>Добавить ноту Фа в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="591"/>
+        <location filename="../../mscore/shortcut.cpp" line="598"/>
         <source>Add note G to chord</source>
         <translation>Добавить ноту Соль в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="604"/>
+        <location filename="../../mscore/shortcut.cpp" line="611"/>
         <source>Insert A</source>
         <translation>Вставить ля</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="605"/>
+        <location filename="../../mscore/shortcut.cpp" line="612"/>
         <source>Insert note A</source>
         <translation>Вставить ноту ля</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="611"/>
+        <location filename="../../mscore/shortcut.cpp" line="618"/>
         <source>Insert B</source>
         <translation>Вставить си</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="612"/>
+        <location filename="../../mscore/shortcut.cpp" line="619"/>
         <source>Insert note B</source>
         <translation>Вставить  ноту си</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="618"/>
+        <location filename="../../mscore/shortcut.cpp" line="625"/>
         <source>Insert C</source>
         <translation>Вставить до</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="619"/>
+        <location filename="../../mscore/shortcut.cpp" line="626"/>
         <source>Insert note C</source>
         <translation>Вставить ноту до</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="625"/>
+        <location filename="../../mscore/shortcut.cpp" line="632"/>
         <source>Insert D</source>
         <translation>Вставить ре</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="626"/>
+        <location filename="../../mscore/shortcut.cpp" line="633"/>
         <source>Insert note D</source>
         <translation>Вставить ноту ре</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="632"/>
+        <location filename="../../mscore/shortcut.cpp" line="639"/>
         <source>Insert E</source>
         <translation>Вставить ми</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="633"/>
+        <location filename="../../mscore/shortcut.cpp" line="640"/>
         <source>Insert note E</source>
         <translation>Вставить ноту ми</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="639"/>
+        <location filename="../../mscore/shortcut.cpp" line="646"/>
         <source>Insert F</source>
         <translation>Вставить фа</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="640"/>
+        <location filename="../../mscore/shortcut.cpp" line="647"/>
         <source>Insert note F</source>
         <translation>Вставить ноту фа</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="646"/>
+        <location filename="../../mscore/shortcut.cpp" line="653"/>
         <source>Insert G</source>
         <translation>Вставить соль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="647"/>
+        <location filename="../../mscore/shortcut.cpp" line="654"/>
         <source>Insert note G</source>
         <translation>Вставить ноту соль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="653"/>
-        <location filename="../../mscore/shortcut.cpp" line="1728"/>
-        <location filename="../../mscore/shortcut.cpp" line="1730"/>
+        <location filename="../../mscore/shortcut.cpp" line="660"/>
+        <location filename="../../mscore/shortcut.cpp" line="1735"/>
+        <location filename="../../mscore/shortcut.cpp" line="1737"/>
         <source>Rest</source>
         <translation>Пауза</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="654"/>
+        <location filename="../../mscore/shortcut.cpp" line="661"/>
         <source>Enter rest</source>
         <translation>Ввести паузу</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="663"/>
+        <location filename="../../mscore/shortcut.cpp" line="670"/>
         <source>Move the cursor forward in real-time input mode</source>
         <translation>Двигать курсор вперёд в режиме ввода в реальном времени</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="670"/>
+        <location filename="../../mscore/shortcut.cpp" line="677"/>
         <source>Staccato</source>
         <translation>Стаккато</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="671"/>
+        <location filename="../../mscore/shortcut.cpp" line="678"/>
         <source>Toggle staccato</source>
         <translation>Переключить стаккато</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="700"/>
+        <location filename="../../mscore/shortcut.cpp" line="707"/>
         <source>Tenuto</source>
         <translation>Тенуто</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="701"/>
+        <location filename="../../mscore/shortcut.cpp" line="708"/>
         <source>Toggle tenuto</source>
         <translation>Переключить тенуто</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="710"/>
+        <location filename="../../mscore/shortcut.cpp" line="717"/>
         <source>Trill</source>
         <translation>Трель</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="711"/>
+        <location filename="../../mscore/shortcut.cpp" line="718"/>
         <source>Toggle trill</source>
         <translation>Переключить трель</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="720"/>
+        <location filename="../../mscore/shortcut.cpp" line="727"/>
         <source>Marcato</source>
         <translation>Маркато</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="721"/>
+        <location filename="../../mscore/shortcut.cpp" line="728"/>
         <source>Toggle marcato</source>
         <translation>Переключить маркато</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="680"/>
+        <location filename="../../mscore/shortcut.cpp" line="687"/>
         <source>Up Bow</source>
         <translation>Смычок вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="681"/>
+        <location filename="../../mscore/shortcut.cpp" line="688"/>
         <source>Toggle up bow</source>
         <translation>Переключить смычок вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="690"/>
+        <location filename="../../mscore/shortcut.cpp" line="697"/>
         <source>Down Bow</source>
         <translation>Смычок вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="691"/>
+        <location filename="../../mscore/shortcut.cpp" line="698"/>
         <source>Toggle down bow</source>
         <translation>Переключить смычок вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="740"/>
+        <location filename="../../mscore/shortcut.cpp" line="747"/>
         <source>Increase Layout Stretch</source>
         <translation>Увеличить ширину такта</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="741"/>
+        <location filename="../../mscore/shortcut.cpp" line="748"/>
         <source>Increase layout stretch</source>
         <translation>Увеличить ширину такта</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="742"/>
+        <location filename="../../mscore/shortcut.cpp" line="749"/>
         <source>Increase layout stretch factor of selected measures</source>
         <translation>Увеличить ширину выделенного такта</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="750"/>
+        <location filename="../../mscore/shortcut.cpp" line="757"/>
         <source>Decrease Layout Stretch</source>
         <translation>Уменьшить ширину такта</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="751"/>
+        <location filename="../../mscore/shortcut.cpp" line="758"/>
         <source>Decrease layout stretch</source>
         <translation>Уменьшить ширину такта</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="752"/>
+        <location filename="../../mscore/shortcut.cpp" line="759"/>
         <source>Decrease layout stretch factor of selected measures</source>
         <translation>Уменьшить ширину выделенного такта</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="790"/>
+        <location filename="../../mscore/shortcut.cpp" line="797"/>
         <source>Regroup Rhythms</source>
         <translation>Перегруппировать ритмы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="791"/>
+        <location filename="../../mscore/shortcut.cpp" line="798"/>
         <source>Regroup rhythms</source>
         <translation>Перегруппировать ритмы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="792"/>
+        <location filename="../../mscore/shortcut.cpp" line="799"/>
         <source>Combine rests and tied notes from selection and resplit at rhythmical locations</source>
         <translation>Комбинировать паузы и залигованные ноты из выбранных, и разделять в ритмических местах</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="800"/>
+        <location filename="../../mscore/shortcut.cpp" line="807"/>
         <source>Flip Direction</source>
         <translation>Развернуть направление</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="801"/>
+        <location filename="../../mscore/shortcut.cpp" line="808"/>
         <source>Flip direction</source>
         <translation>Развернуть направление</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="810"/>
+        <location filename="../../mscore/shortcut.cpp" line="817"/>
         <source>Up</source>
         <translation>Вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="811"/>
+        <location filename="../../mscore/shortcut.cpp" line="818"/>
         <source>Pitch up or move text or articulation up</source>
         <translation>Повысить или переместить текст или знаки артикуляции вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="820"/>
+        <location filename="../../mscore/shortcut.cpp" line="827"/>
         <source>Diatonic Up</source>
         <translation>Диатоническое повышение</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="821"/>
+        <location filename="../../mscore/shortcut.cpp" line="828"/>
         <source>Diatonic pitch up</source>
         <translation>Диатоническое повышение высоты звука</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="842"/>
+        <location filename="../../mscore/shortcut.cpp" line="849"/>
         <source>Up Octave</source>
         <translation>Октавой выше</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="843"/>
+        <location filename="../../mscore/shortcut.cpp" line="850"/>
         <source>Pitch up octave</source>
         <translation>Повысить на октаву</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="844"/>
+        <location filename="../../mscore/shortcut.cpp" line="851"/>
         <source>Pitch up by an octave or move text or articulation up</source>
         <translation>Повысить на октаву или переместить текст или знаки артикуляции вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="852"/>
+        <location filename="../../mscore/shortcut.cpp" line="859"/>
         <source>Up Note in Chord</source>
         <translation>Повысить ноту в аккорде</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="853"/>
+        <location filename="../../mscore/shortcut.cpp" line="860"/>
         <source>Go to higher pitched note in chord</source>
         <translation>Перейти к более высокой ноте в аккорде</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="862"/>
+        <location filename="../../mscore/shortcut.cpp" line="869"/>
         <source>Top Note in Chord</source>
         <translation>Верхняя нота в аккорде</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="863"/>
+        <location filename="../../mscore/shortcut.cpp" line="870"/>
         <source>Go to top note in chord</source>
         <translation>Перейти к верхней ноте в аккорде</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="872"/>
+        <location filename="../../mscore/shortcut.cpp" line="879"/>
         <source>Move Up</source>
         <translation>Вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="883"/>
+        <location filename="../../mscore/shortcut.cpp" line="890"/>
         <source>Down</source>
         <translation>Вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="884"/>
+        <location filename="../../mscore/shortcut.cpp" line="891"/>
         <source>Pitch down or move text or articulation down</source>
         <translation>Понизить или переместить текст или знаки артикуляции вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="893"/>
+        <location filename="../../mscore/shortcut.cpp" line="900"/>
         <source>Diatonic Down</source>
         <translation>Диатоническое понижение</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="894"/>
+        <location filename="../../mscore/shortcut.cpp" line="901"/>
         <source>Diatonic pitch down</source>
         <translation>Диатоническое понижение высоты звука</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="915"/>
+        <location filename="../../mscore/shortcut.cpp" line="922"/>
         <source>Down Octave</source>
         <translation>Октавой ниже</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="916"/>
+        <location filename="../../mscore/shortcut.cpp" line="923"/>
         <source>Pitch down octave</source>
         <translation>Понизить на октаву</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="917"/>
+        <location filename="../../mscore/shortcut.cpp" line="924"/>
         <source>Pitch down by an octave or move text or articulation down</source>
         <translation>Понизить на октаву или переместить текст или знаки артикуляции вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="926"/>
+        <location filename="../../mscore/shortcut.cpp" line="933"/>
         <source>Down Note in Chord</source>
         <translation>Понизить ноту в аккорде</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="927"/>
+        <location filename="../../mscore/shortcut.cpp" line="934"/>
         <source>Go to lower pitched note in chord</source>
         <translation>Перейти к более низкой ноте в аккорде</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="937"/>
+        <location filename="../../mscore/shortcut.cpp" line="944"/>
         <source>Next Segment Element</source>
         <translation>Следующий элемент сегмента</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="938"/>
+        <location filename="../../mscore/shortcut.cpp" line="945"/>
         <source>Accessibility: Next segment element</source>
         <translation>Специальные возможности: следующий элемент сегмента</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="948"/>
+        <location filename="../../mscore/shortcut.cpp" line="955"/>
         <source>Previous Segment Element</source>
         <translation>Предыдущий элемент сегмента</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="949"/>
+        <location filename="../../mscore/shortcut.cpp" line="956"/>
         <source>Accessibility: Previous segment element</source>
         <translation>Специальные возможности: предыдущий элемент сегмента</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="959"/>
+        <location filename="../../mscore/shortcut.cpp" line="966"/>
         <source>Next Element</source>
         <translation>Следующий элемент</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="960"/>
+        <location filename="../../mscore/shortcut.cpp" line="967"/>
         <source>Accessibility: Next element</source>
         <translation>Специальные возможности: Следующий элемент</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="970"/>
+        <location filename="../../mscore/shortcut.cpp" line="977"/>
         <source>Previous Element</source>
         <translation>Предыдущий элемент</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="971"/>
+        <location filename="../../mscore/shortcut.cpp" line="978"/>
         <source>Accessibility: Previous element</source>
         <translation>Специальные возможности: Предыдущий элемент</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="992"/>
-        <location filename="../../mscore/shortcut.cpp" line="993"/>
-        <location filename="../../mscore/shortcut.cpp" line="994"/>
+        <location filename="../../mscore/shortcut.cpp" line="999"/>
+        <location filename="../../mscore/shortcut.cpp" line="1000"/>
+        <location filename="../../mscore/shortcut.cpp" line="1001"/>
         <source>Palette Search</source>
         <translation>Поиск в палитре</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1003"/>
+        <location filename="../../mscore/shortcut.cpp" line="1010"/>
         <source>Apply Current Palette Element</source>
         <translation>Применить текущий элемент из палитры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1004"/>
+        <location filename="../../mscore/shortcut.cpp" line="1011"/>
         <source>Apply current palette element</source>
         <translation>Применить текущий элемент из палитры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1014"/>
+        <location filename="../../mscore/shortcut.cpp" line="1021"/>
         <source>First Element</source>
         <translation>Первый элемент</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1015"/>
+        <location filename="../../mscore/shortcut.cpp" line="1022"/>
         <source>Go to the first element</source>
         <translation>Перейти к первому элементу</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1025"/>
+        <location filename="../../mscore/shortcut.cpp" line="1032"/>
         <source>Last Element</source>
         <translation>Последний элемент</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1026"/>
+        <location filename="../../mscore/shortcut.cpp" line="1033"/>
         <source>Go to the last element</source>
         <translation>Перейти к последнему элементу</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1036"/>
+        <location filename="../../mscore/shortcut.cpp" line="1043"/>
         <source>Bottom Note in Chord</source>
         <translation>Нижняя нота в аккорде</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1037"/>
+        <location filename="../../mscore/shortcut.cpp" line="1044"/>
         <source>Go to bottom note in chord</source>
         <translation>Перейти к нижней ноте в аккорде</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1047"/>
+        <location filename="../../mscore/shortcut.cpp" line="1054"/>
         <source>Move Down</source>
         <translation>Вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1058"/>
+        <location filename="../../mscore/shortcut.cpp" line="1065"/>
         <source>Previous Chord</source>
         <translation>Предыдущий аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1059"/>
+        <location filename="../../mscore/shortcut.cpp" line="1066"/>
         <source>Go to previous chord or move text left</source>
         <translation>Перейти к предыдущему аккорду или сдвинуть текст влево</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1065"/>
+        <location filename="../../mscore/shortcut.cpp" line="1072"/>
         <source>Previous Measure</source>
         <translation>Предыдущий такт</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1066"/>
+        <location filename="../../mscore/shortcut.cpp" line="1073"/>
         <source>Go to previous measure or move text left</source>
         <translation>Перейти к предыдущему такту или сдвинуть текст влево</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1093"/>
+        <location filename="../../mscore/shortcut.cpp" line="1100"/>
         <source>Previous Staff or Voice</source>
         <translation>Предыдущий стан или голос</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1094"/>
+        <location filename="../../mscore/shortcut.cpp" line="1101"/>
         <source>Previous staff or voice</source>
         <translation>Предыдущий стан или голос</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1100"/>
+        <location filename="../../mscore/shortcut.cpp" line="1107"/>
         <source>Next Chord</source>
         <translation>Следующий аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1101"/>
+        <location filename="../../mscore/shortcut.cpp" line="1108"/>
         <source>Go to next chord or move text right</source>
         <translation>Перейти к следующему аккорду или сдвинуть текст вправо</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1107"/>
+        <location filename="../../mscore/shortcut.cpp" line="1114"/>
         <source>Next Measure</source>
         <translation>Следующий такт</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1108"/>
+        <location filename="../../mscore/shortcut.cpp" line="1115"/>
         <source>Go to next measure or move text right</source>
         <translation>Перейти к следующему такту или сдвинуть текст вправо</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1156"/>
+        <location filename="../../mscore/shortcut.cpp" line="1163"/>
         <source>Next Staff or Voice</source>
         <translation>Следующий стан или голос</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1157"/>
+        <location filename="../../mscore/shortcut.cpp" line="1164"/>
         <source>Next staff or voice</source>
         <translation>Следующий стан или голос</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1163"/>
+        <location filename="../../mscore/shortcut.cpp" line="1170"/>
         <source>Add Previous Chord to Selection</source>
         <translation>Добавить предыдущий аккорд к выделению</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1164"/>
+        <location filename="../../mscore/shortcut.cpp" line="1171"/>
         <source>Add previous chord to selection</source>
         <translation>Добавить предыдущий аккорд к выделению</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1170"/>
+        <location filename="../../mscore/shortcut.cpp" line="1177"/>
         <source>Select to Beginning of Measure</source>
         <translation>Выделить до начала такта</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1171"/>
+        <location filename="../../mscore/shortcut.cpp" line="1178"/>
         <source>Select to beginning of measure</source>
         <translation>Выделить до начала такта</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1177"/>
+        <location filename="../../mscore/shortcut.cpp" line="1184"/>
         <source>Add Next Chord to Selection</source>
         <translation>Добавить следующий аккорд к выделению</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1178"/>
+        <location filename="../../mscore/shortcut.cpp" line="1185"/>
         <source>Add next chord to selection</source>
         <translation>Добавить следующий аккорд к выделению</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1184"/>
+        <location filename="../../mscore/shortcut.cpp" line="1191"/>
         <source>Select Section</source>
         <translation>Выделить раздел</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1185"/>
+        <location filename="../../mscore/shortcut.cpp" line="1192"/>
         <source>Select section</source>
         <translation>Выделить раздел</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1191"/>
+        <location filename="../../mscore/shortcut.cpp" line="1198"/>
         <source>Move Chord/Rest Right</source>
         <translation>Сдвинуть аккорд/паузу вправо</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1192"/>
+        <location filename="../../mscore/shortcut.cpp" line="1199"/>
         <source>Move chord/rest right</source>
         <translation>Сдвинуть аккорд/паузу вправо</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1198"/>
+        <location filename="../../mscore/shortcut.cpp" line="1205"/>
         <source>Move Chord/Rest left</source>
         <translation>Сдвинуть аккорд/паузу влево</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1199"/>
+        <location filename="../../mscore/shortcut.cpp" line="1206"/>
         <source>Move chord/rest left</source>
         <translation>Сдвинуть аккорд/паузу влеао</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1205"/>
+        <location filename="../../mscore/shortcut.cpp" line="1212"/>
         <source>Select to End of Measure</source>
         <translation>Выделить до конца такта</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1206"/>
+        <location filename="../../mscore/shortcut.cpp" line="1213"/>
         <source>Select to end of measure</source>
         <translation>Выделить до конца такта</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1212"/>
+        <location filename="../../mscore/shortcut.cpp" line="1219"/>
         <source>Select to Beginning of Line</source>
         <translation>Выделить до начала строки</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1213"/>
+        <location filename="../../mscore/shortcut.cpp" line="1220"/>
         <source>Select to beginning of line</source>
         <translation>Выделить до начала строки</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1219"/>
+        <location filename="../../mscore/shortcut.cpp" line="1226"/>
         <source>Select to End of Line</source>
         <translation>Выделить до конца строки</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1220"/>
+        <location filename="../../mscore/shortcut.cpp" line="1227"/>
         <source>Select to end of line</source>
         <translation>Выделить до конца строки</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1226"/>
+        <location filename="../../mscore/shortcut.cpp" line="1233"/>
         <source>Select to Beginning of Score</source>
         <translation>Выделить до начала партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1227"/>
+        <location filename="../../mscore/shortcut.cpp" line="1234"/>
         <source>Select to beginning of score</source>
         <translation>Выделить до начала партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1233"/>
+        <location filename="../../mscore/shortcut.cpp" line="1240"/>
         <source>Select to End of Score</source>
         <translation>Выделить до конца партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1234"/>
+        <location filename="../../mscore/shortcut.cpp" line="1241"/>
         <source>Select to end of score</source>
         <translation>Выделить до конца партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1240"/>
+        <location filename="../../mscore/shortcut.cpp" line="1247"/>
         <source>Add Staff Above to Selection</source>
         <translation>Добавить к выделению нотоносец сверху</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1241"/>
+        <location filename="../../mscore/shortcut.cpp" line="1248"/>
         <source>Add staff above to selection</source>
         <translation>Добавить к выделению нотоносец сверху</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1247"/>
+        <location filename="../../mscore/shortcut.cpp" line="1254"/>
         <source>Add Staff Below to Selection</source>
         <translation>Добавить к выделению нотоносец снизу</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1248"/>
+        <location filename="../../mscore/shortcut.cpp" line="1255"/>
         <source>Add staff below to selection</source>
         <translation>Добавить к выделению нотоносец снизу</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1266"/>
+        <location filename="../../mscore/shortcut.cpp" line="1273"/>
         <source>Page: Previous</source>
         <translation>Страница: Предыдущая</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1272"/>
+        <location filename="../../mscore/shortcut.cpp" line="1279"/>
         <source>Page: Next</source>
         <translation>Страница: Следующая</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1278"/>
+        <location filename="../../mscore/shortcut.cpp" line="1285"/>
         <source>Page: Top</source>
         <translation>Страница: Первая</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1284"/>
+        <location filename="../../mscore/shortcut.cpp" line="1291"/>
         <source>Page: End</source>
         <translation>Страница: Последняя</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1290"/>
+        <location filename="../../mscore/shortcut.cpp" line="1297"/>
         <source>Slur</source>
         <translation>Лига</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1291"/>
+        <location filename="../../mscore/shortcut.cpp" line="1298"/>
         <source>Add slur</source>
         <translation>Добавить лигу</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1297"/>
+        <location filename="../../mscore/shortcut.cpp" line="1304"/>
         <source>Crescendo</source>
         <translation>Крещендо</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1298"/>
+        <location filename="../../mscore/shortcut.cpp" line="1305"/>
         <source>Add crescendo</source>
         <translation>Добавить крещендо</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1307"/>
+        <location filename="../../mscore/shortcut.cpp" line="1314"/>
         <source>Decrescendo</source>
         <translation>Диминуэндо</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1308"/>
+        <location filename="../../mscore/shortcut.cpp" line="1315"/>
         <source>Add decrescendo</source>
         <translation>Добавить диминуэндо</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1338"/>
+        <location filename="../../mscore/shortcut.cpp" line="1345"/>
         <source>Escape</source>
         <translation>Escape</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1344"/>
-        <location filename="../../mscore/shortcut.cpp" line="1345"/>
+        <location filename="../../mscore/shortcut.cpp" line="1351"/>
+        <location filename="../../mscore/shortcut.cpp" line="1352"/>
         <source>Delete</source>
         <translation>Удалить</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1354"/>
+        <location filename="../../mscore/shortcut.cpp" line="1361"/>
         <source>Full Measure Rest</source>
         <translation>Тактовая пауза</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1355"/>
+        <location filename="../../mscore/shortcut.cpp" line="1362"/>
         <source>Full measure rest</source>
         <translation>Тактовая пауза</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1374"/>
+        <location filename="../../mscore/shortcut.cpp" line="1381"/>
         <source>Append One Measure</source>
         <translation>Добавить один такт в конец партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1375"/>
+        <location filename="../../mscore/shortcut.cpp" line="1382"/>
         <source>Append one measure</source>
         <translation>Добавить один такт в конец партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1381"/>
+        <location filename="../../mscore/shortcut.cpp" line="1388"/>
         <source>Append Measures…</source>
         <translation>Добавить такты в конец партитуры…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1382"/>
+        <location filename="../../mscore/shortcut.cpp" line="1389"/>
         <source>Append measures</source>
         <translation>Присоединить такты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1388"/>
+        <location filename="../../mscore/shortcut.cpp" line="1395"/>
         <source>Insert One Measure</source>
         <translation>Вставить пустой такт</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1389"/>
+        <location filename="../../mscore/shortcut.cpp" line="1396"/>
         <source>Insert one measure</source>
         <translation>Вставить один такт</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1397"/>
+        <location filename="../../mscore/shortcut.cpp" line="1404"/>
         <source>Insert Measures…</source>
         <translation>Вставить такты…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1398"/>
+        <location filename="../../mscore/shortcut.cpp" line="1405"/>
         <source>Insert measures</source>
         <translation>Вставить такты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1404"/>
+        <location filename="../../mscore/shortcut.cpp" line="1411"/>
         <source>Insert Horizontal Frame</source>
         <translation>Вставить горизонтальную рамку</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1405"/>
+        <location filename="../../mscore/shortcut.cpp" line="1412"/>
         <source>Insert horizontal frame</source>
         <translation>Вставить горизонтальную рамку</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1413"/>
+        <location filename="../../mscore/shortcut.cpp" line="1420"/>
         <source>Insert Text Frame</source>
         <translation>Вставить текстовую рамку</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1414"/>
+        <location filename="../../mscore/shortcut.cpp" line="1421"/>
         <source>Insert text frame</source>
         <translation>Вставить текстовую рамку</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1422"/>
+        <location filename="../../mscore/shortcut.cpp" line="1429"/>
         <source>Append Text Frame</source>
         <translation>Добавить текстовую рамку в конец партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1423"/>
+        <location filename="../../mscore/shortcut.cpp" line="1430"/>
         <source>Append text frame</source>
         <translation>Добавить текстовый блок</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1429"/>
+        <location filename="../../mscore/shortcut.cpp" line="1436"/>
         <source>Insert Fretboard Diagram Frame</source>
         <translation>Вставить рамку схемы грифа</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1430"/>
+        <location filename="../../mscore/shortcut.cpp" line="1437"/>
         <source>Insert fretboard diagram frame</source>
         <translation>Вставить схему грифа</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1438"/>
+        <location filename="../../mscore/shortcut.cpp" line="1445"/>
         <source>Insert Vertical Frame</source>
         <translation>Вставить вертикальную рамку</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1439"/>
+        <location filename="../../mscore/shortcut.cpp" line="1446"/>
         <source>Insert vertical frame</source>
         <translation>Вставить вертикальную рамку</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1447"/>
+        <location filename="../../mscore/shortcut.cpp" line="1454"/>
         <source>Append Horizontal Frame</source>
         <translation>Добавить горизонтальную рамку в конец партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1448"/>
+        <location filename="../../mscore/shortcut.cpp" line="1455"/>
         <source>Append horizontal frame</source>
         <translation>Добавить горизонтальный блок</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1454"/>
+        <location filename="../../mscore/shortcut.cpp" line="1461"/>
         <source>Append Vertical Frame</source>
         <translation>Добавить вертикальную рамку в конец партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1455"/>
+        <location filename="../../mscore/shortcut.cpp" line="1462"/>
         <source>Append vertical frame</source>
         <translation>Добавить вертикальный блок</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1461"/>
+        <location filename="../../mscore/shortcut.cpp" line="1468"/>
         <source>Duplet</source>
         <translation>Дуоль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1467"/>
+        <location filename="../../mscore/shortcut.cpp" line="1474"/>
         <source>Triplet</source>
         <translation>Триоль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1473"/>
+        <location filename="../../mscore/shortcut.cpp" line="1480"/>
         <source>Quadruplet</source>
         <translation>Квартоль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1479"/>
+        <location filename="../../mscore/shortcut.cpp" line="1486"/>
         <source>Quintuplet</source>
         <translation>Квинтоль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1485"/>
+        <location filename="../../mscore/shortcut.cpp" line="1492"/>
         <source>Sextuplet</source>
         <translation>Секстоль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1491"/>
+        <location filename="../../mscore/shortcut.cpp" line="1498"/>
         <source>Septuplet</source>
         <translation>Септоль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1497"/>
+        <location filename="../../mscore/shortcut.cpp" line="1504"/>
         <source>Octuplet</source>
         <translation>Октоль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1503"/>
+        <location filename="../../mscore/shortcut.cpp" line="1510"/>
         <source>Nonuplet</source>
         <translation>Новемоль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1509"/>
+        <location filename="../../mscore/shortcut.cpp" line="1516"/>
         <source>Other…</source>
         <translation>Прочие…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1510"/>
+        <location filename="../../mscore/shortcut.cpp" line="1517"/>
         <source>Other tuplets</source>
         <translation>Прочие мультиоли</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1516"/>
-        <location filename="../../mscore/shortcut.cpp" line="1518"/>
+        <location filename="../../mscore/shortcut.cpp" line="1523"/>
+        <location filename="../../mscore/shortcut.cpp" line="1525"/>
         <source>Longa</source>
         <translation>Лонга</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1517"/>
+        <location filename="../../mscore/shortcut.cpp" line="1524"/>
         <source>Note duration: Longa</source>
         <translation>Длительность: Лонга</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1527"/>
+        <location filename="../../mscore/shortcut.cpp" line="1534"/>
         <source>Double Whole Note</source>
         <translation>Двойная нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1528"/>
+        <location filename="../../mscore/shortcut.cpp" line="1535"/>
         <source>Note duration: Double whole</source>
         <translation>Длительность: Двойная</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1529"/>
-        <location filename="../../mscore/shortcut.cpp" line="3436"/>
+        <location filename="../../mscore/shortcut.cpp" line="1536"/>
+        <location filename="../../mscore/shortcut.cpp" line="3454"/>
         <source>Double whole note</source>
         <translation>Двойная целая нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1538"/>
+        <location filename="../../mscore/shortcut.cpp" line="1545"/>
         <source>Whole Note</source>
         <translation>Целая нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1539"/>
+        <location filename="../../mscore/shortcut.cpp" line="1546"/>
         <source>Note duration: Whole</source>
         <translation>Длительность: Целая</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1540"/>
-        <location filename="../../mscore/shortcut.cpp" line="3446"/>
+        <location filename="../../mscore/shortcut.cpp" line="1547"/>
+        <location filename="../../mscore/shortcut.cpp" line="3464"/>
         <source>Whole note</source>
         <translation>Целая нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1549"/>
+        <location filename="../../mscore/shortcut.cpp" line="1556"/>
         <source>Half Note</source>
         <translation>Половинная нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1550"/>
+        <location filename="../../mscore/shortcut.cpp" line="1557"/>
         <source>Note duration: Half</source>
         <translation>Длительность: Половинная</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1551"/>
-        <location filename="../../mscore/shortcut.cpp" line="3456"/>
+        <location filename="../../mscore/shortcut.cpp" line="1558"/>
+        <location filename="../../mscore/shortcut.cpp" line="3474"/>
         <source>Half note</source>
         <translation>Половинная нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1560"/>
+        <location filename="../../mscore/shortcut.cpp" line="1567"/>
         <source>Quarter Note</source>
         <translation>Четвертная нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1561"/>
+        <location filename="../../mscore/shortcut.cpp" line="1568"/>
         <source>Note duration: Quarter</source>
         <translation>Длительность: Четверть</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1562"/>
-        <location filename="../../mscore/shortcut.cpp" line="3466"/>
+        <location filename="../../mscore/shortcut.cpp" line="1569"/>
+        <location filename="../../mscore/shortcut.cpp" line="3484"/>
         <source>Quarter note</source>
         <translation>Четвертная нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1571"/>
+        <location filename="../../mscore/shortcut.cpp" line="1578"/>
         <source>Eighth Note</source>
         <translation>Восьмая нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1572"/>
+        <location filename="../../mscore/shortcut.cpp" line="1579"/>
         <source>Note duration: Eighth</source>
         <translation>Длительность: Восьмая</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1573"/>
-        <location filename="../../mscore/shortcut.cpp" line="3476"/>
+        <location filename="../../mscore/shortcut.cpp" line="1580"/>
+        <location filename="../../mscore/shortcut.cpp" line="3494"/>
         <source>Eighth note</source>
         <translation>Восьмая нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1582"/>
+        <location filename="../../mscore/shortcut.cpp" line="1589"/>
         <source>16th Note</source>
         <translation>16-я нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1583"/>
+        <location filename="../../mscore/shortcut.cpp" line="1590"/>
         <source>Note duration: 16th</source>
         <translation>Длительность ноты: 16-я</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1584"/>
-        <location filename="../../mscore/shortcut.cpp" line="3486"/>
+        <location filename="../../mscore/shortcut.cpp" line="1591"/>
+        <location filename="../../mscore/shortcut.cpp" line="3504"/>
         <source>16th note</source>
         <translation>16-я нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1593"/>
+        <location filename="../../mscore/shortcut.cpp" line="1600"/>
         <source>32nd Note</source>
         <translation>32-я нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1594"/>
+        <location filename="../../mscore/shortcut.cpp" line="1601"/>
         <source>Note duration: 32nd</source>
         <translation>Длительность ноты: 32-я</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1595"/>
-        <location filename="../../mscore/shortcut.cpp" line="3496"/>
+        <location filename="../../mscore/shortcut.cpp" line="1602"/>
+        <location filename="../../mscore/shortcut.cpp" line="3514"/>
         <source>32nd note</source>
         <translation>32-я нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1604"/>
+        <location filename="../../mscore/shortcut.cpp" line="1611"/>
         <source>64th Note</source>
         <translation>64-я нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1605"/>
+        <location filename="../../mscore/shortcut.cpp" line="1612"/>
         <source>Note duration: 64th</source>
         <translation>Длительность ноты: 64-я</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1606"/>
-        <location filename="../../mscore/shortcut.cpp" line="3506"/>
+        <location filename="../../mscore/shortcut.cpp" line="1613"/>
+        <location filename="../../mscore/shortcut.cpp" line="3524"/>
         <source>64th note</source>
         <translation>64-я нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1615"/>
+        <location filename="../../mscore/shortcut.cpp" line="1622"/>
         <source>128th Note</source>
         <translation>128-я нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1616"/>
+        <location filename="../../mscore/shortcut.cpp" line="1623"/>
         <source>Note duration: 128th</source>
         <translation>Длительность ноты: 128-я</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1617"/>
-        <location filename="../../mscore/shortcut.cpp" line="3516"/>
+        <location filename="../../mscore/shortcut.cpp" line="1624"/>
+        <location filename="../../mscore/shortcut.cpp" line="3534"/>
         <source>128th note</source>
         <translation>128-я нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1659"/>
+        <location filename="../../mscore/shortcut.cpp" line="1666"/>
         <source>Increase Active Duration</source>
         <translation>Увеличить текущую длительность</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1660"/>
+        <location filename="../../mscore/shortcut.cpp" line="1667"/>
         <source>Increase active duration</source>
         <translation>Увеличить текущую длительность</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1666"/>
+        <location filename="../../mscore/shortcut.cpp" line="1673"/>
         <source>Decrease Active Duration</source>
         <translation>Уменьшить текущую длительность</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1667"/>
+        <location filename="../../mscore/shortcut.cpp" line="1674"/>
         <source>Decrease active duration</source>
         <translation>Уменьшить текущую длительность</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1673"/>
+        <location filename="../../mscore/shortcut.cpp" line="1680"/>
         <source>Augmentation Dot</source>
         <translation>Точка длительности</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1674"/>
+        <location filename="../../mscore/shortcut.cpp" line="1681"/>
         <source>Note duration: Augmentation dot</source>
         <translation>Длительность: Точка длительности</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1675"/>
+        <location filename="../../mscore/shortcut.cpp" line="1682"/>
         <source>Augmentation dot</source>
         <translation>Точка длительности</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1684"/>
+        <location filename="../../mscore/shortcut.cpp" line="1691"/>
         <source>Double Augmentation Dot</source>
         <translation>Двойная точка длительности</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1685"/>
+        <location filename="../../mscore/shortcut.cpp" line="1692"/>
         <source>Note duration: Double augmentation dot</source>
         <translation>Длительность: Двойная точка длительности</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1686"/>
+        <location filename="../../mscore/shortcut.cpp" line="1693"/>
         <source>Double augmentation dot</source>
         <translation>Двойная точка длительности</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1695"/>
+        <location filename="../../mscore/shortcut.cpp" line="1702"/>
         <source>Triple Augmentation Dot</source>
         <translation>Три точки</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1696"/>
+        <location filename="../../mscore/shortcut.cpp" line="1703"/>
         <source>Note duration: Triple augmentation dot</source>
         <translation>Длительность ноты: Три точки</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1697"/>
+        <location filename="../../mscore/shortcut.cpp" line="1704"/>
         <source>Triple augmentation dot</source>
         <translation>Три точки</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1706"/>
+        <location filename="../../mscore/shortcut.cpp" line="1713"/>
         <source>Quadruple Augmentation Dot</source>
         <translation>Точка четверной длительности</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1707"/>
+        <location filename="../../mscore/shortcut.cpp" line="1714"/>
         <source>Note duration: Quadruple augmentation dot</source>
         <translation>Длительность ноты: четверная точка длительности</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1708"/>
+        <location filename="../../mscore/shortcut.cpp" line="1715"/>
         <source>Quadruple augmentation dot</source>
         <translation>Точка четверной длительности</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1717"/>
-        <location filename="../../mscore/shortcut.cpp" line="1719"/>
+        <location filename="../../mscore/shortcut.cpp" line="1724"/>
+        <location filename="../../mscore/shortcut.cpp" line="1726"/>
         <source>Tie</source>
         <translation>Связующая лига</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1718"/>
+        <location filename="../../mscore/shortcut.cpp" line="1725"/>
         <source>Note duration: Tie</source>
         <translation>Длительность: связующая лига</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1729"/>
+        <location filename="../../mscore/shortcut.cpp" line="1736"/>
         <source>Note input: Rest</source>
         <translation>Ввод нот: Пауза</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1849"/>
-        <location filename="../../mscore/shortcut.cpp" line="1851"/>
+        <location filename="../../mscore/shortcut.cpp" line="1856"/>
+        <location filename="../../mscore/shortcut.cpp" line="1858"/>
         <source>Acciaccatura</source>
         <translation>Короткий форшлаг</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1850"/>
+        <location filename="../../mscore/shortcut.cpp" line="1857"/>
         <source>Add acciaccatura</source>
         <translation>Добавить короткий форшлаг</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1860"/>
-        <location filename="../../mscore/shortcut.cpp" line="1862"/>
+        <location filename="../../mscore/shortcut.cpp" line="1867"/>
+        <location filename="../../mscore/shortcut.cpp" line="1869"/>
         <source>Appoggiatura</source>
         <translation>Форшлаг в 1/8</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1861"/>
+        <location filename="../../mscore/shortcut.cpp" line="1868"/>
         <source>Add appoggiatura</source>
         <translation>Добавить форшлаг в 1/8</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1872"/>
+        <location filename="../../mscore/shortcut.cpp" line="1879"/>
         <source>Grace: Quarter</source>
         <translation>Форшлаг: Четверть</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1873"/>
+        <location filename="../../mscore/shortcut.cpp" line="1880"/>
         <source>Add quarter grace note</source>
         <translation>Добавить форшлаг в 1/4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1874"/>
+        <location filename="../../mscore/shortcut.cpp" line="1881"/>
         <source>Grace: quarter</source>
         <translation>Форшлаг в 1/4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1884"/>
-        <location filename="../../mscore/shortcut.cpp" line="1886"/>
+        <location filename="../../mscore/shortcut.cpp" line="1891"/>
+        <location filename="../../mscore/shortcut.cpp" line="1893"/>
         <source>Grace: 16th</source>
         <translation>Форшлаг в 1/16</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1885"/>
+        <location filename="../../mscore/shortcut.cpp" line="1892"/>
         <source>Add 16th grace note</source>
         <translation>Добавить форшлаг в 1/16</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1896"/>
-        <location filename="../../mscore/shortcut.cpp" line="1898"/>
+        <location filename="../../mscore/shortcut.cpp" line="1903"/>
+        <location filename="../../mscore/shortcut.cpp" line="1905"/>
         <source>Grace: 32nd</source>
         <translation>Форшлаг в 1/32</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1897"/>
+        <location filename="../../mscore/shortcut.cpp" line="1904"/>
         <source>Add 32nd grace note</source>
         <translation>Добавить форшлаг в 1/32</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1909"/>
+        <location filename="../../mscore/shortcut.cpp" line="1916"/>
         <source>Add Eighth grace note after</source>
         <translation>Добавить форшлаг в 1/8 после ноты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1910"/>
+        <location filename="../../mscore/shortcut.cpp" line="1917"/>
         <source>Grace: eighth after</source>
         <translation>Форшлаг в 1/8 после ноты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1922"/>
+        <location filename="../../mscore/shortcut.cpp" line="1929"/>
         <source>Grace: 16th after</source>
         <translation>Форшлаг в 1/16 после ноты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1921"/>
+        <location filename="../../mscore/shortcut.cpp" line="1928"/>
         <source>Add 16th grace note after</source>
         <translation>Добавить форшлаг в 1/16 после ноты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1934"/>
+        <location filename="../../mscore/shortcut.cpp" line="1941"/>
         <source>Grace: 32nd after</source>
         <translation>Форшлаг в 1/32 после ноты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1933"/>
+        <location filename="../../mscore/shortcut.cpp" line="1940"/>
         <source>Add 32nd grace note after</source>
         <translation>Добавить форшлаг в 1/32 после ноты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1943"/>
+        <location filename="../../mscore/shortcut.cpp" line="1950"/>
         <source>1</source>
         <translation>1</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1944"/>
+        <location filename="../../mscore/shortcut.cpp" line="1951"/>
         <source>Voice 1</source>
         <translation>Голос 1</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1951"/>
+        <location filename="../../mscore/shortcut.cpp" line="1958"/>
         <source>2</source>
         <translation>2</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1952"/>
+        <location filename="../../mscore/shortcut.cpp" line="1959"/>
         <source>Voice 2</source>
         <translation>Голос 2</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1959"/>
+        <location filename="../../mscore/shortcut.cpp" line="1966"/>
         <source>3</source>
         <translation>3</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1960"/>
+        <location filename="../../mscore/shortcut.cpp" line="1967"/>
         <source>Voice 3</source>
         <translation>Голос 3</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1967"/>
+        <location filename="../../mscore/shortcut.cpp" line="1974"/>
         <source>4</source>
         <translation>4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1968"/>
+        <location filename="../../mscore/shortcut.cpp" line="1975"/>
         <source>Voice 4</source>
         <translation>Голос 4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2004"/>
+        <location filename="../../mscore/shortcut.cpp" line="2011"/>
         <source>MIDI Input</source>
         <translation>MIDI-ввод</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2005"/>
+        <location filename="../../mscore/shortcut.cpp" line="2012"/>
         <source>Toggle &apos;MIDI Input&apos;</source>
         <translation>Ввод с MIDI клавиатуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2110"/>
+        <location filename="../../mscore/shortcut.cpp" line="2117"/>
         <source>Toggle &apos;Play Panel&apos;</source>
         <translation>Включить/Выключить «Панель воспроизведения»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2150"/>
+        <location filename="../../mscore/shortcut.cpp" line="2157"/>
         <source>Toggle &apos;MIDI Import Panel&apos;</source>
         <translation>Включить/Выключить «Панель импорта MIDI»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2182"/>
+        <location filename="../../mscore/shortcut.cpp" line="2189"/>
         <source>Toggle &apos;Playback Controls&apos; toolbar</source>
         <translation>Включить/Выключить панель инструментов «Управление воспроизведением»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2189"/>
+        <location filename="../../mscore/shortcut.cpp" line="2196"/>
         <source>Toggle &apos;Concert Pitch&apos; toolbar</source>
         <translation>Включить/выключить панель инструментов &quot;Концертный строй&quot;</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2196"/>
+        <location filename="../../mscore/shortcut.cpp" line="2203"/>
         <source>Toggle &apos;Image Capture&apos; toolbar</source>
         <translation>Включить/Выключить панель инструментов «Захват изображения»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2226"/>
+        <location filename="../../mscore/shortcut.cpp" line="2233"/>
         <source>Toggle &apos;Status Bar&apos;</source>
         <translation>Включить/Выключить «Строку статуса»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2386"/>
+        <location filename="../../mscore/shortcut.cpp" line="2393"/>
         <source>Image</source>
         <translation>Изображение</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2387"/>
+        <location filename="../../mscore/shortcut.cpp" line="2394"/>
         <source>Add image</source>
         <translation>Добавить изображение</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2394"/>
+        <location filename="../../mscore/shortcut.cpp" line="2401"/>
         <source>Player: play</source>
         <translation>Панель проигрывания: Воспроизведение</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2444"/>
+        <location filename="../../mscore/shortcut.cpp" line="2451"/>
         <source>Seek to Begin</source>
         <translation>Перейти к началу</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2445"/>
+        <location filename="../../mscore/shortcut.cpp" line="2452"/>
         <source>Player: seek to begin</source>
         <translation>Панель проигрывания: перемотать в начало</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2455"/>
+        <location filename="../../mscore/shortcut.cpp" line="2462"/>
         <source>Player: rewind</source>
         <translation>Панель проигрывания: перемотать назад</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2463"/>
+        <location filename="../../mscore/shortcut.cpp" line="2470"/>
         <source>Seek to End</source>
         <translation>Перемотать в конец</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2464"/>
+        <location filename="../../mscore/shortcut.cpp" line="2471"/>
         <source>Player: seek to end</source>
         <translation>Панель проигрывания: перемотать в конец</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2471"/>
+        <location filename="../../mscore/shortcut.cpp" line="2478"/>
         <source>Toggle &apos;Play Repeats&apos;</source>
         <translation>Включить/Выключить «Играть повторы»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2481"/>
+        <location filename="../../mscore/shortcut.cpp" line="2488"/>
         <source>Pan Score</source>
         <translation>Панорамировать партитуру</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2482"/>
+        <location filename="../../mscore/shortcut.cpp" line="2489"/>
         <source>Toggle &apos;Pan Score&apos;</source>
         <translation>Включить/выключить «Движение по Нотам»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2483"/>
+        <location filename="../../mscore/shortcut.cpp" line="2490"/>
         <source>Pan score automatically</source>
         <translation>Панорамировать партитуру автоматически</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2616"/>
+        <location filename="../../mscore/shortcut.cpp" line="2623"/>
         <source>Toggle &apos;Concert Pitch&apos;</source>
         <translation>Включить/выключить &quot;Концертный строй&quot;</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2617"/>
+        <location filename="../../mscore/shortcut.cpp" line="2624"/>
         <source>Switch between concert/sounding pitch and transposing/written pitch</source>
         <translation>Переключиться между концертным/звуковым строем и транспонирующим/письменным строем</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2646"/>
+        <location filename="../../mscore/shortcut.cpp" line="2653"/>
         <source>Toggle &apos;System Break&apos;</source>
         <translation>Включить/выключить «Перенос строк»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2656"/>
+        <location filename="../../mscore/shortcut.cpp" line="2663"/>
         <source>Toggle &apos;Page Break&apos;</source>
         <translation>Включить/выключить «Перенос страницы»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2666"/>
+        <location filename="../../mscore/shortcut.cpp" line="2673"/>
         <source>Toggle &apos;Section Break&apos;</source>
         <translation>Включить/выключить «Перенос секции»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2692"/>
+        <location filename="../../mscore/shortcut.cpp" line="2699"/>
         <source>Reset Shapes and Positions</source>
         <translation>Сбросить формы и позиции</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2693"/>
+        <location filename="../../mscore/shortcut.cpp" line="2700"/>
         <source>Reset shapes and positions</source>
         <translation>Сбросить формы и позиции</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2694"/>
+        <location filename="../../mscore/shortcut.cpp" line="2701"/>
         <source>Reset shapes and positions of selected elements to their defaults</source>
         <translation>Сбросить формы и позиции выбранных элементов к их исходным значениям</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2706"/>
+        <location filename="../../mscore/shortcut.cpp" line="2713"/>
         <source>Reset Layout Stretch</source>
         <translation>Сбросить изменения ширины такта</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2707"/>
+        <location filename="../../mscore/shortcut.cpp" line="2714"/>
         <source>Reset layout stretch</source>
         <translation>Сбросить изменения ширины такта</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2708"/>
+        <location filename="../../mscore/shortcut.cpp" line="2715"/>
         <source>Reset layout stretch factor of selected measures or entire score</source>
         <translation>Сброс ширины выбранного такта или всей партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2760"/>
+        <location filename="../../mscore/shortcut.cpp" line="2778"/>
         <source>Mark Irregular Measures</source>
         <translation>Отмечать такты необычного размера</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2761"/>
+        <location filename="../../mscore/shortcut.cpp" line="2779"/>
         <source>Mark irregular measures</source>
         <translation>Отмечать такты необычного размера</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2819"/>
+        <location filename="../../mscore/shortcut.cpp" line="2837"/>
         <source>Find / Go To</source>
         <translation>Поиск / Перейти к...</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2820"/>
+        <location filename="../../mscore/shortcut.cpp" line="2838"/>
         <source>Find / Go to</source>
         <translation>Поиск / Перейти к...</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2848"/>
+        <location filename="../../mscore/shortcut.cpp" line="2866"/>
         <source>Zoom to Page Width or Previous Magnification Level</source>
         <translation>Установить масштаб по ширине или предыдущий</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2849"/>
+        <location filename="../../mscore/shortcut.cpp" line="2867"/>
         <source>Zoom to page-width / previous magnification level</source>
         <translation>Приблизить, чтобы умещалось на весь экран по ширине, или вернуться к предыдущему масштабу</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2865"/>
+        <location filename="../../mscore/shortcut.cpp" line="2883"/>
         <source>Style…</source>
         <translation>Стиль…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2866"/>
+        <location filename="../../mscore/shortcut.cpp" line="2884"/>
         <source>Edit style</source>
         <translation>Изменить стиль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2903"/>
+        <location filename="../../mscore/shortcut.cpp" line="2921"/>
         <source>All Similar Elements with More Options</source>
         <translation>Все схожие элементы с дополнительными опциями</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2994"/>
+        <location filename="../../mscore/shortcut.cpp" line="3012"/>
         <source>Par&amp;ts…</source>
         <translation>Пар&amp;тии</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3002"/>
+        <location filename="../../mscore/shortcut.cpp" line="3020"/>
         <source>Change enharmonic spelling (both modes)</source>
         <translation>Изменение энгармонической проверки (оба режима)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3003"/>
+        <location filename="../../mscore/shortcut.cpp" line="3021"/>
         <source>Change enharmonic note (alters the spelling in concert pitch and transposed mode)</source>
         <translation>Изменение энгармонической нотации (изменяет проверку в режиме «концертный строй» и в режиме транспонирования)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3010"/>
+        <location filename="../../mscore/shortcut.cpp" line="3028"/>
         <source>Change enharmonic spelling (current mode)</source>
         <translation>Изменение энгармонической записи (текущий режим)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3011"/>
+        <location filename="../../mscore/shortcut.cpp" line="3029"/>
         <source>Change enharmonic note (alters the spelling in the current mode only)</source>
         <translation>Изменение энгармонической нотации (изменяет запись только в текущем режиме)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3025"/>
+        <location filename="../../mscore/shortcut.cpp" line="3043"/>
         <source>Toggle &apos;Image Capture&apos;</source>
         <translation>Захват изображения</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3036"/>
+        <location filename="../../mscore/shortcut.cpp" line="3054"/>
         <source>Show PDF Image</source>
         <translation>Показать изображение PDF</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3037"/>
+        <location filename="../../mscore/shortcut.cpp" line="3055"/>
         <source>Show PDF image</source>
         <translation>Показать изображение PDF</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3087"/>
+        <location filename="../../mscore/shortcut.cpp" line="3105"/>
         <source>Score Comparison Tool</source>
         <translation>Сравнение партитур</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3088"/>
+        <location filename="../../mscore/shortcut.cpp" line="3106"/>
         <source>Score comparison tool</source>
         <translation>Сравнение партитур</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3101"/>
+        <location filename="../../mscore/shortcut.cpp" line="3119"/>
         <source>Split Measure Before Selected Note/Rest</source>
         <translation>Разделить такт перед выбранной нотой/паузой</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3102"/>
+        <location filename="../../mscore/shortcut.cpp" line="3120"/>
         <source>Split measure before selected note/rest</source>
         <translation>Разделить такт перед выбранной нотой/паузой</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3190"/>
+        <location filename="../../mscore/shortcut.cpp" line="3208"/>
         <source>&amp;Resource Manager…</source>
         <translation>&amp;Менеджер ресурсов</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3201"/>
+        <location filename="../../mscore/shortcut.cpp" line="3219"/>
         <source>PDF Transcribing Assistant</source>
         <translation>Помощник по преобразованию PDF</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3202"/>
+        <location filename="../../mscore/shortcut.cpp" line="3220"/>
         <source>Show PDF transcribing assistant</source>
         <translation>Показать Помощник по преобразованию PDF</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3209"/>
+        <location filename="../../mscore/shortcut.cpp" line="3227"/>
         <source>Loop Playback</source>
         <translation>Зациклить воспроизведение</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3210"/>
+        <location filename="../../mscore/shortcut.cpp" line="3228"/>
         <source>Toggle &apos;Loop Playback&apos;</source>
         <translation>Зациклить воспроизведение</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3263"/>
+        <location filename="../../mscore/shortcut.cpp" line="3281"/>
         <source>Toggle &apos;Count-In&apos; playback</source>
         <translation>Отсчёт перед воспроизведением</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3363"/>
+        <location filename="../../mscore/shortcut.cpp" line="3381"/>
         <source>Toggle &apos;View Mode&apos;</source>
         <translation>Включить/Выключить «Режим просмотра»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3388"/>
+        <location filename="../../mscore/shortcut.cpp" line="3406"/>
         <source>Toggle &apos;Visibility&apos;</source>
         <translation>Включить/Выключить «Видимость»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3797"/>
+        <location filename="../../mscore/shortcut.cpp" line="3815"/>
         <source>Add Brackets to Accidental</source>
         <translation>Добавить к знаку альтерации квадратные скобки </translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3798"/>
+        <location filename="../../mscore/shortcut.cpp" line="3816"/>
         <source>Add brackets to accidental</source>
         <translation>Добавить к знаку альтерации квадратные скобки </translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3807"/>
+        <location filename="../../mscore/shortcut.cpp" line="3825"/>
         <source>Add Parentheses to Element</source>
         <translation>Добавить к элементу круглые скобки</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3808"/>
+        <location filename="../../mscore/shortcut.cpp" line="3826"/>
         <source>Add parentheses to element</source>
         <translation>Добавить к элементу круглые скобки</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3827"/>
-        <location filename="../../mscore/shortcut.cpp" line="3828"/>
+        <location filename="../../mscore/shortcut.cpp" line="3845"/>
+        <location filename="../../mscore/shortcut.cpp" line="3846"/>
         <source>Toggle &apos;Create Multimeasure Rest&apos;</source>
         <translation>Включить/Выключить «Создание оркестровых пауз»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3837"/>
-        <location filename="../../mscore/shortcut.cpp" line="3838"/>
+        <location filename="../../mscore/shortcut.cpp" line="3855"/>
+        <location filename="../../mscore/shortcut.cpp" line="3856"/>
         <source>Toggle &apos;Hide Empty Staves&apos;</source>
         <translation>Включить/Выключить «Скрывать пустые нотные станы»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3935"/>
+        <location filename="../../mscore/shortcut.cpp" line="3953"/>
         <source>Toggle &apos;Rhythmic Slash Notation&apos;</source>
         <translation>Переключить ритмическую нотацию</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3944"/>
+        <location filename="../../mscore/shortcut.cpp" line="3962"/>
         <source>Add/Remove System Breaks…</source>
         <translation>Добавить/удалить переносы строк…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3945"/>
+        <location filename="../../mscore/shortcut.cpp" line="3963"/>
         <source>Add/remove system breaks</source>
         <translation>Добавить/удалить переносы строк</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2015"/>
+        <location filename="../../mscore/shortcut.cpp" line="2022"/>
         <source>Beam Start</source>
         <translation>Начало группы</translation>
     </message>
@@ -26818,2751 +26833,2871 @@ failed</source>
         <translation>Файл: Сохранить как</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="100"/>
+        <location filename="../../mscore/shortcut.cpp" line="107"/>
         <source>File &gt; Save a copy</source>
         <translation>Файл: Сохранить копию</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="110"/>
+        <location filename="../../mscore/shortcut.cpp" line="117"/>
         <source>&amp;Export…</source>
         <translation>&amp;Экспорт…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="130"/>
+        <location filename="../../mscore/shortcut.cpp" line="137"/>
         <source>File &gt; Close</source>
         <translation>Файл: Закрыть партитуру</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="148"/>
+        <location filename="../../mscore/shortcut.cpp" line="155"/>
         <source>File &gt; New</source>
         <translation>Файл: Новый</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="157"/>
+        <location filename="../../mscore/shortcut.cpp" line="164"/>
         <source>&amp;Print…</source>
         <translation>&amp;Печать…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="159"/>
+        <location filename="../../mscore/shortcut.cpp" line="166"/>
         <source>Print score/part</source>
         <translation>Печать партитуры/партии</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="231"/>
+        <location filename="../../mscore/shortcut.cpp" line="238"/>
         <source>Paste Half Duration</source>
         <translation>Вставить с половинной длительностью</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="232"/>
+        <location filename="../../mscore/shortcut.cpp" line="239"/>
         <source>Paste half duration</source>
         <translation>Вставить с половинной длительностью</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="241"/>
+        <location filename="../../mscore/shortcut.cpp" line="248"/>
         <source>Paste Double Duration</source>
         <translation>Вставить с удвоенной длительностью</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="242"/>
+        <location filename="../../mscore/shortcut.cpp" line="249"/>
         <source>Paste double duration</source>
         <translation>Вставить с удвоенной длительностью</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="251"/>
+        <location filename="../../mscore/shortcut.cpp" line="258"/>
         <source>Paste Special</source>
         <translation>Специальная вставка</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="252"/>
+        <location filename="../../mscore/shortcut.cpp" line="259"/>
         <source>Paste special</source>
         <translation>Специальная вставка</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="280"/>
+        <location filename="../../mscore/shortcut.cpp" line="287"/>
         <source>Note input: Toggle Entry/Normal mode</source>
         <translation>Ввод нот: переключиться между режимами ввода и просмотра</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="290"/>
+        <location filename="../../mscore/shortcut.cpp" line="297"/>
         <source>Step-Time (Default)</source>
         <translation>Пошаговый ввод (по умолчанию)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="291"/>
+        <location filename="../../mscore/shortcut.cpp" line="298"/>
         <source>Note input: Enter Step-Time mode</source>
         <translation>Ввод нот: войти в пошаговый режим</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="302"/>
+        <location filename="../../mscore/shortcut.cpp" line="309"/>
         <source>Note input: Enter Re-Pitch mode</source>
         <translation>Ввод нот: войти в режим изменения высоты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="313"/>
+        <location filename="../../mscore/shortcut.cpp" line="320"/>
         <source>Note input: Enter Rhythm mode</source>
         <translation>Ввод нот: войти в режим ритма</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="323"/>
+        <location filename="../../mscore/shortcut.cpp" line="330"/>
         <source>Real-Time (Automatic)</source>
         <translation>В реальном времени (автоматически)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="324"/>
+        <location filename="../../mscore/shortcut.cpp" line="331"/>
         <source>Note input: Enter Real-Time (Automatic) mode</source>
         <translation>Ввод нот: войти в режим реального времени (авто)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="325"/>
+        <location filename="../../mscore/shortcut.cpp" line="332"/>
         <source>Enter notes at a fixed tempo indicated by a metronome beat</source>
         <translation>Вводить ноты с фиксированным темпом, задаваемым биениями метронома</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="334"/>
+        <location filename="../../mscore/shortcut.cpp" line="341"/>
         <source>Real-Time (Manual)</source>
         <translation>В реальном времени (вручную)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="335"/>
+        <location filename="../../mscore/shortcut.cpp" line="342"/>
         <source>Note input: Enter Real-Time (Manual) mode</source>
         <translation>Ввод нот: войти в режим реального времени (ручной)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="336"/>
+        <location filename="../../mscore/shortcut.cpp" line="343"/>
         <source>Enter notes while tapping a key or pedal to set the tempo</source>
         <translation>Вводить ноты, нажимая на клавишу или педаль для задания темпа</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="345"/>
+        <location filename="../../mscore/shortcut.cpp" line="352"/>
         <source>Insert</source>
         <translation>Вставить</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="346"/>
+        <location filename="../../mscore/shortcut.cpp" line="353"/>
         <source>Note input: Enter Insert mode</source>
         <translation>Ввод нот: войти в режим вставки</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="347"/>
+        <location filename="../../mscore/shortcut.cpp" line="354"/>
         <source>Insert notes by increasing measure duration</source>
         <translation>Вводить ноты, увеличивая длительность такта</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="548"/>
+        <location filename="../../mscore/shortcut.cpp" line="555"/>
         <source>Add A to Chord</source>
         <translation>Добавить Ля в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="555"/>
+        <location filename="../../mscore/shortcut.cpp" line="562"/>
         <source>Add B to Chord</source>
         <translation>Добавить Си в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="562"/>
+        <location filename="../../mscore/shortcut.cpp" line="569"/>
         <source>Add C to Chord</source>
         <translation>Добавить До в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="569"/>
+        <location filename="../../mscore/shortcut.cpp" line="576"/>
         <source>Add D to Chord</source>
         <translation>Добавить Ре в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="576"/>
+        <location filename="../../mscore/shortcut.cpp" line="583"/>
         <source>Add E to Chord</source>
         <translation>Добавить Ми в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="583"/>
+        <location filename="../../mscore/shortcut.cpp" line="590"/>
         <source>Add F to Chord</source>
         <translation>Добавить Фа в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="590"/>
+        <location filename="../../mscore/shortcut.cpp" line="597"/>
         <source>Add G to Chord</source>
         <translation>Добавить Соль в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="597"/>
+        <location filename="../../mscore/shortcut.cpp" line="604"/>
         <source>Add Tied Note to Chord</source>
         <translation>Добавить слигованную ноту в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="598"/>
+        <location filename="../../mscore/shortcut.cpp" line="605"/>
         <source>Add tied note to chord</source>
         <translation>Добавить слигованную ноту в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="662"/>
+        <location filename="../../mscore/shortcut.cpp" line="669"/>
         <source>Real-Time Advance</source>
         <translation>Вперёд в реальном времени</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="730"/>
+        <location filename="../../mscore/shortcut.cpp" line="737"/>
         <source>Accent</source>
         <translation>Акцент</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="731"/>
+        <location filename="../../mscore/shortcut.cpp" line="738"/>
         <source>Toggle accent</source>
         <translation>Включить/Выключить акцент</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="760"/>
+        <location filename="../../mscore/shortcut.cpp" line="767"/>
         <source>Reset Beams</source>
         <translation>Сбросить параметры групп</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="761"/>
+        <location filename="../../mscore/shortcut.cpp" line="768"/>
         <source>Reset beams</source>
         <translation>Сбросить параметры групп</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="762"/>
+        <location filename="../../mscore/shortcut.cpp" line="769"/>
         <source>Reset beams of selected measures</source>
         <translation>Сбросить параметры групп в выбранных тактах</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="770"/>
+        <location filename="../../mscore/shortcut.cpp" line="777"/>
         <source>Reset Style</source>
         <translation>Сбросить Стиль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="771"/>
+        <location filename="../../mscore/shortcut.cpp" line="778"/>
         <source>Reset style</source>
         <translation>Сбросить стиль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="772"/>
+        <location filename="../../mscore/shortcut.cpp" line="779"/>
         <source>Reset all style values to default</source>
         <translation>Сбросить все настройки стиля к исходным</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="780"/>
+        <location filename="../../mscore/shortcut.cpp" line="787"/>
         <source>Reset Text Style Overrides</source>
         <translation>Сбросить стиль текста</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="781"/>
+        <location filename="../../mscore/shortcut.cpp" line="788"/>
         <source>Reset text style overrides</source>
         <translation>Сбросить настройки стиля текста</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="782"/>
+        <location filename="../../mscore/shortcut.cpp" line="789"/>
         <source>Reset all text style overrides to default</source>
         <translation>Сбросить все настройки текстового стиля к исходным</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="831"/>
+        <location filename="../../mscore/shortcut.cpp" line="838"/>
         <source>Diatonic Up (Keep Degree Alterations)</source>
         <translation>Диатонический подъём (с сохранением альтерации в градусах)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="832"/>
+        <location filename="../../mscore/shortcut.cpp" line="839"/>
         <source>Diatonic pitch up (Keep degree alterations)</source>
         <translation>Диатонический подъём высотности (с сохранением альтерации в градусах)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="873"/>
+        <location filename="../../mscore/shortcut.cpp" line="880"/>
         <source>Move chord/rest to staff above</source>
         <translation>Переместить аккорд/паузу на нотоносец выше</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="904"/>
+        <location filename="../../mscore/shortcut.cpp" line="911"/>
         <source>Diatonic Down (Keep Degree Alterations)</source>
         <translation>Диатонический спуск (с сохранением альтерации в градусах)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="905"/>
+        <location filename="../../mscore/shortcut.cpp" line="912"/>
         <source>Diatonic pitch down (Keep degree alterations)</source>
         <translation>Диатоническое опускание высотности (с сохранением альтерации в градусах)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="981"/>
+        <location filename="../../mscore/shortcut.cpp" line="988"/>
         <source>Get Location</source>
         <translation>Произнести текущее положение в партитуре</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="982"/>
+        <location filename="../../mscore/shortcut.cpp" line="989"/>
         <source>Accessibility: Get location</source>
         <translation>Специальные возможности: произнести текущее положение в партитуре</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1048"/>
+        <location filename="../../mscore/shortcut.cpp" line="1055"/>
         <source>Move chord/rest to staff below</source>
         <translation>Переместить аккорд/паузу на нотоносец ниже</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1072"/>
+        <location filename="../../mscore/shortcut.cpp" line="1079"/>
         <source>Previous System</source>
         <translation>Предыдущая система</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1073"/>
+        <location filename="../../mscore/shortcut.cpp" line="1080"/>
         <source>Go to previous system</source>
         <translation>Перейти к предыдущей системе</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1079"/>
+        <location filename="../../mscore/shortcut.cpp" line="1086"/>
         <source>Previous Frame</source>
         <translation>Предыдущая рамка</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1080"/>
+        <location filename="../../mscore/shortcut.cpp" line="1087"/>
         <source>Go to previous frame</source>
         <translation>Перейти к предыдущей рамке</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1086"/>
+        <location filename="../../mscore/shortcut.cpp" line="1093"/>
         <source>Previous Section</source>
         <translation>Предыдущий раздел</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1087"/>
+        <location filename="../../mscore/shortcut.cpp" line="1094"/>
         <source>Go to previous section</source>
         <translation>Перейти в предыдущий раздел</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1114"/>
+        <location filename="../../mscore/shortcut.cpp" line="1121"/>
         <source>Next System</source>
         <translation>Следующая система</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1115"/>
+        <location filename="../../mscore/shortcut.cpp" line="1122"/>
         <source>Go to next system</source>
         <translation>Перейти к следующей системе</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1121"/>
+        <location filename="../../mscore/shortcut.cpp" line="1128"/>
         <source>Next Frame</source>
         <translation>Следующая рамка</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1122"/>
+        <location filename="../../mscore/shortcut.cpp" line="1129"/>
         <source>Go to next frame</source>
         <translation>Перейти к следующей рамке</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1128"/>
+        <location filename="../../mscore/shortcut.cpp" line="1135"/>
         <source>Next Section</source>
         <translation>Следующий раздел</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1129"/>
+        <location filename="../../mscore/shortcut.cpp" line="1136"/>
         <source>Go to next section</source>
         <translation>Перейти в следующий раздел</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1135"/>
+        <location filename="../../mscore/shortcut.cpp" line="1142"/>
         <source>Top Staff</source>
         <translation>Верхний нотоносец</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1136"/>
+        <location filename="../../mscore/shortcut.cpp" line="1143"/>
         <source>Go to top staff</source>
         <translation>Перейти к верхнему нотоносцу</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1142"/>
+        <location filename="../../mscore/shortcut.cpp" line="1149"/>
         <source>Playback Cursor Position</source>
         <translation>Позиция курсора взспроизаедения</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1143"/>
+        <location filename="../../mscore/shortcut.cpp" line="1150"/>
         <source>Go to recent playback cursor position</source>
         <translation>Перейти к последней позиции курсора воспроизведения</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1149"/>
+        <location filename="../../mscore/shortcut.cpp" line="1156"/>
         <source>First Empty Trailing Measure</source>
         <translation>Первый пустой такт в конце</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1150"/>
+        <location filename="../../mscore/shortcut.cpp" line="1157"/>
         <source>Go to first empty trailing measure</source>
         <translation>Перейти к первому пустому такту в самом конце</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1254"/>
+        <location filename="../../mscore/shortcut.cpp" line="1261"/>
         <source>Screen: Previous</source>
         <translation>Экран: предыдущий</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1260"/>
+        <location filename="../../mscore/shortcut.cpp" line="1267"/>
         <source>Screen: Next</source>
         <translation>Экран: следующий</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1317"/>
+        <location filename="../../mscore/shortcut.cpp" line="1324"/>
         <source>Ottava 8va alta</source>
         <translation>На октаву выше</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1318"/>
+        <location filename="../../mscore/shortcut.cpp" line="1325"/>
         <source>Add ottava 8va alta</source>
         <translation>Добавить на октаву выше</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1327"/>
+        <location filename="../../mscore/shortcut.cpp" line="1334"/>
         <source>Ottava 8va bassa</source>
         <translation>На октаву ниже</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1328"/>
+        <location filename="../../mscore/shortcut.cpp" line="1335"/>
         <source>Add ottava 8va bassa</source>
         <translation>Добавить на октаву ниже</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1346"/>
+        <location filename="../../mscore/shortcut.cpp" line="1353"/>
         <source>Delete the selected element(s)</source>
         <translation>Удалить выбранные элементы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1356"/>
+        <location filename="../../mscore/shortcut.cpp" line="1363"/>
         <source>Convert the measure to a full measure rest</source>
         <translation>Преобразовать такт в тактовую паузу</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1364"/>
+        <location filename="../../mscore/shortcut.cpp" line="1371"/>
         <source>Remove Selected Range</source>
         <translation>Удалить выделенный диапазон</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1365"/>
+        <location filename="../../mscore/shortcut.cpp" line="1372"/>
         <source>Remove selected range</source>
         <translation>Удалить выделенный диапазон</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1366"/>
+        <location filename="../../mscore/shortcut.cpp" line="1373"/>
         <source>Remove element and duration</source>
         <translation>Удалить элемент и длительность</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1626"/>
+        <location filename="../../mscore/shortcut.cpp" line="1633"/>
         <source>256th Note</source>
         <translation>256-я нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1627"/>
+        <location filename="../../mscore/shortcut.cpp" line="1634"/>
         <source>Note duration: 256th</source>
         <translation>Длительность ноты: 256-я</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1628"/>
-        <location filename="../../mscore/shortcut.cpp" line="3526"/>
+        <location filename="../../mscore/shortcut.cpp" line="1635"/>
+        <location filename="../../mscore/shortcut.cpp" line="3544"/>
         <source>256th note</source>
         <translation>256-я нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1637"/>
+        <location filename="../../mscore/shortcut.cpp" line="1644"/>
         <source>512th Note</source>
         <translation>512-я нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1638"/>
+        <location filename="../../mscore/shortcut.cpp" line="1645"/>
         <source>Note duration: 512th</source>
         <translation>Длительность ноты: 512-я</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1639"/>
-        <location filename="../../mscore/shortcut.cpp" line="3536"/>
+        <location filename="../../mscore/shortcut.cpp" line="1646"/>
+        <location filename="../../mscore/shortcut.cpp" line="3554"/>
         <source>512th note</source>
         <translation>512-я нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1648"/>
+        <location filename="../../mscore/shortcut.cpp" line="1655"/>
         <source>1024th Note</source>
         <translation>1024-я нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1649"/>
+        <location filename="../../mscore/shortcut.cpp" line="1656"/>
         <source>Note duration: 1024th</source>
         <translation>Длительность ноты: 1024-я</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1650"/>
-        <location filename="../../mscore/shortcut.cpp" line="3546"/>
+        <location filename="../../mscore/shortcut.cpp" line="1657"/>
+        <location filename="../../mscore/shortcut.cpp" line="3564"/>
         <source>1024th note</source>
         <translation>1024-я нота</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1739"/>
-        <location filename="../../mscore/shortcut.cpp" line="1741"/>
+        <location filename="../../mscore/shortcut.cpp" line="1746"/>
+        <location filename="../../mscore/shortcut.cpp" line="1748"/>
         <source>Double ♯</source>
         <translation>дубль-диез</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1740"/>
+        <location filename="../../mscore/shortcut.cpp" line="1747"/>
         <source>Note input: Double ♯</source>
         <translation>Ввод нот: Дубль-диез</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1750"/>
-        <location filename="../../mscore/shortcut.cpp" line="1752"/>
+        <location filename="../../mscore/shortcut.cpp" line="1757"/>
+        <location filename="../../mscore/shortcut.cpp" line="1759"/>
         <source>♯</source>
         <translation>диез</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1751"/>
+        <location filename="../../mscore/shortcut.cpp" line="1758"/>
         <source>Note input: ♯</source>
         <translation>Ввод нот: Диез</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1761"/>
-        <location filename="../../mscore/shortcut.cpp" line="1763"/>
+        <location filename="../../mscore/shortcut.cpp" line="1768"/>
+        <location filename="../../mscore/shortcut.cpp" line="1770"/>
         <source>♮</source>
         <translation>бекар</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1762"/>
+        <location filename="../../mscore/shortcut.cpp" line="1769"/>
         <source>Note input: ♮</source>
         <translation>Ввод нот: Бекар</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1772"/>
-        <location filename="../../mscore/shortcut.cpp" line="1774"/>
+        <location filename="../../mscore/shortcut.cpp" line="1779"/>
+        <location filename="../../mscore/shortcut.cpp" line="1781"/>
         <source>♭</source>
         <translation>бемоль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1773"/>
+        <location filename="../../mscore/shortcut.cpp" line="1780"/>
         <source>Note input: ♭</source>
         <translation>Ввод нот: Бемоль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1783"/>
-        <location filename="../../mscore/shortcut.cpp" line="1785"/>
+        <location filename="../../mscore/shortcut.cpp" line="1790"/>
+        <location filename="../../mscore/shortcut.cpp" line="1792"/>
         <source>Double ♭</source>
         <translation>дубль-бемоль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1784"/>
+        <location filename="../../mscore/shortcut.cpp" line="1791"/>
         <source>Note input: Double ♭</source>
         <translation>Ввод нот: Дубль-бемоль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1794"/>
-        <location filename="../../mscore/shortcut.cpp" line="1796"/>
+        <location filename="../../mscore/shortcut.cpp" line="1801"/>
+        <location filename="../../mscore/shortcut.cpp" line="1803"/>
         <source>Double ♯ (non-toggle)</source>
         <translation>Дубль-♯ (без переключения)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1795"/>
+        <location filename="../../mscore/shortcut.cpp" line="1802"/>
         <source>Note input (non-toggle): Double ♯</source>
         <translation>Ввод нот (без переключения): дубль-♯</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1805"/>
-        <location filename="../../mscore/shortcut.cpp" line="1807"/>
+        <location filename="../../mscore/shortcut.cpp" line="1812"/>
+        <location filename="../../mscore/shortcut.cpp" line="1814"/>
         <source>♯ (non-toggle)</source>
         <translation>♯ (без переключения)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1806"/>
+        <location filename="../../mscore/shortcut.cpp" line="1813"/>
         <source>Note input (non-toggle): ♯</source>
         <translation>Ввод нот (без переключения): ♯</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1816"/>
-        <location filename="../../mscore/shortcut.cpp" line="1818"/>
+        <location filename="../../mscore/shortcut.cpp" line="1823"/>
+        <location filename="../../mscore/shortcut.cpp" line="1825"/>
         <source>♮ (non-toggle)</source>
         <translation>♮ (без переключения)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1817"/>
+        <location filename="../../mscore/shortcut.cpp" line="1824"/>
         <source>Note input (non-toggle): ♮</source>
         <translation>Ввод нот (без переключения): ♮</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1827"/>
-        <location filename="../../mscore/shortcut.cpp" line="1829"/>
+        <location filename="../../mscore/shortcut.cpp" line="1834"/>
+        <location filename="../../mscore/shortcut.cpp" line="1836"/>
         <source>♭ (non-toggle)</source>
         <translation>♭ (без переключения)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1828"/>
+        <location filename="../../mscore/shortcut.cpp" line="1835"/>
         <source>Note input (non-toggle): ♭</source>
         <translation>Ввод нот (без переключения): ♭</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1838"/>
-        <location filename="../../mscore/shortcut.cpp" line="1840"/>
+        <location filename="../../mscore/shortcut.cpp" line="1845"/>
+        <location filename="../../mscore/shortcut.cpp" line="1847"/>
         <source>Double ♭ (non-toggle)</source>
         <translation>Дубль-♭ (без переключения)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1839"/>
+        <location filename="../../mscore/shortcut.cpp" line="1846"/>
         <source>Note input (non-toggle): Double ♭</source>
         <translation>Ввод нот (без переключения): дубль-♭</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1908"/>
+        <location filename="../../mscore/shortcut.cpp" line="1915"/>
         <source>Grace: Eighth After</source>
         <translation>Форшлаг в 1/8 после ноты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1920"/>
+        <location filename="../../mscore/shortcut.cpp" line="1927"/>
         <source>Grace: 16th After</source>
         <translation>Форшлаг в 1/16 после ноты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1932"/>
+        <location filename="../../mscore/shortcut.cpp" line="1939"/>
         <source>Grace: 32nd After</source>
         <translation>Форшлаг в 1/32 после ноты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2016"/>
+        <location filename="../../mscore/shortcut.cpp" line="2023"/>
         <source>Beam start</source>
         <translation>Начало группы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2026"/>
+        <location filename="../../mscore/shortcut.cpp" line="2033"/>
         <source>Beam Middle</source>
         <translation>Середина группы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2027"/>
+        <location filename="../../mscore/shortcut.cpp" line="2034"/>
         <source>Beam middle</source>
         <translation>Середина группы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2037"/>
+        <location filename="../../mscore/shortcut.cpp" line="2044"/>
         <source>No Beam</source>
         <translation>Без группы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2038"/>
+        <location filename="../../mscore/shortcut.cpp" line="2045"/>
         <source>No beam</source>
         <translation>Без группы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2048"/>
+        <location filename="../../mscore/shortcut.cpp" line="2055"/>
         <source>Beam 16th Sub</source>
         <translation>16-е подгруппы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2049"/>
+        <location filename="../../mscore/shortcut.cpp" line="2056"/>
         <source>Beam 16th sub</source>
         <translation>16-е подгруппы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2059"/>
+        <location filename="../../mscore/shortcut.cpp" line="2066"/>
         <source>Beam 32nd Sub</source>
         <translation>32-е подгруппы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2060"/>
+        <location filename="../../mscore/shortcut.cpp" line="2067"/>
         <source>Beam 32nd sub</source>
         <translation>32-е подгруппы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2070"/>
+        <location filename="../../mscore/shortcut.cpp" line="2077"/>
         <source>Auto Beam</source>
         <translation>Автогруппировка</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2071"/>
+        <location filename="../../mscore/shortcut.cpp" line="2078"/>
         <source>Auto beam</source>
         <translation>Автогруппировка</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2081"/>
+        <location filename="../../mscore/shortcut.cpp" line="2088"/>
         <source>Feathered Beam, Slower</source>
         <translation>Сужение вязки, замедление</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2082"/>
+        <location filename="../../mscore/shortcut.cpp" line="2089"/>
         <source>Feathered beam, slower</source>
         <translation>Сужение вязки, замедление</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2090"/>
+        <location filename="../../mscore/shortcut.cpp" line="2097"/>
         <source>Feathered Beam, Faster</source>
         <translation>Расширение вязки, ускорение</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2091"/>
+        <location filename="../../mscore/shortcut.cpp" line="2098"/>
         <source>Feathered beam, faster</source>
         <translation>Расширение вязки, ускорение</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2099"/>
+        <location filename="../../mscore/shortcut.cpp" line="2106"/>
         <source>Palettes</source>
         <translation>Палитры символов</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2100"/>
+        <location filename="../../mscore/shortcut.cpp" line="2107"/>
         <source>Toggle &apos;Palettes&apos;</source>
         <translation>Включить/Выключить «Палитры символов»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2109"/>
+        <location filename="../../mscore/shortcut.cpp" line="2116"/>
         <source>Play Panel</source>
         <translation>Панель воспроизведения</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2119"/>
+        <location filename="../../mscore/shortcut.cpp" line="2126"/>
         <source>Selection Filter</source>
         <translation>Фильтр выделения</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2120"/>
+        <location filename="../../mscore/shortcut.cpp" line="2127"/>
         <source>Toggle &apos;Selection Filter&apos;</source>
         <translation>Включить/выключить «Фильтр выделения»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2129"/>
+        <location filename="../../mscore/shortcut.cpp" line="2136"/>
         <source>Navigator</source>
         <translation>Навигатор</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2130"/>
+        <location filename="../../mscore/shortcut.cpp" line="2137"/>
         <source>Toggle &apos;Navigator&apos;</source>
         <translation>Включить/Выключить «Навигатор»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2139"/>
+        <location filename="../../mscore/shortcut.cpp" line="2146"/>
         <source>Timeline</source>
         <translation>Временная шкала</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2140"/>
+        <location filename="../../mscore/shortcut.cpp" line="2147"/>
         <source>Toggle &apos;Timeline&apos;</source>
         <translation>Переключить видимость временной шкалы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2149"/>
+        <location filename="../../mscore/shortcut.cpp" line="2156"/>
         <source>MIDI Import Panel</source>
         <translation>Панель MIDI-импорта</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2164"/>
+        <location filename="../../mscore/shortcut.cpp" line="2171"/>
         <source>Mixer</source>
         <translation>Микшер</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2165"/>
+        <location filename="../../mscore/shortcut.cpp" line="2172"/>
         <source>Toggle &apos;Mixer&apos;</source>
         <translation>Включить/Выключить «Микшер»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2174"/>
+        <location filename="../../mscore/shortcut.cpp" line="2181"/>
         <source>File Operations</source>
         <translation>Операции с файлами</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2175"/>
+        <location filename="../../mscore/shortcut.cpp" line="2182"/>
         <source>Toggle &apos;File Operations&apos; toolbar</source>
         <translation>Включить/выключить панель «Операции с файлами»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2181"/>
+        <location filename="../../mscore/shortcut.cpp" line="2188"/>
         <source>Playback Controls</source>
         <translation>Контроль воспроизведения</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2188"/>
-        <location filename="../../mscore/shortcut.cpp" line="2615"/>
+        <location filename="../../mscore/shortcut.cpp" line="2195"/>
+        <location filename="../../mscore/shortcut.cpp" line="2622"/>
         <source>Concert Pitch</source>
         <translation>Концертный строй</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2195"/>
-        <location filename="../../mscore/shortcut.cpp" line="3024"/>
+        <location filename="../../mscore/shortcut.cpp" line="2202"/>
+        <location filename="../../mscore/shortcut.cpp" line="3042"/>
         <source>Image Capture</source>
         <translation>Захват изображения</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2203"/>
+        <location filename="../../mscore/shortcut.cpp" line="2210"/>
         <source>Toggle &apos;Note Input&apos; toolbar</source>
         <translation>Включить/выключить панель «Ввод нот»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2210"/>
-        <location filename="../../mscore/shortcut.cpp" line="4071"/>
+        <location filename="../../mscore/shortcut.cpp" line="2217"/>
+        <location filename="../../mscore/shortcut.cpp" line="4089"/>
         <source>Feedback</source>
         <translation>Обратная связь</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2211"/>
+        <location filename="../../mscore/shortcut.cpp" line="2218"/>
         <source>Toggle &apos;Feedback&apos; toolbar</source>
         <translation>Включить/выключить панель «Обратная связь»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2218"/>
+        <location filename="../../mscore/shortcut.cpp" line="2225"/>
         <source>Workspaces</source>
         <translation>Рабочие пространства</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2219"/>
+        <location filename="../../mscore/shortcut.cpp" line="2226"/>
         <source>Toggle &apos;Workspaces&apos; toolbar</source>
         <translation>Включить/выключить панель «Рабочие пространства»</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2225"/>
+        <location filename="../../mscore/shortcut.cpp" line="2232"/>
         <source>Status Bar</source>
         <translation>Статусная строка</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2233"/>
+        <location filename="../../mscore/shortcut.cpp" line="2240"/>
         <source>Add new workspace</source>
         <translation>Добавить новое рабочее пространство</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2239"/>
+        <location filename="../../mscore/shortcut.cpp" line="2246"/>
         <source>Quit</source>
         <translation>Выйти из приложения</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2245"/>
+        <location filename="../../mscore/shortcut.cpp" line="2252"/>
         <source>Zoom Canvas</source>
         <translation>Приближать холст</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2246"/>
+        <location filename="../../mscore/shortcut.cpp" line="2253"/>
         <source>Zoom canvas</source>
         <translation>Масштабировать холст</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2252"/>
+        <location filename="../../mscore/shortcut.cpp" line="2259"/>
         <source>Lyrics</source>
         <translation>Вокальный текст</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2253"/>
+        <location filename="../../mscore/shortcut.cpp" line="2260"/>
         <source>Add lyrics</source>
         <translation>Добавить вокальный текст</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2263"/>
+        <location filename="../../mscore/shortcut.cpp" line="2270"/>
         <source>Tempo Marking</source>
         <translation>Обозначение темпа</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2264"/>
+        <location filename="../../mscore/shortcut.cpp" line="2271"/>
         <source>Add tempo marking</source>
         <translation>Добавить темп</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2274"/>
+        <location filename="../../mscore/shortcut.cpp" line="2281"/>
         <source>System Text</source>
         <translation>Текст системы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2275"/>
+        <location filename="../../mscore/shortcut.cpp" line="2282"/>
         <source>Add system text</source>
         <translation>Добавить текст системы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2281"/>
+        <location filename="../../mscore/shortcut.cpp" line="2288"/>
         <source>Staff Text</source>
         <translation>Текст нотоносца</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2282"/>
+        <location filename="../../mscore/shortcut.cpp" line="2289"/>
         <source>Add staff text</source>
         <translation>Добавить текст нотоносца</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2288"/>
+        <location filename="../../mscore/shortcut.cpp" line="2295"/>
         <source>Expression Text</source>
         <translation>Текст средств выразительности</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2289"/>
+        <location filename="../../mscore/shortcut.cpp" line="2296"/>
         <source>Expression text</source>
         <translation>Текст средств выразительности</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2295"/>
+        <location filename="../../mscore/shortcut.cpp" line="2302"/>
         <source>Text</source>
         <translation>Текст</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2296"/>
+        <location filename="../../mscore/shortcut.cpp" line="2303"/>
         <source>Add frame text</source>
         <translation>Добавить текст</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2302"/>
+        <location filename="../../mscore/shortcut.cpp" line="2309"/>
         <source>Title</source>
         <translation>Название произведения</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2303"/>
+        <location filename="../../mscore/shortcut.cpp" line="2310"/>
         <source>Add title text</source>
         <translation>Добавить заголовок</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2309"/>
+        <location filename="../../mscore/shortcut.cpp" line="2316"/>
         <source>Subtitle</source>
         <translation>Подзаголовок</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2310"/>
+        <location filename="../../mscore/shortcut.cpp" line="2317"/>
         <source>Add subtitle text</source>
         <translation>Добавить подзаголовок</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2316"/>
+        <location filename="../../mscore/shortcut.cpp" line="2323"/>
         <source>Composer</source>
         <translation>Композитор</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2317"/>
+        <location filename="../../mscore/shortcut.cpp" line="2324"/>
         <source>Add composer text</source>
         <translation>Добавить композитора</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2323"/>
+        <location filename="../../mscore/shortcut.cpp" line="2330"/>
         <source>Lyricist</source>
         <translation>Автор текста</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2324"/>
+        <location filename="../../mscore/shortcut.cpp" line="2331"/>
         <source>Add lyricist text</source>
         <translation>Добавить автора текста</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2330"/>
+        <location filename="../../mscore/shortcut.cpp" line="2337"/>
         <source>Part Name</source>
         <translation>Название партии</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2331"/>
+        <location filename="../../mscore/shortcut.cpp" line="2338"/>
         <source>Add part name</source>
         <translation>Добавить название партии</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2337"/>
+        <location filename="../../mscore/shortcut.cpp" line="2344"/>
         <source>Chord Symbol</source>
         <translation>Символ аккорда</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2338"/>
+        <location filename="../../mscore/shortcut.cpp" line="2345"/>
         <source>Add chord symbol</source>
         <translation>Добавить символ аккорда</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2344"/>
+        <location filename="../../mscore/shortcut.cpp" line="2351"/>
         <source>Roman Numeral Analysis</source>
         <translation>Римская нотация</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2345"/>
+        <location filename="../../mscore/shortcut.cpp" line="2352"/>
         <source>Add Roman numeral analysis</source>
         <translation>Добавить римскую нотацию</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2351"/>
+        <location filename="../../mscore/shortcut.cpp" line="2358"/>
         <source>Nashville Number</source>
         <translation>Число Нэшвилла</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2352"/>
+        <location filename="../../mscore/shortcut.cpp" line="2359"/>
         <source>Add Nashville number</source>
         <translation>Добавить число Нэшвилла</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2358"/>
+        <location filename="../../mscore/shortcut.cpp" line="2365"/>
         <source>Rehearsal Mark</source>
         <translation>Партитурный ориентир</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2359"/>
+        <location filename="../../mscore/shortcut.cpp" line="2366"/>
         <source>Add rehearsal mark</source>
         <translation>Добавить партитурный ориентир / цифру</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2365"/>
+        <location filename="../../mscore/shortcut.cpp" line="2372"/>
         <source>Instrument Change</source>
         <translation>Смена инструмента</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2366"/>
+        <location filename="../../mscore/shortcut.cpp" line="2373"/>
         <source>Add instrument change</source>
         <translation>Добавить смену инструмента</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2372"/>
+        <location filename="../../mscore/shortcut.cpp" line="2379"/>
         <source>Fingering</source>
         <translation>Аппликатура</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2373"/>
+        <location filename="../../mscore/shortcut.cpp" line="2380"/>
         <source>Add fingering</source>
         <translation>Добавить аппликатуру</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2379"/>
+        <location filename="../../mscore/shortcut.cpp" line="2386"/>
         <source>Sticking</source>
         <translation>Подсказки по палочкам</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2380"/>
+        <location filename="../../mscore/shortcut.cpp" line="2387"/>
         <source>Add sticking</source>
         <translation>Добавить подсказки по палочкам</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4064"/>
+        <location filename="../../mscore/shortcut.cpp" line="4082"/>
         <source>Apply Input State</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4065"/>
+        <location filename="../../mscore/shortcut.cpp" line="4083"/>
         <source>Apply input state</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4081"/>
+        <location filename="../../mscore/shortcut.cpp" line="4099"/>
         <source>Zoom In Horizontally</source>
         <translation>Приблизить по горизонтали</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4082"/>
+        <location filename="../../mscore/shortcut.cpp" line="4100"/>
         <source>Zoom in horizontally - piano roll editor</source>
         <translation>Приблизить по горизонтали — матричный редактор</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4090"/>
+        <location filename="../../mscore/shortcut.cpp" line="4108"/>
         <source>Zoom Out Horizontally</source>
         <translation>Отдалить по горизонтали</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4091"/>
+        <location filename="../../mscore/shortcut.cpp" line="4109"/>
         <source>Zoom out horizontally - piano roll editor</source>
         <translation>Отдалить по горизонтали — матричный редактор</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4099"/>
+        <location filename="../../mscore/shortcut.cpp" line="4117"/>
         <source>Zoom In Vertically</source>
         <translation>Приблизить по вертикали</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4100"/>
+        <location filename="../../mscore/shortcut.cpp" line="4118"/>
         <source>Zoom in vertically - piano roll editor</source>
         <translation>Приблизить по вертикали — матричный редактор</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4108"/>
+        <location filename="../../mscore/shortcut.cpp" line="4126"/>
         <source>Zoom Out Vertically</source>
         <translation>Отдалить по вертикали</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4109"/>
+        <location filename="../../mscore/shortcut.cpp" line="4127"/>
         <source>Zoom out vertically - piano roll editor</source>
         <translation>Отдалить по вертикали — матричный редактор</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2393"/>
+        <location filename="../../mscore/shortcut.cpp" line="2400"/>
         <source>Play</source>
         <translation>Играть</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="137"/>
+        <location filename="../../mscore/shortcut.cpp" line="99"/>
+        <source>Start Preferences Dialog…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="100"/>
+        <source>Start Preferences Dialog</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="144"/>
         <source>Reload Current Score</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="138"/>
+        <location filename="../../mscore/shortcut.cpp" line="145"/>
         <source>File &gt; Reload Current Score</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="139"/>
+        <location filename="../../mscore/shortcut.cpp" line="146"/>
         <source>Reload current score</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="221"/>
+        <location filename="../../mscore/shortcut.cpp" line="228"/>
         <source>Paste (Clone)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="356"/>
+        <location filename="../../mscore/shortcut.cpp" line="363"/>
         <source>&amp;Optimize Enharmonic Spellings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="357"/>
+        <location filename="../../mscore/shortcut.cpp" line="364"/>
         <source>Optimize enharmonic spellings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="366"/>
+        <location filename="../../mscore/shortcut.cpp" line="373"/>
         <source>Unison</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="367"/>
+        <location filename="../../mscore/shortcut.cpp" line="374"/>
         <source>Enter unison</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="429"/>
+        <location filename="../../mscore/shortcut.cpp" line="436"/>
         <source>Tenth Above</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="430"/>
+        <location filename="../../mscore/shortcut.cpp" line="437"/>
         <source>Enter tenth above</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="492"/>
+        <location filename="../../mscore/shortcut.cpp" line="499"/>
         <source>Tenth Below</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="493"/>
+        <location filename="../../mscore/shortcut.cpp" line="500"/>
         <source>Enter tenth below</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../mscore/shortcut.cpp" line="1975"/>
-        <location filename="../../mscore/shortcut.cpp" line="1976"/>
-        <source>Cycle through voices in range-selection</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="1982"/>
         <location filename="../../mscore/shortcut.cpp" line="1983"/>
+        <source>Cycle through voices in range-selection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="1989"/>
+        <location filename="../../mscore/shortcut.cpp" line="1990"/>
         <source>Toggle mouse for note entry</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="1993"/>
-        <location filename="../../mscore/shortcut.cpp" line="1994"/>
+        <location filename="../../mscore/shortcut.cpp" line="2000"/>
+        <location filename="../../mscore/shortcut.cpp" line="2001"/>
         <source>Toggle editing sound playback</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2395"/>
+        <location filename="../../mscore/shortcut.cpp" line="2402"/>
         <source>Start or stop playback</source>
         <translation>Играть/Остановить</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2404"/>
+        <location filename="../../mscore/shortcut.cpp" line="2411"/>
         <source>Play Previous Chord</source>
         <translation>Проиграть предыдущий аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2405"/>
+        <location filename="../../mscore/shortcut.cpp" line="2412"/>
         <source>Play previous chord</source>
         <translation>Проиграть предыдущий аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2414"/>
+        <location filename="../../mscore/shortcut.cpp" line="2421"/>
         <source>Play Previous Measure</source>
         <translation>Проиграть предыдущий такт</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2415"/>
+        <location filename="../../mscore/shortcut.cpp" line="2422"/>
         <source>Play previous measure</source>
         <translation>Проиграть предыдущий такт</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2424"/>
+        <location filename="../../mscore/shortcut.cpp" line="2431"/>
         <source>Play Next Chord</source>
         <translation>Проиграть следующий аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2425"/>
+        <location filename="../../mscore/shortcut.cpp" line="2432"/>
         <source>Play next chord</source>
         <translation>Проиграть следующий аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2434"/>
+        <location filename="../../mscore/shortcut.cpp" line="2441"/>
         <source>Play Next Measure</source>
         <translation>Проиграть следующий такт</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2435"/>
+        <location filename="../../mscore/shortcut.cpp" line="2442"/>
         <source>Play next measure</source>
         <translation>Проиграть следующий такт</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2454"/>
+        <location filename="../../mscore/shortcut.cpp" line="2461"/>
         <source>Rewind</source>
         <translation>Перемотать назад</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2456"/>
+        <location filename="../../mscore/shortcut.cpp" line="2463"/>
         <source>Rewind to start position</source>
         <translation>Перемотать к началу</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2470"/>
+        <location filename="../../mscore/shortcut.cpp" line="2477"/>
         <source>Play Repeats</source>
         <translation>Играть повторы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2472"/>
+        <location filename="../../mscore/shortcut.cpp" line="2479"/>
         <source>Play repeats</source>
         <translation>Играть повторы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2492"/>
+        <location filename="../../mscore/shortcut.cpp" line="2499"/>
         <source>Load Style…</source>
         <translation>Загрузить стиль…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2493"/>
+        <location filename="../../mscore/shortcut.cpp" line="2500"/>
         <source>Load style</source>
         <translation>Загрузить стиль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2503"/>
+        <location filename="../../mscore/shortcut.cpp" line="2510"/>
         <source>Save Style…</source>
         <translation>Сохранить стиль…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2504"/>
+        <location filename="../../mscore/shortcut.cpp" line="2511"/>
         <source>Save style</source>
         <translation>Сохранить стиль</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2514"/>
+        <location filename="../../mscore/shortcut.cpp" line="2521"/>
         <source>Select All</source>
         <translation>Выделить всё</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2515"/>
+        <location filename="../../mscore/shortcut.cpp" line="2522"/>
         <source>Select all</source>
         <translation>Выделить всё</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2524"/>
+        <location filename="../../mscore/shortcut.cpp" line="2531"/>
         <source>&amp;Transpose…</source>
         <translation>&amp;Транспонировать…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2525"/>
+        <location filename="../../mscore/shortcut.cpp" line="2532"/>
         <source>Transpose</source>
         <translation>Транспонировать</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2535"/>
+        <location filename="../../mscore/shortcut.cpp" line="2542"/>
         <source>Treble Clef</source>
         <translation>Скрипичный ключ</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2536"/>
+        <location filename="../../mscore/shortcut.cpp" line="2543"/>
         <source>Add treble clef</source>
         <translation>Добавить скрипичный ключ</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2545"/>
+        <location filename="../../mscore/shortcut.cpp" line="2552"/>
         <source>Bass Clef</source>
         <translation>Басовый ключ</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2546"/>
+        <location filename="../../mscore/shortcut.cpp" line="2553"/>
         <source>Add bass clef</source>
         <translation>Добавить басовый ключ</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2555"/>
+        <location filename="../../mscore/shortcut.cpp" line="2562"/>
         <source>Exchange Voice 1-2</source>
         <translation>Поменять местами голоса 1-2</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2556"/>
+        <location filename="../../mscore/shortcut.cpp" line="2563"/>
         <source>Exchange voice 1-2</source>
         <translation>Поменять голоса 1-2</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2565"/>
+        <location filename="../../mscore/shortcut.cpp" line="2572"/>
         <source>Exchange Voice 1-3</source>
         <translation>Поменять местами голоса 1-3</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2566"/>
+        <location filename="../../mscore/shortcut.cpp" line="2573"/>
         <source>Exchange voice 1-3</source>
         <translation>Поменять голоса 1-3</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2575"/>
+        <location filename="../../mscore/shortcut.cpp" line="2582"/>
         <source>Exchange Voice 1-4</source>
         <translation>Поменять местами голоса 1-4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2576"/>
+        <location filename="../../mscore/shortcut.cpp" line="2583"/>
         <source>Exchange voice 1-4</source>
         <translation>Поменять голоса 1-4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2585"/>
+        <location filename="../../mscore/shortcut.cpp" line="2592"/>
         <source>Exchange Voice 2-3</source>
         <translation>Поменять местами голоса 2-3</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2586"/>
+        <location filename="../../mscore/shortcut.cpp" line="2593"/>
         <source>Exchange voice 2-3</source>
         <translation>Поменять голоса 2-3</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2595"/>
+        <location filename="../../mscore/shortcut.cpp" line="2602"/>
         <source>Exchange Voice 2-4</source>
         <translation>Поменять местами голоса 2-4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2596"/>
+        <location filename="../../mscore/shortcut.cpp" line="2603"/>
         <source>Exchange voice 2-4</source>
         <translation>Поменять голоса 2-4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2605"/>
+        <location filename="../../mscore/shortcut.cpp" line="2612"/>
         <source>Exchange Voice 3-4</source>
         <translation>Поменять местами голоса 3-4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2606"/>
+        <location filename="../../mscore/shortcut.cpp" line="2613"/>
         <source>Exchange voice 3-4</source>
         <translation>Поменять голоса 3-4</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2625"/>
+        <location filename="../../mscore/shortcut.cpp" line="2632"/>
         <source>Repeat Last Command</source>
         <translation>Повторить последнюю команду</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2626"/>
+        <location filename="../../mscore/shortcut.cpp" line="2633"/>
         <source>Repeat last command</source>
         <translation>Повторить последнюю команду</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2634"/>
+        <location filename="../../mscore/shortcut.cpp" line="2641"/>
         <source>Score Properties…</source>
         <translation>Свойства партитуры…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2635"/>
+        <location filename="../../mscore/shortcut.cpp" line="2642"/>
         <source>Edit score properties</source>
         <translation>Редактировать свойства партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2645"/>
+        <location filename="../../mscore/shortcut.cpp" line="2652"/>
         <source>Toggle System Break</source>
         <translation>Включить/выключить разрыв системы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2655"/>
+        <location filename="../../mscore/shortcut.cpp" line="2662"/>
         <source>Toggle Page Break</source>
         <translation>Включить/выключить разрыв страницы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2665"/>
+        <location filename="../../mscore/shortcut.cpp" line="2672"/>
         <source>Toggle Section Break</source>
         <translation>Включить/выключить разрыв раздела</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2675"/>
+        <location filename="../../mscore/shortcut.cpp" line="2682"/>
         <source>Toggle Keep measures on the same system</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2676"/>
+        <location filename="../../mscore/shortcut.cpp" line="2683"/>
         <source>Toggle &apos;Keep measures on the same system&apos;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2685"/>
+        <location filename="../../mscore/shortcut.cpp" line="2692"/>
         <source>Edit Element</source>
         <translation>Изменить элемент</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2686"/>
+        <location filename="../../mscore/shortcut.cpp" line="2693"/>
         <source>Edit element</source>
         <translation>Изменить элемент</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2700"/>
+        <location filename="../../mscore/shortcut.cpp" line="2707"/>
         <source>Debugger</source>
         <translation>Отладчик</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2716"/>
+        <location filename="../../mscore/shortcut.cpp" line="2723"/>
         <source>Show Invisible</source>
         <translation>Отображать невидимые символы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2717"/>
+        <location filename="../../mscore/shortcut.cpp" line="2724"/>
         <source>Show invisible</source>
         <translation>Показать невидимые символы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2727"/>
+        <location filename="../../mscore/shortcut.cpp" line="2734"/>
+        <source>Toggle Debug Options</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="2735"/>
+        <source>Toggle debug options</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="2745"/>
         <source>Show Unprintable</source>
         <translation>Отображать непечатные знаки</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2728"/>
+        <location filename="../../mscore/shortcut.cpp" line="2746"/>
         <source>Show unprintable</source>
         <translation>Отображать невидимые знаки</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2738"/>
+        <location filename="../../mscore/shortcut.cpp" line="2756"/>
         <source>Show Frames</source>
         <translation>Отображать рамки</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2739"/>
+        <location filename="../../mscore/shortcut.cpp" line="2757"/>
         <source>Show frames</source>
         <translation>Отображать рамки</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2749"/>
+        <location filename="../../mscore/shortcut.cpp" line="2767"/>
         <source>Show Page Margins</source>
         <translation>Отображать поля страниц</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2750"/>
+        <location filename="../../mscore/shortcut.cpp" line="2768"/>
         <source>Show page margins</source>
         <translation>Отображать поля страницы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2771"/>
+        <location filename="../../mscore/shortcut.cpp" line="2789"/>
         <source>Insert Special Characters…</source>
         <translation>Вставить специальные символы…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2772"/>
+        <location filename="../../mscore/shortcut.cpp" line="2790"/>
         <source>Insert special characters</source>
         <translation>Вставить специальные символы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2780"/>
+        <location filename="../../mscore/shortcut.cpp" line="2798"/>
         <source>Whole Rest</source>
         <translation>Целая пауза</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2781"/>
+        <location filename="../../mscore/shortcut.cpp" line="2799"/>
         <source>Note input: Whole rest</source>
         <translation>Ввод нот: Целая пауза</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2787"/>
+        <location filename="../../mscore/shortcut.cpp" line="2805"/>
         <source>Half Rest</source>
         <translation>Половинная пауза</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2788"/>
+        <location filename="../../mscore/shortcut.cpp" line="2806"/>
         <source>Note input: Half rest</source>
         <translation>Ввод нот: Половинная пауза</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2794"/>
+        <location filename="../../mscore/shortcut.cpp" line="2812"/>
         <source>Quarter Rest</source>
         <translation>Четвертная пауза</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2795"/>
+        <location filename="../../mscore/shortcut.cpp" line="2813"/>
         <source>Note input: Quarter rest</source>
         <translation>Ввод нот: Четвертная пауза</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2801"/>
+        <location filename="../../mscore/shortcut.cpp" line="2819"/>
         <source>Eighth Rest</source>
         <translation>Восьмая пауза</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2802"/>
+        <location filename="../../mscore/shortcut.cpp" line="2820"/>
         <source>Note input: Eighth rest</source>
         <translation>Ввод нот: Восьмая пауза</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2808"/>
+        <location filename="../../mscore/shortcut.cpp" line="2826"/>
         <source>Backspace</source>
         <translation>Backspace</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2826"/>
+        <location filename="../../mscore/shortcut.cpp" line="2844"/>
         <source>Zoom In</source>
         <translation>Увеличить масштаб партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2827"/>
+        <location filename="../../mscore/shortcut.cpp" line="2845"/>
         <source>Zoom in</source>
         <translation>Увеличить масштаб партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2834"/>
+        <location filename="../../mscore/shortcut.cpp" line="2852"/>
         <source>Zoom Out</source>
         <translation>Уменьшить масштаб партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2835"/>
+        <location filename="../../mscore/shortcut.cpp" line="2853"/>
         <source>Zoom out</source>
         <translation>Уменьшить масштаб партитуры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2841"/>
-        <location filename="../../mscore/shortcut.cpp" line="2842"/>
+        <location filename="../../mscore/shortcut.cpp" line="2859"/>
+        <location filename="../../mscore/shortcut.cpp" line="2860"/>
         <source>Zoom to 100%</source>
         <translation>Масштаб 100%</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2855"/>
+        <location filename="../../mscore/shortcut.cpp" line="2873"/>
         <source>Mirror Notehead</source>
         <translation>Отразить головку</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2856"/>
+        <location filename="../../mscore/shortcut.cpp" line="2874"/>
         <source>Mirror notehead</source>
         <translation>Отразить головку</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2875"/>
+        <location filename="../../mscore/shortcut.cpp" line="2893"/>
         <source>Chord Symbols…</source>
         <translation>Символы аккордов</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2876"/>
+        <location filename="../../mscore/shortcut.cpp" line="2894"/>
         <source>Edit chord symbols style</source>
         <translation>Редактировать стиль символов аккордов</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2882"/>
+        <location filename="../../mscore/shortcut.cpp" line="2900"/>
         <source>All Similar Elements</source>
         <translation>Все схожие элементы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2883"/>
+        <location filename="../../mscore/shortcut.cpp" line="2901"/>
         <source>Select all similar elements</source>
         <translation>Выделить все схожие элементы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2889"/>
+        <location filename="../../mscore/shortcut.cpp" line="2907"/>
         <source>All Similar Elements in Same Staff</source>
         <translation>Все схожие элементы в рамках стана</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2890"/>
+        <location filename="../../mscore/shortcut.cpp" line="2908"/>
         <source>Select all similar elements in same staff</source>
         <translation>Выделить все схожие элементы на стане</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2896"/>
+        <location filename="../../mscore/shortcut.cpp" line="2914"/>
         <source>All Similar Elements in Range Selection</source>
         <translation>Все схожие элементы в выбранном диапазоне</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2897"/>
+        <location filename="../../mscore/shortcut.cpp" line="2915"/>
         <source>Select all similar elements in the range selection</source>
         <translation>Выделить все схожие элементы в выбранном диапазоне</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2904"/>
+        <location filename="../../mscore/shortcut.cpp" line="2922"/>
         <source>Select all similar elements with more options</source>
         <translation>Выбрать все схожие элементы с дополнительными опциями</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2910"/>
+        <location filename="../../mscore/shortcut.cpp" line="2928"/>
         <source>Synthesizer</source>
         <translation>Синтезатор</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2920"/>
+        <location filename="../../mscore/shortcut.cpp" line="2938"/>
         <source>Double Duration</source>
         <translation>Удвоенная длительность</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2921"/>
+        <location filename="../../mscore/shortcut.cpp" line="2939"/>
         <source>Double duration</source>
         <translation>Удвоение длительности</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2930"/>
+        <location filename="../../mscore/shortcut.cpp" line="2948"/>
         <source>Half Duration</source>
         <translation>Половинная длительность</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2931"/>
+        <location filename="../../mscore/shortcut.cpp" line="2949"/>
         <source>Half duration</source>
         <translation>Половина длительности</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2940"/>
+        <location filename="../../mscore/shortcut.cpp" line="2958"/>
         <source>Increase Duration Dotted</source>
         <translation>Увеличить текущую длительность</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2941"/>
+        <location filename="../../mscore/shortcut.cpp" line="2959"/>
         <source>Increase duration dotted</source>
         <translation>Увеличить текущую длительность</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2950"/>
+        <location filename="../../mscore/shortcut.cpp" line="2968"/>
         <source>Decrease Duration Dotted</source>
         <translation>Уменьшить текущую длительность</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2951"/>
+        <location filename="../../mscore/shortcut.cpp" line="2969"/>
         <source>Decrease duration dotted</source>
         <translation>Уменьшить текущую длительность</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2960"/>
+        <location filename="../../mscore/shortcut.cpp" line="2978"/>
         <source>Repeat Selection</source>
         <translation>Повторить выделенное</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2961"/>
+        <location filename="../../mscore/shortcut.cpp" line="2979"/>
         <source>Repeat selection</source>
         <translation>Повторить выделение</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2969"/>
+        <location filename="../../mscore/shortcut.cpp" line="2987"/>
         <source>Pan Piano Roll</source>
         <translation>Прокрутка в матричном редакторе</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2970"/>
+        <location filename="../../mscore/shortcut.cpp" line="2988"/>
         <source>Toggle pan piano roll</source>
         <translation>Включить/выключить движение по нотам в матричном редакторе</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2971"/>
+        <location filename="../../mscore/shortcut.cpp" line="2989"/>
         <source>Pan roll during playback</source>
         <translation>Передвигать при воспроизведении</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2980"/>
+        <location filename="../../mscore/shortcut.cpp" line="2998"/>
         <source>Documents Side by Side</source>
         <translation>Расположить документы бок о бок</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2981"/>
+        <location filename="../../mscore/shortcut.cpp" line="2999"/>
         <source>Display documents side by side</source>
         <translation>Расположить документы бок о бок</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2987"/>
+        <location filename="../../mscore/shortcut.cpp" line="3005"/>
         <source>Documents Stacked</source>
         <translation>Расположить документы друг над другом</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2988"/>
+        <location filename="../../mscore/shortcut.cpp" line="3006"/>
         <source>Display documents stacked</source>
         <translation>Расположить документы друг над другом</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="2995"/>
+        <location filename="../../mscore/shortcut.cpp" line="3013"/>
         <source>Manage parts</source>
         <translation>Управление партиями</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3001"/>
+        <location filename="../../mscore/shortcut.cpp" line="3019"/>
         <source>Change Enharmonic Spelling (&amp;Both Modes)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3009"/>
+        <location filename="../../mscore/shortcut.cpp" line="3027"/>
         <source>Change Enharmonic Spelling (&amp;Current Mode)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3017"/>
+        <location filename="../../mscore/shortcut.cpp" line="3035"/>
         <source>Create New Revision</source>
         <translation>Создать новую ревизию</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3018"/>
+        <location filename="../../mscore/shortcut.cpp" line="3036"/>
         <source>Create new revision</source>
         <translation>Создать новую ревизию</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3044"/>
+        <location filename="../../mscore/shortcut.cpp" line="3062"/>
         <source>Full Screen</source>
         <translation>Во весь экран</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3045"/>
+        <location filename="../../mscore/shortcut.cpp" line="3063"/>
         <source>Full screen</source>
         <translation>Во весь экран</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3051"/>
+        <location filename="../../mscore/shortcut.cpp" line="3069"/>
         <source>Enable Snap to Horizontal Grid</source>
         <translation>Привязка к горизонтальной сетке</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3052"/>
+        <location filename="../../mscore/shortcut.cpp" line="3070"/>
         <source>Enable snap to horizontal grid</source>
         <translation>Привязка к горизонтальной сетке</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3062"/>
+        <location filename="../../mscore/shortcut.cpp" line="3080"/>
         <source>Enable Snap to Vertical Grid</source>
         <translation>Привязка к вертикальной сетке</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3063"/>
+        <location filename="../../mscore/shortcut.cpp" line="3081"/>
         <source>Enable snap to vertical grid</source>
         <translation>Привязка к вертикальной сетке</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3073"/>
+        <location filename="../../mscore/shortcut.cpp" line="3091"/>
         <source>Configure Grid</source>
         <translation>Настроить сетку</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3074"/>
+        <location filename="../../mscore/shortcut.cpp" line="3092"/>
         <source>Configure grid</source>
         <translation>Настроить сетку</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3080"/>
+        <location filename="../../mscore/shortcut.cpp" line="3098"/>
         <source>Piano Keyboard</source>
         <translation>Фортепианная клавиатура</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3081"/>
+        <location filename="../../mscore/shortcut.cpp" line="3099"/>
         <source>Piano keyboard</source>
         <translation>Клавиши фортепиано</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3094"/>
+        <location filename="../../mscore/shortcut.cpp" line="3112"/>
         <source>Additional Media…</source>
         <translation>Дополнительные медиаданные…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3095"/>
+        <location filename="../../mscore/shortcut.cpp" line="3113"/>
         <source>Show media dialog</source>
         <translation>Показать диалог медиа</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3108"/>
+        <location filename="../../mscore/shortcut.cpp" line="3126"/>
         <source>Join Selected Measures</source>
         <translation>Объединить выбранные такты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3109"/>
+        <location filename="../../mscore/shortcut.cpp" line="3127"/>
         <source>Join selected measures</source>
         <translation>Объединить выбранные такты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3115"/>
+        <location filename="../../mscore/shortcut.cpp" line="3133"/>
         <source>Page Settings…</source>
         <translation>Параметры страницы…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3116"/>
+        <location filename="../../mscore/shortcut.cpp" line="3134"/>
         <source>Page settings</source>
         <translation>Параметры страницы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3122"/>
+        <location filename="../../mscore/shortcut.cpp" line="3140"/>
         <source>Album…</source>
         <translation>Создать сборник…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3123"/>
+        <location filename="../../mscore/shortcut.cpp" line="3141"/>
         <source>Album</source>
         <translation>Сборник</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3132"/>
+        <location filename="../../mscore/shortcut.cpp" line="3150"/>
         <source>Layers…</source>
         <translation>Слои…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3133"/>
+        <location filename="../../mscore/shortcut.cpp" line="3151"/>
         <source>Layers</source>
         <translation>Слои</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3142"/>
+        <location filename="../../mscore/shortcut.cpp" line="3160"/>
         <source>Next Score</source>
         <translation>Следующая партитура</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3143"/>
+        <location filename="../../mscore/shortcut.cpp" line="3161"/>
         <source>Next score</source>
         <translation>Следующая партитура</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3152"/>
+        <location filename="../../mscore/shortcut.cpp" line="3170"/>
         <source>Previous Score</source>
         <translation>Предыдущая партитура</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3153"/>
+        <location filename="../../mscore/shortcut.cpp" line="3171"/>
         <source>Previous score</source>
         <translation>Предыдущая партитура</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3163"/>
+        <location filename="../../mscore/shortcut.cpp" line="3181"/>
         <source>Plugin Creator…</source>
         <translation>Создание плагинов…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3164"/>
+        <location filename="../../mscore/shortcut.cpp" line="3182"/>
         <source>Plugin creator</source>
         <translation>Создание дополнений</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3173"/>
+        <location filename="../../mscore/shortcut.cpp" line="3191"/>
         <source>Plugin Manager…</source>
         <translation>Управление плагинами…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3174"/>
+        <location filename="../../mscore/shortcut.cpp" line="3192"/>
         <source>Plugin manager</source>
         <translation>Менеджер дополнений</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3183"/>
+        <location filename="../../mscore/shortcut.cpp" line="3201"/>
         <source>Inspector</source>
         <translation>Инспектор</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3184"/>
+        <location filename="../../mscore/shortcut.cpp" line="3202"/>
         <source>Show inspector</source>
         <translation>Показать инспектор</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3191"/>
+        <location filename="../../mscore/shortcut.cpp" line="3209"/>
         <source>Resource manager</source>
         <translation>Менеджер ресурсов</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3220"/>
+        <location filename="../../mscore/shortcut.cpp" line="3238"/>
         <source>Loop In</source>
         <translation>Начало цикла</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3221"/>
+        <location filename="../../mscore/shortcut.cpp" line="3239"/>
         <source>Set loop in position</source>
         <translation>Установить начало цикла</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3230"/>
+        <location filename="../../mscore/shortcut.cpp" line="3248"/>
         <source>Loop Out</source>
         <translation>Конец цикла</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3231"/>
+        <location filename="../../mscore/shortcut.cpp" line="3249"/>
         <source>Set loop out position</source>
         <translation>Установить конец цикла</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3240"/>
+        <location filename="../../mscore/shortcut.cpp" line="3258"/>
         <source>Metronome</source>
         <translation>Метроном</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3241"/>
+        <location filename="../../mscore/shortcut.cpp" line="3259"/>
         <source>Toggle metronome playback</source>
         <translation>Включить/выключить метроном при воспроизведении</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3242"/>
+        <location filename="../../mscore/shortcut.cpp" line="3260"/>
         <source>Play metronome during playback</source>
         <translation>Метроном при воспроизведении</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3251"/>
+        <location filename="../../mscore/shortcut.cpp" line="3269"/>
         <source>Playback Highlight</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3252"/>
+        <location filename="../../mscore/shortcut.cpp" line="3270"/>
         <source>Toggle playback highlight</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3253"/>
+        <location filename="../../mscore/shortcut.cpp" line="3271"/>
         <source>Highlight notes during playback</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3262"/>
+        <location filename="../../mscore/shortcut.cpp" line="3280"/>
         <source>Count-In</source>
         <translation>Отсчёт</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3264"/>
+        <location filename="../../mscore/shortcut.cpp" line="3282"/>
         <source>Play count-in at playback start</source>
         <translation>Отсчёт перед воспроизведением</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3273"/>
+        <location filename="../../mscore/shortcut.cpp" line="3291"/>
         <source>Increase Playback Speed</source>
         <translation>Ускорить воспроизведение</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3274"/>
+        <location filename="../../mscore/shortcut.cpp" line="3292"/>
         <source>Increase playback speed</source>
         <translation>Ускорить воспроизведение</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3275"/>
+        <location filename="../../mscore/shortcut.cpp" line="3293"/>
         <source>Increase the playback speed</source>
         <translation>Увеличивает скорость воспроизведения</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3281"/>
+        <location filename="../../mscore/shortcut.cpp" line="3299"/>
         <source>Decrease Playback Speed</source>
         <translation>Замедлить воспроизведение</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3282"/>
+        <location filename="../../mscore/shortcut.cpp" line="3300"/>
         <source>Decrease playback speed</source>
         <translation>Замедлить воспроизведение</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3283"/>
+        <location filename="../../mscore/shortcut.cpp" line="3301"/>
         <source>Decrease the playback speed</source>
         <translation>Уменьшает скорость воспроизведения</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3289"/>
+        <location filename="../../mscore/shortcut.cpp" line="3307"/>
         <source>Reset Playback Speed</source>
         <translation>Сбросить скорость воспроизведения</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3290"/>
+        <location filename="../../mscore/shortcut.cpp" line="3308"/>
         <source>Reset playback speed</source>
         <translation>Сбросить скорость воспроизведения</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3291"/>
+        <location filename="../../mscore/shortcut.cpp" line="3309"/>
         <source>Reset the playback speed to 100%</source>
         <translation>Возвращает скорость воспроизведения на значение 100%</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3297"/>
+        <location filename="../../mscore/shortcut.cpp" line="3315"/>
         <source>Figured Bass</source>
         <translation>Цифрованный бас</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3298"/>
+        <location filename="../../mscore/shortcut.cpp" line="3316"/>
         <source>Add figured bass</source>
         <translation>Добавить цифрованный бас</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3308"/>
+        <location filename="../../mscore/shortcut.cpp" line="3326"/>
         <source>Transpose Up</source>
         <translation>Транспонировать вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3309"/>
+        <location filename="../../mscore/shortcut.cpp" line="3327"/>
         <source>Transpose up</source>
         <translation>Транспонировать вверх</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3315"/>
+        <location filename="../../mscore/shortcut.cpp" line="3333"/>
         <source>Transpose Down</source>
         <translation>Транспонировать вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3316"/>
+        <location filename="../../mscore/shortcut.cpp" line="3334"/>
         <source>Transpose down</source>
         <translation>Транспонировать вниз</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3322"/>
+        <location filename="../../mscore/shortcut.cpp" line="3340"/>
         <source>Master Palette…</source>
         <translation>Основная палитра символов…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3323"/>
+        <location filename="../../mscore/shortcut.cpp" line="3341"/>
         <source>Show master palette</source>
         <translation>Показать основную палитру</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3332"/>
+        <location filename="../../mscore/shortcut.cpp" line="3350"/>
         <source>Key Signatures…</source>
         <translation>Ключевые знаки…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3333"/>
+        <location filename="../../mscore/shortcut.cpp" line="3351"/>
         <source>Show key signature palette</source>
         <translation>Показать палитру ключевых знаков</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3342"/>
+        <location filename="../../mscore/shortcut.cpp" line="3360"/>
         <source>Time Signatures…</source>
         <translation>Размеры такта…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3343"/>
+        <location filename="../../mscore/shortcut.cpp" line="3361"/>
         <source>Show time signature palette</source>
         <translation>Показать палитру тактовых размеров</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3352"/>
+        <location filename="../../mscore/shortcut.cpp" line="3370"/>
         <source>Symbols…</source>
         <translation>Символы…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3353"/>
+        <location filename="../../mscore/shortcut.cpp" line="3371"/>
         <source>Show symbol palette</source>
         <translation>Показать палитру символов</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3362"/>
+        <location filename="../../mscore/shortcut.cpp" line="3380"/>
         <source>Toggle View Mode</source>
         <translation>Переключить режим просмотра</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3373"/>
+        <location filename="../../mscore/shortcut.cpp" line="3391"/>
         <source>Next Syllable</source>
         <translation>Следующий слог</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3374"/>
+        <location filename="../../mscore/shortcut.cpp" line="3392"/>
         <source>Next syllable</source>
         <translation>Следующий слог</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3380"/>
+        <location filename="../../mscore/shortcut.cpp" line="3398"/>
         <source>Previous Syllable</source>
         <translation>Предыдущий слог</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3381"/>
+        <location filename="../../mscore/shortcut.cpp" line="3399"/>
         <source>Previous syllable</source>
         <translation>Предыдущий слог</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3387"/>
+        <location filename="../../mscore/shortcut.cpp" line="3405"/>
         <source>Toggle Visibility</source>
         <translation>Переключить видимость</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3394"/>
+        <location filename="../../mscore/shortcut.cpp" line="3412"/>
         <source>Set Visible</source>
         <translation>Показать</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3395"/>
+        <location filename="../../mscore/shortcut.cpp" line="3413"/>
         <source>Set visible</source>
         <translation>Сделать видимым</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3401"/>
+        <location filename="../../mscore/shortcut.cpp" line="3419"/>
         <source>Set Invisible</source>
         <translation>Скрыть</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3402"/>
+        <location filename="../../mscore/shortcut.cpp" line="3420"/>
         <source>Set invisible</source>
         <translation>Сделать невидимым</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3408"/>
+        <location filename="../../mscore/shortcut.cpp" line="3426"/>
         <source>Note Anchored Line</source>
         <translation>Линия привязки ноты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3409"/>
+        <location filename="../../mscore/shortcut.cpp" line="3427"/>
         <source>Note anchored line</source>
         <translation>Линия привязки ноты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3415"/>
+        <location filename="../../mscore/shortcut.cpp" line="3433"/>
         <source>Lock Score</source>
         <translation>Блокировать партитуру</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3416"/>
+        <location filename="../../mscore/shortcut.cpp" line="3434"/>
         <source>Lock score</source>
         <translation>Заблокировать партитуру</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3424"/>
+        <location filename="../../mscore/shortcut.cpp" line="3442"/>
         <source>Longa (TAB)</source>
         <translation>Лонга (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3425"/>
+        <location filename="../../mscore/shortcut.cpp" line="3443"/>
         <source>Note duration: Longa (TAB)</source>
         <translation>Длительность: Лонга (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3426"/>
+        <location filename="../../mscore/shortcut.cpp" line="3444"/>
         <source>Longa note</source>
         <translation>Лонга</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3434"/>
+        <location filename="../../mscore/shortcut.cpp" line="3452"/>
         <source>Double Whole Note (TAB)</source>
         <translation>Двойная целая нота (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3435"/>
+        <location filename="../../mscore/shortcut.cpp" line="3453"/>
         <source>Note duration: Double whole (TAB)</source>
         <translation>Длительность: Двойная (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3444"/>
+        <location filename="../../mscore/shortcut.cpp" line="3462"/>
         <source>Whole Note (TAB)</source>
         <translation>Целая нота (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3445"/>
+        <location filename="../../mscore/shortcut.cpp" line="3463"/>
         <source>Note duration: Whole (TAB)</source>
         <translation>Длительность: Целая (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3454"/>
+        <location filename="../../mscore/shortcut.cpp" line="3472"/>
         <source>Half Note (TAB)</source>
         <translation>Половинная нота (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3455"/>
+        <location filename="../../mscore/shortcut.cpp" line="3473"/>
         <source>Note duration: Half (TAB)</source>
         <translation>Длительность: Половинная (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3464"/>
+        <location filename="../../mscore/shortcut.cpp" line="3482"/>
         <source>Quarter Note (TAB)</source>
         <translation>Четвертная нота (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3465"/>
+        <location filename="../../mscore/shortcut.cpp" line="3483"/>
         <source>Note duration: Quarter (TAB)</source>
         <translation>Длительность: Четверть (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3474"/>
+        <location filename="../../mscore/shortcut.cpp" line="3492"/>
         <source>Eighth Note (TAB)</source>
         <translation>Восьмая нота (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3475"/>
+        <location filename="../../mscore/shortcut.cpp" line="3493"/>
         <source>Note duration: Eighth (TAB)</source>
         <translation>Длительность: Восьмая (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3484"/>
+        <location filename="../../mscore/shortcut.cpp" line="3502"/>
         <source>16th Note (TAB)</source>
         <translation>16-я нота (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3485"/>
+        <location filename="../../mscore/shortcut.cpp" line="3503"/>
         <source>Note duration: 16th (TAB)</source>
         <translation>Длительность ноты: 16-я (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3494"/>
+        <location filename="../../mscore/shortcut.cpp" line="3512"/>
         <source>32nd Note (TAB)</source>
         <translation>32-я нота (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3495"/>
+        <location filename="../../mscore/shortcut.cpp" line="3513"/>
         <source>Note duration: 32nd (TAB)</source>
         <translation>Длительность ноты: 32-я (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3504"/>
+        <location filename="../../mscore/shortcut.cpp" line="3522"/>
         <source>64th Note (TAB)</source>
         <translation>64-я нота (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3505"/>
+        <location filename="../../mscore/shortcut.cpp" line="3523"/>
         <source>Note duration: 64th (TAB)</source>
         <translation>Длительность ноты: 64-я (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3514"/>
+        <location filename="../../mscore/shortcut.cpp" line="3532"/>
         <source>128th Note (TAB)</source>
         <translation>128-я нота (TAB)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3515"/>
+        <location filename="../../mscore/shortcut.cpp" line="3533"/>
         <source>Note duration: 128th (TAB)</source>
         <translation>Длительность ноты: 128-я (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3524"/>
+        <location filename="../../mscore/shortcut.cpp" line="3542"/>
         <source>256th Note (TAB)</source>
         <translation>256-я нота (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3525"/>
+        <location filename="../../mscore/shortcut.cpp" line="3543"/>
         <source>Note duration: 256th (TAB)</source>
         <translation>Длительность ноты: 256-я (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3534"/>
+        <location filename="../../mscore/shortcut.cpp" line="3552"/>
         <source>512th Note (TAB)</source>
         <translation>512-я нота (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3535"/>
+        <location filename="../../mscore/shortcut.cpp" line="3553"/>
         <source>Note duration: 512th (TAB)</source>
         <translation>Длительность ноты: 512-я (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3544"/>
+        <location filename="../../mscore/shortcut.cpp" line="3562"/>
         <source>1024th Note (TAB)</source>
         <translation>1024-я нота (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3545"/>
+        <location filename="../../mscore/shortcut.cpp" line="3563"/>
         <source>Note duration: 1024th (TAB)</source>
         <translation>Длительность ноты: 1024-я (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3554"/>
+        <location filename="../../mscore/shortcut.cpp" line="3572"/>
         <source>Increase Active Duration (TAB)</source>
         <translation>Увеличить текущую длительность (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3555"/>
+        <location filename="../../mscore/shortcut.cpp" line="3573"/>
         <source>Increase active duration (TAB)</source>
         <translation>Увеличить текущую длительность (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3561"/>
+        <location filename="../../mscore/shortcut.cpp" line="3579"/>
         <source>Decrease Active Duration (TAB)</source>
         <translation>Уменьшить текущую длительность (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3562"/>
+        <location filename="../../mscore/shortcut.cpp" line="3580"/>
         <source>Decrease active duration (TAB)</source>
         <translation>Уменьшить текущую длительность (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3568"/>
-        <location filename="../../mscore/shortcut.cpp" line="3577"/>
+        <location filename="../../mscore/shortcut.cpp" line="3586"/>
+        <location filename="../../mscore/shortcut.cpp" line="3595"/>
         <source>Rest (TAB)</source>
         <translation>Пауза (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3569"/>
+        <location filename="../../mscore/shortcut.cpp" line="3587"/>
         <source>Enter rest (TAB)</source>
         <translation>Ввести паузу (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3578"/>
+        <location filename="../../mscore/shortcut.cpp" line="3596"/>
         <source>Note input: Rest (TAB)</source>
         <translation>Ввод нот: Пауза (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3584"/>
+        <location filename="../../mscore/shortcut.cpp" line="3602"/>
         <source>String Above (TAB)</source>
         <translation>Струна выше (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3585"/>
+        <location filename="../../mscore/shortcut.cpp" line="3603"/>
         <source>Select string above (TAB only)</source>
         <translation>Выбрать струну выше (только табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3591"/>
+        <location filename="../../mscore/shortcut.cpp" line="3609"/>
         <source>String Below (TAB)</source>
         <translation>Струна ниже (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3592"/>
+        <location filename="../../mscore/shortcut.cpp" line="3610"/>
         <source>Select string below (TAB only)</source>
         <translation>Выбрать струну ниже (только табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3598"/>
+        <location filename="../../mscore/shortcut.cpp" line="3616"/>
         <source>Fret 0 (TAB)</source>
         <translation>Лад 0 (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3599"/>
+        <location filename="../../mscore/shortcut.cpp" line="3617"/>
         <source>Add fret 0 on current string (TAB only)</source>
         <translation>Добавить лад 0 на текущей струне (только табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3605"/>
+        <location filename="../../mscore/shortcut.cpp" line="3623"/>
         <source>Fret 1 (TAB)</source>
         <translation>Лад 1 (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3606"/>
+        <location filename="../../mscore/shortcut.cpp" line="3624"/>
         <source>Add fret 1 on current string (TAB only)</source>
         <translation>Добавить лад 1 на текущей струне (только табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3612"/>
+        <location filename="../../mscore/shortcut.cpp" line="3630"/>
         <source>Fret 2 (TAB)</source>
         <translation>Лад 2 (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3613"/>
+        <location filename="../../mscore/shortcut.cpp" line="3631"/>
         <source>Add fret 2 on current string (TAB only)</source>
         <translation>Добавить лад 2 на текущей струне (только табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3619"/>
+        <location filename="../../mscore/shortcut.cpp" line="3637"/>
         <source>Fret 3 (TAB)</source>
         <translation>Лад 3 (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3620"/>
+        <location filename="../../mscore/shortcut.cpp" line="3638"/>
         <source>Add fret 3 on current string (TAB only)</source>
         <translation>Добавить лад 3 на текущей струне (только табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3626"/>
+        <location filename="../../mscore/shortcut.cpp" line="3644"/>
         <source>Fret 4 (TAB)</source>
         <translation>Лад 4 (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3627"/>
+        <location filename="../../mscore/shortcut.cpp" line="3645"/>
         <source>Add fret 4 on current string (TAB only)</source>
         <translation>Добавить 4 лад на текущую струну (только ТАБ)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3633"/>
+        <location filename="../../mscore/shortcut.cpp" line="3651"/>
         <source>Fret 5 (TAB)</source>
         <translation>Лад 5 (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3634"/>
+        <location filename="../../mscore/shortcut.cpp" line="3652"/>
         <source>Add fret 5 on current string (TAB only)</source>
         <translation>Добавить 5 лад на текущую струну (только ТАБ)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3640"/>
+        <location filename="../../mscore/shortcut.cpp" line="3658"/>
         <source>Fret 6 (TAB)</source>
         <translation>Лад 6 (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3641"/>
+        <location filename="../../mscore/shortcut.cpp" line="3659"/>
         <source>Add fret 6 on current string (TAB only)</source>
         <translation>Добавить 6 лад на текущую струну (только ТАБ)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3647"/>
+        <location filename="../../mscore/shortcut.cpp" line="3665"/>
         <source>Fret 7 (TAB)</source>
         <translation>Лад 7 (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3648"/>
+        <location filename="../../mscore/shortcut.cpp" line="3666"/>
         <source>Add fret 7 on current string (TAB only)</source>
         <translation>Добавить 7 лад на текущую струну (только ТАБ)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3654"/>
+        <location filename="../../mscore/shortcut.cpp" line="3672"/>
         <source>Fret 8 (TAB)</source>
         <translation>Лад 8 (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3655"/>
+        <location filename="../../mscore/shortcut.cpp" line="3673"/>
         <source>Add fret 8 on current string (TAB only)</source>
         <translation>Добавить 8 лад на текущую струну (только ТАБ)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3661"/>
+        <location filename="../../mscore/shortcut.cpp" line="3679"/>
         <source>Fret 9 (TAB)</source>
         <translation>Лад 9 (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3662"/>
+        <location filename="../../mscore/shortcut.cpp" line="3680"/>
         <source>Add fret 9 on current string (TAB only)</source>
         <translation>Добавить 9 лад на текущую струну (только ТАБ)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3668"/>
+        <location filename="../../mscore/shortcut.cpp" line="3686"/>
         <source>Fret 10 (TAB)</source>
         <translation>Лад 10 (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3669"/>
+        <location filename="../../mscore/shortcut.cpp" line="3687"/>
         <source>Add fret 10 on current string (TAB only)</source>
         <translation>Добавить 10 лад на текущую струну (только ТАБ)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3675"/>
+        <location filename="../../mscore/shortcut.cpp" line="3693"/>
         <source>Fret 11 (TAB)</source>
         <translation>Лад 11 (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3676"/>
+        <location filename="../../mscore/shortcut.cpp" line="3694"/>
         <source>Add fret 11 on current string (TAB only)</source>
         <translation>Добавить 11 лад на текущую струну (только ТАБ)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3682"/>
+        <location filename="../../mscore/shortcut.cpp" line="3700"/>
         <source>Fret 12 (TAB)</source>
         <translation>Лад 12 (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3683"/>
+        <location filename="../../mscore/shortcut.cpp" line="3701"/>
         <source>Add fret 12 on current string (TAB only)</source>
         <translation>Добавить 12 лад на текущую струну (только ТАБ)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3689"/>
+        <location filename="../../mscore/shortcut.cpp" line="3707"/>
         <source>Fret 13 (TAB)</source>
         <translation>Лад 13 (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3690"/>
+        <location filename="../../mscore/shortcut.cpp" line="3708"/>
         <source>Add fret 13 on current string (TAB only)</source>
         <translation>Добавить 13 лад на текущую струну (только ТАБ)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3696"/>
+        <location filename="../../mscore/shortcut.cpp" line="3714"/>
         <source>Fret 14 (TAB)</source>
         <translation>Лад 14 (табулатура)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3697"/>
+        <location filename="../../mscore/shortcut.cpp" line="3715"/>
         <source>Add fret 14 on current string (TAB only)</source>
         <translation>Добавить 14 лад на текущую струну (только ТАБ)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3706"/>
+        <location filename="../../mscore/shortcut.cpp" line="3724"/>
         <source>Longa Advance (F.B./Chord Symbol)</source>
         <translation>Продвижение на лонгу (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3707"/>
+        <location filename="../../mscore/shortcut.cpp" line="3725"/>
         <source>Advance of a longa (Figured bass/Chord symbol only)</source>
         <translation>Продвинуться на лонгу (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3713"/>
+        <location filename="../../mscore/shortcut.cpp" line="3731"/>
         <source>Breve Advance (F.B./Chord Symbol)</source>
         <translation>Продвижение на двойную ноту (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3714"/>
+        <location filename="../../mscore/shortcut.cpp" line="3732"/>
         <source>Advance of a double whole note (Figured bass/Chord symbol only)</source>
         <translation>Продвинуться на двойную ноту (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3720"/>
+        <location filename="../../mscore/shortcut.cpp" line="3738"/>
         <source>Whole Note Advance (F.B./Chord Symbol)</source>
         <translation>Продвижение на целую (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3721"/>
+        <location filename="../../mscore/shortcut.cpp" line="3739"/>
         <source>Advance of a whole note (Figured bass/Chord symbol only)</source>
         <translation>Продвинуться на целую (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3727"/>
+        <location filename="../../mscore/shortcut.cpp" line="3745"/>
         <source>Half Note Advance (F.B./Chord Symbol)</source>
         <translation>Продвижение на половинную (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3728"/>
+        <location filename="../../mscore/shortcut.cpp" line="3746"/>
         <source>Advance of a half note (Figured bass/Chord symbol only)</source>
         <translation>Продвинуться на половинную (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3734"/>
+        <location filename="../../mscore/shortcut.cpp" line="3752"/>
         <source>Quarter Note Advance (F.B./Chord Symbol)</source>
         <translation>Продвижение на четверть (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3735"/>
+        <location filename="../../mscore/shortcut.cpp" line="3753"/>
         <source>Advance of a quarter note (Figured bass/Chord symbol only)</source>
         <translation>Продвинуться на четверть (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3741"/>
+        <location filename="../../mscore/shortcut.cpp" line="3759"/>
         <source>Eighth Note Advance (F.B./Chord Symbol)</source>
         <translation>Продвижение на восьмую (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3742"/>
+        <location filename="../../mscore/shortcut.cpp" line="3760"/>
         <source>Advance of an eighth note (Figured bass/Chord symbol only)</source>
         <translation>Продвинуться на восьмую (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3748"/>
+        <location filename="../../mscore/shortcut.cpp" line="3766"/>
         <source>16th Note Advance (F.B./Chord Symbol)</source>
         <translation>Продвижение на 16-ю (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3749"/>
+        <location filename="../../mscore/shortcut.cpp" line="3767"/>
         <source>Advance of a 16th note (Figured bass/Chord symbol only)</source>
         <translation>Продвинуться на 16-ю (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3755"/>
+        <location filename="../../mscore/shortcut.cpp" line="3773"/>
         <source>32nd Note Advance (F.B./Chord Symbol)</source>
         <translation>Продвижение на 32-ю (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3756"/>
+        <location filename="../../mscore/shortcut.cpp" line="3774"/>
         <source>Advance of a 32nd note (Figured bass/Chord symbol only)</source>
         <translation>Продвинуться на 32-ю (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3762"/>
+        <location filename="../../mscore/shortcut.cpp" line="3780"/>
         <source>64th Note Advance (F.B./Chord Symbol)</source>
         <translation>Продвижение на 64-ю (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3763"/>
+        <location filename="../../mscore/shortcut.cpp" line="3781"/>
         <source>Advance of a 64th note (Figured bass/Chord symbol only)</source>
         <translation>Продвинуться на 64-ю (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3769"/>
+        <location filename="../../mscore/shortcut.cpp" line="3787"/>
         <source>Previous Measure (F.B./Chord Symbol)</source>
         <translation>Предыдущий такт (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3770"/>
+        <location filename="../../mscore/shortcut.cpp" line="3788"/>
         <source>Previous measure (Figured bass/Chord symbol only)</source>
         <translation>Предыдущий такт (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3776"/>
+        <location filename="../../mscore/shortcut.cpp" line="3794"/>
         <source>Next Measure (F.B./Chord Symbol)</source>
         <translation>Следующий такт (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3777"/>
+        <location filename="../../mscore/shortcut.cpp" line="3795"/>
         <source>Next measure (Figured bass/Chord symbol only)</source>
         <translation>Следующий такт (цифровой бас/аккорды)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3783"/>
+        <location filename="../../mscore/shortcut.cpp" line="3801"/>
         <source>Previous Beat (Chord Symbol)</source>
         <translation>Предыдущая доля (аккордовый символ)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3784"/>
+        <location filename="../../mscore/shortcut.cpp" line="3802"/>
         <source>Previous beat (Chord symbol)</source>
         <translation>Предыдущая доля (аккордовый символ)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3790"/>
+        <location filename="../../mscore/shortcut.cpp" line="3808"/>
         <source>Next Beat (Chord Symbol)</source>
         <translation>Следующая доля (аккордовый символ)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3791"/>
+        <location filename="../../mscore/shortcut.cpp" line="3809"/>
         <source>Next beat (Chord symbol)</source>
         <translation>Следующая доля (аккордовый символ)</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3817"/>
+        <location filename="../../mscore/shortcut.cpp" line="3835"/>
         <source>Add Braces to Element</source>
         <translation>Добавить фигурные скобки элементу</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3818"/>
+        <location filename="../../mscore/shortcut.cpp" line="3836"/>
         <source>Add Braces to element</source>
         <translation>Добавить фигурные скобки элементу</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3866"/>
+        <location filename="../../mscore/shortcut.cpp" line="3884"/>
         <source>Strike-through</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3904"/>
+        <location filename="../../mscore/shortcut.cpp" line="3922"/>
         <source>Realize Chord Symbols</source>
         <translation>Записать символы аккордов нотами</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3905"/>
+        <location filename="../../mscore/shortcut.cpp" line="3923"/>
         <source>Realize chord symbols</source>
         <translation>Записать символ аккорда нотами</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3906"/>
+        <location filename="../../mscore/shortcut.cpp" line="3924"/>
         <source>Convert chord symbols into notes</source>
         <translation>Сконвертировать символы аккордов в ноты</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3976"/>
+        <location filename="../../mscore/shortcut.cpp" line="3994"/>
         <source>Start Center…</source>
         <translation>Быстрый старт…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3986"/>
+        <location filename="../../mscore/shortcut.cpp" line="4004"/>
         <source>Customize Toolbars…</source>
         <translation>Персонализация Панелей управления…</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3987"/>
+        <location filename="../../mscore/shortcut.cpp" line="4005"/>
         <source>Customize toolbars</source>
         <translation>Персонализация Панелей управления</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3996"/>
+        <location filename="../../mscore/shortcut.cpp" line="4014"/>
         <source>Remove Empty Trailing Measures</source>
         <translation>Удалить пустые такты в конце</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3997"/>
+        <location filename="../../mscore/shortcut.cpp" line="4015"/>
         <source>Remove empty trailing measures</source>
         <translation>Удалить пустые такты в конце</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4006"/>
-        <location filename="../../mscore/shortcut.cpp" line="4007"/>
+        <location filename="../../mscore/shortcut.cpp" line="4024"/>
+        <location filename="../../mscore/shortcut.cpp" line="4025"/>
         <source>Unroll Repeats</source>
         <translation>Развернуть повторы</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4016"/>
+        <location filename="../../mscore/shortcut.cpp" line="4034"/>
         <source>Show Tours</source>
         <translation>Показать Туры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4017"/>
+        <location filename="../../mscore/shortcut.cpp" line="4035"/>
         <source>Show tours</source>
         <translation>Показать туры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4018"/>
+        <location filename="../../mscore/shortcut.cpp" line="4036"/>
         <source>Toggle display of tours</source>
         <translation>Включить/выключить отображение туров</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4027"/>
+        <location filename="../../mscore/shortcut.cpp" line="4045"/>
         <source>Reset Tours</source>
         <translation>Сбросить Туры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4028"/>
+        <location filename="../../mscore/shortcut.cpp" line="4046"/>
         <source>Reset tours</source>
         <translation>Сбросить туры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4037"/>
+        <location filename="../../mscore/shortcut.cpp" line="4055"/>
         <source>Toggle Automatic Placement</source>
         <translation>Включить/Выключить авторазмещение</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4038"/>
+        <location filename="../../mscore/shortcut.cpp" line="4056"/>
         <source>Toggle &apos;Automatic Placement&apos; for selected elements</source>
         <translation>Включить/Выключить авторазмещение для выбранных элементов</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4044"/>
+        <location filename="../../mscore/shortcut.cpp" line="4062"/>
         <source>Toggle Automatic Placement Globally</source>
         <translation>Включить/Выключить авторазмещение глобально</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4045"/>
+        <location filename="../../mscore/shortcut.cpp" line="4063"/>
         <source>Toggle &apos;Automatic Placement&apos; globally</source>
         <translation>Включить/Выключить авторазмещение глобально</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4054"/>
+        <location filename="../../mscore/shortcut.cpp" line="4072"/>
         <source>Report a Bug</source>
         <translation>Сообщить об ошибке</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4055"/>
+        <location filename="../../mscore/shortcut.cpp" line="4073"/>
         <source>Report a bug</source>
         <translation>Сообщить об ошибке</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="4072"/>
+        <location filename="../../mscore/shortcut.cpp" line="4090"/>
         <source>Leave feedback</source>
         <translation>Оставить отзыв</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3847"/>
+        <location filename="../../mscore/shortcut.cpp" line="4137"/>
+        <source>Script Recorder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4138"/>
+        <source>Script recorder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4148"/>
+        <source>No Horizontal Stretch</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4149"/>
+        <source>No horizontal stretch</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4158"/>
+        <source>No Vertical Stretch</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4159"/>
+        <source>No vertical stretch</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4168"/>
+        <source>Show Segment Shapes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4169"/>
+        <source>Show segment shapes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4178"/>
+        <source>Show Skylines</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4179"/>
+        <source>Show skylines</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4188"/>
+        <source>Show Bounding Rectangles</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4189"/>
+        <source>Show bounding rectangles for selected elements</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4198"/>
+        <source>Show System Bounding Rectangles</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4199"/>
+        <source>Show bounding rectangles for systems</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4208"/>
+        <source>Show Corrupted Measures</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4209"/>
+        <source>Show corrupted measures</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4218"/>
+        <source>Re-Layout</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4219"/>
+        <source>Re-layout</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4228"/>
+        <source>Reload QML Code</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="4229"/>
+        <source>Reload QML code</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../mscore/shortcut.cpp" line="3865"/>
         <source>Bold Face</source>
         <translation>Полужирный</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3848"/>
+        <location filename="../../mscore/shortcut.cpp" line="3866"/>
         <source>Bold face</source>
         <translation>Полужирный</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3854"/>
+        <location filename="../../mscore/shortcut.cpp" line="3872"/>
         <source>Italic</source>
         <translation>Курсив</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3860"/>
+        <location filename="../../mscore/shortcut.cpp" line="3878"/>
         <source>Underline</source>
         <translation>Подчеркнутый</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3872"/>
+        <location filename="../../mscore/shortcut.cpp" line="3890"/>
         <source>Move Word Left</source>
         <translation>Сдвинуть слово влево</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3873"/>
+        <location filename="../../mscore/shortcut.cpp" line="3891"/>
         <source>Move word left</source>
         <translation>Сдвинуть слово вправо</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3883"/>
+        <location filename="../../mscore/shortcut.cpp" line="3901"/>
         <source>Move Word Right</source>
         <translation>Сдвинуть слово вправо</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3884"/>
+        <location filename="../../mscore/shortcut.cpp" line="3902"/>
         <source>Move word right</source>
         <translation>Сдвинуть слово вправо</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3894"/>
-        <location filename="../../mscore/shortcut.cpp" line="3895"/>
+        <location filename="../../mscore/shortcut.cpp" line="3912"/>
+        <location filename="../../mscore/shortcut.cpp" line="3913"/>
         <source>Explode</source>
         <translation>Разделить аккорд на партии</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3896"/>
+        <location filename="../../mscore/shortcut.cpp" line="3914"/>
         <source>Explode contents of top selected staff into staves below</source>
         <translation>Разделить содержимое верхнего выбранного нотоносца на нижние</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3914"/>
-        <location filename="../../mscore/shortcut.cpp" line="3915"/>
+        <location filename="../../mscore/shortcut.cpp" line="3932"/>
+        <location filename="../../mscore/shortcut.cpp" line="3933"/>
         <source>Implode</source>
         <translation>Собрать ноты в аккорд</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3916"/>
+        <location filename="../../mscore/shortcut.cpp" line="3934"/>
         <source>Implode contents of selected staves into top selected staff</source>
         <translation>Собрать содержимое выбранных нотоносцев в тот, что вверху</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3924"/>
+        <location filename="../../mscore/shortcut.cpp" line="3942"/>
         <source>Fill With Slashes</source>
         <translation>Заполнить чёрточками</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3925"/>
+        <location filename="../../mscore/shortcut.cpp" line="3943"/>
         <source>Fill with slashes</source>
         <translation>Заполнить чертами</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3934"/>
+        <location filename="../../mscore/shortcut.cpp" line="3952"/>
         <source>Toggle Rhythmic Slash Notation</source>
         <translation>Переключить ритмическую нотацию</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3955"/>
+        <location filename="../../mscore/shortcut.cpp" line="3973"/>
         <source>Resequence Rehearsal Marks</source>
         <translation>Упорядочить партитурные ориентиры / цифры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3956"/>
+        <location filename="../../mscore/shortcut.cpp" line="3974"/>
         <source>Resequence rehearsal marks</source>
         <translation>Упорядочить партитурные ориентиры</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3965"/>
+        <location filename="../../mscore/shortcut.cpp" line="3983"/>
         <source>Copy Lyrics to Clipboard</source>
         <translation>Скопировать вокальный текст в Буфер обмена</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3966"/>
+        <location filename="../../mscore/shortcut.cpp" line="3984"/>
         <source>Copy lyrics to clipboard</source>
         <translation>Скопировать вокальный текст в буфер обмена</translation>
     </message>
     <message>
-        <location filename="../../mscore/shortcut.cpp" line="3977"/>
+        <location filename="../../mscore/shortcut.cpp" line="3995"/>
         <source>Start center</source>
         <translation>Быстрый старт</translation>
     </message>
@@ -31750,28 +31885,28 @@ failed</source>
 <context>
     <name>error</name>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="117"/>
+        <location filename="../../libmscore/mscore.cpp" line="115"/>
         <source>No chord/rest selected:
 Please select a chord or rest and retry</source>
         <translation>Ни один аккорд или пауза не выбрана:
 Пожалуйста, выберите аккорд или паузу и повторите попытку</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="118"/>
+        <location filename="../../libmscore/mscore.cpp" line="116"/>
         <source>No note or lyrics selected:
 Please select a note or lyrics and retry</source>
         <translation>Ни одна нота или вокальный текст не выбран:
 Пожалуйста, выберите ноту или вокальный текст и повторите попытку</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="119"/>
+        <location filename="../../libmscore/mscore.cpp" line="117"/>
         <source>No note or rest selected:
 Please select a note or rest and retry</source>
         <translation>Ни одна нота или пауза не выбраны:
 Пожалуйста, выберите ноту или паузу и повторите попытку</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="116"/>
+        <location filename="../../libmscore/mscore.cpp" line="114"/>
         <source>No note selected:
 Please select a note and retry</source>
         <translation>Ни одна нота не выбрана:
@@ -31779,7 +31914,7 @@ Please select a note and retry</source>
 </translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="120"/>
+        <location filename="../../libmscore/mscore.cpp" line="118"/>
         <source>No flippable element selected:
 Please select an element that can be flipped and retry</source>
         <translation>Ни один разворачиваемый элемент выбран:
@@ -31787,7 +31922,7 @@ Please select an element that can be flipped and retry</source>
 </translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="121"/>
+        <location filename="../../libmscore/mscore.cpp" line="119"/>
         <source>No staff selected:
 Please select one or more staves and retry</source>
         <translation>Ни один нотный стан не выбран:
@@ -31795,96 +31930,96 @@ Please select one or more staves and retry</source>
 </translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="122"/>
+        <location filename="../../libmscore/mscore.cpp" line="120"/>
         <source>No note or figured bass selected:
 Please select a note or figured bass and retry</source>
         <translation>Ни одна нота или фигурный бас не выбраны:
 Пожалуйста, выберите ноту или фигурный бас и повторите попытку</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="124"/>
+        <location filename="../../libmscore/mscore.cpp" line="122"/>
         <source>Cannot insert chord/rest in tuplet</source>
         <translation>Невозможно добавить аккорд/паузу внутрь мультиоли</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="125"/>
+        <location filename="../../libmscore/mscore.cpp" line="123"/>
         <source>Cannot split tuplet</source>
         <translation>Невозможно разделить мультиоль</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="126"/>
+        <location filename="../../libmscore/mscore.cpp" line="124"/>
         <source>Cannot split measure here:
 First beat of measure</source>
         <translation>Невозможно разделить такт в этом месте:
 Первая доля такта</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="127"/>
+        <location filename="../../libmscore/mscore.cpp" line="125"/>
         <source>Cannot split measure here:
 Cannot split tuplet</source>
         <translation>Невозможно разделить такт в этом месте:
 Нелья разделить мультиоль</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="128"/>
+        <location filename="../../libmscore/mscore.cpp" line="126"/>
         <source>Cannot split measure here:
 Measure would be too short</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="130"/>
+        <location filename="../../libmscore/mscore.cpp" line="128"/>
         <source>No destination to paste</source>
         <translation>Нечего вставлять</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="131"/>
+        <location filename="../../libmscore/mscore.cpp" line="129"/>
         <source>Cannot paste into tuplet</source>
         <translation>Невозможно вставить в мультиоль</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="132"/>
+        <location filename="../../libmscore/mscore.cpp" line="130"/>
         <source>Tuplet cannot cross barlines</source>
         <translation>Мультиоль не может пересекать тактовые черты</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="133"/>
+        <location filename="../../libmscore/mscore.cpp" line="131"/>
         <source>Cannot paste in local time signature</source>
         <translation>Невозможно вставить размер</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="134"/>
+        <location filename="../../libmscore/mscore.cpp" line="132"/>
         <source>Cannot paste in tremolo</source>
         <translation>Невозможно вставить тремоло</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="135"/>
+        <location filename="../../libmscore/mscore.cpp" line="133"/>
         <source>Nothing to paste</source>
         <translation>Нет объектов для вставки</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="136"/>
+        <location filename="../../libmscore/mscore.cpp" line="134"/>
         <source>Destination is not a chord or rest</source>
         <translation>Объект не является аккордом или паузой</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="137"/>
+        <location filename="../../libmscore/mscore.cpp" line="135"/>
         <source>Cannot change local time signature:
 Measure is not empty</source>
         <translation>Невозможно поменять размер: Такт не пуст</translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="138"/>
+        <location filename="../../libmscore/mscore.cpp" line="136"/>
         <source>Cannot change local time signature:
 This score already has part scores. Changing local time signatures while part scores are present is not yet supported.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="141"/>
+        <location filename="../../libmscore/mscore.cpp" line="139"/>
         <source>Cannot change time signature in front of a corrupted measure</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../libmscore/mscore.cpp" line="437"/>
+        <location filename="../../libmscore/mscore.cpp" line="435"/>
         <source>Unknown error</source>
         <translation>Неизвестная ошибка</translation>
     </message>
@@ -32107,19 +32242,19 @@ This score already has part scores. Changing local time signatures while part sc
 <context>
     <name>magTable</name>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2164"/>
+        <location filename="../../mscore/musescore.cpp" line="2156"/>
         <location filename="../../mscore/zoombox.cpp" line="44"/>
         <source>Page Width</source>
         <translation>По ширине</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2165"/>
+        <location filename="../../mscore/musescore.cpp" line="2157"/>
         <location filename="../../mscore/zoombox.cpp" line="45"/>
         <source>Whole Page</source>
         <translation>Вся страница</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2166"/>
+        <location filename="../../mscore/musescore.cpp" line="2158"/>
         <location filename="../../mscore/zoombox.cpp" line="46"/>
         <source>Two Pages</source>
         <translation>Две страницы</translation>
