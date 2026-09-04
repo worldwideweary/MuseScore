@@ -291,12 +291,12 @@
                    </property>
                    <item>
                     <property name="text">
-                     <string notr="true">Leland</string>
+                     <string notr="true">Bravura</string>
                     </property>
                    </item>
                    <item>
                     <property name="text">
-                     <string notr="true">Bravura</string>
+                     <string notr="true">Leland</string>
                     </property>
                    </item>
                    <item>
@@ -335,12 +335,12 @@
                   <widget class="QComboBox" name="musicalTextFontComboBox">
                    <item>
                     <property name="text">
-                     <string notr="true">Leland Text</string>
+                     <string notr="true">Bravura Text</string>
                     </property>
                    </item>
                    <item>
                     <property name="text">
-                     <string notr="true">Bravura Text</string>
+                     <string notr="true">Leland Text</string>
                     </property>
                    </item>
                    <item>
