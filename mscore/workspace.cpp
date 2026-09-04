@@ -419,12 +419,19 @@ void Workspace::write()
             for (auto i : *mscore->noteInputMenuEntries())
                   xml.tag("action", i);
             xml.etag();
+
             xml.stag("Toolbar name=\"fileOperation\"");
             for (auto i : *mscore->fileOperationEntries())
                   xml.tag("action", i);
             xml.etag();
+
             xml.stag("Toolbar name=\"playbackControl\"");
             for (auto i : *mscore->playbackControlEntries())
+                  xml.tag("action", i);
+            xml.etag();
+
+            xml.stag("Toolbar name=\"alternativeOptions\"");
+            for (auto i : *mscore->alternativeEntries())
                   xml.tag("action", i);
             xml.etag();
             }
@@ -538,12 +545,19 @@ void Workspace::writeGlobalToolBar()
       for (auto i : *mscore->noteInputMenuEntries())
             xml.tag("action", i);
       xml.etag();
+
       xml.stag("Toolbar name=\"fileOperation\"");
       for (auto i : *mscore->fileOperationEntries())
             xml.tag("action", i);
       xml.etag();
+
       xml.stag("Toolbar name=\"playbackControl\"");
       for (auto i : *mscore->playbackControlEntries())
+            xml.tag("action", i);
+      xml.etag();
+
+      xml.stag("Toolbar name=\"alternativeOptions\"");
+      for (auto i : *mscore->alternativeEntries())
             xml.tag("action", i);
       xml.etag();
 
@@ -747,6 +761,7 @@ void Workspace::read(XmlReader& e)
       bool niToolbar = false;
       bool foToolbar = false;
       bool pcToolbar = false;
+      bool alternativeToolbar = false;
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
             if (tag == "name")
@@ -769,6 +784,8 @@ void Workspace::read(XmlReader& e)
                         toolbarEntries = mscore->allFileOperationEntries();
                   else if (name == "playbackControl")
                         toolbarEntries = mscore->allPlaybackControlEntries();
+                  else if (name == "alternativeOptions")
+                        toolbarEntries = mscore->allAlternativeEntries();
                   else
                         qDebug() << "Error in loading workspace: " + name + " is not a toolbar";
 
@@ -801,6 +818,11 @@ void Workspace::read(XmlReader& e)
                         mscore->setPlaybackControlEntries(l);
                         mscore->populatePlaybackControls();
                         pcToolbar = true;
+                        }
+                  else if (name == "alternativeOptions") {
+                        mscore->setAlternativeEntries(l);
+                        mscore->populateAlternativeOperations();
+                        alternativeToolbar = true;
                         }
                   }
             else if (tag == "Preferences") {
@@ -904,6 +926,10 @@ void Workspace::read(XmlReader& e)
             if (!pcToolbar) {
                   mscore->setPlaybackControlEntries(mscore->allPlaybackControlEntries());
                   mscore->populatePlaybackControls();
+                  }
+            if (!alternativeToolbar) {
+                  mscore->setAlternativeEntries(mscore->allAlternativeEntries());
+                  mscore->populateAlternativeOperations();
                   }
             }
       else {
@@ -1114,6 +1140,8 @@ void Workspace::readGlobalToolBar()
                                     toolbarEntries = mscore->allFileOperationEntries();
                               else if (name == "playbackControl")
                                     toolbarEntries = mscore->allPlaybackControlEntries();
+                              else if (name == "alternativeOptions")
+                                    toolbarEntries = mscore->allAlternativeEntries();
                               else
                                     qDebug() << "Error in loading workspace: " + name + " is not a toolbar";
 
@@ -1143,6 +1171,10 @@ void Workspace::readGlobalToolBar()
                               else if (name == "playbackControl") {
                                     mscore->setPlaybackControlEntries(l);
                                     mscore->populatePlaybackControls();
+                                    }
+                              else if (name == "alternativeOptions") {
+                                    mscore->setAlternativeEntries(l);
+                                    mscore->populateAlternativeOperations();
                                     }
                               }
                         else

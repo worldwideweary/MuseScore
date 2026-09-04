@@ -178,6 +178,19 @@ static const char* iconNames[] = {
       "note_timewise.svg",
       "arrowsMoveToTop.svg",
       "arrowsMoveToBottom.svg",
+
+      // Alternative Options
+      "debug.svg",
+      "empty_trailing_measure.svg",
+      "instruments.svg",
+      "preferences.svg",
+      "page-settings.svg",
+      "style-settings.svg",
+      "reset-stretch.svg",
+      "remove-range.svg",
+      "regroup-rhythm.svg",
+      "rhythmic-slash-notation.svg",
+      "keyboard.svg",
       };
 
 //---------------------------------------------------------

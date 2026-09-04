@@ -66,6 +66,19 @@ enum class Icons : short { Invalid_ICON = -1,
       mail_ICON, bug_ICON, bin_ICON,
       noteTimewise_ICON,
       arrowsMoveToTop_ICON, arrowsMoveToBottom_ICON,
+
+      showDebug_ICON,
+      emptyTrailingMeasure_ICON,
+      showInstruments_ICON,
+      preferences_ICON,
+      pageSettings_ICON,
+      styleSettingsICON,
+      resetStretch_ICON,
+      removeRange_ICON,
+      regroupRhythms_ICON,
+      rhythmicSlash_ICON,
+      onscreenKeyboard_ICON,
+
       voice1_ICON, voice2_ICON, voice3_ICON, voice4_ICON,
       ICONS
       };
