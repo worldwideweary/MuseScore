@@ -21,6 +21,7 @@
 #include "palette.h"
 #include "preferences.h"
 #include "musescore.h"
+#include "shortcut.h"
 #include "workspace.h"
 
 #include "libmscore/score.h"
@@ -33,6 +34,8 @@
 #include "thirdparty/qzip/qzipwriter_p.h"
 
 #include <cstring>
+
+#include <QDialog>
 
 #if defined(FOR_WINSTORE)  // or even just Q_OS_WIN ?
 extern Q_CORE_EXPORT int qt_ntfs_permission_lookup;
@@ -1023,13 +1026,28 @@ void Workspace::ensureToolbarEntry(std::list<const char*>& entries,
 
 //---------------------------------------------------------
 //   migrate
-//    add here: ensureMenuAction() and ensureToolbarEntry() calls
-//    with uiVersion < [most recent version]
 //---------------------------------------------------------
 
 void Workspace::migrate(int uiVersion)
       {
-      Q_UNUSED(uiVersion);
+      if (uiVersion < 1) {
+            if (auto entries = mscore->noteInputMenuEntries()) {
+                  ensureToolbarEntry(*entries, "toggle-mouse-entry", "empty-trailing-measure", InsertPosition::BEFORE);
+                  ensureToolbarEntry(*entries, "toggle-edit-playback", "toggle-mouse-entry", InsertPosition::AFTER);
+                  mscore->populateNoteInputMenu();
+                  }
+
+            if (auto entries = mscore->fileOperationEntries()) {
+                  ensureToolbarEntry(*entries, "file-reload", "print", InsertPosition::BEFORE);
+                  ensureToolbarEntry(*entries, "file-export", "file-save", InsertPosition::AFTER);
+                  mscore->populateFileOperations();
+                  }
+
+            if (auto entries = mscore->playbackControlEntries()) {
+                  ensureToolbarEntry(*entries, "playback-highlight", "countin", InsertPosition::BEFORE);
+                  mscore->populatePlaybackControls();
+                  }
+            }
       }
 
 //---------------------------------------------------------
