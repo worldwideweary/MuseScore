@@ -295,6 +295,7 @@ const std::list<const char*> MuseScore::_allFileOperationEntries {
             "file-save",
             "file-save-online",
             "file-reload",
+            "file-export",
             "print",
             "undo",
             "redo"
@@ -314,6 +315,24 @@ const std::list<const char*> MuseScore::_allPlaybackControlEntries {
             "metronome",
             "playback-highlight",
             "countin"
+            };
+
+const std::list<const char*> MuseScore::_allAlternativeEntries {
+            "start-preference-dialog",
+            "page-settings",
+            "edit-style",
+            "instruments",
+            "", // Observation: at least one separator must be present if user-defined positions of separators are to be saved/reloaded
+            "show-debug",
+            "",
+            "reset-groupings",
+            "slash-rhythm",
+            "reset-stretch",
+            "time-delete",
+            "",
+            "toggle-piano",
+            "",
+            "empty-trailing-measure"
             };
 
 extern TextPalette* textPalette;
@@ -589,6 +608,9 @@ void MuseScore::preferencesChanged(bool fromWorkspace, bool changeUI)
 
 void MuseScore::populateNoteInputMenu()
       {
+      if (!entryTools)
+            return;
+
       entryTools->clear();
 
       for (const auto s : _noteInputMenuEntries) {
@@ -639,6 +661,30 @@ void MuseScore::populateNoteInputMenu()
                         w->setObjectName(s);
                         }
                   entryTools->addWidget(w);
+                  }
+            }
+      }
+
+//---------------------------------------------------------
+//   populateAlternativeOperations
+//---------------------------------------------------------
+
+void MuseScore::populateAlternativeOperations()
+      {
+      if (!alternativeTools)
+            return;
+
+      alternativeTools->clear();
+
+      for (const auto s : _alternativeEntries) {
+            if (!*s)
+                  alternativeTools->addSeparator();
+            else {
+                  QAction* a = getAction(s);
+                  QWidget* w;
+                  w = new AccessibleToolButton(alternativeTools, a);
+                  w->setObjectName(s);
+                  alternativeTools->addWidget(w);
                   }
             }
       }
@@ -979,6 +1025,9 @@ bool MuseScore::isInstalledExtension(QString extensionId)
 
 void MuseScore::populateFileOperations()
       {
+      if (!fileTools)
+            return;
+
       // Save the current zoom and view-mode combobox states. if any.
       const auto zoomBoxState = zoomBox
          ? std::make_pair(zoomBox->currentIndex(), zoomBox->itemText(static_cast<int>(ZoomIndex::ZOOM_FREE)))
@@ -1048,6 +1097,9 @@ void MuseScore::populateFileOperations()
 
 void MuseScore::populatePlaybackControls()
       {
+      if (!transportTools)
+            return;
+
       transportTools->clear();
 
       for (const auto s : _playbackControlEntries) {
@@ -1363,6 +1415,14 @@ MuseScore::MuseScore()
       getAction("toggle-mouse-entry")->setChecked(!preferences.getBool(PREF_SCORE_NOTE_INPUT_DISABLE_MOUSE_INPUT));
       getAction("toggle-edit-playback")->setChecked(preferences.getBool(PREF_SCORE_NOTE_PLAYONCLICK));
 
+      //---------------------------------------------------
+      //    Alternative Options Tool Bar
+      //---------------------------------------------------
+
+      alternativeTools = addToolBar("");
+      alternativeTools->setObjectName("alternative-operations");
+      populateAlternativeOperations();
+
       //-------------------------------
       //    Workspaces Tool Bar
       //-------------------------------
@@ -1412,6 +1472,7 @@ MuseScore::MuseScore()
 
       menuFile->addSeparator();
       menuFile->addAction(getAction("file-close"));
+      menuFile->addAction(getAction("file-close-all"));
       menuFile->addAction(getAction("file-save"));
       menuFile->addAction(getAction("file-save-as"));
       menuFile->addAction(getAction("file-save-a-copy"));
@@ -1570,6 +1631,12 @@ MuseScore::MuseScore()
       a->setCheckable(true);
       a->setChecked(entryTools->isVisible());
       connect(entryTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
+      menuToolbars->addAction(a);
+
+      a = getAction("toggle-alternative");
+      a->setCheckable(true);
+      a->setChecked(alternativeTools->isVisible());
+      connect(alternativeTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
       menuToolbars->addAction(a);
 
       a = getAction("toggle-workspaces-toolbar");
@@ -2147,6 +2214,7 @@ void MuseScore::retranslate()
 #if 0
       feedbackTools->setWindowTitle(tr("Feedback"));
 #endif
+      alternativeTools->setWindowTitle(tr("Alternative Options"));
       workspacesTools->setWindowTitle(tr("Workspaces"));
 
       // keep translatable (con)texts in sync with those from zoombox.cpp
@@ -4441,6 +4509,7 @@ void MuseScore::changeState(ScoreState val)
       cpitchTools->setEnabled(enable);
       zoomBox->setEnabled(enable);
       entryTools->setEnabled(enable);
+      alternativeTools->setEnabled(enable);
 
       if (_sstate == STATE_FOTO)
             updateInspector();
@@ -4825,6 +4894,9 @@ void MuseScore::readSettings()
 
       a = getAction("toggle-noteinput");
       a->setChecked(!entryTools->isHidden());
+
+      a = getAction("toggle-alternative");
+      a->setChecked(!alternativeTools->isHidden());
       }
 
 //---------------------------------------------------------
@@ -6323,6 +6395,10 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   openFiles();
             else if (cmd == "file-close")
                   closeScore(cs);
+            else if (cmd == "file-close-all") {
+                  for (auto _score : scores())
+                        closeScore(_score);
+                  }
             else if (cmd == "file-save")
                   saveFile();
             else if (cmd == "file-save-as")
@@ -6431,6 +6507,8 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   showPianoKeyboard(a->isChecked());
             else if (cmd == "toggle-scorecmp-tool")
                   reDisplayDockWidget(scoreCmpTool, a->isChecked());
+            else if (cmd == "toggle-alternative")
+                  alternativeTools->setVisible(!alternativeTools->isVisible());
 #if 0
             else if (cmd == "toggle-feedback")
                   feedbackTools->setVisible(!feedbackTools->isVisible());

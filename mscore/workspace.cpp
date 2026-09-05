@@ -21,6 +21,7 @@
 #include "palette.h"
 #include "preferences.h"
 #include "musescore.h"
+#include "shortcut.h"
 #include "workspace.h"
 
 #include "libmscore/score.h"
@@ -32,6 +33,10 @@
 #include "thirdparty/qzip/qzipreader_p.h"
 #include "thirdparty/qzip/qzipwriter_p.h"
 
+#include <cstring>
+
+#include <QDialog>
+
 #if defined(FOR_WINSTORE)  // or even just Q_OS_WIN ?
 extern Q_CORE_EXPORT int qt_ntfs_permission_lookup;
 #else
@@ -39,6 +44,8 @@ int qt_ntfs_permission_lookup;
 #endif
 
 namespace Ms {
+
+static constexpr int WORKSPACE_UI_VERSION = 0;
 
 bool WorkspacesManager::isWorkspacesListDirty = true;
 Workspace* WorkspacesManager::m_currentWorkspace = nullptr;
@@ -403,6 +410,9 @@ void Workspace::write()
       // xml.tag("name", _name);
       if (!_sourceWorkspaceName.isEmpty())
             xml.tag("source", _sourceWorkspaceName);
+
+      xml.tag("uiVersion", WORKSPACE_UI_VERSION);
+
       const PaletteWorkspace* w = mscore->getPaletteWorkspace();
       w->write(xml);
 
@@ -412,12 +422,19 @@ void Workspace::write()
             for (auto i : *mscore->noteInputMenuEntries())
                   xml.tag("action", i);
             xml.etag();
+
             xml.stag("Toolbar name=\"fileOperation\"");
             for (auto i : *mscore->fileOperationEntries())
                   xml.tag("action", i);
             xml.etag();
+
             xml.stag("Toolbar name=\"playbackControl\"");
             for (auto i : *mscore->playbackControlEntries())
+                  xml.tag("action", i);
+            xml.etag();
+
+            xml.stag("Toolbar name=\"alternativeOptions\"");
+            for (auto i : *mscore->alternativeEntries())
                   xml.tag("action", i);
             xml.etag();
             }
@@ -531,12 +548,19 @@ void Workspace::writeGlobalToolBar()
       for (auto i : *mscore->noteInputMenuEntries())
             xml.tag("action", i);
       xml.etag();
+
       xml.stag("Toolbar name=\"fileOperation\"");
       for (auto i : *mscore->fileOperationEntries())
             xml.tag("action", i);
       xml.etag();
+
       xml.stag("Toolbar name=\"playbackControl\"");
       for (auto i : *mscore->playbackControlEntries())
+            xml.tag("action", i);
+      xml.etag();
+
+      xml.stag("Toolbar name=\"alternativeOptions\"");
+      for (auto i : *mscore->alternativeEntries())
             xml.tag("action", i);
       xml.etag();
 
@@ -735,15 +759,20 @@ std::unique_ptr<PaletteTree> Workspace::getPaletteTree() const
 
 void Workspace::read(XmlReader& e)
       {
+      int uiVersion = 0;
+
       bool niToolbar = false;
       bool foToolbar = false;
       bool pcToolbar = false;
+      bool alternativeToolbar = false;
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
             if (tag == "name")
                   e.readElementText();
             else if (tag == "source")
                   _sourceWorkspaceName = e.readElementText();
+            else if (tag == "uiVersion")
+                  uiVersion = e.readInt();
             else if (tag == "PaletteBox") {
                   PaletteWorkspace* w = mscore->getPaletteWorkspace();
                   w->read(e);
@@ -758,6 +787,8 @@ void Workspace::read(XmlReader& e)
                         toolbarEntries = mscore->allFileOperationEntries();
                   else if (name == "playbackControl")
                         toolbarEntries = mscore->allPlaybackControlEntries();
+                  else if (name == "alternativeOptions")
+                        toolbarEntries = mscore->allAlternativeEntries();
                   else
                         qDebug() << "Error in loading workspace: " + name + " is not a toolbar";
 
@@ -790,6 +821,11 @@ void Workspace::read(XmlReader& e)
                         mscore->setPlaybackControlEntries(l);
                         mscore->populatePlaybackControls();
                         pcToolbar = true;
+                        }
+                  else if (name == "alternativeOptions") {
+                        mscore->setAlternativeEntries(l);
+                        mscore->populateAlternativeOperations();
+                        alternativeToolbar = true;
                         }
                   }
             else if (tag == "Preferences") {
@@ -894,6 +930,10 @@ void Workspace::read(XmlReader& e)
                   mscore->setPlaybackControlEntries(mscore->allPlaybackControlEntries());
                   mscore->populatePlaybackControls();
                   }
+            if (!alternativeToolbar) {
+                  mscore->setAlternativeEntries(mscore->allAlternativeEntries());
+                  mscore->populateAlternativeOperations();
+                  }
             }
       else {
             readGlobalToolBar();
@@ -903,8 +943,111 @@ void Workspace::read(XmlReader& e)
       if (!saveComponents)
             readGlobalGUIState();
 
+      migrate(uiVersion);
+
       if (const Workspace* src = sourceWorkspace())
             mscore->getPaletteWorkspace()->setDefaultPaletteTree(src->getPaletteTree());
+      }
+
+//---------------------------------------------------------
+//   ensureMenuAction
+//---------------------------------------------------------
+
+void Workspace::ensureMenuAction(
+      const QString& menuId,
+      const QString& actionId,
+      const QString& anchorActionId,
+      InsertPosition position)
+
+      {
+      QMenu* menu = findMenuFromString(menuId);
+      QAction* action = findActionFromString(actionId);
+
+      if (!menu || !action || menu->actions().contains(action))
+            return;
+
+      QAction* anchorAction =
+            anchorActionId.isEmpty()
+            ? nullptr
+            : findActionFromString(anchorActionId);
+
+      if (!anchorAction || !menu->actions().contains(anchorAction)) {
+            menu->addAction(action);
+            return;
+            }
+
+      if (position == InsertPosition::BEFORE) {
+            menu->insertAction(anchorAction, action);
+            return;
+            }
+
+      const QList<QAction*> actions = menu->actions();
+      const int index = actions.indexOf(anchorAction);
+
+      if (index >= 0 && index + 1 < actions.size())
+            menu->insertAction(actions[index + 1], action);
+      else
+            menu->addAction(action);
+      }
+
+//---------------------------------------------------------
+//   ensureToolbarEntry
+//    anchorActionId: the actionId which will be immediately after
+//    or before the new placement of actionId, depending on [position]
+//---------------------------------------------------------
+
+void Workspace::ensureToolbarEntry(std::list<const char*>& entries,
+                                   const char* actionId,
+                                   const char* anchorActionId,
+                                   InsertPosition position)
+      {
+      if (!actionId || !*actionId)
+            return;
+
+      for (const char* entry : entries) {
+            if (!strcmp(entry, actionId))
+                  return;
+            }
+
+      if (anchorActionId) {
+            for (auto it = entries.begin(); it != entries.end(); ++it) {
+                  if (!strcmp(*it, anchorActionId)) {
+                        if (position == InsertPosition::AFTER)
+                              ++it;
+
+                        entries.insert(it, actionId);
+                        return;
+                        }
+                  }
+            }
+
+      entries.push_back(actionId);
+      }
+
+//---------------------------------------------------------
+//   migrate
+//---------------------------------------------------------
+
+void Workspace::migrate(int uiVersion)
+      {
+      if (uiVersion < 1) {
+            if (auto entries = mscore->noteInputMenuEntries()) {
+                  ensureToolbarEntry(*entries, "toggle-mouse-entry", "empty-trailing-measure", InsertPosition::BEFORE);
+                  ensureToolbarEntry(*entries, "toggle-edit-playback", "toggle-mouse-entry", InsertPosition::AFTER);
+                  mscore->populateNoteInputMenu();
+                  }
+
+            if (auto entries = mscore->fileOperationEntries()) {
+                  ensureToolbarEntry(*entries, "file-reload", "print", InsertPosition::BEFORE);
+                  ensureToolbarEntry(*entries, "file-export", "file-save", InsertPosition::AFTER);
+                  mscore->populateFileOperations();
+                  }
+
+            if (auto entries = mscore->playbackControlEntries()) {
+                  ensureToolbarEntry(*entries, "playback-highlight", "countin", InsertPosition::BEFORE);
+                  mscore->populatePlaybackControls();
+                  }
+            }
       }
 
 //---------------------------------------------------------
@@ -1015,6 +1158,8 @@ void Workspace::readGlobalToolBar()
                                     toolbarEntries = mscore->allFileOperationEntries();
                               else if (name == "playbackControl")
                                     toolbarEntries = mscore->allPlaybackControlEntries();
+                              else if (name == "alternativeOptions")
+                                    toolbarEntries = mscore->allAlternativeEntries();
                               else
                                     qDebug() << "Error in loading workspace: " + name + " is not a toolbar";
 
@@ -1044,6 +1189,10 @@ void Workspace::readGlobalToolBar()
                               else if (name == "playbackControl") {
                                     mscore->setPlaybackControlEntries(l);
                                     mscore->populatePlaybackControls();
+                                    }
+                              else if (name == "alternativeOptions") {
+                                    mscore->setAlternativeEntries(l);
+                                    mscore->populateAlternativeOperations();
                                     }
                               }
                         else

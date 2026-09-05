@@ -219,6 +219,9 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       static const std::list<const char*> _allFileOperationEntries;
       std::list<const char*> _fileOperationEntries { _allFileOperationEntries };
 
+      static const std::list<const char*> _allAlternativeEntries;
+      std::list<const char*> _alternativeEntries { _allAlternativeEntries };
+
       static const std::list<const char*> _allPlaybackControlEntries;
       std::list<const char*> _playbackControlEntries { _allPlaybackControlEntries };
 
@@ -262,6 +265,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
 #if 0
       QToolBar* feedbackTools;
 #endif
+      QToolBar* alternativeTools;
       QToolBar* workspacesTools;
       TextTools* _textTools                { 0 };
       PianoTools* _pianoTools              { 0 };
@@ -937,6 +941,11 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       std::list<const char*>* fileOperationEntries()                 { return &_fileOperationEntries; }
       void setFileOperationEntries(std::list<const char*> l)         { _fileOperationEntries = l; }
       void populateFileOperations();
+
+      static const std::list<const char*>& allAlternativeEntries()   { return _allAlternativeEntries ; }
+      std::list<const char*>* alternativeEntries()                   { return &_alternativeEntries; }
+      void setAlternativeEntries(std::list<const char*> l)           { _alternativeEntries = l; }
+      void populateAlternativeOperations();
 
       static const std::list<const char*>& allPlaybackControlEntries() { return _allPlaybackControlEntries; }
       std::list<const char*>* playbackControlEntries()               { return &_playbackControlEntries; }
