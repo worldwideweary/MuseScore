@@ -1818,10 +1818,18 @@ bool PianoView::calculateNoteDragOffsets(Fraction& pasteTickOffset,
                   scaledNumerator / denominator;
 
             if (scaledNumerator % denominator) {
-                  if (scaledNumerator > 0)
-                        ++alignedDivisions;
-                  else
-                        --alignedDivisions;
+                  if (_dragStyle == DragStyle::NOTE_LENGTH_END) {
+                        // The end of a note spills forward to the next
+                        // grid boundary, just like drawing a new note.
+                        if (scaledNumerator > 0)
+                              ++alignedDivisions;
+                        }
+                  else {
+                        // The start of a note spills backward to the previous
+                        // grid boundary, just like drawing a new note.
+                        if (scaledNumerator < 0)
+                              --alignedDivisions;
+                        }
                   }
 
             const Fraction alignedDragOffset(
