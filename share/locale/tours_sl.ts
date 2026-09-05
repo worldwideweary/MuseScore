@@ -40,7 +40,7 @@
     To enter notes into a different voice, click one of these icons.</source>
         <comment>note-input</comment>
         <translation>Za vnašanje not z različnimi trajanji v isto črtovje uporabite več glasov.
-&#xa0; V vsakem črtovju so lahko največ štirje glasovi.
+  V vsakem črtovju so lahko največ štirje glasovi.
   Privzet je 1. glas, ki ga v vsakem črtovju najprej uporabite.
   Za vnos not v različne glasove kliknite eno izmed teh ikon.</translation>
     </message>

@@ -233,7 +233,7 @@
     to move between pages.
     Keyboards that lack these keys often provide equivalents such as &quot;Fn+Up/Down/Left/Right&quot;.</source>
         <comment>navigate-tour</comment>
-        <translation>Die navigasiesleutels op jou sleutelbord soos PgUp&quot;, &quot;PgDn&quot;, &quot;Home&quot;, and &quot;End&quot;&#xa0;werk soos in ander toepassings
+        <translation>Die navigasiesleutels op jou sleutelbord soos PgUp&quot;, &quot;PgDn&quot;, &quot;Home&quot;, and &quot;End&quot; werk soos in ander toepassings
     om tussen bladsye te beweeg.
     Toetsborde wat nie hierdie toetse het nie, verskaf dikwels ekwivalente soos &quot;Fn+Up/Down/Left/Right&quot;.</translation>
     </message>
@@ -278,7 +278,7 @@
         <translation>Om &apos;n enkele seleksie te maak, kliek die element wat jy wil kies.
     Dit word verlig om aan te dui dat dit gekies is. 
     Jy kan die linker- en regterpyltoetse gebruik om die seleksie deur die note en rustekens van jou partituur te beweeg.
-   Wenk: As jy die &quot;Alt&quot;-sleutel (&quot;Option&quot; op macOS)&#xa0;druk saam met die pyltoetse, kan jy deur die ander elemente beweeg,
+   Wenk: As jy die &quot;Alt&quot;-sleutel (&quot;Option&quot; op macOS) druk saam met die pyltoetse, kan jy deur die ander elemente beweeg,
    en ook op en af van note balk na notebalk beweeg. </translation>
     </message>
     <message>

@@ -340,8 +340,8 @@ Pulse Mayus-Izquierda para mover este handler backward. </translation>
     If you have multiple scores open, you can switch between them using tabs at the top of your score view.</source>
         <comment>welcome</comment>
         <translation>Esta es la vista de partituras, donde puede ver y editar sus partituras.
-&#xa0;&#xa0;&#xa0;&#xa0; Use la rueda del mouse o el panel táctil para desplazarse (con &quot;Shift&quot; para desplazarse horizontalmente).
-&#xa0;&#xa0;&#xa0;&#xa0; Si tiene varias partituras abiertas, puede cambiar entre ellas usando las pestañas en la parte superior de su vista de partituras.</translation>
+     Use la rueda del mouse o el panel táctil para desplazarse (con &quot;Shift&quot; para desplazarse horizontalmente).
+     Si tiene varias partituras abiertas, puede cambiar entre ellas usando las pestañas en la parte superior de su vista de partituras.</translation>
     </message>
     <message>
         <source>The File Operations toolbar allows you to create/save/open/print files and undo/redo changes.
