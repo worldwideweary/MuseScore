@@ -625,19 +625,19 @@ static int convertNote(const QString& s, NoteSpellingType noteSpelling, NoteCase
             if (s[1].isUpper())
                   noteCase = NoteCaseType::UPPER;
             QString ss = s.toLower().left(2);
-            if (ss == "do")
+            if (ss == "do" || ss == "dó")
                   r = 0;
             else if (ss == "re" || ss == "ré")
                   r = 1;
             else if (ss == "mi")
                   r = 2;
-            else if (ss == "fa")
+            else if (ss == "fa" || ss == "fá")
                   r = 3;
             else if (ss == "so")    // sol, but only check first 2 characters
                   r = 4;
-            else if (ss == "la")
+            else if (ss == "la" || ss == "lá")
                   r = 5;
-            else if (ss == "si")
+            else if (ss == "si" || ss == "ti")
                   r = 6;
             else
                   return Tpc::TPC_INVALID;
