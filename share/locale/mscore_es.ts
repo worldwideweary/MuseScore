@@ -21538,28 +21538,28 @@ Visite la %1web de MuseScore%2 para obtener la última versión.</translation>
         <translation>Triple sostenido</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="1991"/>
+        <location filename="../../libmscore/harmony.cpp" line="1992"/>
         <source>Roman numeral</source>
         <translation>Números romanos</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="1993"/>
+        <location filename="../../libmscore/harmony.cpp" line="1994"/>
         <source>Nashville number</source>
         <translation>Número de Nashville</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="2031"/>
+        <location filename="../../libmscore/harmony.cpp" line="2032"/>
         <source>lower case</source>
         <translation>letra minúscula</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="2088"/>
+        <location filename="../../libmscore/harmony.cpp" line="2089"/>
         <location filename="../../libmscore/pitchspelling.cpp" line="281"/>
         <source>♭</source>
         <translation>Bemol</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="2079"/>
+        <location filename="../../libmscore/harmony.cpp" line="2080"/>
         <location filename="../../libmscore/pitchspelling.cpp" line="290"/>
         <source>♯</source>
         <translation>Sostenido</translation>

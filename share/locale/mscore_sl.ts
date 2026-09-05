@@ -21547,28 +21547,28 @@ Za najnovejšo različico pojdite na %1MuseScorovo spletišče%2 </translation>
         <translation>trojni ♯</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="1991"/>
+        <location filename="../../libmscore/harmony.cpp" line="1992"/>
         <source>Roman numeral</source>
         <translation>Rimskoštevilčen</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="1993"/>
+        <location filename="../../libmscore/harmony.cpp" line="1994"/>
         <source>Nashville number</source>
         <translation>Nashvillski številčen</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="2031"/>
+        <location filename="../../libmscore/harmony.cpp" line="2032"/>
         <source>lower case</source>
         <translation>male črke</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="2088"/>
+        <location filename="../../libmscore/harmony.cpp" line="2089"/>
         <location filename="../../libmscore/pitchspelling.cpp" line="281"/>
         <source>♭</source>
         <translation>Nižaj</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="2079"/>
+        <location filename="../../libmscore/harmony.cpp" line="2080"/>
         <location filename="../../libmscore/pitchspelling.cpp" line="290"/>
         <source>♯</source>
         <translation>Višaj</translation>

@@ -21545,28 +21545,28 @@ Besoek die %1MuseScore-webwerf%2 om die nuutste weergawe te kry.</translation>
         <translation>tripel ♯</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="1991"/>
+        <location filename="../../libmscore/harmony.cpp" line="1992"/>
         <source>Roman numeral</source>
         <translation>Romeinse syfer</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="1993"/>
+        <location filename="../../libmscore/harmony.cpp" line="1994"/>
         <source>Nashville number</source>
         <translation>Nashville-nommer</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="2031"/>
+        <location filename="../../libmscore/harmony.cpp" line="2032"/>
         <source>lower case</source>
         <translation>kleinletters</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="2088"/>
+        <location filename="../../libmscore/harmony.cpp" line="2089"/>
         <location filename="../../libmscore/pitchspelling.cpp" line="281"/>
         <source>♭</source>
         <translation>♭</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="2079"/>
+        <location filename="../../libmscore/harmony.cpp" line="2080"/>
         <location filename="../../libmscore/pitchspelling.cpp" line="290"/>
         <source>♯</source>
         <translation>♯</translation>

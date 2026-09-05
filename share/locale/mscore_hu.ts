@@ -21539,28 +21539,28 @@ Keresse fel a %1MuseScore honlapot%2 és töltse le a legújabb verziót.</trans
         <translation>tripla ♯</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="1991"/>
+        <location filename="../../libmscore/harmony.cpp" line="1992"/>
         <source>Roman numeral</source>
         <translation>Római szám</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="1993"/>
+        <location filename="../../libmscore/harmony.cpp" line="1994"/>
         <source>Nashville number</source>
         <translation>Nashville szám</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="2031"/>
+        <location filename="../../libmscore/harmony.cpp" line="2032"/>
         <source>lower case</source>
         <translation>kisbetűs</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="2088"/>
+        <location filename="../../libmscore/harmony.cpp" line="2089"/>
         <location filename="../../libmscore/pitchspelling.cpp" line="281"/>
         <source>♭</source>
         <translation>bé</translation>
     </message>
     <message>
-        <location filename="../../libmscore/harmony.cpp" line="2079"/>
+        <location filename="../../libmscore/harmony.cpp" line="2080"/>
         <location filename="../../libmscore/pitchspelling.cpp" line="290"/>
         <source>♯</source>
         <translation>kereszt</translation>
