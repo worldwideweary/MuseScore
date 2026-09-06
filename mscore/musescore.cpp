@@ -1125,6 +1125,151 @@ void MuseScore::populatePlaybackControls()
       }
 
 //---------------------------------------------------------
+//   dataLocationForApplication
+//---------------------------------------------------------
+
+static QString dataLocationForApplication(const QString& applicationName)
+      {
+      const QString currentApplicationName = QCoreApplication::applicationName();
+
+      QCoreApplication::setApplicationName(applicationName);
+      const QString path = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+      QCoreApplication::setApplicationName(currentApplicationName);
+
+      return path;
+      }
+
+//---------------------------------------------------------
+//   copyDirectory
+//---------------------------------------------------------
+
+static bool copyDirectory(const QString& sourcePath,
+                          const QString& destinationPath)
+      {
+      QDir sourceDir(sourcePath);
+
+      if (!sourceDir.exists())
+            return false;
+
+      QDir destinationDir;
+      if (!destinationDir.mkpath(destinationPath))
+            return false;
+
+      const QFileInfoList entries = sourceDir.entryInfoList(
+            QDir::NoDotAndDotDot
+            | QDir::AllEntries
+            | QDir::Hidden
+            | QDir::System);
+
+      for (const QFileInfo& entry : entries) {
+            const QString source =
+                  entry.absoluteFilePath();
+            const QString destination =
+                  QDir(destinationPath).filePath(entry.fileName());
+
+            if (entry.isDir()) {
+                  if (!copyDirectory(source, destination))
+                        return false;
+                  }
+            else {
+                  if (QFile::exists(destination))
+                        continue;
+
+                  if (!QFile::copy(source, destination))
+                        return false;
+                  }
+            }
+
+      return true;
+      }
+
+//---------------------------------------------------------
+//   migrateEvolutionSettings
+//
+//   On first use of the separate 3.7 Evolution profile,
+//   copy the existing MuseScore3 settings and application
+//   data so that users retain their preferences, workspaces,
+//   shortcuts, sessions, etc.
+//
+//   Once the migration has been handled, never import the
+//   MuseScore3 profile again. This prevents later use of
+//   MuseScore 3.6.2 from affecting the Evolution profile.
+//
+//   Do not migrate when a custom configuration folder or
+//   factory settings have been explicitly requested.
+//---------------------------------------------------------
+
+static void migrateEvolutionSettings()
+      {
+      if (!dataPath.isEmpty())
+            return;
+
+      if (useFactorySettings)
+            return;
+
+      const QString newDataPath =
+            QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+
+      static constexpr const char* migrationKey =
+            "migration/fromMuseScore3";
+
+      QSettings newSettings;
+
+      if (newSettings.value(migrationKey, false).toBool())
+            return;
+
+      const bool haveNewSettings = !newSettings.allKeys().isEmpty();
+
+      QSettings oldSettings(QSettings::defaultFormat(),
+                            QSettings::UserScope,
+                            "MuseScore",
+                            "MuseScore3");
+
+      const QString oldDataPath =
+            dataLocationForApplication("MuseScore3");
+
+      const bool haveOldSettings = !oldSettings.allKeys().isEmpty();
+      const bool haveOldData = QDir(oldDataPath).exists();
+
+      if (!haveOldSettings && !haveOldData) {
+            newSettings.setValue(migrationKey, true);
+            newSettings.sync();
+            return;
+            }
+
+      if (haveOldData && !copyDirectory(oldDataPath, newDataPath)) {
+            qWarning("Failed to migrate MuseScore3 application data from <%s> to <%s>",
+                     qPrintable(oldDataPath),
+                     qPrintable(newDataPath));
+            return;
+            }
+
+      if (haveOldSettings && !haveNewSettings) {
+            for (const QString& key : oldSettings.allKeys())
+                  newSettings.setValue(key, oldSettings.value(key));
+
+            newSettings.sync();
+
+            if (newSettings.status() != QSettings::NoError) {
+                  qWarning("Failed to migrate MuseScore3 settings");
+                  return;
+                  }
+            }
+
+      // Only mark the migration complete after all required data and
+      // settings have been copied successfully.
+      newSettings.setValue(migrationKey, true);
+      newSettings.sync();
+
+      if (newSettings.status() != QSettings::NoError) {
+            qWarning("Failed to mark MuseScore3 settings migration complete");
+            return;
+            }
+
+      qInfo("Migrated MuseScore3 settings to MuseScore3Evo");
+      }
+
+//---------------------------------------------------------
 //   MuseScore
 //---------------------------------------------------------
 
@@ -7674,8 +7819,8 @@ MuseScoreApplication* MuseScoreApplication::initApplication(int& argc, char** ar
             appName  = "MuseScore3Development";
             }
       else {
-            appName2 = "mscore3";
-            appName  = "MuseScore3";
+            appName2 = "mscore3evo";
+            appName  = "MuseScore3Evo";
             }
 
       //! NOTE Disable cache for all platforms
@@ -8095,6 +8240,8 @@ int runApplication(int& argc, char** av)
 
       if (cmdLineParseResult.exit)
             return 0;
+
+      migrateEvolutionSettings();
 
       MuseScore::init(cmdLineParseResult.argv);
 
