@@ -2801,11 +2801,22 @@ void PianoView::mousePressEvent(QMouseEvent* event)
             _tieDragTargets.clear();
 
             _selectionHandledOnPress = false;
+            _actionHandledOnPress = false;
+
+            const Qt::KeyboardModifiers modifiers =
+                  event->modifiers();
+            const bool ctrlPressed =
+                  (modifiers & Qt::ControlModifier);
+            const bool shiftPressed =
+                  (modifiers & Qt::ShiftModifier);
+
+            if (ctrlPressed && (cutTool() || tieTool())) {
+                  regroupNoteAt(_mouseDownPos);
+                  _actionHandledOnPress = true;
+                  }
 
             if (selectTool() || eventsAdjustTool()) {
-                  const Qt::KeyboardModifiers modifiers = event->modifiers();
-                  const bool hasSelectionModifier =
-                        modifiers & (Qt::ShiftModifier | Qt::ControlModifier);
+                  const bool hasSelectionModifier = ctrlPressed || shiftPressed;
 
                   PianoItem* pressedItem = pickNote(_mouseDownPos);
 
@@ -3073,7 +3084,7 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                   }
             _dragStarted = false;
             }
-      else {
+      else if (!_actionHandledOnPress) {
             //This was just a click, not a drag
             switch (_editNoteTool) {
                   case SELECT:
@@ -3094,9 +3105,7 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                         appendNoteToChord(_mouseDownPos);
                         break;
                   case CUT:
-                        if (bnCtrl)
-                              regroupNoteAt(_mouseDownPos);
-                        else if (bnShift)
+                        if (bnShift)
                               toggleTie(_mouseDownPos);
                         else
                               cutChord(_mouseDownPos);
@@ -3111,6 +3120,7 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
             }
 
       _selectionHandledOnPress = false;
+      _actionHandledOnPress = false;
       _dragStyle = DragStyle::NONE;
       _mouseDown = false;
 
@@ -3284,6 +3294,9 @@ PianoRollCursorMode PianoView::effectiveCursorMode() const
                   return PianoRollCursorMode::CUT;
 
             case PianoRollEditTool::TIE:
+                  if (ctrlPressed)
+                        return PianoRollCursorMode::CONSOLIDATE_TIES;
+
                   return PianoRollCursorMode::TIE;
 
             case PianoRollEditTool::EVENT_ADJUST:
@@ -3417,7 +3430,7 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
 
       _cursorModifiers = event->modifiers();
 
-      if (_mouseDown && !_dragStarted) {
+      if (_mouseDown && !_dragStarted && !_actionHandledOnPress) {
             qreal dx = _lastMousePos.x() - _mouseDownPos.x();
             qreal dy = _lastMousePos.y() - _mouseDownPos.y();
 
@@ -3468,7 +3481,7 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                                     }
                               else if (event->modifiers() & Qt::ShiftModifier) {
                                     //
-                                    // Shift+Cut uses the note-specific Toggle Tie gesture.
+                                    // Shift+Cut uses the tie drag gesture.
                                     //
                                     _dragStyle = DragStyle::TIE;
                                     _tieDragTargets.clear();
@@ -4609,6 +4622,8 @@ Note* PianoView::tieNoteAt(const QPointF& pos)
 bool PianoView::toggleTieDragSegment(const QPointF& from,
                                      const QPointF& to)
       {
+      qDebug() << "";
+
       if (!_staff)
             return false;
 
@@ -4632,8 +4647,15 @@ bool PianoView::toggleTieDragSegment(const QPointF& from,
             if (!note)
                   continue;
 
-            if (useOnsetDiamond(note))
+            qDebug() << "tie drag note"
+                     << note
+                     << "onset?"
+                     << useOnsetDiamond(note);
+
+            if (useOnsetDiamond(note)) {
+                  qDebug() << "crackout";
                   continue;
+                  }
 
             const TieDragTarget target {
                   note->chord()->tick(),
@@ -4650,8 +4672,10 @@ bool PianoView::toggleTieDragSegment(const QPointF& from,
                         }
                   }
 
-            if (alreadyHandled)
+            if (alreadyHandled) {
+                  qDebug() << "already handled";
                   continue;
+                  }
 
             //
             // Record it before modifying the score so moving backward
