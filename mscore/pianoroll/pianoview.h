@@ -197,6 +197,7 @@ private:
       int _dragNoteLengthMargin = 4;
       bool _inProgressUndoEvent;
       bool _selectionHandledOnPress { false };
+      bool _actionHandledOnPress { false };
 
       Fraction _levelPreviewLengthOffset;
       Fraction _levelPreviewTickOffset;
@@ -484,6 +485,11 @@ private:
             { return _editNoteTool == PianoRollEditTool::ADD; }
       bool eraseTool() const
             { return _editNoteTool == PianoRollEditTool::ERASE; }
+      bool cutTool() const
+            { return _editNoteTool == PianoRollEditTool::CUT; }
+      bool tieTool() const
+            { return _editNoteTool == PianoRollEditTool::TIE; }
+
 
       bool isHorizontal() const
             { return _orientation == PianoRollOrientation::HORIZONTAL; }
