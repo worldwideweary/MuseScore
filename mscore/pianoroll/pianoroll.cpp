@@ -2698,7 +2698,10 @@ void PianorollEditor::doUpdate()
             removeScore();
             return;
             }
+
       pianoView->updateNotes();
+
+      updateNoteShapeBox();
 
       if (_showPianoLevels && pianoLevels)
             pianoLevels->updateNotes();
