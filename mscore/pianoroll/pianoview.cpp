@@ -1857,8 +1857,10 @@ bool PianoView::calculateNoteDragOffsets(Fraction& pasteTickOffset,
 //---------------------------------------------------------
 
 bool PianoView::paintOnsetDragSegment(const QPointF& from,
-                                     const QPointF& to)
+                                      const QPointF& to)
       {
+      Q_UNUSED(from);
+
       if (!_staff)
             return false;
 
@@ -1870,16 +1872,71 @@ bool PianoView::paintOnsetDragSegment(const QPointF& from,
 
       bool changed = false;
 
+      //
+      // Recalculate the complete set of grid boundaries which the
+      // current gesture should own. This makes pulling the mouse
+      // backward naturally contract the painted onset range.
+      //
       const QVector<Fraction> ticks =
-            onsetPaintTicks(from, to);
+            onsetPaintTicks(_mouseDownPos, to);
+
+      QHash<int, Fraction> desiredTicks;
 
       for (const Fraction& tick : ticks) {
-
-            if (tick < Fraction{})
+            if (tick < Fraction{}
+                || tick > Fraction::fromTicks(_ticks)) {
                   continue;
+                  }
+
+            desiredTicks.insert(tick.ticks(), tick);
+            }
+
+      //
+      // Remove notes which this gesture previously created but which
+      // are no longer inside its current extent.
+      //
+      QList<int> ticksToRemove;
+
+      for (auto it = _onsetPaintedNotes.constBegin();
+           it != _onsetPaintedNotes.constEnd();
+           ++it) {
+            if (!desiredTicks.contains(it.key()))
+                  ticksToRemove.append(it.key());
+            }
+
+      for (int tickValue : ticksToRemove) {
+            const QVector<Note*> notes =
+                  _onsetPaintedNotes.value(tickValue);
+
+            if (!notes.isEmpty()) {
+                  score->startCmd();
+
+                  for (Note* note : notes) {
+                        if (note)
+                              score->deleteItem(note);
+                        }
+
+                  score->endCmd();
+
+                  changed = true;
+                  }
+
+            _onsetPaintedNotes.remove(tickValue);
+            }
+
+      //
+      // Add any newly-covered grid boundaries which this gesture
+      // does not already own.
+      //
+      for (const Fraction& tick : ticks) {
+            if (tick < Fraction{}
+                || tick > Fraction::fromTicks(_ticks)) {
+                  continue;
+                  }
+
             const int tickValue = tick.ticks();
 
-            if (_drumPaintedTicks.contains(tickValue))
+            if (_onsetPaintedNotes.contains(tickValue))
                   continue;
 
             const Fraction duration = gridLengthAt(tick);
@@ -1901,6 +1958,8 @@ bool PianoView::paintOnsetDragSegment(const QPointF& from,
             if (!measure)
                   continue;
 
+            QVector<Note*> added;
+
             score->startCmd();
 
             ChordRest* cr = score->findCR(tick, track);
@@ -1917,20 +1976,26 @@ bool PianoView::paintOnsetDragSegment(const QPointF& from,
                   }
 
             if (cr) {
-                  const QVector<Note*> added =
+                  added =
                         addNote(
                               tick,
                               duration,
                               pitch,
                               track);
-
-                  if (!added.isEmpty()) {
-                        _drumPaintedTicks.insert(tickValue);
-                        changed = true;
-                        }
                   }
 
             score->endCmd();
+
+            //
+            // Record the tick even when nothing was added. An empty
+            // vector means this gesture encountered the grid position
+            // but did not create anything there, so pullback must not
+            // delete any pre-existing score material.
+            //
+            _onsetPaintedNotes.insert(tickValue, added);
+
+            if (!added.isEmpty())
+                  changed = true;
             }
 
       return changed;
@@ -2929,7 +2994,7 @@ void PianoView::mouseReleaseEvent(QMouseEvent* event)
                               }
 
                         _drumPaintUndoStartIdx = -1;
-                        _drumPaintedTicks.clear();
+                        _onsetPaintedNotes.clear();
                         }
                   else {
                         double startTick =
@@ -3525,7 +3590,7 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                                                 true);
 
                                     if (useOnsetDiamond(_staff, tick)) {
-                                          _drumPaintedTicks.clear();
+                                          _onsetPaintedNotes.clear();
                                           _lastDrumPaintPos = _mouseDownPos;
                                           _drumPaintUndoStartIdx =
                                                 _staff->score()->undoStack()->getCurIdx();

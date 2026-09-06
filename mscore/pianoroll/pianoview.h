@@ -184,7 +184,7 @@ private:
 
       int _drumPaintUndoStartIdx { -1 };
       QPointF _lastDrumPaintPos;
-      QSet<int> _drumPaintedTicks;
+      QHash<int, QVector<Note*>> _onsetPaintedNotes;
 
       QPointF _mouseDownScreenPos;
       QPointF _lastMouseScreenPos;
