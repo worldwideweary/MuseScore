@@ -56,9 +56,12 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       QToolBar* tbDots { nullptr };
       QToolBar* tbVoices { nullptr };
       QToolBar* tbTweak { nullptr };
+      QToolButton* tieToolButton { nullptr };
+      QToolButton* cutToolButton { nullptr };
 
       QButtonGroup* bngrpNoteLen { nullptr };
       QButtonGroup* bngrpNoteDot { nullptr };
+      QButtonGroup* bngrpActionBns { nullptr };
 
       PianoView* pianoView { nullptr };
       PianoKeyboard* pianoKbd { nullptr };
@@ -132,6 +135,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       void updateStaffBox();
       void updateVelocity(Note* note);
       void updateSelection();
+      void updateNoteShapeToolState();
       void readSettings();
       void doUpdate();
       void applyPitchEdit();
