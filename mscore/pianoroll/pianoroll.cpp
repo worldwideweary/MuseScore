@@ -256,7 +256,12 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                           PianoRollNoteShape(
                                 noteShapeBox->itemData(index).toInt());
 
+                    const Fraction referenceTick =
+                          Fraction::fromTicks(pianoView->viewportReferenceTick());
+
                     setPianoRollNoteShape(shape);
+                    updateNoteShapeToolState();
+
                     restoreScoreViewFocus();
                     });
 
@@ -410,7 +415,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       //----
 
       tbTool = new QToolBar("Action Buttons", this);
-      QButtonGroup* bngrpActionBns = new QButtonGroup();
+      bngrpActionBns = new QButtonGroup(this);
       tbTool->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
       tbTool->setIconSize(toolbarIconSize);
 
@@ -440,7 +445,14 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             bn->setIconSize(toolbarIconSize);
             bn->setCheckable(true);
             bn->setToolTip(p->_tooltip);
+
             PianoRollEditTool tool = p->_tool;
+
+            if (tool == PianoRollEditTool::CUT)
+                  cutToolButton = bn;
+            else if (tool == PianoRollEditTool::TIE)
+                  tieToolButton = bn;
+
             connect(bn, &QToolButton::clicked,
                   this, [=, this]() {
                         this->setEditNoteTool(tool);
@@ -1111,7 +1123,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(tuplet,
               QOverload<int>::of(&QSpinBox::valueChanged),
               this,
-              [this, bngrpActionBns](int value) {
+              [this](int value) {
                     QAbstractButton* cutButton =
                           bngrpActionBns->button(int(PianoRollEditTool::CUT));
 
@@ -1385,6 +1397,60 @@ void PianorollEditor::updateNoteLengthControls(const Fraction& duration)
       }
 
 //---------------------------------------------------------
+//   updateNoteShapeToolState
+//---------------------------------------------------------
+
+void PianorollEditor::updateNoteShapeToolState()
+      {
+      if (!noteShapeBox)
+            return;
+
+      const PianoRollNoteShape shape =
+            PianoRollNoteShape(
+                  noteShapeBox->currentData().toInt());
+
+      const Fraction referenceTick = pianoView
+            ? Fraction::fromTicks(pianoView->viewportReferenceTick())
+            : Fraction{};
+
+      const bool onsetMode =
+            shape == PianoRollNoteShape::DIAMOND
+            || (shape == PianoRollNoteShape::AUTO
+                && staff
+                && staff->isDrumStaff(referenceTick));
+
+      if (cutToolButton)
+            cutToolButton->setEnabled(!onsetMode);
+
+      if (tieToolButton)
+            tieToolButton->setEnabled(!onsetMode);
+
+      if (!onsetMode || !bngrpActionBns)
+            return;
+
+      QAbstractButton* checked =
+            bngrpActionBns->checkedButton();
+
+      if (!checked)
+            return;
+
+      const int toolId =
+            bngrpActionBns->id(checked);
+
+      if (toolId != int(PianoRollEditTool::CUT)
+          && toolId != int(PianoRollEditTool::TIE)) {
+            return;
+            }
+
+      setEditNoteTool(PianoRollEditTool::SELECT);
+
+      if (QAbstractButton* selectButton =
+          bngrpActionBns->button(int(PianoRollEditTool::SELECT))) {
+            selectButton->setChecked(true);
+            }
+      }
+
+//---------------------------------------------------------
 //   setEditNoteTool
 //---------------------------------------------------------
 
@@ -1639,6 +1705,7 @@ void PianorollEditor::setStaff(Staff* st)
       noteTweakerDlg->setStaff(staff);
 
       updateSelection();
+      updateNoteShapeToolState();
       setEnabled(st);
       }
 

@@ -3461,21 +3461,24 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                               _dragStyle = DragStyle::SELECTION_RECT;
                               }
                         else if (_editNoteTool == PianoRollEditTool::CUT) {
-                              if (event->modifiers() & Qt::ShiftModifier) {
+                              PianoItem* pi = pickNote(_mouseDownPos);
+
+                              if (pi && useOnsetDiamond(pi->note())) {
+                                    _dragStyle = DragStyle::NONE;
+                                    }
+                              else if (event->modifiers() & Qt::ShiftModifier) {
                                     //
                                     // Shift+Cut uses the note-specific Toggle Tie gesture.
                                     //
                                     _dragStyle = DragStyle::TIE;
                                     _tieDragTargets.clear();
                                     _lastTieDragPos = _mouseDownPos;
-
                                     _tieDragUndoStartIdx =
                                           _staff->score()->undoStack()->getCurIdx();
                                     }
                               else {
                                     _dragStyle = DragStyle::CUT;
                                     _lastCutDragPos = _mouseDownPos;
-
                                     _cutDragUndoStartIdx =
                                           _staff->score()->undoStack()->getCurIdx();
                                     }
@@ -4493,6 +4496,9 @@ void PianoView::toggleTie(const QPointF& pos)
       if (!note)
             return;
 
+      if (useOnsetDiamond(note))
+            return;
+
       Score* score = _staff->score();
 
       score->startCmd();
@@ -4510,9 +4516,6 @@ void PianoView::toggleTie(const QPointF& pos)
 bool PianoView::toggleTie(Note* note)
       {
       if (!note || !_staff)
-            return false;
-
-      if (useOnsetDiamond(note))
             return false;
 
       // Based on Score::cmdToggleTie()
@@ -4627,6 +4630,9 @@ bool PianoView::toggleTieDragSegment(const QPointF& from,
 
             Note* note = tieNoteAt(pos);
             if (!note)
+                  continue;
+
+            if (useOnsetDiamond(note))
                   continue;
 
             const TieDragTarget target {
@@ -4885,6 +4891,9 @@ bool PianoView::cutChordDragSegment(const QPointF& from,
                   continue;
 
             const Fraction cutTick = roundToNearestBeat(pickTick);
+
+            if (useOnsetDiamond(_staff, cutTick))
+                  continue;
 
             PianoItem* pn = pickNote(pickTick, pickPitch);
             const int voice = pn ? pn->note()->voice() : _editNoteVoice;
