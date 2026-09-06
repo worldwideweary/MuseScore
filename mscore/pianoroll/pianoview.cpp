@@ -5142,6 +5142,7 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
       QVector<NoteVal> chordNotes;
 
       QMap<int, QPair<Fraction, Fraction>> preservedTieRanges;
+      QMap<int, Fraction> preservedIncomingTieTicks;
 
       if (wasChord) {
             Chord* chord = toChord(targetCr);
@@ -5149,26 +5150,37 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
             for (Note* note : chord->notes()) {
                   chordNotes.append(note->noteVal());
 
+                  if (note->tieBack()) {
+                        Note* previous =
+                              note->tieBack()->startNote();
+
+                        if (previous && previous->chord()) {
+                              preservedIncomingTieTicks.insert(
+                                    note->pitch(),
+                                    previous->chord()->tick());
+                              }
+                        }
+
+                  Note* first = note;
+
                   if (preserveOriginalDuration) {
-                        Note* first = note;
                         while (first->tieBack())
                               first = first->tieBack()->startNote();
-
-                        Note* last = note;
-                        while (last->tieFor())
-                              last = last->tieFor()->endNote();
-
-                        const Fraction logicalStart =
-                              first->chord()->tick();
-
-                        const Fraction logicalEnd =
-                              last->chord()->tick()
-                              + last->chord()->actualTicks();
-
-                        preservedTieRanges.insert(
-                              note->pitch(),
-                              qMakePair(logicalStart, logicalEnd));
                         }
+
+                  Note* last = note;
+                  while (last->tieFor())
+                        last = last->tieFor()->endNote();
+
+                  const Fraction logicalStart =
+                        first->chord()->tick();
+                  const Fraction logicalEnd =
+                        last->chord()->tick()
+                        + last->chord()->actualTicks();
+
+                  preservedTieRanges.insert(
+                        note->pitch(),
+                        qMakePair(logicalStart, logicalEnd));
 
                   note->setSelected(false);
                   }
@@ -5260,6 +5272,63 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
             }
 
       //
+      // Ordinary Cut creates a new attack at cutTick, so cr0 must not
+      // be tied to cr1.  However, if the original ChordRest had an
+      // incoming tie, preserve that existing relationship into cr0.
+      //
+      if (!preserveOriginalDuration && wasChord && cr0->isChord()) {
+
+            Chord* firstChord = toChord(cr0);
+
+            for (Note* note : firstChord->notes()) {
+                  if (!note)
+                        continue;
+
+                  auto incomingIt =
+                        preservedIncomingTieTicks.constFind(note->pitch());
+
+                  if (incomingIt == preservedIncomingTieTicks.constEnd())
+                        continue;
+
+                  ChordRest* previousCR =
+                        score->findCR(incomingIt.value(), track);
+
+                  if (!previousCR
+                      || previousCR->tick() != incomingIt.value()
+                      || !previousCR->isChord()) {
+                        continue;
+                        }
+
+                  Note* previousNote = nullptr;
+
+                  for (Note* candidate : toChord(previousCR)->notes()) {
+                        if (candidate
+                            && candidate->pitch() == note->pitch()) {
+                              previousNote = candidate;
+                              break;
+                              }
+                        }
+
+                  if (!previousNote)
+                        continue;
+
+                  if (previousNote->tieFor() || note->tieBack())
+                        continue;
+
+                  Tie* tie = new Tie(score);
+                  tie->setStartNote(previousNote);
+                  tie->setEndNote(note);
+                  tie->setTrack(previousNote->track());
+                  tie->setTick(previousNote->chord()->segment()->tick());
+                  tie->setTicks(
+                        note->chord()->segment()->tick()
+                        - previousNote->chord()->segment()->tick());
+
+                  score->undoAddElement(tie);
+                  }
+            }
+
+      //
       // setNoteRest() may rhythmically decompose the remainder after
       // cutTick into more than one ChordRest.  Those extra fragments
       // are notation of the same untouched remainder, not additional
@@ -5271,22 +5340,20 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
       if (wasChord && cr1->isChord()) {
             Fraction preserveStartTick = cr1->tick();
             Fraction preserveEndTick = endTick;
+            bool firstRange = true;
 
-            if (preserveOriginalDuration) {
-                  bool firstRange = true;
-
-                  for (auto it = preservedTieRanges.constBegin();
-                       it != preservedTieRanges.constEnd();
-                       ++it) {
-                        if (firstRange
-                            || it.value().first < preserveStartTick) {
-                              preserveStartTick = it.value().first;
-                              firstRange = false;
-                              }
-
-                        if (it.value().second > preserveEndTick)
-                              preserveEndTick = it.value().second;
+            for (auto it = preservedTieRanges.constBegin();
+                 it != preservedTieRanges.constEnd();
+                 ++it) {
+                  if (preserveOriginalDuration
+                      && (firstRange
+                          || it.value().first < preserveStartTick)) {
+                        preserveStartTick = it.value().first;
+                        firstRange = false;
                         }
+
+                  if (it.value().second > preserveEndTick)
+                        preserveEndTick = it.value().second;
                   }
 
             ChordRest* currentCR =
@@ -5332,28 +5399,26 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
                         if (!nextNote)
                               continue;
 
-                        if (preserveOriginalDuration) {
-                              auto rangeIt =
-                                    preservedTieRanges.constFind(note->pitch());
+                        auto rangeIt =
+                              preservedTieRanges.constFind(note->pitch());
 
-                              if (rangeIt == preservedTieRanges.constEnd())
-                                    continue;
+                        if (rangeIt == preservedTieRanges.constEnd())
+                              continue;
 
-                              const Fraction logicalStart =
-                                    rangeIt.value().first;
-                              const Fraction logicalEnd =
-                                    rangeIt.value().second;
+                        const Fraction logicalStart =
+                              rangeIt.value().first;
+                        const Fraction logicalEnd =
+                              rangeIt.value().second;
 
-                              //
-                              // Different notes in the original chord may belong to
-                              // tie chains with different logical extents.
-                              //
-                              if (currentChord->tick() < logicalStart)
-                                    continue;
+                        //
+                        // Different notes in the original chord may belong to
+                        // tie chains with different logical extents.
+                        //
+                        if (currentChord->tick() < logicalStart)
+                              continue;
 
-                              if (nextTick >= logicalEnd)
-                                    continue;
-                              }
+                        if (nextTick >= logicalEnd)
+                              continue;
 
                         //
                         // Do not disturb an existing tie relationship.
