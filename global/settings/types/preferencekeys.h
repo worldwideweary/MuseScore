@@ -301,6 +301,7 @@
 #define PREF_UI_PIANOROLL_USE_NOTE_COLORS                   "ui/pianoroll/coloring/honorNoteheadCustomColor"
 #define PREF_UI_PIANOROLL_NOTE_BORDER_COLOR_LIGHTER         "ui/pianoroll/coloring/noteBorder/lighter"
 
+#define PREF_UI_PIANOROLL_USE_AUTO_VOICE                    "ui/pianoroll/autoVoice"
 #define PREF_UI_PIANOROLL_SHOW_LEVELS_EDITOR                "ui/pianoroll/levelsEditor/show"
 #define PREF_UI_PIANOROLL_PLAYBACK_HIGHLIGHT_NOTES          "ui/pianoroll/playback/highlight/notes"
 #define PREF_UI_PIANOROLL_PLAYBACK_HIGHLIGHT_KEYBOARD       "ui/pianoroll/playback/highlight/keyboard"

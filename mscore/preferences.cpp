@@ -403,6 +403,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_UI_PIANOROLL_SHOW_PITCH_TEXT,                    new BoolPreference(true)},
             {PREF_UI_PIANOROLL_USE_NOTE_COLORS,                    new BoolPreference(false)},
 
+            {PREF_UI_PIANOROLL_USE_AUTO_VOICE,                     new BoolPreference(false)},
             {PREF_UI_PIANOROLL_SHOW_LEVELS_EDITOR,                 new BoolPreference(true)},
             {PREF_UI_PIANOROLL_PLAYBACK_HIGHLIGHT_NOTES,           new BoolPreference(true)},
             {PREF_UI_PIANOROLL_PLAYBACK_HIGHLIGHT_KEYBOARD,        new BoolPreference(true)},

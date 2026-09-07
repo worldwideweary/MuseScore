@@ -611,12 +611,17 @@ PianorollEditor::PianorollEditor(QWidget* parent)
             tbVoices->addWidget(bn);
             }
 
+
+      const bool automaticVoice =
+            preferences.getBool(PREF_UI_PIANOROLL_USE_AUTO_VOICE);
       automaticVoiceSeparator = tbVoices->addSeparator();
 
       automaticVoiceAction =
             new QAction(tr("Auto Voice"), this);
 
       automaticVoiceAction->setCheckable(true);
+      automaticVoiceAction->setChecked(automaticVoice);
+
       automaticVoiceAction->setToolTip(
             tr("Automatically choose a compatible voice when inserting notes"));
 
@@ -789,13 +794,14 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       pianoView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
       pianoView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-      automaticVoiceAction->setChecked(
-            pianoView->automaticVoiceAssignment());
-
       connect(automaticVoiceAction,
               &QAction::toggled,
               this,
               [this](bool checked) {
+                    preferences.setPreference(
+                          PREF_UI_PIANOROLL_USE_AUTO_VOICE,
+                          checked);
+
                     pianoView->setAutomaticVoiceAssignment(checked);
                     restoreScoreViewFocus();
                     });
