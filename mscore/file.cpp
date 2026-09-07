@@ -455,7 +455,7 @@ Score* MuseScore::openScore(const QString& fn, bool switchTab, const bool consid
 
             if (preferences.getBool(PREF_SCORE_PRERENDER_MIDI_ON_LOAD)) {
                   EventMap events;
-                  score->renderMidi(&events, synthesizerState());
+                  score->renderMidi(&events, true, true,synthesizerState());
                   }
 
             score->cmdState().reset();
