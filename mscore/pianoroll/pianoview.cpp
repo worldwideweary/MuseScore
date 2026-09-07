@@ -2497,8 +2497,6 @@ void PianoView::zoomView(int step, bool horizontal, int centerX, int centerY)
                   emit xZoomChanged(_xZoom);
 
                   updateBoundingSize();
-                  updateNotes();
-
                   int mousePixX = tickToPixelX(mouseTick);
                   horizontalScrollBar()->setValue(mousePixX - centerX);
                   }
@@ -2522,7 +2520,6 @@ void PianoView::zoomView(int step, bool horizontal, int centerX, int centerY)
                   emit noteHeightChanged(_noteHeight);
 
                   updateBoundingSize();
-                  updateNotes();
 
                   int mousePixY =
                         static_cast<int>(mouseYNote * _noteHeight);
@@ -2555,7 +2552,6 @@ void PianoView::zoomView(int step, bool horizontal, int centerX, int centerY)
             emit noteHeightChanged(_noteHeight);
 
             updateBoundingSize();
-            updateNotes();
 
             if (pitch >= 0) {
                   qreal newCenter;
@@ -2586,7 +2582,6 @@ void PianoView::zoomView(int step, bool horizontal, int centerX, int centerY)
             emit xZoomChanged(_xZoom);
 
             updateBoundingSize();
-            updateNotes();
 
             int mousePixY = tickToPixelY(mouseTick);
 
