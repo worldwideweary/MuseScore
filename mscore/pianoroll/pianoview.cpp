@@ -407,7 +407,7 @@ void PianoView::setColoring(Coloring c)
             return;
 
       _coloring = c;
-      updateNotes();
+      scene()->update();
       }
 
 //---------------------------------------------------------
@@ -5898,6 +5898,8 @@ void PianoView::updateBoundingSize()
 //   setVerticalPitchLayout
 //---------------------------------------------------------
 
+// TEST keyboard alignment chromatic with this:
+
 void PianoView::setVerticalPitchLayout(VerticalPitchLayout layout)
       {
       if (_verticalPitchLayout == layout)
@@ -5905,7 +5907,7 @@ void PianoView::setVerticalPitchLayout(VerticalPitchLayout layout)
 
       _verticalPitchLayout = layout;
 
-      updateNotes();
+      scene()->update();
       }
 
 //---------------------------------------------------------
@@ -6848,7 +6850,7 @@ void PianoView::setEditNoteTool(PianoRollEditTool tool)
       {
       _editNoteTool = tool;
       updateCursor();
-      updateNotes();
+      scene()->update();
       }
 
 //---------------------------------------------------------
