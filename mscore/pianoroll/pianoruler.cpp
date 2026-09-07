@@ -179,13 +179,29 @@ void PianoRuler::setLoopEnabled(bool enabled)
 //   setXpos
 //---------------------------------------------------------
 
+/* Test for potential:
+
+      stale ruler markings;
+      playback triangle trails;
+      mouse-tracker trails;
+      locator artifacts while manually scrolling backward and forward.
+      */
+
 void PianoRuler::setXpos(int val)
       {
       if (_xpos == val)
             return;
 
+      const int dx = _xpos - val;
       _xpos = val;
-      update();
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL
+          && qAbs(dx) < width()) {
+            scroll(dx, 0);
+            }
+      else {
+            update();
+            }
       }
 
 //---------------------------------------------------------
