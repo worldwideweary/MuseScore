@@ -804,6 +804,9 @@ void PianoLevels::captureLevelDragTargets(Note* anchorNote,
                                 ? anchorEvent
                                 : nullptr);
 
+      const QVector<Note*> candidates =
+            noteCandidatesForTickRange(anchorTick, anchorTick);
+
       _levelDragAnchorValue =
             filter->value(
                   anchorNote->staff(),
@@ -835,7 +838,7 @@ void PianoLevels::captureLevelDragTargets(Note* anchorNote,
       // Capture every selected level at the anchor's effective
       // time, preserving each one's original value.
       //
-      for (Note* note : noteList) {
+      for (Note* note : candidates) {
             if (!note->selected())
                   continue;
 
@@ -1114,8 +1117,10 @@ void PianoLevels::adjustLevelLerp(int tick0, int value0, int tick1, int value1, 
       PianoLevelsFilter* filter = PianoLevelsFilter::FILTER_LIST[_levelsIndex];
       bool hitNote = false;
 
-      for (int i = 0; i < noteList.size(); ++i) {
-            Note* note = noteList[i];
+      const QVector<Note*> candidates =
+            noteCandidatesForTickRange(tick0, tick1);
+
+      for (Note* note : candidates) {
             if (selectedOnly && !note->selected())
                   continue;
 
