@@ -548,6 +548,11 @@ void PianoRuler::setPlaybackLocatorTick(qreal tick)
       _playbackLocatorTick = tick;
       _playbackLocatorTickValid = true;
 
+      const qreal newX = tickToPixelF(tick);
+
+      if (oldX >= 0.0 && qRound(oldX) == qRound(newX))
+            return;
+
       const int pw = markIcon[0]->width() / 2;
       const int margin = 2;
 
@@ -558,8 +563,6 @@ void PianoRuler::setPlaybackLocatorTick(qreal tick)
                   markIcon[0]->width() + margin * 2,
                   height()));
             }
-
-      const qreal newX = tickToPixelF(tick);
 
       update(QRect(
             qRound(newX) - pw - margin,
