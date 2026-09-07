@@ -5539,12 +5539,7 @@ void PianoView::clearNoteSelection()
       score->startCmd();
       score->selection().deselectAll();
 
-      for (MuseScoreView* view : score->getViewer())
-            view->updateAll();
-
       scene()->update();
-      score->setUpdateAll();
-      score->update();
       score->endCmd();
 
       emit selectionChanged();
@@ -5607,12 +5602,7 @@ void PianoView::selectItem(PianoItem* item, NoteSelectType selType)
                   selection.add(note);
             }
 
-      for (MuseScoreView* view : score->getViewer())
-            view->updateAll();
-
       scene()->update();
-      score->setUpdateAll();
-      score->update();
       score->endCmd();
 
       QList<PianoItem*> selectedItems = getSelectedItems();
@@ -5674,12 +5664,7 @@ void PianoView::selectNotes(int startTick, int endTick, int lowPitch, int highPi
                   selection.add(pi->note());
             }
 
-      for (MuseScoreView* view : score->getViewer())
-            view->updateAll();
-
       scene()->update();
-      score->setUpdateAll();
-      score->update();
       score->endCmd();
 
       QList<PianoItem*> selectedItems = getSelectedItems();
