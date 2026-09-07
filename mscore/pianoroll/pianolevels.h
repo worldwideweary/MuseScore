@@ -21,6 +21,8 @@
 #define __PIANOLEVELS_H__
 
 #include <QWidget>
+#include <QHash>
+#include <QVector>
 
 #include "pianorolledittool.h"
 #include "pianoroll/pianoview.h"
@@ -95,6 +97,7 @@ class PianoLevels : public QWidget
       int minBeatGap;
 
       QList<Note*> noteList;
+      QHash<int, QVector<Note*>> _noteTimeBuckets;
 
       virtual void paintEvent(QPaintEvent*);
       virtual void mousePressEvent(QMouseEvent*);
@@ -110,6 +113,10 @@ class PianoLevels : public QWidget
       void moveLocator(QMouseEvent*);
       void addChord(Chord* chord, int voice);
       void clearNoteData();
+
+      int noteTimeBucket(int tick) const;
+      void indexNote(Note* note);
+      QVector<Note*> noteCandidatesForTickRange(int startTick, int endTick) const;
 
       bool pickNoteEvent(int x, int y, bool selectedOnly,
                          Note*& pickedNote, NoteEvent*& pickedNoteEvent);
