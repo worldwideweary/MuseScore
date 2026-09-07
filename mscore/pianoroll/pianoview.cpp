@@ -4731,11 +4731,15 @@ void PianoView::cutChord(const QPointF& pos)
 
       PianoItem* pn = pickNote(pickTick, pickPitch);
 
-      if (pn && useOnsetDiamond(pn->note()))
+      if (!pn || !pn->note())
             return;
 
-      const int voice = pn ? pn->note()->voice() : _editNoteVoice;
-      const int track = _staff->idx() * VOICES + voice;
+      Note* note = pn->note();
+
+      if (useOnsetDiamond(note))
+            return;
+
+      const int track = note->track();
 
       const Fraction insertPosition = roundToNearestBeat(pickTick);
 
@@ -4930,12 +4934,16 @@ bool PianoView::cutChordDragSegment(const QPointF& from,
 
             const Fraction cutTick = roundToNearestBeat(pickTick);
 
-            if (useOnsetDiamond(_staff, cutTick))
+            PianoItem* pn = pickNote(pickTick, pickPitch);
+            if (!pn || !pn->note())
                   continue;
 
-            PianoItem* pn = pickNote(pickTick, pickPitch);
-            const int voice = pn ? pn->note()->voice() : _editNoteVoice;
-            const int track = _staff->idx() * VOICES + voice;
+            Note* note = pn->note();
+
+            if (useOnsetDiamond(note))
+                  continue;
+
+            const int track = note->track();
 
             const QPair<Fraction, int> target(cutTick, track);
 
