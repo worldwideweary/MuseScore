@@ -43,6 +43,7 @@ extern MuseScore* mscore;
 static const QString PIANO_NOTE_MIME_TYPE = "application/musescore/pianorollnotes";
 
 static const qreal MIN_DRAG_DIST_SQ = 9;
+static const int NOTE_TIME_BUCKET_TICKS = DIVISION * 4;
 
 const BarPattern PianoView::barPatterns[] = {
       {QT_TRANSLATE_NOOP("BarPattern", "C major / A minor"),   {1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1}},
@@ -607,6 +608,28 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
                   return false;
                   };
 
+
+      int noteCullTick1 = 0;
+      int noteCullTick2 = 0;
+
+      if (_orientation == PianoRollOrientation::HORIZONTAL) {
+            noteCullTick1 = scenePosToTick(
+                  QPointF(noteCullRect.left(), 0.0));
+            noteCullTick2 = scenePosToTick(
+                  QPointF(noteCullRect.right(), 0.0));
+            }
+      else {
+            noteCullTick1 = scenePosToTick(
+                  QPointF(0.0, noteCullRect.top()));
+            noteCullTick2 = scenePosToTick(
+                  QPointF(0.0, noteCullRect.bottom()));
+            }
+
+      const QVector<PianoItem*> noteCandidates =
+            noteCandidatesForTickRange(
+                  qMin(noteCullTick1, noteCullTick2),
+                  qMax(noteCullTick1, noteCullTick2));
+
       if (_orientation == PianoRollOrientation::HORIZONTAL) {
             QRectF r1;
             r1.setCoords(-DBL_MAX, 0.0, tickToPixelX(0), DBL_MAX);
@@ -712,15 +735,13 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
 
             p->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
 
-            for (PianoItem* block : _noteList) {
-                  if (!block->note()->selected()
-                      && noteBlockVisible(block))
+            for (PianoItem* block : noteCandidates) {
+                  if (!block->note()->selected() && noteBlockVisible(block))
                         drawNoteBlock(p, block);
                   }
 
-            for (PianoItem* block : _noteList) {
-                  if (block->note()->selected()
-                      && noteBlockVisible(block))
+            for (PianoItem* block : noteCandidates) {
+                  if (block->note()->selected() && noteBlockVisible(block))
                         drawNoteBlock(p, block);
                   }
 
@@ -1044,15 +1065,13 @@ void PianoView::drawBackground(QPainter* p, const QRectF& r)
                   | QPainter::SmoothPixmapTransform
                   | QPainter::TextAntialiasing);
 
-            for (PianoItem* block : _noteList) {
-                  if (!block->note()->selected()
-                      && noteBlockVisible(block))
+            for (PianoItem* block : noteCandidates) {
+                  if (!block->note()->selected() && noteBlockVisible(block))
                         drawNoteBlock(p, block);
                   }
 
-            for (PianoItem* block : _noteList) {
-                  if (block->note()->selected()
-                      && noteBlockVisible(block))
+            for (PianoItem* block : noteCandidates) {
+                  if (block->note()->selected() && noteBlockVisible(block))
                         drawNoteBlock(p, block);
                   }
 
@@ -5461,14 +5480,15 @@ bool PianoView::cutChordRest(ChordRest* targetCr,
 
 PianoItem* PianoView::pickNote(int tick, int pitch)
       {
-      for (int i = 0; i < _noteList.size(); ++i) {
-            PianoItem* pi = _noteList[i];
+      const QVector<PianoItem*> candidates =
+            noteCandidatesForTickRange(tick, tick);
 
+      for (PianoItem* pi : candidates) {
             if (pi->intersects(tick, tick, pitch, pitch))
                   return pi;
             }
 
-      return 0;
+      return nullptr;
       }
 
 //---------------------------------------------------------
@@ -5477,7 +5497,12 @@ PianoItem* PianoView::pickNote(int tick, int pitch)
 
 PianoItem* PianoView::pickNote(const QPointF& pos)
       {
-      for (PianoItem* item : _noteList) {
+      const int tick = scenePosToTick(pos);
+
+      const QVector<PianoItem*> candidates =
+            noteCandidatesForTickRange(tick, tick);
+
+      for (PianoItem* item : candidates) {
             if (!item || !item->note())
                   continue;
 
@@ -5485,12 +5510,14 @@ PianoItem* PianoView::pickNote(const QPointF& pos)
 
             if (_editNoteTool == PianoRollEditTool::EVENT_ADJUST) {
                   for (const NoteEvent& event : note->playEvents()) {
-                        if (boundingRect(note, &event, true).contains(pos.toPoint()))
+                        if (boundingRect(note, &event, true)
+                            .contains(pos.toPoint()))
                               return item;
                         }
                   }
             else {
-                  if (boundingRect(note, false).contains(pos.toPoint()))
+                  if (boundingRect(note, false)
+                      .contains(pos.toPoint()))
                         return item;
                   }
             }
@@ -6019,6 +6046,127 @@ void PianoView::setStaff(Staff* s, Pos* l)
       }
 
 //---------------------------------------------------------
+//   noteTimeBucket
+//---------------------------------------------------------
+
+int PianoView::noteTimeBucket(int tick) const
+      {
+      if (tick >= 0)
+            return tick / NOTE_TIME_BUCKET_TICKS;
+
+      //
+      // Integer division truncates toward zero.  For negative ticks
+      // we instead need the mathematical floor so that, for example,
+      // tick -1 belongs to bucket -1 rather than bucket 0.
+      //
+      return -((-tick + NOTE_TIME_BUCKET_TICKS - 1)
+               / NOTE_TIME_BUCKET_TICKS);
+      }
+
+//---------------------------------------------------------
+//   indexNoteItem
+//---------------------------------------------------------
+
+void PianoView::indexNoteItem(PianoItem* item)
+      {
+      if (!item || !item->note())
+            return;
+
+      Note* note = item->note();
+      Chord* chord = note->chord();
+
+      if (!chord)
+            return;
+
+      //
+      // Establish a conservative time range covering both the normal
+      // note block and all possible playback-event positions.
+      //
+      Fraction noteTicks = chord->ticks();
+
+      if (Tuplet* tuplet = chord->tuplet())
+            noteTicks *= tuplet->ratio().inverse();
+
+      const Fraction tieLen =
+            note->playTicksFraction() - noteTicks;
+
+      Fraction firstTick = chord->tick();
+      Fraction lastTick =
+            chord->tick() + noteTicks + tieLen;
+
+      for (const NoteEvent& event : note->playEvents()) {
+            Fraction eventStart =
+                  chord->tick()
+                  + noteTicks * event.ontime() / 1000;
+
+            Fraction eventEnd =
+                  eventStart
+                  + noteTicks * event.len() / 1000
+                  + tieLen;
+
+            if (eventEnd < eventStart)
+                  qSwap(eventStart, eventEnd);
+
+            if (eventStart < firstTick)
+                  firstTick = eventStart;
+
+            if (eventEnd > lastTick)
+                  lastTick = eventEnd;
+            }
+
+      //
+      // Keep one quarter-note of padding on either side.  This makes
+      // the index deliberately conservative for diamonds, outlines,
+      // event offsets, and notes close to a bucket boundary.
+      //
+      int first = firstTick.ticks() - DIVISION;
+      int last  = lastTick.ticks() + DIVISION;
+
+      if (last < first)
+            qSwap(first, last);
+
+      const int firstBucket = noteTimeBucket(first);
+      const int lastBucket  = noteTimeBucket(last);
+
+      for (int bucket = firstBucket; bucket <= lastBucket; ++bucket)
+            _noteTimeBuckets[bucket].append(item);
+      }
+
+//---------------------------------------------------------
+//   noteCandidatesForTickRange
+//---------------------------------------------------------
+
+QVector<PianoItem*> PianoView::noteCandidatesForTickRange(
+      int startTick, int endTick) const
+      {
+      if (endTick < startTick)
+            qSwap(startTick, endTick);
+
+      QVector<PianoItem*> candidates;
+      QSet<PianoItem*> seen;
+
+      const int firstBucket = noteTimeBucket(startTick);
+      const int lastBucket  = noteTimeBucket(endTick);
+
+      for (int bucket = firstBucket; bucket <= lastBucket; ++bucket) {
+            auto it = _noteTimeBuckets.constFind(bucket);
+
+            if (it == _noteTimeBuckets.constEnd())
+                  continue;
+
+            for (PianoItem* item : it.value()) {
+                  if (seen.contains(item))
+                        continue;
+
+                  seen.insert(item);
+                  candidates.append(item);
+                  }
+            }
+
+      return candidates;
+      }
+
+//---------------------------------------------------------
 //   addChord
 //---------------------------------------------------------
 
@@ -6029,7 +6177,9 @@ void PianoView::addChord(Chord* chrd, int voice)
       for (Note* note : chrd->notes()) {
             if (note->tieBack())
                   continue;
-            _noteList.append(new PianoItem(note, this));
+            PianoItem* item = new PianoItem(note, this);
+            _noteList.append(item);
+            indexNoteItem(item);
             }
       }
 
@@ -6124,6 +6274,8 @@ void PianoView::updateNotes()
 
 void PianoView::clearNoteData()
       {
+      _noteTimeBuckets.clear();
+
       for (int i = 0; i < _noteList.size(); ++i)
             delete _noteList[i];
 
