@@ -35,6 +35,8 @@
 
 namespace Ms {
 
+static const int LEVEL_NOTE_TIME_BUCKET_TICKS = DIVISION * 4;
+
 //---------------------------------------------------------
 //   PianoLevels
 //---------------------------------------------------------
@@ -353,16 +355,48 @@ void PianoLevels::paintEvent(QPaintEvent* e)
       //Note lines
       p.setBrush(Qt::NoBrush);
       int pix0 = valToPixel(0);
-
       const QColor interactionColor =
             darkTheme()
                   ? preferences.getColor(PREF_UI_PIANOROLL_DARK_NOTE_DRAG_COLOR)
                   : preferences.getColor(PREF_UI_PIANOROLL_LIGHT_NOTE_DRAG_COLOR);
 
-      for (int pass = 0; pass < 2; ++pass) {
-            for (int i = 0; i < noteList.size(); ++i) {
-                  Note* note = noteList[i];
+      //
+      // A level bar can begin slightly before the dirty region and
+      // still extend into it, so expand the candidate range by the
+      // complete level-bar extent.
+      //
+      const int candidateStartTick =
+            pixelToTick(timeStart - levelLen - levelTimeMargin);
+      const int candidateEndTick =
+            pixelToTick(timeEnd + levelTimeMargin);
 
+      QVector<Note*> noteCandidates;
+
+      //
+      // PianoView drag previews can temporarily move level points
+      // away from the note's indexed score position. During those
+      // interactions retain the old full-list behavior for correctness.
+      //
+      const bool movingPreview =
+            _pianoView
+            && (_pianoView->levelPreviewMovesNotes()
+                || _pianoView->levelPreviewMovesEvents()
+                || _pianoView->levelPreviewResizesNotes());
+
+      if (movingPreview) {
+            noteCandidates.reserve(noteList.size());
+            for (Note* note : noteList)
+                  noteCandidates.append(note);
+            }
+      else {
+            noteCandidates =
+                  noteCandidatesForTickRange(
+                        qMin(candidateStartTick, candidateEndTick),
+                        qMax(candidateStartTick, candidateEndTick));
+            }
+
+      for (int pass = 0; pass < 2; ++pass) {
+            for (Note* note : noteCandidates) {
                   //
                   // Draw unselected notes first, selected notes second,
                   // so overlapping notes from another staff cannot obscure
@@ -1414,6 +1448,92 @@ void PianoLevels::setStaff(Staff* s, Pos* l)
       updateNotes();
       }
 
+//---------------------------------------------------------
+//   noteTimeBucket
+//---------------------------------------------------------
+
+int PianoLevels::noteTimeBucket(int tick) const
+      {
+      if (tick >= 0)
+            return tick / LEVEL_NOTE_TIME_BUCKET_TICKS;
+
+      return -((-tick + LEVEL_NOTE_TIME_BUCKET_TICKS - 1)
+               / LEVEL_NOTE_TIME_BUCKET_TICKS);
+      }
+
+//---------------------------------------------------------
+//   indexNote
+//---------------------------------------------------------
+
+void PianoLevels::indexNote(Note* note)
+      {
+      if (!note || !note->chord())
+            return;
+
+      Chord* chord = note->chord();
+
+      const int chordTick = chord->tick().ticks();
+      const int noteTicks = chord->ticks().ticks();
+
+      //
+      // Piano Levels allows event ontime from -1000 to +1000,
+      // i.e. up to one full note duration before or after the
+      // normal note onset. Index that whole possible range so
+      // editing Position does not make the index stale.
+      //
+      int firstTick = chordTick - noteTicks - DIVISION;
+      int lastTick  = chordTick + noteTicks * 2 + DIVISION;
+
+      //
+      // Also include any existing event positions outside that
+      // nominal range.
+      //
+      for (NoteEvent& event : note->playEvents()) {
+            const int eventTick = noteStartTick(note, &event);
+            firstTick = qMin(firstTick, eventTick - DIVISION);
+            lastTick  = qMax(lastTick, eventTick + DIVISION);
+            }
+
+      const int firstBucket = noteTimeBucket(firstTick);
+      const int lastBucket  = noteTimeBucket(lastTick);
+
+      for (int bucket = firstBucket; bucket <= lastBucket; ++bucket)
+            _noteTimeBuckets[bucket].append(note);
+      }
+
+//---------------------------------------------------------
+//   noteCandidatesForTickRange
+//---------------------------------------------------------
+
+QVector<Note*> PianoLevels::noteCandidatesForTickRange(
+      int startTick, int endTick) const
+      {
+      if (endTick < startTick)
+            qSwap(startTick, endTick);
+
+      QVector<Note*> candidates;
+      QSet<Note*> seen;
+
+      const int firstBucket = noteTimeBucket(startTick);
+      const int lastBucket  = noteTimeBucket(endTick);
+
+      for (int bucket = firstBucket; bucket <= lastBucket; ++bucket) {
+            auto it = _noteTimeBuckets.constFind(bucket);
+
+            if (it == _noteTimeBuckets.constEnd())
+                  continue;
+
+            for (Note* note : it.value()) {
+                  if (seen.contains(note))
+                        continue;
+
+                  seen.insert(note);
+                  candidates.append(note);
+                  }
+            }
+
+      return candidates;
+      }
 
 //---------------------------------------------------------
 //   addChord
@@ -1426,7 +1546,9 @@ void PianoLevels::addChord(Chord* chord, int voice)
       for (Note* note : chord->notes()) {
             if (note->tieBack())
                   continue;
+
             noteList.append(note);
+            indexNote(note);
             }
       }
 
@@ -1512,7 +1634,8 @@ void PianoLevels::updateNotes()
 
 void PianoLevels::setPlaybackLocatorTick(qreal tick)
       {
-      const int oldPos = _playbackLocatorValid
+      const bool hadOldPos = _playbackLocatorValid;
+      const int oldPos = hadOldPos
             ? tickToPixel(qRound(_playbackLocatorTick))
             : -1;
 
@@ -1520,6 +1643,10 @@ void PianoLevels::setPlaybackLocatorTick(qreal tick)
       _playbackLocatorValid = true;
 
       const int newPos = tickToPixel(qRound(tick));
+
+      if (hadOldPos && oldPos == newPos)
+            return;
+
       const int margin = 2;
 
       if (_orientation == PianoRollOrientation::HORIZONTAL) {
@@ -1611,6 +1738,7 @@ int PianoLevels::mouseValuePixel(const QPointF& pos) const
 
 void PianoLevels::clearNoteData()
       {
+      _noteTimeBuckets.clear();
       noteList.clear();
       }
 
