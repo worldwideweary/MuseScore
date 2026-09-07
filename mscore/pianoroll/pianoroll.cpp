@@ -256,9 +256,6 @@ PianorollEditor::PianorollEditor(QWidget* parent)
                           PianoRollNoteShape(
                                 noteShapeBox->itemData(index).toInt());
 
-                    const Fraction referenceTick =
-                          Fraction::fromTicks(pianoView->viewportReferenceTick());
-
                     setPianoRollNoteShape(shape);
                     updateNoteShapeToolState();
 
