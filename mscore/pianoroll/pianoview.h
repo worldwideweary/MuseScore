@@ -219,6 +219,7 @@ private:
       bool _automaticVoiceAssignment { true }; // testing = true
 
       QList<PianoItem*> _noteList;
+      QHash<int, QVector<PianoItem*>> _noteTimeBuckets;
       quint8 _pitchHighlight[128];
 
       float _noteRectRoundedRadius = 3;
@@ -264,6 +265,11 @@ private:
       QVector<Note*> getSegmentNotes(Segment* seg, int track);
       void updateBoundingSize();
       void clearNoteData();
+
+      int noteTimeBucket(int tick) const;
+      void indexNoteItem(PianoItem* item);
+      QVector<PianoItem*> noteCandidatesForTickRange(int startTick, int endTick) const;
+
       void clearNoteSelection();
 
       void selectItem(PianoItem* item, NoteSelectType selType);
