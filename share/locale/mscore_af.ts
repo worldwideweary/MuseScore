@@ -5769,7 +5769,7 @@ By verstek sal hulle so geplaas word dat hulle regtereinde op dieselfde vlak is.
 <context>
     <name>GreendotButton</name>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="5996"/>
+        <location filename="../../mscore/musescore.cpp" line="6141"/>
         <source>Record</source>
         <translation>Neem op</translation>
     </message>
@@ -11715,7 +11715,7 @@ Wil jy %2 nou uitwys?</translation>
     <message>
         <location filename="../../mscore/masterpalette.cpp" line="196"/>
         <location filename="../../mscore/masterpalette.cpp" line="229"/>
-        <location filename="../../mscore/musescore.cpp" line="6434"/>
+        <location filename="../../mscore/musescore.cpp" line="6579"/>
         <source>Symbols</source>
         <translation>Simbole</translation>
     </message>
@@ -13859,82 +13859,82 @@ Klank: %5</translation>
     <name>Ms::MuseScore</name>
     <message>
         <location filename="../../mscore/exportaudio.cpp" line="343"/>
-        <location filename="../../mscore/musescore.cpp" line="7368"/>
+        <location filename="../../mscore/musescore.cpp" line="7513"/>
         <source>Cancel</source>
         <translation>Kanselleer</translation>
     </message>
     <message>
         <location filename="../../mscore/exportaudio.cpp" line="344"/>
-        <location filename="../../mscore/musescore.cpp" line="7369"/>
+        <location filename="../../mscore/musescore.cpp" line="7514"/>
         <source>Exporting…</source>
         <translation>Besig om uit te voer…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7290"/>
-        <location filename="../../mscore/musescore.cpp" line="7302"/>
+        <location filename="../../mscore/musescore.cpp" line="7435"/>
+        <location filename="../../mscore/musescore.cpp" line="7447"/>
         <source>Error Opening LAME library</source>
         <translation>Fout tydens oopmaak van LAME-programmateek</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7291"/>
+        <location filename="../../mscore/musescore.cpp" line="7436"/>
         <source>Could not open MP3 encoding library!</source>
         <translation>Kon nie MP3-enkoderingsprogrammateek oopmaak nie!</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7303"/>
+        <location filename="../../mscore/musescore.cpp" line="7448"/>
         <source>Not a valid or supported MP3 encoding library!</source>
         <translation>Nie &apos;n geldige of ondersteunde MP3-enkoderingsprogrammateek oopmaak nie!</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7251"/>
-        <location filename="../../mscore/musescore.cpp" line="7327"/>
-        <location filename="../../mscore/musescore.cpp" line="7478"/>
+        <location filename="../../mscore/musescore.cpp" line="7396"/>
+        <location filename="../../mscore/musescore.cpp" line="7472"/>
+        <location filename="../../mscore/musescore.cpp" line="7623"/>
         <source>Encoding Error</source>
         <translation>Enkoderingsfout</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4557"/>
+        <location filename="../../mscore/musescore.cpp" line="4702"/>
         <source>Insert mode</source>
         <translation>Invoegmodus</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4581"/>
+        <location filename="../../mscore/musescore.cpp" line="4726"/>
         <source>Drumset input mode</source>
         <translation>Tromstel-toevoermodus</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6143"/>
+        <location filename="../../mscore/musescore.cpp" line="6288"/>
         <source>Invalid Command</source>
         <translation>Ongeldige opdrag</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6144"/>
+        <location filename="../../mscore/musescore.cpp" line="6289"/>
         <source>Command %1 not valid in current state</source>
         <translation>%1-opdrag nie geldig in huidige toestand nie</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7071"/>
+        <location filename="../../mscore/musescore.cpp" line="7216"/>
         <source>Find / Go to:</source>
         <translation>Vind / gaan na:</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7328"/>
+        <location filename="../../mscore/musescore.cpp" line="7473"/>
         <source>Unable to initialize MP3 stream</source>
         <translation>Kon nie MP3-stroom inisieer nie</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7252"/>
+        <location filename="../../mscore/musescore.cpp" line="7397"/>
         <source>Unable to open target file for writing</source>
         <translation>Kan nie doellêer oopmaak vir skryf nie</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7479"/>
+        <location filename="../../mscore/musescore.cpp" line="7624"/>
         <source>Error %1 returned from MP3 encoder</source>
         <translation>Fout %1 deur MP3-enkodeerder teruggekeer</translation>
     </message>
     <message>
         <location filename="../../mscore/file.cpp" line="252"/>
-        <location filename="../../mscore/musescore.cpp" line="5460"/>
+        <location filename="../../mscore/musescore.cpp" line="5605"/>
         <location filename="../../mscore/plugin/mscorePlugins.cpp" line="444"/>
         <source>MuseScore</source>
         <translation>MuseScore</translation>
@@ -14055,7 +14055,7 @@ voor jy toemaak?</translation>
     <message>
         <location filename="../../mscore/file.cpp" line="1241"/>
         <location filename="../../mscore/file.cpp" line="1268"/>
-        <location filename="../../mscore/musescore.cpp" line="6592"/>
+        <location filename="../../mscore/musescore.cpp" line="6737"/>
         <source>Load Style</source>
         <translation>Laai styl</translation>
     </message>
@@ -14068,7 +14068,7 @@ voor jy toemaak?</translation>
         <location filename="../../mscore/file.cpp" line="1248"/>
         <location filename="../../mscore/file.cpp" line="1285"/>
         <location filename="../../mscore/file.cpp" line="1368"/>
-        <location filename="../../mscore/musescore.cpp" line="6583"/>
+        <location filename="../../mscore/musescore.cpp" line="6728"/>
         <source>Save Style</source>
         <translation>Stoor lêer</translation>
     </message>
@@ -14334,27 +14334,27 @@ Wil jy dit vervang?
         <translation>Handleiding</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2261"/>
+        <location filename="../../mscore/musescore.cpp" line="2406"/>
         <source>&amp;Add</source>
         <translation>&amp;Voeg by</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2262"/>
+        <location filename="../../mscore/musescore.cpp" line="2407"/>
         <source>&amp;Measures</source>
         <translation>&amp;Mate</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2263"/>
+        <location filename="../../mscore/musescore.cpp" line="2408"/>
         <source>&amp;Frames</source>
         <translation>&amp;Rame</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2264"/>
+        <location filename="../../mscore/musescore.cpp" line="2409"/>
         <source>&amp;Text</source>
         <translation>&amp;Teks</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2265"/>
+        <location filename="../../mscore/musescore.cpp" line="2410"/>
         <source>&amp;Lines</source>
         <translation>&amp;Lyne</translation>
     </message>
@@ -14366,65 +14366,65 @@ Please select a measure and try again</source>
 Selekteer asseblief &apos;n maat en probeer weer</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2194"/>
+        <location filename="../../mscore/musescore.cpp" line="2339"/>
         <source>Measure:Beat:Tick</source>
         <translation>Maat:Slag:Tik</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1204"/>
+        <location filename="../../mscore/musescore.cpp" line="1349"/>
         <source>Switch layer</source>
         <translation>Verander laag</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1209"/>
+        <location filename="../../mscore/musescore.cpp" line="1354"/>
         <source>Switch play mode</source>
         <translation>Verander speelmodus</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2237"/>
+        <location filename="../../mscore/musescore.cpp" line="2382"/>
         <source>Show MIDI import panel</source>
         <translation>Wys MIDI-invoerpaneel</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2209"/>
+        <location filename="../../mscore/musescore.cpp" line="2354"/>
         <source>File Operations</source>
         <translation>Lêerbewerkings</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1079"/>
-        <location filename="../../mscore/musescore.cpp" line="2228"/>
+        <location filename="../../mscore/musescore.cpp" line="2373"/>
         <source>View Mode</source>
         <translation>Aansigmodus</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1080"/>
-        <location filename="../../mscore/musescore.cpp" line="2229"/>
+        <location filename="../../mscore/musescore.cpp" line="2374"/>
         <source>Page View</source>
         <translation>Bladaansig</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1081"/>
-        <location filename="../../mscore/musescore.cpp" line="2230"/>
+        <location filename="../../mscore/musescore.cpp" line="2375"/>
         <source>Continuous View</source>
         <translation>Aaneenlopende aansig</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2210"/>
+        <location filename="../../mscore/musescore.cpp" line="2355"/>
         <source>Playback Controls</source>
         <translation>Terugspeel-kontroles</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2211"/>
+        <location filename="../../mscore/musescore.cpp" line="2356"/>
         <source>Concert Pitch</source>
         <translation>Konsertstemming</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2212"/>
+        <location filename="../../mscore/musescore.cpp" line="2357"/>
         <source>Image Capture</source>
         <translation>Beeldvaslê</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2213"/>
+        <location filename="../../mscore/musescore.cpp" line="2358"/>
         <source>Note Input</source>
         <translation>Noottoevoer</translation>
     </message>
@@ -14434,155 +14434,155 @@ Selekteer asseblief &apos;n maat en probeer weer</translation>
         <translation>Noottoevoermetodes</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2255"/>
+        <location filename="../../mscore/musescore.cpp" line="2400"/>
         <source>&amp;File</source>
         <translation>&amp;Lêer</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2256"/>
+        <location filename="../../mscore/musescore.cpp" line="2401"/>
         <source>Open &amp;Recent</source>
         <translation>Maak &amp;onlangse oop</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2257"/>
+        <location filename="../../mscore/musescore.cpp" line="2402"/>
         <source>&amp;Edit</source>
         <translation>&amp;Wysig</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2273"/>
+        <location filename="../../mscore/musescore.cpp" line="2418"/>
         <source>&amp;Measure</source>
         <translation>&amp;Maat</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2271"/>
+        <location filename="../../mscore/musescore.cpp" line="2416"/>
         <source>&amp;Tools</source>
         <translation>&amp;Nutsmiddels</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2272"/>
+        <location filename="../../mscore/musescore.cpp" line="2417"/>
         <source>&amp;Voices</source>
         <translation>&amp;Stemme</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2260"/>
+        <location filename="../../mscore/musescore.cpp" line="2405"/>
         <source>W&amp;orkspaces</source>
         <translation>&amp;Werksruimtes</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2195"/>
+        <location filename="../../mscore/musescore.cpp" line="2340"/>
         <source>&amp;Preferences…</source>
         <translation>&amp;Voorkeure…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2258"/>
+        <location filename="../../mscore/musescore.cpp" line="2403"/>
         <source>&amp;View</source>
         <translation>&amp;Aansig</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2259"/>
+        <location filename="../../mscore/musescore.cpp" line="2404"/>
         <source>&amp;Toolbars</source>
         <translation>&amp;Nutsbalke</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2268"/>
+        <location filename="../../mscore/musescore.cpp" line="2413"/>
         <source>T&amp;uplets</source>
         <translation>&amp;Onreëlmatige nootgroepe</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2275"/>
+        <location filename="../../mscore/musescore.cpp" line="2420"/>
         <source>&amp;Plugins</source>
         <translation>In&amp;proppe</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2278"/>
+        <location filename="../../mscore/musescore.cpp" line="2423"/>
         <source>&amp;Help</source>
         <translation>&amp;Hulp</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2199"/>
+        <location filename="../../mscore/musescore.cpp" line="2344"/>
         <source>&amp;Online Handbook</source>
         <translation>&amp;Aanlyn handboek</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2196"/>
+        <location filename="../../mscore/musescore.cpp" line="2341"/>
         <source>&amp;About…</source>
         <translation>&amp;Aangaande…</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1082"/>
-        <location filename="../../mscore/musescore.cpp" line="2231"/>
+        <location filename="../../mscore/musescore.cpp" line="2376"/>
         <source>Single Page</source>
         <translation>Enkele bladsy</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1207"/>
+        <location filename="../../mscore/musescore.cpp" line="1352"/>
         <source>Synthesizer</source>
         <translation>Sintetiseerder</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1208"/>
+        <location filename="../../mscore/musescore.cpp" line="1353"/>
         <source>Audio track</source>
         <translation>Klankbaan</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="1805"/>
-        <location filename="../../mscore/musescore.cpp" line="2270"/>
+        <location filename="../../mscore/musescore.cpp" line="1950"/>
+        <location filename="../../mscore/musescore.cpp" line="2415"/>
         <source>&amp;Stretch</source>
         <translation>&amp;Rek</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2266"/>
+        <location filename="../../mscore/musescore.cpp" line="2411"/>
         <source>N&amp;otes</source>
         <translation>N&amp;ote</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2267"/>
+        <location filename="../../mscore/musescore.cpp" line="2412"/>
         <source>&amp;Intervals</source>
         <translation>&amp;Intervalle</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2269"/>
+        <location filename="../../mscore/musescore.cpp" line="2414"/>
         <source>F&amp;ormat</source>
         <translation>F&amp;ormaat</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2279"/>
+        <location filename="../../mscore/musescore.cpp" line="2424"/>
         <source>&amp;Tours</source>
         <translation>&amp;Toere</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2197"/>
+        <location filename="../../mscore/musescore.cpp" line="2342"/>
         <source>About &amp;Qt…</source>
         <translation>Aangaande &amp;Qt…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2198"/>
+        <location filename="../../mscore/musescore.cpp" line="2343"/>
         <source>About &amp;MusicXML…</source>
         <translation>Aangaande &amp;MusicXML…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2201"/>
+        <location filename="../../mscore/musescore.cpp" line="2346"/>
         <source>Check for &amp;Update</source>
         <translation>Kyk vir &amp;opdatering</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2202"/>
+        <location filename="../../mscore/musescore.cpp" line="2347"/>
         <source>Ask for Help</source>
         <translation>Vra om hulp</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2203"/>
+        <location filename="../../mscore/musescore.cpp" line="2348"/>
         <source>Report a Bug</source>
         <translation>Rapporteer &apos;n programfout</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2207"/>
+        <location filename="../../mscore/musescore.cpp" line="2352"/>
         <source>Revert to Factory Settings</source>
         <translation>Keer terug na fabrieksinstellings</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2205"/>
-        <location filename="../../mscore/musescore.cpp" line="2215"/>
+        <location filename="../../mscore/musescore.cpp" line="2350"/>
+        <location filename="../../mscore/musescore.cpp" line="2360"/>
         <source>Feedback</source>
         <translation>Terugvoer</translation>
     </message>
@@ -14598,37 +14598,37 @@ Selekteer asseblief &apos;n maat en probeer weer</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1084"/>
-        <location filename="../../mscore/musescore.cpp" line="2235"/>
+        <location filename="../../mscore/musescore.cpp" line="2380"/>
         <source>Floating</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2112"/>
+        <location filename="../../mscore/musescore.cpp" line="2257"/>
         <source>No login credentials stored. Please sign in via the GUI.</source>
         <translation>Geen aanmeldbewyse gestoor nie. Teken asseblief in via die GUI.</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2217"/>
+        <location filename="../../mscore/musescore.cpp" line="2362"/>
         <source>Alternative Options</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2218"/>
+        <location filename="../../mscore/musescore.cpp" line="2363"/>
         <source>Workspaces</source>
         <translation>Werkruimtes</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2277"/>
+        <location filename="../../mscore/musescore.cpp" line="2422"/>
         <source>Debug</source>
         <translation type="unfinished">Ontfout</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2428"/>
+        <location filename="../../mscore/musescore.cpp" line="2573"/>
         <source>Are you sure?</source>
         <translation>Is jy seker?</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2429"/>
+        <location filename="../../mscore/musescore.cpp" line="2574"/>
         <source>This will reset all your preferences.
 Custom palettes, custom shortcuts, and the list of recent scores will be deleted. MuseScore will restart with its default settings.
 Reverting will not remove any scores from your computer.
@@ -14639,105 +14639,105 @@ Om terug te keer sal geen partiture van jou rekenaar verwyder nie.
 Is jy seker jy wil voortgaan?</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2682"/>
+        <location filename="../../mscore/musescore.cpp" line="2827"/>
         <source>Clear Recent Files</source>
         <translation>Maak onlangse lêers skoon</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2687"/>
+        <location filename="../../mscore/musescore.cpp" line="2832"/>
         <source>No recent files</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4273"/>
+        <location filename="../../mscore/musescore.cpp" line="4418"/>
         <source>System</source>
         <extracomment>The default language of the operating system. NOT a music system.</extracomment>
         <translation>Stelsel</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4281"/>
+        <location filename="../../mscore/musescore.cpp" line="4426"/>
         <source>Error reading language file %s at line %d column %d: %s
 </source>
         <translation>Fout tydens lees van taallêer %s by lyn %d kolom %d: %s
 </translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4523"/>
+        <location filename="../../mscore/musescore.cpp" line="4668"/>
         <source>No score</source>
         <translation>Geen partituur</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4529"/>
+        <location filename="../../mscore/musescore.cpp" line="4674"/>
         <source>Normal mode</source>
         <translation>Normale modus</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4537"/>
+        <location filename="../../mscore/musescore.cpp" line="4682"/>
         <source>Repitch input mode</source>
         <translation>Herskryf toonhoogte-toevoermodus</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4542"/>
+        <location filename="../../mscore/musescore.cpp" line="4687"/>
         <source>Rhythm input mode</source>
         <translation>Ritmetoevoermodus</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4547"/>
+        <location filename="../../mscore/musescore.cpp" line="4692"/>
         <source>Realtime (automatic) note input mode</source>
         <translation>Intydse (outomaties) noottoevoermodus</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4552"/>
+        <location filename="../../mscore/musescore.cpp" line="4697"/>
         <source>Realtime (manual) note input mode</source>
         <translation>Intydse (handmatige) noottoevoermodus</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4562"/>
+        <location filename="../../mscore/musescore.cpp" line="4707"/>
         <source>Steptime note input mode</source>
         <translation>Staptydnoottoevoermodus</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4603"/>
+        <location filename="../../mscore/musescore.cpp" line="4748"/>
         <source>TAB input mode</source>
         <translation>TAB-toevoermodus</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4606"/>
+        <location filename="../../mscore/musescore.cpp" line="4751"/>
         <source>Edit mode</source>
         <translation>Wysigmodus</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4609"/>
+        <location filename="../../mscore/musescore.cpp" line="4754"/>
         <source>Text edit mode</source>
         <translation>Tekswysigmodus</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4612"/>
+        <location filename="../../mscore/musescore.cpp" line="4757"/>
         <source>Lyrics edit mode</source>
         <translation>Liriekwysigmodus</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4615"/>
+        <location filename="../../mscore/musescore.cpp" line="4760"/>
         <source>Chord symbol/figured bass edit mode</source>
         <translation>Akkoordsimbool-/besyferde baswysigmodus</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4618"/>
+        <location filename="../../mscore/musescore.cpp" line="4763"/>
         <source>Play</source>
         <translation>Speel</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4621"/>
+        <location filename="../../mscore/musescore.cpp" line="4766"/>
         <source>Image capture mode</source>
         <translation>Beeldvaslêmodus</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4625"/>
+        <location filename="../../mscore/musescore.cpp" line="4770"/>
         <source>Score locked</source>
         <translation>Partituur geslote</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="5461"/>
+        <location filename="../../mscore/musescore.cpp" line="5606"/>
         <source>The previous session quit unexpectedly.
 
 Restore session?</source>
@@ -14746,87 +14746,87 @@ Restore session?</source>
 Laai sessie terug?</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6088"/>
+        <location filename="../../mscore/musescore.cpp" line="6233"/>
         <source>Invalid selection. Cannot realize chord symbol</source>
         <translation>Ongeldige seleksie. Kan nie akkoord realiseer nie</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6104"/>
+        <location filename="../../mscore/musescore.cpp" line="6249"/>
         <source>No chord symbol selected. Cannot realize chord symbol</source>
         <translation>Geen akkoordsimbool geselekteer nie. Kan nie akkoord realiseer nie</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6593"/>
+        <location filename="../../mscore/musescore.cpp" line="6738"/>
         <source>MuseScore may not be able to load this style file: %1</source>
         <translation>MuseScore is moontlik nie in staat om hierdie styllêer te laai nie: %1</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6912"/>
+        <location filename="../../mscore/musescore.cpp" line="7057"/>
         <source>Warning</source>
         <translation>Waarskuwing</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="6913"/>
+        <location filename="../../mscore/musescore.cpp" line="7058"/>
         <source>Cannot create tuplet: Note value is too short</source>
         <translation>Kan nie onreëlmatige nootgroep skep nie: nootwaarde is te kort</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8245"/>
+        <location filename="../../mscore/musescore.cpp" line="8392"/>
         <source>Initializing sequencer and audio driver…</source>
         <translation>Inisialiseer sequencer en oudiodrywer…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8254"/>
+        <location filename="../../mscore/musescore.cpp" line="8401"/>
         <source>Loading SoundFonts…</source>
         <translation>Laai SoundFonts…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8297"/>
+        <location filename="../../mscore/musescore.cpp" line="8444"/>
         <source>Initializing workspace…</source>
         <translation>Inisialiseer werkruimte…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8301"/>
+        <location filename="../../mscore/musescore.cpp" line="8448"/>
         <source>Creating main window…</source>
         <translation>Skep hoofvenster…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8318"/>
+        <location filename="../../mscore/musescore.cpp" line="8465"/>
         <source>Reading translations…</source>
         <translation>Lees vertalings…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8325"/>
+        <location filename="../../mscore/musescore.cpp" line="8472"/>
         <source>Initializing startup wizard…</source>
         <translation>Inisialiseer aanvangslimmerd</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8341"/>
+        <location filename="../../mscore/musescore.cpp" line="8488"/>
         <source>Initializing preferences…</source>
         <translation>Inisialiseer voorkeure…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8382"/>
+        <location filename="../../mscore/musescore.cpp" line="8529"/>
         <source>Initializing main window…</source>
         <translation>Inisialiseer hoofvenster…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8406"/>
+        <location filename="../../mscore/musescore.cpp" line="8553"/>
         <source>Restoring session…</source>
         <translation>Herstel sessie…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8440"/>
+        <location filename="../../mscore/musescore.cpp" line="8587"/>
         <source>Loading scores…</source>
         <translation>Laai partiture…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8451"/>
+        <location filename="../../mscore/musescore.cpp" line="8598"/>
         <source>Initializing start center…</source>
         <translation>Inisialiseer die beginsentrum…</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8473"/>
+        <location filename="../../mscore/musescore.cpp" line="8620"/>
         <source>Initializing tours…</source>
         <translation>Inisialiseer toere…</translation>
     </message>
@@ -14890,22 +14890,22 @@ This plugin requires an open score to run.</source>
 <context>
     <name>Ms::MuseScoreApplication</name>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7926"/>
+        <location filename="../../mscore/musescore.cpp" line="8071"/>
         <source>Must specify at least one score to save online.</source>
         <translation>Moet ten minste een partituur spesifiseer om aanlyn te stoor.</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="7987"/>
+        <location filename="../../mscore/musescore.cpp" line="8132"/>
         <source>--run-test-script is incompatible with --diff and --raw-diff</source>
         <translation>--run-test-script is onversoenbaar met --diff en --raw-diff</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8022"/>
+        <location filename="../../mscore/musescore.cpp" line="8167"/>
         <source>Only two scores are needed for performing a comparison</source>
         <translation>Net twee partiture is nodig om ‘n vergelyking te doen</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="8027"/>
+        <location filename="../../mscore/musescore.cpp" line="8172"/>
         <source>Please specify scripts to execute</source>
         <translation>Spesifiseer asseblief skrips om uit te voer</translation>
     </message>
@@ -17151,9 +17151,9 @@ kies asseblief &apos;n ander naam:</translation>
 <context>
     <name>Ms::ZoomBox</name>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2221"/>
-        <location filename="../../mscore/musescore.cpp" line="2222"/>
-        <location filename="../../mscore/musescore.cpp" line="2223"/>
+        <location filename="../../mscore/musescore.cpp" line="2366"/>
+        <location filename="../../mscore/musescore.cpp" line="2367"/>
+        <location filename="../../mscore/musescore.cpp" line="2368"/>
         <location filename="../../mscore/zoombox.cpp" line="92"/>
         <location filename="../../mscore/zoombox.cpp" line="93"/>
         <location filename="../../mscore/zoombox.cpp" line="94"/>
@@ -17662,7 +17662,7 @@ kies asseblief &apos;n ander naam:</translation>
     <message>
         <location filename="../../mscore/masterpalette.cpp" line="227"/>
         <location filename="../../mscore/menus.cpp" line="549"/>
-        <location filename="../../mscore/musescore.cpp" line="6430"/>
+        <location filename="../../mscore/musescore.cpp" line="6575"/>
         <source>Key Signatures</source>
         <translation>Toonsoorttekens</translation>
     </message>
@@ -18248,7 +18248,7 @@ kies asseblief &apos;n ander naam:</translation>
     <message>
         <location filename="../../mscore/masterpalette.cpp" line="228"/>
         <location filename="../../mscore/menus.cpp" line="1767"/>
-        <location filename="../../mscore/musescore.cpp" line="6432"/>
+        <location filename="../../mscore/musescore.cpp" line="6577"/>
         <source>Time Signatures</source>
         <translation>Tydmaattekens</translation>
     </message>
@@ -21970,7 +21970,7 @@ Besoek die %1MuseScore-webwerf%2 om die nuutste weergawe te kry.</translation>
         <location filename="../../importexport/capella/capella.cpp" line="2786"/>
         <location filename="../../importexport/midiimport/importmidi.cpp" line="1206"/>
         <location filename="../../mscore/instrdialog.cpp" line="166"/>
-        <location filename="../../mscore/musescore.cpp" line="4286"/>
+        <location filename="../../mscore/musescore.cpp" line="4431"/>
         <source>Quit</source>
         <translation>Verlaat</translation>
     </message>
@@ -22080,7 +22080,7 @@ Wil jy dit oorskryf?</translation>
         <translation>Kon nie lêers onttrek vanuit die uitbreiding</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="4284"/>
+        <location filename="../../mscore/musescore.cpp" line="4429"/>
         <source>Load Languages Failed:</source>
         <translation>Taallaai het misluk:</translation>
     </message>
@@ -22175,7 +22175,7 @@ Wil jy dit oorskryf?</translation>
 <context>
     <name>RecordButton</name>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="5985"/>
+        <location filename="../../mscore/musescore.cpp" line="6130"/>
         <source>Record</source>
         <translation>Neem op</translation>
     </message>
@@ -32269,19 +32269,19 @@ This score already has part scores. Changing local time signatures while part sc
 <context>
     <name>magTable</name>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2224"/>
+        <location filename="../../mscore/musescore.cpp" line="2369"/>
         <location filename="../../mscore/zoombox.cpp" line="44"/>
         <source>Page Width</source>
         <translation>Bladsywydte</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2225"/>
+        <location filename="../../mscore/musescore.cpp" line="2370"/>
         <location filename="../../mscore/zoombox.cpp" line="45"/>
         <source>Whole Page</source>
         <translation>Heel bladsy</translation>
     </message>
     <message>
-        <location filename="../../mscore/musescore.cpp" line="2226"/>
+        <location filename="../../mscore/musescore.cpp" line="2371"/>
         <location filename="../../mscore/zoombox.cpp" line="46"/>
         <source>Two Pages</source>
         <translation>Twee bladsye</translation>
