@@ -62,7 +62,7 @@ set(CMAKE_AUTOMOC     TRUE)
 set(USE_SSE           TRUE)
 
 # Enable qDebug() output and message context in release builds
-set(ENABLE_RELEASE_DEBUG_LOG ON)
+set(ENABLE_RELEASE_DEBUG_LOG OFF)
 
 set(MUSESCORE_REVISION "" CACHE STRING "Build revision")
 
