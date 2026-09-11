@@ -246,7 +246,7 @@ GridView {
 
                 // first check if controller allows dropping this item here
                 const mimeData = Utils.dropEventMimeData(drag);
-                internal = (drag.source.parentModelIndex === paletteView.paletteRootIndex);
+                internal = (drag.source && drag.source.parentModelIndex === paletteView.paletteRootIndex);
                 action = paletteView.paletteController.dropAction(mimeData, drag.proposedAction, paletteView.paletteRootIndex, internal);
                 proposedAction = drag.proposedAction;
 
