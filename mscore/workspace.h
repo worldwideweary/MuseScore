@@ -60,6 +60,11 @@ class Workspace : public QObject {
             const char* anchorActionId = nullptr,
             InsertPosition position = InsertPosition::BEFORE);
 
+      static void ensureToolbarSeparator(
+            std::list<const char*>& entries,
+            const char* anchorId,
+            InsertPosition position);
+
       static QString findStringFromAction(QAction* action);
       static QAction* findActionFromString(QString string);
       static QString findStringFromMenu(QMenu* menu);
