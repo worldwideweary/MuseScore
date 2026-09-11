@@ -34,6 +34,7 @@
 #include "thirdparty/qzip/qzipwriter_p.h"
 
 #include <cstring>
+#include <iterator>
 
 #include <QDialog>
 
@@ -1022,6 +1023,44 @@ void Workspace::ensureToolbarEntry(std::list<const char*>& entries,
             }
 
       entries.push_back(actionId);
+      }
+
+//---------------------------------------------------------
+//   ensureToolbarSeparator
+//---------------------------------------------------------
+
+void Workspace::ensureToolbarSeparator(std::list<const char*>& entries,
+                                       const char* anchorId,
+                                       InsertPosition position)
+      {
+      auto anchor = std::find_if(
+            entries.begin(),
+            entries.end(),
+            [anchorId](const char* entry) {
+                  return !strcmp(entry, anchorId);
+                  });
+
+      if (anchor == entries.end())
+            return;
+
+      if (position == InsertPosition::AFTER) {
+            auto next = std::next(anchor);
+
+            if (next != entries.end() && !strcmp(*next, ""))
+                  return;
+
+            entries.insert(next, "");
+            }
+      else {
+            if (anchor != entries.begin()) {
+                  auto previous = std::prev(anchor);
+
+                  if (!strcmp(*previous, ""))
+                        return;
+                  }
+
+            entries.insert(anchor, "");
+            }
       }
 
 //---------------------------------------------------------
