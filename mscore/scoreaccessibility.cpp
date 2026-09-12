@@ -203,6 +203,7 @@ ScoreAccessibility::ScoreAccessibility(QMainWindow* mainWindow) : QObject(mainWi
       {
       this->mainWindow = mainWindow;
       statusBarLabel = new QLabel(mainWindow->statusBar());
+      statusBarLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Ignored);
       mainWindow->statusBar()->addWidget(statusBarLabel);
       }
 
