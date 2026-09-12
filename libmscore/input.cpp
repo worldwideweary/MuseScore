@@ -194,23 +194,26 @@ void InputState::update(Selection& selection)
 
 void InputState::moveInputPos(Element* e)
       {
-      if (e == 0)
+      if (!e)
             return;
 
-      Segment* s;
-      if (e->isChordRest())
-            s = toChordRest(e)->segment();
-      else
+      Segment* s = nullptr;
+
+      if (ChordRest* cr = chordRest(e))
+            s = cr->segment();
+      else if (e->isSegment())
             s = toSegment(e);
 
-      if (s->isSegment()) {
-            if (s->measure()->isMMRest()) {
-                  Measure* m = s->measure()->mmRestFirst();
-                  s = m->findSegment(SegmentType::ChordRest, m->tick());
-                  }
-            _lastSegment = _segment;
-            _segment = s;
+      if (!s)
+            return;
+
+      if (s->measure()->isMMRest()) {
+            Measure* m = s->measure()->mmRestFirst();
+            s = m->findSegment(SegmentType::ChordRest, m->tick());
             }
+
+      _lastSegment = _segment;
+      _segment = s;
       }
 
 //---------------------------------------------------------
