@@ -4046,6 +4046,39 @@ qreal Score::loHeight() const
       }
 
 //---------------------------------------------------------
+//   pageLayoutRect
+//---------------------------------------------------------
+
+QRectF Score::pageLayoutRect() const
+      {
+      if (pages().isEmpty())
+            return QRectF();
+
+      Page* firstPage = pages().front();
+      Page* lastPage  = pages().back();
+
+      if (!firstPage || !lastPage)
+            return QRectF();
+
+      QRectF rect = firstPage->bbox().translated(firstPage->pos());
+
+      if (lastPage != firstPage)
+            rect = rect.united(lastPage->bbox().translated(lastPage->pos()));
+
+      if (doublePageMode()) {
+            // First page occupies the right-hand side of the first spread.
+            // Include the empty left-hand slot in the overall bounds
+            const QRectF leftSlot(0.0,
+                                  firstPage->pos().y(),
+                                  firstPage->width(),
+                                  firstPage->height());
+            rect = rect.united(leftSlot);
+            }
+
+      return rect;
+      }
+
+//---------------------------------------------------------
 //   cmdSelectAll
 //---------------------------------------------------------
 

@@ -2213,7 +2213,18 @@ void LayoutContext::getNextPage()
       page->setNo(curPage);
       qreal x = 0.0;
       qreal y = 0.0;
-      if (curPage) {
+
+      if (score->doublePageMode()) {
+            // Arrange pages as double-page spreads:
+            // Page 1 occupies the right-hand side of the first spread
+            // Subsequent spreads advance vertically
+            const int spread = (curPage + 1) / 2;
+            const bool leftPage = curPage & 1;
+
+            x = leftPage ? 0.0 : page->width() + MScore::horizontalPageGapEven;
+            y = spread * (page->height() + MScore::verticalPageGap);
+            }
+      else if (curPage) {
             Page* prevPage = score->pages()[curPage - 1];
             if (MScore::verticalOrientation())
                   y = prevPage->pos().y() + page->height() + MScore::verticalPageGap;
@@ -2222,6 +2233,7 @@ void LayoutContext::getNextPage()
                   x = prevPage->pos().x() + page->width() + gap;
                   }
             }
+
       ++curPage;
       page->setPos(x, y);
       }
@@ -4170,6 +4182,7 @@ System* Score::collectSystem(LayoutContext& lc)
             bool lineBreak  = false;
             switch (_layoutMode) {
                   case LayoutMode::PAGE:
+                  case LayoutMode::DOUBLE_PAGE:
                   case LayoutMode::SYSTEM:
                         lineBreak = mb->pageBreak() || mb->lineBreak() || mb->sectionBreak();
                         break;

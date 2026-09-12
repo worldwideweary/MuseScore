@@ -129,14 +129,15 @@ enum class Pad : char {
 
 //---------------------------------------------------------
 //   LayoutMode
-//    PAGE   The normal page view, honors page and line breaks.
-//    LINE   The panoramic view, one long system
-//    FLOAT  The "reflow" mode, ignore page and line breaks, stave spacer up, fixed and down
-//    SYSTEM The "never ending page", page break are turned into line break
+//    PAGE        The normal page view, honors page and line breaks.
+//    LINE        The panoramic view, one long system
+//    FLOAT       The "reflow" mode, ignore page and line breaks, stave spacer up, fixed and down
+//    SYSTEM      The "never ending page", page break are turned into line break
+//    DOUBLE_PAGE The normal paginated layout arranged as double-page spreads
 //---------------------------------------------------------
 
 enum class LayoutMode : char {
-      PAGE, FLOAT, LINE, SYSTEM
+      PAGE, FLOAT, LINE, SYSTEM, DOUBLE_PAGE
       };
 
 //---------------------------------------------------------
@@ -1016,6 +1017,7 @@ class Score : public QObject, public ScoreElement {
 
       qreal loWidth() const;
       qreal loHeight() const;
+      QRectF pageLayoutRect() const;
 
       virtual int npages() const                { return _pages.size(); }
       virtual int pageIdx(Page* page) const     { return _pages.indexOf(page); }
@@ -1126,6 +1128,8 @@ class Score : public QObject, public ScoreElement {
 
       bool floatMode() const                { return layoutMode() == LayoutMode::FLOAT; }
       bool pageMode() const                 { return layoutMode() == LayoutMode::PAGE; }
+      bool doublePageMode() const           { return layoutMode() == LayoutMode::DOUBLE_PAGE; }
+      bool paginatedMode() const            { return pageMode() || doublePageMode(); }
       bool lineMode() const                 { return layoutMode() == LayoutMode::LINE; }
       bool systemMode() const               { return layoutMode() == LayoutMode::SYSTEM; }
 
