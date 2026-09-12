@@ -3985,8 +3985,14 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       QRectF r(canvasViewport());
       QRectF mRect(m->canvasBoundingRect());
       QRectF sysRect;
-      if (staffIdx == -1)
+      if (staffIdx == -1) {
             sysRect = sys->canvasBoundingRect();
+
+            // During playback, include notation which extends beyond the
+            // nominal system bounds, such as ledger-line notes and spanners
+            if (playBack)
+                  sysRect.adjust(0.0, -sys->minTop(), 0.0, sys->minBottom());
+            }
       else
             sysRect = sys->staff(staffIdx)->bbox();
 
