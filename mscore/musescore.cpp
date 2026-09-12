@@ -1078,6 +1078,7 @@ void MuseScore::populateFileOperations()
 
       viewModeCombo->setAccessibleName(tr("View Mode"));
       viewModeCombo->addItem(tr("Page View"), int(LayoutMode::PAGE));
+      viewModeCombo->addItem(tr("Double Page"), int(LayoutMode::DOUBLE_PAGE));
       viewModeCombo->addItem(tr("Continuous View"), int(LayoutMode::LINE));
       viewModeCombo->addItem(tr("Single Page"), int(LayoutMode::SYSTEM));
       if (enableExperimental)
@@ -2372,6 +2373,7 @@ void MuseScore::retranslate()
 
       viewModeCombo->setAccessibleName(tr("View Mode"));
       viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::PAGE)), tr("Page View"));
+      viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::DOUBLE_PAGE)), tr("Double Page"));
       viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::LINE)), tr("Continuous View"));
       viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::SYSTEM)), tr("Single Page"));
 #ifdef NDEBUG
@@ -2935,6 +2937,8 @@ void MuseScore::setCurrentScoreView(ScoreView* view)
       else
             cs = 0;
 
+      scorePageLayoutChanged();
+
       updateWindowTitle(cs);
       setWindowModified(cs ? cs->dirty() : false);
 
@@ -3069,24 +3073,9 @@ void MuseScore::setSplitScreen(bool val)
 
 void MuseScore::updateViewModeCombo()
       {
-      int idx;
-      switch (cs->layoutMode()) {
-            case LayoutMode::PAGE:
-                  idx = 0;
-                  break;
-            case LayoutMode::LINE:
-                  idx = 1;
-                  break;
-            case LayoutMode::SYSTEM:
-                  idx = 2;
-                  break;
-            case LayoutMode::FLOAT:
-                  idx = 3;
-                  break;
-            default:
-                  idx = 0;
-                  break;
-            }
+      int idx = viewModeCombo->findData(int(cs->layoutMode()));
+      if (idx < 0)
+            idx = 0;
       viewModeCombo->setCurrentIndex(idx);
       }
 
@@ -5771,9 +5760,13 @@ const char* stateName(ScoreState s)
 void MuseScore::scorePageLayoutChanged()
       {
       if (mainWindow) {
-            mainWindow->setOrientation(MScore::verticalOrientation() ? Qt::Horizontal : Qt::Vertical);
+            const bool vertical = MScore::verticalOrientation()
+                                  || (cs && cs->doublePageMode());
+
+            mainWindow->setOrientation(vertical ? Qt::Horizontal : Qt::Vertical);
+
             if (navigatorScrollArea())
-                  navigatorScrollArea()->orientationChanged();
+                  navigatorScrollArea()->orientationChanged(vertical);
             }
       }
 
@@ -7137,6 +7130,15 @@ void MuseScore::switchLayoutMode(LayoutMode mode)
       if (mode != cs->layoutMode()) {
             cs->setLayoutMode(mode);
             cs->doLayout();
+
+            scorePageLayoutChanged();
+
+            const ZoomIndex zoomIndex = cv->zoomIndex();
+            if (zoomIndex == ZoomIndex::ZOOM_PAGE_WIDTH
+                || zoomIndex == ZoomIndex::ZOOM_WHOLE_PAGE
+                || zoomIndex == ZoomIndex::ZOOM_TWO_PAGES) {
+                  cv->setLogicalZoom(zoomIndex, cv->calculateLogicalZoomLevel(zoomIndex));
+                  }
             }
 
       // adjustCanvasPosition often tries to preserve Y position
@@ -7144,6 +7146,7 @@ void MuseScore::switchLayoutMode(LayoutMode mode)
       // also, better positioning is usually achieved if you start from the top
       // and there is really no better place to position canvas if we were all the way off page previously
       cv->pageTop();
+
       if (m && m != cs->firstMeasureMM())
             cv->adjustCanvasPosition(m, false);
       if (cv->noteEntryMode())

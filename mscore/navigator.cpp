@@ -55,9 +55,9 @@ NScrollArea::NScrollArea(QWidget* w)
 //   orientationChanged
 //---------------------------------------------------------
 
-void NScrollArea::orientationChanged()
+void NScrollArea::orientationChanged(bool vertical)
       {
-      if (MScore::verticalOrientation()) {
+      if (vertical) {
             setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
             setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
             }
@@ -181,6 +181,17 @@ void Navigator::setScore(Score* v)
       }
 
 //---------------------------------------------------------
+//   verticalNavigation
+//---------------------------------------------------------
+
+bool Navigator::verticalNavigation() const
+      {
+      return !_previewOnly
+             && ((_score && _score->doublePageMode())
+                 || MScore::verticalOrientation());
+      }
+
+//---------------------------------------------------------
 //   rescale
 //    recompute scale of score view
 //---------------------------------------------------------
@@ -192,27 +203,47 @@ void Navigator::rescale()
             setMinimumSize(0, 0);
             return;
             }
-      Page* lp          = _score->pages().back();
 
-      // reset the layout before setting fix size
+      Page* lp = _score->pages().back();
+
+      // Reset the layout before setting fixed-size
       setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
       setMinimumSize(0, 0);
 
-      if (MScore::verticalOrientation() && !_previewOnly) {
-            qreal scoreWidth  = lp->width();
-            qreal scoreHeight = lp->y() + lp->height();
+      if (verticalNavigation()) {
+            const QRectF scoreRect = _score->pageLayoutRect();
+            const qreal scoreWidth  = scoreRect.width();
+            const qreal scoreHeight = scoreRect.height();
+
             qreal m = width() / scoreWidth;
             setFixedHeight(int(scoreHeight * m));
             matrix = QTransform(m, 0, 0, m, 0, 0);
+
+            scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+            scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
             }
       else {
-            qreal scoreWidth  = lp->x() + lp->width();
-            qreal scoreHeight = lp->height();
-            if (_previewOnly)
-                  scoreWidth = lp->width() * _score->pages().size();
-            qreal m  = height() / scoreHeight;
+            qreal scoreWidth;
+            qreal scoreHeight;
+
+            if (_previewOnly) {
+                  scoreWidth  = lp->width() * _score->pages().size();
+                  scoreHeight = lp->height();
+                  }
+            else {
+                  const QRectF scoreRect = _score->pageLayoutRect();
+                  scoreWidth  = scoreRect.width();
+                  scoreHeight = scoreRect.height();
+                  }
+
+            qreal m = height() / scoreHeight;
             setFixedWidth(int(scoreWidth * m));
             matrix = QTransform(m, 0, 0, m, 0, 0);
+
+            if (!_previewOnly) {
+                  scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+                  scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+                  }
             }
       }
 
@@ -291,7 +322,7 @@ void Navigator::mouseMoveEvent(QMouseEvent* ev)
       viewRect->setGeometry(r);
 
       emit viewRectMoved(matrix.inverted().mapRect(r));
-      if (MScore::verticalOrientation() && !_previewOnly) {
+      if (verticalNavigation()) {
             int y = delta.y() > 0 ? r.y() + r.height() : r.y();
             scrollArea->ensureVisible(width()/2, y, 0, 0);
             }
@@ -308,7 +339,7 @@ void Navigator::mouseMoveEvent(QMouseEvent* ev)
 void Navigator::setViewRect(const QRectF& _viewRect)
       {
       viewRect->setGeometry(matrix.mapRect(_viewRect).toRect());
-      if (MScore::verticalOrientation() && !_previewOnly)
+      if (verticalNavigation())
             scrollArea->ensureVisible(0, viewRect->y() + viewRect->height() / 2);
       else
             scrollArea->ensureVisible(viewRect->x(), 0);
@@ -368,16 +399,36 @@ void Navigator::paintEvent(QPaintEvent* ev)
 
       p.setTransform(matrix);
       QRectF fr = matrix.inverted().mapRect(QRectF(r));
-      int i = 0;
-      for (Page* page : _score->pages()) {
+      for (int i = 0; i < _score->pages().size(); ++i) {
+            Page* page = _score->pages()[i];
+
             QPointF pos(page->pos());
             if (_previewOnly)
                   pos = QPointF(i * page->width(), 0);
+
             QRectF pr(page->abbox().translated(pos));
-            if (pr.right() < fr.left())
+
+            if (verticalNavigation()) {
+                  // Vertical scrolling: Page View and Double Page are monotonically ordered
+                  // by Y. Double Page may have two pages in one row
+                  if (pr.bottom() < fr.top())
+                        continue;
+                  if (pr.top() > fr.bottom())
+                        break;
+                  }
+            else {
+                  // Horizontal scrolling: Page View and preview-only mode are monotonically
+                  // ordered by X
+                  if (pr.right() < fr.left())
+                        continue;
+                  if (pr.left() > fr.right())
+                        break;
+                  }
+
+            // Double Page: a visible row may still contain an off-screen
+            // left or right page
+            if (!pr.intersects(fr))
                   continue;
-            if (pr.left() > fr.right())
-                  break;
 
             p.fillRect(pr, Qt::white);
             p.translate(pos);
@@ -386,13 +437,12 @@ void Navigator::paintEvent(QPaintEvent* ev)
                         m->scanElements(&p, paintElement, false);
                   }
             page->scanElements(&p, paintElement, false);
-            if (page->score()->layoutMode() == LayoutMode::PAGE) {
+            if (page->score()->paginatedMode()) {
                   p.setFont(font);
                   p.setPen(MScore::layoutBreakColor);
                   p.drawText(page->bbox(), Qt::AlignCenter, QString("%1").arg(page->no() + 1 + _score->pageNumberOffset()));
                   }
             p.translate(-pos);
-            i++;
             }
       }
 }

@@ -122,6 +122,8 @@ void Score::writeMovement(XmlWriter& xml, bool selectionOnly)
             xml.tag("layoutMode", "line");
       if (systemMode())
             xml.tag("layoutMode", "system");
+      if (doublePageMode())
+            xml.tag("layoutMode", "double-page");
 
 #ifdef OMR
       if (masterScore()->omr() && xml.writeOmr())

@@ -90,7 +90,7 @@ void Page::appendSystem(System* s)
 
 void Page::draw(QPainter* painter) const
       {
-      bool shouldDraw = score()->pageMode() || score()->floatMode();
+      const bool shouldDraw = score()->paginatedMode() || score()->floatMode();
       if (!shouldDraw)
             return;
       //
@@ -210,7 +210,7 @@ Text* Page::layoutHeaderFooter(int area, const QString& ss) const
 
 qreal Page::headerExtension() const
       {
-      bool shouldLayoutHeader = score()->pageMode() || score()->floatMode();
+      const bool shouldLayoutHeader = score()->paginatedMode() || score()->floatMode();
       if (!shouldLayoutHeader)
             return 0.0;
 
@@ -254,7 +254,7 @@ qreal Page::headerExtension() const
 
 qreal Page::footerExtension() const
       {
-      bool shouldLayoutFooter = score()->pageMode() || score()->floatMode();
+      const bool shouldLayoutFooter = score()->paginatedMode() || score()->floatMode();
       if (!shouldLayoutFooter)
             return 0.0;
 

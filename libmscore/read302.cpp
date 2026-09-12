@@ -200,6 +200,8 @@ bool Score::read(XmlReader& e)
                         _layoutMode = LayoutMode::LINE;
                   else if (s == "system")
                         _layoutMode = LayoutMode::SYSTEM;
+                  else if (s == "double-page")
+                        _layoutMode = LayoutMode::DOUBLE_PAGE;
                   else
                         qDebug("layoutMode: %s", qPrintable(s));
                   }

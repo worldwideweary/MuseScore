@@ -1337,13 +1337,27 @@ void ScoreView::paint(const QRect& r, QPainter& p)
       else {
             for (Page* page : qAsConst(_score->pages())) {
                   QRectF pr(page->abbox().translated(page->pos()));
-                  if (pr.right() < fr.left())
-                        continue;
-                  if (pr.left() > fr.right())
-                        break;
+
+                  if (_score->doublePageMode()) {
+                        // Double Page is ordered vertically by spread, not
+                        // monotonically from left to right
+                        if (pr.bottom() < fr.top())
+                              continue;
+                        if (pr.top() > fr.bottom())
+                              break;
+                        if (!pr.intersects(fr))
+                              continue;
+                        }
+                  else {
+                        if (pr.right() < fr.left())
+                              continue;
+                        if (pr.left() > fr.right())
+                              break;
+                        }
 
                   if (!score()->printing())
                         paintPageBorder(p, page);
+
                   QList<Element*> ell = page->items(fr.translated(-page->pos()));
                   QPointF pos(page->pos());
                   p.translate(pos);
@@ -1609,20 +1623,16 @@ void ScoreView::constraintCanvas (int* dxx, int* dyy)
       int dy = *dyy;
       QRectF rect = QRectF(0, 0, width(), height());
 
-      Page* firstPage = score()->pages().front();
-      Page* lastPage  = score()->pages().back();
-
-      if (firstPage && lastPage) {
+      const QRectF layoutRect = score()->pageLayoutRect();
+      if (!layoutRect.isEmpty()) {
+            const qreal zoom = physicalZoomLevel();
             QPointF offsetPt(xoffset(), yoffset());
-            QRectF firstPageRect(firstPage->pos().x() * physicalZoomLevel(),
-                                      firstPage->pos().y() * physicalZoomLevel(),
-                                      firstPage->width() * physicalZoomLevel(),
-                                      firstPage->height() * physicalZoomLevel());
-            QRectF lastPageRect(lastPage->pos().x() * physicalZoomLevel(),
-                                         lastPage->pos().y() * physicalZoomLevel(),
-                                         lastPage->width() * physicalZoomLevel(),
-                                         lastPage->height() * physicalZoomLevel());
-            QRectF pagesRect     = firstPageRect.united(lastPageRect).translated(offsetPt);
+            QRectF pagesRect(layoutRect.x() * zoom,
+                             layoutRect.y() * zoom,
+                             layoutRect.width() * zoom,
+                             layoutRect.height() * zoom);
+            pagesRect.translate(offsetPt);
+
             bool limitScrollArea = preferences.getBool(PREF_UI_CANVAS_SCROLL_LIMITSCROLLAREA);
             if (!limitScrollArea) {
                   qreal hmargin = this->width() * 0.75;
@@ -1800,18 +1810,25 @@ qreal ScoreView::calculatePhysicalZoomLevel(const ZoomIndex index, const qreal l
       {
       if (!_score)
             return 1.0;
-
       const qreal l2p = mscore->physicalDotsPerInch() / DPI;
       const qreal cw = width();
       const qreal ch = height();
       const qreal pw = _score->styleD(Sid::pageWidth);
       const qreal ph = _score->styleD(Sid::pageHeight);
 
+      qreal spreadWidth = pw * DPI;
+      if (_score->doublePageMode()) {
+            const QRectF layoutRect = _score->pageLayoutRect();
+            spreadWidth = layoutRect.isEmpty()
+                        ? 2.0 * pw * DPI + MScore::horizontalPageGapEven
+                        : layoutRect.width();
+            }
+
       qreal result = 0.0;
 
       switch (index) {
             case ZoomIndex::ZOOM_PAGE_WIDTH:
-                  result = cw / (pw * DPI);
+                  result = cw / spreadWidth;
                   break;
 
             case ZoomIndex::ZOOM_WHOLE_PAGE: {
@@ -1824,7 +1841,12 @@ qreal ScoreView::calculatePhysicalZoomLevel(const ZoomIndex index, const qreal l
             case ZoomIndex::ZOOM_TWO_PAGES: {
                   qreal mag1 = 0.0;
                   qreal mag2 = 0.0;
-                  if (MScore::verticalOrientation()) {
+
+                  if (_score->doublePageMode()) {
+                        mag1 = cw / spreadWidth;
+                        mag2 = ch / (ph * DPI);
+                        }
+                  else if (MScore::verticalOrientation()) {
                         mag1 = ch / (ph * 2.0 * DPI + MScore::verticalPageGap);
                         mag2 = cw / (pw * DPI);
                         }
@@ -1832,6 +1854,7 @@ qreal ScoreView::calculatePhysicalZoomLevel(const ZoomIndex index, const qreal l
                         mag1 = cw / (pw * 2.0 * DPI + std::max(MScore::horizontalPageGapEven, MScore::horizontalPageGapOdd));
                         mag2 = ch / (ph * DPI);
                         }
+
                   result = std::min(mag1, mag2);
                   }
                   break;
@@ -3610,10 +3633,32 @@ void ScoreView::pageNext()
       {
       if (score()->pages().empty())
             return;
+
+      if (score()->doublePageMode()) {
+            Page* page = score()->pages().back();
+
+            // Advance by one complete spread row
+            qreal y = yoffset() - (page->height() + MScore::verticalPageGap) * physicalZoomLevel();
+
+            // Once the last spread has been reached, use the normal end-of-score positioning
+            qreal ly = thinPadding - page->pos().y() * physicalZoomLevel();
+            if (y <= ly - height() * scrollStep) {
+                  pageEnd();
+                  return;
+                  }
+
+            // Preserve horizontal position: Double Page navigation is vertical,
+            // even if the normal page orientation is horizontal
+            setOffset(xoffset(), y);
+            update();
+            return;
+            }
+
       if (score()->layoutMode() != LayoutMode::PAGE) {
             screenNext();
             return;
             }
+
       Page* page = score()->pages().back();
       qreal x, y;
       if (MScore::verticalOrientation()) {
@@ -3683,10 +3728,27 @@ void ScoreView::pagePrev()
       {
       if (score()->pages().empty())
             return;
+
+      if (score()->doublePageMode()) {
+            Page* page = score()->pages().front();
+
+            // Move back by one complete spread row
+            qreal y = yoffset() + (page->height() + MScore::verticalPageGap) * physicalZoomLevel();
+
+            if (y > thinPadding)
+                  y = thinPadding;
+
+            // Preserve horizontal position as with pageNext()
+            setOffset(xoffset(), y);
+            update();
+            return;
+            }
+
       if (score()->layoutMode() != LayoutMode::PAGE) {
             screenPrev();
             return;
             }
+
       Page* page = score()->pages().front();
       qreal x, y;
       if (MScore::verticalOrientation()) {
@@ -3999,16 +4061,28 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       else if (r.height() >= showRect.height() && showRect.bottom() > r.bottom())
             y = showRect.top() - border;
 
-      // align to page borders if extends beyond
+      // Align to page borders if the viewport extends beyond them.
+      // In Double Page view, treat the complete spread as the
+      // horizontal navigation area, while retaining the physical
+      // page's vertical bounds
       Page* page = sys->page();
-      if (x < page->x() || r.width() >= page->width())
-            x = page->x();
-      else if (r.width() < page->width() && r.width() + x > page->width() + page->x())
-            x = (page->width() + page->x()) - r.width();
-      if (y < page->y() || r.height() >= page->height())
-            y = page->y();
-      else if (r.height() < page->height() && r.height() + y > page->height() + page->y())
-            y = (page->height() + page->y()) - r.height();
+      QRectF navigationRect(page->bbox().translated(page->pos()));
+
+      if (score()->doublePageMode()) {
+            const QRectF layoutRect = score()->pageLayoutRect();
+            navigationRect.setLeft(layoutRect.left());
+            navigationRect.setRight(layoutRect.right());
+            }
+
+      if (x < navigationRect.left() || r.width() >= navigationRect.width())
+            x = navigationRect.left();
+      else if (r.width() < navigationRect.width() && r.width() + x > navigationRect.right())
+            x = navigationRect.right() - r.width();
+
+      if (y < navigationRect.top() || r.height() >= navigationRect.height())
+            y = navigationRect.top();
+      else if (r.height() < navigationRect.height() && r.height() + y > navigationRect.bottom())
+            y = navigationRect.bottom() - r.height();
 
       // hack: don't update if we haven't changed the offset
       if (oldX == x && oldY == y)
@@ -4018,7 +4092,10 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       y *= -physicalZoomLevel();
       int cx = x;
       int cy = y;
-      bool constrain = MScore::verticalOrientation() && preferences.getBool(PREF_UI_CANVAS_SCROLL_LIMITSCROLLAREA);
+
+      const bool constrain = (MScore::verticalOrientation() || score()->doublePageMode())
+                              && preferences.getBool(PREF_UI_CANVAS_SCROLL_LIMITSCROLLAREA);
+
       if (constrain) {
             constraintCanvas(&cx, &cy);
             cx = (x < 0) ? x : cx + _matrix.dx();
