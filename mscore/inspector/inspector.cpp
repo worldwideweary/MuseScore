@@ -10,6 +10,8 @@
 //  the file LICENSE.GPL
 //=============================================================================
 
+#include <QStackedWidget>
+
 #include "musescore.h"
 #include "scoreview.h"
 
@@ -73,6 +75,27 @@
 
 namespace Ms {
 
+class InspectorStackedWidget : public QStackedWidget {
+   public:
+      explicit InspectorStackedWidget(QWidget* parent = nullptr)
+         : QStackedWidget(parent)
+            {
+            }
+
+      QSize sizeHint() const override
+            {
+            QWidget* w = currentWidget();
+            return w ? w->sizeHint() : QStackedWidget::sizeHint();
+            }
+
+      QSize minimumSizeHint() const override
+            {
+            QWidget* w = currentWidget();
+            return w ? w->minimumSizeHint()
+                     : QStackedWidget::minimumSizeHint();
+            }
+      };
+
 //---------------------------------------------------------
 //   showInspector
 //---------------------------------------------------------
@@ -108,11 +131,16 @@ Inspector::Inspector(QWidget* parent)
 //      setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
 //      sa->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
 
+      inspectorStack = new InspectorStackedWidget;
+      sa->setWidget(inspectorStack);
+
       setWidget(sa);
       sa->setFocusPolicy(Qt::NoFocus);
 
       _inspectorEdit = false;
       ie             = 0;
+      noteInspector  = 0;
+      restInspector  = 0;
       oe             = 0;
       oSameTypes     = true;
       oSameSubtypes  = true;
@@ -129,8 +157,28 @@ void Inspector::retranslate()
       {
       setWindowTitle(tr("Inspector"));
       sa->setAccessibleName(tr("Inspector Subwindow"));
+
       Score* s = _score;
-      update(0);
+
+      // Cached inspector pages contain translated UI strings, so force
+      // them to be reconstructed following a language change:
+      if (noteInspector) {
+            if (ie == noteInspector)
+                  ie = nullptr;
+            inspectorStack->removeWidget(noteInspector);
+            noteInspector->deleteLater();
+            noteInspector = nullptr;
+            }
+
+      if (restInspector) {
+            if (ie == restInspector)
+                  ie = nullptr;
+            inspectorStack->removeWidget(restInspector);
+            restInspector->deleteLater();
+            restInspector = nullptr;
+            }
+
+      update(nullptr);
       update(s);
       }
 
@@ -197,9 +245,34 @@ void Inspector::update(Score* s)
                         sameSubtypes = false;
                   }
             }
+      // The Note and Rest inspectors are used continuously during normal
+      // score traversal. Reuse the current inspector when its type still
+      // matches the selected element:
+      if (ie && element() && sameTypes && oSameTypes == sameTypes && oSameSubtypes == sameSubtypes) {
+            bool reuse = false;
+
+            if (element()->type() == ElementType::NOTE
+                && ie == noteInspector) {
+                  reuse = true;
+                  }
+            else if (element()->type() == ElementType::REST
+                     && !toRest(element())->measure()->isMMRest()
+                     && ie == restInspector) {
+                  reuse = true;
+                  }
+
+            if (reuse) {
+                  oe = element();
+                  ie->setElement();
+                  return;
+                  }
+            }
+
       if (oe != element() ||
           (oSameTypes != sameTypes) ||
           (oSameSubtypes != sameSubtypes)) {
+            bool reusedInspector = false;
+
             ie  = 0;
             oe  = element();
             oSameTypes = sameTypes;
@@ -230,7 +303,14 @@ void Inspector::update(Score* s)
                               ie = new InspectorSpacer(this);
                               break;
                         case ElementType::NOTE:
-                              ie = new InspectorNote(this);
+                              if (noteInspector) {
+                                    ie = noteInspector;
+                                    reusedInspector = true;
+                                    }
+                              else {
+                                    noteInspector = new InspectorNote(this);
+                                    ie = noteInspector;
+                                    }
                               break;
                         case ElementType::ACCIDENTAL:
                               ie = new InspectorAccidental(this);
@@ -238,8 +318,14 @@ void Inspector::update(Score* s)
                         case ElementType::REST:
                               if (toRest(element())->measure()->isMMRest())
                                     ie = new InspectorMMRest(this);
-                              else
-                                    ie = new InspectorRest(this);
+                              else if (restInspector) {
+                                    ie = restInspector;
+                                    reusedInspector = true;
+                                    }
+                              else {
+                                    restInspector = new InspectorRest(this);
+                                    ie = restInspector;
+                                    }
                               break;
                         case ElementType::CLEF:
                               ie = new InspectorClef(this);
@@ -399,34 +485,56 @@ void Inspector::update(Score* s)
                   }
             if (!ie)
                   return;
-            connect(ie, &InspectorBase::elementChanged, this, QOverload<>::of(&Inspector::update), Qt::QueuedConnection);
-            if (sa->widget()) { // If old inspector exist
-                  QWidget *q = sa->takeWidget();
-                  q->deleteLater();
-                  }
-            sa->setWidget(ie);      // will destroy previous set widget, unless takeWidget() call
 
-            //focus policies were set by hand in each inspector_*.ui. this code just helps keeping them like they are
-            //also fixes mac problem. on Mac Qt::TabFocus doesn't work, but Qt::StrongFocus works
-            QList<QWidget*> widgets = ie->findChildren<QWidget*>();
-            for (int i = 0; i < widgets.size(); i++) {
-                  QWidget* currentWidget = widgets.at(i);
-                  switch (currentWidget->focusPolicy()) {
-                        case Qt::WheelFocus:
-                        case Qt::StrongFocus:
-                              if (currentWidget->inherits("QComboBox")                  ||
-                                  currentWidget->parent()->inherits("QAbstractSpinBox") ||
-                                  currentWidget->inherits("QAbstractSpinBox")           ||
-                                  currentWidget->inherits("QLineEdit")) ; //leave it like it is
-                              else
-                                   currentWidget->setFocusPolicy(Qt::TabFocus);
-                              break;
-                        case Qt::NoFocus:
-                        case Qt::ClickFocus:
+            if (!reusedInspector)
+                  connect(ie, &InspectorBase::elementChanged,
+                          this, QOverload<>::of(&Inspector::update),
+                          Qt::QueuedConnection);
+
+            QWidget* oldInspector = inspectorStack->currentWidget();
+
+            // Ordinary inspector pages retain the old behavior: once we
+            // leave them, dispose of them. Note and Rest are cached because
+            // normal score traversal switches rapidly between the two
+            if (oldInspector
+                && oldInspector != ie
+                && oldInspector != noteInspector
+                && oldInspector != restInspector) {
+                  inspectorStack->removeWidget(oldInspector);
+                  oldInspector->deleteLater();
+                  }
+
+            // A newly constructed inspector is not in the stack yet.
+            // Cached Note/Rest inspectors will already be present
+            if (inspectorStack->indexOf(ie) == -1)
+                  inspectorStack->addWidget(ie);
+
+            inspectorStack->setCurrentWidget(ie);
+            inspectorStack->updateGeometry();
+
+            // Focus policies only need initialization when the inspector
+            // widget itself is first constructed
+            if (!reusedInspector) {
+                  QList<QWidget*> widgets = ie->findChildren<QWidget*>();
+                  for (int i = 0; i < widgets.size(); i++) {
+                        QWidget* currentWidget = widgets.at(i);
+                        switch (currentWidget->focusPolicy()) {
+                              case Qt::WheelFocus:
+                              case Qt::StrongFocus:
+                                    if (currentWidget->inherits("QComboBox")                  ||
+                                        currentWidget->parent()->inherits("QAbstractSpinBox") ||
+                                        currentWidget->inherits("QAbstractSpinBox")           ||
+                                        currentWidget->inherits("QLineEdit")) ; //leave it like it is
+                                    else
+                                          currentWidget->setFocusPolicy(Qt::TabFocus);
+                                    break;
+                              case Qt::NoFocus:
+                              case Qt::ClickFocus:
                                     currentWidget->setFocusPolicy(Qt::NoFocus);
-                              break;
-                        case Qt::TabFocus:
-                              break;
+                                    break;
+                              case Qt::TabFocus:
+                                    break;
+                              }
                         }
                   }
             }

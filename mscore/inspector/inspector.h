@@ -45,6 +45,8 @@
 #include "ui_inspector_tuplet.h"
 #include "ui_inspector_vbox.h"
 
+class QStackedWidget;
+
 namespace Ms {
 
 class Score;
@@ -381,7 +383,10 @@ class Inspector : public QDockWidget {
       Q_OBJECT
 
       QScrollArea* sa;
+      QStackedWidget* inspectorStack;
       InspectorBase* ie;
+      InspectorBase* noteInspector;
+      InspectorBase* restInspector;
       Score* _score;
       bool _inspectorEdit;    // set to true when an edit originates from
                               // within the inspector itself
