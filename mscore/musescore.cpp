@@ -3252,17 +3252,21 @@ void MuseScore::setCurrentScoreView(ScoreView* view)
       getAction("split-measure")->setEnabled(cs->masterScore()->excerpts().size() == 0);
       getAction("concert-pitch")->setChecked(cs->styleB(Sid::concertPitch));
       updateUndoRedo();
-
-      setZoom(cv->zoomIndex(), cv->logicalZoomLevel());
       setPos(cs->inputPos());
       //showMessage(cs->filePath(), 2000);
+
       if (_navigator && _navigator->widget()) {
             navigator()->setScoreView(view);
             }
+
       if (timeline()) {
             timeline()->setScore(cs);
             timeline()->setScoreView(view);
             }
+
+      // Apply the zoom after Navigator/layout geometry has been established,
+      // so fit zoom and canvas constraints use the final ScoreView size
+      setZoom(cv->zoomIndex(), cv->logicalZoomLevel());
       ScoreAccessibility::instance()->updateAccessibilityInfo();
 
       MasterScore* master = cs->masterScore();
@@ -7398,18 +7402,13 @@ void MuseScore::switchLayoutMode(LayoutMode mode)
 
       cv->loopUpdate(getAction("loop")->isChecked());
 
-      if (mode != cs->layoutMode()) {
+      const bool layoutModeChanged = mode != cs->layoutMode();
+
+      if (layoutModeChanged) {
             cs->setLayoutMode(mode);
             cs->doLayout();
 
             scorePageLayoutChanged();
-
-            const ZoomIndex zoomIndex = cv->zoomIndex();
-            if (zoomIndex == ZoomIndex::ZOOM_PAGE_WIDTH
-                || zoomIndex == ZoomIndex::ZOOM_WHOLE_PAGE
-                || zoomIndex == ZoomIndex::ZOOM_TWO_PAGES) {
-                  cv->setLogicalZoom(zoomIndex, cv->calculateLogicalZoomLevel(zoomIndex));
-                  }
             }
 
       // adjustCanvasPosition often tries to preserve Y position
@@ -7417,6 +7416,21 @@ void MuseScore::switchLayoutMode(LayoutMode mode)
       // also, better positioning is usually achieved if you start from the top
       // and there is really no better place to position canvas if we were all the way off page previously
       cv->pageTop();
+
+      if (layoutModeChanged) {
+            const ZoomIndex zoomIndex = cv->zoomIndex();
+
+            if (zoomIndex == ZoomIndex::ZOOM_PAGE_WIDTH
+                || zoomIndex == ZoomIndex::ZOOM_WHOLE_PAGE
+                || zoomIndex == ZoomIndex::ZOOM_TWO_PAGES) {
+                  cv->setLogicalZoom(zoomIndex, cv->calculateLogicalZoomLevel(zoomIndex));
+                  }
+            else {
+                  // Reapply the current zoom so the page-top position is
+                  // constrained against the newly laid-out pages
+                  cv->setLogicalZoom(zoomIndex, cv->logicalZoomLevel());
+                  }
+            }
 
       if (m && m != cs->firstMeasureMM())
             cv->adjustCanvasPosition(m, false);
