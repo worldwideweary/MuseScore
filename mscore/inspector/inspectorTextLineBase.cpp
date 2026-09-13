@@ -223,6 +223,7 @@ void InspectorTextLineBase::hasBeginTextClicked(bool checked)
             t->undoResetProperty(Pid::BEGIN_FONT_SIZE);
             t->undoResetProperty(Pid::BEGIN_FONT_STYLE);
             t->undoResetProperty(Pid::BEGIN_TEXT_OFFSET);
+            tl.beginText->clear();
             t->triggerLayout();
             t->score()->endCmd();
             }
@@ -249,6 +250,7 @@ void InspectorTextLineBase::hasContinueTextClicked(bool checked)
             t->undoResetProperty(Pid::CONTINUE_FONT_SIZE);
             t->undoResetProperty(Pid::CONTINUE_FONT_STYLE);
             t->undoResetProperty(Pid::CONTINUE_TEXT_OFFSET);
+            tl.continueText->clear();
             t->triggerLayout();
             t->score()->endCmd();
             }
@@ -275,6 +277,7 @@ void InspectorTextLineBase::hasEndTextClicked(bool checked)
             t->undoResetProperty(Pid::END_FONT_SIZE);
             t->undoResetProperty(Pid::END_FONT_STYLE);
             t->undoResetProperty(Pid::END_TEXT_OFFSET);
+            tl.endText->clear();
             t->triggerLayout();
             t->score()->endCmd();
             }
