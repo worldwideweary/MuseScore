@@ -270,6 +270,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       void adjustCursorForTextEditing(QMouseEvent*);
 
       void constraintCanvas(int *dxx, int *dyy);
+      void setConstrainedOffset(qreal x, qreal y);
 
       void setShadowNote(const QPointF&);
       void drawElements(QPainter& p,QList<Element*>& el, Element* editElement);

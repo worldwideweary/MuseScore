@@ -1,5 +1,6 @@
 #include <QMainWindow>
 #include <QWidget>
+#include <QSizePolicy>
 
 #include "drumroll.h"
 #include "musescore.h"
