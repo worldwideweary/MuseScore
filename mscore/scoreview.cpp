@@ -3590,6 +3590,27 @@ void ScoreView::setOffset(qreal x, qreal y)
       }
 
 //---------------------------------------------------------
+//   setConstrainedOffset
+//---------------------------------------------------------
+
+void ScoreView::setConstrainedOffset(qreal x, qreal y)
+      {
+      const int requestedDx = qRound(x - xoffset());
+      const int requestedDy = qRound(y - yoffset());
+
+      int dx = requestedDx;
+      int dy = requestedDy;
+      constraintCanvas(&dx, &dy);
+
+      // Preserve the requested qreal position and apply only the
+      // correction made by constraintCanvas().
+      x += dx - requestedDx;
+      y += dy - requestedDy;
+
+      setOffset(x, y);
+      }
+
+//---------------------------------------------------------
 //   xoffset
 //---------------------------------------------------------
 
@@ -3640,16 +3661,15 @@ void ScoreView::pageNext()
             // Advance by one complete spread row
             qreal y = yoffset() - (page->height() + MScore::verticalPageGap) * physicalZoomLevel();
 
-            // Once the last spread has been reached, use the normal end-of-score positioning
-            qreal ly = thinPadding - page->pos().y() * physicalZoomLevel();
-            if (y <= ly - height() * scrollStep) {
-                  pageEnd();
-                  return;
-                  }
+            const QRectF layoutRect = score()->pageLayoutRect();
+            const qreal endY = height() - layoutRect.bottom() * physicalZoomLevel();
+
+            if (y < endY)
+                  y = endY;
 
             // Preserve horizontal position: Double Page navigation is vertical,
             // even if the normal page orientation is horizontal
-            setOffset(xoffset(), y);
+            setConstrainedOffset(xoffset(), y);
             update();
             return;
             }
@@ -3662,13 +3682,14 @@ void ScoreView::pageNext()
       Page* page = score()->pages().back();
       qreal x, y;
       if (MScore::verticalOrientation()) {
-            x        = thinPadding;
-            y        = yoffset() - (page->height() + thickPadding) * physicalZoomLevel();
-            qreal ly = thinPadding - page->pos().y() * physicalZoomLevel();
-            if (y <= ly - height() * scrollStep) {
-                  pageEnd();
-                  return;
-                  }
+            x = thinPadding;
+            y = yoffset() - (page->height() + MScore::verticalPageGap) * physicalZoomLevel();
+
+            const QRectF layoutRect = score()->pageLayoutRect();
+            const qreal endY = height() - layoutRect.bottom() * physicalZoomLevel();
+
+            if (y < endY)
+                  y = endY;
             }
       else {
             y        = thinPadding;
@@ -3679,7 +3700,7 @@ void ScoreView::pageNext()
                   return;
                   }
             }
-      setOffset(x, y);
+      setConstrainedOffset(x, y);
       update();
       }
 
@@ -3739,7 +3760,7 @@ void ScoreView::pagePrev()
                   y = thinPadding;
 
             // Preserve horizontal position as with pageNext()
-            setOffset(xoffset(), y);
+            setConstrainedOffset(xoffset(), y);
             update();
             return;
             }
@@ -3753,7 +3774,7 @@ void ScoreView::pagePrev()
       qreal x, y;
       if (MScore::verticalOrientation()) {
             x  = thinPadding;
-            y  = yoffset() + (page->height() + thickPadding) * physicalZoomLevel();
+            y  = yoffset() + (page->height() + MScore::verticalPageGap) * physicalZoomLevel();
             if (y > thinPadding)
                   y = thinPadding;
             }
@@ -3763,7 +3784,7 @@ void ScoreView::pagePrev()
             if (x > thinPadding)
                   x = thinPadding;
             }
-      setOffset(x, y);
+      setConstrainedOffset(x, y);
       update();
       }
 
@@ -3811,7 +3832,11 @@ void ScoreView::screenPrev()
 
 void ScoreView::pageTop()
       {
-      setOffset(thinPadding, score()->layoutMode() == LayoutMode::LINE ? 0.0 : thinPadding);
+      if (score()->paginatedMode())
+            setConstrainedOffset(thinPadding, thinPadding);
+      else
+            setOffset(thinPadding, score()->lineMode() ? 0.0 : thinPadding);
+
       update();
       }
 
@@ -3832,16 +3857,38 @@ void ScoreView::pageEnd()
             setOffset(-lx, yoffset());
             }
       else {
-            qreal lx { -thinPadding };
-            if (score()->layoutMode() == LayoutMode::PAGE && !MScore::verticalOrientation()) {
-                  for (int i { 0 }; i < score()->npages() - 1; ++i)
-                        lx += score()->pages().at(i)->width() * physicalZoomLevel();
-                  }
-            if (lm->system() && lm->system()->page()->width() * physicalZoomLevel() > width())
-                  lx = (lm->canvasPos().x() + lm->width()) * physicalZoomLevel() - width() * scrollStep;
+            const bool verticalPaginated =
+                  score()->doublePageMode() || (score()->pageMode() && MScore::verticalOrientation());
 
-            qreal ly { (lm->canvasPos().y() + lm->height()) * physicalZoomLevel() - height() * scrollStep };
-            setOffset(-lx, -ly);
+            if (verticalPaginated) {
+                  // For vertically flowing pages, Page End means the actual
+                  // end of the page layout rather than the last measure
+                  const QRectF layoutRect = score()->pageLayoutRect();
+                  const qreal y =
+                        height() - (layoutRect.bottom() * physicalZoomLevel());
+
+                  setConstrainedOffset(xoffset(), y);
+                  }
+            else {
+                  qreal lx { -thinPadding };
+
+                  if (score()->layoutMode() == LayoutMode::PAGE
+                      && !MScore::verticalOrientation()) {
+                        for (int i = 0; i < score()->npages() - 1; ++i)
+                              lx += score()->pages().at(i)->width() * physicalZoomLevel();
+                        }
+
+                  if (lm->system() && lm->system()->page()->width() * physicalZoomLevel() > width()) {
+                        lx = (lm->canvasPos().x() + lm->width()) * physicalZoomLevel() - width() * scrollStep;
+                        }
+
+                  qreal ly = (lm->canvasPos().y() + lm->height()) * physicalZoomLevel() - height() * scrollStep;
+
+                  if (score()->pageMode())
+                        setConstrainedOffset(-lx, -ly);
+                  else
+                        setOffset(-lx, -ly);
+                  }
             }
       update();
       }
