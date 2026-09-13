@@ -4519,6 +4519,17 @@ void MuseScore::focusScoreView()
 
 bool MuseScore::eventFilter(QObject *obj, QEvent *event)
       {
+      auto zoomBoxAcceptKey = [this](QKeyEvent* e) {
+            return zoomBox
+                  && zoomBox->lineEdit()->hasFocus()
+                  && !zoomBox->view()->isVisible()
+                  && (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter)
+                  && !(e->modifiers() & (Qt::ShiftModifier
+                                        | Qt::ControlModifier
+                                        | Qt::AltModifier
+                                        | Qt::MetaModifier));
+            };
+
       switch(event->type()) {
 #ifdef Q_OS_MAC
             case QEvent::FileOpen:
@@ -4540,6 +4551,13 @@ bool MuseScore::eventFilter(QObject *obj, QEvent *event)
             case QEvent::KeyPress:
                   {
                   QKeyEvent* e = static_cast<QKeyEvent*>(event);
+
+                  if (zoomBoxAcceptKey(e)) {
+                        zoomBox->acceptCurrentText();
+                        focusScoreView();
+                        return true;
+                        }
+
                   if(obj->isWidgetType() && e->key() == Qt::Key_Escape && e->modifiers() == Qt::NoModifier) {
                         // Close the search dialog when Escape is pressed:
                         if(_searchDialog != 0)
@@ -4561,19 +4579,31 @@ bool MuseScore::eventFilter(QObject *obj, QEvent *event)
                   break;
                   }
             case QEvent::ShortcutOverride:
+                  {
+                  QKeyEvent* ke = static_cast<QKeyEvent*>(event);
+
+                  if (zoomBoxAcceptKey(ke)) {
+                        // Don't let application shortcuts consume Enter while
+                        // editing the zoom box. The subsequent KeyPress event
+                        // will accept the zoom value and return focus to the score
+                        ke->accept();
+                        return true;
+                        }
+
                   if (qobject_cast<QMenu*>(obj)) {
                         // Disable one-letter shortcuts while in menu
                         // to prevent blocking menu mnemonics
-                        QKeyEvent* ke = static_cast<QKeyEvent*>(event);
                         const QString evtText = ke->text();
-                        const bool letterOrNumber = !ke->modifiers() && evtText.size() == 1 && evtText.at(0).isLetterOrNumber();
-
+                        const bool letterOrNumber = !ke->modifiers()
+                                                    && evtText.size() == 1
+                                                    && evtText.at(0).isLetterOrNumber();
                         if (letterOrNumber) {
                               ke->accept();
                               return true;
                               }
                         }
                   break;
+                  }
             default:
                   return QMainWindow::eventFilter(obj, event);
             }
