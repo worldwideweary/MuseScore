@@ -268,9 +268,11 @@ void Inspector::update(Score* s)
                   }
             }
 
-      if (oe != element() ||
-          (oSameTypes != sameTypes) ||
-          (oSameSubtypes != sameSubtypes)) {
+      const bool differentElement = oe != element()
+            || (oSameTypes != sameTypes)
+            || (oSameSubtypes != sameSubtypes);
+
+      if (differentElement) {
             bool reusedInspector = false;
 
             ie  = 0;
@@ -538,7 +540,7 @@ void Inspector::update(Score* s)
                         }
                   }
             }
-      if (ie)
+      if (ie && differentElement)
             ie->setElement();
       }
 
