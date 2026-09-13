@@ -6922,6 +6922,14 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   reDisplayDockWidget(scoreCmpTool, a->isChecked());
             else if (cmd == "toggle-alternative")
                   alternativeTools->setVisible(!alternativeTools->isVisible());
+            else if (cmd == "toggle-all-unprintable") {
+                  cs->setShowInvisible(a->isChecked());
+                  cs->setShowUnprintable(a->isChecked());
+                  cs->setShowFrames(a->isChecked());
+                  cs->setShowPageborders(a->isChecked());
+                  cs->setMarkIrregularMeasures(a->isChecked());
+                  cs->update();
+                  }
 #if 0
             else if (cmd == "toggle-feedback")
                   feedbackTools->setVisible(!feedbackTools->isVisible());
