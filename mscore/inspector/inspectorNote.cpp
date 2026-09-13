@@ -97,6 +97,16 @@ InspectorNote::InspectorNote(QWidget* parent)
             n.noteHeadType->setItemData(i, i - 1);
             }
 
+      // Don't let largest combo-box item determine the minimum width of Note Inspector:
+      n.noteHeadScheme->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+      n.noteHeadScheme->setMinimumContentsLength(6);
+
+      n.noteHeadGroup->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+      n.noteHeadGroup->setMinimumContentsLength(6);
+
+      n.noteHeadType->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+      n.noteHeadType->setMinimumContentsLength(6);
+
       const std::vector<InspectorItem> iiList = {
             { Pid::SMALL,          0, n.isSmall,       n.resetSmall         },
             { Pid::HEAD_SCHEME,    0, n.noteHeadScheme, n.resetNoteHeadScheme },
@@ -157,8 +167,10 @@ void InspectorNote::setElement()
       InspectorElementBase::setElement();
 
       //must be placed after InspectorBase::setElement() cause the last one sets resetButton enability
-      if (note->staffType()->group() == StaffGroup::STANDARD)
+      if (note->staffType()->group() == StaffGroup::STANDARD) {
+            n.noteHeadScheme->setEnabled(true);
             noteHeadSchemeChanged(n.noteHeadScheme->currentIndex());
+            }
       else {
             n.noteHeadScheme->setEnabled(false);
             n.resetNoteHeadScheme->setEnabled(false);
@@ -170,10 +182,8 @@ void InspectorNote::setElement()
       s.leadingSpace->setEnabled(nograce);
       s.resetLeadingSpace->setEnabled(nograce && s.leadingSpace->value());
 
-      if (!n.fixed->isChecked())
-            n.fixedLine->setEnabled(false);
-      if (!n.play->isChecked())
-            n.playWidget->setVisible(false);
+      n.fixedLine->setEnabled(n.fixed->isChecked());
+      n.playWidget->setVisible(n.play->isChecked());
       }
 
 //---------------------------------------------------------
