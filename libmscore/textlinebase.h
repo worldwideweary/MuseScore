@@ -106,6 +106,7 @@ class TextLineBase : public SLine {
       M_PROPERTY(qreal,     endFontSize,           setEndFontSize)
       M_PROPERTY(FontStyle, endFontStyle,          setEndFontStyle)
       M_PROPERTY(QPointF,   endTextOffset,         setEndTextOffset)
+      M_PROPERTY(bool,      enPassantManifest,     setEnPassantManifest)
 
    protected:
       friend class TextLineBaseSegment;
