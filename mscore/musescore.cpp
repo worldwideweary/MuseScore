@@ -9101,8 +9101,12 @@ MuseScoreApplication* MuseScoreApplication::initApplication(int& argc, char** ar
             appName  = "MuseScore3Development";
             }
       else {
+            // Separate appName2 will allow multiple instances between other builds
+            // using different names, but not this very project
             appName2 = "mscore371";
-            appName  = "MuseScore371"; // to maintain separate .ini file in ~/.config etc
+
+            // Separate appName will provide distinct .ini file in configuration directory
+            appName  = "MuseScore371";
             }
 
       //! NOTE Disable cache for all platforms
@@ -9435,6 +9439,11 @@ MuseScoreApplication::CommandLineParseResult MuseScoreApplication::parseCommandL
                         parseResult.exit = true;
                         return parseResult;
                         }
+                  }
+            else if (app->sendMessage(QString(""))) {
+                  qDebug() << "This version of MuseScore only allows one instance of itself: Exiting…";
+                  parseResult.exit = true;
+                  return parseResult;
                   }
             }
       if (rawDiffMode || diffMode) {
