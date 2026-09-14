@@ -5547,6 +5547,11 @@ bool Score::cmdToggleOptions(const QString& cmd)
                   PREF_UI_SCORE_CURRENT_SYS_ON_TOP,
                   checked = toggle(MScore::currentSystemAlwaysTop));
             }
+      else if (cmd.endsWith("current-system-on-top-skyline")) {
+            preferences.setPreference(
+                  PREF_UI_SCORE_CURRENT_SYS_ON_TOP_SKYLINE,
+                  checked = toggle(MScore::currentSystemAlwaysTopSkyline));
+            }
       else if (cmd.endsWith("fade-focus")) {
             preferences.setPreference(
                   PREF_UI_SCORE_FADE_FOCUS,
