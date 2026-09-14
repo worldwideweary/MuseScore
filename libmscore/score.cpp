@@ -4717,6 +4717,15 @@ Element* Score::getScoreElementOfMeasureBase(MeasureBase* mb) const
       }
 
 //---------------------------------------------------------
+//    undergoingLayout
+//---------------------------------------------------------
+
+bool Score::undergoingLayout() const
+      {
+      return cmdState().isLocked();
+      }
+
+//---------------------------------------------------------
 //   setSoloMute
 //   called once at opening file, adds soloMute marks
 //---------------------------------------------------------

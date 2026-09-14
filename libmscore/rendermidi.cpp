@@ -2643,33 +2643,37 @@ void MidiRenderer::renderScore(EventMap* events, const Context& ctx)
 
       int currentChunk = 0;
       QProgressDialog progress;
-      if (MScore::showProgressBarForLayout) {
-            const int totalChunks = chunks.size();
-            QString label = QObject::tr("Rendering MIDI events") + " "
+      const int min = 0;
+      const int max = chunks.size();
+      const QString& progressFormat = "Rendering MIDI: %p%";
+      emit score->updateProgress(progressFormat, min, min, max);
+
+      // When loading score, allow early termination, but not if in some other ctx
+      if (ScoreLoad::loading() ) {
+            QString label = QObject::tr("Loading score") + ": " + QObject::tr("Rendering MIDI events") + " "
                               + QObject::tr("for") + ":\n"
                               + score->title() + "…\n"
-                              + QObject::tr("Safe to cancel early");
+                              + QObject::tr("Cancelling is safe");
 
             progress.setLabelText(label);
             progress.setCancelButtonText(QObject::tr("Cancel"));
             progress.setWindowFlags(Qt::WindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint));
-            progress.setRange(0, totalChunks);
+            progress.setRange(min, max);
             progress.setWindowModality(Qt::WindowModal);
             progress.setValue(0);
             progress.setMinimumDuration(2500);
             }
 
       for (const Chunk& chunk : chunks) {
-            if (MScore::showProgressBarForLayout) {
-                  progress.setValue(++currentChunk);
-                  // Allow user to prematurely break rendering:
+            emit score->updateProgress(progressFormat, ++currentChunk, min, max);
+                  progress.setValue(currentChunk);
                   if (progress.wasCanceled())
                         break;
-                  }
 
             renderChunk(chunk, events, ctx);
             }
       progress.close();
+      emit score->updateProgress(progressFormat, max, min, max);
       }
 
 void MidiRenderer::renderChunk(const Chunk& chunk, EventMap* events, const Context& ctx)

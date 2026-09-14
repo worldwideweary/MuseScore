@@ -220,6 +220,8 @@ enum class LayoutFlag : char {
       FIX_PITCH_VELO = 1,
       PLAY_EVENTS    = 2,
       REBUILD_MIDI_MAPPING = 4,
+      INIT_SCORE_LOADING = 8,
+      VARIOUS = 16,
       };
 
 typedef QFlags<LayoutFlag> LayoutFlags;
@@ -311,6 +313,7 @@ class CmdState {
 
       void lock() { _locked = true; }
       void unlock() { _locked = false; }
+      bool isLocked() const { return _locked; }
 #ifndef NDEBUG
       void dump();
 #endif
@@ -594,6 +597,7 @@ class Score : public QObject, public ScoreElement {
    signals:
       void posChanged(POS, unsigned, bool);
       void playlistChanged();
+      void updateProgress(const QString&, int, int, int);
 
    public:
       Score();
@@ -891,6 +895,8 @@ class Score : public QObject, public ScoreElement {
       Element* cmdNextPrevRehearsalMark(Element*, bool) const;
       MeasureBase* getNextPrevSectionBreak(MeasureBase*, bool) const;
       Element* getScoreElementOfMeasureBase(MeasureBase*) const;
+
+      bool undergoingLayout() const;
 
       const ChordRest* getLastCRSequenced(void) { return _lastCRSequenced; }
       void setLastCRSequenced(const ChordRest* cr) { _lastCRSequenced = cr; }

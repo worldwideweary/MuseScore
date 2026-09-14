@@ -32,7 +32,7 @@ const QSize MsSplashScreen::designSize { 720, 405 };
 const QRectF MsSplashScreen::designDevBuildIconRect { 25.0,  51.0, 670.0, 38.0 };
 const QRectF MsSplashScreen::designDevBuildTextRect { 25.0,  98.0, 670.0, 46.0 };
 const QRectF MsSplashScreen::designLogotypeRect     { 25.0, 153.0, 670.0, 74.0 };
-const QRectF MsSplashScreen::designMessageTextRect  { 25.0, 270.0, 670.0, 56.0 };
+const QRectF MsSplashScreen::designMessageTextRect  { 25.0, 270.0, 670.0, 64.0 };
 const QRectF MsSplashScreen::designMiscTextRect     { 25.0, 326.0, 670.0, 56.0 };
 
 const double MsSplashScreen::gradientDitherAmount { 0.25 };
@@ -105,6 +105,25 @@ void MsSplashScreen::drawContents(QPainter* painter)
       painter->setPen(textColor);
       painter->drawText(_messageTextRect, Qt::AlignHCenter | Qt::AlignTop, message());
       drawDebugRect(painter, _messageTextRect, 0x80, 0xFF, 0x80);
+
+      // Loading progress bar:
+      if (_progress) {
+            const int barWidth = 333;
+            const int barHeight = 27;
+            const int x = (width() - barWidth) / 2;
+            const int y = height() - 50;
+
+            // Progress: Background
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(QColor(255, 255, 255));
+            painter->drawRect(x, y, barWidth, barHeight);
+
+            // Progress: Fill
+            painter->setBrush(QColor(155, 202, 250));
+            double ratio = double(_progress) / double(_maxProgress);
+            int fillWidth = int(barWidth * ratio);
+            painter->drawRect(x, y, fillWidth, barHeight);
+            }
 
       // Miscellaneous text (version information and Web site).
       painter->drawText(_miscTextRect, Qt::AlignRight | Qt::AlignBottom, _miscText);
