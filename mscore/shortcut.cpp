@@ -2881,13 +2881,35 @@ Shortcut Shortcut::_sc[] = {
          MsWidget::MAIN_WINDOW,
          STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
          "toggle-options-current-system-on-top",
-         QT_TRANSLATE_NOOP("action","Score View: Current System Is Always Top"),
-         QT_TRANSLATE_NOOP("action","Score View: Current System Is Always Top"),
+         QT_TRANSLATE_NOOP("action","Score View: Current system is always top"),
+         QT_TRANSLATE_NOOP("action","Score View: Current system is always top"),
          0,
          Icons::checkmark_ICON,
          Qt::ApplicationShortcut,
          ShortcutFlags::A_CHECKABLE
          },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-current-system-on-top-consider-all",
+         QT_TRANSLATE_NOOP("action","Score View: Current system is always top: consider all systems"),
+         QT_TRANSLATE_NOOP("action","Score View: Current system is always top: consider all systems"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,
+         "toggle-options-current-system-on-top-consider-all-include-frames",
+         QT_TRANSLATE_NOOP("action","Score View: Current system is always top: consider frames"),
+         QT_TRANSLATE_NOOP("action","Score View: Current system is always top: consider frames"),
+         0,
+         Icons::checkmark_ICON,
+         Qt::ApplicationShortcut,
+         ShortcutFlags::A_CHECKABLE
+      },
       {
          MsWidget::MAIN_WINDOW,
          STATE_HIDDEN | STATE_NORMAL | STATE_NOTE_ENTRY,

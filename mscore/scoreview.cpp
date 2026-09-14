@@ -4680,6 +4680,62 @@ void ScoreView::startNoteEntry()
       }
 
 //---------------------------------------------------------
+//   updateAlwaysTopExtents()
+//---------------------------------------------------------
+
+void ScoreView::updateAlwaysTopExtents()
+      {
+      _alwaysTopMax = 0.0;
+      _alwaysTopMaxWithFrames = 0.0;
+
+      Score* s = score();
+      if (!s)
+            return;
+
+      for (System* system : s->systems()) {
+            _alwaysTopMax = qMax(
+                  _alwaysTopMax,
+                  qMax(system->minTop(), 0.0));
+
+            _alwaysTopMaxWithFrames = qMax(
+                  _alwaysTopMaxWithFrames,
+                  systemHeightIncludingBoundFrames(system));
+            }
+      }
+
+//---------------------------------------------------------
+//   systemHeightIncludingBoundFrames
+//---------------------------------------------------------
+
+qreal ScoreView::systemHeightIncludingBoundFrames(System* system) const {
+      if (!system)
+            return 0.0;
+
+      qreal top = qMax(system->minTop(), 0.0);
+
+      Measure* fm = system->firstMeasure();
+      if (!fm)
+            return top;
+
+      for (MeasureBase* mb = fm->prev(); mb; mb = mb->prev()) {
+            if (!mb->isBox())
+                  break;
+
+            Box* box = toBox(mb);
+            if (!box->bindToNextSystem())
+                  break;
+
+            System* boxSystem = box->system();
+            if (!boxSystem || boxSystem->page() != system->page())
+                  break;
+
+            top = qMax(top, system->y() - boxSystem->y());
+            }
+
+      return top;
+      }
+
+//---------------------------------------------------------
 //   endNoteEntry
 //---------------------------------------------------------
 
@@ -5581,9 +5637,22 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
 
       // Utilize skyline to include elements (spanners/etc) above system bbox
       qreal sysTop = 0.0;
+
       if (alwaysTop) {
-            for (auto& s : score()->systems())
-                  sysTop = std::max(s->minTop(), sysTop);
+            if (MScore::currentSystemAlwaysTopConsiderAll) {
+                  for (System*& s : score()->systems()) {
+                        sysTop = std::max(
+                              MScore::currentSystemAlwaysTopConsiderAllBoundFrames
+                                    ? systemHeightIncludingBoundFrames(s)
+                                    : s->minTop(),
+                              sysTop);
+                        }
+                  }
+            else {
+                  sysTop = systemHeightIncludingBoundFrames(sys);
+                  qDebug() << "Not Skyline: Top:" << sysTop;
+                  }
+
             sysRect.adjust(0.0, -sysTop, 0.0, 0.0);
             showHeight += sysTop;
             showHeight += sys->minBottom();
@@ -7947,6 +8016,8 @@ void ScoreView::gotoMeasure(Measure* measure)
 
 void ScoreView::layoutChanged()
       {
+      updateAlwaysTopExtents();
+
       if (mscore->navigator())
             mscore->navigator()->layoutChanged();
       _curLoopIn->move(_score->pos(POS::LEFT));
