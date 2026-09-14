@@ -219,6 +219,22 @@ void Palette::setSystemPalette(bool val)
       }
 
 //---------------------------------------------------------
+//   setContentZoom
+//---------------------------------------------------------
+
+void Palette::setContentZoom(qreal zoom)
+      {
+      zoom = qBound(0.50, zoom, 4.00);
+
+      if (qFuzzyCompare(_contentZoom, zoom))
+            return;
+
+      _contentZoom = zoom;
+      update();
+      emit contentZoomChanged(_contentZoom);
+      }
+
+//---------------------------------------------------------
 //   setReadOnly
 //---------------------------------------------------------
 
@@ -250,6 +266,19 @@ qreal Palette::guiMag()
             return pref * guiScaling * 0.75;
       else                                      // medium high DPI: no target, scaling dependent on resolution
             return pref;                        // (will be 75-100% range)
+      }
+
+//---------------------------------------------------------
+//   paletteZoomLabelText
+//---------------------------------------------------------
+
+QString paletteZoomLabelText(const Palette* palette)
+      {
+      const QString zoom = palette
+            ? QString("%1%").arg(qRound(palette->contentZoom() * 100.0))
+            : QStringLiteral("—");
+
+      return qApp->translate("Palette", "Zoom: %1").arg(zoom);
       }
 
 //---------------------------------------------------------
@@ -456,6 +485,29 @@ void Palette::mouseMoveEvent(QMouseEvent* ev)
                   update(idxRect(oldIdx) | idxRect(currentIdx));
                   }
             }
+      }
+
+//---------------------------------------------------------
+//   wheelEvent
+//---------------------------------------------------------
+
+void Palette::wheelEvent(QWheelEvent* ev)
+      {
+      if (!_contentZoomEnabled || !(ev->modifiers() & Qt::ControlModifier)) {
+            ev->ignore();
+            return;
+            }
+
+      const int delta = ev->angleDelta().y();
+      if (!delta) {
+            ev->ignore();
+            return;
+            }
+
+      const qreal factor = delta > 0 ? 1.10 : 1.0 / 1.10;
+      setContentZoom(_contentZoom * factor);
+
+      ev->accept();
       }
 
 //---------------------------------------------------------
@@ -1161,7 +1213,7 @@ static void paintPaletteElement(void* data, Element* e)
 void Palette::paintEvent(QPaintEvent* event)
       {
       qreal _spatium = gscore->spatium();
-      qreal magS     = PALETTE_SPATIUM * extraMag * guiMag();
+      qreal magS     = PALETTE_SPATIUM * extraMag * _contentZoom * guiMag();
       qreal mag      = magS / _spatium;
 //      qreal mag      = PALETTE_SPATIUM * extraMag / _spatium;
       gscore->setSpatium(SPATIUM20);
@@ -1270,6 +1322,11 @@ void Palette::paintEvent(QPaintEvent* event)
                   }
             el->layout();
 
+            p.save();
+
+            // Keep enlarged palette contents within their cell
+            p.setClipRect(r.adjusted(1, 1, -1, -1));
+
             if (drawStaff) {
                   qreal y = r.y() + vgridM * .5 - dy + _yOffset * _spatium * cellMag;
                   qreal x = r.x() + 3;
@@ -1279,7 +1336,7 @@ void Palette::paintEvent(QPaintEvent* event)
                         p.drawLine(QLineF(x, yy, x + w, yy));
                         }
                   }
-            p.save();
+
             p.scale(cellMag, cellMag);
 
             double gw = hhgrid / cellMag;
@@ -1329,8 +1386,6 @@ QPixmap Palette::pixmap(int paletteIdx) const
       qreal _spatium = gscore->spatium();
       qreal magS     = PALETTE_SPATIUM * extraMag * guiMag();
       qreal mag      = magS / _spatium;
-//      qreal guiMag = guiScaling * preferences.getDouble(PREF_APP_PALETTESCALE);
-//      qreal mag      = PALETTE_SPATIUM * extraMag * guiMag / _spatium;
       PaletteCell* c = cellAt(paletteIdx);
       if (!c || !c->element)
             return QPixmap();
