@@ -295,6 +295,8 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
 
       QMenu* menuFile;
       QMenu* openRecent;
+      QMenu* openArchivedScores;
+      QMenu* restoreOpened;
       QMenu* menuEdit;
       QMenu* menuView;
       QMenu* menuToolbars;
@@ -439,6 +441,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
 
       QLabel* cornerLabel;
       QStringList _recentScores;
+      QStringList _archivedScores;
       QToolButton* _playButton;
 
       qreal _physicalDotsPerInch;
@@ -552,7 +555,9 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void askForHelp();
       void leaveFeedback(QString medium);
       void openRecentMenu();
+      void openArchivedTabsMenu();
       void selectScore(QAction*);
+      void selectArchivedScore(QAction*);
       void preferencesChanged(bool fromWorkspace = false, bool changeUI = true);
       void seqStarted();
       void seqStopped();
@@ -795,6 +800,9 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       MasterScore* readScore(const QString& name);
       NotesColors readNotesColors(const QString& filePath) const;
 
+      bool saveOpenScoresList();
+      bool loadOpenScoresList();
+
       bool saveAs(Score*, bool saveCopy = false);
       bool saveSelection(Score*);
       void addImage(Score*, Element*);
@@ -943,6 +951,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void showPlayPanel(bool);
 
       QFileInfoList recentScores() const;
+      QFileInfoList archivedScores(bool showAlreadyLoaded) const;
       void saveDialogState(const char* name, QFileDialog* d);
       void restoreDialogState(const char* name, QFileDialog* d);
 
