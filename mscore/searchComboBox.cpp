@@ -63,6 +63,8 @@ void SearchComboBox::searchTextChanged(const QString& s)
             }
       //updating status bar
       ScoreAccessibility::instance()->updateAccessibilityInfo();
+      if (cv->score())
+            mscore->setPos(cv->score()->inputState().tick());
       emit currentSearchFinished();
       }
 
