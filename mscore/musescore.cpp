@@ -8007,7 +8007,6 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   w->setSource(QUrl(urlString));
                   }
             }
-#endif
       else {
             if (cv) {
                   //isAncestorOf is called to see if a widget from inspector has focus
