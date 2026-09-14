@@ -111,9 +111,11 @@
 #include "libmscore/chord.h"
 #include "libmscore/chordlist.h"
 #include "libmscore/drumset.h"
+#include "libmscore/element.h"
 #include "libmscore/excerpt.h"
 #include "libmscore/fingering.h"
 #include "libmscore/harmony.h"
+#include "libmscore/image.h"
 #include "libmscore/instrtemplate.h"
 #include "libmscore/measure.h"
 #include "libmscore/mscore.h"
@@ -7090,7 +7092,14 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                                     fingering->setVisible(invert);
                                     fingering->triggerLayout();
                                     }
-                              }
+                              else if (el->isImage()) {
+                                    auto img = toImage(el);
+                                    if (img->isEmpty()) {
+                                          img->setVisible(!img->visible());
+                                          img->triggerLayout();
+                                          }
+                                    }
+                             }
                         }
                   cs->setLayoutAll();
                   cs->update();
