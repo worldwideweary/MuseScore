@@ -357,20 +357,43 @@ TextPalette::TextPalette(QWidget* parent)
       setWindowFlags(Qt::Tool);
       setupUi(this);
 
+      QHBoxLayout* zoomLayout = new QHBoxLayout;
+      zoomLayout->setContentsMargins(0, 0, 0, 0);
+      zoomLayout->setSpacing(6);
+
+      zoomLayout->addStretch();
+
+      zoomLabel = new QLabel(this);
+      zoomResetButton = new QToolButton(this);
+      zoomResetButton->setText(tr("Reset"));
+
+      zoomLayout->addWidget(zoomLabel);
+      zoomLayout->addWidget(zoomResetButton);
+
+      verticalLayout_2->addLayout(zoomLayout);
+
+      connect(zoomResetButton, &QToolButton::clicked, this, [this]() {
+            if (Palette* p = currentZoomPalette())
+                  p->resetContentZoom();
+            });
+
       pCommon = new Palette;
       pCommon->setMag(0.8);
       pCommon->setGrid(33, 60);
       pCommon->setReadOnly(true);
+      pCommon->setContentZoomEnabled(true);
 
       pSmufl = new Palette;
-      pSmufl->setMag(0.8);
-      pSmufl->setGrid(33, 60);
+      pSmufl->setMag(1.0);
+      pSmufl->setGrid(40, 60);
       pSmufl->setReadOnly(true);
+      pSmufl->setContentZoomEnabled(true);
 
       pUnicode = new Palette;
       pUnicode->setMag(0.8);
       pUnicode->setGrid(33, 60);
       pUnicode->setReadOnly(true);
+      pUnicode->setContentZoomEnabled(true);
 
       PaletteScrollArea* psa = new PaletteScrollArea(pCommon);
       psa->setRestrictHeight(false);
@@ -413,14 +436,61 @@ TextPalette::TextPalette(QWidget* parent)
 
       tabWidget->addTab(wu, tr("Unicode Symbols"));
 
+      connect(pCommon, &Palette::contentZoomChanged,
+              this, [this](qreal) { updateZoomControls(); });
+      connect(pSmufl, &Palette::contentZoomChanged,
+              this, [this](qreal) { updateZoomControls(); });
+      connect(pUnicode, &Palette::contentZoomChanged,
+              this, [this](qreal) { updateZoomControls(); });
+      connect(tabWidget, &QTabWidget::currentChanged,
+              this, [this](int) { updateZoomControls(); });
+
       connect(lws, SIGNAL(currentRowChanged(int)), SLOT(populateSmufl()));
       connect(lwu, SIGNAL(currentRowChanged(int)), SLOT(populateUnicode()));
 
 	// others are done in setFont
       populateSmufl();
 
+      updateZoomControls();
+
       setFocusPolicy(Qt::NoFocus);
       MuseScore::restoreGeometry(this);
+      }
+
+//---------------------------------------------------------
+//   currentZoomPalette
+//---------------------------------------------------------
+
+Palette* TextPalette::currentZoomPalette() const
+      {
+      switch (tabWidget->currentIndex()) {
+            case 0:
+                  return pCommon;
+            case 1:
+                  return pSmufl;
+            case 2:
+                  return pUnicode;
+            default:
+                  return nullptr;
+            }
+      }
+
+//---------------------------------------------------------
+//   updateZoomControls
+//---------------------------------------------------------
+
+void TextPalette::updateZoomControls()
+      {
+      Palette* p = currentZoomPalette();
+      const bool enabled = p != nullptr;
+
+      zoomLabel->setEnabled(enabled);
+      zoomResetButton->setEnabled(enabled);
+
+      if (p)
+            zoomLabel->setText(tr("Zoom: %1%").arg(qRound(p->contentZoom() * 100.0)));
+      else
+            zoomLabel->setText(tr("Zoom: —"));
       }
 
 //---------------------------------------------------------
