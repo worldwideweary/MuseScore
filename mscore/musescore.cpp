@@ -1571,25 +1571,38 @@ MuseScore::MuseScore()
       panAction       = getAction("pan");
 
       _statusBar = new QStatusBar;
-      _statusBar->addPermanentWidget(new QWidget(this), 2);
-      _statusBar->addPermanentWidget(new QWidget(this), 100);
-      _statusBar->addPermanentWidget(_modeText, 0);
+            _statusBar->addPermanentWidget(new QWidget(this), 2);
+            _statusBar->addPermanentWidget(new QWidget(this), 100);
+            _statusBar->addPermanentWidget(_modeText, 0);
 
-      if (enableExperimental) {
-            layerSwitch = new QComboBox(this);
-            layerSwitch->setToolTip(tr("Switch layer"));
-            connect(layerSwitch, SIGNAL(activated(QString)), SLOT(switchLayer(QString)));
-            playMode = new QComboBox(this);
-            playMode->addItem(tr("Synthesizer"));
-            playMode->addItem(tr("Audio track"));
-            playMode->setToolTip(tr("Switch play mode"));
-            connect(playMode, SIGNAL(activated(int)), SLOT(switchPlayMode(int)));
+            searchCombo = new SearchComboBox;
+                  searchCombo->setObjectName("searchCombo");
+                  searchCombo->setParent(_statusBar);
 
-            _statusBar->addPermanentWidget(playMode);
-            _statusBar->addPermanentWidget(layerSwitch);
-            }
+                  _statusBar->addPermanentWidget(new QLabel(tr(" | ")));
+                  _statusBar->addPermanentWidget(new QLabel(tr("Find / Go to:")));
+                  _statusBar->addPermanentWidget(searchCombo);
 
-      _statusBar->addPermanentWidget(_positionLabel, 0);
+                  connect(searchCombo->lineEdit(), SIGNAL(returnPressed()), SLOT(endSearch()));
+                  searchCombo->clearEditText();
+                  searchCombo->setFocus();
+                  _statusBar->setFocusProxy(searchCombo);
+
+            if (enableExperimental) {
+                  layerSwitch = new QComboBox(this);
+                  layerSwitch->setToolTip(tr("Switch layer"));
+                  connect(layerSwitch, SIGNAL(activated(QString)), SLOT(switchLayer(QString)));
+                  playMode = new QComboBox(this);
+                  playMode->addItem(tr("Synthesizer"));
+                  playMode->addItem(tr("Audio track"));
+                  playMode->setToolTip(tr("Switch play mode"));
+                  connect(playMode, SIGNAL(activated(int)), SLOT(switchPlayMode(int)));
+
+                  _statusBar->addPermanentWidget(playMode);
+                  _statusBar->addPermanentWidget(layerSwitch);
+                  }
+
+            _statusBar->addPermanentWidget(_positionLabel, 0);
 
       setStatusBar(_statusBar);
       ScoreAccessibility::createInstance(this);
@@ -4602,7 +4615,7 @@ bool MuseScore::eventFilter(QObject *obj, QEvent *event)
                   }
             case QEvent::StatusTip:
                   return true; // prevent updates to the status bar
-            case QEvent::KeyPress:
+            case QEvent::KeyPress: // Note: [Return] is not registered here
                   {
                   QKeyEvent* e = static_cast<QKeyEvent*>(event);
 
@@ -4612,22 +4625,32 @@ bool MuseScore::eventFilter(QObject *obj, QEvent *event)
                         return true;
                         }
 
-                  if(obj->isWidgetType() && e->key() == Qt::Key_Escape && e->modifiers() == Qt::NoModifier) {
-                        // Close the search dialog when Escape is pressed:
-                        if(_searchDialog != 0)
-                              endSearch();
-                        if (isActiveWindow()) {
-                              obj->event(e);
-                              focusScoreView();
-                              return true;
-                              }
+                  if(obj->isWidgetType()) {
+                        if (e->key() == Qt::Key_Escape
+                            && e->modifiers() == Qt::NoModifier) {
+                              // Close the search dialog when Escape is pressed:
+                              if(_searchDialog != 0)
+                                    endSearch();
+                              if (isActiveWindow()) {
+                                    obj->event(e);
+                                    focusScoreView();
+                                    return true;
+                                    }
 
-                        QWidget* w = static_cast<QWidget*>(obj);
-                        if (inspector()->isAncestorOf(w) ||
-                           (selectionWindow && selectionWindow->isAncestorOf(w))) {
-                              activateWindow();
-                              focusScoreView();
-                              return true;
+                              QWidget* w = static_cast<QWidget*>(obj);
+                              if (inspector()->isAncestorOf(w) ||
+                                    (selectionWindow && selectionWindow->isAncestorOf(w))) {
+                                    activateWindow();
+                                    focusScoreView();
+                                    return true;
+                                    }
+                              }
+                        else if (obj->objectName()=="searchCombo") {
+                              obj->event(e);
+                              // Keep focus unless "accepting" via return/enter
+                              statusBar()->setFocus();
+                              if (e->key() != Qt::Key_Return && e->key() != Qt::Key_Enter)
+                                    return true;
                               }
                         }
                   break;
@@ -4644,7 +4667,14 @@ bool MuseScore::eventFilter(QObject *obj, QEvent *event)
                         return true;
                         }
 
-                  if (qobject_cast<QMenu*>(obj)) {
+                  if (obj && obj->objectName() == "searchCombo") {
+                        if (ke->key() == Qt::Key_Return) {
+                              endSearch();
+                              ke->accept();
+                              break;
+                              }
+                        }
+                  else if (qobject_cast<QMenu*>(obj)) {
                         // Disable one-letter shortcuts while in menu
                         // to prevent blocking menu mnemonics
                         const QString evtText = ke->text();
@@ -7598,7 +7628,12 @@ void MuseScore::updateDrumTools(const Drumset* ds)
 
 void MuseScore::endSearch()
       {
-      _searchDialog->hide();
+      if (_searchDialog)
+            _searchDialog->hide();
+      if (searchCombo) {
+            auto txt = searchCombo->currentText();
+            searchCombo->editTextChanged(txt);
+            }
       if (cv)
             cv->setFocus();
       }
@@ -7609,6 +7644,7 @@ void MuseScore::endSearch()
 
 void MuseScore::showSearchDialog()
       {
+      #if 0 // Using status bar instead
       if (_searchDialog == 0) {
             _searchDialog = new QWidget;
             _searchDialog->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -7635,10 +7671,14 @@ void MuseScore::showSearchDialog()
 
             connect(searchCombo->lineEdit(), SIGNAL(returnPressed()), SLOT(endSearch()));
             }
+      #endif
 
-      searchCombo->clearEditText();
-      searchCombo->setFocus();
-      _searchDialog->show();
+      int delay = 55; // msec
+      // Hack: scoreview re-focuses directly after endCmd(), ergo time delay:
+      QTimer::singleShot(delay, this, [&]() {
+            searchCombo->setFocus();
+            searchCombo->lineEdit()->selectAll();
+            });
       }
 
 
