@@ -636,12 +636,15 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                   break;
 
             case ViewState::PLAY: {
-                  Element* e = elementNear(editData.startMove);
-                  if (seq && e && (e->isNote() || e->isRest())) {
-                        if (e->isNote())
-                              e = e->parent();
-                        ChordRest* cr = toChordRest(e);
-                        seq->seek(seq->score()->repeatList().tick2utick(cr->tick().ticks()));
+                  if (seq) {
+                        if (auto e = elementNear(editData.startMove)) {
+                              if (e->isNote())
+                                    e = e->parent();
+                              int tick = e->tick().ticks();
+                              int uTick = seq->score()->repeatList().tick2utick(tick);
+                              seq->seek(uTick, true);
+                              update();
+                              }
                         }
                   }
                   break;
