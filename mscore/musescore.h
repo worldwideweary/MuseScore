@@ -263,6 +263,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       QAction* leaveFeedbackAction;
       QAction* revertToFactoryAction;
 
+      QLabel* _progressEscape              { 0 };
       QProgressBar* _progressBar           { 0 };
       PreferenceDialog* preferenceDialog   { 0 };
       QToolBar* cpitchTools                { 0 };

@@ -252,8 +252,6 @@ void ScoreView::setScore(Score* s)
 
             connect(s, SIGNAL(posChanged(POS,unsigned,bool)), SLOT(posChanged(POS,unsigned,bool)));
             connect(this, SIGNAL(viewRectChanged()), this, SLOT(updateContinuousPanel()));
-
-            connect(_score, &Score::updateProgress, mscore, &MuseScore::updateProgress);
             }
       }
 

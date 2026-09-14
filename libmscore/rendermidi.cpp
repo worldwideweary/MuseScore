@@ -17,8 +17,6 @@
 
 #include <set>
 
-#include <QProgressDialog>
-
 #include "arpeggio.h"
 #include "articulation.h"
 #include "bend.h"
@@ -2629,12 +2627,14 @@ void Score::renderMidi(EventMap* events, const SynthesizerState& synthState)
 void Score::renderMidi(EventMap* events, bool metronome, bool expandRepeats, const SynthesizerState& synthState)
       {
       bool expandRepeatsBackup = masterScore()->expandRepeats();
+      masterScore()->addLayoutFlags(LayoutFlag::REBUILD_MIDI_MAPPING);
       masterScore()->setExpandRepeats(expandRepeats);
       MidiRenderer::Context ctx(synthState);
       ctx.metronome = metronome;
       ctx.renderHarmony = true;
       MidiRenderer(this).renderScore(events, ctx);
       masterScore()->setExpandRepeats(expandRepeatsBackup);
+      removeLayoutFlags(LayoutFlag::REBUILD_MIDI_MAPPING);
       }
 
 void MidiRenderer::renderScore(EventMap* events, const Context& ctx)
@@ -2642,37 +2642,24 @@ void MidiRenderer::renderScore(EventMap* events, const Context& ctx)
       updateState();
 
       int currentChunk = 0;
-      QProgressDialog progress;
+
       const int min = 0;
       const int max = chunks.size();
       const QString& progressFormat = "Rendering MIDI: %p%";
       emit score->updateProgress(progressFormat, min, min, max);
-
-      // When loading score, allow early termination, but not if in some other ctx
-      if (ScoreLoad::loading() ) {
-            QString label = QObject::tr("Loading score") + ": " + QObject::tr("Rendering MIDI events") + " "
-                              + QObject::tr("for") + ":\n"
-                              + score->title() + "…\n"
-                              + QObject::tr("Cancelling is safe");
-
-            progress.setLabelText(label);
-            progress.setCancelButtonText(QObject::tr("Cancel"));
-            progress.setWindowFlags(Qt::WindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint));
-            progress.setRange(min, max);
-            progress.setWindowModality(Qt::WindowModal);
-            progress.setValue(0);
-            progress.setMinimumDuration(2500);
-            }
+      const bool rebuildingMidi = (score->cmdState().layoutFlags & LayoutFlag::REBUILD_MIDI_MAPPING);
 
       for (const Chunk& chunk : chunks) {
+            if (rebuildingMidi)
+                  QCoreApplication::processEvents();
+
+            if ( (score->cmdState().layoutFlags & LayoutFlag::PENDING_CANCELLATION) )
+                  break;
+
             emit score->updateProgress(progressFormat, ++currentChunk, min, max);
-                  progress.setValue(currentChunk);
-                  if (progress.wasCanceled())
-                        break;
 
             renderChunk(chunk, events, ctx);
             }
-      progress.close();
       emit score->updateProgress(progressFormat, max, min, max);
       }
 

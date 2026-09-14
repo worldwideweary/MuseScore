@@ -72,6 +72,9 @@ public:
       void drawContents(QPainter* painter) override;
       void setProgress(int x) { _progress = x; }
       void setProgressMax(int x) { _maxProgress = x; }
+
+protected:
+      void mousePressEvent(QMouseEvent *event) override { Q_UNUSED(event); } // Prevent hide-on-click
       };
 
 }
