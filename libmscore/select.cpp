@@ -51,6 +51,7 @@
 #include "sticking.h"
 #include "system.h"
 #include "tempotext.h"
+#include "textline.h"
 #include "tie.h"
 #include "tremolo.h"
 #include "tuplet.h"
@@ -302,8 +303,21 @@ Measure* Selection::findMeasure() const
 
 void Selection::deselectAll()
       {
-      if (_state == SelState::RANGE)
-            _score->setUpdateAll();
+      if (_score) {
+            if (_state == SelState::RANGE)
+                  _score->setUpdateAll();
+
+            for (auto i : _score->spannerMap().findContained(0, _score->endTick().ticks())) {
+                  auto s = i.value;
+                  if (s->isTextLine()) {
+                        auto tl = toTextLine(s);
+                        for (auto ss : tl->spannerSegments()) {
+                              ss->setSelected(false);
+                              }
+                        }
+                  }
+            }
+
       clear();
       updateState();
       }
