@@ -142,6 +142,8 @@ bool    MScore::fadeFocus;
 bool    MScore::currentSystemAlwaysTop;
 bool    MScore::omitAddingLinkedLines;
 
+bool    MScore::bypassAltMenu;
+
 bool    MScore::cursorMoveByBeat;
 bool    MScore::cursorMoveByMeasure;
 bool    MScore::cursorDrawnBehindStaff;
