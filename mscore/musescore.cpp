@@ -7416,6 +7416,24 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   if (wasNotShowingInvisible)
                         cs->setShowInvisible(false);
                   }
+            else if (cmd == "toggle-visible-en-passant") {
+                  const int begin = 0;
+                  const int end = cs->endTick().ticks();
+                  auto spanners = cs->spannerMap().findOverlapping(begin, end);
+                  for (auto i : spanners) {
+                        auto s = i.value;
+                        if (s->isTextLineBase()) {
+                              auto tlb = toTextLineBase(s);
+                              bool enPassant = tlb->enPassantManifest();
+                              if (enPassant) {
+                                    bool toggle = !tlb->visible();
+                                    tlb->setVisible(toggle);
+                                    }
+                              }
+                        }
+                  cs->setLayoutAll();
+                  cs->update();
+                  }
             else if (cmd == "toggle-optionscontrol")
                   toggleTools->setVisible(!toggleTools->isVisible());
             else if (cmd.startsWith("toggle-options-")) {
