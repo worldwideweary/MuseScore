@@ -116,6 +116,22 @@ QSizeF Image::imageSize() const
       }
 
 //---------------------------------------------------------
+//   isEmpty()
+//---------------------------------------------------------
+
+bool Image::isEmpty() const
+      {
+      bool v = false;
+      switch (imageType) {
+            case ImageType::NONE:                     v = true;   break;
+            case ImageType::RASTER: if (!rasterDoc)   v = true;   break;
+            case ImageType::SVG:    if (!svgDoc)      v = true;   break;
+            default: break;
+            }
+      return v;
+      }
+
+//---------------------------------------------------------
 //   draw
 //---------------------------------------------------------
 
