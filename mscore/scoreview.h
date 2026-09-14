@@ -239,11 +239,17 @@ class ScoreView : public QWidget, public MuseScoreView {
       QPixmap* _fgPixmap;
       QPixmap  _pagePixmap;
 
+      qreal _alwaysTopMax { 0.0 };
+      qreal _alwaysTopMaxWithFrames { 0.0 };
+
       // By default when the view will prevent viewpoint changes if
       // it is inactive. Set this flag to true to change this behaviour.
       bool _moveWhenInactive = false;
 
       bool _blockShowEdit = false;
+
+      void updateAlwaysTopExtents();
+      qreal systemHeightIncludingBoundFrames(System*) const;
 
       virtual void paintEvent(QPaintEvent*) override;
       void paint(const QRect&, QPainter&);

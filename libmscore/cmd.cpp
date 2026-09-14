@@ -5547,6 +5547,16 @@ bool Score::cmdToggleOptions(const QString& cmd)
                   PREF_UI_SCORE_CURRENT_SYS_ON_TOP,
                   checked = toggle(MScore::currentSystemAlwaysTop));
             }
+      else if (cmd.endsWith("current-system-on-top-consider-all")) {
+            preferences.setPreference(
+                  PREF_UI_SCORE_CURRENT_SYS_ON_TOP_ALL,
+                  checked = toggle(MScore::currentSystemAlwaysTopConsiderAll));
+            }
+      else if (cmd.endsWith("current-system-on-top-consider-all-include-frames")) {
+            preferences.setPreference(
+                              PREF_UI_SCORE_CURRENT_SYS_ON_TOP_ALL_WITH_FRAMES,
+                              checked = toggle(MScore::currentSystemAlwaysTopConsiderAllBoundFrames));
+            }
       else if (cmd.endsWith("fade-focus")) {
             preferences.setPreference(
                   PREF_UI_SCORE_FADE_FOCUS,
