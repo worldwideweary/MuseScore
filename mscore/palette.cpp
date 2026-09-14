@@ -446,10 +446,15 @@ void Palette::mouseMoveEvent(QMouseEvent* ev)
                   }
             }
       else {
-            currentIdx = idx(ev->pos());
-            if (currentIdx != -1 && cellAt(currentIdx) == 0)
-                  currentIdx = -1;
-            update();
+            int newIdx = idx(ev->pos());
+            if (newIdx != -1 && cellAt(newIdx) == 0)
+                  newIdx = -1;
+
+            if (newIdx != currentIdx) {
+                  const int oldIdx = currentIdx;
+                  currentIdx = newIdx;
+                  update(idxRect(oldIdx) | idxRect(currentIdx));
+                  }
             }
       }
 
@@ -1153,7 +1158,7 @@ static void paintPaletteElement(void* data, Element* e)
 //   paintEvent
 //---------------------------------------------------------
 
-void Palette::paintEvent(QPaintEvent* /*event*/)
+void Palette::paintEvent(QPaintEvent* event)
       {
       qreal _spatium = gscore->spatium();
       qreal magS     = PALETTE_SPATIUM * extraMag * guiMag();
@@ -1207,7 +1212,13 @@ void Palette::paintEvent(QPaintEvent* /*event*/)
       QPen pen(Qt::black);
       pen.setWidthF(MScore::defaultStyle().value(Sid::staffLineWidth).toDouble() * magS);
 
-      for (int idx = 0; idx < ccp()->size(); ++idx) {
+      const QRect dirtyRect = event->rect();
+      const int firstRow = qMax(0, dirtyRect.top() / vgridM);
+      const int lastRow  = qMin(rows() - 1, dirtyRect.bottom() / vgridM);
+      const int firstIdx = firstRow * columns();
+      const int lastIdx  = qMin(ccp()->size() - 1, (lastRow + 1) * columns() - 1);
+
+      for (int idx = firstIdx; idx <= lastIdx; ++idx) {
             int yoffset  = gscore->spatium() * _yOffset;
             QRect r      = idxRect(idx);
             QRect rShift = r.translated(0, yoffset);
