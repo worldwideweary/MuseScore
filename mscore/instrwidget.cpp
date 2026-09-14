@@ -283,7 +283,6 @@ void StaffListItem::setStaffType(int idx)
 const StaffType* StaffListItem::staffType() const
       {
       int typeIdx = staffTypeIdx();
-      Q_ASSERT(typeIdx != CUSTOM_STAFF_TYPE_IDX);
       if (typeIdx == CUSTOM_STAFF_TYPE_IDX)
             typeIdx = 0;
       return StaffType::preset(StaffTypes(typeIdx));

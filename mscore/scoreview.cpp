@@ -3790,6 +3790,7 @@ void ScoreView::textTab(bool back)
       bool sameParent = false;
       if (originalEl && nextElement && (originalEl->parent() == nextElement->parent())) {
             sameParent = true;
+            (void) sameParent; // Unused for now
             }
       if (!fingeringJump) {
             defaultTid = Tid(ot->propertyDefault(Pid::SUB_STYLE).toInt());
@@ -4793,8 +4794,13 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             if (playBack)
                   sysRect.adjust(0.0, -sys->minTop(), 0.0, sys->minBottom());
             }
-      else
-            sysRect = sys->staff(staffIdx)->bbox();
+      else if (auto staves = sys->staves()) {
+            if (staves->isEmpty())
+                  return;
+
+            if (auto staff = staves->at(staffIdx))
+                  sysRect = staff->bbox();
+            }
 
       // only try to track measure if not during playback
       if (!playBack)
