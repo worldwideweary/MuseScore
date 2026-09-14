@@ -3010,9 +3010,7 @@ void MuseScore::retranslate()
       viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::DOUBLE_PAGE)), tr("Double Page"));
       viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::LINE)), tr("Continuous View"));
       viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::SYSTEM)), tr("Single Page"));
-#ifdef NDEBUG
       if (enableExperimental)
-#endif
             viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::FLOAT)), tr("Floating"));
 
       showMidiImportButton->setText(tr("Show MIDI import panel"));
@@ -9659,13 +9657,6 @@ MuseScoreApplication::CommandLineParseResult MuseScoreApplication::parseCommandL
                         return parseResult;
                         }
                   }
-#if NDEBUG // allow multiple instances when debugging (actually: when built in Debug mode)
-            else
-                  if (app->sendMessage(QString(""))) {
-                        parseResult.exit = true;
-                        return parseResult;
-                        }
-#endif
             }
       if (rawDiffMode || diffMode) {
             if (argv.size() != 2) {
