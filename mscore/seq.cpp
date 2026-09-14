@@ -2757,32 +2757,27 @@ void Seq::heartBeatTimeout()
                         }
                   }
             if (n.type() == ME_NOTEON && MScore::highlightNotes) {
+                  // TODO: Consolidate MScore::highlight notes and mscore->playbackHighlight() brought in recently
                   const Note* note1 = n.note();
                   if (n.velo()) {
-                        while (note1) {
-                              for (ScoreElement* se : note1->linkList()) {
-                                    if (!se->isNote())
-                                          continue;
-                                    Note* currentNote = toNote(se);
-                                    if (mscore->playbackHighlight())
-                                          currentNote->setMark(true);
-                                    markedNotes.append(currentNote);
-                                    r |= currentNote->canvasBoundingRect();
-                                    }
-                              note1 = note1->tieFor() ? note1->tieFor()->endNote() : 0;
+                        for (ScoreElement* se : note1->linkList()) {
+                              if (!se->isNote())
+                                    continue;
+                              Note* currentNote = toNote(se);
+                              if (mscore->playbackHighlight())
+                                    currentNote->setMark(true);
+                              markedNotes.append(currentNote);
+                              r |= currentNote->canvasBoundingRect();
                               }
                         }
                   else {
-                        while (note1) {
-                              for (ScoreElement* se : note1->linkList()) {
-                                    if (!se->isNote())
-                                          continue;
-                                    Note* currentNote = toNote(se);
-                                    currentNote->setMark(false);
-                                    r |= currentNote->canvasBoundingRect();
-                                    markedNotes.removeOne(currentNote);
-                                    }
-                              note1 = note1->tieFor() ? note1->tieFor()->endNote() : 0;
+                        for (ScoreElement* se : note1->linkList()) {
+                              if (!se->isNote())
+                                    continue;
+                              Note* currentNote = toNote(se);
+                              currentNote->setMark(false);
+                              r |= currentNote->canvasBoundingRect();
+                              markedNotes.removeOne(currentNote);
                               }
                         }
                   }
