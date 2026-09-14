@@ -140,6 +140,7 @@ bool    MScore::hoverColorEnabled;
 int     MScore::pedalEventsMinTicks;
 bool    MScore::fadeFocus;
 bool    MScore::currentSystemAlwaysTop;
+bool    MScore::omitAddingLinkedLines;
 
 bool    MScore::cursorMoveByBeat;
 bool    MScore::cursorMoveByMeasure;
