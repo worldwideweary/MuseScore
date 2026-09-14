@@ -220,6 +220,9 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       static const std::list<const char*> _allColorControlMenuEntries;
       std::list<const char*> _colorControlMenuEntries { _allColorControlMenuEntries };
 
+      static const std::list<const char*> _allToggleOptionsMenuEntries;
+      std::list<const char*> _toggleOptionsMenuEntries { _allToggleOptionsMenuEntries };
+
       static const std::list<const char*> _allFileOperationEntries;
       std::list<const char*> _fileOperationEntries { _allFileOperationEntries };
 
@@ -261,22 +264,23 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
 
       QProgressBar* _progressBar           { 0 };
       PreferenceDialog* preferenceDialog   { 0 };
-      QToolBar* cpitchTools;
-      QToolBar* fotoTools;
-      QToolBar* fileTools;
-      QToolBar* transportTools;
-      QToolBar* entryTools;
+      QToolBar* cpitchTools                { 0 };
+      QToolBar* fotoTools                  { 0 };
+      QToolBar* fileTools                  { 0 };
+      QToolBar* transportTools             { 0 };
+      QToolBar* entryTools                 { 0 };
 #if 0
       QToolBar* feedbackTools;
 #endif
-      QToolBar* alternativeTools;
-      QToolBar* colorTools;
-      QToolBar* workspacesTools;
+      QToolBar* alternativeTools           { 0 };
+      QToolBar* colorTools                 { 0 };
+      QToolBar* toggleTools                { 0 };
+      QToolBar* workspacesTools            { 0 };
       TextTools* _textTools                { 0 };
       PianoTools* _pianoTools              { 0 };
       MediaDialog* _mediaDialog            { 0 };
       DrumTools* _drumTools                { 0 };
-      QToolBar* voiceTools;
+      QToolBar* voiceTools                 { 0 };
       InstrumentsDialog* instrList         { 0 };
       MeasuresDialog* measuresDialog       { 0 };
       InsertMeasuresDialog* insertMeasuresDialog { 0 };
@@ -950,6 +954,11 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       std::list<const char*>* colorControlMenuEntries()                 { return &_colorControlMenuEntries; }
       void setColorControlMenuEntries(std::list<const char*> l)         { _colorControlMenuEntries = l; }
       void populateColorControlMenu();
+
+      static const std::list<const char*>& allToggleOptionsMenuEntries() { return _allToggleOptionsMenuEntries; }
+      std::list<const char*>* toggleOptionsMenuEntries()                 { return &_toggleOptionsMenuEntries; }
+      void setToggleOptionsMenuEntries(std::list<const char*> l)         { _toggleOptionsMenuEntries = l; }
+      void populateToggleOptionsMenu();
 
       static const std::list<const char*>& allFileOperationEntries() { return _allFileOperationEntries; }
       std::list<const char*>* fileOperationEntries()                 { return &_fileOperationEntries; }
