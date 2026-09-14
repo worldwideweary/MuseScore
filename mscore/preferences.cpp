@@ -160,6 +160,8 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_APP_PLAYBACK_INDEPENDENT_METRONOME_FOLLOW,       new BoolPreference(false, false)},
             {PREF_APP_PLAYBACK_INDEPENDENT_METRONOME_ACCENTS,      new BoolPreference(true, false)},
 
+            {PREF_APP_PLAYBACK_RESTART_MIDI_AUTOMATICALLY,         new BoolPreference(false)},
+
             {PREF_APP_USESINGLEPALETTE,                            new BoolPreference(false, false)},
             {PREF_APP_PALETTESCALE,                                new DoublePreference(1.0)},
             {PREF_APP_STARTUP_FIRSTSTART,                          new BoolPreference(true)},
