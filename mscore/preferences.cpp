@@ -180,6 +180,11 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_APP_BACKUP_GENERATE_BACKUP,                      new BoolPreference(true)},
             {PREF_APP_BACKUP_SUBFOLDER,                            new StringPreference(".mscbackup")},
             {PREF_APP_DEBUG_LOG_ENABLED,                           new BoolPreference(false)},
+
+            {PREF_APP_SHOW_PROGRESS_LAYOUT,                        new BoolPreference(true)},
+            {PREF_APP_SHOW_PROGRESS_SAVE,                          new BoolPreference(true)},
+            {PREF_APP_SHOW_PROGRESS_AUTOSAVE,                      new BoolPreference(true)},
+
             {PREF_EXPORT_AUDIO_NORMALIZE,                          new BoolPreference(true, false)},
             {PREF_EXPORT_AUDIO_SAMPLERATE,                         new IntPreference(44100, false)},
             {PREF_EXPORT_AUDIO_PCMRATE,                            new IntPreference(16)},
