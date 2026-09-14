@@ -23,6 +23,7 @@ static const char* toolbars[] = {
       QT_TRANSLATE_NOOP("toolbar", "Playback Controls"),
       QT_TRANSLATE_NOOP("toolbar", "Alternative Options")
       QT_TRANSLATE_NOOP("toolbar", "Color Controls")
+      QT_TRANSLATE_NOOP("toolbar", "Toggle Options")
       };
 
 //---------------------------------------------------------
@@ -58,6 +59,7 @@ ToolbarEditor::ToolbarEditor(QWidget* parent)
       new_toolbars->push_back(mscore->playbackControlEntries());
       new_toolbars->push_back(mscore->alternativeEntries());
       new_toolbars->push_back(mscore->colorControlMenuEntries());
+      new_toolbars->push_back(mscore->toggleOptionsMenuEntries());
 
       connect(toolbarList, SIGNAL(currentRowChanged(int)), SLOT(toolbarChanged(int)));
       connect(add, SIGNAL(clicked()), SLOT(addAction()));
@@ -100,6 +102,7 @@ void ToolbarEditor::init()
       new_toolbars->at(2) = mscore->playbackControlEntries();
       new_toolbars->at(3) = mscore->alternativeEntries();
       new_toolbars->at(4) = mscore->colorControlMenuEntries();
+      new_toolbars->at(5) = mscore->toggleOptionsMenuEntries();
 
       // populate lists:
       toolbarChanged(toolbarList->currentRow());
@@ -130,12 +133,14 @@ void ToolbarEditor::accepted()
       mscore->setPlaybackControlEntries(*(new_toolbars->at(2)));
       mscore->setAlternativeEntries(*(new_toolbars->at(3)));
       mscore->setColorControlMenuEntries(*(new_toolbars->at(4)));
+      mscore->setToggleOptionsMenuEntries(*(new_toolbars->at(5)));
 
       mscore->populateNoteInputMenu();
       mscore->populateFileOperations();
       mscore->populatePlaybackControls();
       mscore->populateAlternativeOperations();
       mscore->populateColorControlMenu();
+      mscore->populateToggleOptionsMenu();
 
       WorkspacesManager::currentWorkspace()->setDirty(true);
       }
@@ -291,6 +296,9 @@ void ToolbarEditor::toolbarChanged(int tb)
                   break;
             case 4:     //ColorControls
                   populateLists(MuseScore::allColorControlMenuEntries(), new_toolbars->at(tb));
+                  break;
+            case 5:     //ToggleOptions
+                  populateLists(MuseScore::allToggleOptionsMenuEntries(), new_toolbars->at(tb));
                   break;
             }
       }
