@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>183</width>
-    <height>59</height>
+    <height>97</height>
    </rect>
   </property>
   <property name="accessibleName">
@@ -49,7 +49,6 @@
      </property>
      <property name="font">
       <font>
-       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -76,6 +75,22 @@
       <property name="spacing">
        <number>3</number>
       </property>
+      <item row="1" column="0" colspan="2">
+       <widget class="QCheckBox" name="systemTextLine">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::TabFocus</enum>
+        </property>
+        <property name="text">
+         <string>System Text Line</string>
+        </property>
+       </widget>
+      </item>
       <item row="0" column="1">
        <widget class="QComboBox" name="placement">
         <property name="sizePolicy">
@@ -125,19 +140,10 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="0" colspan="2">
-       <widget class="QCheckBox" name="systemTextLine">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="focusPolicy">
-         <enum>Qt::TabFocus</enum>
-        </property>
+      <item row="2" column="0" colspan="2">
+       <widget class="QCheckBox" name="enPassantManifest">
         <property name="text">
-         <string>System Text Line</string>
+         <string>Show En Passant</string>
         </property>
        </widget>
       </item>

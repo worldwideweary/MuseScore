@@ -641,19 +641,64 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
                         }
                   }
             else if (isSpannerSegment()) {
-                  auto ss = toSpannerSegment(this);
+                  // Mark the line itself
+                  auto ss = toSpannerSegment(const_cast<Element*>(this));
                   auto sp = ss->spanner();
                   auto t1 = sp->tick();
                   auto t2 = sp->tick2();
-                  if (ss->isPedalSegment() || ss->isOttavaSegment()) {
-                        if (ss->isPedalSegment()) {
-                              // Potentially needs a recalibration of ticks...
-                              }
-                        t2 -= Fraction::fromTicks(1);
-                        }
+                  t2 -= Fraction::fromTicks(1);
                   if (auto playingElement = ss->score()->getLastCRSequenced()) {
                         auto pos = playingElement->tick();
-                        marked = (pos >= t1 && pos <= t2);
+                        marked = (pos >= t1 && pos < t2);
+                        }
+                  }
+            else if (isTextBase()) {
+                  // Mark the text of line
+                  auto tb = toTextBase(this);
+                  if (auto playingElement = score()->getLastCRSequenced()) {
+                        if (auto p = tb->parent()) {
+                              if (p->isSpannerSegment()) {
+                                    auto ss = toSpannerSegment(p);
+                                    auto sp = ss->spanner();
+                                    Fraction pos = playingElement->tick();
+                                    Fraction t1 = sp->tick();
+                                    Fraction t2 = sp->tick2();
+                                    t2 -= Fraction::fromTicks(1);
+                                    marked = (pos >= t1 && pos < t2);
+                                    }
+                              }
+                        }
+                  }
+            }
+
+      if (MScore::honorEnPassantVisibility && marked && (isNote() || isRest())) {
+            int iTrack = track();
+            Fraction fTick = tick();
+            auto overlappingSpanners = score()->spannerMap().findOverlapping(0, fTick.ticks());
+            for (auto i : overlappingSpanners) {
+                  auto s = i.value;
+                  if (s->isTextLineBase() && s->track() == iTrack) {
+                        auto tlb = toTextLineBase(s);
+                        if (tlb->enPassantManifest()) {
+                              auto t1 = tlb->tick();
+                              auto t2 = tlb->tick2();
+                              t2 -= Fraction::fromTicks(1);
+                              bool withinPlaybackPosition = (fTick >= t1 && fTick < t2);
+                              if (withinPlaybackPosition) {
+                                    if (!tlb->visible()) {
+                                          tlb->setVisible(true);
+                                          tlb->setTemporarilyShowing(true);
+                                          // BSP Tree needs updating if already invisible
+                                          // TODO TEST this on large scores to verify everything's okay.
+                                          score()->masterScore()->rebuildBspTree();
+                                          score()->masterScore()->setUpdateAll();
+                                          }
+                                    else if (!tlb->isTemporarilyShowing()) {
+                                          tlb->frontSegment()->setSelected(true);
+                                          }
+                                    }
+                              else tlb->isTemporarilyShowing() ? tlb->setVisible(false) : tlb->frontSegment()->setSelected(false);
+                              }
                         }
                   }
             }
