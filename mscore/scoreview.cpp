@@ -611,10 +611,46 @@ void ScoreView::moveCursor(const Fraction& tick)
             return;
 
       _cursorColor = QColor(MScore::cursorColor);
-      if(_cursorColor.alpha() > MAX_CURSOR_ALPHA)
-            _cursorColor.setAlpha(50);
       _cursor->setColor(_cursorColor);
-      _cursor->setTick(tick);
+
+      bool isUpdated = true;
+      if (MScore::cursorMoveByBeat) {
+            // Pedal-line segments activate on point, whereas note events,
+            // not being simultaneously activated, are one "eps" (1/1920 e.g.)
+            // tick after, and hence the note events will not meet the appropriate
+            // BeatType:: due to not having that involved in the calculation!
+
+            // Objective: Nudge back one eps appropriately to see if note event
+            // is "On Beat" to update cursor for when MOVE CURSOR BY BEAT is enabled.
+            // (There's probably a better way, but this'll do for now):
+            auto kindaBeat = _score->tick2beatType(tick);
+            Fraction offByOne = tick;
+            if (offByOne.denominator() > 32) {
+                  // Large denominator signifies the addition of a very small amount [e.g. 1/1920]:
+                  auto eps = offByOne.eps();
+                  auto denomDiff = eps.denominator() / tick.denominator();
+                  offByOne -= eps;
+                  offByOne.rnumerator() =
+                        (denomDiff > 1) ? (offByOne.numerator() - (denomDiff - 1))
+                                        : (offByOne.rnumerator());
+                  }
+
+            auto kindaBeatOBO = _score->tick2beatType(offByOne);
+            if (kindaBeat != BeatType::COMPOUND_SUBBEAT && kindaBeat != BeatType::SUBBEAT) {
+                  _cursor->setTick(tick);
+                  }
+            else if (kindaBeatOBO != BeatType::COMPOUND_SUBBEAT && kindaBeatOBO != BeatType::SUBBEAT) {
+                  _cursor->setTick(offByOne);
+                  }
+            else  {
+                  isUpdated = false;
+                  // qDebug() << "No Update on tick: " << tick << " offByOne: " << offByOne;
+                  }
+            }
+      else  {
+            // Regular cursor playback behavior:
+            _cursor->setTick(tick);
+            }
 
       System* system = measure->system();
       if (system == 0)
@@ -625,7 +661,7 @@ void ScoreView::moveCursor(const Fraction& tick)
       update(_matrix.mapRect(_cursor->rect()).toRect().adjusted(-1,-1,1,1));
 
       qreal mag = _spatium / SPATIUM20;
-      double w  = _spatium * 2.0 + score()->scoreFont()->width(SymId::noteheadBlack, mag);
+      double w  = (_spatium * 1.0) + score()->scoreFont()->width(SymId::noteheadBlack, mag);
       double h  = 6 * _spatium;
       //
       // set cursor height for whole system
@@ -639,14 +675,24 @@ void ScoreView::moveCursor(const Fraction& tick)
             y2 = ss->bbox().bottom();
             }
       h += y2;
-      x -= _spatium;
+      x -= (_spatium * 0.50);
       y -= 3 * _spatium;
 
-      if (mscore->playbackHighlight())
-            _cursor->setRect(QRectF(x, y, w, h));
-      else
-            _cursor->setRect(QRectF());
-      update(_matrix.mapRect(_cursor->rect()).toRect().adjusted(-1,-1,1,1));
+      if (isUpdated) {
+            if (mscore->playbackHighlight()) {
+                  if (MScore::cursorMoveByMeasure) {
+                        x = measure->canvasBoundingRect().topLeft().x();
+                        y = measure->canvasBoundingRect().topLeft().y() + _spatium;
+                        w = measure->width();
+                        h = measure->height() - (2 * _spatium);
+                        }
+                  _cursor->setRect(QRectF(x, y, w, h));
+                  }
+            else
+                  _cursor->setRect(QRectF());
+
+            update(_matrix.mapRect(_cursor->rect()).toRect().adjusted(-1,-1,1,1));
+            }
 
       if (_score->layoutMode() == LayoutMode::LINE && seq->isPlaying() && panSettings().enabled)
             moveControlCursor(tick);
@@ -816,7 +862,7 @@ void ScoreView::moveCursor()
       int staffIdx = track / VOICES;
 
       QColor c(MScore::selectColor[voice]);
-      c.setAlpha(50);
+      c.setAlpha(100);
       _cursor->setColor(c);
       _cursor->setTick(segment->tick());
 
@@ -1116,7 +1162,12 @@ void ScoreView::paintEvent(QPaintEvent* ev)
 
       _curLoopIn->paint(&vp);
       _curLoopOut->paint(&vp);
-      _cursor->paint(&vp);
+
+      // Let playback cursor overlay score elements
+      // Warning: color is not necessarily transparent
+      if (!MScore::cursorDrawnBehindStaff)
+            _cursor->paint(&vp);
+
       if (_score->layoutMode() == LayoutMode::LINE)
             _controlCursor->paint(&vp);
 
@@ -1266,6 +1317,9 @@ void ScoreView::paint(const QRect& r, QPainter& p)
 
       p.setTransform(_matrix);
       QRectF fr = imatrix.mapRect(QRectF(r));
+
+      if (MScore::cursorDrawnBehindStaff)
+            _cursor->paint(&p);
 
       Element* editElement = 0;
       Lasso* lassoToDraw = 0;
