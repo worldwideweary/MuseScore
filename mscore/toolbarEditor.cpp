@@ -22,6 +22,7 @@ static const char* toolbars[] = {
       QT_TRANSLATE_NOOP("toolbar", "File Operations"),
       QT_TRANSLATE_NOOP("toolbar", "Playback Controls"),
       QT_TRANSLATE_NOOP("toolbar", "Alternative Options")
+      QT_TRANSLATE_NOOP("toolbar", "Color Controls")
       };
 
 //---------------------------------------------------------
@@ -56,6 +57,7 @@ ToolbarEditor::ToolbarEditor(QWidget* parent)
       new_toolbars->push_back(mscore->fileOperationEntries());
       new_toolbars->push_back(mscore->playbackControlEntries());
       new_toolbars->push_back(mscore->alternativeEntries());
+      new_toolbars->push_back(mscore->colorControlMenuEntries());
 
       connect(toolbarList, SIGNAL(currentRowChanged(int)), SLOT(toolbarChanged(int)));
       connect(add, SIGNAL(clicked()), SLOT(addAction()));
@@ -63,7 +65,7 @@ ToolbarEditor::ToolbarEditor(QWidget* parent)
       connect(up, SIGNAL(clicked()), SLOT(upAction()));
       connect(down, SIGNAL(clicked()), SLOT(downAction()));
       connect(buttonBox, SIGNAL(accepted()), SLOT(accepted()));
-      
+
       up->setIcon(*icons[int(Icons::arrowUp_ICON)]);
       down->setIcon(*icons[int(Icons::arrowDown_ICON)]);
       add->setIcon(*icons[int(Icons::goPrevious_ICON)]);
@@ -92,13 +94,15 @@ void ToolbarEditor::init()
       down->setEnabled(writable);
       workspaceName->setText(name);
 
-      // Syncs the editor with the current toolbars
+      // sync the editor with the current toolbars:
       new_toolbars->at(0) = mscore->noteInputMenuEntries();
       new_toolbars->at(1) = mscore->fileOperationEntries();
       new_toolbars->at(2) = mscore->playbackControlEntries();
       new_toolbars->at(3) = mscore->alternativeEntries();
+      new_toolbars->at(4) = mscore->colorControlMenuEntries();
 
-      toolbarChanged(toolbarList->currentRow());  // populate lists
+      // populate lists:
+      toolbarChanged(toolbarList->currentRow());
       }
 
 //---------------------------------------------------------
@@ -119,15 +123,20 @@ void ToolbarEditor::accepted()
       {
       if (WorkspacesManager::currentWorkspace()->readOnly())
             return;
-      // Updates the toolbars
+
+      // Update the toolbars
       mscore->setNoteInputMenuEntries(*(new_toolbars->at(0)));
       mscore->setFileOperationEntries(*(new_toolbars->at(1)));
       mscore->setPlaybackControlEntries(*(new_toolbars->at(2)));
       mscore->setAlternativeEntries(*(new_toolbars->at(3)));
+      mscore->setColorControlMenuEntries(*(new_toolbars->at(4)));
+
       mscore->populateNoteInputMenu();
       mscore->populateFileOperations();
       mscore->populatePlaybackControls();
       mscore->populateAlternativeOperations();
+      mscore->populateColorControlMenu();
+
       WorkspacesManager::currentWorkspace()->setDirty(true);
       }
 
@@ -279,6 +288,9 @@ void ToolbarEditor::toolbarChanged(int tb)
                   break;
             case 3:     //AlternativeOptions
                   populateLists(MuseScore::allAlternativeEntries(), new_toolbars->at(tb));
+                  break;
+            case 4:     //ColorControls
+                  populateLists(MuseScore::allColorControlMenuEntries(), new_toolbars->at(tb));
                   break;
             }
       }
