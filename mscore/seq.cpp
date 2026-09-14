@@ -2738,50 +2738,50 @@ void Seq::heartBeatTimeout()
                   if (guiPos->first >= cs->repeatList().tick2utick(cs->loopOutTick().ticks()))
                         break;
             const NPlayEvent& n = guiPos->second;
+            const bool playEventHasVelocity = n.velo();
             if (n.type() == ME_CHORD && MScore::highlightRests) {
-                  if (auto rest = n.rest()) {
-                        for (auto se : rest->linkList()) {
-                              if (!se->isRest())
-                                    continue;
-                              auto currentRest = toRest(se);
-                              if (n.velo()) {
-                                    currentRest->setMark(true);
-                                    markedRests.append(currentRest);
-                                    }
-                              else {
-                                    currentRest->setMark(false);
-                                    markedRests.removeOne(currentRest);
-                                    }
-                              r |= currentRest->canvasBoundingRect();
+                  const Rest* rest = n.rest();
+                  if (!rest)
+                        continue;
+
+                  for (auto se : rest->linkList()) {
+                        if (!se->isRest())
+                              continue;
+                        auto currentRest = toRest(se);
+                        if (playEventHasVelocity) {
+                              currentRest->setMark(true);
+                              markedRests.append(currentRest);
                               }
+                        else {
+                              currentRest->setMark(false);
+                              markedRests.removeOne(currentRest);
+                              }
+                        r |= currentRest->canvasBoundingRect();
                         }
                   }
             if (n.type() == ME_NOTEON && MScore::highlightNotes) {
                   // TODO: Consolidate MScore::highlight notes and mscore->playbackHighlight() brought in recently
-                  const Note* note1 = n.note();
-                  if (n.velo()) {
-                        for (ScoreElement* se : note1->linkList()) {
-                              if (!se->isNote())
-                                    continue;
-                              Note* currentNote = toNote(se);
-                              if (mscore->playbackHighlight())
-                                    currentNote->setMark(true);
+                  const Note* note = n.note();
+                  if (!note)
+                        continue;
+
+                  for (ScoreElement* se : note->linkList()) {
+                        if (!se->isNote())
+                              continue;
+                        Note* currentNote = toNote(se);
+                        if (mscore->playbackHighlight() && playEventHasVelocity) {
+                              currentNote->setMark(true);
                               markedNotes.append(currentNote);
-                              r |= currentNote->canvasBoundingRect();
                               }
-                        }
-                  else {
-                        for (ScoreElement* se : note1->linkList()) {
-                              if (!se->isNote())
-                                    continue;
-                              Note* currentNote = toNote(se);
+                        else {
                               currentNote->setMark(false);
-                              r |= currentNote->canvasBoundingRect();
                               markedNotes.removeOne(currentNote);
                               }
+                        r |= currentNote->canvasBoundingRect();
                         }
                   }
             }
+
       int t = cs->repeatList().utick2tick(utick);
       mscore->currentScoreView()->moveCursor(Fraction::fromTicks(t));
       mscore->setPos(Fraction::fromTicks(t));
