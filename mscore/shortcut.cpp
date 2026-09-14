@@ -116,6 +116,17 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT | STATE_PLAY,
+         "file-clear-archive",
+         QT_TRANSLATE_NOOP("action","Clear Archived Tabs"),
+         QT_TRANSLATE_NOOP("action","Clear Archived Tabs"),
+         QT_TRANSLATE_NOOP("action","Clear Archived Tabs"),
+         Icons::fileSave_ICON,
+         Qt::WindowShortcut,
+         // ShortcutFlags::A_SCORE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
          STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
          "start-preference-dialog",
          QT_TRANSLATE_NOOP("action","Start Preferences Dialog…"),
