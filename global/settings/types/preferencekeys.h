@@ -58,6 +58,7 @@
 #define PREF_APP_PLAYBACK_INDEPENDENT_METRONOME_DENOMINATOR "application/playback/independentMetronome/denominator"
 #define PREF_APP_PLAYBACK_INDEPENDENT_METRONOME_ACCENTS     "application/playback/independentMetronome/beatAccents"
 #define PREF_APP_PLAYBACK_INDEPENDENT_METRONOME_FOLLOW      "application/playback/independentMetronome/followPlayback"
+#define PREF_APP_PLAYBACK_RESTART_MIDI_AUTOMATICALLY        "application/playback/devices/restartOnPlay"
 #define PREF_APP_USESINGLEPALETTE                           "application/useSinglePalette"
 #define PREF_APP_PALETTESCALE                               "application/paletteScale"
 #define PREF_APP_STARTUP_FIRSTSTART                         "application/startup/firstStart"
