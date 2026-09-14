@@ -36,8 +36,15 @@ extern MasterScore* gscore;
 
 void SymbolDialog::createSymbolPalette()
       {
+      constexpr qreal MASTER_PALETTE_GRID_SCALE = 1.30;
+
       sp = new Palette();
       sp->setIsSymbolsPaletteInMasterPalette(true);
+
+      sp->setGrid(qRound(sp->gridWidth() * MASTER_PALETTE_GRID_SCALE),
+                  qRound(sp->gridHeight() * MASTER_PALETTE_GRID_SCALE));
+
+      sp->setContentZoomEnabled(true);
       createSymbols();
       }
 
