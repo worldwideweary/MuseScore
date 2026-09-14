@@ -40,6 +40,7 @@
 #include "glissando.h"
 #include "hairpin.h"
 #include "harmony.h"
+#include "hook.h"
 #include "icon.h"
 #include "image.h"
 #include "iname.h"
@@ -63,6 +64,7 @@
 #include "pedal.h"
 #include "rehearsalmark.h"
 #include "repeat.h"
+#include "repeatlist.h"
 #include "rest.h"
 #include "score.h"
 #include "segment.h"
@@ -403,18 +405,168 @@ QColor Element::curColor(bool isVisible) const
 
 QColor Element::curColor(bool isVisible, QColor normalColor) const
       {
-      // the default element color is always interpreted as black in
-      // printing
-      if (score() && score()->printing())
-            return (normalColor == MScore::defaultColor) ? Qt::black : normalColor;
-
-      if (flag(ElementFlag::DROP_TARGET))
-            return MScore::dropColor;
+      auto currentStaff = staffIdx();      
       bool marked = false;
-      if (isNote()) {
-            //const Note* note = static_cast<const Note*>(this);
-            marked = toNote(this)->mark();
+      bool isDefault = (normalColor == MScore::defaultColor);
+      
+      // Observation: Cross-staff beams don't have same staffIdx as correspondent ChordRest...
+      if (isBeam()) {
+            auto beam = toBeam(this);
+            int staffIdxOfBeamElement = beam->staffIdxOfFirstElement();
+            // Observation: parent of beam is "System", not "ChordRest"
+            if (staffIdxOfBeamElement != beam->staffIdx())
+                  currentStaff = staffIdxOfBeamElement;
             }
+
+      // the default element color is always interpreted as black in printing
+      if (score() && score()->printing()) {
+            return isDefault ? Qt::black : normalColor;
+            }
+
+      if (flag(ElementFlag::DROP_TARGET)) {
+            return MScore::dropColor;
+            }
+
+      //
+      // Playback Highlighting
+      //
+      if (MScore::highlightNotes && isNote()) {
+            const Note* n = toNote(this);
+            const Note* ftn = n->firstTiedNote();
+            if (ftn)
+                  n = ftn;
+            marked = n->mark();
+            }
+
+      if (MScore::highlightRests && isRest()) {
+            auto r = toRest(this);
+            marked = r->mark();
+            }
+
+      if (MScore::highlightLyrics && isLyrics()) {
+            if (auto p = this->parent()) {
+                  if (p->isChord()) {
+                        auto c = toChord(p);
+                        if (auto n = c->upNote()) {
+                              if (n->mark()) {
+                                    marked = true;
+                                    }
+                              }
+                        }
+                  }
+            }
+
+      if (MScore::highlightMore) {
+            Chord* c = nullptr;
+
+            // From Chords:
+            if (isStem()) {
+                  c = toStem(this)->chord();
+                  }
+            else if (isHook()) {
+                  c = toHook(this)->chord();
+                  }
+            else if (isArpeggio()) {
+                  c = toArpeggio(this)->chord();
+                  bool paletteItem = !c || c->notes().empty();
+                  if (!paletteItem) {
+                        auto un = c->upNote();
+                        auto dn = c->downNote();
+                        marked   = un->mark() || dn->mark();
+                        c = nullptr;
+                        }
+                  }
+            else if (isArticulation()) {
+                  if (auto cr = toArticulation(this)->chordRest()) {
+                        c = cr->isChord() ? toChord(cr) : nullptr;
+                        }
+                  }
+            else if (isAccidental()) {
+                  if (auto n = toAccidental(this)->note())
+                        marked = n->mark();
+                  }
+            else if (isNoteDot()) {
+                  const auto dot = toNoteDot(this);
+                  if (auto rest = dot->rest())
+                        marked = rest->mark();
+                  else {
+                        auto n = dot->note();
+                        if (auto ftn = n->firstTiedNote())
+                              n = ftn;
+                        marked = n->mark();
+                        }
+                  }
+            else if (isTieSegment()) {
+                  auto ts = toTieSegment(this);
+                  auto t  = ts->tie();
+                  if (auto sn = t->startNote()) {
+                        if (auto firstNote = sn->firstTiedNote()) {
+                              marked = firstNote->mark();
+                              }
+                        }
+                  }
+            else if (isFermata()) {
+                  auto f = toFermata(this);
+                  if (auto s = f->segment()) {
+                        if (auto cr = s->nextChordRest(f->track())) {
+                              if (cr->isChord())
+                                    c = toChord(cr);
+                              else if (cr->isRest())
+                                    marked = toRest(cr)->mark();
+                              }
+                        }
+                  else if (auto cr = f->chordRest()) {
+                        if (cr->isChord())
+                              c = toChord(cr);
+                        }
+                  }
+
+            if (c) {
+                  for (auto n : c->notes()) {
+                        marked = n->mark();
+                        if (auto firstNote = n->firstTiedNote()) {
+                              marked = firstNote->mark();
+                              }
+                        }
+                  }
+
+            if (isBeam()) {
+                  auto beam = toBeam(this);
+                  auto t1 = beam->tick();
+                  auto t2 = t1 + beam->ticks();
+                  if (auto playingElement = beam->score()->getLastCRSequenced()) {
+                        auto pos = playingElement->tick();
+                        marked = (pos >= t1 && pos < t2);
+                        }
+                  }
+            else if (isSpannerSegment()) {
+                  auto ss = toSpannerSegment(this);
+                  auto sp = ss->spanner();
+                  auto t1 = sp->tick();
+                  auto t2 = sp->tick2();
+                  if (ss->isPedalSegment() || ss->isOttavaSegment()) {
+                        if (ss->isPedalSegment()) {
+                              // Potentially needs a recalibration of ticks...
+                              }
+                        t2 -= Fraction::fromTicks(1);
+                        }
+                  if (auto playingElement = ss->score()->getLastCRSequenced()) {
+                        auto pos = playingElement->tick();
+                        marked = (pos >= t1 && pos <= t2);
+                        }
+                  }
+            }
+
+      if (isNote()) {
+            auto n = toNote(this);
+            marked = n->mark();
+            }
+
+      if (isRest() && MScore::highlightRests) {
+            auto r = toRest(this);
+            marked = r->mark();
+            }
+
       if (selected() || marked ) {
             QColor originalColor;
             if (score()->selection().isComparison() && preferences.getBool(PREF_SCORE_COMPARISON_SELECTION_COLOR_ENABLED))
@@ -423,8 +575,10 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
                   originalColor = MScore::selectColor[0];
             else
                   originalColor = MScore::selectColor[voice()];
-            if (isVisible)
+
+            if (isVisible) {
                   return originalColor;
+                  }
             else {
                   int red = originalColor.red();
                   int green = originalColor.green();

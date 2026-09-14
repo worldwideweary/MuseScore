@@ -167,6 +167,7 @@ class Seq : public QObject, public Sequencer {
       EventMap::const_iterator guiPos;    // moved in gui thread
 
       QList<const Note*> markedNotes;     // notes marked as sounding
+      QList<const Rest*> markedRests;     // rests marked as "resting"
 
       struct MetronomeCustomSample {
             std::vector<float> data;       // interleaved stereo
