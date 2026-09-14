@@ -437,6 +437,118 @@ Score* MuseScore::openScore(const QString& fn, bool switchTab, const bool consid
       }
 
 //---------------------------------------------------------
+//   saveOpenScoresList
+//---------------------------------------------------------
+
+bool MuseScore::saveOpenScoresList()
+      {
+      QDir dir;
+      dir.mkpath(dataPath);
+      QFile f(dataPath + "/scorelist");
+      if (!f.open(QIODevice::WriteOnly)) {
+            qDebug("cannot create session file <%s>", qPrintable(f.fileName()));
+            return false;
+            }
+
+      XmlWriter xml(0, &f);
+      xml.header();
+      xml.stag(QStringLiteral("museScore version=\"" MSC_VERSION "\" full-version=\"%1\"").arg(fullVersion()));
+
+
+      for (MasterScore*& score : scoreList) {
+            xml.stag("Score");
+            xml.tag("created", score->created());
+            QString path;
+            if (score->importedFilePath().isEmpty()) {
+                  // score was not imported from another format, e.g. MIDI file
+                  path = score->masterScore()->fileInfo()->absoluteFilePath();
+                  }
+            else if (score->masterScore()->fileInfo()->exists()) {   // score was saved
+                  path = score->masterScore()->fileInfo()->absoluteFilePath();
+                  }
+            else {      // score was imported but not saved - store original file (e.g. MIDI) path
+                  path = score->importedFilePath();
+                  }
+
+            if (score->tmpName().isEmpty()) {
+                  xml.tag("path", path);
+                  }
+            else {
+                  xml.tag("name", path);
+                  xml.tag("path", score->tmpName());
+                  }
+            xml.etag();
+            qDebug() << "Path:" << path;
+            }
+      return false;
+      }
+
+//---------------------------------------------------------
+//   loadOpenScoresList
+//---------------------------------------------------------
+
+bool MuseScore::loadOpenScoresList()
+      {
+      QDir dir;
+      dir.mkpath(dataPath);
+      QFile f(dataPath + "/scorelist");
+
+      bool cleanExit = false;
+      QString sessionFullVersion;
+
+      if (!f.exists())
+            return false;
+
+      if (!f.open(QIODevice::ReadOnly)) {
+            qDebug("Cannot open session file <%s>", qPrintable(f.fileName()));
+            return false;
+            }
+
+      XmlReader e(&f);
+      while (e.readNextStartElement()) {
+            if (e.name() == "museScore") {
+                  sessionFullVersion = e.attribute("full-version");
+                  while (e.readNextStartElement()) {
+                        const QStringRef& tag(e.name());
+                        if (tag == "Score") {
+                              QString name;
+                              bool created = false;
+                              while (e.readNextStartElement()) {
+                                    const QStringRef& t(e.name());
+                                    if (t == "name")
+                                          name = e.readElementText();
+                                    else if (t == "created")
+                                          created = e.readInt();
+                                    else if (t == "dirty")
+                                          e.readInt();
+                                    else if (t == "path") {
+                                          auto txt = e.readElementText();
+                                          Score* score = openScore(txt, true, true, name);
+
+                                          if (score) {
+                                                if (cleanExit) {
+                                                      // override if last session did a clean exit
+                                                      created = false;
+                                                      }
+                                                score->setCreated(created);
+                                                }
+                                          else {
+                                                // qDebug() << txt << "invalid or already opened";
+                                                }
+                                          }
+                                    else {
+                                          e.unknown();
+                                          return false;
+                                          }
+                                    }
+                              }
+                        }
+                  }
+            }
+      return true;
+      }
+
+//---------------------------------------------------------
 //   readScore
 //---------------------------------------------------------
 

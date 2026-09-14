@@ -94,6 +94,28 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::MAIN_WINDOW,
+         STATE_DISABLED | STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT | STATE_PLAY,
+         "file-open-archived-tabs",
+         QT_TRANSLATE_NOOP("action","Restore Archived Tabs"),
+         QT_TRANSLATE_NOOP("action","Restore Archived Tabs"),
+         QT_TRANSLATE_NOOP("action","Restore Archived Tabs"),
+         Icons::fileOpen_ICON,
+         Qt::WindowShortcut,
+         // ShortcutFlags::A_SCORE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT | STATE_PLAY,
+         "file-archive-tabs",
+         QT_TRANSLATE_NOOP("action","Archive Tabs"),
+         QT_TRANSLATE_NOOP("action","Archive Tabs"),
+         QT_TRANSLATE_NOOP("action","Archive Tabs"),
+         Icons::fileSave_ICON,
+         Qt::WindowShortcut,
+         // ShortcutFlags::A_SCORE
+         },
+      {
+         MsWidget::MAIN_WINDOW,
          STATE_NORMAL | STATE_NOTE_ENTRY | STATE_EDIT,
          "start-preference-dialog",
          QT_TRANSLATE_NOOP("action","Start Preferences Dialog…"),
