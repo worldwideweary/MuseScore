@@ -3045,9 +3045,9 @@ void ScoreView::cmd(const char* s)
                   cv->cmdAddText(Tid::STICKING);
                   }},
             {{"edit-element"}, [&](ScoreView* cv, const QByteArray&) {
-                  if (auto e = cv->score()->selection().element()) {
-                        if (e->isEditable() && !cv->popupActive)
-                              cv->startEditMode(e);
+                  if (auto selectedEl = cv->score()->selection().element()) {
+                        if (selectedEl->isEditable() && !cv->popupActive)
+                              cv->startEditMode(selectedEl);
                         }
                   else if (dropTarget && MScore::hoverColorEnabled) {
                         QRectF r = dropTarget->canvasBoundingRect();
@@ -3056,9 +3056,9 @@ void ScoreView::cmd(const char* s)
                               else cv->startEditMode(const_cast<Element*>(dropTarget));
                               }
 
-                        if (auto e = editData.element) {
-                              if (e->isTextBase()) {
-                                    toTextBase(e)->mousePress(editData);
+                        if (auto hoverEl = editData.element) {
+                              if (hoverEl->isTextBase()) {
+                                    toTextBase(hoverEl)->mousePress(editData);
                                     }
                               }
 
@@ -4972,8 +4972,8 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             if (staves->isEmpty())
                   return;
 
-            if (auto staff = staves->at(staffIdx))
-                  sysRect = staff->bbox();
+            if (auto validStaff = staves->at(staffIdx))
+                  sysRect = validStaff->bbox();
             }
 
       // only try to track measure if not during playback
