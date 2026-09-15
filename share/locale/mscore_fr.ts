@@ -5542,7 +5542,7 @@ Par défaut, elles seront palcées à droite et au même niveau. Cochez cette ca
     <message>
         <location filename="../../mscore/exportdialog.ui" line="475"/>
         <source>Location:</source>
-        <translation type="unfinished"></translation>
+        <translation>Emplacement :</translation>
     </message>
     <message>
         <location filename="../../mscore/exportdialog.ui" line="505"/>
@@ -12462,27 +12462,27 @@ Un condensé aisément consultable est disponible ici :
     <message>
         <location filename="../../mscore/debuglog.cpp" line="208"/>
         <source>Clear</source>
-        <translation type="unfinished"></translation>
+        <translation>Éffacer</translation>
     </message>
     <message>
         <location filename="../../mscore/debuglog.cpp" line="209"/>
         <source>Copy All</source>
-        <translation type="unfinished"></translation>
+        <translation>Tout copier</translation>
     </message>
     <message>
         <location filename="../../mscore/debuglog.cpp" line="211"/>
         <source>Enabled</source>
-        <translation type="unfinished"></translation>
+        <translation>Activé</translation>
     </message>
     <message>
         <location filename="../../mscore/debuglog.cpp" line="214"/>
         <source>Details</source>
-        <translation type="unfinished"></translation>
+        <translation>Détails</translation>
     </message>
     <message>
         <location filename="../../mscore/debuglog.cpp" line="217"/>
         <source>Autoscroll</source>
-        <translation type="unfinished"></translation>
+        <translation>Défilement auto</translation>
     </message>
 </context>
 <context>
@@ -13089,7 +13089,7 @@ a échoué : %2</translation>
     <message>
         <location filename="../../mscore/exportdialog.cpp" line="299"/>
         <source>Choose Score Folder</source>
-        <translation type="unfinished">Choisir le répertoire des partitions</translation>
+        <translation>Choisir le répertoire des partitions</translation>
     </message>
     <message>
         <location filename="../../mscore/exportdialog.cpp" line="539"/>
@@ -14636,7 +14636,7 @@ Veuillez sélectionner une mesure et réessayer</translation>
         <location filename="../../mscore/musescore.cpp" line="1097"/>
         <location filename="../../mscore/musescore.cpp" line="2604"/>
         <source>Double Page</source>
-        <translation type="unfinished"></translation>
+        <translation>Double page</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1101"/>
@@ -14647,38 +14647,39 @@ Veuillez sélectionner une mesure et réessayer</translation>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1158"/>
         <source>BPM:</source>
-        <translation type="unfinished">BPM :</translation>
+        <translation>BPM :</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1167"/>
         <source>Tempo in quarter notes per minute</source>
-        <translation type="unfinished"></translation>
+        <translation>Tempo en Noires par minute</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1171"/>
         <source>Time signature:</source>
-        <translation type="unfinished"></translation>
+        <translation>Indication de mesure :</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1203"/>
         <location filename="../../mscore/musescore.cpp" line="1256"/>
         <source>Follow score</source>
-        <translation type="unfinished"></translation>
+        <translation>Suivre la partition</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1209"/>
         <source>Beat accents</source>
-        <translation type="unfinished"></translation>
+        <translation>Accentuation de battement</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1215"/>
         <source>Use varying strengths for non-downbeat clicks</source>
-        <translation type="unfinished"></translation>
+        <translatorcomment>Utilisez des intensités variables pour les clics autres que ceux du temps fort</translatorcomment>
+        <translation></translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1255"/>
         <source>Following score</source>
-        <translation type="unfinished"></translation>
+        <translation>Suit la partition</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="2480"/>
@@ -14689,12 +14690,12 @@ Veuillez sélectionner une mesure et réessayer</translation>
         <location filename="../../mscore/musescore.cpp" line="2566"/>
         <location filename="../../mscore/musescore.cpp" line="2568"/>
         <source>Debug Log</source>
-        <translation type="unfinished"></translation>
+        <translation>Debug Log</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="2591"/>
         <source>Alternative Options</source>
-        <translation type="unfinished"></translation>
+        <translation>Autres options</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="2592"/>
@@ -14704,7 +14705,7 @@ Veuillez sélectionner une mesure et réessayer</translation>
     <message>
         <location filename="../../mscore/musescore.cpp" line="2652"/>
         <source>Debug</source>
-        <translation type="unfinished">Debug</translation>
+        <translation>Debug</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="2810"/>
@@ -15931,18 +15932,18 @@ Ce plugin nécessite une partition ouverte pour fonctionner.</translation>
     <message>
         <location filename="../../mscore/prefsdialog.cpp" line="1109"/>
         <source>Choose Metronome Downbeat Sound</source>
-        <translation type="unfinished"></translation>
+        <translation>Choisir le son du temps fort du métronome</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.cpp" line="1111"/>
         <location filename="../../mscore/prefsdialog.cpp" line="1134"/>
         <source>Audio Files</source>
-        <translation type="unfinished"></translation>
+        <translation>Fichiers Audio</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.cpp" line="1132"/>
         <source>Choose Metronome Beat Sound</source>
-        <translation type="unfinished"></translation>
+        <translation>Choisir le son du temps faible du métronome</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.cpp" line="1448"/>
@@ -18323,7 +18324,7 @@ veuillez choisir un nom différent :</translation>
     <message>
         <location filename="../../mscore/menus.cpp" line="763"/>
         <source>Keep measures on the same system</source>
-        <translation type="unfinished"></translation>
+        <translation>Garder les mesures sur le même système</translation>
     </message>
     <message>
         <location filename="../../mscore/menus.cpp" line="1498"/>
@@ -19660,63 +19661,63 @@ L&apos;ensemble des plugins sera rafraîchi, ce qui mettra à jour les changemen
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="692"/>
         <source>Metronome sounds</source>
-        <translation type="unfinished"></translation>
+        <translation>Sons du métronome</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="698"/>
         <source>Downbeat:</source>
-        <translation type="unfinished"></translation>
+        <translation>Temps faible du métronome :</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="705"/>
         <source>Metronome downbeat sound</source>
-        <translation type="unfinished"></translation>
+        <translation>Son du temps fort du métronome</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="708"/>
         <source>Path to a custom audio file for the metronome downbeat</source>
-        <translation type="unfinished"></translation>
+        <translation>Chemin d&apos;accès à un fichier audio personnalisé pour le temps fort du métronome</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="711"/>
         <location filename="../../mscore/prefsdialog.ui" line="744"/>
         <source>Built-in default</source>
-        <translation type="unfinished"></translation>
+        <translation>Integré par défaut</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="718"/>
         <source>Choose metronome downbeat sound</source>
-        <translation type="unfinished"></translation>
+        <translation>Choisir le son du temps fort du métronome</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="721"/>
         <source>Choose downbeat sound</source>
-        <translation type="unfinished"></translation>
+        <translation>Choisir le son du temps fort</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="731"/>
         <source>Other beats:</source>
-        <translation type="unfinished"></translation>
+        <translation>Temps faible :</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="738"/>
         <source>Metronome other beat sound</source>
-        <translation type="unfinished"></translation>
+        <translation>Son des temps faible du métronome</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="741"/>
         <source>Path to a custom audio file for other metronome beats</source>
-        <translation type="unfinished"></translation>
+        <translation>Chemin d&apos;accès à un fichier audio personnalisé pour les temps faaible du métronome</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="751"/>
         <source>Choose metronome other beat sound</source>
-        <translation type="unfinished"></translation>
+        <translation>Choisir le son des temps faible du métronome</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="754"/>
         <source>Choose other beat sound</source>
-        <translation type="unfinished"></translation>
+        <translation>Choisir le son des temps faible</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="1186"/>
@@ -24590,67 +24591,67 @@ Note : Ctrl+Shift+1 est une combinaison de touches.</translation>
     <message>
         <location filename="../../libmscore/tremolo.cpp" line="39"/>
         <source>Eighth through stem</source>
-        <translation>Une barre oblique de trémolo sur la hampe</translation>
+        <translation>Trémolo de croche sur la hampe</translation>
     </message>
     <message>
         <location filename="../../libmscore/tremolo.cpp" line="40"/>
         <source>16th through stem</source>
-        <translation>Deux barres obliques de trémolo sur la hampe</translation>
+        <translation>Trémolo de double-croche sur la hampe</translation>
     </message>
     <message>
         <location filename="../../libmscore/tremolo.cpp" line="41"/>
         <source>32nd through stem</source>
-        <translation>Trois barres obliques de trémolo sur la hampe</translation>
+        <translation>Trémolo de triple-croche sur la hampe</translation>
     </message>
     <message>
         <location filename="../../libmscore/tremolo.cpp" line="42"/>
         <source>64th through stem</source>
-        <translation>Quatre barres obliques de trémolo sur la hampe</translation>
+        <translation>Trémolo de quadruple-croche sur la hampe</translation>
     </message>
     <message>
         <location filename="../../libmscore/tremolo.cpp" line="43"/>
         <source>128th through stem</source>
-        <translation type="unfinished">Quatre barres obliques de trémolo sur la hampe {128t?}</translation>
+        <translation>Trémolo de Quintuple-croche sur la hampe</translation>
     </message>
     <message>
         <location filename="../../libmscore/tremolo.cpp" line="44"/>
         <source>256th through stem</source>
-        <translation type="unfinished">Quatre barres obliques de trémolo sur la hampe {256t?}</translation>
+        <translation>Trémolo de Sextuple-croche sur la hampe</translation>
     </message>
     <message>
         <location filename="../../libmscore/tremolo.cpp" line="45"/>
         <source>Buzz roll</source>
-        <translation>Buzz roll</translation>
+        <translation>Roulement</translation>
     </message>
     <message>
         <location filename="../../libmscore/tremolo.cpp" line="46"/>
         <source>Eighth between notes</source>
-        <translation>Une barre oblique de trémolo entre les notes</translation>
+        <translation>Trémolo de croche entre deux notes</translation>
     </message>
     <message>
         <location filename="../../libmscore/tremolo.cpp" line="47"/>
         <source>16th between notes</source>
-        <translation>Deux barres obliques de trémolo entre les notes</translation>
+        <translation>Trémolo de double-croche entre deux notes</translation>
     </message>
     <message>
         <location filename="../../libmscore/tremolo.cpp" line="48"/>
         <source>32nd between notes</source>
-        <translation>Trois barres obliques de trémolo entre les notes</translation>
+        <translation>Trémolo de triple-croche entre deux notes</translation>
     </message>
     <message>
         <location filename="../../libmscore/tremolo.cpp" line="49"/>
         <source>64th between notes</source>
-        <translation>Quatre barres obliques de trémolo entre les notes</translation>
+        <translation>Trémolo de quadruple-croche entre deux notes</translation>
     </message>
     <message>
         <location filename="../../libmscore/tremolo.cpp" line="50"/>
         <source>128th between notes</source>
-        <translation type="unfinished">Quatre barres obliques de trémolo entre les notes {128t?}</translation>
+        <translation>Trémolo de Quintuple-croche entre deux notes</translation>
     </message>
     <message>
         <location filename="../../libmscore/tremolo.cpp" line="51"/>
         <source>256th between notes</source>
-        <translation type="unfinished">Quatre barres obliques de trémolo entre les notes {256t?}</translation>
+        <translation>Trémolo de Sextuple-croche entre deux notes</translation>
     </message>
 </context>
 <context>
@@ -27007,7 +27008,7 @@ a échoué</translation>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="100"/>
         <source>Start preferences dialog</source>
-        <translation type="unfinished"></translation>
+        <translation>Ouvrir la boîte de dialogue des préférences</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="111"/>
@@ -28053,7 +28054,7 @@ a échoué</translation>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="99"/>
         <source>Start Preferences Dialog…</source>
-        <translation type="unfinished"></translation>
+        <translation>Ouvrir la boîte de dialogue des préférences…</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="148"/>
@@ -28073,17 +28074,18 @@ a échoué</translation>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="158"/>
         <source>Close All</source>
-        <translation type="unfinished"></translation>
+        <translation>Tout fermer</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="159"/>
         <source>File &gt; Close all</source>
-        <translation type="unfinished"></translation>
+        <translatorcomment>Fichier &gt; Tout fermer</translatorcomment>
+        <translation></translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="160"/>
         <source>Close all scores</source>
-        <translation type="unfinished"></translation>
+        <translation>Fermer toutes les partitions</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="240"/>
@@ -28151,12 +28153,12 @@ a échoué</translation>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="2247"/>
         <source>Alternative Options</source>
-        <translation type="unfinished"></translation>
+        <translation>Autres options</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="2248"/>
         <source>Toggle &apos;Alternative Options&apos; toolbar</source>
-        <translation type="unfinished"></translation>
+        <translation>Afficher / Masquer la barre &apos;Autres options&apos;</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="2431"/>
@@ -28381,12 +28383,12 @@ a échoué</translation>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="2711"/>
         <source>Toggle Keep measures on the same system</source>
-        <translation type="unfinished"></translation>
+        <translation>Activer / Désactiver Garder les mesures sur le même système</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="2712"/>
         <source>Toggle &apos;Keep measures on the same system&apos;</source>
-        <translation type="unfinished"></translation>
+        <translation>Activer / Désactiver &apos;Garder les mesures sur le même système&apos;</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="2721"/>
@@ -28416,12 +28418,12 @@ a échoué</translation>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="2764"/>
         <source>Toggle Debug Options</source>
-        <translation type="unfinished"></translation>
+        <translation>Activer / Désactiver les options de debug</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="2765"/>
         <source>Toggle debug options</source>
-        <translation type="unfinished"></translation>
+        <translation>Activer / Désactiver les options de debug</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="2775"/>
@@ -28897,17 +28899,17 @@ a échoué</translation>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="3308"/>
         <source>Playback Highlight</source>
-        <translation type="unfinished"></translation>
+        <translation>Affichage de la lecture</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="3309"/>
         <source>Toggle playback highlight</source>
-        <translation type="unfinished"></translation>
+        <translation>Activer / Désactiver l&apos;Affichage de la lecture</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="3310"/>
         <source>Highlight notes during playback</source>
-        <translation type="unfinished"></translation>
+        <translation>Afficher les notes pendant la lecture</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="3319"/>
@@ -28922,17 +28924,17 @@ a échoué</translation>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="3330"/>
         <source>Independent Metronome</source>
-        <translation type="unfinished"></translation>
+        <translation>Métronome indépendant</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="3331"/>
         <source>Toggle independent metronome</source>
-        <translation type="unfinished"></translation>
+        <translation>Activer / Désactiver le Métronome indépendant</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="3332"/>
         <source>Play an independent metronome with optional score synchronization</source>
-        <translation type="unfinished"></translation>
+        <translation>Utilisez un métronome indépendant avec synchronisation optionnelle de la partition</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="3341"/>
@@ -29714,102 +29716,102 @@ a échoué</translation>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4187"/>
         <source>Script Recorder</source>
-        <translation type="unfinished"></translation>
+        <translation>Enregistreur de scripts</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4188"/>
         <source>Script recorder</source>
-        <translation type="unfinished"></translation>
+        <translation>Enregistreur de scripts</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4198"/>
         <source>No Horizontal Stretch</source>
-        <translation type="unfinished"></translation>
+        <translation>Aucun étirement horizontal</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4199"/>
         <source>No horizontal stretch</source>
-        <translation type="unfinished"></translation>
+        <translation>Aucun étirement horizontal</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4208"/>
         <source>No Vertical Stretch</source>
-        <translation type="unfinished"></translation>
+        <translation>Aucun étirement vertical</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4209"/>
         <source>No vertical stretch</source>
-        <translation type="unfinished"></translation>
+        <translation>Aucun étirement vertical</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4218"/>
         <source>Show Segment Shapes</source>
-        <translation type="unfinished"></translation>
+        <translation>Afficher les segment shapes</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4219"/>
         <source>Show segment shapes</source>
-        <translation type="unfinished"></translation>
+        <translation>Afficher les segment shapes</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4228"/>
         <source>Show Skylines</source>
-        <translation type="unfinished"></translation>
+        <translation>Afficher les skylines</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4229"/>
         <source>Show skylines</source>
-        <translation type="unfinished"></translation>
+        <translation>Afficher les skylines</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4238"/>
         <source>Show Bounding Rectangles</source>
-        <translation type="unfinished"></translation>
+        <translation>Afficher les bounding rectangles</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4239"/>
         <source>Show bounding rectangles for selected elements</source>
-        <translation type="unfinished"></translation>
+        <translation>Afficher les bounding rectangles for selected elements</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4248"/>
         <source>Show System Bounding Rectangles</source>
-        <translation type="unfinished"></translation>
+        <translation>Afficher les system bounding rectangles</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4249"/>
         <source>Show bounding rectangles for systems</source>
-        <translation type="unfinished"></translation>
+        <translation>Afficher les bounding rectangles for systems</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4258"/>
         <source>Show Corrupted Measures</source>
-        <translation type="unfinished"></translation>
+        <translation>Afficher les mesures corrompues</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4259"/>
         <source>Show corrupted measures</source>
-        <translation type="unfinished"></translation>
+        <translation>Afficher les mesures corrompues</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4268"/>
         <source>Re-Layout</source>
-        <translation type="unfinished"></translation>
+        <translation>Relancer la disposition</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4269"/>
         <source>Re-layout</source>
-        <translation type="unfinished"></translation>
+        <translation>Relancer la disposition</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4278"/>
         <source>Reload QML Code</source>
-        <translation type="unfinished"></translation>
+        <translation>Recharger le code QML</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="4279"/>
         <source>Reload QML code</source>
-        <translation type="unfinished"></translation>
+        <translation>Recharger le code QML</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="3915"/>
@@ -32943,7 +32945,7 @@ Cette partition contient des parties. La modification des indications de mesure 
     <message>
         <location filename="../../libmscore/note.cpp" line="250"/>
         <source>Pitch Names, No Accidentals</source>
-        <translation type="unfinished"></translation>
+        <translation>Noms des notes, sans altérations</translation>
     </message>
     <message>
         <location filename="../../libmscore/note.cpp" line="251"/>
@@ -32953,7 +32955,7 @@ Cette partition contient des parties. La modification des indications de mesure 
     <message>
         <location filename="../../libmscore/note.cpp" line="252"/>
         <source>German Pitch Names, No Accidentals</source>
-        <translation type="unfinished"></translation>
+        <translation>Noms allemands des notes, sans altérations</translation>
     </message>
     <message>
         <location filename="../../libmscore/note.cpp" line="253"/>
@@ -36689,7 +36691,7 @@ Cette partition contient des parties. La modification des indications de mesure 
     <message>
         <location filename="../../mscore/toolbarEditor.cpp" line="24"/>
         <source>Alternative Options</source>
-        <translation type="unfinished"></translation>
+        <translation>Autres options</translation>
     </message>
 </context>
 <context>
