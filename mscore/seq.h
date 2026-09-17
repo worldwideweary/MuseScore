@@ -110,6 +110,22 @@ enum class Transport : char {
       NET_STARTING=4
       };
 
+struct ActivePitchInfo {
+      int count { 0 };
+      const Note* note { nullptr };
+      };
+
+struct ActiveNoteEventInfo {
+      const Note* owner { nullptr };
+      int noteEventIndex { -1 };
+
+      bool operator==(const ActiveNoteEventInfo& other) const
+            {
+            return owner == other.owner
+                  && noteEventIndex == other.noteEventIndex;
+            }
+      };
+
 //---------------------------------------------------------
 //   Seq
 //    sequencer
@@ -168,6 +184,9 @@ class Seq : public QObject, public Sequencer {
 
       QList<const Note*> markedNotes;     // notes marked as sounding
       QList<const Rest*> markedRests;     // rests marked as "resting"
+
+      QHash<int, ActivePitchInfo> _activePitches;
+      QList<ActiveNoteEventInfo> _activeNoteEvents;
 
       struct MetronomeCustomSample {
             std::vector<float> data;       // interleaved stereo
@@ -339,6 +358,9 @@ class Seq : public QObject, public Sequencer {
       void nextRehearsalMark(bool next=true);
       void prevMeasure();
       void prevChord();
+
+      const QHash<int, ActivePitchInfo>& activePitches() const;
+      const QList<ActiveNoteEventInfo>& activeNoteEvents() const;
 
       void collectEvents(int utick, bool viaUserNavigation=false);
       void ensureBufferAsync(int utick);

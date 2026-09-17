@@ -551,9 +551,34 @@ void Seq::unmarkNotes()
       markedNotes.clear();
       markedRests.clear();
 
+      _activePitches.clear();
+      _activeNoteEvents.clear();
+
+      PianorollEditor* pre = mscore->getPianorollEditor();
+      if (pre)
+            pre->clearPlaybackPitches();
+
       PianoTools* piano = mscore->pianoTools();
       if (piano && piano->isVisible())
             piano->setPlaybackNotes(markedNotes);
+      }
+
+//---------------------------------------------------------
+//   activePitches
+//---------------------------------------------------------
+
+const QHash<int, ActivePitchInfo>& Seq::activePitches() const
+      {
+      return _activePitches;
+      }
+
+//---------------------------------------------------------
+//   activeNoteEvents
+//---------------------------------------------------------
+
+const QList<ActiveNoteEventInfo>& Seq::activeNoteEvents() const
+      {
+      return _activeNoteEvents;
       }
 
 //---------------------------------------------------------
@@ -2739,6 +2764,35 @@ void Seq::heartBeatTimeout()
                         break;
             const NPlayEvent& n = guiPos->second;
             const bool playEventHasVelocity = n.velo();
+
+            // Piano Roll Editor:
+            if (n.type() == ME_NOTEON) {
+                  ActivePitchInfo& info = _activePitches[n.pitch()];
+
+                  if (playEventHasVelocity) {
+                        ++info.count;
+                        info.note = n.note();
+                        }
+                  else {
+                        if (--info.count <= 0)
+                        _activePitches.remove(n.pitch());
+                        }
+                  }
+            // Piano Roll Editor:
+            if (n.type() == ME_NOTEON && n.note() && n.noteEventIndex() >= 0) {
+                  ActiveNoteEventInfo info;
+                  info.owner = n.noteEventOwner();
+                  info.noteEventIndex = n.noteEventIndex();
+
+                  if (playEventHasVelocity) {
+                        if (!_activeNoteEvents.contains(info))
+                              _activeNoteEvents.append(info);
+                        }
+                  else {
+                        _activeNoteEvents.removeAll(info);
+                        }
+                  }
+
             if (n.type() == ME_CHORD && MScore::highlightRests) {
                   const Rest* rest = n.rest();
                   if (!rest)
@@ -2840,6 +2894,10 @@ double Seq::curTempo() const
 
 void Seq::setLoopIn()
       {
+      preferences.setPreference(
+            PREF_APP_PLAYBACK_LOOPTOSELECTIONONPLAY,
+            false);
+
       Fraction t;
       if (state == Transport::PLAY) {     // If in playback mode, set the In position where note is being played
             auto ppos = playPos;
@@ -2860,6 +2918,10 @@ void Seq::setLoopIn()
 
 void Seq::setLoopOut()
       {
+      preferences.setPreference(
+            PREF_APP_PLAYBACK_LOOPTOSELECTIONONPLAY,
+            false);
+
       Fraction t;
       if (state == Transport::PLAY) {    // If in playback mode, set the Out position where note is being played
             t = Fraction::fromTicks(cs->repeatList().utick2tick(playPos->first));
@@ -2918,6 +2980,29 @@ void Seq::setLoopSelection()
       if (score && score->selection().isRange()) {
             cs->setLoopInTick(score->selection().tickStart());
             cs->setLoopOutTick(score->selection().tickEnd());
+            }
+      else if (score && score->selection().isList()) {
+            const Selection& selection = score->selection();
+
+            if (selection.elements().size() > 1) {
+                  ChordRest* first = selection.firstChordRest();
+                  ChordRest* last = selection.lastChordRest();
+
+                  if (first && last) {
+                        ChordRest* longestLastChordRest =
+                              selection.longestChordRestAtTick(last->tick());
+
+                        if (longestLastChordRest) {
+                              const Fraction startTick = first->tick();
+                              const Fraction endTick = longestLastChordRest->endTick();
+
+                              if (startTick < endTick) {
+                                    cs->setLoopInTick(startTick);
+                                    cs->setLoopOutTick(endTick);
+                                    }
+                              }
+                        }
+                  }
             }
 
       // add a dummy event to loop end if it is not already there

@@ -425,6 +425,7 @@ const std::list<const char*> MuseScore::_allAlternativeEntries {
             "time-delete",
             "",
             "toggle-piano",
+            "toggle-piano-roll",
             "",
             "empty-trailing-measure"
             };
@@ -791,6 +792,9 @@ void MuseScore::preferencesChanged(bool fromWorkspace, bool changeUI)
 
       if (seq)
             seq->preferencesChanged();
+
+      if (pianorollEditor)
+            pianorollEditor->updateToolbarIconSize();
       }
 
 //---------------------------------------------------------
@@ -2324,6 +2328,10 @@ MuseScore::MuseScore()
       a->setCheckable(true);
       menuView->addAction(a);
 
+      a = getAction("toggle-piano-roll");
+      a->setCheckable(true);
+      menuView->addAction(a);
+
       a = getAction("toggle-scorecmp-tool");
       a->setCheckable(true);
       menuView->addAction(a);
@@ -3800,6 +3808,11 @@ void MuseScore::setCurrentScoreView(ScoreView* view)
       // so fit zoom and canvas constraints use the final ScoreView size
       setZoom(cv->zoomIndex(), cv->logicalZoomLevel());
       ScoreAccessibility::instance()->updateAccessibilityInfo();
+
+      if (pianorollEditor) {
+            Staff* st = cs && !cs->staves().isEmpty() ? cs->staff(0) : nullptr;
+            pianorollEditor->setStaff(st);
+            }
 
       MasterScore* master = cs->masterScore();
       if (!scoreWasShown[master]) {
@@ -5676,8 +5689,16 @@ void MuseScore::changeState(ScoreState val)
                               QSizePolicy policy(QSizePolicy::Maximum, QSizePolicy::Maximum);
                               textTools()->widget()->setSizePolicy(policy);
                               }
-                        if (timelineScrollArea())
+                        if (pianorollDock
+                            && pianorollDock->isVisible()
+                            && !pianorollDock->isFloating()
+                            && dockWidgetArea(pianorollDock) == Qt::BottomDockWidgetArea) {
+                              splitDockWidget(pianorollDock, textTools(), Qt::Vertical);
+                              }
+                        else if (timelineScrollArea()) {
                               splitDockWidget(textTools(), timelineScrollArea(), Qt::Vertical);
+                              }
+
                         textTools()->show();
                         }
                   }
@@ -6294,11 +6315,15 @@ void MuseScore::updateTimer()
 
 void MuseScore::editInPianoroll(Staff* staff, Position* p)
       {
-      if (pianorollEditor == 0)
-            pianorollEditor = new PianorollEditor(this);
-      pianorollEditor->setScore(staff->score());
+      if (!staff)
+            return;
+
+      createPianoroll();
+
       pianorollEditor->setStaff(staff);
-      pianorollEditor->show();
+
+      reDisplayDockWidget(pianorollDock, true);
+
       pianorollEditor->focusOnPosition(p);
       }
 
@@ -6752,6 +6777,12 @@ void MuseScore::showPianoKeyboard(bool visible)
             }
       if (visible) {
             reDisplayDockWidget(_pianoTools, visible);
+            if (pianorollDock
+                && pianorollDock->isVisible()
+                && !pianorollDock->isFloating()
+                && dockWidgetArea(pianorollDock) == Qt::BottomDockWidgetArea) {
+                  splitDockWidget(pianorollDock, _pianoTools, Qt::Vertical);
+                  }
             if (currentScore())
                   _pianoTools->changeSelection(currentScore()->selection());
             else
@@ -6761,6 +6792,91 @@ void MuseScore::showPianoKeyboard(bool visible)
             if (_pianoTools)
                   _pianoTools->hide();
             }
+      }
+
+//---------------------------------------------------------
+//   createPianoroll
+//---------------------------------------------------------
+
+void MuseScore::createPianoroll()
+      {
+      if (pianorollEditor)
+            return;
+
+      QAction* a = getAction("toggle-piano-roll");
+
+      pianorollDock = new QDockWidget(tr("Piano Roll Editor"), this);
+      pianorollDock->setObjectName("pianoroll");
+
+      pianorollDock->setAllowedAreas(Qt::DockWidgetAreas(
+            Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea));
+
+      pianorollEditor = new PianorollEditor(pianorollDock);
+      pianorollDock->setWidget(pianorollEditor);
+
+      addDockWidget(Qt::BottomDockWidgetArea, pianorollDock);
+
+      connect(pianorollDock, &QDockWidget::visibilityChanged,
+              a, &QAction::setChecked);
+      }
+
+//---------------------------------------------------------
+//   showPianoroll
+//---------------------------------------------------------
+
+void MuseScore::showPianoroll(bool visible)
+      {
+      if (visible) {
+            createPianoroll();
+
+            Staff* staff = nullptr;
+            bool staffFromSelection = false;
+
+            if (cs && !cs->staves().isEmpty()) {
+                  const Selection& selection = cs->selection();
+
+                  if (selection.state() == SelState::RANGE) {
+                        const int staffIdx = selection.staffStart();
+
+                        if (staffIdx >= 0 && staffIdx < cs->nstaves()) {
+                              staff = cs->staff(staffIdx);
+                              staffFromSelection = true;
+                              }
+                        }
+                  else if (selection.state() == SelState::LIST) {
+                        for (Element* e : selection.elements()) {
+                              if (e && e->staff()) {
+                                    staff = e->staff();
+                                    staffFromSelection = true;
+                                    break;
+                                    }
+                              }
+                        }
+
+                  if (staffFromSelection) {
+                        pianorollEditor->setScope(PianoRollScope::PART);
+                        }
+                  else {
+                        staff = cs->staff(0);
+                        pianorollEditor->setScope(PianoRollScope::SCORE);
+                        }
+                  }
+
+            pianorollEditor->setStaff(staff);
+            reDisplayDockWidget(pianorollDock, true);
+
+            if (_pianoTools
+                && _pianoTools->isVisible()
+                && !_pianoTools->isFloating()
+                && dockWidgetArea(_pianoTools) == Qt::BottomDockWidgetArea) {
+                  splitDockWidget(
+                        pianorollDock,
+                        _pianoTools,
+                        Qt::Vertical);
+                  }
+            }
+      else if (pianorollDock)
+            pianorollDock->hide();
       }
 
 //---------------------------------------------------------
@@ -7734,6 +7850,8 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   workspacesTools->setVisible(!workspacesTools->isVisible());
             else if (cmd == "toggle-piano")
                   showPianoKeyboard(a->isChecked());
+            else if (cmd == "toggle-piano-roll")
+                  showPianoroll(a->isChecked());
             else if (cmd == "toggle-scorecmp-tool")
                   reDisplayDockWidget(scoreCmpTool, a->isChecked());
             else if (cmd == "toggle-alternative")
@@ -8386,8 +8504,25 @@ void MuseScore::showDrumTools(const Drumset* drumset, Staff* staff)
                   _drumTools = new DrumTools(this);
                   addDockWidget(Qt::BottomDockWidgetArea, _drumTools);
                   }
-            if (timelineScrollArea())
-                  splitDockWidget(_drumTools, timelineScrollArea(), Qt::Vertical);
+
+            if (pianorollDock
+                && pianorollDock->isVisible()
+                && !pianorollDock->isFloating()
+                && dockWidgetArea(pianorollDock) == Qt::BottomDockWidgetArea) {
+                  splitDockWidget(
+                        pianorollDock,
+                        _drumTools,
+                        Qt::Vertical);
+                  }
+            else if (timelineScrollArea()
+                     && timelineScrollArea()->isVisible()
+                     && !timelineScrollArea()->isFloating()) {
+                  splitDockWidget(
+                        _drumTools,
+                        timelineScrollArea(),
+                        Qt::Vertical);
+                  }
+
             _drumTools->setDrumset(cs, staff, drumset);
             _drumTools->show();
             }

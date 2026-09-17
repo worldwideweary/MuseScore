@@ -605,6 +605,7 @@ class Score : public QObject, public ScoreElement {
       inline virtual const Movements* movements() const;
 
    signals:
+      void partColorChanged();
       void posChanged(POS, unsigned, bool);
       void playlistChanged();
       void updateProgress(const QString&, int, int, int);
@@ -826,6 +827,7 @@ class Score : public QObject, public ScoreElement {
       void deleteLater(ScoreElement* e)     { _updateState._deleteList.push_back(e); }
       void deletePostponed();
 
+      bool regroupVoicing(const Fraction& startTick, const Fraction& endTick, int staffIdx);
       void changeVoice(int);
       void cmdToggleMouseEntry(void);
       void cmdOverrideColor(const char*);
