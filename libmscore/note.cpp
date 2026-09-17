@@ -3743,8 +3743,6 @@ const Note* Note::lastTiedNote() const
 
 //---------------------------------------------------------
 //   firstTiedNote
-//    if note has ties, return last note in chain
-//    - handle recursion in connected notes
 //---------------------------------------------------------
 
 Note* Note::firstTiedNote() const
