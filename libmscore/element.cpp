@@ -856,11 +856,24 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
       if (useInactiveColor && !withinActiveMeasure) {
             if ( (score()->isPlaying() || nem) && !score()->selection().isRange() ) {
                   if (!userDefinedOmittingAlpha(inactiveColor)) {
-                        normalColor.setAlpha(inactiveColor.alpha());
-                        overrideColor.setAlpha(inactiveColor.alpha());
+                        if (normalColor.alpha() != 0)
+                              normalColor.setAlpha(inactiveColor.alpha());
+
+                        if (overrideColor.alpha() != 0)
+                              overrideColor.setAlpha(inactiveColor.alpha());
                         }
-                  else  {
-                        overrideColor = normalColor = inactiveColor;
+                  else {
+                        const int normalAlpha = normalColor.alpha();
+                        const int overrideAlpha = overrideColor.alpha();
+
+                        normalColor = inactiveColor;
+                        overrideColor = inactiveColor;
+
+                        if (normalAlpha == 0)
+                              normalColor.setAlpha(0);
+
+                        if (overrideAlpha == 0)
+                              overrideColor.setAlpha(0);
                         }
                   }
             }
