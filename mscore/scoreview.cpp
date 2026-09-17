@@ -3611,6 +3611,16 @@ void ScoreView::setConstrainedOffset(qreal x, qreal y)
       }
 
 //---------------------------------------------------------
+//   reconstrainCanvas
+//---------------------------------------------------------
+
+void ScoreView::reconstrainCanvas()
+      {
+      setConstrainedOffset(xoffset(), yoffset());
+      update();
+      }
+
+//---------------------------------------------------------
 //   xoffset
 //---------------------------------------------------------
 

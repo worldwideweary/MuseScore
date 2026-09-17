@@ -338,6 +338,10 @@ class MScore {
       static QColor selectColor[VOICES];
       static QColor cursorColor;
       static QColor defaultColor;
+
+      static QColor pianoWhiteKeysColor;
+      static QColor pianoBlackKeysColor;
+
       static QColor dropColor;
       static QColor layoutBreakColor;
       static QColor frameMarginColor;
