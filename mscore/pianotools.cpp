@@ -410,10 +410,11 @@ void PianoKeyItem::mouseReleaseEvent(QGraphicsSceneMouseEvent*)
 
 void PianoKeyItem::paint(QPainter* p, const QStyleOptionGraphicsItem* /*o*/, QWidget*)
       {
+      const bool isBlackKey = (type >= 7);
       p->setRenderHint(QPainter::Antialiasing, true);
       p->setPen(QPen(Qt::black, .8));
       if (_pressed) {
-            QColor c(preferences.getColor(PREF_UI_PIANO_HIGHLIGHTCOLOR));
+            QColor c(preferences.getColor(PREF_UI_PIANO_USER_INPUT_COLOR));
             c.setAlpha(180);
             p->setBrush(c);
             }
@@ -423,9 +424,9 @@ void PianoKeyItem::paint(QPainter* p, const QStyleOptionGraphicsItem* /*o*/, QWi
             p->setBrush(c);
             }
       else if (_highlighted)
-            p->setBrush(type >= 7 ? QColor(125, 125, 125) : QColor(200, 200, 200));
+            p->setBrush(isBlackKey ? QColor(125, 125, 125) : QColor(200, 200, 200));
       else
-            p->setBrush(type >= 7 ? Qt::black : Qt::white);
+            p->setBrush(isBlackKey ? MScore::pianoBlackKeysColor : MScore::pianoWhiteKeysColor);
       p->drawPath(path());
       if (preferences.getBool(PREF_UI_PIANO_SHOWPITCHHELP) && _pitch % 12 == 0) {
             QFont f("Edwin", 6);

@@ -72,6 +72,10 @@ qreal   MScore::horizontalPageGapOdd = 50.0;
 QColor  MScore::selectColor[VOICES];
 QColor  MScore::cursorColor;
 QColor  MScore::defaultColor;
+
+QColor  MScore::pianoWhiteKeysColor;
+QColor  MScore::pianoBlackKeysColor;
+
 QColor  MScore::layoutBreakColor;
 QColor  MScore::frameMarginColor;
 QColor  MScore::bgColor;
