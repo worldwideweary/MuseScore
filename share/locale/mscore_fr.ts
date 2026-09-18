@@ -14673,8 +14673,7 @@ Veuillez sélectionner une mesure et réessayer</translation>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1215"/>
         <source>Use varying strengths for non-downbeat clicks</source>
-        <translatorcomment>Utilisez des intensités variables pour les clics autres que ceux du temps fort</translatorcomment>
-        <translation></translation>
+        <translation>Utiliser des intensités variables pour les tics des temps faibles</translation>
     </message>
     <message>
         <location filename="../../mscore/musescore.cpp" line="1255"/>
@@ -15943,7 +15942,7 @@ Ce plugin nécessite une partition ouverte pour fonctionner.</translation>
     <message>
         <location filename="../../mscore/prefsdialog.cpp" line="1132"/>
         <source>Choose Metronome Beat Sound</source>
-        <translation>Choisir le son du temps faible du métronome</translation>
+        <translation>Choisir le son du métronome</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.cpp" line="1448"/>
@@ -19666,7 +19665,7 @@ L&apos;ensemble des plugins sera rafraîchi, ce qui mettra à jour les changemen
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="698"/>
         <source>Downbeat:</source>
-        <translation>Temps faible du métronome :</translation>
+        <translation>Temps fort :</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="705"/>
@@ -19676,7 +19675,7 @@ L&apos;ensemble des plugins sera rafraîchi, ce qui mettra à jour les changemen
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="708"/>
         <source>Path to a custom audio file for the metronome downbeat</source>
-        <translation>Chemin d&apos;accès à un fichier audio personnalisé pour le temps fort du métronome</translation>
+        <translation>Chemin du fichier audio personnalisé du temps fort du métronome</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="711"/>
@@ -19697,27 +19696,27 @@ L&apos;ensemble des plugins sera rafraîchi, ce qui mettra à jour les changemen
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="731"/>
         <source>Other beats:</source>
-        <translation>Temps faible :</translation>
+        <translation>Temps faibles :</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="738"/>
         <source>Metronome other beat sound</source>
-        <translation>Son des temps faible du métronome</translation>
+        <translation>Son des temps faibles du métronome</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="741"/>
         <source>Path to a custom audio file for other metronome beats</source>
-        <translation>Chemin d&apos;accès à un fichier audio personnalisé pour les temps faaible du métronome</translation>
+        <translation>Chemin du fichier audio personnalisé des temps faibles du métronome</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="751"/>
         <source>Choose metronome other beat sound</source>
-        <translation>Choisir le son des temps faible du métronome</translation>
+        <translation>Choisir le son des temps faibles du métronome</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="754"/>
         <source>Choose other beat sound</source>
-        <translation>Choisir le son des temps faible</translation>
+        <translation>Choisir le son des temps faibles</translation>
     </message>
     <message>
         <location filename="../../mscore/prefsdialog.ui" line="1186"/>
@@ -28929,12 +28928,12 @@ a échoué</translation>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="3331"/>
         <source>Toggle independent metronome</source>
-        <translation>Activer / Désactiver le Métronome indépendant</translation>
+        <translation>Activer / Désactiver le métronome indépendant</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="3332"/>
         <source>Play an independent metronome with optional score synchronization</source>
-        <translation>Utilisez un métronome indépendant avec synchronisation optionnelle de la partition</translation>
+        <translation>Utiliser un métronome indépendant avec synchronisation optionnelle de la partition</translation>
     </message>
     <message>
         <location filename="../../mscore/shortcut.cpp" line="3341"/>
