@@ -1063,7 +1063,8 @@ static void paintScoreElement(QPainter& p, Element* e, qreal spatium, bool align
 static qreal paintStaff(QPainter& p, const QRect& rect, qreal spatium)
       {
       p.save(); // so we can restore painter after we are done using it
-      QPen pen(Qt::black);
+      bool override = preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR_IN_PALETTES);
+      QPen pen(override ? MScore::overrideAllColor : Qt::black);
       pen.setWidthF(MScore::defaultStyle().value(Sid::staffLineWidth).toDouble() * spatium);
       p.setPen(pen);
 
@@ -1109,8 +1110,10 @@ static void paintTag(QPainter& painter, const QRect& rect, QString tag)
       if (tag.isEmpty())
             return;
 
+      bool override = preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR_IN_PALETTES);
+
       painter.save(); // so we can restore it after we are done using it
-      painter.setPen(Qt::darkGray);
+      painter.setPen(override ? MScore::overrideAllColor : Qt::darkGray);
       QFont f(painter.font());
       f.setPointSize(12);
       painter.setFont(f);
@@ -1140,7 +1143,9 @@ static QColor elementColor(Element* el, bool selected)
             // when entering notes on an unpitched percussion staff.
             }
 
-      return QApplication::palette(mscore).color(QPalette::Normal, QPalette::Text);
+      bool override = preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR_IN_PALETTES);
+      return override ? MScore::overrideAllColor 
+                      : QApplication::palette(mscore).color(QPalette::Normal, QPalette::Text);
       }
 
 //---------------------------------------------------------
