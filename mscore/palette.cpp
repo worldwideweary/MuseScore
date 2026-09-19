@@ -1349,7 +1349,9 @@ void Palette::paintEvent(QPaintEvent* event)
       p.setRenderHint(QPainter::Antialiasing, true);
 
       QColor bgColor(0xf6, 0xf0, 0xda);
-      if (preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR))
+      auto fgColor(MScore::overrideAllColor);
+      bool override = preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR_IN_PALETTES);
+      if (override)
             bgColor = preferences.getColor(PREF_UI_CANVAS_FG_COLOR);
 #if 1
       p.setBrush(bgColor);
@@ -1369,7 +1371,7 @@ void Palette::paintEvent(QPaintEvent* event)
       int hhgrid = hgridM + (rightBorder / columns());
 
       if (_drawGrid) {
-            p.setPen(Qt::gray);
+            p.setPen(override ? fgColor : Qt::gray);
             for (int row = 1; row < rows(); ++row) {
                   int x2 = row < rows()-1 ? columns() * hhgrid : width();
                   int y  = row * vgridM;
@@ -1388,7 +1390,7 @@ void Palette::paintEvent(QPaintEvent* event)
       //
 
       // QPen pen(palette().color(QPalette::Normal, QPalette::Text));
-      QPen pen(Qt::black);
+      QPen pen(override ? fgColor : Qt::black);
       pen.setWidthF(MScore::defaultStyle().value(Sid::staffLineWidth).toDouble() * magS);
 
       const QRect dirtyRect = event->rect();
@@ -1423,7 +1425,7 @@ void Palette::paintEvent(QPaintEvent* event)
 
             QString tag = cc->tag;
             if (!tag.isEmpty()) {
-                  p.setPen(Qt::darkGray);
+                  p.setPen(override ? fgColor : Qt::darkGray);
                   QFont f(p.font());
                   f.setPointSize(12);
                   p.setFont(f);
@@ -1454,6 +1456,7 @@ void Palette::paintEvent(QPaintEvent* event)
             // Keep enlarged palette contents within their cell
             p.setClipRect(r.adjusted(1, 1, -1, -1));
 
+            // This is for Master palette items, not palette workspace:
             if (drawStaff) {
                   qreal y = r.y() + vgridM * .5 - dy + _yOffset * _spatium * cellMag;
                   qreal x = r.x() + 3;
