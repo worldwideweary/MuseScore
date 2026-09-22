@@ -1118,8 +1118,12 @@ void Spanner::setTick2(const Fraction& f)
 
 void Spanner::setTicks(const Fraction& f)
       {
-      IF_ASSERT_FAILED(f.positive())
+      if (!f.positive()) {            
+            qDebug() << "Reversing negative tick span for"
+                     << name() << "starting at tick:" << tick().print()
+                     << "with ticks:" << f.print();
             _ticks = -f;
+            }
       else
             _ticks = f;
 
