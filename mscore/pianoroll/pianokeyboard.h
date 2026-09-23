@@ -204,6 +204,8 @@ class PianoKeyboard : public QWidget {
       void setUseNoteColors(bool);
       void set88KeyView(bool);
 
+      void setPlaybackActive(bool active);
+
       void pressPitch(int);
       void releasePitch(int);
 

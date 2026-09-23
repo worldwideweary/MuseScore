@@ -236,6 +236,19 @@ void HPiano::clearSelection()
       }
 
 //---------------------------------------------------------
+//   setPlaybackActive
+//---------------------------------------------------------
+
+void HPiano::setPlaybackActive(bool active)
+      {
+      if (_playbackActive == active)
+            return;
+
+      _playbackActive = active;
+      updateAllKeys();
+      }
+
+//---------------------------------------------------------
 //   updateAllKeys
 //---------------------------------------------------------
 
@@ -411,6 +424,7 @@ void PianoKeyItem::mouseReleaseEvent(QGraphicsSceneMouseEvent*)
 void PianoKeyItem::paint(QPainter* p, const QStyleOptionGraphicsItem* /*o*/, QWidget*)
       {
       const bool isBlackKey = (type >= 7);
+      const bool showSelectionState = !piano->playbackActive();
       p->setRenderHint(QPainter::Antialiasing, true);
       p->setPen(QPen(Qt::black, .8));
       if (_pressed) {
@@ -418,12 +432,12 @@ void PianoKeyItem::paint(QPainter* p, const QStyleOptionGraphicsItem* /*o*/, QWi
             c.setAlpha(180);
             p->setBrush(c);
             }
-      else if (_selected) {
+      else if (showSelectionState && _selected) {
             QColor c(preferences.getColor(PREF_UI_PIANO_HIGHLIGHTCOLOR));
             c.setAlpha(100);
             p->setBrush(c);
             }
-      else if (_highlighted)
+      else if (showSelectionState && _highlighted)
             p->setBrush(isBlackKey ? QColor(125, 125, 125) : QColor(200, 200, 200));
       else
             p->setBrush(isBlackKey ? MScore::pianoBlackKeysColor : MScore::pianoWhiteKeysColor);

@@ -410,12 +410,13 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
 
       if (flag(ElementFlag::DROP_TARGET))
             return MScore::dropColor;
+
       bool marked = false;
+      const bool visuallySelected = selected() && !(score() && score()->isPlaying());
       if (isNote()) {
-            //const Note* note = static_cast<const Note*>(this);
             marked = toNote(this)->mark();
             }
-      if (selected() || marked ) {
+      if (visuallySelected || marked ) {
             QColor originalColor;
             if (score()->selection().isComparison() && preferences.getBool(PREF_SCORE_COMPARISON_SELECTION_COLOR_ENABLED))
                   originalColor = preferences.getColor(PREF_SCORE_COMPARISON_SELECTION_COLOR);

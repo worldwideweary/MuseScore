@@ -495,7 +495,7 @@ private:
       void setEditNoteDots(int dot) { _editNoteDots = dot; }
       void setEditNoteTool(PianoRollEditTool);
 
-      void setPlaybackActive(bool active) { _playbackActive = active; }
+      void setPlaybackActive(bool);
 
       void setAutomaticVoiceAssignment(bool value)
             { _automaticVoiceAssignment = value; }

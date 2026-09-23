@@ -485,6 +485,7 @@ class Score : public QObject, public ScoreElement {
       SelectionFilter _selectionFilter;
       Audio* _audio { 0 };
       PlayMode _playMode { PlayMode::SYNTHESIZER };
+      bool _isPlaying { false };
 
       qreal _noteHeadWidth { 0.0 };       // cached value
       QString accInfo;                    ///< information about selected element(s) for use by screen-readers
@@ -1147,6 +1148,8 @@ class Score : public QObject, public ScoreElement {
       void setAudio(Audio* a)      { _audio = a;       }
       PlayMode playMode() const    { return _playMode; }
       void setPlayMode(PlayMode v) { _playMode = v;    }
+      void setIsPlaying(bool v);
+      bool isPlaying() const;
 
       int linkId();
       void linkId(int);
