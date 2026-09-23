@@ -104,7 +104,7 @@ QColor PianoKeyboard::keyCurrentColor(int pitch, const QColor& defaultColor) con
 
       const Note* note = _playbackNotes.value(pitch, nullptr);
 
-      if (!note)
+      if (!note && !_playbackActive)
             note = _selectionNotes.value(pitch, nullptr);
 
       return note
@@ -991,6 +991,19 @@ void PianoKeyboard::pressPitch(int pitch)
             return;
 
       _pressedPitches.insert(pitch);
+      update();
+      }
+
+//---------------------------------------------------------
+//   setPlaybackActive
+//---------------------------------------------------------
+
+void PianoKeyboard::setPlaybackActive(bool active)
+      {
+      if (_playbackActive == active)
+            return;
+
+      _playbackActive = active;
       update();
       }
 

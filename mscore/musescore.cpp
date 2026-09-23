@@ -6131,6 +6131,7 @@ void MuseScore::showPianoKeyboard(bool visible)
             QAction* a = getAction("toggle-piano");
             _pianoTools = new PianoTools(this);
             addDockWidget(Qt::BottomDockWidgetArea, _pianoTools);
+            _pianoTools->setPlaybackActive(seq && seq->isPlaying());
             connect(_pianoTools, SIGNAL(keyPressed(int,bool,int)), SLOT(midiNoteReceived(int,bool,int)));
             connect(_pianoTools, SIGNAL(keyReleased(int,bool,int)), SLOT(midiNoteReceived(int,bool,int)));
             connect(_pianoTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));

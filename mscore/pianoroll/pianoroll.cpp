@@ -2266,9 +2266,10 @@ void PianorollEditor::setUseNoteColors(bool value)
 
 void PianorollEditor::clearPlaybackPitches()
       {
-      if (pianoKbd)
+      if (pianoKbd) {
+            pianoKbd->setPlaybackActive(false);
             pianoKbd->setPlaybackNotes(QHash<int, const Note*>());
-
+            }
       if (pianoView) {
             pianoView->setPlaybackActive(false);
             pianoView->clearPlaybackNoteEvents();
@@ -2974,6 +2975,7 @@ void PianorollEditor::heartBeat(Seq* s)
             tick = score()->masterScore()->repeatList().utick2tick(tick);
 
       pianoView->setPlaybackActive(s->isPlaying());
+      pianoKbd->setPlaybackActive(s->isPlaying());
 
       // Keep the authoritative PRE playback position synchronized
       // with the sequencer:

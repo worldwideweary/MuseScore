@@ -4140,6 +4140,34 @@ void Score::undo(UndoCommand* cmd, EditData* ed) const
       }
 
 //---------------------------------------------------------
+//   setIsPlaying
+//---------------------------------------------------------
+
+void Score::setIsPlaying(bool v)
+      {
+      Score* s = masterScore();
+
+      if (!s)
+            s = this;
+
+      s->_isPlaying = v;
+      }
+
+//---------------------------------------------------------
+//   isPlaying
+//---------------------------------------------------------
+
+bool Score::isPlaying() const
+      {
+      const Score* s = masterScore();
+
+      if (!s)
+            s = this;
+
+      return s->_isPlaying;
+      }
+
+//---------------------------------------------------------
 //   linkId
 //---------------------------------------------------------
 

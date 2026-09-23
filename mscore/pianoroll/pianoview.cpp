@@ -1333,7 +1333,7 @@ void PianoView::drawNoteBlock(QPainter* p, PianoItem* block)
                                           PREF_UI_PIANOROLL_LIGHT_NOTE_DRAG_COLOR);
                         }
                   else {
-                        noteColor = pianoRollNoteColor(note, _coloring, true, _useNoteColors);
+                        noteColor = pianoRollNoteColor(note, _coloring, !_playbackActive, _useNoteColors);
                         }
 
                   const bool ghostOriginal =
@@ -6909,6 +6909,19 @@ void PianoView::setEditNoteTool(PianoRollEditTool tool)
       {
       _editNoteTool = tool;
       updateCursor();
+      scene()->update();
+      }
+
+//---------------------------------------------------------
+//   setPlaybackActive
+//---------------------------------------------------------
+
+void PianoView::setPlaybackActive(bool active)
+      {
+      if (_playbackActive == active)
+            return;
+
+      _playbackActive = active;
       scene()->update();
       }
 
