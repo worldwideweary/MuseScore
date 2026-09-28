@@ -658,8 +658,7 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
                   }
             }
 
-
-            if (MScore::highlightNotes && isNote()) {
+      if (MScore::highlightNotes && isNote()) {
             const Note* n = toNote(this);
             const Note* ftn = n->firstTiedNote();
             if (ftn)
