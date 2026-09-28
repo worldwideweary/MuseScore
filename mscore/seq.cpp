@@ -529,10 +529,6 @@ void MuseScore::seqStarted()
 
 void MuseScore::seqStopped()
       {
-      if (cv) {
-            cv->setCursorOn(false);
-            }
-
       if (cs) {
             cs->setIsPlaying(false);
             cs->setUpdateAll();
@@ -542,6 +538,10 @@ void MuseScore::seqStopped()
       PianoTools* piano = mscore->pianoTools();
       if (piano)
             piano->setPlaybackActive(false);
+
+      if (cv) {
+            cv->setCursorOn(cv->noteEntryMode());
+            }
       }
 
 //---------------------------------------------------------
