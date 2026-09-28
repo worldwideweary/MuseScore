@@ -1537,11 +1537,9 @@ void Seq::updateEventsEnd()
 //   collectEvents
 //---------------------------------------------------------
 
-void Seq::collectEvents(int utick)
+void Seq::collectEvents(int utick, bool viaUserNavigation)
       {
-      //do not collect even while playing
-      if (state == Transport::PLAY && playlistChanged)
-            return;
+      (void) viaUserNavigation;
 
       mutex.lock();
 
@@ -1569,8 +1567,10 @@ void Seq::collectEvents(int utick)
             }
 
       updateEventsEnd();
-      playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : events.cbegin();
+      auto eventAtTick = events.find(utick);
+      playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : eventAtTick;
       playlistChanged = false;
+      unmarkNotes();
       mutex.unlock();
       }
 
@@ -1674,12 +1674,12 @@ int Seq::getPlayStartUtick()
 //   Do not use explicitly, use seek() or seekRT()
 //---------------------------------------------------------
 
-void Seq::seekCommon(int utick)
+void Seq::seekCommon(int utick, bool viaUserNavigation)
       {
       if (cs == 0)
             return;
 
-      collectEvents(utick);
+      collectEvents(utick, viaUserNavigation);
 
       if (cs->playMode() == PlayMode::AUDIO) {
             ogg_int64_t sp = cs->utick2utime(utick) * MScore::sampleRate;
@@ -1697,7 +1697,7 @@ void Seq::seekCommon(int utick)
 //   gui thread
 //---------------------------------------------------------
 
-void Seq::seek(int utick)
+void Seq::seek(int utick, bool viaUserNavigation)
       {
       if (preferences.getBool(PREF_IO_JACK_USEJACKTRANSPORT)) {
             if (utick > endUTick)
@@ -1706,13 +1706,12 @@ void Seq::seek(int utick)
             if (utick != 0)
                   return;
             }
-      seekCommon(utick);
+      seekCommon(utick, viaUserNavigation);
 
+      // Note: setPlayPos() will eventually call moveCursor() via signal emission
       int t = cs->repeatList().utick2tick(utick);
-      Segment* seg = cs->tick2segment(Fraction::fromTicks(t));
-      if (seg)
-            mscore->currentScoreView()->moveCursor(seg->tick());
-      cs->setPlayPos(Fraction::fromTicks(t));
+      cs->setPlayPos(Fraction::fromTicks(t), viaUserNavigation);
+
       cs->update();
       guiToSeq(SeqMsg(SeqMsgId::SEEK, utick));
       }
@@ -2889,7 +2888,7 @@ void Seq::setLoopOut()
       else
           if (t > cs->lastMeasure()->endTick())
               t = cs->lastMeasure()->endTick();
-      cs->setPos(POS::RIGHT, t);
+      cs->setPos(POS::RIGHT, t, false);
       if (state == Transport::PLAY)
             guiToSeq(SeqMsg(SeqMsgId::SEEK, t.ticks()));
       }
@@ -2919,7 +2918,7 @@ void Seq::setMetronomeGain(float val)
 //   setPos
 //---------------------------------------------------------
 
-void Seq::setPos(POS, unsigned t)
+void Seq::setPos(POS, unsigned t, bool)
       {
       qDebug("seq: setPos %d", t);
       }
