@@ -366,6 +366,7 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
 
       NoteEventList nel = note->playEvents();
       int nels = nel.size();
+      std::vector<Articulation*> articulationsRendered;
       for (int i = 0, pitch = note->ppitch(); i < nels; ++i) {
             const NoteEvent& e = nel[i]; // we make an explicit const ref, not a const copy.  no need to copy as we won't change the original object.
 
@@ -388,7 +389,7 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
 
             // Get the velocity used for this note from the staff
             // This allows correct playback of tremolos even without SND enabled.
-            int velo;
+            int velo = 0;
             Fraction nonUnwoundTick = Fraction::fromTicks(on - tickOffset);
             int articulationVelocity = 0;
             if (config.useSND) {
@@ -405,8 +406,19 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
             else {
                   velo = staff->velocities().val(nonUnwoundTick);
                   for (Articulation* a : chord->articulations()) {
-                        // TODO: Can't accumulate multi articulations easily here
-                        articulationVelocity = a->getVelocityOffset();
+                        bool rendered =
+                              std::find(articulationsRendered.begin(),
+                                        articulationsRendered.end(),
+                                        a)
+                                    == std::end(articulationsRendered)
+                                          ? false
+                                          : true;
+
+                        if (rendered)
+                              break;
+
+                        articulationsRendered.emplace_back(a);
+                        articulationVelocity += a->getVelocityOffset();
                         }
                   }
 
@@ -419,6 +431,7 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
             velo += veloDelta;
             velo += note->veloOffset();
 
+            // Velocity offset per-note is applied within playNote:
             playNote(events,
                      note,
                      note,
@@ -1476,10 +1489,9 @@ void renderTremolo(Chord* chord, QList<NoteEventList>& ell, int arpeggioDelta, i
 //   renderArpeggio
 //---------------------------------------------------------
 
-// "Refactored"
-
-int renderArpeggio(Chord *chord, QList<NoteEventList> & ell)
+int renderArpeggio(Chord *chord, QList<NoteEventList> & ell, int prevOnTime)
       {
+      (void) prevOnTime;
       Arpeggio* arp = chord->arpeggio();
       bool isUp = arp->up();
       int noteCount = (int) chord->notes().size();
@@ -2093,12 +2105,13 @@ bool graceNotesMerged(Chord* chord)
 //   renderChordArticulation
 //---------------------------------------------------------
 
-void renderChordArticulation(Chord* chord, QList<NoteEventList> & ell, int & gateTime, int& velocityOffset)
+void renderChordArticulation(Chord* chord, QList<NoteEventList>& ell, int& gateTime, int& velocityOffset)
       {
       Segment* seg = chord->segment();
       Instrument* instr = chord->part()->instrument(seg->tick());
       int channel  = 0;  // note->subchannel();
-
+      std::vector<Articulation*> articulationsRendered;
+      signed int gateSum = 0;
       for (unsigned k = 0; k < chord->notes().size(); ++k) {
             NoteEventList* events = &ell[k];
             Note *note = chord->notes()[k];
@@ -2114,6 +2127,16 @@ void renderChordArticulation(Chord* chord, QList<NoteEventList> & ell, int & gat
                         if (!a->playArticulation())
                               continue;
                         if (!renderNoteArticulation(events, note, false, a->symId(), a->ornamentStyle())) {
+                              bool rendered
+                                    = std::find(articulationsRendered.begin(),
+                                                articulationsRendered.end(),
+                                                a)
+                                    == std::end(articulationsRendered)
+                                          ? false
+                                          : true;
+
+                              if (rendered) break;
+
                               // NOTE: Instrument definition to Articulation Definition occurs here: (e.g. 95 to 50)
                               instr->updateGateTime(&gateTime, channel, a->articulationName());
 
@@ -2141,6 +2164,8 @@ void renderChordArticulation(Chord* chord, QList<NoteEventList> & ell, int & gat
                                     gateTime = storedGateTime;
                                     }
 
+                              gateSum += (-100 + gateTime);
+
                               //  _  _  ____  __    _____  ___  ____  ____  _  _
                               // ( \/ )( ___)(  )  (  _  )/ __)(_  _)(_  _)( \/ )
                               //  \  /  )__)  )(__  )(_)(( (__  _)(_   )(   \  /
@@ -2166,8 +2191,8 @@ void renderChordArticulation(Chord* chord, QList<NoteEventList> & ell, int & gat
                                           }
                                     }
 
-                              int finalVelocity = (storedStaffDynamic == 0)
-                                          ? storedArticulationDelta // Loading score instead of user-change
+                              int finalVelocity = (storedStaffDynamic == 0) // 0 = score-loading phase
+                                          ? storedArticulationDelta
                                           : calculatedArticulationDelta + calculatedUserVelocityDelta;
 
                               a->setVelocityOffset
@@ -2177,10 +2202,9 @@ void renderChordArticulation(Chord* chord, QList<NoteEventList> & ell, int & gat
                               a->setStaffDynamic
                                     (currentStaffVelocity);
 
-                              // TODO: add multiple articulations. For now, this gives errors because cycling through
-                              // notes so there are extra cycles for no reason... Just use the topMost one then for now
-                              //
-                              velocityOffset = finalVelocity;
+                              // Accumulate velocity
+                              velocityOffset += finalVelocity;
+                              articulationsRendered.emplace_back(a);
                               }
                         }
                   }
@@ -2237,7 +2261,7 @@ static QList<NoteEventList> renderChord(Chord* chord, int gateTime, int ontime, 
       renderChordArticulation(chord, ell, gateTime, velocityOffset1);
 
       if (arpeggio) {
-            arpeggioDelta = renderArpeggio(chord, ell);
+            arpeggioDelta = renderArpeggio(chord, ell, ontime);
             }
 
       Tremolo* tremolo = chord->tremolo();
@@ -2256,7 +2280,7 @@ static QList<NoteEventList> renderChord(Chord* chord, int gateTime, int ontime, 
 
                               if (secondChord->arpeggio() && secondChord->arpeggio()->playArpeggio()) {
                                     // Obtain arpeggio delta
-                                    arpeggio2Delta = renderArpeggio(secondChord, ell2);
+                                    arpeggio2Delta = renderArpeggio(secondChord, ell2, ontime);
                                     }
                               }
                         }
@@ -2293,8 +2317,9 @@ static QList<NoteEventList> renderChord(Chord* chord, int gateTime, int ontime, 
             if (!graceNotesAfter && !twoChordTremolo) {
                   // Two-chord tremolos already had length calculated
                   for (NoteEvent& e : ell[i]) {
-                        int updatedLen = (e.len() * gateTime) / 100;
-                        e.setLen(updatedLen);
+                        int updatedLength = (arpeggio && hasArticulations) ? (gateTime * 10) - e.ontime()
+                                                                           : (e.len() * gateTime) / 100;
+                        e.setLen(updatedLength);
                         }
                   }
             }
@@ -2461,9 +2486,11 @@ void Score::createPlayEvents(Chord* chord)
       if (unit && !chord->tuplet()) {
             swingAdjustParams(chord, gateTime, ontime, unit, ratio);
             }
-      for (Articulation* articulation : chord->articulations()) {
-            int iOnTime = articulation->getOnTime();
-            int onTimeDelta = (iOnTime * 10);
+
+      int onTimeDelta = 0;
+      for (Articulation* a : chord->articulations()) {
+            int storedOnTime = a->getOnTime();
+            onTimeDelta = (storedOnTime * 10);
             ontime += onTimeDelta;
             }
       //
