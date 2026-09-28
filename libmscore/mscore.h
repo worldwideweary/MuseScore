@@ -394,6 +394,8 @@ class MScore {
 
       static bool palettesHideWhenApplied;
 
+      static QColor pianoHighlightColor;
+
       static QColor dropColor;
       static QColor layoutBreakColor;
       static QColor frameMarginColor;
