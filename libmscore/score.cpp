@@ -3245,6 +3245,9 @@ void Score::padToggle(Pad p, const EditData& ed)
                               }
                         setNoteRest(_is.segment(), _is.track(), nval, _is.duration().fraction(), stemDirection);
                         _is.moveToNextInputPos();
+                        if (!MScore::retainAugmentationInRhythmEntry) {
+                              _is.setDots(0);
+                              }
                         }
                   else
                         _is.setRest(false);
