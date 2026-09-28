@@ -31,6 +31,7 @@ namespace Ms {
 class Tie;
 class Chord;
 class NoteEvent;
+class NoteEventList;
 class Text;
 class Score;
 class Sym;
