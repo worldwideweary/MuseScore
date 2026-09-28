@@ -441,9 +441,10 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
                   }
 
             // Velocity offset per-note is applied within playNote:
+            auto eventNote = e.getNote() ? e.getNote() : note;
             playNote(events,
                      note,
-                     note,
+                     eventNote,
                      i,
                      channel,
                      p,
@@ -1428,8 +1429,10 @@ void renderTremolo(Chord* chord, QList<NoteEventList>& ell,
 
                         if (k < firstChordNoteCount && k < secondChordNoteCount) {
                               // both chords have note
-                              int p1 = chord->notes()[k]->pitch();
-                              int p2 = chord2->notes()[k]->pitch();
+                              auto note1 = chord->notes()[k];
+                              auto note2 = chord2->notes()[k];
+                              int p1 = note1->pitch();
+                              int p2 = note2->pitch();
                               int pitchDelta = p2 - p1;
                               for (int i = 0; i < n; ++i) {
                                     int firstChordOnTime  = l * i * 2;
@@ -1441,11 +1444,11 @@ void renderTremolo(Chord* chord, QList<NoteEventList>& ell,
                                     int lenFirst  = l - firstArpDelta;
                                     int lenSecond = l - secondArpDelta;
 
-                                    events->append(NoteEvent(0, firstChordOnTime, lenFirst, vOff1));
+                                    events->append(NoteEvent(0, firstChordOnTime, lenFirst, vOff1, note1));
                                           auto& e = events->back();
                                           e.setLen( (e.len() * gateTime1) / 100);
 
-                                    events->append(NoteEvent(pitchDelta, secondChordOnTime, lenSecond, vOff2));
+                                    events->append(NoteEvent(pitchDelta, secondChordOnTime, lenSecond, vOff2, note2));
                                           auto& e2 = events->back();
                                           e2.setLen(e2.len() * gateTime2 / 100);
                                     }
@@ -1454,13 +1457,14 @@ void renderTremolo(Chord* chord, QList<NoteEventList>& ell,
                               }
                         else if (k < firstChordNoteCount) {
                               // only first chord has note
+                              auto note1 = chord->notes()[k];
                               for (int i = 0; i < n; ++i) {
                                     int onTime = l * i * 2;
                                     int delta = firstArpDelta;
                                     onTime += delta;
                                     int lenFirst = l - delta;
 
-                                    events->append(NoteEvent(0, onTime, lenFirst, vOff1));
+                                    events->append(NoteEvent(0, onTime, lenFirst, vOff1, note1));
                                     auto& e = events->back();
                                           e.setLen( (e.len() * gateTime1) / 100);
                                     }
@@ -1469,8 +1473,10 @@ void renderTremolo(Chord* chord, QList<NoteEventList>& ell,
                         else {
                               // only second chord has note
                               // reuse note 0 of first chord
-                              int p1 = chord->notes()[0]->pitch();
-                              int p2 = chord2->notes()[k]->pitch();
+                              auto note1 = chord->notes()[0];
+                              auto note2 = chord2->notes()[k];
+                              int p1 = note1->pitch();
+                              int p2 = note2->pitch();
                               int pitchDelta = p2-p1;
                               for (int i = 0; i < n; ++i) {
                                     int onTime = l * i * 2 + l;
@@ -1478,7 +1484,7 @@ void renderTremolo(Chord* chord, QList<NoteEventList>& ell,
                                     onTime += delta;
                                     int lenSecond = l - delta;
 
-                                    events->append(NoteEvent(pitchDelta, onTime, lenSecond, vOff2));
+                                    events->append(NoteEvent(pitchDelta, onTime, lenSecond, vOff2, note1));
                                     auto& e2 = events->back();
                                           e2.setLen(e2.len() * gateTime2 / 100);
                                     }
