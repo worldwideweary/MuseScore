@@ -580,7 +580,7 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
             }
 
       if (!isVisible)
-            return Qt::gray;
+            return MScore::invisibleElementsColor;
 
       return normalColor;
       }
