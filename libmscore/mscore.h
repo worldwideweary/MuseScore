@@ -344,6 +344,11 @@ class MScore {
       static QColor pianoWhiteKeysColor;
       static QColor pianoBlackKeysColor;
 
+      static bool   highlightNotes;
+      static bool   highlightRests;
+      static bool   highlightMore;
+      static bool   highlightLyrics;
+
       static bool noteInputOctaveTendencyIsTopNote;
       static bool noteInputOctaveUpwardFifth;
       static bool resetNoteEntryAtSystemOrCourtesy;

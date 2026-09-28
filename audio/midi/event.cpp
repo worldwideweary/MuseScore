@@ -174,6 +174,9 @@ NPlayEvent::NPlayEvent(BeatType beatType)
 
 bool NPlayEvent::isMuted() const
       {
+      if (rest())
+            return true;
+
       const Note* n = note();
       if (n) {
             MasterScore* cs = n->masterScore();
@@ -443,6 +446,10 @@ void EventMap::fixupMIDI()
                         info[event.channel()].event[event.pitch()] = &event;
                         }
                   info[event.channel()].nowPlaying[event.pitch()] = np;
+                  }
+            else if (event.type() == ME_CHORD && event.rest()) {
+                  // Need to omit when exporting of MIDI - rests are to be used solely for playback highlighting
+                  event.setDiscard(1);
                   }
 
             ++it;

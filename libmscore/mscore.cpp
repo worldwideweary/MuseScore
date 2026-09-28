@@ -78,6 +78,11 @@ bool    MScore::selectionFollowsCursor;
 QColor  MScore::pianoWhiteKeysColor;
 QColor  MScore::pianoBlackKeysColor;
 
+bool    MScore::highlightNotes;
+bool    MScore::highlightRests;
+bool    MScore::highlightMore;
+bool    MScore::highlightLyrics;
+
 bool    MScore::noteInputOctaveTendencyIsTopNote;
 bool    MScore::noteInputOctaveUpwardFifth;
 bool    MScore::resetNoteEntryAtSystemOrCourtesy;
