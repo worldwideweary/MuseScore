@@ -78,6 +78,7 @@ QColor  MScore::pianoBlackKeysColor;
 
 bool    MScore::noteInputOctaveTendencyIsTopNote;
 bool    MScore::noteInputOctaveUpwardFifth;
+bool    MScore::resetNoteEntryAtSystemOrCourtesy;
 bool    MScore::retainAugmentationInRhythmEntry;
 
 bool    MScore::fingerTextAutoForwardAlphaNumeric;
