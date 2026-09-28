@@ -343,6 +343,8 @@ class MScore {
       static QColor pianoBlackKeysColor;
 
       static bool noteInputOctaveTendencyIsTopNote;
+      static bool noteInputOctaveUpwardFifth;
+
       static bool disableVerticalMouseDragOfNotes;
 
       static QColor dropColor;
