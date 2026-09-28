@@ -490,6 +490,7 @@ void updateExternalValuesFromPreferences() {
       MScore::dropColor = preferences.getColor(PREF_UI_SCORE_NOTE_DROPCOLOR);
       MScore::defaultColor = preferences.getColor(PREF_UI_SCORE_DEFAULTCOLOR);
 
+      MScore::pianoHighlightColor = preferences.getColor(PREF_UI_PIANO_HIGHLIGHTCOLOR);
       MScore::pianoWhiteKeysColor = preferences.getColor(PREF_UI_PIANO_WHITE_KEYS_COLOR);
       MScore::pianoBlackKeysColor = preferences.getColor(PREF_UI_PIANO_BLACK_KEYS_COLOR);
 

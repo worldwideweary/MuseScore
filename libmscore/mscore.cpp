@@ -129,6 +129,8 @@ bool    MScore::lassoWithoutShift;
 
 bool    MScore::palettesHideWhenApplied;
 
+QColor  MScore::pianoHighlightColor;
+
 QColor  MScore::layoutBreakColor;
 QColor  MScore::frameMarginColor;
 QColor  MScore::bgColor;
