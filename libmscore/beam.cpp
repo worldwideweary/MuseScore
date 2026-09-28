@@ -1615,7 +1615,7 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
                               c->setUp(nup);
                               // guess was wrong, have to relayout
                               if (!_isGrace) {
-                                    score()->layoutChords1(c->segment(), c->staffIdx());
+                                    score()->layoutChords1(c->segment(), c->staffIdx(), true);
                                     // DEBUG: attempting to layout during beam edit causes crash
                                     // probably because ledger lines are deleted and added back
                                     // if (editFragment == -1)
@@ -1737,7 +1737,7 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
                         if (c->up() != nup) {
                               c->setUp(nup);
                               // guess was wrong, have to relayout
-                              score()->layoutChords1(c->segment(), c->staffIdx());
+                              score()->layoutChords1(c->segment(), c->staffIdx(), true);
                               c->layout();
                               // TODO: this might affect chord space, which might affect segment position
                               // we should relayout entire measure
