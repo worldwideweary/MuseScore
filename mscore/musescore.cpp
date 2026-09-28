@@ -495,6 +495,8 @@ void updateExternalValuesFromPreferences() {
       MScore::noteInputOctaveTendencyIsTopNote = preferences.getBool(PREF_SCORE_NOTE_INPUT_OCTAVE_TENDENCY);
       MScore::noteInputOctaveUpwardFifth = preferences.getBool(PREF_SCORE_NOTE_INPUT_FIFTH_IS_UPWARD);
 
+      MScore::palettesHideWhenApplied = preferences.getBool(PREF_UI_APP_AUTOHIDE_PALETTES);
+
       MScore::defaultPlayDuration = preferences.getInt(PREF_SCORE_NOTE_DEFAULTPLAYDURATION);
       MScore::panPlayback = preferences.getBool(PREF_APP_PLAYBACK_PANPLAYBACK);
       MScore::harmonyPlayDisableCompatibility = preferences.getBool(PREF_SCORE_HARMONY_PLAY_DISABLE_COMPATIBILITY);
@@ -6868,6 +6870,8 @@ void MuseScore::cmd(QAction* a)
       if (cmdn == "apply-current-palette-element") {
             if (paletteWidget)
                   paletteWidget->applyCurrentPaletteElement();
+            if (MScore::palettesHideWhenApplied)
+                  showPalette(false);
             return;
             }
       if (cmdn == "repeat-cmd") {
