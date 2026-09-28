@@ -498,6 +498,7 @@ void updateExternalValuesFromPreferences() {
       MScore::palettesHideWhenApplied = preferences.getBool(PREF_UI_APP_AUTOHIDE_PALETTES);
 
       MScore::resetNoteEntryAtSystemOrCourtesy = preferences.getBool(PREF_SCORE_NOTE_INPUT_RESET_PITCH_AT_SYSTEM);
+      MScore::noteInputForceVoice2BeneathVoice1 = preferences.getBool(PREF_SCORE_NOTE_INPUT_FORCE_VOICE2_BELOW);
       MScore::retainAugmentationInRhythmEntry = preferences.getBool(PREF_SCORE_NOTE_INPUT_RETAIN_AUG_RHYTHM_MODE);
       MScore::fingerTextAutoForwardAlphaNumeric = preferences.getBool(PREF_SCORE_FINGERING_ALPHANUMERIC_AUTOFORWARD);
       MScore::defaultPlayDuration = preferences.getInt(PREF_SCORE_NOTE_DEFAULTPLAYDURATION);
