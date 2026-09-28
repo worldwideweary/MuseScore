@@ -42,6 +42,7 @@
 #include "page.h"
 #include "part.h"
 #include "repeat.h"
+#include "rest.h"
 #include "score.h"
 #include "segment.h"
 #include "slur.h"
@@ -86,11 +87,21 @@ void Score::rebuildBspTree()
 //   layoutSegmentElements
 //---------------------------------------------------------
 
-static void layoutSegmentElements(Segment* segment, int startTrack, int endTrack)
+static void layoutSegmentElements(Segment* segment, int startTrack, int endTrack, bool preserveMeasureRestX)
       {
       for (int track = startTrack; track < endTrack; ++track) {
-            if (Element* e = segment->element(track))
+            if (Element* e = segment->element(track)) {
+                  const bool preserveX = preserveMeasureRestX
+                        && e->isRest() && toRest(e)->isFullMeasureRest();
+                  const qreal oldX = e->rxpos();
+
                   e->layout();
+
+                  // Later beam layout must retain the position already
+                  // assigned by Measure::stretchMeasure():
+                  if (preserveX)
+                        e->rxpos() = oldX;
+                  }
             }
       }
 
@@ -139,7 +150,7 @@ static bool vUp(Chord* chord)
 //    - offset as necessary to avoid conflict
 //---------------------------------------------------------
 
-void Score::layoutChords1(Segment* segment, int staffIdx)
+void Score::layoutChords1(Segment* segment, int staffIdx, bool preserveMeasureRestX)
       {
       const Staff* staff = Score::staff(staffIdx);
       const Fraction tick = segment->tick();
@@ -148,7 +159,7 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
       const int endTrack   = startTrack + VOICES;
 
       if (isTab) {
-            layoutSegmentElements(segment, startTrack, endTrack);
+            layoutSegmentElements(segment, startTrack, endTrack, preserveMeasureRestX);
             return;
             }
 
@@ -159,7 +170,7 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
       const int partEndTrack = part ? part->endTrack() : endTrack;
 
       if (isTab && (!staff->staffType(tick) || !staff->staffType(tick)->stemThrough())) {
-            layoutSegmentElements(segment, startTrack, endTrack);
+            layoutSegmentElements(segment, startTrack, endTrack, preserveMeasureRestX);
             return;
             }
 
@@ -660,7 +671,7 @@ void Score::layoutChords1(Segment* segment, int staffIdx)
             layoutChords3(notes, staff, segment);
             }
 
-      layoutSegmentElements(segment, partStartTrack, partEndTrack);
+      layoutSegmentElements(segment, partStartTrack, partEndTrack, preserveMeasureRestX);
       }
 
 //---------------------------------------------------------

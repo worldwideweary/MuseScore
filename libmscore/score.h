@@ -1080,7 +1080,7 @@ class Score : public QObject, public ScoreElement {
       void doLayoutRange(const Fraction&, const Fraction&);
       void layoutLinear(bool layoutAll, LayoutContext& lc);
 
-      void layoutChords1(Segment* segment, int staffIdx);
+      void layoutChords1(Segment* segment, int staffIdx, bool preserveMeasureRestX = false);
       qreal layoutChords2(std::vector<Note*>& notes, bool up);
       void layoutChords3(std::vector<Note*>&, const Staff*, Segment*);
 
