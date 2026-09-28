@@ -32,6 +32,7 @@ class ColorLabel : public QPushButton {
 
       QColor _color = Qt::blue;
       QPixmap* _pixmap = nullptr;
+      QString _title = tr("Select Color");
 
       virtual void paintEvent(QPaintEvent*);
       
@@ -45,6 +46,9 @@ class ColorLabel : public QPushButton {
       ColorLabel(QWidget* parent = 0);
       ~ColorLabel();
       void setColor(const QColor& c);
+      void setTitle(QString s)  { _title = s;    }
+      const QString& getTitle() { return _title; }
+
       virtual QSize sizeHint() const;
       void setPixmap(QPixmap*);
       QColor color() const     { return _color; }
