@@ -344,6 +344,7 @@ class MScore {
 
       static bool noteInputOctaveTendencyIsTopNote;
       static bool noteInputOctaveUpwardFifth;
+      static bool fingerTextAutoForwardAlphaNumeric;
 
       static bool disableVerticalMouseDragOfNotes;
 
