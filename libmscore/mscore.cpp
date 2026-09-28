@@ -76,6 +76,8 @@ QColor  MScore::defaultColor;
 QColor  MScore::pianoWhiteKeysColor;
 QColor  MScore::pianoBlackKeysColor;
 
+bool    MScore::noteInputOctaveTendencyIsTopNote;
+
 QColor  MScore::layoutBreakColor;
 QColor  MScore::frameMarginColor;
 QColor  MScore::bgColor;

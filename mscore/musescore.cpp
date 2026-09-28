@@ -490,6 +490,8 @@ void updateExternalValuesFromPreferences() {
       MScore::pianoWhiteKeysColor = preferences.getColor(PREF_UI_PIANO_WHITE_KEYS_COLOR);
       MScore::pianoBlackKeysColor = preferences.getColor(PREF_UI_PIANO_BLACK_KEYS_COLOR);
 
+      MScore::noteInputOctaveTendencyIsTopNote = preferences.getBool(PREF_SCORE_NOTE_INPUT_OCTAVE_TENDENCY);
+
       MScore::defaultPlayDuration = preferences.getInt(PREF_SCORE_NOTE_DEFAULTPLAYDURATION);
       MScore::panPlayback = preferences.getBool(PREF_APP_PLAYBACK_PANPLAYBACK);
       MScore::harmonyPlayDisableCompatibility = preferences.getBool(PREF_SCORE_HARMONY_PLAY_DISABLE_COMPATIBILITY);
