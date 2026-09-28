@@ -1689,7 +1689,26 @@ void Score::cmdFlip()
             if (e->isBeam()) {
                   auto beam = toBeam(e);
                   flipOnce(beam, [beam](){
-                        Direction dir = beam->up() ? Direction::DOWN : Direction::UP;
+                        Direction dir;
+                        if (beam->cross()) {
+                              switch (beam->beamDirection()) {
+                                    case Direction::UP:
+                                          dir = Direction::AUTO;
+                                          break;
+                                    case Direction::AUTO:
+                                          dir = Direction::DOWN;
+                                          break;
+                                    case Direction::DOWN:
+                                          dir = Direction::UP;
+                                          break;
+                                    default:
+                                          dir = Direction::AUTO;
+                                          break;
+                                    }
+                              }
+                        else
+                              dir = beam->up() ? Direction::DOWN : Direction::UP;
+
                         beam->undoChangeProperty(Pid::STEM_DIRECTION, QVariant::fromValue<Direction>(dir));
                         });
                   }
