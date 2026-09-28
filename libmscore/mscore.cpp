@@ -80,6 +80,28 @@ QColor  MScore::lassoColor;
 bool    MScore::lassoBorderEnabled;
 QColor  MScore::gripsColor;
 
+QColor  MScore::overrideAllColor;
+QColor  MScore::overrideBarlinesColor;
+QColor  MScore::overrideBoxTextsColor;
+QColor  MScore::overrideBracketsColor;
+QColor  MScore::overrideDynamicsColor;
+QColor  MScore::overrideEvenStaffElementsColor;
+QColor  MScore::overrideExpressionTextColor;
+QColor  MScore::overrideFingeringTextColor;
+QColor  MScore::overrideHarmonyTextColor;
+QColor  MScore::overrideLedgerLinesColor;
+bool    MScore::overrideOnlyAllColor;
+QColor  MScore::overrideSlursColor;
+QColor  MScore::overrideStaffLinesColor;
+QColor  MScore::overrideStaffTextColor;
+QColor  MScore::overrideTextLinesColor;
+
+QColor  MScore::overrideTiesColor;
+bool    MScore::noteheadsAlterationColorsEnabled;
+QColor  MScore::overrideNoteheadColor;
+QColor  MScore::overrideNoteheadLoweredColor;
+QColor  MScore::overrideNoteheadRaisedColor;
+
 bool    MScore::cursorResetToStart;
 bool    MScore::selectionFollowsCursor;
 
