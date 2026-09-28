@@ -497,6 +497,7 @@ void updateExternalValuesFromPreferences() {
 
       MScore::palettesHideWhenApplied = preferences.getBool(PREF_UI_APP_AUTOHIDE_PALETTES);
 
+      MScore::fingerTextAutoForwardAlphaNumeric = preferences.getBool(PREF_SCORE_FINGERING_ALPHANUMERIC_AUTOFORWARD);
       MScore::defaultPlayDuration = preferences.getInt(PREF_SCORE_NOTE_DEFAULTPLAYDURATION);
       MScore::panPlayback = preferences.getBool(PREF_APP_PLAYBACK_PANPLAYBACK);
       MScore::harmonyPlayDisableCompatibility = preferences.getBool(PREF_SCORE_HARMONY_PLAY_DISABLE_COMPATIBILITY);

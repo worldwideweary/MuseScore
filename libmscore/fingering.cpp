@@ -101,6 +101,7 @@ void Fingering::layout()
 
       TextBase::layout();
       rypos() = 0.0;    // handle placement below
+      qreal verticalSpacing = 0.15; // Percentage of text-height for stacking vertically
 
       if (autoplace() && note()) {
             Note* n      = note();
@@ -144,7 +145,7 @@ void Fingering::layout()
                               qreal d = sk.minDistance(ss->skyline().north());
                               qreal yd = 0.0;
                               if (d > 0.0 && isStyled(Pid::MIN_DISTANCE))
-                                    yd -= d + height() * .25;
+                                    yd -= d + height() * verticalSpacing;
                               // force extra space above staff & chord (but not other fingerings)
                               qreal top;
                               if (chord->up() && chord->beam() && stem) {
@@ -180,7 +181,7 @@ void Fingering::layout()
                               qreal d = ss->skyline().south().minDistance(sk);
                               qreal yd = 0.0;
                               if (d > 0.0 && isStyled(Pid::MIN_DISTANCE))
-                                    yd += d + height() * .25;
+                                    yd += d + height() * verticalSpacing;
                               // force extra space below staff & chord (but not other fingerings)
                               qreal bottom;
                               if (!chord->up() && chord->beam() && stem) {
