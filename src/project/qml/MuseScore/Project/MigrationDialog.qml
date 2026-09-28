@@ -48,8 +48,8 @@ StyledDialogView {
 
     contentHeight: {
         switch (root.migrationType) {
-        case MigrationType.Pre_3_6: return 533 // 517 just fits, then add 16
-        case MigrationType.Ver_3_6: return 271 // 255 just fits, then add 16
+        case MigrationType.Pre_3_6: return 600
+        case MigrationType.Ver_3_6: return 400
         case MigrationType.Unknown: return 0
         }
         return 600
