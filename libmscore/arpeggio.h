@@ -99,6 +99,9 @@ class Arpeggio final : public Element {
       qreal Stretch() const             { return _stretch; }
       void setStretch(qreal val)        { _stretch = val;  }
 
+      bool up() const
+            { return (_arpeggioType != ArpeggioType::DOWN && _arpeggioType != ArpeggioType::DOWN_STRAIGHT); }
+
       QVariant getProperty(Pid propertyId) const override;
       bool setProperty(Pid propertyId, const QVariant&) override;
       QVariant propertyDefault(Pid propertyId) const override;
