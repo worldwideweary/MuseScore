@@ -595,6 +595,9 @@ void ScoreView::moveCursor(const Fraction& tick, bool viaUserNavigation)
       if (measure == 0)
             return;
 
+      if (score()->isPlaying())
+            score()->setActivePlaybackMeasure(measure);
+
       qreal x = 0.0;
       Segment* s;
       for (s = measure->first(SegmentType::ChordRest); s;) {
