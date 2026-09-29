@@ -80,6 +80,9 @@ QColor  MScore::lassoColor;
 bool    MScore::lassoBorderEnabled;
 QColor  MScore::gripsColor;
 
+bool    MScore::noteheadsBehindStaff;
+bool    MScore::noteheadsBehindLedger;
+
 QColor  MScore::overrideAllColor;
 QColor  MScore::overrideBarlinesColor;
 QColor  MScore::overrideBoxTextsColor;
