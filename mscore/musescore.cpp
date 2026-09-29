@@ -7474,6 +7474,7 @@ void MuseScore::cmd(QAction* a)
 
 void MuseScore::endCmd(bool undoRedo)
       {
+      const bool commandWasInspectorEdit = inspector() ? inspector()->isInspectorEdit() : false;
 #ifdef SCRIPT_INTERFACE
       getPluginEngine()->beginEndCmd(this, undoRedo);
 #endif
@@ -7559,8 +7560,13 @@ void MuseScore::endCmd(bool undoRedo)
       else {
             selectionChanged(SelState::NONE);
             }
-      updateInspector();
+
+      if (!commandWasInspectorEdit) {
+            updateInspector();
+            }
+
       updatePaletteBeamMode();
+
 #ifdef SCRIPT_INTERFACE
       getPluginEngine()->endEndCmd(this);
 #endif
