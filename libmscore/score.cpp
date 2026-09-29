@@ -4747,6 +4747,24 @@ Element* Score::getScoreElementOfMeasureBase(MeasureBase* mb) const
       }
 
 //---------------------------------------------------------
+//    setActivePlaybackMeasure
+//---------------------------------------------------------
+
+void Score::setActivePlaybackMeasure(Measure* m)
+      {
+      _activePlaybackMeasure = m;
+      }
+
+//---------------------------------------------------------
+//    getActivePlaybackMeasure
+//---------------------------------------------------------
+
+Measure* Score::getActivePlaybackMeasure() const
+      {
+      return _activePlaybackMeasure;
+      }
+
+//---------------------------------------------------------
 //    undergoingLayout
 //---------------------------------------------------------
 

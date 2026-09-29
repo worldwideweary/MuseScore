@@ -503,6 +503,8 @@ class Score : public QObject, public ScoreElement {
       PlayMode _playMode { PlayMode::SYNTHESIZER };
       bool _isPlaying { false };
 
+      Measure* _activePlaybackMeasure { nullptr };
+
       bool _resetOctave = false;
 
       qreal _noteHeadWidth { 0.0 };       // cached value
@@ -905,6 +907,9 @@ class Score : public QObject, public ScoreElement {
       Element* cmdNextPrevRehearsalMark(Element*, bool) const;
       MeasureBase* getNextPrevSectionBreak(MeasureBase*, bool) const;
       Element* getScoreElementOfMeasureBase(MeasureBase*) const;
+
+      void setActivePlaybackMeasure(Measure* m);
+      Measure* getActivePlaybackMeasure() const;
 
       bool undergoingLayout() const;
 
