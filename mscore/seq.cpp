@@ -2870,7 +2870,17 @@ void Seq::heartBeatTimeout()
       if (piano && piano->isVisible())
             piano->updateAllKeys();
 
-      cv->update();
+      const bool fullUpdateView =
+               MScore::highlightMore
+            || MScore::honorEnPassantVisibility
+            || MScore::highlightLyrics
+            ;
+
+      fullUpdateView
+            ? cv->update()
+            : cv->update(cv->toPhysical(r))
+            ;
+
       }
 
 //---------------------------------------------------------
