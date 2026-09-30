@@ -2843,7 +2843,7 @@ void Seq::heartBeatTimeout()
                         if (!se->isNote())
                               continue;
                         Note* currentNote = toNote(se);
-                        if (mscore->playbackHighlight() && playEventHasVelocity) {
+                        if (MScore::playbackHighlight && playEventHasVelocity) {
                               currentNote->setMark(true);
                               markedNotes.append(currentNote);
                               }

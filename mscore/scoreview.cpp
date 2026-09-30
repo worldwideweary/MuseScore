@@ -699,7 +699,7 @@ void ScoreView::moveCursor(const Fraction& tick, bool viaUserNavigation)
       y -= 3 * _spatium;
 
       if (isUpdated) {
-            if (mscore->playbackHighlight()) {
+            if (MScore::playbackHighlight) {
                   if (MScore::cursorMoveByMeasure) {
                         x = measure->canvasBoundingRect().topLeft().x();
                         y = measure->canvasBoundingRect().topLeft().y() + _spatium;

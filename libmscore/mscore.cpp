@@ -180,6 +180,8 @@ bool    MScore::harmonyPlayDisableCompatibility;
 bool    MScore::harmonyPlayDisableNew;
 bool    MScore::playRepeats;
 bool    MScore::panPlayback;
+bool    MScore::playbackHighlight;
+bool    MScore::playbackCountIn;
 int     MScore::playbackSpeedIncrement;
 qreal   MScore::nudgeStep;
 qreal   MScore::nudgeStep10;
