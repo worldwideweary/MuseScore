@@ -604,6 +604,8 @@ void updateExternalValuesFromPreferences() {
 
       MScore::defaultPlayDuration = preferences.getInt(PREF_SCORE_NOTE_DEFAULTPLAYDURATION);
       MScore::panPlayback = preferences.getBool(PREF_APP_PLAYBACK_PANPLAYBACK);
+      MScore::playbackHighlight = preferences.getBool(PREF_APP_PLAYBACK_HIGHLIGHT);
+      MScore::playbackCountIn = preferences.getBool(PREF_APP_PLAYBACK_COUNTIN);
       MScore::harmonyPlayDisableCompatibility = preferences.getBool(PREF_SCORE_HARMONY_PLAY_DISABLE_COMPATIBILITY);
       MScore::harmonyPlayDisableNew = preferences.getBool(PREF_SCORE_HARMONY_PLAY_DISABLE_NEW);
       MScore::playRepeats = preferences.getBool(PREF_APP_PLAYBACK_PLAYREPEATS);
@@ -8133,12 +8135,17 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             }
       else if (cmd == "help")
             showContextHelp();
-      else if (cmd == "follow")
+      else if (cmd == "follow") {
             preferences.setPreference(PREF_APP_PLAYBACK_FOLLOWSONG, a->isChecked());
-      else if (cmd == "playback-highlight")
+            }
+      else if (cmd == "playback-highlight") {
+            MScore::playbackHighlight = a->isChecked();
             preferences.setPreference(PREF_APP_PLAYBACK_HIGHLIGHT, a->isChecked());
-      else if (cmd == "countin")
+            }
+      else if (cmd == "countin") {
+            MScore::playbackCountIn = a->isChecked();
             preferences.setPreference(PREF_APP_PLAYBACK_COUNTIN, a->isChecked());
+            }
       else if (cmd == "split-h")
             splitWindow(true);
       else if (cmd == "split-v")
@@ -8273,10 +8280,6 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             loopAction->setChecked(true);
             }
       else if (cmd == "metronome")  // no action
-            ;
-      else if (cmd == "playback-highlight")  // no action
-            ;
-      else if (cmd == "countin")    // no action
             ;
       else if (cmd == "independent-metronome")
             seq->setIndependentMetronomeEnabled(a->isChecked());
