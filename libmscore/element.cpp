@@ -557,82 +557,74 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
       //
       // Playback Highlighting
       //
-      if (MScore::highlightMore) {
-            Chord* c = nullptr;
+      if (MScore::playbackHighlight) {
+            if (MScore::highlightMore) {
+                  Chord* c = nullptr;
 
-            // From Chords:
-            if (isStem()) {
-                  c = toStem(this)->chord();
-                  }
-            else if (isHook()) {
-                  c = toHook(this)->chord();
-                  }
-            else if (isArpeggio()) {
-                  c = toArpeggio(this)->chord();
-                  bool paletteItem = !c || c->notes().empty();
-                  if (!paletteItem) {
-                        auto un = c->upNote();
-                        auto dn = c->downNote();
-                        marked   = un->mark() || dn->mark();
-                        c = nullptr;
+                  // From Chords:
+                  if (isStem()) {
+                        c = toStem(this)->chord();
                         }
-                  }
-            else if (isArticulation()) {
-                  if (auto cr = toArticulation(this)->chordRest()) {
-                        c = cr->isChord() ? toChord(cr) : nullptr;
+                  else if (isHook()) {
+                        c = toHook(this)->chord();
                         }
-                  }
-            else if (isAccidental()) {
-                  if (auto n = toAccidental(this)->note())
-                        marked = n->mark();
-                  }
-            else if (isNoteDot()) {
-                  const auto dot = toNoteDot(this);
-                  if (auto rest = dot->rest())
-                        marked = rest->mark();
-                  else {
-                        auto n = dot->note();
-                        if (auto ftn = n->firstTiedNote())
-                              n = ftn;
-                        marked = n->mark();
-                        }
-                  }
-            else if (isTieSegment()) {
-                  auto ts = toTieSegment(this);
-                  auto t  = ts->tie();
-                  if (auto sn = t->startNote()) {
-                        if (auto firstNote = sn->firstTiedNote()) {
-                              marked = firstNote->mark();
+                  else if (isArpeggio()) {
+                        c = toArpeggio(this)->chord();
+                        bool paletteItem = !c || c->notes().empty();
+                        if (!paletteItem) {
+                              auto un = c->upNote();
+                              auto dn = c->downNote();
+                              marked   = un->mark() || dn->mark();
+                              c = nullptr;
                               }
                         }
-                  }
-            else if (isFermata()) {
-                  auto f = toFermata(this);
-                  if (auto s = f->segment()) {
-                        if (auto cr = s->nextChordRest(f->track())) {
+                  else if (isArticulation()) {
+                        if (auto cr = toArticulation(this)->chordRest()) {
+                              c = cr->isChord() ? toChord(cr) : nullptr;
+                              }
+                        }
+                  else if (isAccidental()) {
+                        if (auto n = toAccidental(this)->note())
+                              marked = n->mark();
+                        }
+                  else if (isNoteDot()) {
+                        const auto dot = toNoteDot(this);
+                        if (auto rest = dot->rest())
+                              marked = rest->mark();
+                        else {
+                              auto n = dot->note();
+                              if (auto ftn = n->firstTiedNote())
+                                    n = ftn;
+                              marked = n->mark();
+                              }
+                        }
+                  else if (isTieSegment()) {
+                        auto ts = toTieSegment(this);
+                        auto t  = ts->tie();
+                        if (auto sn = t->startNote()) {
+                              if (auto firstNote = sn->firstTiedNote()) {
+                                    marked = firstNote->mark();
+                                    }
+                              }
+                        }
+                  else if (isFermata()) {
+                        auto f = toFermata(this);
+                        if (auto s = f->segment()) {
+                              if (auto cr = s->nextChordRest(f->track())) {
+                                    if (cr->isChord())
+                                          c = toChord(cr);
+                                    else if (cr->isRest())
+                                          marked = toRest(cr)->mark();
+                                    }
+                              }
+                        else if (auto cr = f->chordRest()) {
                               if (cr->isChord())
                                     c = toChord(cr);
-                              else if (cr->isRest())
-                                    marked = toRest(cr)->mark();
                               }
                         }
-                  else if (auto cr = f->chordRest()) {
-                        if (cr->isChord())
-                              c = toChord(cr);
-                        }
-                  }
-            else if (isTremolo()) {
-                  auto e = toTremolo(this);
-                  if (auto c = e->chord1()) {
-                        const auto ns = c->notes();
-                        for (auto n : ns) {
-                              marked = n->mark();
-                              if (marked)
-                                    break;
-                              }
-                        }
-                  if (!marked) {
-                        if (auto c = e->chord2()) {
+                  else if (isTremolo()) {
+                        auto e = toTremolo(this);
+                        if (auto c = e->chord1()) {
                               const auto ns = c->notes();
                               for (auto n : ns) {
                                     marked = n->mark();
@@ -640,110 +632,120 @@ QColor Element::curColor(bool isVisible, QColor normalColor) const
                                           break;
                                     }
                               }
-                        }
-                  }
-
-            if (c) {
-                  for (auto n : c->notes()) {
-                        marked = n->mark();
-                        if (auto firstNote = n->firstTiedNote()) {
-                              marked = firstNote->mark();
+                        if (!marked) {
+                              if (auto c = e->chord2()) {
+                                    const auto ns = c->notes();
+                                    for (auto n : ns) {
+                                          marked = n->mark();
+                                          if (marked)
+                                                break;
+                                          }
+                                    }
                               }
                         }
+                  else if (isBeam()) {
+                        auto beam = toBeam(this);
+                        auto t1 = beam->tick();
+                        auto t2 = t1 + beam->ticks();
+                        if (auto playingElement = beam->score()->getLastCRSequenced()) {
+                              auto pos = playingElement->tick();
+                              marked = (pos >= t1 && pos < t2);
+                              }
+                        }
+                  else if (isSpannerSegment()) {
+                        // Mark the line itself
+                        auto ss = toSpannerSegment(const_cast<Element*>(this));
+                        auto sp = ss->spanner();
+                        auto t1 = sp->tick();
+                        auto t2 = sp->tick2();
+                        t2 -= Fraction::fromTicks(isSlurSegment() ? 0 : 1); // let slurs remain highlighted during the final element duration
+                        if (auto playingElement = ss->score()->getLastCRSequenced()) {
+                              auto pos = playingElement->tick();
+                              marked = (pos >= t1 && pos <= t2);
+                              }
+                        }
+                  else if (isTextBase()) {
+                        // Mark the text of line
+                        auto tb = toTextBase(this);
+                        if (auto playingElement = score()->getLastCRSequenced()) {
+                              if (auto p = tb->parent()) {
+                                    if (p->isSpannerSegment()) {
+                                          auto ss = toSpannerSegment(p);
+                                          auto sp = ss->spanner();
+                                          Fraction pos = playingElement->tick();
+                                          Fraction t1 = sp->tick();
+                                          Fraction t2 = sp->tick2();
+                                          t2 -= Fraction::fromTicks(1);
+                                          marked = (pos >= t1 && pos < t2);
+                                          }
+                                    }
+                              }
+                        }
+
+                  if (c) {
+                        for (auto n : c->notes()) {
+                              marked = n->mark();
+                              if (auto firstNote = n->firstTiedNote()) {
+                                    marked = firstNote->mark();
+                                    }
+                              }
+                        }
+
                   }
 
-            if (isBeam()) {
-                  auto beam = toBeam(this);
-                  auto t1 = beam->tick();
-                  auto t2 = t1 + beam->ticks();
-                  if (auto playingElement = beam->score()->getLastCRSequenced()) {
-                        auto pos = playingElement->tick();
-                        marked = (pos >= t1 && pos < t2);
-                        }
-                  }
-            else if (isSpannerSegment()) {
-                  // Mark the line itself
-                  auto ss = toSpannerSegment(const_cast<Element*>(this));
-                  auto sp = ss->spanner();
-                  auto t1 = sp->tick();
-                  auto t2 = sp->tick2();
-                  t2 -= Fraction::fromTicks(isSlurSegment() ? 0 : 1); // let slurs remain highlighted during the final element duration
-                  if (auto playingElement = ss->score()->getLastCRSequenced()) {
-                        auto pos = playingElement->tick();
-                        marked = (pos >= t1 && pos <= t2);
-                        }
-                  }
-            else if (isTextBase()) {
-                  // Mark the text of line
-                  auto tb = toTextBase(this);
-                  if (auto playingElement = score()->getLastCRSequenced()) {
-                        if (auto p = tb->parent()) {
-                              if (p->isSpannerSegment()) {
-                                    auto ss = toSpannerSegment(p);
-                                    auto sp = ss->spanner();
-                                    Fraction pos = playingElement->tick();
-                                    Fraction t1 = sp->tick();
-                                    Fraction t2 = sp->tick2();
+            if (MScore::honorEnPassantVisibility && marked && (isNote() || isRest())) {
+                  int iTrack = track();
+                  Fraction fTick = tick();
+                  auto overlappingSpanners = score()->spannerMap().findOverlapping(0, fTick.ticks());
+                  for (auto i : overlappingSpanners) {
+                        auto s = i.value;
+                        if (s->isTextLineBase() && s->track() == iTrack) {
+                              auto tlb = toTextLineBase(s);
+                              if (tlb->enPassantManifest()) {
+                                    auto t1 = tlb->tick();
+                                    auto t2 = tlb->tick2();
                                     t2 -= Fraction::fromTicks(1);
-                                    marked = (pos >= t1 && pos < t2);
+                                    bool withinPlaybackPosition = (fTick >= t1 && fTick < t2);
+                                    if (withinPlaybackPosition) {
+                                          if (!tlb->visible()) {
+                                                tlb->setVisible(true);
+                                                tlb->setTemporarilyShowing(true);
+                                                // BSP Tree needs updating if already invisible
+                                                // TODO TEST this on large scores to verify everything's okay.
+                                                score()->masterScore()->rebuildBspTree();
+                                                score()->masterScore()->setUpdateAll();
+                                                }
+                                          else if (!tlb->isTemporarilyShowing()) {
+                                                tlb->frontSegment()->setSelected(true);
+                                                }
+                                          }
+                                    else tlb->isTemporarilyShowing() ? tlb->setVisible(false) : tlb->frontSegment()->setSelected(false);
                                     }
                               }
                         }
                   }
-            }
 
-      if (MScore::honorEnPassantVisibility && marked && (isNote() || isRest())) {
-            int iTrack = track();
-            Fraction fTick = tick();
-            auto overlappingSpanners = score()->spannerMap().findOverlapping(0, fTick.ticks());
-            for (auto i : overlappingSpanners) {
-                  auto s = i.value;
-                  if (s->isTextLineBase() && s->track() == iTrack) {
-                        auto tlb = toTextLineBase(s);
-                        if (tlb->enPassantManifest()) {
-                              auto t1 = tlb->tick();
-                              auto t2 = tlb->tick2();
-                              t2 -= Fraction::fromTicks(1);
-                              bool withinPlaybackPosition = (fTick >= t1 && fTick < t2);
-                              if (withinPlaybackPosition) {
-                                    if (!tlb->visible()) {
-                                          tlb->setVisible(true);
-                                          tlb->setTemporarilyShowing(true);
-                                          // BSP Tree needs updating if already invisible
-                                          // TODO TEST this on large scores to verify everything's okay.
-                                          score()->masterScore()->rebuildBspTree();
-                                          score()->masterScore()->setUpdateAll();
-                                          }
-                                    else if (!tlb->isTemporarilyShowing()) {
-                                          tlb->frontSegment()->setSelected(true);
-                                          }
-                                    }
-                              else tlb->isTemporarilyShowing() ? tlb->setVisible(false) : tlb->frontSegment()->setSelected(false);
-                              }
-                        }
+            if (MScore::highlightNotes && isNote()) {
+                  const Note* n = toNote(this);
+                  const Note* ftn = n->firstTiedNote();
+                  if (ftn)
+                        n = ftn;
+                  marked = n->mark();
                   }
-            }
 
-      if (MScore::highlightNotes && isNote()) {
-            const Note* n = toNote(this);
-            const Note* ftn = n->firstTiedNote();
-            if (ftn)
-                  n = ftn;
-            marked = n->mark();
-            }
+            if (MScore::highlightRests && isRest()) {
+                  auto r = toRest(this);
+                  marked = r->mark();
+                  }
 
-      if (MScore::highlightRests && isRest()) {
-            auto r = toRest(this);
-            marked = r->mark();
-            }
-
-      if (MScore::highlightLyrics && isLyrics()) {
-            if (auto p = this->parent()) {
-                  if (p->isChord()) {
-                        auto c = toChord(p);
-                        if (auto n = c->upNote()) {
-                              if (n->mark()) {
-                                    marked = true;
+            if (MScore::highlightLyrics && isLyrics()) {
+                  if (auto p = this->parent()) {
+                        if (p->isChord()) {
+                              auto c = toChord(p);
+                              if (auto n = c->upNote()) {
+                                    if (n->mark()) {
+                                          marked = true;
+                                          }
                                     }
                               }
                         }
