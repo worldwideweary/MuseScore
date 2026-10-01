@@ -2015,6 +2015,8 @@ void Score::deleteItem(Element* el)
                   //
                   {
                   Rest* rest = toRest(el);
+                  const bool atStartOfMeasure =
+                        rest->tick() == rest->measure()->tick();
                   if (rest->tuplet() && rest->tuplet()->elements().empty())
                         undoRemoveElement(rest->tuplet());
                   if ((el->voice() != 0) && !rest->tuplet()) {
@@ -2103,8 +2105,10 @@ void Score::deleteItem(Element* el)
                               }
                         // Set input position
                         // TODO If deleted element is last of a sequence, use prev?
-                        if (noteEntryMode())
-                              score()->move("prev-chord");
+                        if (noteEntryMode()) {
+                               if (!atStartOfMeasure)
+                                     score()->move("prev-chord");
+                               }
                         }
                   }
                   break;
