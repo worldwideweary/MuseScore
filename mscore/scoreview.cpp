@@ -4344,7 +4344,6 @@ void ScoreView::cmd(const char* s)
                         }
                   cv->score()->cmdDeleteSelection();
 
-                  cv->score()->endCmd();
 
                   if (is.noteEntryMode()) {
                         if (!is.cr()) {
@@ -4368,6 +4367,7 @@ void ScoreView::cmd(const char* s)
                         cv->score()->setSelection(originalSelection);
                         cv->score()->cmdCycleVoiceFilter(-1);
                         }
+                  cv->score()->endCmd();
                   }},
             {{"export-midi-automatic"}, [](ScoreView* cv, const QByteArray&) {
                   QString results = cv->saveMIDIWithoutDialogue();
