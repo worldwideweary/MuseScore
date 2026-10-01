@@ -7218,7 +7218,11 @@ void ScoreView::changeVoice(int voice)
             if (is->segment()) {
                   auto desiredTrackCR = is->segment()->nextChordRest(track);
                   if (!(desiredTrackCR && desiredTrackCR->tick() <= inputTick)) {
-                        is->setSegment(is->segment()->measure()->first(SegmentType::ChordRest));
+                        const bool resetInputPositionWhenNoChordRest = false;
+                        if (resetInputPositionWhenNoChordRest) {
+                              // This is 3.6.2 behavior:
+                              is->setSegment(is->segment()->measure()->first(SegmentType::ChordRest));
+                              }
                         desiredTrackCR = is->segment()->nextChordRest(track);
                         }
                   if (desiredTrackCR && desiredTrackCR->tick() <= inputTick) {
