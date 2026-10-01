@@ -7887,49 +7887,60 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
       else if (cmd == "layer" && enableExperimental)
             showLayerManager();
       else if (cmd == "backspace") {
-            bool isRange = (cs->selection().isRange());
-            bool isNoteEntry =
-                  (_sstate == STATE_NOTE_ENTRY_METHOD_STEPTIME ||
-                  _sstate == STATE_NOTE_ENTRY_METHOD_REPITCH ||
-                  _sstate == STATE_NOTE_ENTRY_METHOD_RHYTHM);
-            bool rhythmMethod = _sstate == STATE_NOTE_ENTRY_METHOD_RHYTHM;
-            auto ee = cv->getEditElement();
+            const bool isRange = (cs->selection().isRange());
+            const bool rhythmMethod =
+                  _sstate == STATE_NOTE_ENTRY_METHOD_RHYTHM;
+
+            const bool isNoteEntry =
+                     _sstate == STATE_NOTE_ENTRY_METHOD_STEPTIME
+                  || _sstate == STATE_NOTE_ENTRY_METHOD_REPITCH
+                  || rhythmMethod
+                  ;
+
+            Element* ee = cv->getEditElement();
 
             if (isNoteEntry) {
-                  // Note Entry - Delete current chord, or move to previous chord in current track
-                  auto& is = cs->inputState();
-                  auto  iTick = is.tick();
-                  auto oseg = is.segment();
-                  if (auto cr = cs->selection().firstChordRest()) {
-                        auto track = cr->track();
-                        if (cv && (isRange || cr->isGrace())) {
-                              cv->cmd(getAction("delete")); // Specifically not cs->cmdDeleteSelection();
+                  // current chord: delete
+                  // current rest: move to previous chord in current track
+                  InputState& is = cs->inputState();
+                  const Fraction iTick = is.tick();
+                  Segment* const oseg = is.segment();
+                  if (ChordRest* cr = cs->selection().firstChordRest()) {
+                        const int track = cr->track();
+                        if (isRange || cr->isGrace()) {
+                              // Explicitly not invoking cs->cmdDeleteSelection():
+                              cv->cmd(getAction("delete"));
                               }
                         else if (cr->isRest()) {
-                              auto fsTick = cs->firstSegment(SegmentType::ChordRest)->tick();
-                              while (cr && !cr->isChord() && fsTick != cr->tick()) {
-                                    if (auto pSeg = cr->segment()->prev1MM(SegmentType::ChordRest)) {
-                                          if (pSeg != cr->segment()){
-                                                cr = pSeg->nextChordRest(track, true);
+                              Fraction firstSegTick = cs->firstSegment(SegmentType::ChordRest)->tick();
+                              while (cr && !cr->isChord() && firstSegTick != cr->tick()) {
+                                    if (Segment* prevSeg = cr->segment()->prev1MM(SegmentType::ChordRest)) {
+                                          if (prevSeg != cr->segment()){
+                                                cr = prevSeg->nextChordRest(track, true);
                                                 if (!cr || (cr->tick() == iTick))
                                                       break;
                                                 }
-                                          else break;
+                                          else
+                                                break;
                                           }
                                     }
                               if (cr) {
                                     if (cr->isChord()) {
-                                          auto c = toChord(cr);
+                                          Chord* c = toChord(cr);
                                           cs->select(c->upNote());
                                           }
-                                    else cs->select(cr); // rest
+                                    else
+                                          cs->select(cr);
+
+                                    cs->startCmd();
                                     is.moveInputPos(cr);
+                                    cs->endCmd();
                                     }
                               }
                         else { // Chord:
                               cs->startCmd();
-                              auto selectionTick = cr->tick();
-                              auto inputTick = is.tick();
+                              const Fraction selectionTick = cr->tick();
+                              const Fraction inputTick = is.tick();
                               if (inputTick > selectionTick || inputTick == selectionTick) {
                                     is.moveInputPos(cr);
                                     }
@@ -7937,9 +7948,9 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                               cs->endCmd();
                               }
                         }
-                  else { // Note Entry: selection not a chordrest:
+                  else { // Note Entry: selection is not a ChordRest:
                         cs->startCmd();
-                           cs->cmdDeleteSelection();
+                        cs->cmdDeleteSelection();
                         cs->endCmd();
                         }
 
