@@ -442,6 +442,8 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
 
       //---------------------
 
+      void stackDockAboveDebugLog(QDockWidget*);
+
       virtual void closeEvent(QCloseEvent*) override;
       virtual void dragEnterEvent(QDragEnterEvent*) override;
       virtual void dropEvent(QDropEvent*) override;
