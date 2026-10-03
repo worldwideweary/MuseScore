@@ -5748,13 +5748,17 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       QRectF r(canvasViewport());
       QRectF mRect(m->canvasBoundingRect());
       QRectF sysRect;
+
       if (staffIdx == -1) {
             sysRect = sys->canvasBoundingRect();
-
-            // During playback, include notation which extends beyond the
-            // nominal system bounds, such as ledger-line notes and spanners
-            if (playBack)
-                  sysRect.adjust(0.0, -sys->minTop(), 0.0, sys->minBottom());
+            if (playBack) {
+                  if (!MScore::currentSystemAlwaysTop) {
+                        // During playback, include notation which extends beyond the
+                        // nominal system bounds, such as ledger-line notes and spanners.
+                        // currentSysstemAlwaysTop handles this slightly differently:
+                        sysRect.adjust(0.0, -sys->minTop(), 0.0, sys->minBottom());
+                        }
+                  }
             }
       else if (auto staves = sys->staves()) {
             if (staves->isEmpty())
@@ -5785,11 +5789,10 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             showRect = mRect.intersected(stave).adjusted(-border, -topAdj, border, border);
             }
 
-      auto canvasViewHeight   = r.height();
-      auto showHeight         = showRect.height();
-      bool editing            = (state == ViewState::EDIT);
-      bool fits               = (canvasViewHeight > showHeight);
-      bool alwaysTop          = MScore::currentSystemAlwaysTop && fits && !editing;
+      const qreal canvasViewHeight = r.height();
+      qreal showHeight = showRect.height();
+      const bool editing = (state == ViewState::EDIT);
+      const bool alwaysTop = MScore::currentSystemAlwaysTop && !editing;
 
       // Utilize skyline to include elements (spanners/etc) above system bbox
       qreal sysTop = 0.0;
@@ -5883,12 +5886,26 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       if (alwaysTop)
             y = showRect.top();
       else {
-            if (showRect.top() < r.top() && showRect.bottom() < r.bottom())
+            if (showRect.height() + border > r.height()) {
+                  // The complete system cannot be displayed, so preserve the user's
+                  // vertical position while any part of the system is already visible
+                  // If it is completely outside the viewport, then move directly to its top
+
+                  // Since showRect includes padding, test the actual system bounds when
+                  // deciding whether any of the system is currently visible:
+                  if (sysRect.bottom() < r.top() || sysRect.top() > r.bottom()) {
+                        y = showRect.top() - border;
+                        }
+                  }
+            else if (showRect.top() < r.top() && showRect.bottom() < r.bottom()) {
                   y = showRect.top() - border;
-            else if (showRect.top() > r.bottom())
+                  }
+            else if (showRect.top() > r.bottom()) {
                   y = showRect.bottom() - height() / physicalZoomLevel() + border;
-            else if (r.height() >= showRect.height() && showRect.bottom() > r.bottom())
+                  }
+            else if (showRect.bottom() > r.bottom()) {
                   y = showRect.top() - border;
+                  }
             }
 
       // Align to page borders if the viewport extends beyond them.
@@ -5909,16 +5926,21 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       else if (r.width() < navigationRect.width() && r.width() + x > navigationRect.right())
             x = navigationRect.right() - r.width();
 
-      if (y < navigationRect.top() || r.height() >= navigationRect.height())
-            y = navigationRect.top();
-      else if (r.height() < navigationRect.height() && r.height() + y > navigationRect.bottom())
-            y = navigationRect.bottom() - r.height();
 
       if (!MScore::currentSystemAlwaysTop) {
-            if (y < page->y() || r.height() >= page->height())
+            if (y < navigationRect.top() || r.height() >= navigationRect.height()) {
+                  y = navigationRect.top();
+                  }
+            else if (r.height() < navigationRect.height() && r.height() + y > navigationRect.bottom()) {
+                  y = navigationRect.bottom() - r.height();
+                  }
+
+            if (y < page->y() || r.height() >= page->height()) {
                   y = page->y();
-            else if (r.height() < page->height() && r.height() + y > page->height() + page->y())
+                  }
+            else if (r.height() < page->height() && r.height() + y > page->height() + page->y()) {
                   y = (page->height() + page->y()) - r.height();
+                  }
             // hack: don't update if we haven't changed the offset
             if (oldX == x && oldY == y)
                   return;
