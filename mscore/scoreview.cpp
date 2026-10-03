@@ -5835,6 +5835,14 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
                   return;
             }
 
+      qDebug() << "r:" << r
+               << "showRect:" << showRect
+               << "rHeight:" << r.height()
+               << "showHeight:" << showRect.height()
+               << "oversized:" << (showRect.height() > r.height())
+               << "below:" << (showRect.top() > r.bottom())
+               << "above:" << (showRect.bottom() < r.top());
+
       qreal x  = - xoffset() / physicalZoomLevel();
       qreal y  = - yoffset() / physicalZoomLevel();
 
@@ -5852,6 +5860,8 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             y = showRect.top();
       else {
             if (showRect.height() + border > r.height()) {
+                  qDebug() << "[1a]";
+
                   // The complete system cannot be displayed, so preserve the user's
                   // vertical position while any part of the system is already visible
                   // If it is completely outside the viewport, then move directly to its top
@@ -5859,16 +5869,20 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
                   // Since showRect includes padding, test the actual system bounds when
                   // deciding whether any of the system is currently visible:
                   if (sysRect.bottom() < r.top() || sysRect.top() > r.bottom()) {
+                        qDebug() << "[1b]";
                         y = showRect.top() - border;
                         }
                   }
             else if (showRect.top() < r.top() && showRect.bottom() < r.bottom()) {
+                  qDebug() << "[2]";
                   y = showRect.top() - border;
                   }
             else if (showRect.top() > r.bottom()) {
+                  qDebug() << "[3]";
                   y = showRect.bottom() - height() / physicalZoomLevel() + border;
                   }
             else if (showRect.bottom() > r.bottom()) {
+                  qDebug() << "[4]";
                   y = showRect.top() - border;
                   }
             }
@@ -5895,16 +5909,20 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       if (!MScore::currentSystemAlwaysTop) {
             if (y < navigationRect.top() || r.height() >= navigationRect.height()) {
                   y = navigationRect.top();
+                  qDebug() << "1q";
                   }
             else if (r.height() < navigationRect.height() && r.height() + y > navigationRect.bottom()) {
                   y = navigationRect.bottom() - r.height();
+                  qDebug() << "2q";
                   }
 
             if (y < page->y() || r.height() >= page->height()) {
                   y = page->y();
+                  qDebug() << "3q";
                   }
             else if (r.height() < page->height() && r.height() + y > page->height() + page->y()) {
                   y = (page->height() + page->y()) - r.height();
+                  qDebug() << "4q";
                   }
 
             // hack: don't update if we haven't changed the offset
@@ -5931,6 +5949,7 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       const QPoint mousePos = mapFromGlobal(QCursor::pos());
       updateHover(QPointF(mousePos));
       update();
+      qDebug() << "\t\tEND: " << QPoint(cx, y) << "canvasViewPort:" << canvasViewport();
       }
 
 //---------------------------------------------------------
