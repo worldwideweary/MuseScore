@@ -5587,17 +5587,21 @@ void ScoreView::pageEnd()
 //   adjustCanvasPosition
 //---------------------------------------------------------
 
-void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff )
+void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff)
       {
       if (this != mscore->currentScoreView() && !_moveWhenInactive)
             return;
+
       // TODO: change icon, or add panning options
       if (!mscore->panDuringPlayback())
             return;
 
       setDropTarget(nullptr);
 
-      if (noteEntryMode() && el && el->isChordRest() && !score()->selection().isRange()) {
+      if (!el)
+            return;
+
+      if (noteEntryMode() && el->isChordRest() && !score()->selection().isRange()) {
             if (auto current = score()->selection().cr()) {
                   auto cr = toChordRest(el);
                   auto selectionSys = current->measure() ? current->measure()->system() : nullptr;
@@ -5607,19 +5611,7 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
                   }
             }
 
-      if (score()->layoutMode() == LayoutMode::LINE) {
-
-            if (!el)
-                  return;
-
-            /* Not used, because impossible to get panel width beforehand
-            const MeasureBase* m = 0;
-            if (el->type() == ElementType::MEASURE)
-                  m = static_cast<const MeasureBase*>(el);
-            else
-                  m = static_cast<const Measure*>(el->parent()->findMeasure());
-            */
-
+      if (score()->lineMode()) {
             qreal xo = 0.0;  // new x offset
             QRectF curPos = playBack ? _cursor->rect() : el->canvasBoundingRect();
             if (playBack && _cursor && seq->isPlaying() && panSettings().enabled)
@@ -5683,28 +5675,8 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             return;
             }
 
-      const MeasureBase* m {nullptr};
-      if (!el)
-            return;
-      else if (el->type() == ElementType::NOTE)
-            m = static_cast<const Note*>(el)->chord()->measure();
-      else if (el->type() == ElementType::REST)
-            m = static_cast<const Rest*>(el)->measure();
-      else if (el->type() == ElementType::CHORD)
-            m = static_cast<const Chord*>(el)->measure();
-      else if (el->type() == ElementType::SEGMENT)
-            m = static_cast<const Segment*>(el)->measure();
-      else if (el->type() == ElementType::LYRICS)
-            m = static_cast<const Lyrics*>(el)->measure();
-      else if ( (el->type() == ElementType::HARMONY || el->type() == ElementType::FIGURED_BASS)
-         && el->parent()->type() == ElementType::SEGMENT)
-            m = static_cast<const Segment*>(el->parent())->measure();
-      else if (el->type() == ElementType::HARMONY && el->parent()->type() == ElementType::FRET_DIAGRAM
-         && el->parent()->parent()->type() == ElementType::SEGMENT)
-            m = static_cast<const Segment*>(el->parent()->parent())->measure();
-      else if (el->isMeasureBase())
-            m = static_cast<const MeasureBase*>(el);
-      else if (el->isSpannerSegment()) {
+      const MeasureBase* mb { nullptr };
+      if (el->isSpannerSegment()) {
             auto ss = toSpannerSegment(el);
             auto spanner = ss->spanner();
             auto start = spanner->startElement();
@@ -5712,41 +5684,34 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             if (!spanner->segmentsEmpty()) {
                   if (auto fs = spanner->frontSegment()) {
                         if (auto terminus = (fs == ss) ? start : end) {
-                              m = toMeasure(terminus->findMeasure());
+                              mb = toMeasure(terminus->findMeasure());
                               el = terminus;
                               }
                         }
                   }
             else {
-                  m = end->findMeasure();
+                  mb = end->findMeasure();
                   el = start;
                   }
             }
       else if (el->isSpanner()) {
-            Element* se = static_cast<const Spanner*>(el)->startElement();
-            m = static_cast<Measure*>(se->findMeasure());
+            Element* start = toSpanner(el)->startElement();
+            mb = start->findMeasure();
             }
-      else {
-            // attempt to find measure
-            Element* e = el->parent();
-            while (e && !e->isMeasureBase())
-                  e = e->parent();
-            if (e)
-                  m = toMeasureBase(e);
-            else
-                  return;
-            }
-      if (!m)
+      else
+            mb = el->findMeasureBase();
+
+      if (!mb)
             return;
 
-      int staffIdx = el->staffIdx();
-      System* sys = m->system();
+      const int staffIdx = el->staffIdx();
+      System* sys = mb->system();
       if (!sys)
             return;
 
       QPointF p(el->canvasPos());
       QRectF r(canvasViewport());
-      QRectF mRect(m->canvasBoundingRect());
+      QRectF mRect(mb->canvasBoundingRect());
       QRectF sysRect;
 
       if (staffIdx == -1) {
@@ -5772,7 +5737,7 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       if (!playBack)
             sysRect = mRect;
 
-      double _spatium    = score()->spatium();
+      const double _spatium = score()->spatium();
       const qreal border = _spatium * 3;
       QRectF showRect;
       qreal topAdj = MScore::currentSystemAlwaysTop ? _spatium : border;
@@ -5789,7 +5754,7 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             showRect = mRect.intersected(stave).adjusted(-border, -topAdj, border, border);
             }
 
-      const qreal canvasViewHeight = r.height();
+      const qreal scopedCanvasHeight = r.height();
       qreal showHeight = showRect.height();
       const bool editing = (state == ViewState::EDIT);
       const bool alwaysTop = MScore::currentSystemAlwaysTop && !editing;
@@ -5817,12 +5782,11 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             showHeight += sys->minBottom();
             }
 
-/*printf("%f %f %f %f   %f %f %f %f  %d\n",
-   showRect.x(), showRect.y(), showRect.width(), showRect.height(),
-   r.x(), r.y(), r.width(), r.height(),
-   r.contains(showRect)
-   );
-*/
+      // qDebug("showRect: x:%f y:%f w:%f h:%f   r: x:%f y:%f w:%f h:%f  %d\n",
+      //        showRect.x(), showRect.y(), showRect.width(), showRect.height(),
+      //        r.x(), r.y(), r.width(), r.height(),
+      //        r.contains(showRect));
+
       // canvas is not as wide as measure, track note instead
       if (r.width() < showRect.width()) {
             QRectF eRect(el->canvasBoundingRect());
@@ -5830,11 +5794,11 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             showRect.setWidth(eRect.width());
             }
 
-      // canvas is not as tall as system
       if (alwaysTop) {
             showRect.setY(sys->canvasBoundingRect().y() - sysTop);
             }
-      else if (canvasViewHeight < showHeight) {
+      else if (scopedCanvasHeight < showHeight) {
+            // canvas is not as tall as system
             if (sys->staves()->size() == 1 || !playBack) {
                   // track note if single staff
                   qreal elHeight = el->height();
@@ -5882,6 +5846,7 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             x = showRect.right() - width() / physicalZoomLevel() + border;
       else if (r.width() >= showRect.width() && showRect.right() > r.right())
             x = showRect.left() - border;
+
 
       if (alwaysTop)
             y = showRect.top();
@@ -5941,6 +5906,7 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             else if (r.height() < page->height() && r.height() + y > page->height() + page->y()) {
                   y = (page->height() + page->y()) - r.height();
                   }
+
             // hack: don't update if we haven't changed the offset
             if (oldX == x && oldY == y)
                   return;
@@ -5951,13 +5917,15 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
       int cx = x;
       int cy = y;
 
-      const bool constrain = (MScore::verticalOrientation() || score()->doublePageMode())
-                              && preferences.getBool(PREF_UI_CANVAS_SCROLL_LIMITSCROLLAREA);
+      const bool constrain =
+            (MScore::verticalOrientation() || score()->doublePageMode())
+            && preferences.getBool(PREF_UI_CANVAS_SCROLL_LIMITSCROLLAREA);
 
       if (constrain) {
             constraintCanvas(&cx, &cy);
             cx = (x < 0) ? x : cx + _matrix.dx();
             }
+
       setOffset(cx, y);
 
       const QPoint mousePos = mapFromGlobal(QCursor::pos());
