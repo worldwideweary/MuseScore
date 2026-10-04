@@ -201,6 +201,7 @@ class Preferences {
       ~Preferences();
       void init(bool storeInMemoryOnly = false);
       void save();
+      void syncLocalPreferencesToGlobal();
       // set to true to let getters return default values instead of values from QSettings
       void setReturnDefaultValuesMode(bool returnDefaultValues) {_returnDefaultValues = returnDefaultValues;}
 

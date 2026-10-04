@@ -492,6 +492,25 @@ void Preferences::save()
       settings()->sync();
       }
 
+//---------------------------------------------------------
+//   syncLocalPreferencesToGlobal
+//---------------------------------------------------------
+
+void Preferences::syncLocalPreferencesToGlobal()
+      {
+      if (_storeInMemoryOnly || !useLocalPrefs)
+            return;
+
+      for (auto it = localPreferences.constBegin();
+           it != localPreferences.constEnd();
+           ++it) {
+            if (it.value().isValid())
+                  settings()->setValue(it.key(), it.value());
+            }
+
+      settings()->sync();
+      }
+
 QVariant Preferences::defaultValue(const QString key) const
       {
       checkIfKeyExists(key);
