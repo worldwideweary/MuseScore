@@ -229,6 +229,11 @@ void MuseScore::changeWorkspace(const QString& name)
 
 void MuseScore::changeWorkspace(Workspace* p, bool first)
       {
+      QMap<QString, QVariant> previousPreferences;
+
+      if (!first)
+            previousPreferences = preferences.effectivePreferences();
+
       if (!first)
             WorkspacesManager::currentWorkspace()->save();
 
@@ -238,6 +243,7 @@ void MuseScore::changeWorkspace(Workspace* p, bool first)
       p->read();
       WorkspacesManager::setCurrentWorkspace(p);
       if (!first) {
+            preferences.notifyPreferenceChanges(previousPreferences);
             updateIcons();
             preferencesChanged(true);
             }
