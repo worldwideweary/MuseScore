@@ -693,8 +693,56 @@ void Preferences::setPreference(const QString key, QVariant value)
       {
       checkIfKeyExists(key);
       set(key, value);
+      notifyPreferenceChanged(key, value);
+      }
+
+//---------------------------------------------------------
+//   notifyPreferenceChanged
+//---------------------------------------------------------
+
+void Preferences::notifyPreferenceChanged(const QString& key, const QVariant& value)
+      {
       for (const OnSetListener& l : qAsConst(_onSetListeners))
-          l(key, value);
+            l(key, value);
+      }
+
+//---------------------------------------------------------
+//   effectivePreferences
+//---------------------------------------------------------
+
+QMap<QString, QVariant> Preferences::effectivePreferences() const
+      {
+      QMap<QString, QVariant> values;
+
+      for (auto it = _allPreferences.constBegin();
+           it != _allPreferences.constEnd();
+           ++it) {
+            values.insert(it.key(), preference(it.key()));
+            }
+
+      return values;
+      }
+
+//---------------------------------------------------------
+//   notifyPreferenceChanges
+//---------------------------------------------------------
+
+void Preferences::notifyPreferenceChanges(const QMap<QString, QVariant>& previousPreferences)
+      {
+      const QMap<QString, QVariant> currentPreferences =
+            effectivePreferences();
+
+      for (auto it = currentPreferences.constBegin();
+           it != currentPreferences.constEnd();
+           ++it) {
+            const auto previous = previousPreferences.constFind(it.key());
+
+            if (previous != previousPreferences.constEnd()
+                && previous.value() == it.value())
+                  continue;
+
+            notifyPreferenceChanged(it.key(), it.value());
+            }
       }
 
 Preferences::ListenerID Preferences::addOnSetListener(const OnSetListener& l)

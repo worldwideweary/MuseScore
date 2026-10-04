@@ -181,6 +181,7 @@ class Preferences {
       bool has(const QString key) const;
       void set(const QString key, QVariant value, bool temporary = false);
       void remove(const QString key);
+      void notifyPreferenceChanged(const QString& key, const QVariant& value);
 
       QVariant preference(const QString key) const;
       QMetaType::Type type(const QString key) const;
@@ -216,6 +217,9 @@ class Preferences {
       // general setters
       void setToDefaultValue(const QString key);
       void setPreference(const QString key, QVariant value);
+
+      QMap<QString, QVariant> effectivePreferences() const;
+      void notifyPreferenceChanges(const QMap<QString, QVariant>& previousPreferences);
 
       // set listeners
       ListenerID addOnSetListener(const OnSetListener& l);
