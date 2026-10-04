@@ -32,6 +32,7 @@ Item {
     property PaletteWorkspace paletteWorkspace: null
     property bool searchTextFieldShown: false
     readonly property bool searching: searchTextField.activeFocus || stopSearchButton.activeFocus
+    readonly property real headerIconSize: 24
     property string cellFilter: searchTextField.text
 
     signal addCustomPaletteRequested()
@@ -84,7 +85,7 @@ Item {
             Layout.preferredHeight: searchTextField.height
             Layout.preferredWidth: searchTextField.height
             text: qsTr("Search")
-            padding: 5
+            padding: Math.max(5, (height - header.headerIconSize) / 2)
             contentItem: StyledIcon {
                 source: "icons/MagnifyingGlass.svg"
             }
@@ -159,7 +160,7 @@ Item {
                 flat: true
                 onClicked: stopPaletteSearch()
 
-                padding: 5
+                padding: Math.max(5, (height - header.headerIconSize) / 2)
 
                 text: qsTr("Stop search")
 
