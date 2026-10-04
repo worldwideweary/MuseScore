@@ -5845,7 +5845,15 @@ void MuseScore::writeSettings()
       settings.setValue("splitter", splitter->saveState());
       settings.endGroup();
 
-      WorkspacesManager::currentWorkspace()->save();
+      if (WorkspacesManager::currentWorkspace()) {
+            WorkspacesManager::currentWorkspace()->save();
+
+            // Synchronize global prefs with the final state of active workspace.
+            // The workspace remains authoritative while running, and globals
+            // represent the last active state
+            preferences.syncLocalPreferencesToGlobal();
+            }
+
       if (keyEditor && keyEditor->dirty())
             keyEditor->save();
       if (chordStyleEditor)
