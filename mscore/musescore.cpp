@@ -726,7 +726,26 @@ void updateExternalValuesFromPreferences() {
 
 void MuseScore::preferencesChanged(bool fromWorkspace, bool changeUI)
       {
+      const bool oldVerticalOrientation = MScore::verticalOrientation();
+
       updateExternalValuesFromPreferences();
+
+      if (oldVerticalOrientation != MScore::verticalOrientation()) {
+            const auto currentView = currentScoreView();
+
+            for (Score* s : qAsConst(scores())) {
+                  s->doLayout();
+
+                  for (Score*& ss : s->scoreList())
+                        ss->doLayout();
+                  }
+
+            if (currentView)
+                  currentView->pageTop();
+
+            scorePageLayoutChanged();
+            update();
+            }
 
       getAction("repeat")->setChecked(MScore::playRepeats);
       getAction("pan")->setChecked(MScore::panPlayback);
