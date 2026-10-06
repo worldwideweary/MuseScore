@@ -585,12 +585,12 @@ ListView {
                 transitions: [
                     Transition {
                         from: "collapsed"; to: "expanded"
-                        enabled: paletteTree.enableAnimations
+                        enabled: false
                         NumberAnimation { target: mainPaletteContainer; property: "height"; from: 0; to: mainPaletteContainer.implicitHeight; easing.type: Easing.OutCubic; duration: paletteTree.expandDuration }
                     },
                     Transition {
                         from: "expanded"; to: "collapsed"
-                        enabled: paletteTree.enableAnimations
+                        enabled: false
                         SequentialAnimation {
                             PropertyAction { target: mainPaletteContainer; property: "visible"; value: true } // temporarily set palette visible to animate it being hidden
                             NumberAnimation { target: mainPaletteContainer; property: "height"; from: mainPaletteContainer.implicitHeight; to: 0; easing.type: Easing.OutCubic; duration: paletteTree.expandDuration }
@@ -670,7 +670,11 @@ ListView {
                         cellSize: control.cellSize
                         drawGrid: control.drawGrid
 
-                        paletteModel: control.DelegateModel.isUnresolved ? null : paletteTree.paletteModel
+                        paletteModel:
+                            control.expanded && !control.DelegateModel.isUnresolved
+                                ? paletteTree.paletteModel
+                                : null
+
                         paletteRootIndex: control.modelIndex
                         paletteController: paletteTree.paletteController
                         selectionModel: paletteSelectionModel
