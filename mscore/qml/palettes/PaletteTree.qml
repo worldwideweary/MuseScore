@@ -396,7 +396,7 @@ ListView {
                 if (ListView.isCurrentItem && !filter.length)
                     bringIntoViewAfterExpanding();
             }
-            
+
             property bool selected: paletteSelectionModel.hasSelection ? paletteSelectionModel.isSelected(modelIndex) : false
             onClicked: {
                 forceActiveFocus();
@@ -566,41 +566,11 @@ ListView {
 
             contentItem: Column {
                 visible: !control.DelegateModel.isUnresolved
-                states: [
-                    State {
-                        name: "collapsed"
-                        PropertyChanges { target: mainPaletteContainer; visible: false; restoreEntryValues: false }
-                    },
-                    State {
-                        name: "expanded"
-                        PropertyChanges { target: mainPaletteContainer; visible: true; restoreEntryValues: false }
-                    },
-                    State {
-                        name: "dragged"
-                        PropertyChanges { target: paletteHeader; text: ""; unresolved: true }
-                        PropertyChanges { target: mainPaletteContainer; visible: false }
-                    }
-                ]
-
-                transitions: [
-                    Transition {
-                        from: "collapsed"; to: "expanded"
-                        enabled: false
-                        NumberAnimation { target: mainPaletteContainer; property: "height"; from: 0; to: mainPaletteContainer.implicitHeight; easing.type: Easing.OutCubic; duration: paletteTree.expandDuration }
-                    },
-                    Transition {
-                        from: "expanded"; to: "collapsed"
-                        enabled: false
-                        SequentialAnimation {
-                            PropertyAction { target: mainPaletteContainer; property: "visible"; value: true } // temporarily set palette visible to animate it being hidden
-                            NumberAnimation { target: mainPaletteContainer; property: "height"; from: mainPaletteContainer.implicitHeight; to: 0; easing.type: Easing.OutCubic; duration: paletteTree.expandDuration }
-                            PropertyAction { target: mainPaletteContainer; property: "visible"; value: false } // make palette invisible again
-                            PropertyAction { target: mainPaletteContainer; property: "height"; value: mainPaletteContainer.implicitHeight } // restore the height binding
-                        }
-                    }
-                ]
-
-                state: control.Drag.active ? "dragged" : (control.expanded ? "expanded" : "collapsed")
+                states: State {
+                    name: "dragged"
+                    PropertyChanges { target: paletteHeader; text: ""; unresolved: true }
+                }
+                state: control.Drag.active ? "dragged" : ""
 
                 TreePaletteHeader {
                     id: paletteHeader
@@ -658,23 +628,91 @@ ListView {
                 Rectangle {
                     id: mainPaletteContainer
                     readonly property int padding: 1
+                    readonly property bool wantsOpen: control.expanded
+                        && !control.Drag.active && !control.DelegateModel.isUnresolved
+                    readonly property bool animate: paletteTree.enableAnimations
+                        && !control.Drag.active && !control.DelegateModel.isUnresolved
+                    property bool modelAttached: false
+                    property bool ready: false
+                    property real openness: 0
+
                     implicitHeight: mainPalette.implicitHeight + 2 * padding
                     implicitWidth: parent.width
-                    height: implicitHeight
+                    height: openness * implicitHeight
+                    visible: modelAttached
+                    clip: true
                     border { width: 1; color: enabled ? "black" : "#33000000" }
+
+                    function moveTo(value) {
+                        if (!animate || openness === value) {
+                            openness = value;
+                            if (!wantsOpen && value === 0)
+                                modelAttached = false;
+                            return;
+                        }
+                        expansionAnimation.from = openness;
+                        expansionAnimation.to = value;
+                        expansionAnimation.start();
+                    }
+
+                    function openAfterLayout() {
+                        if (!wantsOpen || !modelAttached)
+                            return;
+                        // Apply pending model changes before starting the reveal.
+                        mainPalette.forceLayout();
+                        moveTo(1);
+                    }
+
+                    function synchronize() {
+                        if (!ready)
+                            return;
+                        expansionAnimation.stop();
+                        if (wantsOpen) {
+                            modelAttached = true;
+                            // Let the model/root-index bindings propagate first.
+                            Qt.callLater(openAfterLayout);
+                        } else {
+                            moveTo(0);
+                        }
+                    }
+
+                    onWantsOpenChanged: synchronize()
+                    onAnimateChanged: {
+                        if (!animate)
+                            synchronize();
+                    }
+                    Component.onCompleted: {
+                        ready = true;
+                        synchronize();
+                    }
+
+                    NumberAnimation {
+                        id: expansionAnimation
+                        target: mainPaletteContainer
+                        property: "openness"
+                        duration: paletteTree.expandDuration
+                        easing.type: Easing.OutCubic
+                        onStopped: {
+                            if (!mainPaletteContainer.wantsOpen && mainPaletteContainer.openness === 0)
+                                mainPaletteContainer.modelAttached = false;
+                        }
+                    }
 
                     Palette {
                         id: mainPalette
-                        anchors { fill: parent; margins: parent.padding }
+                        anchors {
+                            top: parent.top
+                            left: parent.left
+                            right: parent.right
+                            margins: parent.padding
+                        }
+                        // Keep grid layout independent of the animated viewport.
+                        height: implicitHeight
 
                         cellSize: control.cellSize
                         drawGrid: control.drawGrid
 
-                        paletteModel:
-                            control.expanded && !control.DelegateModel.isUnresolved
-                                ? paletteTree.paletteModel
-                                : null
-
+                        paletteModel: mainPaletteContainer.modelAttached ? paletteTree.paletteModel : null
                         paletteRootIndex: control.modelIndex
                         paletteController: paletteTree.paletteController
                         selectionModel: paletteSelectionModel
