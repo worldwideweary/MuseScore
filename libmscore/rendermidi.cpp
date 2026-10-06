@@ -2651,20 +2651,40 @@ void Score::renderMidi(EventMap* events, const SynthesizerState& synthState)
 void Score::renderMidi(EventMap* events, bool metronome, bool expandRepeats, const SynthesizerState& synthState)
       {
       bool expandRepeatsBackup = masterScore()->expandRepeats();
+      masterScore()->addLayoutFlags(LayoutFlag::REBUILD_MIDI_MAPPING);
       masterScore()->setExpandRepeats(expandRepeats);
       MidiRenderer::Context ctx(synthState);
       ctx.metronome = metronome;
       ctx.renderHarmony = true;
       MidiRenderer(this).renderScore(events, ctx);
       masterScore()->setExpandRepeats(expandRepeatsBackup);
+      removeLayoutFlags(LayoutFlag::REBUILD_MIDI_MAPPING);
       }
 
 void MidiRenderer::renderScore(EventMap* events, const Context& ctx)
       {
       updateState();
+
+      int currentChunk = 0;
+
+      const int min = 0;
+      const int max = chunks.size();
+      const QString& progressFormat = "Rendering MIDI: %p%";
+      emit score->updateProgress(progressFormat, min, min, max);
+      const bool rebuildingMidi = (score->cmdState().layoutFlags & LayoutFlag::REBUILD_MIDI_MAPPING);
+
       for (const Chunk& chunk : chunks) {
+            if (rebuildingMidi)
+                  QCoreApplication::processEvents();
+
+            if ( (score->cmdState().layoutFlags & LayoutFlag::PENDING_CANCELLATION) )
+                  break;
+
+            emit score->updateProgress(progressFormat, ++currentChunk, min, max);
+
             renderChunk(chunk, events, ctx);
             }
+      emit score->updateProgress(progressFormat, max, min, max);
       }
 
 void MidiRenderer::renderChunk(const Chunk& chunk, EventMap* events, const Context& ctx)

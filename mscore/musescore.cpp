@@ -23,6 +23,7 @@
 #include <QStandardPaths>
 #include <QStyleFactory>
 #include <QTimer>
+#include <QElapsedTimer>
 #include <QWidgetAction>
 
 #include "accessibletoolbutton.h"
@@ -223,6 +224,8 @@ MasterSynthesizer* synti;
 bool enableExperimental = false;
 
 QString dataPath;
+
+MsSplashScreen* sc { nullptr };
 
 bool converterMode = false;
 static bool rawDiffMode = false;
@@ -573,6 +576,10 @@ void updateExternalValuesFromPreferences() {
       MScore::bgColor = preferences.getColor(PREF_UI_CANVAS_BG_COLOR);
       MScore::dropColor = preferences.getColor(PREF_UI_SCORE_NOTE_DROPCOLOR);
       MScore::defaultColor = preferences.getColor(PREF_UI_SCORE_DEFAULTCOLOR);
+
+      MScore::showProgressBarForLayout = preferences.getBool(PREF_APP_SHOW_PROGRESS_LAYOUT);
+      MScore::showProgressBarForSave = preferences.getBool(PREF_APP_SHOW_PROGRESS_SAVE);
+      MScore::showProgressBarForAutosave = preferences.getBool(PREF_APP_SHOW_PROGRESS_AUTOSAVE);
 
       MScore::pianoHighlightColor = preferences.getColor(PREF_UI_PIANO_HIGHLIGHTCOLOR);
       MScore::pianoWhiteKeysColor = preferences.getColor(PREF_UI_PIANO_WHITE_KEYS_COLOR);
@@ -1868,6 +1875,17 @@ MuseScore::MuseScore()
       _modeText->setAutoFillBackground(false);
       _modeText->setObjectName("modeLabel");
 
+      _progressBar = new QProgressBar;
+      _progressBar->setObjectName("progressBar");
+      _progressBar->setMinimumWidth(300/*px*/);
+      _progressBar->hide();
+
+      _progressEscape = new QLabel;
+      _progressEscape->setAutoFillBackground(false);
+      _progressEscape->setObjectName("progressEscape");
+      _progressEscape->setText(tr("Press Esc to cancel:"));
+      _progressEscape->hide();
+
       hRasterAction   = getAction("hraster");
       vRasterAction   = getAction("vraster");
       loopAction      = getAction("loop");
@@ -1881,6 +1899,8 @@ MuseScore::MuseScore()
       _statusBar = new QStatusBar;
             _statusBar->addPermanentWidget(new QWidget(this), 2);
             _statusBar->addPermanentWidget(new QWidget(this), 100);
+            _statusBar->addPermanentWidget(_progressEscape, 0);
+            _statusBar->addPermanentWidget(_progressBar, 0);
             _statusBar->addPermanentWidget(_modeText, 0);
 
             searchCombo = new SearchComboBox;
@@ -2187,8 +2207,6 @@ MuseScore::MuseScore()
       menuFile->addAction(getAction("file-open"));
 
       openRecent = menuFile->addMenu("");
-      connect(openRecent, SIGNAL(aboutToShow()), SLOT(openRecentMenu()));
-      connect(openRecent, SIGNAL(triggered(QAction*)), SLOT(selectScore(QAction*)));
 
       openArchivedScores = menuFile->addMenu("");
 
@@ -2909,6 +2927,9 @@ MuseScore::~MuseScore()
       // be deleted before paletteWorkspace.
       delete paletteWidget;
       paletteWidget = nullptr;
+
+      delete _progressBar;
+      _progressBar = nullptr;
       }
 
 //---------------------------------------------------------
@@ -3122,13 +3143,23 @@ void MuseScore::updateMenus()
             menuDebug->addAction(_debugLogAction);
             }
 
-      connect(openRecent,     SIGNAL(aboutToShow()),       SLOT(openRecentMenu()));
-      connect(openRecent,     SIGNAL(triggered(QAction*)), SLOT(selectScore(QAction*)));
-      connect(openArchivedScores,
-                              SIGNAL(aboutToShow()),       SLOT(openArchivedTabsMenu()));
-      connect(openArchivedScores,
-                              SIGNAL(triggered(QAction*)), SLOT(selectArchivedScore(QAction*)));
-      connect(menuWorkspaces, SIGNAL(aboutToShow()),       SLOT(showWorkspaceMenu()));
+      connect(openRecent, &QMenu::aboutToShow,
+              this, &MuseScore::openRecentMenu,
+              Qt::UniqueConnection);
+      connect(openRecent, &QMenu::triggered,
+              this, &MuseScore::selectScore,
+              Qt::UniqueConnection);
+
+      connect(openArchivedScores, &QMenu::aboutToShow,
+              this, &MuseScore::openArchivedTabsMenu,
+              Qt::UniqueConnection);
+      connect(openArchivedScores, &QMenu::triggered,
+              this, &MuseScore::selectArchivedScore,
+              Qt::UniqueConnection);
+
+      connect(menuWorkspaces, &QMenu::aboutToShow,
+              this, &MuseScore::showWorkspaceMenu,
+              Qt::UniqueConnection);
 
       setMenuTitles();
 #ifdef SCRIPT_INTERFACE
@@ -5195,6 +5226,16 @@ bool MuseScore::eventFilter(QObject *obj, QEvent *event)
                               return true;
                               }
                         }
+                  if (ke->key() == Qt::Key_Escape) {
+                        if (auto score = currentScore()) {
+                              const LayoutFlags flags = score->cmdState().layoutFlags;
+                              const bool scoreLoad = flags & LayoutFlag::INIT_SCORE_LOADING;
+                              const bool midiRebuild = flags & LayoutFlag::REBUILD_MIDI_MAPPING;
+                              if ( (scoreLoad || midiRebuild) && _progressBar ) {
+                                    score->addLayoutFlags(LayoutFlag::PENDING_CANCELLATION);
+                                    }
+                              }
+                        }
                   break;
                   }
             default:
@@ -6569,11 +6610,17 @@ bool MuseScore::restoreSession(bool always)
                                     else if (t == "path") {
                                           Score* score = openScore(e.readElementText(), false, true, name);
                                           if (score) {
+                                                bool earlyCancellation = (score->cmdState().layoutFlags & LayoutFlag::REWIND);
+                                                if (earlyCancellation){
+                                                      closeScore(score);
+                                                      return true;
+                                                      }
                                                 if (cleanExit) {
                                                       // override if last session did a clean exit
                                                       created = false;
                                                       }
                                                 score->setCreated(created);
+                                                score->removeLayoutFlags(LayoutFlag::INIT_SCORE_LOADING);
                                                 }
                                           else {
                                                 //! NOTE Return true so that there is no attempt to open this file again
@@ -8637,6 +8684,75 @@ void MuseScore::endSearch()
       }
 
 //---------------------------------------------------------
+//   updateProgress
+//---------------------------------------------------------
+
+void MuseScore::updateProgress(const QString& format, int val, int min, int max)
+      {
+      if (sc) {
+            QString message = (format.startsWith("Rendering MIDI") ? tr("Rendering MIDI:") : tr("Loading score:"))
+                              + "\n" + (cs ? cs->title() : "NO SCORE INFORMATION");
+            sc->showMessage(message);
+            sc->setProgress(val);
+            sc->setProgressMax(max);
+            }
+
+      if (!_progressBar)
+            return;
+
+      const bool delayedProgress = format.startsWith("Layout");
+
+      // Omit showing (i.e. flashing) the progressbar for tiny layout activity
+      static constexpr qint64 progressDelay = 333; // msec
+
+      const int curMin = _progressBar->minimum();
+      const int curMax = _progressBar->maximum();
+
+      if (curMin != min)
+            _progressBar->setMinimum(min);
+      if (curMax != max)
+            _progressBar->setMaximum(max);
+
+      _progressBar->setFormat(format);
+      _progressBar->setValue(val);
+
+      if (val == max) {
+            _progressDelayTimer.invalidate();
+
+            _progressBar->hide();
+            _progressEscape->hide();
+
+            if (sc)
+                  sc->setProgress(0);
+            }
+      else if (delayedProgress) {
+            if (!_progressDelayTimer.isValid())
+                  _progressDelayTimer.start();
+
+            const bool beyondTimeThreshold =
+                  _progressDelayTimer.elapsed() >= progressDelay;
+
+            if (_progressBar->isHidden() && beyondTimeThreshold)
+                  _progressBar->show();
+            }
+      else {
+            // No initial delays in this code block
+            _progressDelayTimer.invalidate();
+
+            if (_progressBar->isHidden()) {
+                  _progressBar->show();
+
+                  const bool loadingOrRenderingMIDI =
+                        format.startsWith("Loading")
+                        || format.startsWith("Rendering");
+
+                  if (loadingOrRenderingMIDI)
+                        _progressEscape->show();
+                  }
+            }
+      }
+
+//---------------------------------------------------------
 //   showSearchDialog
 //---------------------------------------------------------
 
@@ -9902,7 +10018,6 @@ void MuseScore::init(QStringList& argv)
       if (!MScore::testMode)
             MScore::readDefaultStyle(preferences.getString(PREF_SCORE_STYLE_DEFAULTSTYLEFILE));
 
-      MsSplashScreen* sc = nullptr;
       if (!MScore::noGui && preferences.getBool(PREF_UI_APP_STARTUP_SHOWSPLASHSCREEN)) {
             sc = new MsSplashScreen();
             sc->show();
@@ -10157,6 +10272,8 @@ void MuseScore::init(QStringList& argv)
 
       if (sc) {
             sc->close();
+            sc->deleteLater();
+            sc = nullptr;
             qApp->processEvents();
             }
 

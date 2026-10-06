@@ -222,6 +222,13 @@ void Score::writeMovement(XmlWriter& xml, bool selectionOnly)
       xml.setCurTrack(0);
       xml.setTrackDiff(-staffStart * VOICES);
       if (measureStart) {
+            int currentMeasureIdx = 0;
+            const int totalMeasuresByStaff = (staffEnd - staffStart) * score()->measures()->size();
+            const int min = 0;
+            const int max = totalMeasuresByStaff;
+            const QString& progressFormat = isAutosaving() ? "Autosave: %p%" : "Saving: %p%";
+            emit updateProgress(progressFormat, min, min, max);
+
             for (int staffIdx = staffStart; staffIdx < staffEnd; ++staffIdx) {
                   xml.stag(staff(staffIdx), QString("id=\"%1\"").arg(staffIdx + 1 - staffStart));
                   xml.setCurTick(measureStart->tick());
@@ -240,11 +247,15 @@ void Score::writeMovement(XmlWriter& xml, bool selectionOnly)
                               else
                                     forceTimeSig = false;
                               }
+
+                        emit updateProgress(progressFormat, ++currentMeasureIdx, min, max);
+
                         // Largest consumption of time for file-saving:
                         writeMeasure(xml, m, staffIdx, writeSystemElements, forceTimeSig);
                         }
                   xml.etag();
                   }
+            emit updateProgress(progressFormat, max, min, max);
             }
       xml.setCurTrack(-1);
       if (isMaster()) {
