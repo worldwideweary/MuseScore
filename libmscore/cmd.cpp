@@ -320,8 +320,8 @@ void Score::update(bool resetCmdState)
             CmdState& cs = ms->cmdState();
             Fraction layoutStart = cs.startTick();
             Fraction layoutEnd = cs.endTick();
-
-            if (auto singleElement = cs.element()) {
+            const auto singleElement = cs.element();
+            if (singleElement) {
                   if (singleElement->isFingering() ||
                       singleElement->isArticulation()) {
                         layoutEntirePage = true;

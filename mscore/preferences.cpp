@@ -183,6 +183,11 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_APP_DEBUG_LOG_DETAILS,                           new BoolPreference(false, false)},
             {PREF_APP_DEBUG_LOG_SHOW_SOURCE,                       new BoolPreference(false, false)},
             {PREF_APP_DEBUG_LOG_AUTOSCROLL,                        new BoolPreference(true, false)},
+
+            {PREF_APP_SHOW_PROGRESS_LAYOUT,                        new BoolPreference(true)},
+            {PREF_APP_SHOW_PROGRESS_SAVE,                          new BoolPreference(true)},
+            {PREF_APP_SHOW_PROGRESS_AUTOSAVE,                      new BoolPreference(true)},
+
             {PREF_EXPORT_AUDIO_NORMALIZE,                          new BoolPreference(true, false)},
             {PREF_EXPORT_AUDIO_SAMPLERATE,                         new IntPreference(44100, false)},
             {PREF_EXPORT_AUDIO_PCMRATE,                            new IntPreference(16)},

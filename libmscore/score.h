@@ -28,6 +28,8 @@
 #include "sym.h"
 #include "synthesizerstate.h"
 
+#include <cstdint>
+
 namespace Ms {
 
 namespace Avs {
@@ -215,11 +217,15 @@ struct Position {
 //   LayoutFlag bits
 //---------------------------------------------------------
 
-enum class LayoutFlag : char {
-      NO_FLAGS       = 0,
-      FIX_PITCH_VELO = 1,
-      PLAY_EVENTS    = 2,
-      REBUILD_MIDI_MAPPING = 4,
+enum class LayoutFlag : std::uint8_t {
+      NO_FLAGS                = 0,
+      FIX_PITCH_VELO          = 1u << 0,
+      PLAY_EVENTS             = 1u << 1,
+      REBUILD_MIDI_MAPPING    = 1u << 2,
+      INIT_SCORE_LOADING      = 1u << 3,
+      PENDING_CANCELLATION    = 1u << 4,
+      REWIND                  = 1u << 5,
+      UNUSED                  = 1u << 6,
       };
 
 typedef QFlags<LayoutFlag> LayoutFlags;
@@ -311,6 +317,7 @@ class CmdState {
 
       void lock() { _locked = true; }
       void unlock() { _locked = false; }
+      bool isLocked() const { return _locked; }
 #ifndef NDEBUG
       void dump();
 #endif
@@ -596,6 +603,7 @@ class Score : public QObject, public ScoreElement {
       void posChanged(POS, unsigned, bool);
       void partColorChanged();
       void playlistChanged();
+      void updateProgress(const QString&, int, int, int);
 
    public:
       Score();
@@ -795,6 +803,7 @@ class Score : public QObject, public ScoreElement {
       virtual inline CmdState& cmdState();
       virtual inline const CmdState& cmdState() const;
       virtual inline void addLayoutFlags(LayoutFlags);
+      virtual inline void removeLayoutFlags(LayoutFlags);
       virtual inline void setInstrumentsChanged(bool);
       void addRefresh(const QRectF&);
 
@@ -895,6 +904,8 @@ class Score : public QObject, public ScoreElement {
       Element* cmdNextPrevRehearsalMark(Element*, bool) const;
       MeasureBase* getNextPrevSectionBreak(MeasureBase*, bool) const;
       Element* getScoreElementOfMeasureBase(MeasureBase*) const;
+
+      bool undergoingLayout() const;
 
       const ChordRest* getLastCRSequenced(void) { return _lastCRSequenced; }
       void setLastCRSequenced(const ChordRest* cr) { _lastCRSequenced = cr; }
@@ -1421,6 +1432,8 @@ class MasterScore : public Score {
       virtual CmdState& cmdState() override                           { return _cmdState;                     }
       const CmdState& cmdState() const override                       { return _cmdState;                     }
       virtual void addLayoutFlags(LayoutFlags val) override           { _cmdState.layoutFlags |= val;         }
+      virtual void removeLayoutFlags(LayoutFlags val) override
+            { if (_cmdState.layoutFlags & val) _cmdState.layoutFlags ^= val; }
       virtual void setInstrumentsChanged(bool val) override           { _cmdState._instrumentsChanged = val;  }
 
       void setExcerptsChanged(bool val)                               { _cmdState._excerptsChanged = val;     }
@@ -1539,6 +1552,7 @@ inline void Score::setLayout(const Fraction& tick1, const Fraction& tick2, int s
 inline CmdState& Score::cmdState()                     { return _masterScore->cmdState();        }
 inline const CmdState& Score::cmdState() const         { return _masterScore->cmdState();        }
 inline void Score::addLayoutFlags(LayoutFlags f)       { _masterScore->addLayoutFlags(f);        }
+inline void Score::removeLayoutFlags(LayoutFlags f)    { _masterScore->removeLayoutFlags(f);     }
 inline void Score::setInstrumentsChanged(bool v)       { _masterScore->setInstrumentsChanged(v); }
 inline Movements* Score::movements()                   { return _masterScore->movements();       }
 inline const Movements* Score::movements() const       { return _masterScore->movements();       }

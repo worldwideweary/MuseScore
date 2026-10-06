@@ -46,6 +46,11 @@ namespace Ms {
 bool MScore::debugMode = false;
 bool MScore::testMode = false;
 
+bool MScore::showProgressBarForLayout;
+bool MScore::showProgressBarForPartialLayout;
+bool MScore::showProgressBarForSave;
+bool MScore::showProgressBarForAutosave;
+
 bool MScore::showSegmentShapes   = false;
 bool MScore::showSkylines        = false;
 bool MScore::showMeasureShapes   = false;

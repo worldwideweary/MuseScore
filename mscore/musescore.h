@@ -263,7 +263,9 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       QAction* leaveFeedbackAction;
       QAction* revertToFactoryAction;
 
+      QLabel* _progressEscape              { 0 };
       QProgressBar* _progressBar           { 0 };
+      QElapsedTimer _progressDelayTimer;
       PreferenceDialog* preferenceDialog   { 0 };
       QToolBar* cpitchTools                { 0 };
       QToolBar* fotoTools                  { 0 };
@@ -647,6 +649,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void restartAudioEngine();
       void updateTimer();
       void endSearch();
+      void updateProgress(const QString&, int, int, int);
 
    public:
       MuseScore();
