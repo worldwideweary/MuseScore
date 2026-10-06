@@ -1854,6 +1854,7 @@ MuseScore::MuseScore()
       _tourHandler->loadTours();
 
       setTabPosition(Qt::AllDockWidgetAreas, QTabWidget::North);
+      setDockNestingEnabled(true);
 
       QScreen* screen = QGuiApplication::primaryScreen();
       if (qFuzzyIsNull(userDPI)) {
@@ -5780,10 +5781,6 @@ void MuseScore::changeState(ScoreState val)
                               QSizePolicy policy(QSizePolicy::Maximum, QSizePolicy::Maximum);
                               textTools()->widget()->setSizePolicy(policy);
                               }
-
-                        QMainWindow::addDockWidget(Qt::BottomDockWidgetArea,
-                                                   textTools(),
-                                                   Qt::Vertical);
 
                         textTools()->show();
                         }

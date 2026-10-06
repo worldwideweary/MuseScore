@@ -19,6 +19,10 @@
 
 #include "log.h"
 
+#include <QAbstractItemView>
+#include <QApplication>
+#include <QScreen>
+
 #include "texttools.h"
 #include "icons.h"
 #include "libmscore/text.h"
@@ -33,6 +37,47 @@ namespace Ms {
 
 TextPalette* textPalette;
 
+class TextToolsFontComboBox : public QFontComboBox
+      {
+      bool _sideDocked { false };
+
+      int popupReferenceWidth() const
+            {
+            return qMax(sizeHint().width(), 250);
+            }
+
+   protected:
+      void showPopup() override
+            {
+            if (_sideDocked) {
+                  if (QAbstractItemView* v = view()) {
+                        QWidget* popup = v->window();
+
+                        const int popupWidth =
+                              qMin(popupReferenceWidth() * 5 / 3,
+                                   QApplication::primaryScreen()
+                                         ->availableGeometry().width());
+
+                        popup->setFixedWidth(popupWidth);
+                        }
+                  }
+
+            QFontComboBox::showPopup();
+            }
+
+   public:
+      explicit TextToolsFontComboBox(QWidget* parent = nullptr)
+         : QFontComboBox(parent)
+            {
+            }
+
+      void setSideDocked(bool side)
+            {
+            _sideDocked = side;
+            }
+      };
+
+
 //---------------------------------------------------------
 //   textTools
 //---------------------------------------------------------
@@ -41,7 +86,9 @@ TextTools* MuseScore::textTools()
       {
       if (!_textTools) {
             _textTools = new TextTools(this);
-            addDockWidget(Qt::DockWidgetArea(Qt::BottomDockWidgetArea), _textTools);
+
+            if (!restoreDockWidget(_textTools))
+                  addDockWidget(Qt::BottomDockWidgetArea, _textTools);
             }
       setFocusPolicy(Qt::NoFocus);
       return _textTools;
@@ -55,7 +102,8 @@ TextTools::TextTools(QWidget* parent)
    : QDockWidget(parent)
       {
       setObjectName("text-tools");
-      setAllowedAreas(Qt::DockWidgetAreas(Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea));
+      setAllowedAreas(Qt::AllDockWidgetAreas);
+      setFeatures(features() & ~QDockWidget::DockWidgetFloatable);
       setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
 
       text = nullptr;
@@ -91,7 +139,7 @@ TextTools::TextTools(QWidget* parent)
 
       toolbar->addSeparator();
 
-      typefaceFamily = new QFontComboBox(this);
+      typefaceFamily = new TextToolsFontComboBox(this);
       typefaceFamily->setEditable(false);
       toolbar->addWidget(typefaceFamily);
 
@@ -101,9 +149,51 @@ TextTools::TextTools(QWidget* parent)
       toolbar->addWidget(typefaceSize);
 
       setWidget(toolbar);
-      QWidget* w = new QWidget(this);
-      setTitleBarWidget(w);
-      titleBarWidget()->hide();
+
+      connect(this, &QDockWidget::dockLocationChanged,
+              this, [this](Qt::DockWidgetArea area) {
+
+                    const bool side =
+                          area == Qt::LeftDockWidgetArea
+                          || area == Qt::RightDockWidgetArea;
+
+                    static_cast<TextToolsFontComboBox*>(typefaceFamily)->setSideDocked(side);
+
+                    toolbar->setOrientation(side ? Qt::Vertical
+                                                 : Qt::Horizontal);
+
+                    if (side) {
+                          const int w = 78;
+                          toolbar->setMinimumWidth(70);
+
+                          typefaceFamily->setSizePolicy(
+                                QSizePolicy::Fixed,
+                                QSizePolicy::Fixed);
+                          typefaceFamily->setFixedWidth(w);
+
+                          typefaceSize->setSizePolicy(
+                                QSizePolicy::Fixed,
+                                QSizePolicy::Fixed);
+                          typefaceSize->setFixedWidth(w);
+                          typefaceSize->setButtonSymbols(QAbstractSpinBox::UpDownArrows);
+                          }
+                    else {
+                          toolbar->setMinimumWidth(0);
+
+                          typefaceFamily->setMinimumWidth(0);
+                          typefaceFamily->setMaximumWidth(QWIDGETSIZE_MAX);
+                          typefaceFamily->setSizePolicy(
+                                QSizePolicy::Preferred,
+                                QSizePolicy::Fixed);
+
+                          typefaceSize->setMinimumWidth(0);
+                          typefaceSize->setMaximumWidth(QWIDGETSIZE_MAX);
+                          typefaceSize->setSizePolicy(
+                                QSizePolicy::Preferred,
+                                QSizePolicy::Fixed);
+                          typefaceSize->setButtonSymbols(QAbstractSpinBox::UpDownArrows);
+                          }
+                    });
 
       connect(typefaceSize,        SIGNAL(valueChanged(double)), SLOT(sizeChanged(double)));
       connect(typefaceFamily,      SIGNAL(currentFontChanged(const QFont&)), SLOT(fontChanged(const QFont&)));
