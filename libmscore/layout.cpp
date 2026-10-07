@@ -2481,6 +2481,19 @@ void LayoutContext::getNextPage()
       else {
             page = score->pages()[curPage];
             QList<System*>& systems = page->systems();
+
+            qDebug() << "\nGET NEXT PAGE"
+                     << "page" << page << page->no()
+                     << "curSystem" << curSystem
+                     << "page systems" << systems.size();
+
+            for (System* s : systems) {
+                  qDebug() << "   existing"
+                           << s
+                           << "parent page" << s->page()
+                           << "measures" << s->measures().size();
+                  }
+
             pageOldMeasure = systems.isEmpty() || systems.back()->measures().empty() ?
                   nullptr : systems.back()->measures().back();
             const int i = systems.indexOf(curSystem);
@@ -2538,6 +2551,13 @@ System* Score::getNextSystem(LayoutContext& lc)
       else {
             system = lc.systemList.takeFirst();
             lc.systemOldMeasure = system->measures().empty() ? 0 : system->measures().back();
+
+            qDebug() << "CLEAR REUSED SYSTEM"
+                     << system
+                     << "page" << system->page()
+                     << "measures before" << system->measures().size()
+                     << "systemList remaining" << lc.systemList.size();
+
             system->clear();   // remove measures from system
             }
       _systems.append(system);
@@ -4421,8 +4441,16 @@ System* Score::collectSystem(LayoutContext& lc)
                   }
 
             if (oldSystem && system != oldSystem && !brokenSystems.contains(oldSystem)
-                && lc.systemList.contains(oldSystem))
+                && lc.systemList.contains(oldSystem)) {
+                  qDebug() << "MARK BROKEN SYSTEM"
+                           << oldSystem
+                           << "page" << oldSystem->page()
+                           << "measures" << oldSystem->measures().size()
+                           << "replacement" << system
+                           << "systemList index" << lc.systemList.indexOf(oldSystem);
+
                   brokenSystems.append(oldSystem);
+                  }
 
             if (lc.prevMeasure && lc.prevMeasure->isMeasure() && lc.prevMeasure->system() == system) {
                   //
@@ -4515,6 +4543,21 @@ System* Score::collectSystem(LayoutContext& lc)
             MeasureBase* curMB = lc.curMeasure;
             Measure* m = curMB && curMB->isMeasure() ? toMeasure(curMB) : nullptr;
             bool curMeasureMayHaveJoinedBeams = m && measureMayHaveBeamsJoinedIntoNext(m);
+
+            if (lc.prevMeasure == lc.systemOldMeasure && !curMeasureMayHaveJoinedBeams) {
+                  qDebug() << "RANGE DONE CANDIDATE"
+                           << "system" << system
+                           << "brokenSystems" << brokenSystems.size()
+                           << "systemList" << lc.systemList.size();
+
+                  for (System* bSystem : brokenSystems) {
+                        qDebug() << "   broken still pending"
+                                 << bSystem
+                                 << "measures" << bSystem->measures().size()
+                                 << "index" << lc.systemList.indexOf(bSystem);
+                        }
+                  }
+
             if (lc.prevMeasure == lc.systemOldMeasure
                 && !curMeasureMayHaveJoinedBeams
                 && brokenSystems.isEmpty()) {
@@ -4662,8 +4705,21 @@ System* Score::collectSystem(LayoutContext& lc)
             }
       system->setWidth(pos.x());
 
-      for (System *bSystem : brokenSystems)
+      for (System* bSystem : brokenSystems) {
+            qDebug() << "CLEAR BROKEN SYSTEM"
+                     << bSystem
+                     << "page" << bSystem->page()
+                     << "measures before" << bSystem->measures().size()
+                     << "still in systemList"
+                     << lc.systemList.contains(bSystem)
+                     << "systemList index"
+                     << lc.systemList.indexOf(bSystem);
+
             bSystem->clear();
+
+            qDebug() << "   measures after"
+                     << bSystem->measures().size();
+            }
 
       layoutSystemElements(system, lc);
       system->layout2();   // compute staff distances
@@ -5530,6 +5586,17 @@ void LayoutContext::collectPage()
                               }
                         }
                   else {
+
+                        if (!systemList.empty()) {
+                              System* const candidate = systemList.first();
+
+                              qDebug() << "CACHED SYSTEM CANDIDATE"
+                                       << candidate
+                                       << "page" << candidate->page()
+                                       << "measures" << candidate->measures().size()
+                                       << "systemList size" << systemList.size();
+                              }
+
                         nextSystem = systemList.empty() ? 0 : systemList.takeFirst();
                         if (nextSystem)
                               score->systems().append(nextSystem);
@@ -5691,6 +5758,20 @@ void LayoutContext::collectPage()
             if (doSecondLayout) {
                   currentScore->layoutSystemElements(s, *this);
                   }
+            }
+
+      qDebug() << "\nCOLLECT PAGE END"
+               << "page" << page << page->no()
+               << "systems" << page->systems().size()
+               << "curSystem" << curSystem
+               << "rangeDone" << rangeDone;
+
+      for (System* s : page->systems()) {
+            qDebug() << "   page system"
+                     << s
+                     << "parent page" << s->page()
+                     << "measures" << s->measures().size()
+                     << "vbox" << (s->vbox() != nullptr);
             }
 
       // If this is the last page we layout, we must also relayout the first barlines of the
