@@ -3081,6 +3081,11 @@ Element* Score::move(const QString& cmd)
                   }
 
             bool isDestBox = dest ? dest->isBox() : false;
+
+            if (noteEntryMode()) {
+                  isDestBox = false;
+                  }
+
             if (isDestBox) {
                   el = toBox(dest);
                   }
