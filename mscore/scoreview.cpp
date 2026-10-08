@@ -1432,6 +1432,23 @@ void ScoreView::drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF&
             // Retain the existing export behavior.
             if (_fgPixmap && !skip) {
                   QRectF src = canvasR.adjusted(xOff, yOff, xOff, yOff);
+
+                  // Convert page coordinates into pixels of the original image
+                  // PDF paints that whole image stretched across the page
+                  const Element* page = el ? el->findAncestor(ElementType::PAGE) : nullptr;
+                  if (page && !_fgPixmap->isNull()) {
+                        const QRectF pageRect = page->bbox();
+                        if (!pageRect.isEmpty()) {
+                              const qreal sx = _fgPixmap->width() / pageRect.width();
+                              const qreal sy = _fgPixmap->height() / pageRect.height();
+
+                              src = QRectF((src.x() - pageRect.x()) * sx,
+                                           (src.y() - pageRect.y()) * sy,
+                                           src.width() * sx,
+                                           src.height() * sy);
+                              }
+                        }
+
                   p->drawPixmap(dest, *_fgPixmap, src);
                   }
             else {

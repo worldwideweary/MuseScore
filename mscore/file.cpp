@@ -2414,7 +2414,7 @@ bool MuseScore::savePdf(Score* cs_, QPrinter& printer)
             switch (exportBgStyle) {
                   case 1:
                         if (fgPixMap && !fgPixMap->isNull()) {
-                              p.drawTiledPixmap(fillRect, *fgPixMap, fillRect.topLeft());
+                              p.drawPixmap(pl.at(n)->bbox(), *fgPixMap, QRectF(fgPixMap->rect()));
                               }
                         else if (useFgColor) {
                               p.fillRect(fillRect, fgColor);
@@ -2511,7 +2511,7 @@ bool MuseScore::savePdf(QList<Score*> cs_, const QString& saveName)
                             if (useFgColor)
                                 p.fillRect(fillRect, fgColor);
                             else
-                                p.drawTiledPixmap(fillRect, fgPixMap, fillRect.topLeft());
+                                p.drawPixmap(pl.at(n)->bbox(), fgPixMap, QRectF(fgPixMap.rect()));
                             break;
                         case 2:
                             p.fillRect(fillRect, customColor);
