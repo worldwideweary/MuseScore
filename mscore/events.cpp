@@ -12,6 +12,7 @@
 
 #include "fotomode.h"
 #include "musescore.h"
+#include "preferences.h"
 #include "scoreview.h"
 #include "seq.h"
 #include "textcursor.h"
@@ -277,11 +278,12 @@ void ScoreView::resizeEvent(QResizeEvent* /*ev*/)
       if (this != mscore->currentScoreView())
             return;
 
-      bool changed = setLogicalZoom(_zoomIndex, calculateLogicalZoomLevel(_zoomIndex, logicalZoomLevel()));
-      if (!changed)
-            return;
+      const bool zoomChanged =
+            setLogicalZoom(_zoomIndex,
+                           calculateLogicalZoomLevel(_zoomIndex, logicalZoomLevel()));
 
-      emit sizeChanged();
+      if (zoomChanged)
+            emit sizeChanged();
 
       // The score may need to be repositioned now.
       // So figure out how far it needs to move in each direction...
