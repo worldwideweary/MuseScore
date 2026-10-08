@@ -1563,13 +1563,15 @@ void ScoreView::drawHoverHighlight(QPainter& p, const Element& el)
             // p.setPen(QPen(MScore::hoverColor, 5.0));
 
       if (el.isSlurTieSegment()) {
-            // canvasPos not valid here (acts like pagePos)
-            // Max function prob not required:
-            auto parentPos = QPointF(std::max(0.0, el.parent()->canvasPos().x()),
-                                     std::max(0.0, el.parent()->canvasPos().y()));
-            p.translate(parentPos);
-                  el.shape().paint(p, adj);
-            p.translate(-parentPos);
+            // Segment-local shape -> page coordinates -> canvas coordinates.
+            QPointF pos = el.pagePos();
+            if (const Element* page = el.findAncestor(ElementType::PAGE))
+                  pos += page->pos();
+
+            p.save();
+            p.translate(pos);
+            el.shape().paint(p, adj);
+            p.restore();
             }
       else {
             auto x = std::max(0.0, el.canvasPos().x());
