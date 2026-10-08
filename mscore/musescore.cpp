@@ -8727,6 +8727,10 @@ void MuseScore::switchLayoutMode(LayoutMode mode)
 
       if (m && m != cs->firstMeasureMM())
             cv->adjustCanvasPosition(m, false);
+
+      if (preferences.getBool(PREF_UI_CANVAS_SCROLL_LIMITSCROLLAREA))
+            cv->reconstrainCanvas();
+
       if (cv->noteEntryMode())
             cv->moveCursor();
       }

@@ -2327,10 +2327,13 @@ void ScoreView::zoomBySteps(const qreal numSteps, const bool usingMouse/* = fals
 
 void ScoreView::constraintCanvas (int* dxx, int* dyy)
       {
-      if (score()->layoutMode() == LayoutMode::SYSTEM)
+      if (score()->layoutMode() == LayoutMode::SYSTEM
+          && !preferences.getBool(PREF_UI_CANVAS_SCROLL_LIMITSCROLLAREA))
             return;
+
       if (score()->pages().isEmpty())
             return;
+
       int dx = *dxx;
       int dy = *dyy;
       QRectF rect = QRectF(0, 0, width(), height());
