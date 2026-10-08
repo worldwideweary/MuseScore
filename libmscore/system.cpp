@@ -282,12 +282,6 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
             delete b;
 
       //---------------------------------------------------
-      //  layout brackets
-      //---------------------------------------------------
-
-      setBracketsXPosition(xo1 + _leftMargin);
-
-      //---------------------------------------------------
       //  layout instrument names x position
       //     at this point it is not clear which staves will
       //     be hidden, so layout all instrument names
@@ -325,6 +319,13 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
             }
 
       _leftMargin = hasShowingNames ? extraIndentation : _leftMargin;
+
+      //---------------------------------------------------
+      //  layout brackets relative to the newly calculated
+      //  staff start
+      //---------------------------------------------------
+
+      setBracketsXPosition(xo1 + _leftMargin);
 
       int nVisible = 0;
       for (int staffIdx = 0; staffIdx < nstaves; ++staffIdx) {
