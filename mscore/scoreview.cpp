@@ -1304,7 +1304,9 @@ void ScoreView::drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF&
       //    - Color or Background Image will perform implicit cut-out overlays
 
       bool printing   = score()->printing();
-      QRectF dest = printing || score()->systemMode() || score()->floatMode() ? r : p->matrix().mapRect(r);
+
+      QRectF dest = printing ? r : p->worldTransform().mapRect(r);
+
       qreal w      = dest.width();
       qreal h      = dest.height();
       qreal transX = p->transform().dx();
@@ -1324,7 +1326,7 @@ void ScoreView::drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF&
                   if (tb->parent() && tb->parent()->isTextLineSegment()) {
                         if (auto tls = toTextLineSegment(tb->parent())) {
                               if (tls == dropTarget) return;
-                              
+
                               // HACK: draw cut-away background iff diagonal enabled
                               if (tls->textLine()->diagonal()) {
                                     //
@@ -1387,7 +1389,19 @@ void ScoreView::drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF&
             }
 
       // Keep transform position, yet use clean identity matrix for mapping
-      if (skip) return;
+      if (skip)
+            return;
+
+      // The painter currently uses element-local coordinates.
+      // Locate the whole page in those coordinates, then map to the viewport.
+      QRectF paperRect;
+      if (!printing && el) {
+            const Element* page = el->findAncestor(ElementType::PAGE);
+            if (page) {
+                  paperRect = p->worldTransform().mapRect(
+                        page->bbox().translated(-el->pagePos()));
+                  }
+            }
 
       if (!printing) {
             p->save();
@@ -1396,32 +1410,33 @@ void ScoreView::drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF&
             }
       else {
             int exportBgStyle = preferences.getInt(PREF_EXPORT_BG_STYLE);
-            
-            // [Transparent] -- fills no background (not even whiteness)            
+
+            // [Transparent] -- fills no background (not even whiteness)
             if (exportBgStyle == 0) return;
-            
+
             // [Color] - does not include the potential gradient option (use background paper for that)
             else if (exportBgStyle == 2) skip = true;
             }
 
-      if (_bgPixmap && !printing) {
-            //
-            // Background Wallpaper
-            //
-            p->drawTiledPixmap(dest, *_bgPixmap, QPointF(transX, transY));
-            }
-      if (_fgPixmap && !skip) {
-            //
-            // Foreground Wallpaper
-            //
-            QRectF src = canvasR.adjusted(xOff, yOff, xOff, yOff);
-            p->drawPixmap(dest, *_fgPixmap, src);
+      if (!printing) {
+            p->save();
+            p->setClipRect(dest, Qt::IntersectClip);
+
+            p->fillRect(dest, _fgColor);
+            if (_fgPixmap && !_fgPixmap->isNull() && !paperRect.isEmpty())
+                  p->drawPixmap(paperRect, *_fgPixmap, QRectF(_fgPixmap->rect()));
+
+            p->restore();
             }
       else {
-            //
-            // Foreground Color
-            //
-            p->fillRect(dest, preferences.getColor(PREF_UI_CANVAS_FG_COLOR));
+            // Retain the existing export behavior.
+            if (_fgPixmap && !skip) {
+                  QRectF src = canvasR.adjusted(xOff, yOff, xOff, yOff);
+                  p->drawPixmap(dest, *_fgPixmap, src);
+                  }
+            else {
+                  p->fillRect(dest, preferences.getColor(PREF_UI_CANVAS_FG_COLOR));
+                  }
             }
 
       if (!printing) {
@@ -1555,7 +1570,7 @@ void ScoreView::drawHoverHighlight(QPainter& p, const Element& el)
 
 //---------------------------------------------------------
 //   drawNoteEntryInformation
-//   Indicator manifests toggle information, along with 
+//   Indicator manifests toggle information, along with
 //   last add-pitch direction/interval
 //---------------------------------------------------------
 
@@ -1691,9 +1706,9 @@ void ScoreView::drawNoteEntryInformation(QPainter& p, const QPointF& pt, int fon
 void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* editElement)
       {
       std::stable_sort(el.begin(), el.end(), elementLessThan);
-      bool opaqueHoverColor = (MScore::hoverColor.alpha() == 255); 
+      bool opaqueHoverColor = (MScore::hoverColor.alpha() == 255);
       bool hoverUnder = opaqueHoverColor;
-      bool haveHover = MScore::hoverColorEnabled && dropTarget; 
+      bool haveHover = MScore::hoverColorEnabled && dropTarget;
 
       // Option: Noteheads behind staff-lines
       // Requires stem to be drawn before noteheads, and a multi-pass approach
@@ -1738,7 +1753,7 @@ void ScoreView::drawElements(QPainter& painter, QList<Element*>& el, Element* ed
             if (MScore::noteheadsBehindStaff && (e->isNote() || e->isStem()))
                   continue;
             if (!e->visible() && (score()->printing() || !score()->showInvisible())) {
-                  bool tempShow = (e->isTextLineBase() && e->isTemporarilyShowing()); 
+                  bool tempShow = (e->isTextLineBase() && e->isTemporarilyShowing());
                   if (!tempShow)
                         continue;
                   }
@@ -2040,23 +2055,17 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                   Page* page = _score->pages().front();
                   QRectF pr(page->abbox().translated(page->pos()));
 
-                  // this->rect().center
-                  // Page Background
-                  qreal x = pr.x();
-                  qreal y = pr.y();
-                  qreal w = pr.width();
-                  qreal h = pr.height();
-                  if (_fgPixmap == 0 || _fgPixmap->isNull()) {
-                        p.fillRect(x, y, w, h, _fgColor);
-                        }
-                  else {
-                        if (_pagePixmap.isNull()) {
-                              _pagePixmap.detach();
-                              *_fgPixmap  = _fgPixmap->scaled(w,h);
-                              _pagePixmap = *_fgPixmap;
-                              }
-                        p.drawPixmap(x, y, w, h, *_fgPixmap);
-                        }
+                  // Page Background:
+                  // One image attached to the page, moving and scaling with it
+                  p.save();
+                  const QRectF paperRect = p.worldTransform().mapRect(pr);
+                  p.resetTransform();
+
+                  p.fillRect(paperRect, _fgColor);
+                  if (_fgPixmap && !_fgPixmap->isNull())
+                        p.drawPixmap(paperRect, *_fgPixmap, QRectF(_fgPixmap->rect()));
+
+                  p.restore();
 
                   QList<Element*> ell = page->items(fr);
 
@@ -2094,22 +2103,17 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                               break;
                         }
 
-                  // Page Background
-                  qreal x = pr.x();
-                  qreal y = pr.y();
-                  qreal w = pr.width();
-                  qreal h = pr.height();
-                  if (_fgPixmap == 0 || _fgPixmap->isNull()) {                        
-                        p.fillRect(x, y, w, h, _fgColor);
-                        }
-                  else {
-                        if (_pagePixmap.isNull()) {
-                              _pagePixmap.detach();
-                              *_fgPixmap  = _fgPixmap->scaled(w,h);
-                              _pagePixmap = *_fgPixmap;
-                              }
-                        p.drawPixmap(x, y, w, h, *_fgPixmap);
-                        }
+                  // Page Background:
+                  // One image attached to the page, moving and scaling with it
+                  p.save();
+                  const QRectF paperRect = p.worldTransform().mapRect(pr);
+                  p.resetTransform();
+
+                  p.fillRect(paperRect, _fgColor);
+                  if (_fgPixmap && !_fgPixmap->isNull())
+                        p.drawPixmap(paperRect, *_fgPixmap, QRectF(_fgPixmap->rect()));
+
+                  p.restore();
                   }
 
             if (MScore::cursorDrawnBehindStaff) {
@@ -3385,8 +3389,8 @@ void ScoreView::cmd(const char* s)
                                           }
                                     if (auto piano = mscore->pianoTools()) {
                                           if (/*TODO*/ true ) {
-                                                // Restoring on-screen piano state after stopping 
-                                                // should also be contingent upon user preference                                    
+                                                // Restoring on-screen piano state after stopping
+                                                // should also be contingent upon user preference
                                                 piano->changeSelection(originalSelection);
                                                 }
                                           }
@@ -4645,7 +4649,7 @@ void ScoreView::textTab(bool back)
                   PropertyFlags pf;
                   Placement oePlacement;
                   if (fingeringJump) {
-                        // Observation: was getting invalid property flag calls here 
+                        // Observation: was getting invalid property flag calls here
                         // ...even though oe was valid - resorting to defaults:
                         pf = PropertyFlags::STYLED;
                         oePlacement = Placement::ABOVE;
@@ -5018,13 +5022,9 @@ void ScoreView::dragScoreView(QMouseEvent* ev)
       _matrix.setMatrix(_matrix.m11(), _matrix.m12(), _matrix.m13(), _matrix.m21(),
          _matrix.m22(), _matrix.m23(), _matrix.dx()+dx, _matrix.dy()+dy, _matrix.m33());
       imatrix = _matrix.inverted();
-      scroll(dx, dy, QRect(0, 0, width(), height()));
-      // scroll schedules an update which is probably too small
-      // hack around:
-      if (dx > 0)
-            update(-10, 0, dx + 50, height());
-      else if (dx < 0)
-            update(width() - 50 + dx, 0, width() + 10, height());
+
+      update();
+
       emit offsetChanged(_matrix.dx(), _matrix.dy());
       emit viewRectChanged();
       }
@@ -5144,7 +5144,7 @@ void ScoreView::doDragLasso(QMouseEvent* ev)
 
 void ScoreView::endLasso()
       {
-      Qt::KeyboardModifiers currentModifiers = keyMods; 
+      Qt::KeyboardModifiers currentModifiers = keyMods;
             (void) currentModifiers;
 
       keyMods = Qt::NoModifier;
@@ -6690,7 +6690,7 @@ void ScoreView::cmdAddPedal(HookType beginHook, HookType endHook)
             // [Note Entry] - Initialize the [active pedal]
             else {
                   bool skip = false;
-                  
+
                   // If a pedal exists & ends at current location, force hooks to coincide @ 45 degrees
                   if (startSegment) {
                         Fraction tick = startSegment->tick();
@@ -7288,8 +7288,8 @@ void ScoreView::cmdTuplet(int n)
       _score->startCmd();
       if (noteEntryMode()) {
             _score->expandVoice();
-            bool rhythmEntry = _score->usingNoteEntryMethod(NoteEntryMethod::RHYTHM); 
-            ChordRest* cr = 
+            bool rhythmEntry = _score->usingNoteEntryMethod(NoteEntryMethod::RHYTHM);
+            ChordRest* cr =
                   rhythmEntry ? _score->selection().currentCR()
                               : _score->inputState().cr();
 
