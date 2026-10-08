@@ -83,6 +83,7 @@ class PaletteWidget : public QmlDockWidget
       PaletteQmlInterface* qmlInterface;
 
       bool wasShown = false;
+      int _preferredDockWidth { 0 };
 
       static void registerQmlTypes();
 
@@ -97,6 +98,7 @@ class PaletteWidget : public QmlDockWidget
       void applyCurrentPaletteElement();
       void notifyElementDraggedToScoreView();
 
+      void hideEvent(QHideEvent* event) override;
       void showEvent(QShowEvent* event) override;
       void changeEvent(QEvent* evt) override;
       };

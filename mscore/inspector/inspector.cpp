@@ -10,6 +10,7 @@
 //  the file LICENSE.GPL
 //=============================================================================
 
+#include <QSettings>
 #include <QStackedWidget>
 
 #include "musescore.h"
@@ -125,6 +126,8 @@ Inspector::Inspector(QWidget* parent)
       {
       setObjectName("inspector");
       setAllowedAreas(Qt::DockWidgetAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea));
+      QSettings settings;
+      _preferredDockWidth = settings.value("MainWindow/inspectorDockWidth", 0).toInt();
       sa = new QScrollArea;
       sa->setFrameShape(QFrame::NoFrame);
       sa->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
@@ -544,6 +547,37 @@ void Inspector::update(Score* s)
             }
       if (ie)
             ie->setElement();
+      }
+
+//---------------------------------------------------------
+//   hideEvent
+//---------------------------------------------------------
+
+void Inspector::hideEvent(QHideEvent* evt)
+      {
+      if (_wasShown && !isFloating() && width() > 0) {
+            _preferredDockWidth = width();
+
+            QSettings settings;
+            settings.setValue("MainWindow/inspectorDockWidth",
+                              _preferredDockWidth);
+            }
+
+      QDockWidget::hideEvent(evt);
+      }
+
+//---------------------------------------------------------
+//   showEvent
+//---------------------------------------------------------
+
+void Inspector::showEvent(QShowEvent* evt)
+      {
+      QDockWidget::showEvent(evt);
+
+      _wasShown = true;
+
+      if (_preferredDockWidth > 0 && !isFloating())
+            mscore->resizeDocks({ this }, { _preferredDockWidth }, Qt::Horizontal);
       }
 
 //---------------------------------------------------------

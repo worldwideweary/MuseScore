@@ -397,11 +397,16 @@ class Inspector : public QDockWidget {
       bool oSameTypes;
       bool oSameSubtypes;
 
+      bool _wasShown { false };
+      int _preferredDockWidth { 0 };
+
    public slots:
       void update();
 
    protected:
       virtual void changeEvent(QEvent *event);
+      void hideEvent(QHideEvent*) override;
+      void showEvent(QShowEvent*) override;
       void retranslate();
 
    public:

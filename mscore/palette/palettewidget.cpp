@@ -26,6 +26,7 @@
 #include "qml/nativetooltip.h"
 
 #include <QQmlContext>
+#include <QSettings>
 #include <QTimer>
 
 namespace Ms {
@@ -85,6 +86,10 @@ PaletteWidget::PaletteWidget(PaletteWorkspace* w, QQmlEngine* e, QWidget* parent
       setSource(QUrl(qmlSourcePrefix() + "qml/palettes/PalettesWidget.qml"));
       setObjectName("palette-widget");
       setAllowedAreas(Qt::DockWidgetAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea));
+
+      QSettings settings;
+      _preferredDockWidth =
+            settings.value("MainWindow/paletteDockWidth", 0).toInt();
 
       retranslate();
       }
@@ -150,6 +155,23 @@ void PaletteWidget::notifyElementDraggedToScoreView()
       }
 
 //---------------------------------------------------------
+//   hideEvent
+//---------------------------------------------------------
+
+void PaletteWidget::hideEvent(QHideEvent* evt)
+      {
+      if (wasShown && !isFloating() && width() > 0) {
+            _preferredDockWidth = width();
+
+            QSettings settings;
+            settings.setValue("MainWindow/paletteDockWidth",
+                              _preferredDockWidth);
+            }
+
+      QDockWidget::hideEvent(evt);
+      }
+
+//---------------------------------------------------------
 //   PaletteWidget::showEvent
 //---------------------------------------------------------
 
@@ -159,9 +181,14 @@ void PaletteWidget::showEvent(QShowEvent* evt)
       if (!wasShown) {
             wasShown = true;
             if (mscoreFirstStart) {
-                  // set default width for palettes
+                  // Set default width for palettes on first startup
                   mscore->resizeDocks({ this }, { int(200 * guiScaling) }, Qt::Horizontal);
+                  return;
                   }
+            }
+
+      if (_preferredDockWidth > 0 && !isFloating()) {
+            mscore->resizeDocks({ this }, { _preferredDockWidth }, Qt::Horizontal);
             }
       }
 
