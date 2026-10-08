@@ -259,6 +259,7 @@ class ScoreView : public QWidget, public MuseScoreView {
 
       void saveChord(XmlWriter&);
 
+      void leaveEvent(QEvent*) override;
       virtual bool event(QEvent* event) override;
       virtual bool gestureEvent(QGestureEvent*);            // ??
       virtual void resizeEvent(QResizeEvent*) override;

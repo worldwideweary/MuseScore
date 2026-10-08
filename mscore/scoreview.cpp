@@ -2437,6 +2437,34 @@ void ScoreView::constraintCanvas (int* dxx, int* dyy)
       }
 
 //---------------------------------------------------------
+//   leaveEvent
+//---------------------------------------------------------
+
+void ScoreView::leaveEvent(QEvent* event)
+      {
+      QWidget::leaveEvent(event);
+
+      // Only clear ordinary hover state, not an active interaction.
+      const bool hoverState =
+            state == ViewState::NORMAL
+            || state == ViewState::EDIT
+            || state == ViewState::PLAY
+            || state == ViewState::FOTO;
+
+      if (!hoverState
+          || QApplication::mouseButtons() != Qt::NoButton
+          || editData.buttons != Qt::NoButton
+          || editData.dropElement)
+            return;
+
+      if (dropTarget) {
+            setDropTarget(nullptr); // also schedules a repaint
+            if (score() && this == mscore->currentScoreView())
+                  ScoreAccessibility::instance()->currentInfoChanged();
+            }
+      }
+
+//---------------------------------------------------------
 //   updateHover
 //---------------------------------------------------------
 
