@@ -2568,12 +2568,9 @@ void ScoreView::constraintCanvas (int* dxx, int* dyy)
 
             if (limitScrollArea) {
                   if (pagesRect.height() <= rect.height()) {
-                        if (score()->layoutMode() == LayoutMode::LINE)
-                              // keep score fixed in place vertically
-                              dy = 0;
-                        else
-                              // center vertically on screen
-                              dy = (rect.height() - pagesRect.height()) / 2 - pagesRect.top();
+                        // Center the page vertically when it fits in the viewport,
+                        // including Horizontal Continuous view.
+                        dy = (rect.height() - pagesRect.height()) / 2 - pagesRect.top();
                         }
                   else if (toPagesRect.top() > rect.top())
                         // get rid of the top margin
@@ -5743,8 +5740,13 @@ void ScoreView::screenPrev()
 
 void ScoreView::pageTop()
       {
-      if (score()->paginatedMode())
-            setConstrainedOffset(thinPadding, thinPadding);
+      const bool constrain =
+            score()->paginatedMode()
+            || (score()->lineMode()
+                && preferences.getBool(PREF_UI_CANVAS_SCROLL_LIMITSCROLLAREA));
+
+      if (constrain)
+            setConstrainedOffset(thinPadding, score()->lineMode() ? 0.0 : thinPadding);
       else
             setOffset(thinPadding, score()->lineMode() ? 0.0 : thinPadding);
 
