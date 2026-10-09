@@ -1508,6 +1508,31 @@ void ScoreView::drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF&
                         }
                   }
 
+            // Preserve an opaque staff-line hover through fret-number
+            // background cutouts, before the fret glyph is drawn.
+            if (el && el->isNote()
+                  && dropTarget && dropTarget->isStaffLines()
+                  && MScore::hoverColorEnabled
+                  && MScore::hoverColor.alpha() == 255
+                  && state != ViewState::LASSO
+                  && el->staffIdx() == dropTarget->staffIdx()
+                  && el->findMeasure() == dropTarget->findMeasure()) {
+
+                  const QRectF staffRect =
+                        _matrix.mapRect(dropTarget->canvasBoundingRect());
+
+                  const QRectF overlap =
+                        QRectF(dest.toAlignedRect()).intersected(
+                              QRectF(staffRect.toAlignedRect()));
+
+                  if (!overlap.isEmpty()) {
+                        p->save();
+                        p->setRenderHint(QPainter::Antialiasing, false);
+                        p->fillRect(overlap, MScore::hoverColor);
+                        p->restore();
+                        }
+                  }
+
             p->restore();
             }
       else {
