@@ -1342,9 +1342,6 @@ void ScoreView::drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF&
       if (el == dropTarget && (!el || !el->isNote()))
             return;
 
-      if (score()->lineMode())
-            return;
-
       if (el) {
             if (el->isTextBase()) {
                   auto tb = toTextBase(el);
@@ -1417,14 +1414,21 @@ void ScoreView::drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF&
       if (skip)
             return;
 
-      // The painter currently uses element-local coordinates.
-      // Locate the whole page in those coordinates, then map to the viewport.
+      // Locate the paper in element-local coordinates, then map
+      // to viewport coordinates.
       QRectF paperRect;
       if (!printing && el) {
             const Element* page = el->findAncestor(ElementType::PAGE);
             if (page) {
+                  // Horizontal Continuous view draws the page without
+                  // the additional page translation used in page modes.
+                  // Match the rectangle used by ScoreView::paint().
+                  const QRectF pageBounds = score()->lineMode()
+                        ? page->abbox().translated(page->pos())
+                        : page->bbox();
+
                   paperRect = p->worldTransform().mapRect(
-                        page->bbox().translated(-el->pagePos()));
+                        pageBounds.translated(-el->pagePos()));
                   }
             }
 
