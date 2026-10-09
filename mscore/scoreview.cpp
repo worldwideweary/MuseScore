@@ -20,6 +20,7 @@
 #include "measureproperties.h"
 #include "musescore.h"
 #include "navigator.h"
+#include "paperimage.h"
 #include "pianotools.h"
 #include "preferences.h"
 #include "scoreaccessibility.h"
@@ -87,6 +88,7 @@
 #include "libmscore/volta.h"
 #include "libmscore/xml.h"
 
+#include <QImage>
 #include <QPainter>
 #include <QRectF>
 
@@ -562,6 +564,24 @@ void ScoreView::setForeground(QPixmap* pm)
       delete _fgPixmap;
       _fgPixmap = pm;
       _pagePixmap = QPixmap();
+      _opaqueFgPixmap = QPixmap();
+
+      if (_fgPixmap && !_fgPixmap->isNull()) {
+            if (_fgPixmap->hasAlpha()) {
+                  QImage opaqueImage(_fgPixmap->size(), QImage::Format_RGB32);
+                  opaqueImage.fill(Qt::white);
+
+                  {
+                  QPainter pp(&opaqueImage);
+                  pp.drawPixmap(0, 0, *_fgPixmap);
+                  }
+
+                  _opaqueFgPixmap = QPixmap::fromImage(opaqueImage);
+                  }
+            else
+                  _opaqueFgPixmap = *_fgPixmap;
+            }
+
       update();
       }
 
@@ -571,6 +591,7 @@ void ScoreView::setForeground(const QColor& color)
       _fgPixmap = 0;
       _fgColor = color;
       _pagePixmap = QPixmap();
+      _opaqueFgPixmap = QPixmap();
       update();
       }
 
@@ -1423,33 +1444,70 @@ void ScoreView::drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF&
             p->setClipRect(dest, Qt::IntersectClip);
 
             p->fillRect(dest, _fgColor);
-            if (_fgPixmap && !_fgPixmap->isNull() && !paperRect.isEmpty())
-                  p->drawPixmap(paperRect, *_fgPixmap, QRectF(_fgPixmap->rect()));
+
+            if (_fgPixmap && !_fgPixmap->isNull() && !paperRect.isEmpty()) {
+                  if (preferences.getBool(PREF_UI_CANVAS_FG_REPEAT_VERTICALLY))
+                        drawVerticallyRepeatedPaper(p, paperRect, dest, *_fgPixmap);
+                  else
+                        p->drawPixmap(paperRect, *_fgPixmap, QRectF(_fgPixmap->rect()));
+                  }
 
             p->restore();
             }
       else {
-            // Retain the existing export behavior.
-            if (_fgPixmap && !skip) {
-                  QRectF src = canvasR.adjusted(xOff, yOff, xOff, yOff);
-
-                  // Convert page coordinates into pixels of the original image
-                  // PDF paints that whole image stretched across the page
+            if (_fgPixmap && !skip && !_opaqueFgPixmap.isNull()) {
+                  const QRectF src = canvasR.adjusted(xOff, yOff, xOff, yOff);
                   const Element* page = el ? el->findAncestor(ElementType::PAGE) : nullptr;
-                  if (page && !_fgPixmap->isNull()) {
-                        const QRectF pageRect = page->bbox();
-                        if (!pageRect.isEmpty()) {
-                              const qreal sx = _fgPixmap->width() / pageRect.width();
-                              const qreal sy = _fgPixmap->height() / pageRect.height();
 
-                              src = QRectF((src.x() - pageRect.x()) * sx,
-                                           (src.y() - pageRect.y()) * sy,
-                                           src.width() * sx,
-                                           src.height() * sy);
-                              }
+                  if (page && !page->bbox().isEmpty() && !src.isEmpty()) {
+                        const QRectF pageRect = page->bbox();
+
+                        const qreal sx = dest.width() / src.width();
+                        const qreal sy = dest.height() / src.height();
+
+                        const QRectF mappedPage(
+                              dest.x() + (pageRect.x() - src.x()) * sx,
+                              dest.y() + (pageRect.y() - src.y()) * sy,
+                              pageRect.width() * sx,
+                              pageRect.height() * sy);
+
+                        // Render the wallpaper portion into an opaque image first,
+                        // avoiding PDF clipping/compositing of the full-page pixmap
+                        const qreal rasterScale = 3.0;
+
+                        const QSize imageSize(
+                              qMax(1, qCeil(dest.width() * rasterScale)),
+                              qMax(1, qCeil(dest.height() * rasterScale)));
+
+                        QImage patch(imageSize, QImage::Format_RGB32);
+                        patch.fill(Qt::white);
+
+                        {
+                        QPainter pp(&patch);
+                        pp.setRenderHint(QPainter::SmoothPixmapTransform, false);
+
+                        // Map the element's cutout rectangle to image pixels
+                        pp.scale(qreal(patch.width()) / dest.width(),
+                                 qreal(patch.height()) / dest.height());
+
+                        pp.translate(-dest.x(), -dest.y());
+
+                        // Render the same page-anchored paper into the small image
+                        if (preferences.getBool(PREF_UI_CANVAS_FG_REPEAT_VERTICALLY))
+                              drawVerticallyRepeatedPaper(
+                                    &pp, mappedPage, dest, _opaqueFgPixmap);
+                        else
+                              pp.drawPixmap(
+                                    mappedPage, _opaqueFgPixmap,
+                                    QRectF(_opaqueFgPixmap.rect()));
                         }
 
-                  p->drawPixmap(dest, *_fgPixmap, src);
+                        // Draw the already-composited, alpha-free patch into the PDF
+                        p->drawImage(dest, patch, QRectF(patch.rect()));
+                        }
+                  else {
+                        p->drawPixmap(dest, _opaqueFgPixmap, src);
+                        }
                   }
             else {
                   p->fillRect(dest, preferences.getColor(PREF_UI_CANVAS_FG_COLOR));
@@ -2068,6 +2126,8 @@ void ScoreView::paint(const QRect& r, QPainter& p)
 #endif
       // ------------
 
+      const bool repeatPaper = preferences.getBool(PREF_UI_CANVAS_FG_REPEAT_VERTICALLY);
+
       QRegion r1(r);
       if ((_score->layoutMode() == LayoutMode::LINE) || (_score->layoutMode() == LayoutMode::SYSTEM)) {
             if (_score->pages().size() > 0) {
@@ -2081,8 +2141,12 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                   p.resetTransform();
 
                   p.fillRect(paperRect, _fgColor);
-                  if (_fgPixmap && !_fgPixmap->isNull())
-                        p.drawPixmap(paperRect, *_fgPixmap, QRectF(_fgPixmap->rect()));
+                  if (_fgPixmap && !_fgPixmap->isNull()) {
+                        if (repeatPaper)
+                              drawVerticallyRepeatedPaper(&p, paperRect, QRectF(r), *_fgPixmap);
+                        else
+                              p.drawPixmap(paperRect, *_fgPixmap, QRectF(_fgPixmap->rect()));
+                        }
 
                   p.restore();
 
@@ -2129,8 +2193,12 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                   p.resetTransform();
 
                   p.fillRect(paperRect, _fgColor);
-                  if (_fgPixmap && !_fgPixmap->isNull())
-                        p.drawPixmap(paperRect, *_fgPixmap, QRectF(_fgPixmap->rect()));
+                  if (_fgPixmap && !_fgPixmap->isNull()) {
+                        if (repeatPaper)
+                              drawVerticallyRepeatedPaper(&p, paperRect, QRectF(r), *_fgPixmap);
+                        else
+                              p.drawPixmap(paperRect, *_fgPixmap, QRectF(_fgPixmap->rect()));
+                        }
 
                   p.restore();
                   }

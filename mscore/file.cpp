@@ -24,6 +24,7 @@
 #include "musescore.h"
 #include "newwizard.h"
 #include "palette.h"
+#include "paperimage.h"
 #include "playpanel.h"
 #include "preferences.h"
 #include "scorePreview.h"
@@ -2384,6 +2385,10 @@ bool MuseScore::savePdf(Score* cs_, QPrinter& printer)
             return false;
       p.setRenderHint(QPainter::Antialiasing, true);
       p.setRenderHint(QPainter::TextAntialiasing, true);
+      // Qt 5.13+: Avoid JPEG compression of images embedded in PDFs:
+#if QT_VERSION >= QT_VERSION_CHECK(5, 13, 0)
+      p.setRenderHint(QPainter::LosslessImageRendering, true);
+#endif
 
       p.setViewport(QRect(0.0, 0.0, size.width() * printer.logicalDpiX(),
          size.height() * printer.logicalDpiY()));
@@ -2397,9 +2402,13 @@ bool MuseScore::savePdf(Score* cs_, QPrinter& printer)
       bool firstPage = true;
 
       const QRect fillRect(0.0, 0.0, size.width() * DPI, size.height() * DPI);
-      int exportBgStyle = preferences.getInt(PREF_EXPORT_BG_STYLE);
-      bool useFgColor = preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR);
-      bool useTransparency = !exportBgStyle;
+      const bool repeatPaper =
+            preferences.getBool(PREF_UI_CANVAS_FG_REPEAT_VERTICALLY);
+      const int exportBgStyle =
+            preferences.getInt(PREF_EXPORT_BG_STYLE);
+      const bool useFgColor =
+            preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR);
+      const bool useTransparency = !exportBgStyle;
       const QColor fgColor = preferences.getColor(PREF_UI_CANVAS_FG_COLOR);
       const QColor customColor = preferences.getColor(PREF_EXPORT_BG_CUSTOM_COLOR);
       QPixmap* fgPixMap = currentScoreView()->fgPixmap();
@@ -2414,7 +2423,11 @@ bool MuseScore::savePdf(Score* cs_, QPrinter& printer)
             switch (exportBgStyle) {
                   case 1:
                         if (fgPixMap && !fgPixMap->isNull()) {
-                              p.drawPixmap(pl.at(n)->bbox(), *fgPixMap, QRectF(fgPixMap->rect()));
+                              if (repeatPaper)
+                                    drawVerticallyRepeatedPaper(&p, pl.at(n)->bbox(),
+                                                                pl.at(n)->bbox(), *fgPixMap);
+                              else
+                                    p.drawPixmap(pl.at(n)->bbox(), *fgPixMap, QRectF(fgPixMap->rect()));
                               }
                         else if (useFgColor) {
                               p.fillRect(fillRect, fgColor);
@@ -2471,12 +2484,20 @@ bool MuseScore::savePdf(QList<Score*> cs_, const QString& saveName)
 
       p.setRenderHint(QPainter::Antialiasing, true);
       p.setRenderHint(QPainter::TextAntialiasing, true);
+      // Qt 5.13+: Avoid JPEG compression of images embedded in PDFs:
+#if QT_VERSION >= QT_VERSION_CHECK(5, 13, 0)
+      p.setRenderHint(QPainter::LosslessImageRendering, true);
+#endif
 
       double pr = MScore::pixelRatio;
 
       bool firstPage = true;
-      int exportBgStyle = preferences.getInt(PREF_EXPORT_BG_STYLE);
-      bool useFgColor = preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR);
+      const bool repeatPaper =
+            preferences.getBool(PREF_UI_CANVAS_FG_REPEAT_VERTICALLY);
+      const int exportBgStyle =
+            preferences.getInt(PREF_EXPORT_BG_STYLE);
+      const bool useFgColor =
+            preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR);
       const QColor fgColor = preferences.getColor(PREF_UI_CANVAS_FG_COLOR);
       const QColor customColor = preferences.getColor(PREF_EXPORT_BG_CUSTOM_COLOR);
       const QPixmap fgPixMap(preferences.getString(PREF_UI_CANVAS_FG_WALLPAPER));
@@ -2508,16 +2529,21 @@ bool MuseScore::savePdf(QList<Score*> cs_, const QString& saveName)
                   firstPage = false;
                   switch (exportBgStyle) {
                         case 1:
-                            if (useFgColor)
-                                p.fillRect(fillRect, fgColor);
-                            else
-                                p.drawPixmap(pl.at(n)->bbox(), fgPixMap, QRectF(fgPixMap.rect()));
-                            break;
+                              if (useFgColor)
+                                    p.fillRect(fillRect, fgColor);
+                              else {
+                                    if (repeatPaper)
+                                          drawVerticallyRepeatedPaper(&p, pl.at(n)->bbox(),
+                                                                      pl.at(n)->bbox(), fgPixMap);
+                                    else
+                                          p.drawPixmap(pl.at(n)->bbox(), fgPixMap, QRectF(fgPixMap.rect()));
+                                    }
+                              break;
                         case 2:
-                            p.fillRect(fillRect, customColor);
-                            break;
+                              p.fillRect(fillRect, customColor);
+                              break;
                         default:
-                            break;
+                              break;
                         }
                   s->print(&p, n);
                   }

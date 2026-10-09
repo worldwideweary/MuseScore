@@ -483,6 +483,7 @@ void PreferenceDialog::start()
                   new ColorPreferenceItem(PREF_UI_CANVAS_FG_COLOR, fgColorLabel, nullptr, doNothing),
                   new StringPreferenceItem(PREF_UI_CANVAS_BG_WALLPAPER, bgWallpaper, nullptr, doNothing),
                   new StringPreferenceItem(PREF_UI_CANVAS_FG_WALLPAPER, fgWallpaper, nullptr, doNothing),
+                  new BoolPreferenceItem(PREF_UI_CANVAS_FG_REPEAT_VERTICALLY, fgRepeatVertically),
                   new IntPreferenceItem(PREF_UI_CANVAS_ZOOM_DEFAULT_TYPE, zoomDefaultType, nullptr,
                                           [this]() { // update function
                                                 zoomDefaultType->setCurrentIndex(preferences.getInt(PREF_UI_CANVAS_ZOOM_DEFAULT_TYPE));
@@ -1169,6 +1170,7 @@ void PreferenceDialog::updateFgView(bool useColor)
       fgUseColorInPalettes->setChecked(preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR_IN_PALETTES));
       fgWallpaper->setEnabled(!useColor);
       fgWallpaperSelect->setEnabled(!useColor);
+      fgRepeatVertically->setEnabled(!useColor);
       fgUseColorInPalettes->setEnabled(useColor);
 
       if (useColor) {

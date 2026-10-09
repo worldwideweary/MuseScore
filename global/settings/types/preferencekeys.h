@@ -233,6 +233,7 @@
 #define PREF_UI_CANVAS_CONTINUOUS_HEADER_INSTRUMENT         "ui/canvas/continuousView/header/showInstrumentName"
 #define PREF_UI_CANVAS_BG_WALLPAPER                         "ui/canvas/background/wallpaper"
 #define PREF_UI_CANVAS_FG_WALLPAPER                         "ui/canvas/foreground/wallpaper"
+#define PREF_UI_CANVAS_FG_REPEAT_VERTICALLY                 "ui/canvas/foreground/repeatVertically"
 #define PREF_UI_CANVAS_ZOOM_DEFAULT_TYPE                    "ui/canvas/zoomDefaultType"
 #define PREF_UI_CANVAS_ZOOM_DEFAULT_LEVEL                   "ui/canvas/zoomDefaultLevel"
 #define PREF_UI_CANVAS_ZOOM_PRECISION_KEYBOARD              "ui/canvas/zoomPrecisionKeyboard"

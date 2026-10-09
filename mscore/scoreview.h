@@ -237,6 +237,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       QColor _fgColor;
       QPixmap* _bgPixmap;
       QPixmap* _fgPixmap;
+      QPixmap  _opaqueFgPixmap;   // White-backed copy for PDF cutouts
       QPixmap  _pagePixmap;
 
       qreal _alwaysTopMax { 0.0 };
