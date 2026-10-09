@@ -262,7 +262,8 @@ void ContinuousPanel::paint(const QRect&, QPainter& painter)
                   }
             }
 
-      _rect = QRect(0, _y, _width, _height);
+      // Preserve fractional panel dimensions for clipping and staff-line alignment
+      _rect = QRectF(0.0, _y, _width, _height);
 
       //====================
 
@@ -335,7 +336,12 @@ void ContinuousPanel::paint(const QRect&, QPainter& painter)
 
       painter.restore();
 
-      painter.setClipRect(_rect);
+      // Allow the header staff lines to meet the score at the
+      // nearest physical-pixel boundary
+      const qreal scale = qAbs(painter.deviceTransform().m11());
+      const qreal edgeOverlap = scale > 0.0 ? 1.0 / scale : 0.0;
+
+      painter.setClipRect(_rect.adjusted(0.0, 0.0, edgeOverlap, 0.0));
       painter.setClipping(true);
 
       QColor color(preferences.getColor(PREF_UI_CANVAS_CONTINUOUS_HEADER_COLOR));
@@ -380,7 +386,7 @@ void ContinuousPanel::paint(const QRect&, QPainter& painter)
                   StaffLines newStaffLines(*toStaffLines(e));
                   newStaffLines.setParent(parent->measure());
                   newStaffLines.setTrack(e->track());
-                  newStaffLines.layoutForWidth(bg.width());
+                  newStaffLines.layoutForWidth(bg.width() + edgeOverlap);
                   newStaffLines.setColor(color);
                   newStaffLines.draw(&painter);
 
