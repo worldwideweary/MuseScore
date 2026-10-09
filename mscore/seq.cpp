@@ -635,6 +635,10 @@ void Seq::guiStop()
 void Seq::seqMessage(int msg, int arg)
       {
       switch(msg) {
+            case '6':   // Audio thread has applied a requested seek
+                  if (_pendingSeekSerial == arg)
+                        _pendingSeekSerial = 0;
+                  break;
             case '5': {
                   // Update the screen after seeking from the realtime thread
                   Segment* seg = cs->tick2segment(Fraction::fromTicks(arg));
@@ -786,6 +790,10 @@ void Seq::processMessages()
                         break;
                   case SeqMsgId::SEEK:
                         setPos(msg.intVal);
+
+                        // Confirm that the realtime playback position has been updated:
+                        if (msg.intVal2 != 0)
+                              emit toGui('6', msg.intVal2);
                         break;
                   case SeqMsgId::ALL_NOTE_OFF:
                         {
@@ -1756,7 +1764,17 @@ void Seq::seek(int utick, bool viaUserNavigation)
       cs->setPlayPos(Fraction::fromTicks(t), viaUserNavigation);
 
       cs->update();
-      guiToSeq(SeqMsg(SeqMsgId::SEEK, utick));
+
+      // During playback, wait for the audio thread to apply this seek
+      // before allowing heartbeat to update the playback cursor.
+      const int serial =
+            (state == Transport::PLAY && _driver && running)
+                  ? ++_seekSerial
+                  : 0;
+
+      _pendingSeekSerial = serial;
+
+      guiToSeq(SeqMsg(SeqMsgId::SEEK, utick, serial));
       }
 
 //---------------------------------------------------------
@@ -2746,6 +2764,11 @@ void Seq::heartBeatTimeout()
             }
 
       if (state != Transport::PLAY || inCountIn)
+            return;
+
+      // Do not overwrite the GUI's new seek position with
+      // the audio thread's previous playback position
+      if (_pendingSeekSerial != 0)
             return;
 
       int endFrame = playFrame;

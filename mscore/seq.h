@@ -182,6 +182,11 @@ class Seq : public QObject, public Sequencer {
       EventMap::const_iterator countInPlayPos;
       EventMap::const_iterator guiPos;    // moved in gui thread
 
+      // GUI-thread seek synchronization.
+      // Prevent heartbeat updates from using the old playback position.
+      int _seekSerial { 0 };
+      int _pendingSeekSerial { 0 };
+
       QList<const Note*> markedNotes;     // notes marked as sounding
       QList<const Rest*> markedRests;     // rests marked as "resting"
 
