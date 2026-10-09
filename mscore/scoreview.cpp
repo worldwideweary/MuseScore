@@ -1449,15 +1449,47 @@ void ScoreView::drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF&
 
       if (!printing) {
             p->save();
-            p->setClipRect(dest, Qt::IntersectClip);
 
-            p->fillRect(dest, _fgColor);
+            const bool translucentForeground =
+                  (!_fgPixmap || _fgPixmap->isNull())
+                  && _fgColor.alpha() < 255;
 
-            if (_fgPixmap && !_fgPixmap->isNull() && !paperRect.isEmpty()) {
-                  if (preferences.getBool(PREF_UI_CANVAS_FG_REPEAT_VERTICALLY))
-                        drawVerticallyRepeatedPaper(p, paperRect, dest, *_fgPixmap);
+            // The screen cutout is already in viewport coordinates.
+            // Align translucent cutouts to whole pixels to avoid
+            // partially covered edges with CompositionMode_Source.
+            const QRectF cutoutRect = translucentForeground
+                  ? QRectF(dest.toAlignedRect())
+                  : dest;
+
+            if (translucentForeground)
+                  p->setRenderHint(QPainter::Antialiasing, false);
+
+            p->setClipRect(cutoutRect, Qt::IntersectClip);
+
+            if (translucentForeground) {
+                  // Restore the original background, replacing staff lines.
+                  p->setCompositionMode(QPainter::CompositionMode_Source);
+
+                  if (_bgPixmap && !_bgPixmap->isNull())
+                        p->drawTiledPixmap(cutoutRect, *_bgPixmap, cutoutRect.topLeft());
                   else
-                        p->drawPixmap(paperRect, *_fgPixmap, QRectF(_fgPixmap->rect()));
+                        p->fillRect(cutoutRect, _bgColor);
+
+                  // Composite the translucent foreground exactly once.
+                  p->setCompositionMode(QPainter::CompositionMode_SourceOver);
+                  p->fillRect(cutoutRect, _fgColor);
+                  }
+            else {
+                  // Existing opaque-color / foreground-image drawing.
+                  p->fillRect(dest, _fgColor);
+
+                  if (_fgPixmap && !_fgPixmap->isNull() && !paperRect.isEmpty()) {
+                        if (preferences.getBool(PREF_UI_CANVAS_FG_REPEAT_VERTICALLY))
+                              drawVerticallyRepeatedPaper(p, paperRect, dest, *_fgPixmap);
+                        else
+                              p->drawPixmap(paperRect, *_fgPixmap,
+                                            QRectF(_fgPixmap->rect()));
+                        }
                   }
 
             p->restore();
