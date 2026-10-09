@@ -1337,9 +1337,13 @@ void ScoreView::drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF&
       bool  skip  = false;
       bool  circlePath = false;
 
-      if (el == dropTarget) return;
+      // Preserve the background cutout for hovered notes,
+      // i.e. tablature fret numbers:
+      if (el == dropTarget && (!el || !el->isNote()))
+            return;
 
-      if (score()->lineMode()) return;
+      if (score()->lineMode())
+            return;
 
       if (el) {
             if (el->isTextBase()) {
