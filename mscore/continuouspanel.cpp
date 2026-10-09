@@ -281,45 +281,42 @@ void ContinuousPanel::paint(const QRect&, QPainter& painter)
 
       bg.setWidth(_widthClef + _widthKeySig + _widthTimeSig + _leftMarginTotal + _panelRightPadding);
 
-      const bool useBg = false;
-      QPixmap* pm = useBg ? _sv->bgPixmap() : _sv->fgPixmap();
+      // Reconstruct the header paper in viewport coordinates.
+      // Align to device pixels to avoid antialiased boundary artifacts.
+      const QRect headerRect =
+            painter.worldTransform().mapRect(bg).toAlignedRect();
 
+      painter.save();
+      painter.resetTransform();
+      painter.setRenderHint(QPainter::Antialiasing, false);
+      painter.setClipRect(headerRect, Qt::IntersectClip);
 
-      // Background - Image
+      // Replace the underlying score, including staff lines.
+      painter.setCompositionMode(QPainter::CompositionMode_Source);
+      painter.fillRect(
+            headerRect,
+            preferences.getColor(PREF_UI_CANVAS_BG_COLOR));
+
+      // Recreate the background wallpaper.
+      painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+
       if (_sv->bgPixmap() && !_sv->bgPixmap()->isNull()) {
-            QRectF dest = painter.matrix().mapRect(bg);
-            qreal transX = painter.transform().dx();
-            qreal transY = painter.transform().dy();
-            transX = dest.x();
-            transY = dest.y();
-            painter.save();
-
-            painter.resetMatrix();
-            painter.resetTransform();
-            painter.drawTiledPixmap(dest, *_sv->bgPixmap(), QPointF(transX, transY));
-
-            painter.restore();
+            painter.drawTiledPixmap(
+                  headerRect, *_sv->bgPixmap(), headerRect.topLeft());
             }
 
-      if (!_sv->fgPixmap() || _sv->fgPixmap()->isNull()) {
-            // Foreground - Color:
-            painter.fillRect(bg, preferences.getColor(PREF_UI_CANVAS_FG_COLOR));
+      // Recreate the foreground only once.
+      if (_sv->fgPixmap() && !_sv->fgPixmap()->isNull()) {
+            painter.drawTiledPixmap(
+                  headerRect, *_sv->fgPixmap(), headerRect.topLeft());
             }
       else {
-            // Foreground - Image:
-            QRectF dest = painter.matrix().mapRect(bg);
-            qreal transX = painter.transform().dx();
-            qreal transY = painter.transform().dy();
-            transX = dest.x();
-            transY = dest.y();
-            painter.save();
-
-            painter.resetMatrix();
-            painter.resetTransform();
-            painter.drawTiledPixmap(dest, *pm, QPointF(transX, transY));
-
-            painter.restore();
+            painter.fillRect(
+                  headerRect,
+                  preferences.getColor(PREF_UI_CANVAS_FG_COLOR));
             }
+
+      painter.restore();
 
       painter.setClipRect(_rect);
       painter.setClipping(true);
