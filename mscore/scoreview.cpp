@@ -1328,6 +1328,22 @@ void ScoreView::drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF&
 
       QRectF dest = printing ? r : p->worldTransform().mapRect(r);
 
+      // An opaque hover over a tablature number must be drawn
+      // after its background cutout, but before the fret glyph.
+      const bool opaqueHoveredNote =
+            !printing
+            && el
+            && el == dropTarget
+            && el->isNote()
+            && MScore::hoverColorEnabled
+            && MScore::hoverColor.alpha() == 255
+            && state != ViewState::LASSO;
+
+      const QRectF hoverRect = opaqueHoveredNote
+            ? p->worldTransform().mapRect(el->bbox().adjusted(-6.0, -6.0, 6.0, 6.0))
+            : QRectF();
+
+
       qreal w      = dest.width();
       qreal h      = dest.height();
       qreal transX = p->transform().dx();
@@ -1555,6 +1571,16 @@ void ScoreView::drawBackgroundOffset(QPainter* p, const QRectF& r, const QRectF&
             }
 
       if (!printing) {
+            if (opaqueHoveredNote) {
+                  // The background cutout has already been painted.
+                  // Draw the opaque hover now, before Note::draw()
+                  // draws the actual fret number.
+                  p->save();
+                  p->setRenderHint(QPainter::Antialiasing, false);
+                  p->fillRect(hoverRect, MScore::hoverColor);
+                  p->restore();
+                  }
+
             p->restore();
             }
 
@@ -2189,6 +2215,18 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                         }
 
                   p.restore();
+
+                  // Opaque hover is normally painted behind score elements.
+                  // Continuous/System mode also needs that pass
+                  if (MScore::hoverColorEnabled
+                      && dropTarget
+                      && state != ViewState::LASSO
+                      && MScore::hoverColor.alpha() == 255)
+                        {
+                        p.save();
+                        drawHoverHighlight(p, *dropTarget);
+                        p.restore();
+                        }
 
                   QList<Element*> ell = page->items(fr);
 
