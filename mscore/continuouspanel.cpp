@@ -11,6 +11,7 @@
 //=============================================================================
 
 #include "continuouspanel.h"
+#include "paperimage.h"
 #include "preferences.h"
 #include "scoreview.h"
 
@@ -267,6 +268,12 @@ void ContinuousPanel::paint(const QRect&, QPainter& painter)
 
       painter.save();
 
+      // Before translating the painter for the header, capture
+      // the same page-to-viewport mapping used by ScoreView
+      const QRectF pageWallpaperRect =
+            painter.worldTransform().mapRect(
+                  page->abbox().translated(page->pos()));
+
       // Draw colored rectangle
       painter.setClipping(false);
       QPointF pos(_offsetPanel, 0);
@@ -305,15 +312,25 @@ void ContinuousPanel::paint(const QRect&, QPainter& painter)
                   headerRect, *_sv->bgPixmap(), headerRect.topLeft());
             }
 
-      // Recreate the foreground only once.
+      // Match the foreground drawing used by ScoreView::paint().
+      painter.fillRect(
+            headerRect,
+            preferences.getColor(PREF_UI_CANVAS_FG_COLOR));
+
       if (_sv->fgPixmap() && !_sv->fgPixmap()->isNull()) {
-            painter.drawTiledPixmap(
-                  headerRect, *_sv->fgPixmap(), headerRect.topLeft());
-            }
-      else {
-            painter.fillRect(
-                  headerRect,
-                  preferences.getColor(PREF_UI_CANVAS_FG_COLOR));
+            if (preferences.getBool(PREF_UI_CANVAS_FG_REPEAT_VERTICALLY)) {
+                  drawVerticallyRepeatedPaper(
+                        &painter,
+                        pageWallpaperRect,
+                        QRectF(headerRect),
+                        *_sv->fgPixmap());
+                  }
+            else {
+                  painter.drawPixmap(
+                        pageWallpaperRect,
+                        *_sv->fgPixmap(),
+                        QRectF(_sv->fgPixmap()->rect()));
+                  }
             }
 
       painter.restore();
