@@ -5858,6 +5858,22 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
             qreal marginLeft = width() * 0.05;
             qreal marginRight = width() * 0.05; // leaves 5% margin to the right
 
+            // The continuous header occupies part of the visible viewport.
+            // Account for it only when navigating to an element it obscures.
+            const bool headerVisible =
+                  !playBack
+                  && _continuousPanel->visible()
+                  && preferences.getBool(PREF_UI_CANVAS_CONTINUOUS_HEADER_VISIBLE);
+
+            const qreal headerRight = headerVisible
+                  ? _continuousPanel->width() * physicalZoomLevel()
+                  : 0.0;
+
+            const bool coveredByHeader =
+                  headerVisible && curPosScrL < headerRight + marginLeft;
+
+
+
 //            if (_continuousPanel->active())                           causes jump
 //                  marginLeft += _continuousPanel->width() * physicalZoomLevel();
 
@@ -5879,12 +5895,32 @@ void ScoreView::adjustCanvasPosition(const Element* el, bool playBack, int staff
                   else
                         xo = -curPosR * physicalZoomLevel() + width() - marginRight;
                   }
-            else if (round(curPosScrL) < round(marginLeft) ) {
-                  // focus in or beyond left margin
-                  // enforce left margin
-                  // (previously we moved canvas all the way right,
-                  // but this made sense only when navigating right-to-left)
-                  xo = -curPosL * physicalZoomLevel() + marginLeft;
+            else if (round(curPosScrL) < round(marginLeft) || coveredByHeader) {
+                  // The selection must remain visible to the right of the
+                  // continuous header, unless we can show the beginning
+                  // of the score and allow the header to disappear.
+
+                  const bool atFirstMeasure =
+                        coveredByHeader
+                        && el->findMeasure() == score()->firstMeasure();
+
+                  const bool fitsAtBeginning =
+                        curPosR * physicalZoomLevel() + 10.0
+                              <= width() - marginRight;
+
+                  if (atFirstMeasure && fitsAtBeginning) {
+                        // Return to the start, revealing the original
+                        // clefs and instrument names instead of the header.
+                        xo = 0.0;
+                        }
+                  else {
+                        // Reveal the selection beyond the header.
+                        const qreal visibleLeft = coveredByHeader
+                              ? headerRight + marginLeft
+                              : marginLeft;
+
+                        xo = -curPosL * physicalZoomLevel() + visibleLeft;
+                        }
                   }
             else {
                   // focus is within margins, so do nothing
