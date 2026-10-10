@@ -1775,6 +1775,7 @@ bool Note::acceptDrop(EditData& data) const
       return (type == ElementType::ARTICULATION
          || type == ElementType::FERMATA
          || type == ElementType::CHORDLINE
+         || type == ElementType::CHORD_BRACKET
          || type == ElementType::TEXT
          || type == ElementType::REHEARSAL_MARK
          || (type == ElementType::FINGERING && (!isTablature || tabFingering))

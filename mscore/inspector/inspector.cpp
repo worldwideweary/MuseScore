@@ -19,6 +19,7 @@
 #include "inspector.h"
 #include "inspectorAmbitus.h"
 #include "inspectorArpeggio.h"
+#include "inspectorChordBracket.h"
 #include "inspectorBarline.h"
 #include "inspectorBeam.h"
 #include "inspectorBend.h"
@@ -430,6 +431,9 @@ void Inspector::update(Score* s)
                               break;
                         case ElementType::ARPEGGIO:
                               ie = new InspectorArpeggio(this);
+                              break;
+                        case ElementType::CHORD_BRACKET:
+                              ie = new InspectorChordBracket(this);
                               break;
                         case ElementType::BREATH:
                               ie = new InspectorCaesura(this);

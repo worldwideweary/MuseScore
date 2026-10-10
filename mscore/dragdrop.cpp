@@ -362,6 +362,7 @@ void ScoreView::dragMoveEvent(QDragMoveEvent* event)
             case ElementType::TIMESIG:
             case ElementType::BAR_LINE:
             case ElementType::ARPEGGIO:
+            case ElementType::CHORD_BRACKET:
             case ElementType::BREATH:
             case ElementType::GLISSANDO:
             case ElementType::MEASURE_NUMBER:
@@ -513,6 +514,7 @@ void ScoreView::dropEvent(QDropEvent* event)
                   case ElementType::TIMESIG:
                   case ElementType::BAR_LINE:
                   case ElementType::ARPEGGIO:
+                  case ElementType::CHORD_BRACKET:
                   case ElementType::BREATH:
                   case ElementType::GLISSANDO:
                   case ElementType::MEASURE_NUMBER:

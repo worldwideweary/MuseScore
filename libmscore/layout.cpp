@@ -21,6 +21,7 @@
 #include "bracket.h"
 #include "box.h"
 #include "chord.h"
+#include "chordbracket.h"
 #include "clef.h"
 #include "element.h"
 #include "fermata.h"
@@ -3644,6 +3645,7 @@ void Score::getNextMeasure(LayoutContext& lc)
 //                                    chord->tremolo()->layout();
                               }
                         }
+                  ChordBracket::layoutSegment(&s);
                   }
             else if (s.isEndBarLineType())
                   continue;
@@ -5661,11 +5663,13 @@ void LayoutContext::collectPage()
                                                 if (cc->beam() && cc->beam()->elements().front() == cc)
                                                       cc->beam()->layout();
                                                 cc->layoutSpanners();
+                                                cc->layoutChordBrackets();
                                                 for (Element* element : cc->el()) {
                                                       if (element->isSlur())
                                                             element->layout();
                                                       }
                                                 }
+                                          c->layoutChordBrackets();
                                           c->layoutArpeggio2();
                                           c->layoutSpanners();
                                           if (c->tremolo()) {
