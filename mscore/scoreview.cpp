@@ -2264,6 +2264,10 @@ void ScoreView::paint(const QRect& r, QPainter& p)
 #endif
                   // ------------
 
+                  // Continuous/System views also need the cursor behind notation.
+                  if (MScore::cursorDrawnBehindStaff)
+                        _cursor->paint(&p);
+
                   drawElements(p, ell, editElement);
                   }
             }
