@@ -1627,6 +1627,7 @@ MuseScore::MuseScore()
       addDockWidget(Qt::BottomDockWidgetArea, scoreCmpTool);
 
       _debugLogDock = new DebugLogDock(this);
+      _debugLogDock->setWindowTitle(tr("Debug Log"));
       addDockWidget(Qt::BottomDockWidgetArea, _debugLogDock);
       _debugLogDock->hide();
 
