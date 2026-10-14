@@ -203,15 +203,12 @@ void Excerpt::createExcerpt(Excerpt* excerpt)
 
       cloneStaves(oscore, score, srcStaves, excerpt->tracks());
 
-      // create excerpt title and title frame for all scores if not already there
+      // create excerpt title frame if not already there
       MeasureBase* measure = oscore->first();
 
-      if (!measure || !measure->isVBox()) {
-            qDebug("original score has no header frame");
-            oscore->insertMeasure(ElementType::VBOX, measure);
-            measure = oscore->first();
-            }
-      VBox* titleFrameScore = toVBox(measure);
+      VBox* titleFrameScore = nullptr;
+      if (measure && measure->isVBox())
+            titleFrameScore = toVBox(measure);
 
       measure = score->first();
       if (!measure || !measure->isVBox()) {
@@ -222,7 +219,9 @@ void Excerpt::createExcerpt(Excerpt* excerpt)
       Q_ASSERT(measure && measure->isVBox());
 
       VBox* titleFramePart = toVBox(measure);
-      titleFramePart->copyValues(titleFrameScore);
+      if (titleFrameScore)
+            titleFramePart->copyValues(titleFrameScore);
+
       QString partLabel = excerpt->title();     // parts.front()->longName();
       if (!partLabel.isEmpty()) {
             Text* txt = new Text(score, Tid::INSTRUMENT_EXCERPT);
