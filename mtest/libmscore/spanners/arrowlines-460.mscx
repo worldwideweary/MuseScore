@@ -1,0 +1,228 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<museScore version="4.60">
+  <programVersion>4.7.5</programVersion>
+  <programRevision>3543170</programRevision>
+  <Score>
+    <LayerTag id="0" tag="default" />
+    <currentLayer>0</currentLayer>
+    <Synthesizer>
+      </Synthesizer>
+    <Division>480</Division>
+    <Style>
+      <pageWidth>8.27</pageWidth>
+      <pageHeight>11.69</pageHeight>
+      <pagePrintableWidth>7.4826</pagePrintableWidth>
+      <Spatium>1.76389</Spatium>
+      <textLineBeginFilledArrowWidth>1.25</textLineBeginFilledArrowWidth>
+    </Style>
+    <showInvisible>1</showInvisible>
+    <showUnprintable>1</showUnprintable>
+    <showFrames>1</showFrames>
+    <showMargins>0</showMargins>
+    <metaTag name="arranger" />
+    <metaTag name="composer" />
+    <metaTag name="copyright" />
+    <metaTag name="creationDate">2019-02-18</metaTag>
+    <metaTag name="lyricist" />
+    <metaTag name="movementNumber" />
+    <metaTag name="movementTitle" />
+    <metaTag name="platform">Linux</metaTag>
+    <metaTag name="poet" />
+    <metaTag name="source" />
+    <metaTag name="translator" />
+    <metaTag name="workNumber" />
+    <metaTag name="workTitle" />
+    <Part>
+      <Staff id="1">
+        <StaffType group="pitched">
+          <name>stdNormal</name>
+        </StaffType>
+      </Staff>
+      <trackName>Piano</trackName>
+      <Instrument>
+        <longName>Piano</longName>
+        <shortName>Pno.</shortName>
+        <trackName>Piano</trackName>
+        <minPitchP>21</minPitchP>
+        <maxPitchP>108</maxPitchP>
+        <minPitchA>21</minPitchA>
+        <maxPitchA>108</maxPitchA>
+        <instrumentId>keyboard.piano</instrumentId>
+        <Articulation>
+          <velocity>100</velocity>
+          <gateTime>95</gateTime>
+        </Articulation>
+        <Articulation name="staccatissimo">
+          <velocity>100</velocity>
+          <gateTime>33</gateTime>
+        </Articulation>
+        <Articulation name="staccato">
+          <velocity>100</velocity>
+          <gateTime>50</gateTime>
+        </Articulation>
+        <Articulation name="portato">
+          <velocity>100</velocity>
+          <gateTime>67</gateTime>
+        </Articulation>
+        <Articulation name="tenuto">
+          <velocity>100</velocity>
+          <gateTime>100</gateTime>
+        </Articulation>
+        <Articulation name="marcato">
+          <velocity>120</velocity>
+          <gateTime>67</gateTime>
+        </Articulation>
+        <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+        </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+        </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+        </Articulation>
+        <Articulation name="marcatoTenuto">
+          <velocity>120</velocity>
+          <gateTime>100</gateTime>
+        </Articulation>
+        <Channel>
+          <program value="0" />
+          <synti>Fluid</synti>
+        </Channel>
+      </Instrument>
+    </Part>
+    <Staff id="1">
+      <Measure>
+        <voice>
+          <TimeSig>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+          </TimeSig>
+          <Spanner type="TextLine">
+            <TextLine>
+              <diagonal>1</diagonal>
+              <beginHookType>4</beginHookType>
+              <endHookType>4</endHookType>
+              <beginLineArrowHeight>1.1</beginLineArrowHeight>
+              <beginLineArrowWidth>1.2000000000000002</beginLineArrowWidth>
+              <beginFilledArrowHeight>1.3</beginFilledArrowHeight>
+              <beginFilledArrowWidth>1.4000000000000001</beginFilledArrowWidth>
+              <endLineArrowHeight>1.5</endLineArrowHeight>
+              <endLineArrowWidth>1.6</endLineArrowWidth>
+              <endFilledArrowHeight>1.7000000000000002</endFilledArrowHeight>
+              <endFilledArrowWidth>1.8000000000000003</endFilledArrowWidth>
+            </TextLine>
+            <next>
+              <location>
+                <measures>1</measures>
+              </location>
+            </next>
+          </Spanner>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Spanner type="TextLine">
+            <prev>
+              <location>
+                <measures>-1</measures>
+              </location>
+            </prev>
+          </Spanner>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Spanner type="TextLine">
+            <TextLine>
+              <diagonal>1</diagonal>
+              <beginHookType>5</beginHookType>
+              <endHookType>5</endHookType>
+              <beginLineArrowHeight>1.1</beginLineArrowHeight>
+              <beginLineArrowWidth>1.2000000000000002</beginLineArrowWidth>
+              <beginFilledArrowHeight>1.3</beginFilledArrowHeight>
+              <beginFilledArrowWidth>1.4000000000000001</beginFilledArrowWidth>
+              <endLineArrowHeight>1.5</endLineArrowHeight>
+              <endLineArrowWidth>1.6</endLineArrowWidth>
+              <endFilledArrowHeight>1.7000000000000002</endFilledArrowHeight>
+              <endFilledArrowWidth>1.8000000000000003</endFilledArrowWidth>
+            </TextLine>
+            <next>
+              <location>
+                <measures>1</measures>
+              </location>
+            </next>
+          </Spanner>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+        <LayoutBreak>
+          <subtype>line</subtype>
+        </LayoutBreak>
+      </Measure>
+      <Measure>
+        <voice>
+          <Spanner type="TextLine">
+            <prev>
+              <location>
+                <measures>-1</measures>
+              </location>
+            </prev>
+          </Spanner>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Spanner type="TextLine">
+            <TextLine>
+              <diagonal>1</diagonal>
+              <beginHookType>5</beginHookType>
+              <endHookType>5</endHookType>
+            </TextLine>
+            <next>
+              <location>
+                <measures>1</measures>
+              </location>
+            </next>
+          </Spanner>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Spanner type="TextLine">
+            <prev>
+              <location>
+                <measures>-1</measures>
+              </location>
+            </prev>
+          </Spanner>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+      </Measure>
+    </Staff>
+  </Score>
+</museScore>

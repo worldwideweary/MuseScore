@@ -34,6 +34,8 @@ class TextLineBaseSegment : public LineSegment {
       Text* _endText;
       QPointF points[6];
       QPolygonF joinedHairpin;
+      QPolygonF beginArrow;
+      QPolygonF endArrow;
       int npoints;
       qreal lineLength;
       bool twoLines { false };
@@ -61,7 +63,7 @@ class TextLineBaseSegment : public LineSegment {
 //---------------------------------------------------------
 
 enum class HookType : char {
-      NONE, HOOK_90, HOOK_45, HOOK_90T
+      NONE, HOOK_90, HOOK_45, HOOK_90T, ARROW, ARROW_FILLED
       };
 
 //---------------------------------------------------------
@@ -76,6 +78,14 @@ class TextLineBase : public SLine {
       M_PROPERTY2(HookType, endHookType,           setEndHookType,            HookType::NONE)
       M_PROPERTY(Spatium,   beginHookHeight,       setBeginHookHeight)
       M_PROPERTY(Spatium,   endHookHeight,         setEndHookHeight)
+      M_PROPERTY(Spatium,   beginLineArrowHeight,  setBeginLineArrowHeight)
+      M_PROPERTY(Spatium,   beginLineArrowWidth,   setBeginLineArrowWidth)
+      M_PROPERTY(Spatium,   beginFilledArrowHeight,setBeginFilledArrowHeight)
+      M_PROPERTY(Spatium,   beginFilledArrowWidth, setBeginFilledArrowWidth)
+      M_PROPERTY(Spatium,   endLineArrowHeight,    setEndLineArrowHeight)
+      M_PROPERTY(Spatium,   endLineArrowWidth,     setEndLineArrowWidth)
+      M_PROPERTY(Spatium,   endFilledArrowHeight,  setEndFilledArrowHeight)
+      M_PROPERTY(Spatium,   endFilledArrowWidth,   setEndFilledArrowWidth)
 
       M_PROPERTY(PlaceText, beginTextPlace,        setBeginTextPlace)
       M_PROPERTY(QString,   beginText,             setBeginText)
@@ -115,6 +125,7 @@ class TextLineBase : public SLine {
 
       virtual void spatiumChanged(qreal /*oldValue*/, qreal /*newValue*/) override;
 
+      virtual QVariant propertyDefault(Pid) const override;
       virtual QVariant getProperty(Pid id) const override;
       virtual bool setProperty(Pid propertyId, const QVariant&) override;
       virtual Pid propertyId(const QStringRef& xmlName) const override;

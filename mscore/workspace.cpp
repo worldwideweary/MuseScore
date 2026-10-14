@@ -46,7 +46,7 @@ int qt_ntfs_permission_lookup;
 
 namespace Ms {
 
-static constexpr int WORKSPACE_UI_VERSION = 4;
+static constexpr int WORKSPACE_UI_VERSION = 5;
 
 bool WorkspacesManager::isWorkspacesListDirty = true;
 Workspace* WorkspacesManager::m_currentWorkspace = nullptr;
@@ -1112,6 +1112,8 @@ void Workspace::migrate(int uiVersion)
             }
       if (uiVersion < 4)
             mscore->getPaletteWorkspace()->ensureVisibleChordBrackets();
+      if (uiVersion < 5)
+            mscore->getPaletteWorkspace()->ensureVisibleArrowLines();
       }
 
 //---------------------------------------------------------

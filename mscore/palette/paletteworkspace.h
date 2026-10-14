@@ -217,6 +217,7 @@ class PaletteWorkspace : public QObject {
 
       PaletteTreeModel* userPaletteModel() { return userPalette; }
       void ensureVisibleChordBrackets();
+      void ensureVisibleArrowLines();
 
       Q_INVOKABLE QAbstractItemModel* availableExtraPalettesModel();
       Q_INVOKABLE bool addPalette(const QPersistentModelIndex&);

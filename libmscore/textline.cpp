@@ -43,6 +43,14 @@ static const ElementStyle textLineSegmentStyle {
 //---------------------------------------------------------
 
 static const ElementStyle textLineStyle {
+      { Sid::textLineBeginLineArrowHeight,       Pid::BEGIN_LINE_ARROW_HEIGHT   },
+      { Sid::textLineBeginLineArrowWidth,        Pid::BEGIN_LINE_ARROW_WIDTH    },
+      { Sid::textLineBeginFilledArrowHeight,     Pid::BEGIN_FILLED_ARROW_HEIGHT },
+      { Sid::textLineBeginFilledArrowWidth,      Pid::BEGIN_FILLED_ARROW_WIDTH  },
+      { Sid::textLineEndLineArrowHeight,         Pid::END_LINE_ARROW_HEIGHT     },
+      { Sid::textLineEndLineArrowWidth,          Pid::END_LINE_ARROW_WIDTH      },
+      { Sid::textLineEndFilledArrowHeight,       Pid::END_FILLED_ARROW_HEIGHT   },
+      { Sid::textLineEndFilledArrowWidth,        Pid::END_FILLED_ARROW_WIDTH    },
 //       { Sid::textLineSystemFlag,                 Pid::SYSTEM_FLAG             },
       { Sid::textLineFontFace,                   Pid::BEGIN_FONT_FACE         },
       { Sid::textLineFontFace,                   Pid::CONTINUE_FONT_FACE      },
@@ -65,6 +73,14 @@ static const ElementStyle textLineStyle {
 //---------------------------------------------------------
 
 static const ElementStyle systemTextLineStyle {
+      { Sid::textLineBeginLineArrowHeight,       Pid::BEGIN_LINE_ARROW_HEIGHT   },
+      { Sid::textLineBeginLineArrowWidth,        Pid::BEGIN_LINE_ARROW_WIDTH    },
+      { Sid::textLineBeginFilledArrowHeight,     Pid::BEGIN_FILLED_ARROW_HEIGHT },
+      { Sid::textLineBeginFilledArrowWidth,      Pid::BEGIN_FILLED_ARROW_WIDTH  },
+      { Sid::textLineEndLineArrowHeight,         Pid::END_LINE_ARROW_HEIGHT     },
+      { Sid::textLineEndLineArrowWidth,          Pid::END_LINE_ARROW_WIDTH      },
+      { Sid::textLineEndFilledArrowHeight,       Pid::END_FILLED_ARROW_HEIGHT   },
+      { Sid::textLineEndFilledArrowWidth,        Pid::END_FILLED_ARROW_WIDTH    },
 //       { Sid::systemTextLineSystemFlag,           Pid::SYSTEM_FLAG             },
       { Sid::systemTextLineFontFace,             Pid::BEGIN_FONT_FACE         },
       { Sid::systemTextLineFontFace,             Pid::CONTINUE_FONT_FACE      },

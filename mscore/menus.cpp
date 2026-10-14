@@ -1558,6 +1558,17 @@ PalettePanel* MuseScore::newLinesPalettePanel()
       line->setDiagonal(true);
       sp->append(line, QT_TRANSLATE_NOOP("Palette", "Line"));
 
+      for (bool leftArrow : { false, true }) {
+            TextLine* arrow = new TextLine(gscore);
+            arrow->setLen(w);
+            arrow->setDiagonal(true);
+            arrow->setBeginHookType(leftArrow ? HookType::ARROW : HookType::NONE);
+            arrow->setEndHookType(leftArrow ? HookType::NONE : HookType::ARROW);
+            sp->append(arrow, leftArrow
+                  ? QT_TRANSLATE_NOOP("Palette", "Line (left arrowhead)")
+                  : QT_TRANSLATE_NOOP("Palette", "Line (right arrowhead)"));
+            }
+
       Ambitus* a = new Ambitus(gscore);
       sp->append(a, QT_TRANSLATE_NOOP("Palette", "Ambitus"));
 

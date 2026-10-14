@@ -28,6 +28,8 @@ void populateHookType(QComboBox* b)
       b->addItem(b->QObject::tr("90\u00b0"),             int(HookType::HOOK_90)); // &deg;
       b->addItem(b->QObject::tr("45\u00b0"),             int(HookType::HOOK_45)); // &deg;
       b->addItem(b->QObject::tr("90\u00b0 centered"),    int(HookType::HOOK_90T)); // &deg;
+      b->addItem(b->QObject::tr("Line arrow"), int(HookType::ARROW));
+      b->addItem(b->QObject::tr("Filled arrow"), int(HookType::ARROW_FILLED));
       }
 
 //---------------------------------------------------------
@@ -63,6 +65,14 @@ InspectorTextLineBase::InspectorTextLineBase(QWidget* parent)
             { Pid::DASH_LINE_LEN,           0, l.dashLineLength,          l.resetDashLineLength        },
             { Pid::DASH_GAP_LEN,            0, l.dashGapLength,           l.resetDashGapLength         },
 
+            { Pid::BEGIN_LINE_ARROW_HEIGHT, 0, tl.beginLineArrowHeight,  tl.resetBeginLineArrowHeight },
+            { Pid::BEGIN_LINE_ARROW_WIDTH,  0, tl.beginLineArrowWidth,   tl.resetBeginLineArrowWidth },
+            { Pid::BEGIN_FILLED_ARROW_HEIGHT,0,tl.beginFilledArrowHeight,tl.resetBeginFilledArrowHeight },
+            { Pid::BEGIN_FILLED_ARROW_WIDTH,0, tl.beginFilledArrowWidth, tl.resetBeginFilledArrowWidth },
+            { Pid::END_LINE_ARROW_HEIGHT,   0, tl.endLineArrowHeight,    tl.resetEndLineArrowHeight },
+            { Pid::END_LINE_ARROW_WIDTH,    0, tl.endLineArrowWidth,     tl.resetEndLineArrowWidth },
+            { Pid::END_FILLED_ARROW_HEIGHT, 0, tl.endFilledArrowHeight,  tl.resetEndFilledArrowHeight },
+            { Pid::END_FILLED_ARROW_WIDTH,  0, tl.endFilledArrowWidth,   tl.resetEndFilledArrowWidth },
             { Pid::BEGIN_TEXT,              0, tl.beginText,             tl.resetBeginText             },
             { Pid::BEGIN_TEXT_PLACE,        0, tl.beginTextPlacement,    tl.resetBeginTextPlacement    },
             { Pid::BEGIN_TEXT_ALIGN,        0, tl.beginTextAlign,        tl.resetBeginTextAlign        },
@@ -165,7 +175,10 @@ void InspectorTextLineBase::updateBeginHookType()
       {
       TextLineBaseSegment* ts = static_cast<TextLineBaseSegment*>(inspector->element());
       TextLineBase* t = ts->textLineBase();
-      bool hook = t->beginHookType() != HookType::NONE;
+      const HookType type = t->beginHookType();
+      const bool hook = type == HookType::HOOK_90 || type == HookType::HOOK_45 || type == HookType::HOOK_90T;
+      tl.beginLineArrowWidget->setVisible(type == HookType::ARROW);
+      tl.beginFilledArrowWidget->setVisible(type == HookType::ARROW_FILLED);
 
       tl.beginHookHeightWidget->setVisible(hook);
       tl.resetBeginHookHeight->setVisible(hook);
@@ -179,7 +192,10 @@ void InspectorTextLineBase::updateEndHookType()
       {
       TextLineBaseSegment* ts = static_cast<TextLineBaseSegment*>(inspector->element());
       TextLineBase* t = ts->textLineBase();
-      bool hook = t->endHookType() != HookType::NONE;
+      const HookType type = t->endHookType();
+      const bool hook = type == HookType::HOOK_90 || type == HookType::HOOK_45 || type == HookType::HOOK_90T;
+      tl.endLineArrowWidget->setVisible(type == HookType::ARROW);
+      tl.endFilledArrowWidget->setVisible(type == HookType::ARROW_FILLED);
 
       tl.endHookHeightWidget->setVisible(hook);
       tl.resetEndHookHeight->setVisible(hook);
