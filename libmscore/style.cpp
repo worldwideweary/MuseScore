@@ -1055,6 +1055,15 @@ static const StyleType styleTypes[] {
       { Sid::frameFrameFgColor,             "frameFrameFgColor",            QColor(0, 0, 0, 255) },
       { Sid::frameFrameBgColor,             "frameFrameBgColor",            QColor(255, 255, 255, 0) },
 
+      { Sid::textLineBeginLineArrowHeight,   "textLineBeginLineArrowHeight",   Spatium(1.0) },
+      { Sid::textLineBeginLineArrowWidth,    "textLineBeginLineArrowWidth",    Spatium(0.5) },
+      { Sid::textLineBeginFilledArrowHeight, "textLineBeginFilledArrowHeight", Spatium(1.0) },
+      { Sid::textLineBeginFilledArrowWidth,  "textLineBeginFilledArrowWidth",  Spatium(0.85) },
+      { Sid::textLineEndLineArrowHeight,     "textLineEndLineArrowHeight",     Spatium(1.0) },
+      { Sid::textLineEndLineArrowWidth,      "textLineEndLineArrowWidth",      Spatium(0.5) },
+      { Sid::textLineEndFilledArrowHeight,   "textLineEndFilledArrowHeight",   Spatium(1.0) },
+      { Sid::textLineEndFilledArrowWidth,    "textLineEndFilledArrowWidth",    Spatium(0.85) },
+
       { Sid::textLineFontFace,              "textLineFontFace",             "Edwin" },
       { Sid::textLineFontSize,              "textLineFontSize",             10.0 },
       { Sid::textLineLineSpacing,           "textLineLineSpacing",          1.0 },

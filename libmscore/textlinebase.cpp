@@ -146,6 +146,25 @@ void TextLineBaseSegment::draw(QPainter* painter) const
                   painter->drawLines(&points[0], 2);
             }
       else {
+            painter->save();
+            const QPen arrowPen(color, textlineLineWidth, Qt::SolidLine, Qt::FlatCap, Qt::MiterJoin);
+            auto drawArrow = [&](const QPolygonF& arrow, HookType type) {
+                  if (arrow.isEmpty())
+                        return;
+                  if (type == HookType::ARROW_FILLED) {
+                        painter->setPen(Qt::NoPen);
+                        painter->setBrush(color);
+                        painter->drawPolygon(arrow);
+                        }
+                  else {
+                        painter->setPen(arrowPen);
+                        painter->setBrush(Qt::NoBrush);
+                        painter->drawPolyline(arrow);
+                        }
+                  };
+            drawArrow(beginArrow, tl->beginHookType());
+            drawArrow(endArrow, tl->endHookType());
+            painter->restore();
             int start = 0;
             int end = npoints;
             //draw centered hooks as solid
@@ -230,9 +249,14 @@ Shape TextLineBaseSegment::shape() const
             }
       else if (textLineBase()->lineVisible()) {
             for (int i = 0; i < npoints; ++i) {
-                  shape.add(QRectF(points[i].x() - lw2, points[i].y() - lw2,
-                     points[i+1].x() - points[i].x() + lw, points[i+1].y() - points[i].y() + lw));
+                  shape.add(QRectF(points[i], points[i+1]).normalized().adjusted(-lw2, -lw2, lw2, lw2));
                   }
+            }
+      if (textLineBase()->lineVisible()) {
+            if (!beginArrow.isEmpty())
+                  shape.add(beginArrow.boundingRect().adjusted(-lw2, -lw2, lw2, lw2));
+            if (!endArrow.isEmpty())
+                  shape.add(endArrow.boundingRect().adjusted(-lw2, -lw2, lw2, lw2));
             }
       return shape;
       }
@@ -241,9 +265,39 @@ Shape TextLineBaseSegment::shape() const
 //   layout
 //---------------------------------------------------------
 
+static bool hasHook(HookType type)
+      {
+      return type == HookType::HOOK_90
+            || type == HookType::HOOK_45
+            || type == HookType::HOOK_90T;
+      }
+
+//---------------------------------------------------------
+//   createArrow
+//---------------------------------------------------------
+
+static QPolygonF createArrow(bool start, bool filled, const QPointF& tip,
+                             const QPointF& direction, const TextLineBase* tl)
+      {
+      const qreal sp = tl->spatium();
+      const qreal width = qMax(qreal(0), (filled
+            ? (start ? tl->beginFilledArrowWidth() : tl->endFilledArrowWidth())
+            : (start ? tl->beginLineArrowWidth() : tl->endLineArrowWidth())).val() * sp);
+      const qreal height = qMax(qreal(0), (filled
+            ? (start ? tl->beginFilledArrowHeight() : tl->endFilledArrowHeight())
+            : (start ? tl->beginLineArrowHeight() : tl->endLineArrowHeight())).val() * sp);
+      const QPointF normal(-direction.y(), direction.x());
+      const QPointF base = tip + (start ? width : -width) * direction;
+      QPolygonF arrow;
+      arrow << base - height * .5 * normal << tip << base + height * .5 * normal;
+      return arrow;
+      }
+
 void TextLineBaseSegment::layout()
       {
       npoints      = 0;
+      beginArrow.clear();
+      endArrow.clear();
       TextLineBase* tl = textLineBase();
       qreal _spatium = tl->spatium();
       bool isSingleOrBegin = isSingleBeginType();
@@ -368,7 +422,7 @@ void TextLineBaseSegment::layout()
             x2 = qMax(x2, _text->width());
             }
 
-      if (textLineBase()->endHookType() != HookType::NONE) {
+      if (hasHook(tl->endHookType())) {
             qreal h = pp2.y() + textLineBase()->endHookHeight().val() * _spatium;
             if (h > y2)
                   y2 = h;
@@ -376,7 +430,7 @@ void TextLineBaseSegment::layout()
                   y1 = h;
             }
 
-      if (textLineBase()->beginHookType() != HookType::NONE) {
+      if (hasHook(tl->beginHookType())) {
             qreal h = textLineBase()->beginHookHeight().val() * _spatium;
             if (h > y2)
                   y2 = h;
@@ -430,7 +484,38 @@ void TextLineBaseSegment::layout()
             // don't draw backwards lines (or hooks) if text is longer than nominal line length
             bool backwards = !_text->empty() && pp1.x() > pp2.x() && !tl->diagonal();
 
-            if (isSingleOrBegin && tl->beginHookType() != HookType::NONE) {
+            if (!backwards) {
+                  const QPointF vector = pp2 - pp1;
+                  const qreal length = std::hypot(vector.x(), vector.y());
+                  const QPointF direction = length > 0 ? vector / length : QPointF(1, 0);
+                  qreal beginReduction = 0;
+                  qreal endReduction = 0;
+
+                  auto addArrow = [&](bool start, HookType type) {
+                        if (type != HookType::ARROW && type != HookType::ARROW_FILLED)
+                              return;
+                        const bool filled = type == HookType::ARROW_FILLED;
+                        QPolygonF& arrow = start ? beginArrow : endArrow;
+                        arrow = createArrow(start, filled, start ? pp1 : pp2, direction, tl);
+                        const qreal reduction = filled ? (start ? tl->beginFilledArrowWidth() : tl->endFilledArrowWidth()).val() * _spatium
+                              : tl->lineWidth() * .5;
+                        (start ? beginReduction : endReduction) = qMax(qreal(0), reduction);
+                        bbox() |= arrow.boundingRect().adjusted(y0, y0, -y0, -y0);
+                        };
+
+                  if (isSingleOrBegin)
+                        addArrow(true, tl->beginHookType());
+                  if (isSingleEndType())
+                        addArrow(false, tl->endHookType());
+
+                  // Disallow accidental reversal of double-arrow heads
+                  const qreal reduction = beginReduction + endReduction;
+                  const qreal scale = reduction > length && reduction > 0 ? length / reduction : 1;
+                  pp1 += beginReduction * scale * direction;
+                  pp2 -= endReduction * scale * direction;
+                  }
+
+            if (isSingleOrBegin && hasHook(tl->beginHookType())) {
                   qreal hh = tl->beginHookHeight().val() * _spatium;
                   if (tl->beginHookType() == HookType::HOOK_90T)
                         points[npoints++] = QPointF(pp1.x() - beginHookWidth, pp1.y() - hh);
@@ -445,7 +530,7 @@ void TextLineBaseSegment::layout()
                   lineLength = sqrt(QPointF::dotProduct(pp2-pp1, pp2-pp1));
                   // painter->drawLine(QLineF(pp1.x(), pp1.y(), pp2.x(), pp2.y()));
 
-                  if ((tl->endHookType() != HookType::NONE) && (isSingleType() || isEndType())) {
+                  if (hasHook(tl->endHookType()) && isSingleEndType()) {
                         ++npoints;
                         qreal hh = tl->endHookHeight().val() * _spatium;
                         // painter->drawLine(QLineF(pp2.x(), pp2.y(), pp2.x() + endHookWidth, pp2.y() + hh));
@@ -470,10 +555,18 @@ void TextLineBaseSegment::spatiumChanged(qreal ov, qreal nv)
       _endText->spatiumChanged(ov, nv);
       }
 
-static constexpr std::array<Pid, 26> pids = { {
+static constexpr std::array<Pid, 34> pids = { {
       Pid::LINE_VISIBLE,
       Pid::BEGIN_HOOK_TYPE,
       Pid::BEGIN_HOOK_HEIGHT,
+      Pid::BEGIN_LINE_ARROW_HEIGHT,
+      Pid::BEGIN_LINE_ARROW_WIDTH,
+      Pid::BEGIN_FILLED_ARROW_HEIGHT,
+      Pid::BEGIN_FILLED_ARROW_WIDTH,
+      Pid::END_LINE_ARROW_HEIGHT,
+      Pid::END_LINE_ARROW_WIDTH,
+      Pid::END_FILLED_ARROW_HEIGHT,
+      Pid::END_FILLED_ARROW_WIDTH,
       Pid::END_HOOK_TYPE,
       Pid::END_HOOK_HEIGHT,
       Pid::BEGIN_TEXT,
@@ -521,6 +614,14 @@ TextLineBase::TextLineBase(Score* s, ElementFlags f)
       {
       setBeginHookHeight(Spatium(1.9));
       setEndHookHeight(Spatium(1.9));
+      setBeginLineArrowHeight(Spatium(1.0));
+      setBeginLineArrowWidth(Spatium(0.5));
+      setBeginFilledArrowHeight(Spatium(1.0));
+      setBeginFilledArrowWidth(Spatium(0.85));
+      setEndLineArrowHeight(Spatium(1.0));
+      setEndLineArrowWidth(Spatium(0.5));
+      setEndFilledArrowHeight(Spatium(1.0));
+      setEndFilledArrowWidth(Spatium(0.85));
       }
 
 //---------------------------------------------------------
@@ -605,12 +706,54 @@ Pid TextLineBase::propertyId(const QStringRef& name) const
       }
 
 //---------------------------------------------------------
+//   propertyDefault
+//---------------------------------------------------------
+
+QVariant TextLineBase::propertyDefault(Pid id) const
+      {
+      const QVariant styled = SLine::propertyDefault(id);
+      if (styled.isValid())
+            return styled;
+      switch (id) {
+            case Pid::BEGIN_LINE_ARROW_HEIGHT:
+            case Pid::END_LINE_ARROW_HEIGHT:
+            case Pid::BEGIN_FILLED_ARROW_HEIGHT:
+            case Pid::END_FILLED_ARROW_HEIGHT:
+                  return Spatium(1.0);
+            case Pid::BEGIN_LINE_ARROW_WIDTH:
+            case Pid::END_LINE_ARROW_WIDTH:
+                  return Spatium(0.5);
+            case Pid::BEGIN_FILLED_ARROW_WIDTH:
+            case Pid::END_FILLED_ARROW_WIDTH:
+                  return Spatium(0.85);
+            default:
+                  return styled;
+            }
+      }
+
+//---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
 QVariant TextLineBase::getProperty(Pid id) const
       {
       switch (id) {
+            case Pid::BEGIN_LINE_ARROW_HEIGHT:
+                  return _beginLineArrowHeight;
+            case Pid::BEGIN_LINE_ARROW_WIDTH:
+                  return _beginLineArrowWidth;
+            case Pid::BEGIN_FILLED_ARROW_HEIGHT:
+                  return _beginFilledArrowHeight;
+            case Pid::BEGIN_FILLED_ARROW_WIDTH:
+                  return _beginFilledArrowWidth;
+            case Pid::END_LINE_ARROW_HEIGHT:
+                  return _endLineArrowHeight;
+            case Pid::END_LINE_ARROW_WIDTH:
+                  return _endLineArrowWidth;
+            case Pid::END_FILLED_ARROW_HEIGHT:
+                  return _endFilledArrowHeight;
+            case Pid::END_FILLED_ARROW_WIDTH:
+                  return _endFilledArrowWidth;
             case Pid::BEGIN_TEXT:
                   return beginText();
             case Pid::BEGIN_TEXT_ALIGN:
@@ -675,6 +818,30 @@ QVariant TextLineBase::getProperty(Pid id) const
 bool TextLineBase::setProperty(Pid id, const QVariant& v)
       {
       switch (id) {
+            case Pid::BEGIN_LINE_ARROW_HEIGHT:
+                  _beginLineArrowHeight = v.value<Spatium>();
+                  break;
+            case Pid::BEGIN_LINE_ARROW_WIDTH:
+                  _beginLineArrowWidth = v.value<Spatium>();
+                  break;
+            case Pid::BEGIN_FILLED_ARROW_HEIGHT:
+                  _beginFilledArrowHeight = v.value<Spatium>();
+                  break;
+            case Pid::BEGIN_FILLED_ARROW_WIDTH:
+                  _beginFilledArrowWidth = v.value<Spatium>();
+                  break;
+            case Pid::END_LINE_ARROW_HEIGHT:
+                  _endLineArrowHeight = v.value<Spatium>();
+                  break;
+            case Pid::END_LINE_ARROW_WIDTH:
+                  _endLineArrowWidth = v.value<Spatium>();
+                  break;
+            case Pid::END_FILLED_ARROW_HEIGHT:
+                  _endFilledArrowHeight = v.value<Spatium>();
+                  break;
+            case Pid::END_FILLED_ARROW_WIDTH:
+                  _endFilledArrowWidth = v.value<Spatium>();
+                  break;
             case Pid::BEGIN_TEXT_PLACE:
                   _beginTextPlace = PlaceText(v.toInt());
                   break;

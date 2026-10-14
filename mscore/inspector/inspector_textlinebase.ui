@@ -89,7 +89,7 @@
         </property>
        </widget>
       </item>
-      <item row="7" column="0" colspan="3">
+      <item row="11" column="0" colspan="3">
        <widget class="QWidget" name="beginWidget" native="true">
         <property name="enabled">
          <bool>true</bool>
@@ -377,7 +377,7 @@
         </layout>
        </widget>
       </item>
-      <item row="10" column="0" colspan="3">
+      <item row="14" column="0" colspan="3">
        <widget class="QCheckBox" name="hasEndText">
         <property name="font">
          <font>
@@ -393,7 +393,7 @@
       <item row="0" column="0">
        <widget class="QLabel" name="label_5">
         <property name="text">
-         <string>Begin hook:</string>
+         <string>Begin line end:</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -412,11 +412,11 @@
          </sizepolicy>
         </property>
         <property name="accessibleName">
-         <string>Begin hook</string>
+         <string>Begin line end</string>
         </property>
        </widget>
       </item>
-      <item row="6" column="0" colspan="3">
+      <item row="10" column="0" colspan="3">
        <widget class="QCheckBox" name="hasBeginText">
         <property name="font">
          <font>
@@ -429,13 +429,13 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
+      <item row="5" column="0">
        <widget class="QLabel" name="label_24">
         <property name="accessibleName">
-         <string>End hook</string>
+         <string>End line end</string>
         </property>
         <property name="text">
-         <string>End hook:</string>
+         <string>End line end:</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -445,7 +445,7 @@
         </property>
        </widget>
       </item>
-      <item row="8" column="0" colspan="3">
+      <item row="12" column="0" colspan="3">
        <widget class="QCheckBox" name="hasContinueText">
         <property name="font">
          <font>
@@ -458,7 +458,7 @@
         </property>
        </widget>
       </item>
-      <item row="9" column="0" colspan="3">
+      <item row="13" column="0" colspan="3">
        <widget class="QWidget" name="continueWidget" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -743,7 +743,7 @@
         </layout>
        </widget>
       </item>
-      <item row="11" column="0" colspan="3">
+      <item row="15" column="0" colspan="3">
        <widget class="QWidget" name="endWidget" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -1016,7 +1016,7 @@
         </layout>
        </widget>
       </item>
-      <item row="5" column="2">
+      <item row="7" column="2">
        <widget class="Ms::ResetButton" name="resetEndHookHeight" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -1029,7 +1029,7 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="2">
+      <item row="5" column="2">
        <widget class="Ms::ResetButton" name="resetEndHookType" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -1038,7 +1038,7 @@
          </sizepolicy>
         </property>
         <property name="accessibleName">
-         <string>Reset 'End hook' value</string>
+         <string>Reset 'End line end' value</string>
         </property>
        </widget>
       </item>
@@ -1051,11 +1051,11 @@
          </sizepolicy>
         </property>
         <property name="accessibleName">
-         <string>Reset 'Begin hook' value</string>
+         <string>Reset 'Begin line end' value</string>
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
+      <item row="5" column="1">
        <widget class="QComboBox" name="endHookType">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -1064,7 +1064,7 @@
          </sizepolicy>
         </property>
         <property name="accessibleName">
-         <string>End hook</string>
+         <string>End line end</string>
         </property>
        </widget>
       </item>
@@ -1105,7 +1105,7 @@
             </sizepolicy>
            </property>
            <property name="accessibleName">
-            <string>Begin hook height</string>
+            <string>Begin line end height</string>
            </property>
            <property name="suffix">
             <string>sp</string>
@@ -1118,7 +1118,7 @@
         </layout>
        </widget>
       </item>
-      <item row="5" column="1">
+      <item row="7" column="1">
        <widget class="QWidget" name="endHookHeightWidget" native="true">
         <layout class="QHBoxLayout" name="endHookHeightLayout">
          <property name="spacing">
@@ -1139,7 +1139,7 @@
          <item>
           <widget class="QLabel" name="endHookHeightLabel">
            <property name="accessibleName">
-            <string>End hook height</string>
+            <string>End line end height</string>
            </property>
            <property name="text">
             <string>Height:</string>
@@ -1168,6 +1168,142 @@
            </property>
           </widget>
          </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="3">
+       <widget class="QWidget" name="beginLineArrowWidget" native="true">
+        <layout class="QGridLayout" name="beginLineArrowWidgetLayout">
+         <property name="leftMargin"><number>0</number></property>
+         <property name="topMargin"><number>0</number></property>
+         <property name="rightMargin"><number>0</number></property>
+         <property name="bottomMargin"><number>0</number></property>
+         <item row="0" column="0"><widget class="QLabel" name="beginLineArrowHeightLabel">
+          <property name="text"><string>Arrow height:</string></property>
+          <property name="buddy"><cstring>beginLineArrowHeight</cstring></property>
+         </widget></item>
+         <item row="0" column="1"><widget class="QDoubleSpinBox" name="beginLineArrowHeight">
+          <property name="accessibleName"><string>Begin line arrow height</string></property>
+          <property name="suffix"><string> sp</string></property>
+          <property name="minimum"><double>0.0</double></property>
+          <property name="maximum"><double>99.99</double></property>
+          <property name="singleStep"><double>0.1</double></property>
+         </widget></item>
+         <item row="0" column="2"><widget class="Ms::ResetButton" name="resetBeginLineArrowHeight" native="true"/></item>
+         <item row="1" column="0"><widget class="QLabel" name="beginLineArrowWidthLabel">
+          <property name="text"><string>Arrow width:</string></property>
+          <property name="buddy"><cstring>beginLineArrowWidth</cstring></property>
+         </widget></item>
+         <item row="1" column="1"><widget class="QDoubleSpinBox" name="beginLineArrowWidth">
+          <property name="accessibleName"><string>Begin line arrow width</string></property>
+          <property name="suffix"><string> sp</string></property>
+          <property name="minimum"><double>0.0</double></property>
+          <property name="maximum"><double>99.99</double></property>
+          <property name="singleStep"><double>0.1</double></property>
+         </widget></item>
+         <item row="1" column="2"><widget class="Ms::ResetButton" name="resetBeginLineArrowWidth" native="true"/></item>
+        </layout>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="3">
+       <widget class="QWidget" name="beginFilledArrowWidget" native="true">
+        <layout class="QGridLayout" name="beginFilledArrowWidgetLayout">
+         <property name="leftMargin"><number>0</number></property>
+         <property name="topMargin"><number>0</number></property>
+         <property name="rightMargin"><number>0</number></property>
+         <property name="bottomMargin"><number>0</number></property>
+         <item row="0" column="0"><widget class="QLabel" name="beginFilledArrowHeightLabel">
+          <property name="text"><string>Arrow height:</string></property>
+          <property name="buddy"><cstring>beginFilledArrowHeight</cstring></property>
+         </widget></item>
+         <item row="0" column="1"><widget class="QDoubleSpinBox" name="beginFilledArrowHeight">
+          <property name="accessibleName"><string>Begin filled arrow height</string></property>
+          <property name="suffix"><string> sp</string></property>
+          <property name="minimum"><double>0.0</double></property>
+          <property name="maximum"><double>99.99</double></property>
+          <property name="singleStep"><double>0.1</double></property>
+         </widget></item>
+         <item row="0" column="2"><widget class="Ms::ResetButton" name="resetBeginFilledArrowHeight" native="true"/></item>
+         <item row="1" column="0"><widget class="QLabel" name="beginFilledArrowWidthLabel">
+          <property name="text"><string>Arrow width:</string></property>
+          <property name="buddy"><cstring>beginFilledArrowWidth</cstring></property>
+         </widget></item>
+         <item row="1" column="1"><widget class="QDoubleSpinBox" name="beginFilledArrowWidth">
+          <property name="accessibleName"><string>Begin filled arrow width</string></property>
+          <property name="suffix"><string> sp</string></property>
+          <property name="minimum"><double>0.0</double></property>
+          <property name="maximum"><double>99.99</double></property>
+          <property name="singleStep"><double>0.1</double></property>
+         </widget></item>
+         <item row="1" column="2"><widget class="Ms::ResetButton" name="resetBeginFilledArrowWidth" native="true"/></item>
+        </layout>
+       </widget>
+      </item>
+      <item row="8" column="0" colspan="3">
+       <widget class="QWidget" name="endLineArrowWidget" native="true">
+        <layout class="QGridLayout" name="endLineArrowWidgetLayout">
+         <property name="leftMargin"><number>0</number></property>
+         <property name="topMargin"><number>0</number></property>
+         <property name="rightMargin"><number>0</number></property>
+         <property name="bottomMargin"><number>0</number></property>
+         <item row="0" column="0"><widget class="QLabel" name="endLineArrowHeightLabel">
+          <property name="text"><string>Arrow height:</string></property>
+          <property name="buddy"><cstring>endLineArrowHeight</cstring></property>
+         </widget></item>
+         <item row="0" column="1"><widget class="QDoubleSpinBox" name="endLineArrowHeight">
+          <property name="accessibleName"><string>End line arrow height</string></property>
+          <property name="suffix"><string> sp</string></property>
+          <property name="minimum"><double>0.0</double></property>
+          <property name="maximum"><double>99.99</double></property>
+          <property name="singleStep"><double>0.1</double></property>
+         </widget></item>
+         <item row="0" column="2"><widget class="Ms::ResetButton" name="resetEndLineArrowHeight" native="true"/></item>
+         <item row="1" column="0"><widget class="QLabel" name="endLineArrowWidthLabel">
+          <property name="text"><string>Arrow width:</string></property>
+          <property name="buddy"><cstring>endLineArrowWidth</cstring></property>
+         </widget></item>
+         <item row="1" column="1"><widget class="QDoubleSpinBox" name="endLineArrowWidth">
+          <property name="accessibleName"><string>End line arrow width</string></property>
+          <property name="suffix"><string> sp</string></property>
+          <property name="minimum"><double>0.0</double></property>
+          <property name="maximum"><double>99.99</double></property>
+          <property name="singleStep"><double>0.1</double></property>
+         </widget></item>
+         <item row="1" column="2"><widget class="Ms::ResetButton" name="resetEndLineArrowWidth" native="true"/></item>
+        </layout>
+       </widget>
+      </item>
+      <item row="9" column="0" colspan="3">
+       <widget class="QWidget" name="endFilledArrowWidget" native="true">
+        <layout class="QGridLayout" name="endFilledArrowWidgetLayout">
+         <property name="leftMargin"><number>0</number></property>
+         <property name="topMargin"><number>0</number></property>
+         <property name="rightMargin"><number>0</number></property>
+         <property name="bottomMargin"><number>0</number></property>
+         <item row="0" column="0"><widget class="QLabel" name="endFilledArrowHeightLabel">
+          <property name="text"><string>Arrow height:</string></property>
+          <property name="buddy"><cstring>endFilledArrowHeight</cstring></property>
+         </widget></item>
+         <item row="0" column="1"><widget class="QDoubleSpinBox" name="endFilledArrowHeight">
+          <property name="accessibleName"><string>End filled arrow height</string></property>
+          <property name="suffix"><string> sp</string></property>
+          <property name="minimum"><double>0.0</double></property>
+          <property name="maximum"><double>99.99</double></property>
+          <property name="singleStep"><double>0.1</double></property>
+         </widget></item>
+         <item row="0" column="2"><widget class="Ms::ResetButton" name="resetEndFilledArrowHeight" native="true"/></item>
+         <item row="1" column="0"><widget class="QLabel" name="endFilledArrowWidthLabel">
+          <property name="text"><string>Arrow width:</string></property>
+          <property name="buddy"><cstring>endFilledArrowWidth</cstring></property>
+         </widget></item>
+         <item row="1" column="1"><widget class="QDoubleSpinBox" name="endFilledArrowWidth">
+          <property name="accessibleName"><string>End filled arrow width</string></property>
+          <property name="suffix"><string> sp</string></property>
+          <property name="minimum"><double>0.0</double></property>
+          <property name="maximum"><double>99.99</double></property>
+          <property name="singleStep"><double>0.1</double></property>
+         </widget></item>
+         <item row="1" column="2"><widget class="Ms::ResetButton" name="resetEndFilledArrowWidth" native="true"/></item>
         </layout>
        </widget>
       </item>

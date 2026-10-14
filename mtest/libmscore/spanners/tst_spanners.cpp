@@ -24,6 +24,7 @@
 #include "libmscore/system.h"
 #include "libmscore/undo.h"
 #include "libmscore/line.h"
+#include "libmscore/textline.h"
 
 #define DIR QString("libmscore/spanners/")
 
@@ -54,6 +55,9 @@ class TestSpanners : public QObject, public MTest
 //      void spanners13();            // drop a line break at the middle of a LyricsLine and check LyricsLineSegments
       void spanners14();            // creating part from an existing grand staff containing a cross staff glissando
       void spanners15();            // change the color & min distance of a line and save it
+      void arrowLinesRoundTrip();
+      void arrowLinesStudioImport();
+      void arrowLinesGeometry();
       void spanners16();            // read lines with manual adjustments on a small staff and save
       };
 
@@ -662,7 +666,151 @@ void TestSpanners::spanners16()
       delete score;
       }
 
+//---------------------------------------------------------
+//    arrowLines
+//    MuseScore Studio property names must survive a 3.x save/reopen,
+//    including inactive arrow dimensions or score-style dimensions
+//---------------------------------------------------------
 
+static QList<TextLine*> arrowLines(Score* score)
+      {
+      QList<TextLine*> lines;
+      for (const auto& entry : score->spanner()) {
+            if (entry.second->isTextLine())
+                  lines.append(toTextLine(entry.second));
+            }
+      return lines;
+      }
+
+//---------------------------------------------------------
+//    checkArrowLines
+//---------------------------------------------------------
+
+static void checkArrowLines(Score* score)
+      {
+      const auto lines = arrowLines(score);
+      QCOMPARE(lines.size(), 3);
+      const std::array<Pid, 8> dimensions {{
+            Pid::BEGIN_LINE_ARROW_HEIGHT,
+            Pid::BEGIN_LINE_ARROW_WIDTH,
+            Pid::BEGIN_FILLED_ARROW_HEIGHT,
+            Pid::BEGIN_FILLED_ARROW_WIDTH,
+            Pid::END_LINE_ARROW_HEIGHT,
+            Pid::END_LINE_ARROW_WIDTH,
+            Pid::END_FILLED_ARROW_HEIGHT,
+            Pid::END_FILLED_ARROW_WIDTH,
+            }};
+      for (int i = 0; i < 2; ++i) {
+            QCOMPARE(int(lines[i]->beginHookType()), i == 0 ? 4 : 5);
+            QCOMPARE(int(lines[i]->endHookType()), i == 0 ? 4 : 5);
+            for (size_t j = 0; j < dimensions.size(); ++j) {
+                  QVERIFY(qAbs(lines[i]->getProperty(dimensions[j]).value<Spatium>().val() - (1.1 + .1 * j)) < 1e-9);
+                  QVERIFY(!lines[i]->spannerSegments().empty());
+                  QVERIFY(lines[i]->spannerSegments().front()->propertyDelegate(dimensions[j]) == lines[i]);
+                  }
+            std::unique_ptr<TextLine> copy(lines[i]->clone());
+            for (Pid pid : dimensions)
+                  QCOMPARE(copy->getProperty(pid), lines[i]->getProperty(pid));
+            }
+      QCOMPARE(lines[2]->beginFilledArrowWidth().val(), 1.25);
+      QCOMPARE(lines[2]->endFilledArrowWidth().val(), .85);
+      }
+
+//---------------------------------------------------------
+//    arrowLinesRoundTrip
+//---------------------------------------------------------
+
+void TestSpanners::arrowLinesRoundTrip()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "arrowlines-302.mscx"));
+      QVERIFY(score);
+      checkArrowLines(score.get());
+      QVERIFY(saveScore(score.get(), "arrowlines-roundtrip.mscx"));
+      std::unique_ptr<MasterScore> reopened(readCreatedScore("arrowlines-roundtrip.mscx"));
+      QVERIFY(reopened);
+      checkArrowLines(reopened.get());
+      auto line = arrowLines(reopened.get()).front();
+      line->resetProperty(Pid::BEGIN_LINE_ARROW_HEIGHT);
+      QCOMPARE(line->beginLineArrowHeight().val(), 1.0);
+      line->score()->startCmd();
+      line->undoChangeProperty(Pid::BEGIN_LINE_ARROW_HEIGHT, QVariant::fromValue(Spatium(2.5)), PropertyFlags::UNSTYLED);
+      line->score()->endCmd();
+      QCOMPARE(line->beginLineArrowHeight().val(), 2.5);
+      line->score()->undoRedo(true, nullptr);
+      QCOMPARE(line->beginLineArrowHeight().val(), 1.0);
+      line->score()->undoRedo(false, nullptr);
+      QCOMPARE(line->beginLineArrowHeight().val(), 2.5);
+      }
+
+//---------------------------------------------------------
+//    arrowLinesStudioImport
+//---------------------------------------------------------
+
+void TestSpanners::arrowLinesStudioImport()
+      {
+      std::unique_ptr<MasterScore> score(new MasterScore(MScore::defaultStyle()));
+      QCOMPARE(score->loadMsc(root + "/" + DIR + "arrowlines-460.mscx", true), Score::FileError::FILE_NO_ERROR);
+      score->doLayout();
+      checkArrowLines(score.get());
+      }
+
+//---------------------------------------------------------
+//    ArrowTestSegment
+//---------------------------------------------------------
+
+class ArrowTestSegment : public TextLineBaseSegment {
+   public:
+      ArrowTestSegment(TextLine* tl, Score* score) : TextLineBaseSegment(tl, score) {}
+      ElementType type() const override { return ElementType::TEXTLINE_SEGMENT; }
+      ArrowTestSegment* clone() const override { return new ArrowTestSegment(*this); }
+      const QPolygonF& beginHead() const { return beginArrow; }
+      const QPolygonF& endHead() const { return endArrow; }
+      };
+
+//---------------------------------------------------------
+//    arrowLinesGeometry
+//---------------------------------------------------------
+
+void TestSpanners::arrowLinesGeometry()
+      {
+      std::unique_ptr<MasterScore> score(new MasterScore(MScore::defaultStyle()));
+      TextLine line(score.get());
+      line.setDiagonal(true);
+      line.setBeginHookType(HookType::ARROW_FILLED);
+      line.setEndHookType(HookType::ARROW);
+      ArrowTestSegment segment(&line, score.get());
+      for (const QPointF& end : { QPointF(100, 40), QPointF(100, -40), QPointF(0, 100),
+                                  QPointF(-100, 30), QPointF(0, 0), QPointF(1, 0) }) {
+            segment.setPos2(end);
+            segment.setSpannerSegmentType(SpannerSegmentType::SINGLE);
+            segment.layout();
+            QCOMPARE(segment.beginHead().size(), 3);
+            QCOMPARE(segment.endHead().size(), 3);
+            QVERIFY(QLineF(segment.beginHead()[1], QPointF()).length() < 1e-9);
+            QVERIFY(QLineF(segment.endHead()[1], end).length() < 1e-9);
+            for (const auto& head : { segment.beginHead(), segment.endHead() }) {
+                  for (const QPointF& p : head) {
+                        QVERIFY(std::isfinite(p.x()) && std::isfinite(p.y()));
+                        QVERIFY(segment.bbox().contains(p));
+                        }
+                  }
+            }
+      segment.setSpannerSegmentType(SpannerSegmentType::BEGIN);
+      segment.layout();
+      QVERIFY(!segment.beginHead().isEmpty());
+      QVERIFY(segment.endHead().isEmpty());
+      segment.setSpannerSegmentType(SpannerSegmentType::MIDDLE);
+      segment.layout();
+      QVERIFY(segment.beginHead().isEmpty() && segment.endHead().isEmpty());
+      segment.setSpannerSegmentType(SpannerSegmentType::END);
+      segment.layout();
+      QVERIFY(segment.beginHead().isEmpty());
+      QVERIFY(!segment.endHead().isEmpty());
+      line.setBeginHookType(HookType::NONE);
+      line.setEndHookType(HookType::NONE);
+      segment.layout();
+      QVERIFY(segment.beginHead().isEmpty() && segment.endHead().isEmpty());
+      }
 
 QTEST_MAIN(TestSpanners)
 #include "tst_spanners.moc"
