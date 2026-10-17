@@ -28,8 +28,12 @@
 #include "libmscore/staff.h"
 #include "libmscore/stafflines.h"
 #include "libmscore/text.h"
+#include "libmscore/textedit.h"
 #include "libmscore/timesig.h"
 #include "libmscore/utils.h"
+#include "libmscore/xml.h"
+
+#include <QCoreApplication>
 
 namespace Ms {
 
@@ -817,6 +821,13 @@ class ScoreViewCmdContext {
             if (_updateGrips)
                   view->updateGrips();
             }
+
+      // Commit the keystroke before recording the automatic quote replacement
+      void splitCmd()
+            {
+            s->endCmd();
+            s->startCmd();
+            }
       };
 
 //---------------------------------------------------------
@@ -904,6 +915,53 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
                         // textTab or other function may have terminated edit mode
                         mscore->endCmd();
                         return;
+                        }
+
+                  // Match the character produced by the keyboard layout, not the physical key:
+                  // AltGr layouts can require Ctrl+Alt to type a quote
+                  const bool shortcutModifier = (editData.modifiers & Qt::MetaModifier)
+                        || ((editData.modifiers & Qt::ControlModifier) && !(editData.modifiers & Qt::AltModifier));
+
+                  if (textEdit
+                      && !shortcutModifier
+                      && (editData.s == QLatin1String("'") || editData.s == QLatin1String("\""))) {
+                        TextBase* tb = toTextBase(editData.element);
+                        TextCursor* cursor = tb->cursor(editData);
+                        const int row = cursor->row();
+                        const int col = cursor->column();
+
+                        // The text editor can handle shortcuts without inserting the event's text.
+                        // Replace a quote only when it was actually inserted by this keyPressEvent:
+                        if (col > 0 && cursor->extractText(row, col - 1, row, col) == XmlWriter::xmlString(editData.s)) {
+                              bool useCloseQuote = false;
+                              if (col > 1) {
+                                    const QString prev = cursor->extractText(row, col - 2, row, col - 1);
+                                    useCloseQuote = !prev.isEmpty() && !prev.at(0).isSpace();
+                                    }
+
+                              //: Single opening quotation mark
+                              const QString singleOpenQuote = QCoreApplication::translate("notation", "‘");
+                              //: Single closing quotation mark
+                              const QString singleCloseQuote = QCoreApplication::translate("notation", "’");
+                              //: Double opening quotation mark
+                              const QString doubleOpenQuote = QCoreApplication::translate("notation", "“");
+                              //: Double closing quotation mark
+                              const QString doubleCloseQuote = QCoreApplication::translate("notation", "”");
+
+                              const QString replacement =
+                                    editData.s == QLatin1String("'")
+                                          ? (useCloseQuote ? singleCloseQuote : singleOpenQuote)
+                                          : (useCloseQuote ? doubleCloseQuote : doubleOpenQuote);
+
+                              if (!replacement.isEmpty()) {
+                                    // Undo once: restore the straight quote
+                                    // Undo twice: remove entry completely
+                                    cc.splitCmd();
+                                    cursor->movePosition(QTextCursor::Left);
+                                    _score->undo(new RemoveText(cursor, editData.s), &editData);
+                                    tb->insertText(editData, replacement);
+                                    }
+                              }
                         }
                   if (textEdit)
                         mscore->textTools()->updateTools(editData);
