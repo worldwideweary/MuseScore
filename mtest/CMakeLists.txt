@@ -87,6 +87,7 @@ set (SOURCE_LIB
       )
 
 add_library(testutils STATIC ${SOURCE_LIB})
+target_link_libraries(testutils freetype)
 
 # testutils version that is linked to a full mscoreapp target
 add_library(testutils_mscoreapp STATIC
@@ -94,7 +95,7 @@ add_library(testutils_mscoreapp STATIC
       mscoreappresources.cpp
       )
 
-target_link_libraries(testutils_mscoreapp mscoreapp)
+target_link_libraries(testutils_mscoreapp mscoreapp freetype)
 
 add_executable(
       mtest
