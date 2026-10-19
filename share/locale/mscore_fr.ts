@@ -13284,53 +13284,54 @@ a échoué : %2</translation>
     <message>
         <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="16"/>
         <source>Chord bracket</source>
-        <translation type="unfinished"></translation>
+        <translation>Crochet d&apos;accord</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="24"/>
         <source>Both</source>
-        <translation type="unfinished"></translation>
+        <translation>L&apos;un et l&apos;autre</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="25"/>
         <source>Top (left hand)</source>
-        <translation type="unfinished"></translation>
+        <translation>Supérieur (main gauche)</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="26"/>
         <source>Bottom (right hand)</source>
-        <translation type="unfinished"></translation>
+        <translation>Inféérieur (main droite)</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="31"/>
         <source> sp</source>
-        <translation type="unfinished"></translation>
+        <translation> sp</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="33"/>
         <source>Right side</source>
-        <translation type="unfinished"></translation>
+        <translation>Coté droit</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="36"/>
         <source>Number of voices spanned, including the anchor voice.
 For example, 5 reaches the same voice on the next staff.</source>
-        <translation type="unfinished"></translation>
+        <translation>Nombre de voix couvertes, y compris la voix d&apos;ancrage.
+Par exemple, la 5 atteint la même voix sur la portée suivante.</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="49"/>
         <source>Hooks:</source>
-        <translation type="unfinished"></translation>
+        <translation>Crochets :</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="50"/>
         <source>Hook length:</source>
-        <translation type="unfinished">Longueur du crochet :</translation>
+        <translation>Longueur du crochet :</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="51"/>
         <source>Placement:</source>
-        <translation type="unfinished">Position :</translation>
+        <translation>Position :</translation>
     </message>
 </context>
 <context>
@@ -18407,17 +18408,17 @@ veuillez choisir un nom différent :</translation>
     <message>
         <location filename="../../mscore/menus.cpp" line="1517"/>
         <source>Chord bracket</source>
-        <translation type="unfinished"></translation>
+        <translation>Crochet d&apos;accord</translation>
     </message>
     <message>
         <location filename="../../mscore/menus.cpp" line="1518"/>
         <source>Chord bracket (play with left hand)</source>
-        <translation type="unfinished"></translation>
+        <translation>Crochet d&apos;accord (jouer par la main gauche)</translation>
     </message>
     <message>
         <location filename="../../mscore/menus.cpp" line="1519"/>
         <source>Chord bracket (play with right hand)</source>
-        <translation type="unfinished"></translation>
+        <translation>Crochet d&apos;accord (jouer par la main droite)</translation>
     </message>
     <message>
         <location filename="../../mscore/menus.cpp" line="1545"/>
@@ -32166,7 +32167,7 @@ a échoué</translation>
     <message>
         <location filename="../../libmscore/scoreElement.cpp" line="136"/>
         <source>Chord Bracket</source>
-        <translation type="unfinished"></translation>
+        <translation>Crochet d&apos;accord</translation>
     </message>
     <message>
         <location filename="../../libmscore/scoreElement.cpp" line="36"/>
@@ -32827,25 +32828,25 @@ Cette partition contient des parties. La modification des indications de mesure 
         <location filename="../../mscore/events.cpp" line="943"/>
         <source>‘</source>
         <extracomment>Single opening quotation mark</extracomment>
-        <translation type="unfinished"></translation>
+        <translation>‘</translation>
     </message>
     <message>
         <location filename="../../mscore/events.cpp" line="945"/>
         <source>’</source>
         <extracomment>Single closing quotation mark</extracomment>
-        <translation type="unfinished"></translation>
+        <translation>’</translation>
     </message>
     <message>
         <location filename="../../mscore/events.cpp" line="947"/>
         <source>“</source>
         <extracomment>Double opening quotation mark</extracomment>
-        <translation type="unfinished"></translation>
+        <translation>“</translation>
     </message>
     <message>
         <location filename="../../mscore/events.cpp" line="949"/>
         <source>”</source>
         <extracomment>Double closing quotation mark</extracomment>
-        <translation type="unfinished"></translation>
+        <translation>”</translation>
     </message>
 </context>
 <context>
