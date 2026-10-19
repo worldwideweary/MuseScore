@@ -1,0 +1,4 @@
+SPDX-License-Identifier: GPL-3.0-only
+Source: MuseScore Studio src/engraving/tests/courtesy_changes_data/
+Revision: ac156123d8fc38287c625b29d09f496b7e85c94d
+Unmodified upstream test fixture.

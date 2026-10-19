@@ -18,6 +18,9 @@
 //=============================================================================
 
 
+#include <algorithm>
+
+#include "libmscore/guitarbend.h"
 #include "createpalettedialog.h"
 #include "keyedit.h"
 #include "musescore.h"
@@ -963,6 +966,31 @@ bool PaletteWorkspace::loadPalette(const QModelIndex& index)
 
 void PaletteWorkspace::setUserPaletteTree(std::unique_ptr<PaletteTree> tree)
       {
+      // Saved pre-backport workspaces replace the default tree entirely.
+      // Add the new panel once, preserving existing panels and hidden choices.
+      if (tree) {
+            bool hasGuitar = false;
+            for (const auto& panel : tree->palettes) {
+                  if (panel->name() != QLatin1String("Guitar"))
+                        continue;
+                  hasGuitar = true;
+                  // Recognize the old generated bend block, leaving customized
+                  // order/content alone. Update only its eight original cells.
+                  bool oldOrder = panel->ncells() == 36;
+                  for (int i = 0; oldOrder && i < 8; ++i) {
+                        const auto cell = panel->cell(i);
+                        oldOrder = cell->element && cell->element->isGuitarBend() && !cell->custom
+                              && int(toGuitarBend(cell->element.get())->bendType()) == i;
+                        }
+                  if (oldOrder) {
+                        auto firstPairRows = panel->takeCells(4, 4);
+                        panel->insertCells(0, std::move(firstPairRows));
+                        panel->setGrid(120, 55);
+                        }
+                  }
+            if (!hasGuitar)
+                  tree->append(MuseScore::newGuitarPalettePanel());
+            }
       if (userPalette) {
             disconnect(userPalette, &PaletteTreeModel::treeChanged, this, &PaletteWorkspace::userPaletteChanged);
             userPalette->setPaletteTree(std::move(tree));

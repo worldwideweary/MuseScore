@@ -133,7 +133,11 @@ static const ElementName elementNames[] = {
       { ElementType::OSSIA,                "Ossia",                QT_TRANSLATE_NOOP("elementName", "Ossia") },
       { ElementType::BAGPIPE_EMBELLISHMENT,"BagpipeEmbellishment", QT_TRANSLATE_NOOP("elementName", "Bagpipe Embellishment") },
       { ElementType::STICKING,             "Sticking",             QT_TRANSLATE_NOOP("elementName", "Sticking") },
-      { ElementType::CHORD_BRACKET,        "ChordBracket",         QT_TRANSLATE_NOOP("elementName", "Chord Bracket") }
+      { ElementType::CHORD_BRACKET,        "ChordBracket",         QT_TRANSLATE_NOOP("elementName", "Chord Bracket") },
+      { ElementType::GUITAR_BEND,          "GuitarBend",           QT_TRANSLATE_NOOP("elementName", "Guitar bend") },
+      { ElementType::GUITAR_BEND_SEGMENT,  "GuitarBendSegment",    QT_TRANSLATE_NOOP("elementName", "Guitar bend segment") },
+      { ElementType::HAMMER_ON_PULL_OFF,   "HammerOnPullOff",      QT_TRANSLATE_NOOP("elementName", "Hammer-on/pull-off") },
+      { ElementType::WHAMMY_BAR,           "WhammyBar",            QT_TRANSLATE_NOOP("elementName", "Whammy bar") }
       };
 
 //---------------------------------------------------------
@@ -823,6 +827,10 @@ QString ScoreElement::userName() const
 
 ElementType ScoreElement::name2type(const QStringRef& s, bool silent)
       {
+      // Tapping shares the articulation editor in 3.x but retains its native
+      // XML tag and hand so Studio can reconstruct the dedicated object.
+      if (s == "Tapping")
+            return ElementType::ARTICULATION;
       for (int i = 0; i < int(ElementType::MAXTYPE); ++i) {
             if (s == elementNames[i].name)
                   return ElementType(i);
@@ -840,7 +848,7 @@ bool ScoreElement::isSLineSegment() const
       {
       return isHairpinSegment() || isOttavaSegment() || isPedalSegment()
          || isTrillSegment() || isVoltaSegment() || isTextLineSegment()
-         || isGlissandoSegment() || isLetRingSegment() || isVibratoSegment() || isPalmMuteSegment();
+         || isGuitarBendSegment() || isGlissandoSegment() || isLetRingSegment() || isVibratoSegment() || isPalmMuteSegment();
       }
 
 //---------------------------------------------------------

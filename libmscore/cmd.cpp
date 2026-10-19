@@ -2812,13 +2812,57 @@ void Score::cmdAddBracket()
 
 void Score::cmdAddParentheses()
       {
-      for (Element* el : selection().elements()) {
-            if (el->type() == ElementType::NOTE) {
-                  Note* n = toNote(el);
-                  n->addParentheses();
+      QMap<Chord*, QList<Note*>> selected;
+      for (Note* note : selection().noteList())
+            selected[note->chord()].append(note);
+      for (auto i = selected.begin(); i != selected.end(); ++i) {
+            Chord* chord = i.key();
+            const auto& notes = chord->notes();
+            int first = int(notes.size());
+            int last = -1;
+            for (Note* note : i.value()) {
+                  const int index = int(std::distance(notes.begin(), std::find(notes.begin(), notes.end(), note)));
+                  first = qMin(first, index);
+                  last = qMax(last, index);
                   }
-            else if (el->type() == ElementType::ACCIDENTAL) {
+            if (last < first || last >= int(notes.size()))
+                  continue;
+            QList<int> indices;
+            for (int index = first; index <= last; ++index)
+                  indices.append(index);
+            QList<Element*> old;
+            for (int index = 0; index < int(notes.size()); ++index) {
+                  for (Element* child : notes[index]->el()) {
+                        if (!child->isSymbol())
+                              continue;
+                        const Symbol* symbol = toSymbol(child);
+                        if (symbol->sym() != SymId::noteheadParenthesisLeft && symbol->sym() != SymId::noteheadParenthesisRight)
+                              continue;
+                        bool overlaps = indices.contains(index);
+                        for (int member : symbol->parenthesisNotes())
+                              overlaps |= indices.contains(member);
+                        if (overlaps)
+                              old.append(child);
+                        }
+                  }
+            for (Element* child : old)
+                  undoRemoveElement(child);
+            for (SymId id : { SymId::noteheadParenthesisLeft, SymId::noteheadParenthesisRight }) {
+                  Symbol* symbol = new Symbol(this);
+                  symbol->setSym(id);
+                  symbol->setParent(notes[first]);
+                  if (indices.size() > 1)
+                        symbol->setParenthesisNotes(indices);
+                  undoAddElement(symbol);
+                  }
+            }
+      for (Element* el : selection().elements()) {
+            if (el->type() == ElementType::ACCIDENTAL) {
                   Accidental* acc = toAccidental(el);
+                  // A range can include the note's accidental as well. Its
+                  // shared enclosing pair is sufficient; do not add another.
+                  if (acc->note() && selected.contains(acc->note()->chord()))
+                        continue;
                   acc->undoChangeProperty(Pid::ACCIDENTAL_BRACKET, int(AccidentalBracket::PARENTHESIS));
                   }
             else if (el->type() == ElementType::HARMONY) {

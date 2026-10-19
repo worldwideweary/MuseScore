@@ -2115,12 +2115,12 @@ MuseScore::MuseScore()
       menuAddFrames->addAction(getAction("insert-hbox"));
       menuAddFrames->addAction(getAction("insert-vbox"));
       menuAddFrames->addAction(getAction("insert-textframe"));
-      if (enableExperimental)
-            menuAddFrames->addAction(getAction("insert-fretframe"));
+      menuAddFrames->addAction(getAction("insert-fretframe"));
       menuAddFrames->addSeparator();
       menuAddFrames->addAction(getAction("append-hbox"));
       menuAddFrames->addAction(getAction("append-vbox"));
       menuAddFrames->addAction(getAction("append-textframe"));
+      menuAddFrames->addAction(getAction("append-fretframe"));
       menuAdd->addMenu(menuAddFrames);
 
       menuAddText = new QMenu();

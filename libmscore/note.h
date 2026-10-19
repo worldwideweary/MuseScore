@@ -259,6 +259,10 @@ class Note final : public Element {
       Q_ENUM(ValueType);
 
    private:
+      bool _overrideBendVisibilityRules { false };
+      bool _studioGhost { false }; // Studio ghost means parentheses, not a dead fret
+      bool _studioParenthesesManaged = false; // 4.7 groups, not the note flag, supply the drawing
+      int _tabFretParentheses = 0; // left=1, right=2
       bool _ghost         { false };      ///< ghost note (guitar: death note)
       bool _hidden        { false };      ///< marks this note as the hidden one if there are
                                           ///< overlapping notes; hidden notes are not played
@@ -357,6 +361,8 @@ class Note final : public Element {
       qreal headWidth() const;
       qreal headHeight() const;
       qreal tabHeadWidth(const StaffType* tab = 0) const;
+      QRectF tabFretMaskRect() const;
+      void layoutTabBendParentheses(bool includeBends = true);
       qreal tabHeadHeight(const StaffType* tab = 0) const;
       QPointF stemDownNW() const;
       QPointF stemUpSE() const;
@@ -416,6 +422,10 @@ class Note final : public Element {
       void setFret(int val)           { _fret = val;    }
       int string() const              { return _string; }
       void setString(int val);
+      bool overrideBendVisibilityRules() const { return _overrideBendVisibilityRules; }
+      bool studioGhost() const { return _studioGhost; }
+      void setStudioGhost(bool value) { _studioGhost = value; }
+      const QString& fretString() const { return _fretString; }
       bool ghost() const              { return _ghost;  }
       void setGhost(bool val)         { _ghost = val;   }
       bool fretConflict() const       { return _fretConflict; }
@@ -452,6 +462,8 @@ class Note final : public Element {
       bool readProperties(XmlReader&) override;
       void readAddConnector(ConnectorInfoReader* info, bool pasteMode) override;
       void write(XmlWriter&) const override;
+      void undoChangeProperty(Pid, const QVariant&, PropertyFlags) override;
+      using Element::undoChangeProperty;
 
       bool acceptDrop(EditData&) const override;
       Element* drop(EditData&) override;

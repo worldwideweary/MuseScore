@@ -79,6 +79,7 @@ class InspectorBase : public QWidget {
       bool isDefault(const InspectorItem&);
       void mapSignals(const std::vector<InspectorItem>& il = std::vector<InspectorItem>(), const std::vector<InspectorPanel>& pl = std::vector<InspectorPanel>());
       void setupLineStyle(QComboBox*);
+      void addFrameClearanceControls();
 
    public:
       InspectorBase(QWidget* parent);

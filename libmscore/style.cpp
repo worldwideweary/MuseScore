@@ -149,6 +149,8 @@ static const StyleType styleTypes[] {
       { Sid::figuredBassStyle,        "figuredBassStyle" ,       QVariant(0) },
       { Sid::systemFrameDistance,     "systemFrameDistance",     Spatium(7.0) },
       { Sid::frameSystemDistance,     "frameSystemDistance",     Spatium(7.0) },
+      { Sid::paddingToNotationAbove,  "paddingToNotationAbove",  Spatium(2.0) },
+      { Sid::paddingToNotationBelow,  "paddingToNotationBelow",  Spatium(2.0) },
       { Sid::minMeasureWidth,         "minMeasureWidth",         Spatium(5.0) },
       { Sid::barWidth,                "barWidth",                Spatium(0.18) },
       { Sid::doubleBarWidth,          "doubleBarWidth",          Spatium(0.18) },
@@ -1453,7 +1455,36 @@ static const StyleType styleTypes[] {
 
       { Sid::autoplaceEnabled,              "autoplaceEnabled",              true },
       { Sid::usePre_3_6_defaults,           "usePre_3_6_defaults",           false},
-      { Sid::defaultsVersion,               "defaultsVersion",               Ms::MSCVERSION}
+      { Sid::defaultsVersion,               "defaultsVersion",               Ms::MSCVERSION},
+      { Sid::tabFretNumberFontFace,         "tabFretNumberFontFace",         "FreeSans" },
+      { Sid::tabFretNumberFontSize,         "tabFretNumberFontSize",         9.0 },
+      { Sid::tabFretLetterFontFace,         "tabFretLetterFontFace",         "MuseScoreTabRenaiss" },
+      { Sid::tabFretLetterFontSize,         "tabFretLetterFontSize",         10.0 },
+      { Sid::alignPreBendAndPreDiveToGraceNote, "alignPreBendAndPreDiveToGraceNote", false },
+      { Sid::showFretOnFullBendRelease,     "showFretOnFullBendRelease",     true },
+      { Sid::guitarBendHeightAboveTABStaff, "guitarBendHeightAboveTABStaff", 1.5 },
+      { Sid::guitarBendArrowWidth,          "guitarBendArrowWidth",          Spatium(1.0) },
+      { Sid::guitarBendArrowHeight,         "guitarBendArrowHeight",         Spatium(1.0) },
+      { Sid::guitarBendPartialBendHeight,   "guitarBendPartialBendHeight",   Spatium(1.5) },
+      { Sid::guitarDivesAboveStaff,         "guitarDivesAboveStaff",         false },
+      { Sid::rhTappingSymbolNormalStave,    "rhTappingSymbolNormalStave",    "plus" },
+      { Sid::rhTappingSymbolTab,            "rhTappingSymbolTab",            "T" },
+      { Sid::lhTappingSymbolNormalStave,    "lhTappingSymbolNormalStave",    "dot" },
+      { Sid::lhTappingSymbolTab,            "lhTappingSymbolTab",            "dot" },
+      { Sid::lhTappingShowItemsNormalStave, "lhTappingShowItemsNormalStave", 0 },
+      { Sid::lhTappingShowItemsTab,         "lhTappingShowItemsTab",         0 },
+      { Sid::lhTappingSlurTopAndBottomNoteOnTab, "lhTappingSlurTopAndBottomNoteOnTab", true },
+      { Sid::useCueSizeFretForGraceBends,   "useCueSizeFretForGraceBends",   false },
+      { Sid::useFractionCharacters,         "useFractionCharacters",         true },
+      { Sid::guitarBendUseFull,             "guitarBendUseFull",             false },
+      { Sid::hammerOnPullOffTappingFontFace, "hammerOnPullOffTappingFontFace", "Edwin" },
+      { Sid::hammerOnPullOffTappingFontSize, "hammerOnPullOffTappingFontSize", 8.0 },
+      { Sid::hammerOnPullOffTappingFontSpatiumDependent, "hammerOnPullOffTappingFontSpatiumDependent", true },
+      { Sid::hammerOnPullOffTappingFontStyle, "hammerOnPullOffTappingFontStyle", int(FontStyle::Normal) },
+      { Sid::guitarBendLineWidth,             "guitarBendLineWidth",         Spatium(0.13) },
+      { Sid::guitarBendLineWidthTab,          "guitarBendLineWidthTab",      Spatium(0.15) },
+      { Sid::guitarDiveLineWidth,             "guitarDiveLineWidth",         Spatium(0.13) },
+      { Sid::guitarDiveLineWidthTab,          "guitarDiveLineWidthTab",      Spatium(0.15) },
       };
 
 MStyle  MScore::_baseStyle;
@@ -3067,6 +3098,10 @@ void MStyle::load(XmlReader& e, int mscVersion)
                   }
             else if (mscVersion <= 301 && tag == "staffTextMinDistance" )         // got lost some time between 2.3.2 and 3.1.0 (2.07 and 3.01)
                   set(Sid::staffTextMinDistance, Spatium(e.readDouble()));
+            // This shared spacing property is supported directly. Preserve an
+            // explicit Studio value before the legacy compatibility filters.
+            else if (mscVersion > 302 && tag == "articulationMinDistance")
+                  set(Sid::articulationMinDistance, Spatium(e.readDouble()));
             else if (mscVersion > 302 && readProperties400(e, mscVersion))        // read Mu4+ tag, if there is one
                   continue;                                                       // it got read or ignored there, so go to next.
             else if (!readProperties(e))                                          // else it got to be one of the regular Mu3 ones.
@@ -3200,10 +3235,7 @@ bool MStyle::readProperties400(XmlReader& e, int mscVersion)
             if (!qFuzzyCompare(beamMinLen, 1.1))                                  // Changed from 4.x default
                   set(Sid::beamMinLen, Spatium(beamMinLen));
             }
-      else if (tag == "snapCustomBeamsToGrid"                                     // Mu4 only, let's skip
-            || tag == "propertyDistanceHead"                                      // 1   -> 0.4, articulation/ornaments distance, let's skip, i.e. reset back
-            || tag == "propertyDistanceStem"                                      // 1.8 -> 0.4, articulation/ornaments distance, let's skip, i.e. reset back
-            || tag == "propertyDistance")                                         // 1   -> 0.4, articulation/ornaments distance, let's skip, i.e. reset back
+      else if (tag == "snapCustomBeamsToGrid")                                    // Mu4 only, let's skip
             e.skipCurrentElement();
       else if (mscVersion >= 410 && tag == "articulationAnchorLuteFingering") {   // 4 (ArticulationAnchor::BOTTOM_CHORD) -> 1 (ArticulationAnchor::BOTTOM_STAFF)
             int articulationAnchorLuteFingering = e.readInt();
@@ -3403,8 +3435,7 @@ bool MStyle::readProperties400(XmlReader& e, int mscVersion)
             || (mscVersion >= 410 && tag == "expressionMinDistance")              // Mu4.1+ only, let's skip
             || (mscVersion >= 420 && tag == "glissandoStyle")                     // Mu4.2+ only, let's skip
             || (mscVersion >= 420 && tag == "glissandoStyleHarp")                 // Mu4.2+ only, let's skip
-            || (mscVersion >= 420 && tag.startsWith("guitarBend"))                // Mu4.2+ only, let's skip
-            || (mscVersion >= 420 && tag == "useCueSizeFretForGraceBends"))       // Mu4.2+ only, let's skip
+            || (mscVersion >= 420 && tag.startsWith("guitarBend")))       // Mu4.2+ only, let's skip
             e.skipCurrentElement();
       //else if (tag == "headerAlign")                                            // center,top -> center,center ToDo/Let's pass
       //      return false;
@@ -3458,7 +3489,6 @@ bool MStyle::readProperties400(XmlReader& e, int mscVersion)
             }
       else if ((mscVersion >= 400 && tag == "palmMuteDashLineLen")                // Mu4 only, let's skip
             || (mscVersion >= 400 && tag == "palmMuteDashGapLen")                 // Mu4 only, let's skip
-            || (mscVersion >= 400 && tag == "articulationMinDistance")            // 0.5 -> 0.4, let's sip, i.e. reset back to Mu3
             || (mscVersion >= 400 && tag.contains("ShowTab"))                     // Mu4 only,    let's skip
             || (mscVersion >= 400 && tag == "chordlineThickness")                 // doesn't exist in Mu3 (and was wrong in Mu4.0), let's skip
             || (mscVersion >= 420 && tag == "tabShowTiedFret")                    // Mu4.3+ only, let's skip (4.3.0 used mscVersion 420)
@@ -3768,9 +3798,11 @@ bool  MStyle::readProperties450(XmlReader& e, int mscVersion)
       else if (tag == "mergeMatchingRests")                         // Mu4.5+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "minEmptyMeasures") {                         // 2 -> 1
-            int minEmptyMeasures = e.readInt();
-            if (minEmptyMeasures == 1)                              // 4.5+ default, let's skip, i.e. reset to Mu3's, which seems better,
-                  e.skipCurrentElement();                           // esp. as it doesn't have `singleMeasureMMRest` etc.
+            const int minEmptyMeasures = e.readInt();
+            // readInt() has already consumed this element. Skipping again
+            // from its end token consumes the remainder of the Style.
+            if (minEmptyMeasures != 1)                              // Preserve Mu3's default for Mu4.5+'s default of 1.
+                  set(Sid::minEmptyMeasures, minEmptyMeasures);
             }
       else if (tag.startsWith("singleMeasureMMRest"))               // Mu4.5+ only, let's skip
             e.skipCurrentElement();
@@ -3989,15 +4021,20 @@ bool  MStyle::readProperties460(XmlReader& e, int mscVersion)
       else if (tag == "lyricistPosition")                           // Mu4.6+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "fingeringPosition"
-            || tag.startsWith("tabFretNumber"))                     // Mu4.6+ only, let's skip
+            || (tag.startsWith("tabFretNumber") && tag != "tabFretNumberFontFace"
+                  && tag != "tabFretNumberFontSize"))                     // Mu4.6+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "lhGuitarFingeringPosition")                  // Mu4.6+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "rhGuitarFingeringPosition"
-            || tag.startsWith("hammerOnPullOffTapping")
+            || (tag.startsWith("hammerOnPullOffTapping")
+                  && tag != "hammerOnPullOffTappingFontFace" && tag != "hammerOnPullOffTappingFontSize"
+                  && tag != "hammerOnPullOffTappingFontSpatiumDependent" && tag != "hammerOnPullOffTappingFontStyle")
             || tag.startsWith("hopo")
-            || tag.startsWith("lhTapping")
-            || tag.startsWith("rhTapping"))                         // Mu4.6+ only, let's skip
+            || (tag.startsWith("lhTapping") && tag != "lhTappingSymbolNormalStave" && tag != "lhTappingSymbolTab"
+                  && tag != "lhTappingShowItemsNormalStave" && tag != "lhTappingShowItemsTab"
+                  && tag != "lhTappingSlurTopAndBottomNoteOnTab")
+            || (tag.startsWith("rhTapping") && tag != "rhTappingSymbolNormalStave" && tag != "rhTappingSymbolTab"))                         // Mu4.6+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "stringNumberPosition")                       // Mu4.6+ only, let's skip
             e.skipCurrentElement();
@@ -4186,7 +4223,6 @@ bool  MStyle::readProperties470(XmlReader& e, int mscVersion)
             e.skipCurrentElement();
       else if (tag == "showFretOnFullBendRelease"                   // Mu4.7+ only, let's skip
             || tag == "alignPreBendAndPreDiveToGraceNote"           // Mu4.7+ only, let's skip
-            || tag == "useFractionCharacters"                       // Mu4.7+ only, let's skip
             || tag == "guitarDivesAboveStaff"                       // Mu4.7+ only, let's skip
             || tag == "guitarDiveLineWidth"                         // Mu4.7+ only, let's skip
             || tag == "guitarDiveLineWidthTab")                     // Mu4.7+ only, let's skip

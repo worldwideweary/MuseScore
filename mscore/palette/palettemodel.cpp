@@ -21,6 +21,8 @@
 #include "palettemodel.h"
 #include "palettetree.h"
 #include "preferences.h"
+#include "musescore.h"
+#include "shortcut.h"
 #include "scoreaccessibility.h"
 
 #include "libmscore/beam.h"
@@ -29,6 +31,33 @@
 #include "libmscore/select.h"
 
 namespace Ms {
+// Upgrade saved and default panels alike, without replacing user content.
+static void ensureLegendPaletteEntry(PaletteTree* tree)
+      {
+      if (!tree)
+            return;
+      for (auto& panel : tree->palettes) {
+            if (panel->type() != PalettePanel::Type::Frame
+                  && panel->type() != PalettePanel::Type::FretboardDiagram
+                  && panel->name() != QLatin1String("Guitar"))
+                  continue;
+            bool present = false;
+            for (int i = 0; i < panel->ncells(); ++i) {
+                  const auto cell = panel->cell(i);
+                  if (cell->element && cell->element->isIcon()
+                        && toIcon(cell->element.get())->iconType() == IconType::FFRAME)
+                        present = true;
+                  }
+            if (present)
+                  continue;
+            const auto* shortcut = Shortcut::getShortcut("insert-fretframe");
+            auto* icon = new Icon(gscore);
+            icon->setIconType(IconType::FFRAME);
+            icon->setAction("insert-fretframe", shortcut->action()->icon());
+            panel->insert(0, icon, shortcut->help());
+            }
+      }
+
 //---------------------------------------------------------
 //   PaletteTreeModel::PaletteTreeModel
 //---------------------------------------------------------
@@ -36,6 +65,7 @@ namespace Ms {
 PaletteTreeModel::PaletteTreeModel(std::unique_ptr<PaletteTree> tree, QObject* parent)
    : QAbstractItemModel(parent), _paletteTree(std::move(tree))
       {
+      ensureLegendPaletteEntry(_paletteTree.get());
       connect(this, &QAbstractItemModel::dataChanged, this, &PaletteTreeModel::onDataChanged);
       connect(this, &QAbstractItemModel::layoutChanged, this, &PaletteTreeModel::setTreeChanged);
       connect(this, &QAbstractItemModel::modelReset, this, &PaletteTreeModel::setTreeChanged);
@@ -169,6 +199,7 @@ PaletteCellPtr PaletteTreeModel::findCell(const QModelIndex& index)
 void PaletteTreeModel::setPaletteTree(std::unique_ptr<PaletteTree> newTree)
       {
       beginResetModel();
+      ensureLegendPaletteEntry(newTree.get());
       _paletteTree = std::move(newTree);
       endResetModel();
 

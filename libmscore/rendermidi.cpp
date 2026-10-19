@@ -16,6 +16,7 @@
 */
 
 #include <set>
+#include <cmath>
 
 #include "arpeggio.h"
 #include "articulation.h"
@@ -26,6 +27,7 @@
 #include "dynamic.h"
 #include "easeInOut.h"
 #include "glissando.h"
+#include "guitarbend.h"
 #include "hairpin.h"
 #include "instrument.h"
 #include "measure.h"
@@ -317,9 +319,303 @@ static void playNote(EventMap* events,
 //   collectNote
 //---------------------------------------------------------
 
+// Render each bend chain as one sustained MIDI note with its own pitch wheel.
+static std::vector<const GuitarBend*> guitarBendsFor(const Note* note)
+      {
+      std::vector<const GuitarBend*> bends;
+      for (const Spanner* sp : note->spannerFor()) {
+            if (sp->isGuitarBend() && sp->getProperty(Pid::PLAY).toBool())
+                  bends.push_back(toGuitarBend(sp));
+            }
+      return bends;
+      }
+
+// Studio's MIDI grace bends borrow at most a sixteenth from the preceding
+// chord. Pre-bend setup notes themselves do not consume an audible grace slot.
+static int guitarGraceBendStart(const Chord* principal)
+      {
+      bool hasGraceBend = false;
+      for (const Chord* grace : principal->graceNotesBefore()) {
+            for (const Note* note : grace->notes()) {
+                  for (const GuitarBend* bend : guitarBendsFor(note))
+                        hasGraceBend |= bend->bendType() == GuitarBendType::GRACE_NOTE_BEND;
+                  }
+            }
+      const int tick = principal->tick().ticks();
+      if (!hasGraceBend)
+            return tick;
+      int duration = DIVISION / 4;
+      if (const Segment* previous = principal->segment()->prev1WithElemsOnTrack(principal->track())) {
+            const Element* element = previous->element(principal->track());
+            if (element && element->isChordRest())
+                  duration = qMin(duration, toChordRest(element)->actualTicks().ticks() / 2);
+            }
+      return qMax(0, tick - duration);
+      }
+
+// Contribution of one finger/bar gesture, relative to its written start note.
+// Independent gestures are summed before emitting the channel's pitch wheel.
+static qreal guitarBendContribution(const GuitarBend* bend, qreal progress, bool graceBefore = false)
+      {
+      const qreal amount = bend->bendAmount() / 2.0;
+      const auto type = bend->bendType();
+      if (type == GuitarBendType::PRE_BEND || type == GuitarBendType::PRE_DIVE)
+            return amount;
+      const qreal start = graceBefore ? 0.0 : bend->getProperty(Pid::BEND_START_TIME_FACTOR).toDouble();
+      const qreal end = graceBefore ? 1.0 : qMax(start, bend->getProperty(Pid::BEND_END_TIME_FACTOR).toDouble());
+      auto ramp = [](qreal t, qreal a, qreal b) {
+            if (t < a)
+                  return 0.0;
+            if (b <= a || t >= b)
+                  return 1.0;
+            const qreal fraction = (t - a) / (b - a);
+            return fraction * fraction;
+            };
+      if (type == GuitarBendType::DIP) {
+            const qreal target = qBound(start, bend->getProperty(Pid::BEND_TARGET_TIME_FACTOR).toDouble(), end);
+            return amount * (progress < target ? ramp(progress, start, target)
+                  : 1.0 - ramp(progress, target, end));
+            }
+      if (type == GuitarBendType::SCOOP)
+            return -1.0 + ramp(progress, start, end);
+      return amount * ramp(progress, start, end);
+      }
+
+static bool renderGuitarBendChain(EventMap* events, int channel, const Note* note,
+      qreal velocityMultiplier, int tickOffset, Staff* staff)
+      {
+      const Note* root = note;
+      QSet<const Note*> seen;
+      while (root && !seen.contains(root)) {
+            seen.insert(root);
+            const Note* previous = nullptr;
+            for (const Spanner* sp : root->spannerBack()) {
+                  if (sp->isGuitarBend() && sp->getProperty(Pid::PLAY).toBool()) {
+                        const auto* bend = toGuitarBend(sp);
+                        if (!bend->singleNote() && bend->startNote() != root) {
+                              if (previous && previous != bend->startNote())
+                                    return false; // ambiguous incoming chains
+                              previous = bend->startNote();
+                              }
+                        }
+                  }
+            if (!previous && root->tieBack())
+                  previous = root->tieBack()->startNote();
+            if (!previous)
+                  break;
+            root = previous;
+            }
+      if (!root)
+            return false;
+
+      struct Step { const Note* note; std::vector<const GuitarBend*> bends; const Note* next; };
+      std::vector<Step> steps;
+      seen.clear();
+      const Note* current = root;
+      int bendCount = 0;
+      while (current && !seen.contains(current)) {
+            const Chord* chord = current->chord();
+            seen.insert(current);
+            if (!current->play() || chord->tremolo() || chord->arpeggio())
+                  return false;
+            const auto bends = guitarBendsFor(current);
+            const Note* next = nullptr;
+            if (!bends.empty()) {
+                  const GuitarBend* first = bends.front();
+                  next = first->singleNote() ? nullptr : first->endNote();
+                  if ((!first->singleNote() && !next) || bends.size() > 2)
+                        return false;
+                  // A finger bend and a bar bend can share anchors. Arbitrary
+                  // branching paths still fall back to ordinary note playback.
+                  for (size_t i = 1; i < bends.size(); ++i) {
+                        if (first->singleNote() || bends[i]->singleNote()
+                              || bends[i]->endNote() != next || first->isDive() == bends[i]->isDive())
+                              return false;
+                        }
+                  bendCount += int(bends.size());
+                  }
+            else if (current->tieFor())
+                  next = current->tieFor()->endNote();
+            steps.push_back({ current, bends, next });
+            if (!next)
+                  break;
+            current = next;
+            }
+      if (!bendCount || steps.empty() || (steps.back().next && seen.contains(steps.back().next)))
+            return false;
+
+      const bool graceStart = root->chord()->isGrace();
+      const Note* owner = graceStart && steps.front().next ? steps.front().next : root;
+      // Main-note collection owns grace bends, whether 3.x merges grace events
+      // into the main chord or collects the grace separately.
+      bool pre = false;
+      for (const GuitarBend* bend : steps.front().bends)
+            pre |= bend->bendType() == GuitarBendType::PRE_BEND || bend->bendType() == GuitarBendType::PRE_DIVE;
+      std::map<const Note*, int> graceTimes;
+      for (const Step& step : steps) {
+            if (!step.note->chord()->isGrace() || !step.next || step.next->chord()->isGrace())
+                  continue;
+            for (const GuitarBend* bend : step.bends) {
+                  if (bend->bendType() == GuitarBendType::GRACE_NOTE_BEND)
+                        graceTimes[step.note] = guitarGraceBendStart(step.next->chord());
+                  }
+            }
+      auto noteTime = [&](const Note* n) {
+            const auto it = graceTimes.find(n);
+            return (it == graceTimes.end() ? n->tick().ticks() : it->second) + tickOffset;
+            };
+      int on = noteTime(owner);
+      for (const auto& grace : graceTimes)
+            on = qMin(on, grace.second + tickOffset);
+      if (graceStart && !pre && graceTimes.empty())
+            on = qMax(0, on - DIVISION / 8);
+      const Note* last = steps.back().note;
+      int off = last->tick().ticks() + last->chord()->actualTicks().ticks() + tickOffset - 1;
+      if (ChordRest* following = nextChordRest(last->chord(), true)) {
+            if (following->isChord())
+                  off = qMin(off, guitarGraceBendStart(toChord(following)) + tickOffset - 1);
+            }
+      if (off <= on)
+            return false;
+      // Setup graces describe the initial pitch offset; choose the first
+      // audible note's key so the soundfont uses the same key zone as Studio.
+      const Note* soundingStart = root;
+      for (const Step& step : steps) {
+            bool setup = !step.bends.empty() && step.next;
+            for (const GuitarBend* bend : step.bends)
+                  setup &= bend->bendType() == GuitarBendType::PRE_BEND || bend->bendType() == GuitarBendType::PRE_DIVE;
+            if (!setup)
+                  break;
+            soundingStart = step.next;
+            }
+      const int referencePitch = soundingStart->ppitch();
+      const qreal baseTuning = soundingStart->tuning();
+      auto offset = [referencePitch, baseTuning](const Note* n) {
+            return n->ppitch() - referencePitch + (n->tuning() - baseTuning) / 100.0;
+            };
+      // Build one composite curve first. This avoids simultaneous gestures
+      // overwriting each other and lets us reject out-of-range playback before
+      // inserting any events or suppressing a chain's ordinary notes.
+      std::map<int, qreal> curve;
+      curve[on] = 0.0;
+      for (const Step& step : steps) {
+            if (step.bends.empty())
+                  continue;
+            const int a = step.note == root ? on : noteTime(step.note);
+            const int b = step.next ? noteTime(step.next)
+                  : a + step.note->chord()->actualTicks().ticks() - 1;
+            const int len = qMax(1, b - a);
+            // Include exact gesture boundaries as well as regularly spaced
+            // samples; a short dip must still hit its full target and release.
+            std::set<int> ticks { a, b };
+            const int count = qMax(1, len / 8);
+            for (int i = 0; i <= count; ++i)
+                  ticks.insert(a + len * i / count);
+            for (const GuitarBend* bend : step.bends) {
+                  for (Pid property : { Pid::BEND_START_TIME_FACTOR, Pid::BEND_END_TIME_FACTOR, Pid::BEND_TARGET_TIME_FACTOR })
+                        ticks.insert(a + qRound(bend->getProperty(property).toDouble() * len));
+                  }
+            for (int tick : ticks) {
+                  const qreal progress = qBound(0.0, qreal(tick - a) / len, 1.0);
+                  qreal value = offset(step.note);
+                  for (const GuitarBend* bend : step.bends) {
+                        const bool graceBefore = bend->bendType() == GuitarBendType::GRACE_NOTE_BEND
+                              && graceTimes.count(step.note);
+                        value += guitarBendContribution(bend, progress, graceBefore);
+                        }
+                  curve[qBound(on, tick, off)] = value;
+                  }
+            }
+      // Fit the whole trajectory in the fixed +/-12-semitone wheel range.
+      // A release can span more than 12 semitones while still fitting a
+      // 24-semitone window. Move the MIDI key and compensate its wheel values,
+      // preserving sounding pitch instead of falling back to delayed attacks.
+      qreal lowest = curve.begin()->second;
+      qreal highest = lowest;
+      for (const auto& point : curve) {
+            lowest = qMin(lowest, point.second);
+            highest = qMax(highest, point.second);
+            }
+      const int firstKey = qMax(0, int(std::ceil(referencePitch + highest - 12.0)));
+      const int lastKey = qMin(127, int(std::floor(referencePitch + lowest + 12.0)));
+      if (firstKey > lastKey)
+            return false;
+      const int basePitch = qBound(firstKey, referencePitch, lastKey);
+      for (auto& point : curve)
+            point.second += referencePitch - basePitch;
+      if (note != owner)
+            return true;
+      MasterScore* master = staff->masterScore();
+      const int sourceChannel = channel;
+      // Reuse a lane only after its note-off AND wheel reset. Interval checking
+      // also handles voices, crossing strings and chains rendered out of order.
+      for (int lane = 0; ; ++lane) {
+            channel = master->guitarBendChannel(sourceChannel, lane);
+            if (channel < 0)
+                  return false;
+            int active = 0;
+            bool busy = false;
+            for (const auto& entry : *events) {
+                  const NPlayEvent& event = entry.second;
+                  if (entry.first > off + 1)
+                        break;
+                  if (event.channel() != channel || event.type() != ME_NOTEON)
+                        continue;
+                  if (event.velo() > 0) {
+                        ++active;
+                        if (entry.first >= on)
+                              busy = true;
+                        }
+                  else {
+                        if (active && entry.first + 1 >= on)
+                              busy = true;
+                        --active;
+                        }
+                  }
+            if (!active && !busy)
+                  break;
+            }
+      events->registerChannel(channel);
+      // Initialize at the attack too: lanes may be allocated after the
+      // sequencer's initial instrument setup, and audio export uses this map.
+      const Channel* source = master->midiMapping(sourceChannel)->articulation();
+      for (const MidiCoreEvent& init : source->initList()) {
+            if (init.type() == ME_INVALID)
+                  continue;
+            NPlayEvent event(init.type(), channel, init.dataA(), init.dataB());
+            event.setOriginatingStaff(staff->idx());
+            events->insert(std::make_pair(qMax(0, on - 1), event));
+            }
+      // Fluid and MIDI export use a +/-12 semitone pitch-wheel range.
+      auto wheel = [&](int tick, qreal semitones) {
+            const int value = qBound(0, qRound(8192.0 + semitones * 8192.0 / 12.0), 16383);
+            NPlayEvent event(ME_PITCHBEND, channel, value & 127, value >> 7);
+            event.setOriginatingStaff(staff->idx());
+            events->insert(std::make_pair(qBound(on, tick, off), event));
+            };
+      for (const auto& point : curve)
+            wheel(point.first, point.second);
+      const int velocity = qBound(1, qRound(staff->velocities().val(owner->tick()) * velocityMultiplier), 127);
+      NPlayEvent attack(ME_NOTEON, channel, basePitch, owner->customizeVelocity(velocity));
+      attack.setOriginatingStaff(staff->idx());
+      attack.setTuning(baseTuning);
+      attack.setNote(owner);
+      attack.setNoteEventOwner(owner);
+      attack.setNoteEventIndex(0);
+      events->insert(std::make_pair(on, attack));
+      attack.setVelo(0);
+      events->insert(std::make_pair(off, attack));
+      NPlayEvent reset(ME_PITCHBEND, channel, 0, 64);
+      reset.setOriginatingStaff(staff->idx());
+      events->insert(std::make_pair(off + 1, reset));
+      return true;
+      }
+
 static void collectNote(EventMap* events, int channel, const Note* note, qreal velocityMultiplier, int tickOffset, Staff* staff, SndConfig config)
       {
       if (!note->play() || note->hidden())      // do not play overlapping notes
+            return;
+      if (renderGuitarBendChain(events, channel, note, velocityMultiplier, tickOffset, staff))
             return;
       Chord* chord = note->chord();
 
@@ -2438,6 +2734,35 @@ void MidiRenderer::renderChunk(const Chunk& chunk, EventMap* events, const Conte
       // create sustain pedal events
       renderSpanners(chunk, events);
 
+      // Ordinary channel automation must reach the independent bend lanes.
+      // Snapshot first, so inserting copies cannot recursively copy the copies.
+      std::vector<std::pair<int, NPlayEvent>> controls;
+      const auto& mappings = score->masterScore()->midiMapping();
+      for (const auto& entry : *events) {
+            if (entry.second.type() != ME_CONTROLLER)
+                  continue;
+            for (const MidiMapping& mapping : mappings) {
+                  if (mapping.bendSource() != entry.second.channel())
+                        continue;
+                  NPlayEvent copy = entry.second;
+                  copy.setChannel(mapping.articulation()->channel());
+                  bool exists = false;
+                  const auto range = events->equal_range(entry.first);
+                  for (auto it = range.first; it != range.second; ++it) {
+                        const NPlayEvent& e = it->second;
+                        if (e.type() == copy.type() && e.channel() == copy.channel()
+                              && e.controller() == copy.controller() && e.value() == copy.value()) {
+                              exists = true;
+                              break;
+                              }
+                        }
+                  if (!exists)
+                        controls.emplace_back(entry.first, copy);
+                  }
+            }
+      for (const auto& entry : controls)
+            events->insert(entry);
+
       if (ctx.metronome)
             renderMetronome(chunk, events);
 
@@ -2502,8 +2827,25 @@ bool MidiRenderer::canBreakChunk(const Measure* last)
       const auto& spanners = score->spannerMap().findOverlapping(endTick - 1, endTick);
       for (const auto& interval : spanners) {
             const Spanner* sp = interval.value;
-            if (sp->isHairpin() && sp->tick2().ticks() > endTick)
+            if ((sp->isHairpin() && sp->tick2().ticks() > endTick)
+                  || (sp->isGuitarBend() && sp->tick2().ticks() >= endTick))
                   return false;
+            }
+
+      // A bent note may continue through ties after its final bend. Keep
+      // those note lifetimes in the same chunk as their channel reservation.
+      for (Segment* segment = last->first(SegmentType::ChordRest); segment;
+            segment = segment->next(SegmentType::ChordRest)) {
+            for (int track = 0; track < score->ntracks(); ++track) {
+                  const Element* element = segment->element(track);
+                  if (!element || !element->isChord())
+                        continue;
+                  for (const Note* note : toChord(element)->notes()) {
+                        if (note->tieFor() && note->tieFor()->endNote()
+                              && note->tieFor()->endNote()->tick().ticks() >= endTick)
+                              return false;
+                        }
+                  }
             }
 
       // Repeat measures rely on the previous measure

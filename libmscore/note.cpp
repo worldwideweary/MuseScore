@@ -33,10 +33,12 @@
 #include "fret.h"
 #include "fingering.h"
 #include "glissando.h"
+#include "guitarbend.h"
 #include "hairpin.h"
 #include "hook.h"
 #include "icon.h"
 #include "image.h"
+#include "ledgerline.h"
 #include "measure.h"
 #include "note.h"
 #include "notedot.h"
@@ -715,6 +717,10 @@ Note::Note(const Note& n, bool link)
       _string            = n._string;
       _fretConflict      = n._fretConflict;
       _ghost             = n._ghost;
+      _overrideBendVisibilityRules = n._overrideBendVisibilityRules;
+      _studioGhost = n._studioGhost;
+      _studioParenthesesManaged = n._studioParenthesesManaged;
+      _tabFretParentheses = n._tabFretParentheses;
       dragMode           = n.dragMode;
       _pitch             = n._pitch;
       _tpc[0]            = n._tpc[0];
@@ -1100,6 +1106,106 @@ qreal Note::tabHeadWidth(const StaffType* tab) const
       return val;
       }
 
+// Single-note bends belong to the parenthesized TAB shape. Longer bends
+// span two notes and must not make either note's parentheses span the measure.
+void Note::layoutTabBendParentheses(bool includeBends)
+      {
+      if (!staff())
+            return;
+      const bool tab = staff()->isTabStaff(tick());
+      for (Element* element : _el) {
+            if (!element->isSymbol())
+                  continue;
+            Symbol* symbol = toSymbol(element);
+            if (!symbol->flexibleTabParenthesis() && symbol->parenthesisNotes().isEmpty())
+                  continue;
+            QList<const Note*> members;
+            if (symbol->parenthesisNotes().isEmpty())
+                  members.append(this);
+            else {
+                  for (int index : symbol->parenthesisNotes())
+                        if (index >= 0 && index < int(chord()->notes().size()))
+                              members.append(chord()->notes()[index]);
+                  }
+            QRectF contents;
+            for (const Note* note : members) {
+                  const QPointF origin = note->pos() - pos();
+                  contents |= note->bbox().translated(origin);
+                  for (Spanner* spanner : note->spannerFor()) {
+                        if (!includeBends || !spanner->isGuitarBend())
+                              continue;
+                        GuitarBend* bend = toGuitarBend(spanner);
+                        if (!bend->singleNote())
+                              continue;
+                        for (const SpannerSegment* segment : bend->spannerSegments()) {
+                              if (segment->system() != chord()->measure()->system())
+                                    continue;
+                              if (tab && bend->bendType() == GuitarBendType::SLIGHT_BEND) {
+                                    // Studio fillNoteShape uses an approximate
+                                    // note-relative bend shape, not its final
+                                    // page placement above the TAB staff.
+                                    const auto* part = static_cast<const GuitarBendSegment*>(segment);
+                                    const QPointF approximate(note->bbox().width() + 0.25 * spatium(), -0.25 * spatium());
+                                    contents |= part->bbox().translated(origin + approximate - part->path().pointAtPercent(0.0));
+                                    }
+                              else
+                                    contents |= segment->bbox().translated(segment->pagePos() - pagePos());
+                              }
+                        }
+                  }
+            if (contents.isEmpty())
+                  continue;
+            if (!tab) {
+                  contents.adjust(0.0, -0.25 * spatium() * mag(), 0.0, 0.25 * spatium() * mag());
+                  for (const Note* note : members) {
+                        if (note->accidental() && note->accidental()->visible()) {
+                              const QRectF accidental = note->accidental()->bbox().translated(note->pos() - pos() + note->accidental()->pos());
+                              contents.setLeft(qMin(contents.left(), accidental.left()));
+                              contents.setRight(qMax(contents.right(), accidental.right()));
+                              }
+                        }
+                  }
+            symbol->layoutTabParenthesis(contents);
+            }
+      }
+
+//---------------------------------------------------------
+//   tabFretMaskRect
+//    Include inline fret text and attached parentheses.
+//---------------------------------------------------------
+
+QRectF Note::tabFretMaskRect() const
+      {
+      const StaffType* tab = staff()->staffTypeForElement(this);
+      const qreal pad = 0.1 * spatium();
+      QRectF mask(bbox().x(), tab->fretMaskY() * magS(), bbox().width(), tab->fretMaskH() * magS());
+      // Advance width need not include every font's ink overhang.
+      QFont font(tab->fretFont());
+      font.setPointSizeF(tab->fretFontSize());
+      const QRectF ink = QFontMetricsF(font, MScore::paintDevice()).boundingRect(_fretString);
+      mask.setLeft(qMin(mask.left(), bbox().x() + ink.left() * magS()));
+      mask.setRight(qMax(mask.right(), bbox().x() + ink.right() * magS()));
+      for (const Element* e : _el) {
+            if (!e->isSymbol() || !e->visible() || !score()->tagIsValid(e->tag()))
+                  continue;
+            const SymId id = toSymbol(e)->sym();
+            if (id != SymId::noteheadParenthesisLeft && id != SymId::noteheadParenthesisRight)
+                  continue;
+            // A tall/shared pair is an independent curve, not part of the
+            // fret's rectangular background. Its full width must not erase
+            // every string in the chord span.
+            const Symbol* symbol = toSymbol(e);
+            if (!symbol->parenthesisNotes().isEmpty() || !symbol->tabParenthesisPath().isEmpty())
+                  continue;
+            const QRectF parenthesis = e->bbox().translated(e->pos());
+            mask.setLeft(qMin(mask.left(), parenthesis.left()));
+            mask.setRight(qMax(mask.right(), parenthesis.right()));
+            }
+      // Keep the staff type's existing vertical mask policy; widening the
+      // cutout must not erase neighbouring strings above or below this fret.
+      return mask.adjusted(-pad, 0.0, pad, 0.0);
+      }
+
 //---------------------------------------------------------
 //   headHeight
 //
@@ -1173,10 +1279,12 @@ void Note::addSpanner(Spanner* l)
       if (e && e->isNote()) {
             Note* note = toNote(e);
             note->addSpannerBack(l);
-            if (l->isGlissando())
+            if (l->isGlissando() || l->isGuitarBend())
                  note->chord()->setEndsGlissando(true);
             }
       addSpannerFor(l);
+      if (l->isGuitarBend())
+            score()->setPlaylistDirty();
       }
 
 //---------------------------------------------------------
@@ -1191,9 +1299,11 @@ void Note::removeSpanner(Spanner* l)
                   qDebug("Note::removeSpanner(%p): cannot remove spannerBack %s %p", this, l->name(), l);
                   // abort();
                   }
-            if (l->isGlissando())
+            if (l->isGlissando() || l->isGuitarBend())
                  e->chord()->updateEndsGlissando();
             }
+      if (l->isGuitarBend())
+            score()->setPlaylistDirty();
       if (!removeSpannerFor(l)) {
             qDebug("Note(%p): cannot remove spannerFor %s %p", this, l->name(), l);
             // abort();
@@ -1234,6 +1344,7 @@ void Note::add(Element* e)
                   _accidental = toAccidental(e);
                   break;
             case ElementType::TEXTLINE:
+            case ElementType::GUITAR_BEND:
             case ElementType::GLISSANDO:
                   addSpanner(toSpanner(e));
                   break;
@@ -1276,6 +1387,7 @@ void Note::remove(Element* e)
                   break;
 
             case ElementType::TEXTLINE:
+            case ElementType::GUITAR_BEND:
             case ElementType::GLISSANDO:
                   removeSpanner(toSpanner(e));
                   break;
@@ -1319,6 +1431,13 @@ void Note::draw(QPainter* painter) const
       painter->setPen(c);
       bool tablature = staff() && staff()->isTabStaff(chord()->tick());
 
+      // Bend arrival frets remain selectable and appear grey when invisibles
+      // are shown, without changing the note's written pitch or visibility.
+      if (tablature && GuitarBend::hideTabFret(this)) {
+            if (score()->printing() || !score()->showInvisible())
+                  return;
+            c = curColor(false);
+            }
       // tablature
       if (tablature) {
             const Staff* st = staff();
@@ -1330,8 +1449,7 @@ void Note::draw(QPainter* painter) const
                   }
             // draw background, if required (to hide a segment of string line or to show a fretting conflict)
             if (!tab->linesThrough() || fretConflict()) {
-                  qreal d  = spatium() * .1;
-                  QRectF bb = QRectF(bbox().x()-d, tab->fretMaskY() * magS(), bbox().width() + 2 * d, tab->fretMaskH()*magS());
+                  const QRectF bb = tabFretMaskRect();
                   // we do not know which viewer did this draw() call
                   // so update all:
                   if (!score()->getViewer().empty()) {
@@ -1353,7 +1471,7 @@ void Note::draw(QPainter* painter) const
             f.setPointSizeF(f.pointSizeF() * magS() * MScore::pixelRatio);
             painter->setFont(f);
             painter->setPen(c);
-            painter->drawText(QPointF(bbox().x(), tab->fretFontYOffset()), _fretString);
+            painter->drawText(QPointF(bbox().x(), tab->fretFontYOffset() * magS()), _fretString);
             }
 
       // NOT tablature
@@ -1395,7 +1513,11 @@ void Note::write(XmlWriter& xml) const
 
       if (_accidental)
             _accidental->write(xml);
-      _el.write(xml);
+      for (const Element* child : _el) {
+            if (child->isSymbol() && !toSymbol(child)->parenthesisNotes().isEmpty())
+                  continue; // shared pairs are written once by Chord
+            child->write(xml);
+            }
       bool write_dots = false;
       for (NoteDot* dot : _dots)
             if (!dot->offset().isNull() || !dot->visible() || dot->color() != Qt::black || dot->visible() != visible()) {
@@ -1422,6 +1544,25 @@ void Note::write(XmlWriter& xml) const
             writeProperty(xml, id);
             }
 
+      if (_overrideBendVisibilityRules)
+            xml.tag("overrideBendVisibilityRules", true);
+      if (_studioGhost)
+            xml.tag("studioGhost", true);
+      bool grouped = false;
+      if (chord()) {
+            const auto& notes = chord()->notes();
+            const int index = int(std::distance(notes.begin(), std::find(notes.begin(), notes.end(), this)));
+            for (const Note* owner : notes)
+                  for (const Element* child : owner->el())
+                        if (child->isSymbol() && toSymbol(child)->parenthesisNotes().contains(index))
+                              grouped = true;
+            }
+      if (_studioParenthesesManaged || grouped)
+            xml.tag("studioParenthesesManaged", true);
+      if (grouped)
+            xml.tag("parentheses", "both");
+      else if (_tabFretParentheses)
+            xml.tag("parentheses", _tabFretParentheses == 3 ? "both" : (_tabFretParentheses == 1 ? "left" : "right"));
       for (Spanner* e : _spannerFor)
             e->writeSpannerStart(xml, this, track());
       for (Spanner* e : _spannerBack)
@@ -1518,7 +1659,14 @@ bool Note::readProperties(XmlReader& e)
       {
       const QStringRef& tag(e.name());
 
-      if (tag == "pitch")
+      if (tag == "GuitarBend" || tag == "Tie" || tag == "Glissando") {
+            Element* element = Element::name2Element(e.name(), score());
+            auto* spanner = toSpanner(element);
+            spanner->setTrack(track());
+            spanner->read(e);
+            e.addEidSpanner(spanner);
+            }
+      else if (tag == "pitch")
             _pitch = e.readInt();
       else if (tag == "tpc") {
             _tpc[0] = e.readInt();
@@ -1526,6 +1674,35 @@ bool Note::readProperties(XmlReader& e)
             }
       else if (tag == "track")            // for performance
             setTrack(e.readInt());
+      else if (tag == "overrideBendVisibilityRules")
+            _overrideBendVisibilityRules = e.readBool();
+      else if (tag == "studioParenthesesManaged")
+            _studioParenthesesManaged = e.readBool();
+      else if (tag == "studioGhost")
+            _studioGhost = e.readBool();
+      else if (tag == "parentheses") {
+            // Studio writes named sides ("both", "left", "right"); older
+            // scores can use a boolean. readBool() treats "both" as false.
+            const QString side = e.readElementText().trimmed();
+            const bool left = side == "both" || side == "left" || side == "1" || side == "true";
+            const bool right = side == "both" || side == "right" || side == "1" || side == "true";
+            // Retain TAB parentheses separately from the legacy dead-note
+            // flag. Standard staves use the existing note-attached symbols.
+            if (score()->mscVersion() >= 470 || _studioParenthesesManaged)
+                  _studioParenthesesManaged = true;
+            else if (staff() && staff()->isTabStaff(tick()))
+                  _tabFretParentheses = (left ? 1 : 0) | (right ? 2 : 0);
+            else if ((left || right) && staff()) {
+                  for (SymId id : { SymId::noteheadParenthesisLeft, SymId::noteheadParenthesisRight }) {
+                        if ((id == SymId::noteheadParenthesisLeft && !left)
+                              || (id == SymId::noteheadParenthesisRight && !right))
+                              continue;
+                        auto* symbol = new Symbol(score());
+                        symbol->setSym(id);
+                        add(symbol);
+                        }
+                  }
+            }
       else if (tag == "Accidental") {
             Accidental* a = new Accidental(score());
             a->setTrack(track());
@@ -1560,8 +1737,18 @@ bool Note::readProperties(XmlReader& e)
             setFret(e.readInt());
       else if (tag == "string")
             setString(e.readInt());
-      else if (tag == "ghost")
-            setGhost(e.readInt());
+      else if (tag == "ghost") {
+            const bool ghost = e.readBool();
+            if (score()->mscVersion() >= 400) {
+                  _studioGhost = ghost;
+                  if (score()->mscVersion() >= 470)
+                        _studioParenthesesManaged = true;
+                  }
+            else
+                  setGhost(ghost);
+            }
+      else if (tag == "dead")
+            setGhost(e.readBool());
       else if (tag == "headType")
             readProperty(e, Pid::HEAD_TYPE);
       else if (tag == "veloType")
@@ -1636,6 +1823,7 @@ void Note::readAddConnector(ConnectorInfoReader* info, bool pasteMode)
       switch(type) {
             case ElementType::TIE:
             case ElementType::TEXTLINE:
+            case ElementType::GUITAR_BEND:
             case ElementType::GLISSANDO:
                   {
                   Spanner* sp = toSpanner(info->connector());
@@ -1665,7 +1853,7 @@ void Note::readAddConnector(ConnectorInfoReader* info, bool pasteMode)
                         if (sp->isTie())
                               _tieBack = toTie(sp);
                         else {
-                              if (sp->isGlissando() && parent() && parent()->isChord())
+                              if ((sp->isGlissando() || sp->isGuitarBend()) && parent() && parent()->isChord())
                                     toChord(parent())->setEndsGlissando(true);
                               addSpannerBack(sp);
                               }
@@ -1970,6 +2158,56 @@ Element* Note::drop(EditData& data)
                   }
                   break;
 
+            case ElementType::GUITAR_BEND: {
+                  auto* bend = toGuitarBend(e);
+                  Note* start = this;
+                  Note* end = this;
+                  const GuitarBendType kind = bend->bendType();
+                  if (kind == GuitarBendType::PRE_BEND || kind == GuitarBendType::GRACE_NOTE_BEND
+                        || kind == GuitarBendType::PRE_DIVE) {
+                        const int delta = kind == GuitarBendType::PRE_DIVE ? 2 : -2;
+                        const int gracePitch = qBound(0, pitch() + delta, 127);
+                        start = score()->setGraceNote(ch, gracePitch, NoteType::APPOGGIATURA, DIVISION / 2);
+                        // Generic grace-chord cloning links the chords, but
+                        // not their newly created notes. Link those anchors
+                        // before cloning the note-to-note bend.
+                        for (ScoreElement* linked : start->chord()->linkList()) {
+                              Chord* grace = toChord(linked);
+                              Note* graceNote = grace->upNote();
+                              if (graceNote != start && !graceNote->links())
+                                    score()->undo(new Link(graceNote, start));
+                              if (kind != GuitarBendType::GRACE_NOTE_BEND) {
+                                    grace->undoChangeProperty(Pid::NO_STEM, true);
+                                    if (!grace->staff()->isTabStaff(grace->tick())) {
+                                          for (SymId id : { SymId::noteheadParenthesisLeft, SymId::noteheadParenthesisRight }) {
+                                                auto* symbol = new Symbol(grace->score());
+                                                symbol->setSym(id);
+                                                symbol->setParent(graceNote);
+                                                symbol->setTrack(graceNote->track());
+                                                score()->undo(new AddElement(symbol));
+                                                }
+                                          }
+                                    }
+                              }
+                        }
+                  else if (!bend->singleNote()) {
+                        end = Glissando::guessFinalNote(ch);
+                        if (!end) {
+                              delete e;
+                              return nullptr;
+                              }
+                        }
+                  for (Spanner* existing : start->spannerFor()) {
+                        if (existing->isGuitarBend() && toGuitarBend(existing)->isDive() == bend->isDive()) {
+                              delete e;
+                              return nullptr;
+                              }
+                        }
+                  bend->setNoteSpan(start, end);
+                  score()->undoAddElement(bend);
+                  return bend;
+                  }
+
             case ElementType::GLISSANDO:
                   {
                   for (auto ee : qAsConst(_spannerFor)) {
@@ -2146,6 +2384,7 @@ void Note::layout()
       {
       bool useTablature = staff() && staff()->isTabStaff(chord()->tick());
       if (useTablature) {
+            GuitarBend::updateTabNote(this);
             const Staff* st = staff();
             const StaffType* tab = st->staffTypeForElement(this);
             qreal mags = magS();
@@ -2159,8 +2398,15 @@ void Note::layout()
                   _fretString = "/";
             else
                   _fretString = tab->fretString(_fret, _string, _ghost);
-            if (paren)
-                  _fretString = QString("(%1)").arg(_fretString);
+            int parentheses = paren || (_studioGhost && !_studioParenthesesManaged) ? 3 : _tabFretParentheses;
+            // Hidden source frets of ordinary pre-bends do not need the
+            // imported generated parentheses unless they are ghost notes.
+            if (!visible() && !_studioGhost && GuitarBend::hideTabFret(this))
+                  parentheses = 0;
+            if (parentheses & 1)
+                  _fretString.prepend('(');
+            if (parentheses & 2)
+                  _fretString.append(')');
             qreal w = tabHeadWidth(tab); // !! use _fretString
             bbox().setRect(0.0, tab->fretBoxY() * mags, w, tab->fretBoxH() * mags);
             }
@@ -2237,16 +2483,54 @@ void Note::layout2()
                   qreal w = headWidth();
                   Symbol* sym = toSymbol(e);
                   e->layout();
-                  if (sym->sym() == SymId::noteheadParenthesisRight) {
-                        if (staff()->isTabStaff(chord()->tick())) {
-                              const Staff* st = staff();
-                              const StaffType* tab = st->staffTypeForElement(this);
-                              w = tabHeadWidth(tab);
+                  const bool leftParen = sym->sym() == SymId::noteheadParenthesisLeft;
+                  const bool rightParen = sym->sym() == SymId::noteheadParenthesisRight;
+                  if (leftParen || rightParen) {
+                        if (!sym->parenthesisNotes().isEmpty())
+                              continue; // one shared curve is laid out after the chord's notes
+                        const bool tabStaff = staff()->isTabStaff(chord()->tick());
+                        if (tabStaff)
+                              w = tabHeadWidth(staff()->staffTypeForElement(this));
+                        else if (chord()->isGrace()) {
+                              // Follow the grace note's content size, as Studio's
+                              // generated parentheses do. Reduce only oversized
+                              // music-font glyphs; no fixed vertical correction.
+                              QRectF content = symBbox(noteHead());
+                              if (_accidental && _accidental->visible())
+                                    content |= _accidental->bbox().translated(_accidental->pos());
+                              const qreal height = content.height() + 0.5 * spatium() * mag();
+                              if (e->height() > height && height > 0.0) {
+                                    e->setMag(e->mag() * height / e->height());
+                                    e->layout();
+                                    }
                               }
-                        e->rxpos() += w;
-                        }
-                  else if (sym->sym() == SymId::noteheadParenthesisLeft) {
-                        e->rxpos() -= symWidth(SymId::noteheadParenthesisLeft);
+                        if (leftParen)
+                              e->rxpos() -= sym->isTabFretParenthesis() ? sym->tabFretParenthesisWidth()
+                                    : e->symWidth(SymId::noteheadParenthesisLeft);
+                        else
+                              e->rxpos() += w;
+                        if (!tabStaff) {
+                              // Studio parentheses enclose the accidental as well
+                              // as ledger lines crossing the parenthesis height.
+                              // These extents are note-local; ledgers belong to
+                              // the chord. Keep Symbol offsets as user edits.
+                              QRectF enclosed = symBbox(noteHead());
+                              if (_accidental && _accidental->visible())
+                                    enclosed |= _accidental->bbox().translated(_accidental->pos());
+                              const QRectF paren = e->bbox().translated(e->ipos());
+                              for (LedgerLine* line = chord()->ledgerLines(); line; line = line->next()) {
+                                    if (!line->visible())
+                                          continue;
+                                    const QRectF ledger = line->bbox().translated(line->pos() - pos());
+                                    if (ledger.bottom() >= paren.top() && ledger.top() <= paren.bottom())
+                                          enclosed |= ledger;
+                                    }
+                              const qreal gap = 0.15 * spatium() * mag();
+                              if (leftParen)
+                                    e->rxpos() = qMin(e->ipos().x(), enclosed.left() - gap - e->bbox().right());
+                              else
+                                    e->rxpos() = qMax(e->ipos().x(), enclosed.right() + gap - e->bbox().left());
+                              }
                         }
                   }
             else if (e->isFingering()) {
@@ -2970,6 +3254,8 @@ QVariant Note::getProperty(Pid propertyId) const
                   return fret();
             case Pid::STRING:
                   return string();
+            case Pid::OVERRIDE_BEND_VISIBILITY_RULES:
+                  return _overrideBendVisibilityRules;
             case Pid::GHOST:
                   return ghost();
             case Pid::HEAD_TYPE:
@@ -2995,6 +3281,20 @@ QVariant Note::getProperty(Pid propertyId) const
 //---------------------------------------------------------
 //   setProperty
 //---------------------------------------------------------
+
+void Note::undoChangeProperty(Pid id, const QVariant& value, PropertyFlags flags)
+      {
+      if (id == Pid::VISIBLE && (!_spannerFor.isEmpty() || !_spannerBack.isEmpty())) {
+            bool guitar = false;
+            for (const Spanner* sp : _spannerFor)
+                  guitar |= sp->isGuitarBend();
+            for (const Spanner* sp : _spannerBack)
+                  guitar |= sp->isGuitarBend();
+            if (guitar)
+                  Element::undoChangeProperty(Pid::OVERRIDE_BEND_VISIBILITY_RULES, true, PropertyFlags::NOSTYLE);
+            }
+      Element::undoChangeProperty(id, value, flags);
+      }
 
 bool Note::setProperty(Pid propertyId, const QVariant& v)
       {
@@ -3042,6 +3342,9 @@ bool Note::setProperty(Pid propertyId, const QVariant& v)
                   break;
             case Pid::STRING:
                   setString(v.toInt());
+                  break;
+            case Pid::OVERRIDE_BEND_VISIBILITY_RULES:
+                  _overrideBendVisibilityRules = v.toBool();
                   break;
             case Pid::GHOST:
                   setGhost(v.toBool());
@@ -3101,6 +3404,8 @@ void Note::undoChangeDotsVisible(bool v)
 QVariant Note::propertyDefault(Pid propertyId) const
       {
       switch(propertyId) {
+            case Pid::OVERRIDE_BEND_VISIBILITY_RULES:
+                  return false;
             case Pid::GHOST:
             case Pid::SMALL:
                   return false;

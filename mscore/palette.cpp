@@ -10,6 +10,7 @@
 //  the file LICENSE.GPL
 //=============================================================================
 
+#include <QSet>
 #include "globals.h"
 #include "musescore.h"
 #include "palette.h"
@@ -588,7 +589,38 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
          && viewer->mscoreState() != STATE_HARMONY_FIGBASS_EDIT) { // Already in startCmd in this case
             score->startCmd();
             }
-      if (sel.isList()) {
+      if (element->isIcon() && toIcon(element)->iconType() == IconType::FFRAME) {
+            // A legend is measure-attached, not a drop on each selected rest
+            // or notehead. Resolve the snapshot before insertion changes layout.
+            QSet<Measure*> targets;
+            if (sel.isRange()) {
+                  Measure* first = nullptr;
+                  Measure* last = nullptr;
+                  if (sel.measureRange(&first, &last)) {
+                        for (Measure* m = first; m; m = m->nextMeasure()) {
+                              targets.insert(m);
+                              if (m == last)
+                                    break;
+                              }
+                        }
+                  }
+            else {
+                  for (Element* selected : sel.elements()) {
+                        if (Measure* m = selected->findMeasure())
+                              targets.insert(m);
+                        }
+                  }
+            MeasureBase* inserted = nullptr;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  if (!targets.contains(m))
+                        continue;
+                  score->insertMeasure(ElementType::FBOX, m);
+                  inserted = m->prev();
+                  }
+            if (inserted)
+                  score->select(inserted, SelectType::SINGLE, 0);
+            }
+      else if (sel.isList()) {
             ChordRest* cr1 = sel.firstChordRest();
             ChordRest* cr2 = sel.lastChordRest();
             bool addSingle = false;       // add a single line only
@@ -653,7 +685,7 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                   if (auto m = sel.findMeasure())
                         m->undoChangeProperty(Pid::MEASURE_NUMBER_MODE, static_cast<int>(MeasureNumberMode::SHOW));
                   }
-            else if (element->isSLine() && !element->isGlissando() && addSingle) {
+            else if (element->isSLine() && !element->isGlissando() && !element->isGuitarBend() && addSingle) {
                   Segment* startSegment = cr1->segment();
                   Segment* endSegment = cr2->segment();
                   if (element->type() == ElementType::PEDAL && cr2 != cr1)
@@ -804,7 +836,7 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
             else if (element->isSlur()) {
                   viewer->cmdAddSlur(toSlur(element));
                   }
-            else if (element->isSLine() && element->type() != ElementType::GLISSANDO) {
+            else if (element->isSLine() && !element->isGlissando() && !element->isGuitarBend()) {
                   Segment* startSegment = sel.startSegment();
                   Segment* endSegment = sel.endSegment();
                   bool firstStaffOnly = (element->isVolta() || (element->isTextLine() && toTextLine(element)->systemFlag())) && !(modifiers & Qt::ControlModifier);

@@ -2760,6 +2760,12 @@ QFont TextBase::font() const
       qreal m = _size;
       if (sizeIsSpatiumDependent())
             m *= spatium() / SPATIUM20;
+      if (isHarmony() && parent() && parent()->isFretDiagram() && parent()->parent() && parent()->parent()->isFBox()) {
+            const Element* frame = parent()->parent();
+            m *= frame->getProperty(Pid::FRET_FRAME_TEXT_SCALE).toDouble();
+            if (sizeIsSpatiumDependent() && !frame->getProperty(Pid::SIZE_SPATIUM_DEPENDENT).toBool())
+                  m *= SPATIUM20 / spatium();
+            }
       QFont f(_family, m, bold() ? QFont::Bold : QFont::Normal, italic());
       if (underline())
             f.setUnderline(underline());

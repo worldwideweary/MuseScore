@@ -19,6 +19,25 @@ add_executable(
 
 if (MTEST_LINK_MSCOREAPP)
       target_link_libraries(${TARGET} testutils_mscoreapp mscoreapp)
+      # GUI-backed tests run below mtest/, outside the application's bin/
+      # resource layout. Stage the standard workspaces where getSharePath()
+      # expects them, so startup does not depend on a system installation.
+      if (UNIX AND NOT APPLE)
+            get_filename_component(test_parent "${CMAKE_CURRENT_BINARY_DIR}" DIRECTORY)
+            string(MD5 workspace_stage_id "${test_parent}")
+            set(workspace_stage_target "mtest_workspaces_${workspace_stage_id}")
+            if (NOT TARGET ${workspace_stage_target})
+                  add_custom_target(${workspace_stage_target}
+                        COMMAND ${CMAKE_COMMAND}
+                              "-DSOURCE_DIR=${PROJECT_SOURCE_DIR}"
+                              "-DBUILD_DIR=${PROJECT_BINARY_DIR}"
+                              "-DRESOURCE_DIR=${test_parent}/share/${Mscore_INSTALL_NAME}"
+                              -P "${PROJECT_SOURCE_DIR}/mtest/StageTestResources.cmake"
+                        VERBATIM)
+                  add_dependencies(${workspace_stage_target} workspaces)
+                  endif()
+            add_dependencies(${TARGET} ${workspace_stage_target})
+            endif()
 else (MTEST_LINK_MSCOREAPP)
       target_link_libraries(${TARGET} testutils)
 endif (MTEST_LINK_MSCOREAPP)

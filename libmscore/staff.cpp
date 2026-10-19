@@ -715,9 +715,11 @@ void Staff::read(XmlReader& e)
 bool Staff::readProperties(XmlReader& e)
       {
       const QStringRef& tag(e.name());
-      if (tag == "StaffType") {
+      if (tag == "eid")
+            e.registerElementEid(e.readElementText(), this);
+      else if (tag == "StaffType") {
             StaffType st;
-            st.read(e);
+            st.read(e, score());
             setStaffType(Fraction(0,1), st);
             }
       else if (tag == "defaultClef") {           // sets both default transposing and concert clef
@@ -768,7 +770,13 @@ bool Staff::readProperties(XmlReader& e)
       else if (tag == "mag")
             /*_userMag =*/ e.readDouble(0.1, 10.0);
       else if (tag == "linkedTo") {
-            int v = e.readInt() - 1;
+            const QString reference = e.readElementText();
+            bool numeric = false;
+            int v = reference.toInt(&numeric) - 1;
+            if (!numeric) {
+                  e.linkElementEid(reference, this);
+                  return true;
+                  }
             Staff* st = masterScore()->staff(v);
             if (_links) {
                   qDebug("Staff::readProperties: multiple <linkedTo> tags");

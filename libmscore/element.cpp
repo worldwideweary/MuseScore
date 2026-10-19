@@ -39,6 +39,8 @@
 #include "fret.h"
 #include "fraction.h"
 #include "glissando.h"
+#include "guitarbend.h"
+#include "guitartechnique.h"
 #include "hairpin.h"
 #include "harmony.h"
 #include "icon.h"
@@ -736,8 +738,10 @@ bool Element::readProperties(XmlReader& e)
                         qDebug("Element::readProperties: could not link %s at staff %d", name(), mainLoc.staff() + 1);
                   }
             }
-      else if (tag == "eid")        // Mu4.2+ compatibility
-            e.skipCurrentElement(); // skip, don't log
+      else if (tag == "eid")
+            e.registerElementEid(e.readElementText(), this);
+      else if (tag == "linkedTo")
+            e.linkElementEid(e.readElementText(), this);
       else if (tag == "lid") {
             if (score()->mscVersion() >= 301) {
                   e.skipCurrentElement();
@@ -1080,6 +1084,9 @@ Element* Element::create(ElementType type, Score* score)
             case ElementType::ARPEGGIO:          return new Arpeggio(score);
             case ElementType::CHORD_BRACKET:     return new ChordBracket(score);
             case ElementType::BREATH:            return new Breath(score);
+            case ElementType::HAMMER_ON_PULL_OFF: return new HammerOnPullOff(score);
+            case ElementType::WHAMMY_BAR:        return new WhammyBar(score);
+            case ElementType::GUITAR_BEND:       return new GuitarBend(score);
             case ElementType::GLISSANDO:         return new Glissando(score);
             case ElementType::BRACKET:           return new Bracket(score);
             case ElementType::ARTICULATION:      return new Articulation(score);
@@ -1137,6 +1144,7 @@ Element* Element::create(ElementType type, Score* score)
             case ElementType::LYRICSLINE:
             case ElementType::TEXTLINE_BASE:
             case ElementType::TEXTLINE_SEGMENT:
+            case ElementType::GUITAR_BEND_SEGMENT:
             case ElementType::GLISSANDO_SEGMENT:
             case ElementType::SLUR_SEGMENT:
             case ElementType::TIE_SEGMENT:

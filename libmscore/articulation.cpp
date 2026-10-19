@@ -13,6 +13,8 @@
 #include "articulation.h"
 #include "score.h"
 #include "chordrest.h"
+#include "chord.h"
+#include "note.h"
 #include "system.h"
 #include "measure.h"
 #include "staff.h"
@@ -60,6 +62,82 @@ Articulation::Articulation(SymId id, Score* s)
 //---------------------------------------------------------
 //   setSymId
 //---------------------------------------------------------
+
+void Articulation::setTappingHand(int hand)
+      {
+      _tappingHand = qBound(0, hand, 2);
+      if (_tappingHand)
+            setSymId(_tappingHand == 2 ? SymId::pluckedLeftHandPizzicato : SymId::guitarLeftHandTapping);
+      }
+
+int Articulation::leftTappingDisplay() const
+      {
+      const bool tab = staff() && staff()->isTabStaff(tick());
+      return score()->styleI(tab ? Sid::lhTappingShowItemsTab : Sid::lhTappingShowItemsNormalStave);
+      }
+
+bool Articulation::leftTappingCircledT() const
+      {
+      const bool tab = staff() && staff()->isTabStaff(tick());
+      return score()->styleSt(tab ? Sid::lhTappingSymbolTab : Sid::lhTappingSymbolNormalStave) == "circledT";
+      }
+
+// A half-slur has an open, thick left edge and a tapered right endpoint.
+// Generate it locally so normal articulation placement and undo still apply.
+static QPainterPath tappingHalfSlur(qreal sp, bool below)
+      {
+      const qreal sign = below ? -1.0 : 1.0;
+      QPainterPath path;
+      path.moveTo(0.0, -0.65 * sp * sign);
+      path.cubicTo(QPointF(0.7 * sp, -0.65 * sp * sign), QPointF(1.35 * sp, -0.35 * sp * sign), QPointF(1.8 * sp, 0.0));
+      path.cubicTo(QPointF(1.3 * sp, -0.55 * sp * sign), QPointF(0.7 * sp, -0.9 * sp * sign), QPointF(0.0, -0.9 * sp * sign));
+      path.closeSubpath();
+      return path;
+      }
+
+void Articulation::layoutTappingHalfSlurs()
+      {
+      if (_tappingHand != 1 || leftTappingDisplay() == 1 || !parent() || !parent()->isChord()
+            || !staff() || !staff()->isTabStaff(tick()) || !score()->styleB(Sid::lhTappingSlurTopAndBottomNoteOnTab))
+            return;
+      const Chord* chord = toChord(parent());
+      if (chord->notes().size() < 2 || !up())
+            return;
+      // Called after articulation placement: anchor the second half-slur
+      // below the lowest fret, retaining the articulation's manual offset.
+      const Note* bottom = chord->downNote();
+      const qreal y = bottom->y() + bottom->bbox().bottom() + 0.5 * spatium() - ipos().y();
+      _tappingPath = tappingHalfSlur(spatium() * mag(), false);
+      _tappingPath.addPath(tappingHalfSlur(spatium() * mag(), true).translated(0.0, y));
+      QRectF bounds = _tappingPath.boundingRect();
+      if (leftTappingDisplay() != 0)
+            bounds |= leftTappingCircledT() ? symBbox(SymId::guitarLeftHandTapping)
+                  : QRectF(-0.15 * spatium(), -0.15 * spatium(), 0.3 * spatium(), 0.3 * spatium());
+      setbbox(bounds);
+      }
+
+bool Articulation::tappingUsesText() const
+      {
+      if (_tappingHand != 2)
+            return false;
+      const bool tab = staff() && staff()->isTabStaff(tick());
+      return score()->styleSt(tab ? Sid::rhTappingSymbolTab : Sid::rhTappingSymbolNormalStave) != "plus";
+      }
+
+QFont Articulation::tappingFont(qreal pixelRatio) const
+      {
+      QFont font(score()->styleSt(Sid::hammerOnPullOffTappingFontFace));
+      const FontStyle flags = FontStyle(score()->styleI(Sid::hammerOnPullOffTappingFontStyle));
+      font.setBold(flags & FontStyle::Bold);
+      font.setItalic(flags & FontStyle::Italic);
+      font.setUnderline(flags & FontStyle::Underline);
+      font.setStrikeOut(flags & FontStyle::Strike);
+      qreal size = score()->styleD(Sid::hammerOnPullOffTappingFontSize) * mag();
+      if (score()->styleB(Sid::hammerOnPullOffTappingFontSpatiumDependent))
+            size *= spatium() / SPATIUM20;
+      font.setPointSizeF(qMax(0.1, size * pixelRatio));
+      return font;
+      }
 
 void Articulation::setSymId(SymId id)
       {
@@ -129,7 +207,13 @@ bool Articulation::readProperties(XmlReader& e)
       {
       const QStringRef& tag(e.name());
 
-      if (tag == "subtype") {
+      if (tag == "hand") {
+            const QString hand = e.readElementText();
+            setTappingHand(hand == "right" ? 2 : (hand == "left" ? 1 : 0));
+            }
+      else if (tag == "TappingHalfSlur")
+            _tappingHalfSlurs.append(e.readXml());
+      else if (tag == "subtype") {
             QString s = e.readElementText();
             SymId id = Sym::name2id(s);
             if (id == SymId::noSym)
@@ -177,11 +261,20 @@ void Articulation::write(XmlWriter& xml) const
       {
       if (!xml.canWrite(this))
             return;
-      xml.stag(this);
+      if (_tappingHand)
+            xml.stag(QString("Tapping"), this);
+      else
+            xml.stag(this);
       if (!_channelName.isEmpty())
             xml.tagE(QString("channel name=\"%1\"").arg(_channelName));
       writeProperty(xml, Pid::DIRECTION);
-      xml.tag("subtype", Sym::id2name(_symId));
+      if (_tappingHand) {
+            xml.tag("hand", _tappingHand == 2 ? "right" : "left");
+            for (const QString& slur : _tappingHalfSlurs)
+                  xml.writeXml("TappingHalfSlur", slur);
+            }
+      else
+            xml.tag("subtype", Sym::id2name(_symId));
       writeProperty(xml, Pid::PLAY);
       writeProperty(xml, Pid::ORNAMENT_STYLE);
       for (const StyledProperty& spp : *styledProperties())
@@ -196,6 +289,8 @@ void Articulation::write(XmlWriter& xml) const
 
 QString Articulation::userName() const
       {
+      if (_tappingHand)
+            return _tappingHand == 2 ? QObject::tr("Right-hand tapping") : QObject::tr("Left-hand tapping");
       return Sym::id2userName(symId());
       }
 
@@ -205,6 +300,16 @@ QString Articulation::userName() const
 
 void Articulation::draw(QPainter* painter) const
       {
+      if (_tappingHand && !parent()) {
+            // Studio uses words in the palette, where the score symbols
+            // alone do not explain which hand performs the tapping.
+            const QString text = _tappingHand == 1 ? "l.h. tap" : "r.h. tap";
+            const QRectF ink = QFontMetricsF(tappingFont(), MScore::paintDevice()).tightBoundingRect(text);
+            painter->setFont(tappingFont(MScore::pixelRatio));
+            painter->setPen(curColor());
+            painter->drawText(QPointF(-ink.center().x(), 0.0), text);
+            return;
+            }
 #if 0 //TODO
       SymId sym = symId();
       ArticulationShowIn flags = articulationList[int(articulationType())].flags;
@@ -219,8 +324,28 @@ void Articulation::draw(QPainter* painter) const
                   }
             }
 #endif
+      if (_tappingHand == 1) {
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(curColor());
+            painter->drawPath(_tappingPath);
+            if (leftTappingDisplay() != 0) {
+                  if (leftTappingCircledT()) {
+                        painter->setPen(curColor());
+                        drawSymbol(SymId::guitarLeftHandTapping, painter);
+                        }
+                  else
+                        painter->drawEllipse(QPointF(), 0.15 * spatium(), 0.15 * spatium());
+                  }
+            return;
+            }
       painter->setPen(curColor());
-      drawSymbol(_symId, painter, QPointF(-0.5 * width(), 0.0));
+      if (tappingUsesText()) {
+            painter->setFont(tappingFont(MScore::pixelRatio));
+            const QRectF text = QFontMetricsF(tappingFont(), MScore::paintDevice()).tightBoundingRect("T");
+            painter->drawText(QPointF(-0.5 * text.width() - text.left(), 0.0), "T");
+            }
+      else
+            drawSymbol(_symId, painter, QPointF(-0.5 * width(), 0.0));
       }
 
 //---------------------------------------------------------
@@ -275,8 +400,31 @@ Page* Articulation::page() const
 
 void Articulation::layout()
       {
-      QRectF b(symBbox(_symId));
-      setbbox(b.translated(-0.5 * b.width(), 0.0));
+      _tappingPath = QPainterPath();
+      if (_tappingHand && !parent()) {
+            const QString text = _tappingHand == 1 ? "l.h. tap" : "r.h. tap";
+            const QRectF ink = QFontMetricsF(tappingFont(), MScore::paintDevice()).tightBoundingRect(text);
+            setbbox(ink.translated(-ink.center().x(), 0.0));
+            }
+      else if (_tappingHand == 1) {
+            QRectF bounds;
+            if (leftTappingDisplay() != 1) {
+                  _tappingPath = tappingHalfSlur(spatium() * mag(), !up());
+                  bounds = _tappingPath.boundingRect();
+                  }
+            if (leftTappingDisplay() != 0)
+                  bounds |= leftTappingCircledT() ? symBbox(SymId::guitarLeftHandTapping)
+                        : QRectF(-0.15 * spatium(), -0.15 * spatium(), 0.3 * spatium(), 0.3 * spatium());
+            setbbox(bounds);
+            }
+      else if (tappingUsesText()) {
+            const QRectF text = QFontMetricsF(tappingFont(), MScore::paintDevice()).tightBoundingRect("T");
+            setbbox(text.translated(-0.5 * text.width() - text.left(), 0.0));
+            }
+      else {
+            QRectF b(symBbox(_symId));
+            setbbox(b.translated(-0.5 * b.width(), 0.0));
+            }
       }
 
 //---------------------------------------------------------
@@ -697,6 +845,8 @@ void Articulation::doAutoplace()
 
             qreal sp = score()->spatium();
             qreal md = minDistance().val() * sp;
+            if (_tappingHand && staff()->isTabStaff(tick()))
+                  md *= staff()->staffTypeForElement(this)->lineDistance().val();
 
             SysStaff* ss = m->system()->staff(si);
             QRectF r = bbox().translated(chordRest()->pos() + m->pos() + s->pos() + pos());

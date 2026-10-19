@@ -11,6 +11,18 @@
 //=============================================================================
 
 #include <QStackedWidget>
+#include <QFormLayout>
+#include <QListWidget>
+#include <QSignalBlocker>
+#include <QDoubleSpinBox>
+#include <QSpinBox>
+#include <QComboBox>
+#include <QCheckBox>
+#include <QPushButton>
+#include <QLabel>
+#include "libmscore/box.h"
+#include "libmscore/fret.h"
+#include "libmscore/harmony.h"
 
 #include "musescore.h"
 #include "scoreview.h"
@@ -26,6 +38,7 @@
 #include "inspectorFingering.h"
 #include "inspectorFret.h"
 #include "inspectorGlissando.h"
+#include "libmscore/guitarbend.h"
 #include "inspectorGroupElement.h"
 #include "inspectorHairpin.h"
 #include "inspectorHarmony.h"
@@ -75,6 +88,90 @@
 #include "libmscore/undo.h"
 
 namespace Ms {
+
+class InspectorGuitarBend : public InspectorElementBase {
+      QSpinBox* _amount;
+      QLabel* _kind;
+      QToolButton* _amountReset;
+      QToolButton* _targetReset;
+   public:
+      explicit InspectorGuitarBend(QWidget* parent) : InspectorElementBase(parent) {
+            QWidget* panel = addWidget();
+            auto* form = new QFormLayout(panel);
+            auto addResetRow = [&](const QString& label, QWidget* editor) {
+                  auto* row = new QWidget(panel);
+                  auto* layout = new QHBoxLayout(row);
+                  layout->setContentsMargins(0, 0, 0, 0);
+                  layout->addWidget(editor, 1);
+                  auto* reset = new QToolButton(row);
+                  reset->setToolTip(tr("Reset to default"));
+                  reset->setAccessibleName(tr("Reset %1").arg(label));
+                  layout->addWidget(reset);
+                  form->addRow(label, row);
+                  return reset;
+                  };
+            _kind = new QLabel(panel);
+            form->addRow(tr("Guitar bend"), _kind);
+            auto* direction = new QComboBox(panel);
+            direction->addItem(tr("Automatic"), int(Direction::AUTO));
+            direction->addItem(tr("Above"), int(Direction::UP));
+            direction->addItem(tr("Below"), int(Direction::DOWN));
+            auto* directionReset = addResetRow(tr("Direction"), direction);
+            _amount = new QSpinBox(panel);
+            _amount->setRange(-48, 48);
+            _amount->setToolTip(tr("Dip interval in quarter tones. For bends joining two notes, change the notes' pitches."));
+            _amountReset = addResetRow(tr("Dip interval"), _amount);
+            auto* width = new QDoubleSpinBox(panel);
+            width->setRange(0.01, 2.0);
+            width->setDecimals(2);
+            width->setSingleStep(0.01);
+            width->setSuffix(tr(" sp"));
+            auto* widthReset = addResetRow(tr("Line width"), width);
+            auto* hold = new QComboBox(panel);
+            hold->addItem(tr("Automatic"), 0);
+            hold->addItem(tr("Show"), 1);
+            hold->addItem(tr("Hide"), 2);
+            auto* holdReset = addResetRow(tr("Hold line"), hold);
+            auto* play = new QCheckBox(tr("Play"), panel);
+            auto* playReset = addResetRow(tr("Playback"), play);
+            auto* start = new QDoubleSpinBox(panel);
+            auto* end = new QDoubleSpinBox(panel);
+            auto* target = new QDoubleSpinBox(panel);
+            for (auto* spin : { start, end, target }) {
+                  spin->setRange(0.0, 1.0);
+                  spin->setDecimals(3);
+                  spin->setSingleStep(0.05);
+                  }
+            auto* startReset = addResetRow(tr("Bend starts"), start);
+            auto* endReset = addResetRow(tr("Bend ends"), end);
+            _targetReset = addResetRow(tr("Dip target time"), target);
+            mapSignals({ { Pid::BEND_SHOW_HOLD_LINE, 0, hold, holdReset },
+                  { Pid::PLAY, 0, play, playReset },
+                  { Pid::BEND_START_TIME_FACTOR, 0, start, startReset },
+                  { Pid::BEND_END_TIME_FACTOR, 0, end, endReset },
+                  { Pid::BEND_TARGET_TIME_FACTOR, 0, target, _targetReset },
+                  { Pid::DIRECTION, 0, direction, directionReset },
+                  { Pid::GUITAR_BEND_AMOUNT, 0, _amount, _amountReset },
+                  { Pid::LINE_WIDTH, 0, width, widthReset } });
+            }
+      void setElement() override {
+            InspectorElementBase::setElement();
+            Element* e = inspector->element();
+            if (e->isGuitarBendSegment())
+                  e = toGuitarBendSegment(e)->spanner();
+            if (!e->isGuitarBend())
+                  return;
+            const auto* b = toGuitarBend(e);
+            static const char* names[] = { "Bend", "Pre-bend", "Grace note bend", "Slight bend",
+                  "Dive", "Pre-dive", "Dip", "Scoop" };
+            _kind->setText(tr(names[int(b->bendType())]));
+            const bool dip = b->bendType() == GuitarBendType::DIP;
+            _amount->setEnabled(dip);
+            _amountReset->setEnabled(dip && b->getProperty(Pid::GUITAR_BEND_AMOUNT) != b->propertyDefault(Pid::GUITAR_BEND_AMOUNT));
+            _targetReset->setEnabled(b->getProperty(Pid::BEND_TARGET_TIME_FACTOR) != b->propertyDefault(Pid::BEND_TARGET_TIME_FACTOR));
+            }
+      };
+
 
 class InspectorStackedWidget : public QStackedWidget {
    public:
@@ -285,6 +382,8 @@ void Inspector::update(Score* s)
             else {
                   switch (element()->type()) {
                         case ElementType::FBOX:
+                              ie = new InspectorFBox(this);
+                              break;
                         case ElementType::VBOX:
                               ie = new InspectorVBox(this);
                               break;
@@ -385,6 +484,10 @@ void Inspector::update(Score* s)
                               break;
                         case ElementType::MARKER:
                               ie = new InspectorMarker(this);
+                              break;
+                        case ElementType::GUITAR_BEND:
+                        case ElementType::GUITAR_BEND_SEGMENT:
+                              ie = new InspectorGuitarBend(this);
                               break;
                         case ElementType::GLISSANDO:
                         case ElementType::GLISSANDO_SEGMENT:
@@ -681,9 +784,189 @@ void InspectorStaffTypeChange::setElement()
             sl.genKeysig->setChecked(false);
       }
 
+InspectorFBox::InspectorFBox(QWidget* parent) : InspectorBase(parent)
+      {
+      auto* panel = addWidget();
+      auto* form = new QFormLayout(panel);
+      form->addRow(new QLabel(tr("Fretboard diagram legend"), panel));
+      auto addControl = [this, form, panel](const QString& label, Pid pid, QWidget* control) {
+            auto* row = new QWidget(panel);
+            auto* layout = new QHBoxLayout(row);
+            layout->setContentsMargins(0, 0, 0, 0);
+            auto* reset = new QToolButton(row);
+            reset->setText(tr("Reset"));
+            reset->setToolTip(tr("Reset to default"));
+            layout->addWidget(control, 1);
+            layout->addWidget(reset);
+            form->addRow(label, row);
+            iList.push_back({pid, 0, control, reset});
+            };
+      auto number = [panel](double minimum, double maximum, double step, const QString& suffix) {
+            auto* spin = new QDoubleSpinBox(panel);
+            spin->setRange(minimum, maximum);
+            spin->setSingleStep(step);
+            spin->setDecimals(2);
+            spin->setSuffix(suffix);
+            return spin;
+            };
+      addControl(tr("Text scale"), Pid::FRET_FRAME_TEXT_SCALE, number(0.1, 10, 0.1, tr(" ×")));
+      addControl(tr("Diagram scale"), Pid::FRET_FRAME_DIAGRAM_SCALE, number(0.1, 10, 0.1, tr(" ×")));
+      auto* columns = new QSpinBox(panel);
+      columns->setRange(1, 100);
+      addControl(tr("Chords per row"), Pid::FRET_FRAME_CHORDS_PER_ROW, columns);
+      addControl(tr("Column gap"), Pid::FRET_FRAME_COLUMN_GAP, number(0, 100, 0.5, tr(" sp")));
+      addControl(tr("Row gap"), Pid::FRET_FRAME_ROW_GAP, number(0, 100, 0.5, tr(" sp")));
+      auto* alignment = new QComboBox(panel);
+      alignment->addItem(tr("Left"), 0);
+      alignment->addItem(tr("Center"), 2);
+      alignment->addItem(tr("Right"), 1);
+      addControl(tr("Alignment"), Pid::FRET_FRAME_H_ALIGN, alignment);
+      addControl(tr("Scale with staff"), Pid::SIZE_SPATIUM_DEPENDENT, new QCheckBox(panel));
+      addControl(tr("Clearance above"), Pid::PADDING_TO_NOTATION_ABOVE, number(0, 100, 0.5, tr(" sp")));
+      addControl(tr("Clearance below"), Pid::PADDING_TO_NOTATION_BELOW, number(0, 100, 0.5, tr(" sp")));
+      for (const auto& item : std::vector<std::pair<QString, Pid>> {
+            {tr("Gap above"), Pid::TOP_GAP}, {tr("Gap below"), Pid::BOTTOM_GAP},
+            {tr("Left margin"), Pid::LEFT_MARGIN}, {tr("Right margin"), Pid::RIGHT_MARGIN},
+            {tr("Top margin"), Pid::TOP_MARGIN}, {tr("Bottom margin"), Pid::BOTTOM_MARGIN}}) {
+            const bool margin = item.second == Pid::LEFT_MARGIN || item.second == Pid::RIGHT_MARGIN
+                  || item.second == Pid::TOP_MARGIN || item.second == Pid::BOTTOM_MARGIN;
+            addControl(item.first, item.second, number(0, 100, 0.5, margin ? tr(" mm") : tr(" sp")));
+            }
+      _diagrams = new QListWidget(panel);
+      _diagrams->setAccessibleName(tr("Legend chords; uncheck to hide"));
+      _diagrams->setMinimumHeight(120);
+      form->addRow(tr("Chords"), _diagrams);
+      auto* buttons = new QWidget(panel);
+      auto* buttonLayout = new QHBoxLayout(buttons);
+      buttonLayout->setContentsMargins(0, 0, 0, 0);
+      auto* up = new QPushButton(tr("Up"), buttons);
+      auto* down = new QPushButton(tr("Down"), buttons);
+      auto* reset = new QPushButton(tr("Reset order"), buttons);
+      buttonLayout->addWidget(up);
+      buttonLayout->addWidget(down);
+      buttonLayout->addWidget(reset);
+      form->addRow(buttons);
+      auto* showAll = new QPushButton(tr("Show all chords"), panel);
+      form->addRow(showAll);
+      connect(up, &QPushButton::clicked, this, [this] { moveDiagram(-1); });
+      connect(down, &QPushButton::clicked, this, [this] { moveDiagram(1); });
+      connect(reset, &QPushButton::clicked, this, [this] {
+            if (inspector->el()->size() != 1)
+                  return;
+            auto* frame = toFBox(inspector->element());
+            auto* score = frame->score();
+            score->startCmd();
+            frame->undoChangeProperty(Pid::FRET_FRAME_DIAGRAMS_ORDER,
+                  frame->propertyDefault(Pid::FRET_FRAME_DIAGRAMS_ORDER));
+            inspector->setInspectorEdit(true);
+            score->endCmd();
+            inspector->setInspectorEdit(false);
+            postInit();
+            });
+      connect(showAll, &QPushButton::clicked, this, [this] {
+            auto* score = inspector->element()->score();
+            score->startCmd();
+            for (Element* e : *inspector->el()) {
+                  for (Element* child : toFBox(e)->el()) {
+                        if (child->isFretDiagram())
+                              child->undoChangeProperty(Pid::VISIBLE, true);
+                        }
+                  }
+            inspector->setInspectorEdit(true);
+            score->endCmd();
+            inspector->setInspectorEdit(false);
+            postInit();
+            });
+      connect(_diagrams, &QListWidget::itemChanged, this, [this](QListWidgetItem* item) {
+            if (inspector->el()->size() != 1)
+                  return;
+            auto* frame = toFBox(inspector->element());
+            auto* score = frame->score();
+            score->startCmd();
+            for (Element* e : frame->el()) {
+                  if (e->isFretDiagram() && toFretDiagram(e)->harmony()
+                        && toFretDiagram(e)->harmony()->harmonyName() == item->text())
+                        e->undoChangeProperty(Pid::VISIBLE, item->checkState() == Qt::Checked);
+                  }
+            inspector->setInspectorEdit(true);
+            score->endCmd();
+            inspector->setInspectorEdit(false);
+            postInit();
+            });
+      mapSignals();
+      }
+
+void InspectorFBox::postInit()
+      {
+      const QString selected = _diagrams->currentItem() ? _diagrams->currentItem()->text() : QString();
+      const QSignalBlocker blocker(_diagrams);
+      _diagrams->clear();
+      _diagrams->setEnabled(inspector->el()->size() == 1);
+      if (inspector->el()->size() != 1)
+            return;
+      for (const Element* e : toFBox(inspector->element())->el()) {
+            if (!e->isFretDiagram() || !toFretDiagram(e)->harmony())
+                  continue;
+            auto* item = new QListWidgetItem(toFretDiagram(e)->harmony()->harmonyName(), _diagrams);
+            item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+            item->setCheckState(e->visible() ? Qt::Checked : Qt::Unchecked);
+            if (item->text() == selected)
+                  _diagrams->setCurrentItem(item);
+            }
+      }
+
+void InspectorFBox::moveDiagram(int direction)
+      {
+      if (inspector->el()->size() != 1)
+            return;
+      const int row = _diagrams->currentRow();
+      const int target = row + direction;
+      if (row < 0 || target < 0 || target >= _diagrams->count())
+            return;
+      QStringList names;
+      for (int i = 0; i < _diagrams->count(); ++i)
+            names.append(_diagrams->item(i)->text());
+      names.swap(row, target);
+      auto* frame = toFBox(inspector->element());
+      auto* score = frame->score();
+      score->startCmd();
+      frame->undoChangeProperty(Pid::FRET_FRAME_DIAGRAMS_ORDER, names.join(QChar(0x1f)));
+      inspector->setInspectorEdit(true);
+      score->endCmd();
+      inspector->setInspectorEdit(false);
+      postInit();
+      _diagrams->setCurrentRow(target);
+      }
+
 //---------------------------------------------------------
 //   InspectorVBox
 //---------------------------------------------------------
+
+void InspectorBase::addFrameClearanceControls()
+      {
+      auto* panel = addWidget();
+      auto* form = new QFormLayout(panel);
+      form->addRow(new QLabel(tr("Clearance for notation"), panel));
+      for (const auto& control : std::vector<std::pair<QString, Pid>> {
+            {tr("Above"), Pid::PADDING_TO_NOTATION_ABOVE},
+            {tr("Below"), Pid::PADDING_TO_NOTATION_BELOW}}) {
+            auto* row = new QWidget(panel);
+            auto* layout = new QHBoxLayout(row);
+            layout->setContentsMargins(0, 0, 0, 0);
+            auto* spin = new QDoubleSpinBox(row);
+            spin->setRange(0, 100);
+            spin->setDecimals(2);
+            spin->setSingleStep(0.5);
+            spin->setSuffix(tr(" sp"));
+            auto* reset = new QToolButton(row);
+            reset->setText(tr("Reset"));
+            reset->setToolTip(tr("Reset to style"));
+            layout->addWidget(spin, 1);
+            layout->addWidget(reset);
+            form->addRow(control.first, row);
+            iList.push_back({control.second, 0, spin, reset});
+            }
+      }
 
 InspectorVBox::InspectorVBox(QWidget* parent)
    : InspectorBase(parent)
@@ -701,6 +984,7 @@ InspectorVBox::InspectorVBox(QWidget* parent)
             { Pid::BOX_AUTOSIZE,  0, vb.enableAutoSize, vb.resetAutoSize   }
             };
       pList = { { vb.title, vb.panel } };
+      addFrameClearanceControls();
       mapSignals();
       }
 
@@ -722,6 +1006,7 @@ InspectorTBox::InspectorTBox(QWidget* parent)
             { Pid::BOTTOM_MARGIN, 0, tb.bottomMargin, tb.resetBottomMargin },
             };
       pList = { { tb.title, tb.panel } };
+      addFrameClearanceControls();
       mapSignals();
       }
 
@@ -763,7 +1048,7 @@ InspectorArticulation::InspectorArticulation(QWidget* parent)
                   }
             }
       if (sameTypes)
-            ar.title->setText(el->isOrnament() ? tr("Ornament") : tr("Articulation"));
+            ar.title->setText(el->tappingHand() ? tr("Tapping") : (el->isOrnament() ? tr("Ornament") : tr("Articulation")));
 
       const std::vector<InspectorItem> iiList = {
             { Pid::ARTICULATION_ANCHOR, 0, ar.anchor,           ar.resetAnchor           },

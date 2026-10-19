@@ -1835,6 +1835,15 @@ void Score::deleteItem(Element* el)
       {
       if (!el)
             return;
+      Element* legendItem = el;
+      if (el->isHarmony() && el->parent() && el->parent()->isFretDiagram())
+            legendItem = el->parent();
+      if (legendItem->isFretDiagram() && legendItem->parent() && legendItem->parent()->isFBox()) {
+            legendItem->undoChangeProperty(Pid::VISIBLE, false);
+            if (auto* h = toFretDiagram(legendItem)->harmony())
+                  h->undoChangeProperty(Pid::VISIBLE, false);
+            return;
+            }
       // cannot remove generated elements
       if (el->generated() && !(el->isBracket() || el->isBarLine() || el->isClef() || el->isMeasureNumber()))
             return;
@@ -2206,6 +2215,7 @@ void Score::deleteItem(Element* el)
             case ElementType::TIE_SEGMENT:
             case ElementType::LYRICSLINE_SEGMENT:
             case ElementType::PEDAL_SEGMENT:
+            case ElementType::GUITAR_BEND_SEGMENT:
             case ElementType::GLISSANDO_SEGMENT:
             case ElementType::LET_RING_SEGMENT:
             case ElementType::PALM_MUTE_SEGMENT:
@@ -4631,7 +4641,7 @@ void Score::undoAddElement(Element* element)
          || (et == ElementType::MARKER)
          || (et == ElementType::TEMPO_TEXT)
          || (et == ElementType::VOLTA)
-         || ((et == ElementType::TEXTLINE) && element->systemFlag())
+         || (((et == ElementType::TEXTLINE || et == ElementType::WHAMMY_BAR)) && element->systemFlag())
          ) {
             for (Score*& s : scoreList())
                   staffList.append(s->staff(0));
@@ -4646,7 +4656,7 @@ void Score::undoAddElement(Element* element)
                         ne = element;
                   else {
                         // only create linked volta/systemTextLine for first staff
-                        if (((et == ElementType::VOLTA) || (et == ElementType::TEXTLINE)) && element->track() != 0)
+                        if (((et == ElementType::VOLTA) || ((et == ElementType::TEXTLINE || et == ElementType::WHAMMY_BAR))) && element->track() != 0)
                               continue;
                         ne = element->linkedClone();
                         ne->setScore(score);
@@ -4654,7 +4664,7 @@ void Score::undoAddElement(Element* element)
                         ne->setTrack(staffIdx * VOICES + element->voice());
                         }
 
-                  if (et == ElementType::VOLTA || (et == ElementType::TEXTLINE)) {
+                  if (et == ElementType::VOLTA || ((et == ElementType::TEXTLINE || et == ElementType::WHAMMY_BAR))) {
                         Spanner* nsp = toSpanner(ne);
                         Spanner* sp = toSpanner(element);
                         int staffIdx1 = sp->track() / VOICES;
@@ -4691,6 +4701,7 @@ void Score::undoAddElement(Element* element)
          || (et == ElementType::SYMBOL && !element->parent()->isSegment())
          || et == ElementType::NOTE
          || et == ElementType::TEXT
+         || et == ElementType::GUITAR_BEND
          || et == ElementType::GLISSANDO
          || et == ElementType::BEND
          || (et == ElementType::CHORD && toChord(element)->isGrace())
@@ -4713,8 +4724,8 @@ void Score::undoAddElement(Element* element)
                   if (e == parent)
                         ne = element;
                   else {
-                        if (element->isGlissando()) {    // and other spanners with Anchor::NOTE
-                              Note* newEnd = Spanner::endElementFromSpanner(toGlissando(element), e);
+                        if (element->isGlissando() || element->isGuitarBend()) {
+                              Note* newEnd = Spanner::endElementFromSpanner(toSpanner(element), e);
                               if (newEnd) {
                                     ne = element->linkedClone();
                                     toSpanner(ne)->setNoteSpan(toNote(e), newEnd);

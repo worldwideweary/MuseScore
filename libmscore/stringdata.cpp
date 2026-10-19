@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "guitarbend.h"
 #include "chord.h"
 #include "note.h"
 #include "part.h"
@@ -203,9 +204,9 @@ void StringData::fretChords(Chord * chord) const
             nFret       = nNewFret      = note->fret();
             note->setFretConflict(false);       // assume no conflicts on this note
             // if no fretting (any invalid fretting has been erased by sortChordNotes() )
-            if (nString == INVALID_STRING_INDEX /*|| nFret == INVALID_FRET_INDEX || getPitch(nString, nFret) != note->pitch()*/) {
+            if (nString == INVALID_STRING_INDEX /*|| nFret == INVALID_FRET_INDEX || getPitch(nString, nFret) != GuitarBend::frettingPitch(note)*/) {
                   // get a new fretting
-                  if (!convertPitch(note->pitch(), pitchOffset, &nNewString, &nNewFret) ) {
+                  if (!convertPitch(GuitarBend::frettingPitch(note), pitchOffset, &nNewString, &nNewFret) ) {
                         // no way to fit this note in this tab:
                         // mark as fretting conflict
                         note->setFretConflict(true);
@@ -227,7 +228,7 @@ void StringData::fretChords(Chord * chord) const
                   // attempt to find a suitable string, from topmost
                   for (nTempString=0; nTempString < strings(); nTempString++) {
                         if (bUsed[nTempString] < 1
-                                    && (nTempFret=fret(note->pitch(), nTempString, pitchOffset)) != INVALID_FRET_INDEX) {
+                                    && (nTempFret=fret(GuitarBend::frettingPitch(note), nTempString, pitchOffset)) != INVALID_FRET_INDEX) {
                               bUsed[nNewString]--;    // free previous string
                               bUsed[nTempString]++;   // and occupy new string
                               nNewFret   = nTempFret;
@@ -421,19 +422,33 @@ void StringData::sortChordNotes(QMap<int, Note *>& sortedNotes, const Chord *cho
       Ms::Staff* staff = chord->staff();
 
       for (Note* note : chord->notes()) {
+            const Note* origin = GuitarBend::frettingNote(note);
+            if (origin != note && origin->string() >= 0 && origin->fret() >= 0) {
+                  // Use linked, undoable changes as in the normal allocation
+                  // path, so the notation staff retains these TAB assignments.
+                  note->undoChangeProperty(Pid::STRING, origin->string());
+                  note->undoChangeProperty(Pid::FRET, origin->fret());
+                  // A hidden bend/tie continuation is a display of the source
+                  // fret, not a new string allocation in this arrival chord.
+                  // Counting it displaced ordinary chord-mates (e.g. 2 -> 11).
+                  if (GuitarBend::hideTabFret(note)) {
+                        note->setFretConflict(false);
+                        continue;
+                        }
+                  }
             int string = note->string();
             int fret = note->fret();
             int capo = staff->capo(note->chord()->tick());
             // if note not fretted yet or current fretting no longer valid,
             // use most convenient string as key
             if (string <= INVALID_STRING_INDEX || fret <= INVALID_FRET_INDEX
-                        || getPitch(string, fret, pitchOffset) + capo != note->pitch()) {
+                        || getPitch(string, fret, pitchOffset) + capo != GuitarBend::frettingPitch(note)) {
                   note->setString(INVALID_STRING_INDEX);
                   note->setFret(INVALID_FRET_INDEX);
-                  convertPitch(note->pitch(), pitchOffset, &string, &fret);
+                  convertPitch(GuitarBend::frettingPitch(note), pitchOffset, &string, &fret);
                   }
             int key = string * 100000;
-            key += -(note->pitch()+pitchOffset) * 100 + *count;     // disambiguate notes of equal pitch
+            key += -(GuitarBend::frettingPitch(note)+pitchOffset) * 100 + *count;     // disambiguate notes of equal pitch
             sortedNotes.insert(key, note);
             (*count)++;
             }

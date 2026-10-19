@@ -8931,6 +8931,57 @@ By default, they will be placed such as that their right end are at the same lev
            <string>Bend</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_36">
+<item row="6" column="0"><widget class="QLabel" name="label_tappingFontFace"><property name="text"><string>Tapping font:</string></property><property name="buddy"><cstring>tappingFontFace</cstring></property></widget></item><item row="6" column="1" colspan="2"><widget class="QFontComboBox" name="tappingFontFace"></widget></item><item row="6" column="3"><widget class="QToolButton" name="resetTappingFontFace"><property name="toolTip"><string>Reset to default</string></property><property name="accessibleName"><string>Reset Tapping font:</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="7" column="0"><widget class="QLabel" name="label_tappingFontSize"><property name="text"><string>Tapping font size:</string></property><property name="buddy"><cstring>tappingFontSize</cstring></property></widget></item><item row="7" column="1" colspan="2"><widget class="QDoubleSpinBox" name="tappingFontSize"><property name="minimum"><double>1.0</double></property><property name="maximum"><double>100.0</double></property><property name="suffix"><string> pt</string></property></widget></item><item row="7" column="3"><widget class="QToolButton" name="resetTappingFontSize"><property name="toolTip"><string>Reset to default</string></property><property name="accessibleName"><string>Reset Tapping font size:</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="8" column="0" colspan="3"><widget class="QCheckBox" name="tappingFontStaffSize"><property name="text"><string>Scale tapping font with staff size</string></property></widget></item><item row="8" column="3"><widget class="QToolButton" name="resetTappingFontStaffSize"><property name="toolTip"><string>Reset to default</string></property><property name="accessibleName"><string>Reset Scale tapping font with staff size</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+
+           <item row="3" column="0" colspan="3">
+            <widget class="QCheckBox" name="bendFractionCharacters">
+             <property name="text"><string>Use fraction characters in guitar bend labels</string></property>
+            </widget>
+           </item>
+           <item row="3" column="3">
+            <widget class="QToolButton" name="resetBendFractionCharacters">
+             <property name="toolTip"><string>Reset to default</string></property>
+             <property name="accessibleName"><string>Reset use fraction characters in guitar bend labels</string></property>
+             <property name="icon">
+              <iconset resource="musescore.qrc">
+               <normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0" colspan="3">
+            <widget class="QCheckBox" name="guitarBendUseFull">
+             <property name="text"><string>Use “full” for a whole-tone guitar bend</string></property>
+            </widget>
+           </item>
+           <item row="4" column="3">
+            <widget class="QToolButton" name="resetGuitarBendUseFull">
+             <property name="toolTip"><string>Reset to default</string></property>
+             <property name="accessibleName"><string>Reset use “full” for a whole-tone guitar bend</string></property>
+             <property name="icon">
+              <iconset resource="musescore.qrc">
+               <normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0" colspan="3">
+            <widget class="QCheckBox" name="useCueSizeFretForGraceBends">
+             <property name="text">
+              <string>Use cue size fret for grace bends</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="3">
+            <widget class="QToolButton" name="resetCueSizeGraceBends">
+             <property name="toolTip"><string>Reset to default</string></property>
+             <property name="accessibleName"><string>Reset cue size fret for grace bends</string></property>
+             <property name="icon">
+              <iconset resource="musescore.qrc">
+               <normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset>
+             </property>
+            </widget>
+           </item>
            <item row="1" column="3">
             <widget class="QToolButton" name="resetBendArrowWidth">
              <property name="toolTip">

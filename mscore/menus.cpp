@@ -35,6 +35,8 @@
 #include "libmscore/bagpembell.h"
 #include "libmscore/barline.h"
 #include "libmscore/bend.h"
+#include "libmscore/guitarbend.h"
+#include "libmscore/guitartechnique.h"
 #include "libmscore/bracket.h"
 #include "libmscore/breath.h"
 #include "libmscore/chord.h"
@@ -394,6 +396,7 @@ PaletteTree* MuseScore::newMasterPaletteTree()
       tree->append(MuseScore::newAccidentalsPalettePanel());
       tree->append(MuseScore::newArticulationsPalettePanel());
       tree->append(MuseScore::newOrnamentsPalettePanel());
+      tree->append(MuseScore::newGuitarPalettePanel());
       tree->append(MuseScore::newBreathPalettePanel());
       tree->append(MuseScore::newGraceNotePalettePanel());
       tree->append(MuseScore::newNoteHeadsPalettePanel());
@@ -477,7 +480,7 @@ PalettePanel* MuseScore::newFramePalettePanel()
                   { IconType::VFRAME,   "insert-vbox" },
                   { IconType::HFRAME,   "insert-hbox" },
                   { IconType::TFRAME,   "insert-textframe" },
-                  { IconType::FFRAME,   "insert-fretframe" },    // experimental
+                  { IconType::FFRAME,   "insert-fretframe" },
                   { IconType::MEASURE,  "insert-measure" },
                   { IconType::NONE,     ""}
                   };
@@ -488,6 +491,7 @@ PalettePanel* MuseScore::newFramePalettePanel()
                   { IconType::VFRAME,   "insert-vbox" },
                   { IconType::HFRAME,   "insert-hbox" },
                   { IconType::TFRAME,   "insert-textframe" },
+                  { IconType::FFRAME,   "insert-fretframe" },
                   { IconType::MEASURE,  "insert-measure" },
                   { IconType::NONE,     ""}
                 };
@@ -986,6 +990,65 @@ PalettePanel* MuseScore::newArticulationsPalettePanel()
 //---------------------------------------------------------
 //   newOrnamentsPalettePanel
 //---------------------------------------------------------
+
+PalettePanel* MuseScore::newGuitarPalettePanel()
+      {
+      PalettePanel* panel = new PalettePanel(PalettePanel::Type::Custom);
+      panel->setName(QT_TRANSLATE_NOOP("Palette", "Guitar"));
+      panel->setGrid(120, 55);
+      panel->setDrawGrid(true);
+      static const char* names[] = {
+            QT_TRANSLATE_NOOP("Palette", "Guitar bend"),
+            QT_TRANSLATE_NOOP("Palette", "Pre-bend"),
+            QT_TRANSLATE_NOOP("Palette", "Grace note bend"),
+            QT_TRANSLATE_NOOP("Palette", "Slight bend"),
+            QT_TRANSLATE_NOOP("Palette", "Guitar dive"),
+            QT_TRANSLATE_NOOP("Palette", "Pre-dive"),
+            QT_TRANSLATE_NOOP("Palette", "Dip"),
+            QT_TRANSLATE_NOOP("Palette", "Scoop")
+            };
+      // Keep Studio's pairs adjacent when the dock displays two columns.
+      for (int i : { 4, 5, 6, 7, 0, 1, 2, 3 }) {
+            auto* bend = new GuitarBend(gscore);
+            bend->setBendType(GuitarBendType(i));
+            panel->append(bend, names[i]);
+            }
+      auto* tapping = new Articulation(gscore);
+      tapping->setTappingHand(2);
+      panel->append(tapping, QT_TRANSLATE_NOOP("Palette", "Right-hand tapping"));
+      auto* hopo = new HammerOnPullOff(gscore);
+      panel->append(hopo, QT_TRANSLATE_NOOP("Palette", "Hammer-on / pull-off"));
+      auto* bar = new WhammyBar(gscore);
+      bar->setLen(7.0 * gscore->spatium());
+      panel->append(bar, QT_TRANSLATE_NOOP("Palette", "Whammy bar line"));
+      auto* ring = new LetRing(gscore);
+      ring->setLen(7.0 * gscore->spatium());
+      panel->append(ring, QT_TRANSLATE_NOOP("Palette", "Let ring"));
+      auto* mute = new PalmMute(gscore);
+      mute->setLen(7.0 * gscore->spatium());
+      panel->append(mute, QT_TRANSLATE_NOOP("Palette", "Palm mute"));
+      auto* leftTap = new Articulation(gscore);
+      leftTap->setTappingHand(1);
+      panel->append(leftTap, QT_TRANSLATE_NOOP("Palette", "Left-hand tapping"));
+      panel->append(new Articulation(SymId::stringsThumbPosition, gscore),
+            QT_TRANSLATE_NOOP("Palette", "Thumb position"));
+      for (QChar finger : QString("pimac")) {
+            auto* f = new Fingering(gscore, Tid::RH_GUITAR_FINGERING);
+            f->setXmlText(QString(finger));
+            panel->append(f, QT_TRANSLATE_NOOP("Palette", "RH Guitar Fingering %1"));
+            }
+      for (QChar finger : QString("012345T")) {
+            auto* f = new Fingering(gscore, Tid::LH_GUITAR_FINGERING);
+            f->setXmlText(QString(finger));
+            panel->append(f, QT_TRANSLATE_NOOP("Palette", "LH Guitar Fingering %1"));
+            }
+      for (int string = 1; string <= 9; ++string) {
+            auto* f = new Fingering(gscore, Tid::STRING_NUMBER);
+            f->setXmlText(QString::number(string));
+            panel->append(f, QT_TRANSLATE_NOOP("Palette", "String number %1"));
+            }
+      return panel;
+      }
 
 PalettePanel* MuseScore::newOrnamentsPalettePanel()
       {
@@ -1888,6 +1951,7 @@ void MuseScore::setDefaultPalette()
       defaultPalette->append(newAccidentalsPalettePanel(true));
       defaultPalette->append(newArticulationsPalettePanel());
       defaultPalette->append(newOrnamentsPalettePanel());
+      defaultPalette->append(newGuitarPalettePanel());
       defaultPalette->append(newBreathPalettePanel());
       defaultPalette->append(newGraceNotePalettePanel());
       defaultPalette->append(newNoteHeadsPalettePanel());

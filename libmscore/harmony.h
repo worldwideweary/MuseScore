@@ -148,7 +148,9 @@ class Harmony final : public TextBase {
       void layout() override;
       void layout1() override;
 
-      bool isEditable() const override { return true; }
+      bool isEditable() const override {
+            return !(parent() && parent()->isFretDiagram() && parent()->parent() && parent()->parent()->isFBox());
+            }
       void startEdit(EditData&) override;
       bool edit(EditData&) override;
       void endEdit(EditData&) override;

@@ -442,6 +442,7 @@ void ScoreView::measurePopup(QContextMenuEvent* ev, Measure* obj)
       menuAdd->addAction(getAction("insert-hbox"));
       menuAdd->addAction(getAction("insert-vbox"));
       menuAdd->addAction(getAction("insert-textframe"));
+      menuAdd->addAction(getAction("insert-fretframe"));
 
       popup->addSeparator();
 
@@ -2889,9 +2890,12 @@ void ScoreView::cmd(const char* s)
                               }
                         }
                   }},
+            {{"append-fretframe"}, [](ScoreView* cv, const QByteArray&) {
+                  MeasureBase* mb = cv->appendMeasure(ElementType::FBOX);
+                  if (mb)
+                        cv->score()->select(mb, SelectType::SINGLE, 0);
+                  }},
             {{"insert-fretframe"}, [](ScoreView* cv, const QByteArray&) {
-                  if (!enableExperimental)
-                        return;
                   cv->cmdInsertMeasure(ElementType::FBOX);
                   }},
             {{"move-left"}, [](ScoreView* cv, const QByteArray&) {
@@ -5728,6 +5732,10 @@ bool ScoreView::fotoMode() const
 
 void ScoreView::setEditElement(Element* e)
       {
+      // The parent bend can win hit testing over its curve, while the
+      // arrow hits the segment. Both must edit the visible segment's grips.
+      if (e && e->isGuitarBend() && !toSpanner(e)->segmentsEmpty())
+            e = toSpanner(e)->frontSegment();
       if (editData.element == e)
             return;
 

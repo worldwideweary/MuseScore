@@ -309,7 +309,7 @@ class StaffType {
       qreal spatium(Score*) const;
 
       void write(XmlWriter& xml) const;
-      void read(XmlReader&);
+      void read(XmlReader&, const Score* score = nullptr);
 
       void setStemless(bool val)               { _stemless = val;       }
       bool stemless() const                    { return _stemless;      }

@@ -206,7 +206,8 @@ void MasterScore::removeDeletedMidiMapping()
       int mappingSize = int(_midiMapping.size());
       for (int index = 0; index < mappingSize; index++) {
             Part* p = midiMapping(index)->part();
-            if (!parts().contains(p)) {
+            // Render-only bend lanes are rebuilt without changing instrument channels.
+            if (_midiMapping[index]._bendSource >= 0 || !parts().contains(p)) {
                   removeOffset++;
                   continue;
                   }
@@ -335,6 +336,33 @@ void MasterScore::addMidiMapping(Channel* channel, Part* part, int midiPort, int
       mm.masterChannel->setChannel(mscoreChannel);
 
       _midiMapping.push_back(std::move(mm));
+      }
+
+// Independent pitch wheels need separate synth and external MIDI channels.
+// These mappings are deliberately absent from Instrument::channel(): saving a
+// score must not turn playback implementation details into mixer instruments.
+int MasterScore::guitarBendChannel(int source, int lane)
+      {
+      if (source < 0 || source >= int(_midiMapping.size()))
+            return -1;
+      for (const MidiMapping& mm : _midiMapping) {
+            if (mm._bendSource == source && mm._bendLane == lane)
+                  return mm.articulation()->channel();
+            }
+      MidiMapping mm;
+      mm._part = _midiMapping[source]._part;
+      mm.masterChannel = _midiMapping[source].masterChannel;
+      mm._articulation.reset(new Channel(*_midiMapping[source].articulation()));
+      mm._bendSource = source;
+      mm._bendLane = lane;
+      const int external = getNextFreeMidiMapping();
+      mm._port = external / 16;
+      mm._channel = external % 16;
+      const int channel = int(_midiMapping.size());
+      mm._articulation->setChannel(channel);
+      _midiMapping.push_back(std::move(mm));
+      setMidiPortCount(qMax(midiPortCount(), external / 16));
+      return channel;
       }
 
 //---------------------------------------------------------

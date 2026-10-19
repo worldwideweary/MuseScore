@@ -64,6 +64,13 @@ class Articulation final : public Element {
       bool _up;
       MScore::OrnamentStyle _ornamentStyle;     // for use in ornaments such as trill
       bool _playArticulation;
+      int _tappingHand = 0; // 0 ordinary articulation, 1 left, 2 right
+      QStringList _tappingHalfSlurs;
+      QPainterPath _tappingPath;
+      int leftTappingDisplay() const;
+      bool leftTappingCircledT() const;
+      bool tappingUsesText() const;
+      QFont tappingFont(qreal pixelRatio = 1.0) const;
 
       void draw(QPainter*) const override;
 
@@ -88,6 +95,10 @@ class Articulation final : public Element {
       SymId symId() const                       { return _symId; }
       void setSymId(SymId id);
       int subtype() const override;
+      void layoutTappingHalfSlurs();
+      const QPainterPath& tappingPath() const { return _tappingPath; }
+      int tappingHand() const { return _tappingHand; }
+      void setTappingHand(int);
       QString userName() const override;
       const char* articulationName() const;  // type-name of articulation; used for midi rendering
       static const char* symId2ArticulationName(SymId symId);

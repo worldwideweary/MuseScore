@@ -22,7 +22,7 @@ add_library (libmscore STATIC
       types.h accidental.h ambitus.h arpeggio.h chordbracket.h articulation.h audio.h bagpembell.h barline.h beam.h bend.h
       box.h bracket.h bracketItem.h breath.h bsp.h bsymbol.h changeMap.h chord.h chordline.h chordlist.h chordrest.h clef.h
       cleflist.h connector.h drumset.h dsp.h duration.h durationtype.h dynamic.h easeInOut.h element.h
-      elementmap.h excerpt.h fermata.h fifo.h figuredbass.h fingering.h fraction.h fret.h glissando.h groups.h hairpin.h
+      elementmap.h excerpt.h fermata.h fifo.h figuredbass.h fingering.h fraction.h fret.h guitartechnique.h guitarbend.h glissando.h groups.h hairpin.h
       harmony.h hook.h icon.h image.h imageStore.h iname.h input.h instrchange.h instrtemplate.h instrument.h interval.h
       jump.h key.h keylist.h keysig.h lasso.h layout.h layoutbreak.h ledgerline.h letring.h line.h location.h
       lyrics.h marker.h mcursor.h measure.h measurebase.h mscore.h mscoreview.h musescoreCore.h navigate.h note.h notedot.h
@@ -40,7 +40,7 @@ add_library (libmscore STATIC
       chordlist.cpp chordrest.cpp clef.cpp cleflist.cpp
       drumset.cpp durationtype.cpp dynamic.cpp dynamichairpingroup.cpp edit.cpp noteentry.cpp
       easeInOut.cpp element.cpp elementgroup.cpp excerpt.cpp
-      fifo.cpp fret.cpp glissando.cpp hairpin.cpp
+      fifo.cpp fret.cpp guitarbend.cpp glissando.cpp hairpin.cpp
       harmony.cpp hook.cpp image.cpp iname.cpp instrchange.cpp
       instrtemplate.cpp instrument.cpp interval.cpp
       key.cpp keysig.cpp lasso.cpp

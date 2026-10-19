@@ -41,6 +41,8 @@ class Box : public MeasureBase {
       qreal _rightMargin            { 0.0   };       // inner margins in metric mm
       qreal _topMargin              { 0.0   };
       qreal _bottomMargin           { 0.0   };
+      Spatium _paddingToNotationAbove { 2.0 };
+      Spatium _paddingToNotationBelow { 2.0 };
       bool _isAutoSizeEnabled       { true  };
       bool editMode                 { false };
 
@@ -82,6 +84,8 @@ class Box : public MeasureBase {
       void setTopGap(qreal val)       { _topGap = val;        }
       qreal bottomGap() const         { return _bottomGap;    }
       void setBottomGap(qreal val)    { _bottomGap = val;     }
+      Spatium paddingToNotationAbove() const { return _paddingToNotationAbove; }
+      Spatium paddingToNotationBelow() const { return _paddingToNotationBelow; }
       bool isAutoSizeEnabled() const  { return _isAutoSizeEnabled; }
       void setAutoSizeEnabled(const bool val) { _isAutoSizeEnabled = val; }
       void copyValues(Box* origin);
@@ -163,8 +167,19 @@ class VBox : public Box {
 //---------------------------------------------------------
 
 class FBox : public VBox {
+      qreal _textScale = 1.0;
+      qreal _diagramScale = 1.0;
+      Spatium _columnGap { 3.0 };
+      Spatium _rowGap { 3.0 };
+      int _chordsPerRow = 8;
+      int _horizontalAlign = 2; // Studio AlignH: left=0, right=1, center=2
+      bool _scaleWithStaff = true;
+      QStringList _defaultOrder;
+
    public:
-      FBox(Score* score) : VBox(score) {}
+      explicit FBox(Score* score);
+      bool syncDiagrams();
+      bool acceptDrop(EditData&) const override;
       virtual ~FBox() {}
 
       FBox* clone() const override      { return new FBox(*this); }
@@ -172,6 +187,14 @@ class FBox : public VBox {
 
       void layout() override;
       void add(Element*) override;
+      void writeProperties(XmlWriter&) const override;
+      bool readProperties(XmlReader&) override;
+      QVariant getProperty(Pid) const override;
+      bool setProperty(Pid, const QVariant&) override;
+      QVariant propertyDefault(Pid) const override;
+      EditBehavior normalModeEditBehavior() const override { return EditBehavior::SelectOnly; }
+      bool isEditable() const override { return false; }
+      int gripsCount() const override { return 0; }
       };
 
 

@@ -73,6 +73,7 @@ class Accidental final : public Element {
       bool m_isSmall                 { false                   };
       AccidentalBracket _bracket     { AccidentalBracket::NONE };
       AccidentalRole _role           { AccidentalRole::AUTO    };
+      bool parentNoteHasParentheses() const;
 
    public:
       Accidental(Score* s = 0);
