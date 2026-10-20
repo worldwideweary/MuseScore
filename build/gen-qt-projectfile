@@ -8,7 +8,7 @@ for a in $uis; do
 echo
 
 echo "FORMS = \\"
-uis=`find $1 -name "*.ui"`
+uis=`find "$1" -type f -name "*.ui" ! -path "$1/build/*" ! -path "$1/builds/*"`
 for a in $uis; do
       echo "    " $a \\;
       done
@@ -20,7 +20,7 @@ echo "    $1/mscore \\"
 echo
 
 echo "SOURCES = \\"
-uis=`find $1 -name "*.cpp"`
+uis=`find "$1" -type f -name "*.cpp" ! -path "$1/build/*" ! -path "$1/builds/*"`
 for a in $uis; do
       echo "    " $a \\;
       done
