@@ -38,6 +38,14 @@ class Beam final : public Element {
       Q_GADGET
       QVector<ChordRest*> _elements;        // must be sorted by tick
       QVector<QLineF*> beamSegments;
+      struct SegmentInfo4 {
+            int level;
+            bool above;
+            Fraction startTick;
+            Fraction endTick;
+            };
+      QVector<SegmentInfo4> segmentInfo4; // only populated by the optional layout
+
       Direction _direction;
 
       bool _up;
@@ -145,6 +153,9 @@ class Beam final : public Element {
       void setBeamPos(const QPointF& bp);
 
       qreal beamDist() const              { return _beamDist; }
+      const QLineF* topLevelSegment4(const ChordRest*, bool* above = nullptr) const;
+      const QLineF* primarySegment4() const { return beamSegments.empty() ? nullptr : beamSegments.front(); }
+
 
       QVariant getProperty(Pid propertyId) const override;
       bool setProperty(Pid propertyId, const QVariant&) override;

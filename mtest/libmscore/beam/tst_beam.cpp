@@ -16,6 +16,8 @@
 #include "libmscore/measure.h"
 #include "libmscore/chordrest.h"
 #include "libmscore/chord.h"
+#include "libmscore/beam.h"
+#include "libmscore/beamlayout4.h"
 
 #define DIR QString("libmscore/beam/")
 
@@ -50,6 +52,14 @@ class TestBeam : public QObject, public MTest
       void beamCrossMeasure4() { beam("Beam-CrossM4.mscx"); }
       void beamStemDir();
       void flipBeamStemDir();
+      void studioBeamStyleRoundTrip();
+      void studioBeamLayoutSwitch();
+      void studioBeamManualPosition();
+      void studioBeamCrossMeasure();
+      void studioBeamCrossStaff();
+      void studioBeamDirectionPolicy();
+      void studioBeamDirectionSwitch();
+      void studioBeamShortWidth();
       };
 
 //---------------------------------------------------------
@@ -137,6 +147,177 @@ void TestBeam::flipBeamStemDir()
       QVERIFY(saveCompareScore(score, "flipBeamStemDir-01.mscx", DIR + "flipBeamStemDir-01-ref.mscx"));
       delete score;
       }
+void TestBeam::studioBeamStyleRoundTrip()
+      {
+      MasterScore* score = readScore(DIR + "studio-beams.mscx");
+      QVERIFY(score);
+      QVERIFY(!score->styleB(Sid::beamLayout4));
+      score->setStyleValue(Sid::beamLayout4, true);
+      QVERIFY(saveScore(score, "studio-beams-roundtrip.mscx"));
+      MasterScore* reloaded = readCreatedScore("studio-beams-roundtrip.mscx");
+      QVERIFY(reloaded);
+      QVERIFY(reloaded->styleB(Sid::beamLayout4));
+      delete reloaded;
+      delete score;
+      }
+
+void TestBeam::studioBeamLayoutSwitch()
+      {
+      MasterScore* score = readScore(DIR + "studio-beams.mscx");
+      QVERIFY(score);
+      ChordRest* cr = toChordRest(score->firstMeasure()->first(SegmentType::ChordRest)->element(0));
+      QVERIFY(cr && cr->beam());
+      const QPointF legacy = cr->beam()->beamPos();
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      const QPointF modern = cr->beam()->beamPos();
+      QVERIFY(qIsFinite(modern.x()) && qIsFinite(modern.y()));
+      score->doLayout();
+      QVERIFY(QLineF(modern, cr->beam()->beamPos()).length() < 1e-7);
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      QVERIFY(QLineF(legacy, cr->beam()->beamPos()).length() < 1e-7);
+      delete score;
+      }
+
+void TestBeam::studioBeamManualPosition()
+      {
+      MasterScore* score = readScore(DIR + "studio-beams.mscx");
+      QVERIFY(score);
+      ChordRest* cr = toChordRest(score->firstMeasure()->first(SegmentType::ChordRest)->element(0));
+      QVERIFY(cr && cr->beam());
+      Beam* beam = cr->beam();
+      beam->setUserModified(true);
+      beam->setBeamPos(QPointF(-4.0, -3.0));
+      score->doLayout();
+      const QPointF manual = beam->beamPos();
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      QVERIFY(QLineF(manual, cr->beam()->beamPos()).length() < 1e-7);
+      delete score;
+      }
+
+void TestBeam::studioBeamShortWidth()
+      {
+      MasterScore* score = readScore(DIR + "studio-beams.mscx");
+      QVERIFY(score);
+      ChordRest* first = toChordRest(score->firstMeasure()->first(SegmentType::ChordRest)->element(0));
+      QVERIFY(first && first->beam());
+      Beam* beam = first->beam();
+      QVERIFY(beam->elements().size() >= 2);
+      ChordRest* second = beam->elements()[1];
+      // Exercise the pre-spacing/final-spacing interface directly. Do not
+      // rely on page justification to happen to produce a short beam.
+      second->rxpos() += first->pagePos().x() + 2 * beam->spatium() - second->pagePos().x();
+      std::vector<ChordRest*> elements {first, second};
+      QPointF start, end;
+      qreal distance = 0.75 * beam->spatium();
+      QVERIFY(layoutBeam4(beam, elements, start, end, distance));
+      QVERIFY(qAbs(end.y() - start.y()) <= 0.25 * beam->spatium() + 1e-7);
+      delete score;
+      }
+
+void TestBeam::studioBeamCrossMeasure()
+      {
+      const char* fixtures[] = {"Beam-CrossM1.mscx", "Beam-CrossM2.mscx", "Beam-CrossM3.mscx", "Beam-CrossM4.mscx"};
+      for (const char* fixture : fixtures) {
+            MasterScore* score = readScore(DIR + fixture);
+            QVERIFY(score);
+            score->setStyleValue(Sid::beamLayout4, true);
+            score->doLayout();
+            std::vector<std::pair<ChordRest*, QPointF>> positions;
+            for (Measure* measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+                  for (Segment* segment = measure->first(SegmentType::ChordRest); segment;
+                       segment = segment->next(SegmentType::ChordRest)) {
+                        for (int track = 0; track < score->ntracks(); ++track) {
+                              Element* e = segment->element(track);
+                              if (!e || !e->isChordRest())
+                                    continue;
+                              ChordRest* cr = toChordRest(e);
+                              Beam* beam = cr->beam();
+                              if (!beam || beam->empty() || beam->elements().front() != cr)
+                                    continue;
+                              const QPointF p = beam->beamPos();
+                              QVERIFY(qIsFinite(p.x()) && qIsFinite(p.y()));
+                              positions.emplace_back(cr, p);
+                              }
+                        }
+                  }
+            QVERIFY(!positions.empty());
+            score->doLayout();
+            for (const auto& position : positions)
+                  QVERIFY(QLineF(position.second, position.first->beam()->beamPos()).length() < 1e-7);
+            delete score;
+            }
+      }
+
+void TestBeam::studioBeamDirectionPolicy()
+      {
+      // Treble B4 is line 4. The photographed D5-B4-A4-G4 group is
+      // lines 2,4,5,6: D5/G4 cancel, then B4/A4 choose up-stems.
+      QVERIFY(beam4AutoStemUp({2, 4, 5, 6}, 4));
+      QVERIFY(!beam4AutoStemUp({2, 3, 4, 6}, 4));
+      QVERIFY(!beam4AutoStemUp({2, 6}, 4));
+      QVERIFY(!beam4AutoStemUp({2, 3, 5, 6}, 4));
+      QVERIFY(!beam4AutoStemUp({4}, 4));
+      // Repeated pitches do not vote multiple times; order is irrelevant.
+      QVERIFY(beam4AutoStemUp({6, 2, 4, 4, 4, 5}, 4));
+      // All notes in each chord participate, not only outer chord notes.
+      QVERIFY(beam4AutoStemUp({2, 4, 5, 6, 4, 5}, 4));
+      // The same relationship works with a different staff centre.
+      QVERIFY(beam4AutoStemUp({0, 2, 3, 4}, 2));
+      }
+
+void TestBeam::studioBeamDirectionSwitch()
+      {
+      MasterScore* score = readScore(DIR + "studio-direction.mscx");
+      QVERIFY(score);
+      ChordRest* first = toChordRest(score->firstMeasure()->first(SegmentType::ChordRest)->element(0));
+      QVERIFY(first && first->beam());
+      QVERIFY(!first->beam()->up());
+      const QPointF legacyPosition = first->beam()->beamPos();
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      QVERIFY(first->beam()->up());
+      for (ChordRest* cr : first->beam()->elements())
+            QVERIFY(cr->up());
+      score->doLayout();
+      QVERIFY(first->beam()->up());
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      QVERIFY(!first->beam()->up());
+      QVERIFY(QLineF(legacyPosition, first->beam()->beamPos()).length() < 1e-7);
+      // A manually specified beam direction remains authoritative.
+      score->setStyleValue(Sid::beamLayout4, true);
+      first->beam()->setBeamDirection(Direction::DOWN);
+      score->doLayout();
+      QVERIFY(!first->beam()->up());
+      delete score;
+      }
+
+void TestBeam::studioBeamCrossStaff()
+      {
+      MasterScore* score = readScore(DIR + "studio-cross-staff.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      ChordRest* first = toChordRest(score->firstMeasure()->first(SegmentType::ChordRest)->element(0));
+      QVERIFY(first && first->beam());
+      Beam* beam = first->beam();
+      QVERIFY(beam->cross());
+      bool hasUpper = false, hasLower = false;
+      for (ChordRest* cr : beam->elements()) {
+            hasUpper |= cr->vStaffIdx() == 0;
+            hasLower |= cr->vStaffIdx() == 1;
+            }
+      QVERIFY(hasUpper && hasLower);
+      const QPointF position = beam->beamPos();
+      QVERIFY(qIsFinite(position.x()) && qIsFinite(position.y()));
+      score->doLayout();
+      QVERIFY(QLineF(position, first->beam()->beamPos()).length() < 1e-7);
+      delete score;
+      }
+
 QTEST_MAIN(TestBeam)
 #include "tst_beam.moc"
 

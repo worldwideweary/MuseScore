@@ -35,7 +35,7 @@ add_library (libmscore STATIC
       tremolo.h tremolobar.h trill.h tuplet.h tupletmap.h types.h undo.h utils.h vibrato.h volta.h xml.h
 
       segmentlist.cpp fingering.cpp accidental.cpp arpeggio.cpp chordbracket.cpp laissezvib.cpp
-      fermata.cpp articulation.cpp barline.cpp beam.cpp bend.cpp box.cpp
+      fermata.cpp articulation.cpp barline.cpp beam.cpp beamlayout4.cpp beamlayout4.h bend.cpp box.cpp
       bracket.cpp breath.cpp bsp.cpp changeMap.cpp chord.cpp chordline.cpp
       chordlist.cpp chordrest.cpp clef.cpp cleflist.cpp
       drumset.cpp durationtype.cpp dynamic.cpp dynamichairpingroup.cpp edit.cpp noteentry.cpp

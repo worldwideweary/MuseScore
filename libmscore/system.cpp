@@ -16,6 +16,8 @@
 */
 
 #include "barline.h"
+#include "beam.h"
+#include "beamlayout4.h"
 #include "bracket.h"
 #include "bracketItem.h"
 #include "box.h"
@@ -824,6 +826,25 @@ void System::layout2()
                         d = ss->skyline().minDistance(System::staff(si2)->skyline());
 #endif
                   dist = qMax(dist, d + minVerticalDistance);
+                  if (score()->styleB(Sid::beamLayout4)) {
+                        for (MeasureBase* mb : ml) {
+                              if (!mb->isMeasure())
+                                    continue;
+                              for (Segment* seg = toMeasure(mb)->first(SegmentType::ChordRest); seg;
+                                   seg = seg->next(SegmentType::ChordRest)) {
+                                    for (int track = si1 * VOICES; track < (si2 + 1) * VOICES; ++track) {
+                                          Element* e = seg->element(track);
+                                          if (!e || !e->isChordRest())
+                                                continue;
+                                          ChordRest* cr = toChordRest(e);
+                                          Beam* beam = cr->beam();
+                                          if (beam && beam->autoplace() && !beam->empty()
+                                              && beam->elements().front() == cr)
+                                                dist = qMax(dist, beam4MinStaffDistance(beam, si1, si2));
+                                          }
+                                    }
+                              }
+                        }
                   }
 #endif
 

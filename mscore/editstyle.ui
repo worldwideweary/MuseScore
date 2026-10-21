@@ -5932,6 +5932,27 @@ By default, they will be placed such as that their right end are at the same lev
              </property>
             </widget>
            </item>
+           <item row="4" column="0" colspan="2">
+            <widget class="QCheckBox" name="beamLayout4">
+             <property name="text">
+              <string>Use Studio 4 beam layout (experimental)</string>
+             </property>
+             <property name="toolTip">
+              <string>Use the experimental Studio 4.7.5 placement for ordinary and cross-staff beams. Tablature and beams containing tremolos retain legacy placement. Manual beam adjustments are preserved.</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="2">
+            <widget class="QToolButton" name="resetBeamLayout4">
+             <property name="toolTip"><string>Reset to default</string></property>
+             <property name="accessibleName"><string>Reset 'Use Studio 4 beam layout' value</string></property>
+             <property name="text"><string notr="true"/></property>
+             <property name="icon">
+              <iconset resource="musescore.qrc">
+               <normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset>
+             </property>
+            </widget>
+           </item>
            <item row="3" column="0" colspan="2">
             <widget class="QCheckBox" name="beamNoSlope">
              <property name="text">
@@ -14320,6 +14341,7 @@ By default, they will be placed such as that their right end are at the same lev
   <tabstop>beamDistance</tabstop>
   <tabstop>beamMinLen</tabstop>
   <tabstop>beamNoSlope</tabstop>
+  <tabstop>beamLayout4</tabstop>
   <tabstop>scrollArea_tuplets</tabstop>
   <tabstop>tupletDirection</tabstop>
   <tabstop>resetTupletDirection</tabstop>

@@ -11,6 +11,7 @@
 //=============================================================================
 
 #include "beam.h"
+#include "beamlayout4.h"
 #include "chord.h"
 #include "groups.h"
 #include "hook.h"
@@ -83,6 +84,7 @@ Beam::Beam(const Beam& b)
    : Element(b)
       {
       _elements     = b._elements;
+      segmentInfo4  = b.segmentInfo4;
       _id           = b._id;
       for (const QLineF* bs : b.beamSegments)
             beamSegments.append(new QLineF(*bs));
@@ -309,6 +311,7 @@ void Beam::layout1()
       //delete old segments
       qDeleteAll(beamSegments);
       beamSegments.clear();
+      segmentInfo4.clear();
 
       setParent(nullptr); // parent is System
 
@@ -402,7 +405,36 @@ void Beam::layout1()
                         _up = false;
                   else if (c1) {
                         Measure* m = c1->measure();
-                        if (c1->stemDirection() != Direction::AUTO)
+                        const int directionIndex = (_direction == Direction::UP) ? 1 : 0;
+                        const bool studioDirection = score()->styleB(Sid::beamLayout4)
+                              && !_userModified[directionIndex] && !staff()->isTabStaff(c1->tick())
+                              && std::none_of(_elements.begin(), _elements.end(), [](const ChordRest* cr) {
+                                    return cr->isChord() && toChord(cr)->tremolo();
+                                    });
+                        if (studioDirection) {
+                              // Studio gives polyphonic voice direction priority. In a
+                              // single voice, the first explicit chord direction wins;
+                              // otherwise compare all distinct note positions.
+                              if (m->hasVoices(c1->staffIdx(), tick(), ticks()))
+                                    _up = !(c1->voice() % 2);
+                              else {
+                                    const Chord* explicitChord = nullptr;
+                                    std::vector<int> noteLines;
+                                    for (const ChordRest* cr : qAsConst(_elements)) {
+                                          if (!cr->isChord())
+                                                continue;
+                                          const Chord* chord = toChord(cr);
+                                          if (!explicitChord && chord->stemDirection() != Direction::AUTO)
+                                                explicitChord = chord;
+                                          for (const Note* note : chord->notes())
+                                                noteLines.push_back(note->line());
+                                          }
+                                    _up = explicitChord ? explicitChord->stemDirection() == Direction::UP
+                                          : noteLines.empty() ? true
+                                          : beam4AutoStemUp(std::move(noteLines), staff()->lines(c1->tick()) - 1);
+                                    }
+                              }
+                        else if (c1->stemDirection() != Direction::AUTO)
                               _up = c1->stemDirection() == Direction::UP;
                         else if (m->hasVoices(c1->staffIdx(), tick(), ticks()))
                               _up = !(c1->voice() % 2);
@@ -451,6 +483,7 @@ void Beam::layoutGraceNotes()
       //delete old segments
       qDeleteAll(beamSegments);
       beamSegments.clear();
+      segmentInfo4.clear();
 
       maxDuration.setType(TDuration::DurationType::V_INVALID);
       Chord* c1 = 0;
@@ -1547,6 +1580,7 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
             return;
 
       beamSegments.clear();
+      segmentInfo4.clear();
 
       const ChordRest* c1 = crl.front();       // first chord/rest in beam
       const ChordRest* c2 = crl.back();        // last chord/rest in beam
@@ -1559,11 +1593,16 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
       int dIdx        = (_direction == Direction::AUTO || _direction == Direction::DOWN) ? 0 : 1;
       qreal& py1      = f->py1[dIdx];
       qreal& py2      = f->py2[dIdx];
+      const bool useModernLayout = score()->styleB(Sid::beamLayout4) && !_userModified[dIdx]
+            && !staff()->isTabStaff(tick())
+            && std::none_of(crl.begin(), crl.end(), [](const ChordRest* cr) {
+                  return cr->isChord() && toChord(cr)->tremolo();
+                  });
 
       qreal _spatium   = spatium();
       QPointF _pagePos(pagePos());
 
-      if (beamLevels == 4)
+      if (beamLevels == 4 && !useModernLayout)
             _beamDist = score()->styleP(Sid::beamWidth) * (1 + score()->styleD(Sid::beamDistance)*4/3);
       else
             _beamDist = score()->styleP(Sid::beamWidth) * (1 + score()->styleD(Sid::beamDistance));
@@ -1593,6 +1632,19 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
             qreal px1 = c1->stemPosX() + c1->pageX();
             qreal px2 = c2->stemPosX() + c2->pageX();
 
+            auto placeModern = [&]() {
+                  if (!useModernLayout)
+                        return false;
+                  QPointF start, end;
+                  if (!layoutBeam4(this, crl, start, end, _beamDist))
+                        return false;
+                  // Studio anchors include the outside stem edges. The 3.x
+                  // segment builder expects the first stem's centre line.
+                  const qreal dx = end.x() - start.x();
+                  slope = qFuzzyIsNull(dx) ? 0.0 : (end.y() - start.y()) / dx;
+                  py1 = start.y() + (px1 - _pagePos.x() - start.x()) * slope;
+                  return true;
+                  };
             if (_userModified[dIdx]) {
                   py1 += _pagePos.y();
                   py2 += _pagePos.y();
@@ -1630,6 +1682,9 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
                   _up = crl.front()->up();
                   if (relayoutGrace)
                         c1->parent()->layout();
+                  }
+            else if (!_cross && placeModern()) {
+                  // Modern placement replaces the legacy calculation.
                   }
             else if (_cross && _direction != Direction::AUTO) {
                   // All stems are pointing in the same direction here
@@ -1774,6 +1829,9 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
                   py2 = c2->stemPos().y();      // for debug
                   computeStemLen(crl, py1, beamLevels);
                   }
+            // Cross-staff stems first need the direction resolution above.
+            if (_cross)
+                  placeModern();
             py2  = (px2 - px1) * slope + py1;   // for debug
             py2 -= _pagePos.y();
             py1 -= _pagePos.y();
@@ -2026,8 +2084,18 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
                         }
                   else {
                         beamSegments.push_back(new QLineF(x2, ly1, x3, ly2));
+                        if (score()->styleB(Sid::beamLayout4))
+                              segmentInfo4.append({beamLevel, !growDownGroup, cr1->tick(), cr2->tick()});
                         }
                   }
+            }
+
+      if (useModernLayout && _cross) {
+            const qreal correction = beam4CenterOffset(this, crl);
+            py1 += correction;
+            py2 += correction;
+            for (QLineF* line : qAsConst(beamSegments))
+                  line->translate(0.0, correction);
             }
 
       //
@@ -2726,4 +2794,22 @@ void Beam::startDrag(EditData& editData)
       initBeamEditData(editData);
       }
 
+}
+
+namespace Ms {
+const QLineF* Beam::topLevelSegment4(const ChordRest* cr, bool* above) const
+      {
+      if (beamSegments.empty())
+            return nullptr;
+      int selected = 0;
+      for (int i = 1; i < segmentInfo4.size(); ++i) {
+            const SegmentInfo4& info = segmentInfo4[i];
+            if (info.level > segmentInfo4[selected].level
+                && cr->tick() >= info.startTick && cr->tick() <= info.endTick)
+                  selected = i;
+            }
+      if (above)
+            *above = segmentInfo4.empty() ? !_up : segmentInfo4[selected].above;
+      return beamSegments[selected];
+      }
 }
