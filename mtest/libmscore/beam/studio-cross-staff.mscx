@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="3.02"><Score><Division>480</Division>
+<Style><Spatium>1.75</Spatium></Style>
+<Part><Staff id="1"><StaffType group="pitched"><name>stdNormal</name></StaffType></Staff>
+<Staff id="2"><StaffType group="pitched"><name>stdNormal</name></StaffType><defaultClef>F</defaultClef></Staff>
+<Instrument id="piano"><trackName>Piano</trackName><Channel><program value="0"/></Channel></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Chord><BeamMode>begin</BeamMode><durationType>eighth</durationType><staffMove>0</staffMove><Note><pitch>72</pitch><tpc>14</tpc></Note></Chord>
+<Chord><BeamMode>mid</BeamMode><durationType>eighth</durationType><staffMove>1</staffMove><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+<Chord><BeamMode>mid</BeamMode><durationType>eighth</durationType><staffMove>0</staffMove><Note><pitch>76</pitch><tpc>18</tpc></Note></Chord>
+<Chord><BeamMode>mid</BeamMode><durationType>eighth</durationType><staffMove>1</staffMove><Note><pitch>64</pitch><tpc>18</tpc></Note></Chord>
+<Rest><durationType>half</durationType></Rest></voice></Measure></Staff>
+<Staff id="2"><Measure><voice><Rest><durationType>measure</durationType><duration>4/4</duration></Rest></voice></Measure></Staff>
+</Score></museScore>

@@ -219,6 +219,7 @@ static const StyleType styleTypes[] {
       { Sid::beamDistance,            "beamDistance",            QVariant(0.5) },
       { Sid::beamMinLen,              "beamMinLen",              Spatium(1.3) },     // 1.316178 exactly notehead widthen beams
       { Sid::beamNoSlope,             "beamNoSlope",             QVariant(false) },
+      { Sid::beamLayout4,             "beamLayout4",             QVariant(false) },
 
       { Sid::dotMag,                  "dotMag",                  QVariant(1.0) },
       { Sid::dotNoteDistance,         "dotNoteDistance",         Spatium(0.5) },

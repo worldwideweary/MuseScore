@@ -61,6 +61,7 @@
 #include "tie.h"
 #include "timesig.h"
 #include "tremolo.h"
+#include "beamlayout4.h"
 #include "tuplet.h"
 #include "undo.h"
 #include "utils.h"
@@ -3317,6 +3318,29 @@ void Score::getNextMeasure(LayoutContext& lc)
 
       createBeams(lc, measure);
 
+      // Both chords' note lines and beam memberships are now current. Resolve
+      // supported standalone tremolos before notehead mirroring and spacing.
+      if (score()->styleB(Sid::beamLayout4)) {
+            for (Segment& segment : measure->segments()) {
+                  if (!segment.isChordRestType())
+                        continue;
+                  for (Element* element : segment.elist()) {
+                        if (!element || !element->isChord())
+                              continue;
+                        Tremolo* tremolo = toChord(element)->tremolo();
+                        bool up;
+                        if (!tremolo || tremolo->chord1() != element || !beam4TremoloStemUp(tremolo, up))
+                              continue;
+                        for (Chord* chord : { tremolo->chord1(), tremolo->chord2() }) {
+                              chord->setUp(chord->staffMove() == 0 ? up : !up);
+                              }
+                        for (Chord* chord : { tremolo->chord1(), tremolo->chord2() }) {
+                              chord->layoutStem1();
+                              }
+                        }
+                  }
+            }
+
       for (int staffIdx = 0; staffIdx < score()->nstaves(); ++staffIdx) {
             for (Segment& segment : measure->segments()) {
                   if (segment.isChordRestType()) {
@@ -3455,6 +3479,18 @@ bool notTopBeam(ChordRest* cr)
 
       // no beam or not first element
       return false;
+      }
+
+// Studio 4.7.5 TupletLayout::layoutTupletAndNestedTuplets: inner
+// tuplets must enter the skyline before their enclosing bracket is placed.
+static void layoutTupletTree4(Tuplet* tuplet)
+      {
+      const auto& elements = tuplet->elements();
+      for (auto it = elements.rbegin(); it != elements.rend(); ++it) {
+            if (*it != tuplet && (*it)->isTuplet())
+                  layoutTupletTree4(toTuplet(*it));
+            }
+      tuplet->layout();
       }
 
 //---------------------------------------------------------
@@ -4682,11 +4718,26 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       // layout tuplets
       //-------------------------------------------------------------
 
+      std::set<Tuplet*> laidOutTuplets4;
       for (Segment* s : sl) {
             for (Element* e : s->elist()) {
                   if (!e || !e->isChordRest() || !score()->staff(e->staffIdx())->show())
                         continue;
                   ChordRest* cr = toChordRest(e);
+                  if (score()->styleB(Sid::beamLayout4)) {
+                        Tuplet* root = cr->tuplet();
+                        if (!root)
+                              continue;
+                        while (root->tuplet())
+                              root = root->tuplet();
+                        if (root->cross())
+                              continue;
+                        // Process the complete tree once. Inner-tuplet
+                        // starts must not add its skyline a second time.
+                        if (laidOutTuplets4.insert(root).second)
+                              layoutTupletTree4(root);
+                        continue;
+                        }
                   if (!isTopTuplet(cr))
                         continue;
                   DurationElement* de = cr;

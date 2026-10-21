@@ -1661,6 +1661,12 @@ void Chord::layoutStem()
 
       int hookIdx  = durationType().hooks();
 
+      // Studio Chord::shouldHaveHook excludes two-note tremolos. Apply this
+      // only with the optional layout style; TAB keeps its existing rules.
+      if (score()->styleB(Sid::beamLayout4) && _tremolo && _tremolo->twoNotes()
+          && !staff()->isTabStaff(tick()))
+            hookIdx = 0;
+
       if (hookIdx && !(noStem() || measure()->stemless(staffIdx()))) {
             if (!hook()) {
                   Hook* hook = new Hook(score());

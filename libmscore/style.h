@@ -205,6 +205,7 @@ enum class Sid : short {
       beamDistance,
       beamMinLen,
       beamNoSlope,
+      beamLayout4,                    // opt-in Studio 4 beam placement
 
       dotMag,
       dotNoteDistance,

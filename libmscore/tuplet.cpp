@@ -692,7 +692,13 @@ void Tuplet::layout()
             }
       setbbox(r);
 
-      if (outOfStaff && !cross())
+      // Nested tuplets suppress outOfStaff when finding their anchors, but
+      // still need collision avoidance and skyline registration. Studio lays
+      // the children out first so the enclosing tuplet can avoid their shapes.
+      const bool modernNested = score()->styleB(Sid::beamLayout4)
+            && (tuplet() || std::any_of(_elements.begin(), _elements.end(),
+                  [](const DurationElement* e) { return e->isTuplet(); }));
+      if ((outOfStaff || modernNested) && !cross())
             autoplaceMeasureElement(_isUp, /* add to skyline */ true);
       }
 

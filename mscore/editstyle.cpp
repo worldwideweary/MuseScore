@@ -396,6 +396,7 @@ EditStyle::EditStyle(Score* s, QWidget* parent)
 
       { Sid::beamDistance,             true,  beamDistance,                 resetBeamDistance   },
       { Sid::beamNoSlope,              false, beamNoSlope,                  resetBeamNoSlope    },
+      { Sid::beamLayout4,              false, beamLayout4,                  resetBeamLayout4    },
       { Sid::graceNoteMag,             true,  graceNoteSize,                resetGraceNoteSize  },
       { Sid::smallStaffMag,            true,  smallStaffSize,               resetSmallStaffSize },
       { Sid::smallNoteMag,             true,  smallNoteSize,                resetSmallNoteSize  },

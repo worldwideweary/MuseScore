@@ -1,0 +1,150 @@
+# Cross-staff tremolo comparisons — v0.25
+
+This checkpoint adds diagnostic inputs only. Apply its patch after v0.24 to
+keep them in the source tree, or open the supplied scores directly in the
+current build. No engraving code or application tests change. The user reports
+tst_beam passing through v0.24, and the O1-O12 capture looks broadly consistent
+with Studio 4.7.5.
+
+Open the same original files in Evolution and Studio 4.7.5. Both start with
+Evolution's experimental beam style enabled. They each have eight 1/4 measures
+on a two-staff piano, two measures per system. U/L mean displayed Upper/Lower
+staff, not stem direction. All saved stem directions are Auto. Empty measures
+on the other source staff contain hidden full-measure rests so those rests do
+not distract from the tremolo comparison. The final system fills the width.
+
+## X1–X8: standalone pairs
+
+File: `studio-tremolo-cross-standalone.mscx`. Each pair uses written quarter
+notes with actual 1/8 durations and explicitly disables ordinary beams.
+
+| Case/measure | Source staff | Displayed pair | Strokes | Inspect |
+|---|---|---|---:|---|
+| X1 | Upper | Upper → Lower | 2 | Basic pair crossing downward |
+| X2 | Upper | Lower → Upper | 3 | Same ownership, reversed order |
+| X3 | Lower | Lower → Upper | 2 | Pair crossing upward from lower ownership |
+| X4 | Lower | Upper → Lower | 4 | Reverse order and thick stack |
+| X5 | Upper | Upper chord → Lower chord | 3 | Complete chord heights and clearance |
+| X6 | Lower | Lower chord → Upper chord | 4 | Chord control with opposite ownership |
+| X7 | Upper | Both on Lower | 2 | Entire pair moved down together |
+| X8 | Lower | Both on Upper | 3 | Entire pair moved up together |
+
+X7/X8 are moved-pair controls: both chords display on one staff, although their
+source staff is the other staff. Start with X1-X4, then X5-X8.
+
+## Y1–Y8: inset pairs within cross-staff beams
+
+File: `studio-tremolo-cross-inset.mscx`. Four chords form one forced ordinary
+beam group. The central two carry the two-note tremolo: written eighths with
+actual 1/16 durations, surrounded by ordinary sixteenths. Each measure totals
+1/4. The beam crosses staves in every case.
+
+| Case/measure | Source staff | Four displayed chord positions | Tremolo pair | Strokes |
+|---|---|---|---|---:|
+| Y1 | Upper | U U L L | U → L | 2 |
+| Y2 | Upper | L L U U | L → U | 3 |
+| Y3 | Lower | L L U U | L → U | 2 |
+| Y4 | Lower | U U L L | U → L | 4 |
+| Y5 | Upper | U L L U | Both on Lower | 3 |
+| Y6 | Upper | L U U L | Both on Upper | 2 |
+| Y7 | Lower | L U U L | Both on Upper | 3 |
+| Y8 | Lower | U L L U | Both on Lower | 4 |
+
+Start with Y1-Y4, then Y5-Y8. The latter distinguish a tremolo crossing between
+staves from a tremolo staying on one side of a cross-staff beam.
+
+## What to compare
+
+Keep both staves and the case labels visible. Compare stem directions first,
+then tremolo slope, stack side, distance to the ordinary beams, notehead
+clearance, and the staff gap. Do not compare widths or angles solely in pixels:
+horizontal spacing can differ. A changed staff gap can itself be significant.
+Report any collisions, extreme stems, or shifts after a repeated layout or a
+small edit. For a suspicious case, a close-up of the entire piano system is
+more useful than a crop of just the strokes.
+
+Current modern tremolo anchor/direction adapters exclude staff moves and
+cross-staff beams, so these are baseline comparisons; differences are expected
+diagnostic results. The same-staff common-direction rule from v0.24 must not
+simply be applied to all these cases. Studio has additional direction and
+anchor branches for cross-staff tremolos. The optional pitched two-note flag
+suppression from v0.22 still applies, though these inputs do not need flags.
+
+## Validation and next action
+
+XML parsing, both source-staff duration sums, legal destination staffs, pair
+connections, written/actual duration matching, Auto properties, labels and case
+counts were checked locally. These scores have not been loaded or rendered in
+either application locally. No new application test was added for this
+fixture-only checkpoint. After comparison, isolate the standalone and inset
+differences and adapt them in separate recoverable stages. TAB, manual edits,
+small/grace tremolos and multiple-voice handling remain separate work.
+
+## v0.26: X1-X6 standalone crossing adapter
+
+Apply v0.26 after v0.25, then rebuild and run tst_beam. Reopen the original
+studio-tremolo-cross-standalone.mscx with the experimental style enabled.
+Compare X1-X6 against the same original input in Studio 4.7.5:
+
+- Upper displayed chords point down; lower displayed chords point up.
+- The strokes span most of the distance between stems, normally leaving 1sp
+  at each end, and use the shallower cross-staff anchor solver.
+- X2/X4 reverse the order without reversing which staff owns the stroke stack.
+- X5/X6 include full chord heights; both stems reach their respective outside
+  stroke edges, including the extra stack distance on the opposing side.
+- Repeating layout or making a small edit must not move the stack cumulatively.
+- Turning the experimental style off must restore the legacy result.
+
+X7/X8 retain their previous relocated same-staff handling. The Y1-Y8 inset
+adapter is unchanged. The supplied Studio inset capture has absent strokes in
+several cases and questionable Y8 placement; those results are not being used
+as target geometry without further investigation.
+
+This stage supports full-size, default-style, automatic-direction standalone
+pairs crossing adjacent pitched staves, with one chord on the source staff and
+one moved chord. Existing manual stems/offsets, forced cross-staff directions,
+multiple voices, grace/small notes, TAB, nonstandard line spacing and relocated
+same-staff pairs remain outside this stage. No horizontal-spacing changes.
+
+The new studioCrossStaffTremoloSwitch regression checks X1-X6 directions,
+spans, opposing-stem reach, repeated layout and style-off restoration, plus
+X7/X8 bypass and stability. Local C++11 syntax checks and isolated Qt geometry
+and direction checks pass; full application tests and rendering remain for
+the application build.
+
+## v0.27: relocated same-staff X7/X8
+
+Apply v0.27 after v0.26. Reuse the same original standalone score; no new input
+is required. With the experimental style enabled, X7 and X8 should now have
+long, horizontal stroke stacks above the displayed notes, matching the supplied
+Studio 4.7.5 capture. Both stems point up in these two inputs. X1-X6 should retain
+the v0.26 result. Turn the setting off to recover the original Evolution layout.
+
+Equal nonzero staff moves use Studio's combined-note Auto calculation and
+invert both chord stems; the stack retains the calculated tremolo direction.
+Anchors use the displayed staff's coordinate system and the stack direction's
+endpoint notes. This is distinct from a pair crossing between two staves.
+The supported relocated branch remains automatic, full-size, default-style,
+single-voice, adjacent pitched staves with standard line spacing and unmodified
+stems/tremolo offsets. Forced directions and other unsupported cases retain the
+fallback. A candidate tip behind its notehead bypasses the geometry adapter
+before changing either stem or the supplied path; wide-contour edge cases need
+separate visual investigation. Cross-staff inset Y1-Y8 remains unchanged.
+
+The extended studioCrossStaffTremoloSwitch checks X7/X8 directions, flatness,
+span, complete stack reach, repeat stability, stored Auto, manual/forced bypass,
+invalid provisional origin bypass, and legacy restoration alongside X1-X6.
+Local C++11 syntax and isolated Qt checks pass. Full tst_beam and visual results
+remain for the application build. Next compare X7/X8, then investigate the inset
+anchor/layout timing separately from Studio's questionable Y results.
+
+## v0.28: bounded closeout
+
+X1-X8 now look consistent with the supplied Studio standalone captures. Keep
+Y1-Y8 on Evolution's complete legacy cross-staff inset path for this milestone.
+The modern adapters explicitly bypass these beams, and the added regression
+checks protect their nonempty output and unchanged geometry when switching the
+experimental setting on/off or repeating layout. No new engraving changes.
+The Studio missing-stroke/Y8 issue and the X8 text-autoplace collision are
+separate follow-up work; neither blocks the horizontal-spacing investigation.
+Run tst_beam after applying the incremental patch. Reuse the existing scores.
