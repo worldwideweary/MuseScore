@@ -234,3 +234,19 @@ interaction checks, known coverage gaps, and recommended order.
 Next: use the supplied scores to confirm any remaining rest-traversal or
 nested-tuplet discrepancy, then address that behavior in a separate engine
 checkpoint before beamed tremolos.
+
+## v0.10 consecutive-rest segment endings
+
+Fixes the confirmed R7/R10 differences in both stem directions. At an inner
+segment break, the enabled modern path now backs over the entire trailing rest
+run to the last chord, rather than only one rest. The legacy branch is retained.
+A single remaining chord produces a normal beamlet instead of a segment ending
+on a rest. This is a targeted endpoint correction, not a full segment-builder
+replacement. Leading/trailing runs at the end of an unbroken beam retain their
+prior handling.
+
+studioRestRunSegmentEnds checks all four R7/R10 measures: the first chord's
+highest beam is a right-facing beamlet of the configured length, and its segment
+does not extend over the following rest. Engine/test syntax checks pass; the
+application test still needs running. Compare the same v0.9 rest score again.
+Next checkpoint: nested-tuplet layout order and skyline participation.

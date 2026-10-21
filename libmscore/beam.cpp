@@ -1882,7 +1882,13 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
                               }
 
                         if ((l >= beamLevel && (b32 || b64)) || (l < beamLevel)) {
-                              if (i > 1 && crl[i-1]->type() == ElementType::REST) {
+                              if (useModernLayout) {
+                                    // Studio ends a broken inner segment on the
+                                    // last chord, even after consecutive rests.
+                                    while (i > currentChordRestIndex + 1 && crl[i - 1]->isRest())
+                                          --i;
+                                    }
+                              else if (i > 1 && crl[i-1]->type() == ElementType::REST) {
                                     --i;
                                     }
                               break;

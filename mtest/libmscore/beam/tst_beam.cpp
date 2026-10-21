@@ -65,6 +65,7 @@ class TestBeam : public QObject, public MTest
       void studioBeamletRestNeighbor();
       void studioInnerBreaks();
       void studioBeamedRestClearance();
+      void studioRestRunSegmentEnds();
       void studioBeamShortWidth();
       };
 
@@ -477,6 +478,35 @@ void TestBeam::studioBeamedRestClearance()
       score->doLayout();
       for (size_t i = 0; i < rests.size(); ++i)
             QVERIFY(qAbs(rests[i]->ipos().y() - legacyY[i]) < 1e-7);
+      delete score;
+      }
+
+void TestBeam::studioRestRunSegmentEnds()
+      {
+      MasterScore* score = readScore(DIR + "studio-corners-rests.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      int index = 0, checked = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++index) {
+            if (index % 10 != 6 && index % 10 != 9)
+                  continue;
+            ChordRest* first = toChordRest(m->first(SegmentType::ChordRest)->element(0));
+            QVERIFY(first && first->beam());
+            Beam* beam = first->beam();
+            const QLineF* line = beam->topLevelSegment4(first);
+            QVERIFY(line);
+            // R7 and R10 start with a right-facing beamlet, not a segment
+            // extending to either of the following rests.
+            const qreal expected = score->styleP(Sid::beamMinLen) * beam->mag() * first->staff()->mag(first);
+            QVERIFY(qAbs(line->dx() - expected) < 1e-7);
+            auto it = beam->elements().begin();
+            ++it;
+            QVERIFY((*it)->isRest());
+            QVERIFY(beam->topLevelSegment4(*it) != line);
+            ++checked;
+            }
+      QCOMPARE(checked, 4);
       delete score;
       }
 
