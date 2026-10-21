@@ -35423,17 +35423,17 @@ Diese Partitur enthält bereits Auszüge. Lokale Taktarten zu ändern, während 
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3081"/>
-        <source>25 small diesis up, (25S, ~5:13S, ~37S, 5C&#xa0;plus&#xa0;5C), 2° up [53 EDO]</source>
+        <source>25 small diesis up, (25S, ~5:13S, ~37S, 5C plus 5C), 2° up [53 EDO]</source>
         <translation>25 Combining flag, (25S, ~5:13S, ~37S, 5C plus 5C), 2° nach oben [53 EDO]</translation>
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3089"/>
-        <source>35 medium diesis up, (35M, ~13M, ~125M, 5C&#xa0;plus&#xa0;7C), 2/9-tone up</source>
+        <source>35 medium diesis up, (35M, ~13M, ~125M, 5C plus 7C), 2/9-tone up</source>
         <translation>35 mittlere Diësis nach oben, (35M, ~13M, ~125M, 5C plus 7C), 2/9-Ton nach oben</translation>
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3119"/>
-        <source>5:7 kleisma up, (5:7k, ~11:13k, 7C&#xa0;less&#xa0;5C)</source>
+        <source>5:7 kleisma up, (5:7k, ~11:13k, 7C less 5C)</source>
         <translation>5:7 Kleisma nach oben, (5:7k, ~11:13k, 7C weniger 5C)</translation>
     </message>
     <message>

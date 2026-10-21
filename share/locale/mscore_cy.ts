@@ -35349,17 +35349,17 @@ This score already has part scores. Changing local time signatures while part sc
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3081"/>
-        <source>25 small diesis up, (25S, ~5:13S, ~37S, 5C&#xa0;plus&#xa0;5C), 2° up [53 EDO]</source>
+        <source>25 small diesis up, (25S, ~5:13S, ~37S, 5C plus 5C), 2° up [53 EDO]</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3089"/>
-        <source>35 medium diesis up, (35M, ~13M, ~125M, 5C&#xa0;plus&#xa0;7C), 2/9-tone up</source>
+        <source>35 medium diesis up, (35M, ~13M, ~125M, 5C plus 7C), 2/9-tone up</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3119"/>
-        <source>5:7 kleisma up, (5:7k, ~11:13k, 7C&#xa0;less&#xa0;5C)</source>
+        <source>5:7 kleisma up, (5:7k, ~11:13k, 7C less 5C)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
