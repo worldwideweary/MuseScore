@@ -21,6 +21,8 @@
  */
 
 #include "beam.h"
+#include "groups.h"
+#include "tuplet.h"
 #include "chord.h"
 #include "note.h"
 #include "measure.h"
@@ -1309,5 +1311,141 @@ bool beam4AutoStemUp(std::vector<int> noteLines, int middleLine)
         --right;
     }
     return false;
+}
+}
+
+namespace Ms {
+namespace {
+// Studio v4.7.5 Groups::baseBeamMode, adapted to Evolution's duration enums.
+// Keep it local to the optional beam engine; the legacy Groups is unchanged.
+Beam::Mode baseBeamMode4(ChordRest* cr, ChordRest* prev)
+{
+    using Mode = Beam::Mode;
+    using Duration = TDuration::DurationType;
+    if (cr->isGrace() || cr->beamMode() != Mode::AUTO)
+        return cr->beamMode();
+    const Fraction maxTickLen = qMax(cr->ticks(), prev ? prev->ticks() : Fraction(0, 1));
+    Fraction smallestTickLen(1, 8);
+    const Fraction tickLenLimit(1, 32);
+    while (smallestTickLen > maxTickLen || cr->rtick().ticks() % smallestTickLen.ticks() != 0) {
+        smallestTickLen /= 2;
+        if (smallestTickLen < tickLenLimit) {
+            smallestTickLen = cr->ticks();
+            break;
+        }
+    }
+    const Duration bigBeatDuration = TDuration(smallestTickLen).type();
+    const TDuration duration = cr->durationType();
+    const Groups& group = cr->staff()->group(cr->tick());
+    const Fraction stretch = cr->staff()->timeStretch(cr->tick());
+    const Fraction tick = cr->rtick() * stretch + cr->measure()->anacrusisOffset();
+    const Mode byType = group.beamMode(tick.ticks(), duration.type());
+    const Mode byPosition = group.beamMode(tick.ticks(), bigBeatDuration);
+    Mode mode = byType == Mode::AUTO ? byPosition : byType;
+    if (mode == Mode::AUTO && tick.isNotZero()) {
+        if (prev && cr->tuplet() != prev->tuplet() && duration == prev->durationType()) {
+            if (duration >= Duration::V_EIGHTH)
+                mode = group.beamMode(tick.ticks(), Duration::V_16TH);
+            else if (duration == Duration::V_16TH)
+                mode = group.beamMode(tick.ticks(), Duration::V_32ND);
+            else
+                mode = group.beamMode(tick.ticks(), Duration::V_64TH);
+        }
+        if (cr->voice() && prev && !prev->tuplet() && prev->tick() + prev->actualTicks() < cr->tick())
+            mode = Mode::BEGIN;
+    }
+    return mode;
+}
+
+// Studio BEGIN16/BEGIN32 mean secondary/tertiary breaks. Evolution calls
+// the equivalent modes BEGIN32/BEGIN64 respectively; do not map by spelling.
+void calcBeamBreaks4(ChordRest* cr, ChordRest* prev, int level,
+                    bool& secondary, bool& tertiary)
+{
+    using Mode = Beam::Mode;
+    secondary = tertiary = false;
+    const Mode manual = cr->beamMode();
+    if (cr->isRest() && (manual == Mode::MID || manual == Mode::BEGIN32 || manual == Mode::BEGIN64)) {
+        secondary = manual == Mode::BEGIN32 && level > 0;
+        tertiary = manual == Mode::BEGIN64 && level > 1;
+        return;
+    }
+    const Mode defaults = baseBeamMode4(cr, prev);
+    secondary = level >= 1 && (manual == Mode::BEGIN32 || (manual == Mode::AUTO && defaults == Mode::BEGIN32));
+    tertiary = level >= 2 && (manual == Mode::BEGIN64 || (manual == Mode::AUTO && defaults == Mode::BEGIN64));
+    if (level > 0 && prev && manual == Mode::AUTO) {
+        const Tuplet* boundaryTuplet = nullptr;
+        if (cr->tuplet() && cr->tuplet() != prev->tuplet())
+            boundaryTuplet = cr->tuplet();
+        else if (prev->tuplet() && prev->tuplet() != cr->tuplet())
+            boundaryTuplet = prev->tuplet();
+        if (boundaryTuplet) {
+            const int beams = qMax(TDuration(boundaryTuplet->ticks()).hooks(), 1);
+            if (beams <= level) {
+                secondary = level == 1;
+                tertiary = level >= 2;
+            }
+        }
+    }
+}
+}
+
+// Studio BeamLayout::calcIsBeamletBefore. True means a left-facing beamlet.
+bool beam4BeamletBefore(const std::vector<ChordRest*>& elements, int index, int level)
+{
+    if (index < 0 || index >= static_cast<int>(elements.size()) || !elements[index]->isChord())
+        return false;
+    if (index == 0)
+        return false;
+    if (index == static_cast<int>(elements.size()) - 1)
+        return true;
+    ChordRest* chord = elements[index];
+    Tuplet* tuplet = chord->tuplet();
+    if (tuplet && chord == tuplet->elements().front())
+        return false;
+    if (tuplet && chord == tuplet->elements().back())
+        return true;
+    ChordRest* next = elements[index + 1];
+    ChordRest* prev = elements[index - 1];
+    if (next->isChord()) {
+        bool nextSecondary, nextTertiary, currentSecondary, currentTertiary;
+        calcBeamBreaks4(chord, prev, prev->beams(), currentSecondary, currentTertiary);
+        calcBeamBreaks4(next, chord, level, nextSecondary, nextTertiary);
+        if ((nextSecondary && level >= 1) || (!currentSecondary && nextTertiary && level >= 2))
+            return true;
+    }
+    bool afterSecondary, afterTertiary;
+    calcBeamBreaks4(chord, prev, level, afterSecondary, afterTertiary);
+    int previousLevel = -1;
+    int nextLevel = -1;
+    for (int i = index - 1; i >= 0; --i) {
+        if (elements[i]->isChord()) {
+            previousLevel = elements[i]->beams();
+            if (afterSecondary)
+                previousLevel = qMin(previousLevel, 1);
+            else if (afterTertiary)
+                previousLevel = qMin(previousLevel, 2);
+            break;
+        }
+    }
+    for (int i = index + 1; i < static_cast<int>(elements.size()); ++i) {
+        if (elements[i]->isChord()) {
+            nextLevel = elements[i]->beams();
+            break;
+        }
+    }
+    if (nextLevel != previousLevel)
+        return nextLevel < previousLevel;
+    const Fraction baseTick = tuplet ? tuplet->tick() : chord->measure()->tick();
+    const Fraction stretch = chord->staff()->timeStretch(baseTick);
+    Fraction tickNext = (next->tick() - baseTick) * stretch;
+    if (tuplet && (tuplet->ratio().numerator() & 1))
+        tickNext = tickNext * tuplet->ratio();
+    const int tickLargeSize = chord->ticks().ticks() * 2;
+    if (tickLargeSize <= 0)
+        return false;
+    const int remainder = tickNext.ticks() % tickLargeSize;
+    const int tolerance = 6;
+    return remainder <= tolerance || tickLargeSize - remainder <= tolerance;
 }
 }

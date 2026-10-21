@@ -35,7 +35,7 @@ apply-to-parts and extraction mechanisms. No forward-port patch is provided.
 
 This is an experimental placement backport, **not verified complete 4.7.5
 engraving parity**. Tablature and beams containing tremolos deliberately retain
-legacy placement. Beam grouping, beamlet selection, segment construction and
+legacy placement. Beam grouping, segment construction and
 automatic stem-direction selection for unsupported cases retain Evolution's infrastructure. These
 can differ from Studio, particularly with mixed subdivisions, rests and complex
 cross-staff groups. The shared Studio two-note tremolo engine is not ported.
@@ -106,3 +106,39 @@ Further existing comparisons: `Beam-23.mscx` mixes eighths and sixteenths;
 None of those alone is a comprehensive thirty-second-note matrix.
 Next implementation stage: inner-beam grouping and beamlets, including rests,
 forced secondary breaks and tuplets, then beamed tremolos. Tablature stays last.
+
+## v0.6 beamlet-direction checkpoint
+
+The earlier alleged mismatch in `studio-mixed-levels.mscx`, measure 3, was
+withdrawn after close-up inspection. Both versions point the second note's
+beamlet right and the fourth note's left. `studioBeamletControl` preserves
+those directions as a regression check.
+
+The optional path now adapts Studio 4.7.5's `calcIsBeamletBefore`, including
+nearest-note searches past rests, boundary/tuplet precedence and rhythmic
+subdivision checks. Supporting base-beam-mode and break calculations are local
+to the optional engine; the legacy Groups code and legacy segment builder are
+unchanged. The new policy runs only for the existing supported modern path;
+the option-off path, manual beams, tablature and tremolo-containing beams keep
+their prior handling. This stage does not port the full inner-segment/rest
+layout engine or change horizontal spacing.
+
+`studio-beamlet-rest.mscx` is a new diagnostic, not a visually confirmed report:
+each beat contains a 32nd note, a manually beamed eighth rest, a 64th note,
+a 16th note, then another 64th. On the first 64th, the legacy code compares the
+adjacent rest (one beam) with the following 16th (two), favouring a right-facing
+beamlet. Studio looks past the rest to the preceding 32nd (three), favouring
+left. The score contains both stem directions. Compare it with the setting
+off/on and in Studio; rest position and horizontal spacing may still differ.
+`studioBeamletRestNeighbor` checks the actual new beamlet's left-facing line.
+
+The adapted beamlet decision matched the original v4.7.5 function in 313,890
+queries in a simplified-context harness, covering rests, manual break modes,
+tuplet boundaries, grace flags, levels and local time stretches. This verifies
+decision adaptation in that harness, not full application parity. Engine and
+test syntax checks pass; the two added `tst_beam` cases have not been run here.
+
+Next stage: forced secondary/tertiary beam breaks and their interactions with
+rests and embedded tuplets. Then beamed tremolos. Tablature remains last among
+beam cases. After beam work, investigate a separate legacy/4.x horizontal
+spacing switch, beginning with the five-note isolated-32nds example.

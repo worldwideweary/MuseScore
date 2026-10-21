@@ -1964,7 +1964,11 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
                         // if first or last of group (including tuplet groups)
                         // unconditionally set beam at right or left side
                         Tuplet* tuplet = cr1->tuplet();
-                        if (currentChordRestIndex == 0)
+                        if (useModernLayout) {
+                              if (beam4BeamletBefore(crl, static_cast<int>(currentChordRestIndex), beamLevel))
+                                    len = -len;
+                              }
+                        else if (currentChordRestIndex == 0)
                               ;
                         else if (currentChordRestIndex == sizeChordRests - 1)
                               len = -len;

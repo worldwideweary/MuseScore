@@ -59,6 +59,8 @@ class TestBeam : public QObject, public MTest
       void studioBeamCrossStaff();
       void studioBeamDirectionPolicy();
       void studioBeamDirectionSwitch();
+      void studioBeamletControl();
+      void studioBeamletRestNeighbor();
       void studioBeamShortWidth();
       };
 
@@ -315,6 +317,56 @@ void TestBeam::studioBeamCrossStaff()
       QVERIFY(qIsFinite(position.x()) && qIsFinite(position.y()));
       score->doLayout();
       QVERIFY(QLineF(position, first->beam()->beamPos()).length() < 1e-7);
+      delete score;
+      }
+
+void TestBeam::studioBeamletControl()
+      {
+      MasterScore* score = readScore(DIR + "studio-mixed-levels.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      Measure* measure = score->firstMeasure()->nextMeasure()->nextMeasure();
+      QVERIFY(measure);
+      ChordRest* first = toChordRest(measure->first(SegmentType::ChordRest)->element(0));
+      QVERIFY(first && first->beam());
+      std::vector<ChordRest*> elements;
+      for (ChordRest* cr : first->beam()->elements())
+            elements.push_back(cr);
+      QCOMPARE(static_cast<int>(elements.size()), 5);
+      // The close-up supplied by the user: second beamlet right, fourth left.
+      QVERIFY(!beam4BeamletBefore(elements, 1, 2));
+      QVERIFY(beam4BeamletBefore(elements, 3, 2));
+      const QLineF* second = first->beam()->topLevelSegment4(elements[1]);
+      const QLineF* fourth = first->beam()->topLevelSegment4(elements[3]);
+      QVERIFY(second && fourth);
+      QVERIFY(second->dx() > 0);
+      QVERIFY(fourth->dx() < 0);
+      delete score;
+      }
+
+void TestBeam::studioBeamletRestNeighbor()
+      {
+      MasterScore* score = readScore(DIR + "studio-beamlet-rest.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      for (Measure* measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+            ChordRest* first = toChordRest(measure->first(SegmentType::ChordRest)->element(0));
+            QVERIFY(first && first->beam());
+            std::vector<ChordRest*> elements;
+            for (ChordRest* cr : first->beam()->elements())
+                  elements.push_back(cr);
+            QCOMPARE(static_cast<int>(elements.size()), 5);
+            QVERIFY(elements[1]->isRest());
+            QCOMPARE(elements[2]->beams(), 4);
+            // Ignore the adjacent eighth rest: the nearest previous note has
+            // three beams and the next note has two, so the beamlet goes left.
+            QVERIFY(beam4BeamletBefore(elements, 2, 3));
+            const QLineF* beamlet = first->beam()->topLevelSegment4(elements[2]);
+            QVERIFY(beamlet);
+            QVERIFY(beamlet->dx() < 0);
+            }
       delete score;
       }
 

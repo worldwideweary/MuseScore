@@ -13,6 +13,8 @@ bool layoutBeam4(Beam*, const std::vector<ChordRest*>&, QPointF& start,
 // Studio's tie-break rule for the distinct note positions of a beam.
 // Line numbers increase downwards; middleLine is the staff's centre line.
 bool beam4AutoStemUp(std::vector<int> noteLines, int middleLine);
+// The fragment's chord/rest vector is in score order. True means left-facing.
+bool beam4BeamletBefore(const std::vector<ChordRest*>&, int index, int level);
 // Staff-gap and segment-stack portions of Studio's cross-staff layout.
 qreal beam4MinStaffDistance(Beam*, int upperStaff, int lowerStaff);
 qreal beam4CenterOffset(Beam*, const std::vector<ChordRest*>&);
