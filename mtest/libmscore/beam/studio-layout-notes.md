@@ -214,3 +214,23 @@ These checks do not establish full application parity.
 
 Next: run tst_beam and compare the rest positions, then continue with remaining
 rest-segment traversal and nested-tuplet cases before beamed tremolos.
+
+## v0.9 visual corner-case pack
+
+Adds studio-corners-rests.mscx (20 measures), studio-corners-tuplets.mscx
+(12 measures), studio-corners-contours.mscx (10 measures), and the accompanying
+studio-corners-guide.md. All cases repeat with up/down stems and carry short
+labels. Explicit system breaks limit each system to two measures.
+
+Coverage: leading/trailing/consecutive rests; mixed rest lengths; forced breaks
+before/on/after rest runs; embedded, nested and adjacent tuplets; a quintuplet;
+sloped-beam rest clearance; mixed 64ths and breaks at multiple beam levels.
+All measure durations and tuplet spans pass exact rational checks, and XML
+parsing passes. No engine or automated-test changes; no application rendering
+or tst_beam run is claimed here. These are diagnostic inputs, not reference
+outputs asserting parity. See studio-corners-guide.md for the comparison map,
+interaction checks, known coverage gaps, and recommended order.
+
+Next: use the supplied scores to confirm any remaining rest-traversal or
+nested-tuplet discrepancy, then address that behavior in a separate engine
+checkpoint before beamed tremolos.
