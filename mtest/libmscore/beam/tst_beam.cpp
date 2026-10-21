@@ -17,6 +17,8 @@
 #include "libmscore/chordrest.h"
 #include "libmscore/chord.h"
 #include "libmscore/rest.h"
+#include "libmscore/tuplet.h"
+#include "libmscore/text.h"
 #include "libmscore/staff.h"
 #include "libmscore/beam.h"
 #include "libmscore/beamlayout4.h"
@@ -66,6 +68,7 @@ class TestBeam : public QObject, public MTest
       void studioInnerBreaks();
       void studioBeamedRestClearance();
       void studioRestRunSegmentEnds();
+      void studioNestedTupletStacking();
       void studioBeamShortWidth();
       };
 
@@ -507,6 +510,65 @@ void TestBeam::studioRestRunSegmentEnds()
             ++checked;
             }
       QCOMPARE(checked, 4);
+      delete score;
+      }
+
+void TestBeam::studioNestedTupletStacking()
+      {
+      MasterScore* score = readScore(DIR + "studio-corners-tuplets.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      std::vector<Tuplet*> outers, inners;
+      std::vector<QPointF> legacyPositions;
+      int index = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++index) {
+            if (index % 6 != 2 && index % 6 != 3)
+                  continue;
+            Tuplet* outer = nullptr;
+            for (Segment* seg = m->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+                  Element* e = seg->element(0);
+                  if (e && e->isChordRest() && toChordRest(e)->tuplet()) {
+                        outer = toChordRest(e)->tuplet();
+                        while (outer->tuplet())
+                              outer = outer->tuplet();
+                        break;
+                        }
+                  }
+            QVERIFY(outer);
+            Tuplet* inner = nullptr;
+            for (DurationElement* e : outer->elements()) {
+                  if (e->isTuplet()) {
+                        inner = toTuplet(e);
+                        break;
+                        }
+                  }
+            QVERIFY(inner);
+            outers.push_back(outer);
+            inners.push_back(inner);
+            legacyPositions.push_back(outer->pos());
+            }
+      QCOMPARE(static_cast<int>(outers.size()), 4);
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      std::vector<QPointF> modernPositions;
+      for (size_t i = 0; i < outers.size(); ++i) {
+            Tuplet* outer = outers[i];
+            Tuplet* inner = inners[i];
+            QVERIFY(outer->number() && inner->number());
+            const QRectF a = outer->number()->bbox().translated(outer->number()->pagePos());
+            const QRectF b = inner->number()->bbox().translated(inner->number()->pagePos());
+            QVERIFY(qIsFinite(a.top()) && qIsFinite(b.top()));
+            QVERIFY(outer->isUp() ? a.bottom() <= b.top() + 1e-7 : b.bottom() <= a.top() + 1e-7);
+            modernPositions.push_back(outer->pos());
+            }
+      score->doLayout();
+      for (size_t i = 0; i < outers.size(); ++i)
+            QVERIFY(QLineF(outers[i]->pos(), modernPositions[i]).length() < 1e-7);
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      for (size_t i = 0; i < outers.size(); ++i)
+            QVERIFY(QLineF(outers[i]->pos(), legacyPositions[i]).length() < 1e-7);
       delete score;
       }
 

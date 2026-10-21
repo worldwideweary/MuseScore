@@ -3457,6 +3457,18 @@ bool notTopBeam(ChordRest* cr)
       return false;
       }
 
+// Studio 4.7.5 TupletLayout::layoutTupletAndNestedTuplets: inner
+// tuplets must enter the skyline before their enclosing bracket is placed.
+static void layoutTupletTree4(Tuplet* tuplet)
+      {
+      const auto& elements = tuplet->elements();
+      for (auto it = elements.rbegin(); it != elements.rend(); ++it) {
+            if (*it != tuplet && (*it)->isTuplet())
+                  layoutTupletTree4(toTuplet(*it));
+            }
+      tuplet->layout();
+      }
+
 //---------------------------------------------------------
 //   isTopTuplet
 //    returns true for the first CR of a tuplet that is not cross-staff
@@ -4682,11 +4694,26 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       // layout tuplets
       //-------------------------------------------------------------
 
+      std::set<Tuplet*> laidOutTuplets4;
       for (Segment* s : sl) {
             for (Element* e : s->elist()) {
                   if (!e || !e->isChordRest() || !score()->staff(e->staffIdx())->show())
                         continue;
                   ChordRest* cr = toChordRest(e);
+                  if (score()->styleB(Sid::beamLayout4)) {
+                        Tuplet* root = cr->tuplet();
+                        if (!root)
+                              continue;
+                        while (root->tuplet())
+                              root = root->tuplet();
+                        if (root->cross())
+                              continue;
+                        // Process the complete tree once. Inner-tuplet
+                        // starts must not add its skyline a second time.
+                        if (laidOutTuplets4.insert(root).second)
+                              layoutTupletTree4(root);
+                        continue;
+                        }
                   if (!isTopTuplet(cr))
                         continue;
                   DurationElement* de = cr;

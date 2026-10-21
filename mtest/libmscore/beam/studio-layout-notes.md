@@ -250,3 +250,31 @@ highest beam is a right-facing beamlet of the configured length, and its segment
 does not extend over the following rest. Engine/test syntax checks pass; the
 application test still needs running. Compare the same v0.9 rest score again.
 Next checkpoint: nested-tuplet layout order and skyline participation.
+
+## v0.11 nested-tuplet stacking
+
+With beamLayout4 enabled, non-cross-staff tuplet trees are laid out once per
+system pass, recursively visiting children in reverse order before their
+parent, following Studio 4.7.5's layoutTupletAndNestedTuplets. A processed-root
+set prevents later inner-tuplet starts from registering the same shapes again.
+Nested tuplets and their enclosing tuplets participate in automatic skyline
+placement even when outOfStaff was suppressed for anchor calculation. The
+existing automatic-placement and add-to-skyline controls still apply.
+
+The option-off traversal and placement condition are retained. Cross-staff
+tuplet placement is deferred. This stage adapts hierarchy order and skyline
+participation, not the complete Studio tuplet bracket or direction algorithms.
+Non-nested tuplets keep their existing outOfStaff placement condition.
+
+studioNestedTupletStacking loads the v0.9 tuplet score and checks T3/T4 in both
+stem directions: outer/inner numbers separate vertically; repeated full layout
+is stable; disabling the style restores legacy outer positions. Production and
+test syntax checks pass, and the full base-to-current whitespace check passes.
+The application tests have not been run here and visual parity is unverified.
+
+Apply v0.10 after v0.9, then v0.11 after v0.10. Run tst_beam. Compare R7/R10
+(up: measures 7/10, down: 17/20) in studio-corners-rests.mscx and T3/T4
+(up: measures 3/4, down: 9/10) in studio-corners-tuplets.mscx. Also check T1/T2,
+T5/T6 for accidental placement changes. Next: confirm these two checkpoints in
+the application, then continue into beamed tremolos; remaining multi-voice and
+cross-staff rest cases and horizontal spacing remain separate work.
