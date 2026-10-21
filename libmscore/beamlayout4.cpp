@@ -29,6 +29,8 @@
 #include "score.h"
 #include "staff.h"
 #include "stem.h"
+#include "rest.h"
+#include "segment.h"
 #include "system.h"
 #include "beamlayout4.h"
 
@@ -1453,5 +1455,98 @@ bool beam4BeamletBefore(const std::vector<ChordRest*>& elements, int index, int 
     const int remainder = tickNext.ticks() % tickLargeSize;
     const int tolerance = 6;
     return remainder <= tolerance || tickLargeSize - remainder <= tolerance;
+}
+}
+
+
+namespace Ms {
+namespace {
+// Studio 4.7.5 BeamSegment::shape: sloped beams are subdivided into
+// staff-space-wide rectangles rather than one oversized bounding box.
+Shape beamSegmentShape4(QLineF line, qreal width, qreal spatium)
+{
+    Shape shape;
+    if (line.x1() > line.x2())
+        line = QLineF(line.p2(), line.p1());
+    const qreal length = line.dx();
+    const int count = qFuzzyIsNull(line.dy()) ? 1 : qMax(1, int(std::floor(length / spatium)));
+    const qreal dx = length / count;
+    const qreal dy = line.dy() / count;
+    for (int i = 0; i < count; ++i)
+        shape.add(QRectF(line.x1() + i * dx, line.y1() + i * dy - width / 2, dx, width));
+    return shape;
+}
+
+// Studio Shape::verticalClearance, kept local to avoid changing legacy Shape.
+qreal verticalClearance4(const Shape& upper, const Shape& lower, qreal minX = 0)
+{
+    if (upper.empty() || lower.empty())
+        return 0;
+    qreal clearance = std::numeric_limits<qreal>::max();
+    for (const QRectF& a : upper) {
+        if (a.height() <= 0)
+            continue;
+        for (const QRectF& b : lower) {
+            if (b.height() > 0 && a.width() != 0 && b.width() != 0
+                && a.right() + minX > b.left() && a.left() < b.right() + minX)
+                clearance = qMin(clearance, b.top() - a.bottom());
+        }
+    }
+    return clearance;
+}
+
+bool canAdjustRest4(const ChordRest* cr, const Beam* beam)
+{
+    return cr->isRest() && cr->vStaffIdx() == beam->staffIdx()
+        && cr->autoplace() && !toRest(cr)->isGap()
+        && !cr->measure()->hasVoices(cr->staffIdx(), cr->tick(), cr->actualTicks());
+}
+
+qreal restMove4(qreal clearance, qreal padding, qreal lineDistance, bool up)
+{
+    if (lineDistance <= 0 || clearance > padding)
+        return 0;
+    return std::ceil((padding - clearance) / lineDistance) * lineDistance * (up ? 1 : -1);
+}
+}
+
+// Reset before calculating anchors too: a leading/trailing rest must not
+// carry its previous clearance adjustment into a provisional layout pass.
+void beam4ResetRests(Beam* beam, const std::vector<ChordRest*>& elements)
+{
+    for (ChordRest* cr : elements) {
+        if (canAdjustRest4(cr, beam))
+            toRest(cr)->layout();
+    }
+}
+
+// Adapted from BeamLayout::verticalAdjustBeamedRests. Multi-voice collision
+// resolution and locked/merged rests need their own adapter and are deferred.
+void beam4AdjustRests(Beam* beam, const std::vector<ChordRest*>& elements,
+                      const QVector<QLineF*>& segments)
+{
+    Shape beamShape;
+    const qreal width = beam->score()->styleP(Sid::beamWidth) * beam->mag();
+    for (const QLineF* line : segments)
+        beamShape.add(beamSegmentShape4(*line, width, beam->spatium()));
+    beamShape.translate(beam->pagePos());
+    for (ChordRest* cr : elements) {
+        if (!canAdjustRest4(cr, beam))
+            continue;
+        Rest* rest = toRest(cr);
+        const qreal sp = rest->spatium();
+        const Shape restShape = rest->shape().translated(rest->pagePos() - rest->offset());
+        const Beam::Mode mode = rest->beamMode();
+        const bool firstRest = rest == beam->elements().front()
+            && (mode == Beam::Mode::BEGIN || mode == Beam::Mode::BEGIN32
+                || mode == Beam::Mode::BEGIN64 || mode == Beam::Mode::MID);
+        const bool up = beam->up();
+        const qreal clearance = up ? verticalClearance4(beamShape, restShape, firstRest ? 0.1 * sp : 0)
+                                   : verticalClearance4(restShape, beamShape);
+        const qreal padding = (rest->ticks() <= Fraction(1, 32) ? 0.2 : 0.35) * sp;
+        const qreal move = restMove4(clearance, padding, rest->staff()->lineDistance(rest->tick()) * sp, up);
+        rest->rypos() += move;
+        rest->segment()->createShape(rest->vStaffIdx());
+    }
 }
 }

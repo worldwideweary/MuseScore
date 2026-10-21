@@ -16,6 +16,8 @@
 #include "libmscore/measure.h"
 #include "libmscore/chordrest.h"
 #include "libmscore/chord.h"
+#include "libmscore/rest.h"
+#include "libmscore/staff.h"
 #include "libmscore/beam.h"
 #include "libmscore/beamlayout4.h"
 
@@ -62,6 +64,7 @@ class TestBeam : public QObject, public MTest
       void studioBeamletControl();
       void studioBeamletRestNeighbor();
       void studioInnerBreaks();
+      void studioBeamedRestClearance();
       void studioBeamShortWidth();
       };
 
@@ -412,6 +415,68 @@ void TestBeam::studioInnerBreaks()
                   }
             }
       QCOMPARE(measureIndex, 10);
+      delete score;
+      }
+
+void TestBeam::studioBeamedRestClearance()
+      {
+      MasterScore* score = readScore(DIR + "studio-inner-breaks.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      std::vector<Rest*> rests;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            for (Segment* seg = m->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+                  Element* e = seg->element(0);
+                  if (e && e->isRest() && toRest(e)->beam())
+                        rests.push_back(toRest(e));
+                  }
+            }
+      QCOMPARE(static_cast<int>(rests.size()), 4);
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      std::vector<qreal> legacyY;
+      for (Rest* rest : rests)
+            legacyY.push_back(rest->ipos().y());
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      std::vector<qreal> modernY;
+      bool movedUpStemRest = false;
+      for (size_t i = 0; i < rests.size(); ++i) {
+            Rest* rest = rests[i];
+            const qreal y = rest->ipos().y();
+            modernY.push_back(y);
+            QVERIFY(qIsFinite(y));
+            QCOMPARE(rest->offset(), QPointF());
+            const qreal delta = y - legacyY[i];
+            QVERIFY(rest->beam()->up() ? delta >= -1e-7 : delta <= 1e-7);
+            const qreal steps = delta / (rest->staff()->lineDistance(rest->tick()) * rest->spatium());
+            QVERIFY(qAbs(steps - qRound(steps)) < 1e-7);
+            movedUpStemRest |= rest->beam()->up() && delta > 0;
+            }
+      QVERIFY(movedUpStemRest);
+      // Exercise beam-only relayout as well as a complete score layout.
+      for (Rest* rest : rests)
+            rest->beam()->layout();
+      for (size_t i = 0; i < rests.size(); ++i)
+            QVERIFY(qAbs(rests[i]->ipos().y() - modernY[i]) < 1e-7);
+      score->doLayout();
+      for (size_t i = 0; i < rests.size(); ++i)
+            QVERIFY(qAbs(rests[i]->ipos().y() - modernY[i]) < 1e-7);
+      // Stored offsets survive the automatic clearance pass.
+      const QPointF offset(0, rests[0]->spatium());
+      rests[0]->setProperty(Pid::OFFSET, offset);
+      score->doLayout();
+      QCOMPARE(rests[0]->offset(), offset);
+      rests[0]->setProperty(Pid::OFFSET, QPointF());
+      rests[0]->setAutoplace(false);
+      score->doLayout();
+      QVERIFY(qAbs(rests[0]->ipos().y() - legacyY[0]) < 1e-7);
+      rests[0]->setAutoplace(true);
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      for (size_t i = 0; i < rests.size(); ++i)
+            QVERIFY(qAbs(rests[i]->ipos().y() - legacyY[i]) < 1e-7);
       delete score;
       }
 

@@ -1599,6 +1599,9 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
                   return cr->isChord() && toChord(cr)->tremolo();
                   });
 
+      if (useModernLayout && !_cross)
+            beam4ResetRests(this, crl);
+
       qreal _spatium   = spatium();
       QPointF _pagePos(pagePos());
 
@@ -2105,6 +2108,9 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
             for (QLineF* line : qAsConst(beamSegments))
                   line->translate(0.0, correction);
             }
+
+      if (useModernLayout && !_cross)
+            beam4AdjustRests(this, crl, beamSegments);
 
       //
       //  calculate stem length

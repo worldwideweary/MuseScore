@@ -2,6 +2,8 @@
 #ifndef MS_BEAMLAYOUT4_H
 #define MS_BEAMLAYOUT4_H
 #include <QPointF>
+#include <QVector>
+#include <QLineF>
 #include <vector>
 namespace Ms {
 class Beam;
@@ -18,6 +20,10 @@ void beam4CalcBreaks(ChordRest*, ChordRest* previous, int level,
                      bool& secondary, bool& tertiary);
 // The fragment's chord/rest vector is in score order. True means left-facing.
 bool beam4BeamletBefore(const std::vector<ChordRest*>&, int index, int level);
+// Single-voice, non-cross-staff rest clearance after segment construction.
+void beam4ResetRests(Beam*, const std::vector<ChordRest*>&);
+void beam4AdjustRests(Beam*, const std::vector<ChordRest*>&,
+                      const QVector<QLineF*>& segments);
 // Staff-gap and segment-stack portions of Studio's cross-staff layout.
 qreal beam4MinStaffDistance(Beam*, int upperStaff, int lowerStaff);
 qreal beam4CenterOffset(Beam*, const std::vector<ChordRest*>&);

@@ -178,3 +178,39 @@ the full diff against the original base passes git diff --check.
 Next: run tst_beam and compare this matrix with 4.7.5, then address remaining
 rest-segment traversal differences and nested tuplets before beamed tremolos.
 Horizontal spacing and tablature remain separate later work.
+
+## v0.8 beamed-rest clearance checkpoint
+
+The supported modern path now adapts Studio 4.7.5's
+BeamLayout::verticalAdjustBeamedRests for single-voice, non-cross-staff beams.
+It builds the collision shape from actual segments, subdividing sloped beams
+as Studio does, and compares it with the rest shape excluding the saved user
+offset. Padding is 0.2sp for 32nd rests and shorter, 0.35sp otherwise. Movement
+is away from the beam, rounded up to whole staff-line-distance increments.
+
+Eligible rests are reset with their normal layout before calculating beam
+anchors, then adjusted after segment construction. This prevents provisional
+or repeated beam layout from accumulating movement. Saved offsets are not
+changed. Disabling automatic placement bypasses this adapter. The option-off
+path, user-modified beams, TAB, tremolo beams and cross-staff beams keep their
+previous path. Multi-voice rests are deferred because Studio additionally
+resolves chord/rest and rest/rest collisions, including merged and locked rests.
+Leading/trailing rests and interactions with adjacent objects need further
+visual comparison; this is not a complete port of Studio's rest layout engine.
+
+Reuse studio-inner-breaks.mscx: measures 3/4 and 8/9 contain beamed rests in
+both stem directions. Compare rest position and beam clearance in 4.7.5 and
+Evolution with the setting on. studioBeamedRestClearance checks movement
+direction, whole-space quantization, repeated beam-only/full layout, saved
+offsets, automatic placement disabled, and restoration after switching off.
+The application test has been syntax checked but has not been run here.
+
+A standalone harness using the real adapter math matched the original Studio
+function bodies for 89,024 beam rectangles and 60,000 clearance queries;
+120,000 movement checks passed for direction, sufficient clearance and minimum
+whole-space rounding. Source/test syntax checks including unused-parameter
+warnings pass, as does the full whitespace check against the original base.
+These checks do not establish full application parity.
+
+Next: run tst_beam and compare the rest positions, then continue with remaining
+rest-segment traversal and nested-tuplet cases before beamed tremolos.
