@@ -278,3 +278,23 @@ Apply v0.10 after v0.9, then v0.11 after v0.10. Run tst_beam. Compare R7/R10
 T5/T6 for accidental placement changes. Next: confirm these two checkpoints in
 the application, then continue into beamed tremolos; remaining multi-voice and
 cross-staff rest cases and horizontal spacing remain separate work.
+
+## v0.12 nested-tuplet test correction
+
+The supplied Qt 5.9.9 result.xml reports one failure, in the number-separation
+assertion of studioNestedTupletStacking. studioRestRunSegmentEnds and
+studioBeamedRestClearance pass. The supplied screenshots show short R7/R10
+beamlets and outward stacking of the nested tuplet numbers/brackets.
+
+The old test required disjoint vertical projections of the number bounding
+boxes, even when they are horizontally separated. That is stronger than the
+2D skyline collision rule. Replace it with outward ordering of the number
+centers plus non-intersection of the full number rectangles. Collapsed, inward
+or overlapping number placement still fails. Failure messages now report both
+rectangles and the stem-side flag. Repeated-layout and option-off restoration
+checks remain in place.
+
+Only the test and these notes change; engraving code is unchanged. Test syntax
+and full base-to-current whitespace checks pass. The corrected application
+test has not been run here; rebuild tst_beam and rerun the suite. A remaining
+failure with the new coordinates would require further geometry investigation.

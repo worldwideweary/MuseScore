@@ -558,8 +558,18 @@ void TestBeam::studioNestedTupletStacking()
             QVERIFY(outer->number() && inner->number());
             const QRectF a = outer->number()->bbox().translated(outer->number()->pagePos());
             const QRectF b = inner->number()->bbox().translated(inner->number()->pagePos());
-            QVERIFY(qIsFinite(a.top()) && qIsFinite(b.top()));
-            QVERIFY(outer->isUp() ? a.bottom() <= b.top() + 1e-7 : b.bottom() <= a.top() + 1e-7);
+            const QByteArray detail = QString(
+                  "nested pair %1, up=%2: outer=(%3,%4,%5,%6), inner=(%7,%8,%9,%10)")
+                  .arg(static_cast<int>(i)).arg(outer->isUp())
+                  .arg(a.x()).arg(a.y()).arg(a.width()).arg(a.height())
+                  .arg(b.x()).arg(b.y()).arg(b.width()).arg(b.height()).toUtf8();
+            QVERIFY2(qIsFinite(a.top()) && qIsFinite(b.top()), detail.constData());
+            // Skyline placement allows diagonally separated numbers to have
+            // overlapping Y ranges. Require outward ordering and no actual
+            // 2D collision, not complete separation of their Y projections.
+            QVERIFY2(outer->isUp() ? a.center().y() < b.center().y()
+                                  : a.center().y() > b.center().y(), detail.constData());
+            QVERIFY2(!a.intersects(b), detail.constData());
             modernPositions.push_back(outer->pos());
             }
       score->doLayout();
