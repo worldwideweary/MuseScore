@@ -11,8 +11,11 @@ class ChordRest;
 bool layoutBeam4(Beam*, const std::vector<ChordRest*>&, QPointF& start,
                  QPointF& end, qreal& beamDistance);
 // Studio's tie-break rule for the distinct note positions of a beam.
-// Line numbers increase downwards; middleLine is the staff's centre line.
+// Line numbers increase downwards; middleLine is the staff's center line.
 bool beam4AutoStemUp(std::vector<int> noteLines, int middleLine);
+// Breaks before this element at the requested inner-beam level.
+void beam4CalcBreaks(ChordRest*, ChordRest* previous, int level,
+                     bool& secondary, bool& tertiary);
 // The fragment's chord/rest vector is in score order. True means left-facing.
 bool beam4BeamletBefore(const std::vector<ChordRest*>&, int index, int level);
 // Staff-gap and segment-stack portions of Studio's cross-staff layout.

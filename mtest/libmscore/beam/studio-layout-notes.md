@@ -142,3 +142,39 @@ Next stage: forced secondary/tertiary beam breaks and their interactions with
 rests and embedded tuplets. Then beamed tremolos. Tablature remains last among
 beam cases. After beam work, investigate a separate legacy/4.x horizontal
 spacing switch, beginning with the five-note isolated-32nds example.
+
+## v0.7 inner-break checkpoint
+
+The supported opt-in segment path now uses the same adapted Studio 4.7.5
+break calculation as beamlet direction. This includes explicit secondary and
+tertiary breaks, manually beamed rests and AUTO embedded-tuplet boundaries.
+The legacy branch still calls Groups::endBeam unchanged. This stage does not
+replace the rest-continuation/segment traversal with Studio's full builder;
+longer runs of rests, nested tuplets and cross-staff mixed segments need further
+comparison before that work can be considered complete. Tremolos still use the
+legacy fallback.
+
+`studio-inner-breaks.mscx` contains ten 1/4 measures. Measures 1–5 use up stems;
+6–10 repeat the patterns with down stems:
+
+1. Four 16ths, secondary break before note 3.
+2. Eight 32nds, tertiary break before note 5.
+3. Four 16th events, event 2 a rest with a secondary break.
+4. Eight 32nd events, event 4 a rest with a tertiary break.
+5. A normal 32nd, three triplet 32nds, another normal 32nd, then an eighth
+   rest. The triplet occupies a 16th, so its entry/exit breaks only the third
+   beam; the primary and secondary beams should remain joined.
+
+`studioInnerBreaks` checks break levels and actual highest-level segment
+sharing/separation. It has been syntax checked, but has not been run here in
+the application. A simplified-context harness compared 418,000 break decisions
+and 313,890 beamlet decisions against original v4.7.5 function bodies, with no
+mismatches. This does not verify full score layout or visual parity.
+
+The unused calculateAnchorsCross item parameter is now unnamed, matching the
+adjacent unused score parameter. The earlier whitespace-only line is removed;
+the full diff against the original base passes git diff --check.
+
+Next: run tst_beam and compare this matrix with 4.7.5, then address remaining
+rest-segment traversal differences and nested tuplets before beamed tremolos.
+Horizontal spacing and tablature remain separate later work.

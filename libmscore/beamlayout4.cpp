@@ -115,7 +115,6 @@ static int minStemLength(const ChordRest* cr, const LayoutData* ldata)
     static constexpr int minStemLengths[BEAMS_COUNT] = { 11, 13, 15, 18, 21, 24, 27, 30 };
     int beams = strokeCount(ldata, cr);
     if (beams > BEAMS_COUNT) {
-        
         return minStemLengths[BEAMS_COUNT - 1];
     }
 
@@ -790,11 +789,11 @@ static QPointF chordBeamAnchor(const LayoutData* ldata, const ChordRest* cr, Cho
     return QPointF(chordBeamAnchorX(ldata, cr, type), y);
 }
 
-static bool calculateAnchorsCross(const Beam* item, LayoutData* ldata,
+static bool calculateAnchorsCross(const Beam* /*item*/, LayoutData* ldata,
                                               const Score* /*score*/)
 {
     if (ldata->crossStaffBeamPos != CrossStaffBeamPosition::BETWEEN) {
-        // The beam is either not cross or above/below and must be layed out like a non-cross beam
+        // The beam is either not cross or above/below and must be laid out like a non-cross beam
         return false;
     }
 
@@ -1388,6 +1387,13 @@ void calcBeamBreaks4(ChordRest* cr, ChordRest* prev, int level,
         }
     }
 }
+}
+
+// Shared by segment construction and the beamlet-direction policy.
+void beam4CalcBreaks(ChordRest* cr, ChordRest* prev, int level,
+                     bool& secondary, bool& tertiary)
+{
+    calcBeamBreaks4(cr, prev, level, secondary, tertiary);
 }
 
 // Studio BeamLayout::calcIsBeamletBefore. True means a left-facing beamlet.

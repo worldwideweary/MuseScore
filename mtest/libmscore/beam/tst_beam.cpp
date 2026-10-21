@@ -61,6 +61,7 @@ class TestBeam : public QObject, public MTest
       void studioBeamDirectionSwitch();
       void studioBeamletControl();
       void studioBeamletRestNeighbor();
+      void studioInnerBreaks();
       void studioBeamShortWidth();
       };
 
@@ -367,6 +368,50 @@ void TestBeam::studioBeamletRestNeighbor()
             QVERIFY(beamlet);
             QVERIFY(beamlet->dx() < 0);
             }
+      delete score;
+      }
+
+void TestBeam::studioInnerBreaks()
+      {
+      MasterScore* score = readScore(DIR + "studio-inner-breaks.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      int measureIndex = 0;
+      for (Measure* measure = score->firstMeasure(); measure; measure = measure->nextMeasure(), ++measureIndex) {
+            const int pattern = measureIndex % 5;
+            ChordRest* first = toChordRest(measure->first(SegmentType::ChordRest)->element(0));
+            QVERIFY(first && first->beam());
+            Beam* beam = first->beam();
+            std::vector<ChordRest*> elements;
+            for (ChordRest* cr : beam->elements())
+                  elements.push_back(cr);
+            QCOMPARE(static_cast<int>(elements.size()), pattern == 4 ? 5 : (pattern % 2 == 0 ? 4 : 8));
+            const int level = pattern == 0 || pattern == 2 ? 1 : 2;
+            const int boundary = pattern == 0 ? 2 : (pattern == 1 ? 4 : (pattern == 2 ? 1 : (pattern == 3 ? 3 : 1)));
+            bool secondary = false, tertiary = false;
+            beam4CalcBreaks(elements[boundary], elements[boundary - 1], level, secondary, tertiary);
+            QVERIFY(secondary || tertiary);
+            beam4CalcBreaks(elements[boundary], elements[boundary - 1], 0, secondary, tertiary);
+            QVERIFY(!secondary && !tertiary);
+            const QLineF* before = beam->topLevelSegment4(elements[0]);
+            const int afterIndex = pattern == 2 ? 2 : (pattern == 3 ? 4 : boundary);
+            const QLineF* after = beam->topLevelSegment4(elements[afterIndex]);
+            QVERIFY(before && after);
+            QVERIFY(before != after);
+            const int last = pattern == 4 ? 3 : static_cast<int>(elements.size()) - 1;
+            QCOMPARE(beam->topLevelSegment4(elements[last]), after);
+            if (pattern == 4) {
+                  // Only the third beam breaks at entry/exit. The triplet's
+                  // three notes stay joined and the final normal note separates.
+                  beam4CalcBreaks(elements[1], elements[0], 1, secondary, tertiary);
+                  QVERIFY(!secondary && !tertiary);
+                  beam4CalcBreaks(elements[4], elements[3], 2, secondary, tertiary);
+                  QVERIFY(tertiary);
+                  QVERIFY(beam->topLevelSegment4(elements[4]) != after);
+                  }
+            }
+      QCOMPARE(measureIndex, 10);
       delete score;
       }
 
