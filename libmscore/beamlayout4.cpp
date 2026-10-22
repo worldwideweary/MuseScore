@@ -29,7 +29,6 @@
 #include "score.h"
 #include "staff.h"
 #include "stem.h"
-#include "hook.h"
 #include "rest.h"
 #include "tremolo.h"
 #include "segment.h"
@@ -761,10 +760,8 @@ static double defaultStemLength4(const Chord* chord)
         intrinsicMag *= score->styleD(Sid::graceNoteMag);
     const bool up = chord->up();
     const bool fullSize = !chord->isSmall() && !chord->isGrace();
-    const bool hasFlag = !chord->beam() && chord->beams() > 0;
     int normal = 14; // Studio stemLength default: 3.5sp
-    if (!hasFlag)
-        normal += beams == 3 ? 2 : (beams >= 4 ? (beams - 3) * spacing : 0);
+    normal += beams == 3 ? 2 : (beams >= 4 ? (beams - 3) * spacing : 0);
     const Note* near = up ? chord->upNote() : chord->downNote();
     const qreal extraHeight = (up ? near->stemUpSE().y() : near->stemDownNW().y()) / (intrinsicMag * sp);
     qreal shortestSetting = score->styleS(Sid::shortestStem).val();
@@ -773,9 +770,7 @@ static double defaultStemLength4(const Chord* chord)
     if (qFuzzyCompare(shortestSetting, 2.25))
         shortestSetting = 2.5;
     const int shortest = spacing == 4 ? 12 : int((shortestSetting + std::abs(extraHeight)) * 4);
-    // Studio's flagged stems retain the ordinary 2sp staff overlap even when
-    // the two-note tremolo has three or four strokes.
-    const int target = minStaffOverlap(up, lines, hasFlag ? 1 : beams, spacing, fullSize);
+    const int target = minStaffOverlap(up, lines, beams, spacing, fullSize);
     const int noteLine = up ? chord->upLine() : chord->downLine();
     const int end = noteLine * qPerLine + (up ? -normal : normal);
     const double endMag = noteLine * qPerLine + (up ? -normal : normal) * intrinsicMag;
@@ -791,24 +786,19 @@ static double defaultStemLength4(const Chord* chord)
         const int extension = up ? std::abs(int(std::floor(endMag)) + shortStemStart)
                                  : std::abs(int(std::ceil(endMag)) - shortStart);
         const int halfSpaces = qBound(0, int(std::floor(extension / 2.0)), 4);
-        const int reductionCount = hasFlag ? 0 : beams;
-        int reduce = reductionCount >= 4 ? 0 : reductions[reductionCount][halfSpaces];
+        int reduce = beams >= 4 ? 0 : reductions[beams][halfSpaces];
         if (!score->styleB(Sid::shortenStem))
             reduce = 0;
         if (score->styleB(Sid::shortenStem) && intrinsicMag >= 1.0) {
-            if (reductionCount == 1 && halfSpaces < 2)
+            if (beams == 1 && halfSpaces < 2)
                 reduce = 2;
-            else if (reductionCount == 3 && halfSpaces == 3)
+            else if (beams == 3 && halfSpaces == 3)
                 reduce = 0;
         }
-        // Evolution uses traditional flags; Studio caps their shortening
-        // at one quarter space. Straight flags need a separate adapter.
-        if (hasFlag)
-            reduce = std::min(reduce, 1);
         ideal = std::max(ideal - reduce, shortest);
     }
     else if (!outside && !(up ? end > target : end < target)) {
-        if (!hasFlag && beams <= 2 && std::fmod(end + 4, 4) == 2)
+        if (beams <= 2 && std::fmod(end + 4, 4) == 2)
             --ideal;
         ideal = std::max(ideal, shortest);
     }
@@ -820,7 +810,7 @@ static double defaultStemLength4(const Chord* chord)
     if (chord->tremolo())
         minLength = std::max(minLength, singleTremoloMinStem4(chord, beams, spacing));
     int stemLength = std::max(ideal, minLength);
-    if (beams == 4 && !hasFlag) {
+    if (beams == 4) {
         const int difference = up ? std::max(0, chord->upLine() - (lines - 1) * 2)
                                   : std::max(0, -chord->downLine());
         if (difference == 2)
@@ -1748,7 +1738,7 @@ bool beam4LayoutInsetTremolo(Tremolo* tremolo, QPainterPath& path)
 }
 
 // Studio's ordinary standalone branch uses the same anchor solver as beams.
-// Traditional flags use the corresponding Studio stem-default rules too.
+// Written eighths and shorter have their flags suppressed by Chord::layoutStem.
 bool beam4LayoutStandaloneTremolo(Tremolo* tremolo, QPainterPath& path)
 {
     Chord* first = tremolo->chord1();
@@ -1757,7 +1747,6 @@ bool beam4LayoutStandaloneTremolo(Tremolo* tremolo, QPainterPath& path)
         || tremolo->style() != TremoloStyle::DEFAULT || tremolo->lines() > 4
         || first->beam() || last->beam()
         || first->beams() > 4 || last->beams() > 4
-        || (first->beams() && !first->hook()) || (last->beams() && !last->hook())
         || !first->stem() || !last->stem() || first->up() != last->up()
         || first->staffMove() || last->staffMove() || first->vStaffIdx() != last->vStaffIdx()
         || first->measure() != last->measure() || !first->measure()->system()
@@ -1805,12 +1794,6 @@ bool beam4LayoutStandaloneTremolo(Tremolo* tremolo, QPainterPath& path)
         const qreal centerX = stem->pagePos().x() - origin.x();
         const qreal tipY = start.y() + (centerX - start.x()) * slope + direction * width / 2;
         stem->setLen(tipY - stem->pagePos().y());
-        // The flag was positioned before tremolo layout. Follow the final
-        // stem tip using Evolution's normal pitched-flag attachment rule.
-        if (Hook* hook = chord->hook()) {
-            hook->layout();
-            hook->setPos(stem->hookPos() - QPointF(stem->width(), 0));
-        }
     }
     path = strokes;
     tremolo->setPos(0, 0);

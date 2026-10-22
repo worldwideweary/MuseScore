@@ -952,8 +952,9 @@ void TestBeam::studioFlaggedTremoloAnchors()
             QVERIFY(qAbs(box.width() - span) < 1e-6);
             for (Chord* chord : { t->chord1(), t->chord2() }) {
                   Stem* stem = chord->stem();
-                  const QPointF flag = stem->hookPos() - QPointF(stem->width(), 0);
-                  QVERIFY(QLineF(chord->hook()->pos(), flag).length() < 1e-6);
+                  // Studio suppresses flags on two-note tremolos even when
+                  // their written duration would ordinarily require a flag.
+                  QVERIFY(!chord->hook());
                   QVERIFY(qIsFinite(stem->len()) && stem->len() > 0);
                   modernLengths.push_back(stem->len());
                   }
@@ -972,6 +973,7 @@ void TestBeam::studioFlaggedTremoloAnchors()
             QVERIFY(QLineF(box.bottomRight(), modernBoxes[i].bottomRight()).length() < 1e-6);
             QVERIFY(qAbs(t->chord1()->stem()->len() - modernLengths[2 * i]) < 1e-6);
             QVERIFY(qAbs(t->chord2()->stem()->len() - modernLengths[2 * i + 1]) < 1e-6);
+            QVERIFY(!t->chord1()->hook() && !t->chord2()->hook());
             }
       score->setStyleValue(Sid::beamLayout4, false);
       score->doLayout();
@@ -983,6 +985,7 @@ void TestBeam::studioFlaggedTremoloAnchors()
             int i = 0;
             for (Chord* chord : { t->chord1(), t->chord2() }) {
                   QVERIFY(qAbs(chord->stem()->len() - saved.lengths[i]) < 1e-6);
+                  QVERIFY(chord->hook());
                   QVERIFY(QLineF(chord->hook()->pos(), saved.flags[i]).length() < 1e-6);
                   ++i;
                   }

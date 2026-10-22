@@ -1,6 +1,6 @@
-# Flagged standalone tremolos — v0.21
+# Short-duration standalone tremolos — v0.22
 
-Apply v0.21 after v0.20, rebuild, and run tst_beam. Open the same original
+Apply v0.22 after v0.21, rebuild, and run tst_beam. Open the same original
 `studio-tremolo-flags.mscx` in Evolution and Studio 4.7.5. The file starts with
 Evolution's experimental beam style enabled and fills the final system.
 There are sixteen 1/4 measures, two per system. F1–F8 use up stems; measures
@@ -18,30 +18,33 @@ beaming. Rests fill the remainder of each measure.
 | F7 | 7 | 15 | Sixty-fourth | 4 | Rising three-note chords |
 | F8 | 8 | 16 | Eighth | 3 | Flat G4–G4 control |
 
-Compare stem lengths, tremolo slopes and staff placement, stroke spacing, flag
-attachment to the final stem tips, and clearance around flags and noteheads.
+Compare stem lengths, tremolo slopes and staff placement, and stroke spacing.
+With the experimental style enabled, both flags should be absent in each pair,
+matching Studio 4.7.5. With it disabled, Evolution's legacy flags should return.
 Start with F1/F2/F4/F7 in both directions. Keep the labels and staff visible.
 Horizontal spacing still differs between applications, so compare vertical
 distances in staff spaces. Check Evolution's style off restores legacy layout.
 
-The enabled adapter now admits ordinary same-direction standalone pairs with
-up to four traditional flags. It follows Studio's flagged-stem defaults:
-no unflagged beam-count stem addition, ordinary 2sp staff-overlap target,
-traditional-flag shortening capped at one quarter space, and no unflagged
-optical or four-beam stem exception. The tremolo anchor solver still counts
-only tremolo strokes, as in Studio. Flags follow the final stem tips and both
-chord segment shapes are refreshed. This stage does not add flag collision
-avoidance beyond those Studio defaults; report any visible collisions.
+The v0.21 comparison exposed a missed rule: Studio's Chord::shouldHaveHook()
+excludes two-note tremolos. The written duration does not imply an actual flag.
+v0.22 suppresses flags for pitched two-note tremolos under the experimental
+style and removes the inappropriate flagged-stem calculations from v0.21.
+Supported standalone pairs use the unflagged tremolo stem/anchor rules, counting
+only tremolo strokes. Both chord segment shapes are refreshed. The score file
+is unchanged; its F labels continue to identify the written durations.
 
-Evolution does not implement Studio's straight-note-flag style here. Other
-limits remain: full-size non-grace pitched default-style pairs, one measure
+TAB retains its existing flag handling. Flag suppression applies to pitched
+two-note tremolos generally under this score style, including arrangements
+whose modern anchors are not implemented yet. Ordinary notes and single-note
+tremolos retain flags. Modern-anchor limits remain: full-size non-grace pitched default-style pairs, one measure
 on the same unmoved staff, standard line spacing and unmodified stems.
 Opposite stems, cross-staff pairs and small/grace/manual cases remain separate.
 
-XML parsing and exact duration/pair checks pass. Production and test C++11
-syntax checks pass. The isolated Qt geometry harness covers 10,000 standalone
-cases (5,000 flagged), including repeated layout and flag-tip attachment, plus
-10,000 ordinary/inset-beam comparisons with v0.20. These checks use simplified
+XML parsing and exact duration/pair checks passed in v0.21. Production and test
+C++11 syntax checks pass for v0.22. The isolated Qt geometry harness covers
+10,000 standalone cases (5,000 with short written durations and suppressed
+flags), including repeated layout, plus 10,000 ordinary/inset-beam comparisons
+with v0.21. These checks use simplified
 contexts and do not replace application tests or establish complete Studio
-parity. Full tst_beam and rendering of this new fixture remain to be verified
+parity. Full tst_beam and rendering of the corrected fixture remain to be verified
 in the application builds.

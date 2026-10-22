@@ -528,3 +528,29 @@ tst_beam and visual comparison remain for the application builds.
 
 Next: compare F1/F2/F4/F7 up/down, check the previous V/K inputs for regressions,
 and isolate any differences before adapting opposite-stem or cross-staff pairs.
+
+## v0.22 two-note tremolo flag suppression
+
+The user reports tst_beam passing through v0.21, but the F1-F8 captures expose
+a missed Studio rule: v4.7.5 src/engraving/dom/chord.cpp, Chord::shouldHaveHook(),
+explicitly requires !tremoloTwoChord(). Thus the v0.21 flagged-stem branches
+were the wrong branches for these two-note tremolos. This stage removes them
+and applies the existing unflagged tremolo defaults to short written durations.
+
+Chord::layoutStem suppresses flags on pitched two-note tremolos only when the
+experimental score style is enabled. The disabled style restores legacy flags;
+TAB, ordinary notes and single-note tremolos retain their prior flag handling.
+Suppression follows Studio for pitched two-note tremolos generally, even where
+the modern anchor adapter remains deferred. The standalone adapter no longer
+requires hooks on written eighths and shorter, and its obsolete flag attachment
+step is removed. No score inputs change; reuse studio-tremolo-flags.mscx.
+
+studioFlaggedTremoloAnchors now requires absent modern flags, stable repeat
+layout and restored legacy flags, stems and tremolo paths. C++11 syntax checks
+pass for chord.cpp, beamlayout4.cpp and tst_beam.cpp with unused-parameter
+warnings enabled. The isolated Qt harness passes 10,000 standalone cases
+(5,000 with short written durations in flag-suppressed contexts) and 10,000
+ordinary/inset-beam comparisons against v0.21. Full tst_beam and visual
+verification remain for the application build. Next: compare the same F cases,
+especially F2/F5/F6/F7 where corrected stem defaults can change placement,
+before proceeding to opposite-stem and cross-staff tremolos.
