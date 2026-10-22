@@ -675,3 +675,49 @@ checks do not replace full-score layout testing. Full tst_beam and application
 rendering are unavailable locally and remain pending on the user's build.
 Next: compare X1-X6, especially reversed X2/X4 and chord case X6; then address
 X7/X8 or isolate the inset behavior in a separate checkpoint.
+
+## v0.27 relocated same-staff tremolos (X7/X8)
+
+The user confirms X1-X6 look consistent with Studio 4.7.5 in the v0.26 capture.
+X7/X8 retain the expected legacy discrepancy and are this checkpoint's scope.
+For equal nonzero staff moves, Studio TremoloLayout::calcIsUp uses combined
+note distances, then inverts both moved chord stems while keeping the tremolo
+stack direction. Extend beam4TremoloStemUp to this automatic adjacent-staff
+case, retaining its existing pitch, voice, style and manual-edit guards.
+
+The solver now derives the stack direction from the first chord and its move
+for both crossing and relocated pairs. Relocated pairs use the ordinary solver
+on the displayed staff, with endpoint note positions chosen by the stack
+direction rather than the inverted chord-stem direction. Beam endpoint behavior
+is unchanged. Reuse the existing stroke spans and opposite-stack stem extensions.
+The X7/X8 pitch patterns flatten with upward stems and strokes above the notes.
+No new score inputs or horizontal-spacing changes. Cross-staff inset Y remains
+untouched. Forced staff-move directions, non-adjacent moves, other unsupported
+configurations and manual edits retain the fallback.
+
+A broad isolated contour check found candidate tips behind noteheads in some
+extreme relocated configurations. Evolution Stem::setLen takes an absolute
+length, which would reflect these tips away from the stroke stack. Preflight
+both relocated stem lengths before modifying either stem or path and bypass
+such candidates. This avoids copying invalid geometry; it is not a claim that
+all extreme relocated contours now match Studio. Keep that corner work separate.
+
+Extend studioCrossStaffTremoloSwitch to expect X7/X8 modern directions, flatness,
+1sp gaps, both stem tips reaching the complete stack, unchanged stored Auto,
+repeated layout, forced/manual bypass, atomic bypass for a deliberately invalid
+provisional stem origin, and style-off restoration. X1-X6 checks remain.
+
+Validation: C++11 syntax checks for beamlayout4.cpp and tst_beam.cpp pass with
+unused-parameter warnings enabled; whitespace and incremental patch checks pass.
+An isolated real-Qt harness using the actual solver/adapter passes 20,000 prior
+crossing cases, 10,000 ordinary/inset-beam baseline comparisons and 10,000 ordinary
+standalone geometry cases. Of 20,000 broad relocated contexts, 14,414 pass span,
+stack/stem, repeat and manual/forced checks; 5,586 invalid candidates bypass with
+both stems and the supplied path untouched. The fixed X7/X8 pitch patterns flatten
+and preserve local geometry when the destination staff translates. The actual
+direction helper matches original Studio calcIsUp in 100,000 relocated contexts,
+100,000 crossing contexts and 100,000 previously supported same-staff contexts.
+These isolated checks do not replace application rendering. Full tst_beam and
+visual validation remain pending on the user's build. Next: compare X7/X8, then
+investigate cross-staff inset anchors/layout timing without assuming the missing
+Studio strokes or Y8 position are intended behavior.

@@ -111,3 +111,29 @@ spans, opposing-stem reach, repeated layout and style-off restoration, plus
 X7/X8 bypass and stability. Local C++11 syntax checks and isolated Qt geometry
 and direction checks pass; full application tests and rendering remain for
 the application build.
+
+## v0.27: relocated same-staff X7/X8
+
+Apply v0.27 after v0.26. Reuse the same original standalone score; no new input
+is required. With the experimental style enabled, X7 and X8 should now have
+long, horizontal stroke stacks above the displayed notes, matching the supplied
+Studio 4.7.5 capture. Both stems point up in these two inputs. X1-X6 should retain
+the v0.26 result. Turn the setting off to recover the original Evolution layout.
+
+Equal nonzero staff moves use Studio's combined-note Auto calculation and
+invert both chord stems; the stack retains the calculated tremolo direction.
+Anchors use the displayed staff's coordinate system and the stack direction's
+endpoint notes. This is distinct from a pair crossing between two staves.
+The supported relocated branch remains automatic, full-size, default-style,
+single-voice, adjacent pitched staves with standard line spacing and unmodified
+stems/tremolo offsets. Forced directions and other unsupported cases retain the
+fallback. A candidate tip behind its notehead bypasses the geometry adapter
+before changing either stem or the supplied path; wide-contour edge cases need
+separate visual investigation. Cross-staff inset Y1-Y8 remains unchanged.
+
+The extended studioCrossStaffTremoloSwitch checks X7/X8 directions, flatness,
+span, complete stack reach, repeat stability, stored Auto, manual/forced bypass,
+invalid provisional origin bypass, and legacy restoration alongside X1-X6.
+Local C++11 syntax and isolated Qt checks pass. Full tst_beam and visual results
+remain for the application build. Next compare X7/X8, then investigate the inset
+anchor/layout timing separately from Studio's questionable Y results.

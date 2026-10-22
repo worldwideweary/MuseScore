@@ -1163,10 +1163,10 @@ static bool calculateAnchors4(Element* item, Beam* beam, Tremolo* tremolo,
     LayoutData data;
     data.beam = beam;
     data.tremolo = tremolo;
-    // A cross-staff tremolo's stack direction belongs to its source staff,
-    // even when its first chord is displayed on the other staff.
+    // Studio keeps the tremolo's stack direction separate from moved chords'
+    // stem directions, including when both chords move to the same staff.
     const bool crossTremolo = tremolo && elements.front()->vStaffIdx() != elements.back()->vStaffIdx();
-    data.up = beam ? beam->up() : tremolo->chord1()->up() != (crossTremolo && tremolo->chord1()->staffMove() != 0);
+    data.up = beam ? beam->up() : tremolo->chord1()->up() != (tremolo->chord1()->staffMove() != 0);
     data.isGrace = false;
     data.spatium = item->spatium();
     data.beamWidth = item->score()->styleS(Sid::beamWidth).val() * data.spatium * item->mag();
@@ -1220,8 +1220,12 @@ static bool calculateAnchors4(Element* item, Beam* beam, Tremolo* tremolo,
     const qreal quarter = data.spatium / 4;
     start = chordBeamAnchor(ldata, first, ChordBeamAnchorType::Start);
     end = chordBeamAnchor(ldata, last, ChordBeamAnchorType::End);
-    const NotePosition firstPos(first->line(), first->vStaffIdx());
-    const NotePosition lastPos(last->line(), last->vStaffIdx());
+    // In relocated pairs the stack and stems point in opposite directions.
+    // Select the endpoint notes using the solver's direction, as Studio does.
+    const int firstLine = tremolo ? (data.up ? first->upLine() : first->downLine()) : first->line();
+    const int lastLine = tremolo ? (data.up ? last->upLine() : last->downLine()) : last->line();
+    const NotePosition firstPos(firstLine, first->vStaffIdx());
+    const NotePosition lastPos(lastLine, last->vStaffIdx());
     const bool isStartDictator = data.up ? firstPos < lastPos : firstPos > lastPos;
     const QPointF origin = data.origin();
     int dictator = std::lround(((isStartDictator ? start : end).y() - origin.y()) / quarter);
@@ -1442,13 +1446,13 @@ bool beam4TremoloStemUp(const Tremolo* tremolo, bool& up)
     if (span <= Fraction(0, 1) || first->measure()->hasVoices(first->staffIdx(), first->tick(), span))
         return false;
     if (first->staffMove() || last->staffMove()) {
-        // Only automatic, genuinely crossing pairs are supported here.
-        // Relocated same-staff pairs and forced cross-staff directions retain
-        // Evolution's handling until their separate geometry is adapted.
-        if (first->vStaffIdx() == last->vStaffIdx()
-            || (first->staffMove() != 0 && last->staffMove() != 0)
-            || std::abs(first->staffMove() - last->staffMove()) != 1
-            || first->stemDirection() != Direction::AUTO || last->stemDirection() != Direction::AUTO)
+        // Automatic pairs may cross adjacent staves or move together to an
+        // adjacent staff. Forced directions retain Evolution's handling.
+        const bool relocated = first->staffMove() == last->staffMove();
+        const bool adjacent = relocated ? std::abs(first->staffMove()) == 1
+            : (first->staffMove() == 0 || last->staffMove() == 0)
+              && std::abs(first->staffMove() - last->staffMove()) == 1;
+        if (!adjacent || first->stemDirection() != Direction::AUTO || last->stemDirection() != Direction::AUTO)
             return false;
         for (const Chord* chord : { first, last }) {
             const int index = chord->vStaffIdx();
@@ -1459,8 +1463,12 @@ bool beam4TremoloStemUp(const Tremolo* tremolo, bool& up)
                 || !qFuzzyCompare(destination->lineDistance(chord->tick()), 1.0))
                 return false;
         }
-        up = first->staffMove() < 0 || last->staffMove() < 0;
-        return true;
+        if (!relocated) {
+            up = first->staffMove() < 0 || last->staffMove() < 0;
+            return true;
+        }
+        // Equal moves use the combined-note Auto rule below, then callers
+        // invert the calculated direction on both moved chords.
     }
     if (first->stemDirection() != Direction::AUTO)
         up = first->stemDirection() == Direction::UP;
@@ -1836,15 +1844,14 @@ bool beam4LayoutStandaloneTremolo(Tremolo* tremolo, QPainterPath& path)
         || !qFuzzyIsNull(first->stem()->userLen()) || !qFuzzyIsNull(last->stem()->userLen())
         || !first->stem()->offset().isNull() || !last->stem()->offset().isNull())
         return false;
-    const bool cross = first->vStaffIdx() != last->vStaffIdx();
     bool up = first->up();
-    if (cross) {
+    if (first->staffMove() || last->staffMove()) {
         if (!beam4TremoloStemUp(tremolo, up)
             || first->up() != (first->staffMove() == 0 ? up : !up)
             || last->up() != (last->staffMove() == 0 ? up : !up))
             return false;
     }
-    else if (first->staffMove() || last->staffMove() || first->up() != last->up())
+    else if (first->up() != last->up())
         return false;
     const qreal sp = tremolo->spatium();
     const qreal grid = first->score()->styleP(Sid::beamWidth)
@@ -1878,6 +1885,9 @@ bool beam4LayoutStandaloneTremolo(Tremolo* tremolo, QPainterPath& path)
         strokes.addPolygon(polygon);
         strokes.closeSubpath();
     }
+    qreal stemLengths[2];
+    int index = 0;
+    const bool relocated = first->staffMove() != 0 && first->staffMove() == last->staffMove();
     for (Chord* chord : { first, last }) {
         Stem* stem = chord->stem();
         const qreal centerX = stem->pagePos().x() - origin.x();
@@ -1886,8 +1896,16 @@ bool beam4LayoutStandaloneTremolo(Tremolo* tremolo, QPainterPath& path)
             : (tremolo->lines() - 1) * grid * sp * tremolo->mag();
         const qreal tipY = start.y() + (centerX - start.x()) * slope
             + stemDirection * (width / 2 + addition);
-        stem->setLen(tipY - stem->pagePos().y());
+        const qreal length = tipY - stem->pagePos().y();
+        // Extreme relocated contours can place a tip behind its notehead.
+        // Stem::setLen takes an absolute length, which would reflect the tip
+        // away from the strokes. Bypass before changing either stem or path.
+        if (relocated && (!qIsFinite(length) || length * stemDirection <= 0))
+            return false;
+        stemLengths[index++] = length;
     }
+    first->stem()->setLen(stemLengths[0]);
+    last->stem()->setLen(stemLengths[1]);
     path = strokes;
     tremolo->setPos(0, 0);
     tremolo->setbbox(path.boundingRect());

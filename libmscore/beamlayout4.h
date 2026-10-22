@@ -17,10 +17,10 @@ bool beam4SupportsTremolos(const Beam*);
 bool beam4LayoutSingleTremolo(Tremolo*);
 // Layout supported inset two-note strokes from the completed beam geometry.
 bool beam4LayoutInsetTremolo(Tremolo*, QPainterPath&);
-// Ordinary same-direction or automatic between-staff unbeamed pairs.
+// Ordinary same-direction, automatic between-staff or relocated pairs.
 bool beam4LayoutStandaloneTremolo(Tremolo*, QPainterPath&);
 // Derive the source-staff layout direction without changing stored properties.
-// For supported cross-staff pairs, invert it on the moved chord.
+// For supported staff-move pairs, invert it on each moved chord.
 bool beam4TremoloStemUp(const Tremolo*, bool& up);
 // Studio's combined-note Auto rule; tremolos retain repeated note positions.
 bool beam4TremoloAutoStemUp(std::vector<int> noteLines, int middleLine);

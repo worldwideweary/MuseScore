@@ -1110,7 +1110,7 @@ void TestBeam::studioTremoloDirectionSwitch()
 
 
 // X1-X6 exercise both source staffs, reversed order and multi-note chords.
-// X7/X8 remain controls for the separately handled relocated same-staff case.
+// X7/X8 cover pairs moved together to the other staff.
 void TestBeam::studioCrossStaffTremoloSwitch()
       {
       MasterScore* score = readScore(DIR + "studio-tremolo-cross-standalone.mscx");
@@ -1157,28 +1157,19 @@ void TestBeam::studioCrossStaffTremoloSwitch()
             Chord* a = t->chord1();
             Chord* b = t->chord2();
             bool ownerUp = false;
-            if (i >= 6) {
-                  QVERIFY(!beam4TremoloStemUp(t, ownerUp));
-                  QVERIFY(QLineF(t->pos(), saved[i].pos).length() < 1e-6);
-                  QVERIFY(QLineF(t->bbox().topLeft(), saved[i].box.topLeft()).length() < 1e-6);
-                  QVERIFY(QLineF(t->bbox().bottomRight(), saved[i].box.bottomRight()).length() < 1e-6);
-                  QCOMPARE(a->up(), saved[i].up[0]);
-                  QCOMPARE(b->up(), saved[i].up[1]);
-                  QVERIFY(qAbs(a->stem()->len() - saved[i].lengths[0]) < 1e-6);
-                  QVERIFY(qAbs(b->stem()->len() - saved[i].lengths[1]) < 1e-6);
-                  QPainterPath sentinel;
-                  sentinel.addRect(1, 2, 3, 4);
-                  const QPainterPath original = sentinel;
-                  QVERIFY(!beam4LayoutStandaloneTremolo(t, sentinel));
-                  QVERIFY(sentinel == original);
-                  }
-            else {
+            {
                   QVERIFY(beam4TremoloStemUp(t, ownerUp));
                   QCOMPARE(ownerUp, i == 2 || i == 3 || i == 5);
-                  QVERIFY(a->up() != b->up());
+                  if (i < 6)
+                        QVERIFY(a->up() != b->up());
+                  else {
+                        QVERIFY(a->up() && b->up()); // X7/X8 combined Auto, then invert
+                        QVERIFY(a->staffMove() == b->staffMove());
+                        }
                   for (Chord* c : { a, b }) {
-                        // Both stems point into the space between staves.
-                        QCOMPARE(c->up(), c->vStaffIdx() > qMin(a->vStaffIdx(), b->vStaffIdx()));
+                        if (i < 6) { // Stems point into the space between staves.
+                              QCOMPARE(c->up(), c->vStaffIdx() > qMin(a->vStaffIdx(), b->vStaffIdx()));
+                              }
                         QCOMPARE(static_cast<int>(c->stemDirection()), static_cast<int>(Direction::AUTO));
                         QVERIFY(qIsFinite(c->stem()->len()) && c->stem()->len() > 0);
                         }
@@ -1198,6 +1189,8 @@ void TestBeam::studioCrossStaffTremoloSwitch()
                   const qreal y2 = anchorY(b);
                   const qreal slope = (y2 - y1) / (x2 - x1);
                   QVERIFY(qAbs(y2 - y1) <= 2 * sp); // Studio's maximum slant
+                  if (i >= 6)
+                        QVERIFY(qAbs(y2 - y1) < 1e-6); // X7/X8 flatten under Studio's target rule
                   const QRectF box = t->bbox().translated(t->pagePos());
                   QVERIFY(qIsFinite(box.top()) && qIsFinite(box.bottom()));
                   QVERIFY(qAbs(box.left() - (x1 - a->stem()->lineWidthMag() / 2) - sp) < 1e-6);
@@ -1214,6 +1207,22 @@ void TestBeam::studioCrossStaffTremoloSwitch()
                   QPainterPath path;
                   QVERIFY(!beam4LayoutStandaloneTremolo(t, path));
                   a->stem()->setUserLen(0);
+                  if (i >= 6) {
+                        // An invalid provisional stem origin must bypass
+                        // atomically, rather than reflect a negative length.
+                        const QPointF stemPos = a->stem()->pos();
+                        const qreal lengthA = a->stem()->len();
+                        const qreal lengthB = b->stem()->len();
+                        a->stem()->setPos(stemPos + QPointF(0, -100 * sp));
+                        QPainterPath sentinel;
+                        sentinel.addRect(1, 2, 3, 4);
+                        const QPainterPath original = sentinel;
+                        QVERIFY(!beam4LayoutStandaloneTremolo(t, sentinel));
+                        QVERIFY(sentinel == original);
+                        QCOMPARE(a->stem()->len(), lengthA);
+                        QCOMPARE(b->stem()->len(), lengthB);
+                        a->stem()->setPos(stemPos);
+                        }
                   }
             modernBoxes.push_back(t->bbox());
             modernLengths.push_back(a->stem()->len());
