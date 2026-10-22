@@ -298,3 +298,16 @@ Only the test and these notes change; engraving code is unchanged. Test syntax
 and full base-to-current whitespace checks pass. The corrected application
 test has not been run here; rebuild tst_beam and rerun the suite. A remaining
 failure with the new coordinates would require further geometry investigation.
+
+## v0.13 tremolo comparison inputs
+
+The user reports tst_beam passing through v0.12. Adds a 20-measure single-note
+tremolo matrix (1–4 strokes, interior notes, mixed levels, slope, chord, buzz
+and small-note controls) and a 10-measure two-note matrix (2–4 inset strokes,
+slope and standalone control). Both stem directions are explicit. See
+studio-tremolo-guide.md for the measure map and comparison order.
+All measures balance using exact durations; two-note XML uses written durations
+twice the actual durations, following existing Evolution fixtures. These files
+have not been opened/rendered here. This checkpoint changes diagnostics only.
+Next: ordinary full-size single-note tremolo stems and placement, then inset
+two-note tremolo anchors. Buzz/grace/small/cross-staff cases remain separate.
