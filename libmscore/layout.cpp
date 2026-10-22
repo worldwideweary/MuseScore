@@ -4411,7 +4411,26 @@ System* Score::collectSystem(LayoutContext& lc)
             // don’t stretch last system of a section (or the last of the piece),
             // if accumulated minWidth is <= lastSystemFillLimit
             //
-            if ((lc.curMeasure == 0  || (lm && lm->sectionBreak()))
+            if (styleB(Sid::spacingLayout4)) {
+                  // Studio 4.7.5 SystemLayout::shouldBeJustified: leave a short
+                  // terminal/section system at its natural width. Frames may
+                  // follow it; only a later measure or HBox requires filling.
+                  bool followedByMusic = false;
+                  const MeasureBase* next = lm && lm->sectionBreak() ? nullptr : lc.curMeasure;
+                  while (next) {
+                        if (next->isMeasure() || next->isHBox()) {
+                              followedByMusic = true;
+                              break;
+                              }
+                        if (next->sectionBreak())
+                              break;
+                        next = next->next();
+                        }
+                  if (!followedByMusic && systemWidth > 0
+                     && minWidth / systemWidth < styleD(Sid::lastSystemFillLimit))
+                        rest = 0;
+                  }
+            else if ((lc.curMeasure == 0  || (lm && lm->sectionBreak()))
                && ((minWidth / systemWidth) <= styleD(Sid::lastSystemFillLimit))) {
                   if (minWidth > rest)
                         rest = rest * .5;

@@ -1024,7 +1024,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="11" column="0" colspan="2">
+               <item row="12" column="0" colspan="2">
                 <widget class="QCheckBox" name="genCourtesyTimesig">
                  <property name="text">
                   <string>Create courtesy time signatures</string>
@@ -1087,14 +1087,14 @@
                  </property>
                 </widget>
                </item>
-               <item row="9" column="0" colspan="2">
+               <item row="10" column="0" colspan="2">
                 <widget class="QCheckBox" name="genKeysig">
                  <property name="text">
                   <string>Create key signature for all systems</string>
                  </property>
                 </widget>
                </item>
-               <item row="10" column="0" colspan="2">
+               <item row="11" column="0" colspan="2">
                 <widget class="QCheckBox" name="genCourtesyClef">
                  <property name="text">
                   <string>Create courtesy clefs</string>
@@ -1183,7 +1183,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="12" column="0" colspan="2">
+               <item row="13" column="0" colspan="2">
                 <widget class="QCheckBox" name="genCourtesyKeysig">
                  <property name="text">
                   <string>Create courtesy key signatures</string>
@@ -1200,14 +1200,14 @@
                  </property>
                 </widget>
                </item>
-               <item row="8" column="0" colspan="2">
+               <item row="9" column="0" colspan="2">
                 <widget class="QCheckBox" name="genClef">
                  <property name="text">
                   <string>Create clef for all systems</string>
                  </property>
                 </widget>
                </item>
-               <item row="13" column="0" colspan="8">
+               <item row="14" column="0" colspan="8">
                 <spacer name="verticalSpacer_9">
                  <property name="orientation">
                   <enum>Qt::Vertical</enum>
@@ -1768,7 +1768,21 @@
                     </property>
                    </spacer>
                   </item>
-                 </layout>
+                  <item row="7" column="0" colspan="8">
+                <widget class="QCheckBox" name="spacingLayout4">
+                 <property name="text"><string>Use Studio 4 horizontal spacing (experimental)</string></property>
+                 <property name="toolTip"><string>Currently uses Studio 4.7.5 final-system justification. Other spacing rules retain Evolution's handling. Independent of the experimental beam layout setting.</string></property>
+                </widget>
+               </item>
+               <item row="7" column="8">
+                <widget class="QToolButton" name="resetSpacingLayout4">
+                 <property name="toolTip"><string>Reset to default</string></property>
+                 <property name="accessibleName"><string>Reset 'Use Studio 4 horizontal spacing' value</string></property>
+                 <property name="text"><string notr="true"/></property>
+                 <property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property>
+                </widget>
+               </item>
+              </layout>
                 </widget>
                </item>
                <item row="3" column="0" colspan="9">
@@ -14188,6 +14202,8 @@ By default, they will be placed such as that their right end are at the same lev
   <tabstop>resetFrameSystemDistance</tabstop>
   <tabstop>lastSystemFillThreshold</tabstop>
   <tabstop>resetLastSystemFillThreshold</tabstop>
+  <tabstop>spacingLayout4</tabstop>
+  <tabstop>resetSpacingLayout4</tabstop>
   <tabstop>genClef</tabstop>
   <tabstop>genKeysig</tabstop>
   <tabstop>genCourtesyClef</tabstop>

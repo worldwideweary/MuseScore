@@ -113,3 +113,55 @@ Next compare H1/H2/H3/H5, the three short controls, and H9/H10. H4/H6/H7/H8 and
 H11/H12 then provide collision, voice, tuplet and reverse-ownership controls for
 the first spacing implementation. Text-autoplace and unsupported tremolo corner
 cases remain separate work.
+
+## v0.30: first implementation — final-system justification
+
+Apply the v0.30 incremental patch after v0.29 and rebuild. The independent,
+default-off per-score XML style is `spacingLayout4`. Enable it at
+**Format → Style → Page → Use Studio 4 horizontal spacing (experimental)**,
+next to the final-system fill threshold. The reset button turns it off. It is
+independent of the experimental beam setting and persists in the score.
+
+This first stage changes only the decision to justify a short terminal or
+section-ending system. Below the fill threshold, it adds no extra justification,
+following Studio 4.7.5 SystemLayout::shouldBeJustified. Equality with the threshold
+still justifies, as in Studio. A following measure/HBox requires filling; frames
+and their section breaks are considered while looking ahead. The existing
+no-horizontal-stretch override still wins. Off retains Evolution's exact prior
+residual-space calculation, including its partial expansion of short systems.
+The underlying natural widths still come from Evolution's existing spacing
+pipeline; exact Studio widths and rhythmic proportions are not promised yet.
+
+For the visual check use **studio-spacing-natural-h1.mscx**,
+**studio-spacing-natural-h2.mscx**, and **studio-spacing-natural-h5.mscx**.
+Use these short single-measure files in both applications, rather than comparing
+a short control with the full-width H1-H8 overview. They already set the fill
+threshold to 100%. In Evolution toggle the new spacing checkbox off/on: on should
+remove the extra expansion, and off should restore the old width. Repeating
+layout must be stable. Setting the fill threshold to 0% should make the final
+system fill again. Beam angles need no adjustment for this comparison.
+
+New studio-spacing-final-line.mscx and studio-spacing-final-section.mscx each
+contain two short measures separated by the named break. At 100% threshold with
+spacing on, the line-break case still fills its nonterminal first system; the
+section-break case leaves both short systems unexpanded. The final-frame input
+checks a short measure followed by a vertical frame. These inputs retain the
+same shared style values and contain no tremolos.
+
+Adds **tst_spacing** alongside tst_benchmark in the existing layout test
+subdirectory. Build the new target (rerun CMake if necessary), then run:
+
+```
+ctest -R '^tst_spacing$' --output-on-failure
+```
+
+It checks default-off behavior, on/off score roundtrip, independence from the
+beam setting, H1/H2/H5 final-system widths, threshold zero, repeat stability,
+legacy restoration, nonterminal line breaks, terminal section breaks and a
+trailing vertical frame. Local C++11 syntax checks pass for style.cpp, layout.cpp,
+editstyle.cpp and tst_spacing.cpp; Qt uic/moc generation succeeds. An isolated
+harness running the actual new branch matches the pinned Studio decision in
+100,000 boundary/threshold/frame/no-stretch contexts and preserves the legacy
+residual-space result when disabled. Full tst_spacing and application rendering
+remain pending on the user's build. No rhythmic-curve or cross-beam spacing
+correction is introduced yet; those are the next stages.
