@@ -414,9 +414,13 @@ void Tremolo::layoutTwoNotesTremolo(qreal x, qreal y, qreal h, qreal spatium)
 
       const qreal defaultLength = qMin(H_MULTIPLIER * (x2 - x1), MAX_H_LENGTH);
       Beam* beam = _chord1->beam();
+      const bool sharedBeam = beam && beam == _chord2->beam()
+            && !beam->cross() && !beam->userModified();
+      const bool standalone = !beam && !_chord2->beam()
+            && _chord1->staffIdx() == _chord2->staffIdx()
+            && !_chord1->staffMove() && !_chord2->staffMove();
       const bool studioSpan = score()->styleB(Sid::beamLayout4)
-            && _style == TremoloStyle::DEFAULT && beam && beam == _chord2->beam()
-            && !beam->cross() && !beam->userModified() && stem1 && stem2
+            && _style == TremoloStyle::DEFAULT && (sharedBeam || standalone) && stem1 && stem2
             && _chord1->up() == _chord2->up()
             && !_chord1->isSmall() && !_chord2->isSmall()
             && !_chord1->isGrace() && !_chord2->isGrace()

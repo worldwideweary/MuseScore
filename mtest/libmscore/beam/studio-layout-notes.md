@@ -386,3 +386,22 @@ both stem directions. D4 remains a flat-beam contour control despite its old
 "slope" label; a genuine sloped fixture is still needed for the later full
 anchor/tilt adapter. Next: verify spans, then continue two-note vertical anchors
 and the remaining beam corner cases before horizontal spacing work.
+
+## v0.16 standalone two-note tremolo span
+
+Extends v0.15's fixed-gap horizontal span to ordinary standalone two-note
+pairs: both stems must exist, point the same way, be on the same unmoved staff
+and system, and belong to full-size non-grace pitched chords using the default
+stroke style. Pairs attached to different beams remain on the prior path.
+The same outside-stem anchors and adaptive 1sp gaps apply. Vertical position,
+stroke spacing and tilt remain on the previous path. Option-off behavior is
+retained. Stemless whole-note pairs, opposite stems, cross-staff, small/grace,
+TAB and other stroke styles still need separate adaptations.
+
+studioTwoNoteTremoloSpan now checks the actual 1sp endpoint gaps for standalone
+D5 as well as inset D1–D4, in both directions. Repeated-layout and option-off
+restoration checks remain. Production and test syntax checks pass; the updated
+application test has not been run here. The unchanged span helper retains its
+v0.15 numerical verification. Reuse D5 (measures 5 and 10) for visual comparison.
+Next: genuine rising/falling inset and standalone inputs for vertical-anchor
+comparison; the old D4 contour is a flat-beam control.

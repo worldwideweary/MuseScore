@@ -67,3 +67,9 @@ edges, with reduced gaps for close pairs. Compare D1/D3 in both directions.
 D5 remains the standalone control. Vertical placement and stroke spacing are
 still legacy for two-note tremolos. D4 actually renders a flat beam in both
 applications, so it does not yet test the future sloped-anchor adapter.
+
+## v0.16 standalone span
+
+D5 (measures 5 and 10) now uses the same fixed-gap span when the setting is on.
+Compare it with Studio 4.7.5 too. This adds ordinary standalone pairs with two
+same-direction stems; it does not change their vertical position or tilt.

@@ -684,23 +684,17 @@ void TestBeam::studioTwoNoteTremoloSpan()
             QVERIFY(qAbs(t->pos().y() - positions[i].y()) < 1e-7);
             const qreal width = t->bbox().width();
             QVERIFY(qIsFinite(width) && width > 0);
-            if (i % 5 == 4) {
-                  // D5 is a standalone control, without an ordinary beam.
-                  QVERIFY(QLineF(t->pos(), positions[i]).length() < 1e-7);
-                  QVERIFY(qAbs(width - legacyWidths[i]) < 1e-7);
-                  }
-            else {
-                  const Stem* s1 = t->chord1()->stem();
-                  const Stem* s2 = t->chord2()->stem();
-                  QVERIFY(s1 && s2);
-                  const qreal left = s1->pagePos().x() - s1->lineWidthMag() / 2;
-                  const qreal right = s2->pagePos().x() + s2->lineWidthMag() / 2;
-                  const QRectF rect = t->bbox().translated(t->pagePos());
-                  const qreal gap = t->spatium();
-                  // These widely spaced fixtures use the normal 1sp gaps.
-                  QVERIFY(qAbs(rect.left() - (left + gap)) < 1e-7);
-                  QVERIFY(qAbs(rect.right() - (right - gap)) < 1e-7);
-                  }
+            const Stem* s1 = t->chord1()->stem();
+            const Stem* s2 = t->chord2()->stem();
+            QVERIFY(s1 && s2);
+            const qreal left = s1->pagePos().x() - s1->lineWidthMag() / 2;
+            const qreal right = s2->pagePos().x() + s2->lineWidthMag() / 2;
+            const QRectF rect = t->bbox().translated(t->pagePos());
+            const qreal gap = t->spatium();
+            // Both inset D1-D4 and standalone D5 use the same 1sp gaps
+            // in these widely spaced fixtures.
+            QVERIFY(qAbs(rect.left() - (left + gap)) < 1e-7);
+            QVERIFY(qAbs(rect.right() - (right - gap)) < 1e-7);
             modernWidths.push_back(width);
             }
       score->doLayout();
