@@ -446,3 +446,35 @@ warnings enabled. An isolated harness using the actual path adapter and real
 Qt paths passed 5,000 geometry/repeat cases. Full tst_beam and visual comparison
 remain for the application build; the isolated harness does not establish full
 Studio solver parity. Next: compare V1/V2/V6, then adapt standalone V3/V4 anchors.
+
+## v0.19 standalone two-note tremolo anchors
+
+The user reports tst_beam passing through v0.18, and the supplied V1/V2/V6
+images look broadly consistent with Studio. Standalone V3/V4 still showed
+shallower slopes in Evolution. This stage shares the existing optional anchor
+solver between beams and supported standalone tremolos. Standalone counts use
+only tremolo strokes; stem defaults, shortening, target overlap and grid/slant
+rules use that count. The completed anchors determine both stem tips and the
+stroke polygons, with outside-edge endpoints and the existing adaptive gaps.
+Stroke thickness and narrow/wide spacing follow the regular beam style.
+
+Support is limited to default-style, full-size non-grace pitched pairs with
+one to four strokes, same-direction stems, no ordinary beams or flags, one
+measure and unmoved staff, standard line spacing and unmodified stem lengths
+and offsets. Other cases retain the prior path. Saved tremolo offsets remain
+separate from the staff-grid calculation. Both segment shapes are refreshed.
+The score style remains default off; horizontal spacing is unchanged in scope.
+
+studioTwoNoteTremoloSpan no longer requires the standalone vertical position
+to remain legacy. New studioStandaloneTremoloAnchors covers V3/V4/V5 in both
+directions: endpoint gaps, outer-stroke/stem alignment, contour direction, flat
+control, repeated layout, manual-stem bypass and legacy position/path/stem
+restoration. C++11 production/test syntax checks pass with unused-parameter
+warnings enabled. An isolated harness using the actual adapters and Qt paths
+passed 10,000 standalone geometry/stem/repeat cases and 10,000 comparisons of
+the shared ordinary-beam solver against v0.18. These are isolated-context checks;
+the full tst_beam and visual comparison remain for the application build.
+
+Next: compare V3/V4 up/down with Studio 4.7.5, using V5 as the flat stack control
+and V1/V2/V6 as inset regression controls. Then expand the tremolo corner-case
+inputs before tackling unsupported stem arrangements or horizontal spacing.

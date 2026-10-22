@@ -74,6 +74,7 @@ class TestBeam : public QObject, public MTest
       void studioSingleTremoloSwitch();
       void studioTwoNoteTremoloSpan();
       void studioInsetTremoloAnchors();
+      void studioStandaloneTremoloAnchors();
       void studioBeamShortWidth();
       };
 
@@ -682,8 +683,6 @@ void TestBeam::studioTwoNoteTremoloSpan()
       std::vector<qreal> modernWidths;
       for (size_t i = 0; i < tremolos.size(); ++i) {
             Tremolo* t = tremolos[i];
-            if (!t->chord1()->beam())
-                  QVERIFY(qAbs(t->pos().y() - positions[i].y()) < 1e-7);
             const qreal width = t->bbox().width();
             QVERIFY(qIsFinite(width) && width > 0);
             const Stem* s1 = t->chord1()->stem();
@@ -786,6 +785,112 @@ void TestBeam::studioInsetTremoloAnchors()
             QVERIFY(QLineF(tremolos[i]->chord1()->beam()->beamPos(), oldBeams[i]).length() < 1e-6);
             QVERIFY(QLineF(tremolos[i]->bbox().topLeft(), oldBoxes[i].topLeft()).length() < 1e-6);
             QVERIFY(QLineF(tremolos[i]->bbox().bottomRight(), oldBoxes[i].bottomRight()).length() < 1e-6);
+            }
+      delete score;
+      }
+
+
+void TestBeam::studioStandaloneTremoloAnchors()
+      {
+      MasterScore* score = readScore(DIR + "studio-tremolo-anchors.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      std::vector<Tremolo*> tremolos;
+      std::vector<QPointF> oldPositions;
+      std::vector<QRectF> oldBoxes;
+      std::vector<qreal> oldLengths;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            for (Segment* seg = m->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+                  Element* e = seg->element(0);
+                  if (!e || !e->isChord())
+                        continue;
+                  Chord* c = toChord(e);
+                  Tremolo* t = c->tremolo();
+                  if (!t || !t->twoNotes() || t->chord1() != c || c->beam())
+                        continue;
+                  QVERIFY(t->chord2() && c->stem() && t->chord2()->stem());
+                  tremolos.push_back(t);
+                  oldPositions.push_back(t->pos());
+                  oldBoxes.push_back(t->bbox());
+                  oldLengths.push_back(c->stem()->len());
+                  oldLengths.push_back(t->chord2()->stem()->len());
+                  }
+            }
+      QCOMPARE(static_cast<int>(tremolos.size()), 6); // V3/V4/V5, both directions
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      std::vector<QRectF> modernBoxes;
+      std::vector<qreal> modernLengths;
+      for (Tremolo* t : tremolos) {
+            Chord* first = t->chord1();
+            Chord* last = t->chord2();
+            const qreal sp = t->spatium();
+            const qreal left = first->stem()->pagePos().x() - first->stem()->lineWidthMag() / 2;
+            const qreal right = last->stem()->pagePos().x() + last->stem()->lineWidthMag() / 2;
+            const QRectF box = t->bbox().translated(t->pagePos());
+            QVERIFY(qAbs(box.left() - left - sp) < 1e-6);
+            QVERIFY(qAbs(box.right() - right + sp) < 1e-6);
+            QVERIFY(qIsFinite(box.top()) && qIsFinite(box.bottom()));
+            const qreal width = score->styleP(Sid::beamWidth) * t->mag();
+            const qreal stack = (t->lines() - 1) * .75 * sp * t->mag();
+            // Stem tips follow the outer stroke edge extrapolated through
+            // the 1sp gaps; this checks their relationship independently of
+            // the anchor solver's particular grid choice.
+            const qreal x1 = first->stem()->pagePos().x();
+            const qreal x2 = last->stem()->pagePos().x();
+            const qreal y1 = first->stem()->pagePos().y() + first->stem()->p2().y();
+            const qreal y2 = last->stem()->pagePos().y() + last->stem()->p2().y();
+            const qreal slope = (y2 - y1) / (x2 - x1);
+            const qreal edgeLeft = y1 + (box.left() - x1) * slope;
+            const qreal edgeRight = y1 + (box.right() - x1) * slope;
+            if (first->up()) {
+                  QVERIFY(qAbs(box.top() - qMin(edgeLeft, edgeRight)) < 1e-6);
+                  QVERIFY(qAbs(box.bottom() - qMax(edgeLeft, edgeRight) - stack - width) < 1e-6);
+                  }
+            else {
+                  QVERIFY(qAbs(box.bottom() - qMax(edgeLeft, edgeRight)) < 1e-6);
+                  QVERIFY(qAbs(box.top() - qMin(edgeLeft, edgeRight) + stack + width) < 1e-6);
+                  }
+            const int contour = last->line() - first->line();
+            if (contour == 0)
+                  QVERIFY(qAbs(slope) < 1e-7);
+            else
+                  QVERIFY(slope * contour > 0);
+            modernBoxes.push_back(box);
+            modernLengths.push_back(first->stem()->len());
+            modernLengths.push_back(last->stem()->len());
+            }
+      score->doLayout();
+      for (size_t i = 0; i < tremolos.size(); ++i) {
+            Tremolo* t = tremolos[i];
+            const QRectF box = t->bbox().translated(t->pagePos());
+            QVERIFY(QLineF(box.topLeft(), modernBoxes[i].topLeft()).length() < 1e-6);
+            QVERIFY(QLineF(box.bottomRight(), modernBoxes[i].bottomRight()).length() < 1e-6);
+            QVERIFY(qAbs(t->chord1()->stem()->len() - modernLengths[2 * i]) < 1e-6);
+            QVERIFY(qAbs(t->chord2()->stem()->len() - modernLengths[2 * i + 1]) < 1e-6);
+            }
+      // Unsupported manual stem lengths must bypass this adapter without
+      // changing either stem or the supplied path.
+      Tremolo* manual = tremolos.front();
+      manual->chord1()->stem()->setUserLen(manual->spatium());
+      QPainterPath sentinel;
+      sentinel.addRect(1, 2, 3, 4);
+      const QPainterPath original = sentinel;
+      const qreal untouched = manual->chord2()->stem()->len();
+      QVERIFY(!beam4LayoutStandaloneTremolo(manual, sentinel));
+      QVERIFY(sentinel == original);
+      QCOMPARE(manual->chord2()->stem()->len(), untouched);
+      manual->chord1()->stem()->setUserLen(0);
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      for (size_t i = 0; i < tremolos.size(); ++i) {
+            Tremolo* t = tremolos[i];
+            QVERIFY(QLineF(t->pos(), oldPositions[i]).length() < 1e-6);
+            QVERIFY(QLineF(t->bbox().topLeft(), oldBoxes[i].topLeft()).length() < 1e-6);
+            QVERIFY(QLineF(t->bbox().bottomRight(), oldBoxes[i].bottomRight()).length() < 1e-6);
+            QVERIFY(qAbs(t->chord1()->stem()->len() - oldLengths[2 * i]) < 1e-6);
+            QVERIFY(qAbs(t->chord2()->stem()->len() - oldLengths[2 * i + 1]) < 1e-6);
             }
       delete score;
       }

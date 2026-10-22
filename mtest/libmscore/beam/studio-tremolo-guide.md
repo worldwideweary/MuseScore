@@ -114,3 +114,17 @@ image; this adapter does not impose a zero slope.
 V3/V4 standalone vertical anchors and tilt remain the next stage. Their fixed-gap
 width rule stays enabled, but their vertical layout is still Evolution's prior
 calculation. Toggle the style off to check restoration of the legacy inset layout.
+
+## v0.19 standalone anchor comparison
+
+Apply v0.19 after v0.18 and run tst_beam. Reuse studio-tremolo-anchors.mscx in
+both applications and compare V3/V4 up and down: the enabled style now solves
+standalone anchors and sets both stem tips from them. Inspect the slope and
+each endpoint's distance from the staff, plus the distance between strokes.
+V5 is the flat four-stroke control; recheck V1/V2/V6 for inset regressions.
+
+This stage covers ordinary default-style pairs with full-size same-direction,
+unmodified stems, no flags or beams, and one measure on the same unmoved staff.
+Cross-staff, opposite-stem, small/grace, flagged, stemless and other stroke styles
+remain on the prior vertical-layout path. Toggle the score style off to check
+legacy stem lengths and tremolo placement are restored.

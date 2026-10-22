@@ -88,7 +88,8 @@ enum class ChordBeamAnchorType { Start, Middle, End };
 enum class CrossStaffBeamPosition { INVALID, ABOVE, BELOW, BETWEEN };
 struct LayoutData {
     CrossStaffBeamPosition crossStaffBeamPos = CrossStaffBeamPosition::INVALID;
-    Beam* beam;
+    Beam* beam = nullptr;
+    Tremolo* tremolo = nullptr;
     bool up;
     bool isGrace;
     qreal spatium;
@@ -101,12 +102,17 @@ struct LayoutData {
     std::vector<ChordRest*> elements;
     std::vector<NotePosition> notePositions;
     qreal mag() const { return magnitude; }
+    bool noSlope() const { return beam && beam->noSlope(); }
+    // Saved tremolo offsets affect drawing, not the staff grid calculation.
+    QPointF origin() const { return beam ? beam->pagePos() : tremolo->chord1()->pagePos(); }
 };
 static const int _maxSlopes[] = { 0, 1, 2, 3, 4, 5, 6, 7 };
 // Studio counts inset tremolo strokes as well as ordinary beams when
 // solving beam anchors. Segment construction still uses ordinary beams only.
-static int strokeCount(const LayoutData*, const ChordRest* cr)
+static int strokeCount(const LayoutData* ldata, const ChordRest* cr)
 {
+    if (ldata && ldata->tremolo)
+        return ldata->tremolo->lines();
     int count = cr->beams();
     if (cr->isChord()) {
         const Tremolo* tremolo = toChord(cr)->tremolo();
@@ -119,7 +125,7 @@ static QPointF chordBeamAnchor(const LayoutData*, const ChordRest*, ChordBeamAnc
 static double chordBeamAnchorX(const LayoutData*, const ChordRest*, ChordBeamAnchorType);
 static double defaultStemLength4(const Chord*);
 static int minStemLength(const ChordRest* cr, const LayoutData* ldata);
-static void offsetBeamToRemoveCollisions(const Beam* item, const LayoutData* ldata,
+static void offsetBeamToRemoveCollisions(const Element* item, const LayoutData* ldata,
                                                      const std::vector<ChordRest*>& chordRests,
                                                      int& dictator,
                                                      int& pointer,
@@ -190,7 +196,7 @@ static int minStemLength(const ChordRest* cr, const LayoutData* ldata)
         ? std::max(ordinary, singleTremoloMinStem4(toChord(cr), beams, ldata->beamSpacing)) : ordinary;
 }
 
-static void offsetBeamToRemoveCollisions(const Beam* item, const LayoutData* ldata,
+static void offsetBeamToRemoveCollisions(const Element* item, const LayoutData* ldata,
                                                      const std::vector<ChordRest*>& chordRests,
                                                      int& dictator,
                                                      int& pointer,
@@ -571,7 +577,7 @@ static void addMiddleLineSlant(const LayoutData* ldata, int& dictator, int& poin
                                            int interval, int desiredSlant)
 {
     bool isSmall = ldata->mag() < 1. || ldata->isGrace;
-    if (interval == 0 || (!isSmall && beamCount > 2 && ldata->beamSpacing != 4) || ldata->beam->noSlope()) {
+    if (interval == 0 || (!isSmall && beamCount > 2 && ldata->beamSpacing != 4) || ldata->noSlope()) {
         return;
     }
     bool isOnTargetLine = pointer == targetLine && (std::abs(pointer - dictator) < 2);
@@ -587,7 +593,7 @@ static void addMiddleLineSlant(const LayoutData* ldata, int& dictator, int& poin
 static void add8thSpaceSlant(LayoutData* ldata, QPointF& dictatorAnchor, int dictator, int pointer, int beamCount,
                                          int interval, int targetLine, bool isFlat)
 {
-    if (beamCount != 3 || ldata->beam->noSlope() || ldata->beamSpacing != 3) {
+    if (beamCount != 3 || ldata->noSlope() || ldata->beamSpacing != 3) {
         return;
     }
     if ((isFlat && dictator != targetLine) || (dictator != pointer) || interval == 0) {
@@ -722,7 +728,7 @@ static int getMaxSlope(const LayoutData* ldata)
     return maxSlope;
 }
 
-// Beam-only counterpart of Studio 4.7.5 StemLayout::calcDefaultStemLength.
+// Beam/two-note-tremolo counterpart of Studio StemLayout::calcDefaultStemLength.
 // Unbeamed flags and unsupported tremolos retain their existing 3.x handling.
 static int minStaffOverlap(bool up, int staffLines, int beams, int spacing, bool fullSize)
 {
@@ -743,7 +749,8 @@ static double defaultStemLength4(const Chord* chord)
     const qreal sp = chord->spatium();
     const qreal lineDistance = chord->staff()->lineDistance(chord->tick());
     const int qPerLine = int(std::floor(lineDistance * 2));
-    const int beams = strokeCount(nullptr, chord);
+    const int beams = chord->beam() ? strokeCount(nullptr, chord)
+        : chord->tremolo() && chord->tremolo()->twoNotes() ? chord->tremolo()->lines() : 1;
     const int lines = chord->staff()->lines(chord->tick());
     // 3.x expresses beam distance relative to beam thickness. Use the
     // closest Studio grid while retaining the actual configured distance.
@@ -834,7 +841,7 @@ static double defaultStemLength4(const Chord* chord)
 
 static double chordBeamAnchorX(const LayoutData* ldata, const ChordRest* cr, ChordBeamAnchorType type)
 {
-    qreal x = cr->stemPosX() + cr->pagePos().x() - ldata->beam->pagePos().x();
+    qreal x = cr->stemPosX() + cr->pagePos().x() - ldata->origin().x();
     if (!cr->isChord() || !toChord(cr)->stem())
         return ldata->up ? x : x - cr->stemPosX();
     const qreal width = toChord(cr)->stem()->lineWidthMag();
@@ -1113,7 +1120,7 @@ static int computeDesiredSlant(const LayoutData* ldata, const NotePosition& star
                               const NotePosition& end, int target, int dictator, int pointer,
                               const std::vector<Chord*>& closest)
 {
-    if (ldata->beam->noSlope() || start == end)
+    if (ldata->noSlope() || start == end)
         return 0;
     int dExtension = target - dictator;
     int pExtension = target - pointer;
@@ -1145,22 +1152,24 @@ static int computeDesiredSlant(const LayoutData* ldata, const NotePosition& star
 
 } // namespace
 
-bool layoutBeam4(Beam* beam, const std::vector<ChordRest*>& elements,
-                 QPointF& start, QPointF& end, qreal& beamDistance)
+static bool calculateAnchors4(Element* item, Beam* beam, Tremolo* tremolo,
+                             const std::vector<ChordRest*>& elements,
+                             QPointF& start, QPointF& end, qreal& beamDistance)
 {
-    if (elements.empty() || beam->staff()->isTabStaff(beam->tick()) || !beam4SupportsTremolos(beam))
+    if (elements.empty())
         return false;
     Chord* first = nullptr;
     Chord* last = nullptr;
     LayoutData data;
     data.beam = beam;
-    data.up = beam->up();
+    data.tremolo = tremolo;
+    data.up = beam ? beam->up() : tremolo->chord1()->up();
     data.isGrace = false;
-    data.spatium = beam->spatium();
-    data.beamWidth = beam->score()->styleS(Sid::beamWidth).val() * data.spatium * beam->mag();
+    data.spatium = item->spatium();
+    data.beamWidth = item->score()->styleS(Sid::beamWidth).val() * data.spatium * item->mag();
     data.beamDist = beamDistance;
-    data.beamSpacing = beamDistance / data.spatium / beam->mag() >= 0.875 ? 4 : 3;
-    data.magnitude = beam->mag();
+    data.beamSpacing = beamDistance / data.spatium / item->mag() >= 0.875 ? 4 : 3;
+    data.magnitude = item->mag();
     data.elements = elements;
     for (ChordRest* cr : elements) {
         if (!cr->isChord())
@@ -1175,7 +1184,7 @@ bool layoutBeam4(Beam* beam, const std::vector<ChordRest*>& elements,
     if (!first || !last)
         return false;
     data.isGrace = first->isGrace();
-    if (beam->cross()) {
+    if (beam && beam->cross()) {
         bool above = false, below = false;
         for (const ChordRest* cr : elements) {
             if (!cr->isChord())
@@ -1187,13 +1196,13 @@ bool layoutBeam4(Beam* beam, const std::vector<ChordRest*>& elements,
             : below ? CrossStaffBeamPosition::ABOVE : CrossStaffBeamPosition::BELOW;
     }
     std::sort(data.notePositions.begin(), data.notePositions.end());
-    if (calculateAnchorsCross(beam, &data, beam->score())) {
+    if (beam && calculateAnchorsCross(beam, &data, item->score())) {
         start = data.startAnchor;
         end = data.endAnchor;
         return true;
     }
     int closestStaff = first->vStaffIdx();
-    if (beam->cross()) {
+    if (beam && beam->cross()) {
         for (const ChordRest* cr : elements) {
             if (cr->isChord())
                 closestStaff = data.up ? std::min(closestStaff, cr->vStaffIdx()) : std::max(closestStaff, cr->vStaffIdx());
@@ -1211,15 +1220,15 @@ bool layoutBeam4(Beam* beam, const std::vector<ChordRest*>& elements,
     const NotePosition firstPos(first->line(), first->vStaffIdx());
     const NotePosition lastPos(last->line(), last->vStaffIdx());
     const bool isStartDictator = data.up ? firstPos < lastPos : firstPos > lastPos;
-    const QPointF origin = beam->pagePos();
+    const QPointF origin = data.origin();
     int dictator = std::lround(((isStartDictator ? start : end).y() - origin.y()) / quarter);
     int pointer = std::lround(((isStartDictator ? end : start).y() - origin.y()) / quarter);
-    const int lines = beam->score()->staff(closestStaff)->lines(first->tick());
+    const int lines = item->score()->staff(closestStaff)->lines(first->tick());
     const int firstTarget = minStaffOverlap(data.up, lines, strokeCount(ldata, first), data.beamSpacing,
                                            qFuzzyCompare(data.mag(), 1.0) && !data.isGrace);
     const int lastTarget = minStaffOverlap(data.up, lines, strokeCount(ldata, last), data.beamSpacing, !data.isGrace);
     int staffOffset = 0;
-    if (beam->cross() && first->measure()->system()) {
+    if (beam && beam->cross() && first->measure()->system()) {
         const System* system = first->measure()->system();
         staffOffset = std::lround(std::abs(system->staffYpage(closestStaff) - system->staffYpage(beam->staffIdx()))
                                  / data.spatium * 4 * (data.up ? -1 : 1));
@@ -1238,13 +1247,13 @@ bool layoutBeam4(Beam* beam, const std::vector<ChordRest*>& elements,
         pointer = dictator + slant;
     const bool small = data.mag() < 1.0 || data.isGrace;
     if (end.x() > start.x()) {
-        setSmallInnerBeamPos(ldata, dictator, pointer, lines, flat, small, beam->score());
+        setSmallInnerBeamPos(ldata, dictator, pointer, lines, flat, small, item->score());
         if (!small) {
             const Chord* d = isStartDictator ? first : last;
             const int stemLength = std::lround(defaultStemLength4(d) / data.spatium * 4);
             offsetBeamWithAnchorShortening(ldata, elements, dictator, pointer, lines, isStartDictator, stemLength, target);
         }
-        offsetBeamToRemoveCollisions(beam, ldata, elements, dictator, pointer, start.x(), end.x(), flat, isStartDictator);
+        offsetBeamToRemoveCollisions(item, ldata, elements, dictator, pointer, start.x(), end.x(), flat, isStartDictator);
     }
     const int beamsD = strokeCount(ldata, isStartDictator ? first : last);
     const int beamsP = strokeCount(ldata, isStartDictator ? last : first);
@@ -1262,6 +1271,14 @@ bool layoutBeam4(Beam* beam, const std::vector<ChordRest*>& elements,
     end.setX(chordBeamAnchorX(ldata, elements.back(), ChordBeamAnchorType::End));
     beamDistance = data.beamDist;
     return true;
+}
+
+bool layoutBeam4(Beam* beam, const std::vector<ChordRest*>& elements,
+                 QPointF& start, QPointF& end, qreal& beamDistance)
+{
+    if (beam->staff()->isTabStaff(beam->tick()) || !beam4SupportsTremolos(beam))
+        return false;
+    return calculateAnchors4(beam, beam, nullptr, elements, start, end, beamDistance);
 }
 } // namespace Ms
 
@@ -1717,6 +1734,71 @@ bool beam4LayoutInsetTremolo(Tremolo* tremolo, QPainterPath& path)
     path = strokes;
     tremolo->setPos(0, 0);
     tremolo->setbbox(path.boundingRect());
+    return true;
+}
+
+// Studio's ordinary standalone branch uses the same anchor solver as beams.
+// Restrict this stage to unmodified, same-direction stems without flags.
+bool beam4LayoutStandaloneTremolo(Tremolo* tremolo, QPainterPath& path)
+{
+    Chord* first = tremolo->chord1();
+    Chord* last = tremolo->chord2();
+    if (!tremolo->twoNotes() || !first || !last || !first->score()->styleB(Sid::beamLayout4)
+        || tremolo->style() != TremoloStyle::DEFAULT || tremolo->lines() > 4
+        || first->beam() || last->beam() || first->beams() || last->beams()
+        || !first->stem() || !last->stem() || first->up() != last->up()
+        || first->staffMove() || last->staffMove() || first->vStaffIdx() != last->vStaffIdx()
+        || first->measure() != last->measure() || !first->measure()->system()
+        || first->isSmall() || last->isSmall() || first->isGrace() || last->isGrace()
+        || first->staff()->isTabStaff(first->tick())
+        || !qFuzzyCompare(first->staff()->lineDistance(first->tick()), 1.0)
+        || !qFuzzyCompare(last->staff()->lineDistance(last->tick()), 1.0)
+        || !qFuzzyIsNull(first->stem()->userLen()) || !qFuzzyIsNull(last->stem()->userLen())
+        || !first->stem()->offset().isNull() || !last->stem()->offset().isNull())
+        return false;
+    const qreal sp = tremolo->spatium();
+    const qreal grid = first->score()->styleP(Sid::beamWidth)
+        * (1 + first->score()->styleD(Sid::beamDistance)) / sp >= 0.875 ? 1.0 : 0.75;
+    qreal distance = grid * sp * tremolo->mag();
+    QPointF start, end;
+    if (!calculateAnchors4(tremolo, nullptr, tremolo, { first, last }, start, end, distance))
+        return false;
+    const qreal span = beam4InsetTremoloSpan(end.x() - start.x(), sp);
+    if (span <= 0)
+        return false;
+    const qreal slope = (end.y() - start.y()) / (end.x() - start.x());
+    const qreal gap = (end.x() - start.x() - span) / 2;
+    const QPointF origin = first->pagePos();
+    const qreal left = start.x() + gap;
+    const qreal right = end.x() - gap;
+    const qreal y1 = start.y() + gap * slope - origin.y();
+    const qreal y2 = end.y() - gap * slope - origin.y();
+    const int direction = first->up() ? -1 : 1;
+    const qreal width = first->score()->styleP(Sid::beamWidth) * tremolo->mag();
+    QPainterPath strokes;
+    for (int i = 0; i < tremolo->lines(); ++i) {
+        // Stroke spacing uses the style grid, including when the anchor solver
+        // adds an eighth-space slant and adjusts its internal beam distance.
+        const qreal offset = -direction * i * grid * sp * tremolo->mag();
+        QPolygonF polygon;
+        polygon << QPointF(left, y1 + offset - width / 2)
+                << QPointF(right, y2 + offset - width / 2)
+                << QPointF(right, y2 + offset + width / 2)
+                << QPointF(left, y1 + offset + width / 2);
+        strokes.addPolygon(polygon);
+        strokes.closeSubpath();
+    }
+    for (Chord* chord : { first, last }) {
+        Stem* stem = chord->stem();
+        const qreal centerX = stem->pagePos().x() - origin.x();
+        const qreal tipY = start.y() + (centerX - start.x()) * slope + direction * width / 2;
+        stem->setLen(tipY - stem->pagePos().y());
+    }
+    path = strokes;
+    tremolo->setPos(0, 0);
+    tremolo->setbbox(path.boundingRect());
+    first->segment()->createShape(first->vStaffIdx());
+    last->segment()->createShape(last->vStaffIdx());
     return true;
 }
 }

@@ -314,7 +314,7 @@ void Tremolo::layoutTwoNotesTremolo(qreal x, qreal y, qreal h, qreal spatium)
       const bool defaultStyle = (!customStyleApplicable()) || (_style == TremoloStyle::DEFAULT);
       const bool isTraditionalAlternate = (_style == TremoloStyle::TRADITIONAL_ALTERNATE);
 
-      if (beam4LayoutInsetTremolo(this, path))
+      if (beam4LayoutInsetTremolo(this, path) || beam4LayoutStandaloneTremolo(this, path))
             return;
 
       //---------------------------------------------------

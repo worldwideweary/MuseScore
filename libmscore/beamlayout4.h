@@ -17,6 +17,8 @@ bool beam4SupportsTremolos(const Beam*);
 bool beam4LayoutSingleTremolo(Tremolo*);
 // Layout supported inset two-note strokes from the completed beam geometry.
 bool beam4LayoutInsetTremolo(Tremolo*, QPainterPath&);
+// Ordinary same-direction, unbeamed pairs with unmodified stems.
+bool beam4LayoutStandaloneTremolo(Tremolo*, QPainterPath&);
 // Studio stroke span from anchor distance; zero means too narrow.
 qreal beam4InsetTremoloSpan(qreal anchorDistance, qreal spatium);
 // Returns false for cases whose modern adapter has not been implemented.
