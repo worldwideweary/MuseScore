@@ -377,3 +377,48 @@ two breaks. Qt moc and C++11 syntax checks pass. Full tst_spacing/tst_beam and
 rendering require the user's build. Apply v0.35 after v0.34, run both suites and
 compare H13-H18 plus natural H13. Next use those results to choose the smallest
 beamlet or voice-spacing correction supported by the pinned Studio source.
+
+## v0.36: cross-staff secondary-beam offsets and beamlet clearance
+
+The user reports the v0.35 tests passing. In the supplied comparisons, natural
+H13 exposes substantially tighter lower-to-upper transitions in Evolution at
+notes 2-3 and 5-6. The full H13/H14 systems are useful secondary-break controls;
+H15 is connected, and H16-H18 remain competing-voice controls. Proceed with this
+focused spacing correction without changing beamlet direction or beam angles.
+
+Extend the single-stream adapter from ordinary eighth notes to eighths and
+sixteenths. Apply the same fixed signed stem-side displacement to supported
+cross-staff transitions. Reject a beam containing tertiary or higher levels;
+existing edited-beam, staff-side, cue-size and competing-voice guards remain.
+For an up-to-down transition, retain the minimum of twice the displacement.
+When both endpoint chords instead have isolated secondary beamlets, use the
+Studio 4.7.5 minimum: displacement + 2 * beamMinLen + 0.35sp. The fixed 0.35sp
+comes from that release's PaddingTable beam-to-beam entry. Respect the score's
+existing beamMinLen; do not change style defaults to force a screenshot match.
+Evolution's collision minimum still takes precedence if it requires more room.
+
+Determine an isolated secondary beamlet from membership in a one-chord group
+at beam level 1. Check connections to both neighbors using beam4CalcBreaks for
+the modern beam option and Groups::endBeam for legacy beams. This uses current
+grouping before final beam geometry exists, avoiding stale segments from the
+previous layout. No final stem directions or beamlet pointers are read. Use the
+same destination-staff inference from v0.34. The spring solver is unchanged.
+
+Update crossBeamCorners to require signed offsets in H13-H15 and explicit
+beamlet clearance at natural/justified H13's two lower-to-upper transitions.
+H16-H18 must still have zero signed offsets. Retain finite-width, imported
+content, repeat-layout and legacy-restoration checks with both beam styles.
+No fixture or layout-default values change.
+
+Local C++11 syntax and Qt moc checks pass. An isolated harness executing the
+actual adapter passes 10,240 H13-H15 boundary/clearance cases with mocked grouping
+calls for the inputs' explicit modes, across both grouping selections and all
+provisional stem combinations. The earlier 8,192 H9-H12 boundary cases and
+visibility/voice/size/duration/beam/edited/gap guards still pass. This does not
+exercise full score layout or automatic grouping in the application. Full
+tst_spacing/tst_beam and rendered comparisons require the user's build.
+
+Apply v0.36 after v0.35. Compare studio-spacing-natural-h13.mscx first, especially
+notes 2-3 and 5-6, then H13-H15 in studio-spacing-cross-staff-corners.mscx.
+Recheck H16-H18 as competing-voice controls and H9-H12 for regressions. Next
+address a verified competing-voice spacing difference after these checks.

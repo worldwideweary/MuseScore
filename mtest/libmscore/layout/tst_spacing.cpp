@@ -347,6 +347,13 @@ void TestSpacing::crossBeamCorners()
       score->doLayout();
       int row = 0;
       const int expectedChords[] = { 6, 6, 8, 6, 8, 11 };
+      const int signs[3][8] = {
+            { -1, 1, 0, -1, 1, 0, 0, 0 },
+            { 1, -1, 0, 1, -1, 0, 0, 0 },
+            { -1, 1, -1, 1, -1, 1, -1, 0 }
+            };
+      const qreal displacement = score->noteHeadWidth() - score->styleP(Sid::stemWidth);
+      QVERIFY(displacement > 0);
       for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++row) {
             QVERIFY(row < measures);
             QVERIFY(m->ticks() == Fraction(1, 2));
@@ -358,11 +365,27 @@ void TestSpacing::crossBeamCorners()
             QVERIFY(primary->beam()->cross());
             int chords = 0;
             int breaks = 0;
+            int onset = 0;
             for (Segment& seg : m->segments()) {
                   QVERIFY(qIsFinite(seg.x()) && qIsFinite(seg.width()) && seg.width() >= 0);
-                  // Secondary beams or competing voices must not accidentally
-                  // enter the ordinary-eighth-note signed correction.
-                  QCOMPARE(seg.spacingWidthOffset4(), qreal(0));
+                  if (seg.isChordRestType()) {
+                        QVERIFY(onset < 8);
+                        const qreal expected = row < 3 ? signs[row][onset] * displacement : 0;
+                        QVERIFY2(qAbs(seg.spacingWidthOffset4() - expected) < 1e-6,
+                              qPrintable(QString("H%1 onset %2: offset %3, expected %4")
+                                    .arg(row + 13).arg(onset + 1).arg(seg.spacingWidthOffset4(), 0, 'g', 15)
+                                    .arg(expected, 0, 'g', 15)));
+                        // H13's lower-to-upper isolated secondary beams require
+                        // clearance for both beamlets, even in the short system.
+                        if (row == 0 && (onset == 1 || onset == 4)) {
+                              const qreal floor = displacement + 2 * score->styleP(Sid::beamMinLen)
+                                    + 0.35 * m->spatium();
+                              QVERIFY(seg.width() + 1e-6 >= floor);
+                              }
+                        ++onset;
+                        }
+                  else
+                        QCOMPARE(seg.spacingWidthOffset4(), qreal(0));
                   for (Element* element : seg.elist()) {
                         if (!element || !element->isChord())
                               continue;
@@ -373,6 +396,7 @@ void TestSpacing::crossBeamCorners()
                   }
             QCOMPARE(chords, expectedChords[row]);
             QCOMPARE(breaks, row < 2 ? 2 : 0);
+            QCOMPARE(onset, row < 2 ? 6 : (row == 2 || row == 5 ? 8 : 4));
             }
       QCOMPARE(row, measures);
       const std::vector<qreal> modern = snapshot();

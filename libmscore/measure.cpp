@@ -23,6 +23,7 @@
 #include "barline.h"
 #include "barlinegeometry.h"
 #include "beam.h"
+#include "beamlayout4.h"
 #include "box.h"
 #include "bracket.h"
 #include "bracketItem.h"
@@ -35,6 +36,7 @@
 #include "fermata.h"
 #include "fret.h"
 #include "glissando.h"
+#include "groups.h"
 #include "hairpin.h"
 #include "hook.h"
 #include "icon.h"
@@ -3770,8 +3772,8 @@ static qreal segmentSpacingStretch4(const Segment* segment)
     return rhythm * qBound(qreal(0.1), segment->measure()->userStretch(), qreal(10));
 }
 
-// Initial cross-beam adapter: a single visible stream of ordinary eighth-note
-// chords. Leave beamlets, cue sizes and competing voices to the collision path.
+// Cross-beam adapter for a single visible stream. Cue sizes and competing
+// voices continue to use the existing collision path.
 static const Chord* singleSpacingChord4(const Segment* segment)
 {
     const Chord* chord = nullptr;
@@ -3788,8 +3790,35 @@ static const Chord* singleSpacingChord4(const Segment* segment)
     return chord;
 }
 
-static qreal crossBeamSpacingOffset4(const Segment* segment, const Segment* next)
+// A secondary beamlet is a one-chord group at level 1. Determine it from
+// grouping, not the beam segments left over from a previous layout pass.
+static bool secondarySpacingBeamlet4(const Chord* chord)
 {
+    if (chord->beams() != 2)
+        return false;
+    const auto& elements = chord->beam()->elements();
+    auto it = std::find(elements.begin(), elements.end(), chord);
+    if (it == elements.end())
+        return false;
+    auto breaks = [chord](ChordRest* current, ChordRest* previous) {
+        if (chord->score()->styleB(Sid::beamLayout4)) {
+            bool secondary, tertiary;
+            beam4CalcBreaks(current, previous, 1, secondary, tertiary);
+            return secondary;
+        }
+        return Groups::endBeam(current, previous) == Beam::Mode::BEGIN32;
+    };
+    if (it != elements.begin() && (*(it - 1))->beams() >= 2 && !breaks(*it, *(it - 1)))
+        return false;
+    if (it + 1 != elements.end() && (*(it + 1))->beams() >= 2 && !breaks(*(it + 1), *it))
+        return false;
+    return true;
+}
+
+static qreal crossBeamSpacingOffset4(const Segment* segment, const Segment* next, qreal* minimumWidth = nullptr)
+{
+    if (minimumWidth)
+        *minimumWidth = 0;
     if (!next || !next->isChordRestType())
         return 0;
     const Chord* chord = singleSpacingChord4(segment);
@@ -3797,7 +3826,7 @@ static qreal crossBeamSpacingOffset4(const Segment* segment, const Segment* next
     if (!chord || !nextChord || chord->track() != nextChord->track()
         || !chord->beam() || chord->beam() != nextChord->beam() || !chord->beam()->cross()
         || chord->beam()->elements().size() <= 2
-        || chord->beams() != 1 || nextChord->beams() != 1
+        || chord->beams() < 1 || chord->beams() > 2 || nextChord->beams() < 1 || nextChord->beams() > 2
         || chord->mag() != 1.0 || nextChord->mag() != 1.0
         || chord->actualTicks() != segment->ticks() || nextChord->actualTicks() != next->ticks())
         return 0;
@@ -3807,7 +3836,7 @@ static qreal crossBeamSpacingOffset4(const Segment* segment, const Segment* next
     int upperStaff = chord->vStaffIdx();
     int lowerStaff = upperStaff;
     for (const ChordRest* cr : beam->elements()) {
-        if (!cr->isChord())
+        if (!cr->isChord() || cr->beams() < 1 || cr->beams() > 2)
             return 0;
         upperStaff = qMin(upperStaff, cr->vStaffIdx());
         lowerStaff = qMax(lowerStaff, cr->vStaffIdx());
@@ -3829,7 +3858,17 @@ static qreal crossBeamSpacingOffset4(const Segment* segment, const Segment* next
         return 0;
     const qreal displacement = qMax(qreal(0), segment->score()->noteHeadWidth()
         - segment->score()->styleP(Sid::stemWidth));
-    return chord->vStaffIdx() == lowerStaff ? displacement : -displacement;
+    const bool upDown = chord->vStaffIdx() == lowerStaff;
+    if (upDown && minimumWidth) {
+        if (secondarySpacingBeamlet4(chord) && secondarySpacingBeamlet4(nextChord)) {
+            // Studio PaddingTable's beam-to-beam padding is fixed at 0.35sp.
+            *minimumWidth = displacement + 2 * segment->score()->styleP(Sid::beamMinLen)
+                + 0.35 * segment->spatium();
+        }
+        else
+            *minimumWidth = 2 * displacement;
+    }
+    return upDown ? displacement : -displacement;
 }
 
 //-----------------------------------------------------------------------------
@@ -4971,13 +5010,13 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
             else
                   w = s->minRight();
             if (studioRhythm && s->isChordRestType() && s->ticks() > Fraction(0, 1)) {
-                  const qreal offset = crossBeamSpacingOffset4(s, ns);
+                  qreal minimumWidth;
+                  const qreal offset = crossBeamSpacingOffset4(s, ns, &minimumWidth);
                   s->setSpacingWidthOffset4(offset);
                   w = qMax(w, 3.5 * spatium() * segmentSpacingStretch4(s) + offset);
-                  // Studio's up-to-down stem clearance; retain the existing
-                  // collision minimum even where the signed correction is negative.
-                  if (offset > 0)
-                        w = qMax(w, 2 * offset);
+                  // Retain Evolution's collision floor for either sign, and
+                  // Studio's stem/beamlet clearance for up-to-down transitions.
+                  w = qMax(w, minimumWidth);
                   }
             s->setWidth(w);
             x += w;
