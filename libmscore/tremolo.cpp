@@ -19,6 +19,7 @@
 #include "style.h"
 #include "sym.h"
 #include "tremolo.h"
+#include "beamlayout4.h"
 #include "xml.h"
 
 namespace Ms {
@@ -260,6 +261,9 @@ void Tremolo::computeShape()
 void Tremolo::layoutOneNoteTremolo(qreal x, qreal y, qreal spatium)
       {
       Q_ASSERT(!twoNotes());
+
+      if (beam4LayoutSingleTremolo(this))
+            return;
 
       bool up = chord()->up();
       int line = up ? chord()->upLine() : chord()->downLine();

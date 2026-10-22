@@ -30,6 +30,7 @@
 #include "staff.h"
 #include "stem.h"
 #include "rest.h"
+#include "tremolo.h"
 #include "segment.h"
 #include "system.h"
 #include "beamlayout4.h"
@@ -39,6 +40,23 @@
 #include <limits>
 
 namespace Ms {
+// Initial tremolo support is deliberately limited to ordinary full-size
+// single-note strokes on unmodified, non-cross-staff pitched beams.
+bool beam4SupportsTremolos(const Beam* beam)
+{
+    for (const ChordRest* cr : beam->elements()) {
+        if (!cr->isChord())
+            continue;
+        const Chord* chord = toChord(cr);
+        const Tremolo* tremolo = chord->tremolo();
+        if (tremolo && (tremolo->twoNotes() || tremolo->isBuzzRoll() || tremolo->lines() > 4
+            || chord->isSmall() || chord->isGrace() || beam->cross() || beam->userModified()
+            || chord->staff()->isTabStaff(chord->tick())
+            || !qFuzzyCompare(chord->staff()->lineDistance(chord->tick()), 1.0)))
+            return false;
+    }
+    return true;
+}
 namespace {
 
 // The algorithms below are adapted from Studio v4.7.5's
@@ -110,6 +128,31 @@ static SlopeConstraint getSlopeConstraint(const LayoutData* ldata, const NotePos
                                                       const NotePosition& endPos);
 static int getMaxSlope(const LayoutData* ldata);
 
+// StemLayout::calcMinStemLength, single-note tremolo branch followed by
+// the beam branch. Padding uses Studio 4.7.5 defaults: note side 1.25sp,
+// outside 0.5sp; Evolution has no corresponding saved style properties.
+static int singleTremoloMinStem4(const Chord* chord, int beams, int spacing)
+{
+    const Tremolo* tremolo = chord->tremolo();
+    if (!tremolo)
+        return 0;
+    const int line = (chord->up() ? chord->upLine() : chord->downLine()) * 2;
+    const int staffHeight = chord->staff()->lines(chord->tick()) * 4;
+    int outside = 0;
+    if (!chord->up() && line < -2)
+        outside = -line;
+    else if (chord->up() && line > staffHeight)
+        outside = line - staffHeight + 4;
+    const int tremoloLength = int(std::ceil(tremolo->minHeight() * 4)) + 2 + std::max(5, outside);
+    static const int innerLengths[] = {10, 9, 8, 7};
+    int length = std::max(tremoloLength, innerLengths[std::min(beams, 3)]) + beams * spacing - 1;
+    const bool inStaff = chord->up() ? chord->upLine() > 0
+        : chord->downLine() < (chord->staff()->lines(chord->tick()) - 1) * 2;
+    if (beams >= 4 && inStaff)
+        ++length;
+    return length;
+}
+
 static int minStemLength(const ChordRest* cr, const LayoutData* ldata)
 {
     // min stem lengths in quarter spaces according to how many beams there are (starting with 1)
@@ -120,7 +163,9 @@ static int minStemLength(const ChordRest* cr, const LayoutData* ldata)
         return minStemLengths[BEAMS_COUNT - 1];
     }
 
-    return minStemLengths[std::max(beams - 1, 0)];
+    const int ordinary = minStemLengths[std::max(beams - 1, 0)];
+    return cr->isChord() && toChord(cr)->tremolo()
+        ? std::max(ordinary, singleTremoloMinStem4(toChord(cr), beams, ldata->beamSpacing)) : ordinary;
 }
 
 static void offsetBeamToRemoveCollisions(const Beam* item, const LayoutData* ldata,
@@ -656,7 +701,7 @@ static int getMaxSlope(const LayoutData* ldata)
 }
 
 // Beam-only counterpart of Studio 4.7.5 StemLayout::calcDefaultStemLength.
-// Unbeamed flags and tremolos retain their existing 3.x handling.
+// Unbeamed flags and unsupported tremolos retain their existing 3.x handling.
 static int minStaffOverlap(bool up, int staffLines, int beams, int spacing, bool fullSize)
 {
     int overlap = 8;
@@ -733,6 +778,8 @@ static double defaultStemLength4(const Chord* chord)
     const bool noteInStaff = up ? noteLine > 0 : noteLine < (lines - 1) * 2;
     if (beams >= 4 && noteInStaff)
         ++minLength;
+    if (chord->tremolo())
+        minLength = std::max(minLength, singleTremoloMinStem4(chord, beams, spacing));
     int stemLength = std::max(ideal, minLength);
     if (beams == 4) {
         const int difference = up ? std::max(0, chord->upLine() - (lines - 1) * 2)
@@ -1079,7 +1126,7 @@ static int computeDesiredSlant(const LayoutData* ldata, const NotePosition& star
 bool layoutBeam4(Beam* beam, const std::vector<ChordRest*>& elements,
                  QPointF& start, QPointF& end, qreal& beamDistance)
 {
-    if (elements.empty() || beam->staff()->isTabStaff(beam->tick()))
+    if (elements.empty() || beam->staff()->isTabStaff(beam->tick()) || !beam4SupportsTremolos(beam))
         return false;
     Chord* first = nullptr;
     Chord* last = nullptr;
@@ -1097,8 +1144,6 @@ bool layoutBeam4(Beam* beam, const std::vector<ChordRest*>& elements,
         if (!cr->isChord())
             continue;
         Chord* chord = toChord(cr);
-        if (chord->tremolo())
-            return false; // tremolo anchor adaptation is a separate stage
         if (!first)
             first = chord;
         last = chord;
@@ -1548,5 +1593,35 @@ void beam4AdjustRests(Beam* beam, const std::vector<ChordRest*>& elements,
         rest->rypos() += move;
         rest->segment()->createShape(rest->vStaffIdx());
     }
+}
+}
+
+
+namespace Ms {
+// Studio 4.7.5 TremoloLayout::layoutOneNoteTremolo, beamed full-size branch.
+// Evolution's Stem position is already its center line, so no edge-to-center
+// X correction is needed here. Saved tremolo offsets remain separate.
+bool beam4LayoutSingleTremolo(Tremolo* tremolo)
+{
+    Chord* chord = tremolo->chord();
+    Beam* beam = chord ? chord->beam() : nullptr;
+    if (!beam || !chord->stem() || !chord->score()->styleB(Sid::beamLayout4)
+        || !beam4SupportsTremolos(beam))
+        return false;
+    const bool up = chord->up();
+    const qreal sp = chord->spatium();
+    const qreal spacing = chord->score()->styleP(Sid::beamWidth)
+        * (1 + chord->score()->styleD(Sid::beamDistance)) / sp >= 0.875 ? 1.0 : 0.75;
+    qreal offset = std::abs(chord->stem()->stemLen()) - 0.5 * sp;
+    offset -= (chord->beams() * spacing - 0.25) * sp;
+    if (!up)
+        offset -= tremolo->minHeight() * sp;
+    qreal y = chord->stem()->y() + offset * (up ? -1 : 1);
+    if (up)
+        y = std::min(y, (chord->staff()->lines(chord->tick()) - 1 - tremolo->minHeight()) * sp);
+    else
+        y = std::max(y, qreal(0));
+    tremolo->setPos(chord->stem()->x(), y);
+    return true;
 }
 }

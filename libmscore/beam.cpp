@@ -408,9 +408,7 @@ void Beam::layout1()
                         const int directionIndex = (_direction == Direction::UP) ? 1 : 0;
                         const bool studioDirection = score()->styleB(Sid::beamLayout4)
                               && !_userModified[directionIndex] && !staff()->isTabStaff(c1->tick())
-                              && std::none_of(_elements.begin(), _elements.end(), [](const ChordRest* cr) {
-                                    return cr->isChord() && toChord(cr)->tremolo();
-                                    });
+                              && beam4SupportsTremolos(this);
                         if (studioDirection) {
                               // Studio gives polyphonic voice direction priority. In a
                               // single voice, the first explicit chord direction wins;
@@ -1595,9 +1593,7 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
       qreal& py2      = f->py2[dIdx];
       const bool useModernLayout = score()->styleB(Sid::beamLayout4) && !_userModified[dIdx]
             && !staff()->isTabStaff(tick())
-            && std::none_of(crl.begin(), crl.end(), [](const ChordRest* cr) {
-                  return cr->isChord() && toChord(cr)->tremolo();
-                  });
+            && beam4SupportsTremolos(this);
 
       if (useModernLayout && !_cross)
             beam4ResetRests(this, crl);

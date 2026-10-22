@@ -47,3 +47,14 @@ implemented. Use this score to identify the next concrete differences.
 All measure durations were checked with exact fractions; XML parsing passes.
 Application loading/rendering still needs checking. The v0.13 checkpoint adds
 these diagnostics only; see later checkpoint notes for engine changes.
+
+## v0.14 engine checkpoint
+
+Apply v0.13 after v0.12, then v0.14 after v0.13. Rebuild and run tst_beam.
+S1–S8 now exercise the initial full-size single-note beam/tremolo adapter when
+the setting is enabled. S9/S10 remain fallback controls, as do all D cases.
+The initial adapter uses Studio's default note-side and outer-side padding;
+it does not add new score-style padding controls. Manual/cross-staff beams,
+standalone single tremolos and nonstandard staff-line distances remain on the
+legacy path. Begin visual comparison with S1/S4/S5/S6, then S7/S8. Source/math
+checks pass; the new application tests and visual comparisons are pending.

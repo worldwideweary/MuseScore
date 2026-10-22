@@ -19,6 +19,7 @@
 #include "libmscore/rest.h"
 #include "libmscore/tuplet.h"
 #include "libmscore/text.h"
+#include "libmscore/tremolo.h"
 #include "libmscore/staff.h"
 #include "libmscore/beam.h"
 #include "libmscore/beamlayout4.h"
@@ -69,6 +70,8 @@ class TestBeam : public QObject, public MTest
       void studioBeamedRestClearance();
       void studioRestRunSegmentEnds();
       void studioNestedTupletStacking();
+      void studioSingleTremoloSwitch();
+      void studioTwoNoteTremoloFallback();
       void studioBeamShortWidth();
       };
 
@@ -579,6 +582,101 @@ void TestBeam::studioNestedTupletStacking()
       score->doLayout();
       for (size_t i = 0; i < outers.size(); ++i)
             QVERIFY(QLineF(outers[i]->pos(), legacyPositions[i]).length() < 1e-7);
+      delete score;
+      }
+
+void TestBeam::studioSingleTremoloSwitch()
+      {
+      MasterScore* score = readScore(DIR + "studio-tremolo-single.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      std::vector<Tremolo*> tremolos;
+      std::vector<QPointF> oldTrem, oldBeam;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            for (Segment* seg = m->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+                  Element* e = seg->element(0);
+                  if (e && e->isChord() && toChord(e)->tremolo()) {
+                        Tremolo* t = toChord(e)->tremolo();
+                        QVERIFY(!t->twoNotes());
+                        QVERIFY(t->chord()->beam());
+                        tremolos.push_back(t);
+                        oldTrem.push_back(t->pos());
+                        oldBeam.push_back(t->chord()->beam()->beamPos());
+                        }
+                  }
+            }
+      QCOMPARE(static_cast<int>(tremolos.size()), 20);
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      std::vector<QPointF> modernTrem, modernBeam;
+      for (size_t i = 0; i < tremolos.size(); ++i) {
+            Tremolo* t = tremolos[i];
+            Beam* beam = t->chord()->beam();
+            const bool supported = i % 10 < 8;
+            QCOMPARE(beam4SupportsTremolos(beam), supported);
+            QVERIFY(qIsFinite(t->pos().x()) && qIsFinite(t->pos().y()));
+            if (!supported) {
+                  QVERIFY(QLineF(t->pos(), oldTrem[i]).length() < 1e-7);
+                  QVERIFY(QLineF(beam->beamPos(), oldBeam[i]).length() < 1e-7);
+                  }
+            // The first four cases have flat single-level beams. The full
+            // tremolo bounding box must stay on the note side of the beam.
+            if (i % 10 < 4) {
+                  const QLineF* line = beam->primarySegment4();
+                  QVERIFY(line);
+                  const qreal beamY = line->y1() + beam->pagePos().y();
+                  const qreal halfWidth = score->styleP(Sid::beamWidth) * beam->mag() / 2;
+                  const QRectF box = t->bbox().translated(t->pagePos());
+                  QVERIFY(t->chord()->up() ? box.top() >= beamY + halfWidth - 1e-7
+                                          : box.bottom() <= beamY - halfWidth + 1e-7);
+                  }
+            modernTrem.push_back(t->pos());
+            modernBeam.push_back(beam->beamPos());
+            }
+      score->doLayout();
+      for (size_t i = 0; i < tremolos.size(); ++i) {
+            QVERIFY(QLineF(tremolos[i]->pos(), modernTrem[i]).length() < 1e-7);
+            QVERIFY(QLineF(tremolos[i]->chord()->beam()->beamPos(), modernBeam[i]).length() < 1e-7);
+            }
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      for (size_t i = 0; i < tremolos.size(); ++i) {
+            QVERIFY(QLineF(tremolos[i]->pos(), oldTrem[i]).length() < 1e-7);
+            QVERIFY(QLineF(tremolos[i]->chord()->beam()->beamPos(), oldBeam[i]).length() < 1e-7);
+            }
+      delete score;
+      }
+
+void TestBeam::studioTwoNoteTremoloFallback()
+      {
+      MasterScore* score = readScore(DIR + "studio-tremolo-two-note.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      std::vector<Tremolo*> tremolos;
+      std::vector<QPointF> positions;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            for (Segment* seg = m->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+                  Element* e = seg->element(0);
+                  if (!e || !e->isChord())
+                        continue;
+                  Chord* c = toChord(e);
+                  Tremolo* t = c->tremolo();
+                  if (!t || !t->twoNotes() || t->chord1() != c)
+                        continue;
+                  QVERIFY(t->chord2());
+                  if (c->beam())
+                        QVERIFY(!beam4SupportsTremolos(c->beam()));
+                  tremolos.push_back(t);
+                  positions.push_back(t->pos());
+                  }
+            }
+      QCOMPARE(static_cast<int>(tremolos.size()), 10);
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      for (size_t i = 0; i < tremolos.size(); ++i)
+            QVERIFY(QLineF(tremolos[i]->pos(), positions[i]).length() < 1e-7);
       delete score;
       }
 

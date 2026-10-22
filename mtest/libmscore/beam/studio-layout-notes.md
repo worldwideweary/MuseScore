@@ -311,3 +311,46 @@ twice the actual durations, following existing Evolution fixtures. These files
 have not been opened/rendered here. This checkpoint changes diagnostics only.
 Next: ordinary full-size single-note tremolo stems and placement, then inset
 two-note tremolo anchors. Buzz/grace/small/cross-staff cases remain separate.
+
+## v0.14 ordinary single-note tremolos in beams
+
+With beamLayout4 enabled, full-size, non-grace single-note tremolos with 1–4
+strokes now use the optional beam engine on unmodified non-cross-staff pitched
+beams with normal staff-line distance. The whole beam's tremolo content is
+checked consistently for direction, anchors and final tremolo placement. A
+const Beam::elements accessor supports that read-only check.
+
+Stem minima adapt the beamed single-tremolo branches of Studio 4.7.5
+StemLayout::calcMinStemLength, including tremolo height, outside-staff offset
+and the beam stack. Padding uses Studio defaults (1.25sp note side, 0.5sp outer
+side); Evolution has no equivalent saved padding properties. Existing stroke
+width/distance settings are retained. The minimum participates in endpoint
+anchors and inner-chord collision checks. Final single-tremolo placement adapts
+TremoloLayout::layoutOneNoteTremolo after the final beam stem is set. Evolution's
+stem X coordinate is already the center line, unlike Studio's edge coordinate.
+User tremolo offsets remain separate from the calculated layout position.
+
+Two-note tremolos, buzz rolls, 5+ stroke tremolos, grace/small tremolo chords,
+manual beams, cross-staff beams, TAB and nonstandard staff-line distances retain
+the prior fallback. Standalone single-note tremolos also keep their prior path.
+The option-off branch is retained. This is an initial single-note adapter, not
+complete tremolo engraving parity or an inset two-note tremolo implementation.
+
+studioSingleTremoloSwitch checks supported/fallback classification, finite
+positions, beam clearance for flat single-level examples, repeated layout and
+legacy restoration after switching off. studioTwoNoteTremoloFallback checks the
+new two-note fixtures connect both chords and retain their tremolo positions
+when the option is enabled. These application tests have only been syntax
+checked here and need a real tst_beam run.
+
+A simplified full-size beamed-context harness compared the actual adapted
+minimum-stem and placement functions with original Studio 4.7.5 function bodies
+in 10,000 contexts, including both directions, narrow/wide beam grids, varying
+stroke counts, staff positions, scales and stem lengths; all matched. This
+verifies the isolated decisions, not full score-layout parity. Production/test
+syntax and full base-to-current whitespace checks pass.
+
+Next: compare S1/S4/S5/S6 in both directions, then the slope and chord cases;
+verify S9/S10 stay unchanged. D1–D5 provide a baseline for the next stage,
+inset two-note tremolo anchors. Remaining corner cases and horizontal spacing
+are still separate later work.
