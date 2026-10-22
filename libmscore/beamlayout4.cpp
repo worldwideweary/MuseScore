@@ -1397,6 +1397,62 @@ bool beam4AutoStemUp(std::vector<int> noteLines, int middleLine)
     }
     return false;
 }
+
+bool beam4TremoloAutoStemUp(std::vector<int> noteLines, int middleLine)
+{
+    // TremoloLayout::calcIsUp passes the complete combined note list, unlike
+    // the beam direction policy, which first removes duplicate positions.
+    std::sort(noteLines.begin(), noteLines.end());
+    int left = 0;
+    int right = static_cast<int>(noteLines.size()) - 1;
+    while (left <= right) {
+        const int net = (noteLines[left] - middleLine) + (noteLines[right] - middleLine);
+        if (net != 0)
+            return net > 0;
+        ++left;
+        --right;
+    }
+    return false;
+}
+
+bool beam4TremoloStemUp(const Tremolo* tremolo, bool& up)
+{
+    const Chord* first = tremolo->chord1();
+    const Chord* last = tremolo->chord2();
+    if (!tremolo->twoNotes() || !first || !last || !first->score()->styleB(Sid::beamLayout4)
+        || tremolo->style() != TremoloStyle::DEFAULT || tremolo->lines() > 4
+        || first->beam() || last->beam() || first->beams() > 4 || last->beams() > 4
+        || first->notes().empty() || last->notes().empty()
+        || first->isSmall() || last->isSmall() || first->isGrace() || last->isGrace()
+        || first->staffMove() || last->staffMove() || first->staffIdx() != last->staffIdx()
+        || first->track() != last->track() || !first->measure() || first->measure() != last->measure()
+        || !first->staff()->isPitchedStaff(first->tick())
+        || !last->staff()->isPitchedStaff(last->tick())
+        || !qFuzzyCompare(first->staff()->lineDistance(first->tick()), 1.0)
+        || !qFuzzyCompare(last->staff()->lineDistance(last->tick()), 1.0)
+        || first->noStem() || last->noStem() || !first->durationType().hasStem() || !last->durationType().hasStem()
+        || first->measure()->stemless(first->staffIdx()) || !tremolo->offset().isNull()
+        || (first->stem() && (!qFuzzyIsNull(first->stem()->userLen()) || !first->stem()->offset().isNull()))
+        || (last->stem() && (!qFuzzyIsNull(last->stem()->userLen()) || !last->stem()->offset().isNull())))
+        return false;
+    const Fraction span = last->tick() - first->tick();
+    if (span <= Fraction(0, 1) || first->measure()->hasVoices(first->staffIdx(), first->tick(), span))
+        return false;
+    if (first->stemDirection() != Direction::AUTO)
+        up = first->stemDirection() == Direction::UP;
+    else if (last->stemDirection() != Direction::AUTO)
+        up = last->stemDirection() == Direction::UP;
+    else {
+        std::vector<int> notes;
+        for (const Chord* chord : { first, last }) {
+            const int middle = chord->staff()->middleLine(chord->tick());
+            for (const Note* note : chord->notes())
+                notes.push_back(note->line() - middle);
+        }
+        up = beam4TremoloAutoStemUp(notes, 0);
+    }
+    return true;
+}
 }
 
 namespace Ms {

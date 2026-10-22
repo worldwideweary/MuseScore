@@ -52,3 +52,34 @@ XML parsing, measure sums, pair connections, written/actual duration matching,
 all twelve direction combinations, pitch spellings and the balanced control
 were checked locally. No application test or engraving code changes here.
 The score has not been loaded or rendered in either application locally.
+
+## v0.24 direction adaptation
+
+The supplied v0.23 captures confirm Studio's expected common directions,
+including conflicting explicit properties, combined Auto in O5/O6, and Down
+for balanced O12. Apply v0.24 after v0.23, rebuild and run tst_beam. Reuse this
+same score; compare O1-O8 and O12 first, then O9-O11 as controls.
+
+Evolution now derives the common direction after note lines and beam membership
+are current, before notehead mirroring and spacing. Both stems are initialized
+with that direction, allowing the existing standalone tremolo adapter to solve
+their anchors. First explicit direction wins, then second explicit direction,
+otherwise both chords' notes contribute to Auto. Unlike beam Auto, this
+tremolo rule retains repeated note positions. Stored stem-direction properties
+are not rewritten. Disabling the experimental style restores legacy choices.
+
+The new direction policy is limited to the supported ordinary standalone path:
+default-style, full-size non-grace pitched pairs in one measure/track on the
+same unmoved staff, standard line spacing, one to four tremolo strokes and
+written durations through sixty-fourths. Stemless, manually lengthened or
+offset stems, offset tremolos, other voices in the checked span, ordinary beams,
+cross-staff, small/grace and TAB cases retain their previous direction policy.
+Flag suppression from v0.22 remains a separate rule.
+
+New tests check the O1-O12 expected directions, retained stored properties,
+modern stroke spans, repeat stability and legacy direction/stem/path restoration.
+A separate policy test distinguishes the treatment of repeated note positions
+from beam Auto. Production/test C++11 syntax checks pass, and 100,000 isolated
+direction cases matched the original Studio 4.7.5 calcIsUp function in supported
+single-voice same-staff contexts. Full tst_beam and visual rendering of this
+new implementation remain for the application build.

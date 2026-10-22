@@ -61,6 +61,7 @@
 #include "tie.h"
 #include "timesig.h"
 #include "tremolo.h"
+#include "beamlayout4.h"
 #include "tuplet.h"
 #include "undo.h"
 #include "utils.h"
@@ -3316,6 +3317,28 @@ void Score::getNextMeasure(LayoutContext& lc)
             }
 
       createBeams(lc, measure);
+
+      // Both chords' note lines and beam memberships are now current. Resolve
+      // supported standalone tremolos before notehead mirroring and spacing.
+      if (score()->styleB(Sid::beamLayout4)) {
+            for (Segment& segment : measure->segments()) {
+                  if (!segment.isChordRestType())
+                        continue;
+                  for (Element* element : segment.elist()) {
+                        if (!element || !element->isChord())
+                              continue;
+                        Tremolo* tremolo = toChord(element)->tremolo();
+                        bool up;
+                        if (!tremolo || tremolo->chord1() != element || !beam4TremoloStemUp(tremolo, up))
+                              continue;
+                        tremolo->chord1()->setUp(up);
+                        tremolo->chord2()->setUp(up);
+                        for (Chord* chord : { tremolo->chord1(), tremolo->chord2() }) {
+                              chord->layoutStem1();
+                              }
+                        }
+                  }
+            }
 
       for (int staffIdx = 0; staffIdx < score()->nstaves(); ++staffIdx) {
             for (Segment& segment : measure->segments()) {

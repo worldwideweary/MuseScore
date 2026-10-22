@@ -77,6 +77,8 @@ class TestBeam : public QObject, public MTest
       void studioInsetTremoloAnchors();
       void studioStandaloneTremoloAnchors();
       void studioFlaggedTremoloAnchors();
+      void studioTremoloDirectionPolicy();
+      void studioTremoloDirectionSwitch();
       void studioBeamShortWidth();
       };
 
@@ -987,6 +989,118 @@ void TestBeam::studioFlaggedTremoloAnchors()
                   QVERIFY(qAbs(chord->stem()->len() - saved.lengths[i]) < 1e-6);
                   QVERIFY(chord->hook());
                   QVERIFY(QLineF(chord->hook()->pos(), saved.flags[i]).length() < 1e-6);
+                  ++i;
+                  }
+            }
+      delete score;
+      }
+
+
+void TestBeam::studioTremoloDirectionPolicy()
+      {
+      QVERIFY(beam4TremoloAutoStemUp({ 10, 3 }, 4));
+      QVERIFY(beam4TremoloAutoStemUp({ 3, 10 }, 4));
+      QVERIFY(!beam4TremoloAutoStemUp({ 10, -2 }, 4));
+      QVERIFY(beam4TremoloAutoStemUp({ 10, 10, -2 }, 4));
+      QVERIFY(!beam4TremoloAutoStemUp({ 10, -2, -2 }, 4));
+      QVERIFY(!beam4AutoStemUp({ 10, 10, -2 }, 4)); // beam policy uses distinct positions
+      QVERIFY(beam4TremoloAutoStemUp({ 17, 13, 10, 10, 8, 6 }, 4));
+      }
+
+void TestBeam::studioTremoloDirectionSwitch()
+      {
+      MasterScore* score = readScore(DIR + "studio-tremolo-direction.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      struct Saved {
+            Tremolo* tremolo;
+            Direction directions[2];
+            bool up[2];
+            qreal lengths[2];
+            QRectF box;
+            QPointF position;
+            };
+      std::vector<Saved> saved;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            for (Segment* seg = m->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+                  Element* e = seg->element(0);
+                  if (!e || !e->isChord())
+                        continue;
+                  Tremolo* t = toChord(e)->tremolo();
+                  if (!t || !t->twoNotes() || t->chord1() != e)
+                        continue;
+                  QVERIFY(t->chord2());
+                  Saved entry;
+                  entry.tremolo = t;
+                  entry.box = t->bbox();
+                  entry.position = t->pos();
+                  int i = 0;
+                  for (Chord* c : { t->chord1(), t->chord2() }) {
+                        QVERIFY(c->stem() && !c->beam());
+                        entry.directions[i] = c->stemDirection();
+                        entry.up[i] = c->up();
+                        entry.lengths[i++] = c->stem()->len();
+                        }
+                  bool result;
+                  QVERIFY(!beam4TremoloStemUp(t, result));
+                  saved.push_back(entry);
+                  }
+            }
+      QCOMPARE(static_cast<int>(saved.size()), 12);
+      const bool expected[] = { true, false, true, false, true, true, true, false, true, false, true, false };
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      std::vector<QRectF> boxes;
+      std::vector<qreal> lengths;
+      for (size_t i = 0; i < saved.size(); ++i) {
+            Tremolo* t = saved[i].tremolo;
+            bool result;
+            QVERIFY(beam4TremoloStemUp(t, result));
+            QCOMPARE(result, expected[i]);
+            int j = 0;
+            for (Chord* c : { t->chord1(), t->chord2() }) {
+                  QCOMPARE(c->up(), expected[i]);
+                  QCOMPARE(static_cast<int>(c->stemDirection()), static_cast<int>(saved[i].directions[j++]));
+                  lengths.push_back(c->stem()->len());
+                  }
+            const QRectF box = t->bbox().translated(t->pagePos());
+            QVERIFY(qIsFinite(box.top()) && qIsFinite(box.bottom()) && box.width() > 0);
+            const Stem* a = t->chord1()->stem();
+            const Stem* b = t->chord2()->stem();
+            const qreal distance = b->pagePos().x() + b->lineWidthMag() / 2
+                  - a->pagePos().x() + a->lineWidthMag() / 2;
+            QVERIFY(qAbs(box.width() - beam4InsetTremoloSpan(distance, t->spatium())) < 1e-6);
+            boxes.push_back(box);
+            }
+      score->doLayout();
+      for (size_t i = 0; i < saved.size(); ++i) {
+            Tremolo* t = saved[i].tremolo;
+            const QRectF box = t->bbox().translated(t->pagePos());
+            QVERIFY(QLineF(box.topLeft(), boxes[i].topLeft()).length() < 1e-6);
+            QVERIFY(QLineF(box.bottomRight(), boxes[i].bottomRight()).length() < 1e-6);
+            QVERIFY(qAbs(t->chord1()->stem()->len() - lengths[2 * i]) < 1e-6);
+            QVERIFY(qAbs(t->chord2()->stem()->len() - lengths[2 * i + 1]) < 1e-6);
+            QCOMPARE(t->chord1()->up(), expected[i]);
+            QCOMPARE(t->chord2()->up(), expected[i]);
+            }
+      Tremolo* manual = saved.front().tremolo;
+      manual->chord1()->stem()->setUserLen(manual->spatium());
+      bool result;
+      QVERIFY(!beam4TremoloStemUp(manual, result));
+      manual->chord1()->stem()->setUserLen(0);
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      for (const Saved& entry : saved) {
+            Tremolo* t = entry.tremolo;
+            QVERIFY(QLineF(t->pos(), entry.position).length() < 1e-6);
+            QVERIFY(QLineF(t->bbox().topLeft(), entry.box.topLeft()).length() < 1e-6);
+            QVERIFY(QLineF(t->bbox().bottomRight(), entry.box.bottomRight()).length() < 1e-6);
+            int i = 0;
+            for (Chord* c : { t->chord1(), t->chord2() }) {
+                  QCOMPARE(c->up(), entry.up[i]);
+                  QCOMPARE(static_cast<int>(c->stemDirection()), static_cast<int>(entry.directions[i]));
+                  QVERIFY(qAbs(c->stem()->len() - entry.lengths[i]) < 1e-6);
                   ++i;
                   }
             }

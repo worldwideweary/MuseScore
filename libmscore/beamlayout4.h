@@ -19,6 +19,10 @@ bool beam4LayoutSingleTremolo(Tremolo*);
 bool beam4LayoutInsetTremolo(Tremolo*, QPainterPath&);
 // Ordinary same-direction, unbeamed pairs with unmodified stems.
 bool beam4LayoutStandaloneTremolo(Tremolo*, QPainterPath&);
+// Derive a common layout direction without changing stored stem properties.
+bool beam4TremoloStemUp(const Tremolo*, bool& up);
+// Studio's combined-note Auto rule; tremolos retain repeated note positions.
+bool beam4TremoloAutoStemUp(std::vector<int> noteLines, int middleLine);
 // Studio stroke span from anchor distance; zero means too narrow.
 qreal beam4InsetTremoloSpan(qreal anchorDistance, qreal spatium);
 // Returns false for cases whose modern adapter has not been implemented.

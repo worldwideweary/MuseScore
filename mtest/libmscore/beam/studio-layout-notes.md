@@ -574,3 +574,35 @@ direction combinations, pitch spellings and the balanced control pass local
 checks. No engraving or application-test changes; rendering remains for the
 applications. Next: verify O1-O6 and O7-O12 against Studio, then implement the
 direction policy with legacy restoration and stored-property preservation.
+
+## v0.24 common standalone tremolo direction
+
+The v0.23 captures confirm Studio's direction policy: both stems follow the
+first explicit property, then the second explicit property, or a combined-note
+Auto calculation. Balanced O12 goes Down. Adds beam4TremoloStemUp and a separate
+combined-note Auto helper, which retains repeated note positions rather than
+using the beam helper's distinct-position list.
+
+After createBeams, all note lines and beam memberships are current. Supported
+standalone pairs now receive their common calculated direction and initialize
+both stems before layoutChords1 mirrors noteheads and computes spacing. This
+avoids changing direction only after horizontal layout. Stem-direction
+properties remain untouched. The style-off path is unchanged and reconstructs
+legacy directions through the normal layout sequence.
+
+Scope is the existing ordinary standalone adapter: full-size non-grace pitched
+default-style pairs, one measure/track and unmoved staff, standard line spacing,
+one to four strokes and written durations through sixty-fourths. Stemless,
+manual stem lengths/offsets, offset tremolos, other voices in the checked span,
+ordinary beams, cross-staff and TAB cases keep their prior direction policy.
+No score inputs change. Reuse studio-tremolo-direction.mscx.
+
+New studioTremoloDirectionPolicy and studioTremoloDirectionSwitch check expected
+O1-O12 directions, repeated-note behavior, stored-property preservation, modern
+span, stable repeated layout, manual-stem bypass and legacy direction/stem/path
+restoration. C++11 syntax checks pass for layout.cpp, beamlayout4.cpp and the
+test with unused-parameter warnings enabled. An isolated harness using the
+actual direction helper matched original Studio 4.7.5 calcIsUp in 100,000
+supported same-staff single-voice contexts. Full tst_beam and visual comparison
+remain for the application build. Next: compare O1-O8/O12, recheck O9-O11 and
+the prior V/K/F controls, then proceed to cross-staff diagnostics.
