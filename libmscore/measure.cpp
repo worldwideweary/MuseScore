@@ -3772,9 +3772,10 @@ static qreal segmentSpacingStretch4(const Segment* segment)
     return rhythm * qBound(qreal(0.1), segment->measure()->userStretch(), qreal(10));
 }
 
-// Cross-beam adapter for a single visible stream. Cue sizes and competing
-// voices continue to use the existing collision path.
-static const Chord* singleSpacingChord4(const Segment* segment)
+// Select one beamed stream, allowing un-beamed chord voices as constraints.
+// Studio permits an outgoing adjustment beside a longer sounding value, but
+// an un-beamed chord at the following onset blocks the signed adjustment.
+static const Chord* singleSpacingChord4(const Segment* segment, bool following, bool& canAdjust)
 {
     const Chord* chord = nullptr;
     for (const Element* element : segment->elist()) {
@@ -3783,8 +3784,15 @@ static const Chord* singleSpacingChord4(const Segment* segment)
         const ChordRest* cr = toChordRest(element);
         if (cr->isFullMeasureRest() || (cr->isRest() && toRest(cr)->isGap()))
             continue;
-        if (chord || !cr->isChord())
+        if (!cr->isChord())
             return nullptr;
+        if (!cr->beam()) {
+            if (following || cr->actualTicks() <= segment->ticks())
+                canAdjust = false;
+            continue;
+        }
+        if (chord)
+            return nullptr; // independent beamed voices keep the existing fallback
         chord = toChord(cr);
     }
     return chord;
@@ -3821,8 +3829,9 @@ static qreal crossBeamSpacingOffset4(const Segment* segment, const Segment* next
         *minimumWidth = 0;
     if (!next || !next->isChordRestType())
         return 0;
-    const Chord* chord = singleSpacingChord4(segment);
-    const Chord* nextChord = singleSpacingChord4(next);
+    bool canAdjust = true;
+    const Chord* chord = singleSpacingChord4(segment, false, canAdjust);
+    const Chord* nextChord = singleSpacingChord4(next, true, canAdjust);
     if (!chord || !nextChord || chord->track() != nextChord->track()
         || !chord->beam() || chord->beam() != nextChord->beam() || !chord->beam()->cross()
         || chord->beam()->elements().size() <= 2
@@ -3868,7 +3877,7 @@ static qreal crossBeamSpacingOffset4(const Segment* segment, const Segment* next
         else
             *minimumWidth = 2 * displacement;
     }
-    return upDown ? displacement : -displacement;
+    return canAdjust ? (upDown ? displacement : -displacement) : 0;
 }
 
 //-----------------------------------------------------------------------------

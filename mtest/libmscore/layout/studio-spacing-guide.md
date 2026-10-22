@@ -422,3 +422,58 @@ Apply v0.36 after v0.35. Compare studio-spacing-natural-h13.mscx first, especial
 notes 2-3 and 5-6, then H13-H15 in studio-spacing-cross-staff-corners.mscx.
 Recheck H16-H18 as competing-voice controls and H9-H12 for regressions. Next
 address a verified competing-voice spacing difference after these checks.
+
+## v0.37: sustained un-beamed voices beside cross-staff beams
+
+The user reports all v0.36 tests passing. Natural H13's lower-to-upper beamlet
+clearance is now close to Studio at matching staff scale. Some extra spacing
+in the reverse transition remains consistent with Evolution's retained collision
+minimums; do not lower those floors as part of this voice correction.
+
+From this checkpoint onward, put the version near the front of patch names
+(37E-v0.37-...) and new comparison-score names (v0.37-...). Existing filenames
+remain unchanged so earlier comparison instructions still work.
+
+Studio v4.7.5 computeCrossBeamSpacing distinguishes a longer un-beamed value at
+the current onset from an un-beamed value at the following onset. The former
+does not block a signed adjustment if actualTicks exceeds the segment interval;
+the latter blocks it. A current un-beamed value ending at/before the next onset
+also blocks it. Even when blocked, an identified up-to-down beam transition
+still requires its minimum stem/beamlet clearance.
+
+Adapt this bounded case by selecting one beamed chord per segment and treating
+un-beamed chord voices as constraints on canAdjust. Independent beamed voices
+still take the fallback, as do visible rests other than gap/full-measure rests.
+Existing beam-size, edited-beam, staff-side and endpoint-duration guards remain.
+No stem directions, collision floors, beam angles or spring rules change.
+This is not the complete Studio multi-voice kerning or cross-beam implementation.
+
+H16 now expects negative outgoing offsets at onsets 1 and 3, and zero signed
+offsets at incoming onsets 2 and 4. H17/H18 retain zero-offset fallback checks.
+Add tests with both beam styles, repeated layout and legacy restoration, plus
+two new version-prefixed inputs:
+
+| File | Cases | Visual focus |
+| --- | --- | --- |
+| v0.37-spacing-natural-h16.mscx | Existing H16 alone at the 100% fill threshold | Outgoing gaps beside sustained quarters versus incoming gaps at new quarters |
+| v0.37-spacing-voices.mscx | H19: lower-source mirror with sustained quarters; H20: upper-source cross beam plus un-beamed eighths | Reversed signed adjustment; short-note blocking control |
+
+Both inputs use matched earlier styles, 2/4 time and spacing initially off.
+The natural file preserves H16's existing notes and voices. H19 expects positive
+outgoing offsets at onsets 1 and 3. H20 expects zero signed offsets. All retain
+up-to-down minimum clearance whether or not the signed adjustment is allowed.
+Initial time signatures precede note/rest durations in both staffs. Every voice
+fills exactly 2/4; XML checks find six chords in natural H16 and fourteen in the
+two-measure H19/H20 overview.
+
+Local C++11 syntax and Qt moc checks pass. The extracted-adapter harness passes
+6,144 sustained/short-voice boundary and blocked-clearance cases across both
+grouping selections and all provisional stem combinations; the earlier 10,240
+secondary-beam and 8,192 ordinary cross-beam cases/guards still pass. Grouping
+calls in this isolated harness are mocked for explicit modes. Full application
+tests and rendering require the user's build.
+
+Apply v0.37 after v0.36. Run tst_spacing/tst_beam; compare the two new files with
+Studio 4.7.5 and recheck H16-H18 in studio-spacing-cross-staff-corners.mscx.
+Then continue with remaining kerning/accidental cases supported by comparisons
+and the pinned source. Continue automatically without a separate permission step.

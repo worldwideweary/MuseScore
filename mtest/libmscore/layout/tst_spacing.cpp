@@ -23,6 +23,8 @@ class TestSpacing : public QObject, public MTest {
       void crossBeamSwitch();
       void crossBeamCorners_data();
       void crossBeamCorners();
+      void sustainedVoiceSwitch_data();
+      void sustainedVoiceSwitch();
       void finalSystemSwitch_data();
       void finalSystemSwitch();
       void boundarySystems_data();
@@ -347,10 +349,11 @@ void TestSpacing::crossBeamCorners()
       score->doLayout();
       int row = 0;
       const int expectedChords[] = { 6, 6, 8, 6, 8, 11 };
-      const int signs[3][8] = {
+      const int signs[4][8] = {
             { -1, 1, 0, -1, 1, 0, 0, 0 },
             { 1, -1, 0, 1, -1, 0, 0, 0 },
-            { -1, 1, -1, 1, -1, 1, -1, 0 }
+            { -1, 1, -1, 1, -1, 1, -1, 0 },
+            { -1, 0, -1, 0, 0, 0, 0, 0 }
             };
       const qreal displacement = score->noteHeadWidth() - score->styleP(Sid::stemWidth);
       QVERIFY(displacement > 0);
@@ -370,7 +373,7 @@ void TestSpacing::crossBeamCorners()
                   QVERIFY(qIsFinite(seg.x()) && qIsFinite(seg.width()) && seg.width() >= 0);
                   if (seg.isChordRestType()) {
                         QVERIFY(onset < 8);
-                        const qreal expected = row < 3 ? signs[row][onset] * displacement : 0;
+                        const qreal expected = row < 4 ? signs[row][onset] * displacement : 0;
                         QVERIFY2(qAbs(seg.spacingWidthOffset4() - expected) < 1e-6,
                               qPrintable(QString("H%1 onset %2: offset %3, expected %4")
                                     .arg(row + 13).arg(onset + 1).arg(seg.spacingWidthOffset4(), 0, 'g', 15)
@@ -399,6 +402,83 @@ void TestSpacing::crossBeamCorners()
             QCOMPARE(onset, row < 2 ? 6 : (row == 2 || row == 5 ? 8 : 4));
             }
       QCOMPARE(row, measures);
+      const std::vector<qreal> modern = snapshot();
+      score->doLayout();
+      const std::vector<qreal> repeated = snapshot();
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i)
+            QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const std::vector<qreal> restored = snapshot();
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i)
+            QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
+void TestSpacing::sustainedVoiceSwitch_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::addColumn<bool>("natural");
+      QTest::addColumn<bool>("modernBeams");
+      QTest::newRow("natural-legacy-beams") << QString("v0.37-spacing-natural-h16.mscx") << true << false;
+      QTest::newRow("natural-studio-beams") << QString("v0.37-spacing-natural-h16.mscx") << true << true;
+      QTest::newRow("mirrored-legacy-beams") << QString("v0.37-spacing-voices.mscx") << false << false;
+      QTest::newRow("mirrored-studio-beams") << QString("v0.37-spacing-voices.mscx") << false << true;
+      }
+
+void TestSpacing::sustainedVoiceSwitch()
+      {
+      QFETCH(QString, file);
+      QFETCH(bool, natural);
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score);
+      QVERIFY(!score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      auto snapshot = [score]() -> std::vector<qreal> {
+            std::vector<qreal> values;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  values.push_back(m->width());
+                  for (Segment& seg : m->segments()) {
+                        values.push_back(seg.x());
+                        values.push_back(seg.width());
+                        }
+                  }
+            return values;
+            };
+      const std::vector<qreal> legacy = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      const qreal displacement = score->noteHeadWidth() - score->styleP(Sid::stemWidth);
+      QVERIFY(displacement > 0);
+      const int signs[3][4] = { { -1, 0, -1, 0 }, { 1, 0, 1, 0 }, { 0, 0, 0, 0 } };
+      int row = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++row) {
+            QVERIFY(row < (natural ? 1 : 2));
+            QVERIFY(m->ticks() == Fraction(1, 2));
+            const int profile = natural ? 0 : row + 1;
+            int onset = 0;
+            for (Segment& seg : m->segments()) {
+                  QVERIFY(qIsFinite(seg.x()) && qIsFinite(seg.width()) && seg.width() >= 0);
+                  if (!seg.isChordRestType())
+                        continue;
+                  QVERIFY(onset < 4);
+                  const qreal expected = signs[profile][onset] * displacement;
+                  QVERIFY2(qAbs(seg.spacingWidthOffset4() - expected) < 1e-6,
+                        qPrintable(QString("voice profile %1 onset %2: offset %3, expected %4")
+                              .arg(profile).arg(onset + 1).arg(seg.spacingWidthOffset4(), 0, 'g', 15)
+                              .arg(expected, 0, 'g', 15)));
+                  // Even a blocked signed adjustment retains up-to-down clearance.
+                  if ((profile != 1 && onset == 1) || (profile == 1 && onset % 2 == 0))
+                        QVERIFY(seg.width() + 1e-6 >= 2 * displacement);
+                  ++onset;
+                  }
+            QCOMPARE(onset, 4);
+            }
+      QCOMPARE(row, natural ? 1 : 2);
       const std::vector<qreal> modern = snapshot();
       score->doLayout();
       const std::vector<qreal> repeated = snapshot();
