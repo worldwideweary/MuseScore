@@ -30,6 +30,8 @@ class TestSpacing : public QObject, public MTest {
       void sustainedVoiceSwitch();
       void accidentalInputs_data();
       void accidentalInputs();
+      void systemInputs_data();
+      void systemInputs();
       void finalSystemSwitch_data();
       void finalSystemSwitch();
       void boundarySystems_data();
@@ -616,6 +618,95 @@ void TestSpacing::accidentalInputs()
             QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
       score->setStyleValue(Sid::spacingLayout4, false);
       score->doLayout();
+      const std::vector<qreal> restored = snapshot();
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i)
+            QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
+void TestSpacing::systemInputs_data()
+      {
+      QTest::addColumn<bool>("modernBeams");
+      QTest::newRow("legacy-beams") << false;
+      QTest::newRow("studio-beams") << true;
+      }
+
+void TestSpacing::systemInputs()
+      {
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + "v0.41-spacing-systems.mscx");
+      QVERIFY(score);
+      QVERIFY(score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      std::vector<Measure*> measures;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
+            measures.push_back(m);
+      QCOMPARE(static_cast<int>(measures.size()), 9);
+      auto grouped = [&measures]() {
+            for (size_t i = 0; i < measures.size(); ++i) {
+                  if (!measures[i]->system())
+                        return false;
+                  if (i && ((measures[i]->system() == measures[i - 1]->system()) != (i % 3 != 0)))
+                        return false;
+                  }
+            return true;
+            };
+      auto snapshot = [&measures]() -> std::vector<qreal> {
+            std::vector<qreal> values;
+            for (Measure* m : measures) {
+                  values.push_back(m->x());
+                  values.push_back(m->width());
+                  for (Segment& seg : m->segments()) {
+                        values.push_back(seg.x());
+                        values.push_back(seg.width());
+                        }
+                  }
+            return values;
+            };
+      QVERIFY(grouped());
+      const std::vector<qreal> legacy = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      QVERIFY(grouped());
+      const int counts[] = { 4, 8, 16, 16, 8, 4, 7, 16, 12 };
+      for (size_t i = 0; i < measures.size(); ++i) {
+            Measure* m = measures[i];
+            QVERIFY(m->ticks() == Fraction(1, 1));
+            QVERIFY(qIsFinite(m->x()) && qIsFinite(m->width()) && m->width() > 0);
+            int onsets = 0;
+            int signs = 0;
+            for (Segment& seg : m->segments()) {
+                  QVERIFY(qIsFinite(seg.x()) && qIsFinite(seg.width()) && seg.width() >= 0);
+                  QCOMPARE(seg.spacingWidthOffset4(), qreal(0));
+                  if (!seg.isChordRestType())
+                        continue;
+                  ++onsets;
+                  ChordRest* cr = seg.cr(0);
+                  QVERIFY(cr && cr->isChord());
+                  if (i == 8) {
+                        QVERIFY(cr->tuplet());
+                        QVERIFY(cr->actualTicks() == Fraction(1, 12));
+                        }
+                  for (const Note* note : toChord(cr)->notes())
+                        signs += note->accidental() != nullptr;
+                  }
+            QCOMPARE(onsets, counts[i]);
+            if (i == 7)
+                  QVERIFY(signs > 0);
+            }
+      const std::vector<qreal> modern = snapshot();
+      score->doLayout();
+      QVERIFY(grouped());
+      const std::vector<qreal> repeated = snapshot();
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i)
+            QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      QVERIFY(grouped());
       const std::vector<qreal> restored = snapshot();
       QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
       for (size_t i = 0; i < legacy.size(); ++i)

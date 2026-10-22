@@ -592,3 +592,54 @@ Apply v0.40 after v0.39. Run tst_spacing/tst_beam and compare the two v0.40 file
 especially natural H24's first upper-to-lower gap. Recheck compact H13/H16 and
 ordinary/cross-staff controls. Full application tests and rendering remain for
 the user's build; use their results to select the next specific kerning change.
+
+## v0.41: compare width distribution across multiple measures
+
+The user reports v0.40 tests passing. At matching staff scale, compact H24 now
+looks close to Studio in its first gap and overall note spacing. The H21-H26
+overview does not expose a clear new accidental collision or column-placement
+problem. Keep the current bounded kerning rather than selecting a speculative
+accidental-packing change from these screenshots.
+
+The next comparison covers multiple measures sharing a system. Earlier controls
+mostly put one measure on each system and cannot reveal how spare system width
+is distributed among measures. Evolution's collectSystem still distributes
+extra width using Measure::layoutWeight times basicStretch; equal-duration
+ordinary measures therefore get equal added width with spacingLayout4 on.
+Studio v4.7.5 HorizontalSpacing::justifySystem instead collects rhythmic springs
+across all measures in the system. This is a known remaining architectural
+difference, not yet changed in this checkpoint.
+
+Add v0.41-spacing-systems.mscx, with Studio horizontal spacing and modern beams
+already on, matched Leland/spacing styles, nine 4/4 measures and explicit breaks
+after measures 3 and 6. The 10-inch-wide page has an 8.8-inch printable width and
+0.6-inch side margins so each three-measure comparison fits in both algorithms.
+The final-system fill threshold is zero to keep every group justified.
+
+| System | Cases | Comparison |
+| --- | --- | --- |
+| 1 | H27 quarters, H28 eighths, H29 sixteenths | Barline positions and note spacing as density increases |
+| 2 | H30 sixteenths, H31 eighths, H32 quarters | Reversed-order control; separate density from header position |
+| 3 | H33 mixed rhythm, H34 chromatic sixteenths, H35 eighth-note triplets | Collision constraints and nonbinary durations within one system |
+
+H33/H34/H35 reuse the notes and voices of earlier H5/H4/H8 controls; H27-H32 use
+repeated E4 with four/eight/sixteen onsets. No tremolos, cross-staff beams or
+multiple voices are mixed into the first two systems. Compare the same original
+in both applications at matching staff scale. Capture the full three-measure
+systems so barline positions remain visible. Also compare option off in Evolution
+if useful; these inputs open with it on as requested.
+
+Add systemInputs to tst_spacing under both beam styles. Verify the input opens
+with spacing on, disable it to capture the legacy baseline, then check the three
+groups of three, nine complete 4/4 measures, expected onset counts, generated
+accidentals in H34, actual 1/12 triplet durations in H35, finite positions/widths,
+zero cross-beam offsets, repeated-layout stability and legacy restoration of
+measure/segment positions and widths. Do not encode the current cross-measure
+width ratios as parity expectations before changing the distributor.
+
+Local XML checks confirm all nine voice durations are 4/4, the onset counts are
+4/8/16/16/8/4/7/16/12, and the explicit triplet ratios are valid. Qt moc and C++11
+test syntax checks pass. No engraving code changes in this checkpoint. Full
+tst_spacing/tst_beam and rendered system comparisons require the user's build.
+Apply v0.41 after v0.40. Next use these results to implement a bounded system-wide
+justification stage behind spacingLayout4 while preserving the default-off path.
