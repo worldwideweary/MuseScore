@@ -247,3 +247,50 @@ retain collision floors and meet their target width. These isolated checks do
 not test full score import/layout. Full tst_spacing, the existing beam suite and
 application rendering remain for the user's build. Next: compare H5/H8 results,
 then address cross-staff stem-direction spacing corrections in a separate stage.
+
+## v0.33: preserve cross-beam stem-side spacing during justification
+
+The user reports tst_spacing and tst_beam passing after v0.32. Natural H5 and
+the justified H5 rhythmic proportions visually agree closely with Studio 4.7.5.
+Overview H8 is already uniform: equal-duration springs can give the same final
+positions under either algorithm when justified to the same system width.
+The earlier suggestion that this overview needed improved uniformity was wrong.
+Use natural H8 to compare the unstretched width instead.
+
+H9-H12 comparisons expose a separate difference: Evolution has almost equal
+notehead gaps, whereas Studio alternates those gaps as stem direction changes.
+Adapt the signed displacement in Studio v4.7.5 applyCrossBeamSpacingCorrection:
+notehead width minus stem width, added for up-to-down and subtracted for
+down-to-up. Keep this displacement fixed during spring stretching, as Studio
+does with its segment widthOffset. Otherwise justification would erase it.
+The existing collision floor is never reduced. An up-to-down transition also
+retains Studio's minimum width of twice the displacement.
+
+This first adapter is deliberately limited to one visible stream of ordinary,
+normal-size eighth-note chords, in the same cross-staff beam containing more
+than two elements. Both chords must end at their next segment boundary. Skip
+competing visible voices, rests other than gap/full-measure rests, cue sizes,
+two-element beams and secondary beams/beamlets. Those cases retain v0.32
+spacing for now. Invisible elements and hidden source staves do not compete.
+This is not the complete Studio cross-beam collision/kerning implementation.
+
+The transient Segment offset is recomputed, not serialized, and starts at zero
+for a cloned segment. It is ignored by the spring solver with spacingLayout4
+off. Beam layout and spacing remain independent; tests cover both beam styles.
+No score files or default style values change in this checkpoint.
+
+Extend tst_spacing with H9-H12's signed offsets and justified gap proportions,
+repeat-layout stability, finite widths and exact restoration of saved legacy
+segment positions and widths after disabling the option. Reuse the existing
+studio-spacing-cross-staff.mscx for visual checks: compare all four systems,
+especially the alternating gaps in H10/H12. Keep the same style values in both
+applications, and compare at matching staff scale rather than screenshot width.
+
+Local C++11 syntax checks for measure.cpp, segment.cpp and tst_spacing.cpp,
+plus Qt moc generation, pass. A harness running the actual extracted adapter
+passes all 32 H9-H12 boundary cases and its visibility/voice/size/duration/beam
+guards. The actual extracted spring loops preserve exact legacy positions in
+10,000 contexts with the option off; 10,000 signed-offset contexts preserve
+collision floors and meet target width. Full tst_spacing/tst_beam and rendering
+remain for the user's build. Apply v0.33 after v0.32. Next compare H9-H12, then
+test opposing beamlets and competing voices before expanding support.

@@ -17,6 +17,8 @@ class TestSpacing : public QObject, public MTest {
       void styleRoundTrip();
       void durationPolicy();
       void rhythmicLayoutSwitch();
+      void crossBeamSwitch_data();
+      void crossBeamSwitch();
       void finalSystemSwitch_data();
       void finalSystemSwitch();
       void boundarySystems_data();
@@ -217,6 +219,87 @@ void TestSpacing::rhythmicLayoutSwitch()
                   }
             QCOMPARE(static_cast<int>(j), static_cast<int>(entry.x.size()));
             }
+      delete score;
+      }
+
+void TestSpacing::crossBeamSwitch_data()
+      {
+      QTest::addColumn<bool>("modernBeams");
+      QTest::newRow("legacy-beams") << false;
+      QTest::newRow("studio-beams") << true;
+      }
+
+void TestSpacing::crossBeamSwitch()
+      {
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + "studio-spacing-cross-staff.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      std::vector<qreal> legacy;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
+            for (Segment& seg : m->segments()) {
+                  legacy.push_back(seg.x());
+                  legacy.push_back(seg.width());
+                  }
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      // H9/H10 start with down stems; H11/H12 start with up stems.
+      // A fixed stem-side correction survives justification of equal durations.
+      const int signs[4][8] = {
+            { 0, -1, 0, 1, 0, -1, 0, 0 },
+            { -1, 1, -1, 1, -1, 1, -1, 0 },
+            { 0, 1, 0, -1, 0, 1, 0, 0 },
+            { 1, -1, 1, -1, 1, -1, 1, 0 }
+            };
+      const qreal displacement = score->noteHeadWidth() - score->styleP(Sid::stemWidth);
+      QVERIFY(displacement > 0);
+      std::vector<qreal> modern;
+      int row = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++row) {
+            QVERIFY(row < 4);
+            int column = 0;
+            qreal coreWidth = 0;
+            for (Segment& seg : m->segments()) {
+                  modern.push_back(seg.x());
+                  modern.push_back(seg.width());
+                  QVERIFY(qIsFinite(seg.x()) && qIsFinite(seg.width()) && seg.width() >= 0);
+                  if (!seg.isChordRestType()) {
+                        QCOMPARE(seg.spacingWidthOffset4(), qreal(0));
+                        continue;
+                        }
+                  QVERIFY(column < 8);
+                  const qreal offset = signs[row][column++] * displacement;
+                  QVERIFY(qAbs(seg.spacingWidthOffset4() - offset) < 1e-6);
+                  // These wide systems have no active collision floors.
+                  const qreal width = seg.width() - offset;
+                  if (coreWidth > 0)
+                        QVERIFY(qAbs(width - coreWidth) < 1e-6);
+                  coreWidth = width;
+                  }
+            QCOMPARE(column, 8);
+            }
+      QCOMPARE(row, 4);
+      score->doLayout();
+      size_t i = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
+            for (Segment& seg : m->segments()) {
+                  QVERIFY(i + 1 < modern.size());
+                  QVERIFY(qAbs(seg.x() - modern[i++]) < 1e-6);
+                  QVERIFY(qAbs(seg.width() - modern[i++]) < 1e-6);
+                  }
+      QCOMPARE(static_cast<int>(i), static_cast<int>(modern.size()));
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      i = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
+            for (Segment& seg : m->segments()) {
+                  QVERIFY(i + 1 < legacy.size());
+                  QVERIFY(qAbs(seg.x() - legacy[i++]) < 1e-6);
+                  QVERIFY(qAbs(seg.width() - legacy[i++]) < 1e-6);
+                  QCOMPARE(seg.spacingWidthOffset4(), qreal(0));
+                  }
+      QCOMPARE(static_cast<int>(i), static_cast<int>(legacy.size()));
       delete score;
       }
 

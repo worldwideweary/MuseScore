@@ -3770,6 +3770,42 @@ static qreal segmentSpacingStretch4(const Segment* segment)
     return rhythm * qBound(qreal(0.1), segment->measure()->userStretch(), qreal(10));
 }
 
+// Initial cross-beam adapter: a single visible stream of ordinary eighth-note
+// chords. Leave beamlets, cue sizes and competing voices to the collision path.
+static const Chord* singleSpacingChord4(const Segment* segment)
+{
+    const Chord* chord = nullptr;
+    for (const Element* element : segment->elist()) {
+        if (!element || !element->isChordRest() || !element->visible() || !element->staff()->show())
+            continue;
+        const ChordRest* cr = toChordRest(element);
+        if (cr->isFullMeasureRest() || (cr->isRest() && toRest(cr)->isGap()))
+            continue;
+        if (chord || !cr->isChord())
+            return nullptr;
+        chord = toChord(cr);
+    }
+    return chord;
+}
+
+static qreal crossBeamSpacingOffset4(const Segment* segment, const Segment* next)
+{
+    if (!next || !next->isChordRestType())
+        return 0;
+    const Chord* chord = singleSpacingChord4(segment);
+    const Chord* nextChord = singleSpacingChord4(next);
+    if (!chord || !nextChord || chord->track() != nextChord->track()
+        || !chord->beam() || chord->beam() != nextChord->beam() || !chord->beam()->cross()
+        || chord->beam()->elements().size() <= 2 || chord->up() == nextChord->up()
+        || chord->beams() != 1 || nextChord->beams() != 1
+        || chord->mag() != 1.0 || nextChord->mag() != 1.0
+        || chord->actualTicks() != segment->ticks() || nextChord->actualTicks() != next->ticks())
+        return 0;
+    const qreal displacement = qMax(qreal(0), segment->score()->noteHeadWidth()
+        - segment->score()->styleP(Sid::stemWidth));
+    return chord->up() ? displacement : -displacement;
+}
+
 //-----------------------------------------------------------------------------
 //    stretchMeasure
 //    resize width of measure to targetWidth
@@ -3799,7 +3835,8 @@ void Measure::stretchMeasure(qreal targetWidth)
                   qreal str = score()->styleB(Sid::spacingLayout4) && !isMMRest() && s.isChordRestType()
                         ? segmentSpacingStretch4(&s)
                         : 1.0 + 0.865617 * log(qreal(t.ticks()) / qreal(minTick.ticks())); // legacy spring weight
-                  qreal d   = s.width() / str;
+                  qreal offset = score()->styleB(Sid::spacingLayout4) ? s.spacingWidthOffset4() : 0;
+                  qreal d   = (s.width() - offset) / str;
                   s.setStretch(str);
                   springs.insert(std::pair<qreal, Segment*>(d, &s));
                   }
@@ -3815,7 +3852,8 @@ void Measure::stretchMeasure(qreal targetWidth)
             qreal c     = 0.0;
             for (auto i = springs.begin(); i != springs.end();) {
                   c            += i->second->stretch();
-                  minimumWidth -= i->second->width();
+                  minimumWidth -= i->second->width() - (score()->styleB(Sid::spacingLayout4)
+                        ? i->second->spacingWidthOffset4() : 0);
                   qreal f       = (targetWidth - minimumWidth) / c;
                   ++i;
                   if (i == springs.end() || f <= i->first) {
@@ -3829,7 +3867,8 @@ void Measure::stretchMeasure(qreal targetWidth)
             //---------------------------------------------------
 
             for (auto& i : springs) {
-                  qreal width = force * i.second->stretch();
+                  qreal width = force * i.second->stretch() + (score()->styleB(Sid::spacingLayout4)
+                        ? i.second->spacingWidthOffset4() : 0);
                   if (width > i.second->width())
                         i.second->setWidth(width);
                   }
@@ -4821,6 +4860,8 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
                               s->prevActive()->setWidth(s->prevActive()->width() + x - oldX);
                         }
                   }
+
+            s->setSpacingWidthOffset4(0);
             s->rxpos() = x;
             // segments with all elements invisible are skipped, though these are already
             // skipped in computeMinWidth() -- the only way this would be an issue here is
@@ -4903,8 +4944,15 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
                   }
             else
                   w = s->minRight();
-            if (studioRhythm && s->isChordRestType() && s->ticks() > Fraction(0, 1))
-                  w = qMax(w, 3.5 * spatium() * segmentSpacingStretch4(s));
+            if (studioRhythm && s->isChordRestType() && s->ticks() > Fraction(0, 1)) {
+                  const qreal offset = crossBeamSpacingOffset4(s, ns);
+                  s->setSpacingWidthOffset4(offset);
+                  w = qMax(w, 3.5 * spatium() * segmentSpacingStretch4(s) + offset);
+                  // Studio's up-to-down stem clearance; retain the existing
+                  // collision minimum even where the signed correction is negative.
+                  if (offset > 0)
+                        w = qMax(w, 2 * offset);
+                  }
             s->setWidth(w);
             x += w;
             s = s->next();

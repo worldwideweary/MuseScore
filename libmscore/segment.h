@@ -52,6 +52,7 @@ class Segment final : public Element {
       Fraction _ticks; // { Fraction(0, 1) };
       Spatium _extraLeadingSpace;
       qreal _stretch;
+      qreal _spacingWidthOffset4 { 0.0 }; // transient, fixed part of Studio spacing
 
       Segment* _next = nullptr;                     // linked list of segments inside a measure
       Segment* _prev = nullptr;
@@ -157,6 +158,8 @@ class Segment final : public Element {
 
       qreal stretch() const                      { return _stretch; }
       void setStretch(qreal v)                   { _stretch = v;    }
+      qreal spacingWidthOffset4() const          { return _spacingWidthOffset4; }
+      void setSpacingWidthOffset4(qreal v)       { _spacingWidthOffset4 = v; }
 
       Fraction rtick() const override    { return _tick;    }
       void setRtick(const Fraction& v)           { Q_ASSERT(v >= Fraction(0,1));  _tick = v;       }
