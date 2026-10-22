@@ -554,3 +554,23 @@ ordinary/inset-beam comparisons against v0.21. Full tst_beam and visual
 verification remain for the application build. Next: compare the same F cases,
 especially F2/F5/F6/F7 where corrected stem defaults can change placement,
 before proceeding to opposite-stem and cross-staff tremolos.
+
+## v0.23 tremolo direction diagnostic
+
+The user reports tst_beam passing through v0.22, and the corrected F captures
+look broadly consistent with Studio 4.7.5. Source inspection for the next stage
+found that ordinary unmodified same-staff tremolos do not retain opposing
+directions in Studio: TremoloLayout::calcIsUp selects the first explicit
+direction, then the second explicit direction, or computes a combined Auto
+direction; it assigns that common direction to both chords. The non-cross
+ChordLayout::computeUpTremoloCase returns the common tremolo direction too.
+
+Adds studio-tremolo-direction.mscx and studio-tremolo-direction-guide.md with
+O1-O12: conflicting explicit directions, either endpoint Auto, both Auto,
+complete balance and a chord control. Twelve balanced 1/4 measures have
+experimental layout enabled, no ordinary beams and two-note tremolos with
+written quarters/actual eighths. XML, exact durations, pair connections,
+direction combinations, pitch spellings and the balanced control pass local
+checks. No engraving or application-test changes; rendering remains for the
+applications. Next: verify O1-O6 and O7-O12 against Studio, then implement the
+direction policy with legacy restoration and stored-property preservation.
