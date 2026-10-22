@@ -23,12 +23,60 @@
 #include "part.h"
 #include "score.h"
 #include "slur.h"
+#include "slurdirection4.h"
+#include "gracespacing4.h"
+#include "graceslurlayout4.h"
 #include "stem.h"
 #include "system.h"
 #include "undo.h"
 #include "utils.h"
 
+#include <cmath>
+#include <QScopedValueRollback>
+
 namespace Ms {
+
+void SlurSegment::startEditDrag(EditData& ed)
+      {
+      SlurTieSegment::startEditDrag(ed);
+      const Slur* s = slur();
+      _offsetEdit4.clean = score()->styleB(Sid::spacingLayout4)
+            && score()->isMaster() && score()->masterScore()->scoreList().size() == 1
+            && score()->cmdState().updateMode() == UpdateMode::DoNothing
+            && !links() && !s->links();
+      _offsetEdit4.start = s->startElement();
+      _offsetEdit4.generation = score()->cmdState().generation4();
+      _offsetEdit4.end = s->endElement();
+      _offsetEdit4.tick = s->tick();
+      _offsetEdit4.tick2 = s->tick2();
+      _offsetEdit4.track = s->track();
+      _offsetEdit4.track2 = s->track2();
+      }
+
+void SlurSegment::endEditDrag(EditData& ed)
+      {
+      const Slur* s = slur();
+      const ElementEditData* data = ed.getData(this);
+      bool offsetOnly = _offsetEdit4.clean && data && !data->propertyData.empty()
+            && _offsetEdit4.generation == score()->cmdState().generation4() && !links() && !s->links()
+            && score()->cmdState().updateMode() == UpdateMode::DoNothing
+            && _offsetEdit4.start == s->startElement() && _offsetEdit4.end == s->endElement()
+            && _offsetEdit4.tick == s->tick() && _offsetEdit4.tick2 == s->tick2()
+            && _offsetEdit4.track == s->track() && _offsetEdit4.track2 == s->track2();
+      if (data) {
+            for (const PropertyData& property : data->propertyData) {
+                  if (property.id != Pid::SLUR_UOFF1 && property.id != Pid::SLUR_UOFF2
+                      && property.id != Pid::SLUR_UOFF3 && property.id != Pid::SLUR_UOFF4
+                      && property.id != Pid::OFFSET) offsetOnly = false;
+                  }
+            }
+      _offsetEdit4.clean = false;
+      // This known commit writes only the captured offsets/flags and GENERATED.
+      // Keep normal undo bookkeeping and layout notifications, then classify it.
+      SlurTieSegment::endEditDrag(ed);
+      if (offsetOnly && _offsetEdit4.generation == score()->cmdState().generation4())
+            score()->cmdState().requestSlurOffset4(this);
+      }
 
 //---------------------------------------------------------
 //   draw
@@ -296,6 +344,21 @@ void SlurSegment::changeAnchor(EditData& ed, Element* element)
       if (!cr || !scr || !ecr)
             return;
 
+      // Only a clean, explicit end-anchor edit can ask for horizontal reuse.
+      // Later layout requests cancel the tag; the update still proves the
+      // complete fresh spacing plan before retaining any horizontal fields.
+      const quint64 anchorGeneration = score()->cmdState().generation4();
+      System* anchorSystem = system();
+      const bool anchorOnly = ed.curGrip == Grip::END && isSingleType() && anchorSystem
+            && score()->styleB(Sid::spacingLayout4) && score()->isMaster()
+            && score()->masterScore()->scoreList().size() == 1
+            && score()->cmdState().updateMode() == UpdateMode::DoNothing
+            && !links() && !spanner()->links()
+            && slur()->slurDirection() != Direction::AUTO
+            && scr->measure() && ecr->measure() && cr->measure()
+            && scr->measure()->system() == anchorSystem
+            && ecr->measure()->system() == anchorSystem && cr->measure()->system() == anchorSystem;
+
       // save current start/end elements
       for (ScoreElement* e : spanner()->linkList()) {
             Spanner* sp = toSpanner(e);
@@ -369,6 +432,9 @@ void SlurSegment::changeAnchor(EditData& ed, Element* element)
             ed.view->startEdit(newSegment, ed.curGrip);
             triggerLayout();
             }
+      if (anchorOnly && anchorGeneration == score()->cmdState().generation4()
+          && system() == anchorSystem && isSingleType() && spanner()->nsegments() == 1)
+            score()->cmdState().requestSlurAnchor4(this);
       }
 
 //---------------------------------------------------------
@@ -378,6 +444,8 @@ void SlurSegment::changeAnchor(EditData& ed, Element* element)
 
 void SlurSegment::computeBezier(QPointF p6o)
       {
+      _graceCurveAdjusted4 = false;
+      const QPointF shoulderDelta = p6o;
       qreal _spatium  = spatium();
       qreal shoulderW;              // height as fraction of slur-length
       qreal shoulderH;
@@ -437,6 +505,75 @@ void SlurSegment::computeBezier(QPointF p6o)
 
       QPointF p3(c1, -shoulderH);
       QPointF p4(c2, -shoulderH);
+
+      if (autoplace() && isSingleType() && system() && score()->styleB(Sid::spacingLayout4)) {
+            SpacingShape4 obstacles;
+            if (buildGraceMergedSlurObstacles4(slur(), obstacles, nullptr, true, slur()->_graceQuery4)) {
+                  // Fit independently of user offsets. layoutSegment already
+                  // received the raw anchors, so do not re-plan the same grace
+                  // geometry through slurPos on each grip preview/relayout.
+                  SlurPos anchors;
+                  if (_graceRawAnchors4) {
+                        anchors.p1 = _graceRawStart4;
+                        anchors.p2 = _graceRawEnd4;
+                        }
+                  else
+                        slur()->slurPos(&anchors);
+                  const QPointF span = anchors.p2 - anchors.p1;
+                  const qreal baseAngle = std::atan2(span.y(), span.x());
+                  const qreal baseLength = std::hypot(span.x(), span.y());
+                  const qreal spaces = baseLength / _spatium;
+                  const qreal baseWidth = spaces < 2 ? .6 : spaces < 10 ? .5 : spaces < 18 ? .6 : .7;
+                  // Studio v4.7.5 computeShoulderHeight. This validated
+                  // after-grace/main span ends on an unbeamed main chord, so
+                  // the source's wholly-over-beams reduction does not apply.
+                  const qreal baseHeight = std::sqrt(spaces / 4) * _spatium;
+                  const qreal sign = slur()->up() ? -1 : 1;
+                  QTransform toSystem;
+                  toSystem.translate(anchors.p1.x(), anchors.p1.y());
+                  toSystem.rotateRadians(baseAngle);
+                  GraceSlurCurve4 curve;
+                  curve.start = anchors.p1;
+                  curve.control1 = toSystem.map(QPointF(baseLength * (1 - baseWidth) / 2, sign * baseHeight));
+                  curve.control2 = toSystem.map(QPointF(baseLength * (1 + baseWidth) / 2, sign * baseHeight));
+                  curve.end = anchors.p2;
+                  const Chord* start = toChord(slur()->startElement());
+                  const Chord* target = toChord(slur()->endElement());
+                  const bool opposite = start->up() != target->up();
+                  // These are the floated-anchor branches of slurPosChord for
+                  // this validated first-grace / unbeamed-main scope.
+                  const bool startFloated = opposite && start->up() == slur()->up() && !start->hook()
+                        && (!start->beam() || start->beam()->elements().back() == start);
+                  const bool endFloated = opposite && target->up() == slur()->up();
+                  if (fitGraceSlurCurve4(obstacles.translated(-ipos()), target, _spatium, slur()->up(),
+                                        curve, startFloated, endFloated)) {
+                        // Apply manual endpoint moves AFTER fitting. Let each
+                        // control follow its adjacent endpoints proportionally;
+                        // its explicit Bezier offset is added below as usual.
+                        const QPointF startOffset = ups(Grip::START).off;
+                        const QPointF endOffset = ups(Grip::END).off;
+                        const qreal width = curve.end.x() - curve.start.x();
+                        const qreal firstRatio = (curve.control1.x() - curve.start.x()) / width;
+                        const qreal secondRatio = (curve.control2.x() - curve.start.x()) / width;
+                        curve.control1 += startOffset * (1 - firstRatio) + endOffset * firstRatio;
+                        curve.control2 += startOffset * (1 - secondRatio) + endOffset * secondRatio;
+                        curve.start += startOffset;
+                        curve.end += endOffset;
+                        pp1 = curve.start;
+                        pp2 = curve.end;
+                        sinb = std::atan2(pp2.y() - pp1.y(), pp2.x() - pp1.x());
+                        t.reset();
+                        t.rotateRadians(-sinb);
+                        p2 = t.map(pp2 - pp1);
+                        p3 = t.map(curve.control1 - pp1);
+                        p4 = t.map(curve.control2 - pp1);
+                        p5 = p2 * .5;
+                        ups(Grip::START).p = pp1 - startOffset;
+                        p6o = t.map(shoulderDelta);
+                        _graceCurveAdjusted4 = true;
+                        }
+                  }
+            }
 
       qreal w = score()->styleP(Sid::slurMidWidth) - score()->styleP(Sid::slurEndWidth);
       if (staff())
@@ -520,6 +657,9 @@ Element* SlurSegment::propertyDelegate(Pid id)
 
 void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       {
+      _graceRawStart4 = p1;
+      _graceRawEnd4 = p2;
+      _graceRawAnchors4 = true;
       setPos(QPointF());
       ups(Grip::START).p = p1;
       ups(Grip::END).p   = p2;
@@ -606,7 +746,7 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
 
       computeBezier();
 
-      if (autoplace() && system()) {
+      if (autoplace() && system() && !_graceCurveAdjusted4) {
             bool up = slur()->up();
             Segment* ls = system()->lastMeasure()->last();
             Segment* fs = system()->firstMeasure()->first();
@@ -981,6 +1121,14 @@ void Slur::slurPos(SlurPos* sp)
 
       Stem* stem1 = sc && staffHasStems ? sc->stem() : 0;
       Stem* stem2 = ec && staffHasStems ? ec->stem() : 0;
+      const bool beamHeights4 = score()->styleB(Sid::spacingLayout4) && !useTablature
+            && scr->staff() && ecr->staff()
+            && scr->staff()->isPitchedStaff(scr->tick()) && ecr->staff()->isPitchedStaff(ecr->tick())
+            && scr->vStaffIdx() == ecr->vStaffIdx()
+            && (!sc || !sc->tremolo()) && (!ec || !ec->tremolo());
+      const bool beamEnds4 = beamHeights4 && !isIncoming() && !isOutgoing()
+            && (!scr->beam() || !scr->beam()->cross())
+            && (!ecr->beam() || !ecr->beam()->cross());
 
       enum class SlurAnchor : char {
             NONE, STEM
@@ -1005,6 +1153,41 @@ void Slur::slurPos(SlurPos* sp)
                   sa2 = SlurAnchor::STEM;
             }
 
+      if (score()->styleB(Sid::spacingLayout4) && !useTablature
+          && sp->system1 && sp->system2 && sp->system1 != sp->system2
+          && (!sc || !sc->tremolo()) && (!ec || !ec->tremolo())) {
+            // Studio 4.7.5 slurPos: continued slurs anchor an unbeamed
+            // stem-side endpoint to its own stem. Do not let a remote beam,
+            // stem-direction change or pitch float that fixed local endpoint.
+            if (scr->up() == _up && stem1 && !scr->beam())
+                  sa1 = SlurAnchor::STEM;
+            if (ecr->up() == _up && stem2 && !ecr->beam())
+                  sa2 = SlurAnchor::STEM;
+            }
+
+      if (beamEnds4) {
+            // Studio 4.7.5 slurPos / stemSideForBeam: select each endpoint
+            // independently. A final start or first end in a beam is eligible
+            // for the stem inset even when its partner is also beamed.
+            sa1 = sa2 = SlurAnchor::NONE;
+            if (sc && sc->hook() && scr->up() == _up)
+                  sa1 = SlurAnchor::STEM;
+            if (scr->up() == ecr->up() && scr->up() == _up) {
+                  const Beam* firstBeam = scr->beam();
+                  const Beam* lastBeam = ecr->beam();
+                  const bool beamSideStart = firstBeam && !firstBeam->elements().empty()
+                        && firstBeam->elements().back() != scr;
+                  const bool beamSideEnd = lastBeam && !lastBeam->elements().empty()
+                        && lastBeam->elements().front() != ecr;
+                  if (stem1 && !beamSideStart) sa1 = SlurAnchor::STEM;
+                  if (stem2 && !beamSideEnd) sa2 = SlurAnchor::STEM;
+                  }
+            else if (sp->system1 && sp->system2 && sp->system1 != sp->system2) {
+                  if (scr->up() == _up && stem1 && !scr->beam()) sa1 = SlurAnchor::STEM;
+                  if (ecr->up() == _up && stem2 && !ecr->beam()) sa2 = SlurAnchor::STEM;
+                  }
+            }
+
       qreal __up = _up ? -1.0 : 1.0;
       qreal hw1 = note1 ? note1->tabHeadWidth(stt) : scr->width();      // if stt == 0, tabHeadWidth()
       qreal hw2 = note2 ? note2->tabHeadWidth(stt) : ecr->width();      // defaults to headWidth()
@@ -1020,8 +1203,13 @@ void Slur::slurPos(SlurPos* sp)
                   // allow slight overlap (y) as per Gould
                   // don't allow overlap with hook if not disabling the autoplace checks against start/end segments in SlurSegment::layoutSegment()
                   qreal yadj = isIncoming() || isOutgoing() ? -0.5 : -0.25;
+                  qreal xOffset = 0.35;
+                  if (beamEnds4 && sc->beam()) {
+                        yadj = -.5 * sc->chordMag();
+                        xOffset = qMax(qreal(.35) * sc->chordMag(), qreal(.2));
+                        }
                   yadj *= _spatium * __up;
-                  pt += QPointF(0.35 * _spatium, yadj);
+                  pt += QPointF(xOffset * _spatium, yadj);
                   // account for articulations
                   pt.ry() = fixArticulations(pt.y(), sc, __up, true);
                   sp->p1 += pt;
@@ -1038,8 +1226,13 @@ void Slur::slurPos(SlurPos* sp)
                         pt.rx() = hw2 * 0.5;
                   // don't allow overlap with beam
                   qreal yadj = ec->beam() ? 0.75 : (isIncoming() || isOutgoing() ? -0.5 : -0.25);
+                  qreal xOffset = 0.35;
+                  if (beamEnds4 && ec->beam()) {
+                        yadj = !ec->beam()->elements().empty() && ec->beam()->elements().front() != ec ? .75 : -.5;
+                        xOffset = qMax(qreal(.35) * ec->chordMag(), qreal(.2));
+                        }
                   yadj *= _spatium * __up;
-                  pt += QPointF(-0.35 * _spatium, yadj);
+                  pt += QPointF(-xOffset * _spatium, yadj);
                   // account for articulations
                   pt.ry() = fixArticulations(pt.y(), ec, __up, true);
                   sp->p2 += pt;
@@ -1088,6 +1281,15 @@ void Slur::slurPos(SlurPos* sp)
                               yo = sc->downNote()->pos().y() - sh;
                         else
                               yo = sc->upNote()->pos().y() + sh;
+                        if (beamHeights4) {
+                              // Studio 4.7.5 slurPos: actual stem length,
+                              // beamWidthSp/2 and magnification-aware clearance.
+                              // Keep the existing horizontal attachment here.
+                              const SlurStemMetrics4 metrics = slurStemMetrics4(sc);
+                              sh = metrics.length + metrics.beamWidthSp / 2
+                                    + qMax(qreal(.35) * sc->chordMag(), qreal(.2)) * _spatium;
+                              yo = sc->stemPos().y() - sc->pagePos().y() + __up * sh;
+                              }
                         xo       = stem1->pos().x();
 
                         // account for articulations
@@ -1203,6 +1405,14 @@ void Slur::slurPos(SlurPos* sp)
                                     yo = ec->downNote()->pos().y() - sh;
                               else
                                     yo = ec->upNote()->pos().y() + sh;
+                              if (beamHeights4) {
+                                    // The source's end branch uses the style
+                                    // space value without the start's magS().
+                                    const qreal beamWidthSp = beam2 ? score()->styleS(Sid::beamWidth).val() : 0;
+                                    sh = slurStemMetrics4(ec).length + beamWidthSp / 2
+                                          + qMax(qreal(.35) * ec->chordMag(), qreal(.2)) * _spatium;
+                                    yo = ec->stemPos().y() - ec->pagePos().y() + __up * sh;
+                                    }
                               xo = stem2->pos().x();
 
                               // account for articulations
@@ -1287,6 +1497,9 @@ void Slur::slurPos(SlurPos* sp)
             }
       if (constrainLeftAnchor)
             sp->p1.setY(sp->p2.y() + __up * 0.25 * _spatium);
+
+      if (!isIncoming() && !isOutgoing() && score()->styleB(Sid::spacingLayout4))
+            adjustGraceMergedSlurBeamAnchors4(this, sp->p1, sp->p2, nullptr, true, _graceQuery4);
       }
 
 //---------------------------------------------------------
@@ -1427,7 +1640,10 @@ SpannerSegment* Slur::layoutSystem(System* system)
                   setEndElement(startCR());
                   setTick2(tick());
                   }
-            switch (_slurDirection) {
+            Direction preparedDirection = Direction::AUTO;
+            if (score()->styleB(Sid::spacingLayout4) && prepareSlurDirection4(this, preparedDirection))
+                  _up = preparedDirection == Direction::UP;
+            else switch (_slurDirection) {
                   case Direction::UP:
                         _up = true;
                         break;
@@ -1489,6 +1705,9 @@ SpannerSegment* Slur::layoutSystem(System* system)
 
       if (isHammerOnPullOff() && _slurDirection == Direction::AUTO && staff() && staff()->isTabStaff(tick()))
             _up = true;
+
+      GraceMergedSlurQuery4 graceQuery;
+      QScopedValueRollback<GraceMergedSlurQuery4*> queryGuard(_graceQuery4, &graceQuery);
       SlurPos sPos;
       slurPos(&sPos);
 
@@ -1556,7 +1775,10 @@ void Slur::layout()
             setEndElement(startCR());
             setTick2(tick());
             }
-      switch (_slurDirection) {
+      Direction preparedDirection = Direction::AUTO;
+      if (score()->styleB(Sid::spacingLayout4) && prepareSlurDirection4(this, preparedDirection))
+            _up = preparedDirection == Direction::UP;
+      else switch (_slurDirection) {
             case Direction::UP:
                   _up = true;
                   break;
@@ -1606,6 +1828,9 @@ void Slur::layout()
 
       if (isHammerOnPullOff() && _slurDirection == Direction::AUTO && staff() && staff()->isTabStaff(tick()))
             _up = true;
+
+      GraceMergedSlurQuery4 graceQuery;
+      QScopedValueRollback<GraceMergedSlurQuery4*> queryGuard(_graceQuery4, &graceQuery);
       SlurPos sPos;
       slurPos(&sPos);
 

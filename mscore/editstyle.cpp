@@ -401,6 +401,8 @@ EditStyle::EditStyle(Score* s, QWidget* parent)
       { Sid::smallStaffMag,            true,  smallStaffSize,               resetSmallStaffSize },
       { Sid::smallNoteMag,             true,  smallNoteSize,                resetSmallNoteSize  },
       { Sid::smallClefMag,             true,  smallClefSize,                resetSmallClefSize  },
+      { Sid::scaleRythmicSpacingForSmallNotes, false, scaleRythmicSpacingForSmallNotes, resetScaleRythmicSpacingForSmallNotes },
+      { Sid::spacingLayout4,           false, spacingLayout4,               resetSpacingLayout4 },
       { Sid::lastSystemFillLimit,      true,  lastSystemFillThreshold,      resetLastSystemFillThreshold },
       { Sid::genClef,                  false, genClef,                      0 },
       { Sid::genKeysig,                false, genKeysig,                    0 },

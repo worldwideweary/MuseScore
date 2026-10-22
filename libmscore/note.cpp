@@ -15,6 +15,7 @@
  Implementation of classes Note and ShadowNote.
 */
 
+#include "spacinggeometry4.h"
 #include <QPointF>
 #include <QtMath>
 #include <QVector2D>
@@ -4039,35 +4040,25 @@ void Note::setAccidentalType(AccidentalType type)
 
 Shape Note::shape() const
       {
-      QRectF r(bbox());
+      return shapeWithItems4(nullptr);
+      }
 
-#ifndef NDEBUG
-      Shape shape(r, name());
+Shape Note::shapeWithItems4(SpacingShape4* items) const
+      {
+      Shape shape;
+      SpacingShapeBuilder4 builder(shape, items);
+      builder.add(bbox(), this);
       for (NoteDot* dot : _dots)
-            shape.add(symBbox(SymId::augmentationDot).translated(dot->pos()), dot->name());
+            builder.add(symBbox(SymId::augmentationDot).translated(dot->pos()), dot);
       if (_accidental && _accidental->addToSkyline())
-            shape.add(_accidental->bbox().translated(_accidental->pos()), _accidental->name());
+            builder.add(_accidental->bbox().translated(_accidental->pos()), _accidental);
       for (auto e : _el) {
             if (e->addToSkyline()) {
                   if (e->isFingering() && toFingering(e)->layoutType() != ElementType::NOTE)
                         continue;
-                  shape.add(e->bbox().translated(e->pos()), e->name());
+                  builder.add(e->bbox().translated(e->pos()), e);
                   }
             }
-#else
-      Shape shape(r);
-      for (NoteDot* dot : _dots)
-            shape.add(symBbox(SymId::augmentationDot).translated(dot->pos()));
-      if (_accidental && _accidental->addToSkyline())
-            shape.add(_accidental->bbox().translated(_accidental->pos()));
-      for (auto e : _el) {
-            if (e->addToSkyline()) {
-                  if (e->isFingering() && toFingering(e)->layoutType() != ElementType::NOTE)
-                        continue;
-                  shape.add(e->bbox().translated(e->pos()));
-                  }
-            }
-#endif
       return shape;
       }
 

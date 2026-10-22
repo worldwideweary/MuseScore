@@ -17,6 +17,7 @@
 #include "shape.h"
 
 namespace Ms {
+struct SpacingShape4;
 
 class Measure;
 class Segment;
@@ -52,6 +53,7 @@ class Segment final : public Element {
       Fraction _ticks; // { Fraction(0, 1) };
       Spatium _extraLeadingSpace;
       qreal _stretch;
+      qreal _spacingWidthOffset4 { 0.0 }; // transient, fixed part of Studio spacing
 
       Segment* _next = nullptr;                     // linked list of segments inside a measure
       Segment* _prev = nullptr;
@@ -62,6 +64,7 @@ class Segment final : public Element {
       std::vector<qreal>    _dotPosX;     // size = staves
 
 
+      void createShape4(int staffIdx, Shape&, SpacingShape4*, Segment* visibilityTarget) const;
       void init();
       void checkEmpty() const;
       void checkElement(Element*, int track);
@@ -157,6 +160,8 @@ class Segment final : public Element {
 
       qreal stretch() const                      { return _stretch; }
       void setStretch(qreal v)                   { _stretch = v;    }
+      qreal spacingWidthOffset4() const          { return _spacingWidthOffset4; }
+      void setSpacingWidthOffset4(qreal v)       { _spacingWidthOffset4 = v; }
 
       Fraction rtick() const override    { return _tick;    }
       void setRtick(const Fraction& v)           { Q_ASSERT(v >= Fraction(0,1));  _tick = v;       }
@@ -226,11 +231,13 @@ class Segment final : public Element {
       Shape& staffShape(int staffIdx)                 { return _shapes[staffIdx]; }
       void createShapes();
       void createShape(int staffIdx);
+      // Read-only reconstruction through the native producer; owns no DOM data.
+      Shape shapeWithItems4(int staffIdx, SpacingShape4*) const;
       qreal minRight() const;
       qreal minLeft(const Shape&) const;
       qreal minLeftAfterBarline(const Shape&, qreal padding) const;
       qreal minLeft() const;
-      qreal minHorizontalDistance(Segment*, bool isSystemGap) const;
+      qreal minHorizontalDistance(Segment*, bool isSystemGap, bool allowCrossStaffKerning = false) const;
       qreal minHorizontalCollidingDistance(Segment* ns) const;
 
       // some helper function

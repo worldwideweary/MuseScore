@@ -18,6 +18,7 @@
 #include "sym.h"
 
 namespace Ms {
+struct SpacingShape4;
 
 class TDuration;
 
@@ -107,6 +108,7 @@ class Rest : public ChordRest {
       QString accessibleInfo() const override;
       QString screenReaderInfo() const override;
       Shape shape() const override;
+      Shape shapeWithItems4(SpacingShape4*) const;
       void editDrag(EditData& editData) override;
       };
 

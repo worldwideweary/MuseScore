@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "spacinggeometry4.h"
 #include "barline.h"
 #include "barlinegeometry.h"
 #include "accidental.h"
@@ -2125,29 +2126,39 @@ void Segment::createShapes()
 
 void Segment::createShape(int staffIdx)
       {
-      Shape& s = _shapes[staffIdx];
+      createShape4(staffIdx, _shapes[staffIdx], nullptr, this);
+      }
+
+Shape Segment::shapeWithItems4(int staffIdx, SpacingShape4* items) const
+      {
+      Shape native;
+      createShape4(staffIdx, native, items, nullptr);
+      return native;
+      }
+
+void Segment::createShape4(int staffIdx, Shape& s, SpacingShape4* items, Segment* visibilityTarget) const
+      {
       s.clear();
+      SpacingShapeBuilder4 builder(s, items);
 
       if (segmentType() & (SegmentType::BarLine | SegmentType::EndBarLine | SegmentType::StartRepeatBarLine | SegmentType::BeginBarLine)) {
-            setVisible(true);
+            if (visibilityTarget) visibilityTarget->setVisible(true);
             BarLine* bl = toBarLine(element(staffIdx * VOICES));
             if (bl) {
                   QRectF r = bl->layoutRect();
-#ifndef NDEBUG
-                  s.add(r.translated(bl->pos()), bl->name());
-#else
-                  s.add(r.translated(bl->pos()));
-#endif
+                  builder.add(r.translated(bl->pos()), bl);
                   }
-            s.addHorizontalSpacing(Shape::SPACING_GENERAL, 0, 0);
-            s.addHorizontalSpacing(Shape::SPACING_LYRICS, 0, 0);
+            builder.addHorizontalSpacing(Shape::SPACING_GENERAL, 0, 0, bl);
+            // These two empty bounds belong to the barline producer and have
+            // the same validated discard policy as its native general bound.
+            builder.addHorizontalSpacing(Shape::SPACING_LYRICS, 0, 0, bl);
             return;
             }
 #if 0
       for (int track = staffIdx * VOICES; track < (staffIdx + 1) * VOICES; ++track) {
             Element* e = _elist[track];
             if (e)
-                  s.add(e->shape().translated(e->pos()));
+                  builder.addElement(e, e->pos());
             }
 #endif
 
@@ -2163,9 +2174,9 @@ void Segment::createShape(int staffIdx)
             if (effectiveTrack >= strack && effectiveTrack < etrack) {
                   // TODO: we could choose to ignore invisible/no-autoplace notes & rests
                   // but these might be relied upon by some
-                  setVisible(true);
+                  if (visibilityTarget) visibilityTarget->setVisible(true);
                   if (e->addToSkyline() || e->isChord())
-                        s.add(e->shape().translated(e->pos()));
+                        builder.addElement(e, e->pos());
                   }
             }
 
@@ -2189,7 +2200,7 @@ void Segment::createShape(int staffIdx)
                         const int last = qMax(owner->vStaffIdx(), end->vStaffIdx());
                         if (staffIdx >= first && staffIdx <= last) {
                               const QRectF r = bracket->bbox().translated(owner->pos() + bracket->pos());
-                              s.addHorizontalSpacing(Shape::SPACING_GENERAL, r.left(), r.right());
+                              builder.addHorizontalSpacing(Shape::SPACING_GENERAL, r.left(), r.right());
                               }
                         }
                   }
@@ -2201,7 +2212,7 @@ void Segment::createShape(int staffIdx)
             if (!e->addToSkyline())
                   continue;
             // TODO: will skipping segments that contain only invisible annotations adversely affect playback or anything else?
-            setVisible(true);
+            if (visibilityTarget) visibilityTarget->setVisible(true);
 
             if (e->isCourtesy() && isType(SegmentType::RepeatCourtesy | SegmentType::ContinuationCourtesy)) {
                   // generated shared parentheses must reserve horizontal space
@@ -2211,12 +2222,12 @@ void Segment::createShape(int staffIdx)
             else if (e->isHarmony()) {
                   // use same spacing calculation as for chordrest
                   auto h = toHarmony(e);
-                  if (h->bbox().isEmpty())
+                  if (!items && h->bbox().isEmpty())
                         h->layout1();
                   const qreal margin = styleP(Sid::harmonyHarmonyDistance) * 0.5;
                   qreal x1 = e->bbox().x() - margin + e->pos().x();
                   qreal x2 = e->bbox().x() + e->bbox().width() + margin + e->pos().x();
-                  s.addHorizontalSpacing(Shape::SPACING_HARMONY, x1, x2);
+                  builder.addHorizontalSpacing(Shape::SPACING_HARMONY, x1, x2);
                   }
             else if (!e->isRehearsalMark()
                && !e->isFretDiagram()
@@ -2233,7 +2244,7 @@ void Segment::createShape(int staffIdx)
                && !e->isStaffText()) {
                   // annotations added here are candidates for collision detection
                   // lyrics, ...
-                  s.add(e->shape().translated(e->pos()));
+                  builder.addElement(e, e->pos());
                   }
             }
       }
@@ -2465,7 +2476,7 @@ qreal courtesySignaturePadding(const Element* left, const Element* right)
       }
 }
 
-qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
+qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap, bool allowCrossStaffKerning) const
       {
       // Studio applies header spacing to clefs/keys/meters, not to the
       // repeat barline itself. After the dots, use the ordinary bar-to-note
@@ -2623,8 +2634,13 @@ qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
                         }
                   if (isGap)
                         return 0.0;
-                  // minimum distance between notes is one note head width
-                  w = qMax(w, score()->noteHeadWidth()) + score()->styleP(Sid::minNoteDistance);
+                  // The supported Studio down-to-up cross-staff case can kern
+                  // noteheads on different staves. Keep shape clearance and
+                  // configured padding; omit only the blanket notehead floor.
+                  if (!(allowCrossStaffKerning && !systemHeaderGap && ns && ns->isChordRestType()
+                        && score()->styleB(Sid::spacingLayout4)))
+                        w = qMax(w, score()->noteHeadWidth());
+                  w += score()->styleP(Sid::minNoteDistance);
                   }
             }
       else if (nst == SegmentType::ChordRest) {

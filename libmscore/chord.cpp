@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "spacinggeometry4.h"
 #include "accidental.h"
 #include "arpeggio.h"
 #include "chordbracket.h"
@@ -20,6 +21,7 @@
 #include "drumset.h"
 #include "fingering.h"
 #include "glissando.h"
+#include "gracespacing4.h"
 #include "guitarbend.h"
 #include "hook.h"
 #include "key.h"
@@ -1820,6 +1822,10 @@ void Chord::layout2()
                   g->rxpos() = xOff;
                   xOff -= minNoteDist + g->_spaceLw;    // move to left by grace note right space and inter-grace distance
                   }
+            // Legacy packing above always runs first, including when the
+            // style is disabled or the supported plan cannot safely fit.
+            if (score()->styleB(Sid::spacingLayout4))
+                  applyGraceAfterPlan4(this);
             }
       if (_tabDur)
             _tabDur->layout2();
@@ -2271,6 +2277,19 @@ void Chord::layoutPitched()
             note->layout2();
 
       _spaceRw = qMax(_spaceRw, LaissezVib::layoutChord(this));
+
+      // Apply the bounded Studio grace adapter before Segment::createShapes
+      // and measure fitting. Legacy packing above resets positions/space on
+      // every pass, so disabling the style or rejecting the context restores
+      // Evolution's handling without a cached extent from an earlier layout.
+      if (gnb && score()->styleB(Sid::spacingLayout4)) {
+            GraceBeforePlan4 plan;
+            if (queryGraceBeforePlan4(this, plan)) {
+                  for (int i = 0; i < gnb; ++i)
+                        graceNotesBefore[i]->rxpos() = plan.positions[i].x;
+                  _spaceLw = qMax(lll, -plan.left - chordX);
+                  }
+            }
 
       // Reserve shared-parenthesis width during horizontal layout, before
       // the later system pass adds any attached single-note bend geometry.
@@ -3665,6 +3684,11 @@ QString Chord::accessibleExtraInfo() const
 
 Shape Chord::shape() const
       {
+      return shapeWithItems4(nullptr);
+      }
+
+Shape Chord::shapeWithItems4(SpacingShape4* items) const
+      {
       // the chord shape will always contain the basic elements of note/stem/hook
       // however, other elements are only added to the shape if the chord itself has autoplace set
       // thus, disabling autoplace for the chord removes ledger lines, accidentals, arpeggios, etc. from the shape
@@ -3674,42 +3698,43 @@ Shape Chord::shape() const
       // by turning autoplace off, no space is allocated for the other elements
       // this can produce collisions if spacing is tight, but if the measure is wide enough, spacing can be made more even
       Shape shape;
+      SpacingShapeBuilder4 builder(shape, items);
       if (_hook && _hook->addToSkyline())
-            shape.add(_hook->shape().translated(_hook->pos()));
+            builder.addElement(_hook, _hook->pos());
       if (_stem && _stem->addToSkyline()) {
             // stem direction is not known soon enough for cross staff beamed notes
             if (!(beam() && (staffMove() || beam()->cross())))
-                  shape.add(_stem->shape().translated(_stem->pos()));
+                  builder.addElement(_stem, _stem->pos());
             }
       if (_stemSlash && _stemSlash->addToSkyline())
-            shape.add(_stemSlash->shape().translated(_stemSlash->pos()));
+            builder.addElement(_stemSlash, _stemSlash->pos());
       for (Note* note : _notes) {
-            shape.add(note->shape().translated(note->pos()));
+            builder.addElement(note, note->pos());
             if (addToSkyline()) {
                   for (Element* e : note->el()) {
                         if (!e->addToSkyline())
                               continue;
                         if (e->isFingering() && toFingering(e)->layoutType() == ElementType::CHORD && e->bbox().isValid())
-                              shape.add(e->bbox().translated(e->pos() + note->pos()));
+                              builder.add(e->bbox().translated(e->pos() + note->pos()), e);
                         }
                   }
             }
-      shape.add(ChordRest::shape());      // add lyrics
+      builder.addChordRest(this);      // add lyrics
       if (addToSkyline()) {
             if (_arpeggio && _arpeggio->addToSkyline())
-                  shape.add(_arpeggio->shape().translated(_arpeggio->pos()));
+                  builder.addElement(_arpeggio, _arpeggio->pos());
             //if (_tremolo)
             //      shape.add(_tremolo->shape().translated(_tremolo->pos()));
             for (Element* e : el()) {
                   if (e->addToSkyline())
-                        shape.add(e->shape().translated(e->pos()));
+                        builder.addElement(e, e->pos());
                   }
             for (Chord* chord : _graceNotes)    // process grace notes last, needed for correct shape calculation
-                  shape.add(chord->shape().translated(chord->pos()));
+                  builder.addElement(chord, chord->pos());
             for (LedgerLine* l = _ledgerLines; l; l = l->next())
-                  shape.add(l->shape().translated(l->pos()));
+                  builder.addElement(l, l->pos());
             if (!qFuzzyIsNull(_spaceLw) || !qFuzzyIsNull(_spaceRw))
-                  shape.addHorizontalSpacing(Shape::SPACING_GENERAL, -_spaceLw, _spaceRw);
+                  builder.addHorizontalSpacing(Shape::SPACING_GENERAL, -_spaceLw, _spaceRw, this);
             }
       return shape;
       }

@@ -12,6 +12,7 @@
 
 #include "spanner.h"
 #include "spannermap.h"
+#include <algorithm>
 
 namespace Ms {
 
@@ -22,7 +23,7 @@ namespace Ms {
 SpannerMap::SpannerMap()
       : std::multimap<int, Spanner*>()
       {
-      dirty = true;
+      setDirty();
       }
 
 //---------------------------------------------------------
@@ -63,6 +64,25 @@ const std::vector<interval_tree::Interval<Spanner*> >& SpannerMap::findOverlappi
       return results;
       }
 
+// Ordered interval results share the native map's invalidation lifetime.
+// setTick can dirty the interval tree without moving the original map key;
+// rank by actual map iteration, never by the current spanner tick or pointer.
+std::vector<Spanner*> SpannerMap::findOverlappingInMapOrder(int start, int stop)
+      {
+      std::vector<Spanner*> ordered;
+      for (const auto& interval : findOverlapping(start, stop)) ordered.push_back(interval.value);
+      if (mapOrderDirty) {
+            mapOrder.clear();
+            std::size_t rank = 0;
+            for (const auto& entry : *this) mapOrder.emplace(entry.second, rank++);
+            mapOrderDirty = false;
+            }
+      std::stable_sort(ordered.begin(), ordered.end(), [this](const Spanner* a, const Spanner* b) {
+            return mapOrder.at(a) < mapOrder.at(b);
+            });
+      return ordered;
+      }
+
 //---------------------------------------------------------
 //   addSpanner
 //---------------------------------------------------------
@@ -80,7 +100,7 @@ void SpannerMap::addSpanner(Spanner* s)
 #endif
 #endif
       insert(std::pair<int,Spanner*>(s->tick().ticks(), s));
-      dirty = true;
+      setDirty();
       }
 
 //---------------------------------------------------------
@@ -92,7 +112,7 @@ bool SpannerMap::removeSpanner(Spanner* s)
       for (auto i = begin(); i != end(); ++i) {
             if (i->second == s) {
                   erase(i);
-                  dirty = true;
+                  setDirty();
                   return true;
                   }
             }

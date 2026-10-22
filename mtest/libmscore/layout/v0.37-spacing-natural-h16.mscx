@@ -1,0 +1,134 @@
+<?xml version='1.0' encoding='utf-8'?>
+<museScore version="3.02">
+  <Score>
+    <Division>480</Division>
+    <Style>
+      <Spatium>1.75</Spatium>
+      <musicalSymbolFont>Leland</musicalSymbolFont>
+      <musicalTextFont>Leland Text</musicalTextFont>
+      <stemWidth>0.10</stemWidth>
+      <minNoteDistance>0.35</minNoteDistance>
+      <barNoteDistance>1.25</barNoteDistance>
+      <noteBarDistance>1.5</noteBarDistance>
+      <measureSpacing>1.5</measureSpacing>
+      <accidentalDistance>0.25</accidentalDistance>
+      <accidentalNoteDistance>0.25</accidentalNoteDistance>
+      <dotNoteDistance>0.5</dotNoteDistance>
+      <beamLayout4>1</beamLayout4>
+      <lastSystemFillLimit>1</lastSystemFillLimit>
+    </Style>
+    <Part>
+      <Staff id="1">
+        <StaffType group="pitched">
+          <name>stdNormal</name>
+        </StaffType>
+        <bracket type="1" span="2" col="0" />
+      </Staff>
+      <Staff id="2">
+        <StaffType group="pitched">
+          <name>stdNormal</name>
+        </StaffType>
+        <defaultClef>F</defaultClef>
+      </Staff>
+      <Instrument id="piano">
+        <trackName>Piano</trackName>
+        <Channel>
+          <program value="0" />
+        </Channel>
+      </Instrument>
+    </Part>
+    <Staff id="1">
+      <VBox>
+        <height>12</height>
+        <Text>
+          <style>Title</style>
+          <text>v0.37 Natural width H16</text>
+        </Text>
+      </VBox>
+      <Measure>
+        <voice>
+          <TimeSig>
+            <sigN>2</sigN>
+            <sigD>4</sigD>
+          </TimeSig>
+          <SystemText>
+            <text>H16: Cross beam + same-source quarter-note voice</text>
+          </SystemText>
+          <Chord>
+            <BeamMode>begin</BeamMode>
+            <durationType>eighth</durationType>
+            <StemDirection>auto</StemDirection>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <BeamMode>mid</BeamMode>
+            <durationType>eighth</durationType>
+            <StemDirection>auto</StemDirection>
+            <staffMove>1</staffMove>
+            <Note>
+              <pitch>53</pitch>
+              <tpc>13</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <BeamMode>mid</BeamMode>
+            <durationType>eighth</durationType>
+            <StemDirection>auto</StemDirection>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <BeamMode>mid</BeamMode>
+            <durationType>eighth</durationType>
+            <StemDirection>auto</StemDirection>
+            <staffMove>1</staffMove>
+            <Note>
+              <pitch>53</pitch>
+              <tpc>13</tpc>
+            </Note>
+          </Chord>
+        </voice>
+        <voice>
+          <Chord>
+            <BeamMode>auto</BeamMode>
+            <durationType>quarter</durationType>
+            <StemDirection>up</StemDirection>
+            <Note>
+              <pitch>79</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <BeamMode>auto</BeamMode>
+            <durationType>quarter</durationType>
+            <StemDirection>up</StemDirection>
+            <Note>
+              <pitch>81</pitch>
+              <tpc>17</tpc>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+    </Staff>
+    <Staff id="2">
+      <Measure>
+        <voice>
+          <TimeSig>
+            <sigN>2</sigN>
+            <sigD>4</sigD>
+          </TimeSig>
+          <Rest>
+            <visible>0</visible>
+            <durationType>measure</durationType>
+            <duration>1/2</duration>
+          </Rest>
+        </voice>
+      </Measure>
+    </Staff>
+  </Score>
+</museScore>

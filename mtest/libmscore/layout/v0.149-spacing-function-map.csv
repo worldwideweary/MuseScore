@@ -1,0 +1,55 @@
+studio_function,v4_7_5_line,status,current_evolution_mapping,work_package,remaining_boundary
+computeSpacingForFullSystem,47,partial,buildSpacingPlan4 + collectSystem final publication,B,Rejects containers/visibility/features; preparation split across native passes
+updateSpacingForLastAddedMeasure,90,partial,systemFittingWidth4,B,Rebuilds full candidate prefix instead of upstream neighboring-measure update
+squeezeSystemToFit,135,partial,squeezeSpacingPlan4,C,Three positive-duration passes; later squeeze and collision-allowing stage absent
+justifySystem,185,partial,justifySpacingPlan4; systemSpacingWidths4; Measure::stretchMeasure,B,Modern-plan publication and hybrid distributor both remain
+spaceMeasureGroup,224,partial,buildSpacingPlan4 flattened system stream,B,No HBox-delimited groups or generic container context
+spaceSegments,262,partial,buildSpacingPlan4 placement loop,B,Manual extra-leading offsets rejected; lyrics/large-time-signature edge stages absent
+ignoreSegmentForSpacing,328,core adapted,active4,A,Visibility policy still lacks hidden-staff integration
+ignoreAllSegmentsForSpacing,333,core adapted,buildSpacingPlan4 placed flag,B,Tracks preceding active placement in admitted stream
+spaceAgainstPreviousSegments,344,partial,buildSpacingPlan4 lookback redistribution; distance4,B,Accepted typed contexts only
+stopCheckingPreviousSegments,417,partial,buildSpacingPlan4 crCount/previousEnd/geometry stopping,B,No lyric/harmony termination rules
+checkLyricsAgainstLeftMargin,474,missing,No dedicated modern implementation,C,Legacy producer/barriers remain; lyrics not admitted
+checkLyricsAgainstRightMargin,485,missing,No dedicated modern implementation,C,Dash/melisma edge distribution absent
+spaceLyricsAgainstBarlines,542,missing,No dedicated modern implementation,C,Typed lyric/barline attachment inputs absent
+checkLargeTimeSigAgainstRightMargin,601,missing,No dedicated modern implementation,C,Independent time-signature backports do not establish this pipeline stage
+moveRightAlignedSegments,634,partial,buildSpacingPlan4 width/barline reconstruction,B,General right-alignment categories and fixed-offset movement not ported
+checkCollisionsWithCrossStaffStems,682,partial,cacheGeometry4 projected cross-staff stems; CrossStaffContext4,D,Bounded streams; not general pre-distance cross-staff constraints
+chordRestSegmentNaturalWidth,730,partial,3.5sp * segmentSpacingStretch4 in buildSpacingPlan4,C,spacingDensity/cue/MMRest policies incomplete
+computeSegmentDurationStretch,748,partial,segmentSpacingStretch4; spacing4DurationStretch,C,Ordinary/polyrhythm law retained; cue/MMRest exceptions absent
+durationStretchForMMRests,783,missing,Native MMRest width path retained,C,MMRest styles and duration mapping absent
+durationStretchForTicks,805,core adapted,spacing4DurationStretch duration law,retain,Pure formula for valid ordinary inputs; not entire duration policy
+needsCueSizeSpacing,814,missing,Small/cue chords rejected by buildSpacingPlan4,C,Add supported cue rhythmic scaling and geometry
+applyCrossBeamSpacingCorrection,836,partial,crossBeamSpacingOffset4; CrossStaffContext4 pairs,D,Single selected streams and bounded companions
+minStemDistOnNonAdjacentCross,872,partial,buildCrossStaffContext4 minimumStemDistance,D,"Bounded context, not all polyphonic nonadjacent crosses"
+computeCrossBeamSpacing,913,partial,singleSpacingChord4; crossBeamSpacingOffset4; prepareCrossStaff4,D,Independent beams/voices and decorations restricted
+computeMinMeasureWidth,1012,partial,buildSpacingPlan4 minimum-width computation,B,Common ordinary measure path; effective-style parity not global
+enforceMinimumMeasureWidths,1048,partial,stretchMeasure4/reflowMeasure4/moveMeasure4,B,Real spring distribution exists in admitted plans
+stretchMeasureToTargetWidth,1066,partial,stretchMeasure4; native Measure::stretchMeasure,B,Two integration paths remain
+stretchSegmentsToWidth,1087,core adapted,spacing4SpringForce,retain,Common-force arithmetic retained; geometry floors separately qualified
+setPositionsAndWidths,1114,partial,buildSpacingPlan4 width reconstruction; collectSystem publication,B,Transactional plan data; surrounding preparation not transactional
+getFirstSegmentXPos,1183,partial,buildSpacingPlan4 first active segment placement,B,Common clef/key/time/bar-note offsets only
+minHorizontalDistance(Shape),1216,partial,spacingShapeDistance4; spacingPairDistance4,A,Tagged kernel implemented; producer/pair-policy coverage bounded
+shapeSpatium,1279,partial,cacheGeometry4 item-derived sp,A,Inferred geometry identity limits scale coverage
+minHorizontalDistance(Segment),1294,partial,distance4; cacheGeometry4,B,Common headers/barlines/lookback only; many contexts reject
+needsHeaderSpacingExceptions,1404,partial,distance4 header signature rules,B,"Common header/trailer types, not every newer item type"
+minLeft,1425,partial,cacheGeometry4 minLeft/minRight/leftEdge; distance4,A,Validated typed projection plus legacy spacers
+computePadding,1438,partial,SpacingPaddingTable4; pairPolicy4,A,Supported type subset and special pair cases
+isSpecialNotePaddingType,1467,partial,pairPolicy4 supported type dispatch,A,Articulation/lyrics/line-attachment producers excluded
+computeNotePadding,1479,partial,pairPolicy4 grace floors and core note policies,A,"No general line-attachment, tie, lyric or articulation metadata"
+computeLedgerRestPadding,1557,partial,pairPolicy4 ledger-rest glyph adjustment,A,Ordinary rest context; full-measure/cue rest coverage absent
+isSpecialLyricsPaddingType,1571,missing,No typed lyric dispatch,C,Legacy lyric bounds cannot substitute for source metadata
+computeLyricsPadding,1583,missing,No typed lyric dispatch,C,Verse/melisma/dash policies absent
+computeChordBracketPadding,1605,missing,No typed chord-bracket dispatch,C,Separate feature import does not supply spacing producer mapping
+computeKerning,1614,partial,pairPolicy4,A,Dispatch restricted by commonChordContext4
+computeVerticalClearance,1636,partial,pairPolicy4 verticalClearance,A,Accidental/general values; unsupported item cases remain
+isSameVoiceKerningLimited,1648,partial,sameVoiceLimited4,A,Ordinary note/dot/rest/stem subset
+isNeverKernable,1665,partial,neverKernable4,A,Common clef/key/time/barline subset
+isAlwaysKernable,1685,missing,No complete always-kernable type dispatcher,C,Text/chordline/parenthesis/fret-dependent cases not generally supported
+ignoreItems,1690,partial,pairPolicy4 full-measure-rest condition,C,"Full-measure rests rejected earlier, so this is not end-to-end coverage"
+doComputeKerningType,1700,partial,pairPolicy4 general cases,A,Special articulation/fermata/lyrics types excluded
+computeNoteKerningType,1728,partial,pairPolicy4; forwardSlurKerning4; mirrored seconds exception,A,First-grace/explicit/AUTO-agreement contracts still restrict attachment flags
+computeStemSlashKerningType,1767,partial,pairPolicy4 allowGrace stem-slash rule,A,Only admitted grace/beam context
+computeLyricsKerningType,1792,missing,No dedicated implementation,C,Typed lyric context absent
+computeArticulationAndFermataKerning,1811,missing,commonChordContext4 rejects chord articulations,A,Missing metadata/producer policy; not a numerical limitation
+computeHangingLineWidth,1826,missing,Ties/note spanners rejected by commonChordContext4,C,Line attachment points and hanging/partial-line widths absent

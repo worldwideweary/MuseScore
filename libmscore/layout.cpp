@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "spacingprofile4.h"
 #include "accidental.h"
 #include "ambitus.h"
 #include "arpeggio.h"
@@ -62,6 +63,13 @@
 #include "timesig.h"
 #include "tremolo.h"
 #include "beamlayout4.h"
+#include "spacinglayout4.h"
+#include "spacingplan4.h"
+#include "spacinginput4.h"
+#include "slurdirection4.h"
+#include "gracespacing4.h"
+#include <map>
+#include <cmath>
 #include "tuplet.h"
 #include "undo.h"
 #include "utils.h"
@@ -3154,6 +3162,74 @@ std::pair<qreal, qreal> extendedStemLenWithTwoNoteTremolo(Tremolo* tremolo, qrea
 //   getNextMeasure
 //---------------------------------------------------------
 
+// Own native producer certificates for a bounded domain, never a physical
+// query cache. Each callback builds and destroys a fresh read-only owner.
+static std::vector<const Measure*> spacingMeasures4(const System* system)
+{
+    std::vector<const Measure*> result;
+    if (system) for (const MeasureBase* mb : system->measures())
+        if (mb && mb->isMeasure()) result.push_back(toMeasure(mb));
+    return result;
+}
+
+class NativeGraceInputs4 {
+    Score* _score;
+    SpacingDirectionReadiness4* _readiness;
+    std::vector<const Measure*> _measures;
+    SpacingGraceQueryFactory4 _factory;
+    std::vector<const Slur*> roots(const std::vector<const Measure*>& measures) const
+    {
+        std::vector<const Slur*> result;
+        if (!_score || measures.empty()) return result;
+        const auto overlaps = _score->spannerMap().findOverlappingInMapOrder(
+            measures.front()->tick().ticks(), measures.back()->endTick().ticks());
+        for (const Spanner* item : overlaps)
+            if (item && item->isSlur()) result.push_back(toSlur(item));
+        return result;
+    }
+    std::vector<SpacingPreparedSlur4> declarations(const std::vector<const Measure*>& measures) const
+    {
+        std::vector<SpacingPreparedSlur4> result;
+        if (!_readiness) return result;
+        for (const Slur* root : roots(measures)) {
+            if (!_readiness->rootPrepared(root)) continue;
+            Direction direction = Direction::AUTO;
+            resolvePreparedSlurDirection4(root, direction); // Read-only; AUTO on failure.
+            result.emplace_back(root, direction);
+        }
+        return result;
+    }
+    bool capture(const Chord* chord, SpacingAttachmentPreparation4& owner, QString* reason) const
+    {
+        if (!_readiness || !chord || chord->score() != _score
+            || std::find(_measures.begin(), _measures.end(), chord->measure()) == _measures.end()) return false;
+        const std::vector<const Measure*> local { chord->measure() };
+        const auto directions = _readiness->declarations(chord->measure());
+        const auto rootDirections = declarations(local);
+        return captureMeasureSpacingAttachments4(chord->measure(), directions, owner, reason, &rootDirections);
+    }
+public:
+    NativeGraceInputs4(Score* score, std::vector<const Measure*> measures, SpacingDirectionReadiness4* readiness)
+        : _score(score), _readiness(readiness), _measures(std::move(measures)),
+          _factory([this](const Chord* chord, SpacingAttachmentPreparation4& owner, QString* reason) {
+              return capture(chord, owner, reason);
+          }, SpacingSlurPolicy4::PREPARED)
+    {
+        // Outside every read-only query. A successful root is produced at most
+        // once per LayoutContext, then only its current direction is resolved.
+        if (_readiness) for (const Slur* root : roots(_measures))
+            _readiness->prepareRoot(const_cast<Slur*>(root));
+    }
+    const SpacingGraceQueryFactory4* factory() const { return &_factory; }
+    bool captureSystem(System* system, SpacingAttachmentPreparation4& owner, QString* reason = nullptr) const
+    {
+        if (!_readiness || spacingMeasures4(system) != _measures) return false;
+        const auto directions = _readiness->declarations(system);
+        const auto rootDirections = declarations(_measures);
+        return captureSystemSpacingAttachments4(system, directions, owner, reason, &rootDirections);
+    }
+};
+
 void Score::getNextMeasure(LayoutContext& lc)
       {
       lc.prevMeasure = lc.curMeasure;
@@ -3215,6 +3291,7 @@ void Score::getNextMeasure(LayoutContext& lc)
       //-----------------------------------------
 
       Measure* measure = toMeasure(lc.curMeasure);
+      if (lc.spacingDirections4) lc.spacingDirections4->invalidate(measure);
       measure->moveTicks(lc.tick - measure->tick());
 
       if (lineMode() && (measure->tick() < lc.startTick || measure->tick() > lc.endTick)) {
@@ -3316,6 +3393,14 @@ void Score::getNextMeasure(LayoutContext& lc)
                   }
             }
 
+      std::unique_ptr<NativeGraceInputs4> graceInputs;
+      if (lc.spacingDirections4) {
+            // Initial native directions are ready. The certificate stores
+            // identities; createBeams may still change their live values.
+            lc.spacingDirections4->produced(measure);
+            graceInputs.reset(new NativeGraceInputs4(score(), { measure }, lc.spacingDirections4.get()));
+            }
+
       createBeams(lc, measure);
 
       // Both chords' note lines and beam memberships are now current. Resolve
@@ -3393,6 +3478,10 @@ void Score::getNextMeasure(LayoutContext& lc)
       else if (seg)
             score()->undoRemoveElement(seg);
 
+      // The initial identity certificate already exists; read current
+      // post-beam directions when each query captures its inputs.
+      SpacingGraceQueryScope4 graceScope(score(), graceInputs ? graceInputs->factory() : nullptr);
+
       for (Segment& s : measure->segments()) {
             // TODO? maybe we do need to process it here to make it possible to enable later
             //if (!s.enabled())
@@ -3420,6 +3509,10 @@ void Score::getNextMeasure(LayoutContext& lc)
             s.createShapes();
             }
 
+      // Notes, beam membership, initial directions and local shapes have now
+      // completed native production. Subsequent beam writes may update values;
+      // the pass-local record certifies identities, not a stale up() snapshot.
+      if (lc.spacingDirections4) lc.spacingDirections4->produced(measure);
       lc.tick += measure->ticks();
       }
 
@@ -4102,12 +4195,268 @@ static void processLines(System* system, std::vector<Spanner*> lines, bool align
             }
       }
 
+// After-grace beams are normally laid out after system spacing. Prepare their
+// stem geometry at the planned intra-group distances first, so the planner and
+// the final beam pass see the same shapes. Preserve native chord positions here.
+static bool prepareAfterGraceBeamForSpacing4(Chord* main, GraceAfterGeometry4 geometry)
+{
+    const auto graces = main->graceNotesAfter();
+    Beam* beam = graces.front()->beam();
+    if (!beam) return true;
+    const auto sameShape = [](const SpacingShape4& a, const SpacingShape4& b) {
+        if (a.elements.size() != b.elements.size()) return false;
+        for (size_t i = 0; i < a.elements.size(); ++i) {
+            const auto& x = a.elements[i];
+            const auto& y = b.elements[i];
+            if (x.item != y.item || x.identity != y.identity
+                || x.aggregateOwners != y.aggregateOwners || x.sharedItems != y.sharedItems
+                || qAbs(x.rect.x() - y.rect.x()) > 1e-9
+                || qAbs(x.rect.y() - y.rect.y()) > 1e-9
+                || qAbs(x.rect.width() - y.rect.width()) > 1e-9
+                || qAbs(x.rect.height() - y.rect.height()) > 1e-9)
+                return false;
+        }
+        return true;
+    };
+    std::vector<qreal> original;
+    for (const Chord* grace : graces) original.push_back(grace->x());
+    // Packing and beam slope depend on each other's geometry. Require a stable
+    // projection, with a bounded attempt count; otherwise use native fallback.
+    for (int pass = 0; pass < 8; ++pass) {
+        for (int i = 0; i < graces.size(); ++i)
+            graces[i]->rxpos() = original.front() + geometry.plan.positions[i].x
+                - geometry.plan.positions.front().x;
+        beam->layout();
+        for (int i = 0; i < graces.size(); ++i) graces[i]->rxpos() = original[i];
+        main->segment()->createShape(main->vStaffIdx());
+        GraceAfterGeometry4 next;
+        if (!queryGraceAfterGeometry4(main, next)) return false;
+        if (sameShape(geometry.source, next.source) && sameShape(geometry.target, next.target))
+            return true;
+        geometry = next;
+    }
+    return false;
+}
+
+// Local to one collectSystem call. A fresh validated projection must match
+// exactly before skipping repeated preparation during prefix fitting.
+struct GraceBeamPreparation4 {
+    GraceMergedGeometry4 geometry;
+    std::vector<const Beam*> beams;
+};
+
+static bool sameGraceBeamPreparation4(const GraceBeamPreparation4& saved, const GraceMergedGeometry4& fresh)
+{
+    const auto& a = saved.geometry.plan;
+    const auto& b = fresh.plan;
+    if (a.slurPolicy != b.slurPolicy || a.owner != b.owner || a.target != b.target || a.left != b.left || a.right != b.right
+        || a.positions.size() != b.positions.size() || saved.beams.size() != b.positions.size()) return false;
+    for (size_t i = 0; i < b.positions.size(); ++i) {
+        if (a.positions[i].chord != b.positions[i].chord || a.positions[i].x != b.positions[i].x
+            || saved.beams[i] != b.positions[i].chord->beam()) return false;
+    }
+    const auto sameShape = [](const SpacingShape4& x, const SpacingShape4& y) {
+        if (x.elements.size() != y.elements.size()) return false;
+        for (size_t i = 0; i < x.elements.size(); ++i) {
+            const auto& p = x.elements[i];
+            const auto& q = y.elements[i];
+            if (p.item != q.item || p.identity != q.identity || p.rect.x() != q.rect.x() || p.rect.y() != q.rect.y()
+                || p.rect.width() != q.rect.width() || p.rect.height() != q.rect.height()
+                || p.aggregateOwners != q.aggregateOwners || p.sharedItems != q.sharedItems) return false;
+        }
+        return true;
+    };
+    return sameShape(saved.geometry.source, fresh.source) && sameShape(saved.geometry.target, fresh.target);
+}
+
+// Before-grace groups already have fixed internal horizontal positions. Their beams
+// can therefore finalize stems and slashes before system spacing, independent
+// of the enclosing measure's eventual stretch. Otherwise the page pass moves
+// the slash after its provisional shape has constrained a neighboring note.
+// Keep this mutation outside the read-only placement planner and restrict it
+// to groups admitted by the corresponding grace adapter.
+static bool prepareGraceBeamsForSpacing4(System* system, std::vector<GraceBeamPreparation4>& preparedBeams,
+                                        std::vector<GraceMergedGeometry4>& readyMerged)
+{
+    // A fresh handoff for the immediately following read-only plan. Every
+    // possible beam/shape write below invalidates ALL earlier entries.
+    readyMerged.clear();
+    if (!system->score()->styleB(Sid::spacingLayout4) || MScore::noHorizontalStretch)
+        return true;
+    std::vector<const Chord*> jointTargets;
+    for (MeasureBase* mb : system->measures()) {
+        if (!mb->isMeasure()) continue;
+        for (Segment& segment : toMeasure(mb)->segments()) {
+            if (!segment.enabled() || !segment.visible() || !segment.isChordRestType()) continue;
+            for (Element* item : segment.elist()) {
+                if (!item || !item->isChord()) continue;
+                Chord* main = toChord(item);
+                if (std::find(jointTargets.begin(), jointTargets.end(), main) != jointTargets.end()) continue;
+                if (!main->graceNotesAfter().empty()) {
+                    GraceAfterGeometry4 geometry;
+                    if (queryGraceAfterGeometry4(main, geometry)) {
+                        readyMerged.clear();
+                        if (!prepareAfterGraceBeamForSpacing4(main, geometry)) return false;
+                    }
+                    else {
+                        GraceMergedGeometry4 joint;
+                        if (queryGraceMergedGeometry4(main, joint)) {
+                            auto saved = std::find_if(preparedBeams.begin(), preparedBeams.end(),
+                                [main](const GraceBeamPreparation4& entry) { return entry.geometry.plan.owner == main; });
+                            if (saved != preparedBeams.end() && sameGraceBeamPreparation4(*saved, joint)) {
+                                SpacingProfileScope4 reuse(SpacingProfileStage4::BEAM_REUSE);
+                                readyMerged.push_back(joint);
+                            }
+                            else {
+                                GraceBeamPreparation4 entry;
+                                readyMerged.clear();
+                                if (!prepareGraceMergedBeams4(main, nullptr, &entry.geometry)) return false;
+                                readyMerged.push_back(entry.geometry);
+                                for (const auto& position : entry.geometry.plan.positions)
+                                    entry.beams.push_back(position.chord->beam());
+                                if (saved == preparedBeams.end()) preparedBeams.push_back(std::move(entry));
+                                else *saved = std::move(entry);
+                            }
+                            jointTargets.push_back(joint.plan.target);
+                        }
+                    }
+                    continue;
+                }
+                GraceBeforePlan4 group;
+                if (!queryGraceBeforePlan4(main, group)) continue;
+                bool placed = true;
+                for (const GracePosition4& p : group.positions)
+                    placed = placed && std::isfinite(p.chord->x()) && qAbs(p.chord->x() - p.x) <= 1e-6;
+                if (!placed) continue;
+                Beam* beam = main->graceNotesBefore().front()->beam();
+                if (beam) {
+                    readyMerged.clear();
+                    beam->layout(); // Also refreshes the owning segment's native shape.
+                }
+            }
+        }
+    }
+    return true;
+}
+
+// Native beam/root production may write derived geometry. Capture one fresh
+// attachment owner only after it completes; destroy all query views on return.
+// The factory itself can remain bound for later native publication callbacks.
+static bool nativeSystemSpacingPlan4(System* system, const SpacingSystemRequest4& request,
+                                     NativeGraceInputs4* inputs, std::vector<GraceBeamPreparation4>& preparedBeams,
+                                     SpacingPlan4& result, QString* reason)
+{
+    const auto fail = [reason](const char* text) { if (reason) *reason = text; return false; };
+    std::vector<GraceMergedGeometry4> readyMerged;
+    const bool ready = prepareGraceBeamsForSpacing4(system, preparedBeams, readyMerged);
+    if (!system->score()->styleB(Sid::spacingLayout4)) return false;
+    if (MScore::noHorizontalStretch) return fail("Horizontal stretch disabled");
+    if (!ready) return fail(request.pass == SpacingPass4::CANDIDATE
+        ? "Candidate grace-beam preparation rejected" : "Final grace-beam preparation rejected");
+    if (!inputs) return fail("Prepared-input factory unavailable");
+    SpacingAttachmentPreparation4 attachments;
+    if (!inputs->captureSystem(system, attachments, reason)) {
+        if (reason && reason->isEmpty()) *reason = "Prepared system attachment domain unavailable";
+        return false;
+    }
+    return selectSystemSpacingPlan4(system, request, attachments, result, reason, &readyMerged);
+}
+
+// Fit ordinary prefixes after checking the native trial-boundary preparation.
+// Repeat end/start transitions may change when the predecessor is accepted;
+// each candidate rebuilds from that phase's fresh geometry. Keep the native
+// width accumulator intact for unsupported-context fallback/backtracking.
+static bool systemFittingWidth4(System* system, qreal availableWidth, qreal& width, std::vector<GraceBeamPreparation4>& preparedBeams,
+                                SpacingDirectionReadiness4* readiness, QString* reason = nullptr)
+{
+    const auto fail = [reason](const char* text) {
+        if (reason) *reason = QString::fromLatin1(text);
+        return false;
+    };
+    if (MScore::noHorizontalStretch || system->score()->styleB(Sid::hideEmptyStaves))
+        return fail("Candidate stretch/hidden-staff boundary");
+    for (MeasureBase* mb : system->measures()) {
+        if (!mb->isMeasure())
+            return fail("Candidate contains a frame");
+        const Measure* m = toMeasure(mb);
+        if (m->noBreak() || measureMayHaveBeamsJoinedIntoNext(m))
+            return fail("Candidate break/joined-beam boundary");
+    }
+    if (!spacingCandidateSignaturesReady4(system, reason)) return false;
+    if (!spacingRepeatBarlinesReady4(system, SpacingPass4::CANDIDATE, reason)) return false;
+    NativeGraceInputs4 inputs(system->score(), spacingMeasures4(system), readiness);
+    SpacingGraceQueryScope4 graceScope(system->score(), inputs.factory());
+    SpacingSystemRequest4 request;
+    request.availableWidth = availableWidth;
+    request.slurPolicy = inputs.factory()->policy();
+    SpacingPlan4 plan;
+    if (!nativeSystemSpacingPlan4(system, request, &inputs, preparedBeams, plan, reason)) return false;
+    width = plan.width;
+    return true;
+}
+
+// Allocate positive spare width with one force across an ordinary system.
+// Return no targets for unsupported systems, preserving the existing path.
+static std::map<Measure*, qreal> systemSpacingWidths4(System* system, qreal extraWidth)
+{
+    struct Spring {
+        Measure* measure;
+        qreal width;
+        qreal stretch;
+    };
+    std::vector<Spring> springs;
+    std::vector<SpacingSpring4> flexible;
+    std::map<Measure*, qreal> targets;
+    for (MeasureBase* mb : system->measures()) {
+        if (!mb->isMeasure())
+            return {};
+        Measure* m = toMeasure(mb);
+        if (m->isMMRest())
+            return {};
+        Segment* first = m->first();
+        while (first && (!first->enabled() || first->allElementsInvisible()))
+            first = first->next();
+        qreal occupied = first ? first->x() : 0;
+        const std::size_t count = springs.size();
+        for (Segment& seg : m->segments()) {
+            if (!seg.enabled() || !seg.visible() || seg.allElementsInvisible())
+                continue;
+            occupied += seg.width();
+            if (seg.ticks().isZero())
+                continue;
+            if (!seg.isChordRestType())
+                return {}; // do not mix rhythmic and nonrhythmic timed springs
+            const qreal stretch = segmentSpacingStretch4(&seg);
+            const qreal width = seg.width() - seg.spacingWidthOffset4();
+            if (!(stretch > 0) || !qIsFinite(stretch) || !(width >= 0) || !qIsFinite(width))
+                return {};
+            springs.push_back({ m, width, stretch });
+            flexible.push_back({ width, stretch });
+        }
+        // A clamped minimum measure width contains slack not represented by
+        // these segment floors. Leave that case to the existing distributor.
+        if (springs.size() == count || qAbs(occupied - m->width()) > 1e-6 * m->spatium())
+            return {};
+        targets[m] = m->width();
+    }
+    if (targets.size() < 2)
+        return {};
+    const qreal force = spacing4SpringForce(flexible, extraWidth);
+    if (!(force > 0))
+        return {};
+    for (const Spring& spring : springs)
+        targets[spring.measure] += qMax(qreal(0), force * spring.stretch - spring.width);
+    return targets;
+}
+
 //---------------------------------------------------------
 //   collectSystem
 //---------------------------------------------------------
 
 System* Score::collectSystem(LayoutContext& lc)
       {
+      std::vector<GraceBeamPreparation4> preparedBeams;
+      SpacingProfileScope4 profile(SpacingProfileStage4::SYSTEM);
       if (!lc.curMeasure)
             return 0;
       const MeasureBase* measure  = _systems.empty() ? 0 : _systems.back()->measures().back();
@@ -4191,7 +4540,22 @@ System* Score::collectSystem(LayoutContext& lc)
             // check if lc.curMeasure fits, remove if not
             // collect at least one measure and the break
 
-            bool doBreak = (system->measures().size() > 1) && ((minWidth + ww) > systemWidth);
+            qreal fittingWidth = minWidth + ww;
+            if (styleB(Sid::spacingLayout4)) {
+                  const bool observed = spacingDecisionObserved4(this);
+                  QString reason;
+                  const bool planned = systemFittingWidth4(system, systemWidth, fittingWidth, preparedBeams,
+                        lc.spacingDirections4.get(), observed ? &reason : nullptr);
+                  if (observed)
+                        recordSpacingDecision4(system, SpacingPass4::CANDIDATE,
+                              MScore::noHorizontalStretch ? SpacingPath4::NO_STRETCH
+                              : planned ? SpacingPath4::FULL_PLAN : SpacingPath4::NATIVE_WIDTHS,
+                              fittingWidth, systemWidth, reason);
+                  }
+            else if (spacingDecisionObserved4(this))
+                  recordSpacingDecision4(system, SpacingPass4::CANDIDATE, SpacingPath4::STYLE_OFF,
+                        fittingWidth, systemWidth);
+            bool doBreak = (system->measures().size() > 1) && (fittingWidth > systemWidth);
             if (doBreak) {
                   breakMeasure = lc.curMeasure;
                   system->removeLastMeasure();
@@ -4383,8 +4747,38 @@ System* Score::collectSystem(LayoutContext& lc)
       //
       // stretch incomplete row
       //
+      // Keep a producer factory for native publication callbacks, not an
+      // attachment/geometry cache. Every query captures fresh read-only input.
+      std::unique_ptr<NativeGraceInputs4> finalInputs;
+      if (lc.spacingDirections4)
+            finalInputs.reset(new NativeGraceInputs4(this, spacingMeasures4(system), lc.spacingDirections4.get()));
+      SpacingGraceQueryScope4 finalGraceScope(this, finalInputs ? finalInputs->factory() : nullptr);
+      const bool observeDecision = spacingDecisionObserved4(this);
+      QString decisionReason;
+      SpacingSystemRequest4 finalRequest;
+      finalRequest.pass = SpacingPass4::FINAL;
+      finalRequest.availableWidth = systemWidth;
+      finalRequest.next = lc.curMeasure;
+      finalRequest.fillLimit = styleD(Sid::lastSystemFillLimit);
+      if (finalInputs) finalRequest.slurPolicy = finalInputs->factory()->policy();
+      SpacingPlan4 studioPlan;
+      bool useStudioPlan = nativeSystemSpacingPlan4(system, finalRequest, finalInputs.get(), preparedBeams,
+                                                   studioPlan, observeDecision ? &decisionReason : nullptr);
+      // Collection revalidates this preparation memo against fresh projections.
+      // It has no role after selection and must not cross publication writes.
+      preparedBeams.clear();
+      std::map<Measure*, const SpacingMeasurePlan4*> studioMeasures;
+      // The shared helper has released its attachment owner and physical shape
+      // views before this first publication write. Candidate/final requests use
+      // the same prepared policy and retain only the selected placement plan.
+      if (useStudioPlan) {
+            useStudioPlan = publishSpacingPlanSegments4(system, studioPlan, observeDecision ? &decisionReason : nullptr);
+            if (useStudioPlan) for (const SpacingMeasurePlan4& m : studioPlan.measures)
+                  studioMeasures[m.measure] = &m;
+            }
       qreal rest;
-      if (MScore::noHorizontalStretch)
+      std::map<Measure*, qreal> studioWidths;
+      if (MScore::noHorizontalStretch || useStudioPlan)
             rest = 0;
       else {
             qreal mw          = system->leftMargin();      // DEBUG
@@ -4411,13 +4805,23 @@ System* Score::collectSystem(LayoutContext& lc)
             // don’t stretch last system of a section (or the last of the piece),
             // if accumulated minWidth is <= lastSystemFillLimit
             //
-            if ((lc.curMeasure == 0  || (lm && lm->sectionBreak()))
+            if (styleB(Sid::spacingLayout4)) {
+                  // Studio 4.7.5 SystemLayout::shouldBeJustified: leave a short
+                  // terminal/section system at its natural width. Frames may
+                  // follow it; only a later measure or HBox requires filling.
+                  if (!spacingSystemJustified4(lm, lc.curMeasure, minWidth, systemWidth,
+                                      styleD(Sid::lastSystemFillLimit)))
+                        rest = 0;
+                  }
+            else if ((lc.curMeasure == 0  || (lm && lm->sectionBreak()))
                && ((minWidth / systemWidth) <= styleD(Sid::lastSystemFillLimit))) {
                   if (minWidth > rest)
                         rest = rest * .5;
                   else
                         rest = minWidth;
                   }
+            if (styleB(Sid::spacingLayout4) && rest > 0)
+                  studioWidths = systemSpacingWidths4(system, rest);
             rest /= totalWeight;
             }
 
@@ -4435,8 +4839,19 @@ System* Score::collectSystem(LayoutContext& lc)
                   Measure* m = toMeasure(mb);
                   qreal stretch = m->basicStretch();
                   int weight = m->layoutWeight();
-                  ww  += rest * weight * stretch;
-                  m->stretchMeasure(ww);
+                  auto studioWidth = studioWidths.find(m);
+                  if (useStudioPlan)
+                        ww = studioMeasures.at(m)->width;
+                  else if (studioWidth != studioWidths.end())
+                        ww = studioWidth->second;
+                  else
+                        ww += rest * weight * stretch;
+                  if (useStudioPlan) {
+                        m->bbox().setWidth(ww);
+                        m->layoutElementsAfterSpacing(ww);
+                        }
+                  else
+                        m->stretchMeasure(ww);
                   m->layoutStaffLines();
                   if (createBrackets) {
                         system->addBrackets(toMeasure(mb));
@@ -4453,6 +4868,37 @@ System* Score::collectSystem(LayoutContext& lc)
             pos.rx() += ww;
             }
       system->setWidth(pos.x());
+      if (useStudioPlan) {
+            // Segment widths are now final. Publish the plan's target-relative
+            // graces directly, including compressed plans, without applying an
+            // unsqueezed local clearance test to an already solved interval.
+            for (const GraceAfterPlan4& after : studioPlan.afterGraces) {
+                  const qreal dx = after.target->x() - after.owner->segment()->x() - after.owner->x();
+                  const auto graces = after.owner->graceNotesAfter();
+                  for (int i = 0; i < graces.size(); ++i)
+                        graces[i]->rxpos() = dx + after.positions[i].x;
+                  after.owner->segment()->createShape(after.owner->vStaffIdx());
+            }
+            for (const GraceMergedPlan4& joint : studioPlan.mergedGraces) {
+                  auto members = joint.owner->graceNotesAfter();
+                  for (Chord* grace : joint.target->graceNotesBefore()) members.push_back(grace);
+                  for (int i = 0; i < members.size(); ++i) {
+                        Chord* parent = toChord(members[i]->parent());
+                        const qreal dx = joint.target->segment()->x() - parent->segment()->x() - parent->x();
+                        members[i]->rxpos() = dx + joint.positions[i].x;
+                  }
+                  joint.owner->segment()->createShape(joint.owner->vStaffIdx());
+                  joint.target->segment()->createShape(joint.target->vStaffIdx());
+            }
+      }
+
+      if (observeDecision)
+            recordSpacingDecision4(system, SpacingPass4::FINAL,
+                  !styleB(Sid::spacingLayout4) ? SpacingPath4::STYLE_OFF
+                  : MScore::noHorizontalStretch ? SpacingPath4::NO_STRETCH
+                  : useStudioPlan ? SpacingPath4::FULL_PLAN
+                  : !studioWidths.empty() ? SpacingPath4::POOLED_WIDTHS : SpacingPath4::NATIVE_WIDTHS,
+                  system->width(), systemWidth, decisionReason);
 
       for (System *bSystem : brokenSystems)
             bSystem->clear();
@@ -5441,6 +5887,126 @@ class CmdStateLocker {
       };
 
 //---------------------------------------------------------
+//   doLayoutSlurOffset4
+//---------------------------------------------------------
+
+bool Score::doLayoutSlurOffset4(const SlurSegment* segment)
+      {
+      return doLayoutSlurEdit4(segment, false);
+      }
+
+bool Score::doLayoutSlurAnchor4(const SlurSegment* segment)
+      {
+      return doLayoutSlurEdit4(segment, true);
+      }
+
+bool Score::doLayoutSlurEdit4(const SlurSegment* segment, bool anchor)
+      {
+      // Bounded path: one music system and up to two pitched staves on one page.
+      // The caller supplies an explicitly classified edit commit. An anchor
+      // edit additionally needs a fresh horizontal proof before any writes.
+      const SlurSegment* candidate = anchor ? cmdState().slurAnchor4() : cmdState().slurOffset4();
+      if (!segment || candidate != segment || segment->score() != this || !isMaster()
+          || masterScore()->scoreList().size() != 1 || movements()->size() != 1
+          || !styleB(Sid::spacingLayout4) || layoutMode() != LayoutMode::PAGE
+          || nstaves() < 1 || nstaves() > 2 || npages() != 1 || !firstMeasure() || !lastMeasure()
+          || int(cmdState().layoutFlags) != 0)
+            return false;
+      System* system = firstMeasure()->system();
+      if (!system || lastMeasure()->system() != system || segment->system() != system
+          || !segment->isSingleType() || !system->page() || _systems.empty() || _systems.back() != system)
+            return false;
+      for (System* existing : qAsConst(_systems)) {
+            if (existing->page() != system->page() || (existing != system && !existing->vbox()))
+                  return false;
+            }
+      for (int i = 0; i < nstaves(); ++i) {
+            if (!staff(i)->show() || !system->staff(i)->show()
+                || !staff(i)->isPitchedStaff(firstMeasure()->tick())) return false;
+            }
+      if (nstaves() == 2) {
+            // Staff-distance changes must not feed back into cross-staff geometry.
+            // Check the whole retained system, including unedited voices/graces.
+            const auto independent = [](const ChordRest* cr) {
+                  if (cr->staffMove() || (cr->beam() && cr->beam()->cross())) return false;
+                  if (cr->isChord()) {
+                        const Tremolo* tremolo = toChord(cr)->tremolo();
+                        if (tremolo && tremolo->twoNotes()
+                            && (!tremolo->chord1() || !tremolo->chord2()
+                                || tremolo->chord1()->staffIdx() != tremolo->chord2()->staffIdx())) return false;
+                        }
+                  for (const Tuplet* t = cr->tuplet(); t; t = t->tuplet())
+                        if (t->cross()) return false;
+                  return true;
+                  };
+            for (Measure* m = firstMeasure(); m; m = m->nextMeasure()) {
+                  for (int i = 0; i < nstaves(); ++i)
+                        if (!staff(i)->isPitchedStaff(m->tick())) return false;
+                  for (const Segment& s : m->segments()) {
+                        for (const Element* item : s.elist()) {
+                              if (!item || !item->isChordRest()) continue;
+                              const ChordRest* cr = toChordRest(item);
+                              if (!independent(cr) || !cr->staff()->isPitchedStaff(s.tick())) return false;
+                              if (cr->isChord())
+                                    for (const Chord* grace : toChord(cr)->graceNotes())
+                                          if (!independent(grace)) return false;
+                              }
+                        }
+                  }
+            for (const auto& entry : spannerMap().map()) {
+                  const Spanner* sp = entry.second;
+                  if (sp->track2() >= 0 && sp->track() / VOICES != sp->track2() / VOICES) return false;
+                  }
+            }
+
+      if (anchor) {
+            // Start with natural terminal systems. Do not approximate squeezed
+            // or justified plans by fitting them to the old system width.
+            if (MScore::noHorizontalStretch || styleD(Sid::lastSystemFillLimit) != 1.0) return false;
+            SpacingProfileScope4 proof(SpacingProfileStage4::SLUR_ANCHOR_PROOF);
+            SpacingPlan4 plan;
+            SpacingAttachmentPreparation4 attachments;
+            SpacingPlanOptions4 options;
+            options.slurPolicy = SpacingSlurPolicy4::PREPARED;
+            if (!snapshotLaidOutSystemSpacing4(system, attachments)
+                || !buildSpacingPlan4(system, plan, attachments, nullptr, options)
+                || !spacingPlanMatches4(plan)) return false;
+            }
+      SpacingProfileScope4 reused(anchor ? SpacingProfileStage4::SLUR_ANCHOR_LAYOUT
+                                        : SpacingProfileStage4::SLUR_OFFSET_LAYOUT);
+      CmdStateLocker locker(this);
+      LayoutContext lc(this);
+      lc.startTick = firstMeasure()->tick();
+      lc.endTick = lastMeasure()->endTick();
+      lc.curSystem = system;
+      lc.page = system->page();
+      lc.curPage = 0;
+      lc.rangeDone = true;
+      lc.systemOldMeasure = system->measures().back();
+      lc.pageOldMeasure = lc.systemOldMeasure;
+      system->restoreLayout2();
+      const auto oldSegments = system->spannerSegments();
+      for (SpannerSegment* old : oldSegments)
+            old->setSystem(nullptr); // Reuse the existing objects, as System::clear does.
+      layoutSystemElements(system, lc);
+      system->layout2();
+
+      // Conservatively fall back if vertical growth could change pagination.
+      qreal needed = qMax(styleP(Sid::staffUpperBorder), system->minTop())
+            + system->height() + qMax(styleP(Sid::staffLowerBorder), system->minBottom());
+      for (int i = 0; i + 1 < _systems.size(); ++i)
+            needed += _systems[i]->height() + _systems[i]->minDistance(_systems[i + 1]);
+      const Page* page = system->page();
+      needed += page->headerExtension() + page->footerExtension();
+      if (page->headerExtension() || page->footerExtension())
+            needed += 2 * styleP(Sid::staffHeaderFooterPadding);
+      if (!std::isfinite(needed) || needed + 4 * spatium() > page->height() - page->tm() - page->bm()) return false;
+
+      lc.layout(); // Native page placement, final element layout and BSP refresh.
+      return true;
+      }
+
+//---------------------------------------------------------
 //   doLayoutRange
 //---------------------------------------------------------
 
@@ -5665,6 +6231,7 @@ LayoutContext::LayoutContext(Score* s)
       : score(s)
       {
       firstSystemIndent = score && score->styleB(Sid::enableIndentationOnFirstSystem);
+      if (score && score->styleB(Sid::spacingLayout4)) spacingDirections4.reset(new SpacingDirectionReadiness4);
       }
 
 //---------------------------------------------------------

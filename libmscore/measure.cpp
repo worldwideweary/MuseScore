@@ -23,6 +23,7 @@
 #include "barline.h"
 #include "barlinegeometry.h"
 #include "beam.h"
+#include "beamlayout4.h"
 #include "box.h"
 #include "bracket.h"
 #include "bracketItem.h"
@@ -35,6 +36,7 @@
 #include "fermata.h"
 #include "fret.h"
 #include "glissando.h"
+#include "groups.h"
 #include "hairpin.h"
 #include "hook.h"
 #include "icon.h"
@@ -56,8 +58,8 @@
 #include "select.h"
 #include "sig.h"
 #include "spacer.h"
+#include "spacinglayout4.h"
 #include "staff.h"
-#include "symbol.h"
 #include "stafflines.h"
 #include "stafftext.h"
 #include "stafftype.h"
@@ -65,6 +67,7 @@
 #include "stem.h"
 #include "stringdata.h"
 #include "style.h"
+#include "symbol.h"
 #include "system.h"
 #include "systemdivider.h"
 #include "tie.h"
@@ -3740,6 +3743,162 @@ QString Measure::accessibleInfo() const
       return QString("%1: %2").arg(Element::accessibleInfo(), QString::number(no() + 1));
       }
 
+// Studio Segment::shortestChordRest, using Evolution's voice visibility API.
+// actualTicks includes tuplet ratios and local time stretch.
+static Fraction shortestSpacingChordRest4(const Segment* segment)
+{
+    Fraction shortest = segment->measure()->ticks();
+    for (const Element* element : segment->elist()) {
+        if (!element || !element->isChordRest() || !element->staff()->show()
+            || (element->isRest() && toRest(element)->isGap())
+            || (!element->visible() && segment->measure()->hasVoices(element->staffIdx())))
+            continue;
+        const Fraction duration = toChordRest(element)->actualTicks();
+        if (duration > Fraction(0, 1) && duration < shortest)
+            shortest = duration;
+    }
+    return shortest;
+}
+
+// Studio 4.7.5 needsCueSizeSpacing: a normal-size item ending at the
+// next onset prevents cue rhythm scaling; a longer held item does not.
+static bool needsCueSizeSpacing4(const Segment* segment)
+{
+    bool small = false;
+    for (const Element* item : segment->elist()) {
+        if (!item || !item->isChordRest()) continue;
+        const ChordRest* cr = toChordRest(item);
+        if (cr->isSmall()) small = true;
+        else if (cr->actualTicks() == segment->ticks()) return false;
+    }
+    return small;
+}
+
+double segmentSpacingStretch4(const Segment* segment)
+{
+    const Segment* previous = segment->prev(SegmentType::ChordRest);
+    const qreal slope = segment->score()->styleD(Sid::measureSpacing);
+    const qreal rhythm = spacing4DurationStretch(slope, segment->ticks().toDouble(),
+        shortestSpacingChordRest4(segment).toDouble(), previous ? previous->ticks().toDouble() : 0,
+        previous ? shortestSpacingChordRest4(previous).toDouble() : 0);
+    // Studio clamps per-measure user stretch; apply it once, to natural widths
+    // and springs, rather than also multiplying the whole measure afterwards.
+    qreal scale = 1;
+    if (segment->score()->styleB(Sid::scaleRythmicSpacingForSmallNotes) && needsCueSizeSpacing4(segment)) {
+        scale = segment->score()->styleD(Sid::smallNoteMag);
+        if (!(scale > 0) || !std::isfinite(scale)) return 0;
+    }
+    return rhythm * scale * qBound(qreal(0.1), segment->measure()->userStretch(), qreal(10));
+}
+
+// Select one beamed stream, allowing un-beamed chord voices as constraints.
+// Studio permits an outgoing adjustment beside a longer sounding value, but
+// an un-beamed chord at the following onset blocks the signed adjustment.
+static const Chord* singleSpacingChord4(const Segment* segment, bool following, bool& canAdjust)
+{
+    const Chord* chord = nullptr;
+    for (const Element* element : segment->elist()) {
+        if (!element || !element->isChordRest() || !element->visible() || !element->staff()->show())
+            continue;
+        const ChordRest* cr = toChordRest(element);
+        if (cr->isFullMeasureRest() || (cr->isRest() && toRest(cr)->isGap()))
+            continue;
+        if (!cr->isChord())
+            return nullptr;
+        if (!cr->beam()) {
+            if (following || cr->actualTicks() <= segment->ticks())
+                canAdjust = false;
+            continue;
+        }
+        if (chord)
+            return nullptr; // independent beamed voices keep the existing fallback
+        chord = toChord(cr);
+    }
+    return chord;
+}
+
+// A secondary beamlet is a one-chord group at level 1. Determine it from
+// grouping, not the beam segments left over from a previous layout pass.
+static bool secondarySpacingBeamlet4(const Chord* chord)
+{
+    if (chord->beams() != 2)
+        return false;
+    const auto& elements = chord->beam()->elements();
+    auto it = std::find(elements.begin(), elements.end(), chord);
+    if (it == elements.end())
+        return false;
+    auto breaks = [chord](ChordRest* current, ChordRest* previous) {
+        if (chord->score()->styleB(Sid::beamLayout4)) {
+            bool secondary, tertiary;
+            beam4CalcBreaks(current, previous, 1, secondary, tertiary);
+            return secondary;
+        }
+        return Groups::endBeam(current, previous) == Beam::Mode::BEGIN32;
+    };
+    if (it != elements.begin() && (*(it - 1))->beams() >= 2 && !breaks(*it, *(it - 1)))
+        return false;
+    if (it + 1 != elements.end() && (*(it + 1))->beams() >= 2 && !breaks(*(it + 1), *it))
+        return false;
+    return true;
+}
+
+static qreal crossBeamSpacingOffset4(const Segment* segment, const Segment* next, qreal* minimumWidth = nullptr)
+{
+    if (minimumWidth)
+        *minimumWidth = 0;
+    if (!next || !next->isChordRestType())
+        return 0;
+    bool canAdjust = true;
+    const Chord* chord = singleSpacingChord4(segment, false, canAdjust);
+    const Chord* nextChord = singleSpacingChord4(next, true, canAdjust);
+    if (!chord || !nextChord || chord->track() != nextChord->track()
+        || !chord->beam() || chord->beam() != nextChord->beam() || !chord->beam()->cross()
+        || chord->beam()->elements().size() <= 2
+        || chord->beams() < 1 || chord->beams() > 2 || nextChord->beams() < 1 || nextChord->beams() > 2
+        || chord->mag() != 1.0 || nextChord->mag() != 1.0
+        || chord->actualTicks() != segment->ticks() || nextChord->actualTicks() != next->ticks())
+        return 0;
+    const Beam* beam = chord->beam();
+    if (beam->beamDirection() != Direction::AUTO || beam->userModified())
+        return 0;
+    int upperStaff = chord->vStaffIdx();
+    int lowerStaff = upperStaff;
+    for (const ChordRest* cr : beam->elements()) {
+        if (!cr->isChord() || cr->beams() < 1 || cr->beams() > 2)
+            return 0;
+        upperStaff = qMin(upperStaff, cr->vStaffIdx());
+        lowerStaff = qMax(lowerStaff, cr->vStaffIdx());
+        }
+    if (lowerStaff != upperStaff + 1)
+        return 0;
+    for (const ChordRest* cr : beam->elements()) {
+        const Chord* c = toChord(cr);
+        // layout1 leaves provisional stem directions; layout later resolves
+        // them around the beam. Infer the unambiguous staff-side case here.
+        // Notes extending into the interstaff gap can change that split.
+        if (c->notes().empty() || c->stemDirection() != Direction::AUTO
+            || (c->vStaffIdx() == upperStaff
+                && c->downNote()->line() > 2 * (segment->score()->staff(upperStaff)->lines(c->tick()) - 1))
+            || (c->vStaffIdx() == lowerStaff && c->upNote()->line() < 0))
+            return 0;
+        }
+    if (chord->vStaffIdx() == nextChord->vStaffIdx())
+        return 0;
+    const qreal displacement = qMax(qreal(0), segment->score()->noteHeadWidth()
+        - segment->score()->styleP(Sid::stemWidth));
+    const bool upDown = chord->vStaffIdx() == lowerStaff;
+    if (upDown && minimumWidth) {
+        if (secondarySpacingBeamlet4(chord) && secondarySpacingBeamlet4(nextChord)) {
+            // Studio PaddingTable's beam-to-beam padding is fixed at 0.35sp.
+            *minimumWidth = displacement + 2 * segment->score()->styleP(Sid::beamMinLen)
+                + 0.35 * segment->spatium();
+        }
+        else
+            *minimumWidth = 2 * displacement;
+    }
+    return canAdjust ? (upDown ? displacement : -displacement) : 0;
+}
+
 //-----------------------------------------------------------------------------
 //    stretchMeasure
 //    resize width of measure to targetWidth
@@ -3766,8 +3925,11 @@ void Measure::stretchMeasure(qreal targetWidth)
                   continue;
             Fraction t = s.ticks();
             if (t.isNotZero()) {
-                  qreal str = 1.0 + 0.865617 * log(qreal(t.ticks()) / qreal(minTick.ticks())); // .6 * log(t / minTick.ticks()) / log(2);
-                  qreal d   = s.width() / str;
+                  qreal str = score()->styleB(Sid::spacingLayout4) && !isMMRest() && s.isChordRestType()
+                        ? segmentSpacingStretch4(&s)
+                        : 1.0 + 0.865617 * log(qreal(t.ticks()) / qreal(minTick.ticks())); // legacy spring weight
+                  qreal offset = score()->styleB(Sid::spacingLayout4) ? s.spacingWidthOffset4() : 0;
+                  qreal d   = (s.width() - offset) / str;
                   s.setStretch(str);
                   springs.insert(std::pair<qreal, Segment*>(d, &s));
                   }
@@ -3783,7 +3945,8 @@ void Measure::stretchMeasure(qreal targetWidth)
             qreal c     = 0.0;
             for (auto i = springs.begin(); i != springs.end();) {
                   c            += i->second->stretch();
-                  minimumWidth -= i->second->width();
+                  minimumWidth -= i->second->width() - (score()->styleB(Sid::spacingLayout4)
+                        ? i->second->spacingWidthOffset4() : 0);
                   qreal f       = (targetWidth - minimumWidth) / c;
                   ++i;
                   if (i == springs.end() || f <= i->first) {
@@ -3797,7 +3960,8 @@ void Measure::stretchMeasure(qreal targetWidth)
             //---------------------------------------------------
 
             for (auto& i : springs) {
-                  qreal width = force * i.second->stretch();
+                  qreal width = force * i.second->stretch() + (score()->styleB(Sid::spacingLayout4)
+                        ? i.second->spacingWidthOffset4() : 0);
                   if (width > i.second->width())
                         i.second->setWidth(width);
                   }
@@ -3817,9 +3981,13 @@ void Measure::stretchMeasure(qreal targetWidth)
                   }
             }
 
-      //---------------------------------------------------
-      //    layout individual elements
-      //---------------------------------------------------
+      layoutElementsAfterSpacing(targetWidth);
+      }
+
+// Finalize elements after either legacy stretching or an already solved
+// Studio segment plan. Do not run a second spring solver on planned widths.
+void Measure::layoutElementsAfterSpacing(qreal targetWidth)
+      {
 
       for (Segment& s : _segments) {
             if (!s.enabled())
@@ -4263,6 +4431,8 @@ qreal Measure::createEndBarLines(bool isLastMeasureInSystem)
 
 qreal Measure::basicStretch() const
       {
+      if (score()->styleB(Sid::spacingLayout4) && !isMMRest())
+            return 1.0; // duration/user stretch is already in the segment widths
       qreal stretch = userStretch() * score()->styleD(Sid::measureSpacing);
       if (stretch < 1.0)
             stretch = 1.0;
@@ -4733,6 +4903,9 @@ static bool hasAccidental(Segment* s)
 
 void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
       {
+      const bool studioRhythm = score()->styleB(Sid::spacingLayout4) && !isMMRest();
+      if (studioRhythm)
+            computeTicks(); // header/trailer changes can invalidate segment durations
       Segment* fs = firstEnabled();
       if (!fs->visible())           // first enabled could be a clef change on invisible staff
             fs = fs->nextActive();
@@ -4784,6 +4957,8 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
                               s->prevActive()->setWidth(s->prevActive()->width() + x - oldX);
                         }
                   }
+
+            s->setSpacingWidthOffset4(0);
             s->rxpos() = x;
             // segments with all elements invisible are skipped, though these are already
             // skipped in computeMinWidth() -- the only way this would be an issue here is
@@ -4801,6 +4976,9 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
             // but still consider it for spacing of previous segment
             if (!ns)
                   ns = s->next(SegmentType::BarLineType);
+            qreal studioMinimum = 0;
+            const qreal studioOffset = studioRhythm && s->isChordRestType() && s->ticks() > Fraction(0, 1)
+                  ? crossBeamSpacingOffset4(s, ns, &studioMinimum) : 0;
             qreal w;
 
             if (ns) {
@@ -4810,7 +4988,7 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
                         isSystemHeader = false;
                         }
                   else {
-                        w = s->minHorizontalDistance(ns, false);
+                        w = s->minHorizontalDistance(ns, false, studioOffset < 0);
                         }
 // printf("  min %f <%s>(%d) <%s>(%d)\n", s->x(), s->subTypeName(), s->enabled(), ns->subTypeName(), ns->enabled());
 #if 1
@@ -4866,6 +5044,13 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
                   }
             else
                   w = s->minRight();
+            if (studioRhythm && s->isChordRestType() && s->ticks() > Fraction(0, 1)) {
+                  s->setSpacingWidthOffset4(studioOffset);
+                  w = qMax(w, 3.5 * spatium() * segmentSpacingStretch4(s) + studioOffset);
+                  // Retain Evolution's collision floor for either sign, and
+                  // Studio's stem/beamlet clearance for up-to-down transitions.
+                  w = qMax(w, studioMinimum);
+                  }
             s->setWidth(w);
             x += w;
             s = s->next();

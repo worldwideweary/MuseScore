@@ -22,6 +22,7 @@
 #include "chordrest.h"
 
 namespace Ms {
+struct SpacingShape4;
 
 class Note;
 class Hook;
@@ -111,6 +112,8 @@ class Chord final : public ChordRest {
 
       LedgerLine* ledgerLines()                  { return _ledgerLines; }
       const LedgerLine* ledgerLines() const      { return _ledgerLines; }
+      qreal spacingLeft4() const                 { return _spaceLw; }
+      qreal spacingRight4() const                { return _spaceRw; }
 
       qreal defaultStemLength() const;
       qreal minAbsStemLength() const;
@@ -234,6 +237,7 @@ class Chord final : public ChordRest {
       Note* firstGraceOrNote();
 
       Shape shape() const override;
+      Shape shapeWithItems4(SpacingShape4*) const;
       };
 
 

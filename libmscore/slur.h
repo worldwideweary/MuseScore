@@ -16,6 +16,7 @@
 #include "slurtie.h"
 
 namespace Ms {
+class GraceMergedSlurQuery4;
 
 //---------------------------------------------------------
 //   @@ SlurSegment
@@ -31,6 +32,20 @@ class SlurSegment final : public SlurTieSegment {
       QPointF _hopoTextPos;
       QFont hopoFont(qreal pixelRatio = 1.0) const;
       void layoutHopoText();
+
+      // Raw anchors supplied by the current layout pass. Direct grip previews
+      // reuse them; every layoutSegment call replaces them before computing.
+      bool _graceCurveAdjusted4 = false; // Derived, reset on every curve computation.
+      QPointF _graceRawStart4, _graceRawEnd4;
+      bool _graceRawAnchors4 = false;
+      struct OffsetEdit4 {
+            bool clean = false;
+            quint64 generation = 0;
+            const Element* start = nullptr;
+            const Element* end = nullptr;
+            Fraction tick, tick2;
+            int track = -1, track2 = -1;
+            } _offsetEdit4;
       void changeAnchor(EditData&, Element*) override;
 
    public:
@@ -48,12 +63,15 @@ class SlurSegment final : public SlurTieSegment {
       const QString& hopoText() const { return _hopoText; }
 
       bool isEdited() const;
+      bool usesGraceCurve4() const { return _graceCurveAdjusted4; }
       bool edit(EditData&) override;
 
       Slur* slur() const { return toSlur(spanner()); }
       Element* propertyDelegate(Pid) override;
 
       void computeBezier(QPointF so = QPointF()) override;
+      void startEditDrag(EditData&) override;
+      void endEditDrag(EditData&) override;
       };
 
 //---------------------------------------------------------
@@ -62,6 +80,9 @@ class SlurSegment final : public SlurTieSegment {
 
 class Slur : public SlurTie {
 
+      friend class SlurSegment;
+      // Borrowed only during layout/layoutSystem, restored by a scoped guard.
+      GraceMergedSlurQuery4* _graceQuery4 = nullptr;
       void slurPosChord(SlurPos*);
       int _partialDirection { -1 }; // Studio: none=-1, incoming=0, outgoing=1, both=2
 
