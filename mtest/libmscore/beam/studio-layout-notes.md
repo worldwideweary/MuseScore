@@ -629,3 +629,49 @@ Loading/rendering remains for the applications. Modern tremolo anchors and
 directions still exclude these staff-move/cross-beam cases; these files establish
 the baseline. Next: compare X1-X4 then X5-X8, and Y1-Y4 then Y5-Y8; isolate the
 standalone and inset discrepancies before implementing their separate adapters.
+
+## v0.26 standalone between-staff tremolos (X1-X6)
+
+The user supplied both Evolution and Studio 4.7.5 captures. X1-X6 show longer,
+shallower strokes in Studio, and X6 also needs the lower chord's upward stem.
+Adapt the automatic between-staff direction branch of TremoloLayout::calcIsUp:
+the source staff owns the stack direction, and the moved chord receives the
+opposite calculated direction before notehead mirroring and horizontal layout.
+Stored Auto properties are unchanged.
+
+The shared cross-staff anchor solver now accepts supported standalone tremolos
+and uses the null-safe noSlope helper. Cross classification still uses the
+actual opposing stem directions. The existing two-chord midpoint/slope branch
+is reused, without the segment-stack centering that applies only to ordinary
+beams. Source ownership determines the stroke-stack side even when the moved
+chord appears first. Stroke spans and the normal/wide beam grid use the existing
+standalone implementation; the opposing stem additionally reaches across the
+complete stroke stack, following Studio's extendStem addition rule. Evolution's
+existing late cross-staff tremolo layout pass uses final staff positions.
+
+Scope: X1-X6 full-size, non-grace, default-style automatic pairs on adjacent
+pitched staves, one source measure/track and no other voice in the checked
+span. Manual stem lengths/offsets, offset tremolos, forced cross-staff directions,
+nonstandard destination line spacing and other unsupported cases bypass the
+adapter. X7/X8 relocated same-staff controls and cross-staff inset Y1-Y8 retain
+Evolution's handling. Several Studio inset strokes are missing in the supplied
+capture, with questionable Y8 placement; do not copy that result as intended
+engraving without a separate diagnosis. No spacing-engine change.
+
+Adds studioCrossStaffTremoloSwitch: expected X1-X6 ownership/directions, stored
+Auto properties, 1sp gaps, finite shallow geometry, both outer stroke edges
+reconstructed independently from the stem tips, repeated layout, explicit/manual
+bypass, legacy restoration, and unchanged X7/X8 controls. Reuses v0.25 scores.
+
+Validation: C++11 syntax checks for beamlayout4.cpp, layout.cpp and tst_beam.cpp
+pass with unused-parameter warnings enabled. An isolated real-Qt path harness
+using the actual anchor and standalone adapter code passes 20,000 crossing
+contexts (ownership, order, chord heights, scale, normal/wide grid, stem reach,
+repeat stability and manual bypass), plus 10,000 ordinary/inset-beam baseline
+comparisons and 10,000 ordinary standalone geometry cases. The actual direction
+helper matches original Studio 4.7.5 calcIsUp in 100,000 automatic crossing
+contexts and 100,000 previously supported same-staff contexts. These isolated
+checks do not replace full-score layout testing. Full tst_beam and application
+rendering are unavailable locally and remain pending on the user's build.
+Next: compare X1-X6, especially reversed X2/X4 and chord case X6; then address
+X7/X8 or isolate the inset behavior in a separate checkpoint.

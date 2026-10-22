@@ -1009,7 +1009,7 @@ static bool calculateAnchorsCross(const Beam* /*item*/, LayoutData* ldata,
 
 
     // Calculates & sets slope
-    if (!ldata->beam->noSlope()) {
+    if (!ldata->noSlope()) {
         int topFirstLine = topFirst ? topFirst->downNote()->line() : 0;
         int topLastLine = topLast ? topLast->downNote()->line() : 0;
         int bottomFirstLine = bottomFirst ? bottomFirst->upNote()->line() : 0;
@@ -1163,7 +1163,10 @@ static bool calculateAnchors4(Element* item, Beam* beam, Tremolo* tremolo,
     LayoutData data;
     data.beam = beam;
     data.tremolo = tremolo;
-    data.up = beam ? beam->up() : tremolo->chord1()->up();
+    // A cross-staff tremolo's stack direction belongs to its source staff,
+    // even when its first chord is displayed on the other staff.
+    const bool crossTremolo = tremolo && elements.front()->vStaffIdx() != elements.back()->vStaffIdx();
+    data.up = beam ? beam->up() : tremolo->chord1()->up() != (crossTremolo && tremolo->chord1()->staffMove() != 0);
     data.isGrace = false;
     data.spatium = item->spatium();
     data.beamWidth = item->score()->styleS(Sid::beamWidth).val() * data.spatium * item->mag();
@@ -1184,7 +1187,7 @@ static bool calculateAnchors4(Element* item, Beam* beam, Tremolo* tremolo,
     if (!first || !last)
         return false;
     data.isGrace = first->isGrace();
-    if (beam && beam->cross()) {
+    if ((beam && beam->cross()) || crossTremolo) {
         bool above = false, below = false;
         for (const ChordRest* cr : elements) {
             if (!cr->isChord())
@@ -1196,7 +1199,7 @@ static bool calculateAnchors4(Element* item, Beam* beam, Tremolo* tremolo,
             : below ? CrossStaffBeamPosition::ABOVE : CrossStaffBeamPosition::BELOW;
     }
     std::sort(data.notePositions.begin(), data.notePositions.end());
-    if (beam && calculateAnchorsCross(beam, &data, item->score())) {
+    if (calculateAnchorsCross(beam, &data, item->score())) {
         start = data.startAnchor;
         end = data.endAnchor;
         return true;
@@ -1424,7 +1427,7 @@ bool beam4TremoloStemUp(const Tremolo* tremolo, bool& up)
         || first->beam() || last->beam() || first->beams() > 4 || last->beams() > 4
         || first->notes().empty() || last->notes().empty()
         || first->isSmall() || last->isSmall() || first->isGrace() || last->isGrace()
-        || first->staffMove() || last->staffMove() || first->staffIdx() != last->staffIdx()
+        || first->staffIdx() != last->staffIdx()
         || first->track() != last->track() || !first->measure() || first->measure() != last->measure()
         || !first->staff()->isPitchedStaff(first->tick())
         || !last->staff()->isPitchedStaff(last->tick())
@@ -1438,6 +1441,27 @@ bool beam4TremoloStemUp(const Tremolo* tremolo, bool& up)
     const Fraction span = last->tick() - first->tick();
     if (span <= Fraction(0, 1) || first->measure()->hasVoices(first->staffIdx(), first->tick(), span))
         return false;
+    if (first->staffMove() || last->staffMove()) {
+        // Only automatic, genuinely crossing pairs are supported here.
+        // Relocated same-staff pairs and forced cross-staff directions retain
+        // Evolution's handling until their separate geometry is adapted.
+        if (first->vStaffIdx() == last->vStaffIdx()
+            || (first->staffMove() != 0 && last->staffMove() != 0)
+            || std::abs(first->staffMove() - last->staffMove()) != 1
+            || first->stemDirection() != Direction::AUTO || last->stemDirection() != Direction::AUTO)
+            return false;
+        for (const Chord* chord : { first, last }) {
+            const int index = chord->vStaffIdx();
+            if (index < 0 || index >= chord->score()->nstaves())
+                return false;
+            const Staff* destination = chord->score()->staff(index);
+            if (!destination->isPitchedStaff(chord->tick())
+                || !qFuzzyCompare(destination->lineDistance(chord->tick()), 1.0))
+                return false;
+        }
+        up = first->staffMove() < 0 || last->staffMove() < 0;
+        return true;
+    }
     if (first->stemDirection() != Direction::AUTO)
         up = first->stemDirection() == Direction::UP;
     else if (last->stemDirection() != Direction::AUTO)
@@ -1793,7 +1817,7 @@ bool beam4LayoutInsetTremolo(Tremolo* tremolo, QPainterPath& path)
     return true;
 }
 
-// Studio's ordinary standalone branch uses the same anchor solver as beams.
+// Studio's supported standalone branches use the same anchor solver as beams.
 // Written eighths and shorter have their flags suppressed by Chord::layoutStem.
 bool beam4LayoutStandaloneTremolo(Tremolo* tremolo, QPainterPath& path)
 {
@@ -1803,8 +1827,7 @@ bool beam4LayoutStandaloneTremolo(Tremolo* tremolo, QPainterPath& path)
         || tremolo->style() != TremoloStyle::DEFAULT || tremolo->lines() > 4
         || first->beam() || last->beam()
         || first->beams() > 4 || last->beams() > 4
-        || !first->stem() || !last->stem() || first->up() != last->up()
-        || first->staffMove() || last->staffMove() || first->vStaffIdx() != last->vStaffIdx()
+        || !first->stem() || !last->stem()
         || first->measure() != last->measure() || !first->measure()->system()
         || first->isSmall() || last->isSmall() || first->isGrace() || last->isGrace()
         || first->staff()->isTabStaff(first->tick())
@@ -1812,6 +1835,16 @@ bool beam4LayoutStandaloneTremolo(Tremolo* tremolo, QPainterPath& path)
         || !qFuzzyCompare(last->staff()->lineDistance(last->tick()), 1.0)
         || !qFuzzyIsNull(first->stem()->userLen()) || !qFuzzyIsNull(last->stem()->userLen())
         || !first->stem()->offset().isNull() || !last->stem()->offset().isNull())
+        return false;
+    const bool cross = first->vStaffIdx() != last->vStaffIdx();
+    bool up = first->up();
+    if (cross) {
+        if (!beam4TremoloStemUp(tremolo, up)
+            || first->up() != (first->staffMove() == 0 ? up : !up)
+            || last->up() != (last->staffMove() == 0 ? up : !up))
+            return false;
+    }
+    else if (first->staffMove() || last->staffMove() || first->up() != last->up())
         return false;
     const qreal sp = tremolo->spatium();
     const qreal grid = first->score()->styleP(Sid::beamWidth)
@@ -1830,7 +1863,7 @@ bool beam4LayoutStandaloneTremolo(Tremolo* tremolo, QPainterPath& path)
     const qreal right = end.x() - gap;
     const qreal y1 = start.y() + gap * slope - origin.y();
     const qreal y2 = end.y() - gap * slope - origin.y();
-    const int direction = first->up() ? -1 : 1;
+    const int direction = up ? -1 : 1;
     const qreal width = first->score()->styleP(Sid::beamWidth) * tremolo->mag();
     QPainterPath strokes;
     for (int i = 0; i < tremolo->lines(); ++i) {
@@ -1848,7 +1881,11 @@ bool beam4LayoutStandaloneTremolo(Tremolo* tremolo, QPainterPath& path)
     for (Chord* chord : { first, last }) {
         Stem* stem = chord->stem();
         const qreal centerX = stem->pagePos().x() - origin.x();
-        const qreal tipY = start.y() + (centerX - start.x()) * slope + direction * width / 2;
+        const int stemDirection = chord->up() ? -1 : 1;
+        const qreal addition = chord->up() == up ? 0
+            : (tremolo->lines() - 1) * grid * sp * tremolo->mag();
+        const qreal tipY = start.y() + (centerX - start.x()) * slope
+            + stemDirection * (width / 2 + addition);
         stem->setLen(tipY - stem->pagePos().y());
     }
     path = strokes;

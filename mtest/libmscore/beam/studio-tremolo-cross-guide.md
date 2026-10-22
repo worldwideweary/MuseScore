@@ -79,3 +79,35 @@ either application locally. No new application test was added for this
 fixture-only checkpoint. After comparison, isolate the standalone and inset
 differences and adapt them in separate recoverable stages. TAB, manual edits,
 small/grace tremolos and multiple-voice handling remain separate work.
+
+## v0.26: X1-X6 standalone crossing adapter
+
+Apply v0.26 after v0.25, then rebuild and run tst_beam. Reopen the original
+studio-tremolo-cross-standalone.mscx with the experimental style enabled.
+Compare X1-X6 against the same original input in Studio 4.7.5:
+
+- Upper displayed chords point down; lower displayed chords point up.
+- The strokes span most of the distance between stems, normally leaving 1sp
+  at each end, and use the shallower cross-staff anchor solver.
+- X2/X4 reverse the order without reversing which staff owns the stroke stack.
+- X5/X6 include full chord heights; both stems reach their respective outside
+  stroke edges, including the extra stack distance on the opposing side.
+- Repeating layout or making a small edit must not move the stack cumulatively.
+- Turning the experimental style off must restore the legacy result.
+
+X7/X8 retain their previous relocated same-staff handling. The Y1-Y8 inset
+adapter is unchanged. The supplied Studio inset capture has absent strokes in
+several cases and questionable Y8 placement; those results are not being used
+as target geometry without further investigation.
+
+This stage supports full-size, default-style, automatic-direction standalone
+pairs crossing adjacent pitched staves, with one chord on the source staff and
+one moved chord. Existing manual stems/offsets, forced cross-staff directions,
+multiple voices, grace/small notes, TAB, nonstandard line spacing and relocated
+same-staff pairs remain outside this stage. No horizontal-spacing changes.
+
+The new studioCrossStaffTremoloSwitch regression checks X1-X6 directions,
+spans, opposing-stem reach, repeated layout and style-off restoration, plus
+X7/X8 bypass and stability. Local C++11 syntax checks and isolated Qt geometry
+and direction checks pass; full application tests and rendering remain for
+the application build.

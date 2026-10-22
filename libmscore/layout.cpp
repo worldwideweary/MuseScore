@@ -3331,8 +3331,9 @@ void Score::getNextMeasure(LayoutContext& lc)
                         bool up;
                         if (!tremolo || tremolo->chord1() != element || !beam4TremoloStemUp(tremolo, up))
                               continue;
-                        tremolo->chord1()->setUp(up);
-                        tremolo->chord2()->setUp(up);
+                        for (Chord* chord : { tremolo->chord1(), tremolo->chord2() }) {
+                              chord->setUp(chord->staffMove() == 0 ? up : !up);
+                              }
                         for (Chord* chord : { tremolo->chord1(), tremolo->chord2() }) {
                               chord->layoutStem1();
                               }
