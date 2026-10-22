@@ -606,3 +606,26 @@ actual direction helper matched original Studio 4.7.5 calcIsUp in 100,000
 supported same-staff single-voice contexts. Full tst_beam and visual comparison
 remain for the application build. Next: compare O1-O8/O12, recheck O9-O11 and
 the prior V/K/F controls, then proceed to cross-staff diagnostics.
+
+## v0.25 cross-staff tremolo diagnostics
+
+The user reports tst_beam passing through v0.24. The resulting O1-O12 capture
+looks broadly consistent with Studio 4.7.5, including the formerly opposing
+pairs, combined Auto and balanced O12. No further direction fix is needed for
+that comparison set.
+
+Adds studio-tremolo-cross-standalone.mscx (X1-X8),
+studio-tremolo-cross-inset.mscx (Y1-Y8), and studio-tremolo-cross-guide.md.
+The two-staff piano inputs cover upper/lower ownership, forward/reverse staff
+crossings, chord pairs, whole pairs moved together, inset pairs crossing
+between staves and inset pairs staying on one side of a cross-staff beam.
+Both start with beamLayout4 enabled and final-system fill limit zero. All stem
+properties are Auto. Non-owning source measures contain hidden measure rests.
+
+No engraving or application-test changes. XML parsing, exact 1/4 sums on both
+source staves, destination-staff validity, pair connections, written/actual
+durations, direction properties, labels and case counts pass local checks.
+Loading/rendering remains for the applications. Modern tremolo anchors and
+directions still exclude these staff-move/cross-beam cases; these files establish
+the baseline. Next: compare X1-X4 then X5-X8, and Y1-Y4 then Y5-Y8; isolate the
+standalone and inset discrepancies before implementing their separate adapters.
