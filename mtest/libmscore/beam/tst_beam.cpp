@@ -80,6 +80,7 @@ class TestBeam : public QObject, public MTest
       void studioTremoloDirectionPolicy();
       void studioTremoloDirectionSwitch();
       void studioCrossStaffTremoloSwitch();
+      void studioCrossStaffInsetFallback();
       void studioBeamShortWidth();
       };
 
@@ -1247,6 +1248,93 @@ void TestBeam::studioCrossStaffTremoloSwitch()
             for (Chord* c : { t->chord1(), t->chord2() }) {
                   QCOMPARE(c->up(), entry.up[j]);
                   QVERIFY(qAbs(c->stem()->len() - entry.lengths[j++]) < 1e-6);
+                  }
+            }
+      delete score;
+      }
+
+
+// The optional engine must leave these beams on Evolution's complete path.
+// Studio 4.7.5's missing inset strokes are not reference output to reproduce.
+void TestBeam::studioCrossStaffInsetFallback()
+      {
+      MasterScore* score = readScore(DIR + "studio-tremolo-cross-inset.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      struct Saved {
+            Tremolo* tremolo;
+            QRectF box;
+            QPointF pos;
+            QPointF beamPos;
+            QLineF primary;
+            bool up[2];
+            qreal lengths[2];
+            };
+      std::vector<Saved> saved;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            for (Segment* seg = m->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+                  for (Element* e : seg->elist()) {
+                        if (!e || !e->isChord())
+                              continue;
+                        Tremolo* t = toChord(e)->tremolo();
+                        if (!t || !t->twoNotes() || t->chord1() != e)
+                              continue;
+                        Chord* a = t->chord1();
+                        Chord* b = t->chord2();
+                        QVERIFY(b && a->stem() && b->stem());
+                        Beam* beam = a->beam();
+                        QVERIFY(beam && beam == b->beam() && beam->cross());
+                        QVERIFY(beam->primarySegment4());
+                        Saved entry;
+                        entry.tremolo = t;
+                        entry.box = t->bbox();
+                        entry.pos = t->pos();
+                        entry.beamPos = beam->beamPos();
+                        entry.primary = *beam->primarySegment4();
+                        int j = 0;
+                        for (Chord* c : { a, b }) {
+                              entry.up[j] = c->up();
+                              entry.lengths[j++] = c->stem()->len();
+                              }
+                        saved.push_back(entry);
+                        }
+                  }
+            }
+      QCOMPARE(static_cast<int>(saved.size()), 8);
+      // Check enabling, repeated modern layout, and restoration separately.
+      for (bool enabled : { true, true, false }) {
+            score->setStyleValue(Sid::beamLayout4, enabled);
+            score->doLayout();
+            for (const Saved& entry : saved) {
+                  Tremolo* t = entry.tremolo;
+                  Beam* beam = t->chord1()->beam();
+                  QVERIFY(beam && beam == t->chord2()->beam());
+                  QVERIFY(!beam4SupportsTremolos(beam));
+                  bool up;
+                  QVERIFY(!beam4TremoloStemUp(t, up));
+                  QPainterPath sentinel;
+                  sentinel.addRect(1, 2, 3, 4);
+                  const QPainterPath original = sentinel;
+                  QVERIFY(!beam4LayoutInsetTremolo(t, sentinel));
+                  QVERIFY(!beam4LayoutStandaloneTremolo(t, sentinel));
+                  QVERIFY(sentinel == original);
+                  const QRectF box = t->bbox();
+                  QVERIFY(qIsFinite(box.top()) && qIsFinite(box.bottom()));
+                  QVERIFY(box.width() > 0 && box.height() > 0);
+                  QVERIFY(QLineF(t->pos(), entry.pos).length() < 1e-6);
+                  QVERIFY(QLineF(box.topLeft(), entry.box.topLeft()).length() < 1e-6);
+                  QVERIFY(QLineF(box.bottomRight(), entry.box.bottomRight()).length() < 1e-6);
+                  QVERIFY(QLineF(beam->beamPos(), entry.beamPos).length() < 1e-6);
+                  const QLineF* primary = beam->primarySegment4();
+                  QVERIFY(primary);
+                  QVERIFY(QLineF(primary->p1(), entry.primary.p1()).length() < 1e-6);
+                  QVERIFY(QLineF(primary->p2(), entry.primary.p2()).length() < 1e-6);
+                  int j = 0;
+                  for (Chord* c : { t->chord1(), t->chord2() }) {
+                        QCOMPARE(c->up(), entry.up[j]);
+                        QVERIFY(qAbs(c->stem()->len() - entry.lengths[j++]) < 1e-6);
+                        }
                   }
             }
       delete score;

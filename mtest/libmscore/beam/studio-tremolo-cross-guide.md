@@ -137,3 +137,14 @@ invalid provisional origin bypass, and legacy restoration alongside X1-X6.
 Local C++11 syntax and isolated Qt checks pass. Full tst_beam and visual results
 remain for the application build. Next compare X7/X8, then investigate the inset
 anchor/layout timing separately from Studio's questionable Y results.
+
+## v0.28: bounded closeout
+
+X1-X8 now look consistent with the supplied Studio standalone captures. Keep
+Y1-Y8 on Evolution's complete legacy cross-staff inset path for this milestone.
+The modern adapters explicitly bypass these beams, and the added regression
+checks protect their nonempty output and unchanged geometry when switching the
+experimental setting on/off or repeating layout. No new engraving changes.
+The Studio missing-stroke/Y8 issue and the X8 text-autoplace collision are
+separate follow-up work; neither blocks the horizontal-spacing investigation.
+Run tst_beam after applying the incremental patch. Reuse the existing scores.

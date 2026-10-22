@@ -721,3 +721,42 @@ These isolated checks do not replace application rendering. Full tst_beam and
 visual validation remain pending on the user's build. Next: compare X7/X8, then
 investigate cross-staff inset anchors/layout timing without assuming the missing
 Studio strokes or Y8 position are intended behavior.
+
+## v0.28 beam milestone closeout: cross-staff inset fallback
+
+The v0.27 captures show X7/X8 consistent with Studio 4.7.5, with X1-X6 stable.
+The user wishes to end the extended tremolo investigation and proceed to general
+horizontal spacing. Defer the X8 text-autoplace collision, visible in both
+applications, as a separate issue. A stale skyline or early annotation layout is
+a plausible explanation, not a confirmed diagnosis.
+
+Bounded Y1-Y8 audit: beam4SupportsTremolos deliberately rejects cross-staff beams
+containing tremolos. Both the modern beam solver and modern inset path are
+therefore bypassed; the complete legacy beam/tremolo layout remains active.
+Studio's inset path depends on precomputed parent-beam tremAnchors. Its anchor
+lookup can fail if that cache is not ready, and the caller then proceeds without
+checking the anchor solver's return value. This is a source-level explanation
+worth investigating later, not a confirmed reproduction of the supplied missing
+strokes. No partial replacement of Evolution's cross-staff inset handling and
+no new engraving behavior in this checkpoint.
+
+Adds studioCrossStaffInsetFallback covering all eight Y cases: modern adapter
+bypass without modifying the supplied path, finite nonempty tremolo bounds,
+unchanged primary beam geometry, beam placement, pair stem lengths/directions,
+repeat layout and style-off restoration. This protects the deliberate fallback
+instead of treating missing strokes in the 4.7.5 capture as golden output.
+C++11 syntax checks with unused-parameter warnings and whitespace checks pass.
+Full tst_beam is unavailable locally and remains pending on the user's build.
+
+The beam-angle milestone is ready for acceptance with known fallbacks. Ordinary
+and non-tremolo cross-staff beams use the optional modern engine; supported
+beamlets/inner breaks, rest clearance, tuplets and common tremolos have adapters
+and comparison inputs. Cross-staff inset tremolos, TAB, manual edits and other
+unsupported configurations retain Evolution's handling. This is not universal
+4.7.5 engraving parity. The default-off beamLayout4 style preserves legacy
+behavior when disabled.
+
+Next stage: horizontal spacing, independently opt-in, with legacy spacing as
+the default and no dependency on beamLayout4. Start by comparing equal-duration
+stem positions/notehead centers, then mixed rhythms and collision constraints.
+Do not tune beam angles to compensate for different horizontal distances.
