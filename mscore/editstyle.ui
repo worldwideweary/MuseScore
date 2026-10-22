@@ -2062,7 +2062,7 @@
                <item row="7" column="0" colspan="8">
                 <widget class="QCheckBox" name="spacingLayout4">
                  <property name="text"><string>Use Studio 4 horizontal spacing (experimental)</string></property>
-                 <property name="toolTip"><string>Currently uses Studio 4.7.5 final-system justification. Other spacing rules retain Evolution's handling. Independent of the experimental beam layout setting.</string></property>
+                 <property name="toolTip"><string>Uses experimental Studio 4.7.5 final-system justification and rhythmic spacing. Evolution's collision checks and system distribution remain in use. Independent of the experimental beam layout setting.</string></property>
                 </widget>
                </item>
                <item row="7" column="8">

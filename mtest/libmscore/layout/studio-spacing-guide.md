@@ -189,3 +189,61 @@ run. Application build and live-dialog verification remain for the user's build.
 Apply v0.31 after v0.30. The v0.30.1 ON/OFF probe was diagnostic data only, so
 there is no intervening code patch. Existing tst_spacing covers the unchanged
 engraving path. Next resume rhythmic spacing after confirming the dialog toggle.
+
+## v0.32: duration-based natural widths and rhythmic springs
+
+The user confirms v0.31 live toggling works with vertical justification disabled.
+H2/H5 short controls are substantially closer to Studio, while H5 proportions and
+H8 triplet uniformity are useful next targets. This checkpoint extends the same
+independent spacingLayout4 option; default-off behavior remains legacy.
+
+Adapt Studio v4.7.5 HorizontalSpacing::computeSegmentDurationStretch and
+chordRestSegmentNaturalWidth. The quarter-note rhythmic reference is 3.5sp.
+Duration weight is pow(measureSpacing, log2(duration / quarter)). When an onset
+subdivides a longer chord/rest, use Studio's proportional shortest-duration rule,
+including its preceding-onset refinement. Evolution's actualTicks supplies tuplet
+ratios/local time stretch. The shortest-onset scan uses the available Evolution
+staff/voice visibility API; advanced invisible-voice semantics are not a full
+port of Studio's considerInvisible overload.
+
+In ordinary measures, natural chord/rest segment width is the greater of the
+rhythmic width and Evolution's collision minimum. Existing lookback collision
+checks remain. The same rhythmic weight drives the existing measure spring
+solver. Per-measure user stretch is clamped to 0.1..10 and applied once to those
+widths/weights; suppress the old whole-measure measureSpacing multiplier under
+the experimental option to avoid double stretching. Multi-measure rests keep
+their prior rhythmic pipeline. No global style defaults are changed: the stored
+Spacing value now controls the modern curve's slope when the option is on.
+The supplied inputs explicitly use 1.5; custom values remain honored. Do not
+reduce minimum note distance to zero to emulate the new pipeline.
+
+This is an incremental rhythmic adapter, not the entire Studio spacing engine.
+Evolution's collision geometry and distribution of width among measures in a
+system remain. Cross-beam width corrections, cue-specific spacing, advanced
+invisible voices, accidental/voice packing, and other kerning changes are
+separate work. Beam layout remains independent. Final-system justification from
+v0.30 and the UI-parent fix from v0.31 remain in place.
+
+Added studio-spacing-natural-h8.mscx contains the same four eighth-note triplets
+as overview H8, in a single short 4/4 measure at the 100% fill threshold. Its XML,
+12 chords, four 3:2 tuplets and exact 4/4 sum are checked. It starts with the
+spacing option off, like the existing comparison files. Open the same original
+in both applications, enable experimental spacing in Evolution and compare
+natural H5/H8 plus overview H5/H8. Recheck H1-H3, H4/H6/H7 and H9-H12 for collision
+or alignment changes. Exact overall widths can still differ due to the retained
+parts of Evolution's spacing pipeline.
+
+Extend tst_spacing with duration ratios, triplet ticks, non-adjacent-onset cases,
+the H8 natural control, H1-H8 natural-width floors/weights, H5/H8 justified spring
+proportions, repeat stability and restoration of every saved legacy segment
+position/width. Existing roundtrip, threshold and section/frame checks remain.
+
+Local validation: C++11 syntax checks for measure.cpp and tst_spacing.cpp, plus
+Qt moc/uic generation, pass. An isolated helper check matches the original pinned
+Studio functions in 100,000 rhythmic/non-adjacent-onset contexts. A real-Qt harness
+running the extracted actual old/new spring-loop code preserves exact legacy
+positions/widths in 10,000 contexts with spacing off; 10,000 modern contexts
+retain collision floors and meet their target width. These isolated checks do
+not test full score import/layout. Full tst_spacing, the existing beam suite and
+application rendering remain for the user's build. Next: compare H5/H8 results,
+then address cross-staff stem-direction spacing corrections in a separate stage.

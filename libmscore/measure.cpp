@@ -56,8 +56,8 @@
 #include "select.h"
 #include "sig.h"
 #include "spacer.h"
+#include "spacinglayout4.h"
 #include "staff.h"
-#include "symbol.h"
 #include "stafflines.h"
 #include "stafftext.h"
 #include "stafftype.h"
@@ -65,6 +65,7 @@
 #include "stem.h"
 #include "stringdata.h"
 #include "style.h"
+#include "symbol.h"
 #include "system.h"
 #include "systemdivider.h"
 #include "tie.h"
@@ -3740,6 +3741,35 @@ QString Measure::accessibleInfo() const
       return QString("%1: %2").arg(Element::accessibleInfo(), QString::number(no() + 1));
       }
 
+// Studio Segment::shortestChordRest, using Evolution's voice visibility API.
+// actualTicks includes tuplet ratios and local time stretch.
+static Fraction shortestSpacingChordRest4(const Segment* segment)
+{
+    Fraction shortest = segment->measure()->ticks();
+    for (const Element* element : segment->elist()) {
+        if (!element || !element->isChordRest() || !element->staff()->show()
+            || (element->isRest() && toRest(element)->isGap())
+            || (!element->visible() && segment->measure()->hasVoices(element->staffIdx())))
+            continue;
+        const Fraction duration = toChordRest(element)->actualTicks();
+        if (duration > Fraction(0, 1) && duration < shortest)
+            shortest = duration;
+    }
+    return shortest;
+}
+
+static qreal segmentSpacingStretch4(const Segment* segment)
+{
+    const Segment* previous = segment->prev(SegmentType::ChordRest);
+    const qreal slope = segment->score()->styleD(Sid::measureSpacing);
+    const qreal rhythm = spacing4DurationStretch(slope, segment->ticks().toDouble(),
+        shortestSpacingChordRest4(segment).toDouble(), previous ? previous->ticks().toDouble() : 0,
+        previous ? shortestSpacingChordRest4(previous).toDouble() : 0);
+    // Studio clamps per-measure user stretch; apply it once, to natural widths
+    // and springs, rather than also multiplying the whole measure afterwards.
+    return rhythm * qBound(qreal(0.1), segment->measure()->userStretch(), qreal(10));
+}
+
 //-----------------------------------------------------------------------------
 //    stretchMeasure
 //    resize width of measure to targetWidth
@@ -3766,7 +3796,9 @@ void Measure::stretchMeasure(qreal targetWidth)
                   continue;
             Fraction t = s.ticks();
             if (t.isNotZero()) {
-                  qreal str = 1.0 + 0.865617 * log(qreal(t.ticks()) / qreal(minTick.ticks())); // .6 * log(t / minTick.ticks()) / log(2);
+                  qreal str = score()->styleB(Sid::spacingLayout4) && !isMMRest() && s.isChordRestType()
+                        ? segmentSpacingStretch4(&s)
+                        : 1.0 + 0.865617 * log(qreal(t.ticks()) / qreal(minTick.ticks())); // legacy spring weight
                   qreal d   = s.width() / str;
                   s.setStretch(str);
                   springs.insert(std::pair<qreal, Segment*>(d, &s));
@@ -4263,6 +4295,8 @@ qreal Measure::createEndBarLines(bool isLastMeasureInSystem)
 
 qreal Measure::basicStretch() const
       {
+      if (score()->styleB(Sid::spacingLayout4) && !isMMRest())
+            return 1.0; // duration/user stretch is already in the segment widths
       qreal stretch = userStretch() * score()->styleD(Sid::measureSpacing);
       if (stretch < 1.0)
             stretch = 1.0;
@@ -4733,6 +4767,9 @@ static bool hasAccidental(Segment* s)
 
 void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
       {
+      const bool studioRhythm = score()->styleB(Sid::spacingLayout4) && !isMMRest();
+      if (studioRhythm)
+            computeTicks(); // header/trailer changes can invalidate segment durations
       Segment* fs = firstEnabled();
       if (!fs->visible())           // first enabled could be a clef change on invisible staff
             fs = fs->nextActive();
@@ -4866,6 +4903,8 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
                   }
             else
                   w = s->minRight();
+            if (studioRhythm && s->isChordRestType() && s->ticks() > Fraction(0, 1))
+                  w = qMax(w, 3.5 * spatium() * segmentSpacingStretch4(s));
             s->setWidth(w);
             x += w;
             s = s->next();
