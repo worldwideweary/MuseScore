@@ -478,3 +478,23 @@ the full tst_beam and visual comparison remain for the application build.
 Next: compare V3/V4 up/down with Studio 4.7.5, using V5 as the flat stack control
 and V1/V2/V6 as inset regression controls. Then expand the tremolo corner-case
 inputs before tackling unsupported stem arrangements or horizontal spacing.
+
+## v0.20 tremolo corner diagnostic pack
+
+The user reports mtest passing through v0.19. Enabled V1/V2/V6 and standalone
+V3/V4/V5 up/down captures look broadly consistent with the earlier Studio
+4.7.5 captures. The apparent V6 regression was a capture with the experimental
+score style disabled; no code correction was needed.
+
+Adds studio-tremolo-corners.mscx (K1-K12 in both directions, 24 measures),
+studio-tremolo-tight.mscx (two dense 6/4 measures with 24 inset pairs each),
+and studio-tremolo-corners-guide.md. Cases cover one to four strokes, complete
+chords, low/high ledger notes, inset stacks and short spans. Both new scores
+start with beamLayout4 enabled and lastSystemFillLimit zero to avoid misleading
+legacy captures and compressed final systems. Existing fixtures are unchanged.
+
+No engraving code or application tests change. XML parsing, exact measure sums,
+pitch spelling, tremolo pair connections, counts and style settings pass local
+checks. Loading/rendering and visual comparison remain for the applications.
+Next: compare K4/K5/K7/K8, then K9-K12 and dense Q1/Q2; isolate discrepancies
+before extending unsupported arrangements or starting horizontal spacing work.
