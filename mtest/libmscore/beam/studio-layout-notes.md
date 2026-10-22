@@ -420,3 +420,29 @@ No engraving or application-test changes in this checkpoint. Apply v0.16 then
 v0.17 after v0.15. Run tst_beam and compare D5 for the standalone width change,
 then V1–V6 against 4.7.5 for the next vertical-anchor/tilt adaptation. Two-note
 vertical anchors, tilt and stroke spacing are not changed by these stages.
+
+## v0.18 inset two-note tremolo anchors
+
+Supported ordinary inset pairs now participate in the optional Studio beam
+solver. Their tremolo strokes contribute to the solver's beam count and stem
+requirements without drawing extra ordinary beams. After both final stems are
+laid out, the tremolo follows the completed primary beam, offset by the ordinary
+beam stack, with Studio's narrow/wide stroke grid. Both chord segment shapes
+are refreshed afterward. Inset endpoints now use stem centers, correcting the
+outside-edge assumption from v0.15; standalone endpoints retain outside edges.
+
+The existing content guards remain: full-size, non-grace pitched default-style
+pairs in one measure, shared unmodified non-cross-staff beam, matching ordinary
+beam counts, standard staff spacing and at most four tremolo strokes. Unsupported
+beams and the disabled score style retain the previous calculation. Standalone
+vertical anchors and tilt are still pending. V6 is not forced flat: its slope
+comes from the enclosing beam solver with the inset stroke counts included.
+
+studioTwoNoteTremoloSpan now distinguishes inset stem-center endpoints from
+standalone outside edges. studioInsetTremoloAnchors checks V1/V2/V6 in both
+directions, interpolation, stroke spacing, repeated layout and option-off
+restoration. C++11 production/test syntax checks pass with unused-parameter
+warnings enabled. An isolated harness using the actual path adapter and real
+Qt paths passed 5,000 geometry/repeat cases. Full tst_beam and visual comparison
+remain for the application build; the isolated harness does not establish full
+Studio solver parity. Next: compare V1/V2/V6, then adapt standalone V3/V4 anchors.

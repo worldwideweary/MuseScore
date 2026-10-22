@@ -2163,9 +2163,24 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
                   if (stemSlash)
                         stemSlash->layout();
                   Tremolo* tremolo = c->tremolo();
-                  if (tremolo)
+                  if (tremolo && !(useModernLayout && tremolo->twoNotes()))
                         tremolo->layout();
                   c->segment()->createShape(c->vStaffIdx());      // recreate shape
+                  }
+            }
+
+      // Inset anchors depend on the completed beam and both final stems.
+      // Refresh both chord shapes after laying out their shared tremolo.
+      if (useModernLayout) {
+            for (ChordRest* cr : crl) {
+                  if (!cr->isChord())
+                        continue;
+                  Tremolo* tremolo = toChord(cr)->tremolo();
+                  if (!tremolo || !tremolo->twoNotes() || tremolo->chord1() != cr)
+                        continue;
+                  tremolo->layout();
+                  tremolo->chord1()->segment()->createShape(tremolo->chord1()->vStaffIdx());
+                  tremolo->chord2()->segment()->createShape(tremolo->chord2()->vStaffIdx());
                   }
             }
       }

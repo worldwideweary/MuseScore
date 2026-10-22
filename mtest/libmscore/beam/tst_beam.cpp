@@ -73,6 +73,7 @@ class TestBeam : public QObject, public MTest
       void studioNestedTupletStacking();
       void studioSingleTremoloSwitch();
       void studioTwoNoteTremoloSpan();
+      void studioInsetTremoloAnchors();
       void studioBeamShortWidth();
       };
 
@@ -669,7 +670,7 @@ void TestBeam::studioTwoNoteTremoloSpan()
                         continue;
                   QVERIFY(t->chord2());
                   if (c->beam())
-                        QVERIFY(!beam4SupportsTremolos(c->beam()));
+                        QVERIFY(beam4SupportsTremolos(c->beam()));
                   tremolos.push_back(t);
                   positions.push_back(t->pos());
                   legacyWidths.push_back(t->bbox().width());
@@ -681,18 +682,20 @@ void TestBeam::studioTwoNoteTremoloSpan()
       std::vector<qreal> modernWidths;
       for (size_t i = 0; i < tremolos.size(); ++i) {
             Tremolo* t = tremolos[i];
-            QVERIFY(qAbs(t->pos().y() - positions[i].y()) < 1e-7);
+            if (!t->chord1()->beam())
+                  QVERIFY(qAbs(t->pos().y() - positions[i].y()) < 1e-7);
             const qreal width = t->bbox().width();
             QVERIFY(qIsFinite(width) && width > 0);
             const Stem* s1 = t->chord1()->stem();
             const Stem* s2 = t->chord2()->stem();
             QVERIFY(s1 && s2);
-            const qreal left = s1->pagePos().x() - s1->lineWidthMag() / 2;
-            const qreal right = s2->pagePos().x() + s2->lineWidthMag() / 2;
+            const bool inset = t->chord1()->beam();
+            const qreal left = s1->pagePos().x() - (inset ? 0 : s1->lineWidthMag() / 2);
+            const qreal right = s2->pagePos().x() + (inset ? 0 : s2->lineWidthMag() / 2);
             const QRectF rect = t->bbox().translated(t->pagePos());
             const qreal gap = t->spatium();
-            // Both inset D1-D4 and standalone D5 use the same 1sp gaps
-            // in these widely spaced fixtures.
+            // Inset anchors are stem centers; standalone anchors use
+            // outside edges. Both have 1sp gaps in these wide fixtures.
             QVERIFY(qAbs(rect.left() - (left + gap)) < 1e-7);
             QVERIFY(qAbs(rect.right() - (right - gap)) < 1e-7);
             modernWidths.push_back(width);
@@ -705,6 +708,84 @@ void TestBeam::studioTwoNoteTremoloSpan()
       for (size_t i = 0; i < tremolos.size(); ++i) {
             QVERIFY(qAbs(tremolos[i]->bbox().width() - legacyWidths[i]) < 1e-7);
             QVERIFY(QLineF(tremolos[i]->pos(), positions[i]).length() < 1e-7);
+            }
+      delete score;
+      }
+
+void TestBeam::studioInsetTremoloAnchors()
+      {
+      MasterScore* score = readScore(DIR + "studio-tremolo-anchors.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      std::vector<Tremolo*> tremolos;
+      std::vector<QPointF> oldPositions, oldBeams;
+      std::vector<QRectF> oldBoxes;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            for (Segment* seg = m->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+                  Element* e = seg->element(0);
+                  if (!e || !e->isChord())
+                        continue;
+                  Chord* c = toChord(e);
+                  Tremolo* t = c->tremolo();
+                  if (!t || !t->twoNotes() || t->chord1() != c || !c->beam())
+                        continue;
+                  tremolos.push_back(t);
+                  oldPositions.push_back(t->pos());
+                  oldBeams.push_back(c->beam()->beamPos());
+                  oldBoxes.push_back(t->bbox());
+                  }
+            }
+      QCOMPARE(static_cast<int>(tremolos.size()), 6);
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      std::vector<QRectF> modernBoxes;
+      std::vector<QPointF> modernBeams;
+      for (Tremolo* t : tremolos) {
+            Beam* beam = t->chord1()->beam();
+            QVERIFY(beam4SupportsTremolos(beam));
+            const QLineF* primary = beam->primarySegment4();
+            QVERIFY(primary && primary->dx() > 0);
+            const qreal sp = t->spatium();
+            const qreal left = t->chord1()->stem()->pagePos().x() + sp;
+            const qreal right = t->chord2()->stem()->pagePos().x() - sp;
+            QVERIFY(right > left);
+            const qreal slope = primary->dy() / primary->dx();
+            const auto beamY = [&](qreal x) {
+                  return beam->pagePos().y() + primary->y1()
+                        + (x - beam->pagePos().x() - primary->x1()) * slope;
+                  };
+            const int direction = t->chord1()->up() ? 1 : -1;
+            const qreal spacing = 0.75 * sp; // default narrow grid in fixture
+            const qreal offset = direction * t->chord1()->beams() * spacing;
+            const qreal stack = direction * (t->lines() - 1) * spacing;
+            const qreal halfWidth = score->styleP(Sid::beamWidth) * beam->mag() / 2;
+            const qreal expectedTop = qMin(beamY(left), beamY(right)) + offset + qMin(qreal(0), stack) - halfWidth;
+            const qreal expectedBottom = qMax(beamY(left), beamY(right)) + offset + qMax(qreal(0), stack) + halfWidth;
+            const QRectF box = t->bbox().translated(t->pagePos());
+            QVERIFY(qIsFinite(box.top()) && qIsFinite(box.bottom()));
+            QVERIFY(qAbs(box.left() - left) < 1e-6);
+            QVERIFY(qAbs(box.right() - right) < 1e-6);
+            QVERIFY(qAbs(box.top() - expectedTop) < 1e-6);
+            QVERIFY(qAbs(box.bottom() - expectedBottom) < 1e-6);
+            // Bounds follow the actual primary slope; do not force V6 flat.
+            modernBoxes.push_back(box);
+            modernBeams.push_back(beam->beamPos());
+            }
+      score->doLayout();
+      for (size_t i = 0; i < tremolos.size(); ++i) {
+            const QRectF box = tremolos[i]->bbox().translated(tremolos[i]->pagePos());
+            QVERIFY(QLineF(box.topLeft(), modernBoxes[i].topLeft()).length() < 1e-6);
+            QVERIFY(QLineF(box.bottomRight(), modernBoxes[i].bottomRight()).length() < 1e-6);
+            QVERIFY(QLineF(tremolos[i]->chord1()->beam()->beamPos(), modernBeams[i]).length() < 1e-6);
+            }
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      for (size_t i = 0; i < tremolos.size(); ++i) {
+            QVERIFY(QLineF(tremolos[i]->pos(), oldPositions[i]).length() < 1e-6);
+            QVERIFY(QLineF(tremolos[i]->chord1()->beam()->beamPos(), oldBeams[i]).length() < 1e-6);
+            QVERIFY(QLineF(tremolos[i]->bbox().topLeft(), oldBoxes[i].topLeft()).length() < 1e-6);
+            QVERIFY(QLineF(tremolos[i]->bbox().bottomRight(), oldBoxes[i].bottomRight()).length() < 1e-6);
             }
       delete score;
       }

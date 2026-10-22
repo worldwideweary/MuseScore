@@ -314,6 +314,9 @@ void Tremolo::layoutTwoNotesTremolo(qreal x, qreal y, qreal h, qreal spatium)
       const bool defaultStyle = (!customStyleApplicable()) || (_style == TremoloStyle::DEFAULT);
       const bool isTraditionalAlternate = (_style == TremoloStyle::TRADITIONAL_ALTERNATE);
 
+      if (beam4LayoutInsetTremolo(this, path))
+            return;
+
       //---------------------------------------------------
       //   Step 1: Calculate the position of the tremolo (x, y)
       //---------------------------------------------------

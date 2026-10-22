@@ -4,16 +4,20 @@
 #include <QPointF>
 #include <QVector>
 #include <QLineF>
+#include <QPainterPath>
 #include <vector>
 namespace Ms {
 class Beam;
 class ChordRest;
 class Tremolo;
+
 // True if the beam has no tremolos requiring the legacy fallback.
 bool beam4SupportsTremolos(const Beam*);
 // Returns true when the optional single-note tremolo adapter was used.
 bool beam4LayoutSingleTremolo(Tremolo*);
-// Studio inset-stroke span from outside stem edges; zero means too narrow.
+// Layout supported inset two-note strokes from the completed beam geometry.
+bool beam4LayoutInsetTremolo(Tremolo*, QPainterPath&);
+// Studio stroke span from anchor distance; zero means too narrow.
 qreal beam4InsetTremoloSpan(qreal anchorDistance, qreal spatium);
 // Returns false for cases whose modern adapter has not been implemented.
 // Coordinates are page Y and beam-relative X, matching the Studio engine.

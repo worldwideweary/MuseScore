@@ -35,13 +35,14 @@
 #include "system.h"
 #include "beamlayout4.h"
 
+#include <QPolygonF>
 #include <algorithm>
 #include <cmath>
 #include <limits>
 
 namespace Ms {
-// Initial tremolo support is deliberately limited to ordinary full-size
-// single-note strokes on unmodified, non-cross-staff pitched beams.
+// Supported tremolos on unmodified, non-cross-staff pitched beams.
+// Two-note support is limited to ordinary inset pairs in one measure.
 bool beam4SupportsTremolos(const Beam* beam)
 {
     for (const ChordRest* cr : beam->elements()) {
@@ -49,11 +50,21 @@ bool beam4SupportsTremolos(const Beam* beam)
             continue;
         const Chord* chord = toChord(cr);
         const Tremolo* tremolo = chord->tremolo();
-        if (tremolo && (tremolo->twoNotes() || tremolo->isBuzzRoll() || tremolo->lines() > 4
+        if (tremolo && (tremolo->isBuzzRoll() || tremolo->lines() > 4
             || chord->isSmall() || chord->isGrace() || beam->cross() || beam->userModified()
             || chord->staff()->isTabStaff(chord->tick())
             || !qFuzzyCompare(chord->staff()->lineDistance(chord->tick()), 1.0)))
             return false;
+        if (tremolo && tremolo->twoNotes()) {
+            const Chord* first = tremolo->chord1();
+            const Chord* last = tremolo->chord2();
+            if (!first || !last || tremolo->style() != TremoloStyle::DEFAULT
+                || first->beam() != beam || last->beam() != beam
+                || first->measure() != last->measure() || first->staffMove() || last->staffMove()
+                || first->beams() != last->beams() || first->beams() < 1
+                || first->beams() + tremolo->lines() > 8)
+                return false;
+        }
     }
     return true;
 }
@@ -92,7 +103,18 @@ struct LayoutData {
     qreal mag() const { return magnitude; }
 };
 static const int _maxSlopes[] = { 0, 1, 2, 3, 4, 5, 6, 7 };
-static int strokeCount(const LayoutData*, const ChordRest* cr) { return qBound(1, cr->beams(), 8); }
+// Studio counts inset tremolo strokes as well as ordinary beams when
+// solving beam anchors. Segment construction still uses ordinary beams only.
+static int strokeCount(const LayoutData*, const ChordRest* cr)
+{
+    int count = cr->beams();
+    if (cr->isChord()) {
+        const Tremolo* tremolo = toChord(cr)->tremolo();
+        if (tremolo && tremolo->twoNotes())
+            count += tremolo->lines();
+    }
+    return qBound(1, count, 8);
+}
 static QPointF chordBeamAnchor(const LayoutData*, const ChordRest*, ChordBeamAnchorType);
 static double chordBeamAnchorX(const LayoutData*, const ChordRest*, ChordBeamAnchorType);
 static double defaultStemLength4(const Chord*);
@@ -134,7 +156,7 @@ static int getMaxSlope(const LayoutData* ldata);
 static int singleTremoloMinStem4(const Chord* chord, int beams, int spacing)
 {
     const Tremolo* tremolo = chord->tremolo();
-    if (!tremolo)
+    if (!tremolo || tremolo->twoNotes())
         return 0;
     const int line = (chord->up() ? chord->upLine() : chord->downLine()) * 2;
     const int staffHeight = chord->staff()->lines(chord->tick()) * 4;
@@ -721,7 +743,7 @@ static double defaultStemLength4(const Chord* chord)
     const qreal sp = chord->spatium();
     const qreal lineDistance = chord->staff()->lineDistance(chord->tick());
     const int qPerLine = int(std::floor(lineDistance * 2));
-    const int beams = qBound(1, chord->beams(), 8);
+    const int beams = strokeCount(nullptr, chord);
     const int lines = chord->staff()->lines(chord->tick());
     // 3.x expresses beam distance relative to beam thickness. Use the
     // closest Studio grid while retaining the actual configured distance.
@@ -1193,9 +1215,9 @@ bool layoutBeam4(Beam* beam, const std::vector<ChordRest*>& elements,
     int dictator = std::lround(((isStartDictator ? start : end).y() - origin.y()) / quarter);
     int pointer = std::lround(((isStartDictator ? end : start).y() - origin.y()) / quarter);
     const int lines = beam->score()->staff(closestStaff)->lines(first->tick());
-    const int firstTarget = minStaffOverlap(data.up, lines, first->beams(), data.beamSpacing,
+    const int firstTarget = minStaffOverlap(data.up, lines, strokeCount(ldata, first), data.beamSpacing,
                                            qFuzzyCompare(data.mag(), 1.0) && !data.isGrace);
-    const int lastTarget = minStaffOverlap(data.up, lines, last->beams(), data.beamSpacing, !data.isGrace);
+    const int lastTarget = minStaffOverlap(data.up, lines, strokeCount(ldata, last), data.beamSpacing, !data.isGrace);
     int staffOffset = 0;
     if (beam->cross() && first->measure()->system()) {
         const System* system = first->measure()->system();
@@ -1224,8 +1246,8 @@ bool layoutBeam4(Beam* beam, const std::vector<ChordRest*>& elements,
         }
         offsetBeamToRemoveCollisions(beam, ldata, elements, dictator, pointer, start.x(), end.x(), flat, isStartDictator);
     }
-    const int beamsD = (isStartDictator ? first : last)->beams();
-    const int beamsP = (isStartDictator ? last : first)->beams();
+    const int beamsD = strokeCount(ldata, isStartDictator ? first : last);
+    const int beamsP = strokeCount(ldata, isStartDictator ? last : first);
     if (!data.isGrace)
         setValidBeamPositions(ldata, dictator, pointer, beamsD, beamsP, lines, isStartDictator, flat, firstPos > lastPos);
     const int interval = std::abs(firstPos.line - lastPos.line);
@@ -1638,5 +1660,63 @@ qreal beam4InsetTremoloSpan(qreal anchorDistance, qreal spatium)
     const qreal widthSp = anchorDistance / spatium - 2;
     const qreal gapSp = widthSp >= 0.6 ? 1.0 : std::max(1.0 - (0.6 - widthSp) * 0.5, 0.4);
     return std::max(qreal(0), anchorDistance - 2 * gapSp * spatium);
+}
+}
+
+
+namespace Ms {
+// Studio BeamLayout::setTremAnchors plus the ordinary, full-size branch of
+// TremoloLayout::createBeamSegments. Inset anchors use stem centers (the
+// standalone Start/End anchors use outside edges). Evaluate the primary beam
+// at the cut endpoints so the 1sp inset also follows its slope.
+bool beam4LayoutInsetTremolo(Tremolo* tremolo, QPainterPath& path)
+{
+    Chord* first = tremolo->chord1();
+    Chord* last = tremolo->chord2();
+    Beam* beam = first ? first->beam() : nullptr;
+    if (!tremolo->twoNotes() || !first || !last || !beam || beam != last->beam()
+        || !first->score()->styleB(Sid::beamLayout4) || !beam4SupportsTremolos(beam)
+        || !first->stem() || !last->stem() || first->up() != last->up())
+        return false;
+    const QLineF* primary = beam->primarySegment4();
+    if (!primary || primary->dx() <= 0)
+        return false;
+    const qreal x1 = first->stem()->pagePos().x();
+    const qreal x2 = last->stem()->pagePos().x();
+    const qreal sp = tremolo->spatium();
+    const qreal span = beam4InsetTremoloSpan(x2 - x1, sp);
+    if (span <= 0)
+        return false;
+    const qreal gap = (x2 - x1 - span) / 2;
+    const qreal left = x1 + gap;
+    const qreal right = x2 - gap;
+    const qreal slope = primary->dy() / primary->dx();
+    const QPointF beamOrigin = beam->pagePos();
+    const QPointF origin = first->pagePos();
+    const int direction = first->up() ? 1 : -1;
+    const qreal grid = first->score()->styleP(Sid::beamWidth)
+        * (1 + first->score()->styleD(Sid::beamDistance)) / sp >= 0.875 ? 1.0 : 0.75;
+    const qreal spacing = grid * sp;
+    const qreal width = first->score()->styleP(Sid::beamWidth) * beam->mag();
+    const auto beamY = [&](qreal x) {
+        return beamOrigin.y() + primary->y1() + (x - beamOrigin.x() - primary->x1()) * slope;
+    };
+    QPainterPath strokes;
+    for (int i = 0; i < tremolo->lines(); ++i) {
+        const qreal offset = direction * (first->beams() + i) * spacing;
+        const qreal y1 = beamY(left) + offset - origin.y();
+        const qreal y2 = beamY(right) + offset - origin.y();
+        QPolygonF polygon;
+        polygon << QPointF(left - origin.x(), y1 - width / 2)
+                << QPointF(right - origin.x(), y2 - width / 2)
+                << QPointF(right - origin.x(), y2 + width / 2)
+                << QPointF(left - origin.x(), y1 + width / 2);
+        strokes.addPolygon(polygon);
+        strokes.closeSubpath();
+    }
+    path = strokes;
+    tremolo->setPos(0, 0);
+    tremolo->setbbox(path.boundingRect());
+    return true;
 }
 }

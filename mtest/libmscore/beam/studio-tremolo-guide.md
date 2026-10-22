@@ -101,3 +101,16 @@ and stroke spacing are still on Evolution's previous path; the new width rule
 from v0.15/v0.16 applies where supported. Do not infer full 4.7.5 parity from the
 stroke spans. All measure durations and the monotonic inset pitch sequences
 were checked; application loading/rendering remains to be confirmed.
+
+## v0.18 inset anchor comparison
+
+Apply v0.18 after v0.17 and run tst_beam. Reuse this same anchor score, comparing
+V1/V2/V6 in both directions with Studio 4.7.5. The enabled style now counts
+inset tremolo strokes when solving the enclosing beam and places the strokes
+from that beam's final anchors. Inspect slope, distance to the ordinary beam,
+stroke spacing and stem lengths. V6 up was nearly flat in the supplied Studio
+image; this adapter does not impose a zero slope.
+
+V3/V4 standalone vertical anchors and tilt remain the next stage. Their fixed-gap
+width rule stays enabled, but their vertical layout is still Evolution's prior
+calculation. Toggle the style off to check restoration of the legacy inset layout.
