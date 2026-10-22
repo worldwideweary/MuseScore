@@ -270,7 +270,10 @@ void TestSpacing::crossBeamSwitch()
                         }
                   QVERIFY(column < 8);
                   const qreal offset = signs[row][column++] * displacement;
-                  QVERIFY(qAbs(seg.spacingWidthOffset4() - offset) < 1e-6);
+                  QVERIFY2(qAbs(seg.spacingWidthOffset4() - offset) < 1e-6,
+                        qPrintable(QString("H%1 note %2: offset %3, expected %4")
+                              .arg(row + 9).arg(column).arg(seg.spacingWidthOffset4(), 0, 'g', 15)
+                              .arg(offset, 0, 'g', 15)));
                   // These wide systems have no active collision floors.
                   const qreal width = seg.width() - offset;
                   if (coreWidth > 0)

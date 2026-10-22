@@ -3796,14 +3796,40 @@ static qreal crossBeamSpacingOffset4(const Segment* segment, const Segment* next
     const Chord* nextChord = singleSpacingChord4(next);
     if (!chord || !nextChord || chord->track() != nextChord->track()
         || !chord->beam() || chord->beam() != nextChord->beam() || !chord->beam()->cross()
-        || chord->beam()->elements().size() <= 2 || chord->up() == nextChord->up()
+        || chord->beam()->elements().size() <= 2
         || chord->beams() != 1 || nextChord->beams() != 1
         || chord->mag() != 1.0 || nextChord->mag() != 1.0
         || chord->actualTicks() != segment->ticks() || nextChord->actualTicks() != next->ticks())
         return 0;
+    const Beam* beam = chord->beam();
+    if (beam->beamDirection() != Direction::AUTO || beam->userModified())
+        return 0;
+    int upperStaff = chord->vStaffIdx();
+    int lowerStaff = upperStaff;
+    for (const ChordRest* cr : beam->elements()) {
+        if (!cr->isChord())
+            return 0;
+        upperStaff = qMin(upperStaff, cr->vStaffIdx());
+        lowerStaff = qMax(lowerStaff, cr->vStaffIdx());
+        }
+    if (lowerStaff != upperStaff + 1)
+        return 0;
+    for (const ChordRest* cr : beam->elements()) {
+        const Chord* c = toChord(cr);
+        // layout1 leaves provisional stem directions; layout later resolves
+        // them around the beam. Infer the unambiguous staff-side case here.
+        // Notes extending into the interstaff gap can change that split.
+        if (c->notes().empty() || c->stemDirection() != Direction::AUTO
+            || (c->vStaffIdx() == upperStaff
+                && c->downNote()->line() > 2 * (segment->score()->staff(upperStaff)->lines(c->tick()) - 1))
+            || (c->vStaffIdx() == lowerStaff && c->upNote()->line() < 0))
+            return 0;
+        }
+    if (chord->vStaffIdx() == nextChord->vStaffIdx())
+        return 0;
     const qreal displacement = qMax(qreal(0), segment->score()->noteHeadWidth()
         - segment->score()->styleP(Sid::stemWidth));
-    return chord->up() ? displacement : -displacement;
+    return chord->vStaffIdx() == lowerStaff ? displacement : -displacement;
 }
 
 //-----------------------------------------------------------------------------

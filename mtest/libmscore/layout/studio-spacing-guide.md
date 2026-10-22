@@ -294,3 +294,38 @@ guards. The actual extracted spring loops preserve exact legacy positions in
 collision floors and meet target width. Full tst_spacing/tst_beam and rendering
 remain for the user's build. Apply v0.33 after v0.32. Next compare H9-H12, then
 test opposing beamlets and competing voices before expanding support.
+
+## v0.34: fix cross-beam correction before final stem layout
+
+The user's Qt 5.9.9 report for v0.33 has two failures: crossBeamSwitch's
+legacy-beams and studio-beams rows both fail the signed-offset assertion.
+All other test cases pass. The debug messages in the report are not additional
+test failures.
+
+The adapter incorrectly assumed Chord::up() was final during spacing.
+Beam::layout1 sets provisional directions (including the source-staff chords),
+while Beam::layout later resolves cross-staff directions around the beam's
+vertical position. Thus opposing stems visible in the finished score can still
+have equal provisional directions when computeMinWidth needs their offset.
+The v0.33 mock harness supplied final directions and missed this ordering.
+
+For the supported automatic case, infer the upper/lower stem-side transition
+from destination staff indices rather than provisional up(). Limit this to two
+adjacent destination staves, an unedited Auto beam and Auto chord directions.
+If upper-staff notes extend below their staff, or lower-staff notes extend above
+theirs, keep the existing fallback because final beam geometry may change the
+split. Use the destination staff's line count. Do not change any stem directions
+or run final beam layout early. Fixed offsets and the spring solver are unchanged.
+
+The existing application test still requires the same nonzero H9-H12 offsets;
+its expectations are not relaxed. Improve its failure message to include the
+H label, note number, actual offset and expected offset. An extracted-code
+harness now checks all H9-H12 boundaries under every provisional stem-direction
+combination (8,192 cases), plus the existing guards and the new edited-beam,
+explicit-direction and interstaff-gap fallbacks. All pass locally. C++11 syntax
+checks for measure.cpp and tst_spacing.cpp pass. Full application tests still
+require the user's build.
+
+Apply v0.34 after v0.33. Run tst_spacing and tst_beam, then compare the unchanged
+studio-spacing-cross-staff.mscx, especially H10/H12. This checkpoint fixes the
+layout-order error; additional beamlet/voice support remains deferred.
