@@ -498,3 +498,33 @@ pitch spelling, tremolo pair connections, counts and style settings pass local
 checks. Loading/rendering and visual comparison remain for the applications.
 Next: compare K4/K5/K7/K8, then K9-K12 and dense Q1/Q2; isolate discrepancies
 before extending unsupported arrangements or starting horizontal spacing work.
+
+## v0.21 flagged standalone tremolos
+
+The supplied K1-K12 up/down and Q1/Q2 captures look broadly consistent with
+Studio 4.7.5. This stage admits same-direction standalone pairs with up to four
+traditional flags to the optional tremolo anchor solver. Stem defaults follow
+Studio's flag branches: no beam-count addition to the normal length, ordinary
+2sp overlap, reduction-count zero with the traditional-flag cap of one quarter
+space, no optical shortening and no unflagged four-beam exception. Unflagged
+and beamed defaults retain their calculations. Flags are repositioned at the
+completed stem tips before refreshing both segment shapes. Unsupported cases
+and the disabled score style retain the prior path.
+
+Adds studio-tremolo-flags.mscx and studio-tremolo-flags-guide.md, with F1-F8 in
+both directions: eighth to sixty-fourth flags, one to four tremolo strokes,
+ledger notes, chords and a flat control. All sixteen measures have exact 1/4
+duration and paired written/actual lengths; ordinary beams are explicitly off.
+The score begins with beamLayout4 enabled. Straight flags are not implemented.
+
+New studioFlaggedTremoloAnchors checks fixture connectivity and flags, modern
+span, finite stems/path, final flag attachment, repeated layout and legacy
+stem/flag/path restoration. Production and test C++11 syntax checks pass with
+unused-parameter warnings enabled. An isolated Qt harness passed 10,000
+standalone cases (5,000 flagged), including flag-tip attachment and repeat
+checks, plus 10,000 ordinary/inset-beam comparisons against v0.20. These are
+simplified-context checks, not full rendering or full Studio parity. Full
+tst_beam and visual comparison remain for the application builds.
+
+Next: compare F1/F2/F4/F7 up/down, check the previous V/K inputs for regressions,
+and isolate any differences before adapting opposite-stem or cross-staff pairs.
