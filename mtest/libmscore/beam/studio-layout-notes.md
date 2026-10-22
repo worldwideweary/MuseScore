@@ -405,3 +405,18 @@ application test has not been run here. The unchanged span helper retains its
 v0.15 numerical verification. Reuse D5 (measures 5 and 10) for visual comparison.
 Next: genuine rising/falling inset and standalone inputs for vertical-anchor
 comparison; the old D4 contour is a flat-beam control.
+
+## v0.17 vertical-anchor diagnostic
+
+Adds studio-tremolo-anchors.mscx and its measure map in studio-tremolo-guide.md.
+Twelve measures repeat six cases in both stem directions: rising/falling inset
+pairs, rising/falling standalone pairs, a flat four-stroke control and a rising
+mixed-beam-level inset pair. Inset pitch contours are strictly monotonic to
+avoid the peak that flattened the old D4 case. Exact-duration checks pass for
+all twelve measures and XML parsing passes. The file has not been rendered in
+either application here; first confirm that V1/V2 visibly slant.
+
+No engraving or application-test changes in this checkpoint. Apply v0.16 then
+v0.17 after v0.15. Run tst_beam and compare D5 for the standalone width change,
+then V1–V6 against 4.7.5 for the next vertical-anchor/tilt adaptation. Two-note
+vertical anchors, tilt and stroke spacing are not changed by these stages.

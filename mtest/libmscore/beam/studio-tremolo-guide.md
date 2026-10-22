@@ -73,3 +73,31 @@ applications, so it does not yet test the future sloped-anchor adapter.
 D5 (measures 5 and 10) now uses the same fixed-gap span when the setting is on.
 Compare it with Studio 4.7.5 too. This adds ordinary standalone pairs with two
 same-direction stems; it does not change their vertical position or tilt.
+
+## v0.17 vertical-anchor comparison inputs
+
+`studio-tremolo-anchors.mscx` contains twelve 1/4 measures. V1–V6 use up stems;
+measures 7–12 repeat them with down stems. Use the same original file in both
+applications, enabling Evolution's Studio beam score style.
+
+| Case | Up measure | Down measure | Inspect |
+|---|---:|---:|---|
+| V1 | 1 | 7 | Rising inset pair, two strokes |
+| V2 | 2 | 8 | Falling inset pair, three strokes |
+| V3 | 3 | 9 | Rising standalone pair, three strokes |
+| V4 | 4 | 10 | Falling standalone pair, three strokes |
+| V5 | 5 | 11 | Flat standalone pair, four strokes |
+| V6 | 6 | 12 | Rising inset 16th pair, three strokes, mixed ordinary beam levels |
+
+The inset contours are strictly monotonic, avoiding the interior maximum that
+flattened D4. Confirm V1/V2 visibly slant in the applications as the first check;
+this fixture has not been rendered here. Compare stroke tilt, vertical distance
+to the ordinary beam, notehead clearance, and stem lengths. For V3/V4 compare
+how far each stroke end sits below/above its stem tip. V5 is the flat vertical
+stack control. Please keep case labels visible in screenshots.
+
+This checkpoint adds a diagnostic score only. Two-note vertical anchors, tilt
+and stroke spacing are still on Evolution's previous path; the new width rule
+from v0.15/v0.16 applies where supported. Do not infer full 4.7.5 parity from the
+stroke spans. All measure durations and the monotonic inset pitch sequences
+were checked; application loading/rendering remains to be confirmed.
