@@ -58,3 +58,12 @@ it does not add new score-style padding controls. Manual/cross-staff beams,
 standalone single tremolos and nonstandard staff-line distances remain on the
 legacy path. Begin visual comparison with S1/S4/S5/S6, then S7/S8. Source/math
 checks pass; the new application tests and visual comparisons are pending.
+
+## v0.15 stroke-span checkpoint
+
+Apply v0.15 after v0.14 and run tst_beam. In D1–D4 the enabled setting now
+changes horizontal stroke span: endpoints leave 1sp from the outside stem
+edges, with reduced gaps for close pairs. Compare D1/D3 in both directions.
+D5 remains the standalone control. Vertical placement and stroke spacing are
+still legacy for two-note tremolos. D4 actually renders a flat beam in both
+applications, so it does not yet test the future sloped-anchor adapter.

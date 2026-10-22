@@ -13,6 +13,8 @@ class Tremolo;
 bool beam4SupportsTremolos(const Beam*);
 // Returns true when the optional single-note tremolo adapter was used.
 bool beam4LayoutSingleTremolo(Tremolo*);
+// Studio inset-stroke span from outside stem edges; zero means too narrow.
+qreal beam4InsetTremoloSpan(qreal anchorDistance, qreal spatium);
 // Returns false for cases whose modern adapter has not been implemented.
 // Coordinates are page Y and beam-relative X, matching the Studio engine.
 bool layoutBeam4(Beam*, const std::vector<ChordRest*>&, QPointF& start,

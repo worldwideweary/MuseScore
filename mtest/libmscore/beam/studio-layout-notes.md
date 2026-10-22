@@ -354,3 +354,35 @@ Next: compare S1/S4/S5/S6 in both directions, then the slope and chord cases;
 verify S9/S10 stay unchanged. D1–D5 provide a baseline for the next stage,
 inset two-note tremolo anchors. Remaining corner cases and horizontal spacing
 are still separate later work.
+
+## v0.15 inset two-note tremolo span
+
+The enabled score style now replaces the 0.62 proportional horizontal stretch
+for ordinary default-style two-note tremolos within the same unmodified,
+non-cross-staff beam. Stroke endpoints use Studio 4.7.5's outside-stem anchors
+and 1sp gaps. For close anchors, gaps shrink toward 0.4sp to retain a 0.6sp
+stroke where possible. Degenerate spans fall back to the prior path.
+The modern span has no legacy 12sp maximum. A centered stroke path is stretched
+to the new width; saved offsets remain separate. Full-size, non-grace pitched
+pairs with matching stem directions in the same system are supported here.
+
+This is a horizontal-span stage only: beam layout, vertical tremolo placement,
+stroke spacing and tilt remain on their previous path for two-note tremolos.
+Standalone tremolos, other stroke styles, manual/cross-staff beams, TAB,
+small/grace pairs and opposite-stem pairs retain their prior span calculation.
+The option-off calculation is retained. No new user-facing style control is
+added; the old internal multiplier remains available for legacy layout.
+
+studioTwoNoteTremoloFallback is renamed studioTwoNoteTremoloSpan and extended
+to check actual endpoint gaps in D1–D4, unchanged vertical positions, unchanged
+standalone D5, stable repeated layout and legacy width/position restoration.
+The test has been syntax checked but has not been run in the application here.
+The actual span helper matched original Studio gap calculations for 40,004
+width/scale queries, allowing the intentional nonnegative-span guard. Production
+and test syntax, whitespace and patch application checks pass.
+
+Reuse studio-tremolo-two-note.mscx in both applications, especially D1/D3 and
+both stem directions. D4 remains a flat-beam contour control despite its old
+"slope" label; a genuine sloped fixture is still needed for the later full
+anchor/tilt adapter. Next: verify spans, then continue two-note vertical anchors
+and the remaining beam corner cases before horizontal spacing work.

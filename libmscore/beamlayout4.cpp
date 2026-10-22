@@ -1625,3 +1625,18 @@ bool beam4LayoutSingleTremolo(Tremolo* tremolo)
     return true;
 }
 }
+
+
+namespace Ms {
+// Studio 4.7.5 TremoloLayout::createBeamSegments uses a 1sp stem gap,
+// reduced for close anchors to retain a 0.6sp stroke until the gap reaches
+// its 0.4sp minimum. Guard against reversed/degenerate spans in pre-layout.
+qreal beam4InsetTremoloSpan(qreal anchorDistance, qreal spatium)
+{
+    if (spatium <= 0 || anchorDistance <= 0)
+        return 0;
+    const qreal widthSp = anchorDistance / spatium - 2;
+    const qreal gapSp = widthSp >= 0.6 ? 1.0 : std::max(1.0 - (0.6 - widthSp) * 0.5, 0.4);
+    return std::max(qreal(0), anchorDistance - 2 * gapSp * spatium);
+}
+}

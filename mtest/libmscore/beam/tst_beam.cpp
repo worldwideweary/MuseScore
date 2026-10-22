@@ -20,6 +20,7 @@
 #include "libmscore/tuplet.h"
 #include "libmscore/text.h"
 #include "libmscore/tremolo.h"
+#include "libmscore/stem.h"
 #include "libmscore/staff.h"
 #include "libmscore/beam.h"
 #include "libmscore/beamlayout4.h"
@@ -71,7 +72,7 @@ class TestBeam : public QObject, public MTest
       void studioRestRunSegmentEnds();
       void studioNestedTupletStacking();
       void studioSingleTremoloSwitch();
-      void studioTwoNoteTremoloFallback();
+      void studioTwoNoteTremoloSpan();
       void studioBeamShortWidth();
       };
 
@@ -648,7 +649,7 @@ void TestBeam::studioSingleTremoloSwitch()
       delete score;
       }
 
-void TestBeam::studioTwoNoteTremoloFallback()
+void TestBeam::studioTwoNoteTremoloSpan()
       {
       MasterScore* score = readScore(DIR + "studio-tremolo-two-note.mscx");
       QVERIFY(score);
@@ -656,6 +657,7 @@ void TestBeam::studioTwoNoteTremoloFallback()
       score->doLayout();
       std::vector<Tremolo*> tremolos;
       std::vector<QPointF> positions;
+      std::vector<qreal> legacyWidths;
       for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
             for (Segment* seg = m->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
                   Element* e = seg->element(0);
@@ -670,13 +672,46 @@ void TestBeam::studioTwoNoteTremoloFallback()
                         QVERIFY(!beam4SupportsTremolos(c->beam()));
                   tremolos.push_back(t);
                   positions.push_back(t->pos());
+                  legacyWidths.push_back(t->bbox().width());
                   }
             }
       QCOMPARE(static_cast<int>(tremolos.size()), 10);
       score->setStyleValue(Sid::beamLayout4, true);
       score->doLayout();
+      std::vector<qreal> modernWidths;
+      for (size_t i = 0; i < tremolos.size(); ++i) {
+            Tremolo* t = tremolos[i];
+            QVERIFY(qAbs(t->pos().y() - positions[i].y()) < 1e-7);
+            const qreal width = t->bbox().width();
+            QVERIFY(qIsFinite(width) && width > 0);
+            if (i % 5 == 4) {
+                  // D5 is a standalone control, without an ordinary beam.
+                  QVERIFY(QLineF(t->pos(), positions[i]).length() < 1e-7);
+                  QVERIFY(qAbs(width - legacyWidths[i]) < 1e-7);
+                  }
+            else {
+                  const Stem* s1 = t->chord1()->stem();
+                  const Stem* s2 = t->chord2()->stem();
+                  QVERIFY(s1 && s2);
+                  const qreal left = s1->pagePos().x() - s1->lineWidthMag() / 2;
+                  const qreal right = s2->pagePos().x() + s2->lineWidthMag() / 2;
+                  const QRectF rect = t->bbox().translated(t->pagePos());
+                  const qreal gap = t->spatium();
+                  // These widely spaced fixtures use the normal 1sp gaps.
+                  QVERIFY(qAbs(rect.left() - (left + gap)) < 1e-7);
+                  QVERIFY(qAbs(rect.right() - (right - gap)) < 1e-7);
+                  }
+            modernWidths.push_back(width);
+            }
+      score->doLayout();
       for (size_t i = 0; i < tremolos.size(); ++i)
+            QVERIFY(qAbs(tremolos[i]->bbox().width() - modernWidths[i]) < 1e-7);
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      for (size_t i = 0; i < tremolos.size(); ++i) {
+            QVERIFY(qAbs(tremolos[i]->bbox().width() - legacyWidths[i]) < 1e-7);
             QVERIFY(QLineF(tremolos[i]->pos(), positions[i]).length() < 1e-7);
+            }
       delete score;
       }
 

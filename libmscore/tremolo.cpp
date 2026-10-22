@@ -11,6 +11,7 @@
 //=============================================================================
 
 #include "chord.h"
+#include "beam.h"
 #include "measure.h"
 #include "note.h"
 #include "score.h"
@@ -412,9 +413,35 @@ void Tremolo::layoutTwoNotesTremolo(qreal x, qreal y, qreal h, qreal spatium)
       const qreal MAX_H_LENGTH = spatium * 12.0;
 
       const qreal defaultLength = qMin(H_MULTIPLIER * (x2 - x1), MAX_H_LENGTH);
-      qreal xScaleFactor = defaultStyle ? defaultLength / H_MULTIPLIER : (x2 - x1);
-      const qreal w2 = spatium * score()->styleS(Sid::tremoloWidth).val() * .5;
-      xScaleFactor /= (2.0 * w2);
+      Beam* beam = _chord1->beam();
+      const bool studioSpan = score()->styleB(Sid::beamLayout4)
+            && _style == TremoloStyle::DEFAULT && beam && beam == _chord2->beam()
+            && !beam->cross() && !beam->userModified() && stem1 && stem2
+            && _chord1->up() == _chord2->up()
+            && !_chord1->isSmall() && !_chord2->isSmall()
+            && !_chord1->isGrace() && !_chord2->isGrace()
+            && !staff()->isTabStaff(tick())
+            && _chord1->measure()->system() == _chord2->measure()->system();
+      qreal strokeSpan = 0;
+      if (studioSpan) {
+            // Studio's anchors are the outside stem edges. Evolution's Stem
+            // position is its center line. Keep the vertical placement/tilt;
+            // stretch and center the path between the outside stem edges.
+            const qreal left = stem1->pagePos().x() - stem1->lineWidthMag() / 2;
+            const qreal right = stem2->pagePos().x() + stem2->lineWidthMag() / 2;
+            strokeSpan = beam4InsetTremoloSpan(right - left, spatium);
+            if (strokeSpan > 0)
+                  x = (left + right) / 2 - _chord1->pagePos().x();
+            }
+      qreal xScaleFactor;
+      const qreal baseWidth = path.boundingRect().width();
+      if (strokeSpan > 0 && baseWidth > 0)
+            xScaleFactor = strokeSpan / baseWidth;
+      else {
+            xScaleFactor = defaultStyle ? defaultLength / H_MULTIPLIER : (x2 - x1);
+            const qreal w2 = spatium * score()->styleS(Sid::tremoloWidth).val() * .5;
+            xScaleFactor /= (2.0 * w2);
+            }
 
       xScaleTransform.scale(xScaleFactor, 1.0);
       path = xScaleTransform.map(path);
