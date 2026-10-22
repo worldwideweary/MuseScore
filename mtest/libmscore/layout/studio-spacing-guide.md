@@ -477,3 +477,66 @@ Apply v0.37 after v0.36. Run tst_spacing/tst_beam; compare the two new files wit
 Studio 4.7.5 and recheck H16-H18 in studio-spacing-cross-staff-corners.mscx.
 Then continue with remaining kerning/accidental cases supported by comparisons
 and the pinned source. Continue automatically without a separate permission step.
+
+## v0.38: correct and verify the short un-beamed voice control
+
+The user reports v0.37 tests passing. H16/H19 screenshots show the intended
+outgoing-gap adjustment. H20, however, shows an upper beam despite its label.
+The fixture used BeamMode "none"; Evolution reads/writes "no" for Mode::NONE.
+The invalid string fell back to automatic beaming in both applications, so H20
+was testing an independent beamed voice rather than the intended short
+un-beamed voice. The zero-offset assertions alone did not distinguish them.
+
+Replace v0.37-spacing-voices.mscx with v0.38-spacing-voices.mscx, correcting its
+six explicit no-beam values and updating its title. The unchanged natural H16
+file keeps its v0.37 filename. Assert that secondary-voice chords have no beam,
+the corrected controls retain Mode::NONE, their chord counts are correct, and
+the primary beam remains cross-staff. Preserve all prior offset, clearance,
+repeat-layout and legacy-restoration assertions. No engraving code changes.
+
+Local moc and C++11 test syntax checks pass. XML inspection confirms all six
+explicit no-beam tokens are "no" and every voice fills 2/4. Full application
+tests/rendering remain for the user's build. Apply v0.38 after v0.37 and use
+v0.38-spacing-voices.mscx for future H19/H20 comparisons. Continue automatically
+with accidental/kerning comparison inputs in the following stage.
+
+## v0.39: accidental and kerning comparison inputs
+
+Add comparison inputs before changing collision/accidental packing. No engraving
+rules change in this stage. Use the original files in both applications; enable
+experimental horizontal spacing in Evolution. Keep the modern beam option on
+for initial screenshots. Both beam styles are included in the regression tests.
+
+| File | Cases | Visual focus |
+| --- | --- | --- |
+| v0.39-spacing-accidentals.mscx | H21: ascending sharps; H22: descending flats | Sign-to-note and preceding-note clearance under ordinary beams |
+| same overview | H23: two-note chord seconds with sharps | Notehead mirroring and columns of adjacent accidentals |
+| same overview | H24: upper-source chromatic cross beam; H25: lower-source mirror | Destination-staff accidental placement and spacing at staff transitions |
+| same overview | H26: chromatic cross beam plus sustained accidental-bearing voice | Voice alignment, sign columns and signed spacing beside sustained notes |
+| v0.39-spacing-natural-h24.mscx | H24 alone at the 100% fill threshold | Compact accidental clearance without full-system stretching |
+
+The overview has six labeled 2/4 measures, one per system. Inputs preserve the
+matched style values of earlier comparisons, Leland fonts and modern beams;
+spacingLayout4 is initially off. Chromatic notes use explicit pitch and tonal
+pitch class (TPC); accidentals are generated on import, not supplied as user
+overrides. Read/render tests must verify this produces actual signs. No ties,
+tremolos, tuplets or courtesy-accidental settings are mixed into these inputs.
+Conventional cases retain the two-staff instrument with hidden full-measure
+rests on the inactive staff for a consistent comparison setup.
+
+Add accidentalInputs to tst_spacing, with the overview and natural control under
+both beam styles. Check first-chord pitch/TPC, actual generated sharp/flat signs,
+the two-note chord-second input, primary cross-staff beam status, expected fixed
+offsets, finite widths, repeat stability and legacy position/width restoration.
+These checks validate the input semantics and stability; visual collision and
+Studio parity checks still require rendered comparisons. Existing collision
+minimums are retained. A new sign or notehead must not be assumed correct merely
+because segment coordinates are finite.
+
+Local XML checks confirm all staff/voice durations fill exactly 2/4, pitch/TPC
+spelling is consistent and initial signatures precede notes/rests. The overview
+contains 26 chords/30 notes; natural H24 has four chords/four notes. Qt moc and
+C++11 test syntax checks pass. Full tst_spacing/tst_beam and rendering remain
+for the user's build. Apply v0.39 after v0.38, run both suites and compare H21-H26
+plus natural H24. Next trace a specific rendered spacing difference against the
+pinned Studio source before selecting the next collision/kerning change.

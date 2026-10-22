@@ -8,6 +8,9 @@
 #include "libmscore/spacinglayout4.h"
 #include "libmscore/chordrest.h"
 #include "libmscore/beam.h"
+#include "libmscore/chord.h"
+#include "libmscore/note.h"
+#include "libmscore/accidental.h"
 
 using namespace Ms;
 #define DIR QString("libmscore/layout/")
@@ -25,6 +28,8 @@ class TestSpacing : public QObject, public MTest {
       void crossBeamCorners();
       void sustainedVoiceSwitch_data();
       void sustainedVoiceSwitch();
+      void accidentalInputs_data();
+      void accidentalInputs();
       void finalSystemSwitch_data();
       void finalSystemSwitch();
       void boundarySystems_data();
@@ -424,8 +429,8 @@ void TestSpacing::sustainedVoiceSwitch_data()
       QTest::addColumn<bool>("modernBeams");
       QTest::newRow("natural-legacy-beams") << QString("v0.37-spacing-natural-h16.mscx") << true << false;
       QTest::newRow("natural-studio-beams") << QString("v0.37-spacing-natural-h16.mscx") << true << true;
-      QTest::newRow("mirrored-legacy-beams") << QString("v0.37-spacing-voices.mscx") << false << false;
-      QTest::newRow("mirrored-studio-beams") << QString("v0.37-spacing-voices.mscx") << false << true;
+      QTest::newRow("mirrored-legacy-beams") << QString("v0.38-spacing-voices.mscx") << false << false;
+      QTest::newRow("mirrored-studio-beams") << QString("v0.38-spacing-voices.mscx") << false << true;
       }
 
 void TestSpacing::sustainedVoiceSwitch()
@@ -461,11 +466,23 @@ void TestSpacing::sustainedVoiceSwitch()
             QVERIFY(m->ticks() == Fraction(1, 2));
             const int profile = natural ? 0 : row + 1;
             int onset = 0;
+            int extraChords = 0;
+            const int primaryTrack = profile == 1 ? VOICES : 0;
+            Segment* first = m->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+            QVERIFY(first && first->cr(primaryTrack) && first->cr(primaryTrack)->beam());
+            QVERIFY(first->cr(primaryTrack)->beam()->cross());
             for (Segment& seg : m->segments()) {
                   QVERIFY(qIsFinite(seg.x()) && qIsFinite(seg.width()) && seg.width() >= 0);
                   if (!seg.isChordRestType())
                         continue;
                   QVERIFY(onset < 4);
+                  ChordRest* extra = seg.cr(primaryTrack + 1);
+                  if (extra && extra->isChord()) {
+                        ++extraChords;
+                        QVERIFY(!extra->beam());
+                        if (!natural)
+                              QCOMPARE(int(extra->beamMode()), int(Beam::Mode::NONE));
+                        }
                   const qreal expected = signs[profile][onset] * displacement;
                   QVERIFY2(qAbs(seg.spacingWidthOffset4() - expected) < 1e-6,
                         qPrintable(QString("voice profile %1 onset %2: offset %3, expected %4")
@@ -477,8 +494,98 @@ void TestSpacing::sustainedVoiceSwitch()
                   ++onset;
                   }
             QCOMPARE(onset, 4);
+            QCOMPARE(extraChords, profile == 2 ? 4 : 2);
             }
       QCOMPARE(row, natural ? 1 : 2);
+      const std::vector<qreal> modern = snapshot();
+      score->doLayout();
+      const std::vector<qreal> repeated = snapshot();
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i)
+            QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const std::vector<qreal> restored = snapshot();
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i)
+            QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
+void TestSpacing::accidentalInputs_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::addColumn<bool>("natural");
+      QTest::addColumn<bool>("modernBeams");
+      QTest::newRow("overview-legacy-beams") << QString("v0.39-spacing-accidentals.mscx") << false << false;
+      QTest::newRow("overview-studio-beams") << QString("v0.39-spacing-accidentals.mscx") << false << true;
+      QTest::newRow("natural-legacy-beams") << QString("v0.39-spacing-natural-h24.mscx") << true << false;
+      QTest::newRow("natural-studio-beams") << QString("v0.39-spacing-natural-h24.mscx") << true << true;
+      }
+
+void TestSpacing::accidentalInputs()
+      {
+      QFETCH(QString, file);
+      QFETCH(bool, natural);
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score);
+      QVERIFY(!score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      auto snapshot = [score]() -> std::vector<qreal> {
+            std::vector<qreal> values;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  values.push_back(m->width());
+                  for (Segment& seg : m->segments()) {
+                        values.push_back(seg.x());
+                        values.push_back(seg.width());
+                        }
+                  }
+            return values;
+            };
+      const std::vector<qreal> legacy = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      const int firstPitches[] = { 73, 75, 61, 73, 49, 73 };
+      const int firstTpcs[] = { 21, 11, 21, 21, 21, 21 };
+      const int signs[3][4] = { { -1, 1, -1, 0 }, { 1, -1, 1, 0 }, { -1, 0, -1, 0 } };
+      const qreal displacement = score->noteHeadWidth() - score->styleP(Sid::stemWidth);
+      int row = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++row) {
+            QVERIFY(row < (natural ? 1 : 6));
+            const int input = natural ? 3 : row;
+            QVERIFY(m->ticks() == Fraction(1, 2));
+            Segment* first = m->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+            QVERIFY(first);
+            ChordRest* primary = first->cr(input == 4 ? VOICES : 0);
+            QVERIFY(primary && primary->isChord() && primary->beam());
+            QCOMPARE(primary->beam()->cross(), input >= 3);
+            const Chord* chord = toChord(primary);
+            QCOMPARE(static_cast<int>(chord->notes().size()), input == 2 ? 2 : 1);
+            QCOMPARE(chord->notes().front()->pitch(), firstPitches[input]);
+            QCOMPARE(chord->notes().front()->tpc1(), firstTpcs[input]);
+            for (const Note* note : chord->notes()) {
+                  QVERIFY(note->accidental()); // prove the chromatic input actually generated signs
+                  QCOMPARE(int(note->accidental()->accidentalType()),
+                        int(input == 1 ? AccidentalType::FLAT : AccidentalType::SHARP));
+                  }
+            int onset = 0;
+            for (Segment& seg : m->segments()) {
+                  QVERIFY(qIsFinite(seg.x()) && qIsFinite(seg.width()) && seg.width() >= 0);
+                  if (!seg.isChordRestType())
+                        continue;
+                  QVERIFY(onset < 4);
+                  const qreal expected = input >= 3 ? signs[input - 3][onset] * displacement : 0;
+                  QVERIFY2(qAbs(seg.spacingWidthOffset4() - expected) < 1e-6,
+                        qPrintable(QString("H%1 onset %2: offset %3, expected %4")
+                              .arg(input + 21).arg(onset + 1).arg(seg.spacingWidthOffset4(), 0, 'g', 15)
+                              .arg(expected, 0, 'g', 15)));
+                  ++onset;
+                  }
+            QCOMPARE(onset, 4);
+            }
+      QCOMPARE(row, natural ? 1 : 6);
       const std::vector<qreal> modern = snapshot();
       score->doLayout();
       const std::vector<qreal> repeated = snapshot();
