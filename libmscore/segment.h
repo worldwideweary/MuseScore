@@ -233,7 +233,7 @@ class Segment final : public Element {
       qreal minLeft(const Shape&) const;
       qreal minLeftAfterBarline(const Shape&, qreal padding) const;
       qreal minLeft() const;
-      qreal minHorizontalDistance(Segment*, bool isSystemGap) const;
+      qreal minHorizontalDistance(Segment*, bool isSystemGap, bool allowCrossStaffKerning = false) const;
       qreal minHorizontalCollidingDistance(Segment* ns) const;
 
       // some helper function

@@ -540,3 +540,55 @@ C++11 test syntax checks pass. Full tst_spacing/tst_beam and rendering remain
 for the user's build. Apply v0.39 after v0.38, run both suites and compare H21-H26
 plus natural H24. Next trace a specific rendered spacing difference against the
 pinned Studio source before selecting the next collision/kerning change.
+
+## v0.40: bounded cross-staff kerning; comparison scores open with spacing on
+
+The user reports v0.38/v0.39 tests passing. H19/H20 now show the intended beam
+states. H21-H26 show no obvious sign collisions at the supplied screenshot
+scales; this is not proof of complete accidental-packing parity. Compact H24
+still has extra space in Evolution's upper-to-lower transition.
+
+Trace that case to Segment::minHorizontalDistance: after checking actual staff
+shapes, Evolution imposes a blanket notehead-width floor plus minimum note
+distance, even when adjacent notes are on different staves. Studio's down-to-up
+cross-beam case permits cross-staff kerning. The existing negative signed offset
+cannot achieve its intended compact gap while this unconditional floor wins.
+
+Add an explicit, default-false allowCrossStaffKerning parameter to the segment
+distance calculation. Measure::computeMinWidth passes it only when its bounded
+cross-beam adapter returns a negative offset. Also require spacingLayout4 on,
+two chord/rest segments and no system-header gap. Omit only the unconditional
+notehead-width floor in that case. Preserve shape clearance, minNoteDistance,
+manual extra-leading space, lookback collision checks and all other margins.
+Up-to-down transitions, ordinary beams, blocked voice adjustments, edited beams,
+unsupported contexts and the default-off path keep their previous handling.
+Do not reduce configured minimum note distance or change accidental columns.
+The spring solver and global style defaults are unchanged.
+
+Per the user's request, new visual comparison inputs should save spacingLayout4
+as 1 whenever testing modern spacing. The tests must explicitly disable it to
+capture legacy baselines; this does not change the default for ordinary scores.
+Rename the current accidental inputs to v0.40-spacing-accidentals.mscx and
+v0.40-spacing-natural-h24.mscx, enable the flag in both and update their titles.
+Their notes, voices, beam modes and other style values remain the same.
+
+Update accidentalInputs to verify the initial on flag, capture the legacy
+baseline with it off, and require the optional kerning argument to have no
+effect while off. With it on, verify that the supported first transition uses
+actual shape distance plus configured padding/manual leading space. Natural H24
+must become narrower there than the old unconditional floor, while still
+respecting the geometric minimum. Keep all prior sign/import, fixed-offset,
+repeat-layout and legacy-restoration checks under both beam styles.
+
+Local C++11 syntax checks for measure.cpp, segment.cpp and tst_spacing.cpp, plus
+Qt moc generation, pass. A harness running the actual extracted old/new segment
+distance functions passes 100,000 mocked-shape contexts, preserving exact old
+results with the option off and retaining geometry, configured padding and
+manual leading space in the supported relaxation. XML checks confirm both
+inputs enable spacing and every staff/voice fills 2/4. These checks do not
+replace application tests or rendered collision inspection.
+
+Apply v0.40 after v0.39. Run tst_spacing/tst_beam and compare the two v0.40 files,
+especially natural H24's first upper-to-lower gap. Recheck compact H13/H16 and
+ordinary/cross-staff controls. Full application tests and rendering remain for
+the user's build; use their results to select the next specific kerning change.

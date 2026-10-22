@@ -517,10 +517,10 @@ void TestSpacing::accidentalInputs_data()
       QTest::addColumn<QString>("file");
       QTest::addColumn<bool>("natural");
       QTest::addColumn<bool>("modernBeams");
-      QTest::newRow("overview-legacy-beams") << QString("v0.39-spacing-accidentals.mscx") << false << false;
-      QTest::newRow("overview-studio-beams") << QString("v0.39-spacing-accidentals.mscx") << false << true;
-      QTest::newRow("natural-legacy-beams") << QString("v0.39-spacing-natural-h24.mscx") << true << false;
-      QTest::newRow("natural-studio-beams") << QString("v0.39-spacing-natural-h24.mscx") << true << true;
+      QTest::newRow("overview-legacy-beams") << QString("v0.40-spacing-accidentals.mscx") << false << false;
+      QTest::newRow("overview-studio-beams") << QString("v0.40-spacing-accidentals.mscx") << false << true;
+      QTest::newRow("natural-legacy-beams") << QString("v0.40-spacing-natural-h24.mscx") << true << false;
+      QTest::newRow("natural-studio-beams") << QString("v0.40-spacing-natural-h24.mscx") << true << true;
       }
 
 void TestSpacing::accidentalInputs()
@@ -530,7 +530,8 @@ void TestSpacing::accidentalInputs()
       QFETCH(bool, modernBeams);
       MasterScore* score = readScore(DIR + file);
       QVERIFY(score);
-      QVERIFY(!score->styleB(Sid::spacingLayout4));
+      QVERIFY(score->styleB(Sid::spacingLayout4)); // visual inputs open ready for comparison
+      score->setStyleValue(Sid::spacingLayout4, false);
       score->setStyleValue(Sid::beamLayout4, modernBeams);
       score->doLayout();
       auto snapshot = [score]() -> std::vector<qreal> {
@@ -545,6 +546,12 @@ void TestSpacing::accidentalInputs()
             return values;
             };
       const std::vector<qreal> legacy = snapshot();
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            Segment* first = m->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+            QVERIFY(first && first->nextActive());
+            QCOMPARE(first->minHorizontalDistance(first->nextActive(), false, true),
+                  first->minHorizontalDistance(first->nextActive(), false));
+            }
       score->setStyleValue(Sid::spacingLayout4, true);
       score->doLayout();
       const int firstPitches[] = { 73, 75, 61, 73, 49, 73 };
@@ -569,6 +576,21 @@ void TestSpacing::accidentalInputs()
                   QVERIFY(note->accidental()); // prove the chromatic input actually generated signs
                   QCOMPARE(int(note->accidental()->accidentalType()),
                         int(input == 1 ? AccidentalType::FLAT : AccidentalType::SHARP));
+                  }
+            if (input == 3 || input == 5) {
+                  Segment* next = first->nextActive();
+                  QVERIFY(next && next->isChordRestType());
+                  QVERIFY(first->spacingWidthOffset4() < 0);
+                  const qreal plain = first->minHorizontalDistance(next, false);
+                  const qreal kerned = first->minHorizontalDistance(next, false, true);
+                  const qreal geometry = first->minHorizontalCollidingDistance(next);
+                  const qreal floor = qMax(qreal(0), geometry) + score->styleP(Sid::minNoteDistance)
+                        + next->extraLeadingSpace().val() * first->spatium();
+                  QVERIFY(qAbs(kerned - floor) < 1e-6);
+                  QVERIFY(kerned <= plain + 1e-6);
+                  QVERIFY(first->width() + 1e-6 >= kerned);
+                  if (natural)
+                        QVERIFY(first->width() + 1e-6 < plain);
                   }
             int onset = 0;
             for (Segment& seg : m->segments()) {

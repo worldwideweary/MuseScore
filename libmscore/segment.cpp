@@ -2465,7 +2465,7 @@ qreal courtesySignaturePadding(const Element* left, const Element* right)
       }
 }
 
-qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
+qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap, bool allowCrossStaffKerning) const
       {
       // Studio applies header spacing to clefs/keys/meters, not to the
       // repeat barline itself. After the dots, use the ordinary bar-to-note
@@ -2623,8 +2623,13 @@ qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
                         }
                   if (isGap)
                         return 0.0;
-                  // minimum distance between notes is one note head width
-                  w = qMax(w, score()->noteHeadWidth()) + score()->styleP(Sid::minNoteDistance);
+                  // The supported Studio down-to-up cross-staff case can kern
+                  // noteheads on different staves. Keep shape clearance and
+                  // configured padding; omit only the blanket notehead floor.
+                  if (!(allowCrossStaffKerning && !systemHeaderGap && ns && ns->isChordRestType()
+                        && score()->styleB(Sid::spacingLayout4)))
+                        w = qMax(w, score()->noteHeadWidth());
+                  w += score()->styleP(Sid::minNoteDistance);
                   }
             }
       else if (nst == SegmentType::ChordRest) {
