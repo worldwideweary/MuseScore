@@ -1768,21 +1768,7 @@
                     </property>
                    </spacer>
                   </item>
-                  <item row="7" column="0" colspan="8">
-                <widget class="QCheckBox" name="spacingLayout4">
-                 <property name="text"><string>Use Studio 4 horizontal spacing (experimental)</string></property>
-                 <property name="toolTip"><string>Currently uses Studio 4.7.5 final-system justification. Other spacing rules retain Evolution's handling. Independent of the experimental beam layout setting.</string></property>
-                </widget>
-               </item>
-               <item row="7" column="8">
-                <widget class="QToolButton" name="resetSpacingLayout4">
-                 <property name="toolTip"><string>Reset to default</string></property>
-                 <property name="accessibleName"><string>Reset 'Use Studio 4 horizontal spacing' value</string></property>
-                 <property name="text"><string notr="true"/></property>
-                 <property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property>
-                </widget>
-               </item>
-              </layout>
+                 </layout>
                 </widget>
                </item>
                <item row="3" column="0" colspan="9">
@@ -2065,11 +2051,26 @@
                  </property>
                 </widget>
                </item>
-               <item row="7" column="0" colspan="9">
+               <item row="8" column="0" colspan="9">
                 <widget class="Line" name="line_6">
                  <property name="orientation">
                   <enum>Qt::Horizontal</enum>
                  </property>
+                </widget>
+               </item>
+
+               <item row="7" column="0" colspan="8">
+                <widget class="QCheckBox" name="spacingLayout4">
+                 <property name="text"><string>Use Studio 4 horizontal spacing (experimental)</string></property>
+                 <property name="toolTip"><string>Currently uses Studio 4.7.5 final-system justification. Other spacing rules retain Evolution's handling. Independent of the experimental beam layout setting.</string></property>
+                </widget>
+               </item>
+               <item row="7" column="8">
+                <widget class="QToolButton" name="resetSpacingLayout4">
+                 <property name="toolTip"><string>Reset to default</string></property>
+                 <property name="accessibleName"><string>Reset 'Use Studio 4 horizontal spacing' value</string></property>
+                 <property name="text"><string notr="true"/></property>
+                 <property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property>
                 </widget>
                </item>
               </layout>

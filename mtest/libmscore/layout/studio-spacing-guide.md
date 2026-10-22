@@ -165,3 +165,27 @@ harness running the actual new branch matches the pinned Studio decision in
 residual-space result when disabled. Full tst_spacing and application rendering
 remain pending on the user's build. No rhythmic-curve or cross-beam spacing
 correction is introduced yet; those are the next stages.
+
+## v0.31: horizontal control independent of vertical justification
+
+The user identified the cause of the apparently unresponsive v0.30 checkbox:
+it was accidentally parented inside enableVerticalSpread. When that checkable
+group was off, Qt disabled the horizontal checkbox and its reset button. The
+explicit ON input still loaded and laid out correctly, which explains why the
+layout/roundtrip tests passed while the dialog could not change the setting.
+
+Move both controls into the outer Page grid beside/below the system-fill
+threshold, outside both vertical-justification groups. Restore the nested
+vertical group's original layout. No layout algorithm, style binding or XML
+property changes. Vertical justification can remain disabled while horizontal
+spacing is enabled, disabled or reset.
+
+Qt uic generation and editstyle.cpp C++11 syntax checks pass. An isolated Qt
+widget check generated from the actual Page subtree verifies that the checkbox
+and reset remain enabled with either vertical mode selected and that checkbox
+clicks change state and emit toggles. The test substitutes standard QGroupBox
+for the paint-only RadioButtonGroupBox subclass; it is not a full application
+run. Application build and live-dialog verification remain for the user's build.
+Apply v0.31 after v0.30. The v0.30.1 ON/OFF probe was diagnostic data only, so
+there is no intervening code patch. Existing tst_spacing covers the unchanged
+engraving path. Next resume rhythmic spacing after confirming the dialog toggle.
