@@ -329,3 +329,51 @@ require the user's build.
 Apply v0.34 after v0.33. Run tst_spacing and tst_beam, then compare the unchanged
 studio-spacing-cross-staff.mscx, especially H10/H12. This checkpoint fixes the
 layout-order error; additional beamlet/voice support remains deferred.
+
+## v0.35: cross-staff beamlet and competing-voice comparison inputs
+
+The user reports tst_spacing/tst_beam passing after v0.34. H9-H12 screenshots
+show the intended signed-gap pattern with spacing on, close to Studio 4.7.5;
+spacing off retains the legacy nearly equal gaps. Keep that implementation.
+This stage adds inputs/tests only; no layout rules change.
+
+Open studio-spacing-cross-staff-corners.mscx in both applications. It contains
+six labeled 2/4 measures, one per system, with the matched styles used in the
+earlier comparisons. The spacing option starts off; enable it in Evolution.
+Keep the same beam setting for an initial comparison (the input enables modern
+beams). Tests also exercise legacy beams independently.
+
+| Label | Contents | Visual focus |
+| --- | --- | --- |
+| H13 | Upper-source eighth/sixteenth/sixteenth pattern, repeated; forced secondary breaks | Short secondary beams at notes 2-3 and 5-6, especially the lower-to-upper transition |
+| H14 | Lower-source mirror of H13 | The reverse transition and beamlet clearance |
+| H15 | Eight continuous cross-staff sixteenths | Connected secondary-beam control |
+| H16 | Alternating cross-staff eighths plus a same-source quarter-note voice | Shared onsets, rhythmic proportions and notehead/stem clearance |
+| H17 | Alternating upper-source cross-staff eighths plus an independent lower-staff eighth-note voice | Simultaneous notes on the destination staff |
+| H18 | Alternating lower-source cross-staff eighths plus a lower second voice starting with a sixteenth rest | Offbeat subdivisions, voice alignment and rest clearance |
+
+Also open studio-spacing-natural-h13.mscx. It contains H13 alone with a 100%
+last-system fill threshold, exposing short-system beamlet clearance without
+full-page justification. Use this original in Studio as well; compare at the
+same staff scale. The text labels identify cases but are not engraving targets.
+
+H13/H14's explicit begin32 settings separate adjacent sixteenths' secondary
+beams while preserving their common primary beam. Inspect the actual beamlet
+directions in the application before deciding whether an opposing-beamlet
+spacing correction is warranted. Their import/rendering is not verified by
+XML inspection alone. H15 provides a connected-beam control for that comparison.
+
+All these cases deliberately stay outside v0.34's ordinary-eighth-note signed
+offset adapter. New data-driven tst_spacing checks require zero signed offsets,
+finite nonnegative widths, repeat stability and restoration of legacy segment
+positions/widths when the spacing option is disabled. They check each primary
+beam is cross-staff, plus measure duration, chord counts and retained forced
+secondary-break counts. Run them with both beam styles. A zero offset does not
+mean that the rhythmic-spacing option has no effect on the total layout.
+
+Local XML checks confirm every staff/voice fills exactly 2/4; the overview has
+45 chords and four forced secondary breaks, and natural H13 has six chords and
+two breaks. Qt moc and C++11 syntax checks pass. Full tst_spacing/tst_beam and
+rendering require the user's build. Apply v0.35 after v0.34, run both suites and
+compare H13-H18 plus natural H13. Next use those results to choose the smallest
+beamlet or voice-spacing correction supported by the pinned Studio source.

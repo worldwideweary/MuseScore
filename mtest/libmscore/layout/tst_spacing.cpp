@@ -6,6 +6,8 @@
 #include "libmscore/measure.h"
 #include "libmscore/segment.h"
 #include "libmscore/spacinglayout4.h"
+#include "libmscore/chordrest.h"
+#include "libmscore/beam.h"
 
 using namespace Ms;
 #define DIR QString("libmscore/layout/")
@@ -19,6 +21,8 @@ class TestSpacing : public QObject, public MTest {
       void rhythmicLayoutSwitch();
       void crossBeamSwitch_data();
       void crossBeamSwitch();
+      void crossBeamCorners_data();
+      void crossBeamCorners();
       void finalSystemSwitch_data();
       void finalSystemSwitch();
       void boundarySystems_data();
@@ -303,6 +307,86 @@ void TestSpacing::crossBeamSwitch()
                   QCOMPARE(seg.spacingWidthOffset4(), qreal(0));
                   }
       QCOMPARE(static_cast<int>(i), static_cast<int>(legacy.size()));
+      delete score;
+      }
+
+void TestSpacing::crossBeamCorners_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::addColumn<int>("measures");
+      QTest::addColumn<bool>("modernBeams");
+      QTest::newRow("corners-legacy-beams") << QString("studio-spacing-cross-staff-corners.mscx") << 6 << false;
+      QTest::newRow("corners-studio-beams") << QString("studio-spacing-cross-staff-corners.mscx") << 6 << true;
+      QTest::newRow("natural-legacy-beams") << QString("studio-spacing-natural-h13.mscx") << 1 << false;
+      QTest::newRow("natural-studio-beams") << QString("studio-spacing-natural-h13.mscx") << 1 << true;
+      }
+
+void TestSpacing::crossBeamCorners()
+      {
+      QFETCH(QString, file);
+      QFETCH(int, measures);
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score);
+      QVERIFY(!score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      auto snapshot = [score]() -> std::vector<qreal> {
+            std::vector<qreal> values;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  values.push_back(m->width());
+                  for (Segment& seg : m->segments()) {
+                        values.push_back(seg.x());
+                        values.push_back(seg.width());
+                        }
+                  }
+            return values;
+            };
+      const std::vector<qreal> legacy = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      int row = 0;
+      const int expectedChords[] = { 6, 6, 8, 6, 8, 11 };
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++row) {
+            QVERIFY(row < measures);
+            QVERIFY(m->ticks() == Fraction(1, 2));
+            const int sourceTrack = (row == 1 || row == 5) ? VOICES : 0;
+            Segment* first = m->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+            QVERIFY(first);
+            ChordRest* primary = first->cr(sourceTrack);
+            QVERIFY(primary && primary->isChord() && primary->beam());
+            QVERIFY(primary->beam()->cross());
+            int chords = 0;
+            int breaks = 0;
+            for (Segment& seg : m->segments()) {
+                  QVERIFY(qIsFinite(seg.x()) && qIsFinite(seg.width()) && seg.width() >= 0);
+                  // Secondary beams or competing voices must not accidentally
+                  // enter the ordinary-eighth-note signed correction.
+                  QCOMPARE(seg.spacingWidthOffset4(), qreal(0));
+                  for (Element* element : seg.elist()) {
+                        if (!element || !element->isChord())
+                              continue;
+                        ++chords;
+                        if (toChordRest(element)->beamMode() == Beam::Mode::BEGIN32)
+                              ++breaks;
+                        }
+                  }
+            QCOMPARE(chords, expectedChords[row]);
+            QCOMPARE(breaks, row < 2 ? 2 : 0);
+            }
+      QCOMPARE(row, measures);
+      const std::vector<qreal> modern = snapshot();
+      score->doLayout();
+      const std::vector<qreal> repeated = snapshot();
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i)
+            QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const std::vector<qreal> restored = snapshot();
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i)
+            QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
       delete score;
       }
 
