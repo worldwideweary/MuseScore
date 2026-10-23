@@ -55,33 +55,29 @@ struct CrossStaffGeometry4 {
     std::map<const Segment*, CrossStaffPair4> pairs;
 };
 
-bool prepareCrossStaff4(System* system, CrossStaffGeometry4& result, QString* reason)
+bool prepareCrossStaffMeasure4(Measure* measure, CrossStaffGeometry4& result, QString* reason)
 {
     const Beam* beam = nullptr;
-    Measure* measure = nullptr;
-    for (MeasureBase* mb : system->measures()) {
-        if (!mb->isMeasure()) continue;
-        for (const Segment& s : toMeasure(mb)->segments()) {
-            for (const Element* item : s.elist()) {
-                if (!item || !item->isChord()) continue;
-                const Chord* c = toChord(item);
-                if (!c->staffMove() && !(c->beam() && c->beam()->cross())) continue;
-                if (!c->beam() || (beam && beam != c->beam())) {
-                    if (reason) *reason = "Independent cross-staff streams require a later adapter";
-                    return false;
-                }
-                beam = c->beam();
-                measure = c->measure();
+    for (const Segment& s : measure->segments()) {
+        for (const Element* item : s.elist()) {
+            if (!item || !item->isChord()) continue;
+            const Chord* c = toChord(item);
+            if (!c->staffMove() && !(c->beam() && c->beam()->cross())) continue;
+            if (!c->beam() || (beam && beam != c->beam())) {
+                if (reason) *reason = "Independent cross-staff streams within a measure require a later adapter";
+                return false;
             }
+            beam = c->beam();
         }
     }
     if (!beam) return true;
     const auto fail = [&](const QString& message) { if (reason) *reason = message; return false; };
-    if (system->measures().size() != 1 || system->score()->nstaves() != 2)
-        return fail("Cross-staff placement currently requires one grand-staff measure");
+    if (measure->score()->nstaves() != 2)
+        return fail("Cross-staff placement currently requires a grand staff");
     CrossStaffContext4 context;
     if (!buildCrossStaffContext4(beam, context, reason)) return false;
-    if (!context.chords.front().chord->rtick().isZero()
+    if (context.chords.front().chord->measure() != measure
+        || !context.chords.front().chord->rtick().isZero()
         || context.chords.back().chord->rtick() + context.chords.back().chord->actualTicks() != measure->ticks())
         return fail("Cross-staff placement requires a complete measure stream");
     CrossStaffGeometry4 prepared;
@@ -118,6 +114,24 @@ bool prepareCrossStaff4(System* system, CrossStaffGeometry4& result, QString* re
     }
     for (size_t i = 0; i < context.pairs.size(); ++i) {
         prepared.pairs[context.pairs[i].first->segment()] = context.pairs[i];
+    }
+    result = prepared;
+    return true;
+}
+
+// Publish only after every measure's independently bounded context succeeds.
+bool prepareCrossStaff4(System* system, CrossStaffGeometry4& result, QString* reason)
+{
+    CrossStaffGeometry4 prepared;
+    for (MeasureBase* mb : system->measures()) {
+        if (!mb->isMeasure()) {
+            if (reason) *reason = "Frames require a later cross-staff system adapter";
+            return false;
+        }
+        CrossStaffGeometry4 local;
+        if (!prepareCrossStaffMeasure4(toMeasure(mb), local, reason)) return false;
+        prepared.chords.insert(local.chords.begin(), local.chords.end());
+        prepared.pairs.insert(local.pairs.begin(), local.pairs.end());
     }
     result = prepared;
     return true;

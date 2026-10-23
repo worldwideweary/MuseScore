@@ -2202,3 +2202,52 @@ Apply after v0.70 and run tst_spacing/tst_beam. Resolve any X9/X10 mismatch,
 then move to multi-measure systems, fitting/justification and compression
 checks for the bounded cross-staff scope. Larger/mirrored chords, additional
 independent beams and other unsupported musical contexts still use fallback.
+
+## v0.72 WIP: multiple cross-staff measures in one system, X11/X12
+
+The user reports v0.71 tests passing. Blue-paper X9/X10 captures look close
+to Studio 4.7.5 in natural and justified spacing on both staves.
+
+Split cross-staff preparation into a per-measure adapter and an atomic system
+collector. Each measure can contain one independently supported complete beam
+stream and the previously admitted companions. Publish the combined chord/pair
+maps only after every measure succeeds. Ordinary measures contribute empty
+maps. Multiple independent cross beams in one measure and beams crossing a
+measure boundary remain unsupported. Other musical and geometry limits are
+unchanged. Collection/fitting and final placement use the existing shared
+planner; no new width accumulator, beam policy or legacy-off path is added.
+
+New comparison files, both experimental settings enabled:
+- v0.72-spacing-cross-staff-system-natural.mscx
+- v0.72-spacing-cross-staff-system.mscx
+
+X11 is X9's plain two-moving-voice measure; X12 immediately follows with X10's
+companion accidental cycle. Remove only the repeated time signature from the
+second measure and update labels/title. Compare natural width and the barline
+to the second measure's first notes/accidentals, then whole-system justified
+proportions. This two-score control changes the system context, not the music.
+
+New crossStaffSystems test runs both files under both beam settings. Require
+two measures in one system, distinct cross-staff beams, exact onset/rhythm/pitch
+structure, full-plan acceptance and actual measure/segment positions and widths.
+Build the first positive compression pass, choose a target between that width
+and natural width, then require squeeze plus justification to reach the target
+while preserving both beam-neighbor stem floors. These compression operations
+are read-only checks; the provided visual scores show natural/justified layout,
+not a narrow-page compression fixture. An unsupported forced stem in measure 2
+must reject the whole output atomically. Retain repeat and legacy-off checks.
+
+Files changed: spacingplan4.cpp, tst_spacing.cpp, guide, audit and two scores.
+Local moc/C++11 debug/NDEBUG syntax and fixture identity checks pass. A harness
+of the actual system-wrapper body with controlled measure adapters covers 91
+merge/ordinary-measure/later-failure/frame cases, including unchanged output
+on failure. It does not exercise live geometry, fitting or compression. Those
+paths are covered by the new Qt test, pending the user's full Qt 5.9 build;
+rendered comparison is also pending. Parent-index patch and whitespace checks
+precede delivery. Apply after v0.71 and run tst_spacing/tst_beam.
+
+Next address any boundary/placement discrepancy, then run narrow-page automatic
+system fitting/backtracking controls and summarize the bounded milestone's
+supported scope and remaining fallbacks. Broad decorations, grace notes,
+additional beams, mirrored/larger chords, and the deferred centered-beam/rest
+placement issues remain outside this checkpoint.
