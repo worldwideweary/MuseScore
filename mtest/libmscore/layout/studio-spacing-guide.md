@@ -1980,3 +1980,42 @@ another voice inserts a segment between the two chords; it enforces stem-center
 separation plus stem padding for up-to-down neighbors. Signed advance adjustment
 is a separate adjacent-segment rule. Our current held-voice scope avoids that
 interleaving, so do not remove its guard without adapting both paths.
+
+## v0.67 WIP: interleaved companion baseline X4
+
+The user reports v0.66 mtests passing. Natural and justified X3 captures look
+close to Studio 4.7.5, including the lower-to-upper transition. Preserve that
+accepted scope while adding the next unsupported input, X4.
+
+New files (both experimental options on):
+- v0.67-spacing-cross-staff-interleaved-natural.mscx
+- v0.67-spacing-cross-staff-interleaved.mscx
+
+Keep X3's four eighths and lower held half note. Replace the upper held half
+note with eight un-beamed sixteenths on the same C4 pitch, stems down. This
+inserts one segment between every pair of consecutive beam chords. The flags
+are intentional: there is only one beam in the score, isolating interleaving
+from independent-beam handling. Compare each original in both applications,
+natural first. Differences are diagnostic at this checkpoint, not parity claims.
+
+The new crossStaffInterleaved test validates exact onset/duration/staff/pitch
+structure, the un-beamed companion, finite placement, atomic context/plan
+rejection, repeat stability and legacy-off restoration under both beam settings.
+No production code changes. Files changed: test, guide, audit and two scores.
+Local moc/C++11 debug/NDEBUG syntax and XML structure checks precede delivery;
+full live mtests and visual comparison remain pending. Apply after v0.66.
+
+Source audit: buildCrossStaffContext4 currently requires each beam chord's
+segment duration to equal its eighth-note duration. X4 deliberately violates
+that condition (segment 1/16, chord 1/8). prepareCrossStaff4 also limits companion
+onsets to measure-long held chords at tick zero. These are separate guards.
+Do not simply delete them: the current pair minimumWidth includes adjacent
+cross-beam correction floors, whereas Studio's nonadjacent rule uses only the
+beam-neighbor stem-center distance plus stem padding. Signed rhythmic offsets
+also belong to adjacent segments and must not be attached across an inserted
+segment. The temporary extended-stem geometry needs review for moving targets.
+
+Next adapt adjacency classification, nonadjacent stem constraints and companion
+geometry together in a bounded placement stage; then change this test from
+expected fallback to actual plan application. This WIP saves the reproduction
+and rejection boundary before production changes.
