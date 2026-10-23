@@ -1896,3 +1896,35 @@ Apply v0.63 after v0.62 and run tst_spacing/tst_beam. No visual recapture is
 needed: the full planner still rejects cross-staff geometry. Next integrate
 the bounded geometry and fixed offsets with placement, retaining fallback for
 unsupported contexts. This WIP is not completion of cross-staff integration.
+
+## v0.64: enable the bounded cross-staff baseline in the placement planner
+
+The user reports v0.63 tests passing. Connect X1's context to temporary stem
+geometry, pair floors, natural advances and fixed-offset reconstruction.
+Final layout now replaces each native offset with the planned value after a
+whole fitting plan succeeds. See the appended audit section for exact scope
+and the conservative treatment of unknown vertical stem length.
+
+Eligibility remains narrow: one complete alternating eighth-note beam in one
+two-staff system measure, with only start-aligned measure-long companions.
+Other cross-staff contexts retain fallback. No native shapes, stem directions,
+beam anchors or legacy-off algorithms are changed. The broader centered-beam
+reproduction and R1 rest-placement difference remain queued.
+
+Update crossStaffPlanBoundary to require full-plan acceptance and actual
+positions, widths and fixed-offset application for X1 under both beam settings.
+Keep rejection/atomicity for forced directions and repeat/off restoration.
+No new score files: reuse v0.60-spacing-cross-staff-natural.mscx and
+v0.60-spacing-cross-staff.mscx, with both experimental options enabled.
+
+Files changed: spacingplan4.cpp, layout.cpp, tst_spacing.cpp, this guide and
+the audit. Local syntax, controlled zero/signed-offset planner checks and
+injected cross-constraint builder checks pass as detailed in the audit.
+Full Qt 5.9 mtests and rendered comparison remain pending; the controller
+harness does not substitute for live cross-staff geometry/dispatch tests.
+Whitespace and parent-index patch application are checked before delivery.
+
+Apply v0.64 after v0.63 and run tst_spacing/tst_beam. If they pass, compare
+natural X1 first, then justified X1 with the existing 4.7.5 captures. Use any
+failure reason or visible difference to refine this scope before expanding
+to same-side stem crossings and interleaved moving voices.

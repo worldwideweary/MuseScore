@@ -1673,15 +1673,28 @@ void TestSpacing::crossStaffPlanBoundary()
       QVERIFY(!buildCrossStaffContext4(firstChord->beam(), rejected, &contextReason));
       QCOMPARE(rejected.beam, static_cast<const Beam*>(firstChord->beam()));
       QVERIFY(rejected.chords.empty() && rejected.pairs.empty());
+      SpacingPlan4 rejectedPlan;
+      rejectedPlan.width = -123;
+      QVERIFY(!buildSpacingPlan4(m->system(), rejectedPlan, &contextReason));
+      QCOMPARE(rejectedPlan.width, qreal(-123));
+      QVERIFY(rejectedPlan.segments.empty() && rejectedPlan.measures.empty());
       edited->setStemDirection(savedDirection);
       QVERIFY(snapshot() == modern);
       SpacingPlan4 plan;
-      plan.width = -123;
       QString reason;
-      QVERIFY(!buildSpacingPlan4(m->system(), plan, &reason));
-      QVERIFY2(reason.contains("cross-beam offset") || reason.startsWith("Cross-staff geometry"), qPrintable(reason));
-      QCOMPARE(plan.width, qreal(-123));
-      QVERIFY(plan.measures.empty() && plan.segments.empty());
+      QVERIFY2(buildSpacingPlan4(m->system(), plan, &reason), qPrintable(reason));
+      if (!file.contains("-natural"))
+            QVERIFY(justifySpacingPlan4(plan, score->styleD(Sid::pagePrintableWidth) * DPI));
+      QVERIFY(qAbs(plan.width - m->system()->width()) < 1e-6);
+      int fixedOffsets = 0;
+      for (const SpacingSegmentPlan4& e : plan.segments) {
+            if (e.ignored) continue;
+            QVERIFY(qAbs(m->x() + e.segment->x() - e.x) < 1e-6);
+            QVERIFY(qAbs(e.segment->width() - e.width) < 1e-6);
+            QVERIFY(qAbs(e.segment->spacingWidthOffset4() - e.widthOffset) < 1e-6);
+            fixedOffsets += e.widthOffset != 0;
+            }
+      QCOMPARE(fixedOffsets, 3);
       QVERIFY(snapshot() == modern);
       score->doLayout();
       const auto repeated = snapshot();

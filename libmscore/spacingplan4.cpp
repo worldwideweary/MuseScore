@@ -50,7 +50,62 @@ bool eligibleType4(const Segment* s)
         || s->isEndBarLineType() || s->segmentType() == SegmentType::BeginBarLine;
 }
 
-bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometry4& geometry)
+struct CrossStaffGeometry4 {
+    std::map<const Chord*, CrossStaffChord4> chords;
+    std::map<const Segment*, CrossStaffPair4> pairs;
+};
+
+bool prepareCrossStaff4(System* system, CrossStaffGeometry4& result, QString* reason)
+{
+    const Beam* beam = nullptr;
+    Measure* measure = nullptr;
+    for (MeasureBase* mb : system->measures()) {
+        if (!mb->isMeasure()) continue;
+        for (const Segment& s : toMeasure(mb)->segments()) {
+            for (const Element* item : s.elist()) {
+                if (!item || !item->isChord()) continue;
+                const Chord* c = toChord(item);
+                if (!c->staffMove() && !(c->beam() && c->beam()->cross())) continue;
+                if (!c->beam() || (beam && beam != c->beam())) {
+                    if (reason) *reason = "Independent cross-staff streams require a later adapter";
+                    return false;
+                }
+                beam = c->beam();
+                measure = c->measure();
+            }
+        }
+    }
+    if (!beam) return true;
+    const auto fail = [&](const QString& message) { if (reason) *reason = message; return false; };
+    if (system->measures().size() != 1 || system->score()->nstaves() != 2)
+        return fail("Cross-staff placement currently requires one grand-staff measure");
+    CrossStaffContext4 context;
+    if (!buildCrossStaffContext4(beam, context, reason)) return false;
+    if (!context.chords.front().chord->rtick().isZero()
+        || context.chords.back().chord->rtick() + context.chords.back().chord->actualTicks() != measure->ticks())
+        return fail("Cross-staff placement requires a complete measure stream");
+    CrossStaffGeometry4 prepared;
+    for (const CrossStaffChord4& e : context.chords) {
+        prepared.chords[e.chord] = e;
+        // Only start-aligned full-measure held chords are admitted as companions.
+        // This excludes targets along the unknown vertical stem extension.
+        for (const Element* item : e.chord->segment()->elist()) {
+            if (!item || item == e.chord) continue;
+            if (!item->isChord() || !e.chord->rtick().isZero()
+                || toChord(item)->actualTicks() != measure->ticks())
+                return fail("Cross-staff placement needs start-aligned sustained companions");
+        }
+    }
+    for (size_t i = 0; i < context.pairs.size(); ++i) {
+        if (context.chords[i].visualStaff == context.chords[i + 1].visualStaff)
+            return fail("Same-side cross-beam transitions require a later adapter");
+        prepared.pairs[context.pairs[i].first->segment()] = context.pairs[i];
+    }
+    result = prepared;
+    return true;
+}
+
+bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometry4& geometry, const CrossStaffGeometry4& cross)
 {
     for (int staffIdx = 0; staffIdx < segment->score()->nstaves(); ++staffIdx) {
         const SpacingShape4 native = spacingStaffShape4(segment, staffIdx);
@@ -66,6 +121,24 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
         }
         if (!spacingCollisionProjection4(table, native, sp, projected))
             return false;
+        for (const auto& pair : cross.chords) {
+            const CrossStaffChord4& e = pair.second;
+            if (e.chord->segment() != segment || e.visualStaff != staffIdx) continue;
+            const Note* note = e.chord->notes().front();
+            const qreal width = e.chord->stem()->lineWidth() * e.chord->mag();
+            const qreal y = e.chord->y() + note->y()
+                + (e.up ? note->stemUpSE().y() : note->stemDownNW().y());
+            // In this bounded context the beam lies between the staves. Use
+            // the proven stem side without borrowing a provisional stem length.
+            // Keep this conservative extension confined to the restricted
+            // companion/onset context above; broader cases remain unsupported.
+            const qreal reach = 100000;
+            const QRectF rect(e.stemX - width / 2, e.up ? y - reach : y - width / 2,
+                              width, reach + width / 2);
+            SpacingPairPolicy4 policy;
+            if (!spacingPairPolicy4(table, e.chord->stem(), e.chord->stem(), sp, policy)) return false;
+            projected.elements.push_back(SpacingShapeElement4(rect, e.chord->stem()));
+        }
         qreal staffLeft = std::numeric_limits<qreal>::max();
         for (const SpacingShapeElement4& e : projected.elements) {
             geometry.minRight = std::max(geometry.minRight, e.rect.right());
@@ -87,7 +160,7 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
 
 bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, const Geometry4& first,
                const SpacingSegmentPlan4& b, const Geometry4& second, Measure* firstMeasure,
-               qreal squeeze, qreal& result)
+               qreal squeeze, qreal& result, const CrossStaffGeometry4& cross)
 {
     qreal distance = 0;
     const bool header = headerType4(a.segment) && a.segment->rtick().isZero()
@@ -103,6 +176,9 @@ bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, 
             return false;
         distance = std::max(distance, d);
     }
+    const auto constraint = cross.pairs.find(a.segment);
+    if (constraint != cross.pairs.end() && constraint->second.second->segment() == b.segment)
+        distance = std::max(distance, constraint->second.minimumWidth);
     if (header) {
         const Score* score = table.score();
         distance = std::max(distance, first.minRight);
@@ -301,6 +377,8 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
         if (!score->staff(st)->show() || !system->staff(st)->show())
             return fail("Hidden staves require a later adapter");
     }
+    CrossStaffGeometry4 cross;
+    if (!prepareCrossStaff4(system, cross, reason)) return false;
     SpacingPlan4 plan;
     std::vector<Geometry4> geometry;
     const SpacingPaddingTable4 table(score);
@@ -321,7 +399,7 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                     return fail("Courtesy signatures require a terminal measure-end trailer");
                 if (!eligibleType4(&segment) || (segment.trailer() && !courtesyType4(&segment))
                     || segment.extraLeadingSpace().val() != 0
-                    || segment.spacingWidthOffset4() != 0)
+                    || (segment.spacingWidthOffset4() != 0 && !cross.pairs.count(&segment)))
                     return fail("Unadapted segment type, trailer, manual space or cross-beam offset");
                 for (const Element* annotation : segment.annotations()) {
                     if (!annotation)
@@ -339,7 +417,8 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                     const Chord* chord = toChord(item);
                     if (chord->tremolo())
                         return fail("Tremolo spacing requires a later adapter");
-                    if (chord->staffMove() != 0 || (chord->beam() && chord->beam()->cross()))
+                    if ((chord->staffMove() != 0 || (chord->beam() && chord->beam()->cross()))
+                        && !cross.chords.count(chord))
                         return fail("Cross-staff geometry requires its later stem constraints");
                     if (chord->isSmall() || !chord->graceNotes().empty())
                         return fail("Cue and grace-note rhythm requires a later adapter");
@@ -349,7 +428,7 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                             return fail("Unadapted note visibility, cue or decoration context");
                     }
                 }
-                if (!cacheGeometry4(&segment, table, g))
+                if (!cacheGeometry4(&segment, table, g, cross))
                     return fail(QString("Unadapted geometry at tick %1").arg(segment.tick().ticks()));
                 if (segment.isChordRestType()) {
                     if (!(segment.ticks() > Fraction(0, 1)))
@@ -359,6 +438,8 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                         return fail("Invalid rhythmic stretch");
                 }
             }
+            const auto correction = cross.pairs.find(&segment);
+            if (correction != cross.pairs.end()) entry.widthOffset = correction->second.widthOffset;
             plan.segments.push_back(entry);
             geometry.push_back(g);
         }
@@ -400,7 +481,7 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                     ++crCount;
                 qreal distance = 0;
                 if (!distance4(table, previous, geometry[j], current, geometry[i], plan.measures.front().measure,
-                               options.squeezeFactor, distance))
+                               options.squeezeFactor, distance, cross))
                     return fail("Unsupported segment distance");
                 x = std::max(x, previous.x + distance);
                 if (x > cursor) {
@@ -433,7 +514,13 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                 cursor = std::max(cursor, system->leftMargin() + 1.25 * current.segment->spatium());
                 current.x = cursor;
             }
-            cursor += 3.5 * current.segment->spatium() * current.stretch * options.stretchReduction;
+            qreal advance = 3.5 * current.segment->spatium() * current.stretch * options.stretchReduction
+                + current.widthOffset;
+            const auto correction = cross.pairs.find(current.segment);
+            if (correction != cross.pairs.end() && correction->second.minimumWidth > 0)
+                advance = std::max(advance, correction->second.minimumWidth);
+            if (advance < 0) return fail("Cross-staff advance needs stronger compression support");
+            cursor += advance;
         }
     }
     if (!placed)

@@ -4511,6 +4511,7 @@ System* Score::collectSystem(LayoutContext& lc)
                         s.segment->rxpos() = s.x - m->x;
                         s.segment->setWidth(s.width);
                         s.segment->setStretch(s.stretch);
+                        s.segment->setSpacingWidthOffset4(s.widthOffset);
                         }
                   }
             }
