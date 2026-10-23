@@ -2299,3 +2299,15 @@ cross contexts and unsupported decorations retain fallback. These boundaries
 are cross-staff-specific; ordinary non-cross notation has broader earlier
 coverage. Legacy-off, default style values and native within-chord packing are
 unchanged. The registered centered-beam and rest-position issues stay separate.
+
+## v0.74: milestone acceptance and next focused issue
+
+The user reports v0.73 tests passing. Both applications break the fitting score
+into F1-F2/F3-F4/F5-F6 without an obvious collision. Record the bounded milestone
+in v0.74-spacing-milestone.md. A remaining visual difference is apparent extra
+clef-to-first-note spacing on Evolution's later systems (F3/F5), with slightly
+tighter justified interior gaps. Confirm coordinates/style migration before
+changing spacing. Next audit generated system headers using the existing
+v0.73 score; do not expand musical scope or alter rhythmic constants to mask it.
+This checkpoint changes documentation only; no rebuild or new visual test is
+required. It does not claim full Studio parity or remove existing fallbacks.
