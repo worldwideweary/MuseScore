@@ -1304,7 +1304,7 @@ void TestSpacing::polyrhythmInputs()
                         QVERIFY(cr->isChord());
                         if (accidentals) {
                               const Chord* chord = toChord(cr);
-                              QCOMPARE(chord->notes().size(), 1);
+                              QCOMPARE(static_cast<int>(chord->notes().size()), 1);
                               const Note* note = chord->notes().front();
                               const int pitches[] = { 77, 65, 53, 41 };
                               const int alterations[] = { 1, 0, -1, 0 };

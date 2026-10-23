@@ -1509,3 +1509,17 @@ is rejected or a collision differs, trace the exact producer/pair floor before
 changing layout policy. Next extend the controlled rhythms to chord seconds
 and unisons, then rests/sustained voices and cross-staff combinations. The
 registered centered-beam issue remains queued separately.
+
+## v0.53.1: fix Qt 5.9 test comparison linkage
+
+The new note-count assertion compared vector::size_type with an int literal.
+On the user's Qt 5.9 build this instantiated an unavailable mixed-type
+QTest::qCompare<unsigned long, int>, failing at link time. Cast the count to
+int, matching the expected value and existing count assertions. Syntax-only
+checks cannot detect that missing template definition; a small same-type
+comparison now compiles, links and runs with the locally available Qt 5.15.
+The user's full Qt 5.9 tst_spacing build/run remains the final check.
+
+Files changed: tst_spacing.cpp and this guide. No score or production changes.
+Apply v0.53.1 after v0.53, rebuild tst_spacing, then resume the two A1 visual
+comparisons before extending the controls.
