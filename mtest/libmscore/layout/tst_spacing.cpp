@@ -41,6 +41,10 @@ class TestSpacing : public QObject, public MTest {
       void graceBeforeLayout();
       void graceNeighborPlan_data();
       void graceNeighborPlan();
+      void graceFitting_data();
+      void graceFitting();
+      void graceSqueeze_data();
+      void graceSqueeze();
       void fixedOffsetPlan();
       void geometryResolution();
       void geometryInputs_data();
@@ -3090,6 +3094,206 @@ void TestSpacing::graceNeighborPlan()
       score->setStyleValue(Sid::spacingLayout4, false);
       score->doLayout();
       const auto restored = snapshot();
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
+// Include system membership and active geometry, but not cached disabled headers
+// left behind by earlier system-break choices.
+static std::vector<qreal> graceLayoutSnapshot4(Score* score)
+      {
+      std::vector<qreal> values;
+      const System* previous = nullptr;
+      int systemIndex = -1;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            if (m->system() != previous) { previous = m->system(); ++systemIndex; }
+            values.insert(values.end(), {qreal(systemIndex), m->x(), m->width()});
+            for (const Segment& s : m->segments()) {
+                  if (!s.enabled() && (s.header() || s.trailer())) continue;
+                  values.insert(values.end(), {qreal(static_cast<int>(s.segmentType())), s.tick().toDouble(),
+                        s.enabled() ? qreal(1) : qreal(0), s.x(), s.width(), s.spacingWidthOffset4()});
+                  for (const Element* item : s.elist()) {
+                        if (!item || !item->isChord()) continue;
+                        const Chord* chord = toChord(item);
+                        values.insert(values.end(), {chord->x(), chord->spacingLeft4(), chord->spacingRight4()});
+                        for (const Chord* grace : chord->graceNotesBefore()) values.push_back(grace->x());
+                        }
+                  }
+            }
+      return values;
+      }
+
+void TestSpacing::graceFitting_data()
+      {
+      graceBeforePlan_data();
+      }
+
+void TestSpacing::graceFitting()
+      {
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + "v0.82-spacing-grace-fitting.mscx");
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      QCOMPARE(score->styleD(Sid::lastSystemFillLimit), qreal(0));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->setStyleValue(Sid::pageWidth, 100.0);
+      score->setStyleValue(Sid::pagePrintableWidth, 98.8);
+      score->doLayout();
+      System* wideSystem = score->firstMeasure()->system();
+      int count = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++count) {
+            QCOMPARE(m->system(), wideSystem);
+            QVERIFY(!m->lineBreak() && !m->pageBreak() && !m->noBreak());
+            QVERIFY(m->ticks() == Fraction(1, 1));
+            int onsets = 0;
+            for (const Segment& s : m->segments()) {
+                  if (!s.isChordRestType()) continue;
+                  QVERIFY(s.rtick() == Fraction(onsets, 4));
+                  const Element* item = s.element(0);
+                  QVERIFY(item && item->isChord());
+                  const Chord* chord = toChord(item);
+                  if (onsets == 1) QCOMPARE(chord->graceNotesBefore().size(), count < 4 ? 4 : 1);
+                  else QVERIFY(chord->graceNotes().empty());
+                  ++onsets;
+                  }
+            QCOMPARE(onsets, 3);
+            }
+      QCOMPARE(count, 6);
+      SpacingPlan4 wide;
+      QString reason;
+      QVERIFY2(buildSpacingPlan4(wideSystem, wide, &reason), qPrintable(reason));
+      const qreal naturalWidth = wide.width;
+      int previousCount = 0;
+      for (qreal ratio : {qreal(1.1), qreal(.55), qreal(.35)}) {
+            const qreal available = naturalWidth * ratio;
+            score->setStyleValue(Sid::pagePrintableWidth, available / DPI);
+            score->setStyleValue(Sid::pageWidth, available / DPI + 1.2);
+            score->setStyleValue(Sid::spacingLayout4, false);
+            score->doLayout();
+            const auto legacy = graceLayoutSnapshot4(score);
+            score->setStyleValue(Sid::spacingLayout4, true);
+            score->doLayout();
+            int total = 0;
+            int systems = 0;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  ++total;
+                  for (const Segment& s : m->segments()) {
+                        if (!s.isChordRestType()) continue;
+                        const Chord* chord = toChord(s.element(0));
+                        if (chord->graceNotes().empty()) continue;
+                        GraceBeforePlan4 group;
+                        QVERIFY2(buildGraceBeforePlan4(chord, group, &reason), qPrintable(reason));
+                        for (const GracePosition4& p : group.positions) QVERIFY(qAbs(p.chord->x() - p.x) < 1e-6);
+                        }
+                  if (m != m->system()->firstMeasure()) continue;
+                  ++systems;
+                  SpacingPlan4 plan;
+                  QVERIFY2(buildSpacingPlan4(m->system(), plan, &reason), qPrintable(reason));
+                  QVERIFY(plan.width <= available + 1e-6);
+                  QVERIFY(justifySpacingPlan4(plan, available));
+                  QVERIFY(qAbs(m->system()->width() - available) < 1e-6);
+                  for (const SpacingMeasurePlan4& e : plan.measures) {
+                        QVERIFY(qAbs(e.measure->x() - e.x) < 1e-6);
+                        QVERIFY(qAbs(e.measure->width() - e.width) < 1e-6);
+                        }
+                  for (const SpacingSegmentPlan4& e : plan.segments) {
+                        if (e.ignored) continue;
+                        QVERIFY(qAbs(e.segment->measure()->x() + e.segment->x() - e.x) < 1e-6);
+                        QVERIFY(qAbs(e.segment->width() - e.width) < 1e-6);
+                        QCOMPARE(e.widthOffset, qreal(0));
+                        }
+                  }
+            QCOMPARE(total, 6);
+            if (ratio > 1) QCOMPARE(systems, 1);
+            else QVERIFY(systems > 1);
+            QVERIFY(systems >= previousCount);
+            previousCount = systems;
+            const auto modern = graceLayoutSnapshot4(score);
+            score->doLayout();
+            const auto repeated = graceLayoutSnapshot4(score);
+            QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+            for (size_t i = 0; i < modern.size(); ++i) QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+            score->setStyleValue(Sid::spacingLayout4, false);
+            score->doLayout();
+            const auto restored = graceLayoutSnapshot4(score);
+            QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+            for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+            }
+      delete score;
+      }
+
+void TestSpacing::graceSqueeze_data()
+      {
+      graceBeforePlan_data();
+      }
+
+void TestSpacing::graceSqueeze()
+      {
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + "v0.82-spacing-grace-squeeze.mscx");
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->setStyleValue(Sid::pageWidth, 100.0);
+      score->setStyleValue(Sid::pagePrintableWidth, 98.8);
+      score->doLayout();
+      Measure* measure = score->firstMeasure();
+      QVERIFY(measure && !measure->nextMeasure());
+      QCOMPARE(measure->userStretch(), qreal(2));
+      SpacingPlan4 natural;
+      QString reason;
+      QVERIFY2(buildSpacingPlan4(measure->system(), natural, &reason), qPrintable(reason));
+      SpacingPlanOptions4 options;
+      options.minimumMeasureWidths = false;
+      options.stretchReduction = 1 - .33;
+      options.squeezeFactor = 1 - .2;
+      SpacingPlan4 compressed;
+      QVERIFY2(buildSpacingPlan4(measure->system(), compressed, &reason, options), qPrintable(reason));
+      QVERIFY(compressed.width < natural.width);
+      const qreal target = (natural.width + compressed.width) / 2;
+      score->setStyleValue(Sid::pagePrintableWidth, target / DPI);
+      score->setStyleValue(Sid::pageWidth, target / DPI + 1.2);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto legacy = graceLayoutSnapshot4(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      QVERIFY2(buildSpacingPlan4(measure->system(), natural, &reason), qPrintable(reason));
+      QVERIFY(natural.width > target);
+      SpacingPlan4 expected;
+      QVERIFY2(squeezeSpacingPlan4(measure->system(), target, expected, &reason), qPrintable(reason));
+      QVERIFY(justifySpacingPlan4(expected, target));
+      QVERIFY(qAbs(measure->system()->width() - target) < 1e-6);
+      for (const SpacingMeasurePlan4& e : expected.measures) {
+            QVERIFY(qAbs(e.measure->x() - e.x) < 1e-6);
+            QVERIFY(qAbs(e.measure->width() - e.width) < 1e-6);
+            }
+      for (const SpacingSegmentPlan4& e : expected.segments) {
+            if (e.ignored) continue;
+            QVERIFY(qAbs(e.segment->measure()->x() + e.segment->x() - e.x) < 1e-6);
+            QVERIFY(qAbs(e.segment->width() - e.width) < 1e-6);
+            }
+      Chord* main = nullptr;
+      for (const Segment& s : measure->segments()) {
+            if (s.isChordRestType() && s.element(0) && !toChord(s.element(0))->graceNotes().empty())
+                  main = toChord(s.element(0));
+            }
+      QVERIFY(main);
+      GraceBeforePlan4 group;
+      QVERIFY2(buildGraceBeforePlan4(main, group, &reason), qPrintable(reason));
+      for (const GracePosition4& p : group.positions) QVERIFY(qAbs(p.chord->x() - p.x) < 1e-6);
+      const auto modern = graceLayoutSnapshot4(score);
+      SpacingPlan4 rejected;
+      rejected.width = 123;
+      QVERIFY(!squeezeSpacingPlan4(measure->system(), 0, rejected, &reason));
+      QCOMPARE(rejected.width, qreal(123));
+      QVERIFY(graceLayoutSnapshot4(score) == modern);
+      score->doLayout();
+      const auto repeated = graceLayoutSnapshot4(score);
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i) QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto restored = graceLayoutSnapshot4(score);
       QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
       for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
       delete score;

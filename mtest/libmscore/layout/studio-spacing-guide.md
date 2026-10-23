@@ -2380,3 +2380,13 @@ before and after each group; both experimental settings are on. Tests cover
 actual full-plan positions/widths, read-only compression, rejection boundaries,
 repeat stability and spacing-off restoration under both beam modes. See
 `v0.81-grace-system-spacing.md`; actual narrow-page fitting is the next stage.
+
+### v0.82: automatic grace fitting and actual compression
+
+Test-only checkpoint. `v0.82-spacing-grace-fitting.mscx` has P1-P6 without
+explicit breaks on a narrower page; `v0.82-spacing-grace-squeeze.mscx` has one
+stretched sharp/flat group (S1) on a narrow page. Both options are saved on.
+New tests exercise actual automatic system collection at three widths and
+actual compressed/justified placement, both beam modes, group-position
+stability, repeated layout and spacing-off restoration. See
+`v0.82-grace-fitting-checkpoint.md`. No production engraving code changes.
