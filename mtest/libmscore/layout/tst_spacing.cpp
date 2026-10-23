@@ -3062,6 +3062,32 @@ void TestSpacing::graceNeighborPlan()
             QVERIFY(expected.width <= m->system()->width() + 1e-6);
             if (expected.width < m->system()->width() - 1e-6)
                   QVERIFY(justifySpacingPlan4(expected, m->system()->width()));
+            bool measureMismatch = false;
+            for (const SpacingMeasurePlan4& e : expected.measures)
+                  measureMismatch = measureMismatch || qAbs(e.measure->x() - e.x) >= 1e-6
+                        || qAbs(e.measure->width() - e.width) >= 1e-6;
+            if (measureMismatch) {
+                  // Keep the original assertion: report the complete natural
+                  // and applied plans instead of guessing at a tolerance/fix.
+                  QString report = QString("%1: natural=%2 system=%3 expected=%4")
+                        .arg(file).arg(natural.width, 0, 'g', 17)
+                        .arg(m->system()->width(), 0, 'g', 17).arg(expected.width, 0, 'g', 17);
+                  for (size_t i = 0; i < expected.measures.size(); ++i) {
+                        const SpacingMeasurePlan4& e = expected.measures[i];
+                        report += QString("\nmeasure tick=%1: x actual=%2 expected=%3; width actual=%4 expected=%5 natural=%6")
+                              .arg(e.measure->tick().ticks()).arg(e.measure->x(), 0, 'g', 17)
+                              .arg(e.x, 0, 'g', 17).arg(e.measure->width(), 0, 'g', 17)
+                              .arg(e.width, 0, 'g', 17).arg(natural.measures[i].width, 0, 'g', 17);
+                        }
+                  for (const SpacingSegmentPlan4& e : expected.segments) {
+                        if (e.ignored) continue;
+                        report += QString("\nsegment tick=%1 type=%2: x actual=%3 expected=%4; width actual=%5 expected=%6")
+                              .arg(e.segment->tick().ticks()).arg(int(e.segment->segmentType()))
+                              .arg(e.segment->measure()->x() + e.segment->x(), 0, 'g', 17)
+                              .arg(e.x, 0, 'g', 17).arg(e.segment->width(), 0, 'g', 17).arg(e.width, 0, 'g', 17);
+                        }
+                  QVERIFY2(!measureMismatch, qPrintable(report));
+                  }
             for (const SpacingMeasurePlan4& e : expected.measures) {
                   QVERIFY(qAbs(e.measure->x() - e.x) < 1e-6);
                   QVERIFY(qAbs(e.measure->width() - e.width) < 1e-6);
