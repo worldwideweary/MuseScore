@@ -1780,3 +1780,36 @@ Inspect the moving notes' intervals above the sustained voices and the common
 beat boundary. Continue with cross-staff combinations after S1 validation;
 keep R1's rest-position difference and the centered-beam reproduction queued
 as explicit remaining work.
+
+## v0.60: cross-staff source audit and X1 fallback baseline
+
+The user reports v0.59 tests passing. Natural and justified S1 look close to
+4.7.5, including regular moving-note intervals over the sustained voices.
+Continue with cross-staff while retaining the explicit R1 rest-position and
+centered-beam differences as remaining work.
+
+See v0.60-cross-staff-spacing-audit.md for the pinned source rules, existing
+bounded fallback coverage and integration order. The full planner still lacks
+cross-stem, signed fixed-displacement and nonadjacent-beam constraints. Its
+guard stays in place. This checkpoint does not change production behavior.
+
+Add natural/justified X1 with both experimental options enabled:
+
+- v0.60-spacing-cross-staff-natural.mscx
+- v0.60-spacing-cross-staff.mscx
+
+X1 has one alternating cross-staff eighth-note beam above two sustained voices,
+with no rests, tuplets, accidentals or beam-position overrides. The new
+crossStaffPlanBoundary test covers both beam settings, exact source rhythm,
+actual cross-staff beam membership, the current planner rejection, unchanged
+output/live positions, repeat layout and default-off restoration.
+
+Files changed: tst_spacing.cpp, this guide, the audit and two X1 scores. Local
+checks cover XML/rational rhythm, intended moves/pitches/styles, moc/C++11
+debug/NDEBUG syntax, whitespace and parent-index patch application. Full
+Qt 5.9 tests and live comparison remain for the user's build.
+
+Apply v0.60 after v0.59. Run tst_spacing/tst_beam and compare natural X1 first,
+then justified X1 with 4.7.5. These are intentionally fallback baseline captures.
+Next implement the bounded read-only cross-staff constraints described in the
+audit, then require full-plan application for X1 before expanding the cases.

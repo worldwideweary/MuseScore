@@ -49,6 +49,8 @@ class TestSpacing : public QObject, public MTest {
       void courtesyPlan();
       void polyrhythmInputs_data();
       void polyrhythmInputs();
+      void crossStaffPlanBoundary_data();
+      void crossStaffPlanBoundary();
       void rhythmicLayoutSwitch();
       void crossBeamSwitch_data();
       void crossBeamSwitch();
@@ -1495,6 +1497,87 @@ void TestSpacing::polyrhythmInputs()
       score->setStyleValue(Sid::spacingLayout4, false);
       score->doLayout();
       const std::vector<qreal> restored = snapshot();
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
+void TestSpacing::crossStaffPlanBoundary_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::addColumn<bool>("modernBeams");
+      for (bool beams : { false, true }) {
+            const QString suffix = beams ? "-studio-beams" : "-legacy-beams";
+            QTest::newRow(qPrintable("natural" + suffix)) << QString("v0.60-spacing-cross-staff-natural.mscx") << beams;
+            QTest::newRow(qPrintable("justified" + suffix)) << QString("v0.60-spacing-cross-staff.mscx") << beams;
+            }
+      }
+
+void TestSpacing::crossStaffPlanBoundary()
+      {
+      QFETCH(QString, file);
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      const auto snapshot = [score]() {
+            std::vector<qreal> result;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  result.push_back(m->x()); result.push_back(m->width());
+                  for (Segment& s : m->segments()) {
+                        if (!s.enabled() && (s.header() || s.trailer())) continue;
+                        result.push_back(static_cast<int>(s.segmentType()));
+                        result.push_back(s.rtick().toDouble());
+                        result.push_back(s.x()); result.push_back(s.width());
+                        result.push_back(s.spacingWidthOffset4());
+                        }
+                  }
+            return result;
+            };
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto legacy = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      Measure* m = score->firstMeasure();
+      QVERIFY(m && !m->nextMeasure() && m->ticks() == Fraction(1, 2));
+      int onset = 0;
+      for (Segment& s : m->segments()) {
+            QVERIFY(qIsFinite(s.x()) && qIsFinite(s.width()) && s.width() >= 0);
+            if (!s.isChordRestType()) continue;
+            QVERIFY(s.rtick() == Fraction(onset, 8));
+            const ChordRest* cr = s.cr(0);
+            QVERIFY(cr && cr->isChord() && cr->actualTicks() == Fraction(1, 8));
+            const Chord* chord = toChord(cr);
+            QCOMPARE(chord->staffMove(), onset % 2);
+            QCOMPARE(static_cast<int>(chord->notes().size()), 1);
+            QCOMPARE(chord->notes().front()->pitch(), onset % 2 ? 53 : 65);
+            QVERIFY(chord->beam() && chord->beam()->cross());
+            if (onset == 0) {
+                  for (int track : { 1, VOICES }) {
+                        const ChordRest* held = s.cr(track);
+                        QVERIFY(held && held->isChord() && held->actualTicks() == Fraction(1, 2));
+                        }
+                  }
+            ++onset;
+            }
+      QCOMPARE(onset, 4);
+      const auto modern = snapshot();
+      SpacingPlan4 plan;
+      plan.width = -123;
+      QString reason;
+      QVERIFY(!buildSpacingPlan4(m->system(), plan, &reason));
+      QVERIFY2(reason.contains("cross-beam offset") || reason.startsWith("Cross-staff geometry"), qPrintable(reason));
+      QCOMPARE(plan.width, qreal(-123));
+      QVERIFY(plan.measures.empty() && plan.segments.empty());
+      QVERIFY(snapshot() == modern);
+      score->doLayout();
+      const auto repeated = snapshot();
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i) QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto restored = snapshot();
       QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
       for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
       delete score;
