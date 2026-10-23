@@ -2323,3 +2323,15 @@ See v0.76-header-spacing-audit.md for source findings, values and next steps.
 Apply after v0.75, run both mtests and compare F3/F5 in the new control in both
 applications. Local checks pass; live checks are pending. If the gap remains,
 compare effective styles and SVG coordinates before selecting a fix.
+
+## v0.77 WIP: header control accepted; grace-group source located
+
+The user reports v0.76 tests passing. Explicit-style captures bring the later
+header gaps into close agreement, so no header algorithm change is justified.
+The pinned grace-group layout was located in TLayout::layoutGraceNotesGroup,
+with source blob hashes verified against the pinned tree. See
+v0.77-grace-group-source-audit.md for shape accumulation, group-to-main safety
+bound, call order, coordinate/geometry obligations and the first adapter scope.
+Documentation only; no rebuild or new score. Next implement ordinary before-
+grace group spacing behind the optional style, keeping slurs and broader grace
+contexts separate until the core spacing and full-plan geometry are validated.
