@@ -62,6 +62,8 @@
 #include "timesig.h"
 #include "tremolo.h"
 #include "beamlayout4.h"
+#include "spacinglayout4.h"
+#include <map>
 #include "tuplet.h"
 #include "undo.h"
 #include "utils.h"
@@ -4102,6 +4104,60 @@ static void processLines(System* system, std::vector<Spanner*> lines, bool align
             }
       }
 
+// Allocate positive spare width with one force across an ordinary system.
+// Return no targets for unsupported systems, preserving the existing path.
+static std::map<Measure*, qreal> systemSpacingWidths4(System* system, qreal extraWidth)
+{
+    struct Spring {
+        Measure* measure;
+        qreal width;
+        qreal stretch;
+    };
+    std::vector<Spring> springs;
+    std::vector<SpacingSpring4> flexible;
+    std::map<Measure*, qreal> targets;
+    for (MeasureBase* mb : system->measures()) {
+        if (!mb->isMeasure())
+            return {};
+        Measure* m = toMeasure(mb);
+        if (m->isMMRest())
+            return {};
+        Segment* first = m->first();
+        while (first && (!first->enabled() || first->allElementsInvisible()))
+            first = first->next();
+        qreal occupied = first ? first->x() : 0;
+        const std::size_t count = springs.size();
+        for (Segment& seg : m->segments()) {
+            if (!seg.enabled() || !seg.visible() || seg.allElementsInvisible())
+                continue;
+            occupied += seg.width();
+            if (seg.ticks().isZero())
+                continue;
+            if (!seg.isChordRestType())
+                return {}; // do not mix rhythmic and nonrhythmic timed springs
+            const qreal stretch = segmentSpacingStretch4(&seg);
+            const qreal width = seg.width() - seg.spacingWidthOffset4();
+            if (!(stretch > 0) || !qIsFinite(stretch) || !(width >= 0) || !qIsFinite(width))
+                return {};
+            springs.push_back({ m, width, stretch });
+            flexible.push_back({ width, stretch });
+        }
+        // A clamped minimum measure width contains slack not represented by
+        // these segment floors. Leave that case to the existing distributor.
+        if (springs.size() == count || qAbs(occupied - m->width()) > 1e-6 * m->spatium())
+            return {};
+        targets[m] = m->width();
+    }
+    if (targets.size() < 2)
+        return {};
+    const qreal force = spacing4SpringForce(flexible, extraWidth);
+    if (!(force > 0))
+        return {};
+    for (const Spring& spring : springs)
+        targets[spring.measure] += qMax(qreal(0), force * spring.stretch - spring.width);
+    return targets;
+}
+
 //---------------------------------------------------------
 //   collectSystem
 //---------------------------------------------------------
@@ -4384,6 +4440,7 @@ System* Score::collectSystem(LayoutContext& lc)
       // stretch incomplete row
       //
       qreal rest;
+      std::map<Measure*, qreal> studioWidths;
       if (MScore::noHorizontalStretch)
             rest = 0;
       else {
@@ -4437,6 +4494,8 @@ System* Score::collectSystem(LayoutContext& lc)
                   else
                         rest = minWidth;
                   }
+            if (styleB(Sid::spacingLayout4) && rest > 0)
+                  studioWidths = systemSpacingWidths4(system, rest);
             rest /= totalWeight;
             }
 
@@ -4454,7 +4513,11 @@ System* Score::collectSystem(LayoutContext& lc)
                   Measure* m = toMeasure(mb);
                   qreal stretch = m->basicStretch();
                   int weight = m->layoutWeight();
-                  ww  += rest * weight * stretch;
+                  auto studioWidth = studioWidths.find(m);
+                  if (studioWidth != studioWidths.end())
+                        ww = studioWidth->second;
+                  else
+                        ww += rest * weight * stretch;
                   m->stretchMeasure(ww);
                   m->layoutStaffLines();
                   if (createBrackets) {

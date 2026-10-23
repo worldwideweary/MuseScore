@@ -643,3 +643,52 @@ test syntax checks pass. No engraving code changes in this checkpoint. Full
 tst_spacing/tst_beam and rendered system comparisons require the user's build.
 Apply v0.41 after v0.40. Next use these results to implement a bounded system-wide
 justification stage behind spacingLayout4 while preserving the default-off path.
+
+## v0.42: share rhythmic spring force across supported systems
+
+The user reports v0.41 tests passing. The system comparison shows Evolution
+allocating relatively more width to quarter-note measures and Studio allocating
+relatively more to dense measures. Address that distribution with the existing
+spacingLayout4 option; its default remains off and beamLayout4 stays independent.
+
+In collectSystem, pool flexible rhythmic segment widths across eligible systems
+and solve for one force before allocating each measure's target width. This
+follows pinned Studio v4.7.5 HorizontalSpacing::justifySystem and
+stretchSegmentsToWidth. Subtract signed cross-beam offsets before solving, keep
+collision floors until their pre-tension is exceeded, and use the same duration
+and user-stretch weights as Evolution's experimental per-measure springs.
+Existing Measure::stretchMeasure applies the targets and retains its element
+layout and rest-centering work. System collection and line fitting are unchanged.
+
+The pooled path requires at least two ordinary measures, positive spare width,
+and at least one visible rhythmic spring in each measure. Systems containing
+frames, multi-measure rests, timed non-ChordRest segments, invalid spring values,
+or minimum-measure-width slack retain the current measure distribution. A short
+terminal system left natural by the fill threshold and noHorizontalStretch also
+retain their current behavior. The default-off path uses the original formula.
+The spacing checkbox tooltip now describes justification as part of this option.
+
+Reuse **v0.41-spacing-systems.mscx**; it already enables experimental spacing.
+Compare the same three systems in both applications, especially H27-H29 and the
+reversed H30-H32. Inspect barline positions and within-measure note intervals.
+H33-H35 cover collision floors, chromatic notes, mixed rhythm and triplets.
+Recheck the option-off layout as well. No new visual fixture is needed for this
+algorithm change.
+
+Add springForce unit cases for rhythmic weights, unequal collision floors,
+zero spare width and invalid spring input. Extend systemInputs under both beam
+styles to require a common segment force across the first two spacious systems,
+while retaining content, grouping, finite geometry, repeated-layout stability
+and exact legacy-restoration checks.
+
+Local Qt moc/uic generation and C++11 syntax checks for layout.cpp, measure.cpp
+and tst_spacing.cpp pass. An isolated harness using the actual extracted system
+allocator and Measure::stretchMeasure spring loop passes 100,000 generated
+systems against the pinned Studio solver. It checks total allocated width,
+collision floors, signed fixed offsets and frame/MMRest/slack fallbacks. These
+checks use mocked score objects and do not replace a full application run.
+
+Apply v0.42 after v0.41. Full tst_spacing/tst_beam and rendered comparisons remain
+pending on the user's build. Next use the three-system comparison to decide
+whether another width-allocation correction is needed before expanding the
+eligible contexts or changing system fitting.

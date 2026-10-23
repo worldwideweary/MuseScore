@@ -21,6 +21,7 @@ class TestSpacing : public QObject, public MTest {
       void initTestCase() { initMTest(); }
       void styleRoundTrip();
       void durationPolicy();
+      void springForce();
       void rhythmicLayoutSwitch();
       void crossBeamSwitch_data();
       void crossBeamSwitch();
@@ -233,6 +234,19 @@ void TestSpacing::rhythmicLayoutSwitch()
             QCOMPARE(static_cast<int>(j), static_cast<int>(entry.x.size()));
             }
       delete score;
+      }
+
+void TestSpacing::springForce()
+      {
+      const double weights = 1 + 2.0 / 3 + 4.0 / 9;
+      std::vector<SpacingSpring4> rhythm = { { 3.5, 1 }, { 3.5 * 2 / 3, 2.0 / 3 }, { 3.5 * 4 / 9, 4.0 / 9 } };
+      QVERIFY(qAbs(spacing4SpringForce(rhythm, 2 * weights) - 5.5) < 1e-12);
+      std::vector<SpacingSpring4> collision = { { 1, 1 }, { 10, 1 } };
+      QCOMPARE(spacing4SpringForce(collision, 1), 2.0);
+      QCOMPARE(spacing4SpringForce(collision, 9), 10.0);
+      QCOMPARE(spacing4SpringForce(collision, 0), 0.0);
+      QCOMPARE(spacing4SpringForce({}, 1), 0.0);
+      QCOMPARE(spacing4SpringForce({ { 1, 0 } }, 1), 0.0);
       }
 
 void TestSpacing::crossBeamSwitch_data()
@@ -672,7 +686,10 @@ void TestSpacing::systemInputs()
       score->doLayout();
       QVERIFY(grouped());
       const int counts[] = { 4, 8, 16, 16, 8, 4, 7, 16, 12 };
+      qreal systemForce = 0;
       for (size_t i = 0; i < measures.size(); ++i) {
+            if (i % 3 == 0)
+                  systemForce = 0;
             Measure* m = measures[i];
             QVERIFY(m->ticks() == Fraction(1, 1));
             QVERIFY(qIsFinite(m->x()) && qIsFinite(m->width()) && m->width() > 0);
@@ -686,6 +703,17 @@ void TestSpacing::systemInputs()
                   ++onsets;
                   ChordRest* cr = seg.cr(0);
                   QVERIFY(cr && cr->isChord());
+                  // The first two spacious systems have no active collision
+                  // floors: one rhythmic spring force must span all 3 measures.
+                  if (i < 6) {
+                        QVERIFY(seg.stretch() > 0);
+                        const qreal force = seg.width() / seg.stretch();
+                        if (systemForce > 0)
+                              QVERIFY2(qAbs(force - systemForce) < 1e-6,
+                                    qPrintable(QString("H%1: spring force %2, system force %3")
+                                          .arg(i + 27).arg(force, 0, 'g', 15).arg(systemForce, 0, 'g', 15)));
+                        systemForce = force;
+                        }
                   if (i == 8) {
                         QVERIFY(cr->tuplet());
                         QVERIFY(cr->actualTicks() == Fraction(1, 12));

@@ -3760,7 +3760,7 @@ static Fraction shortestSpacingChordRest4(const Segment* segment)
     return shortest;
 }
 
-static qreal segmentSpacingStretch4(const Segment* segment)
+double segmentSpacingStretch4(const Segment* segment)
 {
     const Segment* previous = segment->prev(SegmentType::ChordRest);
     const qreal slope = segment->score()->styleD(Sid::measureSpacing);
