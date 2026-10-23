@@ -1660,7 +1660,7 @@ void TestSpacing::crossStaffPlanBoundary()
             QVERIFY(qAbs(context.chords[i].stemX - chord->x() - chord->stem()->x()) < 1e-6);
             }
       for (int i = 0; i < 3; ++i) {
-            QVERIFY(context.pairs[i].canAdjust);
+            QVERIFY(context.pairs[i].adjacentSegments && context.pairs[i].canAdjust);
             const bool up = expectedStaff(i) != 0;
             const bool nextUp = expectedStaff(i + 1) != 0;
             const qreal offset = up == nextUp ? 0 : (up ? displacement : -displacement);
@@ -1788,17 +1788,62 @@ void TestSpacing::crossStaffInterleaved()
       QVERIFY(first);
       const auto modern = snapshot();
       CrossStaffContext4 context;
-      context.beam = first->beam();
       QString reason;
-      QVERIFY(!buildCrossStaffContext4(first->beam(), context, &reason));
-      QVERIFY(!reason.isEmpty());
-      QCOMPARE(context.beam, static_cast<const Beam*>(first->beam()));
-      QVERIFY(context.chords.empty() && context.pairs.empty());
+      QVERIFY2(buildCrossStaffContext4(first->beam(), context, &reason), qPrintable(reason));
+      QCOMPARE(static_cast<int>(context.chords.size()), 4);
+      QCOMPARE(static_cast<int>(context.pairs.size()), 3);
+      for (int i = 0; i < 4; ++i) {
+            const Chord* chord = context.chords[i].chord;
+            QCOMPARE(context.chords[i].visualStaff, i < 2 ? 1 : 0);
+            QCOMPARE(context.chords[i].up, i < 2);
+            QCOMPARE(chord->up(), context.chords[i].up);
+            QVERIFY(qAbs(context.chords[i].stemX - chord->x() - chord->stem()->x()) < 1e-6);
+            }
+      for (int i = 0; i < 3; ++i) {
+            const CrossStaffPair4& pair = context.pairs[i];
+            QVERIFY(!pair.adjacentSegments && !pair.canAdjust);
+            QCOMPARE(pair.widthOffset, qreal(0));
+            QCOMPARE(pair.minimumWidth, qreal(0));
+            if (i == 1) {
+                  qreal padding = 0;
+                  const SpacingPaddingTable4 table(score);
+                  QVERIFY(table.padding(ElementType::STEM, ElementType::STEM, padding));
+                  const qreal expected = qMax(qreal(0), context.chords[i].stemX - context.chords[i + 1].stemX + padding);
+                  QVERIFY(expected > 0 && qAbs(pair.minimumStemDistance - expected) < 1e-6);
+                  const qreal actual = pair.second->segment()->x() + context.chords[i + 1].stemX
+                        - pair.first->segment()->x() - context.chords[i].stemX;
+                  QVERIFY(actual + 1e-6 >= padding);
+                  }
+            else QCOMPARE(pair.minimumStemDistance, qreal(0));
+            }
       SpacingPlan4 plan;
-      plan.width = -123;
-      QVERIFY(!buildSpacingPlan4(m->system(), plan, &reason));
-      QCOMPARE(plan.width, qreal(-123));
-      QVERIFY(plan.segments.empty() && plan.measures.empty());
+      QVERIFY2(buildSpacingPlan4(m->system(), plan, &reason), qPrintable(reason));
+      if (!file.contains("-natural"))
+            QVERIFY(justifySpacingPlan4(plan, score->styleD(Sid::pagePrintableWidth) * DPI));
+      QVERIFY(qAbs(plan.width - m->system()->width()) < 1e-6);
+      for (const SpacingSegmentPlan4& e : plan.segments) {
+            if (e.ignored) continue;
+            QCOMPARE(e.widthOffset, qreal(0));
+            QVERIFY(qAbs(m->x() + e.segment->x() - e.x) < 1e-6);
+            QVERIFY(qAbs(e.segment->width() - e.width) < 1e-6);
+            QVERIFY(qAbs(e.segment->spacingWidthOffset4()) < 1e-6);
+            }
+      Chord* edited = const_cast<Chord*>(first);
+      const Direction saved = edited->stemDirection();
+      edited->setStemDirection(Direction::UP);
+      SpacingPlan4 rejected;
+      rejected.width = -123;
+      QVERIFY(!buildSpacingPlan4(m->system(), rejected, &reason));
+      QCOMPARE(rejected.width, qreal(-123));
+      QVERIFY(rejected.segments.empty() && rejected.measures.empty());
+      edited->setStemDirection(saved);
+      Chord* companion = toChord(m->first(SegmentType::ChordRest)->cr(1));
+      const Fraction savedTicks = companion->ticks();
+      companion->setTicks(Fraction(1, 8));
+      QVERIFY(!buildSpacingPlan4(m->system(), rejected, &reason));
+      QCOMPARE(rejected.width, qreal(-123));
+      QVERIFY(rejected.segments.empty() && rejected.measures.empty());
+      companion->setTicks(savedTicks);
       QVERIFY(snapshot() == modern);
       score->doLayout();
       const auto repeated = snapshot();

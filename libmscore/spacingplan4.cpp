@@ -85,17 +85,37 @@ bool prepareCrossStaff4(System* system, CrossStaffGeometry4& result, QString* re
         || context.chords.back().chord->rtick() + context.chords.back().chord->actualTicks() != measure->ticks())
         return fail("Cross-staff placement requires a complete measure stream");
     CrossStaffGeometry4 prepared;
-    for (const CrossStaffChord4& e : context.chords) {
+    for (const CrossStaffChord4& e : context.chords)
         prepared.chords[e.chord] = e;
-        // Only start-aligned full-measure held chords are admitted as companions.
-        // This excludes targets along the unknown vertical stem extension.
-        for (const Element* item : e.chord->segment()->elist()) {
-            if (!item || item == e.chord) continue;
-            if (!item->isChord() || !e.chord->rtick().isZero()
-                || toChord(item)->actualTicks() != measure->ticks())
-                return fail("Cross-staff placement needs start-aligned sustained companions");
+    int movingTrack = -1;
+    int movingCount = 0;
+    for (const Segment& segment : measure->segments()) {
+        if (!segment.isChordRestType()) continue;
+        for (const Element* item : segment.elist()) {
+            if (!item || (item->isChord() && prepared.chords.count(toChord(item)))) continue;
+            if (!item->isChord()) return fail("Cross-staff companions currently require chords");
+            const Chord* c = toChord(item);
+            if (!c->visible() || c->beam() || c->staffMove() || c->isGrace() || c->tuplet()
+                || c->tremolo() || c->isSmall() || c->mag() != 1 || c->isNudged() || c->noStem() || !c->stem()
+                || !c->graceNotes().empty() || c->notes().size() != 1)
+                return fail("Unadapted moving cross-staff companion");
+            const Note* note = c->notes().front();
+            if (!note->visible() || note->isSmall() || !note->offset().isNull() || note->mirror()
+                || note->headGroup() != NoteHead::Group::HEAD_NORMAL || note->headType() != NoteHead::Type::HEAD_AUTO)
+                return fail("Unadapted moving cross-staff companion note");
+            if (c->rtick().isZero() && c->actualTicks() == measure->ticks()) continue;
+            // First moving scope: one complete un-beamed sixteenth-note voice.
+            if (c->actualTicks() != Fraction(1, 16)
+                || c->durationType().type() != TDuration::DurationType::V_16TH
+                || (movingTrack >= 0 && c->track() != movingTrack)
+                || c->rtick() != Fraction(movingCount, 16))
+                return fail("Cross-staff companions need one complete sixteenth-note stream");
+            movingTrack = c->track();
+            ++movingCount;
         }
     }
+    if (movingCount && Fraction(movingCount, 16) != measure->ticks())
+        return fail("Incomplete moving cross-staff companion");
     for (size_t i = 0; i < context.pairs.size(); ++i) {
         prepared.pairs[context.pairs[i].first->segment()] = context.pairs[i];
     }
@@ -129,7 +149,8 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
             // In this bounded context the beam lies between the staves. Use
             // the proven stem side without borrowing a provisional stem length.
             // Keep this conservative extension confined to the restricted
-            // companion/onset context above; broader cases remain unsupported.
+            // held or single un-beamed moving-voice context above; broader cases
+            // remain unsupported. This conservative extent needs visual review.
             const qreal reach = 100000;
             const QRectF rect(e.stemX - width / 2, e.up ? y - reach : y - width / 2,
                               width, reach + width / 2);
@@ -176,7 +197,7 @@ bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, 
     }
     const auto constraint = cross.pairs.find(a.segment);
     if (constraint != cross.pairs.end() && constraint->second.second->segment() == b.segment)
-        distance = std::max(distance, constraint->second.minimumWidth);
+        distance = std::max(distance, std::max(constraint->second.minimumWidth, constraint->second.minimumStemDistance));
     if (header) {
         const Score* score = table.score();
         distance = std::max(distance, first.minRight);
@@ -261,7 +282,8 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
             || chord->isSmall() || chord->mag() != 1.0 || chord->noStem() || !chord->stem()
             || chord->isNudged() || chord->stemDirection() != Direction::AUTO
             || chord->durationType().type() != TDuration::DurationType::V_EIGHTH
-            || chord->actualTicks() != Fraction(1, 8) || chord->segment()->ticks() != chord->actualTicks())
+            || chord->actualTicks() != Fraction(1, 8) || chord->segment()->ticks() <= Fraction(0, 1)
+            || chord->segment()->ticks() > chord->actualTicks())
             return fail("Unadapted cross-staff chord, rhythm or manual context");
         const int staff = chord->vStaffIdx();
         if (staff < 0 || staff >= score->nstaves() || !score->staff(staff)->show()
@@ -334,7 +356,8 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
         CrossStaffPair4 pair;
         pair.first = a.chord;
         pair.second = b.chord;
-        pair.canAdjust = true;
+        pair.adjacentSegments = a.chord->segment()->next(SegmentType::ChordRest) == b.chord->segment();
+        pair.canAdjust = pair.adjacentSegments;
         for (int side = 0; side < 2; ++side) {
             const Chord* chord = side ? b.chord : a.chord;
             for (const Element* item : chord->segment()->elist()) {
@@ -346,11 +369,13 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
         if (a.up != b.up) {
             pair.widthOffset = pair.canAdjust ? (a.up ? displacement : -displacement) : 0;
             if (a.up) {
-                pair.minimumWidth = std::max(2 * displacement, headWidth + stemPadding);
+                if (pair.adjacentSegments)
+                    pair.minimumWidth = std::max(2 * displacement, headWidth + stemPadding);
                 // Source minStemDistOnNonAdjacentCross also applies to
                 // adjacent segments. Keep it explicit for later lookback.
                 pair.minimumStemDistance = std::max(qreal(0), a.stemX - b.stemX + stemPadding);
-                pair.minimumWidth = std::max(pair.minimumWidth, pair.minimumStemDistance);
+                if (pair.adjacentSegments)
+                    pair.minimumWidth = std::max(pair.minimumWidth, pair.minimumStemDistance);
             }
         }
         context.pairs.push_back(pair);
@@ -469,6 +494,12 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
         }
         else {
             qreal x = -std::numeric_limits<qreal>::max();
+            // A beam neighbor can lie beyond the ordinary geometry lookback.
+            const Segment* requiredPrevious = nullptr;
+            for (const auto& pair : cross.pairs) {
+                if (pair.second.minimumStemDistance > 0 && pair.second.second->segment() == current.segment)
+                    requiredPrevious = pair.second.first->segment();
+            }
             int crCount = 0;
             for (size_t j = i; j > 0;) {
                 --j;
@@ -497,7 +528,8 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                     cursor = x;
                 }
                 const Fraction previousEnd = previous.segment->tick() + previous.segment->ticks();
-                if (previousEnd < current.segment->tick()) {
+                if (previousEnd < current.segment->tick()
+                    && (!requiredPrevious || previous.segment->tick() <= requiredPrevious->tick())) {
                     if (!current.segment->isChordRestType()
                         || cursor + geometry[i].leftEdge > previous.x + geometry[j].minRight
                         || (previous.segment->measure() != current.segment->measure()

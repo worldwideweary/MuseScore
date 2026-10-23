@@ -2019,3 +2019,51 @@ Next adapt adjacency classification, nonadjacent stem constraints and companion
 geometry together in a bounded placement stage; then change this test from
 expected fallback to actual plan application. This WIP saves the reproduction
 and rejection boundary before production changes.
+
+## v0.68 WIP: connect X4 interleaving to the placement planner
+
+The user reports v0.67 mtests passing. X4's justified capture looks close to
+Studio 4.7.5, while Evolution's fallback natural layout is slightly wider.
+Reuse the same two v0.67 files; this checkpoint changes the algorithm, not the
+musical input. Both experimental options already start enabled.
+
+Classify consecutive beam chords by whether their chord/rest segments are
+adjacent. An inserted onset permits a shorter positive segment duration than
+the eighth-note chord duration. Nonadjacent pairs receive no signed rhythmic
+offset and no adjacent cross-beam minimumWidth floor. The explicit up-to-down
+stem-center distance plus stem padding remains a pair-distance constraint.
+Ensure lookback reaches that beam neighbor even when the ordinary geometric
+lookback would stop at an intervening segment. Adjacent X1-X3 corrections stay
+covered by their existing actual-application tests.
+
+Placement now admits one complete un-beamed ordinary sixteenth-note companion
+stream in the same single-measure grand-staff context, alongside start-aligned
+held companions. Validate every companion onset, including segments without a
+beam chord. Other moving rhythms, additional moving streams, companion beams,
+rests, tuplets, manual cross-beam stems and wider system contexts still fall
+back. Temporary cross-stem geometry retains the conservative extension used
+in X1-X3; this stage is not the complete Studio stem-shape pipeline. Its visual
+behavior against moving targets must be evaluated with the supplied captures.
+
+Change crossStaffInterleaved from expected fallback to full-plan acceptance
+and actual application: inferred nonadjacency, zero fixed offsets, explicit
+stem clearance, system/segment positions and widths, repeat stability and
+legacy-off restoration under both beam settings. Forced cross-beam direction
+and an invalid companion duration must reject atomically.
+
+Files changed: spacingplan4.cpp/.h, tst_spacing.cpp, guide and audit. Local
+moc/C++11 debug/NDEBUG syntax checks pass. An actual context-body harness with
+controlled DOM covers 560 adjacent/interleaved cases across staff patterns,
+anchors, offsets and rejection. An actual builder/distance-body harness with
+injected pair constraints and controlled geometry covers 1,000 nonadjacent
+lookback/floor/justification cases; removing the required lookback makes the
+regression fail. These harnesses do not validate live companion eligibility,
+stem rectangles or application dispatch. Full Qt 5.9 mtests and rendered X4
+comparison remain pending on the user's build.
+
+Apply v0.68 after v0.67, run tst_spacing/tst_beam, then reuse
+v0.67-spacing-cross-staff-interleaved-natural.mscx followed by
+v0.67-spacing-cross-staff-interleaved.mscx. Compare natural width and the
+lower-to-upper beam transition, then justified rhythm and flag clearance.
+Next resolve any X4 discrepancy before widening to accidentals/chords and
+additional moving voices. No legacy-off or vertical beam-anchor policy changes.

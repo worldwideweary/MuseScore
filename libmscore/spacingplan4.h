@@ -15,7 +15,7 @@ class Chord;
 
 // Read-only preparation for cross-staff placement. This first context covers
 // one automatic, single-note eighth-note beam between adjacent ordinary staves.
-// It does not authorize the placement planner to accept cross-staff geometry.
+// Placement applies its own additional companion/system eligibility checks.
 struct CrossStaffChord4 {
     const Chord* chord = nullptr;
     int visualStaff = 0;
@@ -25,6 +25,7 @@ struct CrossStaffChord4 {
 struct CrossStaffPair4 {
     const Chord* first = nullptr;
     const Chord* second = nullptr;
+    bool adjacentSegments = false; // beam neighbors may have intervening voice onsets
     bool canAdjust = false;
     qreal widthOffset = 0; // fixed signed displacement, outside rhythmic springs
     qreal minimumWidth = 0;
