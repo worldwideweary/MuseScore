@@ -111,6 +111,8 @@ class Chord final : public ChordRest {
 
       LedgerLine* ledgerLines()                  { return _ledgerLines; }
       const LedgerLine* ledgerLines() const      { return _ledgerLines; }
+      qreal spacingLeft4() const                 { return _spaceLw; }
+      qreal spacingRight4() const                { return _spaceRw; }
 
       qreal defaultStemLength() const;
       qreal minAbsStemLength() const;

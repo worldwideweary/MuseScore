@@ -8,6 +8,8 @@
 #include "libmscore/spacinglayout4.h"
 #include "libmscore/spacinggeometry4.h"
 #include "libmscore/spacingcollision4.h"
+#include "libmscore/spacingplan4.h"
+#include "libmscore/system.h"
 #include "libmscore/shape.h"
 #include "libmscore/notedot.h"
 #include "libmscore/clef.h"
@@ -34,6 +36,8 @@ class TestSpacing : public QObject, public MTest {
       void geometryInputs_data();
       void geometryInputs();
       void collisionPolicy();
+      void placementPlan_data();
+      void placementPlan();
       void rhythmicLayoutSwitch();
       void crossBeamSwitch_data();
       void crossBeamSwitch();
@@ -267,7 +271,9 @@ void TestSpacing::geometryResolution()
       QVERIFY(score);
       {
       Chord context(score);
+      context.setParent(score->firstMeasure()->first(SegmentType::ChordRest));
       context.setTrack(0);
+      context.setDurationType(TDuration::DurationType::V_EIGHTH);
       Note* ownedNote = new Note(score);
       context.add(ownedNote);
       Note& note = *ownedNote;
@@ -326,6 +332,25 @@ void TestSpacing::geometryResolution()
       resolved = spacingResolveShape4(native, candidates);
       QCOMPARE(int(resolved.elements[0].identity), int(SpacingIdentity4::UNCLASSIFIED));
       QCOMPARE(int(resolved.elements[2].identity), int(SpacingIdentity4::UNCLASSIFIED));
+      // Producer-tagged aggregates remain in the snapshot but have a separate
+      // collision projection. Arbitrary zero-height rectangles stay opaque.
+      const SpacingPaddingTable4 table(score);
+      SpacingShape4 aggregate = tagged;
+      SpacingShapeElement4 spacer(QRectF(-1, 0, 8, 0), &context);
+      spacer.identity = SpacingIdentity4::LEGACY_SPACER;
+      aggregate.elements.push_back(spacer);
+      SpacingShape4 projected;
+      QVERIFY(spacingCollisionProjection4(table, aggregate, score->spatium(), projected));
+      QCOMPARE(static_cast<int>(aggregate.elements.size()), 4);
+      QCOMPARE(static_cast<int>(projected.elements.size()), 3);
+      QVERIFY(projected.complete());
+      aggregate.elements.back().identity = SpacingIdentity4::UNCLASSIFIED;
+      aggregate.elements.back().item = nullptr;
+      QVERIFY(!spacingCollisionProjection4(table, aggregate, score->spatium(), projected));
+      QCOMPARE(static_cast<int>(projected.elements.size()), 3);
+      SpacingShape4 orphan;
+      orphan.elements.push_back(spacer);
+      QVERIFY(!spacingCollisionProjection4(table, orphan, score->spatium(), projected));
       }
       delete score;
       }
@@ -371,6 +396,10 @@ void TestSpacing::geometryInputs()
                               const SpacingShapeElement4& e = tagged.elements[i];
                               QCOMPARE(e.rect, static_cast<const QRectF&>(native[staffIdx][i]));
                               QCOMPARE(static_cast<const QRectF&>(seg.staffShape(staffIdx)[i]), static_cast<const QRectF&>(native[staffIdx][i]));
+                              if (e.identity == SpacingIdentity4::LEGACY_SPACER) {
+                                    QVERIFY(e.item && (e.item->isChord() || e.item->isBarLine()));
+                                    continue;
+                                    }
                               if (e.identity != SpacingIdentity4::ITEM) {
                                     QVERIFY(!e.item);
                                     continue;
@@ -573,6 +602,152 @@ void TestSpacing::collisionPolicy()
       QCOMPARE(spacingPairDistance4(r, QRectF(0, 2 * sp, sp, sp), policy, sp, 1), sp);
       policy.kerning = SpacingKerning4::KERNING;
       QVERIFY(qAbs(spacingPairDistance4(QRectF(0, 0, 0, sp), QRectF(0, 2 * sp, sp, sp), policy, sp, 0.5) - 0.05 * sp) < 1e-9);
+      delete score;
+      }
+
+void TestSpacing::placementPlan_data()
+      {
+      QTest::addColumn<bool>("modernBeams");
+      QTest::newRow("legacy-beams") << false;
+      QTest::newRow("studio-beams") << true;
+      }
+
+void TestSpacing::placementPlan()
+      {
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + "v0.41-spacing-systems.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      struct Saved {
+            Measure* measure;
+            qreal x, width;
+            std::vector<qreal> segments;
+            };
+      std::vector<Saved> saved;
+      std::vector<System*> systems;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            Saved entry;
+            entry.measure = m;
+            entry.x = m->x();
+            entry.width = m->width();
+            for (Segment& seg : m->segments()) {
+                  entry.segments.push_back(seg.x());
+                  entry.segments.push_back(seg.width());
+                  entry.segments.push_back(seg.stretch());
+                  entry.segments.push_back(seg.spacingWidthOffset4());
+                  }
+            saved.push_back(entry);
+            if (systems.empty() || systems.back() != m->system())
+                  systems.push_back(m->system());
+            }
+      QCOMPARE(static_cast<int>(systems.size()), 3);
+      for (System* system : systems) {
+            SpacingPlan4 plan;
+            QString reason;
+            QVERIFY2(buildSpacingPlan4(system, plan, &reason), qPrintable(reason));
+            QCOMPARE(static_cast<int>(plan.measures.size()), 3);
+            QVERIFY(reason.isEmpty());
+            QVERIFY(qIsFinite(plan.width) && plan.width > system->leftMargin());
+            for (size_t i = 0; i < plan.measures.size(); ++i) {
+                  const SpacingMeasurePlan4& m = plan.measures[i];
+                  if (i > 0)
+                        QVERIFY(qAbs(m.x - plan.measures[i - 1].x - plan.measures[i - 1].width) < 1e-6);
+                  qreal cursor = m.x;
+                  bool first = true;
+                  for (const SpacingSegmentPlan4& seg : plan.segments) {
+                        if (seg.segment->measure() != m.measure || seg.ignored)
+                              continue;
+                        QVERIFY(qIsFinite(seg.x) && qIsFinite(seg.width) && seg.width >= 0);
+                        if (first) {
+                              QVERIFY(seg.x >= m.x - 1e-6);
+                              cursor = seg.x;
+                              first = false;
+                              }
+                        QVERIFY(qAbs(seg.x - cursor) < 1e-6);
+                        cursor += seg.width;
+                        }
+                  QVERIFY(!first);
+                  QVERIFY(qAbs(cursor - m.x - m.width) < 1e-6);
+                  }
+            SpacingPlan4 repeated;
+            QVERIFY2(buildSpacingPlan4(system, repeated, &reason), qPrintable(reason));
+            QCOMPARE(repeated.width, plan.width);
+            QCOMPARE(static_cast<int>(repeated.segments.size()), static_cast<int>(plan.segments.size()));
+            for (size_t i = 0; i < plan.segments.size(); ++i) {
+                  QCOMPARE(repeated.segments[i].x, plan.segments[i].x);
+                  QCOMPARE(repeated.segments[i].width, plan.segments[i].width);
+                  }
+            SpacingPlan4 justified = plan;
+            const qreal target = plan.width + 20 * score->spatium();
+            QVERIFY(justifySpacingPlan4(justified, target));
+            QVERIFY(qAbs(justified.width - target) < 1e-6);
+            std::vector<SpacingSpring4> springs;
+            for (const SpacingSegmentPlan4& seg : plan.segments) {
+                  if (!seg.ignored && seg.stretch > 0)
+                        springs.push_back({ seg.width, seg.stretch });
+                  }
+            const qreal force = spacing4SpringForce(springs, target - plan.width);
+            QVERIFY(force > 0);
+            for (size_t i = 0; i < plan.segments.size(); ++i) {
+                  const SpacingSegmentPlan4& before = plan.segments[i];
+                  if (before.ignored)
+                        continue;
+                  const qreal expected = before.stretch > 0 ? qMax(before.width, force * before.stretch) : before.width;
+                  QVERIFY(qAbs(justified.segments[i].width - expected) < 1e-6);
+                  }
+            SpacingPlanOptions4 compressed;
+            compressed.stretchReduction = 0.67;
+            compressed.squeezeFactor = 0.8;
+            QVERIFY2(buildSpacingPlan4(system, repeated, &reason, compressed), qPrintable(reason));
+            QVERIFY(repeated.width <= plan.width + 1e-6);
+            const qreal oldMinimum = score->styleP(Sid::minMeasureWidth) / score->spatium();
+            score->setStyleValue(Sid::minMeasureWidth, Spatium(80));
+            const bool minimumOK = buildSpacingPlan4(system, repeated, &reason);
+            score->setStyleValue(Sid::minMeasureWidth, Spatium(oldMinimum));
+            QVERIFY2(minimumOK, qPrintable(reason));
+            QVERIFY(repeated.width > plan.width);
+            const qreal minimum = qMin(80 * score->spatium(), system->width() - system->leftMargin());
+            for (const SpacingMeasurePlan4& m : repeated.measures)
+                  QVERIFY(m.width + 1e-6 >= minimum);
+            SpacingPlanOptions4 invalid;
+            invalid.squeezeFactor = -1;
+            repeated = plan;
+            QVERIFY(!buildSpacingPlan4(system, repeated, &reason, invalid));
+            QCOMPARE(repeated.width, plan.width);
+            QCOMPARE(repeated.segments.front().x, plan.segments.front().x);
+            QVERIFY(!justifySpacingPlan4(repeated, plan.width - 1));
+            QCOMPARE(repeated.width, plan.width);
+            }
+      for (const Saved& entry : saved) {
+            QCOMPARE(entry.measure->x(), entry.x);
+            QCOMPARE(entry.measure->width(), entry.width);
+            size_t i = 0;
+            for (Segment& seg : entry.measure->segments()) {
+                  QCOMPARE(seg.x(), entry.segments[i++]);
+                  QCOMPARE(seg.width(), entry.segments[i++]);
+                  QCOMPARE(seg.stretch(), entry.segments[i++]);
+                  QCOMPARE(seg.spacingWidthOffset4(), entry.segments[i++]);
+                  }
+            }
+      delete score;
+      // Unsupported systems must leave an existing output untouched.
+      score = readScore(DIR + "v0.40-spacing-accidentals.mscx");
+      QVERIFY(score);
+      score->doLayout();
+      Measure* cross = score->firstMeasure();
+      for (int i = 0; i < 3; ++i)
+            cross = cross->nextMeasure(); // H24
+      QVERIFY(cross);
+      SpacingPlan4 unchanged;
+      unchanged.width = 123;
+      QString reason;
+      QVERIFY(!buildSpacingPlan4(cross->system(), unchanged, &reason));
+      QCOMPARE(unchanged.width, 123.0);
+      QVERIFY(!reason.isEmpty());
+      QVERIFY(!buildSpacingPlan4(nullptr, unchanged, &reason));
+      QCOMPARE(unchanged.width, 123.0);
       delete score;
       }
 

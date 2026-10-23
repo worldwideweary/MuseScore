@@ -54,6 +54,7 @@ SpacingShape4 spacingResolveShape4(const Shape& native, const SpacingShape4& can
         bool ambiguous = false;
         size_t matches = 0;
         const Element* owner = nullptr;
+        SpacingIdentity4 identity = SpacingIdentity4::UNCLASSIFIED;
         for (const SpacingShapeElement4& candidate : candidates.elements) {
             // Exact native geometry only. Do not infer identity by proximity,
             // shape bounds, debug names or candidate order.
@@ -63,12 +64,14 @@ SpacingShape4 spacingResolveShape4(const Shape& native, const SpacingShape4& can
             ++matches;
             if (candidate.identity == SpacingIdentity4::AMBIGUOUS)
                 ambiguous = true;
-            else if (candidate.identity != SpacingIdentity4::ITEM || !candidate.item)
+            else if ((candidate.identity != SpacingIdentity4::ITEM && candidate.identity != SpacingIdentity4::LEGACY_SPACER) || !candidate.item)
                 unknown = true;
-            else if (owner && owner != candidate.item)
+            else if (owner && (owner != candidate.item || identity != candidate.identity))
                 ambiguous = true;
-            else
+            else {
                 owner = candidate.item;
+                identity = candidate.identity;
+            }
         }
         // A single known primitive cannot account for several coincident
         // native primitives whose other owners have not been identified.
@@ -82,7 +85,7 @@ SpacingShape4 spacingResolveShape4(const Shape& native, const SpacingShape4& can
             resolved.identity = SpacingIdentity4::AMBIGUOUS;
         else if (found && !unknown && owner) {
             resolved.item = owner;
-            resolved.identity = SpacingIdentity4::ITEM;
+            resolved.identity = identity;
         }
         result.elements.push_back(resolved);
     }
@@ -102,6 +105,18 @@ static void appendLeaf4(SpacingShape4& target, const Element* item)
     const Shape native = item->shape();
     for (const QRectF& rect : native)
         target.elements.push_back(SpacingShapeElement4(rect.translated(item->pos()), item));
+}
+
+static void appendLegacySpacer4(SpacingShape4& target, const Element* owner,
+                                Shape::HorizontalSpacingType type, qreal left, qreal right)
+{
+    Shape native;
+    native.addHorizontalSpacing(type, left, right);
+    for (const QRectF& rect : native) {
+        SpacingShapeElement4 element(rect, owner);
+        element.identity = SpacingIdentity4::LEGACY_SPACER;
+        target.elements.push_back(element);
+    }
 }
 
 SpacingShape4 spacingElementShape4(const Element* item)
@@ -149,6 +164,8 @@ SpacingShape4 spacingElementShape4(const Element* item)
         }
         for (const Chord* grace : chord->graceNotes())
             appendShape4(candidates, spacingElementShape4(grace), grace->pos());
+        if (chord->addToSkyline() && (!qFuzzyIsNull(chord->spacingLeft4()) || !qFuzzyIsNull(chord->spacingRight4())))
+            appendLegacySpacer4(candidates, chord, Shape::SPACING_GENERAL, -chord->spacingLeft4(), chord->spacingRight4());
     }
     else if (item->isRest()) {
         // MMRest body/number and rest-dot identity need their own adapter.
@@ -193,8 +210,11 @@ SpacingShape4 spacingStaffShape4(const Segment* segment, int staffIdx)
     SpacingShape4 candidates;
     if (segment->segmentType() & SegmentType::BarLineType) {
         const Element* item = segment->element(staffIdx * VOICES);
-        if (item && item->isBarLine())
+        if (item && item->isBarLine()) {
             candidates.elements.push_back(SpacingShapeElement4(toBarLine(item)->layoutRect().translated(item->pos()), item));
+            appendLegacySpacer4(candidates, item, Shape::SPACING_GENERAL, 0, 0);
+            appendLegacySpacer4(candidates, item, Shape::SPACING_LYRICS, 0, 0);
+        }
     }
     else if (segment->score()->staff(staffIdx)->show()) {
         for (const Element* item : segment->elist()) {

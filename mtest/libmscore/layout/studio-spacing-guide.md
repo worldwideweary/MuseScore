@@ -870,3 +870,97 @@ part of the connected placement work, not something to bypass to pass a test.
 Local moc and C++11 test syntax checks pass; full tst_spacing/tst_beam remain for
 the user's build. Apply v0.45.1 after v0.45 and rerun the tests. No screenshots
 are needed for this correction.
+
+## v0.46 WIP: connected common-notation placement plan
+
+The user reports v0.45.1 tests passing. Add spacingplan4.h/.cpp, a nonmutating
+system plan using the tested collision policy. This connects placement,
+cross-measure lookback, width reconstruction, minimum-width springs and pooled
+justification. It does not change Score::collectSystem dispatch yet: application
+layout remains at the existing experimental path until this plan has passed
+the user's live-score checks.
+
+### Native aggregate geometry has explicit provenance
+
+Add LEGACY_SPACER metadata for Chord::shape's aggregate _spaceLw/_spaceRw bound
+and Segment::createShape's synthetic barline spacing rectangles. Reconstruct
+their rectangles with the actual native addHorizontalSpacing producer, rather
+than recognizing arbitrary zero-height geometry. Add read-only chord accessors
+for those native bounds. Preserve every rectangle and producer identity in the
+snapshot. Resolver conflicts between direct-item and aggregate identities remain
+ambiguous, and unknown geometry still has no inferred owner.
+
+spacingCollisionProjection4 creates a separate view containing direct supported
+items. It excludes a tagged aggregate only when its owning chord's notes have
+supported contexts (or its owner is a barline) and an identified component
+footprint is present. Unsupported/ambiguous rectangles reject the whole
+projection with its output untouched. Ordinary native shapes remain intact;
+the existing whole-shape collision query still rejects unprojected aggregate
+records, as the v0.45.1 test requires. A raw zero-height rectangle is not a
+barrier or a discardable aggregate by default.
+
+### Position stream and reconstruction
+
+buildSpacingPlan4 caches projected staff geometry, flattens active segments into
+system coordinates and applies the ordinary branches of Studio's spaceSegments,
+spaceAgainstPreviousSegments and stopCheckingPreviousSegments. Collision
+clearance is redistributed through intervening chord/rest positions, including
+across barlines. Duration/user stretch comes from segmentSpacingStretch4;
+natural advances use the pinned 3.5sp quarter reference. The missing Studio
+systemHeaderMinStartOfSystemDistance style uses its explicit v4.7.5 default,
+1.25sp. Spacing density is the current default 1.0, not a new persisted setting.
+
+The pass reconstructs local spans and measure boundaries after positioning,
+using the ordinary setPositionsAndWidths boundary rules. End barlines retain
+their actual projected right extent. Minimum width follows the pinned
+computeMinMeasureWidth policy: available-width cap, shortened-measure scaling
+and first-chord/header/accidental adjustment. Deficits are distributed through
+rhythmic springs and following measures are moved, rather than leaving
+unrepresented measure bounding-box slack.
+
+justifySpacingPlan4 applies one common force to a built plan and reconstructs
+positions while retaining fixed nonrhythmic widths and first-segment offsets.
+It validates the resulting total width before publishing the result. Both APIs
+work on temporary data; no segment/measure positions, widths, stretch values,
+styles or ticks are written to the score. Pointers belong to the current pass
+and must not survive edits or a new layout.
+
+### Scope, checks and next integration
+
+The first plan supports visible ordinary measures, normal chord/rest segments,
+header clefs/keys/time signatures, begin/end barlines and supported common item
+geometry. Reject frames, MMRest, hidden staves, inactive rhythmic segments,
+manual leading space, cross-beam offsets, cross-staff chords/beams, cue/grace
+contexts, invisible notes, unadapted decorations and ordinary mid-measure clefs,
+breaths/trailers. Unadapted annotations are rejected before native shape builders
+can lazily lay them out. Existing ignored nonrhythmic segments are retained with
+zero width. Unsupported input leaves the caller's plan untouched and supplies
+a reason. This is an explicit first pipeline scope, not full Studio parity.
+
+Extend geometryResolution with aggregate projection, orphan-aggregate rejection
+and opaque-rectangle preservation. Extend geometryInputs to recognize tagged
+aggregate owners while retaining the full native geometry/fallback checks.
+Add placementPlan under both beam settings using v0.41-spacing-systems.mscx
+(H27-H35). Require three successful three-measure plans, continuous reconstructed
+spans, repeatability, justified target-width/floor conservation, reduced-spacing
+controls, large minimum-width expansion and unchanged native score geometry.
+Check rejection without output mutation for invalid factors, impossible
+justification, null systems and a cross-staff input. No new visual fixture.
+
+Local moc and C++11 debug/NDEBUG syntax checks pass for geometry, collision and
+planner modules and the test source. An isolated harness uses the actual planner
+body and the pinned placement/lookback/reconstruction/minimum-width spring
+routines with controlled DOM and distance inputs. It checks 10,000 generated
+systems, including pickups, narrow width caps and ignored nonrhythmic segments,
+and checks justification target/floor conservation. These tests isolate the
+connected math, not real font/DOM adaptation. The actual geometry resolver also
+passes 100,000 cases plus new aggregate-identity/conflict cases. Full application
+and live-score tests remain for the user's build.
+
+Apply v0.46 after v0.45.1 and run tst_spacing/tst_beam. No visual change is
+expected and screenshots are not needed yet. Next, after validating the live
+plans, connect eligible final systems behind spacingLayout4, preserving the
+whole-context legacy fallback and existing line collection. Later use the same
+engine during collection/squeezing and extend the documented unsupported
+contexts. Cache eligibility/pair metadata and profile before widening production
+use; the conservative slur scan currently remains in common-item policy.

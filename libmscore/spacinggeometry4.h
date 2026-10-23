@@ -12,7 +12,9 @@ class Element;
 class Segment;
 class Shape;
 
-enum class SpacingIdentity4 { ITEM, UNCLASSIFIED, AMBIGUOUS };
+enum class SpacingIdentity4 { ITEM, UNCLASSIFIED, AMBIGUOUS, LEGACY_SPACER };
+// LEGACY_SPACER records a known producer's aggregate bound. It is retained in
+// snapshots and excluded only by the separately validated collision projection.
 
 struct SpacingShapeElement4 {
     QRectF rect;
@@ -26,7 +28,8 @@ struct SpacingShapeElement4 {
 // Pointers are borrowed for this pass only; never retain across edits/layouts.
 struct SpacingShape4 {
     std::vector<SpacingShapeElement4> elements;
-    // Identity coverage only, not a claim that every item's policy is ported.
+    // Direct item geometry only. Known legacy aggregates still need projection;
+    // true does not claim that every item's collision policy is ported.
     bool complete() const;
     SpacingShape4 translated(const QPointF&) const;
 };
