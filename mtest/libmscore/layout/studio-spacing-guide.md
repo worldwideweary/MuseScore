@@ -1280,3 +1280,29 @@ v0.50-spacing-courtesy.mscx in 37E and Studio 4.7.5. Next prepare changing
 header/courtesy geometry for tentative collection boundaries before widening
 systemFittingWidth4. Clef changes and repeat boundaries remain separate guarded
 adapters. Keep existing cross-staff/tremolo handling and default-off restoration.
+
+
+## v0.50.1: correct courtesy fixture break placement
+
+The user's result(4).xml reports two courtesyPlan failures, one under each beam
+option, at the system/measure pointer comparisons. The accompanying XML-reader
+diagnostics explicitly identify LayoutBreak as unknown at fixture lines 126,
+203 and 265. Other test functions, including squeezePlan and fittingSwitch, pass.
+
+The v0.50 generator incorrectly nested those three LayoutBreak elements inside
+voice. Measure::readVoice does not handle LayoutBreak; Measure::read delegates
+measure-level properties to MeasureBase::readProperties, which does. Move each
+break to be a direct child of Measure, matching the existing v0.41 fixture.
+Keep every note, signature, label and style value unchanged. Add an early
+courtesyPlan assertion requiring four loaded measures with lineBreak flags on
+exactly the first three, so a malformed fixture is diagnosed before layout.
+No production code changes. The comparison filename remains
+v0.50-spacing-courtesy.mscx so applying the patch repairs the existing input.
+
+Files changed: v0.50-spacing-courtesy.mscx, tst_spacing.cpp and this guide.
+Validate XML structure, unchanged musical/style content, parser dispatch and
+C++11 syntax; check whitespace and apply against v0.50 before delivery. Full
+runtime execution remains for the user's build. Apply v0.50.1 after v0.50,
+rerun tst_spacing/tst_beam and reopen the corrected courtesy comparison score.
+Changing-header collection remains the next implementation stage after this
+terminal-courtesy validation.

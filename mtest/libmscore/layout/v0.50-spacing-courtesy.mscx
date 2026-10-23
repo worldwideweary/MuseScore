@@ -123,10 +123,10 @@
               <tpc>18</tpc>
             </Note>
           </Chord>
-          <LayoutBreak>
-            <subtype>line</subtype>
-          </LayoutBreak>
         </voice>
+        <LayoutBreak>
+          <subtype>line</subtype>
+        </LayoutBreak>
       </Measure>
       <Measure>
         <voice>
@@ -200,10 +200,10 @@
               <tpc>20</tpc>
             </Note>
           </Chord>
-          <LayoutBreak>
-            <subtype>line</subtype>
-          </LayoutBreak>
         </voice>
+        <LayoutBreak>
+          <subtype>line</subtype>
+        </LayoutBreak>
       </Measure>
       <Measure>
         <voice>
@@ -262,10 +262,10 @@
               <tpc>20</tpc>
             </Note>
           </Chord>
-          <LayoutBreak>
-            <subtype>line</subtype>
-          </LayoutBreak>
         </voice>
+        <LayoutBreak>
+          <subtype>line</subtype>
+        </LayoutBreak>
       </Measure>
       <Measure>
         <voice>

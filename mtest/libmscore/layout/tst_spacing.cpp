@@ -1080,6 +1080,10 @@ void TestSpacing::courtesyPlan()
       MasterScore* score = readScore(DIR + "v0.50-spacing-courtesy.mscx");
       QVERIFY(score);
       QVERIFY(score->styleB(Sid::spacingLayout4));
+      int inputMeasures = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++inputMeasures)
+            QVERIFY2(m->lineBreak() == (inputMeasures < 3), "Courtesy fixture must load three explicit line breaks");
+      QCOMPARE(inputMeasures, 4);
       score->setStyleValue(Sid::beamLayout4, modernBeams);
       const auto snapshot = [score]() -> std::vector<qreal> {
             std::vector<qreal> values;
