@@ -10,6 +10,31 @@ namespace Ms {
 class Measure;
 class Segment;
 class System;
+class Beam;
+class Chord;
+
+// Read-only preparation for cross-staff placement. This first context covers
+// one automatic, single-note eighth-note beam between adjacent ordinary staves.
+// It does not authorize the placement planner to accept cross-staff geometry.
+struct CrossStaffChord4 {
+    const Chord* chord = nullptr;
+    int visualStaff = 0;
+    bool up = false; // inferred staff side; never writes Chord::up()
+};
+struct CrossStaffPair4 {
+    const Chord* first = nullptr;
+    const Chord* second = nullptr;
+    bool canAdjust = false;
+    qreal widthOffset = 0; // fixed signed displacement, outside rhythmic springs
+    qreal minimumWidth = 0;
+};
+struct CrossStaffContext4 {
+    const Beam* beam = nullptr;
+    std::vector<CrossStaffChord4> chords;
+    std::vector<CrossStaffPair4> pairs;
+};
+// Requires prepared layout geometry. Unsupported input leaves output untouched.
+bool buildCrossStaffContext4(const Beam*, CrossStaffContext4&, QString* reason = nullptr);
 
 struct SpacingSegmentPlan4 {
     Segment* segment;

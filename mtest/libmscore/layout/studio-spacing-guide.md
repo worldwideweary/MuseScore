@@ -1813,3 +1813,36 @@ Apply v0.60 after v0.59. Run tst_spacing/tst_beam and compare natural X1 first,
 then justified X1 with 4.7.5. These are intentionally fallback baseline captures.
 Next implement the bounded read-only cross-staff constraints described in the
 audit, then require full-plan application for X1 before expanding the cases.
+
+## v0.61 WIP: build the cross-staff context without changing placement
+
+The user reports v0.60 tests passing. Natural and justified X1 are fairly
+close to the supplied 4.7.5 captures, while the tests confirm intentional
+fallback. Continue the audited implementation rather than inferring full
+planner support from those screenshots.
+
+Add CrossStaffContext4 and buildCrossStaffContext4 in spacingplan4.h/.cpp.
+They validate a bounded automatic single-note eighth-note beam, infer effective
+stem sides from proven staff placement, and describe signed fixed offsets
+and minimum-width floors for adjacent pairs. Retain un-beamed companions in
+the adjustment decision. See the appended v0.61 section in the cross-staff
+audit for exact eligibility, rejected cases and remaining integration.
+
+Extend crossStaffPlanBoundary to validate X1's context and pair values under
+both beam settings, unchanged live positions/stem sides and atomic rejection
+for a forced stem direction. Keep the planner's deliberate rejection and
+repeat/off restoration checks. The builder has no production caller yet;
+no rendering change or new scores/screenshots are expected at this checkpoint.
+
+Files changed: spacingplan4.h/.cpp, tst_spacing.cpp, this guide and the cross-
+staff audit. Local moc/C++11 debug/NDEBUG syntax checks pass. An isolated
+actual-function-body harness with controlled score contexts covers 280 cases
+of staff-side patterns, dimensions and sustained companion onsets, verifying
+offsets/floors plus atomic rejection of forced directions, manual edits,
+unsupported notes and interstaff positions. Full Qt 5.9 tests remain pending.
+Whitespace and parent-index patch checks are required before delivery.
+
+Apply v0.61 after v0.60 and run tst_spacing/tst_beam. No visual recapture is
+needed. Next integrate explicit cross-stem geometry and fixed displacement
+with the planner's reconstruction/justification, then require actual plan
+application for X1. Rest positioning and the centered-beam case stay queued.

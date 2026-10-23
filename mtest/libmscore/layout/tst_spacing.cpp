@@ -1563,6 +1563,37 @@ void TestSpacing::crossStaffPlanBoundary()
             }
       QCOMPARE(onset, 4);
       const auto modern = snapshot();
+      const Chord* firstChord = toChord(m->first(SegmentType::ChordRest)->cr(0));
+      std::vector<bool> stemSides;
+      for (const ChordRest* cr : firstChord->beam()->elements()) stemSides.push_back(cr->up());
+      CrossStaffContext4 context;
+      QString contextReason;
+      QVERIFY2(buildCrossStaffContext4(firstChord->beam(), context, &contextReason), qPrintable(contextReason));
+      QCOMPARE(static_cast<int>(context.chords.size()), 4);
+      QCOMPARE(static_cast<int>(context.pairs.size()), 3);
+      const qreal displacement = score->noteHeadWidth() - score->styleP(Sid::stemWidth);
+      for (int i = 0; i < 4; ++i) {
+            QCOMPARE(context.chords[i].visualStaff, i % 2);
+            QCOMPARE(context.chords[i].up, i % 2 != 0);
+            QCOMPARE(context.chords[i].chord->up(), static_cast<bool>(stemSides[i]));
+            }
+      for (int i = 0; i < 3; ++i) {
+            QVERIFY(context.pairs[i].canAdjust);
+            QVERIFY(qAbs(context.pairs[i].widthOffset - (i % 2 ? displacement : -displacement)) < 1e-6);
+            if (i % 2) QVERIFY(context.pairs[i].minimumWidth >= 2 * displacement);
+            else QCOMPARE(context.pairs[i].minimumWidth, qreal(0));
+            }
+      QVERIFY(snapshot() == modern);
+      Chord* edited = toChord(m->first(SegmentType::ChordRest)->cr(0));
+      const Direction savedDirection = edited->stemDirection();
+      edited->setStemDirection(Direction::UP);
+      CrossStaffContext4 rejected;
+      rejected.beam = firstChord->beam(); // sentinel survives failure
+      QVERIFY(!buildCrossStaffContext4(firstChord->beam(), rejected, &contextReason));
+      QCOMPARE(rejected.beam, static_cast<const Beam*>(firstChord->beam()));
+      QVERIFY(rejected.chords.empty() && rejected.pairs.empty());
+      edited->setStemDirection(savedDirection);
+      QVERIFY(snapshot() == modern);
       SpacingPlan4 plan;
       plan.width = -123;
       QString reason;

@@ -5,6 +5,7 @@
 #include "spacingcollision4.h"
 #include "spacinglayout4.h"
 #include "chord.h"
+#include "beam.h"
 #include "measure.h"
 #include "note.h"
 #include "rest.h"
@@ -161,6 +162,111 @@ bool stretchMeasure4(SpacingPlan4& plan, SpacingMeasurePlan4& measure, qreal ext
     }
     return true;
 }
+}
+
+bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QString* reason)
+{
+    const auto fail = [&](const QString& message) { if (reason) *reason = message; return false; };
+    if (!beam || !beam->score() || !beam->cross() || beam->elements().size() < 3
+        || beam->beamDirection() != Direction::AUTO || beam->userModified())
+        return fail("Cross-staff context needs a prepared automatic beam");
+    const Score* score = beam->score();
+    const SpacingPaddingTable4 table(score);
+    CrossStaffContext4 context;
+    context.beam = beam;
+    int upper = score->nstaves(), lower = -1;
+    const Chord* previous = nullptr;
+    for (const ChordRest* cr : beam->elements()) {
+        if (!cr || !cr->isChord())
+            return fail("Cross-staff context does not yet support beamed rests");
+        const Chord* chord = toChord(cr);
+        if (chord->score() != score || !chord->segment() || !chord->measure() || !chord->visible()
+            || chord->beam() != beam || chord->notes().size() != 1 || chord->isGrace()
+            || chord->tuplet() || chord->tremolo() || !chord->graceNotes().empty()
+            || chord->isSmall() || chord->mag() != 1.0 || chord->noStem() || !chord->stem()
+            || chord->isNudged() || chord->stemDirection() != Direction::AUTO
+            || chord->durationType().type() != TDuration::DurationType::V_EIGHTH
+            || chord->actualTicks() != Fraction(1, 8) || chord->segment()->ticks() != chord->actualTicks())
+            return fail("Unadapted cross-staff chord, rhythm or manual context");
+        const int staff = chord->vStaffIdx();
+        if (staff < 0 || staff >= score->nstaves() || !score->staff(staff)->show()
+            || !score->staff(staff)->isPitchedStaff(chord->tick()) || score->staff(staff)->lines(chord->tick()) != 5)
+            return fail("Cross-staff context needs visible ordinary five-line staves");
+        const Note* note = chord->notes().front();
+        SpacingPairPolicy4 policy;
+        if (!note->visible() || note->isSmall() || note->mirror()
+            || note->headGroup() != NoteHead::Group::HEAD_NORMAL || note->headType() != NoteHead::Type::HEAD_AUTO
+            || !spacingPairPolicy4(table, note, note, note->spatium(), policy))
+            return fail("Unadapted cross-staff note context");
+        if (previous && (chord->measure() != previous->measure() || chord->track() != previous->track()
+                         || chord->tick() != previous->tick() + previous->actualTicks()))
+            return fail("Cross-staff context needs one adjacent stream within one measure");
+        CrossStaffChord4 entry;
+        entry.chord = chord;
+        entry.visualStaff = staff;
+        context.chords.push_back(entry);
+        upper = std::min(upper, staff);
+        lower = std::max(lower, staff);
+        previous = chord;
+    }
+    if (lower != upper + 1)
+        return fail("Cross-staff context needs exactly two adjacent staves");
+    for (CrossStaffChord4& entry : context.chords) {
+        const Chord* chord = entry.chord;
+        // Evolution's initial stem sides are provisional. Infer only the
+        // unambiguous within-staff case, as in the existing bounded adapter.
+        const int line = chord->notes().front()->line();
+        if ((entry.visualStaff == upper && line > 8) || (entry.visualStaff == lower && line < 0))
+            return fail("Interstaff note positions need a later stem-side adapter");
+        entry.up = entry.visualStaff == lower;
+        for (const Element* item : chord->segment()->elist()) {
+            if (!item || item == chord)
+                continue;
+            if (!item->isChord() || !item->visible() || !item->staff()->show())
+                return fail("Unadapted companion voice in cross-staff context");
+            const Chord* companion = toChord(item);
+            if (companion->beam() || companion->staffMove() || companion->isGrace() || companion->tuplet()
+                || companion->tremolo() || companion->isSmall() || companion->notes().empty())
+                return fail("Independent moving or decorated voices need a later cross-staff adapter");
+            for (const Note* note : companion->notes()) {
+                SpacingPairPolicy4 policy;
+                if (!note->visible() || !spacingPairPolicy4(table, note, note, note->spatium(), policy))
+                    return fail("Unadapted companion note context");
+            }
+        }
+    }
+    const qreal headWidth = score->noteHeadWidth();
+    const qreal displacement = headWidth - score->styleP(Sid::stemWidth);
+    qreal stemPadding = 0;
+    if (!(headWidth > 0) || !(displacement > 0) || !std::isfinite(displacement)
+        || !table.padding(ElementType::STEM, ElementType::STEM, stemPadding)
+        || stemPadding < 0 || !std::isfinite(stemPadding))
+        return fail("Invalid cross-staff spacing dimensions");
+    for (size_t i = 1; i < context.chords.size(); ++i) {
+        const CrossStaffChord4& a = context.chords[i - 1];
+        const CrossStaffChord4& b = context.chords[i];
+        CrossStaffPair4 pair;
+        pair.first = a.chord;
+        pair.second = b.chord;
+        pair.canAdjust = true;
+        for (int side = 0; side < 2; ++side) {
+            const Chord* chord = side ? b.chord : a.chord;
+            for (const Element* item : chord->segment()->elist()) {
+                if (item && item != chord && item->isChordRest()
+                    && (side || toChordRest(item)->actualTicks() <= chord->segment()->ticks()))
+                    pair.canAdjust = false;
+            }
+        }
+        if (a.up != b.up) {
+            pair.widthOffset = pair.canAdjust ? (a.up ? displacement : -displacement) : 0;
+            if (a.up)
+                pair.minimumWidth = std::max(2 * displacement, headWidth + stemPadding);
+        }
+        context.pairs.push_back(pair);
+    }
+    result = context;
+    if (reason) reason->clear();
+    return true;
 }
 
 bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, const SpacingPlanOptions4& options)
