@@ -2088,16 +2088,28 @@ void TestSpacing::crossStaffSystems()
 void TestSpacing::crossStaffFitting_data()
       {
       QTest::addColumn<bool>("modernBeams");
-      QTest::newRow("legacy-beams") << false;
-      QTest::newRow("studio-beams") << true;
+      QTest::addColumn<QString>("file");
+      for (bool beams : { false, true }) {
+            const QString suffix = beams ? "-studio-beams" : "-legacy-beams";
+            QTest::newRow(qPrintable("original" + suffix)) << beams << QString("v0.73-spacing-cross-staff-fitting.mscx");
+            QTest::newRow(qPrintable("explicit-headers" + suffix)) << beams << QString("v0.76-spacing-header-control.mscx");
+            }
       }
 
 void TestSpacing::crossStaffFitting()
       {
       QFETCH(bool, modernBeams);
-      MasterScore* score = readScore(DIR + "v0.73-spacing-cross-staff-fitting.mscx");
+      QFETCH(QString, file);
+      MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
       QCOMPARE(score->styleD(Sid::lastSystemFillLimit), qreal(0));
+      if (file.startsWith("v0.76-")) {
+            QCOMPARE(score->styleS(Sid::clefLeftMargin).val(), qreal(.75));
+            QCOMPARE(score->styleS(Sid::clefKeyDistance).val(), qreal(.75));
+            QCOMPARE(score->styleS(Sid::systemHeaderDistance).val(), qreal(2.5));
+            QCOMPARE(score->styleS(Sid::systemHeaderTimeSigDistance).val(), qreal(2));
+            QVERIFY(score->styleB(Sid::genClef) && score->styleB(Sid::genKeysig));
+            }
       score->setStyleValue(Sid::beamLayout4, modernBeams);
       score->setStyleValue(Sid::pageWidth, 100.0);
       score->setStyleValue(Sid::pagePrintableWidth, 98.8);

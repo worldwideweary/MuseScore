@@ -2311,3 +2311,15 @@ changing spacing. Next audit generated system headers using the existing
 v0.73 score; do not expand musical scope or alter rhythmic constants to mask it.
 This checkpoint changes documentation only; no rebuild or new visual test is
 required. It does not claim full Studio parity or remove existing fallbacks.
+
+## v0.76 WIP: matched generated-header settings
+
+The source audit has not established a header algorithm defect: the adapted
+header gap formula matches the pinned source, and the known clef-left default
+difference is only 0.05sp. Add v0.76-spacing-header-control.mscx with explicit
+matching header style values, preserving v0.73's music/page/labels. Reuse the
+three-width fitting test under both beam settings; no production changes.
+See v0.76-header-spacing-audit.md for source findings, values and next steps.
+Apply after v0.75, run both mtests and compare F3/F5 in the new control in both
+applications. Local checks pass; live checks are pending. If the gap remains,
+compare effective styles and SVG coordinates before selecting a fix.
