@@ -7,8 +7,13 @@
 #include "libmscore/segment.h"
 #include "libmscore/spacinglayout4.h"
 #include "libmscore/spacinggeometry4.h"
+#include "libmscore/spacingcollision4.h"
 #include "libmscore/shape.h"
 #include "libmscore/notedot.h"
+#include "libmscore/clef.h"
+#include "libmscore/rest.h"
+#include "libmscore/tie.h"
+#include <limits>
 #include "libmscore/chordrest.h"
 #include "libmscore/beam.h"
 #include "libmscore/chord.h"
@@ -28,6 +33,7 @@ class TestSpacing : public QObject, public MTest {
       void geometryResolution();
       void geometryInputs_data();
       void geometryInputs();
+      void collisionPolicy();
       void rhythmicLayoutSwitch();
       void crossBeamSwitch_data();
       void crossBeamSwitch();
@@ -349,6 +355,8 @@ void TestSpacing::geometryInputs()
       int signs = 0;
       int stems = 0;
       int crossStaffHeads = 0;
+      int collisionQueries = 0;
+      const SpacingPaddingTable4 paddingTable(score);
       for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
             const qreal measureWidth = m->width();
             for (Segment& seg : m->segments()) {
@@ -380,6 +388,22 @@ void TestSpacing::geometryInputs()
                               if (e.item->isStem())
                                     ++stems;
                               }
+                        Segment* next = seg.next(SegmentType::ChordRest);
+                        if (seg.isChordRestType() && next) {
+                              const SpacingShape4 following = spacingStaffShape4(next, staffIdx);
+                              if (!tagged.elements.empty() && !following.elements.empty()) {
+                                    qreal distance = 123;
+                                    if (spacingShapeDistance4(paddingTable, tagged, following, m->spatium(), 1, distance)) {
+                                          ++collisionQueries;
+                                          QVERIFY(qIsFinite(distance));
+                                          qreal squeezed = 123;
+                                          QVERIFY(spacingShapeDistance4(paddingTable, tagged, following, m->spatium(), 0.6, squeezed));
+                                          QVERIFY(squeezed <= distance + 1e-6);
+                                          }
+                                    else
+                                          QCOMPARE(distance, 123.0);
+                                    }
+                              }
                         }
                   QCOMPARE(seg.x(), x);
                   QCOMPARE(seg.width(), width);
@@ -389,6 +413,7 @@ void TestSpacing::geometryInputs()
             }
       QVERIFY(heads > 0);
       QVERIFY(stems > 0);
+      QVERIFY(collisionQueries > 0);
       if (file.contains("accidentals")) {
             QVERIFY(signs > 0);
             QVERIFY(crossStaffHeads > 0);
@@ -396,6 +421,115 @@ void TestSpacing::geometryInputs()
       QVERIFY(spacingStaffShape4(nullptr, 0).elements.empty());
       QVERIFY(spacingStaffShape4(score->firstMeasure()->first(), -1).elements.empty());
       QVERIFY(spacingStaffShape4(score->firstMeasure()->first(), score->nstaves()).elements.empty());
+      delete score;
+      }
+
+void TestSpacing::collisionPolicy()
+      {
+      MasterScore* score = readScore(DIR + "v0.40-spacing-accidentals.mscx");
+      QVERIFY(score);
+      score->doLayout();
+      const SpacingPaddingTable4 table(score);
+      const qreal sp = score->spatium();
+      qreal padding = 0;
+      QVERIFY(table.padding(ElementType::NOTE, ElementType::ACCIDENTAL, padding));
+      QVERIFY(qAbs(padding - qMax(score->styleP(Sid::accidentalNoteDistance), 0.35 * sp)) < 1e-9);
+      QVERIFY(table.padding(ElementType::ACCIDENTAL, ElementType::NOTE, padding));
+      QCOMPARE(padding, score->styleP(Sid::accidentalNoteDistance));
+      QVERIFY(table.padding(ElementType::STEM, ElementType::STEM, padding));
+      QVERIFY(qAbs(padding - 0.85 * sp) < 1e-9);
+      padding = 123;
+      QVERIFY(!table.padding(ElementType::LYRICS, ElementType::NOTE, padding));
+      QCOMPARE(padding, 123.0);
+      {
+      Segment* first = score->firstMeasure()->first(SegmentType::ChordRest);
+      QVERIFY(first);
+      Segment* next = first->next(SegmentType::ChordRest);
+      QVERIFY(next);
+      Chord contextA(score), contextB(score);
+      contextA.setParent(first);
+      contextB.setParent(next);
+      contextA.setTrack(0);
+      contextB.setTrack(0);
+      contextA.setDurationType(TDuration::DurationType::V_EIGHTH);
+      contextB.setDurationType(TDuration::DurationType::V_EIGHTH);
+      Note* a = new Note(score);
+      Note* b = new Note(score);
+      contextA.add(a);
+      contextB.add(b);
+      a->setbbox(QRectF(0, 0, sp, sp));
+      b->setbbox(QRectF(0, 0, sp, sp));
+      SpacingPairPolicy4 policy;
+      QVERIFY(spacingPairPolicy4(table, a, b, sp, policy));
+      QCOMPARE(int(policy.kerning), int(SpacingKerning4::NON_KERNING));
+      QVERIFY(qAbs(policy.padding - score->styleP(Sid::minNoteDistance)) < 1e-9);
+      const SpacingShape4 left = spacingElementShape4(a);
+      const SpacingShape4 right = spacingElementShape4(b);
+      qreal distance = 0;
+      QVERIFY(spacingShapeDistance4(table, left, right, sp, 1, distance));
+      QVERIFY(qAbs(distance - sp - score->styleP(Sid::minNoteDistance)) < 1e-9);
+      QVERIFY(spacingShapeDistance4(table, left, right.translated(QPointF(0, 10 * sp)), sp, 1, distance));
+      QVERIFY(qAbs(distance - sp - score->styleP(Sid::minNoteDistance)) < 1e-9);
+      contextB.setTrack(1);
+      b->setTrack(1);
+      b->setPos(0, 10 * sp);
+      QVERIFY(spacingPairPolicy4(table, a, b, sp, policy));
+      QCOMPARE(int(policy.kerning), int(SpacingKerning4::KERNING));
+      QVERIFY(spacingShapeDistance4(table, left, spacingElementShape4(b).translated(b->pos()), sp, 1, distance));
+      QCOMPARE(distance, -std::numeric_limits<qreal>::max());
+      a->setSmall(true);
+      QVERIFY(spacingPairPolicy4(table, a, b, sp, policy));
+      QVERIFY(qAbs(policy.padding - 0.1 * sp * (a->mag() + b->mag()) / 2) < 1e-9);
+      a->setSmall(false);
+      Accidental accidental(score);
+      accidental.setParent(b);
+      accidental.setTrack(1);
+      QVERIFY(spacingPairPolicy4(table, a, &accidental, sp, policy));
+      QVERIFY(qAbs(policy.verticalClearance - 0.1 * sp) < 1e-9);
+      Clef clef(score);
+      clef.setParent(first);
+      clef.setTrack(0);
+      QVERIFY(spacingPairPolicy4(table, a, &clef, sp, policy));
+      QCOMPARE(int(policy.kerning), int(SpacingKerning4::NON_KERNING));
+      clef.setParent(next);
+      QVERIFY(spacingPairPolicy4(table, a, &clef, sp, policy));
+      QCOMPARE(int(policy.kerning), int(SpacingKerning4::RIGHT_EDGE));
+      Rest fullRest(score);
+      fullRest.setParent(first);
+      fullRest.setTrack(4);
+      fullRest.setDurationType(TDuration::DurationType::V_MEASURE);
+      QVERIFY(spacingPairPolicy4(table, &fullRest, a, sp, policy));
+      QCOMPARE(int(policy.kerning), int(SpacingKerning4::ALLOW_COLLISION));
+      // Failed queries must leave output untouched, including late failure.
+      qreal untouched = 321;
+      SpacingShape4 incomplete = right;
+      incomplete.elements.push_back(SpacingShapeElement4(QRectF(2, 0, 1, 1)));
+      QVERIFY(!spacingShapeDistance4(table, left, incomplete, sp, 1, untouched));
+      QCOMPARE(untouched, 321.0);
+      QVERIFY(!spacingShapeDistance4(table, left, right, sp, -0.1, untouched));
+      QCOMPARE(untouched, 321.0);
+      Tie tie(score);
+      a->setTieFor(&tie);
+      policy.padding = 123;
+      const bool acceptsTie = spacingPairPolicy4(table, a, b, sp, policy);
+      a->setTieFor(nullptr);
+      QVERIFY(!acceptsTie);
+      QCOMPARE(policy.padding, 123.0);
+      contextA.setNoteType(NoteType::ACCIACCATURA);
+      QVERIFY(!spacingPairPolicy4(table, a, b, sp, policy));
+      }
+      // Vertical-clearance boundary, zero-width and edge kerning constraints.
+      SpacingPairPolicy4 policy;
+      policy.padding = 0.01 * sp;
+      policy.verticalClearance = 0.2 * sp;
+      policy.kerning = SpacingKerning4::KERNING;
+      const QRectF r(0, 0, sp, sp);
+      QVERIFY(qAbs(spacingPairDistance4(r, QRectF(0, 1.1 * sp, sp, sp), policy, sp, 1) - 1.1 * sp) < 1e-9);
+      QCOMPARE(spacingPairDistance4(r, QRectF(0, 2 * sp, sp, sp), policy, sp, 1), -std::numeric_limits<qreal>::max());
+      policy.kerning = SpacingKerning4::RIGHT_EDGE;
+      QCOMPARE(spacingPairDistance4(r, QRectF(0, 2 * sp, sp, sp), policy, sp, 1), sp);
+      policy.kerning = SpacingKerning4::KERNING;
+      QVERIFY(qAbs(spacingPairDistance4(QRectF(0, 0, 0, sp), QRectF(0, 2 * sp, sp, sp), policy, sp, 0.5) - 0.05 * sp) < 1e-9);
       delete score;
       }
 

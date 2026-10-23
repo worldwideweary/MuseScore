@@ -45,7 +45,8 @@ add_library (libmscore STATIC
       instrtemplate.cpp instrument.cpp interval.cpp
       key.cpp keysig.cpp lasso.cpp
       layoutbreak.cpp layout.cpp line.cpp lyrics.cpp measurebase.cpp
-      measure.cpp spacinglayout4.h spacinggeometry4.cpp spacinggeometry4.h navigate.cpp note.cpp noteevent.cpp ottava.cpp
+      measure.cpp spacinglayout4.h spacinggeometry4.cpp spacinggeometry4.h spacingcollision4.cpp spacingcollision4.h
+      navigate.cpp note.cpp noteevent.cpp ottava.cpp
       page.cpp part.cpp pedal.cpp letring.cpp vibrato.cpp palmmute.cpp pitch.cpp pitchspelling.cpp
       rendermidi.cpp repeat.cpp repeatlist.cpp repeatcourtesy.cpp rest.cpp
       score.cpp segment.cpp select.cpp shadownote.cpp slur.cpp tie.cpp slurtie.cpp

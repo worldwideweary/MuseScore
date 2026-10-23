@@ -772,3 +772,73 @@ notation inputs and implement the source-derived item-pair padding/kerning
 policy. Keep the current layout dispatch until those inputs and the connected
 placement/width-reconstruction path are ready. Profile reconciliation before
 putting it into a repeated production spacing pass.
+
+## v0.45 WIP: common-notation item-pair collision policy
+
+The user reports compilation and mtests passing after v0.44. Add
+spacingcollision4.h/.cpp, still without production layout dispatch. The new
+module consumes the temporary identities from spacinggeometry4 and supplies the
+first source-derived pair policy for the connected spacing engine.
+
+Snapshot the 12 supported type rows/columns from Studio v4.7.5
+PaddingTable::createTable: NOTE, LEDGER_LINE, HOOK, NOTEDOT, REST, CLEF, BAR_LINE,
+KEYSIG, TIMESIG, ARPEGGIO, ACCIDENTAL and STEM. Preserve asymmetric padding and the
+upstream ordering of note-row/column copies followed by stem-specific overrides.
+Use existing score style values rather than changing Evolution's defaults.
+Rebuild this table after style changes; it is scoped to a layout pass.
+
+spacingPairPolicy4 adapts average item magnification, the same-voice/adjacent
+note intersection rule for minimum padding, ledger-rest glyph padding, accidental
+versus general vertical clearance, same-voice kerning restrictions, ordinary
+header-item restrictions, mid-measure clef right-edge kerning and full-measure
+rest handling across source staves. For supported ordinary notes the chord
+kerning-exception flags are unrestricted: notes with articulations, attached
+slurs, ties or other note spanners are explicitly rejected until their metadata
+has an adapter. Grace notes, tablature, MMRest items and types outside these 12
+are also outside this stage. This is a bounded common policy, not a replacement
+for every upstream computePadding/computeKerning branch.
+
+spacingPairDistance4 implements the upstream rectangular constraint math:
+vertical clearance, absolute minimum padding, squeeze factor, non-kerning,
+free kerning, allowed collisions, left/center/right edge limits and zero-width
+constraints. A pair imposing no constraint returns -max(qreal), preserving
+upstream semantics; it does not mean an origin-to-origin distance of zero.
+The shape-level query combines constraints only if every relevant primitive
+has supported provenance and context. It returns false with the caller's output
+untouched when any primitive is unsupported, ambiguous or malformed. Synthetic
+spacing rectangles have no inferred barrier policy yet and require fallback.
+Do not mix half-adapted query results with a guessed spacing floor.
+
+The query receives staff-scaled shape spatium separately from the table's score
+spatium. Preserve that distinction when integrating small staves. Header minimum
+distances, cross-staff stem exceptions, natural rhythmic widths and group-wide
+placement still belong to the later segment/system pass, not this item-pair
+kernel. The slur-context eligibility scan is deliberately conservative; cache
+pass metadata and profile it before enabling repeated production queries.
+
+Extend tst_spacing with collisionPolicy tests for asymmetric table entries,
+same-voice and different-voice constraints, average magnification, accidental
+clearance, header versus mid-measure clefs, full-measure rests, unknown geometry,
+unadapted ties/grace notes and unchanged outputs on rejection. Explicitly test
+clearance, zero-width and edge-kerning math. Extend geometryInputs to exercise
+actual adjacent score shapes under both beam styles, require supported queries,
+check squeeze monotonicity and retain the prior nonmutation checks. Reuse the
+existing ordinary/accidental/cross-staff/voice scores; no new visual file.
+
+Local moc generation and C++11 syntax checks for the adapter in debug/NDEBUG
+configurations and for tst_spacing pass. An isolated test extracts the actual
+table constructor and compares all 144 supported entries against the complete
+pinned Studio table constructor for 1,000 randomized style sets (144,000 entries).
+A second harness links the actual rectangular-constraint function and compares
+100,000 cases against the pinned Studio shape-distance loop using controlled
+pair policies, including kerning modes, squeeze, clearance and zero dimensions.
+These isolate table/math parity; they do not validate full DOM adaptation or
+establish complete engraving parity. The live-score tests remain for the user's
+application build.
+
+Apply v0.45 after v0.44. Run tst_spacing/tst_beam; no visual change or screenshots
+are expected because layout dispatch is unchanged. Next connect the common
+collision inputs to a measure-group position stream, including explicit barrier
+handling, cross-measure lookback, width reconstruction and minimum-width springs.
+Retain whole-context fallback for unsupported features until each adapter is
+ready. Do not replace the new pipeline with more screenshot-specific constants.
