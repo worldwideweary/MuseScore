@@ -172,6 +172,7 @@ class Measure final : public MeasureBase {
       void setUserStretch(qreal v)         { _userStretch = v; }
 
       void stretchMeasure(qreal stretch);
+      void layoutElementsAfterSpacing(qreal targetWidth);
       Fraction computeTicks();
       Fraction anacrusisOffset() const;
       void layout2();

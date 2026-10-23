@@ -63,6 +63,7 @@
 #include "tremolo.h"
 #include "beamlayout4.h"
 #include "spacinglayout4.h"
+#include "spacingplan4.h"
 #include <map>
 #include "tuplet.h"
 #include "undo.h"
@@ -4104,6 +4105,22 @@ static void processLines(System* system, std::vector<Spanner*> lines, bool align
             }
       }
 
+// Studio leaves short terminal/section systems at their natural width.
+static bool justifySystem4(const Measure* last, const MeasureBase* next,
+                           qreal naturalWidth, qreal availableWidth, qreal fillLimit)
+{
+    if (last && last->sectionBreak())
+        next = nullptr;
+    while (next) {
+        if (next->isMeasure() || next->isHBox())
+            return true;
+        if (next->sectionBreak())
+            break;
+        next = next->next();
+    }
+    return !(availableWidth > 0 && naturalWidth / availableWidth < fillLimit);
+}
+
 // Allocate positive spare width with one force across an ordinary system.
 // Return no targets for unsupported systems, preserving the existing path.
 static std::map<Measure*, qreal> systemSpacingWidths4(System* system, qreal extraWidth)
@@ -4439,9 +4456,31 @@ System* Score::collectSystem(LayoutContext& lc)
       //
       // stretch incomplete row
       //
+      // First integrate the nonmutating planner at final placement only.
+      // Collection and squeezing still use the existing measure widths. A
+      // complete fitting plan is required before any native positions change.
+      SpacingPlan4 studioPlan;
+      bool useStudioPlan = false;
+      std::map<Measure*, const SpacingMeasurePlan4*> studioMeasures;
+      if (styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch
+          && buildSpacingPlan4(system, studioPlan) && studioPlan.width <= systemWidth) {
+            useStudioPlan = !justifySystem4(lm, lc.curMeasure, studioPlan.width, systemWidth,
+                                             styleD(Sid::lastSystemFillLimit))
+                  || justifySpacingPlan4(studioPlan, systemWidth);
+            if (useStudioPlan) {
+                  for (const SpacingMeasurePlan4& m : studioPlan.measures)
+                        studioMeasures[m.measure] = &m;
+                  for (const SpacingSegmentPlan4& s : studioPlan.segments) {
+                        const SpacingMeasurePlan4* m = studioMeasures.at(s.segment->measure());
+                        s.segment->rxpos() = s.x - m->x;
+                        s.segment->setWidth(s.width);
+                        s.segment->setStretch(s.stretch);
+                        }
+                  }
+            }
       qreal rest;
       std::map<Measure*, qreal> studioWidths;
-      if (MScore::noHorizontalStretch)
+      if (MScore::noHorizontalStretch || useStudioPlan)
             rest = 0;
       else {
             qreal mw          = system->leftMargin();      // DEBUG
@@ -4472,19 +4511,8 @@ System* Score::collectSystem(LayoutContext& lc)
                   // Studio 4.7.5 SystemLayout::shouldBeJustified: leave a short
                   // terminal/section system at its natural width. Frames may
                   // follow it; only a later measure or HBox requires filling.
-                  bool followedByMusic = false;
-                  const MeasureBase* next = lm && lm->sectionBreak() ? nullptr : lc.curMeasure;
-                  while (next) {
-                        if (next->isMeasure() || next->isHBox()) {
-                              followedByMusic = true;
-                              break;
-                              }
-                        if (next->sectionBreak())
-                              break;
-                        next = next->next();
-                        }
-                  if (!followedByMusic && systemWidth > 0
-                     && minWidth / systemWidth < styleD(Sid::lastSystemFillLimit))
+                  if (!justifySystem4(lm, lc.curMeasure, minWidth, systemWidth,
+                                      styleD(Sid::lastSystemFillLimit)))
                         rest = 0;
                   }
             else if ((lc.curMeasure == 0  || (lm && lm->sectionBreak()))
@@ -4514,11 +4542,18 @@ System* Score::collectSystem(LayoutContext& lc)
                   qreal stretch = m->basicStretch();
                   int weight = m->layoutWeight();
                   auto studioWidth = studioWidths.find(m);
-                  if (studioWidth != studioWidths.end())
+                  if (useStudioPlan)
+                        ww = studioMeasures.at(m)->width;
+                  else if (studioWidth != studioWidths.end())
                         ww = studioWidth->second;
                   else
                         ww += rest * weight * stretch;
-                  m->stretchMeasure(ww);
+                  if (useStudioPlan) {
+                        m->bbox().setWidth(ww);
+                        m->layoutElementsAfterSpacing(ww);
+                        }
+                  else
+                        m->stretchMeasure(ww);
                   m->layoutStaffLines();
                   if (createBrackets) {
                         system->addBrackets(toMeasure(mb));

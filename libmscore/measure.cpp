@@ -3962,9 +3962,13 @@ void Measure::stretchMeasure(qreal targetWidth)
                   }
             }
 
-      //---------------------------------------------------
-      //    layout individual elements
-      //---------------------------------------------------
+      layoutElementsAfterSpacing(targetWidth);
+      }
+
+// Finalize elements after either legacy stretching or an already solved
+// Studio segment plan. Do not run a second spring solver on planned widths.
+void Measure::layoutElementsAfterSpacing(qreal targetWidth)
+      {
 
       for (Segment& s : _segments) {
             if (!s.enabled())

@@ -198,11 +198,14 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                         return fail("Annotations require a later adapter");
                 }
                 for (const Element* item : segment.elist()) {
-                    if (item && item->isRest() && (toRest(item)->isGap() || toRest(item)->isSmall()))
-                        return fail("Gap and cue rests require a later adapter");
+                    if (item && item->isRest() && (toRest(item)->isGap() || toRest(item)->isSmall()
+                                                  || toRest(item)->isFullMeasureRest()))
+                        return fail("Gap, cue and centered measure rests require a later adapter");
                     if (!item || !item->isChord())
                         continue;
                     const Chord* chord = toChord(item);
+                    if (chord->tremolo())
+                        return fail("Tremolo spacing requires a later adapter");
                     if (chord->staffMove() != 0 || (chord->beam() && chord->beam()->cross()))
                         return fail("Cross-staff geometry requires its later stem constraints");
                     if (chord->isSmall() || !chord->graceNotes().empty())

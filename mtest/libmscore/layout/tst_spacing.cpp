@@ -38,6 +38,8 @@ class TestSpacing : public QObject, public MTest {
       void collisionPolicy();
       void placementPlan_data();
       void placementPlan();
+      void finalPlacement_data();
+      void finalPlacement();
       void rhythmicLayoutSwitch();
       void crossBeamSwitch_data();
       void crossBeamSwitch();
@@ -748,6 +750,91 @@ void TestSpacing::placementPlan()
       QVERIFY(!reason.isEmpty());
       QVERIFY(!buildSpacingPlan4(nullptr, unchanged, &reason));
       QCOMPARE(unchanged.width, 123.0);
+      delete score;
+      }
+
+void TestSpacing::finalPlacement_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::addColumn<bool>("modernBeams");
+      QTest::newRow("systems-legacy-beams") << QString("v0.47-spacing-placement.mscx") << false;
+      QTest::newRow("systems-studio-beams") << QString("v0.47-spacing-placement.mscx") << true;
+      QTest::newRow("natural-h5-legacy-beams") << QString("v0.47-spacing-natural-h5.mscx") << false;
+      QTest::newRow("natural-h5-studio-beams") << QString("v0.47-spacing-natural-h5.mscx") << true;
+      QTest::newRow("natural-h8-legacy-beams") << QString("v0.47-spacing-natural-h8.mscx") << false;
+      QTest::newRow("natural-h8-studio-beams") << QString("v0.47-spacing-natural-h8.mscx") << true;
+      }
+
+void TestSpacing::finalPlacement()
+      {
+      QFETCH(QString, file);
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score);
+      QVERIFY(score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto snapshot = [score]() -> std::vector<qreal> {
+            std::vector<qreal> result;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  result.push_back(m->x());
+                  result.push_back(m->width());
+                  for (Segment& s : m->segments()) {
+                        result.push_back(s.x());
+                        result.push_back(s.width());
+                        }
+                  }
+            return result;
+            };
+      const std::vector<qreal> legacy = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      std::vector<System*> systems;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            if (systems.empty() || systems.back() != m->system())
+                  systems.push_back(m->system());
+            }
+      QCOMPARE(static_cast<int>(systems.size()), file.contains("placement") ? 3 : 1);
+      const qreal available = score->styleD(Sid::pagePrintableWidth) * DPI;
+      for (System* system : systems) {
+            SpacingPlan4 expected;
+            QString reason;
+            QVERIFY2(buildSpacingPlan4(system, expected, &reason), qPrintable(reason));
+            QVERIFY(expected.width <= available);
+            // The overview fills all three systems; the natural controls have
+            // fill limit 1 and remain unfilled. Require the actual layout to
+            // match the planner, including fixed header/barline spacing.
+            if (file.contains("placement"))
+                  QVERIFY(justifySpacingPlan4(expected, available));
+            QVERIFY(qAbs(system->width() - expected.width) < 1e-6);
+            for (const SpacingMeasurePlan4& m : expected.measures) {
+                  QVERIFY(qAbs(m.measure->x() - m.x) < 1e-6);
+                  QVERIFY(qAbs(m.measure->width() - m.width) < 1e-6);
+                  }
+            for (const SpacingSegmentPlan4& s : expected.segments) {
+                  if (s.ignored)
+                        continue;
+                  const Measure* m = s.segment->measure();
+                  QVERIFY2(qAbs(m->x() + s.segment->x() - s.x) < 1e-6,
+                        qPrintable(QString("segment at tick %1 did not use final plan").arg(s.segment->tick().ticks())));
+                  QVERIFY(qAbs(s.segment->width() - s.width) < 1e-6);
+                  QCOMPARE(s.segment->stretch(), s.stretch);
+                  }
+            }
+      const std::vector<qreal> modern = snapshot();
+      QVERIFY(modern != legacy);
+      score->doLayout();
+      const std::vector<qreal> repeated = snapshot();
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i)
+            QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const std::vector<qreal> restored = snapshot();
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i)
+            QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
       delete score;
       }
 

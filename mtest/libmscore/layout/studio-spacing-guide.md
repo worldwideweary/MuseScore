@@ -964,3 +964,76 @@ whole-context legacy fallback and existing line collection. Later use the same
 engine during collection/squeezing and extend the documented unsupported
 contexts. Cache eligibility/pair metadata and profile before widening production
 use; the conservative slur scan currently remains in common-item policy.
+
+
+## v0.47: apply common-notation plans at final system placement
+
+The user reports v0.46 builds and both tst_spacing and tst_beam pass without
+failures. This checkpoint connects the previously isolated planner to
+Score::collectSystem after collection, hidden-staff handling and final barlines
+and trailers, immediately before final horizontal placement.
+
+With spacingLayout4 enabled, build a whole-system candidate without changing
+native positions. Use it only if every context is adapted and its natural width
+fits the available system width. Evaluate terminal/section fill using the
+candidate's natural width. Solve the complete justified plan, if needed, before
+publishing any segment positions, widths or stretch values. Reconstruct measure
+positions/widths from that plan and finalize elements and staff lines normally.
+Do not run Measure::stretchMeasure on the solved widths: extract its existing
+element-finalization body into Measure::layoutElementsAfterSpacing, shared by
+both paths. The extracted body is byte-for-byte identical to the prior body.
+
+Unsupported or overwide candidates retain the existing experimental path,
+including the earlier system spring allocator and cross-staff adapters. With
+the option off, dispatch and spring arithmetic are unchanged. The existing
+noHorizontalStretch override bypasses the planner. The terminal fill helper is
+shared with the fallback and preserves its prior rule, including trailing
+frames and section boundaries. Whole-measure centered rests and tremolo chords
+now explicitly reject planning: their moving geometry and anchor constraints
+need adapters before this new final-placement path should handle them. Their
+existing layout continues through the fallback. This boundary does not undo
+any earlier beam or tremolo work.
+
+Files changed:
+
+- libmscore/layout.cpp: guarded final-system dispatch, shared fill predicate,
+  solved segment application and measure reconstruction.
+- libmscore/measure.cpp and measure.h: share the existing element finalizer.
+- libmscore/spacingplan4.cpp: explicit centered-rest/tremolo fallback boundaries.
+- mtest/libmscore/layout/tst_spacing.cpp: six finalPlacement rows covering the
+  new overview and natural controls, with each beam option. Check actual
+  system, measure and segment geometry against the solved plan, rhythmic
+  stretch, repeatability, changed enabled layout and exact option-off restoration.
+- Three new visual inputs below, plus this guide.
+
+New comparison inputs (both experimental spacing and beams initially on):
+
+- v0.47-spacing-placement.mscx: H27-H35, the same three fixed systems as the
+  v0.41 overview, with a versioned title. Compare measure widths across each
+  system, transitions between rhythmic values, H34 accidentals and H35 triplets.
+- v0.47-spacing-natural-h5.mscx: H5 mixed rhythmic values at natural width.
+- v0.47-spacing-natural-h8.mscx: H8 eighth-note triplets at natural width.
+
+Open those same files in Studio 4.7.5 for the visual comparison. For the natural
+controls compare inter-onset gaps and header/barline distances; for the overview
+compare the relative widths of measures sharing one justified system. Existing
+H9-H26 cross-staff controls remain relevant fallback regression checks. Existing
+line collection still determines how many measures fit: v0.47 does not yet use
+the planner to select breaks or squeeze an overwide system.
+
+Local validation: moc plus C++11 syntax checks in debug and NDEBUG modes pass
+for layout.cpp, measure.cpp, spacingplan4.cpp and tst_spacing.cpp, with unused
+parameter diagnostics enabled. The actual planner again passes the isolated
+10,000-system comparison against pinned 4.7.5 placement/lookback, reconstruction
+and minimum-width spring routines with controlled DOM/distance inputs;
+justification preserves floors and target width. This harness is not a full
+application/font test. All three new score XML files parse and save both options
+enabled. Patch whitespace and apply checks are required before delivery.
+
+Apply v0.47 after v0.46, rebuild, and run tst_spacing and tst_beam. Full runtime
+validation and screenshots remain for the user's build. Next, after validating
+final placement, feed the same engine into bounded collection/squeezing so line
+fitting and final spacing share one calculation. Preserve whole-system fallback
+until each unsupported context has an explicit adapter; profile/cache eligibility
+and pair metadata before widening the production scope. Continue using version
+prefixes and enabling experimental spacing in new comparison files.
