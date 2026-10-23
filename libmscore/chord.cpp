@@ -20,6 +20,7 @@
 #include "drumset.h"
 #include "fingering.h"
 #include "glissando.h"
+#include "gracespacing4.h"
 #include "guitarbend.h"
 #include "hook.h"
 #include "key.h"
@@ -2271,6 +2272,19 @@ void Chord::layoutPitched()
             note->layout2();
 
       _spaceRw = qMax(_spaceRw, LaissezVib::layoutChord(this));
+
+      // Apply the bounded Studio grace adapter before Segment::createShapes
+      // and measure fitting. Legacy packing above resets positions/space on
+      // every pass, so disabling the style or rejecting the context restores
+      // Evolution's handling without a cached extent from an earlier layout.
+      if (gnb && score()->styleB(Sid::spacingLayout4)) {
+            GraceBeforePlan4 plan;
+            if (buildGraceBeforePlan4(this, plan)) {
+                  for (int i = 0; i < gnb; ++i)
+                        graceNotesBefore[i]->rxpos() = plan.positions[i].x;
+                  _spaceLw = qMax(lll, -plan.left - chordX);
+                  }
+            }
 
       // Reserve shared-parenthesis width during horizontal layout, before
       // the later system pass adds any attached single-note bend geometry.

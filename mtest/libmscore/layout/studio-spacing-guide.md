@@ -2358,3 +2358,14 @@ G5/G6 remain unbeamed. Removed the new control's unrecognized title fontSize
 field. Production code is unchanged. Re-run tst_spacing and tst_beam; this is
 still a read-only adapter checkpoint with no live layout change. Next connect
 placement/extents to live layout after these controls pass.
+
+### v0.80 WIP: live ordinary before-grace spacing
+
+`v0.80-spacing-grace-before.mscx` enables both experimental settings and reuses
+G1-G6. Accepted groups now use the new positions and left extent before native
+shape/width collection. Full Studio system-plan grace admission is still
+pending; these systems keep native spacing with the new footprint. New tests
+check final applied positions/shapes, repeat stability, on/off restoration and
+unsupported manual-offset fallback under both beam modes. Compare internal
+G1-G4 gaps and terminal G1-G6 gaps with 4.7.5 after full mtests pass. See
+`v0.80-grace-layout-integration.md` for scope and lifecycle limitations.

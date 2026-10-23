@@ -37,6 +37,8 @@ class TestSpacing : public QObject, public MTest {
       void springForce();
       void graceBeforePlan_data();
       void graceBeforePlan();
+      void graceBeforeLayout_data();
+      void graceBeforeLayout();
       void fixedOffsetPlan();
       void geometryResolution();
       void geometryInputs_data();
@@ -2824,6 +2826,113 @@ void TestSpacing::graceBeforePlan()
       unchanged.left = 123;
       QVERIFY(!buildGraceBeforePlan4(nullptr, unchanged));
       QCOMPARE(unchanged.left, qreal(123));
+      delete score;
+      }
+
+void TestSpacing::graceBeforeLayout_data()
+      {
+      graceBeforePlan_data();
+      }
+
+void TestSpacing::graceBeforeLayout()
+      {
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + "v0.80-spacing-grace-before.mscx");
+      QVERIFY(score);
+      QVERIFY(score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      const auto measureSnapshot = [](const Measure* measure) {
+            std::vector<qreal> values = { measure->width() };
+            for (const Segment& s : measure->segments()) {
+                  if (!s.enabled() || !s.isChordRestType())
+                        continue;
+                  values.insert(values.end(), {s.x(), s.width(), s.staffShape(0).left()});
+                  const Element* item = s.element(0);
+                  if (!item || !item->isChord())
+                        continue;
+                  const Chord* chord = toChord(item);
+                  values.insert(values.end(), {chord->x(), chord->spacingLeft4(), chord->spacingRight4()});
+                  for (const Chord* grace : chord->graceNotesBefore())
+                        values.push_back(grace->x());
+                  }
+            return values;
+            };
+      const auto snapshot = [&]() {
+            std::vector<qreal> values;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  const auto part = measureSnapshot(m);
+                  values.insert(values.end(), part.begin(), part.end());
+                  }
+            return values;
+            };
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto legacy = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      int count = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++count) {
+            Segment* s = m->first(SegmentType::ChordRest);
+            QVERIFY(s && s->element(0) && s->element(0)->isChord());
+            const Chord* main = toChord(s->element(0));
+            GraceBeforePlan4 plan;
+            QString reason;
+            QVERIFY2(buildGraceBeforePlan4(main, plan, &reason), qPrintable(reason));
+            for (const GracePosition4& p : plan.positions) {
+                  QVERIFY(qAbs(p.chord->x() - p.x) < 1e-6);
+                  const Note* note = p.chord->notes().front();
+                  const QRectF expected = note->bbox().translated(note->pos() + p.chord->pos() + main->pos());
+                  bool found = false;
+                  for (const QRectF& rect : s->staffShape(0)) {
+                        if (rect == expected) found = true;
+                        }
+                  QVERIFY(found); // The segment shape was rebuilt after publication.
+                  }
+            const qreal leftExtent = -plan.left - main->x();
+            QVERIFY(main->spacingLeft4() >= leftExtent - 1e-6);
+            QVERIFY(s->staffShape(0).left() >= leftExtent - 1e-6);
+            QVERIFY(s->x() + main->x() + plan.left >= -1e-6);
+            QVERIFY(m->width() >= s->x() + main->x() + main->spacingRight4() - 1e-6);
+            // Until full typed grace geometry is integrated, keep the system
+            // planner's atomic rejection rather than mixing partial plans.
+            SpacingPlan4 unsupported;
+            unsupported.width = 123;
+            QVERIFY(!buildSpacingPlan4(m->system(), unsupported, &reason));
+            QCOMPARE(unsupported.width, qreal(123));
+            }
+      QCOMPARE(count, 6);
+      const auto modern = snapshot();
+      QCOMPARE(static_cast<int>(modern.size()), static_cast<int>(legacy.size()));
+      bool changed = false;
+      for (size_t i = 0; i < modern.size(); ++i)
+            changed = changed || qAbs(modern[i] - legacy[i]) > 1e-6;
+      QVERIFY(changed);
+      score->doLayout();
+      const auto repeated = snapshot();
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i)
+            QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto restored = snapshot();
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i)
+            QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      // A manual grace offset stays on the native path in either style state.
+      Measure* second = score->firstMeasure()->nextMeasure();
+      Chord* main = toChord(second->first(SegmentType::ChordRest)->element(0));
+      Note* note = main->graceNotesBefore()[1]->notes().front();
+      note->setOffset(QPointF(.5, 0));
+      score->doLayout();
+      const auto unsupportedLegacy = measureSnapshot(second);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      GraceBeforePlan4 rejected;
+      QVERIFY(!buildGraceBeforePlan4(main, rejected));
+      const auto unsupportedModern = measureSnapshot(second);
+      QCOMPARE(static_cast<int>(unsupportedModern.size()), static_cast<int>(unsupportedLegacy.size()));
+      for (size_t i = 0; i < unsupportedLegacy.size(); ++i)
+            QVERIFY(qAbs(unsupportedModern[i] - unsupportedLegacy[i]) < 1e-6);
       delete score;
       }
 
