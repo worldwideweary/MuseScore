@@ -3592,12 +3592,12 @@ void PianoView::mouseMoveEvent(QMouseEvent* event)
                               else if (!pi && _editNoteTool == PianoRollEditTool::ADD) {
                                     _dragStyle = DragStyle::DRAW_NOTE;
 
-                                    const Fraction tick =
+                                    const Fraction cTick =
                                           roundToNearestBeat(
                                                 scenePosToTick(_mouseDownPos),
                                                 true);
 
-                                    if (useOnsetDiamond(_staff, tick)) {
+                                    if (useOnsetDiamond(_staff, cTick)) {
                                           _onsetPaint.notes.clear();
                                           _onsetPaint.lastPos = _mouseDownPos;
                                           _onsetPaint.undoStartIdx =

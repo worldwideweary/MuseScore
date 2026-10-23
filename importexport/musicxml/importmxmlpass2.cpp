@@ -2978,9 +2978,9 @@ void MusicXMLParserPass2::measure(const QString& partId,
             delete inferredFingering;
             }
 
-      for (auto& harmony : delayedHarmony) {
-            HarmonyDesc harmonyDesc = harmony.second;
-            Fraction tick = Fraction::fromTicks(harmony.first);
+      for (auto& delHarmony : delayedHarmony) {
+            HarmonyDesc harmonyDesc = delHarmony.second;
+            Fraction tick = Fraction::fromTicks(delHarmony.first);
             if (FretDiagram* fd = harmonyDesc._fretDiagram) {
                   fd->setTrack(harmonyDesc._track);
                   Segment* s = measure->getSegment(SegmentType::ChordRest, tick);
