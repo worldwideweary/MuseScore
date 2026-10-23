@@ -1731,6 +1731,10 @@ void TestSpacing::crossStaffInterleaved_data()
             const QString suffix = beams ? "-studio-beams" : "-legacy-beams";
             QTest::newRow(qPrintable("natural" + suffix)) << QString("v0.67-spacing-cross-staff-interleaved-natural.mscx") << beams;
             QTest::newRow(qPrintable("justified" + suffix)) << QString("v0.67-spacing-cross-staff-interleaved.mscx") << beams;
+            QTest::newRow(qPrintable("cross-accidentals-natural" + suffix)) << QString("v0.69-spacing-cross-accidentals-natural.mscx") << beams;
+            QTest::newRow(qPrintable("cross-accidentals-justified" + suffix)) << QString("v0.69-spacing-cross-accidentals.mscx") << beams;
+            QTest::newRow(qPrintable("companion-accidentals-natural" + suffix)) << QString("v0.69-spacing-companion-accidentals-natural.mscx") << beams;
+            QTest::newRow(qPrintable("companion-accidentals-justified" + suffix)) << QString("v0.69-spacing-companion-accidentals.mscx") << beams;
             }
       }
 
@@ -1738,6 +1742,11 @@ void TestSpacing::crossStaffInterleaved()
       {
       QFETCH(QString, file);
       QFETCH(bool, modernBeams);
+      const bool crossAccidentals = file.contains("spacing-cross-accidentals");
+      const bool companionAccidentals = file.contains("spacing-companion-accidentals");
+      const int alterations[] = { 1, 0, -1, 0 };
+      const int fSpellings[] = { Tpc::TPC_F_S, Tpc::TPC_F, Tpc::TPC_F_B, Tpc::TPC_F };
+      const int cSpellings[] = { Tpc::TPC_C_S, Tpc::TPC_C, Tpc::TPC_C_B, Tpc::TPC_C };
       MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
       score->setStyleValue(Sid::beamLayout4, modernBeams);
@@ -1761,6 +1770,7 @@ void TestSpacing::crossStaffInterleaved()
       Measure* m = score->firstMeasure();
       QVERIFY(m && !m->nextMeasure() && m->ticks() == Fraction(1, 2));
       int onset = 0;
+      int accidentals = 0;
       const Chord* first = nullptr;
       for (Segment& s : m->segments()) {
             QVERIFY(qIsFinite(s.x()) && qIsFinite(s.width()) && s.width() >= 0);
@@ -1771,13 +1781,23 @@ void TestSpacing::crossStaffInterleaved()
             QVERIFY(companion && companion->isChord() && !companion->beam());
             QVERIFY(companion->actualTicks() == Fraction(1, 16));
             QCOMPARE(static_cast<int>(toChord(companion)->notes().size()), 1);
-            QCOMPARE(toChord(companion)->notes().front()->pitch(), 60);
+            const Note* companionNote = toChord(companion)->notes().front();
+            QCOMPARE(companionNote->pitch(), 60 + (companionAccidentals ? alterations[onset % 4] : 0));
+            QCOMPARE(companionNote->tpc(), companionAccidentals ? cSpellings[onset % 4] : static_cast<int>(Tpc::TPC_C));
+            QCOMPARE(companionNote->pitch() % 12, (tpc2pitch(companionNote->tpc()) + 12) % 12);
+            QCOMPARE(tpc2step(companionNote->tpc()), tpc2step(Tpc::TPC_C));
+            accidentals += companionNote->accidental() != nullptr;
             if (onset % 2 == 0) {
                   const ChordRest* cr = s.cr(0);
                   QVERIFY(cr && cr->isChord() && cr->actualTicks() == Fraction(1, 8));
                   const Chord* c = toChord(cr);
                   QCOMPARE(c->staffMove(), onset < 4 ? 1 : 0);
-                  QCOMPARE(c->notes().front()->pitch(), onset < 4 ? 53 : 65);
+                  const Note* beamNote = c->notes().front();
+                  QCOMPARE(beamNote->pitch(), (onset < 4 ? 53 : 65) + (crossAccidentals ? alterations[onset / 2] : 0));
+                  QCOMPARE(beamNote->tpc(), crossAccidentals ? fSpellings[onset / 2] : static_cast<int>(Tpc::TPC_F));
+                  QCOMPARE(beamNote->pitch() % 12, (tpc2pitch(beamNote->tpc()) + 12) % 12);
+                  QCOMPARE(tpc2step(beamNote->tpc()), tpc2step(Tpc::TPC_F));
+                  accidentals += beamNote->accidental() != nullptr;
                   QVERIFY(c->beam() && c->beam()->cross());
                   if (!first) first = c;
                   }
@@ -1785,6 +1805,7 @@ void TestSpacing::crossStaffInterleaved()
             ++onset;
             }
       QCOMPARE(onset, 8);
+      if (crossAccidentals || companionAccidentals) QVERIFY(accidentals >= 2);
       QVERIFY(first);
       const auto modern = snapshot();
       CrossStaffContext4 context;
