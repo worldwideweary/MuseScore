@@ -692,3 +692,21 @@ Apply v0.42 after v0.41. Full tst_spacing/tst_beam and rendered comparisons rema
 pending on the user's build. Next use the three-system comparison to decide
 whether another width-allocation correction is needed before expanding the
 eligible contexts or changing system fitting.
+
+## v0.43: source audit and implementation map
+
+The user reports v0.42 tests passing. Add
+[v0.43-horizontal-spacing-audit.md](v0.43-horizontal-spacing-audit.md), covering
+all 54 HorizontalSpacing definitions plus its collection/finalization callers,
+shape/padding dependencies and selected geometry producers. Verify reference
+bytes against the pinned v4.7.5 Git blob IDs. No engraving code or score changes.
+
+The remaining major gaps are item-tagged collision geometry and pair policy,
+cross-measure placement/width reconstruction, minimum-width spring enforcement,
+and collection/squeeze integration. Current duration/common-force adaptations
+remain useful components; current bounded cross-staff handling is not general
+Studio kerning. The audit records exact scope, fallbacks and a dependency-ordered
+implementation plan. Next start the spacing-only geometry/identity adapter and
+source-derived collision policy in recoverable WIP increments. Existing H1-H35
+fixtures remain the integration controls. No application test rerun is needed for
+this documentation-only checkpoint.
