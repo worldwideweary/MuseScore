@@ -1693,3 +1693,41 @@ mtests and rendered parity remain pending on the user's build. If another
 producer is rejected, use the exact failure reason for the next bounded
 adaptation. Once U1 is accepted visually, proceed to rests/sustained voices
 before cross-staff combinations. The centered-beam issue stays deferred.
+
+## v0.58: internal rests in independent rhythmic streams
+
+The user reports v0.57 mtests passing. The updated natural U1 screenshot now
+looks close to the previous 4.7.5 capture in width and note placement; the
+justified pair also looks close. Keep the shared-notehead implementation and
+its acceptance tests unchanged.
+
+Add R1 using the original separated-octave P3 streams. Replace the second
+chord/rest event in each voice with an ordinary rest of the exact same written
+and actual duration. Retain its explicit middle beam mode, so these are
+internal beamed rests. The other notes, rhythms, tuplets and forced note stem
+directions remain the same. The rests occur at different rational onsets in
+the four voices. These are not gap, cue or centered full-measure rests.
+
+New scores, both with experimental spacing and beams enabled:
+
+- v0.58-spacing-polyrhythm-rests-natural.mscx
+- v0.58-spacing-polyrhythm-rests.mscx
+
+Extend polyrhythmInputs under both beam settings. Require exactly the intended
+rest event in every voice, actual beam membership, unchanged event counts and
+rational durations, full-plan eligibility and actual application, finite
+geometry, repeat layout and restoration when experimental spacing is off.
+The existing shortest-duration formula checks now include rest onsets as well.
+No production layout changes are introduced in this checkpoint.
+
+Files changed: tst_spacing.cpp, this guide and the two R1 scores. Local checks
+cover XML structure, exact restoration to P3 after undoing the four intended
+rest substitutions, preserved beam modes/settings, moc/C++11 debug/NDEBUG
+syntax, whitespace and parent-index patch application. Full Qt 5.9 mtests,
+beam membership and live-score rendering remain for the user's build.
+
+Apply v0.58 after v0.57. Compare natural R1 first and justified R1 second with
+4.7.5. Inspect rest-to-neighbor clearance and gaps in the other voices at each
+rest onset. Distinguish vertical rest placement from horizontal spacing before
+choosing a code change. Once accepted, introduce sustained voices separately,
+then cross-staff combinations. The centered-beam issue remains deferred.

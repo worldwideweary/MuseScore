@@ -1304,6 +1304,10 @@ void TestSpacing::polyrhythmInputs_data()
       QTest::newRow("unisons-natural-studio-beams") << QString("v0.56-spacing-polyrhythm-unisons-natural.mscx") << true << true;
       QTest::newRow("unisons-justified-legacy-beams") << QString("v0.56-spacing-polyrhythm-unisons.mscx") << false << false;
       QTest::newRow("unisons-justified-studio-beams") << QString("v0.56-spacing-polyrhythm-unisons.mscx") << false << true;
+      QTest::newRow("rests-natural-legacy-beams") << QString("v0.58-spacing-polyrhythm-rests-natural.mscx") << true << false;
+      QTest::newRow("rests-natural-studio-beams") << QString("v0.58-spacing-polyrhythm-rests-natural.mscx") << true << true;
+      QTest::newRow("rests-justified-legacy-beams") << QString("v0.58-spacing-polyrhythm-rests.mscx") << false << false;
+      QTest::newRow("rests-justified-studio-beams") << QString("v0.58-spacing-polyrhythm-rests.mscx") << false << true;
       }
 
 void TestSpacing::polyrhythmInputs()
@@ -1313,6 +1317,7 @@ void TestSpacing::polyrhythmInputs()
       QFETCH(bool, modernBeams);
       const bool seconds = file.startsWith("v0.55-");
       const bool unisons = file.startsWith("v0.56-");
+      const bool rests = file.startsWith("v0.58-");
       const bool accidentals = seconds || file.startsWith("v0.54-");
       MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
@@ -1340,7 +1345,7 @@ void TestSpacing::polyrhythmInputs()
       const int counts[3][4] = { { 3, 2, 2, 3 }, { 5, 4, 4, 5 }, { 6, 8, 10, 12 } };
       int measureCount = 0;
       for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++measureCount) {
-            const int row = natural || accidentals || unisons ? 2 : measureCount;
+            const int row = natural || accidentals || unisons || rests ? 2 : measureCount;
             QVERIFY(row < 3);
             QVERIFY(m->ticks() == Fraction(1, 2));
             QCOMPARE(m->system()->firstMeasure(), m);
@@ -1353,7 +1358,13 @@ void TestSpacing::polyrhythmInputs()
                         if (!seg.isChordRestType()) continue;
                         const ChordRest* cr = seg.cr(tracks[v]);
                         if (!cr) continue;
-                        QVERIFY(cr->isChord());
+                        if (rests && n == 1) {
+                              QVERIFY(cr->isRest());
+                              QVERIFY(!toRest(cr)->isGap() && !toRest(cr)->isFullMeasureRest());
+                              QVERIFY(cr->beam());
+                              }
+                        else
+                              QVERIFY(cr->isChord());
                         if (unisons) {
                               const Chord* chord = toChord(cr);
                               QCOMPARE(static_cast<int>(chord->notes().size()), 1);
@@ -1462,7 +1473,7 @@ void TestSpacing::polyrhythmInputs()
                   QVERIFY(qIsFinite(seg.x()) && qIsFinite(seg.width()) && seg.width() >= 0);
                   }
             }
-      QCOMPARE(measureCount, natural || accidentals || unisons ? 1 : 3);
+      QCOMPARE(measureCount, natural || accidentals || unisons || rests ? 1 : 3);
       const std::vector<qreal> modern = snapshot();
       score->doLayout();
       const std::vector<qreal> repeated = snapshot();
