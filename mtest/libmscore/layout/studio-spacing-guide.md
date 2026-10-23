@@ -1136,3 +1136,78 @@ patch checks are required before delivery. Full mtests remain for the user's
 build. Apply v0.48.1 after v0.48 and rerun tst_spacing/tst_beam, then continue
 with the same v0.48-spacing-fitting.mscx visual comparison. Bounded squeezing
 remains the next implementation stage after fitting validation.
+
+
+## v0.49: first three Studio squeeze passes for adapted final systems
+
+The user reports v0.48.1 mtests passing. Both automatic-fitting captures place
+H27-H31 on the first system and H32-H35 on the second. Horizontal gaps and
+measure proportions look close after accounting for image positions. This is
+validation of the supplied control, not proof of all score-layout equivalence.
+
+Add squeezeSpacingPlan4 to spacingplan4.h/.cpp. First build the ordinary natural
+plan. If it exceeds the target width, recompute from native geometry using the
+first three positive-duration passes from Studio v4.7.5's
+HorizontalSpacing::squeezeSystemToFit:
+
+| Pass | Duration-spacing multiplier | Padding/clearance multiplier |
+| --- | --- | --- |
+| 1 | 0.67 | 0.80 |
+| 2 | 0.34 | 0.60 |
+| 3 | 0.01 | 0.40 |
+
+Use the source's repeated subtraction of 0.33 and 0.20, and override minimum
+measure widths for these squeeze passes, as Studio does. Return the first
+fitting whole-system plan. Every query, including unsuccessful passes, leaves
+native positions and widths unchanged; unsuccessful queries also preserve the
+caller's output plan. Reject nonpositive/nonfinite targets. Existing geometry
+and unsupported-context guards still apply.
+
+At final placement, collectSystem now asks this wrapper for a fitting plan,
+then applies the existing fill decision and pooled justification before
+publishing geometry through v0.47's application path. A naturally fitting system
+has the same behavior as v0.48.1. Collection still uses natural group widths,
+matching the source's distinction between collection and final squeezing; the
+new squeeze passes do not accept extra candidate measures during collection.
+
+This checkpoint deliberately stops before Studio's negative duration advances
+and later collision-allowing width reductions. If the positive passes cannot
+fit, retain the previous Evolution fallback rather than publish a partial
+compressed result. Changing headers, cross-staff constraints, centered measure
+rests, tremolos and other unsupported contexts keep their prior handling.
+
+Files changed:
+
+- libmscore/spacingplan4.cpp and spacingplan4.h: nonmutating bounded squeeze API.
+- libmscore/layout.cpp: use the fitting/squeeze wrapper at final placement.
+- mtest/libmscore/layout/tst_spacing.cpp: squeezePlan under both beam settings.
+- mtest/libmscore/layout/v0.49-spacing-squeeze-h5.mscx: versioned narrow-page
+  mixed-rhythm control, user stretch 2, terminal fill 0, both experimental
+  options enabled. A small title keeps the narrow comparison readable.
+- This guide: completed work, boundaries, validation and continuation.
+
+The new test chooses widths between successive pass results and requires the
+wrapper to select each first-fitting pass exactly. Check natural-width bypass,
+invalid/impossibly narrow targets, preserved output/native geometry on failure,
+and the actual final compressed-and-justified measure/segment geometry. Check
+repeatability and off/on/off restoration. The production target is computed
+from live geometry to avoid reliance on particular font metrics.
+
+Local validation: moc and C++11 debug/NDEBUG syntax checks pass for layout.cpp,
+spacingplan4.cpp and tst_spacing.cpp with unused-parameter diagnostics enabled.
+The actual planner again passes 10,000 controlled cases against pinned 4.7.5
+placement/lookback, reconstruction and minimum-width routines. A separate
+10,000-case harness compiles the actual squeeze controller with controlled
+planner results, checking exact source factors, first-fit selection,
+unsupported-pass rejection, output preservation and invalid targets. These
+are isolated checks, not full application/font execution. Score XML and patch
+whitespace/apply checks are required before delivery. Full mtests remain for
+the user's Qt build.
+
+Apply v0.49 after v0.48.1, rebuild, and run tst_spacing and tst_beam. Open
+v0.49-spacing-squeeze-h5.mscx in 37E and Studio 4.7.5 at the saved page width.
+Compare the seven onsets, rhythmic gap proportions and final barline. Recheck
+v0.48-spacing-fitting.mscx as the natural-fitting control. Next address explicit
+changing-header/courtesy preparation before widening collection/final fitting,
+then consider the remaining squeeze boundary cases. Keep default-off behavior
+and existing unsupported-context fallback intact.

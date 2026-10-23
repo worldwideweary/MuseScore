@@ -43,5 +43,11 @@ struct SpacingPlanOptions4 {
 bool buildSpacingPlan4(System*, SpacingPlan4& result, QString* reason = nullptr,
                        const SpacingPlanOptions4& options = SpacingPlanOptions4());
 bool justifySpacingPlan4(SpacingPlan4&, qreal targetWidth);
+
+// Try natural width, then Studio's first three positive-duration squeeze
+// passes. Publish only a fitting whole-system plan; stronger compression and
+// unsupported contexts leave result untouched for the existing fallback.
+bool squeezeSpacingPlan4(System*, qreal targetWidth, SpacingPlan4& result,
+                         QString* reason = nullptr);
 }
 #endif

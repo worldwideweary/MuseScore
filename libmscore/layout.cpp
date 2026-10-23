@@ -4493,12 +4493,13 @@ System* Score::collectSystem(LayoutContext& lc)
       //
       // First integrate the nonmutating planner at final placement only.
       // Collection and squeezing still use the existing measure widths. A
-      // complete fitting plan is required before any native positions change.
+      // complete fitting plan, including bounded squeezing when necessary,
+      // is required before any native positions change.
       SpacingPlan4 studioPlan;
       bool useStudioPlan = false;
       std::map<Measure*, const SpacingMeasurePlan4*> studioMeasures;
       if (styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch
-          && buildSpacingPlan4(system, studioPlan) && studioPlan.width <= systemWidth) {
+          && squeezeSpacingPlan4(system, systemWidth, studioPlan)) {
             useStudioPlan = !justifySystem4(lm, lc.curMeasure, studioPlan.width, systemWidth,
                                              styleD(Sid::lastSystemFillLimit))
                   || justifySpacingPlan4(studioPlan, systemWidth);

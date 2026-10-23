@@ -377,6 +377,42 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
     return true;
 }
 
+bool squeezeSpacingPlan4(System* system, qreal targetWidth, SpacingPlan4& result, QString* reason)
+{
+    if (!std::isfinite(targetWidth) || targetWidth <= 0) {
+        if (reason)
+            *reason = "Invalid squeeze target";
+        return false;
+    }
+    SpacingPlan4 candidate;
+    if (!buildSpacingPlan4(system, candidate, reason))
+        return false;
+    if (candidate.width <= targetWidth) {
+        result = candidate;
+        return true;
+    }
+    // Studio 4.7.5 squeezeSystemToFit recomputes from native geometry each
+    // pass, with minimum-measure widths overridden. Stop before its negative
+    // duration advances and subsequent collision-allowing width reduction.
+    SpacingPlanOptions4 options;
+    options.minimumMeasureWidths = false;
+    options.stretchReduction = 1 - 0.33;
+    options.squeezeFactor = 1 - 0.2;
+    for (int pass = 0; pass < 3; ++pass) {
+        if (!buildSpacingPlan4(system, candidate, reason, options))
+            return false;
+        if (candidate.width <= targetWidth) {
+            result = candidate;
+            return true;
+        }
+        options.stretchReduction -= 0.33;
+        options.squeezeFactor -= 0.2;
+    }
+    if (reason)
+        *reason = "Target needs stronger compression than the adapted squeeze passes";
+    return false;
+}
+
 bool justifySpacingPlan4(SpacingPlan4& target, qreal targetWidth)
 {
     if (target.measures.empty() || !std::isfinite(targetWidth) || targetWidth < target.width)

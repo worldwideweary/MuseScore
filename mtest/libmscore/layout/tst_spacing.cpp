@@ -42,6 +42,8 @@ class TestSpacing : public QObject, public MTest {
       void finalPlacement();
       void fittingSwitch_data();
       void fittingSwitch();
+      void squeezePlan_data();
+      void squeezePlan();
       void rhythmicLayoutSwitch();
       void crossBeamSwitch_data();
       void crossBeamSwitch();
@@ -948,6 +950,112 @@ void TestSpacing::fittingSwitch()
       QCOMPARE(static_cast<int>(reenabled.size()), static_cast<int>(modern.size()));
       for (size_t i = 0; i < modern.size(); ++i)
             QVERIFY(qAbs(reenabled[i] - modern[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const std::vector<qreal> restored = snapshot();
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i)
+            QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
+void TestSpacing::squeezePlan_data()
+      {
+      QTest::addColumn<bool>("modernBeams");
+      QTest::newRow("legacy-beams") << false;
+      QTest::newRow("studio-beams") << true;
+      }
+
+void TestSpacing::squeezePlan()
+      {
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + "v0.49-spacing-squeeze-h5.mscx");
+      QVERIFY(score);
+      QVERIFY(score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->setStyleValue(Sid::pageWidth, 100.0);
+      score->setStyleValue(Sid::pagePrintableWidth, 98.8);
+      score->doLayout();
+      Measure* measure = score->firstMeasure();
+      QVERIFY(measure && !measure->nextMeasure());
+      QCOMPARE(measure->userStretch(), qreal(2));
+      const auto snapshot = [measure]() -> std::vector<qreal> {
+            std::vector<qreal> values = { measure->x(), measure->width() };
+            for (Segment& seg : measure->segments()) {
+                  values.push_back(seg.x());
+                  values.push_back(seg.width());
+                  values.push_back(seg.stretch());
+                  }
+            return values;
+            };
+      const std::vector<qreal> saved = snapshot();
+      SpacingPlan4 natural;
+      QString reason;
+      QVERIFY2(buildSpacingPlan4(measure->system(), natural, &reason), qPrintable(reason));
+      SpacingPlan4 result;
+      QVERIFY(squeezeSpacingPlan4(measure->system(), natural.width, result, &reason));
+      QCOMPARE(result.width, natural.width);
+      SpacingPlanOptions4 options;
+      options.minimumMeasureWidths = false;
+      options.stretchReduction = 1 - 0.33;
+      options.squeezeFactor = 1 - 0.2;
+      qreal previous = natural.width;
+      qreal productionTarget = 0;
+      for (int pass = 0; pass < 3; ++pass) {
+            SpacingPlan4 expected;
+            QVERIFY2(buildSpacingPlan4(measure->system(), expected, &reason, options), qPrintable(reason));
+            QVERIFY(expected.width < previous - 1e-6);
+            const qreal target = (previous + expected.width) / 2;
+            if (pass == 0)
+                  productionTarget = target;
+            QVERIFY2(squeezeSpacingPlan4(measure->system(), target, result, &reason), qPrintable(reason));
+            QVERIFY(reason.isEmpty());
+            QVERIFY(qAbs(result.width - expected.width) < 1e-6);
+            QCOMPARE(static_cast<int>(result.segments.size()), static_cast<int>(expected.segments.size()));
+            for (size_t i = 0; i < result.segments.size(); ++i) {
+                  QVERIFY(qAbs(result.segments[i].x - expected.segments[i].x) < 1e-6);
+                  QVERIFY(qAbs(result.segments[i].width - expected.segments[i].width) < 1e-6);
+                  }
+            previous = expected.width;
+            options.stretchReduction -= 0.33;
+            options.squeezeFactor -= 0.2;
+            }
+      const qreal unchanged = result.width;
+      QVERIFY(!squeezeSpacingPlan4(measure->system(), 0, result, &reason));
+      QCOMPARE(result.width, unchanged);
+      QVERIFY(!squeezeSpacingPlan4(measure->system(), measure->system()->leftMargin() + 1e-5, result, &reason));
+      QCOMPARE(result.width, unchanged);
+      QVERIFY(!reason.isEmpty());
+      QVERIFY(snapshot() == saved); // queries, including failed ones, never publish geometry
+
+      // Force the actual final-placement path to compress this one measure,
+      // then justify its solved widths to the requested page width.
+      score->setStyleValue(Sid::pagePrintableWidth, productionTarget / DPI);
+      score->setStyleValue(Sid::pageWidth, productionTarget / DPI + 1.2);
+      score->doLayout();
+      QVERIFY2(buildSpacingPlan4(measure->system(), natural, &reason), qPrintable(reason));
+      QVERIFY(natural.width > productionTarget);
+      QVERIFY2(squeezeSpacingPlan4(measure->system(), productionTarget, result, &reason), qPrintable(reason));
+      QVERIFY(justifySpacingPlan4(result, productionTarget));
+      QVERIFY(qAbs(measure->system()->width() - productionTarget) < 1e-6);
+      QVERIFY(qAbs(measure->width() - result.measures.front().width) < 1e-6);
+      for (const SpacingSegmentPlan4& seg : result.segments) {
+            if (seg.ignored)
+                  continue;
+            QVERIFY(qAbs(measure->x() + seg.segment->x() - seg.x) < 1e-6);
+            QVERIFY(qAbs(seg.segment->width() - seg.width) < 1e-6);
+            }
+      const std::vector<qreal> modern = snapshot();
+      score->doLayout();
+      const std::vector<qreal> repeated = snapshot();
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i)
+            QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const std::vector<qreal> legacy = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
       score->setStyleValue(Sid::spacingLayout4, false);
       score->doLayout();
       const std::vector<qreal> restored = snapshot();
