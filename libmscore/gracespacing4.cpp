@@ -9,11 +9,35 @@
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
+#include "slur.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>
 
 namespace Ms {
+bool spacingLocalGraceSlur4(const Slur* slur, const Chord* main)
+{
+    if (!slur || !main || main->isGrace() || !main->segment() || main->staffMove()
+        || slur->score() != main->score() || !slur->visible() || !slur->autoplace()
+        || slur->isNudged() || slur->lineType() != 0 || slur->nsegments() > 1
+        || slur->endElement() != main || slur->track() != main->track() || slur->track2() != main->track()
+        || slur->tick() != main->tick() || slur->tick2() != main->tick())
+        return false;
+    const auto graces = main->graceNotesBefore();
+    if (graces.empty() || slur->startElement() != graces.front())
+        return false;
+    const Chord* first = graces.front();
+    if (!first->isGraceBefore() || first->parent() != main || first->staffMove()
+        || first->track() != main->track() || first->score() != main->score())
+        return false;
+    if (slur->nsegments()) {
+        const SlurSegment* segment = slur->frontSegment();
+        if (!segment->autoplace() || segment->isNudged() || segment->isEdited())
+            return false;
+    }
+    return true;
+}
+
 static const Chord* ownerChord4(const Element* item)
 {
     for (; item; item = item->parent()) {
@@ -132,7 +156,7 @@ bool buildGraceBeforePlan4(const Chord* main, GraceBeforePlan4& result, QString*
             return fail("Unadapted before-grace chord or beam");
     }
     if (beam) {
-        if (beam->elements().size() != static_cast<size_t>(graces.size()))
+        if (beam->elements().size() != graces.size())
             return fail("Grace beam extends outside group");
         for (const ChordRest* chord : beam->elements()) {
             if (std::find(graces.begin(), graces.end(), chord) == graces.end())

@@ -24,6 +24,8 @@
 #include "libmscore/accidental.h"
 #include "libmscore/pitchspelling.h"
 #include "libmscore/stem.h"
+#include "libmscore/slur.h"
+#include "libmscore/spannermap.h"
 
 using namespace Ms;
 #define DIR QString("libmscore/layout/")
@@ -45,6 +47,8 @@ class TestSpacing : public QObject, public MTest {
       void graceFitting();
       void graceSqueeze_data();
       void graceSqueeze();
+      void graceSlurSpacing_data();
+      void graceSlurSpacing();
       void fixedOffsetPlan();
       void geometryResolution();
       void geometryInputs_data();
@@ -3296,6 +3300,125 @@ void TestSpacing::graceSqueeze()
       const auto restored = graceLayoutSnapshot4(score);
       QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
       for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
+void TestSpacing::graceSlurSpacing_data()
+      {
+      graceBeforePlan_data();
+      }
+
+void TestSpacing::graceSlurSpacing()
+      {
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + "v0.84-spacing-grace-slurs.mscx");
+      MasterScore* plain = readScore(DIR + "v0.84-spacing-grace-slurs-plain.mscx");
+      QVERIFY(score && plain);
+      QVERIFY(score->styleB(Sid::spacingLayout4) && plain->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      plain->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto legacy = graceLayoutSnapshot4(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      plain->doLayout();
+      std::vector<Slur*> slurs;
+      for (const auto& entry : score->spannerMap().map()) {
+            if (entry.second->isSlur()) slurs.push_back(toSlur(entry.second));
+            }
+      QCOMPARE(static_cast<int>(slurs.size()), 6);
+      int count = 0;
+      const SpacingPaddingTable4 table(score);
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++count) {
+            const Segment* s = m->first(SegmentType::ChordRest);
+            QVERIFY(s && s->element(0) && s->element(0)->isChord());
+            Chord* main = toChord(s->element(0));
+            Slur* slur = nullptr;
+            for (Slur* candidate : slurs) {
+                  if (candidate->endElement() == main) slur = candidate;
+                  }
+            QVERIFY(slur);
+            QCOMPARE(slur->startElement(), static_cast<Element*>(main->graceNotesBefore().front()));
+            QVERIFY(slur->tick() == main->tick() && slur->tick2() == main->tick());
+            QVERIFY(spacingLocalGraceSlur4(slur, main));
+            QCOMPARE(static_cast<int>(slur->nsegments()), 1);
+            GraceBeforePlan4 group;
+            QString reason;
+            QVERIFY2(buildGraceBeforePlan4(main, group, &reason), qPrintable(reason));
+            for (const GracePosition4& p : group.positions) QVERIFY(qAbs(p.chord->x() - p.x) < 1e-6);
+            SpacingGraceContext4 context;
+            context.mains.push_back(main);
+            const Note* note = main->notes().front();
+            SpacingPairPolicy4 policy;
+            QVERIFY(!spacingPairPolicy4(table, note, note, note->spatium(), policy));
+            QVERIFY(spacingPairPolicy4(table, note, note, note->spatium(), policy, &context));
+            SpacingPlan4 expected;
+            QVERIFY2(buildSpacingPlan4(m->system(), expected, &reason), qPrintable(reason));
+            QVERIFY(expected.width <= m->system()->width() + 1e-6);
+            if (expected.width < m->system()->width() - 1e-6)
+                  QVERIFY(justifySpacingPlan4(expected, m->system()->width()));
+            for (const SpacingSegmentPlan4& e : expected.segments) {
+                  if (e.ignored) continue;
+                  QVERIFY(qAbs(e.segment->measure()->x() + e.segment->x() - e.x) < 1e-6);
+                  QVERIFY(qAbs(e.segment->width() - e.width) < 1e-6);
+                  }
+            }
+      QCOMPARE(count, 6);
+      const auto modern = graceLayoutSnapshot4(score);
+      const auto withoutSlurs = graceLayoutSnapshot4(plain);
+      QCOMPARE(static_cast<int>(withoutSlurs.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i) QVERIFY(qAbs(withoutSlurs[i] - modern[i]) < 1e-6);
+      // Handle edits and an unresolved endpoint must not inherit this allowance.
+      Slur* first = slurs.front();
+      Chord* main = toChord(first->endElement());
+      SlurSegment* segment = first->frontSegment();
+      const QPointF oldOffset = segment->ups(Grip::BEZIER1).off;
+      segment->ups(Grip::BEZIER1).off = QPointF(.5, 0);
+      QVERIFY(!spacingLocalGraceSlur4(first, main));
+      GraceBeforePlan4 rejectedGroup;
+      rejectedGroup.left = 123;
+      QVERIFY(!buildGraceBeforePlan4(main, rejectedGroup));
+      QCOMPARE(rejectedGroup.left, qreal(123));
+      SpacingPlan4 rejected;
+      rejected.width = 123;
+      QVERIFY(!buildSpacingPlan4(main->measure()->system(), rejected));
+      QCOMPARE(rejected.width, qreal(123));
+      segment->ups(Grip::BEZIER1).off = oldOffset;
+      Element* oldEnd = first->endElement();
+      first->setEndElement(nullptr);
+      QVERIFY(!spacingLocalGraceSlur4(first, main));
+      QVERIFY(!buildGraceBeforePlan4(main, rejectedGroup));
+      QCOMPARE(rejectedGroup.left, qreal(123));
+      first->setEndElement(oldEnd);
+      QVERIFY(graceLayoutSnapshot4(score) == modern); // Queries and rejected allowances do not publish positions.
+      QVERIFY(saveScore(score, "v0.84-grace-slurs-roundtrip.mscx"));
+      MasterScore* loaded = readCreatedScore("v0.84-grace-slurs-roundtrip.mscx");
+      QVERIFY(loaded);
+      loaded->doLayout();
+      int loadedSlurs = 0;
+      for (const auto& entry : loaded->spannerMap().map()) {
+            if (!entry.second->isSlur()) continue;
+            Slur* slur = toSlur(entry.second);
+            QVERIFY(slur->endElement() && slur->endElement()->isChord());
+            Chord* parent = toChord(slur->endElement());
+            QVERIFY(!parent->graceNotesBefore().empty());
+            QCOMPARE(slur->startElement(), static_cast<Element*>(parent->graceNotesBefore().front()));
+            QVERIFY(spacingLocalGraceSlur4(slur, parent));
+            ++loadedSlurs;
+            }
+      QCOMPARE(loadedSlurs, 6);
+      score->doLayout();
+      const auto repeated = graceLayoutSnapshot4(score);
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i) QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto restored = graceLayoutSnapshot4(score);
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete loaded;
+      delete plain;
       delete score;
       }
 

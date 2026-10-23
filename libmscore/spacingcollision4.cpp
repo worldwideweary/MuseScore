@@ -2,6 +2,8 @@
 // Licensed under GNU GPL version 2; see LICENSE.GPL.
 #include "spacingcollision4.h"
 #include "spacinggeometry4.h"
+#include "gracespacing4.h"
+#include "slur.h"
 #include "chord.h"
 #include "clef.h"
 #include "note.h"
@@ -177,7 +179,8 @@ bool SpacingPaddingTable4::padding(ElementType first, ElementType second, qreal&
     return true;
 }
 
-static bool commonItemContext4(const Element* item, bool allowGrace = false)
+static bool commonItemContext4(const Element* item, bool allowGrace,
+                               const SpacingGraceContext4* context, const Chord* scopedMain)
 {
     if (!item || item->track() < 0 || item->onTabStaff())
         return false;
@@ -202,14 +205,21 @@ static bool commonItemContext4(const Element* item, bool allowGrace = false)
         if (note->tieFor() || note->tieBack() || !note->spannerFor().empty() || !note->spannerBack().empty())
             return false;
     }
+    const Chord* main = chord;
+    if (chord->isGrace() && chord->parent() && chord->parent()->isChord())
+        main = toChord(chord->parent());
+    const bool localScope = main == scopedMain || (context && context->contains(main));
+    int localSlurs = 0;
     for (const auto& entry : chord->score()->spannerMap().map()) {
         const Spanner* spanner = entry.second;
         if (!spanner->isSlur())
             continue;
         if (spanner->startElement() == chord || spanner->endElement() == chord
             || (spanner->track() == chord->track() && spanner->tick() == chord->tick())
-            || (spanner->track2() == chord->track() && spanner->tick2() == chord->tick()))
-            return false;
+            || (spanner->track2() == chord->track() && spanner->tick2() == chord->tick())) {
+            if (!localScope || !spacingLocalGraceSlur4(toSlur(spanner), main) || ++localSlurs > 1)
+                return false;
+        }
     }
     return true;
 }
@@ -225,10 +235,12 @@ static bool neverKernable4(const Element* item)
 }
 
 static bool pairPolicy4(const SpacingPaddingTable4& table, const Element* first, const Element* second,
-                        qreal shapeSpatium, SpacingPairPolicy4& result, bool allowGrace)
+                        qreal shapeSpatium, SpacingPairPolicy4& result, bool allowGrace,
+                        const SpacingGraceContext4* context = nullptr, const Chord* scopedMain = nullptr)
 {
     if (!table.score() || !first || !second || first->score() != table.score() || second->score() != table.score()
-        || !commonItemContext4(first, allowGrace) || !commonItemContext4(second, allowGrace)
+        || !commonItemContext4(first, allowGrace, context, scopedMain)
+        || !commonItemContext4(second, allowGrace, context, scopedMain)
         || !(shapeSpatium > 0) || !std::isfinite(shapeSpatium))
         return false;
     SpacingPairPolicy4 policy;
@@ -321,7 +333,7 @@ bool spacingPairPolicy4(const SpacingPaddingTable4& table, const Element* first,
             break;
         }
     }
-    return pairPolicy4(table, first, second, shapeSpatium, result, hasGrace);
+    return pairPolicy4(table, first, second, shapeSpatium, result, hasGrace, context);
 }
 
 bool spacingGracePairPolicy4(const SpacingPaddingTable4& table, const Chord* main,
@@ -339,7 +351,7 @@ bool spacingGracePairPolicy4(const SpacingPaddingTable4& table, const Chord* mai
         }
         return false;
     };
-    return belongs(first) && belongs(second) && pairPolicy4(table, first, second, shapeSpatium, result, true);
+    return belongs(first) && belongs(second) && pairPolicy4(table, first, second, shapeSpatium, result, true, nullptr, main);
 }
 
 qreal spacingPairDistance4(const QRectF& first, const QRectF& second, const SpacingPairPolicy4& policy,

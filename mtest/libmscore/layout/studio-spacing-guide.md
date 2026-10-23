@@ -2402,3 +2402,14 @@ slur collision checks, whereas Studio filters individual items within them.
 Next add paired local grace-to-own-main slur controls and preserve the new
 horizontal spacing with a narrowly validated slur allowance before changing
 curve geometry. See `v0.83-grace-slur-source-audit.md`.
+
+### v0.84 WIP: local slurs coexist with optional grace spacing
+
+A narrowly validated first-before-grace to own-main slur no longer forces the
+optional group/system spacing to fall back. Ordinary queries still reject it
+without a scoped or prepared grace context. Slur drawing is unchanged. Compare
+`v0.84-spacing-grace-slurs.mscx` (L1-L6) with 4.7.5 and its unslurred companion,
+`v0.84-spacing-grace-slurs-plain.mscx`; both options are saved on. New tests cover
+resolved/round-tripped endpoints, equal horizontal layout with/without slurs,
+full-plan application, unsupported edits, repeat layout and legacy restoration.
+See `v0.84-grace-slur-coexistence.md` before evaluating curve differences.

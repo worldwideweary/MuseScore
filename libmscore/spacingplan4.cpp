@@ -499,7 +499,7 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                         return fail("Cue and grace-note rhythm requires a later adapter");
                     for (const Note* note : chord->notes()) {
                         SpacingPairPolicy4 policy;
-                        if (!note->visible() || note->isSmall() || !spacingPairPolicy4(table, note, note, note->spatium(), policy))
+                        if (!note->visible() || note->isSmall() || !spacingPairPolicy4(table, note, note, note->spatium(), policy, &graces))
                             return fail("Unadapted note visibility, cue or decoration context");
                     }
                 }
