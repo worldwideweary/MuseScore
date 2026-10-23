@@ -87,8 +87,7 @@ bool prepareCrossStaff4(System* system, CrossStaffGeometry4& result, QString* re
     CrossStaffGeometry4 prepared;
     for (const CrossStaffChord4& e : context.chords)
         prepared.chords[e.chord] = e;
-    int movingTrack = -1;
-    int movingCount = 0;
+    std::map<int, int> movingCounts;
     for (const Segment& segment : measure->segments()) {
         if (!segment.isChordRestType()) continue;
         for (const Element* item : segment.elist()) {
@@ -104,18 +103,19 @@ bool prepareCrossStaff4(System* system, CrossStaffGeometry4& result, QString* re
                 || note->headGroup() != NoteHead::Group::HEAD_NORMAL || note->headType() != NoteHead::Type::HEAD_AUTO)
                 return fail("Unadapted moving cross-staff companion note");
             if (c->rtick().isZero() && c->actualTicks() == measure->ticks()) continue;
-            // First moving scope: one complete un-beamed sixteenth-note voice.
-            if (c->actualTicks() != Fraction(1, 16)
+            // Keep each admitted un-beamed stream complete independently.
+            int& count = movingCounts[c->track()];
+            if (movingCounts.size() > 2 || c->actualTicks() != Fraction(1, 16)
                 || c->durationType().type() != TDuration::DurationType::V_16TH
-                || (movingTrack >= 0 && c->track() != movingTrack)
-                || c->rtick() != Fraction(movingCount, 16))
-                return fail("Cross-staff companions need one complete sixteenth-note stream");
-            movingTrack = c->track();
-            ++movingCount;
+                || c->rtick() != Fraction(count, 16))
+                return fail("Cross-staff companions need at most two complete sixteenth-note streams");
+            ++count;
         }
     }
-    if (movingCount && Fraction(movingCount, 16) != measure->ticks())
-        return fail("Incomplete moving cross-staff companion");
+    for (const auto& stream : movingCounts) {
+        if (Fraction(stream.second, 16) != measure->ticks())
+            return fail("Incomplete moving cross-staff companion");
+    }
     for (size_t i = 0; i < context.pairs.size(); ++i) {
         prepared.pairs[context.pairs[i].first->segment()] = context.pairs[i];
     }
@@ -149,7 +149,7 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
             // In this bounded context the beam lies between the staves. Use
             // the proven stem side without borrowing a provisional stem length.
             // Keep this conservative extension confined to the restricted
-            // held or single un-beamed moving-voice context above; broader cases
+            // held companions or at most two un-beamed moving voices; broader cases
             // remain unsupported. This conservative extent needs visual review.
             const qreal reach = 100000;
             const QRectF rect(e.stemX - width / 2, e.up ? y - reach : y - width / 2,

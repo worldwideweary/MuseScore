@@ -1739,6 +1739,10 @@ void TestSpacing::crossStaffInterleaved_data()
             QTest::newRow(qPrintable("chords-justified" + suffix)) << QString("v0.70-spacing-cross-chords.mscx") << beams;
             QTest::newRow(qPrintable("accidental-chords-natural" + suffix)) << QString("v0.70-spacing-cross-accidentals-chords-natural.mscx") << beams;
             QTest::newRow(qPrintable("accidental-chords-justified" + suffix)) << QString("v0.70-spacing-cross-accidentals-chords.mscx") << beams;
+            QTest::newRow(qPrintable("two-voices-natural" + suffix)) << QString("v0.71-spacing-cross-chords-two-voices-natural.mscx") << beams;
+            QTest::newRow(qPrintable("two-voices-justified" + suffix)) << QString("v0.71-spacing-cross-chords-two-voices.mscx") << beams;
+            QTest::newRow(qPrintable("two-voices-accidentals-natural" + suffix)) << QString("v0.71-spacing-cross-chords-two-voices-accidentals-natural.mscx") << beams;
+            QTest::newRow(qPrintable("two-voices-accidentals-justified" + suffix)) << QString("v0.71-spacing-cross-chords-two-voices-accidentals.mscx") << beams;
             }
       }
 
@@ -1747,7 +1751,9 @@ void TestSpacing::crossStaffInterleaved()
       QFETCH(QString, file);
       QFETCH(bool, modernBeams);
       const bool crossAccidentals = file.contains("spacing-cross-accidentals");
-      const bool companionAccidentals = file.contains("spacing-companion-accidentals");
+      const bool twoVoices = file.contains("two-voices");
+      const bool companionAccidentals = file.contains("spacing-companion-accidentals")
+            || file.contains("two-voices-accidentals");
       const bool crossChords = file.contains("-chords");
       const int alterations[] = { 1, 0, -1, 0 };
       const int fSpellings[] = { Tpc::TPC_F_S, Tpc::TPC_F, Tpc::TPC_F_B, Tpc::TPC_F };
@@ -1793,6 +1799,18 @@ void TestSpacing::crossStaffInterleaved()
             QCOMPARE(companionNote->pitch() % 12, (tpc2pitch(companionNote->tpc()) + 12) % 12);
             QCOMPARE(tpc2step(companionNote->tpc()), tpc2step(Tpc::TPC_C));
             accidentals += companionNote->accidental() != nullptr;
+            if (twoVoices) {
+                  const ChordRest* lower = s.cr(VOICES);
+                  QVERIFY(lower && lower->isChord() && !lower->beam());
+                  QVERIFY(lower->actualTicks() == Fraction(1, 16));
+                  QCOMPARE(static_cast<int>(toChord(lower)->notes().size()), 1);
+                  const Note* note = toChord(lower)->notes().front();
+                  QCOMPARE(note->pitch(), 48 + (companionAccidentals ? alterations[onset % 4] : 0));
+                  QCOMPARE(note->tpc(), companionAccidentals ? cSpellings[onset % 4] : static_cast<int>(Tpc::TPC_C));
+                  QCOMPARE(note->pitch() % 12, (tpc2pitch(note->tpc()) + 12) % 12);
+                  QCOMPARE(tpc2step(note->tpc()), tpc2step(Tpc::TPC_C));
+                  accidentals += note->accidental() != nullptr;
+                  }
             if (onset % 2 == 0) {
                   const ChordRest* cr = s.cr(0);
                   QVERIFY(cr && cr->isChord() && cr->actualTicks() == Fraction(1, 8));
@@ -1879,6 +1897,15 @@ void TestSpacing::crossStaffInterleaved()
       QCOMPARE(rejected.width, qreal(-123));
       QVERIFY(rejected.segments.empty() && rejected.measures.empty());
       companion->setTicks(savedTicks);
+      if (twoVoices) {
+            Chord* lower = toChord(m->first(SegmentType::ChordRest)->cr(VOICES));
+            const Fraction savedLowerTicks = lower->ticks();
+            lower->setTicks(Fraction(1, 8));
+            QVERIFY(!buildSpacingPlan4(m->system(), rejected, &reason));
+            QCOMPARE(rejected.width, qreal(-123));
+            QVERIFY(rejected.segments.empty() && rejected.measures.empty());
+            lower->setTicks(savedLowerTicks);
+            }
       if (crossChords) {
             Note* second = edited->notes().back();
             const QPointF savedOffset = second->offset();
