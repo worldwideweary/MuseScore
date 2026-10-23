@@ -236,20 +236,20 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       tbMain->addSeparator();
 
       // Option: Voice coloring / Unselect preference coloring:
-      coloringBox = new PianoRollComboBox;
-      coloringBox->setToolTip(QCoreApplication::translate("Ms::PianorollEditor", "Coloring scheme"));
-      coloringBox->addItem(QCoreApplication::translate("Ms::PianorollEditor", "Voice"),   int(Coloring::VOICING));
-      coloringBox->addItem(QCoreApplication::translate("Ms::PianorollEditor", "Staff"),  int(Coloring::STAFF));
-      coloringBox->addItem(QCoreApplication::translate("Ms::PianorollEditor", "Instrument"), int(Coloring::INSTRUMENT));
+      _coloringBox = new PianoRollComboBox;
+      _coloringBox->setToolTip(QCoreApplication::translate("Ms::PianorollEditor", "Coloring scheme"));
+      _coloringBox->addItem(QCoreApplication::translate("Ms::PianorollEditor", "Voice"),   int(Coloring::VOICING));
+      _coloringBox->addItem(QCoreApplication::translate("Ms::PianorollEditor", "Staff"),  int(Coloring::STAFF));
+      _coloringBox->addItem(QCoreApplication::translate("Ms::PianorollEditor", "Instrument"), int(Coloring::INSTRUMENT));
 
-      tbMain->addWidget(coloringBox);
+      tbMain->addWidget(_coloringBox);
 
       auto applyColoring = [this](int index) {
-            Coloring c = static_cast<Coloring>(coloringBox->itemData(index).toInt());
+            Coloring c = static_cast<Coloring>(_coloringBox->itemData(index).toInt());
             setColoring(c);
             };
 
-      connect(coloringBox,
+      connect(_coloringBox,
               QOverload<int>::of(&QComboBox::activated),
               this,
               applyColoring);
@@ -583,7 +583,7 @@ PianorollEditor::PianorollEditor(QWidget* parent)
       connect(_playbackFollowTimer, &QTimer::timeout,
               this, &PianorollEditor::updatePlaybackFollow);
 
-      connectEditorSignals(pitchLabel, coloringBox);
+      connectEditorSignals(pitchLabel, _coloringBox);
 
       readSettings();
 
@@ -645,10 +645,10 @@ void PianorollEditor::retranslate()
 
       showLevelsAction->setText(QCoreApplication::translate("Ms::PianorollEditor", "Levels Editor"));
 
-      coloringBox->setToolTip(QCoreApplication::translate("Ms::PianorollEditor", "Coloring scheme"));
-      coloringBox->setItemText(0, QCoreApplication::translate("Ms::PianorollEditor", "Voice"));
-      coloringBox->setItemText(1, QCoreApplication::translate("Ms::PianorollEditor", "Staff"));
-      coloringBox->setItemText(2, QCoreApplication::translate("Ms::PianorollEditor", "Instrument"));
+      _coloringBox->setToolTip(QCoreApplication::translate("Ms::PianorollEditor", "Coloring scheme"));
+      _coloringBox->setItemText(0, QCoreApplication::translate("Ms::PianorollEditor", "Voice"));
+      _coloringBox->setItemText(1, QCoreApplication::translate("Ms::PianorollEditor", "Staff"));
+      _coloringBox->setItemText(2, QCoreApplication::translate("Ms::PianorollEditor", "Instrument"));
 
       noteShapeBox->setItemText(0, QCoreApplication::translate("Ms::PianorollEditor", "Auto"));
       noteShapeBox->setItemText(1, QCoreApplication::translate("Ms::PianorollEditor", "Duration"));
@@ -1185,22 +1185,22 @@ Awl::PitchLabel* PianorollEditor::createTweakToolbar(const QSize& iconSize)
 
       tbTweak->addWidget(veloType);
 
-      velocity = new QSpinBox;
-      velocity->setRange(-127, 127);
-      velocity->setReadOnly(true);
+      _velocity = new QSpinBox;
+      _velocity->setRange(-127, 127);
+      _velocity->setReadOnly(true);
 
-      velocity->setPrefix("+");
-      const int velocityWidth = velocity->sizeHint().width();
-      velocity->setPrefix("");
-      velocity->setMinimumWidth(velocityWidth);
+      _velocity->setPrefix("+");
+      const int velocityWidth = _velocity->sizeHint().width();
+      _velocity->setPrefix("");
+      _velocity->setMinimumWidth(velocityWidth);
 
-      tbTweak->addWidget(velocity);
+      tbTweak->addWidget(_velocity);
 
       tbTweak->addWidget(pitchTextLabel = new QLabel(QCoreApplication::translate("Ms::PianorollEditor", "Pitch:")));
 
-      pitch = new Awl::PitchEdit;
-      pitch->setReadOnly(false);
-      tbTweak->addWidget(pitch);
+      _pitch = new Awl::PitchEdit;
+      _pitch->setReadOnly(false);
+      tbTweak->addWidget(_pitch);
 
       tbTweak->addWidget(onTimeLabel = new QLabel(QCoreApplication::translate("Ms::PianorollEditor", "OnTime:")));
 
@@ -1225,7 +1225,7 @@ Awl::PitchLabel* PianorollEditor::createTweakToolbar(const QSize& iconSize)
 
 void PianorollEditor::connectEditorSignals(
       Awl::PitchLabel* pitchLabel,
-      QComboBox* coloringBox)
+      QComboBox* colorBox)
       {
       connect(pianoView, &PianoView::onTimeDragged, this, [this](int value) {
             _previewOnTime = value;
@@ -1263,16 +1263,16 @@ void PianorollEditor::connectEditorSignals(
       connect(pianoView, &PianoView::editNoteLengthChanged,
               this, &PianorollEditor::updateNoteLengthControls);
 
-      velocity->installEventFilter(this);
-      pitch->installEventFilter(this);
+      _velocity->installEventFilter(this);
+      _pitch->installEventFilter(this);
       onTime->installEventFilter(this);
       tickLen->installEventFilter(this);
       subdiv->installEventFilter(this);
       tuplet->installEventFilter(this);
 
-      const int coloringIndex = coloringBox->currentIndex();
+      const int coloringIndex = colorBox->currentIndex();
       setColoring(static_cast<Coloring>(
-            coloringBox->itemData(coloringIndex).toInt()));
+            colorBox->itemData(coloringIndex).toInt()));
 
       pianoView->setUseNoteColors(_useNoteColors);
       pianoKbd->setUseNoteColors(_useNoteColors);
@@ -1352,7 +1352,7 @@ void PianorollEditor::connectEditorSignals(
                   restoreScoreViewFocus();
                   });
 
-      connect(pitch, &Awl::PitchEdit::returnPressed,
+      connect(_pitch, &Awl::PitchEdit::returnPressed,
               this, [this]() {
                   applyPitchEdit();
                   restoreScoreViewFocus();
@@ -1403,7 +1403,7 @@ void PianorollEditor::connectEditorSignals(
             SIGNAL(activated(int)),
             SLOT(veloTypeChanged(int)));
 
-      connect(velocity,
+      connect(_velocity,
             SIGNAL(valueChanged(int)),
             SLOT(velocityChanged(int)));
 
@@ -1852,7 +1852,7 @@ bool PianorollEditor::eventFilter(QObject* obj, QEvent* event)
                   }
 
             const bool pitchEnterPress =
-                  obj == pitch
+                  obj == _pitch
                   && (ke->key() == Qt::Key_Return
                       || ke->key() == Qt::Key_Enter);
 
@@ -2603,9 +2603,9 @@ void PianorollEditor::updateSelection()
                   }
 
             if (mixed)
-                  pitch->setMixedPitch();
+                  _pitch->setMixedPitch();
             else
-                  pitch->setPitch(firstPitch, firstTpc);
+                  _pitch->setPitch(firstPitch, firstTpc);
             }
 
       // These fields only have an unambiguous value
@@ -2644,8 +2644,8 @@ void PianorollEditor::updateSelection()
                   }
             }
 
-      velocity->setEnabled(enabled && sameVeloType);
-      pitch->setEnabled(enabled);
+      _velocity->setEnabled(enabled && sameVeloType);
+      _pitch->setEnabled(enabled);
       veloType->setEnabled(enabled);
       onTime->setEnabled(enabled);
       tickLen->setEnabled(enabled);
@@ -2733,14 +2733,14 @@ void PianorollEditor::veloTypeChanged(int val)
       const Note::ValueType vt = Note::ValueType(val);
       switch (vt) {
             case Note::ValueType::USER_VAL:
-                  velocity->setRange(0, 127);
-                  velocity->setPrefix("");
+                  _velocity->setRange(0, 127);
+                  _velocity->setPrefix("");
                   break;
 
             case Note::ValueType::OFFSET_VAL:
-                  velocity->setRange(-127, 127);
-                  velocity->setPrefix(
-                        velocity->value() > 0 ? "+" : "");
+                  _velocity->setRange(-127, 127);
+                  _velocity->setPrefix(
+                        _velocity->value() > 0 ? "+" : "");
                   break;
             }
 
@@ -2875,26 +2875,26 @@ void PianorollEditor::updateVelocity(Note* note)
       const int value = note->veloOffset();
 
       QSignalBlocker typeBlocker(veloType);
-      QSignalBlocker velocityBlocker(velocity);
+      QSignalBlocker velocityBlocker(_velocity);
 
       veloType->setCurrentIndex(int(vt));
 
-      velocity->setReadOnly(false);
-      velocity->setSuffix("");
+      _velocity->setReadOnly(false);
+      _velocity->setSuffix("");
 
       switch (vt) {
             case Note::ValueType::USER_VAL:
-                  velocity->setRange(0, 127);
-                  velocity->setPrefix("");
+                  _velocity->setRange(0, 127);
+                  _velocity->setPrefix("");
                   break;
 
             case Note::ValueType::OFFSET_VAL:
-                  velocity->setRange(-127, 127);
-                  velocity->setPrefix(value > 0 ? "+" : "");
+                  _velocity->setRange(-127, 127);
+                  _velocity->setPrefix(value > 0 ? "+" : "");
                   break;
             }
 
-      velocity->setValue(value);
+      _velocity->setValue(value);
 
       if (_showPianoLevels && pianoLevels)
             pianoLevels->update();
@@ -2914,9 +2914,9 @@ void PianorollEditor::velocityChanged(int val)
             Note::ValueType(veloType->currentIndex());
 
       if (currentType == Note::ValueType::OFFSET_VAL && val > 0)
-            velocity->setPrefix("+");
+            _velocity->setPrefix("+");
       else
-            velocity->setPrefix("");
+            _velocity->setPrefix("");
 
       _score->startCmd();
       for (int i = 0; i < items.size(); i++) {
@@ -3465,8 +3465,8 @@ void PianorollEditor::applyPitchEdit()
       if (!_score)
             return;
 
-      const int newPitch = pitch->value();
-      const int tpc = pitch->typedTpc();
+      const int newPitch = _pitch->value();
+      const int tpc = _pitch->typedTpc();
 
       if (!pitchIsValid(newPitch) || !tpcIsValid(tpc))
             return;
