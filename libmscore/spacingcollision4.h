@@ -42,6 +42,8 @@ bool spacingShapeDistance4(const SpacingPaddingTable4&, const SpacingShape4&, co
                            qreal shapeSpatium, qreal squeezeFactor, qreal& result);
 // A separate, validated view for the new placement pass. Native snapshots keep
 // all rectangles; only producer-tagged redundant legacy bounds are excluded.
+// Proven shared noteheads expand to all owners so pair queries retain every
+// voice's policy; unknown ownership or unsupported shared types reject the view.
 bool spacingCollisionProjection4(const SpacingPaddingTable4&, const SpacingShape4&,
                                  qreal shapeSpatium, SpacingShape4& result);
 }

@@ -12,7 +12,7 @@ class Element;
 class Segment;
 class Shape;
 
-enum class SpacingIdentity4 { ITEM, UNCLASSIFIED, AMBIGUOUS, LEGACY_SPACER };
+enum class SpacingIdentity4 { ITEM, UNCLASSIFIED, AMBIGUOUS, LEGACY_SPACER, SHARED_ITEM };
 // LEGACY_SPACER records a known producer's aggregate bound. It is retained in
 // snapshots and excluded only by the separately validated collision projection.
 
@@ -23,6 +23,9 @@ struct SpacingShapeElement4 {
     // For coincident known aggregates only: every native producer must be
     // accounted for exactly. item stays null rather than choosing one owner.
     std::vector<const Element*> aggregateOwners;
+    // Proven coincident direct producers; projection validates every item and
+    // expands the rectangle for all pair policies. Never select one voice.
+    std::vector<const Element*> sharedItems;
     SpacingShapeElement4(const QRectF& r, const Element* owner = nullptr)
         : rect(r), item(owner), identity(owner ? SpacingIdentity4::ITEM : SpacingIdentity4::UNCLASSIFIED) {}
 };
@@ -39,8 +42,10 @@ struct SpacingShape4 {
 
 // Preserve every native rectangle, in order. Ownership is resolved only where
 // all matching candidates agree. Coincident legacy aggregates may retain a
-// complete producer set when multiplicities match. Other ambiguity falls back.
-SpacingShape4 spacingResolveShape4(const Shape&, const SpacingShape4& candidates);
+// complete producer set when multiplicities match. At staff assembly only,
+// allowSharedItems also retains distinct direct producers with exact counts.
+// Other ambiguity falls back; shared geometry still requires projection.
+SpacingShape4 spacingResolveShape4(const Shape&, const SpacingShape4& candidates, bool allowSharedItems = false);
 SpacingShape4 spacingElementShape4(const Element*);
 SpacingShape4 spacingStaffShape4(const Segment*, int staffIdx);
 }

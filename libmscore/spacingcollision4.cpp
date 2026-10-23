@@ -362,15 +362,42 @@ bool spacingCollisionProjection4(const SpacingPaddingTable4& table, const Spacin
             return false;
         // Every producer needs its own identified component footprint.
         for (const SpacingShapeElement4& component : native.elements) {
-            if (component.identity != SpacingIdentity4::ITEM || !component.item)
-                continue;
-            if (component.item == owner || (component.item->isNote() && toNote(component.item)->chord() == owner))
+            const auto belongsToOwner = [owner](const Element* item) {
+                return item && (item == owner || (item->isNote() && toNote(item)->chord() == owner));
+            };
+            if (component.identity == SpacingIdentity4::ITEM && belongsToOwner(component.item))
                 return true;
+            if (component.identity == SpacingIdentity4::SHARED_ITEM) {
+                for (const Element* item : component.sharedItems) {
+                    if (belongsToOwner(item))
+                        return true;
+                }
+            }
         }
         return false;
     };
     for (const SpacingShapeElement4& e : native.elements) {
         if (!validRect4(e.rect))
+            return false;
+        if (e.identity == SpacingIdentity4::SHARED_ITEM) {
+            if (e.item || !e.aggregateOwners.empty() || e.sharedItems.size() < 2)
+                return false;
+            for (size_t i = 0; i < e.sharedItems.size(); ++i) {
+                const Element* item = e.sharedItems[i];
+                SpacingPairPolicy4 policy;
+                // This stage admits shared noteheads only. Other coincident
+                // component types still require their own context adapter.
+                if (!item || !item->isNote() || !spacingPairPolicy4(table, item, item, shapeSpatium, policy))
+                    return false;
+                for (size_t j = 0; j < i; ++j) {
+                    if (item == e.sharedItems[j])
+                        return false;
+                }
+                projected.elements.push_back(SpacingShapeElement4(e.rect, item));
+            }
+            continue;
+        }
+        if (!e.sharedItems.empty())
             return false;
         if (e.identity == SpacingIdentity4::LEGACY_SPACER) {
             if (e.item) {

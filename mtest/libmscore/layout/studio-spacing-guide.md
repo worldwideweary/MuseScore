@@ -1647,3 +1647,49 @@ direct-item producer and apply all relevant pair policies, with unknown or
 incomplete ownership still rejected. After enabling that bounded case, change
 U1's eligibility assertions to require full-plan application and recompare.
 The centered cross-staff beam reproduction stays deferred.
+
+## v0.57: retain both voices' shared-notehead policies
+
+The user reports v0.56 tests passing, confirming the registered geometry
+fallback. Its natural U1 screenshot is substantially wider than 4.7.5, while
+the justified pair looks much closer because both fill the system. This is
+the expected place to adapt provenance, rather than tune duration spacing.
+
+At staff-shape assembly, spacingResolveShape4 can now retain a SHARED_ITEM
+producer set when every coincident native primitive has exactly one distinct,
+identified direct candidate. Candidate/native counts must match exactly;
+unknown candidates, mixed roles and duplicated producers do not qualify.
+Native rectangle count/order/coordinates remain intact. Ordinary element
+resolution keeps the previous conservative behavior. Producer ordering is
+stable and no single voice is selected as the owner.
+
+The collision projection accepts these producer sets only for supported notes.
+It expands each shared rectangle to every producer, so the existing all-pairs
+distance query evaluates each voice's context and keeps the strongest floor.
+Shared notes can also establish each chord's component footprint when removing
+redundant legacy aggregate bounds. Unsupported shared types, malformed sets or
+any unsupported owner reject the whole projection without publishing changes.
+Raw shared snapshots still require projection; they are not complete single-
+owner geometry. No native Shape, notehead packing or legacy layout code changes.
+
+Update geometryResolution with default rejection, explicit staff-mode admission,
+exact multiplicity, order/translation invariance, every-owner projection,
+malformed/unsupported metadata and unchanged-output checks. Change U1 from its
+diagnostic rejection to requiring shared producers on both staves, complete
+plan acceptance and actual application. Keep all earlier polyrhythm rows,
+both beam settings, repeat layout and legacy-off restoration.
+
+Files changed: spacinggeometry4.h/.cpp, spacingcollision4.h/.cpp,
+tst_spacing.cpp and this guide. No new scores are necessary: reuse both v0.56
+U1 files, with both experimental options already on. Local checks include
+moc/C++11 debug/NDEBUG syntax for changed sources, 100,000 previous actual
+resolver cases plus 10,000 shared direct-owner cases, actual projection-body
+checks with controlled contexts, whitespace and parent-index patch application.
+These checks do not replace live Qt 5.9 score execution.
+
+Apply v0.57 after v0.56. Rebuild and run tst_spacing/tst_beam; compare natural
+U1 first and justified U1 second against the same 4.7.5 screenshots. Full
+mtests and rendered parity remain pending on the user's build. If another
+producer is rejected, use the exact failure reason for the next bounded
+adaptation. Once U1 is accepted visually, proceed to rests/sustained voices
+before cross-staff combinations. The centered-beam issue stays deferred.

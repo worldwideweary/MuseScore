@@ -25,7 +25,7 @@ namespace Ms {
 bool SpacingShape4::complete() const
 {
     for (const SpacingShapeElement4& e : elements) {
-        if (e.identity != SpacingIdentity4::ITEM || !e.item || !e.aggregateOwners.empty())
+        if (e.identity != SpacingIdentity4::ITEM || !e.item || !e.aggregateOwners.empty() || !e.sharedItems.empty())
             return false;
     }
     return true;
@@ -45,7 +45,7 @@ static bool sameRect4(const QRectF& a, const QRectF& b)
     return a.x() == b.x() && a.y() == b.y() && a.width() == b.width() && a.height() == b.height();
 }
 
-SpacingShape4 spacingResolveShape4(const Shape& native, const SpacingShape4& candidates)
+SpacingShape4 spacingResolveShape4(const Shape& native, const SpacingShape4& candidates, bool allowSharedItems)
 {
     SpacingShape4 result;
     result.elements.reserve(native.size());
@@ -55,6 +55,8 @@ SpacingShape4 spacingResolveShape4(const Shape& native, const SpacingShape4& can
         bool unknown = false;
         bool ambiguous = false;
         bool allAggregates = true;
+        bool allItems = true;
+        std::vector<const Element*> sharedItems;
         std::vector<const Element*> aggregateOwners;
         size_t matches = 0;
         const Element* owner = nullptr;
@@ -67,14 +69,19 @@ SpacingShape4 spacingResolveShape4(const Shape& native, const SpacingShape4& can
             found = true;
             ++matches;
             allAggregates = allAggregates && candidate.identity == SpacingIdentity4::LEGACY_SPACER
-                && candidate.item && candidate.aggregateOwners.empty();
+                && candidate.item && candidate.aggregateOwners.empty() && candidate.sharedItems.empty();
+            allItems = allItems && candidate.identity == SpacingIdentity4::ITEM
+                && candidate.item && candidate.aggregateOwners.empty() && candidate.sharedItems.empty();
+            if (candidate.identity == SpacingIdentity4::ITEM && candidate.item
+                && std::find(sharedItems.begin(), sharedItems.end(), candidate.item) == sharedItems.end())
+                sharedItems.push_back(candidate.item);
             if (candidate.identity == SpacingIdentity4::LEGACY_SPACER && candidate.item
                 && std::find(aggregateOwners.begin(), aggregateOwners.end(), candidate.item) == aggregateOwners.end())
                 aggregateOwners.push_back(candidate.item);
             if (candidate.identity == SpacingIdentity4::AMBIGUOUS)
                 ambiguous = true;
             else if ((candidate.identity != SpacingIdentity4::ITEM && candidate.identity != SpacingIdentity4::LEGACY_SPACER)
-                     || !candidate.item || !candidate.aggregateOwners.empty())
+                     || !candidate.item || !candidate.aggregateOwners.empty() || !candidate.sharedItems.empty())
                 unknown = true;
             else if (owner && (owner != candidate.item || identity != candidate.identity))
                 ambiguous = true;
@@ -97,6 +104,12 @@ SpacingShape4 spacingResolveShape4(const Shape& native, const SpacingShape4& can
             std::sort(aggregateOwners.begin(), aggregateOwners.end(), std::less<const Element*>());
             resolved.identity = SpacingIdentity4::LEGACY_SPACER;
             resolved.aggregateOwners = aggregateOwners;
+        }
+        else if (allowSharedItems && allItems && !unknown && matches == nativeMatches
+                 && sharedItems.size() == matches && matches > 1) {
+            std::sort(sharedItems.begin(), sharedItems.end(), std::less<const Element*>());
+            resolved.identity = SpacingIdentity4::SHARED_ITEM;
+            resolved.sharedItems = sharedItems;
         }
         else if (ambiguous)
             resolved.identity = SpacingIdentity4::AMBIGUOUS;
@@ -243,6 +256,6 @@ SpacingShape4 spacingStaffShape4(const Segment* segment, int staffIdx)
                 appendShape4(candidates, spacingElementShape4(item), item->pos());
         }
     }
-    return spacingResolveShape4(native, candidates);
+    return spacingResolveShape4(native, candidates, true);
 }
 }

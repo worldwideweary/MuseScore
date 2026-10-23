@@ -371,6 +371,47 @@ void TestSpacing::geometryResolution()
       Note* secondNote = new Note(score);
       secondContext.add(secondNote);
       secondNote->setbbox(QRectF(2, 8, 3, 4));
+      // Shared direct producers are admitted only at staff assembly, with
+      // exact counts. Projection keeps every note's pair policy available.
+      Shape directNative;
+      directNative.add(rect);
+      directNative.add(rect);
+      SpacingShape4 directOwners;
+      directOwners.elements.push_back(SpacingShapeElement4(rect, &note));
+      directOwners.elements.push_back(SpacingShapeElement4(rect, secondNote));
+      QCOMPARE(int(spacingResolveShape4(directNative, directOwners).elements.front().identity),
+            int(SpacingIdentity4::AMBIGUOUS));
+      SpacingShape4 directShared = spacingResolveShape4(directNative, directOwners, true);
+      QVERIFY(!directShared.complete());
+      for (const SpacingShapeElement4& e : directShared.elements) {
+            QCOMPARE(int(e.identity), int(SpacingIdentity4::SHARED_ITEM));
+            QVERIFY(!e.item && e.aggregateOwners.empty());
+            QCOMPARE(static_cast<int>(e.sharedItems.size()), 2);
+            }
+      std::reverse(directOwners.elements.begin(), directOwners.elements.end());
+      QVERIFY(directShared.elements.front().sharedItems
+            == spacingResolveShape4(directNative, directOwners, true).elements.front().sharedItems);
+      QVERIFY(directShared.translated(offset).elements.front().sharedItems == directShared.elements.front().sharedItems);
+      QVERIFY(spacingCollisionProjection4(table, directShared, score->spatium(), projected));
+      QCOMPARE(static_cast<int>(projected.elements.size()), 4);
+      QVERIFY(projected.complete());
+      for (const Element* owner : { static_cast<const Element*>(&note), static_cast<const Element*>(secondNote) }) {
+            int count = 0;
+            for (const SpacingShapeElement4& e : projected.elements) count += e.item == owner;
+            QCOMPARE(count, 2);
+            }
+      SpacingShape4 malformed = directShared;
+      malformed.elements.front().sharedItems.back() = malformed.elements.front().sharedItems.front();
+      QVERIFY(!spacingCollisionProjection4(table, malformed, score->spatium(), projected));
+      QCOMPARE(static_cast<int>(projected.elements.size()), 4);
+      malformed = directShared;
+      malformed.elements.front().sharedItems.back() = accidental; // shared non-note stays unsupported
+      QVERIFY(!spacingCollisionProjection4(table, malformed, score->spatium(), projected));
+      directOwners.elements.push_back(SpacingShapeElement4(rect));
+      QVERIFY(spacingResolveShape4(directNative, directOwners, true).elements.front().identity != SpacingIdentity4::SHARED_ITEM);
+      directOwners.elements.pop_back();
+      directNative.add(rect);
+      QVERIFY(spacingResolveShape4(directNative, directOwners, true).elements.front().identity != SpacingIdentity4::SHARED_ITEM);
       Shape sharedNative;
       sharedNative.add(spacer.rect);
       sharedNative.add(spacer.rect);
@@ -1369,34 +1410,29 @@ void TestSpacing::polyrhythmInputs()
             SpacingPlan4 applied;
             QString reason;
             if (unisons) {
-                  // Coincident direct-item owners are still intentionally
-                  // ambiguous. Register the boundary without choosing one
-                  // voice's padding policy or partially publishing a plan.
-                  applied.width = -123;
-                  QVERIFY(!buildSpacingPlan4(m->system(), applied, &reason));
-                  QVERIFY2(reason.startsWith("Unadapted geometry at tick"), qPrintable(reason));
-                  QCOMPARE(applied.width, qreal(-123));
-                  QVERIFY(applied.segments.empty() && applied.measures.empty());
                   Segment* first = m->first(SegmentType::ChordRest);
                   QVERIFY(first);
                   for (int staff = 0; staff < 2; ++staff) {
                         const SpacingShape4 shape = spacingStaffShape4(first, staff);
-                        bool ambiguous = false;
-                        for (const SpacingShapeElement4& item : shape.elements)
-                              ambiguous |= item.identity == SpacingIdentity4::AMBIGUOUS;
-                        QVERIFY(ambiguous);
+                        bool shared = false;
+                        for (const SpacingShapeElement4& item : shape.elements) {
+                              if (item.identity == SpacingIdentity4::SHARED_ITEM) {
+                                    QVERIFY(!item.item);
+                                    QCOMPARE(static_cast<int>(item.sharedItems.size()), 2);
+                                    shared = true;
+                                    }
+                              }
+                        QVERIFY(shared);
                         }
                   }
-            else {
-                  QVERIFY2(buildSpacingPlan4(m->system(), applied, &reason), qPrintable(reason));
-                  if (!natural)
-                        QVERIFY(justifySpacingPlan4(applied, score->styleD(Sid::pagePrintableWidth) * DPI));
-                  QVERIFY(qAbs(m->system()->width() - applied.width) < 1e-6);
-                  for (const SpacingSegmentPlan4& entry : applied.segments) {
-                        if (entry.ignored) continue;
-                        QVERIFY(qAbs(m->x() + entry.segment->x() - entry.x) < 1e-6);
-                        QVERIFY(qAbs(entry.segment->width() - entry.width) < 1e-6);
-                        }
+            QVERIFY2(buildSpacingPlan4(m->system(), applied, &reason), qPrintable(reason));
+            if (!natural)
+                  QVERIFY(justifySpacingPlan4(applied, score->styleD(Sid::pagePrintableWidth) * DPI));
+            QVERIFY(qAbs(m->system()->width() - applied.width) < 1e-6);
+            for (const SpacingSegmentPlan4& entry : applied.segments) {
+                  if (entry.ignored) continue;
+                  QVERIFY(qAbs(m->x() + entry.segment->x() - entry.x) < 1e-6);
+                  QVERIFY(qAbs(entry.segment->width() - entry.width) < 1e-6);
                   }
             // Verify the multi-voice rhythmic branch against the pinned
             // duration formula, including the preceding non-adjacent onset.
