@@ -1928,3 +1928,29 @@ Apply v0.64 after v0.63 and run tst_spacing/tst_beam. If they pass, compare
 natural X1 first, then justified X1 with the existing 4.7.5 captures. Use any
 failure reason or visible difference to refine this scope before expanding
 to same-side stem crossings and interleaved moving voices.
+
+## v0.65: same-staff runs within the bounded cross-staff beam
+
+The user reports v0.64 mtests passing. Natural and justified X1 captures look
+close to Studio 4.7.5; this is visual acceptance of the bounded baseline, not
+proof of general cross-staff parity.
+
+Remove the alternating-only guard. The existing context already represents
+same-staff neighbors with zero signed offset. All other eligibility limits,
+temporary stem geometry, collision floors and fallback behavior remain.
+
+New comparison files (both experimental options enabled):
+- v0.65-spacing-cross-staff-runs-natural.mscx
+- v0.65-spacing-cross-staff-runs.mscx
+
+X2 has four eighths on upper/upper/lower/lower staves, with the same held
+companion voices as X1. Compare natural width first, then justified gaps,
+especially the middle staff change. Open each original in both applications.
+The test requires full-plan acceptance and actual placement under both beam
+settings, one nonzero fixed offset, repeat stability and legacy-off restoration.
+
+Files changed: spacingplan4.cpp, tst_spacing.cpp, this guide, the cross-staff
+audit and the two new scores. Local moc/C++11 debug/NDEBUG syntax and fixture
+structure checks pass. Full Qt 5.9 mtests and X2 visual comparison are pending.
+Apply after v0.64 and run tst_spacing/tst_beam. Next audit interleaved moving
+voices and nonadjacent beam-neighbor constraints before widening that guard.

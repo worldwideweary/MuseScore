@@ -97,8 +97,6 @@ bool prepareCrossStaff4(System* system, CrossStaffGeometry4& result, QString* re
         }
     }
     for (size_t i = 0; i < context.pairs.size(); ++i) {
-        if (context.chords[i].visualStaff == context.chords[i + 1].visualStaff)
-            return fail("Same-side cross-beam transitions require a later adapter");
         prepared.pairs[context.pairs[i].first->segment()] = context.pairs[i];
     }
     result = prepared;

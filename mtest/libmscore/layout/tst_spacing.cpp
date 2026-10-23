@@ -1577,6 +1577,8 @@ void TestSpacing::crossStaffPlanBoundary_data()
             const QString suffix = beams ? "-studio-beams" : "-legacy-beams";
             QTest::newRow(qPrintable("natural" + suffix)) << QString("v0.60-spacing-cross-staff-natural.mscx") << beams;
             QTest::newRow(qPrintable("justified" + suffix)) << QString("v0.60-spacing-cross-staff.mscx") << beams;
+            QTest::newRow(qPrintable("runs-natural" + suffix)) << QString("v0.65-spacing-cross-staff-runs-natural.mscx") << beams;
+            QTest::newRow(qPrintable("runs-justified" + suffix)) << QString("v0.65-spacing-cross-staff-runs.mscx") << beams;
             }
       }
 
@@ -1584,6 +1586,8 @@ void TestSpacing::crossStaffPlanBoundary()
       {
       QFETCH(QString, file);
       QFETCH(bool, modernBeams);
+      const bool runs = file.startsWith("v0.65-");
+      const auto expectedStaff = [runs](int i) { return runs ? i / 2 : i % 2; };
       MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
       score->setStyleValue(Sid::beamLayout4, modernBeams);
@@ -1616,9 +1620,9 @@ void TestSpacing::crossStaffPlanBoundary()
             const ChordRest* cr = s.cr(0);
             QVERIFY(cr && cr->isChord() && cr->actualTicks() == Fraction(1, 8));
             const Chord* chord = toChord(cr);
-            QCOMPARE(chord->staffMove(), onset % 2);
+            QCOMPARE(chord->staffMove(), expectedStaff(onset));
             QCOMPARE(static_cast<int>(chord->notes().size()), 1);
-            QCOMPARE(chord->notes().front()->pitch(), onset % 2 ? 53 : 65);
+            QCOMPARE(chord->notes().front()->pitch(), expectedStaff(onset) ? 53 : 65);
             QVERIFY(chord->beam() && chord->beam()->cross());
             if (onset == 0) {
                   for (int track : { 1, VOICES }) {
@@ -1640,8 +1644,8 @@ void TestSpacing::crossStaffPlanBoundary()
       QCOMPARE(static_cast<int>(context.pairs.size()), 3);
       const qreal displacement = score->noteHeadWidth() - score->styleP(Sid::stemWidth);
       for (int i = 0; i < 4; ++i) {
-            QCOMPARE(context.chords[i].visualStaff, i % 2);
-            QCOMPARE(context.chords[i].up, i % 2 != 0);
+            QCOMPARE(context.chords[i].visualStaff, expectedStaff(i));
+            QCOMPARE(context.chords[i].up, expectedStaff(i) != 0);
             QCOMPARE(context.chords[i].chord->up(), static_cast<bool>(stemSides[i]));
             const Chord* chord = context.chords[i].chord;
             QCOMPARE(chord->up(), context.chords[i].up);
@@ -1649,8 +1653,11 @@ void TestSpacing::crossStaffPlanBoundary()
             }
       for (int i = 0; i < 3; ++i) {
             QVERIFY(context.pairs[i].canAdjust);
-            QVERIFY(qAbs(context.pairs[i].widthOffset - (i % 2 ? displacement : -displacement)) < 1e-6);
-            if (i % 2) {
+            const bool up = expectedStaff(i) != 0;
+            const bool nextUp = expectedStaff(i + 1) != 0;
+            const qreal offset = up == nextUp ? 0 : (up ? displacement : -displacement);
+            QVERIFY(qAbs(context.pairs[i].widthOffset - offset) < 1e-6);
+            if (up && !nextUp) {
                   QVERIFY(context.pairs[i].minimumWidth >= 2 * displacement);
                   qreal stemPadding = 0;
                   const SpacingPaddingTable4 table(score);
@@ -1694,7 +1701,7 @@ void TestSpacing::crossStaffPlanBoundary()
             QVERIFY(qAbs(e.segment->spacingWidthOffset4() - e.widthOffset) < 1e-6);
             fixedOffsets += e.widthOffset != 0;
             }
-      QCOMPARE(fixedOffsets, 3);
+      QCOMPARE(fixedOffsets, runs ? 1 : 3);
       QVERIFY(snapshot() == modern);
       score->doLayout();
       const auto repeated = snapshot();
