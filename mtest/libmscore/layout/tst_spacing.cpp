@@ -1250,6 +1250,10 @@ void TestSpacing::polyrhythmInputs_data()
       QTest::newRow("overview-studio-beams") << QString("v0.51-spacing-polyrhythms.mscx") << false << true;
       QTest::newRow("natural-legacy-beams") << QString("v0.51-spacing-polyrhythm-natural.mscx") << true << false;
       QTest::newRow("natural-studio-beams") << QString("v0.51-spacing-polyrhythm-natural.mscx") << true << true;
+      QTest::newRow("accidentals-natural-legacy-beams") << QString("v0.53-spacing-polyrhythm-accidentals-natural.mscx") << true << false;
+      QTest::newRow("accidentals-natural-studio-beams") << QString("v0.53-spacing-polyrhythm-accidentals-natural.mscx") << true << true;
+      QTest::newRow("accidentals-justified-legacy-beams") << QString("v0.53-spacing-polyrhythm-accidentals.mscx") << false << false;
+      QTest::newRow("accidentals-justified-studio-beams") << QString("v0.53-spacing-polyrhythm-accidentals.mscx") << false << true;
       }
 
 void TestSpacing::polyrhythmInputs()
@@ -1257,6 +1261,7 @@ void TestSpacing::polyrhythmInputs()
       QFETCH(QString, file);
       QFETCH(bool, natural);
       QFETCH(bool, modernBeams);
+      const bool accidentals = file.startsWith("v0.53-");
       MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
       score->setStyleValue(Sid::beamLayout4, modernBeams);
@@ -1283,7 +1288,7 @@ void TestSpacing::polyrhythmInputs()
       const int counts[3][4] = { { 3, 2, 2, 3 }, { 5, 4, 4, 5 }, { 6, 8, 10, 12 } };
       int measureCount = 0;
       for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++measureCount) {
-            const int row = natural ? 2 : measureCount;
+            const int row = natural || accidentals ? 2 : measureCount;
             QVERIFY(row < 3);
             QVERIFY(m->ticks() == Fraction(1, 2));
             QCOMPARE(m->system()->firstMeasure(), m);
@@ -1291,11 +1296,23 @@ void TestSpacing::polyrhythmInputs()
             for (int v = 0; v < 4; ++v) {
                   Fraction elapsed(0, 1);
                   int n = 0;
+                  int signs = 0;
                   for (Segment& seg : m->segments()) {
                         if (!seg.isChordRestType()) continue;
                         const ChordRest* cr = seg.cr(tracks[v]);
                         if (!cr) continue;
                         QVERIFY(cr->isChord());
+                        if (accidentals) {
+                              const Chord* chord = toChord(cr);
+                              QCOMPARE(chord->notes().size(), 1);
+                              const Note* note = chord->notes().front();
+                              const int pitches[] = { 77, 65, 53, 41 };
+                              const int alterations[] = { 1, 0, -1, 0 };
+                              const int spellings[] = { 25, 13, 1, 13 };
+                              QCOMPARE(note->pitch(), pitches[v] + alterations[n % 4]);
+                              QCOMPARE(note->tpc(), spellings[n % 4]);
+                              signs += note->accidental() != nullptr;
+                              }
                         QVERIFY(seg.rtick() == elapsed);
                         Fraction duration;
                         if (row == 0) duration = (v == 0 || v == 3) ? Fraction(1, 6) : Fraction(1, 4);
@@ -1309,6 +1326,7 @@ void TestSpacing::polyrhythmInputs()
                         ++n;
                         }
                   QCOMPARE(n, counts[row][v]);
+                  if (accidentals) QVERIFY(signs > 0);
                   QVERIFY(elapsed == Fraction(1, 2));
                   }
             SpacingPlan4 applied;
@@ -1350,7 +1368,7 @@ void TestSpacing::polyrhythmInputs()
                   QVERIFY(qIsFinite(seg.x()) && qIsFinite(seg.width()) && seg.width() >= 0);
                   }
             }
-      QCOMPARE(measureCount, natural ? 1 : 3);
+      QCOMPARE(measureCount, natural || accidentals ? 1 : 3);
       const std::vector<qreal> modern = snapshot();
       score->doLayout();
       const std::vector<qreal> repeated = snapshot();

@@ -1467,3 +1467,45 @@ rejected, use its exact test failure reason for the next adapter stage. If it
 is applied but gaps still differ, inspect active pair floors and rhythmic
 advances before adding accidental/rest/cross-staff variants. The registered
 beam issue stays deferred, and default-off restoration remains required.
+
+## v0.53: accidental controls for the same four-stream polyrhythm
+
+The user reports full mtests passing after v0.52. The updated natural P3
+screenshots show the excess width removed and regular gaps within each voice.
+After allowing for zoom, overall width and beat alignment look close to 4.7.5.
+This validates the plain-note control; it does not establish parity for every
+collision combination.
+
+This checkpoint changes test inputs and assertions only. Two new scores retain
+the exact P3 durations, tuplets, octaves, voices and forced stem directions:
+
+- v0.53-spacing-polyrhythm-accidentals-natural.mscx: natural-width A1.
+- v0.53-spacing-polyrhythm-accidentals.mscx: the same A1 justified to page width.
+
+Each voice cycles F-sharp, F-natural, F-flat, F-natural in its original octave.
+This keeps the staff positions constant while introducing changing accidental
+footprints at the irregular onsets. Both experimental options are already on.
+The natural file isolates required spacing; the justified file checks how the
+same floors interact with system expansion. Open the same files in 4.7.5.
+Compare signs against neighboring noteheads and stems, the common second-beat
+boundary, and the gaps within each voice. Do not expect equally spaced notes
+where an accidental collision requires additional room.
+
+Extend polyrhythmInputs with both files under both beam settings. Verify exact
+pitches/spellings and generated signs in each voice, all original rational
+durations, full-plan eligibility and actual application, repeat layout and
+legacy-off restoration. The original P1/P2/P3 rows remain intact. These inputs
+exercise inter-item spacing; within-chord accidental packing is still
+Evolution's implementation.
+
+Files changed: tst_spacing.cpp, this guide and the two v0.53 scores. Local
+validation covers XML structure, unchanged rhythmic streams, enabled styles,
+moc, C++11 debug/NDEBUG syntax, whitespace and parent-index patch application.
+Full tst_spacing/tst_beam and live visual comparison remain for the user's
+build. No production engraving code changes in this milestone.
+
+Apply v0.53 after v0.52. Compare natural A1 first, then justified A1. If a plan
+is rejected or a collision differs, trace the exact producer/pair floor before
+changing layout policy. Next extend the controlled rhythms to chord seconds
+and unisons, then rests/sustained voices and cross-staff combinations. The
+registered centered-beam issue remains queued separately.
