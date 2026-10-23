@@ -177,7 +177,7 @@ bool SpacingPaddingTable4::padding(ElementType first, ElementType second, qreal&
     return true;
 }
 
-static bool commonItemContext4(const Element* item)
+static bool commonItemContext4(const Element* item, bool allowGrace = false)
 {
     if (!item || item->track() < 0 || item->onTabStaff())
         return false;
@@ -196,7 +196,7 @@ static bool commonItemContext4(const Element* item)
         return true;
     // Common notation only in this stage. Studio's line attachment and chord
     // kerning-exception inputs need a separate adapter before these can enter.
-    if (chord->isGrace() || !chord->articulations().empty())
+    if ((!allowGrace && chord->isGrace()) || !chord->articulations().empty())
         return false;
     for (const Note* note : chord->notes()) {
         if (note->tieFor() || note->tieBack() || !note->spannerFor().empty() || !note->spannerBack().empty())
@@ -224,16 +224,20 @@ static bool neverKernable4(const Element* item)
     return (item->isClef() && item->rtick().isZero()) || item->isKeySig() || item->isTimeSig() || item->isBarLine();
 }
 
-bool spacingPairPolicy4(const SpacingPaddingTable4& table, const Element* first, const Element* second,
-                        qreal shapeSpatium, SpacingPairPolicy4& result)
+static bool pairPolicy4(const SpacingPaddingTable4& table, const Element* first, const Element* second,
+                        qreal shapeSpatium, SpacingPairPolicy4& result, bool allowGrace)
 {
     if (!table.score() || !first || !second || first->score() != table.score() || second->score() != table.score()
-        || !commonItemContext4(first) || !commonItemContext4(second)
+        || !commonItemContext4(first, allowGrace) || !commonItemContext4(second, allowGrace)
         || !(shapeSpatium > 0) || !std::isfinite(shapeSpatium))
         return false;
     SpacingPairPolicy4 policy;
-    if (!table.padding(first->type(), second->type(), policy.padding))
-        return false;
+    if (!table.padding(first->type(), second->type(), policy.padding)) {
+        // Studio's default padding-table cell for the slash is 0.1sp.
+        if (!allowGrace || (first->type() != ElementType::STEM_SLASH && second->type() != ElementType::STEM_SLASH))
+            return false;
+        policy.padding = 0.1 * table.score()->spatium();
+    }
     const qreal scaling = (first->mag() + second->mag()) / 2;
     if (!(scaling > 0) || !std::isfinite(scaling))
         return false;
@@ -248,6 +252,12 @@ bool spacingPairPolicy4(const SpacingPaddingTable4& table, const Element* first,
             policy.padding = std::max(policy.padding, table.score()->styleP(Sid::minNoteDistance));
     }
     policy.padding *= scaling;
+    if (allowGrace && first->isNote() && second->isNote()) {
+        const bool a = toNote(first)->chord()->isGrace();
+        const bool b = toNote(second)->chord()->isGrace();
+        if (a || b)
+            policy.padding = std::max(policy.padding, (a && b ? 0.3 : 0.45) * table.score()->spatium());
+    }
     if (!first->isLedgerLine() && second->isRest()) {
         switch (toRest(second)->sym()) {
         case SymId::restWholeLegerLine:
@@ -269,10 +279,47 @@ bool spacingPairPolicy4(const SpacingPaddingTable4& table, const Element* first,
         policy.kerning = SpacingKerning4::RIGHT_EDGE;
     else
         policy.kerning = SpacingKerning4::KERNING;
+    if (allowGrace && first->type() == ElementType::STEM_SLASH) {
+        const auto chordOf = [](const Element* item) -> const Chord* {
+            for (; item; item = item->parent()) {
+                if (item->isChord())
+                    return toChord(item);
+            }
+            return nullptr;
+        };
+        const Chord* a = chordOf(first);
+        const Chord* b = chordOf(second);
+        policy.kerning = a && b && a->beam() && a->beam() == b->beam()
+            ? SpacingKerning4::ALLOW_COLLISION : SpacingKerning4::KERNING;
+    }
     if (!std::isfinite(policy.padding))
         return false;
     result = policy;
     return true;
+}
+
+bool spacingPairPolicy4(const SpacingPaddingTable4& table, const Element* first, const Element* second,
+                        qreal shapeSpatium, SpacingPairPolicy4& result)
+{
+    return pairPolicy4(table, first, second, shapeSpatium, result, false);
+}
+
+bool spacingGracePairPolicy4(const SpacingPaddingTable4& table, const Chord* main,
+                             const Element* first, const Element* second,
+                             qreal shapeSpatium, SpacingPairPolicy4& result)
+{
+    if (!main || main->isGrace())
+        return false;
+    const auto belongs = [main](const Element* item) {
+        for (; item; item = item->parent()) {
+            if (item->isChord()) {
+                const Chord* chord = toChord(item);
+                return chord == main || (chord->isGraceBefore() && chord->parent() == main);
+            }
+        }
+        return false;
+    };
+    return belongs(first) && belongs(second) && pairPolicy4(table, first, second, shapeSpatium, result, true);
 }
 
 qreal spacingPairDistance4(const QRectF& first, const QRectF& second, const SpacingPairPolicy4& policy,

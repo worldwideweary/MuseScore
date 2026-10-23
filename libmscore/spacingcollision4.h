@@ -8,6 +8,7 @@
 
 namespace Ms {
 class Element;
+class Chord;
 class Score;
 struct SpacingShape4;
 enum class ElementType : char;
@@ -34,6 +35,11 @@ public:
 // score spatium and item magnification, as in Studio. They are not interchangeable.
 bool spacingPairPolicy4(const SpacingPaddingTable4&, const Element* first, const Element* second,
                         qreal shapeSpatium, SpacingPairPolicy4& result);
+// Scoped grace-group query. Both items must belong to main or its before-graces.
+// Does not broaden the ordinary collision projection/planner's admission rules.
+bool spacingGracePairPolicy4(const SpacingPaddingTable4&, const Chord* main,
+                             const Element* first, const Element* second,
+                             qreal shapeSpatium, SpacingPairPolicy4& result);
 // Pure rectangular constraint; finite, normalized geometry/policy is required.
 // Returns -max(qreal) when this pair imposes no horizontal constraint.
 qreal spacingPairDistance4(const QRectF&, const QRectF&, const SpacingPairPolicy4&,

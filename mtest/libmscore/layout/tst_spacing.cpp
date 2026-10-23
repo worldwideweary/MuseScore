@@ -9,6 +9,7 @@
 #include "libmscore/spacinggeometry4.h"
 #include "libmscore/spacingcollision4.h"
 #include "libmscore/spacingplan4.h"
+#include "libmscore/gracespacing4.h"
 #include "libmscore/system.h"
 #include "libmscore/shape.h"
 #include "libmscore/notedot.h"
@@ -34,6 +35,8 @@ class TestSpacing : public QObject, public MTest {
       void styleRoundTrip();
       void durationPolicy();
       void springForce();
+      void graceBeforePlan_data();
+      void graceBeforePlan();
       void fixedOffsetPlan();
       void geometryResolution();
       void geometryInputs_data();
@@ -2712,6 +2715,107 @@ void TestSpacing::systemInputs()
       QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
       for (size_t i = 0; i < legacy.size(); ++i)
             QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
+void TestSpacing::graceBeforePlan_data()
+      {
+      QTest::addColumn<bool>("modernBeams");
+      QTest::newRow("legacy-beams") << false;
+      QTest::newRow("studio-beams") << true;
+      }
+
+void TestSpacing::graceBeforePlan()
+      {
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + "v0.78-spacing-grace-before.mscx");
+      QVERIFY(score);
+      QVERIFY(score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      const SpacingPaddingTable4 table(score);
+      int index = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++index) {
+            Segment* s = m->first(SegmentType::ChordRest);
+            QVERIFY(s && s->element(0) && s->element(0)->isChord());
+            Chord* main = toChord(s->element(0));
+            const auto graces = main->graceNotesBefore();
+            QCOMPARE(graces.size(), index < 4 ? 4 : 1);
+            const bool up = index < 2 || index == 4;
+            std::vector<QPointF> native;
+            for (const Chord* grace : graces) {
+                  QCOMPARE(grace->up(), up);
+                  native.push_back(grace->pos());
+                  }
+            const qreal nativeWidth = m->width();
+            const QPointF nativeMain = main->pos();
+            GraceBeforePlan4 plan;
+            QString reason;
+            QVERIFY2(buildGraceBeforePlan4(main, plan, &reason), qPrintable(reason));
+            QCOMPARE(static_cast<int>(plan.positions.size()), graces.size());
+            QVERIFY(plan.left <= plan.positions.front().x + 1e-8);
+            const qreal terminalBound = -(0.45 * score->spatium()
+                  + graces.back()->notes().front()->headWidth() / 2) - main->pos().x();
+            QVERIFY(plan.positions.back().x <= terminalBound + 1e-8);
+            for (int i = 0; i < graces.size(); ++i) {
+                  QCOMPARE(plan.positions[i].chord, static_cast<const Chord*>(graces[i]));
+                  QCOMPARE(graces[i]->pos(), native[i]);
+                  if (i) QVERIFY(plan.positions[i - 1].x < plan.positions[i].x);
+                  }
+            QCOMPARE(main->pos(), nativeMain);
+            QCOMPARE(m->width(), nativeWidth);
+            SpacingPairPolicy4 policy;
+            const Note* last = graces.back()->notes().front();
+            QVERIFY(!spacingPairPolicy4(table, last, main->notes().front(), main->spatium(), policy));
+            QVERIFY(spacingGracePairPolicy4(table, main, last, main->notes().front(), main->spatium(), policy));
+            QVERIFY(policy.padding >= .45 * score->spatium() - 1e-8);
+            if (graces.size() > 1) {
+                  QVERIFY(spacingGracePairPolicy4(table, main, graces.front()->notes().front(),
+                        last, main->spatium(), policy));
+                  QVERIFY(policy.padding >= .3 * score->spatium() - 1e-8);
+                  }
+            // Check every notehead pair, including nonadjacent group members,
+            // against its independently queried collision constraint.
+            for (int a = 0; a < graces.size(); ++a) {
+                  const Note* first = graces[a]->notes().front();
+                  for (int b = a + 1; b <= graces.size(); ++b) {
+                        const Note* second = b == graces.size() ? main->notes().front()
+                              : graces[b]->notes().front();
+                        QVERIFY(spacingGracePairPolicy4(table, main, first, second, main->spatium(), policy));
+                        const qreal required = spacingPairDistance4(first->bbox().translated(first->pos()),
+                              second->bbox().translated(second->pos()), policy, main->spatium(), 1);
+                        const qreal rightX = b == graces.size() ? 0 : plan.positions[b].x;
+                        QVERIFY(rightX - plan.positions[a].x >= required - 1e-8);
+                        }
+                  }
+            // Neither old grace x positions nor a second query may feed back
+            // into the plan through the native main chord's composite shape.
+            for (Chord* grace : graces) grace->rxpos() -= 100 * score->spatium();
+            GraceBeforePlan4 repeated;
+            QVERIFY2(buildGraceBeforePlan4(main, repeated, &reason), qPrintable(reason));
+            QCOMPARE(repeated.left, plan.left);
+            for (int i = 0; i < graces.size(); ++i) {
+                  QCOMPARE(repeated.positions[i].x, plan.positions[i].x);
+                  graces[i]->setPos(native[i]);
+                  }
+            // Unsupported edits reject atomically, preserving a caller's plan.
+            Note* note = graces.front()->notes().front();
+            const QPointF oldOffset = note->offset();
+            note->setOffset(QPointF(.5, 0));
+            QVERIFY(!buildGraceBeforePlan4(main, repeated, &reason));
+            QVERIFY(!reason.isEmpty());
+            QCOMPARE(repeated.left, plan.left);
+            QCOMPARE(repeated.positions.front().x, plan.positions.front().x);
+            note->setOffset(oldOffset);
+            main->setNoStem(true);
+            QVERIFY(!buildGraceBeforePlan4(main, repeated, &reason));
+            main->setNoStem(false);
+            }
+      QCOMPARE(index, 6);
+      GraceBeforePlan4 unchanged;
+      unchanged.left = 123;
+      QVERIFY(!buildGraceBeforePlan4(nullptr, unchanged));
+      QCOMPARE(unchanged.left, qreal(123));
       delete score;
       }
 

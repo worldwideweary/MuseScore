@@ -2335,3 +2335,11 @@ bound, call order, coordinate/geometry obligations and the first adapter scope.
 Documentation only; no rebuild or new score. Next implement ordinary before-
 grace group spacing behind the optional style, keeping slurs and broader grace
 contexts separate until the core spacing and full-plan geometry are validated.
+
+### v0.78 WIP: before-grace placement plan
+
+Added a read-only adapter and `v0.78-spacing-grace-before.mscx` (G1-G6, both
+experimental settings on). The new test checks final group positions, pair
+constraints, stale-position independence and rejection atomicity under both
+beam modes. Live grace layout remains unchanged until its width contribution
+and geometry lifecycle are connected. See `v0.78-grace-before-adapter.md`.
