@@ -2390,3 +2390,15 @@ New tests exercise actual automatic system collection at three widths and
 actual compressed/justified placement, both beam modes, group-position
 stability, repeated layout and spacing-off restoration. See
 `v0.82-grace-fitting-checkpoint.md`. No production engraving code changes.
+
+### v0.83 WIP: fitting accepted; grace-slur source audit
+
+The v0.82 user mtests pass; supplied fitting captures agree on 3+3 measures.
+No production change or rebuild in this documentation checkpoint. The pinned
+slur source audit identifies separate horizontal-admission, endpoint/anchor,
+direction and collision differences. Both versions already include the grace
+parent in endpoint coordinates. Evolution skips entire endpoint segments in
+slur collision checks, whereas Studio filters individual items within them.
+Next add paired local grace-to-own-main slur controls and preserve the new
+horizontal spacing with a narrowly validated slur allowance before changing
+curve geometry. See `v0.83-grace-slur-source-audit.md`.
