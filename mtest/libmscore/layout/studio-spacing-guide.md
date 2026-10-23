@@ -1306,3 +1306,89 @@ runtime execution remains for the user's build. Apply v0.50.1 after v0.50,
 rerun tst_spacing/tst_beam and reopen the corrected courtesy comparison score.
 Changing-header collection remains the next implementation stage after this
 terminal-courtesy validation.
+
+
+## v0.51: simultaneous polyrhythm validation checkpoint
+
+The user reports v0.50.1 mtests passing and supplies courtesy comparison images.
+Those controls look close, but do not close chord/rest, multi-voice or accidental
+work. At the user's request, prioritize the polyrhythm example from
+https://musescore.org/en/node/330793 (Engraving improvements in MuseScore 4.0).
+Direct retrieval returned HTTP 403; the supplied figure is the source of the
+rhythmic reconstruction. The implementation reference remains pinned v4.7.5,
+not the historical article's promise of equivalence for every case.
+
+The duration branch already exists in segmentSpacingStretch4 and
+spacing4DurationStretch. It uses onset intervals, the shortest actual chord/rest
+duration at that onset, and the preceding non-adjacent onset when appropriate.
+Actual durations include tuplets. Earlier H8/H35 controls checked ordinary
+triplets, not the four interlocking streams in the supplied figure. That missing
+end-to-end validation is the point of this checkpoint.
+
+Add two comparison inputs, both with experimental spacing and beams enabled:
+
+- v0.51-spacing-polyrhythms.mscx: P1 is 3 against 2, P2 is 5 against 4, P3
+  reconstructs the four simultaneous streams in the figure. Every measure is
+  2/4, with two voices on each piano staff. Each measure has its own justified
+  system, using measure-level line breaks.
+- v0.51-spacing-polyrhythm-natural.mscx: P3 alone, final-system fill limit 1,
+  for a natural-width comparison that does not hide excess space by filling
+  the page. Other font/style inputs match the overview.
+
+P3 has these streams:
+
+| Staff/voice | First quarter | Second quarter |
+| --- | --- | --- |
+| Upper voice 1 | Four sixteenths | Two eighths |
+| Upper voice 2 | Five sixteenths in four | Three eighths in two |
+| Lower voice 1 | Six sixteenths in four | Four sixteenths |
+| Lower voice 2 | Seven sixteenths in four | Five sixteenths in four |
+
+Rhythms follow the figure; constant, separated pitches isolate spacing from
+chromatic, chord-second and cross-staff geometry. This is not a note-for-note
+facsimile of the figure's pitches. Compare identical files in 37E and 4.7.5.
+Look for smooth gaps within each voice, aligned simultaneous onsets, accurate
+beat alignment at the quarter boundary, and excess natural width. Collision
+constraints can legitimately prevent perfectly uniform visible gaps; compare
+the reference rather than imposing equal distance between every adjacent
+segment in the merged onset list.
+
+Add polyrhythmInputs for both files under both beam settings. Verify every
+voice's exact count, actual duration and rational onset; all four streams must
+fill exactly 2/4. Require the intended system grouping. Compare rhythmic weights
+against the pinned adjacent/non-adjacent formula using live chord durations.
+Check finite nonnegative widths, repeatability and option-off restoration while
+ignoring inactive native header caches. These tests establish valid test inputs,
+correct rhythmic math and stable switching. They do not claim that every
+multi-voice shape is adapted to the new full-system planner; ambiguous or
+unsupported geometry can still take the documented fallback. Visual/source
+investigation must distinguish a rhythmic-weight issue from a collision-floor
+or dispatch boundary before changing the algorithm.
+
+No production code changes in this checkpoint. Files changed: tst_spacing.cpp,
+this guide and the two new score files. Local moc and C++11 debug/NDEBUG syntax
+checks pass. XML/rational-duration checks confirm two staves, balanced tuplets,
+valid measure-level breaks and exact 2/4 totals in every voice. Whitespace and
+parent-index patch checks are required before delivery. Full Qt mtests and
+visual comparisons remain for the user's build.
+
+Next validation sequence:
+
+1. Compare P1/P2 and both forms of P3 with 4.7.5. Trace discrepancies through
+   actual durations, rhythmic weights, active collision floors and full-planner
+   eligibility, in that order.
+2. Add accidentals, chord seconds/unisons and sustained/rest voices to the same
+   rhythms, then cross-staff moves. Separate timing from geometry constraints.
+   Individual accidental glyphs are children of Notes inside chord/rest
+   segments; keys/time signatures have their own segments. Between-item
+   accidental clearance is partly adapted, but Evolution's within-chord and
+   multi-voice accidental packing has not been replaced wholesale.
+3. Extend nested tuplets, mixed tuplets and transitions across barlines; keep
+   natural, justified and squeezed controls and test both beam settings.
+4. Return to changing-header collection, clefs and repeats once the core
+   interlocking-rhythm controls are understood. The terminal courtesy adapter
+   is a boundary milestone, not completion of the entire spacing port.
+
+Apply v0.51 after v0.50.1 and run tst_spacing/tst_beam. Compare the two new
+files in both applications. Preserve version prefixes, enabled comparison
+settings, independent beam/spacing switches and exact legacy-off restoration.

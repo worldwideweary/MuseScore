@@ -46,6 +46,8 @@ class TestSpacing : public QObject, public MTest {
       void squeezePlan();
       void courtesyPlan_data();
       void courtesyPlan();
+      void polyrhythmInputs_data();
+      void polyrhythmInputs();
       void rhythmicLayoutSwitch();
       void crossBeamSwitch_data();
       void crossBeamSwitch();
@@ -1188,6 +1190,118 @@ void TestSpacing::courtesyPlan()
       QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
       for (size_t i = 0; i < legacy.size(); ++i)
             QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
+void TestSpacing::polyrhythmInputs_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::addColumn<bool>("natural");
+      QTest::addColumn<bool>("modernBeams");
+      QTest::newRow("overview-legacy-beams") << QString("v0.51-spacing-polyrhythms.mscx") << false << false;
+      QTest::newRow("overview-studio-beams") << QString("v0.51-spacing-polyrhythms.mscx") << false << true;
+      QTest::newRow("natural-legacy-beams") << QString("v0.51-spacing-polyrhythm-natural.mscx") << true << false;
+      QTest::newRow("natural-studio-beams") << QString("v0.51-spacing-polyrhythm-natural.mscx") << true << true;
+      }
+
+void TestSpacing::polyrhythmInputs()
+      {
+      QFETCH(QString, file);
+      QFETCH(bool, natural);
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      const auto snapshot = [score]() -> std::vector<qreal> {
+            std::vector<qreal> values;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  values.push_back(m->x()); values.push_back(m->width());
+                  for (Segment& seg : m->segments()) {
+                        if (!seg.enabled() && (seg.header() || seg.trailer()))
+                              continue;
+                        values.push_back(static_cast<int>(seg.segmentType()));
+                        values.push_back(seg.rtick().toDouble());
+                        values.push_back(seg.x()); values.push_back(seg.width());
+                        }
+                  }
+            return values;
+            };
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const std::vector<qreal> legacy = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      const int tracks[] = { 0, 1, VOICES, VOICES + 1 };
+      const int counts[3][4] = { { 3, 2, 2, 3 }, { 5, 4, 4, 5 }, { 6, 8, 10, 12 } };
+      int measureCount = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++measureCount) {
+            const int row = natural ? 2 : measureCount;
+            QVERIFY(row < 3);
+            QVERIFY(m->ticks() == Fraction(1, 2));
+            QCOMPARE(m->system()->firstMeasure(), m);
+            QCOMPARE(m->system()->lastMeasure(), m);
+            for (int v = 0; v < 4; ++v) {
+                  Fraction elapsed(0, 1);
+                  int n = 0;
+                  for (Segment& seg : m->segments()) {
+                        if (!seg.isChordRestType()) continue;
+                        const ChordRest* cr = seg.cr(tracks[v]);
+                        if (!cr) continue;
+                        QVERIFY(cr->isChord());
+                        QVERIFY(seg.rtick() == elapsed);
+                        Fraction duration;
+                        if (row == 0) duration = (v == 0 || v == 3) ? Fraction(1, 6) : Fraction(1, 4);
+                        else if (row == 1) duration = (v == 0 || v == 3) ? Fraction(1, 10) : Fraction(1, 8);
+                        else if (v == 0) duration = n < 4 ? Fraction(1, 16) : Fraction(1, 8);
+                        else if (v == 1) duration = n < 5 ? Fraction(1, 20) : Fraction(1, 12);
+                        else if (v == 2) duration = n < 6 ? Fraction(1, 24) : Fraction(1, 16);
+                        else duration = n < 7 ? Fraction(1, 28) : Fraction(1, 20);
+                        QVERIFY(cr->actualTicks() == duration);
+                        elapsed += duration;
+                        ++n;
+                        }
+                  QCOMPARE(n, counts[row][v]);
+                  QVERIFY(elapsed == Fraction(1, 2));
+                  }
+            // Verify the multi-voice rhythmic branch against the pinned
+            // duration formula, including the preceding non-adjacent onset.
+            const auto shortest = [](const Segment* seg) {
+                  Fraction value = seg->measure()->ticks();
+                  for (const Element* e : seg->elist()) {
+                        if (e && e->isChordRest() && toChordRest(e)->actualTicks() < value)
+                              value = toChordRest(e)->actualTicks();
+                        }
+                  return value;
+                  };
+            for (Segment& seg : m->segments()) {
+                  if (!seg.isChordRestType()) continue;
+                  const Segment* prev = seg.prev(SegmentType::ChordRest);
+                  const Fraction currentShortest = shortest(&seg);
+                  Fraction reference = seg.ticks();
+                  double proportion = 1;
+                  if (currentShortest != seg.ticks()) {
+                        const Fraction previousShortest = prev ? shortest(prev) : Fraction(0, 1);
+                        reference = prev && previousShortest != prev->ticks() && previousShortest < currentShortest
+                              ? previousShortest : currentShortest;
+                        proportion = (seg.ticks() / reference).toDouble();
+                        }
+                  const qreal expected = std::pow(score->styleD(Sid::measureSpacing),
+                        std::log2(reference.toDouble() / .25)) * proportion;
+                  QVERIFY(qAbs(segmentSpacingStretch4(&seg) - expected) < 1e-9);
+                  QVERIFY(qIsFinite(seg.x()) && qIsFinite(seg.width()) && seg.width() >= 0);
+                  }
+            }
+      QCOMPARE(measureCount, natural ? 1 : 3);
+      const std::vector<qreal> modern = snapshot();
+      score->doLayout();
+      const std::vector<qreal> repeated = snapshot();
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i) QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const std::vector<qreal> restored = snapshot();
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
       delete score;
       }
 
