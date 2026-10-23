@@ -355,7 +355,9 @@ void TestSpacing::geometryInputs()
       int signs = 0;
       int stems = 0;
       int crossStaffHeads = 0;
-      int collisionQueries = 0;
+      int itemPairQueries = 0;
+      int notePairQueries = 0;
+      int opaqueShapeFallbacks = 0;
       const SpacingPaddingTable4 paddingTable(score);
       for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
             const qreal measureWidth = m->width();
@@ -392,9 +394,20 @@ void TestSpacing::geometryInputs()
                         if (seg.isChordRestType() && next) {
                               const SpacingShape4 following = spacingStaffShape4(next, staffIdx);
                               if (!tagged.elements.empty() && !following.elements.empty()) {
+                                    const auto opaque = [](const SpacingShapeElement4& e) {
+                                          return !e.rect.isNull() && (e.identity != SpacingIdentity4::ITEM || !e.item);
+                                          };
+                                    const bool hasOpaque = std::any_of(tagged.elements.begin(), tagged.elements.end(), opaque)
+                                          || std::any_of(following.elements.begin(), following.elements.end(), opaque);
                                     qreal distance = 123;
-                                    if (spacingShapeDistance4(paddingTable, tagged, following, m->spatium(), 1, distance)) {
-                                          ++collisionQueries;
+                                    const bool supported = spacingShapeDistance4(paddingTable, tagged, following, m->spatium(), 1, distance);
+                                    // Native chord shapes include legacy horizontal
+                                    // spacers. Whole-shape fallback is intentional.
+                                    if (hasOpaque) {
+                                          QVERIFY(!supported);
+                                          ++opaqueShapeFallbacks;
+                                          }
+                                    if (supported) {
                                           QVERIFY(qIsFinite(distance));
                                           qreal squeezed = 123;
                                           QVERIFY(spacingShapeDistance4(paddingTable, tagged, following, m->spatium(), 0.6, squeezed));
@@ -402,6 +415,34 @@ void TestSpacing::geometryInputs()
                                           }
                                     else
                                           QCOMPARE(distance, 123.0);
+                                    // Exercise identified live items separately.
+                                    // These probes never become a whole-shape floor.
+                                    for (const SpacingShapeElement4& a : tagged.elements) {
+                                          if (opaque(a) || a.rect.isNull())
+                                                continue;
+                                          for (const SpacingShapeElement4& b : following.elements) {
+                                                if (opaque(b) || b.rect.isNull())
+                                                      continue;
+                                                SpacingShape4 one, two;
+                                                one.elements.push_back(a);
+                                                two.elements.push_back(b);
+                                                qreal pairDistance = 123;
+                                                const bool accepts = spacingShapeDistance4(paddingTable, one, two, m->spatium(), 1, pairDistance);
+                                                if (a.item->isNote() && b.item->isNote()) {
+                                                      QVERIFY2(accepts, "Plain note pair unexpectedly rejected by common-notation policy");
+                                                      ++notePairQueries;
+                                                      }
+                                                if (accepts) {
+                                                      ++itemPairQueries;
+                                                      QVERIFY(qIsFinite(pairDistance));
+                                                      qreal squeezed = 123;
+                                                      QVERIFY(spacingShapeDistance4(paddingTable, one, two, m->spatium(), 0.6, squeezed));
+                                                      QVERIFY(squeezed <= pairDistance + 1e-6);
+                                                      }
+                                                else
+                                                      QCOMPARE(pairDistance, 123.0);
+                                                }
+                                          }
                                     }
                               }
                         }
@@ -413,7 +454,9 @@ void TestSpacing::geometryInputs()
             }
       QVERIFY(heads > 0);
       QVERIFY(stems > 0);
-      QVERIFY(collisionQueries > 0);
+      QVERIFY(itemPairQueries > 0);
+      QVERIFY(notePairQueries > 0);
+      QVERIFY(opaqueShapeFallbacks > 0);
       if (file.contains("accidentals")) {
             QVERIFY(signs > 0);
             QVERIFY(crossStaffHeads > 0);

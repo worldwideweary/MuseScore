@@ -842,3 +842,31 @@ collision inputs to a measure-group position stream, including explicit barrier
 handling, cross-measure lookback, width reconstruction and minimum-width springs.
 Retain whole-context fallback for unsupported features until each adapter is
 ready. Do not replace the new pipeline with more screenshot-specific constants.
+
+## v0.45.1: correct the live-score policy test boundary
+
+The user's Qt 5.9.9 result.xml reports six failures, all at geometryInputs'
+`collisionQueries > 0` assertion (three fixtures under both beam styles).
+geometryResolution, collisionPolicy and the existing spacing/layout tests pass.
+
+The v0.45 test incorrectly required successful complete staff-shape queries.
+Native Chord::shape adds a horizontal-spacing rectangle for its computed
+_spaceLw/_spaceRw. The geometry adapter deliberately leaves these synthetic
+rectangles unclassified, and the collision module correctly rejects a query
+containing unadapted geometry. The test conflated live item-pair support with
+whole-shape support, which is not implemented yet.
+
+Keep the full-shape queries and explicitly require fallback with unchanged
+output when they contain relevant opaque primitives. Probe identified native
+item pairs separately, retaining finite-distance and squeeze-monotonicity checks.
+Require common plain note pairs to succeed, require live item/note-pair coverage,
+and require actual opaque-shape fallback coverage in every fixture/beam row.
+The existing geometry and score nonmutation checks remain. Partial probes are
+test observations only; they are never used to derive a whole-shape floor.
+
+This checkpoint changes tst_spacing.cpp and this guide only. No production
+collision, geometry or layout rules change. Synthetic barrier handling remains
+part of the connected placement work, not something to bypass to pass a test.
+Local moc and C++11 test syntax checks pass; full tst_spacing/tst_beam remain for
+the user's build. Apply v0.45.1 after v0.45 and rerun the tests. No screenshots
+are needed for this correction.
