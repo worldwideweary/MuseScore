@@ -1105,3 +1105,34 @@ change printable width in both applications to expose a nearby fitting
 threshold. Do not expect every Studio break yet: the next stage is bounded
 squeezing, followed by explicit changing-header/courtesy boundary preparation.
 Retain default-off legacy restoration and whole-context fallback throughout.
+
+
+## v0.48.1: compare layout independently of cached inactive headers
+
+The user's Qt 5.9.9 result(3).xml reports two failures, both fittingSwitch beam
+rows, at the reenabled snapshot-length comparison: 235 values versus 233.
+The fitting threshold, per-system width checks and repeated enabled layout
+passed, as did the other test functions. The snapshot stored two coordinates
+for every segment, so the difference represents one retained segment.
+
+Evolution's addSystemHeader creates a missing generated header segment when a
+measure becomes the first in a system. removeSystemHeader disables that segment
+but retains it in the measure for reuse. Switching spacing off can create a new
+header at a different break; switching back on removes it from visible layout
+while leaving the cached segment in the container. The test incorrectly treated
+container growth as a difference in the restored layout.
+
+Change only fittingSwitch's snapshot: exclude disabled header/trailer cache
+entries, and add segment type, tick and enabled state to each retained record
+alongside its x/width. This preserves checks for system grouping, measure
+positions/widths, active header geometry and rhythmic segment structure while
+allowing the native header cache lifecycle. Existing on/off/on/off comparisons
+and fitting/width assertions remain. No production engraving or score fixture
+changes are made.
+
+Files changed: tst_spacing.cpp and this guide. Local moc and C++11 debug/NDEBUG
+syntax checks, targeted snapshot lifecycle checks, whitespace and parent-index
+patch checks are required before delivery. Full mtests remain for the user's
+build. Apply v0.48.1 after v0.48 and rerun tst_spacing/tst_beam, then continue
+with the same v0.48-spacing-fitting.mscx visual comparison. Bounded squeezing
+remains the next implementation stage after fitting validation.

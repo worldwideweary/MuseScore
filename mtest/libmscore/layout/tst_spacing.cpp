@@ -897,6 +897,14 @@ void TestSpacing::fittingSwitch()
                   values.push_back(m->x());
                   values.push_back(m->width());
                   for (Segment& s : m->segments()) {
+                        // Changing line breaks can create generated headers.
+                        // removeSystemHeader retains them disabled for reuse;
+                        // their presence is not a difference in score layout.
+                        if (!s.enabled() && (s.header() || s.trailer()))
+                              continue;
+                        values.push_back(static_cast<int>(s.segmentType()));
+                        values.push_back(s.tick().ticks());
+                        values.push_back(s.enabled() ? 1 : 0);
                         values.push_back(s.x());
                         values.push_back(s.width());
                         }
