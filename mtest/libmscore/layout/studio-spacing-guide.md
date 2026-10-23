@@ -2104,3 +2104,52 @@ Next use these results to fix any accidental/cross-stem discrepancy, then
 address multi-note cross-staff chords and additional moving voices as the next
 group. Broader systems/compression and the deferred centered-beam/rest-position
 issues remain outside this checkpoint.
+
+## v0.70 WIP: two-note cross-staff chords, X7/X8
+
+The user reports v0.69 mtests passing. Natural and justified X5/X6 captures
+look close to Studio 4.7.5, without an obvious accidental-clearance discrepancy.
+Extend the bounded beam context from one note to at most two ordinary,
+unmirrored notes per chord. Companion voices retain their previous scope.
+
+Derive horizontal stem center from the appropriate outer reference note,
+matching Chord::stemPosX: upNote for up stems, downNote for down stems. Cover
+the complete chord stem in the temporary collision shape by starting at the
+opposite outer note: downNote for up stems, upNote for down stems. Validate
+visibility, notehead type, offsets, pair policy and within-staff line bounds
+for every note rather than only the first. Manual/mirrored/interstaff cases
+still reject. Existing single-note behavior and legacy-off paths are retained.
+This is still the conservative bounded stem geometry, not full Studio parity.
+
+New files (both experimental styles enabled):
+- v0.70-spacing-cross-chords-natural.mscx
+- v0.70-spacing-cross-chords.mscx
+- v0.70-spacing-cross-accidentals-chords-natural.mscx
+- v0.70-spacing-cross-accidentals-chords.mscx
+
+X7 adds an A a major third above each F of X4, preserving the lower/lower/
+upper/upper staff pattern and moving C4 companion. X8 does the same to X5's
+accidental cycle: both notes use sharp/natural/flat/natural. Open the same
+originals in both applications. Compare natural X7 then natural X8 before
+the justified versions. Inspect stem attachment through both noteheads,
+accidental clearance, natural group width and the staff-change gap. Native
+within-chord accidental packing remains Evolution's handling.
+
+Extend crossStaffInterleaved to require exact two-note pitch/TPC/step structure,
+unmirrored heads, full-plan actual application, inferred/native stem-anchor
+agreement, explicit nonadjacent stem clearance, repeat stability and legacy-off
+restoration under both beam settings. A manually offset second note must reject
+atomically, as must the existing forced-direction and invalid-companion cases.
+
+Files changed: spacingplan4.cpp/.h, tst_spacing.cpp, guide, audit and four scores.
+Local moc/C++11 debug/NDEBUG syntax checks pass. Actual context-body checks with
+controlled DOM cover 1,120 single/dyad and adjacent/interleaved cases, including
+different attachment anchors on the second note and rejection of its offset or
+interstaff line. XML comparisons preserve all other musical/style structure;
+source pitch/step functions validate F/A spellings. These checks do not validate
+live chord shapes, collision projection or dispatch. Full Qt 5.9 mtests and
+rendered comparison remain pending. Apply after v0.69.
+
+Next resolve any X7/X8 mismatch, then broaden moving companion voices. Mirrored
+seconds, larger chords and broader system/compression combinations remain
+outside this checkpoint; they must not be implied by a passing thirds control.

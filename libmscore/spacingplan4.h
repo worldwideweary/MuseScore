@@ -14,7 +14,8 @@ class Beam;
 class Chord;
 
 // Read-only preparation for cross-staff placement. This first context covers
-// one automatic, single-note eighth-note beam between adjacent ordinary staves.
+// one automatic eighth-note beam of up to two unmirrored normal notes per chord
+// between adjacent ordinary staves.
 // Placement applies its own additional companion/system eligibility checks.
 struct CrossStaffChord4 {
     const Chord* chord = nullptr;

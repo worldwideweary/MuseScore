@@ -1735,6 +1735,10 @@ void TestSpacing::crossStaffInterleaved_data()
             QTest::newRow(qPrintable("cross-accidentals-justified" + suffix)) << QString("v0.69-spacing-cross-accidentals.mscx") << beams;
             QTest::newRow(qPrintable("companion-accidentals-natural" + suffix)) << QString("v0.69-spacing-companion-accidentals-natural.mscx") << beams;
             QTest::newRow(qPrintable("companion-accidentals-justified" + suffix)) << QString("v0.69-spacing-companion-accidentals.mscx") << beams;
+            QTest::newRow(qPrintable("chords-natural" + suffix)) << QString("v0.70-spacing-cross-chords-natural.mscx") << beams;
+            QTest::newRow(qPrintable("chords-justified" + suffix)) << QString("v0.70-spacing-cross-chords.mscx") << beams;
+            QTest::newRow(qPrintable("accidental-chords-natural" + suffix)) << QString("v0.70-spacing-cross-accidentals-chords-natural.mscx") << beams;
+            QTest::newRow(qPrintable("accidental-chords-justified" + suffix)) << QString("v0.70-spacing-cross-accidentals-chords.mscx") << beams;
             }
       }
 
@@ -1744,9 +1748,11 @@ void TestSpacing::crossStaffInterleaved()
       QFETCH(bool, modernBeams);
       const bool crossAccidentals = file.contains("spacing-cross-accidentals");
       const bool companionAccidentals = file.contains("spacing-companion-accidentals");
+      const bool crossChords = file.contains("-chords");
       const int alterations[] = { 1, 0, -1, 0 };
       const int fSpellings[] = { Tpc::TPC_F_S, Tpc::TPC_F, Tpc::TPC_F_B, Tpc::TPC_F };
       const int cSpellings[] = { Tpc::TPC_C_S, Tpc::TPC_C, Tpc::TPC_C_B, Tpc::TPC_C };
+      const int aSpellings[] = { Tpc::TPC_A_S, Tpc::TPC_A, Tpc::TPC_A_B, Tpc::TPC_A };
       MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
       score->setStyleValue(Sid::beamLayout4, modernBeams);
@@ -1792,12 +1798,20 @@ void TestSpacing::crossStaffInterleaved()
                   QVERIFY(cr && cr->isChord() && cr->actualTicks() == Fraction(1, 8));
                   const Chord* c = toChord(cr);
                   QCOMPARE(c->staffMove(), onset < 4 ? 1 : 0);
-                  const Note* beamNote = c->notes().front();
-                  QCOMPARE(beamNote->pitch(), (onset < 4 ? 53 : 65) + (crossAccidentals ? alterations[onset / 2] : 0));
-                  QCOMPARE(beamNote->tpc(), crossAccidentals ? fSpellings[onset / 2] : static_cast<int>(Tpc::TPC_F));
-                  QCOMPARE(beamNote->pitch() % 12, (tpc2pitch(beamNote->tpc()) + 12) % 12);
-                  QCOMPARE(tpc2step(beamNote->tpc()), tpc2step(Tpc::TPC_F));
-                  accidentals += beamNote->accidental() != nullptr;
+                  QCOMPARE(static_cast<int>(c->notes().size()), crossChords ? 2 : 1);
+                  int noteIndex = 0;
+                  for (const Note* beamNote : c->notes()) {
+                        const int base = (onset < 4 ? 53 : 65) + 4 * noteIndex;
+                        QCOMPARE(beamNote->pitch(), base + (crossAccidentals ? alterations[onset / 2] : 0));
+                        const int spelling = crossAccidentals ? (noteIndex ? aSpellings[onset / 2] : fSpellings[onset / 2])
+                              : static_cast<int>(noteIndex ? Tpc::TPC_A : Tpc::TPC_F);
+                        QCOMPARE(beamNote->tpc(), spelling);
+                        QCOMPARE(beamNote->pitch() % 12, (tpc2pitch(beamNote->tpc()) + 12) % 12);
+                        QCOMPARE(tpc2step(beamNote->tpc()), tpc2step(noteIndex ? Tpc::TPC_A : Tpc::TPC_F));
+                        QVERIFY(!beamNote->mirror());
+                        accidentals += beamNote->accidental() != nullptr;
+                        ++noteIndex;
+                        }
                   QVERIFY(c->beam() && c->beam()->cross());
                   if (!first) first = c;
                   }
@@ -1865,6 +1879,15 @@ void TestSpacing::crossStaffInterleaved()
       QCOMPARE(rejected.width, qreal(-123));
       QVERIFY(rejected.segments.empty() && rejected.measures.empty());
       companion->setTicks(savedTicks);
+      if (crossChords) {
+            Note* second = edited->notes().back();
+            const QPointF savedOffset = second->offset();
+            second->setOffset(QPointF(.5, 0));
+            QVERIFY(!buildSpacingPlan4(m->system(), rejected, &reason));
+            QCOMPARE(rejected.width, qreal(-123));
+            QVERIFY(rejected.segments.empty() && rejected.measures.empty());
+            second->setOffset(savedOffset);
+            }
       QVERIFY(snapshot() == modern);
       score->doLayout();
       const auto repeated = snapshot();

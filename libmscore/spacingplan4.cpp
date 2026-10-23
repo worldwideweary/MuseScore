@@ -142,7 +142,7 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
         for (const auto& pair : cross.chords) {
             const CrossStaffChord4& e = pair.second;
             if (e.chord->segment() != segment || e.visualStaff != staffIdx) continue;
-            const Note* note = e.chord->notes().front();
+            const Note* note = e.up ? e.chord->downNote() : e.chord->upNote();
             const qreal width = e.chord->stem()->lineWidth() * e.chord->mag();
             const qreal y = e.chord->y() + note->y()
                 + (e.up ? note->stemUpSE().y() : note->stemDownNW().y());
@@ -277,7 +277,7 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
             return fail("Cross-staff context does not yet support beamed rests");
         const Chord* chord = toChord(cr);
         if (chord->score() != score || !chord->segment() || !chord->measure() || !chord->visible()
-            || chord->beam() != beam || chord->notes().size() != 1 || chord->isGrace()
+            || chord->beam() != beam || chord->notes().empty() || chord->notes().size() > 2 || chord->isGrace()
             || chord->tuplet() || chord->tremolo() || !chord->graceNotes().empty()
             || chord->isSmall() || chord->mag() != 1.0 || chord->noStem() || !chord->stem()
             || chord->isNudged() || chord->stemDirection() != Direction::AUTO
@@ -289,12 +289,13 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
         if (staff < 0 || staff >= score->nstaves() || !score->staff(staff)->show()
             || !score->staff(staff)->isPitchedStaff(chord->tick()) || score->staff(staff)->lines(chord->tick()) != 5)
             return fail("Cross-staff context needs visible ordinary five-line staves");
-        const Note* note = chord->notes().front();
-        SpacingPairPolicy4 policy;
-        if (!note->visible() || note->isSmall() || note->mirror() || !note->offset().isNull()
-            || note->headGroup() != NoteHead::Group::HEAD_NORMAL || note->headType() != NoteHead::Type::HEAD_AUTO
-            || !spacingPairPolicy4(table, note, note, note->spatium(), policy))
-            return fail("Unadapted cross-staff note context");
+        for (const Note* note : chord->notes()) {
+            SpacingPairPolicy4 policy;
+            if (!note->visible() || note->isSmall() || note->mirror() || !note->offset().isNull()
+                || note->headGroup() != NoteHead::Group::HEAD_NORMAL || note->headType() != NoteHead::Type::HEAD_AUTO
+                || !spacingPairPolicy4(table, note, note, note->spatium(), policy))
+                return fail("Unadapted cross-staff note context");
+        }
         if (previous && (chord->measure() != previous->measure() || chord->track() != previous->track()
                          || chord->tick() != previous->tick() + previous->actualTicks()))
             return fail("Cross-staff context needs one adjacent stream within one measure");
@@ -312,11 +313,12 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
         const Chord* chord = entry.chord;
         // Evolution's initial stem sides are provisional. Infer only the
         // unambiguous within-staff case, as in the existing bounded adapter.
-        const int line = chord->notes().front()->line();
-        if ((entry.visualStaff == upper && line > 8) || (entry.visualStaff == lower && line < 0))
-            return fail("Interstaff note positions need a later stem-side adapter");
+        for (const Note* note : chord->notes()) {
+            if ((entry.visualStaff == upper && note->line() > 8) || (entry.visualStaff == lower && note->line() < 0))
+                return fail("Interstaff note positions need a later stem-side adapter");
+        }
         entry.up = entry.visualStaff == lower;
-        const Note* note = chord->notes().front();
+        const Note* note = entry.up ? chord->upNote() : chord->downNote();
         // Match Chord::stemPosX/layoutStem1 without changing the provisional
         // Chord::up(). Stem length and final vertical beam position are unused.
         const QPointF attach = entry.up ? note->stemUpSE() : note->stemDownNW();
