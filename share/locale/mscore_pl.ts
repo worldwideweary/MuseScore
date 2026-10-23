@@ -35420,17 +35420,17 @@ Ta partytura ma już partie. Zmiana lokalnych oznaczeń metrycznych, gdy obecne 
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3081"/>
-        <source>25 small diesis up, (25S, ~5:13S, ~37S, 5C plus 5C), 2° up [53 EDO]</source>
+        <source>25 small diesis up, (25S, ~5:13S, ~37S, 5C plus 5C), 2° up [53 EDO]</source>
         <translation>25 małych diesis wyżej, (25S, ~5:13S, ~37S, 5C plus 5C), 2° wyżej [53 równe podziały oktawy]</translation>
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3089"/>
-        <source>35 medium diesis up, (35M, ~13M, ~125M, 5C plus 7C), 2/9-tone up</source>
+        <source>35 medium diesis up, (35M, ~13M, ~125M, 5C plus 7C), 2/9-tone up</source>
         <translation>35 średnich diesis wyżej, (35M, ~13M, ~125M, 5C plus 7C), 2/9-tonu wyżej</translation>
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3119"/>
-        <source>5:7 kleisma up, (5:7k, ~11:13k, 7C less 5C)</source>
+        <source>5:7 kleisma up, (5:7k, ~11:13k, 7C less 5C)</source>
         <translation>5:7 kleisma wyżej, (5:7k, ~11:13k, 7C mniej 5C)</translation>
     </message>
     <message>

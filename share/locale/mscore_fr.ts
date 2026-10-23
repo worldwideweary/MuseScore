@@ -35418,17 +35418,17 @@ Cette partition contient des parties. La modification des indications de mesure 
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3081"/>
-        <source>25 small diesis up, (25S, ~5:13S, ~37S, 5C plus 5C), 2° up [53 EDO]</source>
+        <source>25 small diesis up, (25S, ~5:13S, ~37S, 5C plus 5C), 2° up [53 EDO]</source>
         <translation>25 petits dièses vers le haut, (25S, ~5:13S, ~37S, 5C plus 5C), 2° vers le haut [53 EDO]</translation>
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3089"/>
-        <source>35 medium diesis up, (35M, ~13M, ~125M, 5C plus 7C), 2/9-tone up</source>
+        <source>35 medium diesis up, (35M, ~13M, ~125M, 5C plus 7C), 2/9-tone up</source>
         <translation>35 dièses moyens vers le haut, (35M, ~13M, ~125M, 5C plus 7C), 2/9 de ton vers le haut</translation>
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3119"/>
-        <source>5:7 kleisma up, (5:7k, ~11:13k, 7C less 5C)</source>
+        <source>5:7 kleisma up, (5:7k, ~11:13k, 7C less 5C)</source>
         <translation>5:7 kleisma vers le haut, (5:7k, ~11:13k, 7C moins 5C)</translation>
     </message>
     <message>

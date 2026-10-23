@@ -3923,7 +3923,7 @@ space unit</extracomment>
     <message>
         <location filename="../../mscore/editstyle.ui" line="4228"/>
         <source>Reset &apos;Note left margin&apos; value</source>
-        <translation>&apos;音符の左余白&apos; の値をリセット　</translation>
+        <translation>&apos;音符の左余白&apos; の値をリセット&#x3000;</translation>
     </message>
     <message>
         <location filename="../../mscore/editstyle.ui" line="4837"/>
@@ -9839,7 +9839,7 @@ time and key signatures</source>
     <message>
         <location filename="../../mscore/inspector/inspector_tbox.ui" line="340"/>
         <source>Reset &apos;Left margin&apos; value</source>
-        <translation>&apos;左余白&apos; の値をリセット　</translation>
+        <translation>&apos;左余白&apos; の値をリセット&#x3000;</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspector_tbox.ui" line="353"/>
@@ -9849,12 +9849,12 @@ time and key signatures</source>
     <message>
         <location filename="../../mscore/inspector/inspector_tbox.ui" line="366"/>
         <source>Reset &apos;Top margin&apos; value</source>
-        <translation>&apos;上余白&apos; の値をリセット　</translation>
+        <translation>&apos;上余白&apos; の値をリセット&#x3000;</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspector_tbox.ui" line="379"/>
         <source>Reset &apos;Bottom margin&apos; value</source>
-        <translation>&apos;下余白&apos; の値をリセット　</translation>
+        <translation>&apos;下余白&apos; の値をリセット&#x3000;</translation>
     </message>
 </context>
 <context>
@@ -10851,7 +10851,7 @@ time and key signatures</source>
     <message>
         <location filename="../../mscore/inspector/inspector_vbox.ui" line="227"/>
         <source>Reset &apos;Left margin&apos; value</source>
-        <translation>&apos;左余白&apos; の値をリセット　</translation>
+        <translation>&apos;左余白&apos; の値をリセット&#x3000;</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspector_vbox.ui" line="278"/>
@@ -10861,7 +10861,7 @@ time and key signatures</source>
     <message>
         <location filename="../../mscore/inspector/inspector_vbox.ui" line="297"/>
         <source>Reset &apos;Bottom margin&apos; value</source>
-        <translation>&apos;下余白&apos; の値をリセット　</translation>
+        <translation>&apos;下余白&apos; の値をリセット&#x3000;</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspector_vbox.ui" line="310"/>
@@ -10907,7 +10907,7 @@ time and key signatures</source>
     <message>
         <location filename="../../mscore/inspector/inspector_vbox.ui" line="384"/>
         <source>Reset &apos;Top margin&apos; value</source>
-        <translation>&apos;上余白&apos; の値をリセット　</translation>
+        <translation>&apos;上余白&apos; の値をリセット&#x3000;</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspector_vbox.ui" line="397"/>
@@ -16708,7 +16708,7 @@ failed: %2</source>
     <message>
         <location filename="../../mscore/fotomode.cpp" line="496"/>
         <source>Scalable Vector Graphics</source>
-        <translation>SVG形式　</translation>
+        <translation>SVG形式&#x3000;</translation>
     </message>
     <message>
         <location filename="../../mscore/fotomode.cpp" line="525"/>
@@ -21399,17 +21399,17 @@ failed: %2</source>
     <message>
         <location filename="../../libmscore/stafftype.cpp" line="1353"/>
         <source>Perc. 1 line</source>
-        <translation>パーカッション　1線譜</translation>
+        <translation>パーカッション&#x3000;1線譜</translation>
     </message>
     <message>
         <location filename="../../libmscore/stafftype.cpp" line="1354"/>
         <source>Perc. 3 lines</source>
-        <translation>パーカッション　3線譜</translation>
+        <translation>パーカッション&#x3000;3線譜</translation>
     </message>
     <message>
         <location filename="../../libmscore/stafftype.cpp" line="1355"/>
         <source>Perc. 5 lines</source>
-        <translation>パーカッション　5線譜</translation>
+        <translation>パーカッション&#x3000;5線譜</translation>
     </message>
     <message>
         <location filename="../../libmscore/stafftype.cpp" line="1360"/>
@@ -24220,7 +24220,7 @@ Note: &quot;Ctrl+Shift+1&quot; is one key combination.</source>
     <message>
         <location filename="../../mscore/timedialog.ui" line="278"/>
         <source>Add time signature to master palette</source>
-        <translation>マスターパレットに拍子記号を追加　</translation>
+        <translation>マスターパレットに拍子記号を追加&#x3000;</translation>
     </message>
     <message>
         <location filename="../../mscore/timedialog.ui" line="281"/>
@@ -34276,7 +34276,7 @@ This score already has part scores. Changing local time signatures while part sc
     <message>
         <location filename="../../libmscore/sym.cpp" line="3522"/>
         <source>Sharp sharp</source>
-        <translation>シャープ　シャープ</translation>
+        <translation>シャープ&#x3000;シャープ</translation>
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3523"/>
@@ -35393,17 +35393,17 @@ This score already has part scores. Changing local time signatures while part sc
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3081"/>
-        <source>25 small diesis up, (25S, ~5:13S, ~37S, 5C plus 5C), 2° up [53 EDO]</source>
+        <source>25 small diesis up, (25S, ~5:13S, ~37S, 5C plus 5C), 2° up [53 EDO]</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3089"/>
-        <source>35 medium diesis up, (35M, ~13M, ~125M, 5C plus 7C), 2/9-tone up</source>
+        <source>35 medium diesis up, (35M, ~13M, ~125M, 5C plus 7C), 2/9-tone up</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3119"/>
-        <source>5:7 kleisma up, (5:7k, ~11:13k, 7C less 5C)</source>
+        <source>5:7 kleisma up, (5:7k, ~11:13k, 7C less 5C)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
