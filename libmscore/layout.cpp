@@ -4121,6 +4121,38 @@ static bool justifySystem4(const Measure* last, const MeasureBase* next,
     return !(availableWidth > 0 && naturalWidth / availableWidth < fillLimit);
 }
 
+// Fit only ordinary prefixes whose header/barline geometry remains unchanged
+// when the next measure is accepted or this system is finalized. Keep the
+// native width accumulator intact for unsupported-context fallback/backtracking.
+static bool systemFittingWidth4(System* system, qreal& width)
+{
+    if (MScore::noHorizontalStretch || system->score()->styleB(Sid::hideEmptyStaves))
+        return false;
+    bool first = true;
+    for (MeasureBase* mb : system->measures()) {
+        if (!mb->isMeasure())
+            return false;
+        const Measure* m = toMeasure(mb);
+        if (m->noBreak() || m->repeatStart() || m->repeatEnd() || m->trailer()
+            || measureMayHaveBeamsJoinedIntoNext(m))
+            return false;
+        // Courtesy and changing headers need candidate-boundary preparation.
+        if (!first) {
+            for (const Segment& s : m->segments()) {
+                if (s.enabled() && s.visible() && !s.allElementsInvisible()
+                    && (s.isHeaderClefType() || s.isKeySigType() || s.isTimeSigType()))
+                    return false;
+            }
+        }
+        first = false;
+    }
+    SpacingPlan4 plan;
+    if (!buildSpacingPlan4(system, plan))
+        return false;
+    width = plan.width;
+    return true;
+}
+
 // Allocate positive spare width with one force across an ordinary system.
 // Return no targets for unsupported systems, preserving the existing path.
 static std::map<Measure*, qreal> systemSpacingWidths4(System* system, qreal extraWidth)
@@ -4264,7 +4296,10 @@ System* Score::collectSystem(LayoutContext& lc)
             // check if lc.curMeasure fits, remove if not
             // collect at least one measure and the break
 
-            bool doBreak = (system->measures().size() > 1) && ((minWidth + ww) > systemWidth);
+            qreal fittingWidth = minWidth + ww;
+            if (styleB(Sid::spacingLayout4))
+                  systemFittingWidth4(system, fittingWidth);
+            bool doBreak = (system->measures().size() > 1) && (fittingWidth > systemWidth);
             if (doBreak) {
                   breakMeasure = lc.curMeasure;
                   system->removeLastMeasure();

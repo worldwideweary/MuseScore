@@ -40,6 +40,8 @@ class TestSpacing : public QObject, public MTest {
       void placementPlan();
       void finalPlacement_data();
       void finalPlacement();
+      void fittingSwitch_data();
+      void fittingSwitch();
       void rhythmicLayoutSwitch();
       void crossBeamSwitch_data();
       void crossBeamSwitch();
@@ -829,6 +831,115 @@ void TestSpacing::finalPlacement()
       QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
       for (size_t i = 0; i < modern.size(); ++i)
             QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const std::vector<qreal> restored = snapshot();
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i)
+            QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
+void TestSpacing::fittingSwitch_data()
+      {
+      QTest::addColumn<bool>("modernBeams");
+      QTest::newRow("legacy-beams") << false;
+      QTest::newRow("studio-beams") << true;
+      }
+
+void TestSpacing::fittingSwitch()
+      {
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + "v0.48-spacing-fitting.mscx");
+      QVERIFY(score);
+      QVERIFY(score->styleB(Sid::spacingLayout4));
+      QVERIFY(!score->styleB(Sid::hideEmptyStaves));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      // Start with all nine measures in one natural-width system, then choose
+      // a page width between the planner and old per-measure fitting widths.
+      score->setStyleValue(Sid::pageWidth, 100.0);
+      score->setStyleValue(Sid::pagePrintableWidth, 98.8);
+      score->doLayout();
+      System* system = score->firstMeasure()->system();
+      QVERIFY(system);
+      int count = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            QCOMPARE(m->system(), system);
+            QVERIFY(!m->lineBreak() && !m->pageBreak() && !m->noBreak());
+            ++count;
+            }
+      QCOMPARE(count, 9);
+      SpacingPlan4 plan;
+      QString reason;
+      QVERIFY2(buildSpacingPlan4(system, plan, &reason), qPrintable(reason));
+      const qreal modernWidth = plan.width;
+      qreal oldFittingWidth = system->leftMargin();
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            m->computeMinWidth();
+            oldFittingWidth += m->width();
+            }
+      QVERIFY2(qAbs(modernWidth - oldFittingWidth) > 1e-4,
+            "The fitting control must distinguish group planning from per-measure widths");
+      const qreal available = (modernWidth + oldFittingWidth) / 2;
+      score->setStyleValue(Sid::pagePrintableWidth, available / DPI);
+      score->setStyleValue(Sid::pageWidth, available / DPI + 1.2);
+      score->doLayout();
+      const auto snapshot = [score]() -> std::vector<qreal> {
+            std::vector<qreal> values;
+            int systemIndex = -1;
+            const System* previous = nullptr;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  if (m->system() != previous) {
+                        ++systemIndex;
+                        previous = m->system();
+                        }
+                  values.push_back(systemIndex);
+                  values.push_back(m->x());
+                  values.push_back(m->width());
+                  for (Segment& s : m->segments()) {
+                        values.push_back(s.x());
+                        values.push_back(s.width());
+                        }
+                  }
+            return values;
+            };
+      const auto systemCount = [score]() {
+            int n = 0;
+            const System* previous = nullptr;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  if (m->system() != previous) {
+                        previous = m->system();
+                        ++n;
+                        }
+                  }
+            return n;
+            };
+      if (modernWidth < oldFittingWidth)
+            QCOMPARE(systemCount(), 1);
+      else
+            QVERIFY(systemCount() > 1);
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            if (m != m->system()->firstMeasure())
+                  continue;
+            QVERIFY2(buildSpacingPlan4(m->system(), plan, &reason), qPrintable(reason));
+            QVERIFY(plan.width <= available + 1e-6);
+            QVERIFY(m->system()->width() <= available + 1e-6);
+            }
+      const std::vector<qreal> modern = snapshot();
+      score->doLayout();
+      const std::vector<qreal> repeated = snapshot();
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i)
+            QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const std::vector<qreal> legacy = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      const std::vector<qreal> reenabled = snapshot();
+      QCOMPARE(static_cast<int>(reenabled.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i)
+            QVERIFY(qAbs(reenabled[i] - modern[i]) < 1e-6);
       score->setStyleValue(Sid::spacingLayout4, false);
       score->doLayout();
       const std::vector<qreal> restored = snapshot();

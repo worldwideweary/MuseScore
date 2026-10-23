@@ -1037,3 +1037,71 @@ fitting and final spacing share one calculation. Preserve whole-system fallback
 until each unsupported context has an explicit adapter; profile/cache eligibility
 and pair metadata before widening the production scope. Continue using version
 prefixes and enabling experimental spacing in new comparison files.
+
+
+## v0.48: bounded natural-width system fitting
+
+The user reports v0.47 tst_spacing/tst_beam passing. In the supplied comparison
+captures, natural H5/H8 horizontal gaps and the H27-H35 overview's relative
+measure widths look close to Studio 4.7.5 after accounting for zoom. No obvious
+new horizontal collision stands out. This is visual evidence for the tested
+inputs, not a claim of complete engraving equivalence.
+
+Connect the existing nonmutating plan to the ordinary collectSystem fit query:
+when another measure is tentatively appended, ask systemFittingWidth4 for the
+whole prefix's natural width and use that width to decide whether to break.
+Do not apply candidate positions, and keep the native minWidth accumulator
+unchanged for fallback, removal and no-break backtracking. Final placement and
+justification continue through v0.47, using a newly built plan with the final
+system header/barline geometry.
+
+This first fitting adapter requires stable boundary geometry. It rejects
+frames, no-break groups, repeat starts/ends, courtesy trailers, possible beams
+joined into the next measure, and active clef/key/time headers after the first
+measure. Hidden-staff policy and noHorizontalStretch bypass the adapter. The
+planner's other unsupported-context guards remain in force. Failure leaves
+the supplied fitting width untouched, preserving the existing decision. A
+single overwide measure still follows Evolution's existing at-least-one-measure
+rule. The stage does not squeeze an overwide candidate or fit changing headers.
+
+The narrow boundary guards matter because accepting a prefix with group
+spacing must not leave an overfull legacy-width system if finalization later
+needs unsupported geometry. In this stage, ordinary accepted prefixes have
+unchanged end-barline/header geometry; changing-boundary cases retain the
+previous collection policy. Existing explicit line/page/section breaks remain
+in the existing collector and continue to apply.
+
+Files changed:
+
+- libmscore/layout.cpp: guarded systemFittingWidth4 and the candidate fit query.
+- mtest/libmscore/layout/tst_spacing.cpp: fittingSwitch under both beam options.
+- mtest/libmscore/layout/v0.48-spacing-fitting.mscx: H27-H35 without forced line
+  breaks, experimental spacing/beams on, visible-staff policy, natural terminal
+  fill. The versioned title identifies the new automatic-fitting comparison.
+- This guide: validation, limits and continuation checkpoint.
+
+The new test first lays out all nine measures on a wide page, then independently
+measures the planner's group width and the prior per-measure fitting estimate.
+Choose a printable width between those estimates, require the resulting system
+count to follow the group estimate, and verify every planned system fits.
+Check repeated layout plus on/off/on/off restoration of geometry and grouping.
+This tests the production fitting decision, not only finite output. Existing
+forced-break overview and cross-staff cases remain regression controls.
+
+Local validation: moc and C++11 syntax checks pass in debug and NDEBUG modes for
+layout.cpp and tst_spacing.cpp, with unused-parameter diagnostics enabled. An
+isolated harness compiles the actual fitting guard against controlled DOM and
+planner stubs: all 4,096 guard combinations pass, rejected queries retain the
+caller's width, and initial headers remain eligible. This checks dispatch
+boundaries, not live-score font geometry. The new score XML parses, has nine
+measures and no LayoutBreak elements, and saves both experimental options on.
+Patch whitespace and parent-index apply checks are required before delivery.
+Full tst_spacing/tst_beam execution remains for the user's build.
+
+Apply v0.48 after v0.47. Rebuild and run tst_spacing/tst_beam, then open
+v0.48-spacing-fitting.mscx in 37E and Studio 4.7.5. Compare measures per system
+and the onset gaps around automatic breaks at the saved page width. If useful,
+change printable width in both applications to expose a nearby fitting
+threshold. Do not expect every Studio break yet: the next stage is bounded
+squeezing, followed by explicit changing-header/courtesy boundary preparation.
+Retain default-off legacy restoration and whole-context fallback throughout.
