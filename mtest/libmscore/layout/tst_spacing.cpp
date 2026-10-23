@@ -1259,6 +1259,10 @@ void TestSpacing::polyrhythmInputs_data()
       QTest::newRow("seconds-natural-studio-beams") << QString("v0.55-spacing-polyrhythm-seconds-natural.mscx") << true << true;
       QTest::newRow("seconds-justified-legacy-beams") << QString("v0.55-spacing-polyrhythm-seconds.mscx") << false << false;
       QTest::newRow("seconds-justified-studio-beams") << QString("v0.55-spacing-polyrhythm-seconds.mscx") << false << true;
+      QTest::newRow("unisons-natural-legacy-beams") << QString("v0.56-spacing-polyrhythm-unisons-natural.mscx") << true << false;
+      QTest::newRow("unisons-natural-studio-beams") << QString("v0.56-spacing-polyrhythm-unisons-natural.mscx") << true << true;
+      QTest::newRow("unisons-justified-legacy-beams") << QString("v0.56-spacing-polyrhythm-unisons.mscx") << false << false;
+      QTest::newRow("unisons-justified-studio-beams") << QString("v0.56-spacing-polyrhythm-unisons.mscx") << false << true;
       }
 
 void TestSpacing::polyrhythmInputs()
@@ -1267,6 +1271,7 @@ void TestSpacing::polyrhythmInputs()
       QFETCH(bool, natural);
       QFETCH(bool, modernBeams);
       const bool seconds = file.startsWith("v0.55-");
+      const bool unisons = file.startsWith("v0.56-");
       const bool accidentals = seconds || file.startsWith("v0.54-");
       MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
@@ -1294,7 +1299,7 @@ void TestSpacing::polyrhythmInputs()
       const int counts[3][4] = { { 3, 2, 2, 3 }, { 5, 4, 4, 5 }, { 6, 8, 10, 12 } };
       int measureCount = 0;
       for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++measureCount) {
-            const int row = natural || accidentals ? 2 : measureCount;
+            const int row = natural || accidentals || unisons ? 2 : measureCount;
             QVERIFY(row < 3);
             QVERIFY(m->ticks() == Fraction(1, 2));
             QCOMPARE(m->system()->firstMeasure(), m);
@@ -1308,6 +1313,14 @@ void TestSpacing::polyrhythmInputs()
                         const ChordRest* cr = seg.cr(tracks[v]);
                         if (!cr) continue;
                         QVERIFY(cr->isChord());
+                        if (unisons) {
+                              const Chord* chord = toChord(cr);
+                              QCOMPARE(static_cast<int>(chord->notes().size()), 1);
+                              const Note* note = chord->notes().front();
+                              QCOMPARE(note->pitch(), v < 2 ? 77 : 53);
+                              QCOMPARE(note->tpc(), static_cast<int>(Tpc::TPC_F));
+                              QVERIFY(!note->accidental());
+                              }
                         if (accidentals) {
                               const Chord* chord = toChord(cr);
                               QCOMPARE(static_cast<int>(chord->notes().size()), seconds ? 2 : 1);
@@ -1355,14 +1368,35 @@ void TestSpacing::polyrhythmInputs()
                   }
             SpacingPlan4 applied;
             QString reason;
-            QVERIFY2(buildSpacingPlan4(m->system(), applied, &reason), qPrintable(reason));
-            if (!natural)
-                  QVERIFY(justifySpacingPlan4(applied, score->styleD(Sid::pagePrintableWidth) * DPI));
-            QVERIFY(qAbs(m->system()->width() - applied.width) < 1e-6);
-            for (const SpacingSegmentPlan4& entry : applied.segments) {
-                  if (entry.ignored) continue;
-                  QVERIFY(qAbs(m->x() + entry.segment->x() - entry.x) < 1e-6);
-                  QVERIFY(qAbs(entry.segment->width() - entry.width) < 1e-6);
+            if (unisons) {
+                  // Coincident direct-item owners are still intentionally
+                  // ambiguous. Register the boundary without choosing one
+                  // voice's padding policy or partially publishing a plan.
+                  applied.width = -123;
+                  QVERIFY(!buildSpacingPlan4(m->system(), applied, &reason));
+                  QVERIFY2(reason.startsWith("Unadapted geometry at tick"), qPrintable(reason));
+                  QCOMPARE(applied.width, qreal(-123));
+                  QVERIFY(applied.segments.empty() && applied.measures.empty());
+                  Segment* first = m->first(SegmentType::ChordRest);
+                  QVERIFY(first);
+                  for (int staff = 0; staff < 2; ++staff) {
+                        const SpacingShape4 shape = spacingStaffShape4(first, staff);
+                        bool ambiguous = false;
+                        for (const SpacingShapeElement4& item : shape.elements)
+                              ambiguous |= item.identity == SpacingIdentity4::AMBIGUOUS;
+                        QVERIFY(ambiguous);
+                        }
+                  }
+            else {
+                  QVERIFY2(buildSpacingPlan4(m->system(), applied, &reason), qPrintable(reason));
+                  if (!natural)
+                        QVERIFY(justifySpacingPlan4(applied, score->styleD(Sid::pagePrintableWidth) * DPI));
+                  QVERIFY(qAbs(m->system()->width() - applied.width) < 1e-6);
+                  for (const SpacingSegmentPlan4& entry : applied.segments) {
+                        if (entry.ignored) continue;
+                        QVERIFY(qAbs(m->x() + entry.segment->x() - entry.x) < 1e-6);
+                        QVERIFY(qAbs(entry.segment->width() - entry.width) < 1e-6);
+                        }
                   }
             // Verify the multi-voice rhythmic branch against the pinned
             // duration formula, including the preceding non-adjacent onset.
@@ -1392,7 +1426,7 @@ void TestSpacing::polyrhythmInputs()
                   QVERIFY(qIsFinite(seg.x()) && qIsFinite(seg.width()) && seg.width() >= 0);
                   }
             }
-      QCOMPARE(measureCount, natural || accidentals ? 1 : 3);
+      QCOMPARE(measureCount, natural || accidentals || unisons ? 1 : 3);
       const std::vector<qreal> modern = snapshot();
       score->doLayout();
       const std::vector<qreal> repeated = snapshot();

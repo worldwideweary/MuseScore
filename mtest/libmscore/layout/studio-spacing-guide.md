@@ -1602,3 +1602,48 @@ stems and shared beat boundary. Use an exact test failure reason or a visible
 pair discrepancy to choose a production change. Next prepare unisons between
 voices as a separate control; then rests/sustained voices and cross-staff.
 The centered cross-staff beam reproduction remains deferred.
+
+## v0.56: register the shared-notehead boundary with unison controls
+
+The user reports full mtests passing after v0.55. Natural and justified C1
+screenshots look close to 4.7.5 in overall spacing, displaced noteheads and
+accidental columns. No clear production spacing defect is visible in that
+comparison. Keep those controls unchanged.
+
+Add U1 using the same four P3 rhythmic streams, with single F notes and no
+accidentals. Both voices on the treble staff use F5; both bass voices use F3.
+Opposing stems and the original tuplets remain. Both experimental options are
+enabled, in natural and justified variants:
+
+- v0.56-spacing-polyrhythm-unisons-natural.mscx
+- v0.56-spacing-polyrhythm-unisons.mscx
+
+Source inspection identifies a deliberate adapter limit: Chord::shape includes
+each voice's Note::shape, while spacingResolveShape4 rejects coincident direct
+rectangles with different item owners as AMBIGUOUS. v0.52 retained producer
+sets only for legacy aggregate spacers, not direct noteheads. Shared heads
+therefore need a separate ownership adaptation; choosing one voice would lose
+potentially different pair policies. Do not claim these controls already use
+the full Studio placement planner.
+
+Extend polyrhythmInputs under both beam settings. Check exact unison pitches,
+spellings, absence of accidentals, all original rational durations, finite
+geometry, repeat layout and off restoration. For these U1 inputs specifically,
+expect an unadapted-geometry rejection, require AMBIGUOUS entries in both
+staff shapes at the first onset, and verify the failed planner leaves its
+output untouched. All preceding eligible controls still require complete
+plan application. The existing fallback remains active for U1.
+
+Files changed: tst_spacing.cpp, this guide and the two U1 scores. Local checks
+cover source-based shared-rectangle resolver behavior, unchanged rhythm and
+settings, pitch/step agreement, moc/C++11 debug/NDEBUG syntax, whitespace and
+parent-index patch application. Live Qt 5.9 mtests and screenshots remain for
+the user's build. No production code changes in this diagnostic checkpoint.
+
+Apply v0.56 after v0.55. Run tst_spacing/tst_beam, then compare natural U1 and
+justified U1 with 4.7.5. Differences are useful baseline evidence, not a reason
+to tune fallback widths. The next source stage is to retain every proven
+direct-item producer and apply all relevant pair policies, with unknown or
+incomplete ownership still rejected. After enabling that bounded case, change
+U1's eligibility assertions to require full-plan application and recompare.
+The centered cross-staff beam reproduction stays deferred.
