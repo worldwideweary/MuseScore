@@ -20,6 +20,7 @@ struct CrossStaffChord4 {
     const Chord* chord = nullptr;
     int visualStaff = 0;
     bool up = false; // inferred staff side; never writes Chord::up()
+    qreal stemX = 0; // stem center in segment coordinates, independent of its provisional side
 };
 struct CrossStaffPair4 {
     const Chord* first = nullptr;
@@ -27,6 +28,7 @@ struct CrossStaffPair4 {
     bool canAdjust = false;
     qreal widthOffset = 0; // fixed signed displacement, outside rhythmic springs
     qreal minimumWidth = 0;
+    qreal minimumStemDistance = 0; // explicit up-to-down stem-center constraint
 };
 struct CrossStaffContext4 {
     const Beam* beam = nullptr;

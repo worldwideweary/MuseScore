@@ -1874,3 +1874,25 @@ Apply v0.62 after v0.61 and run tst_spacing/tst_beam. No rendering change is
 expected because production plans still carry zero offsets and retain the
 cross-staff guard. Next connect stem constraints, context offsets and final
 placement, then require X1 full-plan application and request visual comparison.
+
+## v0.63 WIP: stem-anchor constraints saved before integration
+
+The user reports v0.62 compilation and mtests passing and has little usage
+remaining. Save the next bounded dependency as a recoverable checkpoint.
+
+CrossStaffChord4 now records a horizontal stem center inferred from the source
+glyph-attachment calculation. CrossStaffPair4 retains the explicit up-to-down
+stem clearance in addition to its existing fixed-offset/minimum-width values.
+Manual note offsets and invalid stem dimensions fail without publishing a
+partial context. See the cross-staff audit for exact scope and source mapping.
+
+Files changed: spacingplan4.h/.cpp, tst_spacing.cpp, this guide and the audit.
+The live X1 test compares inferred anchors with actual stem centers under both
+beam settings and verifies the explicit stem floor. Local moc/C++11 debug/
+NDEBUG syntax and controlled actual-context checks pass. Full Qt 5.9 mtests
+remain pending. Whitespace and parent-index patch application are checked.
+
+Apply v0.63 after v0.62 and run tst_spacing/tst_beam. No visual recapture is
+needed: the full planner still rejects cross-staff geometry. Next integrate
+the bounded geometry and fixed offsets with placement, retaining fallback for
+unsupported contexts. This WIP is not completion of cross-staff integration.

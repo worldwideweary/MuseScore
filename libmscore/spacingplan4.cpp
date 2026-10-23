@@ -12,6 +12,7 @@
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
+#include "stem.h"
 #include "system.h"
 #include <algorithm>
 #include <cmath>
@@ -194,7 +195,7 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
             return fail("Cross-staff context needs visible ordinary five-line staves");
         const Note* note = chord->notes().front();
         SpacingPairPolicy4 policy;
-        if (!note->visible() || note->isSmall() || note->mirror()
+        if (!note->visible() || note->isSmall() || note->mirror() || !note->offset().isNull()
             || note->headGroup() != NoteHead::Group::HEAD_NORMAL || note->headType() != NoteHead::Type::HEAD_AUTO
             || !spacingPairPolicy4(table, note, note, note->spatium(), policy))
             return fail("Unadapted cross-staff note context");
@@ -219,6 +220,17 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
         if ((entry.visualStaff == upper && line > 8) || (entry.visualStaff == lower && line < 0))
             return fail("Interstaff note positions need a later stem-side adapter");
         entry.up = entry.visualStaff == lower;
+        const Note* note = chord->notes().front();
+        // Match Chord::stemPosX/layoutStem1 without changing the provisional
+        // Chord::up(). Stem length and final vertical beam position are unused.
+        const QPointF attach = entry.up ? note->stemUpSE() : note->stemDownNW();
+        const qreal nominalWidth = chord->noteHeadWidth();
+        const qreal anchor = attach.isNull() ? (entry.up ? nominalWidth : 0)
+            : attach.x() - (entry.up ? note->headBodyWidth() - nominalWidth : 0);
+        const qreal stemWidth = chord->stem()->lineWidth() * chord->mag();
+        entry.stemX = chord->x() + anchor + (entry.up ? -.5 : .5) * stemWidth;
+        if (!(stemWidth > 0) || !std::isfinite(stemWidth) || !std::isfinite(entry.stemX))
+            return fail("Invalid cross-staff stem anchor");
         for (const Element* item : chord->segment()->elist()) {
             if (!item || item == chord)
                 continue;
@@ -259,8 +271,13 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
         }
         if (a.up != b.up) {
             pair.widthOffset = pair.canAdjust ? (a.up ? displacement : -displacement) : 0;
-            if (a.up)
+            if (a.up) {
                 pair.minimumWidth = std::max(2 * displacement, headWidth + stemPadding);
+                // Source minStemDistOnNonAdjacentCross also applies to
+                // adjacent segments. Keep it explicit for later lookback.
+                pair.minimumStemDistance = std::max(qreal(0), a.stemX - b.stemX + stemPadding);
+                pair.minimumWidth = std::max(pair.minimumWidth, pair.minimumStemDistance);
+            }
         }
         context.pairs.push_back(pair);
     }
