@@ -710,3 +710,65 @@ implementation plan. Next start the spacing-only geometry/identity adapter and
 source-derived collision policy in recoverable WIP increments. Existing H1-H35
 fixtures remain the integration controls. No application test rerun is needed for
 this documentation-only checkpoint.
+
+## v0.44 WIP: spacing-only item identity and geometry snapshots
+
+Add spacinggeometry4.h/.cpp as the first implementation step from the source
+audit. The adapter retains every rectangle from the native element/staff shape
+in its original order and coordinates, and attaches a borrowed Element pointer
+where native component geometry identifies the owner. Rectangles that have no
+owner or competing owners remain explicitly UNCLASSIFIED or AMBIGUOUS. Their
+geometry is retained; neither state is eligible for a future item-policy path.
+
+The snapshot supports identity-preserving copy/translation. `complete()` reports
+identity coverage only, not collision-policy support. Exact coordinate matching
+is deliberate: no debug-name interpretation, tolerance-based guessing or
+candidate-order assignment. Unknown candidates prevent a known overlapping
+candidate from claiming the rectangle. Two native coincident rectangles cannot
+both be attributed to one candidate. Floating-point translation differences can
+leave geometry unclassified; preserve that fallback rather than guess an owner.
+
+Tag common noteheads, note dots, accidentals, stems/hooks/stem slashes, ledger
+lines, arpeggios, native clefs/keys/time signatures/barlines and ordinary rest
+bodies. Reconcile composed chord shapes against native geometry so omitted
+cross-staff stems are not inserted. Staff snapshots use visual staff ownership;
+barlines use the same layoutRect as Segment::createShape. Add a const ledger-line
+accessor to Chord so the adapter can inspect lines without casting away const.
+The CMake library source list includes the new implementation.
+
+Explicit remaining gaps include rest dots/MMRest body and number identification,
+aggregated lyric/harmony/synthetic spacing rectangles, unfamiliar composites,
+and any ambiguous or non-exactly-matching primitive. This is an identity adapter,
+not Studio's padding/kerning implementation. It intentionally does not recreate
+every Studio shape producer. Candidate reconciliation is a conservative WIP
+boundary and must not be mistaken for full source-provenance instrumentation.
+
+There are no production layout callers yet: existing native Shape, skyline,
+collision calculations and spacing dispatch are unchanged. The adapter is
+currently exercised explicitly by tests. No visual layout change is expected
+with either experimental option state; no new visual MSCX is needed.
+
+Extend tst_spacing with geometryResolution and geometryInputs. The first checks
+native notehead/dot/accidental identity, translation, unknown spacers, ambiguous
+overlaps, candidate-order independence, near-match rejection, and coincident
+primitives with insufficient ownership. The score-based cases use existing
+H1-H8, H21-H26 and H19-H20 fixtures under both beam styles. They retain all native
+staff rectangles, check notehead destination staff/coordinates and known stem/
+accidental/cross-staff identity, and check that inspection leaves native shapes,
+measure widths, segment positions/widths and fixed offsets unchanged.
+
+Local Qt moc generation and C++11 syntax checks pass for the adapter in debug
+and NDEBUG configurations and for tst_spacing. A standalone run linked to the
+actual resolver/translation code passes 100,000 generated identity cases,
+covering geometry retention, ownership states, translation, candidate order,
+and exact-match rejection. These tests do not run the full DOM shape builders.
+Full application builds and the new score-based tests remain for the user's
+build; the implementation is not being declared integrated from the isolated
+checks alone.
+
+Apply v0.44 after v0.43, build and run tst_spacing (tst_beam remains a useful
+regression check). Next use the identity coverage results to complete common
+notation inputs and implement the source-derived item-pair padding/kerning
+policy. Keep the current layout dispatch until those inputs and the connected
+placement/width-reconstruction path are ready. Profile reconciliation before
+putting it into a repeated production spacing pass.

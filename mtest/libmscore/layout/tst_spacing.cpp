@@ -6,6 +6,9 @@
 #include "libmscore/measure.h"
 #include "libmscore/segment.h"
 #include "libmscore/spacinglayout4.h"
+#include "libmscore/spacinggeometry4.h"
+#include "libmscore/shape.h"
+#include "libmscore/notedot.h"
 #include "libmscore/chordrest.h"
 #include "libmscore/beam.h"
 #include "libmscore/chord.h"
@@ -22,6 +25,9 @@ class TestSpacing : public QObject, public MTest {
       void styleRoundTrip();
       void durationPolicy();
       void springForce();
+      void geometryResolution();
+      void geometryInputs_data();
+      void geometryInputs();
       void rhythmicLayoutSwitch();
       void crossBeamSwitch_data();
       void crossBeamSwitch();
@@ -247,6 +253,150 @@ void TestSpacing::springForce()
       QCOMPARE(spacing4SpringForce(collision, 0), 0.0);
       QCOMPARE(spacing4SpringForce({}, 1), 0.0);
       QCOMPARE(spacing4SpringForce({ { 1, 0 } }, 1), 0.0);
+      }
+
+void TestSpacing::geometryResolution()
+      {
+      MasterScore* score = readScore(DIR + "studio-spacing-natural-h1.mscx");
+      QVERIFY(score);
+      {
+      Chord context(score);
+      context.setTrack(0);
+      Note* ownedNote = new Note(score);
+      context.add(ownedNote);
+      Note& note = *ownedNote;
+      note.setbbox(QRectF(1, 2, 3, 4));
+      Accidental* accidental = new Accidental(score);
+      accidental->setParent(&note);
+      accidental->setTrack(0);
+      accidental->setbbox(QRectF(-2, -1, 0.5, 2));
+      accidental->setPos(-1, 0);
+      note.setAccidental(accidental);
+      NoteDot* dot = new NoteDot(score);
+      dot->setParent(&note);
+      dot->setTrack(0);
+      dot->setPos(6, 0);
+      note.dots().push_back(dot);
+      const SpacingShape4 tagged = spacingElementShape4(&note);
+      QCOMPARE(static_cast<int>(tagged.elements.size()), 3);
+      QVERIFY(tagged.complete());
+      QCOMPARE(tagged.elements[0].item, static_cast<const Element*>(&note));
+      QCOMPARE(tagged.elements[1].item, static_cast<const Element*>(dot));
+      QCOMPARE(tagged.elements[2].item, static_cast<const Element*>(accidental));
+      const QPointF offset(7, -3);
+      const SpacingShape4 shifted = tagged.translated(offset);
+      for (size_t i = 0; i < tagged.elements.size(); ++i) {
+            QCOMPARE(shifted.elements[i].rect, tagged.elements[i].rect.translated(offset));
+            QCOMPARE(shifted.elements[i].item, tagged.elements[i].item);
+            QCOMPARE(int(shifted.elements[i].identity), int(tagged.elements[i].identity));
+            }
+      Shape native;
+      const QRectF rect(1, 2, 3, 4);
+      native.add(rect);
+      native.add(QRectF(-5, 0, 2, 0)); // synthetic horizontal spacer, no inferred owner
+      SpacingShape4 candidates;
+      candidates.elements.push_back(SpacingShapeElement4(rect, &note));
+      SpacingShape4 resolved = spacingResolveShape4(native, candidates);
+      QCOMPARE(resolved.elements[0].item, static_cast<const Element*>(&note));
+      QVERIFY(!resolved.complete());
+      QCOMPARE(int(resolved.elements[1].identity), int(SpacingIdentity4::UNCLASSIFIED));
+      candidates.elements.push_back(SpacingShapeElement4(rect, accidental));
+      resolved = spacingResolveShape4(native, candidates);
+      QCOMPARE(int(resolved.elements[0].identity), int(SpacingIdentity4::AMBIGUOUS));
+      QVERIFY(!resolved.elements[0].item);
+      std::reverse(candidates.elements.begin(), candidates.elements.end());
+      QCOMPARE(int(spacingResolveShape4(native, candidates).elements[0].identity), int(SpacingIdentity4::AMBIGUOUS));
+      // Unknown provenance must not be overridden by an overlapping known item.
+      candidates.elements.clear();
+      candidates.elements.push_back(SpacingShapeElement4(rect, &note));
+      candidates.elements.push_back(SpacingShapeElement4(rect));
+      QCOMPARE(int(spacingResolveShape4(native, candidates).elements[0].identity), int(SpacingIdentity4::UNCLASSIFIED));
+      candidates.elements.clear();
+      candidates.elements.push_back(SpacingShapeElement4(rect.translated(1e-12, 0), &note));
+      QCOMPARE(int(spacingResolveShape4(native, candidates).elements[0].identity), int(SpacingIdentity4::UNCLASSIFIED));
+      native.add(rect); // only one of two identical primitives has an owner
+      candidates.elements.clear();
+      candidates.elements.push_back(SpacingShapeElement4(rect, &note));
+      resolved = spacingResolveShape4(native, candidates);
+      QCOMPARE(int(resolved.elements[0].identity), int(SpacingIdentity4::UNCLASSIFIED));
+      QCOMPARE(int(resolved.elements[2].identity), int(SpacingIdentity4::UNCLASSIFIED));
+      }
+      delete score;
+      }
+
+void TestSpacing::geometryInputs_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::addColumn<bool>("modernBeams");
+      for (bool beams : { false, true }) {
+            const QString suffix = beams ? "-studio-beams" : "-legacy-beams";
+            QTest::newRow(qPrintable("ordinary" + suffix)) << QString("studio-spacing-baseline.mscx") << beams;
+            QTest::newRow(qPrintable("accidentals-cross-staff" + suffix)) << QString("v0.40-spacing-accidentals.mscx") << beams;
+            QTest::newRow(qPrintable("mixed-voices" + suffix)) << QString("v0.38-spacing-voices.mscx") << beams;
+            }
+      }
+
+void TestSpacing::geometryInputs()
+      {
+      QFETCH(QString, file);
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      int heads = 0;
+      int signs = 0;
+      int stems = 0;
+      int crossStaffHeads = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            const qreal measureWidth = m->width();
+            for (Segment& seg : m->segments()) {
+                  const qreal x = seg.x(), width = seg.width(), offset = seg.spacingWidthOffset4();
+                  const std::vector<Shape> native = seg.shapes();
+                  for (int staffIdx = 0; staffIdx < score->nstaves(); ++staffIdx) {
+                        const SpacingShape4 tagged = spacingStaffShape4(&seg, staffIdx);
+                        QCOMPARE(static_cast<int>(tagged.elements.size()), static_cast<int>(native[staffIdx].size()));
+                        for (size_t i = 0; i < tagged.elements.size(); ++i) {
+                              const SpacingShapeElement4& e = tagged.elements[i];
+                              QCOMPARE(e.rect, static_cast<const QRectF&>(native[staffIdx][i]));
+                              QCOMPARE(static_cast<const QRectF&>(seg.staffShape(staffIdx)[i]), static_cast<const QRectF&>(native[staffIdx][i]));
+                              if (e.identity != SpacingIdentity4::ITEM) {
+                                    QVERIFY(!e.item);
+                                    continue;
+                                    }
+                              QVERIFY(e.item);
+                              if (e.item->isNote()) {
+                                    ++heads;
+                                    const Chord* chord = toNote(e.item)->chord();
+                                    QVERIFY(chord);
+                                    QCOMPARE(chord->vStaffIdx(), staffIdx);
+                                    QVERIFY(e.rect == e.item->bbox().translated(e.item->pos()).translated(chord->pos()));
+                                    if (chord->staffMove())
+                                          ++crossStaffHeads;
+                                    }
+                              if (e.item->isAccidental())
+                                    ++signs;
+                              if (e.item->isStem())
+                                    ++stems;
+                              }
+                        }
+                  QCOMPARE(seg.x(), x);
+                  QCOMPARE(seg.width(), width);
+                  QCOMPARE(seg.spacingWidthOffset4(), offset);
+                  }
+            QCOMPARE(m->width(), measureWidth);
+            }
+      QVERIFY(heads > 0);
+      QVERIFY(stems > 0);
+      if (file.contains("accidentals")) {
+            QVERIFY(signs > 0);
+            QVERIFY(crossStaffHeads > 0);
+            }
+      QVERIFY(spacingStaffShape4(nullptr, 0).elements.empty());
+      QVERIFY(spacingStaffShape4(score->firstMeasure()->first(), -1).elements.empty());
+      QVERIFY(spacingStaffShape4(score->firstMeasure()->first(), score->nstaves()).elements.empty());
+      delete score;
       }
 
 void TestSpacing::crossBeamSwitch_data()
