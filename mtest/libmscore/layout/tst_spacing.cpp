@@ -57,6 +57,8 @@ class TestSpacing : public QObject, public MTest {
       void crossStaffInterleaved();
       void crossStaffSystems_data();
       void crossStaffSystems();
+      void crossStaffFitting_data();
+      void crossStaffFitting();
       void rhythmicLayoutSwitch();
       void crossBeamSwitch_data();
       void crossBeamSwitch();
@@ -2080,6 +2082,131 @@ void TestSpacing::crossStaffSystems()
       const auto restored = snapshot();
       QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
       for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
+void TestSpacing::crossStaffFitting_data()
+      {
+      QTest::addColumn<bool>("modernBeams");
+      QTest::newRow("legacy-beams") << false;
+      QTest::newRow("studio-beams") << true;
+      }
+
+void TestSpacing::crossStaffFitting()
+      {
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + "v0.73-spacing-cross-staff-fitting.mscx");
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      QCOMPARE(score->styleD(Sid::lastSystemFillLimit), qreal(0));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->setStyleValue(Sid::pageWidth, 100.0);
+      score->setStyleValue(Sid::pagePrintableWidth, 98.8);
+      score->doLayout();
+      System* wideSystem = score->firstMeasure()->system();
+      int measureCount = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            QCOMPARE(m->system(), wideSystem);
+            QVERIFY(!m->lineBreak() && !m->pageBreak() && !m->noBreak());
+            QVERIFY(m->ticks() == Fraction(1, 2));
+            int onset = 0;
+            for (Segment& segment : m->segments()) {
+                  if (!segment.isChordRestType()) continue;
+                  QVERIFY(segment.rtick() == Fraction(onset, 16));
+                  for (int track : { 1, VOICES }) {
+                        const ChordRest* cr = segment.cr(track);
+                        QVERIFY(cr && cr->isChord() && !cr->beam() && cr->actualTicks() == Fraction(1, 16));
+                        const int delta[] = { 1, 0, -1, 0 };
+                        const Note* note = toChord(cr)->notes().front();
+                        QCOMPARE(note->pitch(), (track == 1 ? 60 : 48) + (measureCount % 2 ? delta[onset % 4] : 0));
+                        }
+                  if (onset % 2 == 0) {
+                        const ChordRest* cr = segment.cr(0);
+                        QVERIFY(cr && cr->isChord() && cr->actualTicks() == Fraction(1, 8));
+                        const Chord* c = toChord(cr);
+                        QCOMPARE(c->staffMove(), onset < 4 ? 1 : 0);
+                        QCOMPARE(static_cast<int>(c->notes().size()), 2);
+                        QVERIFY(c->beam() && c->beam()->cross());
+                        }
+                  ++onset;
+                  }
+            QCOMPARE(onset, 8);
+            ++measureCount;
+            }
+      QCOMPARE(measureCount, 6);
+      SpacingPlan4 natural;
+      QString reason;
+      QVERIFY2(buildSpacingPlan4(wideSystem, natural, &reason), qPrintable(reason));
+      QCOMPARE(static_cast<int>(natural.measures.size()), 6);
+      const qreal naturalWidth = natural.width;
+      const auto snapshot = [score]() {
+            std::vector<qreal> result;
+            const System* previous = nullptr;
+            int systemIndex = -1;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  if (m->system() != previous) { previous = m->system(); ++systemIndex; }
+                  result.push_back(systemIndex);
+                  result.push_back(m->x()); result.push_back(m->width());
+                  for (Segment& segment : m->segments()) {
+                        if (!segment.enabled() && (segment.header() || segment.trailer())) continue;
+                        result.push_back(static_cast<int>(segment.segmentType()));
+                        result.push_back(segment.tick().toDouble());
+                        result.push_back(segment.enabled() ? 1 : 0);
+                        result.push_back(segment.x()); result.push_back(segment.width());
+                        result.push_back(segment.spacingWidthOffset4());
+                        }
+                  }
+            return result;
+            };
+      int previousCount = 0;
+      for (qreal ratio : { qreal(1.1), qreal(.55), qreal(.35) }) {
+            const qreal available = naturalWidth * ratio;
+            score->setStyleValue(Sid::pagePrintableWidth, available / DPI);
+            score->setStyleValue(Sid::pageWidth, available / DPI + 1.2);
+            score->setStyleValue(Sid::spacingLayout4, false);
+            score->doLayout();
+            const auto legacy = snapshot();
+            score->setStyleValue(Sid::spacingLayout4, true);
+            score->doLayout();
+            int systems = 0;
+            int total = 0;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  ++total;
+                  if (m != m->system()->firstMeasure()) continue;
+                  ++systems;
+                  SpacingPlan4 plan;
+                  QVERIFY2(buildSpacingPlan4(m->system(), plan, &reason), qPrintable(reason));
+                  QVERIFY(plan.width <= available + 1e-6);
+                  QVERIFY(justifySpacingPlan4(plan, available));
+                  QVERIFY(qAbs(plan.width - m->system()->width()) < 1e-6);
+                  for (const SpacingMeasurePlan4& e : plan.measures) {
+                        QVERIFY(qAbs(e.measure->x() - e.x) < 1e-6);
+                        QVERIFY(qAbs(e.measure->width() - e.width) < 1e-6);
+                        }
+                  for (const SpacingSegmentPlan4& e : plan.segments) {
+                        if (e.ignored) continue;
+                        QVERIFY(qIsFinite(e.x) && qIsFinite(e.width) && e.width >= 0);
+                        QCOMPARE(e.widthOffset, qreal(0));
+                        QVERIFY(qAbs(e.segment->measure()->x() + e.segment->x() - e.x) < 1e-6);
+                        QVERIFY(qAbs(e.segment->width() - e.width) < 1e-6);
+                        QVERIFY(qAbs(e.segment->spacingWidthOffset4()) < 1e-6);
+                        }
+                  }
+            QCOMPARE(total, 6);
+            if (ratio > 1) QCOMPARE(systems, 1);
+            else QVERIFY(systems > 1);
+            QVERIFY(systems >= previousCount);
+            previousCount = systems;
+            const auto modern = snapshot();
+            score->doLayout();
+            const auto repeated = snapshot();
+            QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+            for (size_t i = 0; i < modern.size(); ++i) QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+            score->setStyleValue(Sid::spacingLayout4, false);
+            score->doLayout();
+            const auto restored = snapshot();
+            QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+            for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+            }
       delete score;
       }
 
