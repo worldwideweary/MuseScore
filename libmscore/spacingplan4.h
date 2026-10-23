@@ -40,6 +40,7 @@ struct SpacingSegmentPlan4 {
     Segment* segment;
     qreal x = 0; // system coordinates, not Segment::x()
     qreal width = 0;
+    qreal widthOffset = 0; // fixed signed width, excluded from spring growth
     qreal stretch = 0;
     bool ignored = false;
     explicit SpacingSegmentPlan4(Segment* s) : segment(s) {}

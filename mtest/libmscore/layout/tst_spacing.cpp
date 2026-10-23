@@ -33,6 +33,7 @@ class TestSpacing : public QObject, public MTest {
       void styleRoundTrip();
       void durationPolicy();
       void springForce();
+      void fixedOffsetPlan();
       void geometryResolution();
       void geometryInputs_data();
       void geometryInputs();
@@ -276,6 +277,71 @@ void TestSpacing::springForce()
       QCOMPARE(spacing4SpringForce(collision, 0), 0.0);
       QCOMPARE(spacing4SpringForce({}, 1), 0.0);
       QCOMPARE(spacing4SpringForce({ { 1, 0 } }, 1), 0.0);
+      }
+
+void TestSpacing::fixedOffsetPlan()
+      {
+      MasterScore* score = readScore(DIR + "v0.59-spacing-polyrhythm-sustained-natural.mscx");
+      QVERIFY(score);
+      score->doLayout();
+      Measure* measure = score->firstMeasure();
+      QVERIFY(measure);
+      std::vector<Segment*> segments;
+      for (Segment& s : measure->segments()) {
+            if (s.isChordRestType() && segments.size() < 3) segments.push_back(&s);
+            }
+      QCOMPARE(static_cast<int>(segments.size()), 3);
+      const qreal nativeWidth = measure->width();
+      const qreal nativeX[] = { segments[0]->x(), segments[1]->x(), segments[2]->x() };
+      const qreal offsets[][3] = { { 0, 0, 0 }, { 1, 2, .5 }, { 1, -2, .5 } };
+      const qreal flexible[] = { 4, 8, 5 };
+      const qreal stretches[] = { 1, 2, .5 };
+      for (const auto& row : offsets) {
+            for (qreal extra : { qreal(3), qreal(24) }) {
+                  SpacingPlan4 plan;
+                  plan.measures.push_back(SpacingMeasurePlan4(measure));
+                  plan.measures.front().x = 10;
+                  qreal cursor = 10;
+                  for (int i = 0; i < 3; ++i) {
+                        SpacingSegmentPlan4 s(segments[i]);
+                        s.x = cursor;
+                        s.widthOffset = row[i];
+                        s.width = flexible[i] + row[i];
+                        s.stretch = stretches[i];
+                        cursor += s.width;
+                        plan.segments.push_back(s);
+                        }
+                  plan.measures.front().width = cursor - 10;
+                  plan.width = cursor;
+                  const qreal target = cursor + extra;
+                  QVERIFY(justifySpacingPlan4(plan, target));
+                  // Hand-solved source spring cases: at +3 the third spring
+                  // stays at its floor; at +24 all three springs are active.
+                  const qreal expected[] = { extra == 3 ? 5 : 82.0 / 7,
+                        extra == 3 ? 10 : 164.0 / 7, extra == 3 ? 5 : 41.0 / 7 };
+                  cursor = 10;
+                  for (int i = 0; i < 3; ++i) {
+                        QCOMPARE(plan.segments[i].widthOffset, row[i]);
+                        QVERIFY(qAbs(plan.segments[i].width - expected[i] - row[i]) < 1e-9);
+                        QVERIFY(qAbs(plan.segments[i].x - cursor) < 1e-9);
+                        cursor += plan.segments[i].width;
+                        }
+                  QVERIFY(qAbs(cursor - target) < 1e-9);
+                  QVERIFY(qAbs(plan.width - target) < 1e-9);
+                  QVERIFY(qAbs(plan.measures.front().width - (target - 10)) < 1e-9);
+                  QCOMPARE(plan.measures.front().x, qreal(10));
+                  SpacingPlan4 invalid = plan;
+                  invalid.segments.front().widthOffset = invalid.segments.front().width + 1;
+                  const qreal savedWidth = invalid.segments.front().width;
+                  QVERIFY(!justifySpacingPlan4(invalid, target + 1));
+                  QCOMPARE(invalid.width, plan.width);
+                  QCOMPARE(invalid.segments.front().width, savedWidth);
+                  QCOMPARE(invalid.segments.front().widthOffset, savedWidth + 1);
+                  }
+            }
+      QCOMPARE(measure->width(), nativeWidth);
+      for (int i = 0; i < 3; ++i) QCOMPARE(segments[i]->x(), nativeX[i]);
+      delete score;
       }
 
 void TestSpacing::geometryResolution()

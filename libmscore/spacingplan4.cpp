@@ -151,14 +151,14 @@ bool stretchMeasure4(SpacingPlan4& plan, SpacingMeasurePlan4& measure, qreal ext
     std::vector<SpacingSpring4> springs;
     for (const SpacingSegmentPlan4& segment : plan.segments) {
         if (!segment.ignored && segment.segment->measure() == measure.measure && segment.stretch > 0)
-            springs.push_back({ segment.width, segment.stretch });
+            springs.push_back({ segment.width - segment.widthOffset, segment.stretch });
     }
     const qreal force = spacing4SpringForce(springs, extra);
     if (!(force > 0))
         return false;
     for (SpacingSegmentPlan4& segment : plan.segments) {
         if (!segment.ignored && segment.segment->measure() == measure.measure && segment.stretch > 0)
-            segment.width = std::max(segment.width, force * segment.stretch);
+            segment.width = std::max(segment.width - segment.widthOffset, force * segment.stretch) + segment.widthOffset;
     }
     return true;
 }
@@ -541,14 +541,14 @@ bool justifySpacingPlan4(SpacingPlan4& target, qreal targetWidth)
     std::vector<SpacingSpring4> springs;
     for (const SpacingSegmentPlan4& segment : plan.segments) {
         if (!segment.ignored && segment.stretch > 0)
-            springs.push_back({ segment.width, segment.stretch });
+            springs.push_back({ segment.width - segment.widthOffset, segment.stretch });
     }
     const qreal force = spacing4SpringForce(springs, targetWidth - plan.width);
     if (!(force > 0))
         return false;
     for (SpacingSegmentPlan4& segment : plan.segments) {
         if (!segment.ignored && segment.stretch > 0)
-            segment.width = std::max(segment.width, force * segment.stretch);
+            segment.width = std::max(segment.width - segment.widthOffset, force * segment.stretch) + segment.widthOffset;
     }
     qreal movement = 0;
     for (SpacingMeasurePlan4& measure : plan.measures) {

@@ -1846,3 +1846,31 @@ Apply v0.61 after v0.60 and run tst_spacing/tst_beam. No visual recapture is
 needed. Next integrate explicit cross-stem geometry and fixed displacement
 with the planner's reconstruction/justification, then require actual plan
 application for X1. Rest positioning and the centered-beam case stay queued.
+
+## v0.62 WIP: preserve fixed spacing during spring expansion
+
+The user reports v0.61 compilation and mtests passing. Save the spring dependency
+as a separate recoverable stage before connecting cross-staff geometry.
+
+Add a zero-default widthOffset field to SpacingSegmentPlan4. The per-measure
+minimum-width solver and whole-system justification both subtract this fixed
+signed value before solving flexible widths, then restore it unchanged.
+Reconstruction continues to use total widths. See the appended audit section
+for the pinned Studio routines and remaining integration order.
+
+Add fixedOffsetPlan with hand-solved floor/expansion cases for zero, positive
+and mixed-sign offsets, exact target and position reconstruction, invalid
+input preserving output, and no writes to native score positions. All prior
+context, planner-boundary and default-off checks remain intact.
+
+Files changed: spacingplan4.h/.cpp, tst_spacing.cpp, this guide and the cross-
+staff audit. Local moc/C++11 debug/NDEBUG syntax checks pass. Actual spring
+function-body checks with controlled measures cover 5,000 signed-offset plans
+against an independent bisection solution, plus minimum-width reflow and atomic
+failure. The earlier 10,000 zero-offset source-placement comparisons also pass.
+Full Qt 5.9 mtests remain for the user's build. No new score files are needed.
+
+Apply v0.62 after v0.61 and run tst_spacing/tst_beam. No rendering change is
+expected because production plans still carry zero offsets and retain the
+cross-staff guard. Next connect stem constraints, context offsets and final
+placement, then require X1 full-plan application and request visual comparison.
