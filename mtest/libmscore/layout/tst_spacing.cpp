@@ -1255,6 +1255,10 @@ void TestSpacing::polyrhythmInputs_data()
       QTest::newRow("accidentals-natural-studio-beams") << QString("v0.54-spacing-polyrhythm-accidentals-natural.mscx") << true << true;
       QTest::newRow("accidentals-justified-legacy-beams") << QString("v0.54-spacing-polyrhythm-accidentals.mscx") << false << false;
       QTest::newRow("accidentals-justified-studio-beams") << QString("v0.54-spacing-polyrhythm-accidentals.mscx") << false << true;
+      QTest::newRow("seconds-natural-legacy-beams") << QString("v0.55-spacing-polyrhythm-seconds-natural.mscx") << true << false;
+      QTest::newRow("seconds-natural-studio-beams") << QString("v0.55-spacing-polyrhythm-seconds-natural.mscx") << true << true;
+      QTest::newRow("seconds-justified-legacy-beams") << QString("v0.55-spacing-polyrhythm-seconds.mscx") << false << false;
+      QTest::newRow("seconds-justified-studio-beams") << QString("v0.55-spacing-polyrhythm-seconds.mscx") << false << true;
       }
 
 void TestSpacing::polyrhythmInputs()
@@ -1262,7 +1266,8 @@ void TestSpacing::polyrhythmInputs()
       QFETCH(QString, file);
       QFETCH(bool, natural);
       QFETCH(bool, modernBeams);
-      const bool accidentals = file.startsWith("v0.54-");
+      const bool seconds = file.startsWith("v0.55-");
+      const bool accidentals = seconds || file.startsWith("v0.54-");
       MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
       score->setStyleValue(Sid::beamLayout4, modernBeams);
@@ -1305,21 +1310,32 @@ void TestSpacing::polyrhythmInputs()
                         QVERIFY(cr->isChord());
                         if (accidentals) {
                               const Chord* chord = toChord(cr);
-                              QCOMPARE(static_cast<int>(chord->notes().size()), 1);
-                              const Note* note = chord->notes().front();
+                              QCOMPARE(static_cast<int>(chord->notes().size()), seconds ? 2 : 1);
                               const int pitches[] = { 77, 65, 53, 41 };
                               const int alterations[] = { 1, 0, -1, 0 };
                               const int spellings[] = { Tpc::TPC_F_S, Tpc::TPC_F, Tpc::TPC_F_B, Tpc::TPC_F };
-                              QCOMPARE(note->pitch(), pitches[v] + alterations[n % 4]);
-                              QCOMPARE(note->tpc(), spellings[n % 4]);
-                              QCOMPARE(note->pitch() % 12, tpc2pitch(note->tpc()));
-                              QCOMPARE(tpc2step(note->tpc()), tpc2step(Tpc::TPC_F));
-                              if (n == 0 || n == 2) {
-                                    QVERIFY(note->accidental());
-                                    QCOMPARE(static_cast<int>(note->accidental()->accidentalType()),
-                                          static_cast<int>(n == 0 ? AccidentalType::SHARP : AccidentalType::FLAT));
+                              int matched = 0;
+                              int mirrored = 0;
+                              for (const Note* note : chord->notes()) {
+                                    mirrored += note->mirror();
+                                    const int offset = note->pitch() - pitches[v] - alterations[n % 4];
+                                    QVERIFY(offset == 0 || (seconds && offset == 2));
+                                    const int bit = offset == 0 ? 1 : 2;
+                                    QVERIFY(!(matched & bit));
+                                    matched |= bit;
+                                    const int secondSpellings[] = { Tpc::TPC_G_S, Tpc::TPC_G, Tpc::TPC_G_B, Tpc::TPC_G };
+                                    QCOMPARE(note->tpc(), offset == 0 ? spellings[n % 4] : secondSpellings[n % 4]);
+                                    QCOMPARE(note->pitch() % 12, tpc2pitch(note->tpc()));
+                                    QCOMPARE(tpc2step(note->tpc()), tpc2step(offset == 0 ? Tpc::TPC_F : Tpc::TPC_G));
+                                    if (n == 0 || n == 2) {
+                                          QVERIFY(note->accidental());
+                                          QCOMPARE(static_cast<int>(note->accidental()->accidentalType()),
+                                                static_cast<int>(n == 0 ? AccidentalType::SHARP : AccidentalType::FLAT));
+                                          }
+                                    signs += note->accidental() != nullptr;
                                     }
-                              signs += note->accidental() != nullptr;
+                              QCOMPARE(matched, seconds ? 3 : 1);
+                              if (seconds) QVERIFY(mirrored > 0);
                               }
                         QVERIFY(seg.rtick() == elapsed);
                         Fraction duration;

@@ -1560,3 +1560,45 @@ the accidental cycle should include ordinary sharps, naturals and flats.
 Resolve any demonstrated pair-floor difference before adding chord seconds
 and unisons. No production layout code changes in this checkpoint; the
 registered centered-beam issue stays deferred.
+
+## v0.55: chord seconds at irregular multi-voice onsets
+
+The user reports full mtests passing after v0.54. Its corrected screenshots
+show the intended ordinary sharp/natural/flat cycle on constant staff positions.
+Natural width and justified spacing look close to 4.7.5, with no obvious
+accidental collisions at the supplied scale. This is visual acceptance of A1,
+not a claim of exact numeric equality or complete accidental-packing parity.
+
+Add C1 in two files, both with experimental spacing and beams enabled:
+
+- v0.55-spacing-polyrhythm-seconds-natural.mscx
+- v0.55-spacing-polyrhythm-seconds.mscx
+
+Keep every P3 rhythmic stream and A1 pitch/spelling. Add the corresponding G
+above each F, with the same alteration: F-sharp/G-sharp, F/G, F-flat/G-flat,
+F/G. This gives two-note seconds under up/down stems in all four voices.
+The natural control exercises displaced notehead and two-accidental footprints;
+the justified control adds system expansion to those same constraints.
+No explicit notehead displacement or accidental offsets are stored in the
+scores. Evolution still handles packing within each chord, so differences in
+those local offsets should be distinguished from inter-segment spacing.
+
+Extend polyrhythmInputs under both beam settings. Check exactly one F and one
+G per chord without depending on note-vector ordering, source spelling/MIDI
+agreement, first sharp and first flat signs, and actual mirrored noteheads.
+Retain rational onsets/durations, full-plan eligibility and actual application,
+repeat layout and legacy-off restoration. The earlier plain-note and A1 rows
+remain. The two new files differ from A1 only in titles/labels and added notes.
+
+Files changed: tst_spacing.cpp, this guide and the two C1 scores. Local checks
+cover original rhythmic/settings preservation, all added pitch/spelling pairs
+against the source pitch functions, moc/C++11 debug/NDEBUG syntax, whitespace
+and parent-index patch application. Full Qt 5.9 mtests and visual comparison
+remain for the user's build. No production engraving code changes here.
+
+Apply v0.55 after v0.54. Compare natural C1 first, then justified C1 in 37E and
+4.7.5. Inspect the seconds' opposing noteheads, accidental columns, neighboring
+stems and shared beat boundary. Use an exact test failure reason or a visible
+pair discrepancy to choose a production change. Next prepare unisons between
+voices as a separate control; then rests/sustained voices and cross-staff.
+The centered cross-staff beam reproduction remains deferred.
