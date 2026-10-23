@@ -1954,3 +1954,29 @@ audit and the two new scores. Local moc/C++11 debug/NDEBUG syntax and fixture
 structure checks pass. Full Qt 5.9 mtests and X2 visual comparison are pending.
 Apply after v0.64 and run tst_spacing/tst_beam. Next audit interleaved moving
 voices and nonadjacent beam-neighbor constraints before widening that guard.
+
+## v0.66: reverse-run control before moving companions
+
+The user reports v0.65 tests passing; natural and justified X2 screenshots
+look close to Studio 4.7.5. Add X3, lower/lower/upper/upper, reversing X2's
+staff moves and pitches while preserving rhythm, held voices and styles.
+This exposes the positive fixed offset and up-to-down minimum stem floor;
+X2's only staff change uses a negative offset and no such floor.
+
+New files, with both experimental styles enabled:
+- v0.66-spacing-cross-staff-reverse-runs-natural.mscx
+- v0.66-spacing-cross-staff-reverse-runs.mscx
+
+Extend crossStaffPlanBoundary under both beam settings to require actual
+placement, one fixed offset, the explicit stem-distance floor, repeat stability,
+forced-direction rejection and legacy-off restoration. No production algorithm
+changes. Files changed: tst_spacing.cpp, these two scores, guide and audit.
+Local syntax/fixture/patch checks precede delivery; full mtests and rendering
+remain pending. Apply after v0.65 and compare natural X3 before justified X3.
+
+Next audit moving companions and nonadjacent beam neighbors. Pinned Studio's
+minStemDistOnNonAdjacentCross finds the preceding chord on the beam even when
+another voice inserts a segment between the two chords; it enforces stem-center
+separation plus stem padding for up-to-down neighbors. Signed advance adjustment
+is a separate adjacent-segment rule. Our current held-voice scope avoids that
+interleaving, so do not remove its guard without adapting both paths.

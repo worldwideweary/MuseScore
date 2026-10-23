@@ -1579,6 +1579,8 @@ void TestSpacing::crossStaffPlanBoundary_data()
             QTest::newRow(qPrintable("justified" + suffix)) << QString("v0.60-spacing-cross-staff.mscx") << beams;
             QTest::newRow(qPrintable("runs-natural" + suffix)) << QString("v0.65-spacing-cross-staff-runs-natural.mscx") << beams;
             QTest::newRow(qPrintable("runs-justified" + suffix)) << QString("v0.65-spacing-cross-staff-runs.mscx") << beams;
+            QTest::newRow(qPrintable("reverse-runs-natural" + suffix)) << QString("v0.66-spacing-cross-staff-reverse-runs-natural.mscx") << beams;
+            QTest::newRow(qPrintable("reverse-runs-justified" + suffix)) << QString("v0.66-spacing-cross-staff-reverse-runs.mscx") << beams;
             }
       }
 
@@ -1586,8 +1588,12 @@ void TestSpacing::crossStaffPlanBoundary()
       {
       QFETCH(QString, file);
       QFETCH(bool, modernBeams);
-      const bool runs = file.startsWith("v0.65-");
-      const auto expectedStaff = [runs](int i) { return runs ? i / 2 : i % 2; };
+      const bool reverse = file.startsWith("v0.66-");
+      const bool runs = reverse || file.startsWith("v0.65-");
+      const auto expectedStaff = [runs, reverse](int i) {
+            const int staff = runs ? i / 2 : i % 2;
+            return reverse ? 1 - staff : staff;
+            };
       MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
       score->setStyleValue(Sid::beamLayout4, modernBeams);
