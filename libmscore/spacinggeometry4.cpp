@@ -17,13 +17,15 @@
 #include "staff.h"
 #include "stem.h"
 #include "stemslash.h"
+#include <algorithm>
+#include <functional>
 
 namespace Ms {
 
 bool SpacingShape4::complete() const
 {
     for (const SpacingShapeElement4& e : elements) {
-        if (e.identity != SpacingIdentity4::ITEM || !e.item)
+        if (e.identity != SpacingIdentity4::ITEM || !e.item || !e.aggregateOwners.empty())
             return false;
     }
     return true;
@@ -52,6 +54,8 @@ SpacingShape4 spacingResolveShape4(const Shape& native, const SpacingShape4& can
         bool found = false;
         bool unknown = false;
         bool ambiguous = false;
+        bool allAggregates = true;
+        std::vector<const Element*> aggregateOwners;
         size_t matches = 0;
         const Element* owner = nullptr;
         SpacingIdentity4 identity = SpacingIdentity4::UNCLASSIFIED;
@@ -62,9 +66,15 @@ SpacingShape4 spacingResolveShape4(const Shape& native, const SpacingShape4& can
                 continue;
             found = true;
             ++matches;
+            allAggregates = allAggregates && candidate.identity == SpacingIdentity4::LEGACY_SPACER
+                && candidate.item && candidate.aggregateOwners.empty();
+            if (candidate.identity == SpacingIdentity4::LEGACY_SPACER && candidate.item
+                && std::find(aggregateOwners.begin(), aggregateOwners.end(), candidate.item) == aggregateOwners.end())
+                aggregateOwners.push_back(candidate.item);
             if (candidate.identity == SpacingIdentity4::AMBIGUOUS)
                 ambiguous = true;
-            else if ((candidate.identity != SpacingIdentity4::ITEM && candidate.identity != SpacingIdentity4::LEGACY_SPACER) || !candidate.item)
+            else if ((candidate.identity != SpacingIdentity4::ITEM && candidate.identity != SpacingIdentity4::LEGACY_SPACER)
+                     || !candidate.item || !candidate.aggregateOwners.empty())
                 unknown = true;
             else if (owner && (owner != candidate.item || identity != candidate.identity))
                 ambiguous = true;
@@ -81,7 +91,14 @@ SpacingShape4 spacingResolveShape4(const Shape& native, const SpacingShape4& can
                 ++nativeMatches;
         }
         unknown = unknown || matches < nativeMatches;
-        if (ambiguous)
+        if (allAggregates && !unknown && matches == nativeMatches && aggregateOwners.size() > 1) {
+            // Multi-voice Chord::shape bounds can coincide exactly. Preserve
+            // the complete producer set; projection must validate every owner.
+            std::sort(aggregateOwners.begin(), aggregateOwners.end(), std::less<const Element*>());
+            resolved.identity = SpacingIdentity4::LEGACY_SPACER;
+            resolved.aggregateOwners = aggregateOwners;
+        }
+        else if (ambiguous)
             resolved.identity = SpacingIdentity4::AMBIGUOUS;
         else if (found && !unknown && owner) {
             resolved.item = owner;

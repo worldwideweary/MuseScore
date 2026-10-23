@@ -1392,3 +1392,78 @@ Next validation sequence:
 Apply v0.51 after v0.50.1 and run tst_spacing/tst_beam. Compare the two new
 files in both applications. Preserve version prefixes, enabled comparison
 settings, independent beam/spacing switches and exact legacy-off restoration.
+
+
+## v0.52: retain proven shared aggregate producers in multi-voice geometry
+
+The user's v0.51 images expose a clear remaining issue in natural P3: 37E is
+much wider and has uneven gaps inside the four streams, whereas Studio 4.7.5
+is compact. Do not proceed to accidental packing while this control differs.
+The user did not separately confirm v0.51 mtest results in this message; full
+runtime validation remains pending.
+
+A concrete adapter fallback exists when two voices emit identical legacy
+Chord::shape general-spacing rectangles. Their notes can occupy different staff
+positions while their aggregate horizontal bounds coincide at the same y.
+Previously the resolver classified different owners at the same rectangle as
+ambiguous, including these already identified legacy bounds. Projection then
+correctly rejected the unresolved whole shape. This checkpoint addresses that
+provenance gap; the user's build must verify that it removes the observed P3
+fallback rather than assume every discrepancy has the same cause.
+
+SpacingShapeElement4 now has aggregateOwners for this one case. Keep item null
+rather than pick an arbitrary owner. Retain the complete, sorted producer set
+only if all matching candidates are known legacy aggregates, there are at least
+two distinct owners, no unknown/mixed metadata is present, and native/candidate
+multiplicities match exactly. Preserve every native rectangle and its order.
+Direct-item ambiguity and mixed-role collisions still fall back. Candidate
+ordering and translation must preserve the same producer set.
+
+The separate collision projection validates every aggregate owner: supported
+chord notes (or a barline), plus an identified component footprint for each.
+Unknown, unsupported, absent, null, duplicate or contradictory owners reject the
+whole query without publishing output. Full snapshots still contain the legacy
+bounds; only the validated collision projection excludes them. No global native
+Shape, skyline or note/accidental geometry is changed.
+
+Strengthen polyrhythmInputs: all P1/P2/P3 systems must now build a full plan and
+the actual system/segment geometry must match its natural/justified result.
+The prior input/duration, repeatability and option-off checks remain. Report the
+planner's rejection reason if another unsupported context is encountered.
+Extend geometryResolution with shared producers, ordering, missing footprint,
+count mismatch and unknown-producer cases. Update geometryInputs to recognize
+the explicit multi-owner legacy metadata rather than require a single item.
+Reuse the unchanged v0.51 overview and natural comparison scores.
+
+### Deferred centered cross-staff beam report
+
+Preserve the user's original test-grandstaff.mscz unchanged as
+v0.52-beam-centered-grandstaff.mscz. This is a queued reproduction, not a new
+current-stage visual comparison or a change to beam geometry. The first measure
+has a lower-source-staff beam moved partly to the upper staff, with flats and a
+low A-flat moved upward in staff assignment. Several chords have explicit up
+stem directions in the supplied file. The user reports that with the centered
+beam, 4.7.5 places the beam below that low note / changes the effective stem
+side; 37E with experimental beams on puts the beam high and flat, while off has
+a slight slant. The screenshots show the substantial placement difference.
+Investigate cross-staff anchor placement and effective stem-side handling later;
+do not assume a cause or change the score's stem settings to disguise it.
+The user explicitly asked to register this without diverting the spacing work.
+
+Files changed: spacinggeometry4.h/.cpp, spacingcollision4.cpp, tst_spacing.cpp,
+this guide and the preserved v0.52 beam reproduction. Local moc/C++11 syntax
+checks pass in debug/NDEBUG modes. Isolated actual projection checks with
+controlled item/policy inputs verify every-owner footprints and atomic fallback.
+The actual resolver regression harness covers 100,000 direct-identity cases,
+plus shared producer counts/order/translation and mixed/unknown-role rejection.
+These are local adapter checks; they do not replace live-score execution.
+Whitespace, binary fixture identity and parent-index apply checks are required
+before delivery. Full tst_spacing/tst_beam and visual confirmation remain for
+the user's Qt build.
+
+Apply v0.52 after v0.51. Rebuild and run tst_spacing/tst_beam. Recompare the same
+v0.51 natural P3 first, then the justified overview. If the plan is still
+rejected, use its exact test failure reason for the next adapter stage. If it
+is applied but gaps still differ, inspect active pair floors and rhythmic
+advances before adding accidental/rest/cross-staff variants. The registered
+beam issue stays deferred, and default-off restoration remains required.

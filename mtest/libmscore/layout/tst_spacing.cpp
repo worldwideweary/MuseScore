@@ -361,6 +361,46 @@ void TestSpacing::geometryResolution()
       SpacingShape4 orphan;
       orphan.elements.push_back(spacer);
       QVERIFY(!spacingCollisionProjection4(table, orphan, score->spatium(), projected));
+      // Two voices can emit the same legacy aggregate. Preserve all owners
+      // only when native/candidate multiplicities match exactly.
+      Chord secondContext(score);
+      secondContext.setParent(context.parent());
+      secondContext.setTrack(1);
+      secondContext.setDurationType(TDuration::DurationType::V_EIGHTH);
+      Note* secondNote = new Note(score);
+      secondContext.add(secondNote);
+      secondNote->setbbox(QRectF(2, 8, 3, 4));
+      Shape sharedNative;
+      sharedNative.add(spacer.rect);
+      sharedNative.add(spacer.rect);
+      SpacingShape4 owners;
+      owners.elements.push_back(spacer);
+      SpacingShapeElement4 otherSpacer = spacer;
+      otherSpacer.item = &secondContext;
+      owners.elements.push_back(otherSpacer);
+      SpacingShape4 shared = spacingResolveShape4(sharedNative, owners);
+      for (const SpacingShapeElement4& entry : shared.elements) {
+            QCOMPARE(int(entry.identity), int(SpacingIdentity4::LEGACY_SPACER));
+            QVERIFY(!entry.item);
+            QCOMPARE(static_cast<int>(entry.aggregateOwners.size()), 2);
+            }
+      std::reverse(owners.elements.begin(), owners.elements.end());
+      const SpacingShape4 permuted = spacingResolveShape4(sharedNative, owners);
+      QVERIFY(shared.elements.front().aggregateOwners == permuted.elements.front().aggregateOwners);
+      aggregate = tagged;
+      aggregate.elements.push_back(SpacingShapeElement4(secondNote->bbox(), secondNote));
+      aggregate.elements.insert(aggregate.elements.end(), shared.elements.begin(), shared.elements.end());
+      QVERIFY(spacingCollisionProjection4(table, aggregate, score->spatium(), projected));
+      QCOMPARE(static_cast<int>(projected.elements.size()), 4);
+      aggregate.elements.erase(aggregate.elements.begin() + tagged.elements.size());
+      QVERIFY(!spacingCollisionProjection4(table, aggregate, score->spatium(), projected));
+      QCOMPARE(static_cast<int>(projected.elements.size()), 4); // missing owner's footprint cannot be discarded
+      sharedNative.add(spacer.rect);
+      shared = spacingResolveShape4(sharedNative, owners);
+      QVERIFY(shared.elements.front().identity != SpacingIdentity4::LEGACY_SPACER);
+      owners.elements.push_back(SpacingShapeElement4(spacer.rect));
+      shared = spacingResolveShape4(sharedNative, owners);
+      QVERIFY(shared.elements.front().identity != SpacingIdentity4::LEGACY_SPACER);
       }
       delete score;
       }
@@ -407,7 +447,15 @@ void TestSpacing::geometryInputs()
                               QCOMPARE(e.rect, static_cast<const QRectF&>(native[staffIdx][i]));
                               QCOMPARE(static_cast<const QRectF&>(seg.staffShape(staffIdx)[i]), static_cast<const QRectF&>(native[staffIdx][i]));
                               if (e.identity == SpacingIdentity4::LEGACY_SPACER) {
-                                    QVERIFY(e.item && (e.item->isChord() || e.item->isBarLine()));
+                                    if (e.item) {
+                                          QVERIFY(e.aggregateOwners.empty());
+                                          QVERIFY(e.item->isChord() || e.item->isBarLine());
+                                          }
+                                    else {
+                                          QVERIFY(e.aggregateOwners.size() > 1);
+                                          for (const Element* owner : e.aggregateOwners)
+                                                QVERIFY(owner && (owner->isChord() || owner->isBarLine()));
+                                          }
                                     continue;
                                     }
                               if (e.identity != SpacingIdentity4::ITEM) {
@@ -1262,6 +1310,17 @@ void TestSpacing::polyrhythmInputs()
                         }
                   QCOMPARE(n, counts[row][v]);
                   QVERIFY(elapsed == Fraction(1, 2));
+                  }
+            SpacingPlan4 applied;
+            QString reason;
+            QVERIFY2(buildSpacingPlan4(m->system(), applied, &reason), qPrintable(reason));
+            if (!natural)
+                  QVERIFY(justifySpacingPlan4(applied, score->styleD(Sid::pagePrintableWidth) * DPI));
+            QVERIFY(qAbs(m->system()->width() - applied.width) < 1e-6);
+            for (const SpacingSegmentPlan4& entry : applied.segments) {
+                  if (entry.ignored) continue;
+                  QVERIFY(qAbs(m->x() + entry.segment->x() - entry.x) < 1e-6);
+                  QVERIFY(qAbs(entry.segment->width() - entry.width) < 1e-6);
                   }
             // Verify the multi-voice rhythmic branch against the pinned
             // duration formula, including the preceding non-adjacent onset.

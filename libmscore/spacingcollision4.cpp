@@ -345,35 +345,54 @@ bool spacingCollisionProjection4(const SpacingPaddingTable4& table, const Spacin
     SpacingShape4 projected;
     if (!table.score() || !(shapeSpatium > 0) || !std::isfinite(shapeSpatium))
         return false;
+    const auto supportedAggregateOwner = [&](const Element* owner) {
+        if (!owner)
+            return false;
+        if (owner->isChord()) {
+            const Chord* chord = toChord(owner);
+            if (chord->notes().empty())
+                return false;
+            for (const Note* note : chord->notes()) {
+                SpacingPairPolicy4 policy;
+                if (!spacingPairPolicy4(table, note, note, shapeSpatium, policy))
+                    return false;
+            }
+        }
+        else if (!owner->isBarLine())
+            return false;
+        // Every producer needs its own identified component footprint.
+        for (const SpacingShapeElement4& component : native.elements) {
+            if (component.identity != SpacingIdentity4::ITEM || !component.item)
+                continue;
+            if (component.item == owner || (component.item->isNote() && toNote(component.item)->chord() == owner))
+                return true;
+        }
+        return false;
+    };
     for (const SpacingShapeElement4& e : native.elements) {
-        if (!e.item || !validRect4(e.rect))
+        if (!validRect4(e.rect))
             return false;
         if (e.identity == SpacingIdentity4::LEGACY_SPACER) {
-            if (e.item->isChord()) {
-                const Chord* chord = toChord(e.item);
-                if (chord->notes().empty())
+            if (e.item) {
+                if (!e.aggregateOwners.empty() || !supportedAggregateOwner(e.item))
                     return false;
-                for (const Note* note : chord->notes()) {
-                    SpacingPairPolicy4 policy;
-                    if (!spacingPairPolicy4(table, note, note, shapeSpatium, policy))
+            }
+            else {
+                if (e.aggregateOwners.size() < 2)
+                    return false;
+                for (size_t i = 0; i < e.aggregateOwners.size(); ++i) {
+                    if (!supportedAggregateOwner(e.aggregateOwners[i]))
                         return false;
+                    for (size_t j = 0; j < i; ++j) {
+                        if (e.aggregateOwners[i] == e.aggregateOwners[j])
+                            return false;
+                    }
                 }
             }
-            else if (!e.item->isBarLine())
-                return false;
-            // Require an identified footprint of this owner (or its notes).
-            // A tagged aggregate alone is not evidence of supported geometry.
-            bool footprint = false;
-            for (const SpacingShapeElement4& component : native.elements) {
-                if (component.identity != SpacingIdentity4::ITEM || !component.item)
-                    continue;
-                if (component.item == e.item || (component.item->isNote() && toNote(component.item)->chord() == e.item))
-                    footprint = true;
-            }
-            if (!footprint)
-                return false;
             continue;
         }
+        if (!e.item || !e.aggregateOwners.empty())
+            return false;
         SpacingPairPolicy4 policy;
         if (e.identity != SpacingIdentity4::ITEM || !spacingPairPolicy4(table, e.item, e.item, shapeSpatium, policy))
             return false;

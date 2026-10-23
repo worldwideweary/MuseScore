@@ -20,6 +20,9 @@ struct SpacingShapeElement4 {
     QRectF rect;
     const Element* item;
     SpacingIdentity4 identity;
+    // For coincident known aggregates only: every native producer must be
+    // accounted for exactly. item stays null rather than choosing one owner.
+    std::vector<const Element*> aggregateOwners;
     SpacingShapeElement4(const QRectF& r, const Element* owner = nullptr)
         : rect(r), item(owner), identity(owner ? SpacingIdentity4::ITEM : SpacingIdentity4::UNCLASSIFIED) {}
 };
@@ -35,7 +38,8 @@ struct SpacingShape4 {
 };
 
 // Preserve every native rectangle, in order. Ownership is resolved only where
-// all matching candidates agree. Unknown/ambiguous rectangles require fallback.
+// all matching candidates agree. Coincident legacy aggregates may retain a
+// complete producer set when multiplicities match. Other ambiguity falls back.
 SpacingShape4 spacingResolveShape4(const Shape&, const SpacingShape4& candidates);
 SpacingShape4 spacingElementShape4(const Element*);
 SpacingShape4 spacingStaffShape4(const Segment*, int staffIdx);
