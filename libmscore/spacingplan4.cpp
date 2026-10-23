@@ -4,6 +4,7 @@
 #include "spacinggeometry4.h"
 #include "spacingcollision4.h"
 #include "spacinglayout4.h"
+#include "gracespacing4.h"
 #include "chord.h"
 #include "beam.h"
 #include "measure.h"
@@ -137,7 +138,40 @@ bool prepareCrossStaff4(System* system, CrossStaffGeometry4& result, QString* re
     return true;
 }
 
-bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometry4& geometry, const CrossStaffGeometry4& cross)
+// Validate all groups and their published positions before admitting any
+// grace footprint. Failure leaves the caller's context untouched.
+bool prepareGraces4(System* system, SpacingGraceContext4& result, QString* reason)
+{
+    SpacingGraceContext4 prepared;
+    for (MeasureBase* mb : system->measures()) {
+        if (!mb->isMeasure())
+            continue; // The ordinary planner rejects frames itself.
+        for (const Segment& segment : toMeasure(mb)->segments()) {
+            if (!active4(&segment) || !segment.isChordRestType())
+                continue;
+            for (const Element* item : segment.elist()) {
+                if (!item || !item->isChord() || toChord(item)->graceNotes().empty())
+                    continue;
+                const Chord* main = toChord(item);
+                GraceBeforePlan4 plan;
+                if (!buildGraceBeforePlan4(main, plan, reason))
+                    return false;
+                for (const GracePosition4& p : plan.positions) {
+                    if (std::abs(p.chord->x() - p.x) > 1e-6 || !std::isfinite(p.chord->x())) {
+                        if (reason) *reason = "Grace positions must be prepared before system spacing";
+                        return false;
+                    }
+                }
+                prepared.mains.push_back(main);
+            }
+        }
+    }
+    result = prepared;
+    return true;
+}
+
+bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometry4& geometry,
+                    const CrossStaffGeometry4& cross, const SpacingGraceContext4& graces)
 {
     for (int staffIdx = 0; staffIdx < segment->score()->nstaves(); ++staffIdx) {
         const SpacingShape4 native = spacingStaffShape4(segment, staffIdx);
@@ -151,7 +185,7 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
                 break;
             }
         }
-        if (!spacingCollisionProjection4(table, native, sp, projected))
+        if (!spacingCollisionProjection4(table, native, sp, projected, &graces))
             return false;
         for (const auto& pair : cross.chords) {
             const CrossStaffChord4& e = pair.second;
@@ -193,7 +227,7 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
 
 bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, const Geometry4& first,
                const SpacingSegmentPlan4& b, const Geometry4& second, Measure* firstMeasure,
-               qreal squeeze, qreal& result, const CrossStaffGeometry4& cross)
+               qreal squeeze, qreal& result, const CrossStaffGeometry4& cross, const SpacingGraceContext4& graces)
 {
     qreal distance = 0;
     const bool header = headerType4(a.segment) && a.segment->rtick().isZero()
@@ -205,7 +239,7 @@ bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, 
             break;
         }
         qreal d = 0;
-        if (!spacingShapeDistance4(table, first.staff[st], second.staff[st], sp, squeeze, d))
+        if (!spacingShapeDistance4(table, first.staff[st], second.staff[st], sp, squeeze, d, &graces))
             return false;
         distance = std::max(distance, d);
     }
@@ -418,6 +452,8 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
     }
     CrossStaffGeometry4 cross;
     if (!prepareCrossStaff4(system, cross, reason)) return false;
+    SpacingGraceContext4 graces;
+    if (!prepareGraces4(system, graces, reason)) return false;
     SpacingPlan4 plan;
     std::vector<Geometry4> geometry;
     const SpacingPaddingTable4 table(score);
@@ -459,7 +495,7 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                     if ((chord->staffMove() != 0 || (chord->beam() && chord->beam()->cross()))
                         && !cross.chords.count(chord))
                         return fail("Cross-staff geometry requires its later stem constraints");
-                    if (chord->isSmall() || !chord->graceNotes().empty())
+                    if (chord->isSmall() || (!chord->graceNotes().empty() && !graces.contains(chord)))
                         return fail("Cue and grace-note rhythm requires a later adapter");
                     for (const Note* note : chord->notes()) {
                         SpacingPairPolicy4 policy;
@@ -467,7 +503,7 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                             return fail("Unadapted note visibility, cue or decoration context");
                     }
                 }
-                if (!cacheGeometry4(&segment, table, g, cross))
+                if (!cacheGeometry4(&segment, table, g, cross, graces))
                     return fail(QString("Unadapted geometry at tick %1").arg(segment.tick().ticks()));
                 if (segment.isChordRestType()) {
                     if (!(segment.ticks() > Fraction(0, 1)))
@@ -526,7 +562,7 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                     ++crCount;
                 qreal distance = 0;
                 if (!distance4(table, previous, geometry[j], current, geometry[i], plan.measures.front().measure,
-                               options.squeezeFactor, distance, cross))
+                               options.squeezeFactor, distance, cross, graces))
                     return fail("Unsupported segment distance");
                 x = std::max(x, previous.x + distance);
                 if (x > cursor) {

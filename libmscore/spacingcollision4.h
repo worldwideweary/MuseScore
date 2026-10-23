@@ -5,6 +5,7 @@
 #include <QtGlobal>
 #include <QRectF>
 #include <array>
+#include <vector>
 
 namespace Ms {
 class Element;
@@ -30,11 +31,19 @@ public:
     bool padding(ElementType first, ElementType second, qreal& result) const;
 };
 
+// Borrowed roots validated by buildGraceBeforePlan4 for this spacing pass.
+// An empty/null context retains ordinary grace rejection. Do not retain across
+// edits/layout; preparing a context does not itself move any score items.
+struct SpacingGraceContext4 {
+    std::vector<const Chord*> mains;
+    bool contains(const Chord* chord) const;
+};
+
 // False means this context is not covered: output is left untouched.
 // shapeSpatium is the first shape's staff-scaled spatium; table padding uses
 // score spatium and item magnification, as in Studio. They are not interchangeable.
 bool spacingPairPolicy4(const SpacingPaddingTable4&, const Element* first, const Element* second,
-                        qreal shapeSpatium, SpacingPairPolicy4& result);
+                        qreal shapeSpatium, SpacingPairPolicy4& result, const SpacingGraceContext4* = nullptr);
 // Scoped grace-group query. Both items must belong to main or its before-graces.
 // Does not broaden the ordinary collision projection/planner's admission rules.
 bool spacingGracePairPolicy4(const SpacingPaddingTable4&, const Chord* main,
@@ -45,12 +54,12 @@ bool spacingGracePairPolicy4(const SpacingPaddingTable4&, const Chord* main,
 qreal spacingPairDistance4(const QRectF&, const QRectF&, const SpacingPairPolicy4&,
                            qreal shapeSpatium, qreal squeezeFactor);
 bool spacingShapeDistance4(const SpacingPaddingTable4&, const SpacingShape4&, const SpacingShape4&,
-                           qreal shapeSpatium, qreal squeezeFactor, qreal& result);
+                           qreal shapeSpatium, qreal squeezeFactor, qreal& result, const SpacingGraceContext4* = nullptr);
 // A separate, validated view for the new placement pass. Native snapshots keep
 // all rectangles; only producer-tagged redundant legacy bounds are excluded.
 // Proven shared noteheads expand to all owners so pair queries retain every
 // voice's policy; unknown ownership or unsupported shared types reject the view.
 bool spacingCollisionProjection4(const SpacingPaddingTable4&, const SpacingShape4&,
-                                 qreal shapeSpatium, SpacingShape4& result);
+                                 qreal shapeSpatium, SpacingShape4& result, const SpacingGraceContext4* = nullptr);
 }
 #endif

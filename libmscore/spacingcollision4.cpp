@@ -252,9 +252,9 @@ static bool pairPolicy4(const SpacingPaddingTable4& table, const Element* first,
             policy.padding = std::max(policy.padding, table.score()->styleP(Sid::minNoteDistance));
     }
     policy.padding *= scaling;
-    if (allowGrace && first->isNote() && second->isNote()) {
+    if (allowGrace && first->isNote() && (second->isNote() || second->isRest())) {
         const bool a = toNote(first)->chord()->isGrace();
-        const bool b = toNote(second)->chord()->isGrace();
+        const bool b = second->isNote() && toNote(second)->chord()->isGrace();
         if (a || b)
             policy.padding = std::max(policy.padding, (a && b ? 0.3 : 0.45) * table.score()->spatium());
     }
@@ -298,10 +298,30 @@ static bool pairPolicy4(const SpacingPaddingTable4& table, const Element* first,
     return true;
 }
 
-bool spacingPairPolicy4(const SpacingPaddingTable4& table, const Element* first, const Element* second,
-                        qreal shapeSpatium, SpacingPairPolicy4& result)
+bool SpacingGraceContext4::contains(const Chord* chord) const
 {
-    return pairPolicy4(table, first, second, shapeSpatium, result, false);
+    return std::find(mains.begin(), mains.end(), chord) != mains.end();
+}
+
+bool spacingPairPolicy4(const SpacingPaddingTable4& table, const Element* first, const Element* second,
+                        qreal shapeSpatium, SpacingPairPolicy4& result, const SpacingGraceContext4* context)
+{
+    bool hasGrace = false;
+    for (const Element* item : {first, second}) {
+        for (; item; item = item->parent()) {
+            if (!item->isChord())
+                continue;
+            const Chord* chord = toChord(item);
+            if (chord->isGrace()) {
+                if (!context || !chord->isGraceBefore() || !chord->parent() || !chord->parent()->isChord()
+                    || !context->contains(toChord(chord->parent())))
+                    return false;
+                hasGrace = true;
+            }
+            break;
+        }
+    }
+    return pairPolicy4(table, first, second, shapeSpatium, result, hasGrace);
 }
 
 bool spacingGracePairPolicy4(const SpacingPaddingTable4& table, const Chord* main,
@@ -354,7 +374,7 @@ static bool validRect4(const QRectF& r)
 }
 
 bool spacingShapeDistance4(const SpacingPaddingTable4& table, const SpacingShape4& first, const SpacingShape4& second,
-                           qreal shapeSpatium, qreal squeezeFactor, qreal& result)
+                           qreal shapeSpatium, qreal squeezeFactor, qreal& result, const SpacingGraceContext4* context)
 {
     if (!table.score() || !(shapeSpatium > 0) || !std::isfinite(shapeSpatium) || !std::isfinite(squeezeFactor)
         || squeezeFactor < 0 || squeezeFactor > 1)
@@ -377,7 +397,7 @@ bool spacingShapeDistance4(const SpacingPaddingTable4& table, const SpacingShape
             if (a.rect.isNull())
                 continue;
             SpacingPairPolicy4 policy;
-            if (!spacingPairPolicy4(table, a.item, b.item, shapeSpatium, policy))
+            if (!spacingPairPolicy4(table, a.item, b.item, shapeSpatium, policy, context))
                 return false;
             distance = std::max(distance, spacingPairDistance4(a.rect, b.rect, policy, shapeSpatium, squeezeFactor));
         }
@@ -387,7 +407,7 @@ bool spacingShapeDistance4(const SpacingPaddingTable4& table, const SpacingShape
 }
 
 bool spacingCollisionProjection4(const SpacingPaddingTable4& table, const SpacingShape4& native,
-                                 qreal shapeSpatium, SpacingShape4& result)
+                                 qreal shapeSpatium, SpacingShape4& result, const SpacingGraceContext4* context)
 {
     SpacingShape4 projected;
     if (!table.score() || !(shapeSpatium > 0) || !std::isfinite(shapeSpatium))
@@ -401,7 +421,7 @@ bool spacingCollisionProjection4(const SpacingPaddingTable4& table, const Spacin
                 return false;
             for (const Note* note : chord->notes()) {
                 SpacingPairPolicy4 policy;
-                if (!spacingPairPolicy4(table, note, note, shapeSpatium, policy))
+                if (!spacingPairPolicy4(table, note, note, shapeSpatium, policy, context))
                     return false;
             }
         }
@@ -434,7 +454,7 @@ bool spacingCollisionProjection4(const SpacingPaddingTable4& table, const Spacin
                 SpacingPairPolicy4 policy;
                 // This stage admits shared noteheads only. Other coincident
                 // component types still require their own context adapter.
-                if (!item || !item->isNote() || !spacingPairPolicy4(table, item, item, shapeSpatium, policy))
+                if (!item || !item->isNote() || !spacingPairPolicy4(table, item, item, shapeSpatium, policy, context))
                     return false;
                 for (size_t j = 0; j < i; ++j) {
                     if (item == e.sharedItems[j])
@@ -468,7 +488,7 @@ bool spacingCollisionProjection4(const SpacingPaddingTable4& table, const Spacin
         if (!e.item || !e.aggregateOwners.empty())
             return false;
         SpacingPairPolicy4 policy;
-        if (e.identity != SpacingIdentity4::ITEM || !spacingPairPolicy4(table, e.item, e.item, shapeSpatium, policy))
+        if (e.identity != SpacingIdentity4::ITEM || !spacingPairPolicy4(table, e.item, e.item, shapeSpatium, policy, context))
             return false;
         projected.elements.push_back(e);
     }

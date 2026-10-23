@@ -18,7 +18,8 @@ struct GraceBeforePlan4 {
 // Uses current native component shapes, excluding legacy spacing bounds and
 // old grace positions. No DOM writes; failure leaves result untouched.
 // Chord::layoutPitched applies accepted plans before native shape/width collection.
-// The full Studio system planner still rejects grace-containing systems.
+// The system planner admits these groups only after validating their published
+// positions; unsupported grace contexts still reject the entire system plan.
 bool buildGraceBeforePlan4(const Chord*, GraceBeforePlan4&, QString* reason = nullptr);
 }
 #endif

@@ -2369,3 +2369,14 @@ check final applied positions/shapes, repeat stability, on/off restoration and
 unsupported manual-offset fallback under both beam modes. Compare internal
 G1-G4 gaps and terminal G1-G6 gaps with 4.7.5 after full mtests pass. See
 `v0.80-grace-layout-integration.md` for scope and lifecycle limitations.
+
+### v0.81 WIP: grace groups enter full system spacing
+
+Accepted ordinary before-grace groups now enter the typed full-system planner
+only after all group contexts and published positions validate. Default collision
+queries still reject graces. New `v0.81-spacing-grace-neighbors.mscx` and
+`v0.81-spacing-grace-neighbors-natural.mscx` provide N1-N6 with ordinary notes
+before and after each group; both experimental settings are on. Tests cover
+actual full-plan positions/widths, read-only compression, rejection boundaries,
+repeat stability and spacing-off restoration under both beam modes. See
+`v0.81-grace-system-spacing.md`; actual narrow-page fitting is the next stage.
