@@ -2728,7 +2728,7 @@ void TestSpacing::graceBeforePlan_data()
 void TestSpacing::graceBeforePlan()
       {
       QFETCH(bool, modernBeams);
-      MasterScore* score = readScore(DIR + "v0.78-spacing-grace-before.mscx");
+      MasterScore* score = readScore(DIR + "v0.79-spacing-grace-before.mscx");
       QVERIFY(score);
       QVERIFY(score->styleB(Sid::spacingLayout4));
       score->setStyleValue(Sid::beamLayout4, modernBeams);
@@ -2742,6 +2742,14 @@ void TestSpacing::graceBeforePlan()
             const auto graces = main->graceNotesBefore();
             QCOMPARE(graces.size(), index < 4 ? 4 : 1);
             const bool up = index < 2 || index == 4;
+            if (index < 4) {
+                  QVERIFY(graces.front()->beam());
+                  // Grace beams choose their own direction independently of
+                  // explicit per-chord stem directions in Evolution.
+                  QVERIFY(graces.front()->beam()->beamDirection() == (up ? Direction::UP : Direction::DOWN));
+                  }
+            else
+                  QVERIFY(!graces.front()->beam());
             std::vector<QPointF> native;
             for (const Chord* grace : graces) {
                   QCOMPARE(grace->up(), up);

@@ -2343,3 +2343,18 @@ experimental settings on). The new test checks final group positions, pair
 constraints, stale-position independence and rejection atomicity under both
 beam modes. Live grace layout remains unchanged until its width contribution
 and geometry lifecycle are connected. See `v0.78-grace-before-adapter.md`.
+
+### v0.79: correct down-stem grace controls
+
+The supplied Qt 5.9.9 result reports two failures in graceBeforePlan, one per
+beam mode: the expected down-stem group was up. Evolution's grace beam layout
+uses the beam's direction, defaulting to up in one voice; per-chord down stems
+alone do not force the group down. The adapter assertions for the earlier up
+controls passed, as did the existing spacing tests.
+
+Renamed the control to `v0.79-spacing-grace-before.mscx`, set explicit Beam
+StemDirection before G1-G4's first grace, and added a beam-direction assertion.
+G5/G6 remain unbeamed. Removed the new control's unrecognized title fontSize
+field. Production code is unchanged. Re-run tst_spacing and tst_beam; this is
+still a read-only adapter checkpoint with no live layout change. Next connect
+placement/extents to live layout after these controls pass.

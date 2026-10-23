@@ -56,8 +56,7 @@
         <height>10</height>
         <Text>
           <style>Title</style>
-          <fontSize>16</fontSize>
-          <text>v0.78 Before-grace controls (baseline WIP)</text>
+          <text>v0.79 Before-grace controls (baseline WIP)</text>
         </Text>
       </VBox>
       <Measure>
@@ -69,6 +68,9 @@
           <SystemText>
             <text>G1: plain contour, up</text>
           </SystemText>
+          <Beam>
+            <StemDirection>up</StemDirection>
+          </Beam>
           <Chord>
             <BeamMode>begin</BeamMode>
             <durationType>eighth</durationType>
@@ -128,6 +130,9 @@
           <SystemText>
             <text>G2: sharp/flat contour, up</text>
           </SystemText>
+          <Beam>
+            <StemDirection>up</StemDirection>
+          </Beam>
           <Chord>
             <BeamMode>begin</BeamMode>
             <durationType>eighth</durationType>
@@ -187,6 +192,9 @@
           <SystemText>
             <text>G3: plain contour, down</text>
           </SystemText>
+          <Beam>
+            <StemDirection>down</StemDirection>
+          </Beam>
           <Chord>
             <BeamMode>begin</BeamMode>
             <durationType>eighth</durationType>
@@ -246,6 +254,9 @@
           <SystemText>
             <text>G4: sharp/flat contour, down</text>
           </SystemText>
+          <Beam>
+            <StemDirection>down</StemDirection>
+          </Beam>
           <Chord>
             <BeamMode>begin</BeamMode>
             <durationType>eighth</durationType>
