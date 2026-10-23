@@ -37,9 +37,15 @@ bool headerType4(const Segment* s)
     return s->isHeaderClefType() || s->isKeySigType() || s->isTimeSigType();
 }
 
+bool courtesyType4(const Segment* s)
+{
+    return s->isKeySigAnnounceType() || s->isTimeSigAnnounceType();
+}
+
 bool eligibleType4(const Segment* s)
 {
-    return headerType4(s) || s->isChordRestType() || s->isEndBarLineType() || s->segmentType() == SegmentType::BeginBarLine;
+    return headerType4(s) || courtesyType4(s) || s->isChordRestType()
+        || s->isEndBarLineType() || s->segmentType() == SegmentType::BeginBarLine;
 }
 
 bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometry4& geometry)
@@ -187,7 +193,11 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                 return fail("Inactive rhythmic segments require a later adapter");
             Geometry4 g;
             if (!entry.ignored) {
-                if (!eligibleType4(&segment) || segment.trailer() || segment.extraLeadingSpace().val() != 0
+                if (courtesyType4(&segment) && (!segment.trailer() || measure != system->lastMeasure()
+                                               || segment.rtick() != measure->ticks()))
+                    return fail("Courtesy signatures require a terminal measure-end trailer");
+                if (!eligibleType4(&segment) || (segment.trailer() && !courtesyType4(&segment))
+                    || segment.extraLeadingSpace().val() != 0
                     || segment.spacingWidthOffset4() != 0)
                     return fail("Unadapted segment type, trailer, manual space or cross-beam offset");
                 for (const Element* annotation : segment.annotations()) {
@@ -319,6 +329,8 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
         const size_t mi = measureIndex[current.segment->measure()];
         if (next == plan.segments.size()) {
             current.width = geometry[i].minRight;
+            if (current.segment->trailer())
+                current.width += score->styleP(Sid::systemTrailerRightMargin);
             plan.measures[mi].width = current.x + current.width - plan.measures[mi].x;
         }
         else {

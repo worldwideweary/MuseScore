@@ -1211,3 +1211,72 @@ v0.48-spacing-fitting.mscx as the natural-fitting control. Next address explicit
 changing-header/courtesy preparation before widening collection/final fitting,
 then consider the remaining squeeze boundary cases. Keep default-off behavior
 and existing unsupported-context fallback intact.
+
+
+## v0.50: terminal key/time courtesy signatures
+
+The user reports v0.49 mtests passing. The earlier squeeze H5 captures look
+close overall, with a modest header-to-first-note difference still worth
+tracking; screenshots alone do not identify its cause. Continue with the
+explicit boundary cases rather than tune a spacing constant to that image.
+
+Add the first courtesy-signature adapter to buildSpacingPlan4. Ordinary
+KeySigAnnounce and TimeSigAnnounce segments are eligible only when marked as
+trailers, at the owning measure's end tick, in the system's final measure.
+Their native leaf geometry already has explicit item identity and uses the
+existing Studio key/time-signature collision policy. Their segment types remain
+distinct from leading headers, so they do not acquire the system-header-to-note
+exception. Any unadapted geometry or context still rejects the entire plan.
+
+Pinned Studio 4.7.5 HorizontalSpacing::setPositionsAndWidths assigns the final
+trailer its minRight plus systemTrailerRightMargin. Reconstruct that same
+terminal width in the temporary plan; the margin is fixed, not scaled by the
+squeeze factor and not a rhythmic spring. Existing pooled justification/reflow
+retains it. Do not change Evolution's creation, suppression, ordering or styling
+of courtesy glyphs. Do not widen collection across changing headers in this
+checkpoint: systemFittingWidth4 still rejects trailer/changing-header prefixes.
+This extends final placement only, after native boundary preparation.
+
+Files changed:
+
+- libmscore/spacingplan4.cpp: terminal courtesy eligibility and right margin.
+- mtest/libmscore/layout/tst_spacing.cpp: courtesyPlan under both beam options.
+- mtest/libmscore/layout/v0.50-spacing-courtesy.mscx: four forced systems with
+  both experimental options enabled and explicit courtesy generation enabled.
+- This guide: source rule, completed stage, validation and next integration.
+
+Visual controls in v0.50-spacing-courtesy.mscx:
+
+| Label | Boundary/control |
+| --- | --- |
+| C1 | Key courtesy before C major changes to D major |
+| C2 | Time courtesy before 4/4 changes to 3/4 |
+| C3 | Combined key/time courtesies before E-flat major and 2/4 |
+| C4 | Final system with the resulting key/time header |
+
+The first three systems are justified; the final system stays at natural width.
+Compare the last note-to-barline gap, barline-to-courtesy gap, spacing between
+combined courtesies and space after the final courtesy. Also compare the next
+system's header-to-first-note gap. The new tests require the expected generated
+courtesy types, measure-end placement, per-row rhythmic counts, live plan
+eligibility and exact final measure/segment application. Changing only the
+trailer margin must change natural width by exactly that amount. Removing an
+announce segment's trailer flag must reject the query without publishing output.
+Check repeated layout and option-off restoration, ignoring inactive native
+header/trailer cache entries as established in v0.48.1.
+
+Local validation: moc plus C++11 syntax checks in debug and NDEBUG modes pass
+for planner/test sources, with unused-parameter diagnostics enabled. The actual
+planner also passes 10,000 cases against pinned placement/lookback,
+reconstruction and minimum-width routines with controlled DOM/distance inputs,
+now including one/two terminal courtesies and fixed terminal-margin handling.
+This validates the math in the isolated model, not live font/DOM integration.
+Score XML, whitespace and parent-index patch checks are required before delivery.
+Full tst_spacing/tst_beam execution and visual comparisons remain for the user's
+Qt build.
+
+Apply v0.50 after v0.49, rebuild and run tst_spacing/tst_beam. Compare
+v0.50-spacing-courtesy.mscx in 37E and Studio 4.7.5. Next prepare changing
+header/courtesy geometry for tentative collection boundaries before widening
+systemFittingWidth4. Clef changes and repeat boundaries remain separate guarded
+adapters. Keep existing cross-staff/tremolo handling and default-off restoration.

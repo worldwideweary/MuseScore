@@ -44,6 +44,8 @@ class TestSpacing : public QObject, public MTest {
       void fittingSwitch();
       void squeezePlan_data();
       void squeezePlan();
+      void courtesyPlan_data();
+      void courtesyPlan();
       void rhythmicLayoutSwitch();
       void crossBeamSwitch_data();
       void crossBeamSwitch();
@@ -1056,6 +1058,126 @@ void TestSpacing::squeezePlan()
       const std::vector<qreal> legacy = snapshot();
       score->setStyleValue(Sid::spacingLayout4, true);
       score->doLayout();
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const std::vector<qreal> restored = snapshot();
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i)
+            QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
+void TestSpacing::courtesyPlan_data()
+      {
+      QTest::addColumn<bool>("modernBeams");
+      QTest::newRow("legacy-beams") << false;
+      QTest::newRow("studio-beams") << true;
+      }
+
+void TestSpacing::courtesyPlan()
+      {
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + "v0.50-spacing-courtesy.mscx");
+      QVERIFY(score);
+      QVERIFY(score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      const auto snapshot = [score]() -> std::vector<qreal> {
+            std::vector<qreal> values;
+            int index = -1;
+            const System* previous = nullptr;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  if (m->system() != previous) {
+                        previous = m->system();
+                        ++index;
+                        }
+                  values.push_back(index);
+                  values.push_back(m->x());
+                  values.push_back(m->width());
+                  for (Segment& seg : m->segments()) {
+                        if (!seg.enabled() && (seg.header() || seg.trailer()))
+                              continue;
+                        values.push_back(static_cast<int>(seg.segmentType()));
+                        values.push_back(seg.tick().ticks());
+                        values.push_back(seg.x());
+                        values.push_back(seg.width());
+                        }
+                  }
+            return values;
+            };
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const std::vector<qreal> legacy = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      const bool keys[] = { true, false, true, false };
+      const bool times[] = { false, true, true, false };
+      const int onsets[] = { 8, 8, 6, 4 };
+      const qreal available = score->styleD(Sid::pagePrintableWidth) * DPI;
+      int row = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++row) {
+            QVERIFY(row < 4);
+            QCOMPARE(m->system()->firstMeasure(), m);
+            QCOMPARE(m->system()->lastMeasure(), m);
+            int notes = 0;
+            bool key = false, time = false;
+            for (Segment& seg : m->segments()) {
+                  if (!seg.enabled() || !seg.visible() || seg.allElementsInvisible())
+                        continue;
+                  notes += seg.isChordRestType();
+                  if (!seg.isKeySigAnnounceType() && !seg.isTimeSigAnnounceType())
+                        continue;
+                  QVERIFY(seg.trailer());
+                  QVERIFY(seg.rtick() == m->ticks());
+                  key = key || seg.isKeySigAnnounceType();
+                  time = time || seg.isTimeSigAnnounceType();
+                  }
+            QCOMPARE(notes, onsets[row]);
+            QCOMPARE(key, keys[row]);
+            QCOMPARE(time, times[row]);
+            SpacingPlan4 plan;
+            QString reason;
+            QVERIFY2(buildSpacingPlan4(m->system(), plan, &reason), qPrintable(reason));
+            const qreal naturalWidth = plan.width;
+            if (row < 3) {
+                  for (const SpacingSegmentPlan4& entry : plan.segments) {
+                        Segment* trailer = entry.segment;
+                        if (entry.ignored || (!trailer->isKeySigAnnounceType() && !trailer->isTimeSigAnnounceType()))
+                              continue;
+                        trailer->setTrailer(false);
+                        SpacingPlan4 unchanged;
+                        unchanged.width = 123;
+                        const bool accepted = buildSpacingPlan4(m->system(), unchanged, &reason);
+                        trailer->setTrailer(true);
+                        QVERIFY(!accepted);
+                        QCOMPARE(unchanged.width, qreal(123));
+                        }
+                  // The terminal margin is a fixed source value, not squeezed
+                  // padding or rhythmic spring space. Query without DOM edits.
+                  const qreal oldMargin = score->styleP(Sid::systemTrailerRightMargin) / score->spatium();
+                  score->setStyleValue(Sid::systemTrailerRightMargin, Spatium(oldMargin + .75));
+                  SpacingPlan4 changed;
+                  const bool built = buildSpacingPlan4(m->system(), changed, &reason);
+                  score->setStyleValue(Sid::systemTrailerRightMargin, Spatium(oldMargin));
+                  QVERIFY2(built, qPrintable(reason));
+                  QVERIFY(qAbs(changed.width - naturalWidth - .75 * score->spatium()) < 1e-6);
+                  QVERIFY(justifySpacingPlan4(plan, available));
+                  }
+            QVERIFY(qAbs(m->system()->width() - plan.width) < 1e-6);
+            QVERIFY(qAbs(m->width() - plan.measures.front().width) < 1e-6);
+            for (const SpacingSegmentPlan4& seg : plan.segments) {
+                  if (seg.ignored)
+                        continue;
+                  QVERIFY(qAbs(m->x() + seg.segment->x() - seg.x) < 1e-6);
+                  QVERIFY(qAbs(seg.segment->width() - seg.width) < 1e-6);
+                  }
+            }
+      QCOMPARE(row, 4);
+      const std::vector<qreal> modern = snapshot();
+      score->doLayout();
+      const std::vector<qreal> repeated = snapshot();
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i)
+            QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
       score->setStyleValue(Sid::spacingLayout4, false);
       score->doLayout();
       const std::vector<qreal> restored = snapshot();
