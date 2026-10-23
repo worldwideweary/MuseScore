@@ -1308,6 +1308,10 @@ void TestSpacing::polyrhythmInputs_data()
       QTest::newRow("rests-natural-studio-beams") << QString("v0.58-spacing-polyrhythm-rests-natural.mscx") << true << true;
       QTest::newRow("rests-justified-legacy-beams") << QString("v0.58-spacing-polyrhythm-rests.mscx") << false << false;
       QTest::newRow("rests-justified-studio-beams") << QString("v0.58-spacing-polyrhythm-rests.mscx") << false << true;
+      QTest::newRow("sustained-natural-legacy-beams") << QString("v0.59-spacing-polyrhythm-sustained-natural.mscx") << true << false;
+      QTest::newRow("sustained-natural-studio-beams") << QString("v0.59-spacing-polyrhythm-sustained-natural.mscx") << true << true;
+      QTest::newRow("sustained-justified-legacy-beams") << QString("v0.59-spacing-polyrhythm-sustained.mscx") << false << false;
+      QTest::newRow("sustained-justified-studio-beams") << QString("v0.59-spacing-polyrhythm-sustained.mscx") << false << true;
       }
 
 void TestSpacing::polyrhythmInputs()
@@ -1318,6 +1322,7 @@ void TestSpacing::polyrhythmInputs()
       const bool seconds = file.startsWith("v0.55-");
       const bool unisons = file.startsWith("v0.56-");
       const bool rests = file.startsWith("v0.58-");
+      const bool sustained = file.startsWith("v0.59-");
       const bool accidentals = seconds || file.startsWith("v0.54-");
       MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
@@ -1345,7 +1350,7 @@ void TestSpacing::polyrhythmInputs()
       const int counts[3][4] = { { 3, 2, 2, 3 }, { 5, 4, 4, 5 }, { 6, 8, 10, 12 } };
       int measureCount = 0;
       for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++measureCount) {
-            const int row = natural || accidentals || unisons || rests ? 2 : measureCount;
+            const int row = natural || accidentals || unisons || rests || sustained ? 2 : measureCount;
             QVERIFY(row < 3);
             QVERIFY(m->ticks() == Fraction(1, 2));
             QCOMPARE(m->system()->firstMeasure(), m);
@@ -1365,6 +1370,13 @@ void TestSpacing::polyrhythmInputs()
                               }
                         else
                               QVERIFY(cr->isChord());
+                        if (sustained && (v == 1 || v == 3)) {
+                              QVERIFY(!cr->tuplet() && !cr->beam());
+                              const Chord* chord = toChord(cr);
+                              QCOMPARE(static_cast<int>(chord->notes().size()), 1);
+                              QCOMPARE(chord->notes().front()->pitch(), v == 1 ? 65 : 41);
+                              QCOMPARE(chord->notes().front()->tpc(), static_cast<int>(Tpc::TPC_F));
+                              }
                         if (unisons) {
                               const Chord* chord = toChord(cr);
                               QCOMPARE(static_cast<int>(chord->notes().size()), 1);
@@ -1404,7 +1416,8 @@ void TestSpacing::polyrhythmInputs()
                               }
                         QVERIFY(seg.rtick() == elapsed);
                         Fraction duration;
-                        if (row == 0) duration = (v == 0 || v == 3) ? Fraction(1, 6) : Fraction(1, 4);
+                        if (sustained && (v == 1 || v == 3)) duration = Fraction(1, 2);
+                        else if (row == 0) duration = (v == 0 || v == 3) ? Fraction(1, 6) : Fraction(1, 4);
                         else if (row == 1) duration = (v == 0 || v == 3) ? Fraction(1, 10) : Fraction(1, 8);
                         else if (v == 0) duration = n < 4 ? Fraction(1, 16) : Fraction(1, 8);
                         else if (v == 1) duration = n < 5 ? Fraction(1, 20) : Fraction(1, 12);
@@ -1414,7 +1427,7 @@ void TestSpacing::polyrhythmInputs()
                         elapsed += duration;
                         ++n;
                         }
-                  QCOMPARE(n, counts[row][v]);
+                  QCOMPARE(n, sustained && (v == 1 || v == 3) ? 1 : counts[row][v]);
                   if (accidentals) QVERIFY(signs > 0);
                   QVERIFY(elapsed == Fraction(1, 2));
                   }
@@ -1473,7 +1486,7 @@ void TestSpacing::polyrhythmInputs()
                   QVERIFY(qIsFinite(seg.x()) && qIsFinite(seg.width()) && seg.width() >= 0);
                   }
             }
-      QCOMPARE(measureCount, natural || accidentals || unisons || rests ? 1 : 3);
+      QCOMPARE(measureCount, natural || accidentals || unisons || rests || sustained ? 1 : 3);
       const std::vector<qreal> modern = snapshot();
       score->doLayout();
       const std::vector<qreal> repeated = snapshot();

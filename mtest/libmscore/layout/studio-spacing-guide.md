@@ -1731,3 +1731,52 @@ Apply v0.58 after v0.57. Compare natural R1 first and justified R1 second with
 rest onset. Distinguish vertical rest placement from horizontal spacing before
 choosing a code change. Once accepted, introduce sustained voices separately,
 then cross-staff combinations. The centered-beam issue remains deferred.
+
+## v0.59: bracket explanation and sustained-voice controls
+
+The user reports v0.58 mtests passing. R1's 37E captures show automatic brackets
+on the first quintuplet, sextuplet and septuplet, with none on the later triplet
+and quintuplet. Tuplet::layout in libmscore/tuplet.cpp explains this directly:
+AUTO_BRACKET is enabled when any element is a rest (or a nested tuplet), even
+if the rest is beamed; an all-note group can omit it when every event is beamed.
+The compared 4.7.5 captures omit these brackets. Do not change bracket policy
+as part of horizontal spacing. Tuplet brackets/numbers are not inputs to this
+spacing projection, though their display can affect vertical appearance.
+
+R1 also has a small natural-width difference and visibly different rest heights.
+These cannot be treated as exact spacing parity. The pinned restlayout-4.7.5.cpp
+uses a newer rest placement/collision pipeline; computeVoiceOffset selects a
+one-space offset by default (multiVoiceRestTwoSpaceOffset is false in pinned
+styledef-4.7.5.cpp). Evolution's Rest::layout uses duration-specific offsets and
+opposite-voice note-line avoidance. Different vertical shapes can activate
+different horizontal collision floors. Record this for a bounded rest-layout
+audit rather than compensating with rhythmic spacing constants. The current
+tests establish full-plan application, not identical rest placement.
+
+Add S1 as a separate sustained-voice control:
+
+- v0.59-spacing-polyrhythm-sustained-natural.mscx
+- v0.59-spacing-polyrhythm-sustained.mscx
+
+Preserve P3's upper stream on each staff: six events on track 0 and ten on
+track 4, including the sextuplet. Replace each lower stream with a single
+half note at its original F pitch, lasting the entire 2/4 measure. No ties,
+rests, accidentals or cross-staff moves are added. Both experimental options
+remain on. Natural and justified versions isolate placement and expansion.
+
+Extend polyrhythmInputs under both beam settings. Require counts 6/1/10/1,
+exact original upper-stream onsets, half-note durations and pitches in the
+lower voices, no beam/tuplet on those half notes, full-plan eligibility and
+actual application, duration-formula agreement, repeat layout and off restoration.
+Earlier control rows remain unchanged. No production layout changes here.
+
+Files changed: tst_spacing.cpp, this guide and the two S1 scores. Local checks
+cover XML structure, original upper streams/styles, exact lower-voice duration
+and spelling, moc/C++11 debug/NDEBUG syntax, whitespace and parent-index patch
+application. Full Qt 5.9 mtests and rendered comparisons remain pending.
+
+Apply v0.59 after v0.58. Compare natural S1 first, then justified S1 with 4.7.5.
+Inspect the moving notes' intervals above the sustained voices and the common
+beat boundary. Continue with cross-staff combinations after S1 validation;
+keep R1's rest-position difference and the centered-beam reproduction queued
+as explicit remaining work.
