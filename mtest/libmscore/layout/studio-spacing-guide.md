@@ -1523,3 +1523,40 @@ The user's full Qt 5.9 tst_spacing build/run remains the final check.
 Files changed: tst_spacing.cpp and this guide. No score or production changes.
 Apply v0.53.1 after v0.53, rebuild tst_spacing, then resume the two A1 visual
 comparisons before extending the controls.
+
+## v0.54: correct the accidental control spellings
+
+The user reports mtests passing after v0.53.1. Both natural and justified A1
+screenshots look close to 4.7.5, but also expose a fixture error: changing staff
+positions and double flats were not the intended F-sharp/F-natural/F-flat cycle.
+The original MIDI pitches were correct; the spelling values 25 and 1 were
+incorrect. F-sharp is TPC_F_S (20), F-natural is TPC_F (13), and F-flat is
+TPC_F_B (6). The old assertions repeated the erroneous values and therefore
+did not detect the inconsistency. This is a test-input correction, not evidence
+of a production accidental spacing defect.
+
+Rename the two scores with the v0.54 prefix, update their titles and correct
+the spellings. Rhythms, voices, pitches, forced directions, styles and natural
+versus justified settings stay the same. Both experimental options remain on.
+The renamed files replace the old v0.53 controls:
+
+- v0.54-spacing-polyrhythm-accidentals-natural.mscx
+- v0.54-spacing-polyrhythm-accidentals.mscx
+
+Use named Tpc constants in the assertions. Independently check spelling-to-MIDI
+pitch agreement, constant diatonic step, and generated sharp/flat signs on the
+first/third notes of each voice. Retain complete-plan application, rational
+rhythm, repeat-layout and off-restoration checks under both beam settings.
+
+Files changed: the two renamed scores, tst_spacing.cpp and this guide. Local
+validation covers all 36 MIDI/spelling pairs in each score against the actual
+pitch-spelling functions, unchanged rhythmic content/settings, moc/C++11
+debug/NDEBUG syntax, whitespace and parent-index patch application. The full
+Qt 5.9 mtests and live comparison remain for the user's build.
+
+Apply v0.54 after v0.53.1. Recompare natural A1 first, then justified A1 in
+37E and 4.7.5. All noteheads in each voice should now occupy one staff position;
+the accidental cycle should include ordinary sharps, naturals and flats.
+Resolve any demonstrated pair-floor difference before adding chord seconds
+and unisons. No production layout code changes in this checkpoint; the
+registered centered-beam issue stays deferred.

@@ -48,7 +48,7 @@
         <height>12</height>
         <Text>
           <style>Title</style>
-          <text>v0.53 Justified accidental polyrhythm</text>
+          <text>v0.54 Justified accidental polyrhythm</text>
         </Text>
       </VBox>
       <Measure>
@@ -66,7 +66,7 @@
             <StemDirection>up</StemDirection>
             <Note>
               <pitch>78</pitch>
-              <tpc>25</tpc>
+              <tpc>20</tpc>
             </Note>
           </Chord>
           <Chord>
@@ -84,7 +84,7 @@
             <StemDirection>up</StemDirection>
             <Note>
               <pitch>76</pitch>
-              <tpc>1</tpc>
+              <tpc>6</tpc>
             </Note>
           </Chord>
           <Chord>
@@ -102,7 +102,7 @@
             <StemDirection>up</StemDirection>
             <Note>
               <pitch>78</pitch>
-              <tpc>25</tpc>
+              <tpc>20</tpc>
             </Note>
           </Chord>
           <Chord>
@@ -127,7 +127,7 @@
             <StemDirection>down</StemDirection>
             <Note>
               <pitch>66</pitch>
-              <tpc>25</tpc>
+              <tpc>20</tpc>
             </Note>
           </Chord>
           <Chord>
@@ -145,7 +145,7 @@
             <StemDirection>down</StemDirection>
             <Note>
               <pitch>64</pitch>
-              <tpc>1</tpc>
+              <tpc>6</tpc>
             </Note>
           </Chord>
           <Chord>
@@ -163,7 +163,7 @@
             <StemDirection>down</StemDirection>
             <Note>
               <pitch>66</pitch>
-              <tpc>25</tpc>
+              <tpc>20</tpc>
             </Note>
           </Chord>
           <endTuplet />
@@ -187,7 +187,7 @@
             <StemDirection>down</StemDirection>
             <Note>
               <pitch>64</pitch>
-              <tpc>1</tpc>
+              <tpc>6</tpc>
             </Note>
           </Chord>
           <Chord>
@@ -221,7 +221,7 @@
             <StemDirection>up</StemDirection>
             <Note>
               <pitch>54</pitch>
-              <tpc>25</tpc>
+              <tpc>20</tpc>
             </Note>
           </Chord>
           <Chord>
@@ -239,7 +239,7 @@
             <StemDirection>up</StemDirection>
             <Note>
               <pitch>52</pitch>
-              <tpc>1</tpc>
+              <tpc>6</tpc>
             </Note>
           </Chord>
           <Chord>
@@ -257,7 +257,7 @@
             <StemDirection>up</StemDirection>
             <Note>
               <pitch>54</pitch>
-              <tpc>25</tpc>
+              <tpc>20</tpc>
             </Note>
           </Chord>
           <Chord>
@@ -276,7 +276,7 @@
             <StemDirection>up</StemDirection>
             <Note>
               <pitch>52</pitch>
-              <tpc>1</tpc>
+              <tpc>6</tpc>
             </Note>
           </Chord>
           <Chord>
@@ -294,7 +294,7 @@
             <StemDirection>up</StemDirection>
             <Note>
               <pitch>54</pitch>
-              <tpc>25</tpc>
+              <tpc>20</tpc>
             </Note>
           </Chord>
           <Chord>
@@ -319,7 +319,7 @@
             <StemDirection>down</StemDirection>
             <Note>
               <pitch>42</pitch>
-              <tpc>25</tpc>
+              <tpc>20</tpc>
             </Note>
           </Chord>
           <Chord>
@@ -337,7 +337,7 @@
             <StemDirection>down</StemDirection>
             <Note>
               <pitch>40</pitch>
-              <tpc>1</tpc>
+              <tpc>6</tpc>
             </Note>
           </Chord>
           <Chord>
@@ -355,7 +355,7 @@
             <StemDirection>down</StemDirection>
             <Note>
               <pitch>42</pitch>
-              <tpc>25</tpc>
+              <tpc>20</tpc>
             </Note>
           </Chord>
           <Chord>
@@ -373,7 +373,7 @@
             <StemDirection>down</StemDirection>
             <Note>
               <pitch>40</pitch>
-              <tpc>1</tpc>
+              <tpc>6</tpc>
             </Note>
           </Chord>
           <endTuplet />
@@ -397,7 +397,7 @@
             <StemDirection>down</StemDirection>
             <Note>
               <pitch>42</pitch>
-              <tpc>25</tpc>
+              <tpc>20</tpc>
             </Note>
           </Chord>
           <Chord>
@@ -415,7 +415,7 @@
             <StemDirection>down</StemDirection>
             <Note>
               <pitch>40</pitch>
-              <tpc>1</tpc>
+              <tpc>6</tpc>
             </Note>
           </Chord>
           <Chord>
