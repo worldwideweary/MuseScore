@@ -2960,6 +2960,8 @@ void TestSpacing::graceNeighborPlan_data()
             const QString tag = modern ? "studio-" : "legacy-";
             QTest::newRow(qPrintable(tag + "justified")) << modern << QString("v0.81-spacing-grace-neighbors.mscx");
             QTest::newRow(qPrintable(tag + "natural")) << modern << QString("v0.81-spacing-grace-neighbors-natural.mscx");
+            QTest::newRow(qPrintable(tag + "slurred-accidentals")) << modern << QString("v0.86-spacing-grace-accidental-neighbors.mscx");
+            QTest::newRow(qPrintable(tag + "slurred-accidentals-natural")) << modern << QString("v0.86-spacing-grace-accidental-neighbors-natural.mscx");
             }
       }
 
@@ -3011,6 +3013,42 @@ void TestSpacing::graceNeighborPlan()
             QCOMPARE(chords, 3);
             QVERIFY(main);
             QCOMPARE(main->rtick().ticks(), DIVISION);
+            if (file.startsWith("v0.86-")) {
+                  QVERIFY(count < 6);
+                  const int mainPitch[] = {72, 73, 72, 73, 73, 61};
+                  const int previousPitch[] = {73, 69, 73, 69, 66, 66};
+                  const int previousTpc[] = {21, 17, 21, 17, 20, 20};
+                  const int nextPitch[] = {67, 72, 67, 72, 65, 65};
+                  const int nextTpc[] = {15, 14, 15, 14, 13, 13};
+                  const Note* n = main->notes().front();
+                  QCOMPARE(n->pitch(), mainPitch[count]);
+                  QCOMPARE(n->tpc(), count == 0 || count == 2 ? 14 : 21);
+                  QVERIFY(n->accidental());
+                  QCOMPARE(int(n->accidental()->accidentalType()),
+                        int(count == 0 || count == 2 ? AccidentalType::NATURAL : AccidentalType::SHARP));
+                  const Chord* previous = toChord(main->segment()->prev(SegmentType::ChordRest)->element(0));
+                  const Chord* next = toChord(main->segment()->next(SegmentType::ChordRest)->element(0));
+                  QCOMPARE(previous->notes().front()->pitch(), previousPitch[count]);
+                  QCOMPARE(previous->notes().front()->tpc(), previousTpc[count]);
+                  QCOMPARE(next->notes().front()->pitch(), nextPitch[count]);
+                  QCOMPARE(next->notes().front()->tpc(), nextTpc[count]);
+                  if (count != 1 && count != 3) {
+                        QVERIFY(previous->notes().front()->accidental());
+                        QCOMPARE(int(previous->notes().front()->accidental()->accidentalType()), int(AccidentalType::SHARP));
+                        }
+                  if (count != 0 && count != 2) {
+                        QVERIFY(next->notes().front()->accidental());
+                        QCOMPARE(int(next->notes().front()->accidental()->accidentalType()), int(AccidentalType::NATURAL));
+                        }
+                  Slur* local = nullptr;
+                  for (const auto& entry : score->spannerMap().map()) {
+                        if (entry.second->isSlur() && entry.second->endElement() == main)
+                              local = toSlur(entry.second);
+                        }
+                  QVERIFY(local);
+                  QCOMPARE(local->startElement(), static_cast<Element*>(main->graceNotesBefore().front()));
+                  QVERIFY(spacingLocalGraceSlur4(local, main));
+                  }
             context.mains.push_back(main);
             mains.push_back(main);
             GraceBeforePlan4 group;

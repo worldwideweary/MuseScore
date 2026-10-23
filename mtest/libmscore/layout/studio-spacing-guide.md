@@ -2413,3 +2413,13 @@ without a scoped or prepared grace context. Slur drawing is unchanged. Compare
 resolved/round-tripped endpoints, equal horizontal layout with/without slurs,
 full-plan application, unsupported edits, repeat layout and legacy restoration.
 See `v0.84-grace-slur-coexistence.md` before evaluating curve differences.
+
+### v0.86: slurred grace groups with accidental neighbors
+
+v0.84/v0.85 user mtests pass; the paired plain/slurred captures look broadly
+close to Studio, so no slur-renderer change is indicated by them. Test-only
+A1-A6 controls now add main-note sharps/naturals and neighboring sharps/naturals:
+`v0.86-spacing-grace-accidental-neighbors.mscx` and its `-natural.mscx` companion.
+Both options are saved on. Existing full-plan/compression/stability tests now
+cover these inputs and explicitly require the expected accidental glyphs and
+local-slur endpoints. See `v0.86-grace-accidental-neighbors.md`.
