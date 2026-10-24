@@ -43,6 +43,8 @@ class TestSpacing : public QObject, public MTest {
       void graceBeforeLayout();
       void graceNeighborPlan_data();
       void graceNeighborPlan();
+      void graceAfterBaseline_data();
+      void graceAfterBaseline();
       void graceFitting_data();
       void graceFitting();
       void graceSqueeze_data();
@@ -3193,6 +3195,185 @@ static std::vector<qreal> graceLayoutSnapshot4(Score* score)
                   }
             }
       return values;
+      }
+
+void TestSpacing::graceAfterBaseline_data()
+      {
+      QTest::addColumn<bool>("modernBeams");
+      QTest::addColumn<QString>("file");
+      for (const QString& file : {QString("v0.92-spacing-after-grace-baseline.mscx"),
+                                  QString("v0.92-spacing-after-grace-baseline-natural.mscx")}) {
+            for (bool beams : {false, true}) {
+                  const QByteArray tag = (file + (beams ? "-studio" : "-legacy")).toLatin1();
+                  QTest::newRow(tag.constData()) << beams << file;
+                  }
+            }
+      }
+
+void TestSpacing::graceAfterBaseline()
+      {
+      QFETCH(bool, modernBeams);
+      QFETCH(QString, file);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      const auto measureSnapshot = [](const Measure* m) {
+            std::vector<qreal> values = {m->width()};
+            for (const Segment& segment : m->segments()) {
+                  if (!segment.enabled()) continue;
+                  values.insert(values.end(), {qreal(int(segment.segmentType())), segment.x(), segment.width()});
+                  for (const Element* item : segment.elist()) {
+                        if (!item || !item->isChord()) continue;
+                        const Chord* chord = toChord(item);
+                        values.insert(values.end(), {chord->x(), chord->y()});
+                        for (const Chord* grace : chord->graceNotes())
+                              values.insert(values.end(), {grace->x(), grace->y(), qreal(grace->noteType())});
+                        }
+                  }
+            return values;
+            };
+      const auto snapshot = [&]() {
+            std::vector<qreal> values;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  const auto part = measureSnapshot(m);
+                  values.insert(values.end(), part.begin(), part.end());
+                  }
+            return values;
+            };
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto legacy = snapshot();
+      std::vector<std::vector<qreal>> legacyMeasures;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
+            legacyMeasures.push_back(measureSnapshot(m));
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      const auto modern = snapshot();
+      int count = 0;
+      std::vector<std::vector<int>> afterPitches;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++count) {
+            QVERIFY(count < 6);
+            QVERIFY(m->ticks() == Fraction(1, 1));
+            std::vector<ChordRest*> onsets;
+            for (Segment& segment : m->segments()) {
+                  if (segment.isChordRestType()) onsets.push_back(segment.cr(0));
+                  }
+            QCOMPARE(static_cast<int>(onsets.size()), 3);
+            QVERIFY(onsets[0] && onsets[1] && onsets[2]);
+            QVERIFY(onsets[0]->rtick() == Fraction(0, 1));
+            QVERIFY(onsets[1]->rtick() == Fraction(1, 4));
+            QVERIFY(onsets[2]->rtick() == Fraction(1, 2));
+            ChordRest* ownerRest = onsets[count == 3 ? 2 : 1];
+            QVERIFY(ownerRest->isChord());
+            Chord* owner = toChord(ownerRest);
+            const auto after = owner->graceNotesAfter();
+            QCOMPARE(after.size(), count == 0 ? 1 : (count == 1 || count == 2 ? 4 : 2));
+            QVERIFY(owner->graceNotesBefore().empty());
+            const int plainPitch[] = {77, 74, 71, 76};
+            const int plainTpc[] = {13, 16, 19, 18};
+            const int alteredPitch[] = {78, 73, 71, 76};
+            const int alteredTpc[] = {20, 9, 19, 18};
+            for (int i = 0; i < after.size(); ++i) {
+                  const Chord* grace = after[i];
+                  QCOMPARE(grace->parent(), static_cast<Element*>(owner));
+                  QCOMPARE(grace->segment(), owner->segment());
+                  QVERIFY(grace->isGraceAfter());
+                  QVERIFY(grace->tick() == owner->tick());
+                  QCOMPARE(grace->track(), owner->track());
+                  QVERIFY(grace->up() == (count != 2));
+                  const int pitch = count == 0 ? 76 : count == 1 ? alteredPitch[i]
+                        : count == 2 ? plainPitch[i] : i == 0 ? 74 : 76;
+                  const int tpc = count == 0 ? 18 : count == 1 ? alteredTpc[i]
+                        : count == 2 ? plainTpc[i] : i == 0 ? 16 : 18;
+                  QCOMPARE(grace->notes().front()->pitch(), pitch);
+                  QCOMPARE(grace->notes().front()->tpc(), tpc);
+                  QVERIFY(qIsFinite(grace->x()) && qIsFinite(grace->y()));
+                  if (i) QVERIFY(grace->x() > after[i - 1]->x());
+                  if (after.size() > 1) {
+                        QVERIFY(grace->beam());
+                        QCOMPARE(grace->beam(), after.front()->beam());
+                        }
+                  }
+            std::vector<int> pitches;
+            for (const Chord* grace : after) {
+                  pitches.push_back(grace->notes().front()->pitch());
+                  pitches.push_back(grace->notes().front()->tpc());
+                  }
+            afterPitches.push_back(pitches);
+            // Fixture target semantics only; this is not a new target adapter.
+            Segment* target = m->tick2segment(owner->tick() + owner->actualTicks(), SegmentType::All);
+            QVERIFY(target && target != owner->segment());
+            if (count == 3)
+                  QVERIFY(target->isEndBarLineType());
+            else {
+                  QCOMPARE(target, onsets[2]->segment());
+                  QVERIFY(onsets[2]->isRest() == (count == 4));
+                  if (count == 5) {
+                        QVERIFY(onsets[2]->isChord());
+                        QCOMPARE(toChord(onsets[2])->graceNotesBefore().size(), 2);
+                        }
+                  }
+            GraceBeforePlan4 group;
+            group.left = 123;
+            QVERIFY(!buildGraceBeforePlan4(owner, group));
+            QCOMPARE(group.left, qreal(123));
+            SpacingPlan4 rejected;
+            rejected.width = 123;
+            QVERIFY(!buildSpacingPlan4(m->system(), rejected));
+            QCOMPARE(rejected.width, qreal(123));
+            QVERIFY(rejected.measures.empty() && rejected.segments.empty());
+            if (count < 5) {
+                  // AG6 also has before-graces, which already use the local
+                  // adapter even when system-level after-grace admission fails.
+                  const auto current = measureSnapshot(m);
+                  QCOMPARE(static_cast<int>(current.size()), static_cast<int>(legacyMeasures[count].size()));
+                  for (size_t i = 0; i < current.size(); ++i)
+                        QVERIFY(qAbs(current[i] - legacyMeasures[count][i]) < 1e-6);
+                  }
+            }
+      QCOMPARE(count, 6);
+      QVERIFY(snapshot() == modern); // All rejected queries were read-only.
+      score->doLayout();
+      const auto repeated = snapshot();
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i) QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+      const QString output = modernBeams ? "v0.92-after-grace-studio-roundtrip.mscx"
+            : "v0.92-after-grace-legacy-roundtrip.mscx";
+      QVERIFY(saveScore(score, output));
+      MasterScore* loaded = readCreatedScore(output);
+      QVERIFY(loaded);
+      QVERIFY(loaded->styleB(Sid::spacingLayout4));
+      QCOMPARE(loaded->styleB(Sid::beamLayout4), modernBeams);
+      loaded->doLayout();
+      int loadedCount = 0;
+      for (Measure* m = loaded->firstMeasure(); m; m = m->nextMeasure(), ++loadedCount) {
+            QVERIFY(loadedCount < 6);
+            Chord* owner = nullptr;
+            for (Segment& segment : m->segments()) {
+                  Element* item = segment.element(0);
+                  if (item && item->isChord() && !toChord(item)->graceNotesAfter().empty()) owner = toChord(item);
+                  }
+            QVERIFY(owner);
+            const auto after = owner->graceNotesAfter();
+            QCOMPARE(after.size(), loadedCount == 0 ? 1 : (loadedCount < 3 ? 4 : 2));
+            std::vector<int> pitches;
+            for (const Chord* grace : after) {
+                  QCOMPARE(grace->parent(), static_cast<Element*>(owner));
+                  QVERIFY(grace->isGraceAfter() && grace->tick() == owner->tick());
+                  QVERIFY(grace->up() == (loadedCount != 2));
+                  pitches.push_back(grace->notes().front()->pitch());
+                  pitches.push_back(grace->notes().front()->tpc());
+                  }
+            QVERIFY(pitches == afterPitches[loadedCount]);
+            }
+      QCOMPARE(loadedCount, 6);
+      delete loaded;
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto restored = snapshot();
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
       }
 
 void TestSpacing::graceFitting_data()

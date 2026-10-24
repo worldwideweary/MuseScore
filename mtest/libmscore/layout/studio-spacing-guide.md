@@ -2445,3 +2445,14 @@ same-track merging, typed shape publication and final ownership-coordinate
 conversion for after-graces. No production guards change. Next prepare AG1-AG6
 baseline controls before adapting that separate lifecycle. See
 `v0.91-grace-fitting-accepted-after-grace-audit.md`.
+
+### v0.92: AG1-AG6 after-grace baseline controls
+
+Test-only stage. `v0.92-spacing-after-grace-baseline.mscx` provides six separate
+systems and `v0.92-spacing-after-grace-baseline-natural.mscx` a wide overview.
+Both styles are saved on, but after-graces still use the legacy path. New tests
+check actual ownership, musical ordering, following-target fixture semantics,
+read-only planner rejection, stable layout, toggle restoration and round trips
+under both beam algorithms. AG6 also contains before-graces; their existing
+local adapter can still act despite system-level fallback. See
+`v0.92-after-grace-baseline.md`. Next add a read-only ordinary target adapter.
