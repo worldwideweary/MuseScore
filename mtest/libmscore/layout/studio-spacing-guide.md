@@ -2888,3 +2888,13 @@ add native policy-equivalence coverage. See
 `v0.124-grace-query-context-reuse.md`. Apply after v0.123, run both mtests,
 and repeat the existing timing/edit reproduction. Native speed gain remains
 unmeasured; no new score or engraving adjustment is included.
+
+### v0.125: extend reuse to the complete read-only grace query
+
+v0.124 native mtests pass. Held-arrow latency remains, though the new log's
+median experimental command is about 112 ms rather than 202 ms. Share the
+existing eligibility cache across complete packing and merged projection,
+discarding it before any later query, beam preparation or edit. Add native
+query-boundary invalidation coverage. See
+`v0.125-grace-geometry-query-reuse.md`. Apply after v0.124; repeat both mtests
+and the existing timing reproduction. Native v0.125 performance is pending.

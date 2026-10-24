@@ -4527,6 +4527,7 @@ void TestSpacing::graceContextCachePolicies()
       MasterScore* score = readScore(DIR + "v0.113-spacing-slurred-merged-graces-natural.mscx");
       QVERIFY(score);
       score->doLayout();
+      Slur* selected = nullptr;
       const Chord* owner = nullptr;
       const Chord* target = nullptr;
       for (const auto& entry : score->spannerMap().map()) {
@@ -4536,6 +4537,7 @@ void TestSpacing::graceContextCachePolicies()
             if (!start || !start->isGraceAfter()) continue;
             owner = toChord(start->parent());
             target = toChord(slur->endElement());
+            selected = toSlur(entry.second);
             break;
             }
       QVERIFY(owner && target);
@@ -4593,6 +4595,23 @@ void TestSpacing::graceContextCachePolicies()
             // through the complete planner with these local caches enabled.
             invalid.setParent(nullptr);
       }
+      // Complete geometry queries must not retain eligibility into the next
+      // edit. Rejection is atomic, and restoring the line restores the plan.
+      GraceMergedGeometry4 baseline, rejected, restored;
+      QVERIFY(buildGraceMergedGeometry4(owner, baseline));
+      const int savedLine = selected->lineType();
+      selected->setLineType(savedLine + 1);
+      rejected.plan.owner = target;
+      const bool admitted = buildGraceMergedGeometry4(owner, rejected);
+      selected->setLineType(savedLine);
+      QVERIFY(!admitted);
+      QCOMPARE(rejected.plan.owner, target);
+      QVERIFY(buildGraceMergedGeometry4(owner, restored));
+      QCOMPARE(int(restored.plan.positions.size()), int(baseline.plan.positions.size()));
+      for (size_t i = 0; i < baseline.plan.positions.size(); ++i) {
+            QCOMPARE(restored.plan.positions[i].chord, baseline.plan.positions[i].chord);
+            QCOMPARE(restored.plan.positions[i].x, baseline.plan.positions[i].x);
+            }
       delete score;
       }
 
