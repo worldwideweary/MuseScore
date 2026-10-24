@@ -55,6 +55,8 @@ SpacingShape4 spacingResolveShape4(const Shape& native, const SpacingShape4& can
         bool unknown = false;
         bool ambiguous = false;
         bool allAggregates = true;
+        bool allResolvedAggregates = true;
+        std::vector<const Element*> resolvedAggregateOwners;
         bool allItems = true;
         std::vector<const Element*> sharedItems;
         std::vector<const Element*> aggregateOwners;
@@ -68,6 +70,20 @@ SpacingShape4 spacingResolveShape4(const Shape& native, const SpacingShape4& can
                 continue;
             found = true;
             ++matches;
+            // A child chord can already have resolved coincident spacing
+            // bounds. Preserve that complete set through staff assembly only
+            // when every matching record agrees and multiplicities still fit.
+            bool resolvedAggregate = candidate.identity == SpacingIdentity4::LEGACY_SPACER
+                && !candidate.item && candidate.sharedItems.empty() && candidate.aggregateOwners.size() > 1;
+            if (resolvedAggregate) {
+                auto owners = candidate.aggregateOwners;
+                std::sort(owners.begin(), owners.end(), std::less<const Element*>());
+                resolvedAggregate = std::find(owners.begin(), owners.end(), nullptr) == owners.end()
+                    && std::adjacent_find(owners.begin(), owners.end()) == owners.end();
+                if (resolvedAggregateOwners.empty()) resolvedAggregateOwners = owners;
+                else resolvedAggregate = resolvedAggregate && resolvedAggregateOwners == owners;
+            }
+            allResolvedAggregates = allResolvedAggregates && resolvedAggregate;
             allAggregates = allAggregates && candidate.identity == SpacingIdentity4::LEGACY_SPACER
                 && candidate.item && candidate.aggregateOwners.empty() && candidate.sharedItems.empty();
             allItems = allItems && candidate.identity == SpacingIdentity4::ITEM
@@ -104,6 +120,11 @@ SpacingShape4 spacingResolveShape4(const Shape& native, const SpacingShape4& can
             std::sort(aggregateOwners.begin(), aggregateOwners.end(), std::less<const Element*>());
             resolved.identity = SpacingIdentity4::LEGACY_SPACER;
             resolved.aggregateOwners = aggregateOwners;
+        }
+        else if (allResolvedAggregates && matches == nativeMatches
+                 && matches == resolvedAggregateOwners.size() && matches > 1) {
+            resolved.identity = SpacingIdentity4::LEGACY_SPACER;
+            resolved.aggregateOwners = resolvedAggregateOwners;
         }
         else if (allowSharedItems && allItems && !unknown && matches == nativeMatches
                  && sharedItems.size() == matches && matches > 1) {

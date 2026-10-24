@@ -42,7 +42,9 @@ struct SpacingShape4 {
 
 // Preserve every native rectangle, in order. Ownership is resolved only where
 // all matching candidates agree. Coincident legacy aggregates may retain a
-// complete producer set when multiplicities match. At staff assembly only,
+// complete producer set when multiplicities match. Previously resolved sets
+// survive another resolution only with identical complete sets and exact counts.
+// At staff assembly only,
 // allowSharedItems also retains distinct direct producers with exact counts.
 // Other ambiguity falls back; shared geometry still requires projection.
 SpacingShape4 spacingResolveShape4(const Shape&, const SpacingShape4& candidates, bool allowSharedItems = false);

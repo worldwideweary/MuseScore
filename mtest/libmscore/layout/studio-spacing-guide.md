@@ -2535,3 +2535,18 @@ plans plus actual coordinates. Only the v0.97 runtime test rows enable tracing;
 ordinary application use is quiet. All assertions and layout behavior remain.
 Rerun tst_spacing normally and provide its XML; failures may remain. See
 `v0.99-after-grace-plan-trace.md`. No new comparison scores are needed.
+
+
+### v0.100: preserve nested spacing-bound provenance
+
+The v0.99 trace establishes that grouped after-graces fall back before final
+spacing: their owner segments fail geometry admission while the same post-layout
+queries succeed. AG1's single grace applies normally. Coincident unpositioned
+grace spacing bounds acquire complete producer sets at chord resolution, then
+lose them when those already resolved records pass through staff resolution.
+Preserve identical complete sets only with exact native/candidate/set counts;
+unknown, mixed, inconsistent or malformed sets still reject. Add a two-level
+resolver regression and invalid-set controls. All layout assertions remain.
+Apply after v0.99 and rerun tst_spacing and tst_beam; native confirmation remains
+pending. Keep the trace temporarily to verify actual application. Reuse v0.97
+scores. See `v0.100-nested-spacing-bound-provenance.md`.

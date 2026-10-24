@@ -558,6 +558,38 @@ void TestSpacing::geometryResolution()
             QVERIFY(!entry.item);
             QCOMPARE(static_cast<int>(entry.aggregateOwners.size()), 2);
             }
+      // Resolve again exactly as chord geometry is reconciled with its staff
+      // shape. Coincident unpositioned after-grace bounds must retain the full
+      // producer set, rather than becoming unclassified at this second level.
+      SpacingShape4 nested = spacingResolveShape4(sharedNative, shared, true);
+      for (const auto& entry : nested.elements) {
+            QCOMPARE(int(entry.identity), int(SpacingIdentity4::LEGACY_SPACER));
+            QVERIFY(!entry.item && entry.sharedItems.empty());
+            QVERIFY(entry.aggregateOwners == shared.elements.front().aggregateOwners);
+            }
+      SpacingShape4 reversed = shared;
+      for (auto& entry : reversed.elements) std::reverse(entry.aggregateOwners.begin(), entry.aggregateOwners.end());
+      QVERIFY(spacingResolveShape4(sharedNative, reversed, true).elements.front().aggregateOwners
+            == nested.elements.front().aggregateOwners);
+      Shape translatedNative;
+      for (const QRectF& r : sharedNative) translatedNative.add(r.translated(offset));
+      const SpacingShape4 translatedNested = spacingResolveShape4(translatedNative, nested.translated(offset), true);
+      QVERIFY(translatedNested.elements.front().aggregateOwners == nested.elements.front().aggregateOwners);
+      for (int mode = 0; mode < 7; ++mode) {
+            SpacingShape4 broken = shared;
+            Shape wrongNative = sharedNative;
+            switch (mode) {
+            case 0: broken.elements.front().aggregateOwners.back() = broken.elements.front().aggregateOwners.front(); break;
+            case 1: broken.elements.front().aggregateOwners.back() = nullptr; break;
+            case 2: broken.elements.front().aggregateOwners.back() = accidental; break; // inconsistent producer sets
+            case 3: broken.elements.front().item = &secondContext; break;
+            case 4: broken.elements.front().sharedItems.push_back(&note); break;
+            case 5: broken.elements.pop_back(); break;
+            case 6: wrongNative.add(spacer.rect); break;
+            }
+            const SpacingShape4 rejected = spacingResolveShape4(wrongNative, broken, true);
+            QVERIFY(rejected.elements.front().identity != SpacingIdentity4::LEGACY_SPACER);
+            }
       std::reverse(owners.elements.begin(), owners.elements.end());
       const SpacingShape4 permuted = spacingResolveShape4(sharedNative, owners);
       QVERIFY(shared.elements.front().aggregateOwners == permuted.elements.front().aggregateOwners);
