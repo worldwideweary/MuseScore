@@ -2604,3 +2604,22 @@ Assert four separate systems versus one combined natural system in the test.
 Reopen the corrected v0.102 files for visual comparison. Native completion of
 the full suite and the newly genuine combined natural case remains pending.
 See `v0.103-rest-squeeze-test-and-fixture-fix.md`.
+
+
+### v0.104: passing rest stage; match measure stretch for visual squeezing
+
+The user reports v0.103 tests passing. Paired captures support close agreement
+for AR1/AG5's natural owning-C-to-first-D gap, internal grace intervals, and
+last-grace-to-rest clearance. The static squeeze views distribute header/rhythm
+space differently, but source audit finds unequal inputs: Studio 4.7.5 ignores
+saved measure stretch when importing pre-4.0 scores. The old squeeze file uses
+stretch 2 in 37E, while Studio retains its default 1.
+
+Keep the stretch-2 runtime regression. Add
+`v0.104-spacing-after-grace-rest-squeeze-match.mscx`, with stretch 1, narrower
+page, and both experimental options on, so the imported stretch matches. Add
+native checks of the file's actual static compressed plan and dynamic squeezing
+under both beam modes. Fix the old squeeze title's literal font markup using a
+plain title and supported size field. No engraving algorithms change. Compare
+the new file in both applications before diagnosing a remaining squeeze gap.
+See `v0.104-rest-squeeze-import-audit.md`.

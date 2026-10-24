@@ -44,6 +44,8 @@ class TestSpacing : public QObject, public MTest {
       void graceBeforeLayout();
       void graceNeighborPlan_data();
       void graceNeighborPlan();
+      void graceAfterRestStaticSqueeze_data();
+      void graceAfterRestStaticSqueeze();
       void graceAfterRest_data();
       void graceAfterRest();
       void graceAfterSystem_data();
@@ -3240,6 +3242,49 @@ static std::vector<qreal> graceLayoutSnapshot4(Score* score)
       return values;
       }
 
+void TestSpacing::graceAfterRestStaticSqueeze_data()
+      {
+      graceBeforePlan_data();
+      }
+
+void TestSpacing::graceAfterRestStaticSqueeze()
+      {
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + "v0.104-spacing-after-grace-rest-squeeze-match.mscx");
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      Measure* measure = score->firstMeasure();
+      QVERIFY(measure && !measure->nextMeasure() && !measure->lineBreak());
+      QCOMPARE(measure->userStretch(), qreal(1));
+      const auto placed = graceLayoutSnapshot4(score);
+      QString reason;
+      SpacingPlan4 natural, expected;
+      QVERIFY2(buildSpacingPlan4(measure->system(), natural, &reason), qPrintable(reason));
+      const qreal target = measure->system()->width();
+      QVERIFY2(natural.width > target,
+            qPrintable(QString("Matched rest fixture must squeeze: natural=%1 actual=%2")
+                  .arg(natural.width, 0, 'g', 17).arg(target, 0, 'g', 17)));
+      QVERIFY2(squeezeSpacingPlan4(measure->system(), target, expected, &reason), qPrintable(reason));
+      QVERIFY(justifySpacingPlan4(expected, target));
+      QCOMPARE(static_cast<int>(expected.afterGraces.size()), 1);
+      for (const auto& e : expected.measures) {
+            QVERIFY(qAbs(e.measure->x() - e.x) < 1e-6);
+            QVERIFY(qAbs(e.measure->width() - e.width) < 1e-6);
+            }
+      for (const auto& e : expected.segments) {
+            if (e.ignored) continue;
+            QVERIFY(qAbs(e.segment->measure()->x() + e.segment->x() - e.x) < 1e-6);
+            QVERIFY(qAbs(e.segment->width() - e.width) < 1e-6);
+            }
+      const GraceAfterPlan4& after = expected.afterGraces.front();
+      QVERIFY(after.target->element(0) && after.target->element(0)->isRest());
+      for (const auto& p : after.positions)
+            QVERIFY(qAbs(after.owner->segment()->x() + after.owner->x() + p.chord->x() - after.target->x() - p.x) < 1e-6);
+      QVERIFY(graceLayoutSnapshot4(score) == placed);
+      delete score;
+      }
+
 void TestSpacing::graceAfterRest_data()
       {
       QTest::addColumn<bool>("modernBeams");
@@ -4111,7 +4156,8 @@ void TestSpacing::graceSqueeze_data()
       for (const QString& file : {QString("v0.82-spacing-grace-squeeze.mscx"),
                                   QString("v0.90-spacing-grace-accidental-squeeze.mscx"),
                                   QString("v0.97-spacing-after-grace-squeeze.mscx"),
-                                  QString("v0.102-spacing-after-grace-rest-squeeze.mscx")}) {
+                                  QString("v0.102-spacing-after-grace-rest-squeeze.mscx"),
+                                  QString("v0.104-spacing-after-grace-rest-squeeze-match.mscx")}) {
             for (bool beams : {false, true}) {
                   const QByteArray tag = (file + (beams ? "-studio" : "-legacy")).toLatin1();
                   QTest::newRow(tag.constData()) << beams << file;
@@ -4131,7 +4177,7 @@ void TestSpacing::graceSqueeze()
       score->doLayout();
       Measure* measure = score->firstMeasure();
       QVERIFY(measure && !measure->nextMeasure());
-      QCOMPARE(measure->userStretch(), qreal(2));
+      QCOMPARE(measure->userStretch(), file.startsWith("v0.104-") ? qreal(1) : qreal(2));
       SpacingPlan4 natural;
       QString reason;
       QVERIFY2(buildSpacingPlan4(measure->system(), natural, &reason), qPrintable(reason));
