@@ -250,6 +250,18 @@ bool SpacingContextCache4::lookup(const Chord* chord, bool allowGrace,
     return false;
 }
 
+const SpacingGraceContext4* SpacingContextCache4::mergedContext(const Chord* owner, const Chord* target)
+{
+    if (_mergedOwner != owner || _mergedTarget != target) {
+        _mergedOwner = owner;
+        _mergedTarget = target;
+        _mergedContext.mains = {target};
+        _mergedContext.afterMains = {owner};
+        _mergedContext.mergedPairs = {{owner, target}};
+    }
+    return &_mergedContext;
+}
+
 static bool commonItemContext4(const Element* item, bool allowGrace,
                                const SpacingGraceContext4* context, const Chord* scopedMain, SpacingContextCache4* cache)
 {
@@ -433,14 +445,20 @@ static bool afterGraceScopePolicy4(const SpacingPaddingTable4& table, const Chor
         }
         return false;
     };
-    SpacingGraceContext4 joint;
+    SpacingGraceContext4 local;
+    const SpacingGraceContext4* joint = nullptr;
     if (includeBefore) {
-        joint.mains.push_back(toChord(target));
-        joint.afterMains.push_back(owner);
-        joint.mergedPairs.push_back({owner, toChord(target)});
+        if (cache)
+            joint = cache->mergedContext(owner, toChord(target));
+        else {
+            local.mains.push_back(toChord(target));
+            local.afterMains.push_back(owner);
+            local.mergedPairs.push_back({owner, toChord(target)});
+            joint = &local;
+        }
     }
     return belongs(first) && belongs(second)
-        && pairPolicy4(table, first, second, shapeSpatium, result, true, includeBefore ? &joint : nullptr, nullptr, cache);
+        && pairPolicy4(table, first, second, shapeSpatium, result, true, joint, nullptr, cache);
 }
 
 bool spacingAfterGracePairPolicy4(const SpacingPaddingTable4& table, const Chord* owner, const Element* target,

@@ -50,9 +50,12 @@ struct SpacingGraceContext4 {
 class SpacingContextCache4 {
     bool _initialized = false, _allowGrace = false, _hasContext = false;
     const Chord* _scopedMain = nullptr;
-    SpacingGraceContext4 _context;
+    SpacingGraceContext4 _context, _mergedContext;
+    const Chord* _mergedOwner = nullptr;
+    const Chord* _mergedTarget = nullptr;
     std::vector<std::pair<const Chord*, bool>> _chords;
 public:
+    const SpacingGraceContext4* mergedContext(const Chord* owner, const Chord* target);
     bool lookup(const Chord*, bool allowGrace, const SpacingGraceContext4*,
                 const Chord* scopedMain, bool& result);
     void remember(const Chord* chord, bool result) { _chords.push_back({chord, result}); }

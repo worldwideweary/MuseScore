@@ -2950,3 +2950,14 @@ Extend native cached/uncached snapshot checks and retain independent final
 projection comparisons. See `v0.130-grace-native-shape-reuse.md`. Apply after
 v0.129 and repeat both native mtests and the existing timing test. The new
 `shapeReuse` counter reports avoided extractions; native gains are unmeasured.
+
+### v0.131: prepare the merged component-pair scope once
+
+v0.130 native mtests pass. The latest log shows about 56 ms median commands,
+1,024 element extractions and 260 shape reuses. Grace distance remains about
+12.5 ms; avoid rebuilding its three-vector merged context for every pair.
+Reuse it within the existing query cache and invalidate by root identity.
+Also report compiler optimization/assertions/Qt once per profiling process;
+current build comparability with Studio has not been established. See
+`v0.131-grace-pair-context-preparation.md`. Apply after v0.130, run both
+native mtests and repeat the same timing test, retaining the complete log.

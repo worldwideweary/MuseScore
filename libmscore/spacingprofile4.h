@@ -79,6 +79,26 @@ inline void endSpacingProfile4()
     if (!data.collecting) return;
     const qreal elapsed = data.command.nsecsElapsed() / 1000000.0;
     data.collecting = false;
+    static const bool buildReported = [] {
+#if defined(__GNUC__) || defined(__clang__)
+#ifdef __OPTIMIZE__
+        const char* optimization = "on";
+#else
+        const char* optimization = "off";
+#endif
+#else
+        const char* optimization = "unknown";
+#endif
+#ifdef NDEBUG
+        const char* assertions = "off";
+#else
+        const char* assertions = "on";
+#endif
+        qDebug().noquote() << QString("layout4-profile-build compiler-optimization=%1 assertions=%2 Qt=%3")
+            .arg(optimization).arg(assertions).arg(QT_VERSION_STR);
+        return true;
+    }();
+    (void)buildReported;
     static const char* names[] = { "update", "system", "plan", "before", "after", "merged",
         "geometry", "beams", "obstacles", "anchors", "curve", "context", "beamReuse",
         "components", "graceDistance", "paddingTable", "elementShape", "chordCheck", "shapeReuse" };

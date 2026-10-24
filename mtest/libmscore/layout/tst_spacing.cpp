@@ -4628,7 +4628,7 @@ void TestSpacing::graceContextCachePolicies()
             joint.afterMains.push_back(owner);
             joint.mergedPairs.push_back({owner, target});
             int accepted = 0, rejected = 0;
-            for (int scope : {0, 1, 2, 3, 4, 5, 0}) {
+            for (int scope : {0, 1, 2, 3, 4, 5, 6, 0}) {
                   for (int repeat = 0; repeat < 2; ++repeat) {
                         for (const Element* a : items) {
                               for (const Element* b : items) {
@@ -4647,6 +4647,12 @@ void TestSpacing::graceContextCachePolicies()
                                     else if (scope == 2) {
                                           uncached = spacingAfterGracePairPolicy4(table, owner, target, a, b, score->spatium(), expected);
                                           cached = spacingAfterGracePairPolicy4(table, owner, target, a, b, score->spatium(), actual, false, &cache);
+                                          }
+                                    else if (scope == 6) {
+                                          // Switching roots must rebuild the prepared context and
+                                          // invalidate any chord decisions from the original group.
+                                          uncached = spacingMergedGracePairPolicy4(table, target, owner, a, b, score->spatium(), expected, true);
+                                          cached = spacingMergedGracePairPolicy4(table, target, owner, a, b, score->spatium(), actual, true, &cache);
                                           }
                                     else {
                                           const SpacingGraceContext4* context = scope == 4 ? &joint : nullptr;
