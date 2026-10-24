@@ -2699,3 +2699,18 @@ Tests cover projection multiplicity, actual solved placement, compression and
 restoration. Native results and visual confirmation remain pending. Compare
 the natural B cases first; preserve M2's clearer mixed-direction separation.
 See `v0.109-after-grace-barline-system.md`.
+
+### v0.110: accepted barlines; read-only combined-group query
+
+The user reports v0.109 tests passing. Paired natural B1-B3 captures show close
+agreement in note/grace/barline gaps. Add a separate read-only combined plan for
+same-direction incoming after-graces and target before-graces, packed together
+against the target's own components while retaining each original parent.
+
+M1/M3 query coverage uses the existing v0.107 matrix; M2 rejects mixed directions.
+Production/system admission remains unchanged, as do original after-only and
+default collision scopes. Check ownership, ordering, boundary clearance, stale
+position independence, edited-stem rejection and unchanged score snapshots.
+No new capture is needed. Native tests remain pending; next stage joint typed
+projection and both-beam preparation before live placement. See
+`v0.110-merged-grace-readonly-plan.md`.

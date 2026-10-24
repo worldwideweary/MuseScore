@@ -59,6 +59,11 @@ bool spacingGracePairPolicy4(const SpacingPaddingTable4&, const Chord* main,
 bool spacingAfterGracePairPolicy4(const SpacingPaddingTable4&, const Chord* owner, const Element* target,
                                   const Element* first, const Element* second,
                                   qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner = false);
+// Explicit joint-query scope: incoming after-graces, target before-graces and target.
+// Does not admit merged groups into ordinary or system queries.
+bool spacingMergedGracePairPolicy4(const SpacingPaddingTable4&, const Chord* owner, const Chord* target,
+                                   const Element* first, const Element* second,
+                                   qreal shapeSpatium, SpacingPairPolicy4& result);
 // Pure rectangular constraint; finite, normalized geometry/policy is required.
 // Returns -max(qreal) when this pair imposes no horizontal constraint.
 qreal spacingPairDistance4(const QRectF&, const QRectF&, const SpacingPairPolicy4&,

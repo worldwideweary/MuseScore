@@ -52,7 +52,7 @@ static const Chord* ownerChord4(const Element* item)
 }
 
 static bool graceComponents4(const Chord* chord, const Chord* main,
-                              const SpacingPaddingTable4& table, SpacingShape4& result, const Element* afterTarget = nullptr)
+                              const SpacingPaddingTable4& table, SpacingShape4& result, const Element* afterTarget = nullptr, bool merged = false)
 {
     const SpacingShape4 native = spacingElementShape4(chord);
     SpacingShape4 shape;
@@ -60,7 +60,7 @@ static bool graceComponents4(const Chord* chord, const Chord* main,
         // The main chord's native shape contains its already-placed graces.
         // Rebuild from its own components, never their stale positions/bounds.
         const Chord* owner = ownerChord4(e.item);
-        if (chord == main && owner && owner != main && owner->parent() == main)
+        if ((chord == main || (merged && chord == afterTarget)) && owner && owner != chord && owner->parent() == chord)
             continue;
         if (e.identity == SpacingIdentity4::LEGACY_SPACER && e.item == chord
             && e.aggregateOwners.empty() && e.sharedItems.empty())
@@ -83,7 +83,9 @@ static bool graceComponents4(const Chord* chord, const Chord* main,
             return false;
         }
         SpacingPairPolicy4 policy;
-        const bool supported = afterTarget
+        const bool supported = merged
+            ? spacingMergedGracePairPolicy4(table, main, toChord(afterTarget), e.item, e.item, chord->spatium(), policy)
+            : afterTarget
             ? spacingAfterGracePairPolicy4(table, main, afterTarget, e.item, e.item, chord->spatium(), policy)
             : spacingGracePairPolicy4(table, main, e.item, e.item, chord->spatium(), policy);
         if (!supported)
@@ -97,13 +99,15 @@ static bool graceComponents4(const Chord* chord, const Chord* main,
 }
 
 static bool graceDistance4(const SpacingPaddingTable4& table, const Chord* main,
-                            const SpacingShape4& a, const SpacingShape4& b, qreal sp, qreal& result, const Element* afterTarget = nullptr)
+                            const SpacingShape4& a, const SpacingShape4& b, qreal sp, qreal& result, const Element* afterTarget = nullptr, bool merged = false)
 {
     qreal distance = -std::numeric_limits<qreal>::max();
     for (const auto& first : a.elements) {
         for (const auto& second : b.elements) {
             SpacingPairPolicy4 policy;
-            const bool supported = afterTarget
+            const bool supported = merged
+                ? spacingMergedGracePairPolicy4(table, main, toChord(afterTarget), first.item, second.item, sp, policy)
+                : afterTarget
                 ? spacingAfterGracePairPolicy4(table, main, afterTarget, first.item, second.item, sp, policy)
                 : spacingGracePairPolicy4(table, main, first.item, second.item, sp, policy);
             if (!supported)
@@ -236,7 +240,7 @@ bool buildGraceBeforePlan4(const Chord* main, GraceBeforePlan4& result, QString*
         reason->clear();
     return true;
 }
-static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result, QString* reason, bool barlineOnly)
+static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result, QString* reason, bool barlineOnly, bool merged = false)
 {
     const auto fail = [reason](const char* message) {
         if (reason) *reason = QString::fromLatin1(message);
@@ -281,7 +285,8 @@ static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result
     if (target->isChord()) {
         const Chord* chord = toChord(target);
         if (!validChord(chord) || chord->score() != owner->score() || chord->mag() != 1 || chord->beam()
-            || !chord->graceNotes().empty())
+            || (merged ? (chord->graceNotesBefore().empty() || !chord->graceNotesAfter().empty())
+                       : !chord->graceNotes().empty()))
             return fail("Unadapted or merged after-grace target");
     }
     else if (target->isRest()) {
@@ -304,6 +309,7 @@ static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result
             || barline->spanFrom() || barline->spanTo() || !barline->el()->empty())
             return fail("After-grace barline target needs an ordinary visible unedited single-staff barline");
     }
+    if (merged && !target->isChord()) return fail("Merged grace target needs an ordinary chord");
     for (const Segment* segment : {owner->segment(), targetSegment}) {
         if (!segment->enabled() || !segment->visible())
             return fail("After-grace owner/target segment is inactive");
@@ -316,7 +322,7 @@ static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result
                 return fail("Unadapted after-grace segment attachment");
         }
     }
-    const auto graces = owner->graceNotesAfter();
+    auto graces = owner->graceNotesAfter();
     const Beam* beam = graces.front()->beam();
     for (const Chord* grace : graces) {
         if (!validChord(grace) || !grace->isGraceAfter() || grace->parent() != owner || !grace->graceNotes().empty()
@@ -333,9 +339,22 @@ static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result
                 return fail("After-grace beam extends outside group");
         }
     }
+    if (merged) {
+        const Chord* next = toChord(target);
+        GraceBeforePlan4 before;
+        if (!buildGraceBeforePlan4(next, before, reason)) return false;
+        for (const Chord* grace : next->graceNotesBefore()) {
+            if (!validChord(grace) || grace->up() != graces.front()->up())
+                return fail("Merged query needs unedited same-direction grace groups");
+        }
+        for (Chord* grace : next->graceNotesBefore()) graces.push_back(grace);
+    }
     const SpacingPaddingTable4 table(owner->score());
     SpacingShape4 targetShape;
-    if (!afterTargetComponents4(target, owner, table, targetShape))
+    const bool targetReady = merged
+        ? graceComponents4(toChord(target), owner, table, targetShape, target, true)
+        : afterTargetComponents4(target, owner, table, targetShape);
+    if (!targetReady)
         return fail("Unadapted after-grace target shape");
     targetShape = targetShape.translated(target->pos());
     GraceAfterPlan4 plan;
@@ -346,8 +365,8 @@ static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result
     for (int i = graces.size() - 1; i >= 0; --i) {
         SpacingShape4 shape;
         qreal distance;
-        if (!graceComponents4(graces[i], owner, table, shape, target)
-            || !graceDistance4(table, owner, shape, accumulated, graces[i]->spatium(), distance, target))
+        if (!graceComponents4(graces[i], owner, table, shape, target, merged)
+            || !graceDistance4(table, owner, shape, accumulated, graces[i]->spatium(), distance, target, merged))
             return fail("Unadapted after-grace component shape");
         const qreal x = -std::max(distance, qreal(0));
         plan.positions[i] = {graces[i], x};
@@ -355,7 +374,7 @@ static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result
         accumulated.elements.insert(accumulated.elements.end(), shape.elements.begin(), shape.elements.end());
     }
     qreal distance;
-    if (!graceDistance4(table, owner, accumulated, targetShape, graces.front()->spatium(), distance, target))
+    if (!graceDistance4(table, owner, accumulated, targetShape, graces.front()->spatium(), distance, target, merged))
         return fail("Unadapted after-grace group-to-target constraint");
     const qreal groupX = std::min(-distance,
         -(0.45 * owner->score()->spatium() + graces.back()->notes().front()->headWidth() / 2));
@@ -384,6 +403,20 @@ bool buildGraceAfterBarlinePlan4(const Chord* owner, GraceAfterPlan4& result, QS
     // Target-specific query shares production packing and keeps other target
     // types out of boundary-focused checks.
     return buildGraceAfterPlanImpl4(owner, result, reason, true);
+}
+
+bool buildGraceMergedPlan4(const Chord* owner, GraceMergedPlan4& result, QString* reason)
+{
+    GraceAfterPlan4 joint;
+    if (!buildGraceAfterPlanImpl4(owner, joint, reason, false, true)) return false;
+    GraceMergedPlan4 plan;
+    plan.owner = owner;
+    plan.target = toChord(joint.target->element(owner->track()));
+    plan.positions = joint.positions;
+    plan.left = joint.left;
+    plan.right = joint.right;
+    result = plan;
+    return true;
 }
 
 static bool afterSourceComponents4(const Chord* owner, const Element* target,

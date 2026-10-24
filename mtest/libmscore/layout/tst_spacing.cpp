@@ -3422,6 +3422,67 @@ void TestSpacing::graceAfterBoundaryBaseline()
                   QCOMPARE(boundary.left, qreal(123));
                   QVERIFY(!boundary.owner && !boundary.target && boundary.positions.empty());
                   }
+            GraceMergedPlan4 joint;
+            joint.left = 123;
+            const bool jointBuilt = buildGraceMergedPlan4(owner, joint, &reason);
+            QVERIFY2(jointBuilt == (count == 3 || count == 5), qPrintable(reason));
+            if (jointBuilt) {
+                  Chord* next = toChord(target->element(0));
+                  auto combined = after;
+                  for (Chord* grace : next->graceNotesBefore()) combined.push_back(grace);
+                  QCOMPARE(joint.owner, static_cast<const Chord*>(owner));
+                  QCOMPARE(joint.target, static_cast<const Chord*>(next));
+                  QCOMPARE(static_cast<int>(joint.positions.size()), combined.size());
+                  QVERIFY(qIsFinite(joint.left) && qIsFinite(joint.right) && joint.left < joint.right);
+                  for (int i = 0; i < combined.size(); ++i) {
+                        QCOMPARE(joint.positions[i].chord, static_cast<const Chord*>(combined[i]));
+                        QCOMPARE(combined[i]->parent(), static_cast<Element*>(i < after.size() ? owner : next));
+                        QVERIFY(qIsFinite(joint.positions[i].x));
+                        if (i) QVERIFY(joint.positions[i].x > joint.positions[i - 1].x);
+                        }
+                  const SpacingPaddingTable4 table(score);
+                  const Note* lastAfter = after.back()->notes().front();
+                  const Note* firstBefore = next->graceNotesBefore().front()->notes().front();
+                  SpacingPairPolicy4 policy;
+                  QVERIFY(spacingMergedGracePairPolicy4(table, owner, next, lastAfter, firstBefore, score->spatium(), policy));
+                  QVERIFY(policy.padding >= .3 * score->spatium());
+                  const qreal boundaryDistance = spacingPairDistance4(lastAfter->bbox().translated(lastAfter->pos()),
+                        firstBefore->bbox().translated(firstBefore->pos()), policy, score->spatium(), 1);
+                  QVERIFY(joint.positions[after.size()].x - joint.positions[after.size() - 1].x + 1e-6 >= boundaryDistance);
+                  QVERIFY(!spacingAfterGracePairPolicy4(table, owner, next, lastAfter, firstBefore, score->spatium(), policy));
+                  QVERIFY(!spacingPairPolicy4(table, lastAfter, firstBefore, score->spatium(), policy));
+                  QVERIFY(!spacingMergedGracePairPolicy4(table, owner, next,
+                        owner->notes().front(), firstBefore, score->spatium(), policy));
+                  // Native member x and segment intervals are not packing inputs.
+                  std::vector<qreal> saved;
+                  for (Chord* grace : combined) { saved.push_back(grace->x()); grace->rxpos() += 50 * score->spatium(); }
+                  const QPointF oldTarget = target->pos();
+                  target->rxpos() += 17 * score->spatium();
+                  GraceMergedPlan4 repeated;
+                  const bool repeatedBuilt = buildGraceMergedPlan4(owner, repeated, &reason);
+                  target->setPos(oldTarget);
+                  for (int i = 0; i < combined.size(); ++i) combined[i]->rxpos() = saved[i];
+                  QVERIFY2(repeatedBuilt, qPrintable(reason));
+                  QCOMPARE(static_cast<int>(repeated.positions.size()), static_cast<int>(joint.positions.size()));
+                  for (size_t i = 0; i < joint.positions.size(); ++i)
+                        QVERIFY(qAbs(repeated.positions[i].x - joint.positions[i].x) < 1e-6);
+                  // Both owners' grace stems participate in eligibility.
+                  for (Chord* grace : {after.front(), next->graceNotesBefore().front()}) {
+                        const qreal userLength = grace->stem()->userLen();
+                        grace->stem()->setUserLen(score->spatium());
+                        GraceMergedPlan4 edited;
+                        edited.left = 123;
+                        const bool accepted = buildGraceMergedPlan4(owner, edited);
+                        grace->stem()->setUserLen(userLength);
+                        QVERIFY(!accepted);
+                        QCOMPARE(edited.left, qreal(123));
+                        QVERIFY(!edited.owner && !edited.target && edited.positions.empty());
+                        }
+                  }
+            else {
+                  QCOMPARE(joint.left, qreal(123));
+                  QVERIFY(!joint.owner && !joint.target && joint.positions.empty());
+                  }
             SpacingPlan4 system;
             system.width = 123;
             const bool systemBuilt = buildSpacingPlan4(m->system(), system, &reason);

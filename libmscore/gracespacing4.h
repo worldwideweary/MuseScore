@@ -43,6 +43,16 @@ struct GraceAfterPlan4 {
 bool buildGraceAfterPlan4(const Chord*, GraceAfterPlan4&, QString* reason = nullptr);
 // Read-only target-specific query for an ordinary normal ending barline.
 bool buildGraceAfterBarlinePlan4(const Chord*, GraceAfterPlan4&, QString* reason = nullptr);
+struct GraceMergedPlan4 {
+    const Chord* owner = nullptr; // Owns the incoming after-graces.
+    const Chord* target = nullptr; // Retains ownership of its before-graces.
+    std::vector<GraceAfterPosition4> positions; // After then before, in TARGET SEGMENT coordinates.
+    qreal left = 0;
+    qreal right = 0;
+};
+// Read-only same-direction joint packing. Not used by production/system layout.
+// Every member keeps its parent; failure leaves the entire output untouched.
+bool buildGraceMergedPlan4(const Chord*, GraceMergedPlan4&, QString* reason = nullptr);
 struct GraceAfterGeometry4 {
     GraceAfterPlan4 plan;
     SpacingShape4 source; // Owner's own components, in source-segment coordinates.

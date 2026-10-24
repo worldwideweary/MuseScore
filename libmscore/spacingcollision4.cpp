@@ -361,26 +361,41 @@ bool spacingGracePairPolicy4(const SpacingPaddingTable4& table, const Chord* mai
     return belongs(first) && belongs(second) && pairPolicy4(table, first, second, shapeSpatium, result, true, nullptr, main);
 }
 
-bool spacingAfterGracePairPolicy4(const SpacingPaddingTable4& table, const Chord* owner, const Element* target,
+static bool afterGraceScopePolicy4(const SpacingPaddingTable4& table, const Chord* owner, const Element* target,
                                   const Element* first, const Element* second,
-                                  qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner)
+                                  qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner, bool includeBefore)
 {
     if (!owner || !target || owner == target || owner->isGrace()
         || (!target->isChord() && !target->isRest() && !target->isBarLine()) || (target->isChord() && toChord(target)->isGrace())
         || owner->score() != target->score() || owner->track() != target->track())
         return false;
-    const auto belongs = [owner, target, includeOwner](const Element* item) {
+    const auto belongs = [owner, target, includeOwner, includeBefore](const Element* item) {
         for (; item; item = item->parent()) {
             if (item == target) return true;
             if (item->isChord()) {
                 const Chord* chord = toChord(item);
-                return chord == target || (includeOwner && chord == owner) || (chord->isGraceAfter() && chord->parent() == owner);
+                return chord == target || (includeOwner && chord == owner) || (chord->isGraceAfter() && chord->parent() == owner)
+                    || (includeBefore && chord->isGraceBefore() && chord->parent() == target);
             }
         }
         return false;
     };
     // No local slur allowance in the after-grace scope yet.
     return belongs(first) && belongs(second) && pairPolicy4(table, first, second, shapeSpatium, result, true);
+}
+
+bool spacingAfterGracePairPolicy4(const SpacingPaddingTable4& table, const Chord* owner, const Element* target,
+                                  const Element* first, const Element* second,
+                                  qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner)
+{
+    return afterGraceScopePolicy4(table, owner, target, first, second, shapeSpatium, result, includeOwner, false);
+}
+
+bool spacingMergedGracePairPolicy4(const SpacingPaddingTable4& table, const Chord* owner, const Chord* target,
+                                   const Element* first, const Element* second,
+                                   qreal shapeSpatium, SpacingPairPolicy4& result)
+{
+    return afterGraceScopePolicy4(table, owner, target, first, second, shapeSpatium, result, false, true);
 }
 
 qreal spacingPairDistance4(const QRectF& first, const QRectF& second, const SpacingPairPolicy4& policy,
