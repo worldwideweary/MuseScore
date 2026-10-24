@@ -63,7 +63,8 @@ bool buildGraceMergedGeometry4(const Chord*, GraceMergedGeometry4&, QString* rea
 // Preparation before system spacing. Updates derived beam/
 // stem geometry at planned intra-group distances, restoring every member x.
 // Failure after preparation may leave derived geometry needing native relayout.
-bool prepareGraceMergedBeams4(Chord*, QString* reason = nullptr);
+// Optional output is the final validated geometry, published only on success.
+bool prepareGraceMergedBeams4(Chord*, QString* reason = nullptr, GraceMergedGeometry4* prepared = nullptr);
 struct GraceAfterGeometry4 {
     GraceAfterPlan4 plan;
     SpacingShape4 source; // Owner's own components, in source-segment coordinates.

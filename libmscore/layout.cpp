@@ -4167,13 +4167,44 @@ static bool prepareAfterGraceBeamForSpacing4(Chord* main, GraceAfterGeometry4 ge
     return false;
 }
 
+// Local to one collectSystem call. A fresh validated projection must match
+// exactly before skipping repeated preparation during prefix fitting.
+struct GraceBeamPreparation4 {
+    GraceMergedGeometry4 geometry;
+    std::vector<const Beam*> beams;
+};
+
+static bool sameGraceBeamPreparation4(const GraceBeamPreparation4& saved, const GraceMergedGeometry4& fresh)
+{
+    const auto& a = saved.geometry.plan;
+    const auto& b = fresh.plan;
+    if (a.owner != b.owner || a.target != b.target || a.left != b.left || a.right != b.right
+        || a.positions.size() != b.positions.size() || saved.beams.size() != b.positions.size()) return false;
+    for (size_t i = 0; i < b.positions.size(); ++i) {
+        if (a.positions[i].chord != b.positions[i].chord || a.positions[i].x != b.positions[i].x
+            || saved.beams[i] != b.positions[i].chord->beam()) return false;
+    }
+    const auto sameShape = [](const SpacingShape4& x, const SpacingShape4& y) {
+        if (x.elements.size() != y.elements.size()) return false;
+        for (size_t i = 0; i < x.elements.size(); ++i) {
+            const auto& p = x.elements[i];
+            const auto& q = y.elements[i];
+            if (p.item != q.item || p.identity != q.identity || p.rect.x() != q.rect.x() || p.rect.y() != q.rect.y()
+                || p.rect.width() != q.rect.width() || p.rect.height() != q.rect.height()
+                || p.aggregateOwners != q.aggregateOwners || p.sharedItems != q.sharedItems) return false;
+        }
+        return true;
+    };
+    return sameShape(saved.geometry.source, fresh.source) && sameShape(saved.geometry.target, fresh.target);
+}
+
 // Before-grace groups already have fixed internal horizontal positions. Their beams
 // can therefore finalize stems and slashes before system spacing, independent
 // of the enclosing measure's eventual stretch. Otherwise the page pass moves
 // the slash after its provisional shape has constrained a neighboring note.
 // Keep this mutation outside the read-only placement planner and restrict it
 // to groups admitted by the corresponding grace adapter.
-static bool prepareGraceBeamsForSpacing4(System* system)
+static bool prepareGraceBeamsForSpacing4(System* system, std::vector<GraceBeamPreparation4>& preparedBeams)
 {
     if (!system->score()->styleB(Sid::spacingLayout4) || MScore::noHorizontalStretch)
         return true;
@@ -4194,7 +4225,19 @@ static bool prepareGraceBeamsForSpacing4(System* system)
                     else {
                         GraceMergedGeometry4 joint;
                         if (buildGraceMergedGeometry4(main, joint)) {
-                            if (!prepareGraceMergedBeams4(main)) return false;
+                            auto saved = std::find_if(preparedBeams.begin(), preparedBeams.end(),
+                                [main](const GraceBeamPreparation4& entry) { return entry.geometry.plan.owner == main; });
+                            if (saved != preparedBeams.end() && sameGraceBeamPreparation4(*saved, joint)) {
+                                SpacingProfileScope4 reuse(SpacingProfileStage4::BEAM_REUSE);
+                            }
+                            else {
+                                GraceBeamPreparation4 entry;
+                                if (!prepareGraceMergedBeams4(main, nullptr, &entry.geometry)) return false;
+                                for (const auto& position : entry.geometry.plan.positions)
+                                    entry.beams.push_back(position.chord->beam());
+                                if (saved == preparedBeams.end()) preparedBeams.push_back(std::move(entry));
+                                else *saved = std::move(entry);
+                            }
                             jointTargets.push_back(joint.plan.target);
                         }
                     }
@@ -4218,7 +4261,7 @@ static bool prepareGraceBeamsForSpacing4(System* system)
 // Fit only ordinary prefixes whose header/barline geometry remains unchanged
 // when the next measure is accepted or this system is finalized. Keep the
 // native width accumulator intact for unsupported-context fallback/backtracking.
-static bool systemFittingWidth4(System* system, qreal& width)
+static bool systemFittingWidth4(System* system, qreal& width, std::vector<GraceBeamPreparation4>& preparedBeams)
 {
     if (MScore::noHorizontalStretch || system->score()->styleB(Sid::hideEmptyStaves))
         return false;
@@ -4240,7 +4283,7 @@ static bool systemFittingWidth4(System* system, qreal& width)
         }
         first = false;
     }
-    if (!prepareGraceBeamsForSpacing4(system)) return false;
+    if (!prepareGraceBeamsForSpacing4(system, preparedBeams)) return false;
     SpacingPlan4 plan;
     if (!buildSpacingPlan4(system, plan))
         return false;
@@ -4308,6 +4351,7 @@ static std::map<Measure*, qreal> systemSpacingWidths4(System* system, qreal extr
 
 System* Score::collectSystem(LayoutContext& lc)
       {
+      std::vector<GraceBeamPreparation4> preparedBeams;
       SpacingProfileScope4 profile(SpacingProfileStage4::SYSTEM);
       if (!lc.curMeasure)
             return 0;
@@ -4394,7 +4438,7 @@ System* Score::collectSystem(LayoutContext& lc)
 
             qreal fittingWidth = minWidth + ww;
             if (styleB(Sid::spacingLayout4))
-                  systemFittingWidth4(system, fittingWidth);
+                  systemFittingWidth4(system, fittingWidth, preparedBeams);
             bool doBreak = (system->measures().size() > 1) && (fittingWidth > systemWidth);
             if (doBreak) {
                   breakMeasure = lc.curMeasure;
@@ -4591,7 +4635,7 @@ System* Score::collectSystem(LayoutContext& lc)
       // Collection and squeezing still use the existing measure widths. A
       // complete fitting plan, including bounded squeezing when necessary,
       // is required before any native positions change.
-      const bool graceGeometryReady = prepareGraceBeamsForSpacing4(system);
+      const bool graceGeometryReady = prepareGraceBeamsForSpacing4(system, preparedBeams);
       SpacingPlan4 studioPlan;
       bool useStudioPlan = false;
       std::map<Measure*, const SpacingMeasurePlan4*> studioMeasures;

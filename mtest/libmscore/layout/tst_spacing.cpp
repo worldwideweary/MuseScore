@@ -3350,7 +3350,11 @@ void TestSpacing::graceMergedGeometry()
                   QCOMPARE(static_cast<int>(geometry.target.elements.size()), 1);
                   QCOMPARE(geometry.source.elements.front().rect.x(), qreal(99));
                   QCOMPARE(geometry.target.elements.front().rect.x(), qreal(99));
-                  QVERIFY(!prepareGraceMergedBeams4(owner));
+                  GraceMergedGeometry4 unprepared;
+                  unprepared.plan.left = 789;
+                  QVERIFY(!prepareGraceMergedBeams4(owner, nullptr, &unprepared));
+                  QCOMPARE(unprepared.plan.left, qreal(789));
+                  QVERIFY(unprepared.source.elements.empty() && unprepared.target.elements.empty());
                   continue;
                   }
             supported.push_back(owner);
@@ -3431,7 +3435,30 @@ void TestSpacing::graceMergedGeometry()
             std::vector<qreal> positions;
             for (const auto& p : plan.positions) positions.push_back(p.chord->x());
             QString reason;
-            QVERIFY2(prepareGraceMergedBeams4(owner, &reason), qPrintable(reason));
+            GraceMergedGeometry4 completed, fresh;
+            QVERIFY2(prepareGraceMergedBeams4(owner, &reason, &completed), qPrintable(reason));
+            QVERIFY2(buildGraceMergedGeometry4(owner, fresh, &reason), qPrintable(reason));
+            QCOMPARE(completed.plan.owner, fresh.plan.owner);
+            QCOMPARE(completed.plan.target, fresh.plan.target);
+            QCOMPARE(completed.plan.left, fresh.plan.left);
+            QCOMPARE(completed.plan.right, fresh.plan.right);
+            QCOMPARE(int(completed.plan.positions.size()), int(fresh.plan.positions.size()));
+            for (size_t i = 0; i < fresh.plan.positions.size(); ++i) {
+                  QCOMPARE(completed.plan.positions[i].chord, fresh.plan.positions[i].chord);
+                  QCOMPARE(completed.plan.positions[i].x, fresh.plan.positions[i].x);
+                  }
+            for (const auto& pair : {std::make_pair(&completed.source, &fresh.source),
+                                     std::make_pair(&completed.target, &fresh.target)}) {
+                  QCOMPARE(int(pair.first->elements.size()), int(pair.second->elements.size()));
+                  for (size_t i = 0; i < pair.first->elements.size(); ++i) {
+                        const auto& x = pair.first->elements[i];
+                        const auto& y = pair.second->elements[i];
+                        QCOMPARE(x.item, y.item);
+                        QCOMPARE(int(x.identity), int(y.identity));
+                        QCOMPARE(x.rect, y.rect);
+                        QVERIFY(x.aggregateOwners == y.aggregateOwners && x.sharedItems == y.sharedItems);
+                        }
+                  }
             for (size_t i = 0; i < plan.positions.size(); ++i) QCOMPARE(plan.positions[i].chord->x(), positions[i]);
             const auto prepared = graceMergedSnapshot4(score);
             QVERIFY2(prepareGraceMergedBeams4(owner, &reason), qPrintable(reason));

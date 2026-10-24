@@ -2908,3 +2908,14 @@ snapshot within that geometry query, preserving projection order and fresh
 inputs for every later query. Add native independent fresh-extraction
 comparison. See `v0.126-grace-packed-component-reuse.md`. Apply after v0.125;
 native mtests and latency validation are pending, using the same score.
+
+### v0.127: reuse completed preparation during system-prefix fitting
+
+v0.126 native mtests pass, but latency remains and Studio 4.7.5 is responsive.
+The latest log shows about 85 ms median commands and unchanged preparation
+counts. Keep completed combined-grace beam preparation only within one
+collectSystem call; skip it after a fresh validated geometry query matches
+every recorded input and beam identity exactly. Add successful final-output
+and failure-atomicity checks plus a `beamReuse` timing counter. See
+`v0.127-same-system-grace-beam-reuse.md`. Apply after v0.126; native mtests
+and the existing timing/edit reproduction remain pending.

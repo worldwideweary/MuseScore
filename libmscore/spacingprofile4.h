@@ -10,7 +10,7 @@
 namespace Ms {
 enum class SpacingProfileStage4 {
     UPDATE, SYSTEM, PLAN, BEFORE, AFTER, MERGED, GEOMETRY, BEAMS,
-    OBSTACLES, ANCHORS, CURVE, CONTEXT, COUNT
+    OBSTACLES, ANCHORS, CURVE, CONTEXT, BEAM_REUSE, COUNT
 };
 struct SpacingProfileData4 {
     struct Entry { qint64 calls = 0, inclusive = 0, self = 0; };
@@ -79,7 +79,7 @@ inline void endSpacingProfile4()
     const qreal elapsed = data.command.nsecsElapsed() / 1000000.0;
     data.collecting = false;
     static const char* names[] = { "update", "system", "plan", "before", "after", "merged",
-        "geometry", "beams", "obstacles", "anchors", "curve", "context" };
+        "geometry", "beams", "obstacles", "anchors", "curve", "context", "beamReuse" };
     QStringList parts;
     for (int i = 0; i < static_cast<int>(SpacingProfileStage4::COUNT); ++i) {
         const auto& entry = data.entries[i];

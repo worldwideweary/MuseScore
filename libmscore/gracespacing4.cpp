@@ -622,7 +622,7 @@ bool buildGraceMergedSlurObstacles4(const Slur* slur, SpacingShape4& result, QSt
     return true;
 }
 
-bool prepareGraceMergedBeams4(Chord* owner, QString* reason)
+bool prepareGraceMergedBeams4(Chord* owner, QString* reason, GraceMergedGeometry4* prepared)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::BEAMS);
     GraceMergedGeometry4 geometry;
@@ -644,7 +644,10 @@ bool prepareGraceMergedBeams4(Chord* owner, QString* reason)
         if (grace->beam() && std::find(beams.begin(), beams.end(), grace->beam()) == beams.end())
             beams.push_back(grace->beam());
     }
-    if (beams.empty()) return true;
+    if (beams.empty()) {
+        if (prepared) *prepared = geometry;
+        return true;
+    }
     const auto sameShape = [](const SpacingShape4& a, const SpacingShape4& b) {
         if (a.elements.size() != b.elements.size()) return false;
         for (size_t i = 0; i < a.elements.size(); ++i) {
@@ -678,7 +681,10 @@ bool prepareGraceMergedBeams4(Chord* owner, QString* reason)
             if (next.plan.positions[i].chord != members[i])
                 return fail("Merged grace order changed during beam preparation");
         }
-        if (sameShape(geometry.source, next.source) && sameShape(geometry.target, next.target)) return true;
+        if (sameShape(geometry.source, next.source) && sameShape(geometry.target, next.target)) {
+            if (prepared) *prepared = next;
+            return true;
+        }
         geometry = next;
     }
     return fail("Merged grace beam geometry did not stabilize");
