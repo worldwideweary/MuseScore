@@ -3089,59 +3089,6 @@ void TestSpacing::graceNeighborPlan()
                               .arg(e.x, 0, 'g', 17).arg(e.segment->width(), 0, 'g', 17).arg(e.width, 0, 'g', 17);
                         qDebug("%s", qPrintable(line));
                         }
-                  // Controlled diagnostic only: determine whether resetting
-                  // beamed grace stems to their pre-beam lengths reproduces
-                  // the wider applied plan. Restore every stem and native
-                  // segment shape before the unchanged failing assertion.
-                  struct SavedGraceStem {
-                        Stem* stem;
-                        qreal length;
-                        QPointF position;
-                        };
-                  std::vector<SavedGraceStem> savedLengths;
-                  std::vector<Segment*> graceSegments;
-                  for (const SpacingMeasurePlan4& e : natural.measures) {
-                        for (Segment& segment : e.measure->segments()) {
-                              bool changed = false;
-                              for (Element* item : segment.elist()) {
-                                    if (!item || !item->isChord()) continue;
-                                    for (Chord* grace : toChord(item)->graceNotesBefore()) {
-                                          if (!grace->beam() || !grace->stem()) continue;
-                                          Stem* stem = grace->stem();
-                                          savedLengths.push_back({stem, stem->len(), stem->pos()});
-                                          const QString line = QString("grace tick=%1 index=%2 up=%3: final stem=%4 default=%5 x=%6")
-                                                .arg(grace->tick().ticks()).arg(grace->graceIndex()).arg(grace->up())
-                                                .arg(stem->len(), 0, 'g', 17).arg(grace->defaultStemLength(), 0, 'g', 17)
-                                                .arg(stem->x(), 0, 'g', 17);
-                                          qDebug("%s", qPrintable(line));
-                                          stem->setLen(grace->defaultStemLength());
-                                          changed = true;
-                                          }
-                                    }
-                              if (changed) {
-                                    segment.createShapes();
-                                    graceSegments.push_back(&segment);
-                                    }
-                              }
-                        }
-                  SpacingPlan4 provisional;
-                  QString probeReason;
-                  const bool probeBuilt = buildSpacingPlan4(m->system(), provisional, &probeReason);
-                  for (const SavedGraceStem& saved : savedLengths) {
-                        saved.stem->setLen(saved.length);
-                        saved.stem->setPos(saved.position);
-                        }
-                  for (Segment* segment : graceSegments) segment->createShapes();
-                  if (probeBuilt) {
-                        for (const SpacingMeasurePlan4& e : provisional.measures) {
-                              const QString line = QString("default-stem probe tick=%1: width=%2 applied=%3")
-                                    .arg(e.measure->tick().ticks()).arg(e.width, 0, 'g', 17)
-                                    .arg(e.measure->width(), 0, 'g', 17);
-                              qDebug("%s", qPrintable(line));
-                              }
-                        }
-                  else
-                        qDebug("default-stem probe rejected: %s", qPrintable(probeReason));
                   QVERIFY2(!measureMismatch, qPrintable(report));
                   }
             for (const SpacingMeasurePlan4& e : expected.measures) {

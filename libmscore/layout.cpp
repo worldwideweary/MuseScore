@@ -64,7 +64,9 @@
 #include "beamlayout4.h"
 #include "spacinglayout4.h"
 #include "spacingplan4.h"
+#include "gracespacing4.h"
 #include <map>
+#include <cmath>
 #include "tuplet.h"
 #include "undo.h"
 #include "utils.h"
@@ -4121,6 +4123,37 @@ static bool justifySystem4(const Measure* last, const MeasureBase* next,
     return !(availableWidth > 0 && naturalWidth / availableWidth < fillLimit);
 }
 
+// Grace groups already have fixed internal horizontal positions. Their beams
+// can therefore finalize stems and slashes before system spacing, independent
+// of the enclosing measure's eventual stretch. Otherwise the page pass moves
+// the slash after its provisional shape has constrained a neighboring note.
+// Keep this mutation outside the read-only placement planner and restrict it
+// to groups admitted by the existing before-grace adapter.
+static void prepareGraceBeamsForSpacing4(System* system)
+{
+    if (!system->score()->styleB(Sid::spacingLayout4) || MScore::noHorizontalStretch)
+        return;
+    for (MeasureBase* mb : system->measures()) {
+        if (!mb->isMeasure()) continue;
+        for (Segment& segment : toMeasure(mb)->segments()) {
+            if (!segment.enabled() || !segment.visible() || !segment.isChordRestType()) continue;
+            for (Element* item : segment.elist()) {
+                if (!item || !item->isChord()) continue;
+                Chord* main = toChord(item);
+                GraceBeforePlan4 group;
+                if (!buildGraceBeforePlan4(main, group)) continue;
+                bool placed = true;
+                for (const GracePosition4& p : group.positions)
+                    placed = placed && std::isfinite(p.chord->x()) && qAbs(p.chord->x() - p.x) <= 1e-6;
+                if (!placed) continue;
+                Beam* beam = main->graceNotesBefore().front()->beam();
+                if (beam)
+                    beam->layout(); // Also refreshes the owning segment's native shape.
+            }
+        }
+    }
+}
+
 // Fit only ordinary prefixes whose header/barline geometry remains unchanged
 // when the next measure is accepted or this system is finalized. Keep the
 // native width accumulator intact for unsupported-context fallback/backtracking.
@@ -4146,6 +4179,7 @@ static bool systemFittingWidth4(System* system, qreal& width)
         }
         first = false;
     }
+    prepareGraceBeamsForSpacing4(system);
     SpacingPlan4 plan;
     if (!buildSpacingPlan4(system, plan))
         return false;
@@ -4495,6 +4529,7 @@ System* Score::collectSystem(LayoutContext& lc)
       // Collection and squeezing still use the existing measure widths. A
       // complete fitting plan, including bounded squeezing when necessary,
       // is required before any native positions change.
+      prepareGraceBeamsForSpacing4(system);
       SpacingPlan4 studioPlan;
       bool useStudioPlan = false;
       std::map<Measure*, const SpacingMeasurePlan4*> studioMeasures;
