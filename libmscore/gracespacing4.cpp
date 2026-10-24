@@ -1,5 +1,6 @@
 // Adapted from Studio v4.7.5 TLayout::layoutGraceNotesGroup.
 // Licensed under GNU GPL version 2; see LICENSE.GPL.
+#include "spacingprofile4.h"
 #include "gracespacing4.h"
 #include "spacingcollision4.h"
 #include "spacinggeometry4.h"
@@ -170,6 +171,7 @@ static bool afterTargetComponents4(const Element* target, const Chord* owner,
 
 bool buildGraceBeforePlan4(const Chord* main, GraceBeforePlan4& result, QString* reason)
 {
+    SpacingProfileScope4 profile(SpacingProfileStage4::BEFORE);
     const auto fail = [reason](const char* message) {
         if (reason)
             *reason = QString::fromLatin1(message);
@@ -268,6 +270,7 @@ bool buildGraceBeforePlan4(const Chord* main, GraceBeforePlan4& result, QString*
 }
 static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result, QString* reason, bool barlineOnly, bool merged = false)
 {
+    SpacingProfileScope4 profile(SpacingProfileStage4::AFTER);
     const auto fail = [reason](const char* message) {
         if (reason) *reason = QString::fromLatin1(message);
         return false;
@@ -444,6 +447,7 @@ bool buildGraceAfterBarlinePlan4(const Chord* owner, GraceAfterPlan4& result, QS
 
 bool buildGraceMergedPlan4(const Chord* owner, GraceMergedPlan4& result, QString* reason)
 {
+    SpacingProfileScope4 profile(SpacingProfileStage4::MERGED);
     GraceAfterPlan4 joint;
     if (!buildGraceAfterPlanImpl4(owner, joint, reason, false, true)) return false;
     GraceMergedPlan4 plan;
@@ -502,6 +506,7 @@ static bool afterSourceComponents4(const Chord* owner, const Element* target,
 
 bool buildGraceMergedGeometry4(const Chord* owner, GraceMergedGeometry4& result, QString* reason)
 {
+    SpacingProfileScope4 profile(SpacingProfileStage4::GEOMETRY);
     GraceMergedGeometry4 geometry;
     if (!buildGraceMergedPlan4(owner, geometry.plan, reason)) return false;
     const auto fail = [reason](const char* message) {
@@ -534,6 +539,7 @@ bool buildGraceMergedGeometry4(const Chord* owner, GraceMergedGeometry4& result,
 
 bool buildGraceMergedSlurObstacles4(const Slur* slur, SpacingShape4& result, QString* reason, bool allowVisualEdits)
 {
+    SpacingProfileScope4 profile(SpacingProfileStage4::OBSTACLES);
     const auto fail = [reason](const char* message) {
         if (reason) *reason = QString::fromLatin1(message);
         return false;
@@ -585,6 +591,7 @@ bool buildGraceMergedSlurObstacles4(const Slur* slur, SpacingShape4& result, QSt
 
 bool prepareGraceMergedBeams4(Chord* owner, QString* reason)
 {
+    SpacingProfileScope4 profile(SpacingProfileStage4::BEAMS);
     GraceMergedGeometry4 geometry;
     if (!buildGraceMergedGeometry4(owner, geometry, reason)) return false;
     const auto fail = [reason](const char* message) {

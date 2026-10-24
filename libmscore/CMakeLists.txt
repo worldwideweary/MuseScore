@@ -46,7 +46,7 @@ add_library (libmscore STATIC
       key.cpp keysig.cpp lasso.cpp
       layoutbreak.cpp layout.cpp line.cpp lyrics.cpp measurebase.cpp
       measure.cpp spacinglayout4.h spacinggeometry4.cpp spacinggeometry4.h spacingcollision4.cpp spacingcollision4.h
-      spacingplan4.cpp spacingplan4.h gracespacing4.cpp gracespacing4.h
+      spacingplan4.cpp spacingplan4.h spacingprofile4.h gracespacing4.cpp gracespacing4.h
       graceslurlayout4.cpp graceslurlayout4.h
       navigate.cpp note.cpp noteevent.cpp ottava.cpp
       page.cpp part.cpp pedal.cpp letring.cpp vibrato.cpp palmmute.cpp pitch.cpp pitchspelling.cpp

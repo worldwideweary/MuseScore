@@ -2867,3 +2867,12 @@ behavior. Add raw-frame refresh coverage; old/new collector outputs agree in
 70 local mock cases. See `v0.122-grace-slur-repeated-work-reduction.md`.
 Native mtests and editing-speed comparison remain pending; this is a first
 performance increment, with no claimed native speed ratio.
+
+### v0.123: measure the remaining held-arrow slowdown
+
+v0.122 did not resolve held-arrow latency. Add opt-in command and nested-stage
+timings with `MS_LAYOUT4_PROFILE=1`, including counts for item-context checks,
+grace planning, anchors, obstacles and fitting. No layout behavior changes.
+See `v0.123-grace-slur-edit-timing.md` for the short on/off reproduction and
+log command. Native tests and timing results are pending; this checkpoint
+provides diagnosis rather than another unmeasured optimization.

@@ -1,5 +1,6 @@
 // Optional Studio spacing: common-notation collision policy.
 // Licensed under GNU GPL version 2; see LICENSE.GPL.
+#include "spacingprofile4.h"
 #include "spacingcollision4.h"
 #include "spacinggeometry4.h"
 #include "gracespacing4.h"
@@ -182,6 +183,7 @@ bool SpacingPaddingTable4::padding(ElementType first, ElementType second, qreal&
 static bool commonItemContext4(const Element* item, bool allowGrace,
                                const SpacingGraceContext4* context, const Chord* scopedMain)
 {
+    SpacingProfileScope4 profile(SpacingProfileStage4::CONTEXT);
     if (!item || item->track() < 0 || item->onTabStaff())
         return false;
     if (item->isRest() && toRest(item)->measure() && toRest(item)->measure()->isMMRest())

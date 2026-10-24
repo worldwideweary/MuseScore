@@ -1,5 +1,6 @@
 // Adapted from Studio v4.7.5 SlurTieLayout::avoidCollisions and its clearance,
 // adjustment-step and balance helpers. Licensed under GNU GPL version 2.
+#include "spacingprofile4.h"
 #include "graceslurlayout4.h"
 #include "gracespacing4.h"
 #include "beam.h"
@@ -20,6 +21,7 @@ namespace Ms {
 bool fitGraceSlurCurve4(const SpacingShape4& physical, const Chord* target, qreal spatium,
                        bool up, GraceSlurCurve4& result, bool startFloated, bool endFloated, QString* reason)
 {
+    SpacingProfileScope4 profile(SpacingProfileStage4::CURVE);
     const auto fail = [reason](const char* message) {
         if (reason) *reason = QString::fromLatin1(message);
         return false;
@@ -175,6 +177,7 @@ bool fitGraceSlurCurve4(const SpacingShape4& physical, const Chord* target, qrea
 
 bool adjustGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& startPoint, QPointF& endPoint, QString* reason, bool allowVisualEdits)
 {
+    SpacingProfileScope4 profile(SpacingProfileStage4::ANCHORS);
     const auto fail = [reason](const char* message) {
         if (reason) *reason = QString::fromLatin1(message);
         return false;

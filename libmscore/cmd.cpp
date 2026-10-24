@@ -15,6 +15,7 @@
  Handling of several GUI commands.
 */
 
+#include "spacingprofile4.h"
 #include "accidental.h"
 #include "articulation.h"
 #include "barline.h"
@@ -210,6 +211,7 @@ void Score::startCmd()
             return;
             }
       undoStack()->beginMacro(this);
+      beginSpacingProfile4();
       }
 
 //---------------------------------------------------------
@@ -261,6 +263,7 @@ void Score::endCmd(bool rollback)
             masterScore()->setAutosaveDirty(true);
             }
       MuseScoreCore::mscoreCore->endCmd();
+      endSpacingProfile4();
       cmdState().reset();
       }
 
@@ -285,6 +288,7 @@ void CmdState::dump()
 
 void Score::update(bool resetCmdState)
       {
+      SpacingProfileScope4 profile(SpacingProfileStage4::UPDATE);
       bool updateAll = false;
       for (MasterScore* ms : *movements()) {
             CmdState& cs = ms->cmdState();

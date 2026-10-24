@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "spacingprofile4.h"
 #include "accidental.h"
 #include "ambitus.h"
 #include "arpeggio.h"
@@ -4307,6 +4308,7 @@ static std::map<Measure*, qreal> systemSpacingWidths4(System* system, qreal extr
 
 System* Score::collectSystem(LayoutContext& lc)
       {
+      SpacingProfileScope4 profile(SpacingProfileStage4::SYSTEM);
       if (!lc.curMeasure)
             return 0;
       const MeasureBase* measure  = _systems.empty() ? 0 : _systems.back()->measures().back();

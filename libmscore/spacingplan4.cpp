@@ -1,5 +1,6 @@
 // Optional Studio spacing: nonmutating common-notation placement plan.
 // Licensed under GNU GPL version 2; see LICENSE.GPL.
+#include "spacingprofile4.h"
 #include "spacingplan4.h"
 #include "spacinggeometry4.h"
 #include "spacingcollision4.h"
@@ -539,6 +540,7 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
 
 bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, const SpacingPlanOptions4& options)
 {
+    SpacingProfileScope4 profile(SpacingProfileStage4::PLAN);
     const auto fail = [&](const QString& message) { if (reason) *reason = message; return false; };
     if (!system || system->measures().empty())
         return fail("No system measures");
