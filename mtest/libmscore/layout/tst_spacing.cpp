@@ -10,6 +10,7 @@
 #include "libmscore/spacingcollision4.h"
 #include "libmscore/spacingplan4.h"
 #include "libmscore/gracespacing4.h"
+#include "libmscore/graceslurlayout4.h"
 #include "libmscore/system.h"
 #include "libmscore/shape.h"
 #include "libmscore/notedot.h"
@@ -52,6 +53,9 @@ class TestSpacing : public QObject, public MTest {
       void graceMergedSlurs();
       void graceMergedSlurObstacles_data();
       void graceMergedSlurObstacles();
+      void graceSlurCurveFit();
+      void graceMergedSlurCurves_data();
+      void graceMergedSlurCurves();
       void graceMergedSystem_data();
       void graceMergedSystem();
       void graceMergedGeometry_data();
@@ -3972,6 +3976,166 @@ void TestSpacing::graceAfterBarlineSystem()
       const auto restored = graceBarlineSnapshot4(score);
       QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
       for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
+void TestSpacing::graceSlurCurveFit()
+      {
+      MasterScore* score = readScore(DIR + "v0.113-spacing-slurred-merged-grace-squeeze.mscx");
+      QVERIFY(score);
+      score->doLayout();
+      Slur* slur = nullptr;
+      for (const auto& entry : score->spannerMap().map()) if (entry.second->isSlur()) slur = toSlur(entry.second);
+      QVERIFY(slur);
+      const Chord* target = toChord(slur->endElement());
+      const Note* note = toChord(slur->startElement())->notes().front();
+      const auto nearPoint = [](const QPointF& a, const QPointF& b) { return (a - b).manhattanLength() < 1e-6; };
+      for (bool up : {false, true}) {
+            for (int floated = 0; floated < 4; ++floated) {
+                  const qreal sign = up ? -1 : 1;
+                  GraceSlurCurve4 curve;
+                  curve.start = QPointF(0, 0);
+                  curve.control1 = QPointF(3, .5 * sign);
+                  curve.control2 = QPointF(7, .5 * sign);
+                  curve.end = QPointF(10, 0);
+                  const auto original = curve;
+                  SpacingShape4 obstacles;
+                  const QRectF obstacle = QRectF(QPointF(4, sign), QPointF(6, .4 * sign)).normalized();
+                  obstacles.elements.push_back(SpacingShapeElement4(obstacle, note));
+                  QString reason;
+                  QVERIFY2(fitGraceSlurCurve4(obstacles, target, 1, up, curve, floated & 1, floated & 2, &reason), qPrintable(reason));
+                  QVERIFY(reason.isEmpty());
+                  const CubicBezier rendered(curve.start, curve.control1, curve.control2, curve.end);
+                  QRectF padded = obstacle;
+                  padded.adjust(0, up ? -.4 : 0, 0, up ? 0 : .4);
+                  for (int sample = 0; sample <= 2000; ++sample) {
+                        const QPointF p = rendered.pointAtPercent(sample / qreal(2000));
+                        if (p.x() > padded.left() && p.x() < padded.right())
+                              QVERIFY(up ? p.y() < padded.top() : p.y() > padded.bottom());
+                        }
+                  GraceSlurCurve4 translated = original;
+                  const QPointF delta(15, -7);
+                  translated.start += delta;
+                  translated.control1 += delta;
+                  translated.control2 += delta;
+                  translated.end += delta;
+                  QVERIFY(fitGraceSlurCurve4(obstacles.translated(delta), target, 1, up, translated, floated & 1, floated & 2));
+                  QVERIFY(nearPoint(translated.start, curve.start + delta));
+                  QVERIFY(nearPoint(translated.control1, curve.control1 + delta));
+                  QVERIFY(nearPoint(translated.control2, curve.control2 + delta));
+                  QVERIFY(nearPoint(translated.end, curve.end + delta));
+                  SpacingShape4 impossible;
+                  impossible.elements.push_back(SpacingShapeElement4(QRectF(0, -1000, 10, 2000), note));
+                  auto rejected = original;
+                  QVERIFY(!fitGraceSlurCurve4(impossible, target, 1, up, rejected));
+                  QCOMPARE(rejected.start, original.start);
+                  QCOMPARE(rejected.control1, original.control1);
+                  QCOMPARE(rejected.control2, original.control2);
+                  QCOMPARE(rejected.end, original.end);
+                  QVERIFY(!fitGraceSlurCurve4(obstacles, target, 0, up, rejected));
+                  QCOMPARE(rejected.control1, original.control1);
+                  }
+            }
+      delete score;
+      }
+
+void TestSpacing::graceMergedSlurCurves_data()
+      {
+      graceMergedSlurs_data();
+      }
+
+void TestSpacing::graceMergedSlurCurves()
+      {
+      QFETCH(bool, modernBeams);
+      QFETCH(QString, suffix);
+      MasterScore* score = readScore(DIR + "v0.113-spacing-slurred-merged-" + suffix + ".mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      const auto horizontal = graceMergedSnapshot4(score);
+      const auto curves = [](Score* item) {
+            std::vector<qreal> values;
+            for (const auto& entry : item->spannerMap().map()) {
+                  if (!entry.second->isSlur()) continue;
+                  const Slur* slur = toSlur(entry.second);
+                  values.push_back(slur->nsegments());
+                  for (int i = 0; i < static_cast<int>(slur->nsegments()); ++i) {
+                        const SlurSegment* segment = slur->segmentAt(i);
+                        values.insert(values.end(), {segment->x(), segment->y(), qreal(segment->usesGraceCurve4())});
+                        for (Grip grip : {Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END}) {
+                              const QPointF p = segment->ups(grip).p;
+                              const QPointF off = segment->ups(grip).off;
+                              values.insert(values.end(), {p.x(), p.y(), off.x(), off.y()});
+                              }
+                        }
+                  }
+            return values;
+            };
+      const auto same = [](const std::vector<qreal>& a, const std::vector<qreal>& b) {
+            if (a.size() != b.size()) return false;
+            for (size_t i = 0; i < a.size(); ++i) if (qAbs(a[i] - b[i]) > 1e-6) return false;
+            return true;
+            };
+      int count = 0;
+      Slur* first = nullptr;
+      for (const auto& entry : score->spannerMap().map()) {
+            if (!entry.second->isSlur()) continue;
+            Slur* slur = toSlur(entry.second);
+            QCOMPARE(static_cast<int>(slur->nsegments()), 1);
+            const SlurSegment* segment = slur->frontSegment();
+            QVERIFY(segment->usesGraceCurve4());
+            QVERIFY(!segment->isEdited());
+            SpacingShape4 obstacles;
+            QVERIFY(buildGraceMergedSlurObstacles4(slur, obstacles));
+            const Chord* target = toChord(slur->endElement());
+            const CubicBezier rendered(segment->ups(Grip::START).pos() + segment->pos(),
+                  segment->ups(Grip::BEZIER1).pos() + segment->pos(),
+                  segment->ups(Grip::BEZIER2).pos() + segment->pos(),
+                  segment->ups(Grip::END).pos() + segment->pos());
+            for (const auto& component : obstacles.elements) {
+                  const Element* owner = component.item;
+                  while (owner && !owner->isChord()) owner = owner->parent();
+                  const qreal margin = owner == target ? 0 : (component.item->isNote() ? .4 : .1) * score->spatium();
+                  QRectF padded = component.rect;
+                  padded.adjust(0, slur->up() ? -margin : 0, 0, slur->up() ? 0 : margin);
+                  for (int sample = 0; sample <= 1000; ++sample) {
+                        const QPointF p = rendered.pointAtPercent(sample / qreal(1000));
+                        if (p.x() > padded.left() && p.x() < padded.right())
+                              QVERIFY2(slur->up() ? p.y() < padded.top() : p.y() > padded.bottom(),
+                                    qPrintable(QString("curve clearance at tick %1, up %2, sample %3")
+                                          .arg(slur->tick().ticks()).arg(slur->up()).arg(sample)));
+                        }
+                  }
+            if (!first) first = slur;
+            ++count;
+            }
+      QCOMPARE(count, suffix == "grace-squeeze" ? 2 : 8);
+      const auto modern = curves(score);
+      score->doLayout();
+      QVERIFY(same(curves(score), modern));
+      QVERIFY(same(graceMergedSnapshot4(score), horizontal));
+      // An edited curve must use the unchanged manual/legacy handling.
+      QVERIFY(first);
+      const QPointF saved = first->offset();
+      first->setOffset(QPointF(.5, 0));
+      score->doLayout();
+      QVERIFY(!first->frontSegment()->usesGraceCurve4());
+      first->setOffset(saved);
+      score->doLayout();
+      QVERIFY(same(curves(score), modern));
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      for (const auto& entry : score->spannerMap().map()) {
+            if (entry.second->isSlur()) QVERIFY(!toSlur(entry.second)->frontSegment()->usesGraceCurve4());
+            }
+      const auto legacy = curves(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      QVERIFY(same(curves(score), modern));
+      QVERIFY(same(graceMergedSnapshot4(score), horizontal));
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      QVERIFY(same(curves(score), legacy));
       delete score;
       }
 

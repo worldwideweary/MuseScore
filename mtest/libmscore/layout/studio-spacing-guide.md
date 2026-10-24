@@ -2795,3 +2795,15 @@ coordinate changes without publishing positions. See
 `v0.116-grace-slur-obstacle-collector.md` for scope and validation. No rendering
 call yet, so screenshots should remain unchanged. Native tests are pending;
 next integrate clearance and curve adjustment separately.
+
+
+### v0.117: fit combined-grace slur curves against physical obstacles
+
+After the user's passing v0.116 native tests, connect the collector to a
+bounded adaptation of Studio's localized curve/end-point collision adjustment.
+Only automatic single combined-grace slurs with experimental spacing enabled
+enter; failures and disabled/manual contexts retain legacy handling. Add
+synthetic and rendered-clearance/repeat/toggle native checks. Reuse v0.113
+natural, filled and squeeze inputs; inspect the upper M4 arc and both lower
+arcs first. Initial anchors, shoulder geometry and stroke remain Evolution's.
+See `v0.117-grace-slur-curve-clearance.md`; native tests and visuals pending.

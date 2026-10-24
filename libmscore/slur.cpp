@@ -23,10 +23,14 @@
 #include "part.h"
 #include "score.h"
 #include "slur.h"
+#include "gracespacing4.h"
+#include "graceslurlayout4.h"
 #include "stem.h"
 #include "system.h"
 #include "undo.h"
 #include "utils.h"
+
+#include <cmath>
 
 namespace Ms {
 
@@ -378,6 +382,7 @@ void SlurSegment::changeAnchor(EditData& ed, Element* element)
 
 void SlurSegment::computeBezier(QPointF p6o)
       {
+      _graceCurveAdjusted4 = false;
       qreal _spatium  = spatium();
       qreal shoulderW;              // height as fraction of slur-length
       qreal shoulderH;
@@ -437,6 +442,43 @@ void SlurSegment::computeBezier(QPointF p6o)
 
       QPointF p3(c1, -shoulderH);
       QPointF p4(c2, -shoulderH);
+
+      if (p6o.isNull() && autoplace() && !isEdited() && isSingleType() && system()
+            && score()->styleB(Sid::spacingLayout4)) {
+            SpacingShape4 obstacles;
+            if (buildGraceMergedSlurObstacles4(slur(), obstacles)) {
+                  QTransform toSystem;
+                  toSystem.translate(pp1.x(), pp1.y());
+                  toSystem.rotateRadians(sinb);
+                  GraceSlurCurve4 curve;
+                  curve.start = pp1;
+                  curve.control1 = toSystem.map(p3);
+                  curve.control2 = toSystem.map(p4);
+                  curve.end = pp2;
+                  const Chord* start = toChord(slur()->startElement());
+                  const Chord* target = toChord(slur()->endElement());
+                  const bool opposite = start->up() != target->up();
+                  // These are the floated-anchor branches of slurPosChord for
+                  // this validated first-grace / unbeamed-main scope.
+                  const bool startFloated = opposite && start->up() == slur()->up() && !start->hook()
+                        && (!start->beam() || start->beam()->elements().back() == start);
+                  const bool endFloated = opposite && target->up() == slur()->up();
+                  if (fitGraceSlurCurve4(obstacles.translated(-pos()), target, _spatium, slur()->up(),
+                                        curve, startFloated, endFloated)) {
+                        pp1 = curve.start;
+                        pp2 = curve.end;
+                        sinb = std::atan2(pp2.y() - pp1.y(), pp2.x() - pp1.x());
+                        t.reset();
+                        t.rotateRadians(-sinb);
+                        p2 = t.map(pp2 - pp1);
+                        p3 = t.map(curve.control1 - pp1);
+                        p4 = t.map(curve.control2 - pp1);
+                        p5 = p2 * .5;
+                        ups(Grip::START).p = pp1;
+                        _graceCurveAdjusted4 = true;
+                        }
+                  }
+            }
 
       qreal w = score()->styleP(Sid::slurMidWidth) - score()->styleP(Sid::slurEndWidth);
       if (staff())
@@ -606,7 +648,7 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
 
       computeBezier();
 
-      if (autoplace() && system()) {
+      if (autoplace() && system() && !_graceCurveAdjusted4) {
             bool up = slur()->up();
             Segment* ls = system()->lastMeasure()->last();
             Segment* fs = system()->firstMeasure()->first();

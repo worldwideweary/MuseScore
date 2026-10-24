@@ -25,6 +25,7 @@ namespace Ms {
 class SlurSegment final : public SlurTieSegment {
 
    protected:
+      bool _graceCurveAdjusted4 = false; // Derived, reset on every curve computation.
       qreal _extraHeight = 0.0;
       QString _hopoText;
       QRectF _hopoTextRect;
@@ -48,6 +49,7 @@ class SlurSegment final : public SlurTieSegment {
       const QString& hopoText() const { return _hopoText; }
 
       bool isEdited() const;
+      bool usesGraceCurve4() const { return _graceCurveAdjusted4; }
       bool edit(EditData&) override;
 
       Slur* slur() const { return toSlur(spanner()); }
