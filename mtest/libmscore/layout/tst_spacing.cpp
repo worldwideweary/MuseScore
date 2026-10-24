@@ -3996,26 +3996,31 @@ void TestSpacing::graceMergedSlurs()
       plain->setStyleValue(Sid::beamLayout4, modernBeams);
       score->doLayout();
       plain->doLayout();
+      // Compare published geometry, not the main chord's native spacing cache.
+      // The plain target can use the standalone before adapter; paired slurs
+      // deliberately require the merged adapter instead. Their _spaceLw values
+      // therefore differ even though joint substitution replaces both bounds.
       const auto horizontal = [](Score* item) {
-            auto values = graceLayoutSnapshot4(item);
+            std::vector<qreal> values;
+            const System* previous = nullptr;
+            int systemIndex = -1;
             for (Measure* m = item->firstMeasure(); m; m = m->nextMeasure()) {
+                  if (m->system() != previous) { previous = m->system(); ++systemIndex; }
+                  values.insert(values.end(), {qreal(systemIndex), m->x(), m->width()});
                   for (const Segment& seg : m->segments()) {
-                        const Element* e = seg.element(0);
-                        if (e && e->isChord()) {
-                              for (const Chord* grace : toChord(e)->graceNotes()) values.push_back(grace->x());
+                        if (!seg.enabled() && (seg.header() || seg.trailer())) continue;
+                        values.insert(values.end(), {qreal(static_cast<int>(seg.segmentType())), seg.tick().toDouble(),
+                              seg.enabled() ? qreal(1) : qreal(0), seg.x(), seg.width(), seg.spacingWidthOffset4()});
+                        for (const Element* e : seg.elist()) {
+                              if (!e || !e->isChord()) continue;
+                              const Chord* chord = toChord(e);
+                              values.push_back(chord->x());
+                              for (const Chord* grace : chord->graceNotes()) values.push_back(grace->x());
                               }
                         }
                   }
             return values;
             };
-      const auto expected = horizontal(plain);
-      const auto actual = horizontal(score);
-      QCOMPARE(static_cast<int>(actual.size()), static_cast<int>(expected.size()));
-      for (size_t i = 0; i < expected.size(); ++i) {
-            QVERIFY2(qAbs(actual[i] - expected[i]) < 1e-6,
-                  qPrintable(QString("slurred/plain horizontal component %1: %2 versus %3")
-                        .arg(int(i)).arg(actual[i], 0, 'g', 17).arg(expected[i], 0, 'g', 17)));
-            }
       int count = 0, up = 0, down = 0;
       Slur* first = nullptr;
       for (const auto& entry : score->spannerMap().map()) {
@@ -4045,6 +4050,40 @@ void TestSpacing::graceMergedSlurs()
       QCOMPARE(up, measures);
       QCOMPARE(down, measures);
       QVERIFY(first);
+      // Require the full-system adapter before comparing rendered positions.
+      // Compare the replacement plan too: native cache differences must not
+      // leak into its width or the combined groups' target-relative packing.
+      Measure* plainMeasure = plain->firstMeasure();
+      const System* previousSystem = nullptr;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), plainMeasure = plainMeasure->nextMeasure()) {
+            QVERIFY(plainMeasure);
+            if (m->system() == previousSystem) continue;
+            previousSystem = m->system();
+            SpacingPlan4 slurredPlan, plainPlan;
+            QString reason;
+            QVERIFY2(buildSpacingPlan4(m->system(), slurredPlan, &reason), qPrintable(reason));
+            QVERIFY2(buildSpacingPlan4(plainMeasure->system(), plainPlan, &reason), qPrintable(reason));
+            QVERIFY(qAbs(slurredPlan.width - plainPlan.width) < 1e-6);
+            QCOMPARE(static_cast<int>(slurredPlan.mergedGraces.size()), static_cast<int>(plainPlan.mergedGraces.size()));
+            for (size_t i = 0; i < plainPlan.mergedGraces.size(); ++i) {
+                  const auto& actualGroup = slurredPlan.mergedGraces[i];
+                  const auto& expectedGroup = plainPlan.mergedGraces[i];
+                  QVERIFY(qAbs(actualGroup.left - expectedGroup.left) < 1e-6);
+                  QVERIFY(qAbs(actualGroup.right - expectedGroup.right) < 1e-6);
+                  QCOMPARE(static_cast<int>(actualGroup.positions.size()), static_cast<int>(expectedGroup.positions.size()));
+                  for (size_t j = 0; j < expectedGroup.positions.size(); ++j)
+                        QVERIFY(qAbs(actualGroup.positions[j].x - expectedGroup.positions[j].x) < 1e-6);
+                  }
+            }
+      const auto expected = horizontal(plain);
+      const auto actual = horizontal(score);
+      QCOMPARE(static_cast<int>(actual.size()), static_cast<int>(expected.size()));
+      for (size_t i = 0; i < expected.size(); ++i) {
+            QVERIFY2(qAbs(actual[i] - expected[i]) < 1e-6,
+                  qPrintable(QString("slurred/plain published horizontal component %1: %2 versus %3")
+                        .arg(int(i)).arg(actual[i], 0, 'g', 17).arg(expected[i], 0, 'g', 17)));
+            }
+
       const Chord* owner = toChord(first->startElement()->parent());
       const Chord* target = toChord(first->endElement());
       // Edited slur geometry still rejects without publishing a partial group.

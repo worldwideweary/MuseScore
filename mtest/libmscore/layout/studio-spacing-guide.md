@@ -2761,3 +2761,14 @@ v0.112 inputs, exercise compression/toggling and reject edits/third slurs.
 Both options start on. Native results remain pending. Curve placement still
 uses the legacy renderer and needs a separate attachment/collision audit. See
 `v0.113-merged-grace-slur-admission.md`.
+
+
+### v0.114: correct the slurred/plain comparison boundary
+
+The six new v0.113 rows compared a replaced native target spacing cache.
+Compare published horizontal positions and full-system replacement plans
+instead. Preserve all eligibility, edit rejection, compression, repeat and
+style restoration checks. Production layout is unchanged; reuse the v0.113
+scores. See `v0.114-slurred-grace-snapshot-fix.md` for the failure values and
+source explanation. Native verification and the separate curve audit remain
+pending.
