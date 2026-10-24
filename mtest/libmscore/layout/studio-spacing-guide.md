@@ -2898,3 +2898,13 @@ discarding it before any later query, beam preparation or edit. Add native
 query-boundary invalidation coverage. See
 `v0.125-grace-geometry-query-reuse.md`. Apply after v0.124; repeat both mtests
 and the existing timing reproduction. Native v0.125 performance is pending.
+
+### v0.126: remove the second combined-component extraction round
+
+v0.125 native mtests pass; the new log shows about 96 ms median experimental
+commands and continuing latency. Packing and projection currently extract
+the same target/member shapes twice. Reuse packing's validated physical
+snapshot within that geometry query, preserving projection order and fresh
+inputs for every later query. Add native independent fresh-extraction
+comparison. See `v0.126-grace-packed-component-reuse.md`. Apply after v0.125;
+native mtests and latency validation are pending, using the same score.

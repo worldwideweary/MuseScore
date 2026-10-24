@@ -3357,6 +3357,30 @@ void TestSpacing::graceMergedGeometry()
             QVERIFY(geometry.source.complete() && geometry.target.complete());
             const Chord* target = geometry.plan.target;
             for (const auto& e : geometry.source.elements) QVERIFY(belongsTo(e.item, owner));
+            // Independent fresh extraction must match the packing snapshot,
+            // including component identity/order and every translated rectangle.
+            SpacingShape4 reference;
+            const auto appendReference = [&](const Chord* chord, const QPointF& offset) {
+                  for (const auto& e : spacingElementShape4(chord).elements) {
+                        if (e.identity != SpacingIdentity4::ITEM || !belongsTo(e.item, chord)) continue;
+                        SpacingShapeElement4 component = e;
+                        component.rect.translate(offset);
+                        reference.elements.push_back(component);
+                        }
+                  };
+            appendReference(target, target->pos());
+            for (const auto& position : geometry.plan.positions)
+                  appendReference(position.chord, QPointF(position.x, 0));
+            QCOMPARE(int(geometry.target.elements.size()), int(reference.elements.size()));
+            for (size_t i = 0; i < reference.elements.size(); ++i) {
+                  const auto& actual = geometry.target.elements[i];
+                  const auto& expected = reference.elements[i];
+                  QCOMPARE(actual.item, expected.item);
+                  QCOMPARE(int(actual.identity), int(expected.identity));
+                  QCOMPARE(actual.rect, expected.rect);
+                  QVERIFY(actual.aggregateOwners == expected.aggregateOwners);
+                  QVERIFY(actual.sharedItems == expected.sharedItems);
+                  }
             const Note* targetNote = target->notes().front();
             int mainCopies = 0;
             for (const auto& e : geometry.target.elements) {
