@@ -3067,25 +3067,81 @@ void TestSpacing::graceNeighborPlan()
                   measureMismatch = measureMismatch || qAbs(e.measure->x() - e.x) >= 1e-6
                         || qAbs(e.measure->width() - e.width) >= 1e-6;
             if (measureMismatch) {
-                  // Keep the original assertion: report the complete natural
-                  // and applied plans instead of guessing at a tolerance/fix.
-                  QString report = QString("%1: natural=%2 system=%3 expected=%4")
+                  // Qt 5.9 truncates a single QVERIFY2 message. Emit short
+                  // separate messages so segment details survive in result.xml.
+                  const QString report = QString("%1: natural=%2 system=%3 expected=%4")
                         .arg(file).arg(natural.width, 0, 'g', 17)
                         .arg(m->system()->width(), 0, 'g', 17).arg(expected.width, 0, 'g', 17);
+                  qDebug("%s", qPrintable(report));
                   for (size_t i = 0; i < expected.measures.size(); ++i) {
                         const SpacingMeasurePlan4& e = expected.measures[i];
-                        report += QString("\nmeasure tick=%1: x actual=%2 expected=%3; width actual=%4 expected=%5 natural=%6")
+                        const QString line = QString("measure tick=%1: x actual=%2 expected=%3; width actual=%4 expected=%5 natural=%6")
                               .arg(e.measure->tick().ticks()).arg(e.measure->x(), 0, 'g', 17)
                               .arg(e.x, 0, 'g', 17).arg(e.measure->width(), 0, 'g', 17)
                               .arg(e.width, 0, 'g', 17).arg(natural.measures[i].width, 0, 'g', 17);
+                        qDebug("%s", qPrintable(line));
                         }
-                  for (const SpacingSegmentPlan4& e : expected.segments) {
+                  for (const SpacingSegmentPlan4& e : natural.segments) {
                         if (e.ignored) continue;
-                        report += QString("\nsegment tick=%1 type=%2: x actual=%3 expected=%4; width actual=%5 expected=%6")
+                        const QString line = QString("segment tick=%1 type=%2: x actual=%3 natural=%4; width actual=%5 natural=%6")
                               .arg(e.segment->tick().ticks()).arg(int(e.segment->segmentType()))
                               .arg(e.segment->measure()->x() + e.segment->x(), 0, 'g', 17)
                               .arg(e.x, 0, 'g', 17).arg(e.segment->width(), 0, 'g', 17).arg(e.width, 0, 'g', 17);
+                        qDebug("%s", qPrintable(line));
                         }
+                  // Controlled diagnostic only: determine whether resetting
+                  // beamed grace stems to their pre-beam lengths reproduces
+                  // the wider applied plan. Restore every stem and native
+                  // segment shape before the unchanged failing assertion.
+                  struct SavedGraceStem {
+                        Stem* stem;
+                        qreal length;
+                        QPointF position;
+                        };
+                  std::vector<SavedGraceStem> savedLengths;
+                  std::vector<Segment*> graceSegments;
+                  for (const SpacingMeasurePlan4& e : natural.measures) {
+                        for (Segment& segment : e.measure->segments()) {
+                              bool changed = false;
+                              for (Element* item : segment.elist()) {
+                                    if (!item || !item->isChord()) continue;
+                                    for (Chord* grace : toChord(item)->graceNotesBefore()) {
+                                          if (!grace->beam() || !grace->stem()) continue;
+                                          Stem* stem = grace->stem();
+                                          savedLengths.push_back({stem, stem->len(), stem->pos()});
+                                          const QString line = QString("grace tick=%1 index=%2 up=%3: final stem=%4 default=%5 x=%6")
+                                                .arg(grace->tick().ticks()).arg(grace->graceIndex()).arg(grace->up())
+                                                .arg(stem->len(), 0, 'g', 17).arg(grace->defaultStemLength(), 0, 'g', 17)
+                                                .arg(stem->x(), 0, 'g', 17);
+                                          qDebug("%s", qPrintable(line));
+                                          stem->setLen(grace->defaultStemLength());
+                                          changed = true;
+                                          }
+                                    }
+                              if (changed) {
+                                    segment.createShapes();
+                                    graceSegments.push_back(&segment);
+                                    }
+                              }
+                        }
+                  SpacingPlan4 provisional;
+                  QString probeReason;
+                  const bool probeBuilt = buildSpacingPlan4(m->system(), provisional, &probeReason);
+                  for (const SavedGraceStem& saved : savedLengths) {
+                        saved.stem->setLen(saved.length);
+                        saved.stem->setPos(saved.position);
+                        }
+                  for (Segment* segment : graceSegments) segment->createShapes();
+                  if (probeBuilt) {
+                        for (const SpacingMeasurePlan4& e : provisional.measures) {
+                              const QString line = QString("default-stem probe tick=%1: width=%2 applied=%3")
+                                    .arg(e.measure->tick().ticks()).arg(e.width, 0, 'g', 17)
+                                    .arg(e.measure->width(), 0, 'g', 17);
+                              qDebug("%s", qPrintable(line));
+                              }
+                        }
+                  else
+                        qDebug("default-stem probe rejected: %s", qPrintable(probeReason));
                   QVERIFY2(!measureMismatch, qPrintable(report));
                   }
             for (const SpacingMeasurePlan4& e : expected.measures) {
