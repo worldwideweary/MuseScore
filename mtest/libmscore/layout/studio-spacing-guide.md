@@ -2669,3 +2669,17 @@ fallback, ownership and layout stability tests without changing engraving.
 Compare the natural file first, focusing on last-grace-to-barline and the
 after-to-before group boundary. Next implement ordinary barline support before
 joint merged-group support. See `v0.107-after-grace-boundary-audit.md`.
+
+### v0.108: passing target controls; stage an ordinary barline query
+
+The user reports v0.107 tests passing. B1-B3 clearance already looks broadly
+comparable; M2 is more clearly separated in Evolution than in Studio. Preserve
+that mixed-direction treatment.
+
+Add buildGraceAfterBarlinePlan4 as a read-only target-relative query for normal,
+visible, unedited, single-staff ending barlines. Reuse typed accumulated-group
+packing and barline padding. Extend B/M controls to cover query success,
+unsupported boundary edits and unchanged published layout. Production/system
+admission remains off in this stage; M1-M3 still reject. Reuse the v0.107 files;
+no new capture is needed. Next integrate validated barline geometry into system
+fitting/publication. See `v0.108-after-grace-barline-plan.md`.

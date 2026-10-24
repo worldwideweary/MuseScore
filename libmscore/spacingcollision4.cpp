@@ -366,7 +366,7 @@ bool spacingAfterGracePairPolicy4(const SpacingPaddingTable4& table, const Chord
                                   qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner)
 {
     if (!owner || !target || owner == target || owner->isGrace()
-        || (!target->isChord() && !target->isRest()) || (target->isChord() && toChord(target)->isGrace())
+        || (!target->isChord() && !target->isRest() && !target->isBarLine()) || (target->isChord() && toChord(target)->isGrace())
         || owner->score() != target->score() || owner->track() != target->track())
         return false;
     const auto belongs = [owner, target, includeOwner](const Element* item) {

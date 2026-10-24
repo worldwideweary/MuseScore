@@ -41,6 +41,9 @@ struct GraceAfterPlan4 {
 // separately validates its temporary projections before admission.
 // Rebuild after geometry changes; failure preserves every output field.
 bool buildGraceAfterPlan4(const Chord*, GraceAfterPlan4&, QString* reason = nullptr);
+// Read-only staging for an ordinary normal ending barline on this staff.
+// Not admitted by production geometry/publication or system planning yet.
+bool buildGraceAfterBarlinePlan4(const Chord*, GraceAfterPlan4&, QString* reason = nullptr);
 struct GraceAfterGeometry4 {
     GraceAfterPlan4 plan;
     SpacingShape4 source; // Owner's own components, in source-segment coordinates.

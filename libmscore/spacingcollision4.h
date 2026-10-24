@@ -52,7 +52,8 @@ bool spacingPairPolicy4(const SpacingPaddingTable4&, const Element* first, const
 bool spacingGracePairPolicy4(const SpacingPaddingTable4&, const Chord* main,
                              const Element* first, const Element* second,
                              qreal shapeSpatium, SpacingPairPolicy4& result);
-// Read-only after-grace packing scope: owner's after-graces or ordinary chord/rest target.
+// Read-only after-grace scope: owner's after-graces and the selected chord/rest/barline.
+// Callers separately validate the target's layout eligibility.
 // includeOwner also allows source-chord components for a publication clearance check.
 // Does not admit after-graces into default/system spacing queries.
 bool spacingAfterGracePairPolicy4(const SpacingPaddingTable4&, const Chord* owner, const Element* target,

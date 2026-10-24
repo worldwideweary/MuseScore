@@ -4,6 +4,7 @@
 #include "spacingcollision4.h"
 #include "spacinggeometry4.h"
 #include "beam.h"
+#include "barline.h"
 #include "chord.h"
 #include "note.h"
 #include "rest.h"
@@ -114,13 +115,13 @@ static bool graceDistance4(const SpacingPaddingTable4& table, const Chord* main,
     return true;
 }
 
-// A normal rest contributes its glyph, with the same explicit after-group
-// policy as a following chord. Dots and attachments remain outside this scope.
+// Ordinary rests and staged barline targets contribute their own leaf shapes
+// under the explicit after-group policy. Attachments remain outside this scope.
 static bool afterTargetComponents4(const Element* target, const Chord* owner,
                                     const SpacingPaddingTable4& table, SpacingShape4& result)
 {
     if (target->isChord()) return graceComponents4(toChord(target), owner, table, result, target);
-    if (!target->isRest()) return false;
+    if (!target->isRest() && !target->isBarLine()) return false;
     const SpacingShape4 shape = spacingElementShape4(target);
     if (shape.elements.empty()) return false;
     for (const auto& e : shape.elements) {
@@ -235,7 +236,7 @@ bool buildGraceBeforePlan4(const Chord* main, GraceBeforePlan4& result, QString*
         reason->clear();
     return true;
 }
-bool buildGraceAfterPlan4(const Chord* owner, GraceAfterPlan4& result, QString* reason)
+static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result, QString* reason, bool barlineOnly)
 {
     const auto fail = [reason](const char* message) {
         if (reason) *reason = QString::fromLatin1(message);
@@ -269,18 +270,19 @@ bool buildGraceAfterPlan4(const Chord* owner, GraceAfterPlan4& result, QString* 
     while (targetSegment && !targetSegment->hasElements(firstTrack, firstTrack + VOICES - 1))
         targetSegment = targetSegment->next();
     if (!targetSegment || targetSegment == owner->segment() || targetSegment->measure() != measure
-        || !targetSegment->enabled() || !targetSegment->visible() || !targetSegment->isChordRestType())
-        return fail("After-grace target is not a same-measure chord/rest segment");
+        || !targetSegment->enabled() || !targetSegment->visible()
+        || (barlineOnly ? !targetSegment->isEndBarLineType() : !targetSegment->isChordRestType()))
+        return fail("After-grace target is not the requested same-measure segment type");
     const Element* target = targetSegment->element(owner->track());
-    if (!target || (!target->isChord() && !target->isRest()))
-        return fail("After-grace target is not a chord/rest in the same voice");
+    if (!target || (barlineOnly ? !target->isBarLine() : (!target->isChord() && !target->isRest())))
+        return fail("After-grace target is not the requested item in the same voice");
     if (target->isChord()) {
         const Chord* chord = toChord(target);
         if (!validChord(chord) || chord->score() != owner->score() || chord->mag() != 1 || chord->beam()
             || !chord->graceNotes().empty())
             return fail("Unadapted or merged after-grace target");
     }
-    else {
+    else if (target->isRest()) {
         const Rest* rest = toRest(target);
         if (rest->score() != owner->score() || !rest->staff() || rest->onTabStaff() || rest->staffMove()
             || !rest->staff()->isPitchedStaff(rest->tick()) || rest->staff()->lines(rest->tick()) != 5
@@ -289,6 +291,16 @@ bool buildGraceAfterPlan4(const Chord* owner, GraceAfterPlan4& result, QString* 
             || rest->measure()->isMMRest() || rest->actualDots() || rest->beam() || rest->tuplet()
             || rest->actualTicks() <= Fraction(0, 1) || !rest->el().empty() || !rest->lyrics().empty())
             return fail("After-grace rest target needs an ordinary visible undotted rest");
+    }
+    else {
+        const BarLine* barline = toBarLine(target);
+        if (owner->track() != firstTrack || targetSegment->tick() != measure->endTick()
+            || barline->score() != owner->score() || barline->mag() != 1
+            || !barline->visible() || !barline->autoplace() || barline->isNudged()
+            || !std::isfinite(barline->x()) || !std::isfinite(barline->y())
+            || barline->barLineType() != BarLineType::NORMAL || barline->spanStaff()
+            || barline->spanFrom() || barline->spanTo() || !barline->el()->empty())
+            return fail("After-grace barline target needs an ordinary visible unedited single-staff barline");
     }
     for (const Segment* segment : {owner->segment(), targetSegment}) {
         if (!segment->enabled() || !segment->visible())
@@ -358,6 +370,18 @@ bool buildGraceAfterPlan4(const Chord* owner, GraceAfterPlan4& result, QString* 
     result = plan;
     if (reason) reason->clear();
     return true;
+}
+
+bool buildGraceAfterPlan4(const Chord* owner, GraceAfterPlan4& result, QString* reason)
+{
+    return buildGraceAfterPlanImpl4(owner, result, reason, false);
+}
+
+bool buildGraceAfterBarlinePlan4(const Chord* owner, GraceAfterPlan4& result, QString* reason)
+{
+    // Read-only staging API: production geometry/publication still calls the
+    // chord/rest wrapper until barline system projection is integrated.
+    return buildGraceAfterPlanImpl4(owner, result, reason, true);
 }
 
 static bool afterSourceComponents4(const Chord* owner, const Element* target,

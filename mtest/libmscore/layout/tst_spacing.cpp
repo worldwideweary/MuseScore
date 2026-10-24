@@ -19,6 +19,7 @@
 #include <limits>
 #include "libmscore/chordrest.h"
 #include "libmscore/beam.h"
+#include "libmscore/barline.h"
 #include "libmscore/beamlayout4.h"
 #include "libmscore/chord.h"
 #include "libmscore/note.h"
@@ -3341,6 +3342,56 @@ void TestSpacing::graceAfterBoundaryBaseline()
             QCOMPARE(geometry.plan.left, qreal(123));
             QVERIFY(geometry.source.elements.empty() && geometry.target.elements.empty());
             QVERIFY(!applyGraceAfterPlan4(owner));
+            GraceAfterPlan4 boundary;
+            boundary.left = 123;
+            const bool staged = buildGraceAfterBarlinePlan4(owner, boundary, &reason);
+            QCOMPARE(staged, count < 3);
+            if (staged) {
+                  QCOMPARE(boundary.owner, static_cast<const Chord*>(owner));
+                  QCOMPARE(boundary.target, static_cast<const Segment*>(target));
+                  QCOMPARE(static_cast<int>(boundary.positions.size()), after.size());
+                  QVERIFY(qIsFinite(boundary.left) && qIsFinite(boundary.right) && boundary.left < boundary.right);
+                  QVERIFY(target->element(0) && target->element(0)->isBarLine());
+                  BarLine* barline = toBarLine(target->element(0));
+                  const SpacingPaddingTable4 table(score);
+                  for (int i = 0; i < after.size(); ++i) {
+                        QCOMPARE(boundary.positions[i].chord, static_cast<const Chord*>(after[i]));
+                        QVERIFY(qIsFinite(boundary.positions[i].x));
+                        if (i) QVERIFY(boundary.positions[i].x > boundary.positions[i - 1].x);
+                        SpacingPairPolicy4 policy;
+                        const Note* note = after[i]->notes().front();
+                        QVERIFY(spacingAfterGracePairPolicy4(table, owner, barline, note, barline, score->spatium(), policy));
+                        const qreal expectedPadding = score->styleP(Sid::noteBarDistance) * (note->mag() + barline->mag()) / 2;
+                        QVERIFY(qAbs(policy.padding - expectedPadding) < 1e-6);
+                        QVERIFY(!spacingPairPolicy4(table, note, barline, score->spatium(), policy));
+                        QVERIFY(!spacingAfterGracePairPolicy4(table, owner, barline,
+                              owner->notes().front(), note, score->spatium(), policy));
+                        }
+                  // Query rejection must be atomic for unsupported boundary edits.
+                  for (int mode = 0; mode < 5; ++mode) {
+                        const QPointF offset = barline->offset();
+                        if (mode == 0) barline->setVisible(false);
+                        if (mode == 1) barline->setSpanStaff(1);
+                        if (mode == 2) barline->setBarLineType(BarLineType::DOUBLE);
+                        if (mode == 3) barline->setOffset(QPointF(1, 0));
+                        if (mode == 4) barline->setAutoplace(false);
+                        GraceAfterPlan4 invalid;
+                        invalid.left = 123;
+                        const bool accepted = buildGraceAfterBarlinePlan4(owner, invalid);
+                        if (mode == 0) barline->setVisible(true);
+                        if (mode == 1) barline->setSpanStaff(0);
+                        if (mode == 2) barline->setBarLineType(BarLineType::NORMAL);
+                        if (mode == 3) barline->setOffset(offset);
+                        if (mode == 4) barline->setAutoplace(true);
+                        QVERIFY(!accepted);
+                        QCOMPARE(invalid.left, qreal(123));
+                        QVERIFY(!invalid.owner && !invalid.target && invalid.positions.empty());
+                        }
+                  }
+            else {
+                  QCOMPARE(boundary.left, qreal(123));
+                  QVERIFY(!boundary.owner && !boundary.target && boundary.positions.empty());
+                  }
             SpacingPlan4 system;
             system.width = 123;
             QVERIFY(!buildSpacingPlan4(m->system(), system));
