@@ -31,12 +31,15 @@ public:
     bool padding(ElementType first, ElementType second, qreal& result) const;
 };
 
-// Borrowed roots validated by buildGraceBeforePlan4 for this spacing pass.
+// Borrowed roots validated by before-group plans or complete after-group
+// projections for this spacing pass.
 // An empty/null context retains ordinary grace rejection. Do not retain across
 // edits/layout; preparing a context does not itself move any score items.
 struct SpacingGraceContext4 {
     std::vector<const Chord*> mains;
+    std::vector<const Chord*> afterMains; // Validated temporary after-grace projections.
     bool contains(const Chord* chord) const;
+    bool containsAfter(const Chord* chord) const;
 };
 
 // False means this context is not covered: output is left untouched.

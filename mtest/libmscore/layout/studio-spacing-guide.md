@@ -2498,3 +2498,15 @@ ownership, and live placement stay unchanged. New tests cover provenance,
 coordinates, stale-position independence and atomic failure. No new scores or
 screenshots are needed. See `v0.96-after-grace-target-projection.md` before the
 next full-system admission/publication stage.
+
+### v0.97: full ordinary after-grace system spacing
+
+The user reports v0.96 mtests passing. Supported AG1-AG3 projections now enter
+system fitting, full placement, and compression. After-group coordinates are
+retained in the plan and published only after segment spacing is final. Mixed
+unsupported systems still fall back atomically. New controls are
+`v0.97-spacing-after-grace-system.mscx`,
+`v0.97-spacing-after-grace-system-natural.mscx`, and
+`v0.97-spacing-after-grace-squeeze.mscx`, with both
+experimental settings on. AG5's rest target and owning-note gap remain pending.
+See `v0.97-after-grace-system-spacing.md` for precise filenames and validation.

@@ -331,8 +331,25 @@ static bool afterSourceComponents4(const Chord* owner, const Chord* target,
     for (const SpacingShapeElement4& e : spacingElementShape4(owner).elements) {
         const Chord* chord = ownerChord4(e.item);
         if (chord && chord != owner && chord->parent() == owner) continue;
-        if (e.identity == SpacingIdentity4::LEGACY_SPACER && e.item == owner
-            && e.aggregateOwners.empty() && e.sharedItems.empty()) continue;
+        if (e.identity == SpacingIdentity4::LEGACY_SPACER) {
+            const auto knownProducer = [owner](const Element* item) {
+                return item && item->isChord()
+                    && (item == owner || (toChord(item)->isGraceAfter() && item->parent() == owner));
+            };
+            if (!e.sharedItems.empty()) return false;
+            if (e.item) {
+                if (!knownProducer(e.item) || !e.aggregateOwners.empty()) return false;
+            }
+            else {
+                if (e.aggregateOwners.size() < 2) return false;
+                for (size_t i = 0; i < e.aggregateOwners.size(); ++i) {
+                    if (!knownProducer(e.aggregateOwners[i])) return false;
+                    for (size_t j = 0; j < i; ++j)
+                        if (e.aggregateOwners[i] == e.aggregateOwners[j]) return false;
+                }
+            }
+            continue;
+        }
         SpacingPairPolicy4 policy;
         if (e.identity != SpacingIdentity4::ITEM || !e.item || chord != owner
             || !e.aggregateOwners.empty() || !e.sharedItems.empty()

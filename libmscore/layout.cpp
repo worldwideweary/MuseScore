@@ -4642,6 +4642,18 @@ System* Score::collectSystem(LayoutContext& lc)
             pos.rx() += ww;
             }
       system->setWidth(pos.x());
+      if (useStudioPlan) {
+            // Segment widths are now final. Publish the plan's target-relative
+            // graces directly, including compressed plans, without applying an
+            // unsqueezed local clearance test to an already solved interval.
+            for (const GraceAfterPlan4& after : studioPlan.afterGraces) {
+                  const qreal dx = after.target->x() - after.owner->segment()->x() - after.owner->x();
+                  const auto graces = after.owner->graceNotesAfter();
+                  for (int i = 0; i < graces.size(); ++i)
+                        graces[i]->rxpos() = dx + after.positions[i].x;
+                  after.owner->segment()->createShape(after.owner->vStaffIdx());
+            }
+      }
 
       for (System *bSystem : brokenSystems)
             bSystem->clear();

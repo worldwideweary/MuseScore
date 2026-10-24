@@ -138,11 +138,12 @@ bool prepareCrossStaff4(System* system, CrossStaffGeometry4& result, QString* re
     return true;
 }
 
-// Validate all groups and their published positions before admitting any
-// grace footprint. Failure leaves the caller's context untouched.
-bool prepareGraces4(System* system, SpacingGraceContext4& result, QString* reason)
+// Validate published before-graces and prepare complete temporary after-group
+// projections. No native writes; publish outputs only after every group succeeds.
+bool prepareGraces4(System* system, SpacingGraceContext4& result, std::vector<GraceAfterGeometry4>& afterResult, QString* reason)
 {
     SpacingGraceContext4 prepared;
+    std::vector<GraceAfterGeometry4> afters;
     for (MeasureBase* mb : system->measures()) {
         if (!mb->isMeasure())
             continue; // The ordinary planner rejects frames itself.
@@ -153,6 +154,13 @@ bool prepareGraces4(System* system, SpacingGraceContext4& result, QString* reaso
                 if (!item || !item->isChord() || toChord(item)->graceNotes().empty())
                     continue;
                 const Chord* main = toChord(item);
+                if (!main->graceNotesAfter().empty()) {
+                    GraceAfterGeometry4 geometry;
+                    if (!buildGraceAfterGeometry4(main, geometry, reason)) return false;
+                    prepared.afterMains.push_back(main);
+                    afters.push_back(geometry);
+                    continue;
+                }
                 GraceBeforePlan4 plan;
                 if (!buildGraceBeforePlan4(main, plan, reason))
                     return false;
@@ -167,14 +175,73 @@ bool prepareGraces4(System* system, SpacingGraceContext4& result, QString* reaso
         }
     }
     result = prepared;
+    afterResult = afters;
+    return true;
+}
+
+// Replace only proven components on the affected staff. Unknown or mixed
+// ownership must not disappear when a temporary after-grace shape is used.
+bool substituteAfterGeometry4(Segment* segment, int staff, SpacingShape4& native,
+                             const std::vector<GraceAfterGeometry4>& afters)
+{
+    for (const GraceAfterGeometry4& after : afters) {
+        const Chord* owner = after.plan.owner;
+        if (staff != owner->staffIdx()) continue;
+        const bool source = segment == owner->segment();
+        if (!source && segment != after.plan.target) continue;
+        const Chord* root = source ? owner : toChord(segment->element(owner->track()));
+        const auto owned = [root](const Element* item) {
+            for (; item; item = item->parent()) {
+                if (item->isChord()) {
+                    const Chord* chord = toChord(item);
+                    return chord == root || (chord->isGraceAfter() && chord->parent() == root);
+                }
+            }
+            return false;
+        };
+        for (const auto& e : native.elements) {
+            if (!std::isfinite(e.rect.x()) || !std::isfinite(e.rect.y())
+                || !std::isfinite(e.rect.width()) || !std::isfinite(e.rect.height())
+                || e.rect.width() < 0 || e.rect.height() < 0) return false;
+            if (e.identity == SpacingIdentity4::ITEM) {
+                if (!owned(e.item) || !e.aggregateOwners.empty() || !e.sharedItems.empty()) return false;
+            }
+            else if (e.identity == SpacingIdentity4::LEGACY_SPACER) {
+                if (!e.sharedItems.empty()) return false;
+                if (e.item) {
+                    if (!e.item->isChord() || !owned(e.item) || !e.aggregateOwners.empty()) return false;
+                }
+                else {
+                    if (e.aggregateOwners.size() < 2) return false;
+                    for (size_t i = 0; i < e.aggregateOwners.size(); ++i) {
+                        const Element* item = e.aggregateOwners[i];
+                        if (!item || !item->isChord() || !owned(item)) return false;
+                        for (size_t j = 0; j < i; ++j) if (item == e.aggregateOwners[j]) return false;
+                    }
+                }
+            }
+            else if (e.identity == SpacingIdentity4::SHARED_ITEM) {
+                if (e.item || !e.aggregateOwners.empty() || e.sharedItems.size() < 2) return false;
+                for (size_t i = 0; i < e.sharedItems.size(); ++i) {
+                    if (!owned(e.sharedItems[i])) return false;
+                    for (size_t j = 0; j < i; ++j) if (e.sharedItems[i] == e.sharedItems[j]) return false;
+                }
+            }
+            else return false;
+        }
+        native = source ? after.source : after.target;
+        return true;
+    }
     return true;
 }
 
 bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometry4& geometry,
-                    const CrossStaffGeometry4& cross, const SpacingGraceContext4& graces)
+                    const CrossStaffGeometry4& cross, const SpacingGraceContext4& graces,
+                    const std::vector<GraceAfterGeometry4>& afters)
 {
     for (int staffIdx = 0; staffIdx < segment->score()->nstaves(); ++staffIdx) {
-        const SpacingShape4 native = spacingStaffShape4(segment, staffIdx);
+        SpacingShape4 native = spacingStaffShape4(segment, staffIdx);
+        if (!substituteAfterGeometry4(segment, staffIdx, native, afters)) return false;
         SpacingShape4 projected;
         // These first controls use ordinary visible staves. Staff scale still
         // comes from the item, rather than assuming score spatium in the kernel.
@@ -453,8 +520,10 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
     CrossStaffGeometry4 cross;
     if (!prepareCrossStaff4(system, cross, reason)) return false;
     SpacingGraceContext4 graces;
-    if (!prepareGraces4(system, graces, reason)) return false;
+    std::vector<GraceAfterGeometry4> afters;
+    if (!prepareGraces4(system, graces, afters, reason)) return false;
     SpacingPlan4 plan;
+    for (const auto& after : afters) plan.afterGraces.push_back(after.plan);
     std::vector<Geometry4> geometry;
     const SpacingPaddingTable4 table(score);
     for (MeasureBase* mb : system->measures()) {
@@ -495,7 +564,7 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                     if ((chord->staffMove() != 0 || (chord->beam() && chord->beam()->cross()))
                         && !cross.chords.count(chord))
                         return fail("Cross-staff geometry requires its later stem constraints");
-                    if (chord->isSmall() || (!chord->graceNotes().empty() && !graces.contains(chord)))
+                    if (chord->isSmall() || (!chord->graceNotes().empty() && !graces.contains(chord) && !graces.containsAfter(chord)))
                         return fail("Cue and grace-note rhythm requires a later adapter");
                     for (const Note* note : chord->notes()) {
                         SpacingPairPolicy4 policy;
@@ -503,7 +572,7 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                             return fail("Unadapted note visibility, cue or decoration context");
                     }
                 }
-                if (!cacheGeometry4(&segment, table, g, cross, graces))
+                if (!cacheGeometry4(&segment, table, g, cross, graces, afters))
                     return fail(QString("Unadapted geometry at tick %1").arg(segment.tick().ticks()));
                 if (segment.isChordRestType()) {
                     if (!(segment.ticks() > Fraction(0, 1)))

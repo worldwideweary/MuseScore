@@ -315,6 +315,11 @@ bool SpacingGraceContext4::contains(const Chord* chord) const
     return std::find(mains.begin(), mains.end(), chord) != mains.end();
 }
 
+bool SpacingGraceContext4::containsAfter(const Chord* chord) const
+{
+    return std::find(afterMains.begin(), afterMains.end(), chord) != afterMains.end();
+}
+
 bool spacingPairPolicy4(const SpacingPaddingTable4& table, const Element* first, const Element* second,
                         qreal shapeSpatium, SpacingPairPolicy4& result, const SpacingGraceContext4* context)
 {
@@ -325,8 +330,10 @@ bool spacingPairPolicy4(const SpacingPaddingTable4& table, const Element* first,
                 continue;
             const Chord* chord = toChord(item);
             if (chord->isGrace()) {
-                if (!context || !chord->isGraceBefore() || !chord->parent() || !chord->parent()->isChord()
-                    || !context->contains(toChord(chord->parent())))
+                if (!context || !chord->parent() || !chord->parent()->isChord()) return false;
+                const Chord* root = toChord(chord->parent());
+                if (!(chord->isGraceBefore() ? context->contains(root)
+                      : chord->isGraceAfter() && context->containsAfter(root)))
                     return false;
                 hasGrace = true;
             }
