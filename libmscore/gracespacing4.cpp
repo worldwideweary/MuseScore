@@ -324,4 +324,63 @@ bool buildGraceAfterPlan4(const Chord* owner, GraceAfterPlan4& result, QString* 
     return true;
 }
 
+bool applyGraceAfterPlan4(Chord* owner, QString* reason)
+{
+    GraceAfterPlan4 plan;
+    if (!buildGraceAfterPlan4(owner, plan, reason)) return false;
+    const auto fail = [reason](const char* message) {
+        if (reason) *reason = QString::fromLatin1(message);
+        return false;
+    };
+    const Chord* target = toChord(plan.target->element(owner->track()));
+    const qreal translation = plan.target->x() - owner->segment()->x() - owner->x();
+    if (!std::isfinite(translation)) return fail("Nonfinite after-grace publication offset");
+    const SpacingPaddingTable4 table(owner->score());
+    SpacingShape4 source;
+    for (const SpacingShapeElement4& e : spacingElementShape4(owner).elements) {
+        const Chord* chord = ownerChord4(e.item);
+        if (chord && chord != owner && chord->parent() == owner) continue;
+        if (e.identity == SpacingIdentity4::LEGACY_SPACER && e.item == owner
+            && e.aggregateOwners.empty() && e.sharedItems.empty()) continue;
+        SpacingPairPolicy4 policy;
+        if (e.identity != SpacingIdentity4::ITEM || !e.item || chord != owner
+            || !e.aggregateOwners.empty() || !e.sharedItems.empty()
+            || !std::isfinite(e.rect.x()) || !std::isfinite(e.rect.y())
+            || !std::isfinite(e.rect.width()) || !std::isfinite(e.rect.height())
+            || e.rect.width() < 0 || e.rect.height() < 0
+            || !spacingAfterGracePairPolicy4(table, owner, target, e.item, e.item,
+                                             owner->spatium(), policy, true))
+            return fail("Unadapted after-grace source shape");
+        source.elements.push_back(e);
+    }
+    if (source.elements.empty()) return fail("Empty after-grace source shape");
+    std::vector<qreal> positions;
+    for (const GraceAfterPosition4& p : plan.positions) {
+        const qreal x = translation + p.x;
+        if (!std::isfinite(x)) return fail("Nonfinite after-grace member position");
+        SpacingShape4 shape;
+        if (!graceComponents4(p.chord, owner, table, shape, target))
+            return fail("Unadapted after-grace publication shape");
+        // The segment interval still comes from native spacing at this stage.
+        // Refuse to repack into it unless every source-to-grace constraint fits.
+        for (const auto& first : source.elements) {
+            for (const auto& second : shape.elements) {
+                SpacingPairPolicy4 policy;
+                if (!spacingAfterGracePairPolicy4(table, owner, target, first.item, second.item,
+                                                  owner->spatium(), policy, true))
+                    return fail("Unadapted source-to-after-grace constraint");
+                const qreal required = spacingPairDistance4(first.rect, second.rect, policy, owner->spatium(), 1);
+                if (x + 1e-6 < required)
+                    return fail("Native segment interval is too narrow for after-grace plan");
+            }
+        }
+        positions.push_back(x);
+    }
+    const auto graces = owner->graceNotesAfter();
+    for (int i = 0; i < graces.size(); ++i) graces[i]->rxpos() = positions[i];
+    owner->segment()->createShape(owner->vStaffIdx());
+    if (reason) reason->clear();
+    return true;
+}
+
 }

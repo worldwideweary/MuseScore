@@ -1821,6 +1821,10 @@ void Chord::layout2()
                   g->rxpos() = xOff;
                   xOff -= minNoteDist + g->_spaceLw;    // move to left by grace note right space and inter-grace distance
                   }
+            // Legacy packing above always runs first, including when the
+            // style is disabled or the supported plan cannot safely fit.
+            if (score()->styleB(Sid::spacingLayout4))
+                  applyGraceAfterPlan4(this);
             }
       if (_tabDur)
             _tabDur->layout2();

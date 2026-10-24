@@ -2476,3 +2476,14 @@ broaden default or before-grace queries. New tests cover packing, stale-position
 independence, atomic rejection, and complete native-layout nonmutation under
 both beam modes. Reuse the v0.92 scores; no visible change is expected yet.
 See `v0.94-after-grace-readonly-plan.md` for validation and the next integration.
+
+### v0.95: guarded live after-grace packing
+
+The user reports v0.94 building and passing. AG1-AG3 can now use the new local
+packing when all source-to-grace constraints fit the existing native interval.
+Legacy packing runs first and remains on unsupported or cramped input; full
+system-plan after-grace admission is still pending. New v0.95 comparison files
+are `v0.95-spacing-after-grace-packing.mscx` and its `-natural.mscx` companion.
+Check AG2's D-flat-to-B gap explicitly. AG5's owning-C-to-after-D gap is also
+an identified discrepancy, but its rest target remains unsupported here.
+See `v0.95-after-grace-live-packing.md` for validation and remaining work.

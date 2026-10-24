@@ -43,6 +43,8 @@ class TestSpacing : public QObject, public MTest {
       void graceBeforeLayout();
       void graceNeighborPlan_data();
       void graceNeighborPlan();
+      void graceAfterLayout_data();
+      void graceAfterLayout();
       void graceAfterPlan_data();
       void graceAfterPlan();
       void graceAfterBaseline_data();
@@ -3199,6 +3201,91 @@ static std::vector<qreal> graceLayoutSnapshot4(Score* score)
       return values;
       }
 
+void TestSpacing::graceAfterLayout_data()
+      {
+      QTest::addColumn<bool>("modernBeams");
+      QTest::addColumn<QString>("file");
+      for (const QString& file : {QString("v0.95-spacing-after-grace-packing.mscx"),
+                                  QString("v0.95-spacing-after-grace-packing-natural.mscx")}) {
+            for (bool beams : {false, true}) {
+                  const QByteArray tag = (file + (beams ? "-studio" : "-legacy")).toLatin1();
+                  QTest::newRow(tag.constData()) << beams << file;
+                  }
+            }
+      }
+
+void TestSpacing::graceAfterLayout()
+      {
+      QFETCH(bool, modernBeams);
+      QFETCH(QString, file);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      // Give every ordinary group ample room. Default/natural-page rejection
+      // and stability are also covered by graceAfterBaseline/graceAfterPlan.
+      score->setStyleValue(Sid::pageWidth, 100.0);
+      score->setStyleValue(Sid::pagePrintableWidth, 98.8);
+      score->setStyleValue(Sid::lastSystemFillLimit, 0.0);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto legacy = graceLayoutSnapshot4(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      int count = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++count) {
+            QVERIFY(count < 6);
+            Chord* owner = nullptr;
+            for (Segment& segment : m->segments()) {
+                  Element* item = segment.element(0);
+                  if (item && item->isChord() && !toChord(item)->graceNotesAfter().empty()) owner = toChord(item);
+                  }
+            QVERIFY(owner);
+            const auto native = graceLayoutSnapshot4(score);
+            QString reason;
+            if (count >= 3) {
+                  QVERIFY(!applyGraceAfterPlan4(owner, &reason));
+                  QVERIFY(graceLayoutSnapshot4(score) == native);
+                  continue;
+                  }
+            GraceAfterPlan4 plan;
+            QVERIFY2(buildGraceAfterPlan4(owner, plan, &reason), qPrintable(reason));
+            for (const GraceAfterPosition4& p : plan.positions) {
+                  const qreal actual = owner->segment()->x() + owner->x() + p.chord->x() - plan.target->x();
+                  QVERIFY2(qAbs(actual - p.x) < 1e-6,
+                        qPrintable(QString("AG%1 applied x=%2 expected=%3").arg(count + 1)
+                              .arg(actual, 0, 'g', 17).arg(p.x, 0, 'g', 17)));
+                  }
+            const qreal width = m->width();
+            QVERIFY2(applyGraceAfterPlan4(owner, &reason), qPrintable(reason));
+            QCOMPARE(m->width(), width);
+            QVERIFY(graceLayoutSnapshot4(score) == native); // Idempotent local publication.
+            Segment* target = m->tick2segment(owner->tick() + owner->actualTicks(), SegmentType::ChordRest);
+            QVERIFY(target);
+            const QPointF old = target->pos();
+            target->rxpos() = owner->segment()->x() - 100 * score->spatium();
+            const auto cramped = graceLayoutSnapshot4(score);
+            const bool accepted = applyGraceAfterPlan4(owner, &reason);
+            const auto after = graceLayoutSnapshot4(score);
+            target->setPos(old);
+            QVERIFY(!accepted);
+            QVERIFY(!reason.isEmpty());
+            QVERIFY(after == cramped); // Not a single member moves on failed clearance.
+            QVERIFY(graceLayoutSnapshot4(score) == native);
+            }
+      QCOMPARE(count, 6);
+      const auto modern = graceLayoutSnapshot4(score);
+      score->doLayout();
+      const auto repeated = graceLayoutSnapshot4(score);
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i) QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto restored = graceLayoutSnapshot4(score);
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
 void TestSpacing::graceAfterPlan_data()
       {
       graceAfterBaseline_data();
@@ -3461,9 +3548,9 @@ void TestSpacing::graceAfterBaseline()
             QVERIFY(!buildSpacingPlan4(m->system(), rejected));
             QCOMPARE(rejected.width, qreal(123));
             QVERIFY(rejected.measures.empty() && rejected.segments.empty());
-            if (count < 5) {
+            if (count == 3 || count == 4) {
                   // Rhythmic spacing still acts when the full plan rejects
-                  // after-graces. Compare their native target-relative packing,
+                  // after-graces. AG4/AG5 retain native target-relative packing,
                   // not whole-measure widths or absolute chord positions.
                   // AG6's target has before-graces with their own local adapter.
                   const auto current = afterTargetSnapshot(m);

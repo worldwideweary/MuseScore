@@ -39,6 +39,10 @@ struct GraceAfterPlan4 {
 // Query only: does not move items, publish shapes, or enable system admission.
 // Rebuild after geometry changes; failure preserves every output field.
 bool buildGraceAfterPlan4(const Chord*, GraceAfterPlan4&, QString* reason = nullptr);
+// Local post-spacing publication only. Rebuild the plan, check every source-
+// to-grace constraint in the available interval, then publish all x positions.
+// Failure does not move any items. Native/system widths remain unchanged.
+bool applyGraceAfterPlan4(Chord*, QString* reason = nullptr);
 
 // Only the unedited first-before-grace to its own main chord, same staff/voice.
 // This validates a spacing allowance; it does not select a new slur renderer.
