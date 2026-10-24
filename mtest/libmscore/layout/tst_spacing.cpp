@@ -3282,8 +3282,8 @@ void TestSpacing::graceAfterRestStaticSqueeze()
       QVERIFY(after.target->element(0) && after.target->element(0)->isRest());
       for (const auto& p : after.positions)
             QVERIFY(qAbs(after.owner->segment()->x() + after.owner->x() + p.chord->x() - after.target->x() - p.x) < 1e-6);
-      // Compare the two scale conventions without publishing either result.
-      // The native XML report retains these short records for the next audit.
+      // The v0.105 native probe found a quarter-space anchor shift on this
+      // matched-input pair. Keep that result and the production selection covered.
       Beam* beam = after.positions.front().chord->beam();
       QVERIFY(beam);
       QVERIFY(beam->primarySegment4());
@@ -3294,19 +3294,28 @@ void TestSpacing::graceAfterRestStaticSqueeze()
       QVERIFY(beam4ProbeGraceAnchors(beam, probe));
       QCOMPARE(static_cast<int>(probe.defaultStemLengths.size()), static_cast<int>(after.positions.size()));
       const qreal sp = score->spatium();
-      const qreal origin = beam->pagePos().y();
-      qDebug("graceAnchor105 modern=%d width current=%.12g separated=%.12g start current=%.12g separated=%.12g end current=%.12g separated=%.12g",
-            int(modernBeams), probe.currentWidth / sp, probe.separatedWidth / sp,
-            (probe.currentStart.y() - origin) / sp, (probe.separatedStart.y() - origin) / sp,
-            (probe.currentEnd.y() - origin) / sp, (probe.separatedEnd.y() - origin) / sp);
-      for (size_t j = 0; j < after.positions.size(); ++j) {
-            const Chord* chord = after.positions[j].chord;
-            QCOMPARE(chord->stem()->len(), stems[j]);
-            qDebug("graceAnchor105 modern=%d chord=%d line=%d up=%d mag=%.12g defaultStem=%.12g actualStem=%.12g attachY=%.12g",
-                  int(modernBeams), int(j), chord->line(), int(chord->up()), chord->mag(),
-                  probe.defaultStemLengths[j] / sp, stems[j] / sp,
-                  (chord->up() ? chord->upNote()->stemUpSE().y() : chord->downNote()->stemDownNW().y()) / sp);
+      QVERIFY(qAbs(probe.currentWidth / sp - .35) < 1e-6);
+      QVERIFY(qAbs(probe.separatedWidth / sp - .5) < 1e-6);
+      QVERIFY(qAbs((probe.separatedStart.y() - probe.currentStart.y()) / sp - .25) < 1e-6);
+      QVERIFY(qAbs((probe.separatedEnd.y() - probe.currentEnd.y()) / sp - .25) < 1e-6);
+      std::vector<ChordRest*> elements(beam->elements().begin(), beam->elements().end());
+      QPointF start, end;
+      qreal distance = beam->beamDist();
+      QVERIFY(layoutBeam4(beam, elements, start, end, distance));
+      QVERIFY(QLineF(start, probe.separatedStart).length() < 1e-6);
+      QVERIFY(QLineF(end, probe.separatedEnd).length() < 1e-6);
+      QVERIFY(qAbs(distance - beam->beamDist()) < 1e-6);
+      if (modernBeams) {
+            // Final segment placement must actually consume the nominal anchors.
+            QVERIFY(qAbs(primary.dx()) > 1e-6);
+            for (const QPointF& anchor : {start, end}) {
+                  const qreal y = primary.y1() + (anchor.x() - primary.x1()) * primary.dy() / primary.dx()
+                        + beam->pagePos().y();
+                  QVERIFY(qAbs(y - anchor.y()) < 1e-6);
+                  }
             }
+      for (size_t j = 0; j < after.positions.size(); ++j)
+            QCOMPARE(after.positions[j].chord->stem()->len(), stems[j]);
       QVERIFY(beam->primarySegment4());
       QCOMPARE(*beam->primarySegment4(), primary);
       GraceBeamAnchorProbe4 rejected;
@@ -3384,6 +3393,21 @@ void TestSpacing::graceAfterRest()
                         p.chord->spatium(), policy));
                   QVERIFY(policy.padding >= .45 * score->spatium());
                   QVERIFY(!spacingPairPolicy4(table, p.chord->notes().front(), rest, p.chord->spatium(), policy));
+                  }
+            // Exercise the nominal anchor path on up/down and altered groups,
+            // including the four-note contour. A query must not alter the beam.
+            if (Beam* beam = geometry.plan.positions.front().chord->beam()) {
+                  QVERIFY(beam->primarySegment4());
+                  const QLineF primary = *beam->primarySegment4();
+                  GraceBeamAnchorProbe4 probe;
+                  QVERIFY(beam4ProbeGraceAnchors(beam, probe));
+                  std::vector<ChordRest*> elements(beam->elements().begin(), beam->elements().end());
+                  QPointF start, end;
+                  qreal distance = beam->beamDist();
+                  QVERIFY(layoutBeam4(beam, elements, start, end, distance));
+                  QVERIFY(QLineF(start, probe.separatedStart).length() < 1e-6);
+                  QVERIFY(QLineF(end, probe.separatedEnd).length() < 1e-6);
+                  QCOMPARE(*beam->primarySegment4(), primary);
                   }
             // Every glyph/stem constraint, including owner-to-first grace,
             // must fit the actual source-to-target interval at natural spacing.

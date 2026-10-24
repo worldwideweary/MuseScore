@@ -1187,8 +1187,8 @@ static bool calculateAnchors4(Element* item, Beam* beam, Tremolo* tremolo,
     if (!first || !last)
         return false;
     data.isGrace = first->isGrace();
-    // The audit query can compare a separately specified anchor magnitude.
-    // All production callers keep the existing default and do not enter here.
+    // Studio keeps intrinsic grace scaling out of the anchor magnitude and
+    // nominal beam width. The rendered stroke and beam distance stay scaled.
     if (data.isGrace && anchorMagnitude > 0) {
         data.magnitude = anchorMagnitude;
         data.beamWidth = item->score()->styleS(Sid::beamWidth).val() * data.spatium * anchorMagnitude;
@@ -1286,7 +1286,7 @@ static bool calculateAnchors4(Element* item, Beam* beam, Tremolo* tremolo,
     return true;
 }
 
-bool beam4ProbeGraceAnchors(Beam* beam, GraceBeamAnchorProbe4& result)
+static bool ordinaryGraceAnchors4(Beam* beam)
 {
     if (!beam || beam->cross() || beam->userModified() || beam->elements().empty()
         || beam->staff()->isTabStaff(beam->tick()))
@@ -1294,14 +1294,23 @@ bool beam4ProbeGraceAnchors(Beam* beam, GraceBeamAnchorProbe4& result)
     const qreal graceMag = beam->score()->styleD(Sid::graceNoteMag);
     if (!(graceMag > 0) || !std::isfinite(graceMag) || !qFuzzyCompare(beam->mag(), graceMag))
         return false;
-    std::vector<ChordRest*> elements;
-    GraceBeamAnchorProbe4 probe;
     for (ChordRest* cr : beam->elements()) {
         if (!cr->isChord() || !cr->isGrace() || cr->isSmall() || cr->staffMove()) return false;
         const Chord* chord = toChord(cr);
         if (!chord->stem() || chord->stem()->userLen() != 0 || chord->tremolo()
             || !chord->parent() || !chord->parent()->isChord() || toChord(chord->parent())->isSmall())
             return false;
+    }
+    return true;
+}
+
+bool beam4ProbeGraceAnchors(Beam* beam, GraceBeamAnchorProbe4& result)
+{
+    if (!ordinaryGraceAnchors4(beam)) return false;
+    std::vector<ChordRest*> elements;
+    GraceBeamAnchorProbe4 probe;
+    for (ChordRest* cr : beam->elements()) {
+        const Chord* chord = toChord(cr);
         elements.push_back(cr);
         const qreal length = defaultStemLength4(chord);
         if (!std::isfinite(length)) return false;
@@ -1325,7 +1334,8 @@ bool layoutBeam4(Beam* beam, const std::vector<ChordRest*>& elements,
 {
     if (beam->staff()->isTabStaff(beam->tick()) || !beam4SupportsTremolos(beam))
         return false;
-    return calculateAnchors4(beam, beam, nullptr, elements, start, end, beamDistance);
+    const qreal anchorMagnitude = ordinaryGraceAnchors4(beam) ? 1.0 : 0.0;
+    return calculateAnchors4(beam, beam, nullptr, elements, start, end, beamDistance, anchorMagnitude);
 }
 } // namespace Ms
 

@@ -2639,3 +2639,17 @@ stem lengths and stem attachment metadata in the native XML report. No candidate
 anchors are published, and all production layout calls retain their original
 parameters. This does not claim a height fix. Reuse the v0.104 score; send the
 result XML even if tests pass. See `v0.105-grace-beam-height-audit.md`.
+
+### v0.106: use nominal anchors for ordinary grace beams
+
+The passing v0.105 native report confirms the candidate moves both anchors of
+the matched-input D5/E5 pair toward its noteheads by 0.25sp. Select Studio's
+nominal magnitude for ordinary automatic grace-beam anchor solving under the
+experimental beam algorithm. Keep drawn thickness/distance grace-scaled and
+retain the previous handling for cue, cross-staff, edited and tremolo contexts.
+
+Replace diagnostic logging with numeric and completed-segment regressions;
+also cover up/down and altered AR groups. Reuse
+`v0.104-spacing-after-grace-rest-squeeze-match.mscx` for the visual comparison.
+Native tests and updated visual confirmation are pending. See
+`v0.106-grace-beam-nominal-anchors.md`.

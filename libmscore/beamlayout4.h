@@ -30,8 +30,8 @@ qreal beam4InsetTremoloSpan(qreal anchorDistance, qreal spatium);
 // Coordinates are page Y and beam-relative X, matching the Studio engine.
 bool layoutBeam4(Beam*, const std::vector<ChordRest*>&, QPointF& start,
                  QPointF& end, qreal& beamDistance);
-// Read-only audit of ordinary grace beams. The alternative uses Studio's
-// separation of intrinsic grace scale from the beam anchor magnitude.
+// Read-only comparison of ordinary grace beams: current* retains the v0.104
+// scaled-anchor baseline; separated* uses Studio's nominal anchor magnitude.
 // Neither result is published; failure leaves output untouched.
 struct GraceBeamAnchorProbe4 {
     QPointF currentStart, currentEnd;
