@@ -2456,3 +2456,12 @@ read-only planner rejection, stable layout, toggle restoration and round trips
 under both beam algorithms. AG6 also contains before-graces; their existing
 local adapter can still act despite system-level fallback. See
 `v0.92-after-grace-baseline.md`. Next add a read-only ordinary target adapter.
+
+### v0.93: correct the after-grace baseline equality assertion
+
+All four v0.92 runtime rows failed the new whole-measure on/off equality check.
+That contract was incorrect: the optional rhythmic widths/springs still act
+when the typed system planner rejects after-graces. Compare AG1-AG5's native
+after-group coordinates relative to the following target instead. All original
+repeat-layout, off-restoration, ownership and rejection checks remain. No
+production code or score changes. See `v0.93-after-grace-baseline-assertion-fix.md`.

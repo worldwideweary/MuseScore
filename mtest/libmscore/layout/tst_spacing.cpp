@@ -3232,6 +3232,23 @@ void TestSpacing::graceAfterBaseline()
                   }
             return values;
             };
+      const auto afterTargetSnapshot = [](Measure* m) {
+            std::vector<qreal> values;
+            for (const Segment& segment : m->segments()) {
+                  if (!segment.enabled() || !segment.isChordRestType()) continue;
+                  for (const Element* item : segment.elist()) {
+                        if (!item || !item->isChord()) continue;
+                        const Chord* owner = toChord(item);
+                        const auto after = owner->graceNotesAfter();
+                        if (after.empty()) continue;
+                        const Segment* target = m->tick2segment(owner->tick() + owner->actualTicks(), SegmentType::All);
+                        if (!target) return std::vector<qreal>();
+                        for (const Chord* grace : after)
+                              values.insert(values.end(), {segment.x() + owner->x() + grace->x() - target->x(), grace->y()});
+                        }
+                  }
+            return values;
+            };
       const auto snapshot = [&]() {
             std::vector<qreal> values;
             for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
@@ -3243,9 +3260,9 @@ void TestSpacing::graceAfterBaseline()
       score->setStyleValue(Sid::spacingLayout4, false);
       score->doLayout();
       const auto legacy = snapshot();
-      std::vector<std::vector<qreal>> legacyMeasures;
+      std::vector<std::vector<qreal>> legacyAfterTargets;
       for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
-            legacyMeasures.push_back(measureSnapshot(m));
+            legacyAfterTargets.push_back(afterTargetSnapshot(m));
       score->setStyleValue(Sid::spacingLayout4, true);
       score->doLayout();
       const auto modern = snapshot();
@@ -3323,12 +3340,19 @@ void TestSpacing::graceAfterBaseline()
             QCOMPARE(rejected.width, qreal(123));
             QVERIFY(rejected.measures.empty() && rejected.segments.empty());
             if (count < 5) {
-                  // AG6 also has before-graces, which already use the local
-                  // adapter even when system-level after-grace admission fails.
-                  const auto current = measureSnapshot(m);
-                  QCOMPARE(static_cast<int>(current.size()), static_cast<int>(legacyMeasures[count].size()));
-                  for (size_t i = 0; i < current.size(); ++i)
-                        QVERIFY(qAbs(current[i] - legacyMeasures[count][i]) < 1e-6);
+                  // Rhythmic spacing still acts when the full plan rejects
+                  // after-graces. Compare their native target-relative packing,
+                  // not whole-measure widths or absolute chord positions.
+                  // AG6's target has before-graces with their own local adapter.
+                  const auto current = afterTargetSnapshot(m);
+                  QCOMPARE(static_cast<int>(current.size()), 2 * after.size());
+                  QCOMPARE(static_cast<int>(current.size()), static_cast<int>(legacyAfterTargets[count].size()));
+                  for (size_t i = 0; i < current.size(); ++i) {
+                        QVERIFY2(qAbs(current[i] - legacyAfterTargets[count][i]) < 1e-6,
+                              qPrintable(QString("AG%1 target-relative component %2: on=%3 off=%4")
+                                    .arg(count + 1).arg(static_cast<int>(i))
+                                    .arg(current[i], 0, 'g', 17).arg(legacyAfterTargets[count][i], 0, 'g', 17)));
+                        }
                   }
             }
       QCOMPARE(count, 6);
