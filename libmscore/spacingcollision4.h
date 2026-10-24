@@ -44,8 +44,8 @@ struct SpacingGraceContext4 {
     bool containsAfter(const Chord* chord) const;
 };
 
-// Stack-local memo for one read-only component query. Never retain across a
-// score edit, geometry preparation, or layout. Only chord eligibility is
+// Stack-local memo for one read-only spacing query, including a complete plan.
+// Discard before score edits, geometry preparation or later layout. Eligibility is
 // reused; item checks and pair-specific geometry/padding are always evaluated.
 class SpacingContextCache4 {
     bool _initialized = false, _allowGrace = false, _hasContext = false;
@@ -91,12 +91,14 @@ bool spacingMergedGracePairPolicy4(const SpacingPaddingTable4&, const Chord* own
 qreal spacingPairDistance4(const QRectF&, const QRectF&, const SpacingPairPolicy4&,
                            qreal shapeSpatium, qreal squeezeFactor);
 bool spacingShapeDistance4(const SpacingPaddingTable4&, const SpacingShape4&, const SpacingShape4&,
-                           qreal shapeSpatium, qreal squeezeFactor, qreal& result, const SpacingGraceContext4* = nullptr);
+                           qreal shapeSpatium, qreal squeezeFactor, qreal& result, const SpacingGraceContext4* = nullptr,
+                           SpacingContextCache4* = nullptr);
 // A separate, validated view for the new placement pass. Native snapshots keep
 // all rectangles; only producer-tagged redundant legacy bounds are excluded.
 // Proven shared noteheads expand to all owners so pair queries retain every
 // voice's policy; unknown ownership or unsupported shared types reject the view.
 bool spacingCollisionProjection4(const SpacingPaddingTable4&, const SpacingShape4&,
-                                 qreal shapeSpatium, SpacingShape4& result, const SpacingGraceContext4* = nullptr);
+                                 qreal shapeSpatium, SpacingShape4& result, const SpacingGraceContext4* = nullptr,
+                                 SpacingContextCache4* = nullptr);
 }
 #endif

@@ -4669,11 +4669,14 @@ void TestSpacing::graceContextCachePolicies()
                                                 QCOMPARE(distance, spacingPairDistance4(rect, rect, expected, score->spatium(), 1));
                                           else
                                                 QCOMPARE(distance, qreal(123));
+                                          qreal sharedDistance = 123;
+                                          QCOMPARE(spacingShapeDistance4(table, left, right, score->spatium(), 1, sharedDistance, context, &cache), uncached);
+                                          QCOMPARE(sharedDistance, distance);
                                           SpacingPairPolicy4 self;
                                           const bool selfAccepted = spacingPairPolicy4(table, a, a, score->spatium(), self, context);
                                           SpacingShape4 projected;
                                           projected.elements.push_back(SpacingShapeElement4(QRectF(9, 9, 1, 1), target));
-                                          QCOMPARE(spacingCollisionProjection4(table, left, score->spatium(), projected, context), selfAccepted);
+                                          QCOMPARE(spacingCollisionProjection4(table, left, score->spatium(), projected, context, &cache), selfAccepted);
                                           if (selfAccepted) {
                                                 QCOMPARE(int(projected.elements.size()), 3);
                                                 for (const auto& component : projected.elements) {

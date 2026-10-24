@@ -2961,3 +2961,14 @@ Also report compiler optimization/assertions/Qt once per profiling process;
 current build comparability with Studio has not been established. See
 `v0.131-grace-pair-context-preparation.md`. Apply after v0.130, run both
 native mtests and repeat the same timing test, retaining the complete log.
+
+### v0.132: reuse eligibility across a whole system plan
+
+User reports ordinary notation is also slow and retains Debug as the normal
+workflow. Share eligibility across each complete read-only system plan instead
+of restarting at every projection/distance query. Preserve all pair and scope
+checks and discard the cache at query return. Extend local/shared-cache native
+comparisons. See `v0.132-system-plan-context-reuse.md`, including the requested
+measured percentages: 4.455 ms legacy versus 51.9915 ms experimental, about
+1,067% more elapsed time; Studio has not been timed. Apply after v0.131 and
+repeat both native mtests and the same Debug timing test. Native gains pending.

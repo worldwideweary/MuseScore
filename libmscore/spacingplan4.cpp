@@ -272,7 +272,7 @@ bool substituteMergedGeometry4(Segment* segment, int staff, SpacingShape4& nativ
 bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometry4& geometry,
                     const CrossStaffGeometry4& cross, const SpacingGraceContext4& graces,
                     const std::vector<GraceAfterGeometry4>& afters,
-                    const std::vector<GraceMergedGeometry4>& merged)
+                    const std::vector<GraceMergedGeometry4>& merged, SpacingContextCache4& contextCache)
 {
     for (int staffIdx = 0; staffIdx < segment->score()->nstaves(); ++staffIdx) {
         SpacingShape4 native = spacingStaffShape4(segment, staffIdx);
@@ -288,7 +288,7 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
                 break;
             }
         }
-        if (!spacingCollisionProjection4(table, native, sp, projected, &graces))
+        if (!spacingCollisionProjection4(table, native, sp, projected, &graces, &contextCache))
             return false;
         for (const auto& pair : cross.chords) {
             const CrossStaffChord4& e = pair.second;
@@ -306,7 +306,7 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
             const QRectF rect(e.stemX - width / 2, e.up ? y - reach : y - width / 2,
                               width, reach + width / 2);
             SpacingPairPolicy4 policy;
-            if (!spacingPairPolicy4(table, e.chord->stem(), e.chord->stem(), sp, policy)) return false;
+            if (!spacingPairPolicy4(table, e.chord->stem(), e.chord->stem(), sp, policy, nullptr, &contextCache)) return false;
             projected.elements.push_back(SpacingShapeElement4(rect, e.chord->stem()));
         }
         qreal staffLeft = std::numeric_limits<qreal>::max();
@@ -330,7 +330,8 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
 
 bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, const Geometry4& first,
                const SpacingSegmentPlan4& b, const Geometry4& second, Measure* firstMeasure,
-               qreal squeeze, qreal& result, const CrossStaffGeometry4& cross, const SpacingGraceContext4& graces)
+               qreal squeeze, qreal& result, const CrossStaffGeometry4& cross, const SpacingGraceContext4& graces,
+               SpacingContextCache4& contextCache)
 {
     qreal distance = 0;
     const bool header = headerType4(a.segment) && a.segment->rtick().isZero()
@@ -342,7 +343,7 @@ bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, 
             break;
         }
         qreal d = 0;
-        if (!spacingShapeDistance4(table, first.staff[st], second.staff[st], sp, squeeze, d, &graces))
+        if (!spacingShapeDistance4(table, first.staff[st], second.staff[st], sp, squeeze, d, &graces, &contextCache))
             return false;
         distance = std::max(distance, d);
     }
@@ -560,6 +561,9 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
     std::vector<GraceAfterGeometry4> afters;
     std::vector<GraceMergedGeometry4> merged;
     if (!prepareGraces4(system, graces, afters, merged, reason)) return false;
+    // All remaining projection and distance work is read-only. Reuse chord
+    // eligibility through this complete plan; later plans/edits start fresh.
+    SpacingContextCache4 contextCache;
     SpacingPlan4 plan;
     for (const auto& after : afters) plan.afterGraces.push_back(after.plan);
     for (const auto& joint : merged) plan.mergedGraces.push_back(joint.plan);
@@ -607,11 +611,11 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                         return fail("Cue and grace-note rhythm requires a later adapter");
                     for (const Note* note : chord->notes()) {
                         SpacingPairPolicy4 policy;
-                        if (!note->visible() || note->isSmall() || !spacingPairPolicy4(table, note, note, note->spatium(), policy, &graces))
+                        if (!note->visible() || note->isSmall() || !spacingPairPolicy4(table, note, note, note->spatium(), policy, &graces, &contextCache))
                             return fail("Unadapted note visibility, cue or decoration context");
                     }
                 }
-                if (!cacheGeometry4(&segment, table, g, cross, graces, afters, merged))
+                if (!cacheGeometry4(&segment, table, g, cross, graces, afters, merged, contextCache))
                     return fail(QString("Unadapted geometry at tick %1").arg(segment.tick().ticks()));
                 if (segment.isChordRestType()) {
                     if (!(segment.ticks() > Fraction(0, 1)))
@@ -670,7 +674,7 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                     ++crCount;
                 qreal distance = 0;
                 if (!distance4(table, previous, geometry[j], current, geometry[i], plan.measures.front().measure,
-                               options.squeezeFactor, distance, cross, graces))
+                               options.squeezeFactor, distance, cross, graces, contextCache))
                     return fail("Unsupported segment distance");
                 x = std::max(x, previous.x + distance);
                 if (x > cursor) {
