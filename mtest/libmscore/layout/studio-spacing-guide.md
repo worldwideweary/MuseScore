@@ -2434,3 +2434,14 @@ indicated by these captures. New `v0.90-spacing-grace-accidental-fitting.mscx`
 exercise automatic narrow-system collection and actual compression under both
 beam modes, with both experimental settings saved on. New runtime rows still
 need target-build validation. See `v0.90-grace-accidental-fitting-checkpoint.md`.
+
+### v0.91: fitting accepted; after-grace source audit
+
+The user reports v0.90 mtests passing. The paired captures show the same 3+3
+system grouping for F1-F6 and usable S1 compression, with some remaining
+header-to-note redistribution in S1. Record this as a scoped passing checkpoint.
+The documentation-only audit identifies Studio's following-segment attachment,
+same-track merging, typed shape publication and final ownership-coordinate
+conversion for after-graces. No production guards change. Next prepare AG1-AG6
+baseline controls before adapting that separate lifecycle. See
+`v0.91-grace-fitting-accepted-after-grace-audit.md`.
