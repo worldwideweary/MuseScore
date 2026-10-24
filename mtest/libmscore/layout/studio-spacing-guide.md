@@ -2714,3 +2714,18 @@ position independence, edited-stem rejection and unchanged score snapshots.
 No new capture is needed. Native tests remain pending; next stage joint typed
 projection and both-beam preparation before live placement. See
 `v0.110-merged-grace-readonly-plan.md`.
+
+### v0.111: joint geometry and isolated preparation of both beams
+
+The user reports v0.110 native tests passing. Add read-only joint projections
+that remove old source grace footprints and place after/before members exactly
+once in the target's temporary geometry. Add an isolated helper that prepares
+both independent beams at planned internal distances, restores member x values
+and requires stable geometry within eight attempts.
+
+Only tests invoke preparation in this checkpoint; production admission and live
+placement remain unchanged. Reuse v0.107 M1/M3 for native geometry, ownership,
+atomic rejection, repeat-preparation and native-relayout restoration checks;
+M2 remains rejected. No new capture is needed. Next integrate validated joint
+geometry/preparation with system spacing and per-parent publication. See
+`v0.111-merged-grace-geometry-beams.md`.

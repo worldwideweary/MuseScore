@@ -461,6 +461,99 @@ static bool afterSourceComponents4(const Chord* owner, const Element* target,
     return true;
 }
 
+bool buildGraceMergedGeometry4(const Chord* owner, GraceMergedGeometry4& result, QString* reason)
+{
+    GraceMergedGeometry4 geometry;
+    if (!buildGraceMergedPlan4(owner, geometry.plan, reason)) return false;
+    const auto fail = [reason](const char* message) {
+        if (reason) *reason = QString::fromLatin1(message);
+        return false;
+    };
+    const Chord* target = geometry.plan.target;
+    const SpacingPaddingTable4 table(owner->score());
+    SpacingShape4 source;
+    if (!afterSourceComponents4(owner, target, table, source))
+        return fail("Unadapted merged-grace source projection");
+    geometry.source = source.translated(owner->pos());
+    SpacingShape4 following;
+    if (!graceComponents4(target, owner, table, following, target, true))
+        return fail("Unadapted merged-grace target projection");
+    geometry.target = following.translated(target->pos());
+    for (const GraceAfterPosition4& p : geometry.plan.positions) {
+        SpacingShape4 member;
+        if (!graceComponents4(p.chord, owner, table, member, target, true))
+            return fail("Unadapted merged-grace member projection");
+        member = member.translated(QPointF(p.x, 0));
+        geometry.target.elements.insert(geometry.target.elements.end(), member.elements.begin(), member.elements.end());
+    }
+    if (!geometry.source.complete() || !geometry.target.complete())
+        return fail("Incomplete merged-grace projection identity");
+    result = geometry;
+    if (reason) reason->clear();
+    return true;
+}
+
+bool prepareGraceMergedBeams4(Chord* owner, QString* reason)
+{
+    GraceMergedGeometry4 geometry;
+    if (!buildGraceMergedGeometry4(owner, geometry, reason)) return false;
+    const auto fail = [reason](const char* message) {
+        if (reason) *reason = QString::fromLatin1(message);
+        return false;
+    };
+    std::vector<Chord*> members;
+    for (Chord* grace : owner->graceNotesAfter()) members.push_back(grace);
+    const size_t afterCount = members.size();
+    for (Chord* grace : geometry.plan.target->graceNotesBefore()) members.push_back(grace);
+    if (!afterCount || members.size() == afterCount || members.size() != geometry.plan.positions.size())
+        return fail("Merged beam preparation needs both complete groups");
+    std::vector<qreal> original;
+    std::vector<Beam*> beams;
+    for (Chord* grace : members) {
+        original.push_back(grace->x());
+        if (grace->beam() && std::find(beams.begin(), beams.end(), grace->beam()) == beams.end())
+            beams.push_back(grace->beam());
+    }
+    if (beams.empty()) return true;
+    const auto sameShape = [](const SpacingShape4& a, const SpacingShape4& b) {
+        if (a.elements.size() != b.elements.size()) return false;
+        for (size_t i = 0; i < a.elements.size(); ++i) {
+            const auto& x = a.elements[i];
+            const auto& y = b.elements[i];
+            if (x.item != y.item || x.identity != y.identity
+                || x.aggregateOwners != y.aggregateOwners || x.sharedItems != y.sharedItems
+                || qAbs(x.rect.x() - y.rect.x()) > 1e-9 || qAbs(x.rect.y() - y.rect.y()) > 1e-9
+                || qAbs(x.rect.width() - y.rect.width()) > 1e-9
+                || qAbs(x.rect.height() - y.rect.height()) > 1e-9)
+                return false;
+        }
+        return true;
+    };
+    for (int pass = 0; pass < 8; ++pass) {
+        // Each independent beam needs its own group's relative distances.
+        // Anchor that group at its original first x; do not move musical parents.
+        for (size_t i = 0; i < members.size(); ++i) {
+            const size_t base = i < afterCount ? 0 : afterCount;
+            members[i]->rxpos() = original[base] + geometry.plan.positions[i].x
+                - geometry.plan.positions[base].x;
+        }
+        for (Beam* beam : beams) beam->layout();
+        for (size_t i = 0; i < members.size(); ++i) members[i]->rxpos() = original[i];
+        owner->segment()->createShape(owner->vStaffIdx());
+        geometry.plan.target->segment()->createShape(geometry.plan.target->vStaffIdx());
+        GraceMergedGeometry4 next;
+        if (!buildGraceMergedGeometry4(owner, next, reason)) return false;
+        if (next.plan.positions.size() != members.size()) return fail("Merged grace membership changed during beam preparation");
+        for (size_t i = 0; i < members.size(); ++i) {
+            if (next.plan.positions[i].chord != members[i])
+                return fail("Merged grace order changed during beam preparation");
+        }
+        if (sameShape(geometry.source, next.source) && sameShape(geometry.target, next.target)) return true;
+        geometry = next;
+    }
+    return fail("Merged grace beam geometry did not stabilize");
+}
+
 bool buildGraceAfterGeometry4(const Chord* owner, GraceAfterGeometry4& result, QString* reason)
 {
     GraceAfterGeometry4 geometry;

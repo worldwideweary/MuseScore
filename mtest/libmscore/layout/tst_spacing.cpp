@@ -48,6 +48,8 @@ class TestSpacing : public QObject, public MTest {
       void graceNeighborPlan();
       void graceAfterBarlineSystem_data();
       void graceAfterBarlineSystem();
+      void graceMergedGeometry_data();
+      void graceMergedGeometry();
       void graceAfterBoundaryBaseline_data();
       void graceAfterBoundaryBaseline();
       void graceAfterRestStaticSqueeze_data();
@@ -3269,8 +3271,146 @@ static std::vector<qreal> graceBarlineSnapshot4(Score* score)
       return values;
       }
 
+static std::vector<qreal> graceMergedSnapshot4(Score* score)
+      {
+      auto values = graceLayoutSnapshot4(score);
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            for (const Segment& seg : m->segments()) {
+                  const Element* item = seg.element(0);
+                  if (!item || !item->isChord()) continue;
+                  for (const Chord* grace : toChord(item)->graceNotes()) {
+                        values.insert(values.end(), {grace->x(), grace->y(),
+                              qreal(grace->up()), grace->stem() ? grace->stem()->len() : 0});
+                        if (grace->beam() && grace->beam()->primarySegment4()) {
+                              const QLineF& beam = *grace->beam()->primarySegment4();
+                              values.insert(values.end(), {beam.x1(), beam.y1(), beam.x2(), beam.y2()});
+                              }
+                        }
+                  }
+            }
+      return values;
+      }
+
 // Ordinary barline targets use the optional plan; merged groups retain their
 // native fallback until shared target geometry is implemented.
+void TestSpacing::graceMergedGeometry_data()
+      {
+      graceAfterBoundaryBaseline_data();
+      }
+
+void TestSpacing::graceMergedGeometry()
+      {
+      QFETCH(bool, modernBeams);
+      QFETCH(QString, file);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      const auto original = graceMergedSnapshot4(score);
+      const auto belongsTo = [](const Element* item, const Chord* chord) {
+            for (; item; item = item->parent()) {
+                  if (item == chord) return true;
+                  if (item->isChord()) return false;
+                  }
+            return false;
+            };
+      std::vector<Chord*> supported;
+      int count = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++count) {
+            QVERIFY(count < 6);
+            Chord* owner = nullptr;
+            for (const Segment& seg : m->segments()) {
+                  Element* item = seg.element(0);
+                  if (item && item->isChord() && !toChord(item)->graceNotesAfter().empty()) owner = toChord(item);
+                  }
+            QVERIFY(owner);
+            GraceMergedGeometry4 geometry;
+            geometry.plan.left = 123;
+            geometry.source.elements.push_back(SpacingShapeElement4(QRectF(99, 0, 1, 1), owner));
+            geometry.target = geometry.source;
+            QString reason;
+            const bool built = buildGraceMergedGeometry4(owner, geometry, &reason);
+            QVERIFY2(built == (count == 3 || count == 5), qPrintable(reason));
+            if (!built) {
+                  QCOMPARE(geometry.plan.left, qreal(123));
+                  QVERIFY(!geometry.plan.owner && !geometry.plan.target && geometry.plan.positions.empty());
+                  QCOMPARE(static_cast<int>(geometry.source.elements.size()), 1);
+                  QCOMPARE(static_cast<int>(geometry.target.elements.size()), 1);
+                  QCOMPARE(geometry.source.elements.front().rect.x(), qreal(99));
+                  QCOMPARE(geometry.target.elements.front().rect.x(), qreal(99));
+                  QVERIFY(!prepareGraceMergedBeams4(owner));
+                  continue;
+                  }
+            supported.push_back(owner);
+            QVERIFY(geometry.source.complete() && geometry.target.complete());
+            const Chord* target = geometry.plan.target;
+            for (const auto& e : geometry.source.elements) QVERIFY(belongsTo(e.item, owner));
+            const Note* targetNote = target->notes().front();
+            int mainCopies = 0;
+            for (const auto& e : geometry.target.elements) {
+                  if (e.item == targetNote) {
+                        ++mainCopies;
+                        QCOMPARE(e.rect, targetNote->bbox().translated(targetNote->pos() + target->pos()));
+                        }
+                  bool known = belongsTo(e.item, target);
+                  for (const auto& p : geometry.plan.positions) known = known || belongsTo(e.item, p.chord);
+                  QVERIFY(known);
+                  }
+            QCOMPARE(mainCopies, 1);
+            for (const auto& p : geometry.plan.positions) {
+                  const Note* note = p.chord->notes().front();
+                  int oldCopies = 0, newCopies = 0;
+                  for (const auto& e : geometry.source.elements) oldCopies += e.item == note;
+                  for (const auto& e : geometry.target.elements) {
+                        if (e.item == note) {
+                              ++newCopies;
+                              QCOMPARE(e.rect, note->bbox().translated(note->pos() + QPointF(p.x, 0)));
+                              }
+                        }
+                  QCOMPARE(oldCopies, 0);
+                  QCOMPARE(newCopies, 1);
+                  QCOMPARE(static_cast<const Element*>(p.chord->parent()),
+                        static_cast<const Element*>(p.chord->isGraceAfter() ? owner : target));
+                  }
+            // An edited target must not partially overwrite a previous projection.
+            const QPointF offset = targetNote->offset();
+            Note* edited = target->notes().front();
+            edited->setOffset(QPointF(.5, 0));
+            GraceMergedGeometry4 rejected;
+            rejected.plan.left = 123;
+            rejected.source.elements.push_back(SpacingShapeElement4(QRectF(99, 0, 1, 1), owner));
+            const bool accepted = buildGraceMergedGeometry4(owner, rejected);
+            edited->setOffset(offset);
+            QVERIFY(!accepted);
+            QCOMPARE(rejected.plan.left, qreal(123));
+            QCOMPARE(rejected.source.elements.front().rect.x(), qreal(99));
+            QVERIFY(rejected.target.elements.empty());
+            }
+      QCOMPARE(count, 6);
+      QCOMPARE(static_cast<int>(supported.size()), 2);
+      QVERIFY(graceMergedSnapshot4(score) == original); // Projection queries are read-only.
+      for (Chord* owner : supported) {
+            GraceMergedPlan4 plan;
+            QVERIFY(buildGraceMergedPlan4(owner, plan));
+            std::vector<qreal> positions;
+            for (const auto& p : plan.positions) positions.push_back(p.chord->x());
+            QString reason;
+            QVERIFY2(prepareGraceMergedBeams4(owner, &reason), qPrintable(reason));
+            for (size_t i = 0; i < plan.positions.size(); ++i) QCOMPARE(plan.positions[i].chord->x(), positions[i]);
+            const auto prepared = graceMergedSnapshot4(score);
+            QVERIFY2(prepareGraceMergedBeams4(owner, &reason), qPrintable(reason));
+            const auto repeated = graceMergedSnapshot4(score);
+            QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(prepared.size()));
+            for (size_t i = 0; i < prepared.size(); ++i) QVERIFY(qAbs(prepared[i] - repeated[i]) < 1e-6);
+            }
+      // Live layout still uses the original fallback; staged beams are derived state.
+      score->doLayout();
+      const auto restored = graceMergedSnapshot4(score);
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(original.size()));
+      for (size_t i = 0; i < original.size(); ++i) QVERIFY(qAbs(restored[i] - original[i]) < 1e-6);
+      delete score;
+      }
+
 void TestSpacing::graceAfterBoundaryBaseline_data()
       {
       QTest::addColumn<bool>("modernBeams");
@@ -3291,24 +3431,7 @@ void TestSpacing::graceAfterBoundaryBaseline()
       MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4) && score->styleB(Sid::beamLayout4));
       score->setStyleValue(Sid::beamLayout4, modernBeams);
-      const auto snapshot = [&]() {
-            auto values = graceLayoutSnapshot4(score);
-            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
-                  for (const Segment& seg : m->segments()) {
-                        const Element* item = seg.element(0);
-                        if (!item || !item->isChord()) continue;
-                        for (const Chord* grace : toChord(item)->graceNotes()) {
-                              values.insert(values.end(), {grace->x(), grace->y(),
-                                    qreal(grace->up()), grace->stem() ? grace->stem()->len() : 0});
-                              if (grace->beam() && grace->beam()->primarySegment4()) {
-                                    const QLineF& beam = *grace->beam()->primarySegment4();
-                                    values.insert(values.end(), {beam.x1(), beam.y1(), beam.x2(), beam.y2()});
-                                    }
-                              }
-                        }
-                  }
-            return values;
-            };
+      const auto snapshot = [&]() { return graceMergedSnapshot4(score); };
       score->setStyleValue(Sid::spacingLayout4, false);
       score->doLayout();
       const auto legacy = snapshot();

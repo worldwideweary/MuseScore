@@ -53,6 +53,17 @@ struct GraceMergedPlan4 {
 // Read-only same-direction joint packing. Not used by production/system layout.
 // Every member keeps its parent; failure leaves the entire output untouched.
 bool buildGraceMergedPlan4(const Chord*, GraceMergedPlan4&, QString* reason = nullptr);
+struct GraceMergedGeometry4 {
+    GraceMergedPlan4 plan;
+    SpacingShape4 source; // Incoming owner's own components in its segment.
+    SpacingShape4 target; // Target's own components plus all planned graces in target segment.
+};
+// Read-only joint projection; does not admit groups to production/system layout.
+bool buildGraceMergedGeometry4(const Chord*, GraceMergedGeometry4&, QString* reason = nullptr);
+// Explicit staging helper, not called by live layout yet. Updates derived beam/
+// stem geometry at planned intra-group distances, restoring every member x.
+// Failure after preparation may leave derived geometry needing native relayout.
+bool prepareGraceMergedBeams4(Chord*, QString* reason = nullptr);
 struct GraceAfterGeometry4 {
     GraceAfterPlan4 plan;
     SpacingShape4 source; // Owner's own components, in source-segment coordinates.
