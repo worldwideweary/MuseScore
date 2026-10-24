@@ -2919,3 +2919,13 @@ every recorded input and beam identity exactly. Add successful final-output
 and failure-atomicity checks plus a `beamReuse` timing counter. See
 `v0.127-same-system-grace-beam-reuse.md`. Apply after v0.126; native mtests
 and the existing timing/edit reproduction remain pending.
+
+### v0.128: reuse context checks in system collision queries
+
+The v0.127 log confirms ten preparation reuses, beam preparation calls down
+from 14 to four, geometry calls from 73 to 53, and about 69 ms median commands.
+Extend the existing query-local eligibility cache to generic system shape
+distances and collision projections; preserve item/pair/provenance checks.
+Expand native cached/uncached policy, distance and projection comparisons.
+See `v0.128-system-collision-context-reuse.md`. Apply after v0.127; both
+native mtests and the existing timing reproduction remain pending.

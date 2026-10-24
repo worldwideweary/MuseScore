@@ -373,7 +373,7 @@ bool SpacingGraceContext4::containsAfter(const Chord* chord) const
 }
 
 bool spacingPairPolicy4(const SpacingPaddingTable4& table, const Element* first, const Element* second,
-                        qreal shapeSpatium, SpacingPairPolicy4& result, const SpacingGraceContext4* context)
+                        qreal shapeSpatium, SpacingPairPolicy4& result, const SpacingGraceContext4* context, SpacingContextCache4* cache)
 {
     bool hasGrace = false;
     for (const Element* item : {first, second}) {
@@ -392,7 +392,7 @@ bool spacingPairPolicy4(const SpacingPaddingTable4& table, const Element* first,
             break;
         }
     }
-    return pairPolicy4(table, first, second, shapeSpatium, result, hasGrace, context);
+    return pairPolicy4(table, first, second, shapeSpatium, result, hasGrace, context, nullptr, cache);
 }
 
 bool spacingGracePairPolicy4(const SpacingPaddingTable4& table, const Chord* main,
@@ -503,6 +503,7 @@ bool spacingShapeDistance4(const SpacingPaddingTable4& table, const SpacingShape
                 return false;
         }
     }
+    SpacingContextCache4 cache;
     qreal distance = -std::numeric_limits<qreal>::max();
     for (const SpacingShapeElement4& b : second.elements) {
         if (b.rect.isNull())
@@ -511,7 +512,7 @@ bool spacingShapeDistance4(const SpacingPaddingTable4& table, const SpacingShape
             if (a.rect.isNull())
                 continue;
             SpacingPairPolicy4 policy;
-            if (!spacingPairPolicy4(table, a.item, b.item, shapeSpatium, policy, context))
+            if (!spacingPairPolicy4(table, a.item, b.item, shapeSpatium, policy, context, &cache))
                 return false;
             distance = std::max(distance, spacingPairDistance4(a.rect, b.rect, policy, shapeSpatium, squeezeFactor));
         }
@@ -523,6 +524,7 @@ bool spacingShapeDistance4(const SpacingPaddingTable4& table, const SpacingShape
 bool spacingCollisionProjection4(const SpacingPaddingTable4& table, const SpacingShape4& native,
                                  qreal shapeSpatium, SpacingShape4& result, const SpacingGraceContext4* context)
 {
+    SpacingContextCache4 cache;
     SpacingShape4 projected;
     if (!table.score() || !(shapeSpatium > 0) || !std::isfinite(shapeSpatium))
         return false;
@@ -535,7 +537,7 @@ bool spacingCollisionProjection4(const SpacingPaddingTable4& table, const Spacin
                 return false;
             for (const Note* note : chord->notes()) {
                 SpacingPairPolicy4 policy;
-                if (!spacingPairPolicy4(table, note, note, shapeSpatium, policy, context))
+                if (!spacingPairPolicy4(table, note, note, shapeSpatium, policy, context, &cache))
                     return false;
             }
         }
@@ -568,7 +570,7 @@ bool spacingCollisionProjection4(const SpacingPaddingTable4& table, const Spacin
                 SpacingPairPolicy4 policy;
                 // This stage admits shared noteheads only. Other coincident
                 // component types still require their own context adapter.
-                if (!item || !item->isNote() || !spacingPairPolicy4(table, item, item, shapeSpatium, policy, context))
+                if (!item || !item->isNote() || !spacingPairPolicy4(table, item, item, shapeSpatium, policy, context, &cache))
                     return false;
                 for (size_t j = 0; j < i; ++j) {
                     if (item == e.sharedItems[j])
@@ -602,7 +604,7 @@ bool spacingCollisionProjection4(const SpacingPaddingTable4& table, const Spacin
         if (!e.item || !e.aggregateOwners.empty())
             return false;
         SpacingPairPolicy4 policy;
-        if (e.identity != SpacingIdentity4::ITEM || !spacingPairPolicy4(table, e.item, e.item, shapeSpatium, policy, context))
+        if (e.identity != SpacingIdentity4::ITEM || !spacingPairPolicy4(table, e.item, e.item, shapeSpatium, policy, context, &cache))
             return false;
         projected.elements.push_back(e);
     }

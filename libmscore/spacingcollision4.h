@@ -62,7 +62,8 @@ public:
 // shapeSpatium is the first shape's staff-scaled spatium; table padding uses
 // score spatium and item magnification, as in Studio. They are not interchangeable.
 bool spacingPairPolicy4(const SpacingPaddingTable4&, const Element* first, const Element* second,
-                        qreal shapeSpatium, SpacingPairPolicy4& result, const SpacingGraceContext4* = nullptr);
+                        qreal shapeSpatium, SpacingPairPolicy4& result, const SpacingGraceContext4* = nullptr,
+                        SpacingContextCache4* = nullptr);
 // Scoped grace-group query. Both items must belong to main or its before-graces.
 // Does not broaden the ordinary collision projection/planner's admission rules.
 bool spacingGracePairPolicy4(const SpacingPaddingTable4&, const Chord* main,

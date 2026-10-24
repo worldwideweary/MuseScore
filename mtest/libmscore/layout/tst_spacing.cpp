@@ -4611,8 +4611,12 @@ void TestSpacing::graceContextCachePolicies()
             items.push_back(&invalid);
             SpacingPaddingTable4 table(score);
             SpacingContextCache4 cache;
+            SpacingGraceContext4 joint;
+            joint.mains.push_back(target);
+            joint.afterMains.push_back(owner);
+            joint.mergedPairs.push_back({owner, target});
             int accepted = 0, rejected = 0;
-            for (int scope : {0, 1, 2, 3, 0}) {
+            for (int scope : {0, 1, 2, 3, 4, 5, 0}) {
                   for (int repeat = 0; repeat < 2; ++repeat) {
                         for (const Element* a : items) {
                               for (const Element* b : items) {
@@ -4628,9 +4632,41 @@ void TestSpacing::graceContextCachePolicies()
                                           uncached = spacingGracePairPolicy4(table, target, a, b, score->spatium(), expected);
                                           cached = spacingGracePairPolicy4(table, target, a, b, score->spatium(), actual, &cache);
                                           }
-                                    else {
+                                    else if (scope == 2) {
                                           uncached = spacingAfterGracePairPolicy4(table, owner, target, a, b, score->spatium(), expected);
                                           cached = spacingAfterGracePairPolicy4(table, owner, target, a, b, score->spatium(), actual, false, &cache);
+                                          }
+                                    else {
+                                          const SpacingGraceContext4* context = scope == 4 ? &joint : nullptr;
+                                          uncached = spacingPairPolicy4(table, a, b, score->spatium(), expected, context);
+                                          cached = spacingPairPolicy4(table, a, b, score->spatium(), actual, context, &cache);
+                                          // Repeated components exercise the actual shape-distance cache.
+                                          const QRectF rect(0, 0, 1, 1);
+                                          SpacingShape4 left, right;
+                                          for (int i = 0; i < 3; ++i) left.elements.push_back(SpacingShapeElement4(rect, a));
+                                          for (int i = 0; i < 2; ++i) right.elements.push_back(SpacingShapeElement4(rect, b));
+                                          qreal distance = 123;
+                                          QCOMPARE(spacingShapeDistance4(table, left, right, score->spatium(), 1, distance, context), uncached);
+                                          if (uncached)
+                                                QCOMPARE(distance, spacingPairDistance4(rect, rect, expected, score->spatium(), 1));
+                                          else
+                                                QCOMPARE(distance, qreal(123));
+                                          SpacingPairPolicy4 self;
+                                          const bool selfAccepted = spacingPairPolicy4(table, a, a, score->spatium(), self, context);
+                                          SpacingShape4 projected;
+                                          projected.elements.push_back(SpacingShapeElement4(QRectF(9, 9, 1, 1), target));
+                                          QCOMPARE(spacingCollisionProjection4(table, left, score->spatium(), projected, context), selfAccepted);
+                                          if (selfAccepted) {
+                                                QCOMPARE(int(projected.elements.size()), 3);
+                                                for (const auto& component : projected.elements) {
+                                                      QCOMPARE(component.item, a);
+                                                      QCOMPARE(component.rect, rect);
+                                                      }
+                                                }
+                                          else {
+                                                QCOMPARE(int(projected.elements.size()), 1);
+                                                QCOMPARE(projected.elements.front().rect, QRectF(9, 9, 1, 1));
+                                                }
                                           }
                                     QCOMPARE(cached, uncached);
                                     QCOMPARE(actual.padding, expected.padding);
