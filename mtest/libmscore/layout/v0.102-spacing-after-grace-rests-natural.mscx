@@ -111,9 +111,6 @@
             <durationType>half</durationType>
           </Rest>
         </voice>
-        <LayoutBreak>
-          <subtype>line</subtype>
-        </LayoutBreak>
       </Measure>
       <Measure>
         <voice>
@@ -163,9 +160,6 @@
             <durationType>half</durationType>
           </Rest>
         </voice>
-        <LayoutBreak>
-          <subtype>line</subtype>
-        </LayoutBreak>
       </Measure>
       <Measure>
         <voice>
@@ -235,9 +229,6 @@
             <durationType>half</durationType>
           </Rest>
         </voice>
-        <LayoutBreak>
-          <subtype>line</subtype>
-        </LayoutBreak>
       </Measure>
       <Measure>
         <voice>
@@ -274,9 +265,6 @@
             <durationType>half</durationType>
           </Rest>
         </voice>
-        <LayoutBreak>
-          <subtype>line</subtype>
-        </LayoutBreak>
       </Measure>
     </Staff>
   </Score>

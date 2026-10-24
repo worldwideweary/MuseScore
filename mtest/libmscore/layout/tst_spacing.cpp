@@ -3271,6 +3271,15 @@ void TestSpacing::graceAfterRest()
       int count = 0;
       for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++count) {
             QVERIFY(count < 4);
+            if (file.contains("-natural.mscx")) {
+                  QCOMPARE(m->system(), score->firstMeasure()->system());
+                  QCOMPARE(m->system()->lastMeasure(), score->lastMeasure());
+                  QVERIFY(!m->lineBreak());
+                  }
+            else {
+                  QCOMPARE(m->system()->firstMeasure(), m);
+                  QCOMPARE(m->system()->lastMeasure(), m);
+                  }
             Segment* source = m->tick2segment(m->tick() + Fraction(1, 4), SegmentType::ChordRest);
             Segment* following = m->tick2segment(m->tick() + Fraction(1, 2), SegmentType::ChordRest);
             QVERIFY(source && following && source->element(0) && source->element(0)->isChord());
@@ -4162,7 +4171,8 @@ void TestSpacing::graceSqueeze()
             }
       Chord* main = nullptr;
       for (const Segment& s : measure->segments()) {
-            if (s.isChordRestType() && s.element(0) && !toChord(s.element(0))->graceNotes().empty())
+            if (s.isChordRestType() && s.element(0) && s.element(0)->isChord()
+                && !toChord(s.element(0))->graceNotes().empty())
                   main = toChord(s.element(0));
             }
       QVERIFY(main);

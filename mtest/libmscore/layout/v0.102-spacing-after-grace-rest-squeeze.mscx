@@ -111,9 +111,6 @@
             <durationType>half</durationType>
           </Rest>
         </voice>
-        <LayoutBreak>
-          <subtype>line</subtype>
-        </LayoutBreak>
         <stretch>2</stretch>
       </Measure>
     </Staff>

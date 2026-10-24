@@ -2588,3 +2588,19 @@ AR1 is the original AG5 two-up group; AR2 is down, AR3 altered four-up, and AR4
 single-up. Compare owning C to first D in AR1, internal grace gaps, and the last
 grace to rest separately in 37E and 4.7.5. Native tests and visual confirmation
 remain pending. See `v0.102-after-grace-rest-targets.md`.
+
+
+### v0.103: fix the squeeze-test rest cast and comparison-score breaks
+
+The native v0.102 report passes graceAfterRest and the earlier after-grace
+cases, then aborts in graceSqueeze on a checked chord cast. The shared main-
+chord search lacked an isChord guard and reached the newly added following rest.
+Guard that cast without changing assertions or production engraving.
+
+Correct the v0.102 fixtures: remove misplaced voice-level LayoutBreak elements,
+retain exactly three measure-level breaks in the separate-system score, and
+remove inherited measure-level breaks from the natural and squeeze scores.
+Assert four separate systems versus one combined natural system in the test.
+Reopen the corrected v0.102 files for visual comparison. Native completion of
+the full suite and the newly genuine combined natural case remains pending.
+See `v0.103-rest-squeeze-test-and-fixture-fix.md`.
