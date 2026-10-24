@@ -51,6 +51,7 @@ class TestSpacing : public QObject, public MTest {
       void graceAfterBarlineSystem();
       void graceMergedSlurs_data();
       void graceMergedSlurs();
+      void graceContextCachePolicies();
       void graceMergedSlurObstacles_data();
       void graceMergedSlurObstacles();
       void graceSlurCurveFit();
@@ -4518,6 +4519,80 @@ void TestSpacing::graceMergedSlurObstacles()
             QVERIFY(closeRect(after.elements[i].rect, before.elements[i].rect));
             }
       QVERIFY(graceMergedSnapshot4(score) == original);
+      delete score;
+      }
+
+void TestSpacing::graceContextCachePolicies()
+      {
+      MasterScore* score = readScore(DIR + "v0.113-spacing-slurred-merged-graces-natural.mscx");
+      QVERIFY(score);
+      score->doLayout();
+      const Chord* owner = nullptr;
+      const Chord* target = nullptr;
+      for (const auto& entry : score->spannerMap().map()) {
+            if (!entry.second->isSlur()) continue;
+            const Slur* slur = toSlur(entry.second);
+            const Chord* start = toChord(slur->startElement());
+            if (!start || !start->isGraceAfter()) continue;
+            owner = toChord(start->parent());
+            target = toChord(slur->endElement());
+            break;
+            }
+      QVERIFY(owner && target);
+      std::vector<const Element*> items {nullptr};
+      for (const Chord* chord : {owner, target}) {
+            items.push_back(chord->notes().front());
+            items.push_back(chord->stem());
+            for (const Chord* grace : chord->graceNotes()) {
+                  items.push_back(grace->notes().front());
+                  items.push_back(grace->stem());
+                  if (grace->notes().front()->accidental()) items.push_back(grace->notes().front()->accidental());
+                  }
+            }
+      // A component with an invalid track must still reject, even when its
+      // owning chord already has a cached success from another component.
+      {
+            Stem invalid(score);
+            invalid.setParent(const_cast<Chord*>(target));
+            invalid.setTrack(-1);
+            items.push_back(&invalid);
+            SpacingPaddingTable4 table(score);
+            SpacingContextCache4 cache;
+            int accepted = 0, rejected = 0;
+            for (int scope : {0, 1, 2, 3, 0}) {
+                  for (int repeat = 0; repeat < 2; ++repeat) {
+                        for (const Element* a : items) {
+                              for (const Element* b : items) {
+                                    SpacingPairPolicy4 expected, actual;
+                                    expected.padding = actual.padding = -123;
+                                    expected.verticalClearance = actual.verticalClearance = -456;
+                                    bool uncached, cached;
+                                    if (scope == 0 || scope == 3) {
+                                          uncached = spacingMergedGracePairPolicy4(table, owner, target, a, b, score->spatium(), expected, scope == 3);
+                                          cached = spacingMergedGracePairPolicy4(table, owner, target, a, b, score->spatium(), actual, scope == 3, &cache);
+                                          }
+                                    else if (scope == 1) {
+                                          uncached = spacingGracePairPolicy4(table, target, a, b, score->spatium(), expected);
+                                          cached = spacingGracePairPolicy4(table, target, a, b, score->spatium(), actual, &cache);
+                                          }
+                                    else {
+                                          uncached = spacingAfterGracePairPolicy4(table, owner, target, a, b, score->spatium(), expected);
+                                          cached = spacingAfterGracePairPolicy4(table, owner, target, a, b, score->spatium(), actual, false, &cache);
+                                          }
+                                    QCOMPARE(cached, uncached);
+                                    QCOMPARE(actual.padding, expected.padding);
+                                    QCOMPARE(actual.verticalClearance, expected.verticalClearance);
+                                    QCOMPARE(int(actual.kerning), int(expected.kerning));
+                                    if (cached) ++accepted; else ++rejected;
+                                    }
+                              }
+                        }
+                  }
+            QVERIFY(accepted > 0 && rejected > 0);
+            // Existing graceMergedSlurs tests cover edits and third-slur rejection
+            // through the complete planner with these local caches enabled.
+            invalid.setParent(nullptr);
+      }
       delete score;
       }
 

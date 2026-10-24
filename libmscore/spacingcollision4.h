@@ -44,6 +44,20 @@ struct SpacingGraceContext4 {
     bool containsAfter(const Chord* chord) const;
 };
 
+// Stack-local memo for one read-only component query. Never retain across a
+// score edit, geometry preparation, or layout. Only chord eligibility is
+// reused; item checks and pair-specific geometry/padding are always evaluated.
+class SpacingContextCache4 {
+    bool _initialized = false, _allowGrace = false, _hasContext = false;
+    const Chord* _scopedMain = nullptr;
+    SpacingGraceContext4 _context;
+    std::vector<std::pair<const Chord*, bool>> _chords;
+public:
+    bool lookup(const Chord*, bool allowGrace, const SpacingGraceContext4*,
+                const Chord* scopedMain, bool& result);
+    void remember(const Chord* chord, bool result) { _chords.push_back({chord, result}); }
+};
+
 // False means this context is not covered: output is left untouched.
 // shapeSpatium is the first shape's staff-scaled spatium; table padding uses
 // score spatium and item magnification, as in Studio. They are not interchangeable.
@@ -53,19 +67,21 @@ bool spacingPairPolicy4(const SpacingPaddingTable4&, const Element* first, const
 // Does not broaden the ordinary collision projection/planner's admission rules.
 bool spacingGracePairPolicy4(const SpacingPaddingTable4&, const Chord* main,
                              const Element* first, const Element* second,
-                             qreal shapeSpatium, SpacingPairPolicy4& result);
+                             qreal shapeSpatium, SpacingPairPolicy4& result, SpacingContextCache4* = nullptr);
 // Read-only after-grace scope: owner's after-graces and the selected chord/rest/barline.
 // Callers separately validate the target's layout eligibility.
 // includeOwner also allows source-chord components for a publication clearance check.
 // Does not admit after-graces into default/system spacing queries.
 bool spacingAfterGracePairPolicy4(const SpacingPaddingTable4&, const Chord* owner, const Element* target,
                                   const Element* first, const Element* second,
-                                  qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner = false);
+                                  qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner = false,
+                                  SpacingContextCache4* = nullptr);
 // Explicit joint-query scope: incoming after-graces, target before-graces and target.
 // Does not admit merged groups into ordinary or system queries.
 bool spacingMergedGracePairPolicy4(const SpacingPaddingTable4&, const Chord* owner, const Chord* target,
                                    const Element* first, const Element* second,
-                                   qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner = false);
+                                   qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner = false,
+                                   SpacingContextCache4* = nullptr);
 // Pure rectangular constraint; finite, normalized geometry/policy is required.
 // Returns -max(qreal) when this pair imposes no horizontal constraint.
 qreal spacingPairDistance4(const QRectF&, const QRectF&, const SpacingPairPolicy4&,

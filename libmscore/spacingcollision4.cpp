@@ -180,25 +180,10 @@ bool SpacingPaddingTable4::padding(ElementType first, ElementType second, qreal&
     return true;
 }
 
-static bool commonItemContext4(const Element* item, bool allowGrace,
-                               const SpacingGraceContext4* context, const Chord* scopedMain)
+static bool commonChordContext4(const Chord* chord, bool allowGrace,
+                                const SpacingGraceContext4* context, const Chord* scopedMain)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::CONTEXT);
-    if (!item || item->track() < 0 || item->onTabStaff())
-        return false;
-    if (item->isRest() && toRest(item)->measure() && toRest(item)->measure()->isMMRest())
-        return false;
-    const Chord* chord = nullptr;
-    for (const Element* parent = item; parent; parent = parent->parent()) {
-        if (parent->isChord()) {
-            chord = toChord(parent);
-            break;
-        }
-    }
-    if ((item->isNote() || item->isStem() || item->isHook()) && !chord)
-        return false;
-    if (!chord)
-        return true;
     // Common notation only in this stage. Studio's line attachment and chord
     // kerning-exception inputs need a separate adapter before these can enter.
     if ((!allowGrace && chord->isGrace()) || !chord->articulations().empty())
@@ -239,6 +224,57 @@ static bool commonItemContext4(const Element* item, bool allowGrace,
     return true;
 }
 
+bool SpacingContextCache4::lookup(const Chord* chord, bool allowGrace,
+                                   const SpacingGraceContext4* context, const Chord* scopedMain, bool& result)
+{
+    // Compare scope values, not an address: merged-policy wrappers construct
+    // equivalent temporary contexts at different addresses for each pair.
+    const bool sameContext = _hasContext == bool(context) && (!context
+        || (_context.mains == context->mains && _context.afterMains == context->afterMains
+            && _context.mergedPairs == context->mergedPairs));
+    if (!_initialized || _allowGrace != allowGrace || _scopedMain != scopedMain || !sameContext) {
+        _initialized = true;
+        _allowGrace = allowGrace;
+        _hasContext = bool(context);
+        _scopedMain = scopedMain;
+        _context = context ? *context : SpacingGraceContext4();
+        _chords.clear();
+    }
+    for (const auto& entry : _chords) {
+        if (entry.first == chord) {
+            result = entry.second;
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool commonItemContext4(const Element* item, bool allowGrace,
+                               const SpacingGraceContext4* context, const Chord* scopedMain, SpacingContextCache4* cache)
+{
+    if (!item || item->track() < 0 || item->onTabStaff())
+        return false;
+    if (item->isRest() && toRest(item)->measure() && toRest(item)->measure()->isMMRest())
+        return false;
+    const Chord* chord = nullptr;
+    for (const Element* parent = item; parent; parent = parent->parent()) {
+        if (parent->isChord()) {
+            chord = toChord(parent);
+            break;
+        }
+    }
+    if ((item->isNote() || item->isStem() || item->isHook()) && !chord)
+        return false;
+    if (!chord)
+        return true;
+    bool supported;
+    if (cache && cache->lookup(chord, allowGrace, context, scopedMain, supported))
+        return supported;
+    supported = commonChordContext4(chord, allowGrace, context, scopedMain);
+    if (cache) cache->remember(chord, supported);
+    return supported;
+}
+
 static bool sameVoiceLimited4(const Element* item)
 {
     return item->isNote() || item->isNoteDot() || item->isRest() || item->isStem();
@@ -251,11 +287,12 @@ static bool neverKernable4(const Element* item)
 
 static bool pairPolicy4(const SpacingPaddingTable4& table, const Element* first, const Element* second,
                         qreal shapeSpatium, SpacingPairPolicy4& result, bool allowGrace,
-                        const SpacingGraceContext4* context = nullptr, const Chord* scopedMain = nullptr)
+                        const SpacingGraceContext4* context = nullptr, const Chord* scopedMain = nullptr,
+                        SpacingContextCache4* cache = nullptr)
 {
     if (!table.score() || !first || !second || first->score() != table.score() || second->score() != table.score()
-        || !commonItemContext4(first, allowGrace, context, scopedMain)
-        || !commonItemContext4(second, allowGrace, context, scopedMain)
+        || !commonItemContext4(first, allowGrace, context, scopedMain, cache)
+        || !commonItemContext4(second, allowGrace, context, scopedMain, cache)
         || !(shapeSpatium > 0) || !std::isfinite(shapeSpatium))
         return false;
     SpacingPairPolicy4 policy;
@@ -360,7 +397,7 @@ bool spacingPairPolicy4(const SpacingPaddingTable4& table, const Element* first,
 
 bool spacingGracePairPolicy4(const SpacingPaddingTable4& table, const Chord* main,
                              const Element* first, const Element* second,
-                             qreal shapeSpatium, SpacingPairPolicy4& result)
+                             qreal shapeSpatium, SpacingPairPolicy4& result, SpacingContextCache4* cache)
 {
     if (!main || main->isGrace())
         return false;
@@ -373,12 +410,12 @@ bool spacingGracePairPolicy4(const SpacingPaddingTable4& table, const Chord* mai
         }
         return false;
     };
-    return belongs(first) && belongs(second) && pairPolicy4(table, first, second, shapeSpatium, result, true, nullptr, main);
+    return belongs(first) && belongs(second) && pairPolicy4(table, first, second, shapeSpatium, result, true, nullptr, main, cache);
 }
 
 static bool afterGraceScopePolicy4(const SpacingPaddingTable4& table, const Chord* owner, const Element* target,
                                   const Element* first, const Element* second,
-                                  qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner, bool includeBefore)
+                                  qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner, bool includeBefore, SpacingContextCache4* cache)
 {
     if (!owner || !target || owner == target || owner->isGrace()
         || (!target->isChord() && !target->isRest() && !target->isBarLine()) || (target->isChord() && toChord(target)->isGrace())
@@ -402,21 +439,21 @@ static bool afterGraceScopePolicy4(const SpacingPaddingTable4& table, const Chor
         joint.mergedPairs.push_back({owner, toChord(target)});
     }
     return belongs(first) && belongs(second)
-        && pairPolicy4(table, first, second, shapeSpatium, result, true, includeBefore ? &joint : nullptr);
+        && pairPolicy4(table, first, second, shapeSpatium, result, true, includeBefore ? &joint : nullptr, nullptr, cache);
 }
 
 bool spacingAfterGracePairPolicy4(const SpacingPaddingTable4& table, const Chord* owner, const Element* target,
                                   const Element* first, const Element* second,
-                                  qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner)
+                                  qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner, SpacingContextCache4* cache)
 {
-    return afterGraceScopePolicy4(table, owner, target, first, second, shapeSpatium, result, includeOwner, false);
+    return afterGraceScopePolicy4(table, owner, target, first, second, shapeSpatium, result, includeOwner, false, cache);
 }
 
 bool spacingMergedGracePairPolicy4(const SpacingPaddingTable4& table, const Chord* owner, const Chord* target,
                                    const Element* first, const Element* second,
-                                   qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner)
+                                   qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner, SpacingContextCache4* cache)
 {
-    return afterGraceScopePolicy4(table, owner, target, first, second, shapeSpatium, result, includeOwner, true);
+    return afterGraceScopePolicy4(table, owner, target, first, second, shapeSpatium, result, includeOwner, true, cache);
 }
 
 qreal spacingPairDistance4(const QRectF& first, const QRectF& second, const SpacingPairPolicy4& policy,

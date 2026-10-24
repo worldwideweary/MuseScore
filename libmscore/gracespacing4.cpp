@@ -81,6 +81,7 @@ static const Chord* ownerChord4(const Element* item)
 static bool graceComponents4(const Chord* chord, const Chord* main,
                               const SpacingPaddingTable4& table, SpacingShape4& result, const Element* afterTarget = nullptr, bool merged = false)
 {
+    SpacingContextCache4 cache;
     const SpacingShape4 native = spacingElementShape4(chord);
     SpacingShape4 shape;
     for (const SpacingShapeElement4& e : native.elements) {
@@ -111,10 +112,10 @@ static bool graceComponents4(const Chord* chord, const Chord* main,
         }
         SpacingPairPolicy4 policy;
         const bool supported = merged
-            ? spacingMergedGracePairPolicy4(table, main, toChord(afterTarget), e.item, e.item, chord->spatium(), policy)
+            ? spacingMergedGracePairPolicy4(table, main, toChord(afterTarget), e.item, e.item, chord->spatium(), policy, false, &cache)
             : afterTarget
-            ? spacingAfterGracePairPolicy4(table, main, afterTarget, e.item, e.item, chord->spatium(), policy)
-            : spacingGracePairPolicy4(table, main, e.item, e.item, chord->spatium(), policy);
+            ? spacingAfterGracePairPolicy4(table, main, afterTarget, e.item, e.item, chord->spatium(), policy, false, &cache)
+            : spacingGracePairPolicy4(table, main, e.item, e.item, chord->spatium(), policy, &cache);
         if (!supported)
             return false;
         shape.elements.push_back(e);
@@ -128,15 +129,16 @@ static bool graceComponents4(const Chord* chord, const Chord* main,
 static bool graceDistance4(const SpacingPaddingTable4& table, const Chord* main,
                             const SpacingShape4& a, const SpacingShape4& b, qreal sp, qreal& result, const Element* afterTarget = nullptr, bool merged = false)
 {
+    SpacingContextCache4 cache;
     qreal distance = -std::numeric_limits<qreal>::max();
     for (const auto& first : a.elements) {
         for (const auto& second : b.elements) {
             SpacingPairPolicy4 policy;
             const bool supported = merged
-                ? spacingMergedGracePairPolicy4(table, main, toChord(afterTarget), first.item, second.item, sp, policy)
+                ? spacingMergedGracePairPolicy4(table, main, toChord(afterTarget), first.item, second.item, sp, policy, false, &cache)
                 : afterTarget
-                ? spacingAfterGracePairPolicy4(table, main, afterTarget, first.item, second.item, sp, policy)
-                : spacingGracePairPolicy4(table, main, first.item, second.item, sp, policy);
+                ? spacingAfterGracePairPolicy4(table, main, afterTarget, first.item, second.item, sp, policy, false, &cache)
+                : spacingGracePairPolicy4(table, main, first.item, second.item, sp, policy, &cache);
             if (!supported)
                 return false;
             distance = std::max(distance, spacingPairDistance4(first.rect, second.rect, policy, sp, 1));

@@ -2876,3 +2876,15 @@ grace planning, anchors, obstacles and fitting. No layout behavior changes.
 See `v0.123-grace-slur-edit-timing.md` for the short on/off reproduction and
 log command. Native tests and timing results are pending; this checkpoint
 provides diagnosis rather than another unmeasured optimization.
+
+### v0.124: reuse eligibility within grace component queries
+
+Native timings identify repeated item-context validation as the main measured
+cost, with about 19,700 checks per arrow step and only about 0.23 ms in curve
+fitting. Reuse chord eligibility within each read-only component/distance
+query, clearing on scope changes and retaining all item and pair checks.
+The local old/new harness agrees in 43,200 cases and reduces spanner scans;
+add native policy-equivalence coverage. See
+`v0.124-grace-query-context-reuse.md`. Apply after v0.123, run both mtests,
+and repeat the existing timing/edit reproduction. Native speed gain remains
+unmeasured; no new score or engraving adjustment is included.
