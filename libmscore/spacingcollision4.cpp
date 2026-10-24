@@ -34,6 +34,7 @@ static int paddingIndex4(ElementType type)
 
 SpacingPaddingTable4::SpacingPaddingTable4(const Score* score) : _score(score)
 {
+    SpacingProfileScope4 profile(SpacingProfileStage4::PADDING_TABLE);
     const qreal spatium = score ? score->spatium() : 0;
     const qreal minPadUnit = 0.1 * spatium;
     for (auto& row : _padding)

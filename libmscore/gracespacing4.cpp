@@ -88,6 +88,7 @@ struct GracePackedComponents4 {
 static bool graceComponents4(const Chord* chord, const Chord* main,
                               const SpacingPaddingTable4& table, SpacingShape4& result, const Element* afterTarget = nullptr, bool merged = false, SpacingContextCache4* queryCache = nullptr)
 {
+    SpacingProfileScope4 profile(SpacingProfileStage4::COMPONENTS);
     SpacingContextCache4 localCache;
     SpacingContextCache4* cache = queryCache ? queryCache : &localCache;
     const SpacingShape4 native = spacingElementShape4(chord);
@@ -137,6 +138,7 @@ static bool graceComponents4(const Chord* chord, const Chord* main,
 static bool graceDistance4(const SpacingPaddingTable4& table, const Chord* main,
                             const SpacingShape4& a, const SpacingShape4& b, qreal sp, qreal& result, const Element* afterTarget = nullptr, bool merged = false, SpacingContextCache4* queryCache = nullptr)
 {
+    SpacingProfileScope4 profile(SpacingProfileStage4::GRACE_DISTANCE);
     SpacingContextCache4 localCache;
     SpacingContextCache4* cache = queryCache ? queryCache : &localCache;
     qreal distance = -std::numeric_limits<qreal>::max();
@@ -293,6 +295,7 @@ static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result
         || owner->track() < 0 || !owner->graceNotesBefore().empty() || owner->graceNotesAfter().empty())
         return fail("After-grace adapter needs an ordinary owner with only after-graces");
     const auto validChord = [](const Chord* chord) {
+        SpacingProfileScope4 check(SpacingProfileStage4::CHORD_CHECK);
         if (!chord || !chord->staff() || chord->onTabStaff() || chord->staffMove()
             || !chord->staff()->isPitchedStaff(chord->tick()) || chord->staff()->lines(chord->tick()) != 5
             || !chord->visible() || !chord->autoplace() || chord->isNudged() || chord->isSmall()

@@ -1,6 +1,7 @@
 // Optional Studio spacing: temporary item identities for native geometry.
 // Licensed under GNU GPL version 2; see LICENSE.GPL.
 #include "spacinggeometry4.h"
+#include "spacingprofile4.h"
 #include "accidental.h"
 #include "arpeggio.h"
 #include "barline.h"
@@ -172,6 +173,7 @@ static void appendLegacySpacer4(SpacingShape4& target, const Element* owner,
 
 SpacingShape4 spacingElementShape4(const Element* item)
 {
+    SpacingProfileScope4 profile(SpacingProfileStage4::ELEMENT_SHAPE);
     if (!item)
         return {};
     const Shape native = item->shape();

@@ -2929,3 +2929,13 @@ distances and collision projections; preserve item/pair/provenance checks.
 Expand native cached/uncached policy, distance and projection comparisons.
 See `v0.128-system-collision-context-reuse.md`. Apply after v0.127; both
 native mtests and the existing timing reproduction remain pending.
+
+### v0.129: detail the remaining grace-planning timing
+
+v0.128 native mtests pass. The latest log shows about 57 ms median commands,
+context time down to about seven ms, and unchanged geometry/beam counts.
+Split the remaining planning time into component extraction, distance work,
+padding setup, native shape extraction and structural chord checks before
+choosing another optimization. See `v0.129-grace-planning-detail-timing.md`.
+Apply after v0.128 and repeat the same timing test. No engraving changes or
+new score; this checkpoint adds opt-in diagnostics, not a speed claim.
