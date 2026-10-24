@@ -2510,3 +2510,16 @@ unsupported systems still fall back atomically. New controls are
 `v0.97-spacing-after-grace-squeeze.mscx`, with both
 experimental settings on. AG5's rest target and owning-note gap remain pending.
 See `v0.97-after-grace-system-spacing.md` for precise filenames and validation.
+
+
+### v0.98: prepare after-grace beam geometry before spacing
+
+The v0.97 native report has four failures: both beam modes for the three-case
+natural system and AS1 compression. Earlier runtime cases pass. Source tracing
+shows after-grace beam stems are finalized later than spacing, while early
+preparation previously covered only before-graces. Prepare validated after
+beams at planned internal distances, restore native x, and require stable typed
+source/target projections before fitting or placement. Keep all original test
+expectations and add numeric failure diagnostics. Reuse the three v0.97 scores.
+Native confirmation of this targeted correction is still required. AG5 remains
+pending. See `v0.98-after-grace-beam-preparation.md`.

@@ -4123,16 +4123,59 @@ static bool justifySystem4(const Measure* last, const MeasureBase* next,
     return !(availableWidth > 0 && naturalWidth / availableWidth < fillLimit);
 }
 
-// Grace groups already have fixed internal horizontal positions. Their beams
+// After-grace beams are normally laid out after system spacing. Prepare their
+// stem geometry at the planned intra-group distances first, so the planner and
+// the final beam pass see the same shapes. Preserve native chord positions here.
+static bool prepareAfterGraceBeamForSpacing4(Chord* main, GraceAfterGeometry4 geometry)
+{
+    const auto graces = main->graceNotesAfter();
+    Beam* beam = graces.front()->beam();
+    if (!beam) return true;
+    const auto sameShape = [](const SpacingShape4& a, const SpacingShape4& b) {
+        if (a.elements.size() != b.elements.size()) return false;
+        for (size_t i = 0; i < a.elements.size(); ++i) {
+            const auto& x = a.elements[i];
+            const auto& y = b.elements[i];
+            if (x.item != y.item || x.identity != y.identity
+                || x.aggregateOwners != y.aggregateOwners || x.sharedItems != y.sharedItems
+                || qAbs(x.rect.x() - y.rect.x()) > 1e-9
+                || qAbs(x.rect.y() - y.rect.y()) > 1e-9
+                || qAbs(x.rect.width() - y.rect.width()) > 1e-9
+                || qAbs(x.rect.height() - y.rect.height()) > 1e-9)
+                return false;
+        }
+        return true;
+    };
+    std::vector<qreal> original;
+    for (const Chord* grace : graces) original.push_back(grace->x());
+    // Packing and beam slope depend on each other's geometry. Require a stable
+    // projection, with a bounded attempt count; otherwise use native fallback.
+    for (int pass = 0; pass < 8; ++pass) {
+        for (int i = 0; i < graces.size(); ++i)
+            graces[i]->rxpos() = original.front() + geometry.plan.positions[i].x
+                - geometry.plan.positions.front().x;
+        beam->layout();
+        for (int i = 0; i < graces.size(); ++i) graces[i]->rxpos() = original[i];
+        main->segment()->createShape(main->vStaffIdx());
+        GraceAfterGeometry4 next;
+        if (!buildGraceAfterGeometry4(main, next)) return false;
+        if (sameShape(geometry.source, next.source) && sameShape(geometry.target, next.target))
+            return true;
+        geometry = next;
+    }
+    return false;
+}
+
+// Before-grace groups already have fixed internal horizontal positions. Their beams
 // can therefore finalize stems and slashes before system spacing, independent
 // of the enclosing measure's eventual stretch. Otherwise the page pass moves
 // the slash after its provisional shape has constrained a neighboring note.
 // Keep this mutation outside the read-only placement planner and restrict it
-// to groups admitted by the existing before-grace adapter.
-static void prepareGraceBeamsForSpacing4(System* system)
+// to groups admitted by the corresponding grace adapter.
+static bool prepareGraceBeamsForSpacing4(System* system)
 {
     if (!system->score()->styleB(Sid::spacingLayout4) || MScore::noHorizontalStretch)
-        return;
+        return true;
     for (MeasureBase* mb : system->measures()) {
         if (!mb->isMeasure()) continue;
         for (Segment& segment : toMeasure(mb)->segments()) {
@@ -4140,6 +4183,13 @@ static void prepareGraceBeamsForSpacing4(System* system)
             for (Element* item : segment.elist()) {
                 if (!item || !item->isChord()) continue;
                 Chord* main = toChord(item);
+                if (!main->graceNotesAfter().empty()) {
+                    GraceAfterGeometry4 geometry;
+                    if (buildGraceAfterGeometry4(main, geometry)
+                        && !prepareAfterGraceBeamForSpacing4(main, geometry))
+                        return false;
+                    continue;
+                }
                 GraceBeforePlan4 group;
                 if (!buildGraceBeforePlan4(main, group)) continue;
                 bool placed = true;
@@ -4152,6 +4202,7 @@ static void prepareGraceBeamsForSpacing4(System* system)
             }
         }
     }
+    return true;
 }
 
 // Fit only ordinary prefixes whose header/barline geometry remains unchanged
@@ -4179,7 +4230,7 @@ static bool systemFittingWidth4(System* system, qreal& width)
         }
         first = false;
     }
-    prepareGraceBeamsForSpacing4(system);
+    if (!prepareGraceBeamsForSpacing4(system)) return false;
     SpacingPlan4 plan;
     if (!buildSpacingPlan4(system, plan))
         return false;
@@ -4529,11 +4580,11 @@ System* Score::collectSystem(LayoutContext& lc)
       // Collection and squeezing still use the existing measure widths. A
       // complete fitting plan, including bounded squeezing when necessary,
       // is required before any native positions change.
-      prepareGraceBeamsForSpacing4(system);
+      const bool graceGeometryReady = prepareGraceBeamsForSpacing4(system);
       SpacingPlan4 studioPlan;
       bool useStudioPlan = false;
       std::map<Measure*, const SpacingMeasurePlan4*> studioMeasures;
-      if (styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch
+      if (styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch && graceGeometryReady
           && squeezeSpacingPlan4(system, systemWidth, studioPlan)) {
             useStudioPlan = !justifySystem4(lm, lc.curMeasure, studioPlan.width, systemWidth,
                                              styleD(Sid::lastSystemFillLimit))

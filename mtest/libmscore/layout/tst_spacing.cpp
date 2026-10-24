@@ -3261,7 +3261,10 @@ void TestSpacing::graceAfterSystem()
             QVERIFY2(buildSpacingPlan4(m->system(), natural, &reason), qPrintable(reason));
             QVERIFY(!natural.afterGraces.empty());
             SpacingPlan4 expected = natural;
-            QVERIFY(expected.width <= m->system()->width() + 1e-6);
+            QVERIFY2(expected.width <= m->system()->width() + 1e-6,
+                  qPrintable(QString("after-grace natural width=%1 exceeds final system=%2 at tick=%3")
+                        .arg(expected.width, 0, 'g', 17).arg(m->system()->width(), 0, 'g', 17)
+                        .arg(m->tick().ticks())));
             if (expected.width < m->system()->width() - 1e-6) QVERIFY(justifySpacingPlan4(expected, m->system()->width()));
             for (const SpacingMeasurePlan4& e : expected.measures) {
                   QVERIFY2(qAbs(e.measure->width() - e.width) < 1e-6,
@@ -3996,7 +3999,11 @@ void TestSpacing::graceSqueeze()
             }
       for (const SpacingSegmentPlan4& e : expected.segments) {
             if (e.ignored) continue;
-            QVERIFY(qAbs(e.segment->measure()->x() + e.segment->x() - e.x) < 1e-6);
+            QVERIFY2(qAbs(e.segment->measure()->x() + e.segment->x() - e.x) < 1e-6,
+                  qPrintable(QString("grace squeeze segment tick=%1 type=%2 actual x=%3 expected x=%4 natural=%5 target=%6")
+                        .arg(e.segment->tick().ticks()).arg(int(e.segment->segmentType()))
+                        .arg(e.segment->measure()->x() + e.segment->x(), 0, 'g', 17)
+                        .arg(e.x, 0, 'g', 17).arg(natural.width, 0, 'g', 17).arg(target, 0, 'g', 17)));
             QVERIFY(qAbs(e.segment->width() - e.width) < 1e-6);
             }
       Chord* main = nullptr;
