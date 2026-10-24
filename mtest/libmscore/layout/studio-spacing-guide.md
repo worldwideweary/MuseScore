@@ -2523,3 +2523,15 @@ source/target projections before fitting or placement. Keep all original test
 expectations and add numeric failure diagnostics. Reuse the three v0.97 scores.
 Native confirmation of this targeted correction is still required. AG5 remains
 pending. See `v0.98-after-grace-beam-preparation.md`.
+
+
+### v0.99: trace the remaining native after-grace failures
+
+The next native report retains the same four failures after v0.98. Its squeeze
+opening-clef delta equals the first pass's clef-left-margin reduction; the beam
+preparation change has not established the cause. This diagnostic checkpoint
+records PRE natural plans, APPLY decisions/rejection reasons, and POST rebuilt
+plans plus actual coordinates. Only the v0.97 runtime test rows enable tracing;
+ordinary application use is quiet. All assertions and layout behavior remain.
+Rerun tst_spacing normally and provide its XML; failures may remain. See
+`v0.99-after-grace-plan-trace.md`. No new comparison scores are needed.

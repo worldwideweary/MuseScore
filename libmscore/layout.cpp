@@ -4123,6 +4123,21 @@ static bool justifySystem4(const Measure* last, const MeasureBase* next,
     return !(availableWidth > 0 && naturalWidth / availableWidth < fillLimit);
 }
 
+// Opt-in native-test diagnostics. Disabled during ordinary application use.
+static void traceAfterSpacingPlan4(const char* phase, System* system, const SpacingPlan4& plan,
+                                   bool built, const QString& reason)
+{
+    qDebug("afterSpacing4 %s tick=%d system=%.17g left=%.17g built=%d natural=%.17g reason=%s",
+           phase, system->firstMeasure()->tick().ticks(), system->width(), system->leftMargin(),
+           int(built), plan.width, qPrintable(reason));
+    if (!built) return;
+    for (const auto& e : plan.segments) {
+        if (e.ignored) continue;
+        qDebug("afterSpacing4 %s segment tick=%d type=%d x=%.17g width=%.17g stretch=%.17g",
+               phase, e.segment->tick().ticks(), int(e.segment->segmentType()), e.x, e.width, e.stretch);
+    }
+}
+
 // After-grace beams are normally laid out after system spacing. Prepare their
 // stem geometry at the planned intra-group distances first, so the planner and
 // the final beam pass see the same shapes. Preserve native chord positions here.
@@ -4158,11 +4173,19 @@ static bool prepareAfterGraceBeamForSpacing4(Chord* main, GraceAfterGeometry4 ge
         for (int i = 0; i < graces.size(); ++i) graces[i]->rxpos() = original[i];
         main->segment()->createShape(main->vStaffIdx());
         GraceAfterGeometry4 next;
-        if (!buildGraceAfterGeometry4(main, next)) return false;
+        QString reason;
+        if (!buildGraceAfterGeometry4(main, next, &reason)) {
+            if (qEnvironmentVariableIsSet("MSCORE_TRACE_AFTER_SPACING4"))
+                qDebug("afterSpacing4 PREPARE tick=%d pass=%d rebuild failed: %s",
+                       main->tick().ticks(), pass, qPrintable(reason));
+            return false;
+        }
         if (sameShape(geometry.source, next.source) && sameShape(geometry.target, next.target))
             return true;
         geometry = next;
     }
+    if (qEnvironmentVariableIsSet("MSCORE_TRACE_AFTER_SPACING4"))
+        qDebug("afterSpacing4 PREPARE tick=%d projection did not stabilize", main->tick().ticks());
     return false;
 }
 
@@ -4581,11 +4604,20 @@ System* Score::collectSystem(LayoutContext& lc)
       // complete fitting plan, including bounded squeezing when necessary,
       // is required before any native positions change.
       const bool graceGeometryReady = prepareGraceBeamsForSpacing4(system);
+      const bool traceAfterSpacing = styleB(Sid::spacingLayout4)
+            && qEnvironmentVariableIsSet("MSCORE_TRACE_AFTER_SPACING4");
+      if (traceAfterSpacing) {
+            SpacingPlan4 natural;
+            QString reason;
+            const bool built = buildSpacingPlan4(system, natural, &reason);
+            traceAfterSpacingPlan4("PRE", system, natural, built, reason);
+      }
       SpacingPlan4 studioPlan;
+      QString studioPlanReason;
       bool useStudioPlan = false;
       std::map<Measure*, const SpacingMeasurePlan4*> studioMeasures;
       if (styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch && graceGeometryReady
-          && squeezeSpacingPlan4(system, systemWidth, studioPlan)) {
+          && squeezeSpacingPlan4(system, systemWidth, studioPlan, &studioPlanReason)) {
             useStudioPlan = !justifySystem4(lm, lc.curMeasure, studioPlan.width, systemWidth,
                                              styleD(Sid::lastSystemFillLimit))
                   || justifySpacingPlan4(studioPlan, systemWidth);
@@ -4601,6 +4633,10 @@ System* Score::collectSystem(LayoutContext& lc)
                         }
                   }
             }
+      if (traceAfterSpacing)
+            qDebug("afterSpacing4 APPLY ready=%d applied=%d target=%.17g chosen=%.17g reason=%s",
+                   int(graceGeometryReady), int(useStudioPlan), systemWidth, studioPlan.width,
+                   qPrintable(studioPlanReason));
       qreal rest;
       std::map<Measure*, qreal> studioWidths;
       if (MScore::noHorizontalStretch || useStudioPlan)
