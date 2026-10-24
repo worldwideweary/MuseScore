@@ -36,16 +36,17 @@ struct GraceAfterPlan4 {
     qreal left = 0;
     qreal right = 0; // Typed component extent in target-segment coordinates.
 };
-// First scope: same-measure following ordinary chord, no merged before-graces.
-// Query only: does not move items, publish shapes, or enable system admission.
+// First scope: same-measure following ordinary chord or undotted rest; no merged before-graces.
+// Query only: does not move items or publish shapes. The system planner
+// separately validates its temporary projections before admission.
 // Rebuild after geometry changes; failure preserves every output field.
 bool buildGraceAfterPlan4(const Chord*, GraceAfterPlan4&, QString* reason = nullptr);
 struct GraceAfterGeometry4 {
     GraceAfterPlan4 plan;
     SpacingShape4 source; // Owner's own components, in source-segment coordinates.
-    SpacingShape4 target; // Following chord plus planned graces, in target-segment coordinates.
+    SpacingShape4 target; // Following chord/rest plus planned graces, in target-segment coordinates.
 };
-// Temporary typed projection for future system planning. Does not update native
+// Temporary typed projection for system planning. Does not update native
 // segment shapes or move musical ownership. Failure leaves result unchanged.
 bool buildGraceAfterGeometry4(const Chord*, GraceAfterGeometry4&, QString* reason = nullptr);
 

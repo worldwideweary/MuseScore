@@ -189,9 +189,10 @@ bool substituteAfterGeometry4(Segment* segment, int staff, SpacingShape4& native
         if (staff != owner->staffIdx()) continue;
         const bool source = segment == owner->segment();
         if (!source && segment != after.plan.target) continue;
-        const Chord* root = source ? owner : toChord(segment->element(owner->track()));
+        const Element* root = source ? owner : segment->element(owner->track());
         const auto owned = [root](const Element* item) {
             for (; item; item = item->parent()) {
+                if (item == root) return true;
                 if (item->isChord()) {
                     const Chord* chord = toChord(item);
                     return chord == root || (chord->isGraceAfter() && chord->parent() == root);

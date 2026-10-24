@@ -2568,3 +2568,23 @@ all regression assertions, and numeric failure messages. No score files or
 engraving algorithms change. Next address the separately bounded rest target
 for AG5 before merging after- and before-grace groups or barline targets. See
 `v0.101-after-grace-accepted-checkpoint.md`.
+
+
+### v0.102: ordinary rest targets for after-graces
+
+The user committed v0.101. Extend after-grace target preparation and full-system
+projection to ordinary visible undotted rests in the same measure and voice.
+The scoped collision policy uses the existing grace/rest padding; the system
+planner reserves source-to-group clearance instead of relying on a native
+interval chosen before repacking. The bounded stage excludes full-measure,
+gap, cue, moved/cross-staff, dotted, beamed/tuplet, and attached rest targets.
+AG4 barlines and AG6 merged before-graces still reject.
+
+New comparisons, with both options saved on:
+`v0.102-spacing-after-grace-rests.mscx` (AR1-AR4, separate systems),
+`v0.102-spacing-after-grace-rests-natural.mscx` (compact overview), and
+`v0.102-spacing-after-grace-rest-squeeze.mscx` (AR1 compressed).
+AR1 is the original AG5 two-up group; AR2 is down, AR3 altered four-up, and AR4
+single-up. Compare owning C to first D in AR1, internal grace gaps, and the last
+grace to rest separately in 37E and 4.7.5. Native tests and visual confirmation
+remain pending. See `v0.102-after-grace-rest-targets.md`.

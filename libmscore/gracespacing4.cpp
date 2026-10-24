@@ -6,6 +6,7 @@
 #include "beam.h"
 #include "chord.h"
 #include "note.h"
+#include "rest.h"
 #include "measure.h"
 #include "stem.h"
 #include "score.h"
@@ -50,7 +51,7 @@ static const Chord* ownerChord4(const Element* item)
 }
 
 static bool graceComponents4(const Chord* chord, const Chord* main,
-                              const SpacingPaddingTable4& table, SpacingShape4& result, const Chord* afterTarget = nullptr)
+                              const SpacingPaddingTable4& table, SpacingShape4& result, const Element* afterTarget = nullptr)
 {
     const SpacingShape4 native = spacingElementShape4(chord);
     SpacingShape4 shape;
@@ -95,7 +96,7 @@ static bool graceComponents4(const Chord* chord, const Chord* main,
 }
 
 static bool graceDistance4(const SpacingPaddingTable4& table, const Chord* main,
-                            const SpacingShape4& a, const SpacingShape4& b, qreal sp, qreal& result, const Chord* afterTarget = nullptr)
+                            const SpacingShape4& a, const SpacingShape4& b, qreal sp, qreal& result, const Element* afterTarget = nullptr)
 {
     qreal distance = -std::numeric_limits<qreal>::max();
     for (const auto& first : a.elements) {
@@ -110,6 +111,29 @@ static bool graceDistance4(const SpacingPaddingTable4& table, const Chord* main,
         }
     }
     result = distance;
+    return true;
+}
+
+// A normal rest contributes its glyph, with the same explicit after-group
+// policy as a following chord. Dots and attachments remain outside this scope.
+static bool afterTargetComponents4(const Element* target, const Chord* owner,
+                                    const SpacingPaddingTable4& table, SpacingShape4& result)
+{
+    if (target->isChord()) return graceComponents4(toChord(target), owner, table, result, target);
+    if (!target->isRest()) return false;
+    const SpacingShape4 shape = spacingElementShape4(target);
+    if (shape.elements.empty()) return false;
+    for (const auto& e : shape.elements) {
+        SpacingPairPolicy4 policy;
+        if (e.identity != SpacingIdentity4::ITEM || e.item != target
+            || !e.aggregateOwners.empty() || !e.sharedItems.empty()
+            || !std::isfinite(e.rect.x()) || !std::isfinite(e.rect.y())
+            || !std::isfinite(e.rect.width()) || !std::isfinite(e.rect.height())
+            || e.rect.width() <= 0 || e.rect.height() <= 0
+            || !spacingAfterGracePairPolicy4(table, owner, target, target, target, owner->spatium(), policy))
+            return false;
+    }
+    result = shape;
     return true;
 }
 
@@ -246,14 +270,26 @@ bool buildGraceAfterPlan4(const Chord* owner, GraceAfterPlan4& result, QString* 
         targetSegment = targetSegment->next();
     if (!targetSegment || targetSegment == owner->segment() || targetSegment->measure() != measure
         || !targetSegment->enabled() || !targetSegment->visible() || !targetSegment->isChordRestType())
-        return fail("After-grace target is not a same-measure ordinary chord segment");
-    const Element* targetItem = targetSegment->element(owner->track());
-    if (!targetItem || !targetItem->isChord())
-        return fail("After-grace target is not an ordinary chord in the same voice");
-    const Chord* target = toChord(targetItem);
-    if (!validChord(target) || target->score() != owner->score() || target->mag() != 1 || target->beam()
-        || !target->graceNotes().empty())
-        return fail("Unadapted or merged after-grace target");
+        return fail("After-grace target is not a same-measure chord/rest segment");
+    const Element* target = targetSegment->element(owner->track());
+    if (!target || (!target->isChord() && !target->isRest()))
+        return fail("After-grace target is not a chord/rest in the same voice");
+    if (target->isChord()) {
+        const Chord* chord = toChord(target);
+        if (!validChord(chord) || chord->score() != owner->score() || chord->mag() != 1 || chord->beam()
+            || !chord->graceNotes().empty())
+            return fail("Unadapted or merged after-grace target");
+    }
+    else {
+        const Rest* rest = toRest(target);
+        if (rest->score() != owner->score() || !rest->staff() || rest->onTabStaff() || rest->staffMove()
+            || !rest->staff()->isPitchedStaff(rest->tick()) || rest->staff()->lines(rest->tick()) != 5
+            || rest->mag() != 1 || rest->isSmall() || !rest->visible() || !rest->autoplace() || rest->isNudged()
+            || !std::isfinite(rest->x()) || !std::isfinite(rest->y()) || rest->isGap() || rest->isFullMeasureRest()
+            || rest->measure()->isMMRest() || rest->actualDots() || rest->beam() || rest->tuplet()
+            || rest->actualTicks() <= Fraction(0, 1) || !rest->el().empty() || !rest->lyrics().empty())
+            return fail("After-grace rest target needs an ordinary visible undotted rest");
+    }
     for (const Segment* segment : {owner->segment(), targetSegment}) {
         if (!segment->enabled() || !segment->visible())
             return fail("After-grace owner/target segment is inactive");
@@ -285,7 +321,7 @@ bool buildGraceAfterPlan4(const Chord* owner, GraceAfterPlan4& result, QString* 
     }
     const SpacingPaddingTable4 table(owner->score());
     SpacingShape4 targetShape;
-    if (!graceComponents4(target, owner, table, targetShape, target))
+    if (!afterTargetComponents4(target, owner, table, targetShape))
         return fail("Unadapted after-grace target shape");
     targetShape = targetShape.translated(target->pos());
     GraceAfterPlan4 plan;
@@ -324,7 +360,7 @@ bool buildGraceAfterPlan4(const Chord* owner, GraceAfterPlan4& result, QString* 
     return true;
 }
 
-static bool afterSourceComponents4(const Chord* owner, const Chord* target,
+static bool afterSourceComponents4(const Chord* owner, const Element* target,
                                     const SpacingPaddingTable4& table, SpacingShape4& result)
 {
     SpacingShape4 source;
@@ -374,14 +410,14 @@ bool buildGraceAfterGeometry4(const Chord* owner, GraceAfterGeometry4& result, Q
         if (reason) *reason = QString::fromLatin1(message);
         return false;
     };
-    const Chord* target = toChord(geometry.plan.target->element(owner->track()));
+    const Element* target = geometry.plan.target->element(owner->track());
     const SpacingPaddingTable4 table(owner->score());
     SpacingShape4 source;
     if (!afterSourceComponents4(owner, target, table, source))
         return fail("Unadapted after-grace source projection");
     geometry.source = source.translated(owner->pos());
     SpacingShape4 following;
-    if (!graceComponents4(target, owner, table, following, target))
+    if (!afterTargetComponents4(target, owner, table, following))
         return fail("Unadapted after-grace target projection");
     geometry.target = following.translated(target->pos());
     for (const GraceAfterPosition4& p : geometry.plan.positions) {
@@ -406,7 +442,7 @@ bool applyGraceAfterPlan4(Chord* owner, QString* reason)
         if (reason) *reason = QString::fromLatin1(message);
         return false;
     };
-    const Chord* target = toChord(plan.target->element(owner->track()));
+    const Element* target = plan.target->element(owner->track());
     const qreal translation = plan.target->x() - owner->segment()->x() - owner->x();
     if (!std::isfinite(translation)) return fail("Nonfinite after-grace publication offset");
     const SpacingPaddingTable4 table(owner->score());
