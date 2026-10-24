@@ -5,6 +5,7 @@
 #include <QtGlobal>
 #include <QString>
 #include <vector>
+#include "spacinggeometry4.h"
 namespace Ms {
 class Chord;
 class Slur;
@@ -39,6 +40,15 @@ struct GraceAfterPlan4 {
 // Query only: does not move items, publish shapes, or enable system admission.
 // Rebuild after geometry changes; failure preserves every output field.
 bool buildGraceAfterPlan4(const Chord*, GraceAfterPlan4&, QString* reason = nullptr);
+struct GraceAfterGeometry4 {
+    GraceAfterPlan4 plan;
+    SpacingShape4 source; // Owner's own components, in source-segment coordinates.
+    SpacingShape4 target; // Following chord plus planned graces, in target-segment coordinates.
+};
+// Temporary typed projection for future system planning. Does not update native
+// segment shapes or move musical ownership. Failure leaves result unchanged.
+bool buildGraceAfterGeometry4(const Chord*, GraceAfterGeometry4&, QString* reason = nullptr);
+
 // Local post-spacing publication only. Rebuild the plan, check every source-
 // to-grace constraint in the available interval, then publish all x positions.
 // Failure does not move any items. Native/system widths remain unchanged.

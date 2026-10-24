@@ -324,18 +324,9 @@ bool buildGraceAfterPlan4(const Chord* owner, GraceAfterPlan4& result, QString* 
     return true;
 }
 
-bool applyGraceAfterPlan4(Chord* owner, QString* reason)
+static bool afterSourceComponents4(const Chord* owner, const Chord* target,
+                                    const SpacingPaddingTable4& table, SpacingShape4& result)
 {
-    GraceAfterPlan4 plan;
-    if (!buildGraceAfterPlan4(owner, plan, reason)) return false;
-    const auto fail = [reason](const char* message) {
-        if (reason) *reason = QString::fromLatin1(message);
-        return false;
-    };
-    const Chord* target = toChord(plan.target->element(owner->track()));
-    const qreal translation = plan.target->x() - owner->segment()->x() - owner->x();
-    if (!std::isfinite(translation)) return fail("Nonfinite after-grace publication offset");
-    const SpacingPaddingTable4 table(owner->score());
     SpacingShape4 source;
     for (const SpacingShapeElement4& e : spacingElementShape4(owner).elements) {
         const Chord* chord = ownerChord4(e.item);
@@ -350,10 +341,61 @@ bool applyGraceAfterPlan4(Chord* owner, QString* reason)
             || e.rect.width() < 0 || e.rect.height() < 0
             || !spacingAfterGracePairPolicy4(table, owner, target, e.item, e.item,
                                              owner->spatium(), policy, true))
-            return fail("Unadapted after-grace source shape");
+            return false;
         source.elements.push_back(e);
     }
-    if (source.elements.empty()) return fail("Empty after-grace source shape");
+    if (source.elements.empty()) return false;
+    result = source;
+    return true;
+}
+
+bool buildGraceAfterGeometry4(const Chord* owner, GraceAfterGeometry4& result, QString* reason)
+{
+    GraceAfterGeometry4 geometry;
+    if (!buildGraceAfterPlan4(owner, geometry.plan, reason)) return false;
+    const auto fail = [reason](const char* message) {
+        if (reason) *reason = QString::fromLatin1(message);
+        return false;
+    };
+    const Chord* target = toChord(geometry.plan.target->element(owner->track()));
+    const SpacingPaddingTable4 table(owner->score());
+    SpacingShape4 source;
+    if (!afterSourceComponents4(owner, target, table, source))
+        return fail("Unadapted after-grace source projection");
+    geometry.source = source.translated(owner->pos());
+    SpacingShape4 following;
+    if (!graceComponents4(target, owner, table, following, target))
+        return fail("Unadapted after-grace target projection");
+    geometry.target = following.translated(target->pos());
+    for (const GraceAfterPosition4& p : geometry.plan.positions) {
+        SpacingShape4 member;
+        if (!graceComponents4(p.chord, owner, table, member, target))
+            return fail("Unadapted after-grace member projection");
+        member = member.translated(QPointF(p.x, 0));
+        geometry.target.elements.insert(geometry.target.elements.end(), member.elements.begin(), member.elements.end());
+    }
+    if (!geometry.source.complete() || !geometry.target.complete())
+        return fail("Incomplete after-grace projection identity");
+    result = geometry;
+    if (reason) reason->clear();
+    return true;
+}
+
+bool applyGraceAfterPlan4(Chord* owner, QString* reason)
+{
+    GraceAfterPlan4 plan;
+    if (!buildGraceAfterPlan4(owner, plan, reason)) return false;
+    const auto fail = [reason](const char* message) {
+        if (reason) *reason = QString::fromLatin1(message);
+        return false;
+    };
+    const Chord* target = toChord(plan.target->element(owner->track()));
+    const qreal translation = plan.target->x() - owner->segment()->x() - owner->x();
+    if (!std::isfinite(translation)) return fail("Nonfinite after-grace publication offset");
+    const SpacingPaddingTable4 table(owner->score());
+    SpacingShape4 source;
+    if (!afterSourceComponents4(owner, target, table, source))
+        return fail("Unadapted after-grace source shape");
     std::vector<qreal> positions;
     for (const GraceAfterPosition4& p : plan.positions) {
         const qreal x = translation + p.x;

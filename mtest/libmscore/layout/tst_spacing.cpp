@@ -43,6 +43,8 @@ class TestSpacing : public QObject, public MTest {
       void graceBeforeLayout();
       void graceNeighborPlan_data();
       void graceNeighborPlan();
+      void graceAfterGeometry_data();
+      void graceAfterGeometry();
       void graceAfterLayout_data();
       void graceAfterLayout();
       void graceAfterPlan_data();
@@ -3199,6 +3201,124 @@ static std::vector<qreal> graceLayoutSnapshot4(Score* score)
                   }
             }
       return values;
+      }
+
+void TestSpacing::graceAfterGeometry_data()
+      {
+      graceAfterBaseline_data();
+      }
+
+void TestSpacing::graceAfterGeometry()
+      {
+      QFETCH(bool, modernBeams);
+      QFETCH(QString, file);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      const auto native = graceLayoutSnapshot4(score);
+      const auto belongsTo = [](const Element* item, const Chord* chord) {
+            for (; item; item = item->parent()) {
+                  if (item->isChord()) return item == chord;
+                  }
+            return false;
+            };
+      const auto sameShape = [](const SpacingShape4& a, const SpacingShape4& b) {
+            if (a.elements.size() != b.elements.size()) return false;
+            for (size_t i = 0; i < a.elements.size(); ++i) {
+                  if (a.elements[i].item != b.elements[i].item || a.elements[i].identity != b.elements[i].identity
+                      || a.elements[i].rect != b.elements[i].rect) return false;
+                  }
+            return true;
+            };
+      int count = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++count) {
+            QVERIFY(count < 6);
+            Chord* owner = nullptr;
+            for (Segment& segment : m->segments()) {
+                  Element* item = segment.element(0);
+                  if (item && item->isChord() && !toChord(item)->graceNotesAfter().empty()) owner = toChord(item);
+                  }
+            QVERIFY(owner);
+            GraceAfterGeometry4 geometry;
+            geometry.plan.left = 123;
+            geometry.source.elements.push_back(SpacingShapeElement4(QRectF(1, 2, 3, 4), owner));
+            geometry.target = geometry.source;
+            const SpacingShape4 sentinel = geometry.source;
+            QString reason;
+            const bool built = buildGraceAfterGeometry4(owner, geometry, &reason);
+            if (count >= 3) {
+                  QVERIFY(!built);
+                  QCOMPARE(geometry.plan.left, qreal(123));
+                  QVERIFY(!geometry.plan.owner && !geometry.plan.target && geometry.plan.positions.empty());
+                  QVERIFY(sameShape(geometry.source, sentinel) && sameShape(geometry.target, sentinel));
+                  continue;
+                  }
+            QVERIFY2(built, qPrintable(reason));
+            QVERIFY(geometry.source.complete() && geometry.target.complete());
+            QCOMPARE(geometry.plan.owner, static_cast<const Chord*>(owner));
+            const Chord* target = toChord(geometry.plan.target->element(owner->track()));
+            for (const auto& e : geometry.source.elements) QVERIFY(belongsTo(e.item, owner));
+            int followingCopies = 0;
+            const Note* followingNote = target->notes().front();
+            for (const auto& e : geometry.target.elements) {
+                  if (e.item == followingNote) {
+                        ++followingCopies;
+                        QCOMPARE(e.rect, followingNote->bbox().translated(followingNote->pos() + target->pos()));
+                        }
+                  }
+            QCOMPARE(followingCopies, 1);
+            for (const GraceAfterPosition4& position : geometry.plan.positions) {
+                  const Note* note = position.chord->notes().front();
+                  int sourceCopies = 0, targetCopies = 0;
+                  for (const auto& e : geometry.source.elements) sourceCopies += e.item == note;
+                  for (const auto& e : geometry.target.elements) {
+                        if (e.item == note) {
+                              ++targetCopies;
+                              QCOMPARE(e.rect, note->bbox().translated(note->pos() + QPointF(position.x, 0)));
+                              }
+                        }
+                  QCOMPARE(sourceCopies, 0);
+                  QCOMPARE(targetCopies, 1); // No duplicate old source footprint.
+                  }
+            for (const auto& e : geometry.target.elements) {
+                  bool known = belongsTo(e.item, target);
+                  for (const auto& p : geometry.plan.positions) known = known || belongsTo(e.item, p.chord);
+                  QVERIFY(known);
+                  }
+            const auto graces = owner->graceNotesAfter();
+            std::vector<QPointF> saved;
+            for (Chord* grace : graces) { saved.push_back(grace->pos()); grace->rxpos() -= 100 * score->spatium(); }
+            const QPointF sourcePos = owner->segment()->pos();
+            Segment* targetSegment = m->tick2segment(owner->tick() + owner->actualTicks(), SegmentType::ChordRest);
+            QVERIFY(targetSegment);
+            const QPointF targetPos = targetSegment->pos();
+            owner->segment()->rxpos() -= 17 * score->spatium();
+            targetSegment->rxpos() += 23 * score->spatium();
+            GraceAfterGeometry4 repeated;
+            const bool rebuilt = buildGraceAfterGeometry4(owner, repeated, &reason);
+            owner->segment()->setPos(sourcePos);
+            targetSegment->setPos(targetPos);
+            for (int i = 0; i < graces.size(); ++i) graces[i]->setPos(saved[i]);
+            QVERIFY2(rebuilt, qPrintable(reason));
+            QVERIFY(sameShape(geometry.source, repeated.source) && sameShape(geometry.target, repeated.target));
+            const QPointF offset = owner->notes().front()->offset();
+            owner->notes().front()->setOffset(QPointF(.5, 0));
+            const bool editedAccepted = buildGraceAfterGeometry4(owner, repeated, &reason);
+            owner->notes().front()->setOffset(offset);
+            QVERIFY(!editedAccepted);
+            QVERIFY(sameShape(geometry.source, repeated.source) && sameShape(geometry.target, repeated.target));
+            QCOMPARE(repeated.plan.owner, geometry.plan.owner);
+            QCOMPARE(repeated.plan.target, geometry.plan.target);
+            QCOMPARE(repeated.plan.left, geometry.plan.left);
+            const SpacingPaddingTable4 table(score);
+            qreal distance = 123;
+            QVERIFY(!spacingShapeDistance4(table, geometry.source, geometry.target, owner->spatium(), 1, distance));
+            QCOMPARE(distance, qreal(123)); // Default/system admission still requires a later context.
+            }
+      QCOMPARE(count, 6);
+      QVERIFY(graceLayoutSnapshot4(score) == native);
+      delete score;
       }
 
 void TestSpacing::graceAfterLayout_data()

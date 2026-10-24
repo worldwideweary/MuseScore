@@ -2487,3 +2487,14 @@ are `v0.95-spacing-after-grace-packing.mscx` and its `-natural.mscx` companion.
 Check AG2's D-flat-to-B gap explicitly. AG5's owning-C-to-after-D gap is also
 an identified discrepancy, but its rest target remains unsupported here.
 See `v0.95-after-grace-live-packing.md` for validation and remaining work.
+
+### v0.96: live packing accepted; temporary target projection
+
+The user reports v0.95 tests passing. AG2's D-flat-to-B gap is visibly closer
+to Studio; AG5's compact owning-note gap remains unresolved. New read-only
+geometry preparation removes old source grace footprints and appends each
+planned component exactly once to a temporary target shape. Native shapes,
+ownership, and live placement stay unchanged. New tests cover provenance,
+coordinates, stale-position independence and atomic failure. No new scores or
+screenshots are needed. See `v0.96-after-grace-target-projection.md` before the
+next full-system admission/publication stage.
