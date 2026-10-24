@@ -56,6 +56,8 @@ class TestSpacing : public QObject, public MTest {
       void graceSlurCurveFit();
       void graceMergedSlurCurves_data();
       void graceMergedSlurCurves();
+      void graceMergedSlurBeamAnchors_data();
+      void graceMergedSlurBeamAnchors();
       void graceMergedSystem_data();
       void graceMergedSystem();
       void graceMergedGeometry_data();
@@ -3976,6 +3978,101 @@ void TestSpacing::graceAfterBarlineSystem()
       const auto restored = graceBarlineSnapshot4(score);
       QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
       for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
+void TestSpacing::graceMergedSlurBeamAnchors_data()
+      {
+      graceMergedSlurs_data();
+      }
+
+void TestSpacing::graceMergedSlurBeamAnchors()
+      {
+      QFETCH(bool, modernBeams);
+      QFETCH(QString, suffix);
+      MasterScore* score = readScore(DIR + "v0.113-spacing-slurred-merged-" + suffix + ".mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      const auto original = graceMergedSnapshot4(score);
+      int adapted = 0, preserved = 0;
+      Slur* first = nullptr;
+      for (const auto& entry : score->spannerMap().map()) {
+            if (!entry.second->isSlur()) continue;
+            Slur* slur = toSlur(entry.second);
+            Chord* start = toChord(slur->startElement());
+            const Chord* target = toChord(slur->endElement());
+            // Query both styles at the SAME published positions. Do not
+            // conflate attachment differences with horizontal style toggling.
+            score->setStyleValue(Sid::spacingLayout4, false);
+            SlurPos legacy;
+            slur->slurPos(&legacy);
+            score->setStyleValue(Sid::spacingLayout4, true);
+            SlurPos modern;
+            slur->slurPos(&modern);
+            QPointF a = legacy.p1, b = legacy.p2;
+            QString reason;
+            const bool accepted = adjustGraceMergedSlurBeamAnchors4(slur, a, b, &reason);
+            QCOMPARE(accepted, start->up() == slur->up());
+            QCOMPARE(a, modern.p1);
+            QCOMPARE(b, modern.p2);
+            if (!accepted) {
+                  QCOMPARE(a, legacy.p1);
+                  QCOMPARE(b, legacy.p2);
+                  ++preserved;
+                  continue;
+                  }
+            QVERIFY(reason.isEmpty());
+            const qreal sp = score->spatium();
+            const qreal sign = slur->up() ? -1 : 1;
+            const QPointF startOrigin = start->pos() + start->parent()->pos()
+                  + start->segment()->pos() + start->measure()->pos();
+            const qreal startTipY = startOrigin.y() + start->stemPos().y() - start->pagePos().y()
+                  + sign * start->stem()->len();
+            // Measure the anchor's distance beyond the actual stem tip.
+            const qreal sourceBeamTerm = score->styleS(Sid::beamWidth).val() * start->beam()->magS() / 2;
+            const qreal sourceClearance = sourceBeamTerm + qMax(.35 * start->chordMag(), qreal(.2)) * sp;
+            QVERIFY(qAbs(sign * (a.y() - startTipY) - sourceClearance) < 1e-6);
+            QVERIFY(qAbs(a.y() - startTipY) < qAbs(legacy.p1.y() - startTipY));
+            const qreal startStemCenterX = startOrigin.x() + start->notes().front()->x()
+                  + start->stemPosX() + sign * start->stem()->lineWidthMag() / 2;
+            QVERIFY(qAbs(a.x() - startStemCenterX - .15 * sp * start->chordMag()) < 1e-6);
+            if (start->up() == target->up()) {
+                  const QPointF endOrigin = target->pos() + target->segment()->pos() + target->measure()->pos();
+                  const qreal endTipY = endOrigin.y() + target->stemPos().y() - target->pagePos().y()
+                        + sign * target->stem()->len();
+                  QVERIFY(qAbs(sign * (b.y() - endTipY) - .35 * sp) < 1e-6);
+                  QVERIFY(qAbs(b.y() - endTipY) < qAbs(legacy.p2.y() - endTipY));
+                  }
+            else QCOMPARE(b, legacy.p2);
+            if (!first) first = slur;
+            ++adapted;
+            }
+      const int measures = suffix == "grace-squeeze" ? 1 : 4;
+      QCOMPARE(adapted, measures);
+      QCOMPARE(preserved, measures);
+      QVERIFY(first);
+      const QPointF sentinelA(11, 22), sentinelB(33, 44);
+      QPointF a = sentinelA, b = sentinelB;
+      const QPointF offset = first->offset();
+      first->setOffset(QPointF(.5, 0));
+      const bool edited = adjustGraceMergedSlurBeamAnchors4(first, a, b);
+      first->setOffset(offset);
+      QVERIFY(!edited);
+      QCOMPARE(a, sentinelA);
+      QCOMPARE(b, sentinelB);
+      Element* anchor = first->startElement();
+      Chord* start = toChord(anchor);
+      first->setStartElement(start->beam()->elements().back());
+      const bool last = adjustGraceMergedSlurBeamAnchors4(first, a, b);
+      first->setStartElement(anchor);
+      QVERIFY(!last);
+      QCOMPARE(a, sentinelA);
+      QCOMPARE(b, sentinelB);
+      QVERIFY(!adjustGraceMergedSlurBeamAnchors4(nullptr, a, b));
+      QCOMPARE(a, sentinelA);
+      QCOMPARE(b, sentinelB);
+      QVERIFY(graceMergedSnapshot4(score) == original);
       delete score;
       }
 

@@ -6,6 +6,7 @@
 #include <QString>
 namespace Ms {
 class Chord;
+class Slur;
 struct GraceSlurCurve4 {
     QPointF start, control1, control2, end; // System x / staff-relative y.
 };
@@ -16,5 +17,10 @@ struct GraceSlurCurve4 {
 bool fitGraceSlurCurve4(const SpacingShape4&, const Chord* target, qreal spatium,
                        bool up, GraceSlurCurve4&, bool startFloated = false, bool endFloated = false,
                        QString* reason = nullptr);
+// Studio beam-side anchors for an automatic first-after-grace / main slur in
+// the validated combined scope. Only the stem-side start branch is adapted.
+// When both stems agree, adapt its forced stem-side end too; otherwise retain
+// the supplied end. Query only; failure preserves both points.
+bool adjustGraceMergedSlurBeamAnchors4(const Slur*, QPointF& start, QPointF& end, QString* reason = nullptr);
 }
 #endif

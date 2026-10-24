@@ -1329,6 +1329,9 @@ void Slur::slurPos(SlurPos* sp)
             }
       if (constrainLeftAnchor)
             sp->p1.setY(sp->p2.y() + __up * 0.25 * _spatium);
+
+      if (!isIncoming() && !isOutgoing() && score()->styleB(Sid::spacingLayout4))
+            adjustGraceMergedSlurBeamAnchors4(this, sp->p1, sp->p2);
       }
 
 //---------------------------------------------------------

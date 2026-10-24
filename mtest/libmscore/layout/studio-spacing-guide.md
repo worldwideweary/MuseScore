@@ -2807,3 +2807,15 @@ synthetic and rendered-clearance/repeat/toggle native checks. Reuse v0.113
 natural, filled and squeeze inputs; inspect the upper M4 arc and both lower
 arcs first. Initial anchors, shoulder geometry and stroke remain Evolution's.
 See `v0.117-grace-slur-curve-clearance.md`; native tests and visuals pending.
+
+
+### v0.118: grace slur beam-side attachment branch
+
+User confirms v0.117 native tests pass; M4 upper clearance is improved.
+Adapt the pinned source's first-grace beam-side attachment and forced
+same-direction unbeamed main endpoint, within the existing validated joint
+scope and spacing style. Preserve opposite-side anchors and the source's
+beamWidthSp/magS metric rather than substituting drawn beam width. Add six
+native anchor-query rows; keep all rendered-clearance/repeat/toggle checks.
+Reuse v0.113 controls, inspecting M1/M3 upper and M4/M5 lower arcs. See
+`v0.118-grace-slur-beam-anchors.md`; native and visual verification pending.

@@ -1,8 +1,16 @@
 // Adapted from Studio v4.7.5 SlurTieLayout::avoidCollisions and its clearance,
 // adjustment-step and balance helpers. Licensed under GNU GPL version 2.
 #include "graceslurlayout4.h"
+#include "gracespacing4.h"
+#include "beam.h"
 #include "chord.h"
+#include "measure.h"
+#include "note.h"
+#include "score.h"
+#include "segment.h"
+#include "slur.h"
 #include "slurtie.h"
+#include "stem.h"
 #include <QTransform>
 #include <algorithm>
 #include <cmath>
@@ -162,5 +170,76 @@ bool fitGraceSlurCurve4(const SpacingShape4& physical, const Chord* target, qrea
         }
     }
     return fail("Grace slur clearance exceeds bounded fitting passes");
+}
+
+bool adjustGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& startPoint, QPointF& endPoint, QString* reason)
+{
+    const auto fail = [reason](const char* message) {
+        if (reason) *reason = QString::fromLatin1(message);
+        return false;
+    };
+    if (!slur || !slur->startElement() || !slur->startElement()->isChord()
+        || !slur->endElement() || !slur->endElement()->isChord()
+        || !std::isfinite(startPoint.x()) || !std::isfinite(startPoint.y())
+        || !std::isfinite(endPoint.x()) || !std::isfinite(endPoint.y()))
+        return fail("Invalid combined grace beam anchors");
+    const Chord* start = toChord(slur->startElement());
+    const Chord* target = toChord(slur->endElement());
+    if (!start->isGraceAfter() || !start->parent() || !start->parent()->isChord()
+        || !start->beam() || start->beam()->elements().empty()
+        || start->beam()->elements().back() == start || start->up() != slur->up())
+        return fail("Combined grace slur does not use the beam-side start branch");
+    const Chord* owner = toChord(start->parent());
+    if (!spacingMergedGraceSlur4(slur, owner, target) || !owner->measure()->system()
+        || owner->measure()->system() != target->measure()->system())
+        return fail("Unadapted combined grace beam anchors");
+    GraceMergedGeometry4 geometry;
+    if (!buildGraceMergedGeometry4(owner, geometry, reason)) return false;
+    const qreal sp = slur->spatium();
+    const qreal mag = start->chordMag();
+    // Preserve Studio slurPos's beamWidthSp expression exactly. It uses the
+    // style's space value times magS(), not the drawn beam width in points.
+    const qreal beamWidth = start->score()->styleS(Sid::beamWidth).val() * start->beam()->magS();
+    if (!(sp > 0) || !(mag > 0) || !(beamWidth > 0)
+        || !std::isfinite(sp) || !std::isfinite(mag) || !std::isfinite(beamWidth)
+        || !(start->stem()->len() > 0) || !(target->stem()->len() > 0)
+        || !std::isfinite(start->stem()->len()) || !std::isfinite(target->stem()->len())
+        || !std::isfinite(start->stem()->lineWidthMag()) || !std::isfinite(target->stem()->lineWidthMag()))
+        return fail("Invalid combined grace stem or beam metrics");
+    const qreal sign = slur->up() ? -1 : 1;
+    const auto origin = [](const Chord* chord) {
+        QPointF p = chord->pos() + chord->segment()->pos() + chord->measure()->pos();
+        if (chord->isGrace()) p += chord->parent()->pos();
+        // Match slurPos's note-centering adjustment; mirroring is rejected by
+        // the validated joint component/ownership scope.
+        p.rx() += chord->notes().front()->x();
+        return p;
+    };
+    // Studio slurPos's beamed, non-final, stem-side start branch. Use the
+    // source's beamWidthSp term here; the beam layout anchor width and drawn
+    // beam polygon width are separate metrics.
+    const qreal startHeight = start->stem()->len() + beamWidth / 2 + std::max(qreal(.35) * mag, qreal(.2)) * sp;
+    const qreal startStemY = start->stemPos().y() - start->pagePos().y();
+    const QPointF adjustedStart = origin(start) + QPointF(
+        start->stemPosX() + .15 * sp * mag + sign * start->stem()->lineWidthMag() / 2,
+        startStemY + sign * startHeight);
+    QPointF adjustedEnd = endPoint;
+    if (start->up() == target->up()) {
+        // The stem-side start forces the same-direction main endpoint to its
+        // stem. This scope's target is unbeamed and has ordinary magnitude.
+        const qreal endMag = target->chordMag();
+        const qreal endHeight = target->stem()->len() + std::max(qreal(.35) * endMag, qreal(.2)) * sp;
+        const qreal endStemY = target->stemPos().y() - target->pagePos().y();
+        adjustedEnd = origin(target) + QPointF(
+            target->stemPosX() + sign * target->stem()->lineWidthMag() / 2 - .15 * sp * endMag,
+            endStemY + sign * endHeight);
+    }
+    if (!std::isfinite(adjustedStart.x()) || !std::isfinite(adjustedStart.y())
+        || !std::isfinite(adjustedEnd.x()) || !std::isfinite(adjustedEnd.y()))
+        return fail("Non-finite combined grace beam anchors");
+    startPoint = adjustedStart;
+    endPoint = adjustedEnd;
+    if (reason) reason->clear();
+    return true;
 }
 }
