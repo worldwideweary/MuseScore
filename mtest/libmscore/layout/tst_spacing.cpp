@@ -29,37 +29,6 @@
 
 using namespace Ms;
 
-// Scope the diagnostic environment to the new after-grace runtime rows, and
-// restore it even when a QVERIFY returns early. No manual test command changes.
-class AfterSpacingTrace4 {
-      QByteArray previous;
-      bool wasSet;
-      bool enabled;
-public:
-      explicit AfterSpacingTrace4(bool enable)
-            : previous(qgetenv("MSCORE_TRACE_AFTER_SPACING4")),
-              wasSet(qEnvironmentVariableIsSet("MSCORE_TRACE_AFTER_SPACING4")), enabled(enable)
-            { if (enabled) qputenv("MSCORE_TRACE_AFTER_SPACING4", "1"); }
-      ~AfterSpacingTrace4()
-            {
-            if (!enabled) return;
-            if (wasSet) qputenv("MSCORE_TRACE_AFTER_SPACING4", previous);
-            else qunsetenv("MSCORE_TRACE_AFTER_SPACING4");
-            }
-      };
-
-static void traceAfterSpacingFinal4(System* system, const SpacingPlan4& plan)
-      {
-      qDebug("afterSpacing4 POST tick=%d system=%.17g left=%.17g natural=%.17g",
-            system->firstMeasure()->tick().ticks(), system->width(), system->leftMargin(), plan.width);
-      for (const auto& e : plan.segments) {
-            if (e.ignored) continue;
-            qDebug("afterSpacing4 POST segment tick=%d type=%d x=%.17g width=%.17g stretch=%.17g actualX=%.17g actualWidth=%.17g",
-                  e.segment->tick().ticks(), int(e.segment->segmentType()), e.x, e.width, e.stretch,
-                  e.segment->measure()->x() + e.segment->x(), e.segment->width());
-            }
-      }
-
 #define DIR QString("libmscore/layout/")
 
 class TestSpacing : public QObject, public MTest {
@@ -3286,7 +3255,6 @@ void TestSpacing::graceAfterSystem()
       {
       QFETCH(bool, modernBeams);
       QFETCH(QString, file);
-      AfterSpacingTrace4 trace(file.startsWith("v0.97-"));
       MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
       score->setStyleValue(Sid::beamLayout4, modernBeams);
@@ -3324,7 +3292,6 @@ void TestSpacing::graceAfterSystem()
             if (m != m->system()->firstMeasure()) continue;
             SpacingPlan4 natural;
             QVERIFY2(buildSpacingPlan4(m->system(), natural, &reason), qPrintable(reason));
-            traceAfterSpacingFinal4(m->system(), natural);
             QVERIFY(!natural.afterGraces.empty());
             SpacingPlan4 expected = natural;
             QVERIFY2(expected.width <= m->system()->width() + 1e-6,
@@ -4026,7 +3993,6 @@ void TestSpacing::graceSqueeze()
       {
       QFETCH(bool, modernBeams);
       QFETCH(QString, file);
-      AfterSpacingTrace4 trace(file.startsWith("v0.97-"));
       MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
       score->setStyleValue(Sid::beamLayout4, modernBeams);
@@ -4055,7 +4021,6 @@ void TestSpacing::graceSqueeze()
       score->setStyleValue(Sid::spacingLayout4, true);
       score->doLayout();
       QVERIFY2(buildSpacingPlan4(measure->system(), natural, &reason), qPrintable(reason));
-      if (!natural.afterGraces.empty()) traceAfterSpacingFinal4(measure->system(), natural);
       QVERIFY(natural.width > target);
       SpacingPlan4 expected;
       QVERIFY2(squeezeSpacingPlan4(measure->system(), target, expected, &reason), qPrintable(reason));

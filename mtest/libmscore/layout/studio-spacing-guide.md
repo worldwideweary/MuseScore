@@ -2550,3 +2550,21 @@ resolver regression and invalid-set controls. All layout assertions remain.
 Apply after v0.99 and rerun tst_spacing and tst_beam; native confirmation remains
 pending. Keep the trace temporarily to verify actual application. Reuse v0.97
 scores. See `v0.100-nested-spacing-bound-provenance.md`.
+
+
+### v0.101: native pass and visual checkpoint; remove temporary tracing
+
+The user reports v0.100 mtests passing and supplies paired 37E/4.7.5 captures
+for the three v0.97 controls. At the supplied resolution, AS1's final grace-to-
+main gap, AG2's D-flat-to-B spacing, and AG3's down-stem group spacing look
+closely aligned. The justified views also agree after accounting for capture
+position. This supports the bounded AG1-AG3 milestone, not universal parity.
+AG5 is absent from these controls and its compact owning-C-to-after-D gap is
+still unresolved.
+
+Remove v0.99's temporary environment guard, PRE/APPLY/POST trace, and preparation
+failure logging. Keep v0.98's bounded beam preparation, v0.100's ownership fix,
+all regression assertions, and numeric failure messages. No score files or
+engraving algorithms change. Next address the separately bounded rest target
+for AG5 before merging after- and before-grace groups or barline targets. See
+`v0.101-after-grace-accepted-checkpoint.md`.
