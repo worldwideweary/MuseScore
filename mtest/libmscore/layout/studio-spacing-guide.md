@@ -2653,3 +2653,19 @@ also cover up/down and altered AR groups. Reuse
 `v0.104-spacing-after-grace-rest-squeeze-match.mscx` for the visual comparison.
 Native tests and updated visual confirmation are pending. See
 `v0.106-grace-beam-nominal-anchors.md`.
+
+### v0.107: accepted height; barline and merged target controls
+
+The user reports v0.106 tests passing; the paired captures show closely aligned
+grace-beam heights and horizontal gaps in the matched AR1 example. Close that
+specific height issue. Source audit confirms that barline targets use staff
+shape/table padding, while incoming after-graces and a target's before-graces
+are packed together in Studio.
+
+New `v0.107-spacing-after-grace-targets.mscx` and
+`v0.107-spacing-after-grace-targets-natural.mscx` provide B1-B3 barline and M1-M3
+merged controls, with both experimental options on and stretch 1. Add atomic
+fallback, ownership and layout stability tests without changing engraving.
+Compare the natural file first, focusing on last-grace-to-barline and the
+after-to-before group boundary. Next implement ordinary barline support before
+joint merged-group support. See `v0.107-after-grace-boundary-audit.md`.
