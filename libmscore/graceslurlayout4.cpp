@@ -11,6 +11,7 @@
 #include "slur.h"
 #include "slurtie.h"
 #include "stem.h"
+#include "system.h"
 #include <QTransform>
 #include <algorithm>
 #include <cmath>
@@ -220,9 +221,23 @@ bool adjustGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& startPoint, QP
     // beam polygon width are separate metrics.
     const qreal startHeight = start->stem()->len() + beamWidth / 2 + std::max(qreal(.35) * mag, qreal(.2)) * sp;
     const qreal startStemY = start->stemPos().y() - start->pagePos().y();
-    const QPointF adjustedStart = origin(start) + QPointF(
+    QPointF adjustedStart = origin(start) + QPointF(
         start->stemPosX() + .15 * sp * mag + sign * start->stem()->lineWidthMag() / 2,
         startStemY + sign * startHeight);
+    if (slur->up()) {
+        const Beam* beam = start->beam();
+        const QLineF* primary = beam->primarySegment4();
+        const qreal capRadius = start->score()->styleP(Sid::slurEndWidth) / 2;
+        if (beam->elements().front() != start || !primary || !(primary->x2() > primary->x1())
+            || !std::isfinite(primary->x1()) || !std::isfinite(primary->x2())
+            || !std::isfinite(capRadius) || capRadius < 0)
+            return fail("Invalid leading beam edge for upper grace slur");
+        // User-preferred alignment: the rounded visible start lies directly
+        // above the drawn beam's leading edge. Use its published geometry,
+        // avoiding the note-centering/inset reconstruction of the source rule.
+        const qreal leadingEdge = beam->pagePos().x() - owner->measure()->system()->pagePos().x() + primary->x1();
+        adjustedStart.setX(leadingEdge + capRadius);
+    }
     QPointF adjustedEnd = endPoint;
     if (start->up() == target->up()) {
         // The stem-side start forces the same-direction main endpoint to its

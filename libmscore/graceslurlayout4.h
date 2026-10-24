@@ -21,6 +21,8 @@ bool fitGraceSlurCurve4(const SpacingShape4&, const Chord* target, qreal spatium
 // the validated combined scope. Only the stem-side start branch is adapted.
 // When both stems agree, adapt its forced stem-side end too; otherwise retain
 // the supplied end. Query only; failure preserves both points.
+// Upper starts use the user-preferred visible-tip alignment above the actual
+// leading beam edge, including the rounded end-stroke radius.
 bool adjustGraceMergedSlurBeamAnchors4(const Slur*, QPointF& start, QPointF& end, QString* reason = nullptr);
 }
 #endif

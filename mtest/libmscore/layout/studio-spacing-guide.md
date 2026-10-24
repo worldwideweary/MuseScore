@@ -2819,3 +2819,14 @@ beamWidthSp/magS metric rather than substituting drawn beam width. Add six
 native anchor-query rows; keep all rendered-clearance/repeat/toggle checks.
 Reuse v0.113 controls, inspecting M1/M3 upper and M4/M5 lower arcs. See
 `v0.118-grace-slur-beam-anchors.md`; native and visual verification pending.
+
+
+### v0.119: user-preferred upper slur / beam-edge alignment
+
+User confirms v0.118 native tests pass, but prefers the upper slur's visible
+start directly above the leading beam edge rather than either application's
+observed offset. Reference the actual primary beam edge and account for the
+rounded slur-end stroke. Preserve lower starts and all vertical calculations.
+Update both anchor and final fitted-curve checks; reuse the v0.113 natural
+score and inspect M1/M3 closely. Other differences remain deferred. See
+`v0.119-upper-grace-slur-edge-alignment.md`; native and visual checks pending.

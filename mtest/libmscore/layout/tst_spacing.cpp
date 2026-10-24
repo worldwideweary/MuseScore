@@ -4034,9 +4034,18 @@ void TestSpacing::graceMergedSlurBeamAnchors()
             const qreal sourceClearance = sourceBeamTerm + qMax(.35 * start->chordMag(), qreal(.2)) * sp;
             QVERIFY(qAbs(sign * (a.y() - startTipY) - sourceClearance) < 1e-6);
             QVERIFY(qAbs(a.y() - startTipY) < qAbs(legacy.p1.y() - startTipY));
-            const qreal startStemCenterX = startOrigin.x() + start->notes().front()->x()
-                  + start->stemPosX() + sign * start->stem()->lineWidthMag() / 2;
-            QVERIFY(qAbs(a.x() - startStemCenterX - .15 * sp * start->chordMag()) < 1e-6);
+            if (slur->up()) {
+                  const QLineF* primary = start->beam()->primarySegment4();
+                  QVERIFY(primary);
+                  const qreal leadingEdge = start->beam()->pagePos().x() - start->measure()->system()->pagePos().x() + primary->x1();
+                  const qreal capRadius = score->styleP(Sid::slurEndWidth) / 2;
+                  QVERIFY(qAbs(a.x() - capRadius - leadingEdge) < 1e-6);
+                  }
+            else {
+                  const qreal startStemCenterX = startOrigin.x() + start->notes().front()->x()
+                        + start->stemPosX() + sign * start->stem()->lineWidthMag() / 2;
+                  QVERIFY(qAbs(a.x() - startStemCenterX - .15 * sp * start->chordMag()) < 1e-6);
+                  }
             if (start->up() == target->up()) {
                   const QPointF endOrigin = target->pos() + target->segment()->pos() + target->measure()->pos();
                   const qreal endTipY = endOrigin.y() + target->stemPos().y() - target->pagePos().y()
@@ -4182,6 +4191,17 @@ void TestSpacing::graceMergedSlurCurves()
             const SlurSegment* segment = slur->frontSegment();
             QVERIFY(segment->usesGraceCurve4());
             QVERIFY(!segment->isEdited());
+            const Chord* start = toChord(slur->startElement());
+            if (slur->up() && start->up()) {
+                  const QLineF* primary = start->beam()->primarySegment4();
+                  QVERIFY(primary);
+                  const qreal leadingEdge = start->beam()->pagePos().x() - start->measure()->system()->pagePos().x() + primary->x1();
+                  // The fitter may lift the start vertically, but must retain
+                  // the user's preferred visible horizontal edge alignment.
+                  const qreal visibleTipX = segment->ups(Grip::START).pos().x() + segment->x()
+                        - score->styleP(Sid::slurEndWidth) / 2;
+                  QVERIFY(qAbs(visibleTipX - leadingEdge) < 1e-6);
+                  }
             SpacingShape4 obstacles;
             QVERIFY(buildGraceMergedSlurObstacles4(slur, obstacles));
             const Chord* target = toChord(slur->endElement());
