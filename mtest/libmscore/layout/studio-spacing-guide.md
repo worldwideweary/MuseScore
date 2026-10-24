@@ -2784,3 +2784,14 @@ item identity in native shapes, and the distinct attachment/solver changes.
 Next build and verify physical obstacle collection before changing curves.
 Documentation only; v0.114 remains the tested runtime baseline. Reuse the
 v0.113 comparison scores.
+
+
+### v0.116: read-only grace-slur physical obstacles
+
+Add the bounded combined-grace obstacle query and six native test rows using
+the v0.113 inputs. Collect current physical components from both musical
+parents, exclude the true start anchor, ledgers and spacing extents, and check
+coordinate changes without publishing positions. See
+`v0.116-grace-slur-obstacle-collector.md` for scope and validation. No rendering
+call yet, so screenshots should remain unchanged. Native tests are pending;
+next integrate clearance and curve adjustment separately.

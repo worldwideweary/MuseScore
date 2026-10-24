@@ -50,6 +50,8 @@ class TestSpacing : public QObject, public MTest {
       void graceAfterBarlineSystem();
       void graceMergedSlurs_data();
       void graceMergedSlurs();
+      void graceMergedSlurObstacles_data();
+      void graceMergedSlurObstacles();
       void graceMergedSystem_data();
       void graceMergedSystem();
       void graceMergedGeometry_data();
@@ -3970,6 +3972,150 @@ void TestSpacing::graceAfterBarlineSystem()
       const auto restored = graceBarlineSnapshot4(score);
       QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
       for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
+// Read-only collision input: no slur curve or published spacing changes yet.
+void TestSpacing::graceMergedSlurObstacles_data()
+      {
+      graceMergedSlurs_data();
+      }
+
+void TestSpacing::graceMergedSlurObstacles()
+      {
+      QFETCH(bool, modernBeams);
+      QFETCH(QString, suffix);
+      MasterScore* score = readScore(DIR + "v0.113-spacing-slurred-merged-" + suffix + ".mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      const auto original = graceMergedSnapshot4(score);
+      int count = 0;
+      Slur* first = nullptr;
+      const auto closeRect = [](const QRectF& a, const QRectF& b) {
+            return qAbs(a.x() - b.x()) < 1e-6 && qAbs(a.y() - b.y()) < 1e-6
+                  && qAbs(a.width() - b.width()) < 1e-6 && qAbs(a.height() - b.height()) < 1e-6;
+            };
+      for (const auto& entry : score->spannerMap().map()) {
+            if (!entry.second->isSlur()) continue;
+            Slur* slur = toSlur(entry.second);
+            const Chord* start = toChord(slur->startElement());
+            const Chord* owner = toChord(start->parent());
+            const Chord* target = toChord(slur->endElement());
+            SpacingShape4 obstacles;
+            QString reason;
+            QVERIFY2(buildGraceMergedSlurObstacles4(slur, obstacles, &reason), qPrintable(reason));
+            QVERIFY(reason.isEmpty() && obstacles.complete() && !obstacles.elements.empty());
+            std::vector<const Chord*> members;
+            for (const Chord* chord : owner->graceNotesAfter()) if (chord != start) members.push_back(chord);
+            for (const Chord* chord : target->graceNotesBefore()) members.push_back(chord);
+            members.push_back(target);
+            // Every intervening note survives, including those sharing an
+            // endpoint's segment; the actual start anchor never survives.
+            for (const Chord* chord : members) {
+                  bool noteFound = false, accidentalFound = false;
+                  const Note* note = chord->notes().front();
+                  for (const auto& obstacle : obstacles.elements) {
+                        noteFound = noteFound || obstacle.item == note;
+                        accidentalFound = accidentalFound || obstacle.item == note->accidental();
+                        }
+                  QVERIFY(noteFound);
+                  if (note->accidental() && note->accidental()->visible()) QVERIFY(accidentalFound);
+                  }
+            int notes = 0;
+            for (const auto& obstacle : obstacles.elements) {
+                  QVERIFY(obstacle.identity == SpacingIdentity4::ITEM && obstacle.item);
+                  QVERIFY(obstacle.aggregateOwners.empty() && obstacle.sharedItems.empty());
+                  QVERIFY(!obstacle.item->isLedgerLine());
+                  const Element* parent = obstacle.item;
+                  while (parent && !parent->isChord()) parent = parent->parent();
+                  QVERIFY(parent && parent != start && parent != owner);
+                  const Chord* chord = toChord(parent);
+                  QVERIFY(std::find(members.begin(), members.end(), chord) != members.end());
+                  if (obstacle.item->isNote()) ++notes;
+                  // Verify against actual native local rectangles and parent
+                  // chains, rather than the plan's temporary target offsets.
+                  QPointF position = chord->pos() + chord->segment()->pos() + chord->measure()->pos();
+                  if (chord->isGrace()) position += chord->parent()->pos();
+                  const SpacingShape4 native = spacingElementShape4(chord);
+                  bool found = false;
+                  for (const auto& component : native.elements) {
+                        if (component.item == obstacle.item && component.identity == SpacingIdentity4::ITEM
+                              && closeRect(component.rect.translated(position), obstacle.rect)) found = true;
+                        }
+                  QVERIFY(found);
+                  }
+            QCOMPARE(notes, static_cast<int>(members.size()));
+            if (!first) first = slur;
+            ++count;
+            }
+      QCOMPARE(count, suffix == "grace-squeeze" ? 2 : 8);
+      QVERIFY(first);
+      QVERIFY(graceMergedSnapshot4(score) == original);
+      Chord* start = toChord(first->startElement());
+      Chord* owner = toChord(start->parent());
+      Chord* target = toChord(first->endElement());
+      Chord* moved = target->graceNotesBefore().front();
+      SpacingShape4 before, after;
+      QVERIFY(buildGraceMergedSlurObstacles4(first, before));
+      const qreal dx = 0.75 * score->spatium();
+      const qreal savedX = moved->x();
+      moved->rxpos() += dx;
+      const auto relocated = graceMergedSnapshot4(score);
+      const bool movedAccepted = buildGraceMergedSlurObstacles4(first, after);
+      const bool movedUnchanged = graceMergedSnapshot4(score) == relocated;
+      moved->rxpos() = savedX;
+      QVERIFY(movedAccepted && movedUnchanged);
+      QCOMPARE(static_cast<int>(before.elements.size()), static_cast<int>(after.elements.size()));
+      for (size_t i = 0; i < before.elements.size(); ++i) {
+            const auto& old = before.elements[i];
+            const auto& now = after.elements[i];
+            QCOMPARE(now.item, old.item);
+            const Element* parent = old.item;
+            while (parent && !parent->isChord()) parent = parent->parent();
+            QVERIFY(closeRect(now.rect, old.rect.translated(parent == moved ? QPointF(dx, 0) : QPointF())));
+            }
+      // Moving the measure tests translation of BOTH source-owned after-graces
+      // and target-owned before-graces without changing their local offsets.
+      Measure* measure = owner->measure();
+      const QPointF savedPos = measure->pos();
+      const QPointF delta(dx, 0.25 * score->spatium());
+      measure->setPos(savedPos + delta);
+      const bool translatedAccepted = buildGraceMergedSlurObstacles4(first, after);
+      const bool measureUnchanged = measure->pos() == savedPos + delta;
+      measure->setPos(savedPos);
+      QVERIFY(translatedAccepted && measureUnchanged);
+      QCOMPARE(static_cast<int>(before.elements.size()), static_cast<int>(after.elements.size()));
+      for (size_t i = 0; i < before.elements.size(); ++i)
+            QVERIFY(closeRect(after.elements[i].rect, before.elements[i].rect.translated(delta)));
+      const QRectF sentinel(11, 22, 33, 44);
+      SpacingShape4 rejected;
+      rejected.elements.push_back(SpacingShapeElement4(sentinel, target));
+      const QPointF savedOffset = first->offset();
+      first->setOffset(QPointF(.5, 0));
+      const bool editedAccepted = buildGraceMergedSlurObstacles4(first, rejected);
+      first->setOffset(savedOffset);
+      QVERIFY(!editedAccepted);
+      QCOMPARE(static_cast<int>(rejected.elements.size()), 1);
+      QCOMPARE(rejected.elements.front().rect, sentinel);
+      QCOMPARE(rejected.elements.front().item, static_cast<const Element*>(target));
+      const qreal savedLength = target->stem()->userLen();
+      target->stem()->setUserLen(savedLength + score->spatium());
+      const bool stemAccepted = buildGraceMergedSlurObstacles4(first, rejected);
+      target->stem()->setUserLen(savedLength);
+      QVERIFY(!stemAccepted);
+      QCOMPARE(static_cast<int>(rejected.elements.size()), 1);
+      QCOMPARE(rejected.elements.front().rect, sentinel);
+      QVERIFY(!buildGraceMergedSlurObstacles4(nullptr, rejected));
+      QVERIFY(graceMergedSnapshot4(score) == original);
+      // Repeating the query is stable; enabling it has no rendering side effects.
+      QVERIFY(buildGraceMergedSlurObstacles4(first, after));
+      QCOMPARE(static_cast<int>(before.elements.size()), static_cast<int>(after.elements.size()));
+      for (size_t i = 0; i < before.elements.size(); ++i) {
+            QCOMPARE(after.elements[i].item, before.elements[i].item);
+            QVERIFY(closeRect(after.elements[i].rect, before.elements[i].rect));
+            }
+      QVERIFY(graceMergedSnapshot4(score) == original);
       delete score;
       }
 

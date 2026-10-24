@@ -82,6 +82,14 @@ bool applyGraceAfterPlan4(Chord*, QString* reason = nullptr);
 // incoming after-grace (or the existing local before anchor) to target main.
 bool spacingMergedGraceSlur4(const Slur*, const Chord* owner, const Chord* target);
 
+// Read-only physical obstacles for first-after-grace to target-main slurs in
+// the validated combined scope. Uses CURRENT published positions, not planned
+// grace offsets. Coordinates match Slur::slurPos (system x, staff-relative y).
+// Excludes the start anchor, ledgers and synthetic spacing bounds; includes
+// other grace members and the target's own components. No clearance inflation
+// or curve adjustment yet. Failure leaves result unchanged.
+bool buildGraceMergedSlurObstacles4(const Slur*, SpacingShape4&, QString* reason = nullptr);
+
 // Only the unedited first-before-grace to its own main chord, same staff/voice.
 // This validates a spacing allowance; it does not select a new slur renderer.
 bool spacingLocalGraceSlur4(const Slur*, const Chord* main);
