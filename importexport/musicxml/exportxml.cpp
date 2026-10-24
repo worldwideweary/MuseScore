@@ -4707,12 +4707,12 @@ static void getImageInfo(const ImageStoreItem* isi, QString& source, QString& ty
       if (type.isEmpty()) {
             const QByteArray& ba = isi->buffer();
             if (ba.size() >= 4) {
-                  if (ba.at(0) == (char)0x89 && ba.at(1) == 0x50 && ba.at(2) == 0x4E && ba.at(3) == 0x47) {
+                  if ((unsigned char)ba.at(0) == 0x89 && ba.at(1) == 0x50 && ba.at(2) == 0x4E && ba.at(3) == 0x47) {
                         type = "image/png";
                         if (suffix.isEmpty())
                               source += ".png";
                         }
-                  else if (ba.at(0) == (char)0xFF && ba.at(1) == (char)0xD8 && ba.at(2) == (char)0xFF) {
+                  else if ((unsigned char)ba.at(0) == 0xFF && (unsigned char)ba.at(1) == 0xD8 && (unsigned char)ba.at(2) == 0xFF) {
                         type = "image/jpeg";
                         if (suffix.isEmpty())
                               source += ".jpg";

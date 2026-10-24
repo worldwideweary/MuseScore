@@ -91,8 +91,8 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       QComboBox* orientationBox { nullptr };
       QComboBox* scopeBox { nullptr };
       QComboBox* noteShapeBox { nullptr };
-      Awl::PitchEdit* pitch { nullptr };
-      QSpinBox* velocity { nullptr };
+      Awl::PitchEdit* _pitch { nullptr };
+      QSpinBox* _velocity { nullptr };
       QSpinBox* onTime { nullptr };
       QSpinBox* tickLen { nullptr };
       Pos locator[3];
@@ -109,7 +109,7 @@ class PianorollEditor : public QWidget, public MuseScoreView {
       QAction* automaticVoiceSeparator { nullptr };
       QAction* showLevelsAction { nullptr };
       QAction* regroupVoicingAction { nullptr };
-      QComboBox* coloringBox { nullptr };      
+      QComboBox* _coloringBox { nullptr };
       QAction* useNoteColorsAction { nullptr };
       QAction* showPitchNamesAction { nullptr };
       
