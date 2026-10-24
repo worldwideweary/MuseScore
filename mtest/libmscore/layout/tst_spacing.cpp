@@ -19,6 +19,7 @@
 #include <limits>
 #include "libmscore/chordrest.h"
 #include "libmscore/beam.h"
+#include "libmscore/beamlayout4.h"
 #include "libmscore/chord.h"
 #include "libmscore/note.h"
 #include "libmscore/accidental.h"
@@ -3281,6 +3282,37 @@ void TestSpacing::graceAfterRestStaticSqueeze()
       QVERIFY(after.target->element(0) && after.target->element(0)->isRest());
       for (const auto& p : after.positions)
             QVERIFY(qAbs(after.owner->segment()->x() + after.owner->x() + p.chord->x() - after.target->x() - p.x) < 1e-6);
+      // Compare the two scale conventions without publishing either result.
+      // The native XML report retains these short records for the next audit.
+      Beam* beam = after.positions.front().chord->beam();
+      QVERIFY(beam);
+      QVERIFY(beam->primarySegment4());
+      const QLineF primary = *beam->primarySegment4();
+      std::vector<qreal> stems;
+      for (const auto& p : after.positions) stems.push_back(p.chord->stem()->len());
+      GraceBeamAnchorProbe4 probe;
+      QVERIFY(beam4ProbeGraceAnchors(beam, probe));
+      QCOMPARE(static_cast<int>(probe.defaultStemLengths.size()), static_cast<int>(after.positions.size()));
+      const qreal sp = score->spatium();
+      const qreal origin = beam->pagePos().y();
+      qDebug("graceAnchor105 modern=%d width current=%.12g separated=%.12g start current=%.12g separated=%.12g end current=%.12g separated=%.12g",
+            int(modernBeams), probe.currentWidth / sp, probe.separatedWidth / sp,
+            (probe.currentStart.y() - origin) / sp, (probe.separatedStart.y() - origin) / sp,
+            (probe.currentEnd.y() - origin) / sp, (probe.separatedEnd.y() - origin) / sp);
+      for (size_t j = 0; j < after.positions.size(); ++j) {
+            const Chord* chord = after.positions[j].chord;
+            QCOMPARE(chord->stem()->len(), stems[j]);
+            qDebug("graceAnchor105 modern=%d chord=%d line=%d up=%d mag=%.12g defaultStem=%.12g actualStem=%.12g attachY=%.12g",
+                  int(modernBeams), int(j), chord->line(), int(chord->up()), chord->mag(),
+                  probe.defaultStemLengths[j] / sp, stems[j] / sp,
+                  (chord->up() ? chord->upNote()->stemUpSE().y() : chord->downNote()->stemDownNW().y()) / sp);
+            }
+      QVERIFY(beam->primarySegment4());
+      QCOMPARE(*beam->primarySegment4(), primary);
+      GraceBeamAnchorProbe4 rejected;
+      rejected.currentWidth = 123;
+      QVERIFY(!beam4ProbeGraceAnchors(nullptr, rejected));
+      QCOMPARE(rejected.currentWidth, qreal(123));
       QVERIFY(graceLayoutSnapshot4(score) == placed);
       delete score;
       }

@@ -1154,7 +1154,7 @@ static int computeDesiredSlant(const LayoutData* ldata, const NotePosition& star
 
 static bool calculateAnchors4(Element* item, Beam* beam, Tremolo* tremolo,
                              const std::vector<ChordRest*>& elements,
-                             QPointF& start, QPointF& end, qreal& beamDistance)
+                             QPointF& start, QPointF& end, qreal& beamDistance, qreal anchorMagnitude = 0)
 {
     if (elements.empty())
         return false;
@@ -1187,6 +1187,12 @@ static bool calculateAnchors4(Element* item, Beam* beam, Tremolo* tremolo,
     if (!first || !last)
         return false;
     data.isGrace = first->isGrace();
+    // The audit query can compare a separately specified anchor magnitude.
+    // All production callers keep the existing default and do not enter here.
+    if (data.isGrace && anchorMagnitude > 0) {
+        data.magnitude = anchorMagnitude;
+        data.beamWidth = item->score()->styleS(Sid::beamWidth).val() * data.spatium * anchorMagnitude;
+    }
     if ((beam && beam->cross()) || crossTremolo) {
         bool above = false, below = false;
         for (const ChordRest* cr : elements) {
@@ -1277,6 +1283,40 @@ static bool calculateAnchors4(Element* item, Beam* beam, Tremolo* tremolo,
     start.setX(chordBeamAnchorX(ldata, elements.front(), ChordBeamAnchorType::Start));
     end.setX(chordBeamAnchorX(ldata, elements.back(), ChordBeamAnchorType::End));
     beamDistance = data.beamDist;
+    return true;
+}
+
+bool beam4ProbeGraceAnchors(Beam* beam, GraceBeamAnchorProbe4& result)
+{
+    if (!beam || beam->cross() || beam->userModified() || beam->elements().empty()
+        || beam->staff()->isTabStaff(beam->tick()))
+        return false;
+    const qreal graceMag = beam->score()->styleD(Sid::graceNoteMag);
+    if (!(graceMag > 0) || !std::isfinite(graceMag) || !qFuzzyCompare(beam->mag(), graceMag))
+        return false;
+    std::vector<ChordRest*> elements;
+    GraceBeamAnchorProbe4 probe;
+    for (ChordRest* cr : beam->elements()) {
+        if (!cr->isChord() || !cr->isGrace() || cr->isSmall() || cr->staffMove()) return false;
+        const Chord* chord = toChord(cr);
+        if (!chord->stem() || chord->stem()->userLen() != 0 || chord->tremolo()
+            || !chord->parent() || !chord->parent()->isChord() || toChord(chord->parent())->isSmall())
+            return false;
+        elements.push_back(cr);
+        const qreal length = defaultStemLength4(chord);
+        if (!std::isfinite(length)) return false;
+        probe.defaultStemLengths.push_back(length);
+    }
+    probe.currentWidth = beam->score()->styleS(Sid::beamWidth).val() * beam->spatium() * beam->mag();
+    probe.separatedWidth = beam->score()->styleS(Sid::beamWidth).val() * beam->spatium();
+    qreal distance = beam->beamDist();
+    if (!calculateAnchors4(beam, beam, nullptr, elements, probe.currentStart, probe.currentEnd, distance)) return false;
+    distance = beam->beamDist();
+    if (!calculateAnchors4(beam, beam, nullptr, elements, probe.separatedStart, probe.separatedEnd, distance, 1.0)) return false;
+    for (const QPointF& point : {probe.currentStart, probe.currentEnd, probe.separatedStart, probe.separatedEnd}) {
+        if (!std::isfinite(point.x()) || !std::isfinite(point.y())) return false;
+    }
+    result = probe;
     return true;
 }
 

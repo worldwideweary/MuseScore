@@ -2623,3 +2623,19 @@ under both beam modes. Fix the old squeeze title's literal font markup using a
 plain title and supported size field. No engraving algorithms change. Compare
 the new file in both applications before diagnosing a remaining squeeze gap.
 See `v0.104-rest-squeeze-import-audit.md`.
+
+
+### v0.105: grace-beam height audit and read-only anchor comparison
+
+The user reports v0.104 tests passing. Its matched-stretch captures show close
+horizontal agreement, with the two beamed grace stems slightly longer in 37E;
+ordinary quarter-note stems appear comparable. Keep this vertical issue separate.
+
+Pinned source confirms differing anchor scale conventions: 3.x grace Beam mag
+already includes graceNoteMag, while Studio retains ordinary beam magnitude
+and separately scales the drawn grace beam. v0.105 adds a read-only comparison
+of current anchors versus the separated-scale candidate, plus default/actual
+stem lengths and stem attachment metadata in the native XML report. No candidate
+anchors are published, and all production layout calls retain their original
+parameters. This does not claim a height fix. Reuse the v0.104 score; send the
+result XML even if tests pass. See `v0.105-grace-beam-height-audit.md`.
