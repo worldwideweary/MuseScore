@@ -2830,3 +2830,15 @@ rounded slur-end stroke. Preserve lower starts and all vertical calculations.
 Update both anchor and final fitted-curve checks; reuse the v0.113 natural
 score and inspect M1/M3 closely. Other differences remain deferred. See
 `v0.119-upper-grace-slur-edge-alignment.md`; native and visual checks pending.
+
+
+### v0.120: repair v0.119's stale beam-edge input
+
+v0.119 failed six final rendered-alignment rows and visibly moved the upper
+starts too far left. Its direct anchor queries passed, exposing a cached-
+beam versus final-layout mismatch. Derive the same leading edge as
+Beam::layout2 from current first-stem/page coordinates; do not read the cached
+primary segment during slur layout. Add cache-poisoning and moved-grace
+regressions; retain the failing final-edge assertion with diagnostic values.
+See `v0.120-upper-grace-slur-live-edge-fix.md`. Apply after v0.119; native
+mtests and M1/M3 close-up validation are pending. Other differences deferred.

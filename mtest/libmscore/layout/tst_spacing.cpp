@@ -4039,7 +4039,32 @@ void TestSpacing::graceMergedSlurBeamAnchors()
                   QVERIFY(primary);
                   const qreal leadingEdge = start->beam()->pagePos().x() - start->measure()->system()->pagePos().x() + primary->x1();
                   const qreal capRadius = score->styleP(Sid::slurEndWidth) / 2;
-                  QVERIFY(qAbs(a.x() - capRadius - leadingEdge) < 1e-6);
+                  QVERIFY2(qAbs(a.x() - capRadius - leadingEdge) < 1e-6,
+                        qPrintable(QString("queried upper tip %1 versus final beam edge %2")
+                              .arg(a.x() - capRadius, 0, 'g', 17).arg(leadingEdge, 0, 'g', 17)));
+                  // A beam segment from an earlier preparation pass must not
+                  // affect the query. Restore the cache before any assertion.
+                  QLineF* cached = const_cast<QLineF*>(primary);
+                  const QLineF savedBeam = *cached;
+                  cached->translate(-3 * sp, 0);
+                  QPointF cachedA = legacy.p1, cachedB = legacy.p2;
+                  const bool cachedAccepted = adjustGraceMergedSlurBeamAnchors4(slur, cachedA, cachedB);
+                  *cached = savedBeam;
+                  QVERIFY(cachedAccepted);
+                  QCOMPARE(cachedA, a);
+                  QCOMPARE(cachedB, b);
+                  // Likewise, moving the live first grace while leaving the
+                  // beam cache alone must move the attachment exactly once.
+                  const qreal savedX = start->x();
+                  const qreal dx = .5 * sp;
+                  start->rxpos() += dx;
+                  QPointF movedA = legacy.p1, movedB = legacy.p2;
+                  const bool movedAccepted = adjustGraceMergedSlurBeamAnchors4(slur, movedA, movedB);
+                  start->rxpos() = savedX;
+                  QVERIFY(movedAccepted);
+                  QVERIFY(qAbs(movedA.x() - a.x() - dx) < 1e-6);
+                  QVERIFY(qAbs(movedA.y() - a.y()) < 1e-6);
+                  QCOMPARE(movedB, b);
                   }
             else {
                   const qreal startStemCenterX = startOrigin.x() + start->notes().front()->x()
@@ -4200,7 +4225,9 @@ void TestSpacing::graceMergedSlurCurves()
                   // the user's preferred visible horizontal edge alignment.
                   const qreal visibleTipX = segment->ups(Grip::START).pos().x() + segment->x()
                         - score->styleP(Sid::slurEndWidth) / 2;
-                  QVERIFY(qAbs(visibleTipX - leadingEdge) < 1e-6);
+                  QVERIFY2(qAbs(visibleTipX - leadingEdge) < 1e-6,
+                        qPrintable(QString("rendered upper tip %1 versus final beam edge %2, tick %3")
+                              .arg(visibleTipX, 0, 'g', 17).arg(leadingEdge, 0, 'g', 17).arg(slur->tick().ticks())));
                   }
             SpacingShape4 obstacles;
             QVERIFY(buildGraceMergedSlurObstacles4(slur, obstacles));

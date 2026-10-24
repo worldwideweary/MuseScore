@@ -226,16 +226,16 @@ bool adjustGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& startPoint, QP
         startStemY + sign * startHeight);
     if (slur->up()) {
         const Beam* beam = start->beam();
-        const QLineF* primary = beam->primarySegment4();
         const qreal capRadius = start->score()->styleP(Sid::slurEndWidth) / 2;
-        if (beam->elements().front() != start || !primary || !(primary->x2() > primary->x1())
-            || !std::isfinite(primary->x1()) || !std::isfinite(primary->x2())
-            || !std::isfinite(capRadius) || capRadius < 0)
+        if (beam->elements().front() != start || !std::isfinite(capRadius) || capRadius < 0)
             return fail("Invalid leading beam edge for upper grace slur");
         // User-preferred alignment: the rounded visible start lies directly
-        // above the drawn beam's leading edge. Use its published geometry,
-        // avoiding the note-centering/inset reconstruction of the source rule.
-        const qreal leadingEdge = beam->pagePos().x() - owner->measure()->system()->pagePos().x() + primary->x1();
+        // above the drawn beam's leading edge. Beam::layout2 builds that edge
+        // from the first up-stem position minus its full line width. Its cached
+        // primary segment may still describe the spacing-preparation pass, so
+        // derive the same edge from CURRENT chord coordinates instead.
+        const qreal leadingEdge = start->pageX() - owner->measure()->system()->pagePos().x()
+            + start->stemPosX() - start->stem()->lineWidthMag();
         adjustedStart.setX(leadingEdge + capRadius);
     }
     QPointF adjustedEnd = endPoint;
