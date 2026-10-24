@@ -447,11 +447,16 @@ void SlurSegment::computeBezier(QPointF p6o)
       if (autoplace() && isSingleType() && system() && score()->styleB(Sid::spacingLayout4)) {
             SpacingShape4 obstacles;
             if (buildGraceMergedSlurObstacles4(slur(), obstacles, nullptr, true)) {
-                  // Fit an automatic base independently of all user offsets.
-                  // Re-query raw anchors also for direct grip-edit calls, whose
-                  // stored points may already be the previous fitted curve.
+                  // Fit independently of user offsets. layoutSegment already
+                  // received the raw anchors, so do not re-plan the same grace
+                  // geometry through slurPos on each grip preview/relayout.
                   SlurPos anchors;
-                  slur()->slurPos(&anchors);
+                  if (_graceRawAnchors4) {
+                        anchors.p1 = _graceRawStart4;
+                        anchors.p2 = _graceRawEnd4;
+                        }
+                  else
+                        slur()->slurPos(&anchors);
                   const QPointF span = anchors.p2 - anchors.p1;
                   const qreal baseAngle = std::atan2(span.y(), span.x());
                   const qreal baseLength = std::hypot(span.x(), span.y());
@@ -588,6 +593,9 @@ Element* SlurSegment::propertyDelegate(Pid id)
 
 void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       {
+      _graceRawStart4 = p1;
+      _graceRawEnd4 = p2;
+      _graceRawAnchors4 = true;
       setPos(QPointF());
       ups(Grip::START).p = p1;
       ups(Grip::END).p   = p2;

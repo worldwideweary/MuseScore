@@ -551,32 +551,32 @@ bool buildGraceMergedSlurObstacles4(const Slur* slur, SpacingShape4& result, QSt
         return fail("Unadapted combined grace slur obstacles");
     GraceMergedGeometry4 geometry;
     if (!buildGraceMergedGeometry4(owner, geometry, reason)) return false;
-    const SpacingPaddingTable4 table(owner->score());
     SpacingShape4 obstacles;
-    const auto append = [&](const Chord* chord) {
-        SpacingShape4 components;
-        if (!graceComponents4(chord, owner, table, components, target, true)) return false;
+    // Geometry already contains each validated physical component. Rebase
+    // those rectangles from temporary target coordinates to CURRENT published
+    // coordinates instead of resolving and validating every chord again.
+    const auto append = [&](const Chord* chord, const QPointF& plannedOrigin) {
         QPointF position = chord->pos() + chord->segment()->pos() + chord->measure()->pos();
         if (chord->isGrace()) position += chord->parent()->pos();
-        if (!std::isfinite(position.x()) || !std::isfinite(position.y())) return false;
-        for (const SpacingShapeElement4& component : components.elements) {
-            // Studio's slur collector removes ledger lines, but retains notes,
-            // accidentals and stems of intervening members, including members
-            // stored in the same musical segment as an endpoint.
-            if (component.item->isLedgerLine()) continue;
+        const QPointF shift = position - plannedOrigin;
+        if (!std::isfinite(shift.x()) || !std::isfinite(shift.y())) return false;
+        bool found = false;
+        for (const SpacingShapeElement4& component : geometry.target.elements) {
+            if (ownerChord4(component.item) != chord || component.item->isLedgerLine()) continue;
             SpacingShapeElement4 projected = component;
-            projected.rect.translate(position);
+            projected.rect.translate(shift);
             if (!std::isfinite(projected.rect.left()) || !std::isfinite(projected.rect.right())
                 || !std::isfinite(projected.rect.top()) || !std::isfinite(projected.rect.bottom())) return false;
             obstacles.elements.push_back(projected);
+            found = true;
         }
-        return true;
+        return found;
     };
     for (const GraceAfterPosition4& member : geometry.plan.positions) {
-        if (member.chord != start && !append(member.chord))
+        if (member.chord != start && !append(member.chord, QPointF(member.x, 0)))
             return fail("Unadapted published combined grace obstacle");
     }
-    if (!append(target) || !obstacles.complete() || obstacles.elements.empty())
+    if (!append(target, target->pos()) || !obstacles.complete() || obstacles.elements.empty())
         return fail("Incomplete combined grace slur obstacles");
     result = obstacles;
     if (reason) reason->clear();

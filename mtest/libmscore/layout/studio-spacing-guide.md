@@ -2855,3 +2855,15 @@ endpoint edits, object translations, repeated layout and restoring the base.
 See `v0.121-grace-slur-edit-spacing-independence.md`; apply after v0.120 and
 repeat M3's upper-left grip edit in the existing v0.113 natural input. Native
 verification pending; other differences deferred.
+
+
+### v0.122: reduce redundant work during grace-slur editing
+
+User confirms the no-jump behavior but reports slow interaction. Reuse already-
+validated joint component rectangles in the obstacle collector and raw anchors
+supplied by the current layoutSegment frame, eliminating a repeated component
+extraction round and raw-anchor query. Preserve fitting/clearance and edit
+behavior. Add raw-frame refresh coverage; old/new collector outputs agree in
+70 local mock cases. See `v0.122-grace-slur-repeated-work-reduction.md`.
+Native mtests and editing-speed comparison remain pending; this is a first
+performance increment, with no claimed native speed ratio.

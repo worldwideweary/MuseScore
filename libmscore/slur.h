@@ -25,13 +25,18 @@ namespace Ms {
 class SlurSegment final : public SlurTieSegment {
 
    protected:
-      bool _graceCurveAdjusted4 = false; // Derived, reset on every curve computation.
       qreal _extraHeight = 0.0;
       QString _hopoText;
       QRectF _hopoTextRect;
       QPointF _hopoTextPos;
       QFont hopoFont(qreal pixelRatio = 1.0) const;
       void layoutHopoText();
+
+      // Raw anchors supplied by the current layout pass. Direct grip previews
+      // reuse them; every layoutSegment call replaces them before computing.
+      bool _graceCurveAdjusted4 = false; // Derived, reset on every curve computation.
+      QPointF _graceRawStart4, _graceRawEnd4;
+      bool _graceRawAnchors4 = false;
       void changeAnchor(EditData&, Element*) override;
 
    public:

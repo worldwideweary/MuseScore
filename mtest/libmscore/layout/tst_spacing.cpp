@@ -4337,6 +4337,30 @@ void TestSpacing::graceMergedSlurCurves()
       segment->setOffset(segmentOffset);
       score->doLayout();
       QVERIFY(same(curves(score), modern));
+      // New layout-supplied raw anchors replace the prior editing frame.
+      // Move the physical group, lay out this segment with fresh anchors, and
+      // verify translation rather than reuse of an earlier frame's points.
+      segment = first->frontSegment();
+      std::vector<QPointF> basePoints, shiftedPoints;
+      for (Grip grip : {Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END}) basePoints.push_back(segment->ups(grip).pos());
+      Measure* measure = toChord(first->startElement())->measure();
+      const QPointF savedMeasure = measure->pos();
+      const QPointF shift(.5 * score->spatium(), .25 * score->spatium());
+      measure->setPos(savedMeasure + shift);
+      SlurPos shiftedAnchors;
+      first->slurPos(&shiftedAnchors);
+      segment->layoutSegment(shiftedAnchors.p1, shiftedAnchors.p2);
+      const bool shiftedModern = segment->usesGraceCurve4();
+      for (Grip grip : {Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END}) shiftedPoints.push_back(segment->ups(grip).pos());
+      measure->setPos(savedMeasure);
+      SlurPos restoredAnchors;
+      first->slurPos(&restoredAnchors);
+      segment->layoutSegment(restoredAnchors.p1, restoredAnchors.p2);
+      QVERIFY(shiftedModern);
+      for (size_t i = 0; i < basePoints.size(); ++i)
+            QVERIFY((shiftedPoints[i] - basePoints[i] - shift).manhattanLength() < 1e-6);
+      QVERIFY(same(curves(score), modern));
+      QVERIFY(same(graceMergedSnapshot4(score), horizontal));
       score->setStyleValue(Sid::spacingLayout4, false);
       score->doLayout();
       for (const auto& entry : score->spannerMap().map()) {
