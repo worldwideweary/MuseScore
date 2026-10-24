@@ -4176,6 +4176,7 @@ static bool prepareGraceBeamsForSpacing4(System* system)
 {
     if (!system->score()->styleB(Sid::spacingLayout4) || MScore::noHorizontalStretch)
         return true;
+    std::vector<const Chord*> jointTargets;
     for (MeasureBase* mb : system->measures()) {
         if (!mb->isMeasure()) continue;
         for (Segment& segment : toMeasure(mb)->segments()) {
@@ -4183,11 +4184,19 @@ static bool prepareGraceBeamsForSpacing4(System* system)
             for (Element* item : segment.elist()) {
                 if (!item || !item->isChord()) continue;
                 Chord* main = toChord(item);
+                if (std::find(jointTargets.begin(), jointTargets.end(), main) != jointTargets.end()) continue;
                 if (!main->graceNotesAfter().empty()) {
                     GraceAfterGeometry4 geometry;
-                    if (buildGraceAfterGeometry4(main, geometry)
-                        && !prepareAfterGraceBeamForSpacing4(main, geometry))
-                        return false;
+                    if (buildGraceAfterGeometry4(main, geometry)) {
+                        if (!prepareAfterGraceBeamForSpacing4(main, geometry)) return false;
+                    }
+                    else {
+                        GraceMergedGeometry4 joint;
+                        if (buildGraceMergedGeometry4(main, joint)) {
+                            if (!prepareGraceMergedBeams4(main)) return false;
+                            jointTargets.push_back(joint.plan.target);
+                        }
+                    }
                     continue;
                 }
                 GraceBeforePlan4 group;
@@ -4703,6 +4712,17 @@ System* Score::collectSystem(LayoutContext& lc)
                   for (int i = 0; i < graces.size(); ++i)
                         graces[i]->rxpos() = dx + after.positions[i].x;
                   after.owner->segment()->createShape(after.owner->vStaffIdx());
+            }
+            for (const GraceMergedPlan4& joint : studioPlan.mergedGraces) {
+                  auto members = joint.owner->graceNotesAfter();
+                  for (Chord* grace : joint.target->graceNotesBefore()) members.push_back(grace);
+                  for (int i = 0; i < members.size(); ++i) {
+                        Chord* parent = toChord(members[i]->parent());
+                        const qreal dx = joint.target->segment()->x() - parent->segment()->x() - parent->x();
+                        members[i]->rxpos() = dx + joint.positions[i].x;
+                  }
+                  joint.owner->segment()->createShape(joint.owner->vStaffIdx());
+                  joint.target->segment()->createShape(joint.target->vStaffIdx());
             }
       }
 

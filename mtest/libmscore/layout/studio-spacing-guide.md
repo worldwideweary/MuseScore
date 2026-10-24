@@ -2729,3 +2729,18 @@ atomic rejection, repeat-preparation and native-relayout restoration checks;
 M2 remains rejected. No new capture is needed. Next integrate validated joint
 geometry/preparation with system spacing and per-parent publication. See
 `v0.111-merged-grace-geometry-beams.md`.
+
+### v0.112: same-direction combined groups in live spacing
+
+The user reports v0.111 tests passing. Connect joint geometry and both-beam
+preparation to system fitting and final per-parent placement. Retain merged
+plans through compression/justification and skip independent before preparation
+on their targets. M2 remains on its existing mixed-direction path.
+
+New `v0.112-spacing-merged-graces.mscx` and
+`v0.112-spacing-merged-graces-natural.mscx` cover M1/M3 up and M4/M5 down, plain
+and altered. `v0.112-spacing-merged-grace-squeeze.mscx` adds actual compression
+coverage. Both options start on; stretch is 1. Compare the natural file first,
+checking the group boundary, last-before-to-main gap and accidentals separately.
+Native tests/visual confirmation remain pending. See
+`v0.112-merged-grace-system-spacing.md`.

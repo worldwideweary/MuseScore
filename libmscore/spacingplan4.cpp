@@ -140,10 +140,12 @@ bool prepareCrossStaff4(System* system, CrossStaffGeometry4& result, QString* re
 
 // Validate published before-graces and prepare complete temporary after-group
 // projections. No native writes; publish outputs only after every group succeeds.
-bool prepareGraces4(System* system, SpacingGraceContext4& result, std::vector<GraceAfterGeometry4>& afterResult, QString* reason)
+bool prepareGraces4(System* system, SpacingGraceContext4& result, std::vector<GraceAfterGeometry4>& afterResult,
+                    std::vector<GraceMergedGeometry4>& mergedResult, QString* reason)
 {
     SpacingGraceContext4 prepared;
     std::vector<GraceAfterGeometry4> afters;
+    std::vector<GraceMergedGeometry4> merged;
     for (MeasureBase* mb : system->measures()) {
         if (!mb->isMeasure())
             continue; // The ordinary planner rejects frames itself.
@@ -154,11 +156,21 @@ bool prepareGraces4(System* system, SpacingGraceContext4& result, std::vector<Gr
                 if (!item || !item->isChord() || toChord(item)->graceNotes().empty())
                     continue;
                 const Chord* main = toChord(item);
+                // Incoming combined groups already stage their target's before-graces.
+                if (prepared.contains(main)) continue;
                 if (!main->graceNotesAfter().empty()) {
                     GraceAfterGeometry4 geometry;
-                    if (!buildGraceAfterGeometry4(main, geometry, reason)) return false;
-                    prepared.afterMains.push_back(main);
-                    afters.push_back(geometry);
+                    if (buildGraceAfterGeometry4(main, geometry, reason)) {
+                        prepared.afterMains.push_back(main);
+                        afters.push_back(geometry);
+                    }
+                    else {
+                        GraceMergedGeometry4 joint;
+                        if (!buildGraceMergedGeometry4(main, joint, reason)) return false;
+                        prepared.afterMains.push_back(main);
+                        prepared.mains.push_back(joint.plan.target);
+                        merged.push_back(joint);
+                    }
                     continue;
                 }
                 GraceBeforePlan4 plan;
@@ -176,13 +188,14 @@ bool prepareGraces4(System* system, SpacingGraceContext4& result, std::vector<Gr
     }
     result = prepared;
     afterResult = afters;
+    mergedResult = merged;
     return true;
 }
 
 // Replace only proven components on the affected staff. Unknown or mixed
 // ownership must not disappear when a temporary after-grace shape is used.
 bool substituteAfterGeometry4(Segment* segment, int staff, SpacingShape4& native,
-                             const std::vector<GraceAfterGeometry4>& afters)
+                             const std::vector<GraceAfterGeometry4>& afters, bool targetBefore = false)
 {
     for (const GraceAfterGeometry4& after : afters) {
         const Chord* owner = after.plan.owner;
@@ -190,12 +203,13 @@ bool substituteAfterGeometry4(Segment* segment, int staff, SpacingShape4& native
         const bool source = segment == owner->segment();
         if (!source && segment != after.plan.target) continue;
         const Element* root = source ? owner : segment->element(owner->track());
-        const auto owned = [root](const Element* item) {
+        const bool before = targetBefore && !source;
+        const auto owned = [root, before](const Element* item) {
             for (; item; item = item->parent()) {
                 if (item == root) return true;
                 if (item->isChord()) {
                     const Chord* chord = toChord(item);
-                    return chord == root || (chord->isGraceAfter() && chord->parent() == root);
+                    return chord == root || ((before ? chord->isGraceBefore() : chord->isGraceAfter()) && chord->parent() == root);
                 }
             }
             return false;
@@ -237,13 +251,31 @@ bool substituteAfterGeometry4(Segment* segment, int staff, SpacingShape4& native
     return true;
 }
 
+// Reuse the provenance validator with explicit target-before ownership. The
+// adapter is private to geometry substitution; public after-only plans stay separate.
+bool substituteMergedGeometry4(Segment* segment, int staff, SpacingShape4& native,
+                              const std::vector<GraceMergedGeometry4>& merged)
+{
+    for (const GraceMergedGeometry4& joint : merged) {
+        GraceAfterGeometry4 view;
+        view.plan.owner = joint.plan.owner;
+        view.plan.target = joint.plan.target->segment();
+        view.source = joint.source;
+        view.target = joint.target;
+        if (!substituteAfterGeometry4(segment, staff, native, {view}, true)) return false;
+    }
+    return true;
+}
+
 bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometry4& geometry,
                     const CrossStaffGeometry4& cross, const SpacingGraceContext4& graces,
-                    const std::vector<GraceAfterGeometry4>& afters)
+                    const std::vector<GraceAfterGeometry4>& afters,
+                    const std::vector<GraceMergedGeometry4>& merged)
 {
     for (int staffIdx = 0; staffIdx < segment->score()->nstaves(); ++staffIdx) {
         SpacingShape4 native = spacingStaffShape4(segment, staffIdx);
-        if (!substituteAfterGeometry4(segment, staffIdx, native, afters)) return false;
+        if (!substituteAfterGeometry4(segment, staffIdx, native, afters)
+            || !substituteMergedGeometry4(segment, staffIdx, native, merged)) return false;
         SpacingShape4 projected;
         // These first controls use ordinary visible staves. Staff scale still
         // comes from the item, rather than assuming score spatium in the kernel.
@@ -523,9 +555,11 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
     if (!prepareCrossStaff4(system, cross, reason)) return false;
     SpacingGraceContext4 graces;
     std::vector<GraceAfterGeometry4> afters;
-    if (!prepareGraces4(system, graces, afters, reason)) return false;
+    std::vector<GraceMergedGeometry4> merged;
+    if (!prepareGraces4(system, graces, afters, merged, reason)) return false;
     SpacingPlan4 plan;
     for (const auto& after : afters) plan.afterGraces.push_back(after.plan);
+    for (const auto& joint : merged) plan.mergedGraces.push_back(joint.plan);
     std::vector<Geometry4> geometry;
     const SpacingPaddingTable4 table(score);
     for (MeasureBase* mb : system->measures()) {
@@ -574,7 +608,7 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
                             return fail("Unadapted note visibility, cue or decoration context");
                     }
                 }
-                if (!cacheGeometry4(&segment, table, g, cross, graces, afters))
+                if (!cacheGeometry4(&segment, table, g, cross, graces, afters, merged))
                     return fail(QString("Unadapted geometry at tick %1").arg(segment.tick().ticks()));
                 if (segment.isChordRestType()) {
                     if (!(segment.ticks() > Fraction(0, 1)))

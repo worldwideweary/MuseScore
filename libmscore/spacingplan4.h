@@ -60,6 +60,7 @@ struct SpacingPlan4 {
     std::vector<SpacingSegmentPlan4> segments;
     std::vector<SpacingMeasurePlan4> measures;
     std::vector<GraceAfterPlan4> afterGraces; // Target-relative; retained through justification/squeezing.
+    std::vector<GraceMergedPlan4> mergedGraces; // Per-member ownership retained through fitting.
     qreal width = 0; // right system edge, including left margin
 };
 struct SpacingPlanOptions4 {
