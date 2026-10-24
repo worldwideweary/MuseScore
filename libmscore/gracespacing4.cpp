@@ -271,10 +271,12 @@ static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result
         targetSegment = targetSegment->next();
     if (!targetSegment || targetSegment == owner->segment() || targetSegment->measure() != measure
         || !targetSegment->enabled() || !targetSegment->visible()
-        || (barlineOnly ? !targetSegment->isEndBarLineType() : !targetSegment->isChordRestType()))
+        || (barlineOnly ? !targetSegment->isEndBarLineType()
+                        : !(targetSegment->isChordRestType() || targetSegment->isEndBarLineType())))
         return fail("After-grace target is not the requested same-measure segment type");
     const Element* target = targetSegment->element(owner->track());
-    if (!target || (barlineOnly ? !target->isBarLine() : (!target->isChord() && !target->isRest())))
+    if (!target || (barlineOnly ? !target->isBarLine()
+                              : (!target->isChord() && !target->isRest() && !target->isBarLine())))
         return fail("After-grace target is not the requested item in the same voice");
     if (target->isChord()) {
         const Chord* chord = toChord(target);
@@ -379,8 +381,8 @@ bool buildGraceAfterPlan4(const Chord* owner, GraceAfterPlan4& result, QString* 
 
 bool buildGraceAfterBarlinePlan4(const Chord* owner, GraceAfterPlan4& result, QString* reason)
 {
-    // Read-only staging API: production geometry/publication still calls the
-    // chord/rest wrapper until barline system projection is integrated.
+    // Target-specific query shares production packing and keeps other target
+    // types out of boundary-focused checks.
     return buildGraceAfterPlanImpl4(owner, result, reason, true);
 }
 

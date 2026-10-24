@@ -210,7 +210,8 @@ bool substituteAfterGeometry4(Segment* segment, int staff, SpacingShape4& native
             else if (e.identity == SpacingIdentity4::LEGACY_SPACER) {
                 if (!e.sharedItems.empty()) return false;
                 if (e.item) {
-                    if (!e.item->isChord() || !owned(e.item) || !e.aggregateOwners.empty()) return false;
+                    if ((!e.item->isChord() && !(e.item == root && e.item->isBarLine()))
+                        || !owned(e.item) || !e.aggregateOwners.empty()) return false;
                 }
                 else {
                     if (e.aggregateOwners.size() < 2) return false;

@@ -46,6 +46,8 @@ class TestSpacing : public QObject, public MTest {
       void graceBeforeLayout();
       void graceNeighborPlan_data();
       void graceNeighborPlan();
+      void graceAfterBarlineSystem_data();
+      void graceAfterBarlineSystem();
       void graceAfterBoundaryBaseline_data();
       void graceAfterBoundaryBaseline();
       void graceAfterRestStaticSqueeze_data();
@@ -3246,8 +3248,29 @@ static std::vector<qreal> graceLayoutSnapshot4(Score* score)
       return values;
       }
 
-// Boundary/merged groups remain rejection controls until their shared target
-// geometry and final coordinate conversion are implemented together.
+// Include the rendered after-grace state for barline publication/restoration.
+static std::vector<qreal> graceBarlineSnapshot4(Score* score)
+      {
+      auto values = graceLayoutSnapshot4(score);
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            for (const Segment& segment : m->segments()) {
+                  const Element* item = segment.element(0);
+                  if (!item || !item->isChord()) continue;
+                  for (const Chord* grace : toChord(item)->graceNotesAfter()) {
+                        values.insert(values.end(), {grace->x(), grace->y(),
+                              grace->stem() ? grace->stem()->len() : 0});
+                        if (grace->beam() && grace->beam()->primarySegment4()) {
+                              const QLineF& beam = *grace->beam()->primarySegment4();
+                              values.insert(values.end(), {beam.x1(), beam.y1(), beam.x2(), beam.y2()});
+                              }
+                        }
+                  }
+            }
+      return values;
+      }
+
+// Ordinary barline targets use the optional plan; merged groups retain their
+// native fallback until shared target geometry is implemented.
 void TestSpacing::graceAfterBoundaryBaseline_data()
       {
       QTest::addColumn<bool>("modernBeams");
@@ -3328,20 +3351,27 @@ void TestSpacing::graceAfterBoundaryBaseline()
                   QVERIFY(qIsFinite(grace->x()) && qIsFinite(grace->y()));
                   if (i) QVERIFY(grace->x() > after[i - 1]->x());
                   }
-            // Rejection must preserve both staged output and all published geometry.
+            // Barline geometry is admitted; merged groups still reject atomically.
             GraceAfterPlan4 plan;
             plan.left = 123;
             QString reason;
-            QVERIFY(!buildGraceAfterPlan4(owner, plan, &reason));
-            QVERIFY(!reason.isEmpty());
-            QCOMPARE(plan.left, qreal(123));
-            QVERIFY(plan.positions.empty() && !plan.owner && !plan.target);
+            const bool built = buildGraceAfterPlan4(owner, plan, &reason);
+            QCOMPARE(built, count < 3);
             GraceAfterGeometry4 geometry;
             geometry.plan.left = 123;
-            QVERIFY(!buildGraceAfterGeometry4(owner, geometry));
-            QCOMPARE(geometry.plan.left, qreal(123));
-            QVERIFY(geometry.source.elements.empty() && geometry.target.elements.empty());
-            QVERIFY(!applyGraceAfterPlan4(owner));
+            const bool projected = buildGraceAfterGeometry4(owner, geometry, &reason);
+            QCOMPARE(projected, count < 3);
+            if (count >= 3) {
+                  QCOMPARE(plan.left, qreal(123));
+                  QVERIFY(plan.positions.empty() && !plan.owner && !plan.target);
+                  QCOMPARE(geometry.plan.left, qreal(123));
+                  QVERIFY(geometry.source.elements.empty() && geometry.target.elements.empty());
+                  QVERIFY(!applyGraceAfterPlan4(owner));
+                  }
+            else {
+                  QVERIFY(geometry.source.complete() && geometry.target.complete());
+                  QCOMPARE(geometry.plan.target, static_cast<const Segment*>(target));
+                  }
             GraceAfterPlan4 boundary;
             boundary.left = 123;
             const bool staged = buildGraceAfterBarlinePlan4(owner, boundary, &reason);
@@ -3394,9 +3424,13 @@ void TestSpacing::graceAfterBoundaryBaseline()
                   }
             SpacingPlan4 system;
             system.width = 123;
-            QVERIFY(!buildSpacingPlan4(m->system(), system));
-            QCOMPARE(system.width, qreal(123));
-            QVERIFY(system.measures.empty() && system.segments.empty() && system.afterGraces.empty());
+            const bool systemBuilt = buildSpacingPlan4(m->system(), system, &reason);
+            QCOMPARE(systemBuilt, count < 3 && !natural);
+            if (systemBuilt) QCOMPARE(static_cast<int>(system.afterGraces.size()), 1);
+            else {
+                  QCOMPARE(system.width, qreal(123));
+                  QVERIFY(system.measures.empty() && system.segments.empty() && system.afterGraces.empty());
+                  }
             }
       QCOMPARE(count, 6);
       QVERIFY(snapshot() == modern);
@@ -3633,6 +3667,122 @@ void TestSpacing::graceAfterRest()
       delete score;
       }
 
+void TestSpacing::graceAfterBarlineSystem_data()
+      {
+      QTest::addColumn<bool>("modernBeams");
+      QTest::addColumn<QString>("file");
+      for (const QString& file : {QString("v0.109-spacing-after-grace-barlines.mscx"),
+                                  QString("v0.109-spacing-after-grace-barlines-natural.mscx")}) {
+            for (bool beams : {false, true}) {
+                  const QByteArray tag = (file + (beams ? "-studio" : "-legacy")).toLatin1();
+                  QTest::newRow(tag.constData()) << beams << file;
+                  }
+            }
+      }
+
+void TestSpacing::graceAfterBarlineSystem()
+      {
+      QFETCH(bool, modernBeams);
+      QFETCH(QString, file);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      // A plain closing measure keeps all three grace targets normal barlines.
+      // The closing final barline has no after-graces and retains ordinary handling.
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto legacy = graceBarlineSnapshot4(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      const auto modern = graceBarlineSnapshot4(score);
+      QString reason;
+      int count = 0, groups = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++count) {
+            QVERIFY(count < 4);
+            QVERIFY(m->ticks() == Fraction(1, 1));
+            int onsets = 0;
+            for (Segment& segment : m->segments()) {
+                  if (!segment.isChordRestType()) continue;
+                  ++onsets;
+                  Element* item = segment.element(0);
+                  QVERIFY(item && item->isChord());
+                  const Chord* chord = toChord(item);
+                  if (chord->graceNotesAfter().empty()) continue;
+                  ++groups;
+                  QCOMPARE(chord->graceNotesAfter().size(), count == 2 ? 4 : 2);
+                  GraceAfterPlan4 group;
+                  QVERIFY2(buildGraceAfterPlan4(chord, group, &reason), qPrintable(reason));
+                  QVERIFY(group.target->isEndBarLineType());
+                  QVERIFY(group.target->element(0) && group.target->element(0)->isBarLine());
+                  GraceAfterGeometry4 geometry;
+                  QVERIFY2(buildGraceAfterGeometry4(chord, geometry, &reason), qPrintable(reason));
+                  const Element* barline = group.target->element(0);
+                  int barlineCopies = 0;
+                  for (const auto& e : geometry.source.elements) QVERIFY(e.item != barline);
+                  for (const auto& e : geometry.target.elements) barlineCopies += e.item == barline;
+                  QCOMPARE(barlineCopies, 1);
+                  for (const auto& p : group.positions) {
+                        int oldCopies = 0, newCopies = 0;
+                        const Note* note = p.chord->notes().front();
+                        for (const auto& e : geometry.source.elements) oldCopies += e.item == note;
+                        for (const auto& e : geometry.target.elements) newCopies += e.item == note;
+                        QCOMPARE(oldCopies, 0);
+                        QCOMPARE(newCopies, 1);
+                        const qreal actual = chord->segment()->x() + chord->x() + p.chord->x() - group.target->x();
+                        QVERIFY2(qAbs(actual - p.x) < 1e-6,
+                              qPrintable(QString("AG%1 target-relative x actual=%2 expected=%3")
+                                    .arg(count + 1).arg(actual, 0, 'g', 17).arg(p.x, 0, 'g', 17)));
+                        }
+                  }
+            QCOMPARE(onsets, 3);
+            if (m != m->system()->firstMeasure()) continue;
+            SpacingPlan4 natural;
+            QVERIFY2(buildSpacingPlan4(m->system(), natural, &reason), qPrintable(reason));
+            QCOMPARE(static_cast<int>(natural.afterGraces.size()),
+                  file.contains("-natural.mscx") ? 3 : count < 3 ? 1 : 0);
+            SpacingPlan4 expected = natural;
+            QVERIFY2(expected.width <= m->system()->width() + 1e-6,
+                  qPrintable(QString("after-grace natural width=%1 exceeds final system=%2 at tick=%3")
+                        .arg(expected.width, 0, 'g', 17).arg(m->system()->width(), 0, 'g', 17)
+                        .arg(m->tick().ticks())));
+            if (expected.width < m->system()->width() - 1e-6) QVERIFY(justifySpacingPlan4(expected, m->system()->width()));
+            for (const SpacingMeasurePlan4& e : expected.measures) {
+                  QVERIFY2(qAbs(e.measure->width() - e.width) < 1e-6,
+                        qPrintable(QString("measure tick=%1 width actual=%2 expected=%3 natural total=%4 system=%5")
+                              .arg(e.measure->tick().ticks()).arg(e.measure->width(), 0, 'g', 17)
+                              .arg(e.width, 0, 'g', 17).arg(natural.width, 0, 'g', 17)
+                              .arg(m->system()->width(), 0, 'g', 17)));
+                  QVERIFY(qAbs(e.measure->x() - e.x) < 1e-6);
+                  }
+            for (const SpacingSegmentPlan4& e : expected.segments) {
+                  if (e.ignored) continue;
+                  QVERIFY(qAbs(e.segment->measure()->x() + e.segment->x() - e.x) < 1e-6);
+                  QVERIFY(qAbs(e.segment->width() - e.width) < 1e-6);
+                  }
+            SpacingPlanOptions4 options;
+            options.minimumMeasureWidths = false;
+            options.stretchReduction = .67;
+            options.squeezeFactor = .8;
+            SpacingPlan4 compressed;
+            QVERIFY2(buildSpacingPlan4(m->system(), compressed, &reason, options), qPrintable(reason));
+            QVERIFY(compressed.width < natural.width);
+            QCOMPARE(static_cast<int>(compressed.afterGraces.size()), static_cast<int>(natural.afterGraces.size()));
+            QVERIFY(graceBarlineSnapshot4(score) == modern);
+            }
+      QCOMPARE(count, 4);
+      QCOMPARE(groups, 3);
+      score->doLayout();
+      const auto repeated = graceBarlineSnapshot4(score);
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
+      for (size_t i = 0; i < modern.size(); ++i) QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto restored = graceBarlineSnapshot4(score);
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
 void TestSpacing::graceAfterSystem_data()
       {
       QTest::addColumn<bool>("modernBeams");
@@ -3776,7 +3926,7 @@ void TestSpacing::graceAfterGeometry()
             const SpacingShape4 sentinel = geometry.source;
             QString reason;
             const bool built = buildGraceAfterGeometry4(owner, geometry, &reason);
-            if (count == 3 || count == 5) {
+            if (count == 5) {
                   QVERIFY(!built);
                   QCOMPARE(geometry.plan.left, qreal(123));
                   QVERIFY(!geometry.plan.owner && !geometry.plan.target && geometry.plan.positions.empty());
@@ -3819,7 +3969,7 @@ void TestSpacing::graceAfterGeometry()
             std::vector<QPointF> saved;
             for (Chord* grace : graces) { saved.push_back(grace->pos()); grace->rxpos() -= 100 * score->spatium(); }
             const QPointF sourcePos = owner->segment()->pos();
-            Segment* targetSegment = m->tick2segment(owner->tick() + owner->actualTicks(), SegmentType::ChordRest);
+            Segment* targetSegment = m->tick2segment(owner->tick() + owner->actualTicks(), SegmentType::All);
             QVERIFY(targetSegment);
             const QPointF targetPos = targetSegment->pos();
             owner->segment()->rxpos() -= 17 * score->spatium();
@@ -3891,7 +4041,7 @@ void TestSpacing::graceAfterLayout()
             QVERIFY(owner);
             const auto native = graceLayoutSnapshot4(score);
             QString reason;
-            if (count == 3 || count == 5) {
+            if (count == 5) {
                   QVERIFY(!applyGraceAfterPlan4(owner, &reason));
                   QVERIFY(graceLayoutSnapshot4(score) == native);
                   continue;
@@ -3908,7 +4058,7 @@ void TestSpacing::graceAfterLayout()
             QVERIFY2(applyGraceAfterPlan4(owner, &reason), qPrintable(reason));
             QCOMPARE(m->width(), width);
             QVERIFY(graceLayoutSnapshot4(score) == native); // Idempotent local publication.
-            Segment* target = m->tick2segment(owner->tick() + owner->actualTicks(), SegmentType::ChordRest);
+            Segment* target = m->tick2segment(owner->tick() + owner->actualTicks(), SegmentType::All);
             QVERIFY(target);
             const QPointF old = target->pos();
             target->rxpos() = owner->segment()->x() - 100 * score->spatium();
@@ -3965,7 +4115,7 @@ void TestSpacing::graceAfterPlan()
             plan.right = 456;
             QString reason;
             const bool built = buildGraceAfterPlan4(owner, plan, &reason);
-            if (count == 3 || count == 5) {
+            if (count == 5) {
                   QVERIFY(!built);
                   QVERIFY(!reason.isEmpty());
                   QCOMPARE(plan.left, qreal(123));
@@ -3976,8 +4126,8 @@ void TestSpacing::graceAfterPlan()
             QVERIFY2(built, qPrintable(reason));
             QVERIFY(reason.isEmpty());
             QCOMPARE(plan.owner, static_cast<const Chord*>(owner));
-            const Segment* targetSegment = m->tick2segment(owner->tick() + owner->actualTicks(), SegmentType::ChordRest);
-            QVERIFY(targetSegment && targetSegment->element(0) && targetSegment->element(0)->isChordRest());
+            const Segment* targetSegment = m->tick2segment(owner->tick() + owner->actualTicks(), SegmentType::All);
+            QVERIFY(targetSegment && targetSegment->element(0) && (targetSegment->element(0)->isChordRest() || targetSegment->element(0)->isBarLine()));
             Element* target = targetSegment->element(0);
             Element* targetPrimitive = target->isChord() ? static_cast<Element*>(toChord(target)->notes().front()) : target;
             QCOMPARE(plan.target, targetSegment);
@@ -3995,7 +4145,12 @@ void TestSpacing::graceAfterPlan()
                   graces.front()->spatium(), policy));
             QVERIFY(spacingAfterGracePairPolicy4(table, owner, target, graces.front()->notes().front(),
                   targetPrimitive, graces.front()->spatium(), policy));
-            QVERIFY(policy.padding >= .45 * score->spatium());
+            if (target->isBarLine()) {
+                  const qreal expectedPadding = score->styleP(Sid::noteBarDistance)
+                        * (graces.front()->notes().front()->mag() + target->mag()) / 2;
+                  QVERIFY(qAbs(policy.padding - expectedPadding) < 1e-6);
+                  }
+            else QVERIFY(policy.padding >= .45 * score->spatium());
             QVERIFY(!spacingAfterGracePairPolicy4(table, owner, target, owner->notes().front(),
                   targetPrimitive, owner->spatium(), policy));
             // Target-relative output must not depend on stale native after-x,
@@ -4007,7 +4162,7 @@ void TestSpacing::graceAfterPlan()
             const QPointF targetPos = targetSegment->pos();
             owner->rxpos() += 11 * score->spatium();
             owner->segment()->rxpos() -= 17 * score->spatium();
-            Segment* writableTarget = m->tick2segment(owner->tick() + owner->actualTicks(), SegmentType::ChordRest);
+            Segment* writableTarget = m->tick2segment(owner->tick() + owner->actualTicks(), SegmentType::All);
             writableTarget->rxpos() += 23 * score->spatium();
             GraceAfterPlan4 repeated;
             const bool rebuilt = buildGraceAfterPlan4(owner, repeated, &reason);
@@ -4095,23 +4250,6 @@ void TestSpacing::graceAfterBaseline()
                   }
             return values;
             };
-      const auto afterTargetSnapshot = [](Measure* m) {
-            std::vector<qreal> values;
-            for (const Segment& segment : m->segments()) {
-                  if (!segment.enabled() || !segment.isChordRestType()) continue;
-                  for (const Element* item : segment.elist()) {
-                        if (!item || !item->isChord()) continue;
-                        const Chord* owner = toChord(item);
-                        const auto after = owner->graceNotesAfter();
-                        if (after.empty()) continue;
-                        const Segment* target = m->tick2segment(owner->tick() + owner->actualTicks(), SegmentType::All);
-                        if (!target) return std::vector<qreal>();
-                        for (const Chord* grace : after)
-                              values.insert(values.end(), {segment.x() + owner->x() + grace->x() - target->x(), grace->y()});
-                        }
-                  }
-            return values;
-            };
       const auto snapshot = [&]() {
             std::vector<qreal> values;
             for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
@@ -4123,9 +4261,6 @@ void TestSpacing::graceAfterBaseline()
       score->setStyleValue(Sid::spacingLayout4, false);
       score->doLayout();
       const auto legacy = snapshot();
-      std::vector<std::vector<qreal>> legacyAfterTargets;
-      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
-            legacyAfterTargets.push_back(afterTargetSnapshot(m));
       score->setStyleValue(Sid::spacingLayout4, true);
       score->doLayout();
       const auto modern = snapshot();
@@ -4180,7 +4315,7 @@ void TestSpacing::graceAfterBaseline()
                   pitches.push_back(grace->notes().front()->tpc());
                   }
             afterPitches.push_back(pitches);
-            // Fixture target semantics only; this is not a new target adapter.
+            // Verify target semantics before checking optional system admission.
             Segment* target = m->tick2segment(owner->tick() + owner->actualTicks(), SegmentType::All);
             QVERIFY(target && target != owner->segment());
             if (count == 3)
@@ -4200,27 +4335,13 @@ void TestSpacing::graceAfterBaseline()
             SpacingPlan4 rejected;
             rejected.width = 123;
             const bool built = buildSpacingPlan4(m->system(), rejected);
-            QCOMPARE(built, (count < 3 || count == 4) && !file.contains("-natural.mscx"));
+            QCOMPARE(built, count < 5 && !file.contains("-natural.mscx"));
             if (built) QCOMPARE(static_cast<int>(rejected.afterGraces.size()), 1);
             else {
                   QCOMPARE(rejected.width, qreal(123));
                   QVERIFY(rejected.measures.empty() && rejected.segments.empty() && rejected.afterGraces.empty());
                   }
-            if (count == 3) {
-                  // Rhythmic spacing still acts when the full plan rejects
-                  // after-graces. AG4 retains native target-relative packing,
-                  // not whole-measure widths or absolute chord positions.
-                  // AG6's target has before-graces with their own local adapter.
-                  const auto current = afterTargetSnapshot(m);
-                  QCOMPARE(static_cast<int>(current.size()), 2 * after.size());
-                  QCOMPARE(static_cast<int>(current.size()), static_cast<int>(legacyAfterTargets[count].size()));
-                  for (size_t i = 0; i < current.size(); ++i) {
-                        QVERIFY2(qAbs(current[i] - legacyAfterTargets[count][i]) < 1e-6,
-                              qPrintable(QString("AG%1 target-relative component %2: on=%3 off=%4")
-                                    .arg(count + 1).arg(static_cast<int>(i))
-                                    .arg(current[i], 0, 'g', 17).arg(legacyAfterTargets[count][i], 0, 'g', 17)));
-                        }
-                  }
+
             }
       QCOMPARE(count, 6);
       QVERIFY(snapshot() == modern); // All rejected queries were read-only.
@@ -4382,7 +4503,8 @@ void TestSpacing::graceSqueeze_data()
                                   QString("v0.90-spacing-grace-accidental-squeeze.mscx"),
                                   QString("v0.97-spacing-after-grace-squeeze.mscx"),
                                   QString("v0.102-spacing-after-grace-rest-squeeze.mscx"),
-                                  QString("v0.104-spacing-after-grace-rest-squeeze-match.mscx")}) {
+                                  QString("v0.104-spacing-after-grace-rest-squeeze-match.mscx"),
+                                  QString("v0.109-spacing-after-grace-barline-squeeze.mscx")}) {
             for (bool beams : {false, true}) {
                   const QByteArray tag = (file + (beams ? "-studio" : "-legacy")).toLatin1();
                   QTest::newRow(tag.constData()) << beams << file;
@@ -4396,13 +4518,16 @@ void TestSpacing::graceSqueeze()
       QFETCH(QString, file);
       MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      const auto snapshot = [&]() {
+            return file.startsWith("v0.109-") ? graceBarlineSnapshot4(score) : graceLayoutSnapshot4(score);
+            };
       score->setStyleValue(Sid::beamLayout4, modernBeams);
       score->setStyleValue(Sid::pageWidth, 100.0);
       score->setStyleValue(Sid::pagePrintableWidth, 98.8);
       score->doLayout();
       Measure* measure = score->firstMeasure();
       QVERIFY(measure && !measure->nextMeasure());
-      QCOMPARE(measure->userStretch(), file.startsWith("v0.104-") ? qreal(1) : qreal(2));
+      QCOMPARE(measure->userStretch(), (file.startsWith("v0.104-") || file.startsWith("v0.109-")) ? qreal(1) : qreal(2));
       SpacingPlan4 natural;
       QString reason;
       QVERIFY2(buildSpacingPlan4(measure->system(), natural, &reason), qPrintable(reason));
@@ -4418,7 +4543,7 @@ void TestSpacing::graceSqueeze()
       score->setStyleValue(Sid::pageWidth, target / DPI + 1.2);
       score->setStyleValue(Sid::spacingLayout4, false);
       score->doLayout();
-      const auto legacy = graceLayoutSnapshot4(score);
+      const auto legacy = snapshot();
       score->setStyleValue(Sid::spacingLayout4, true);
       score->doLayout();
       QVERIFY2(buildSpacingPlan4(measure->system(), natural, &reason), qPrintable(reason));
@@ -4459,19 +4584,19 @@ void TestSpacing::graceSqueeze()
             QVERIFY2(buildGraceBeforePlan4(main, group, &reason), qPrintable(reason));
             for (const GracePosition4& p : group.positions) QVERIFY(qAbs(p.chord->x() - p.x) < 1e-6);
             }
-      const auto modern = graceLayoutSnapshot4(score);
+      const auto modern = snapshot();
       SpacingPlan4 rejected;
       rejected.width = 123;
       QVERIFY(!squeezeSpacingPlan4(measure->system(), 0, rejected, &reason));
       QCOMPARE(rejected.width, qreal(123));
-      QVERIFY(graceLayoutSnapshot4(score) == modern);
+      QVERIFY(snapshot() == modern);
       score->doLayout();
-      const auto repeated = graceLayoutSnapshot4(score);
+      const auto repeated = snapshot();
       QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(modern.size()));
       for (size_t i = 0; i < modern.size(); ++i) QVERIFY(qAbs(repeated[i] - modern[i]) < 1e-6);
       score->setStyleValue(Sid::spacingLayout4, false);
       score->doLayout();
-      const auto restored = graceLayoutSnapshot4(score);
+      const auto restored = snapshot();
       QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
       for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
       delete score;

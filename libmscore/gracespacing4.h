@@ -36,18 +36,17 @@ struct GraceAfterPlan4 {
     qreal left = 0;
     qreal right = 0; // Typed component extent in target-segment coordinates.
 };
-// First scope: same-measure following ordinary chord or undotted rest; no merged before-graces.
+// Same-measure ordinary chord, undotted rest or normal ending barline; no merged before-graces.
 // Query only: does not move items or publish shapes. The system planner
 // separately validates its temporary projections before admission.
 // Rebuild after geometry changes; failure preserves every output field.
 bool buildGraceAfterPlan4(const Chord*, GraceAfterPlan4&, QString* reason = nullptr);
-// Read-only staging for an ordinary normal ending barline on this staff.
-// Not admitted by production geometry/publication or system planning yet.
+// Read-only target-specific query for an ordinary normal ending barline.
 bool buildGraceAfterBarlinePlan4(const Chord*, GraceAfterPlan4&, QString* reason = nullptr);
 struct GraceAfterGeometry4 {
     GraceAfterPlan4 plan;
     SpacingShape4 source; // Owner's own components, in source-segment coordinates.
-    SpacingShape4 target; // Following chord/rest plus planned graces, in target-segment coordinates.
+    SpacingShape4 target; // Following chord/rest/barline plus planned graces, in target-segment coordinates.
 };
 // Temporary typed projection for system planning. Does not update native
 // segment shapes or move musical ownership. Failure leaves result unchanged.

@@ -2683,3 +2683,19 @@ unsupported boundary edits and unchanged published layout. Production/system
 admission remains off in this stage; M1-M3 still reject. Reuse the v0.107 files;
 no new capture is needed. Next integrate validated barline geometry into system
 fitting/publication. See `v0.108-after-grace-barline-plan.md`.
+
+### v0.109: normal barline targets in live system spacing
+
+The user reports v0.108 tests passing. Admit its bounded normal-barline plan
+through production after-grace geometry, system projection and final placement.
+Retain exact target-barline spacer provenance and existing unsupported-context
+fallback; merged M1-M3 handling remains unchanged.
+
+New `v0.109-spacing-after-grace-barlines.mscx` and
+`v0.109-spacing-after-grace-barlines-natural.mscx` isolate B1-B3 plus a plain
+closing control. `v0.109-spacing-after-grace-barline-squeeze.mscx` adds a normal
+terminal-barline compression case. All options start on; stretch stays 1.
+Tests cover projection multiplicity, actual solved placement, compression and
+restoration. Native results and visual confirmation remain pending. Compare
+the natural B cases first; preserve M2's clearer mixed-direction separation.
+See `v0.109-after-grace-barline-system.md`.
