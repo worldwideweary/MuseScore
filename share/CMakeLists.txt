@@ -20,7 +20,7 @@
 # Normalize destination paths
 if(POLICY CMP0177)
       cmake_policy(SET CMP0177 NEW)
-endif(POLICY CMP00177)
+endif(POLICY CMP0177)
 
 subdirs(templates wallpaper locale styles sound manual
    workspaces instruments tours)
