@@ -3197,13 +3197,22 @@ static std::vector<qreal> graceLayoutSnapshot4(Score* score)
 
 void TestSpacing::graceFitting_data()
       {
-      graceBeforePlan_data();
+      QTest::addColumn<bool>("modernBeams");
+      QTest::addColumn<QString>("file");
+      for (const QString& file : {QString("v0.82-spacing-grace-fitting.mscx"),
+                                  QString("v0.90-spacing-grace-accidental-fitting.mscx")}) {
+            for (bool beams : {false, true}) {
+                  const QByteArray tag = (file + (beams ? "-studio" : "-legacy")).toLatin1();
+                  QTest::newRow(tag.constData()) << beams << file;
+                  }
+            }
       }
 
 void TestSpacing::graceFitting()
       {
       QFETCH(bool, modernBeams);
-      MasterScore* score = readScore(DIR + "v0.82-spacing-grace-fitting.mscx");
+      QFETCH(QString, file);
+      MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
       QCOMPARE(score->styleD(Sid::lastSystemFillLimit), qreal(0));
       score->setStyleValue(Sid::beamLayout4, modernBeams);
@@ -3295,13 +3304,22 @@ void TestSpacing::graceFitting()
 
 void TestSpacing::graceSqueeze_data()
       {
-      graceBeforePlan_data();
+      QTest::addColumn<bool>("modernBeams");
+      QTest::addColumn<QString>("file");
+      for (const QString& file : {QString("v0.82-spacing-grace-squeeze.mscx"),
+                                  QString("v0.90-spacing-grace-accidental-squeeze.mscx")}) {
+            for (bool beams : {false, true}) {
+                  const QByteArray tag = (file + (beams ? "-studio" : "-legacy")).toLatin1();
+                  QTest::newRow(tag.constData()) << beams << file;
+                  }
+            }
       }
 
 void TestSpacing::graceSqueeze()
       {
       QFETCH(bool, modernBeams);
-      MasterScore* score = readScore(DIR + "v0.82-spacing-grace-squeeze.mscx");
+      QFETCH(QString, file);
+      MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
       score->setStyleValue(Sid::beamLayout4, modernBeams);
       score->setStyleValue(Sid::pageWidth, 100.0);

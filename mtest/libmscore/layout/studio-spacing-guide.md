@@ -2423,3 +2423,14 @@ A1-A6 controls now add main-note sharps/naturals and neighboring sharps/naturals
 Both options are saved on. Existing full-plan/compression/stability tests now
 cover these inputs and explicitly require the expected accidental glyphs and
 local-slur endpoints. See `v0.86-grace-accidental-neighbors.md`.
+
+### v0.90: A1-A6 accepted; accidental-neighbor fitting and squeeze tests
+
+The user reports passing mtests after v0.89. Blue Evolution and white 4.7.5
+captures look broadly comparable for A1-A6 in justified and natural layouts.
+The scoped beam-shape preparation is retained; no slur-renderer change is
+indicated by these captures. New `v0.90-spacing-grace-accidental-fitting.mscx`
+(F1-F6 = A1-A6) and `v0.90-spacing-grace-accidental-squeeze.mscx` (S1 = A3)
+exercise automatic narrow-system collection and actual compression under both
+beam modes, with both experimental settings saved on. New runtime rows still
+need target-build validation. See `v0.90-grace-accidental-fitting-checkpoint.md`.
