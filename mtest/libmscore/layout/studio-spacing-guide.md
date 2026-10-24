@@ -2982,3 +2982,24 @@ notes, both experimental settings enabled. See
 `v0.133-general-edit-layout-audit.md` for the source findings and timing steps.
 No engraving code change or rebuild: open the new v0.133 files in the current
 Debug application and measure on/off before another general optimization.
+
+### v0.134: ordinary edit controls are responsive
+
+User logs confirm ordinary slur median 5.2755 ms with spacing on versus
+4.612 ms off (14.4% more elapsed time), and hairpin median 11.8145 ms on;
+no hairpin-off layout samples were supplied. Neither exercises merged-grace
+geometry or grace-distance work. The visible N2 beam change after editing N1
+remains an unresolved repeat-layout discrepancy, not demonstrated fallback.
+See `v0.134-ordinary-edit-timing-results.md`. Documentation checkpoint only;
+no rebuild, engraving change or additional user test requested.
+
+### v0.135: reuse repeated native pair intersections
+
+Memoize the exact ordered native shape-intersection result in the existing
+read-only query cache. Keep per-pair eligibility and padding behavior, and
+discard all results before geometry changes. Add native comparison coverage
+and the pairOverlap timing stage. See v0.135-pair-shape-intersection-reuse.md.
+The consolidated patch applies after v0.132 and includes the v0.133/v0.134
+diagnostic files. Run native tst_spacing and tst_beam, then repeat the original
+merged-grace edit timing. Speed gains and the separate N2 beam issue remain
+unverified; Debug responsiveness is still the target.

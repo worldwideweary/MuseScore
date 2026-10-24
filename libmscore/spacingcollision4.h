@@ -7,6 +7,7 @@
 #include <array>
 #include <vector>
 #include <utility>
+#include <unordered_map>
 
 namespace Ms {
 class Element;
@@ -46,7 +47,8 @@ struct SpacingGraceContext4 {
 
 // Stack-local memo for one read-only spacing query, including a complete plan.
 // Discard before score edits, geometry preparation or later layout. Eligibility is
-// reused; item checks and pair-specific geometry/padding are always evaluated.
+// reused, including native shape intersections; item checks and pair-specific
+// padding are always evaluated. Geometry must remain unchanged for its lifetime.
 class SpacingContextCache4 {
     bool _initialized = false, _allowGrace = false, _hasContext = false;
     const Chord* _scopedMain = nullptr;
@@ -54,7 +56,10 @@ class SpacingContextCache4 {
     const Chord* _mergedOwner = nullptr;
     const Chord* _mergedTarget = nullptr;
     std::vector<std::pair<const Chord*, bool>> _chords;
+    std::unordered_map<const Element*, std::unordered_map<const Element*, bool>> _overlaps;
 public:
+    // Validated, non-null items; preserves the ordered native shape query.
+    bool shapesIntersect(const Element* first, const Element* second);
     const SpacingGraceContext4* mergedContext(const Chord* owner, const Chord* target);
     bool lookup(const Chord*, bool allowGrace, const SpacingGraceContext4*,
                 const Chord* scopedMain, bool& result);

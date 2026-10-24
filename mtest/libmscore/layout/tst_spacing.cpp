@@ -4604,6 +4604,28 @@ void TestSpacing::graceContextCachePolicies()
             break;
             }
       QVERIFY(owner && target);
+      // The pair memo must preserve the full native shapes and local positions,
+      // including both overlap and non-overlap. A new query sees geometry edits.
+      Note* overlapNote = const_cast<Note*>(target->notes().front());
+      const QPointF savedPosition = overlapNote->pos();
+      const Element* overlapStem = target->stem();
+      QVERIFY(overlapStem);
+      bool sawOverlap = false, sawSeparation = false;
+      for (qreal offset : {qreal(0), qreal(1000)}) {
+            overlapNote->setPos(savedPosition + QPointF(offset, offset));
+            SpacingContextCache4 query;
+            for (const Element* a : {static_cast<const Element*>(overlapNote), overlapStem}) {
+                  for (const Element* b : {static_cast<const Element*>(overlapNote), overlapStem}) {
+                        const bool expected = a->shape().translated(a->pos()).intersects(b->shape().translated(b->pos()));
+                        sawOverlap |= expected;
+                        sawSeparation |= !expected;
+                        for (int repeat = 0; repeat < 3; ++repeat)
+                              QCOMPARE(query.shapesIntersect(a, b), expected);
+                        }
+                  }
+            }
+      overlapNote->setPos(savedPosition);
+      QVERIFY(sawOverlap && sawSeparation);
       std::vector<const Element*> items {nullptr};
       for (const Chord* chord : {owner, target}) {
             items.push_back(chord->notes().front());

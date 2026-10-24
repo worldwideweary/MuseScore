@@ -298,6 +298,23 @@ static bool neverKernable4(const Element* item)
     return (item->isClef() && item->rtick().isZero()) || item->isKeySig() || item->isTimeSig() || item->isBarLine();
 }
 
+static bool nativeShapesIntersect4(const Element* first, const Element* second)
+{
+    SpacingProfileScope4 profile(SpacingProfileStage4::PAIR_OVERLAP);
+    return first->shape().translated(first->pos()).intersects(second->shape().translated(second->pos()));
+}
+
+bool SpacingContextCache4::shapesIntersect(const Element* first, const Element* second)
+{
+    auto& row = _overlaps[first];
+    const auto found = row.find(second);
+    if (found != row.end())
+        return found->second;
+    const bool overlap = nativeShapesIntersect4(first, second);
+    row.emplace(second, overlap);
+    return overlap;
+}
+
 static bool pairPolicy4(const SpacingPaddingTable4& table, const Element* first, const Element* second,
                         qreal shapeSpatium, SpacingPairPolicy4& result, bool allowGrace,
                         const SpacingGraceContext4* context = nullptr, const Chord* scopedMain = nullptr,
@@ -325,7 +342,7 @@ static bool pairPolicy4(const SpacingPaddingTable4& table, const Element* first,
         const bool sameVoiceNoteOrStem = (second->isNote() || second->isStem()) && note->track() == second->track();
         const bool adjacent = note->rtick() + note->chord()->actualTicks() == second->rtick();
         if ((sameVoiceNoteOrStem || adjacent)
-            && note->shape().translated(note->pos()).intersects(second->shape().translated(second->pos())))
+            && (cache ? cache->shapesIntersect(note, second) : nativeShapesIntersect4(note, second)))
             policy.padding = std::max(policy.padding, table.score()->styleP(Sid::minNoteDistance));
     }
     policy.padding *= scaling;
