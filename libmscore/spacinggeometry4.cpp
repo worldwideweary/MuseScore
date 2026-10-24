@@ -171,8 +171,14 @@ static void appendLegacySpacer4(SpacingShape4& target, const Element* owner,
     }
 }
 
-SpacingShape4 spacingElementShape4(const Element* item)
+SpacingShape4 spacingElementShape4(const Element* item, SpacingShapeCache4* cache)
 {
+    if (cache) {
+        if (const SpacingShape4* cached = cache->find(item)) {
+            SpacingProfileScope4 reuse(SpacingProfileStage4::SHAPE_REUSE);
+            return *cached;
+        }
+    }
     SpacingProfileScope4 profile(SpacingProfileStage4::ELEMENT_SHAPE);
     if (!item)
         return {};
@@ -202,7 +208,7 @@ SpacingShape4 spacingElementShape4(const Element* item)
         appendLeaf4(candidates, chord->stemSlash());
         appendLeaf4(candidates, chord->arpeggio());
         for (const Note* note : chord->notes()) {
-            appendShape4(candidates, spacingElementShape4(note), note->pos());
+            appendShape4(candidates, spacingElementShape4(note, cache), note->pos());
             for (const Element* child : note->el()) {
                 if (child->addToSkyline())
                     candidates.elements.push_back(SpacingShapeElement4(
@@ -213,10 +219,10 @@ SpacingShape4 spacingElementShape4(const Element* item)
             appendLeaf4(candidates, line);
         for (const Element* child : chord->el()) {
             if (child->addToSkyline())
-                appendShape4(candidates, spacingElementShape4(child), child->pos());
+                appendShape4(candidates, spacingElementShape4(child, cache), child->pos());
         }
         for (const Chord* grace : chord->graceNotes())
-            appendShape4(candidates, spacingElementShape4(grace), grace->pos());
+            appendShape4(candidates, spacingElementShape4(grace, cache), grace->pos());
         if (chord->addToSkyline() && (!qFuzzyIsNull(chord->spacingLeft4()) || !qFuzzyIsNull(chord->spacingRight4())))
             appendLegacySpacer4(candidates, chord, Shape::SPACING_GENERAL, -chord->spacingLeft4(), chord->spacingRight4());
     }
@@ -227,7 +233,7 @@ SpacingShape4 spacingElementShape4(const Element* item)
             candidates.elements.push_back(SpacingShapeElement4(rest->bbox(), rest));
         for (const Element* child : rest->el()) {
             if (child->addToSkyline())
-                appendShape4(candidates, spacingElementShape4(child), child->pos());
+                appendShape4(candidates, spacingElementShape4(child, cache), child->pos());
         }
     }
     else {
@@ -252,7 +258,9 @@ SpacingShape4 spacingElementShape4(const Element* item)
             break;
         }
     }
-    return spacingResolveShape4(native, candidates);
+    SpacingShape4 resolved = spacingResolveShape4(native, candidates);
+    if (cache) cache->remember(item, resolved);
+    return resolved;
 }
 
 SpacingShape4 spacingStaffShape4(const Segment* segment, int staffIdx)

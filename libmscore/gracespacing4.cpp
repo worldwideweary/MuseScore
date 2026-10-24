@@ -86,12 +86,13 @@ struct GracePackedComponents4 {
 };
 
 static bool graceComponents4(const Chord* chord, const Chord* main,
-                              const SpacingPaddingTable4& table, SpacingShape4& result, const Element* afterTarget = nullptr, bool merged = false, SpacingContextCache4* queryCache = nullptr)
+                              const SpacingPaddingTable4& table, SpacingShape4& result, const Element* afterTarget = nullptr, bool merged = false, SpacingContextCache4* queryCache = nullptr,
+                              SpacingShapeCache4* shapes = nullptr)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::COMPONENTS);
     SpacingContextCache4 localCache;
     SpacingContextCache4* cache = queryCache ? queryCache : &localCache;
-    const SpacingShape4 native = spacingElementShape4(chord);
+    const SpacingShape4 native = spacingElementShape4(chord, shapes);
     SpacingShape4 shape;
     for (const SpacingShapeElement4& e : native.elements) {
         // The main chord's native shape contains its already-placed graces.
@@ -282,9 +283,11 @@ bool buildGraceBeforePlan4(const Chord* main, GraceBeforePlan4& result, QString*
     return true;
 }
 static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result, QString* reason, bool barlineOnly, bool merged = false, SpacingContextCache4* queryCache = nullptr,
-                                      GracePackedComponents4* components = nullptr)
+                                      GracePackedComponents4* components = nullptr, SpacingShapeCache4* queryShapes = nullptr)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::AFTER);
+    SpacingShapeCache4 localShapes;
+    SpacingShapeCache4* shapes = queryShapes ? queryShapes : &localShapes;
     SpacingContextCache4 localCache;
     SpacingContextCache4* cache = queryCache ? queryCache : &localCache;
     const auto fail = [reason](const char* message) {
@@ -409,7 +412,7 @@ static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result
     const SpacingPaddingTable4 table(owner->score());
     SpacingShape4 targetShape;
     const bool targetReady = merged
-        ? graceComponents4(toChord(target), owner, table, targetShape, target, true, cache)
+        ? graceComponents4(toChord(target), owner, table, targetShape, target, true, cache, shapes)
         : afterTargetComponents4(target, owner, table, targetShape);
     if (!targetReady)
         return fail("Unadapted after-grace target shape");
@@ -424,7 +427,7 @@ static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result
     for (int i = graces.size() - 1; i >= 0; --i) {
         SpacingShape4 shape;
         qreal distance;
-        if (!graceComponents4(graces[i], owner, table, shape, target, merged, cache)
+        if (!graceComponents4(graces[i], owner, table, shape, target, merged, cache, shapes)
             || !graceDistance4(table, owner, shape, accumulated, graces[i]->spatium(), distance, target, merged, cache))
             return fail("Unadapted after-grace component shape");
         if (components) packed.members[i] = shape;
@@ -470,11 +473,11 @@ bool buildGraceAfterBarlinePlan4(const Chord* owner, GraceAfterPlan4& result, QS
 }
 
 static bool buildGraceMergedPlanImpl4(const Chord* owner, GraceMergedPlan4& result, QString* reason, SpacingContextCache4* cache,
-                                      GracePackedComponents4* components = nullptr)
+                                      GracePackedComponents4* components = nullptr, SpacingShapeCache4* shapes = nullptr)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::MERGED);
     GraceAfterPlan4 joint;
-    if (!buildGraceAfterPlanImpl4(owner, joint, reason, false, true, cache, components)) return false;
+    if (!buildGraceAfterPlanImpl4(owner, joint, reason, false, true, cache, components, shapes)) return false;
     GraceMergedPlan4 plan;
     plan.owner = owner;
     plan.target = toChord(joint.target->element(owner->track()));
@@ -491,12 +494,13 @@ bool buildGraceMergedPlan4(const Chord* owner, GraceMergedPlan4& result, QString
 }
 
 static bool afterSourceComponents4(const Chord* owner, const Element* target,
-                                    const SpacingPaddingTable4& table, SpacingShape4& result, bool merged = false, SpacingContextCache4* queryCache = nullptr)
+                                    const SpacingPaddingTable4& table, SpacingShape4& result, bool merged = false, SpacingContextCache4* queryCache = nullptr,
+                                    SpacingShapeCache4* shapes = nullptr)
 {
     SpacingContextCache4 localCache;
     SpacingContextCache4* cache = queryCache ? queryCache : &localCache;
     SpacingShape4 source;
-    for (const SpacingShapeElement4& e : spacingElementShape4(owner).elements) {
+    for (const SpacingShapeElement4& e : spacingElementShape4(owner, shapes).elements) {
         const Chord* chord = ownerChord4(e.item);
         if (chord && chord != owner && chord->parent() == owner) continue;
         if (e.identity == SpacingIdentity4::LEGACY_SPACER) {
@@ -542,9 +546,10 @@ bool buildGraceMergedGeometry4(const Chord* owner, GraceMergedGeometry4& result,
     // Packing and projection only read the DOM. Discard eligibility before
     // returning; beam preparation and every later query start fresh.
     SpacingContextCache4 cache;
+    SpacingShapeCache4 shapes;
     GracePackedComponents4 packed;
     GraceMergedGeometry4 geometry;
-    if (!buildGraceMergedPlanImpl4(owner, geometry.plan, reason, &cache, &packed)) return false;
+    if (!buildGraceMergedPlanImpl4(owner, geometry.plan, reason, &cache, &packed, &shapes)) return false;
     const auto fail = [reason](const char* message) {
         if (reason) *reason = QString::fromLatin1(message);
         return false;
@@ -552,7 +557,7 @@ bool buildGraceMergedGeometry4(const Chord* owner, GraceMergedGeometry4& result,
     const Chord* target = geometry.plan.target;
     const SpacingPaddingTable4 table(owner->score());
     SpacingShape4 source;
-    if (!afterSourceComponents4(owner, target, table, source, true, &cache))
+    if (!afterSourceComponents4(owner, target, table, source, true, &cache, &shapes))
         return fail("Unadapted merged-grace source projection");
     geometry.source = source.translated(owner->pos());
     // Packing already extracted and validated these exact physical shapes.

@@ -2939,3 +2939,14 @@ padding setup, native shape extraction and structural chord checks before
 choosing another optimization. See `v0.129-grace-planning-detail-timing.md`.
 Apply after v0.128 and repeat the same timing test. No engraving changes or
 new score; this checkpoint adds opt-in diagnostics, not a speed claim.
+
+### v0.130: reuse native child shapes within grace queries
+
+v0.129 native mtests pass. Detailed timings identify about 20 ms in native
+shape extraction, with 1,544 calls, and about 13 ms in grace distances; padding
+and structural checks are small. Reuse resolved native child snapshots within
+one immutable-input grace query, preserving all geometry and provenance.
+Extend native cached/uncached snapshot checks and retain independent final
+projection comparisons. See `v0.130-grace-native-shape-reuse.md`. Apply after
+v0.129 and repeat both native mtests and the existing timing test. The new
+`shapeReuse` counter reports avoided extractions; native gains are unmeasured.

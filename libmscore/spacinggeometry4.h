@@ -6,6 +6,7 @@
 #include <QPointF>
 #include <QRectF>
 #include <vector>
+#include <utility>
 
 namespace Ms {
 class Element;
@@ -48,7 +49,18 @@ struct SpacingShape4 {
 // allowSharedItems also retains distinct direct producers with exact counts.
 // Other ambiguity falls back; shared geometry still requires projection.
 SpacingShape4 spacingResolveShape4(const Shape&, const SpacingShape4& candidates, bool allowSharedItems = false);
-SpacingShape4 spacingElementShape4(const Element*);
+// One read-only query only: native shapes and all positions must remain fixed.
+// Borrowed item identities and snapshots must not survive an edit or layout.
+class SpacingShapeCache4 {
+    std::vector<std::pair<const Element*, SpacingShape4>> _entries;
+public:
+    const SpacingShape4* find(const Element* item) const {
+        for (const auto& entry : _entries) if (entry.first == item) return &entry.second;
+        return nullptr;
+    }
+    void remember(const Element* item, const SpacingShape4& shape) { _entries.push_back({item, shape}); }
+};
+SpacingShape4 spacingElementShape4(const Element*, SpacingShapeCache4* = nullptr);
 SpacingShape4 spacingStaffShape4(const Segment*, int staffIdx);
 }
 #endif

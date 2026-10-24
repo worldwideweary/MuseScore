@@ -3364,17 +3364,29 @@ void TestSpacing::graceMergedGeometry()
             // Independent fresh extraction must match the packing snapshot,
             // including component identity/order and every translated rectangle.
             SpacingShape4 reference;
+            SpacingShapeCache4 shapeCache;
+            spacingElementShape4(owner, &shapeCache); // Populate nested after-graces first.
             const auto appendReference = [&](const Chord* chord, const QPointF& offset) {
-                  for (const auto& e : spacingElementShape4(chord).elements) {
+                  const SpacingShape4 uncached = spacingElementShape4(chord);
+                  const SpacingShape4 cached = spacingElementShape4(chord, &shapeCache);
+                  if (cached.elements.size() != uncached.elements.size()) return false;
+                  for (size_t i = 0; i < uncached.elements.size(); ++i) {
+                        const auto& x = cached.elements[i];
+                        const auto& y = uncached.elements[i];
+                        if (x.item != y.item || x.identity != y.identity || x.rect != y.rect
+                            || x.aggregateOwners != y.aggregateOwners || x.sharedItems != y.sharedItems) return false;
+                        }
+                  for (const auto& e : uncached.elements) {
                         if (e.identity != SpacingIdentity4::ITEM || !belongsTo(e.item, chord)) continue;
                         SpacingShapeElement4 component = e;
                         component.rect.translate(offset);
                         reference.elements.push_back(component);
                         }
+                  return true;
                   };
-            appendReference(target, target->pos());
+            QVERIFY(appendReference(target, target->pos()));
             for (const auto& position : geometry.plan.positions)
-                  appendReference(position.chord, QPointF(position.x, 0));
+                  QVERIFY(appendReference(position.chord, QPointF(position.x, 0)));
             QCOMPARE(int(geometry.target.elements.size()), int(reference.elements.size()));
             for (size_t i = 0; i < reference.elements.size(); ++i) {
                   const auto& actual = geometry.target.elements[i];
