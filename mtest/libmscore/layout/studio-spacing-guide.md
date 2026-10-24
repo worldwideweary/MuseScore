@@ -2772,3 +2772,15 @@ style restoration checks. Production layout is unchanged; reuse the v0.113
 scores. See `v0.114-slurred-grace-snapshot-fix.md` for the failure values and
 source explanation. Native verification and the separate curve audit remain
 pending.
+
+
+### v0.115: passing slurred spacing; curve source audit
+
+User confirms v0.114 native tests pass. New blue/white overview captures show
+closely aligned horizontal spacing; M4's upper curve still crowds the grace
+noteheads in Evolution. `v0.115-slurred-grace-source-audit.md` records the
+endpoint-segment collision omission, source/target shape ownership, missing
+item identity in native shapes, and the distinct attachment/solver changes.
+Next build and verify physical obstacle collection before changing curves.
+Documentation only; v0.114 remains the tested runtime baseline. Reuse the
+v0.113 comparison scores.
