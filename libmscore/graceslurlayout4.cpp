@@ -173,7 +173,7 @@ bool fitGraceSlurCurve4(const SpacingShape4& physical, const Chord* target, qrea
     return fail("Grace slur clearance exceeds bounded fitting passes");
 }
 
-bool adjustGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& startPoint, QPointF& endPoint, QString* reason)
+bool adjustGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& startPoint, QPointF& endPoint, QString* reason, bool allowVisualEdits)
 {
     const auto fail = [reason](const char* message) {
         if (reason) *reason = QString::fromLatin1(message);
@@ -191,7 +191,7 @@ bool adjustGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& startPoint, QP
         || start->beam()->elements().back() == start || start->up() != slur->up())
         return fail("Combined grace slur does not use the beam-side start branch");
     const Chord* owner = toChord(start->parent());
-    if (!spacingMergedGraceSlur4(slur, owner, target) || !owner->measure()->system()
+    if (!spacingMergedGraceSlur4(slur, owner, target, allowVisualEdits) || !owner->measure()->system()
         || owner->measure()->system() != target->measure()->system())
         return fail("Unadapted combined grace beam anchors");
     GraceMergedGeometry4 geometry;

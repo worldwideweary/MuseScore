@@ -4258,13 +4258,83 @@ void TestSpacing::graceMergedSlurCurves()
       score->doLayout();
       QVERIFY(same(curves(score), modern));
       QVERIFY(same(graceMergedSnapshot4(score), horizontal));
-      // An edited curve must use the unchanged manual/legacy handling.
+      // Whole-slur movement preserves the modern base and note spacing.
       QVERIFY(first);
       const QPointF saved = first->offset();
       first->setOffset(QPointF(.5, 0));
       score->doLayout();
-      QVERIFY(!first->frontSegment()->usesGraceCurve4());
+      QVERIFY(first->frontSegment()->usesGraceCurve4());
+      QVERIFY(same(graceMergedSnapshot4(score), horizontal));
       first->setOffset(saved);
+      score->doLayout();
+      QVERIFY(same(curves(score), modern));
+      // Reproduce keyboard/drag editing of the actual endpoint/control grips.
+      // Every edit is relative to the same fitted automatic base, not a
+      // legacy attachment. Repeated layout must not accumulate the edit.
+      for (Grip grip : {Grip::START, Grip::END, Grip::BEZIER1, Grip::BEZIER2}) {
+            SlurSegment* segment = first->frontSegment();
+            const QPointF base = segment->ups(grip).pos();
+            const QPointF old = segment->ups(grip).off;
+            const QPointF delta(0, -.5 * score->spatium());
+            segment->ups(grip).off = old + delta;
+            segment->computeBezier(); // Direct editing preview, before full layout.
+            QVERIFY((segment->ups(grip).pos() - base - delta).manhattanLength() < 1e-6);
+            QVERIFY(same(graceMergedSnapshot4(score), horizontal));
+            score->doLayout();
+            segment = first->frontSegment();
+            QVERIFY(segment->usesGraceCurve4());
+            QCOMPARE(segment->ups(grip).off, old + delta);
+            QVERIFY((segment->ups(grip).pos() - base - delta).manhattanLength() < 1e-6);
+            QVERIFY(same(graceMergedSnapshot4(score), horizontal));
+            SpacingPlan4 plan;
+            QString reason;
+            QVERIFY2(buildSpacingPlan4(toChord(first->endElement())->measure()->system(), plan, &reason), qPrintable(reason));
+            QVERIFY(!plan.mergedGraces.empty());
+            const auto edited = curves(score);
+            score->doLayout();
+            QVERIFY(same(curves(score), edited));
+            QVERIFY(same(graceMergedSnapshot4(score), horizontal));
+            first->frontSegment()->ups(grip).off = old;
+            score->doLayout();
+            QVERIFY(same(curves(score), modern));
+            }
+      // Exercise the user's left-node edit on every group and slur direction,
+      // including altered M3 and the fitted upper M4 curve.
+      std::vector<Slur*> allSlurs;
+      for (const auto& entry : score->spannerMap().map()) if (entry.second->isSlur()) allSlurs.push_back(toSlur(entry.second));
+      for (Slur* slur : allSlurs) {
+            SlurSegment* segment = slur->frontSegment();
+            const QPointF base = segment->ups(Grip::START).pos();
+            const QPointF old = segment->ups(Grip::START).off;
+            const QPointF delta(0, -.5 * score->spatium());
+            segment->ups(Grip::START).off = old + delta;
+            score->doLayout();
+            segment = slur->frontSegment();
+            QVERIFY(segment->usesGraceCurve4());
+            QCOMPARE(segment->ups(Grip::START).off, old + delta);
+            QVERIFY2((segment->ups(Grip::START).pos() - base - delta).manhattanLength() < 1e-6,
+                  qPrintable(QString("manual start at tick %1: base (%2,%3), result (%4,%5), delta (%6,%7)")
+                        .arg(slur->tick().ticks()).arg(base.x(), 0, 'g', 17).arg(base.y(), 0, 'g', 17)
+                        .arg(segment->ups(Grip::START).pos().x(), 0, 'g', 17)
+                        .arg(segment->ups(Grip::START).pos().y(), 0, 'g', 17)
+                        .arg(delta.x(), 0, 'g', 17).arg(delta.y(), 0, 'g', 17)));
+            QVERIFY(same(graceMergedSnapshot4(score), horizontal));
+            segment->ups(Grip::START).off = old;
+            score->doLayout();
+            QVERIFY(same(curves(score), modern));
+            }
+      // Segment translation must translate the rendered base without making
+      // the collision fitter compensate for the requested user displacement.
+      SlurSegment* segment = first->frontSegment();
+      const QPointF segmentOffset = segment->offset();
+      const QPointF startBase = segment->ups(Grip::START).pos();
+      segment->setOffset(segmentOffset + QPointF(.25, -.5) * score->spatium());
+      score->doLayout();
+      segment = first->frontSegment();
+      QVERIFY(segment->usesGraceCurve4());
+      QVERIFY((segment->ups(Grip::START).pos() - startBase).manhattanLength() < 1e-6);
+      QVERIFY(same(graceMergedSnapshot4(score), horizontal));
+      segment->setOffset(segmentOffset);
       score->doLayout();
       QVERIFY(same(curves(score), modern));
       score->setStyleValue(Sid::spacingLayout4, false);
@@ -4540,17 +4610,21 @@ void TestSpacing::graceMergedSlurs()
 
       const Chord* owner = toChord(first->startElement()->parent());
       const Chord* target = toChord(first->endElement());
-      // Edited slur geometry still rejects without publishing a partial group.
+      // A visual offset changes the curve, not horizontal eligibility.
       const QPointF offset = first->offset();
       first->setOffset(QPointF(.5, 0));
+      GraceMergedPlan4 editedPlan;
+      const bool accepted = buildGraceMergedPlan4(owner, editedPlan);
+      const bool strict = spacingMergedGraceSlur4(first, owner, target);
+      const bool spacing = spacingMergedGraceSlur4(first, owner, target, true);
+      first->setOffset(offset);
+      QVERIFY(accepted && !strict && spacing);
+      QCOMPARE(editedPlan.owner, owner);
+      QCOMPARE(editedPlan.target, target);
+      QVERIFY(!editedPlan.positions.empty());
+      // Three slurs still exceed this explicitly bounded structural scope.
       GraceMergedPlan4 rejected;
       rejected.left = 123;
-      const bool accepted = buildGraceMergedPlan4(owner, rejected);
-      first->setOffset(offset);
-      QVERIFY(!accepted);
-      QCOMPARE(rejected.left, qreal(123));
-      QVERIFY(!rejected.owner && !rejected.target && rejected.positions.empty());
-      // Three slurs exceed this explicitly bounded scope.
       Slur* extra = new Slur(score);
       extra->setTrack(first->track());
       extra->setTrack2(first->track2());
@@ -5587,22 +5661,22 @@ void TestSpacing::graceSlurSpacing()
       const auto withoutSlurs = graceLayoutSnapshot4(plain);
       QCOMPARE(static_cast<int>(withoutSlurs.size()), static_cast<int>(modern.size()));
       for (size_t i = 0; i < modern.size(); ++i) QVERIFY(qAbs(withoutSlurs[i] - modern[i]) < 1e-6);
-      // Handle edits and an unresolved endpoint must not inherit this allowance.
+      // Visual handle edits retain spacing; unresolved anchors still reject.
       Slur* first = slurs.front();
       Chord* main = toChord(first->endElement());
       SlurSegment* segment = first->frontSegment();
       const QPointF oldOffset = segment->ups(Grip::BEZIER1).off;
       segment->ups(Grip::BEZIER1).off = QPointF(.5, 0);
       QVERIFY(!spacingLocalGraceSlur4(first, main));
+      QVERIFY(spacingLocalGraceSlur4(first, main, true));
+      GraceBeforePlan4 editedGroup;
+      QVERIFY(buildGraceBeforePlan4(main, editedGroup));
+      SpacingPlan4 editedSystem;
+      QVERIFY(buildSpacingPlan4(main->measure()->system(), editedSystem));
+      QVERIFY(!editedGroup.positions.empty() && !editedSystem.segments.empty());
+      segment->ups(Grip::BEZIER1).off = oldOffset;
       GraceBeforePlan4 rejectedGroup;
       rejectedGroup.left = 123;
-      QVERIFY(!buildGraceBeforePlan4(main, rejectedGroup));
-      QCOMPARE(rejectedGroup.left, qreal(123));
-      SpacingPlan4 rejected;
-      rejected.width = 123;
-      QVERIFY(!buildSpacingPlan4(main->measure()->system(), rejected));
-      QCOMPARE(rejected.width, qreal(123));
-      segment->ups(Grip::BEZIER1).off = oldOffset;
       Element* oldEnd = first->endElement();
       first->setEndElement(nullptr);
       QVERIFY(!spacingLocalGraceSlur4(first, main));

@@ -80,7 +80,7 @@ bool applyGraceAfterPlan4(Chord*, QString* reason = nullptr);
 
 // Automatic slur within a validated same-direction combined group: first
 // incoming after-grace (or the existing local before anchor) to target main.
-bool spacingMergedGraceSlur4(const Slur*, const Chord* owner, const Chord* target);
+bool spacingMergedGraceSlur4(const Slur*, const Chord* owner, const Chord* target, bool allowVisualEdits = false);
 
 // Read-only physical obstacles for first-after-grace to target-main slurs in
 // the validated combined scope. Uses CURRENT published positions, not planned
@@ -88,10 +88,13 @@ bool spacingMergedGraceSlur4(const Slur*, const Chord* owner, const Chord* targe
 // Excludes the start anchor, ledgers and synthetic spacing bounds; includes
 // other grace members and the target's own components. No clearance inflation
 // or curve adjustment yet. Failure leaves result unchanged.
-bool buildGraceMergedSlurObstacles4(const Slur*, SpacingShape4&, QString* reason = nullptr);
+// allowVisualEdits is for computing an unedited base before applying user offsets.
+bool buildGraceMergedSlurObstacles4(const Slur*, SpacingShape4&, QString* reason = nullptr, bool allowVisualEdits = false);
 
-// Only the unedited first-before-grace to its own main chord, same staff/voice.
+// First-before-grace to its own main chord, same staff/voice.
+// Visual edits may be admitted explicitly for horizontal spacing or computing
+// an automatic curve base; anchors, ownership and slur-count guards still apply.
 // This validates a spacing allowance; it does not select a new slur renderer.
-bool spacingLocalGraceSlur4(const Slur*, const Chord* main);
+bool spacingLocalGraceSlur4(const Slur*, const Chord* main, bool allowVisualEdits = false);
 }
 #endif

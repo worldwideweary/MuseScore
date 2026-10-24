@@ -23,6 +23,7 @@ bool fitGraceSlurCurve4(const SpacingShape4&, const Chord* target, qreal spatium
 // the supplied end. Query only; failure preserves both points.
 // Upper starts use the user-preferred visible-tip alignment above the actual
 // leading beam edge, including the rounded end-stroke radius.
-bool adjustGraceMergedSlurBeamAnchors4(const Slur*, QPointF& start, QPointF& end, QString* reason = nullptr);
+bool adjustGraceMergedSlurBeamAnchors4(const Slur*, QPointF& start, QPointF& end, QString* reason = nullptr,
+                                      bool allowVisualEdits = false);
 }
 #endif

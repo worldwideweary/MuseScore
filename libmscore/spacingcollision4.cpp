@@ -222,11 +222,13 @@ static bool commonItemContext4(const Element* item, bool allowGrace,
         if (spanner->startElement() == chord || spanner->endElement() == chord
             || (spanner->track() == chord->track() && spanner->tick() == chord->tick())
             || (spanner->track2() == chord->track() && spanner->tick2() == chord->tick())) {
-            bool supported = localScope && spacingLocalGraceSlur4(toSlur(spanner), main);
+            // A visual slur edit does not change these physical note/stem
+            // obstacles or the supported musical anchors. Keep spacing active.
+            bool supported = localScope && spacingLocalGraceSlur4(toSlur(spanner), main, true);
             if (context) {
                 for (const auto& pair : context->mergedPairs) {
                     if ((main == pair.first || main == pair.second)
-                        && spacingMergedGraceSlur4(toSlur(spanner), pair.first, pair.second)) supported = true;
+                        && spacingMergedGraceSlur4(toSlur(spanner), pair.first, pair.second, true)) supported = true;
                 }
             }
             if (!supported || ++localSlurs > (jointScope ? 2 : 1)) return false;

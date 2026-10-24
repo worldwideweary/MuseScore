@@ -19,11 +19,11 @@
 #include <limits>
 
 namespace Ms {
-bool spacingLocalGraceSlur4(const Slur* slur, const Chord* main)
+bool spacingLocalGraceSlur4(const Slur* slur, const Chord* main, bool allowVisualEdits)
 {
     if (!slur || !main || main->isGrace() || !main->segment() || main->staffMove()
-        || slur->score() != main->score() || !slur->visible() || !slur->autoplace()
-        || slur->isNudged() || slur->lineType() != 0 || slur->nsegments() > 1
+        || slur->score() != main->score() || !slur->visible()
+        || (!allowVisualEdits && (!slur->autoplace() || slur->isNudged())) || slur->lineType() != 0 || slur->nsegments() > 1
         || slur->endElement() != main || slur->track() != main->track() || slur->track2() != main->track()
         || slur->tick() != main->tick() || slur->tick2() != main->tick())
         return false;
@@ -36,13 +36,13 @@ bool spacingLocalGraceSlur4(const Slur* slur, const Chord* main)
         return false;
     if (slur->nsegments()) {
         const SlurSegment* segment = slur->frontSegment();
-        if (!segment->autoplace() || segment->isNudged() || segment->isEdited())
+        if (!allowVisualEdits && (!segment->autoplace() || segment->isNudged() || segment->isEdited()))
             return false;
     }
     return true;
 }
 
-bool spacingMergedGraceSlur4(const Slur* slur, const Chord* owner, const Chord* target)
+bool spacingMergedGraceSlur4(const Slur* slur, const Chord* owner, const Chord* target, bool allowVisualEdits)
 {
     if (!slur || !owner || !target || owner == target || owner->isGrace() || target->isGrace()
         || !owner->measure() || !owner->segment() || !target->segment()
@@ -51,10 +51,10 @@ bool spacingMergedGraceSlur4(const Slur* slur, const Chord* owner, const Chord* 
         || owner->tick() + owner->actualTicks() != target->tick()
         || owner->graceNotesAfter().empty() || target->graceNotesBefore().empty())
         return false;
-    if (spacingLocalGraceSlur4(slur, target)) return true;
+    if (spacingLocalGraceSlur4(slur, target, allowVisualEdits)) return true;
     const Chord* first = owner->graceNotesAfter().front();
-    if (slur->score() != owner->score() || !slur->visible() || !slur->autoplace()
-        || slur->isNudged() || slur->lineType() != 0 || slur->nsegments() > 1
+    if (slur->score() != owner->score() || !slur->visible()
+        || (!allowVisualEdits && (!slur->autoplace() || slur->isNudged())) || slur->lineType() != 0 || slur->nsegments() > 1
         || slur->startElement() != first || slur->endElement() != target
         || slur->track() != owner->track() || slur->track2() != target->track()
         || slur->tick() != owner->tick() || slur->tick2() != target->tick()
@@ -63,7 +63,7 @@ bool spacingMergedGraceSlur4(const Slur* slur, const Chord* owner, const Chord* 
         return false;
     if (slur->nsegments()) {
         const SlurSegment* segment = slur->frontSegment();
-        if (!segment->autoplace() || segment->isNudged() || segment->isEdited()) return false;
+        if (!allowVisualEdits && (!segment->autoplace() || segment->isNudged() || segment->isEdited())) return false;
     }
     return true;
 }
@@ -532,7 +532,7 @@ bool buildGraceMergedGeometry4(const Chord* owner, GraceMergedGeometry4& result,
     return true;
 }
 
-bool buildGraceMergedSlurObstacles4(const Slur* slur, SpacingShape4& result, QString* reason)
+bool buildGraceMergedSlurObstacles4(const Slur* slur, SpacingShape4& result, QString* reason, bool allowVisualEdits)
 {
     const auto fail = [reason](const char* message) {
         if (reason) *reason = QString::fromLatin1(message);
@@ -546,7 +546,7 @@ bool buildGraceMergedSlurObstacles4(const Slur* slur, SpacingShape4& result, QSt
     if (!start->isGraceAfter() || !start->parent() || !start->parent()->isChord())
         return fail("Combined grace obstacles need the incoming after-grace anchor");
     const Chord* owner = toChord(start->parent());
-    if (!spacingMergedGraceSlur4(slur, owner, target)
+    if (!spacingMergedGraceSlur4(slur, owner, target, allowVisualEdits)
         || !owner->measure()->system() || owner->measure()->system() != target->measure()->system())
         return fail("Unadapted combined grace slur obstacles");
     GraceMergedGeometry4 geometry;

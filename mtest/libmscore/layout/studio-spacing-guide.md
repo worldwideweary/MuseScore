@@ -2842,3 +2842,16 @@ primary segment during slur layout. Add cache-poisoning and moved-grace
 regressions; retain the failing final-edge assertion with diagnostic values.
 See `v0.120-upper-grace-slur-live-edge-fix.md`. Apply after v0.119; native
 mtests and M1/M3 close-up validation are pending. Other differences deferred.
+
+
+### v0.121: keep note spacing and the modern base during slur edits
+
+User confirms v0.120 tests pass and upper alignment is improved, but moving a
+slur grip rejects the experimental spacing plan. Separate visual-edit
+admission from strict automatic-only queries. Fit a fresh unedited modern base
+and apply user grip offsets afterward, preserving note spacing and requested
+movement. Extend native tests for direct previews, every left grip, control/
+endpoint edits, object translations, repeated layout and restoring the base.
+See `v0.121-grace-slur-edit-spacing-independence.md`; apply after v0.120 and
+repeat M3's upper-left grip edit in the existing v0.113 natural input. Native
+verification pending; other differences deferred.
