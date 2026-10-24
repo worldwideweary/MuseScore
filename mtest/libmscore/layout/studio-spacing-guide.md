@@ -2465,3 +2465,14 @@ when the typed system planner rejects after-graces. Compare AG1-AG5's native
 after-group coordinates relative to the following target instead. All original
 repeat-layout, off-restoration, ownership and rejection checks remain. No
 production code or score changes. See `v0.93-after-grace-baseline-assertion-fix.md`.
+
+### v0.94: baseline accepted; read-only after-grace packing
+
+The user reports v0.93 mtests passing and provides paired AG1-AG6 captures.
+New buildGraceAfterPlan4 returns target-segment-relative positions and bounds
+for AG1-AG3 without changing live layout. AG4-AG6 and full system admission
+still reject after-graces. The explicit after-group collision scope does not
+broaden default or before-grace queries. New tests cover packing, stale-position
+independence, atomic rejection, and complete native-layout nonmutation under
+both beam modes. Reuse the v0.92 scores; no visible change is expected yet.
+See `v0.94-after-grace-readonly-plan.md` for validation and the next integration.

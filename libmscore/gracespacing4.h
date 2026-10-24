@@ -1,4 +1,4 @@
-// Optional Studio spacing: read-only ordinary before-grace placement.
+// Optional Studio spacing: read-only ordinary grace placement.
 // Licensed under GNU GPL version 2; see LICENSE.GPL.
 #ifndef MS_GRACESPACING4_H
 #define MS_GRACESPACING4_H
@@ -8,6 +8,7 @@
 namespace Ms {
 class Chord;
 class Slur;
+class Segment;
 struct GracePosition4 {
     const Chord* chord;
     qreal x; // Relative to the main chord, like Chord::graceNotesBefore().
@@ -22,6 +23,22 @@ struct GraceBeforePlan4 {
 // The system planner admits these groups only after validating their published
 // positions; unsupported grace contexts still reject the entire system plan.
 bool buildGraceBeforePlan4(const Chord*, GraceBeforePlan4&, QString* reason = nullptr);
+
+struct GraceAfterPosition4 {
+    const Chord* chord;
+    qreal x; // Target-segment coordinates, NOT owner-chord coordinates.
+};
+struct GraceAfterPlan4 {
+    const Chord* owner = nullptr;
+    const Segment* target = nullptr;
+    std::vector<GraceAfterPosition4> positions; // Musical order, left to right.
+    qreal left = 0;
+    qreal right = 0; // Typed component extent in target-segment coordinates.
+};
+// First scope: same-measure following ordinary chord, no merged before-graces.
+// Query only: does not move items, publish shapes, or enable system admission.
+// Rebuild after geometry changes; failure preserves every output field.
+bool buildGraceAfterPlan4(const Chord*, GraceAfterPlan4&, QString* reason = nullptr);
 
 // Only the unedited first-before-grace to its own main chord, same staff/voice.
 // This validates a spacing allowance; it does not select a new slur renderer.

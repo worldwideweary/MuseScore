@@ -49,6 +49,11 @@ bool spacingPairPolicy4(const SpacingPaddingTable4&, const Element* first, const
 bool spacingGracePairPolicy4(const SpacingPaddingTable4&, const Chord* main,
                              const Element* first, const Element* second,
                              qreal shapeSpatium, SpacingPairPolicy4& result);
+// Read-only after-grace packing scope: owner's after-graces or target chord.
+// Does not admit after-graces into default/system spacing queries.
+bool spacingAfterGracePairPolicy4(const SpacingPaddingTable4&, const Chord* owner, const Chord* target,
+                                  const Element* first, const Element* second,
+                                  qreal shapeSpatium, SpacingPairPolicy4& result);
 // Pure rectangular constraint; finite, normalized geometry/policy is required.
 // Returns -max(qreal) when this pair imposes no horizontal constraint.
 qreal spacingPairDistance4(const QRectF&, const QRectF&, const SpacingPairPolicy4&,
