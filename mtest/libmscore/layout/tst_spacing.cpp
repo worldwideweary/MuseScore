@@ -48,6 +48,8 @@ class TestSpacing : public QObject, public MTest {
       void graceNeighborPlan();
       void graceAfterBarlineSystem_data();
       void graceAfterBarlineSystem();
+      void graceMergedSlurs_data();
+      void graceMergedSlurs();
       void graceMergedSystem_data();
       void graceMergedSystem();
       void graceMergedGeometry_data();
@@ -3971,6 +3973,129 @@ void TestSpacing::graceAfterBarlineSystem()
       delete score;
       }
 
+void TestSpacing::graceMergedSlurs_data()
+      {
+      QTest::addColumn<bool>("modernBeams");
+      QTest::addColumn<QString>("suffix");
+      for (const QString& suffix : {QString("graces"), QString("graces-natural"), QString("grace-squeeze")}) {
+            for (bool beams : {false, true}) {
+                  const QByteArray tag = (suffix + (beams ? "-studio" : "-legacy")).toLatin1();
+                  QTest::newRow(tag.constData()) << beams << suffix;
+                  }
+            }
+      }
+
+void TestSpacing::graceMergedSlurs()
+      {
+      QFETCH(bool, modernBeams);
+      QFETCH(QString, suffix);
+      MasterScore* score = readScore(DIR + "v0.113-spacing-slurred-merged-" + suffix + ".mscx");
+      MasterScore* plain = readScore(DIR + "v0.112-spacing-merged-" + suffix + ".mscx");
+      QVERIFY(score && plain && score->styleB(Sid::spacingLayout4));
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      plain->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      plain->doLayout();
+      const auto horizontal = [](Score* item) {
+            auto values = graceLayoutSnapshot4(item);
+            for (Measure* m = item->firstMeasure(); m; m = m->nextMeasure()) {
+                  for (const Segment& seg : m->segments()) {
+                        const Element* e = seg.element(0);
+                        if (e && e->isChord()) {
+                              for (const Chord* grace : toChord(e)->graceNotes()) values.push_back(grace->x());
+                              }
+                        }
+                  }
+            return values;
+            };
+      const auto expected = horizontal(plain);
+      const auto actual = horizontal(score);
+      QCOMPARE(static_cast<int>(actual.size()), static_cast<int>(expected.size()));
+      for (size_t i = 0; i < expected.size(); ++i) {
+            QVERIFY2(qAbs(actual[i] - expected[i]) < 1e-6,
+                  qPrintable(QString("slurred/plain horizontal component %1: %2 versus %3")
+                        .arg(int(i)).arg(actual[i], 0, 'g', 17).arg(expected[i], 0, 'g', 17)));
+            }
+      int count = 0, up = 0, down = 0;
+      Slur* first = nullptr;
+      for (const auto& entry : score->spannerMap().map()) {
+            if (!entry.second->isSlur()) continue;
+            Slur* slur = toSlur(entry.second);
+            QVERIFY(slur->startElement() && slur->startElement()->isChord());
+            QVERIFY(slur->endElement() && slur->endElement()->isChord());
+            const Chord* start = toChord(slur->startElement());
+            QVERIFY(start->isGraceAfter() && start->parent() && start->parent()->isChord());
+            const Chord* owner = toChord(start->parent());
+            const Chord* target = toChord(slur->endElement());
+            QCOMPARE(start, static_cast<const Chord*>(owner->graceNotesAfter().front()));
+            QVERIFY(spacingMergedGraceSlur4(slur, owner, target));
+            GraceMergedGeometry4 geometry;
+            QString reason;
+            QVERIFY2(buildGraceMergedGeometry4(owner, geometry, &reason), qPrintable(reason));
+            SpacingPlan4 plan;
+            QVERIFY2(buildSpacingPlan4(owner->measure()->system(), plan, &reason), qPrintable(reason));
+            QVERIFY(!plan.mergedGraces.empty());
+            if (slur->slurDirection() == Direction::UP) ++up;
+            if (slur->slurDirection() == Direction::DOWN) ++down;
+            if (!first) first = slur;
+            ++count;
+            }
+      const int measures = suffix == "grace-squeeze" ? 1 : 4;
+      QCOMPARE(count, 2 * measures);
+      QCOMPARE(up, measures);
+      QCOMPARE(down, measures);
+      QVERIFY(first);
+      const Chord* owner = toChord(first->startElement()->parent());
+      const Chord* target = toChord(first->endElement());
+      // Edited slur geometry still rejects without publishing a partial group.
+      const QPointF offset = first->offset();
+      first->setOffset(QPointF(.5, 0));
+      GraceMergedPlan4 rejected;
+      rejected.left = 123;
+      const bool accepted = buildGraceMergedPlan4(owner, rejected);
+      first->setOffset(offset);
+      QVERIFY(!accepted);
+      QCOMPARE(rejected.left, qreal(123));
+      QVERIFY(!rejected.owner && !rejected.target && rejected.positions.empty());
+      // Three slurs exceed this explicitly bounded scope.
+      Slur* extra = new Slur(score);
+      extra->setTrack(first->track());
+      extra->setTrack2(first->track2());
+      extra->setTick(first->tick());
+      extra->setTick2(first->tick2());
+      extra->setStartElement(first->startElement());
+      extra->setEndElement(first->endElement());
+      const bool extraEligible = spacingMergedGraceSlur4(extra, owner, target);
+      score->addSpanner(extra);
+      const bool thirdAccepted = buildGraceMergedPlan4(owner, rejected);
+      score->removeSpanner(extra);
+      delete extra;
+      QVERIFY(extraEligible);
+      QVERIFY(!thirdAccepted);
+      QCOMPARE(rejected.left, qreal(123));
+      QVERIFY(spacingMergedGraceSlur4(first, owner, target));
+      QVERIFY(horizontal(score) == actual); // Queries/edit rejection leave positions unchanged.
+      score->doLayout();
+      const auto repeated = horizontal(score);
+      QCOMPARE(static_cast<int>(repeated.size()), static_cast<int>(actual.size()));
+      for (size_t i = 0; i < actual.size(); ++i) QVERIFY(qAbs(repeated[i] - actual[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto legacy = horizontal(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      const auto enabled = horizontal(score);
+      QCOMPARE(static_cast<int>(enabled.size()), static_cast<int>(actual.size()));
+      for (size_t i = 0; i < actual.size(); ++i) QVERIFY(qAbs(enabled[i] - actual[i]) < 1e-6);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto restored = horizontal(score);
+      QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
+      for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      delete plain;
+      }
+
 void TestSpacing::graceMergedSystem_data()
       {
       QTest::addColumn<bool>("modernBeams");
@@ -4793,7 +4918,8 @@ void TestSpacing::graceSqueeze_data()
                                   QString("v0.102-spacing-after-grace-rest-squeeze.mscx"),
                                   QString("v0.104-spacing-after-grace-rest-squeeze-match.mscx"),
                                   QString("v0.109-spacing-after-grace-barline-squeeze.mscx"),
-                                  QString("v0.112-spacing-merged-grace-squeeze.mscx")}) {
+                                  QString("v0.112-spacing-merged-grace-squeeze.mscx"),
+                                  QString("v0.113-spacing-slurred-merged-grace-squeeze.mscx")}) {
             for (bool beams : {false, true}) {
                   const QByteArray tag = (file + (beams ? "-studio" : "-legacy")).toLatin1();
                   QTest::newRow(tag.constData()) << beams << file;
@@ -4808,7 +4934,7 @@ void TestSpacing::graceSqueeze()
       MasterScore* score = readScore(DIR + file);
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
       const auto snapshot = [&]() {
-            if (file.startsWith("v0.112-")) return graceMergedSnapshot4(score);
+            if (file.startsWith("v0.112-") || file.startsWith("v0.113-")) return graceMergedSnapshot4(score);
             return file.startsWith("v0.109-") ? graceBarlineSnapshot4(score) : graceLayoutSnapshot4(score);
             };
       score->setStyleValue(Sid::beamLayout4, modernBeams);
@@ -4817,7 +4943,7 @@ void TestSpacing::graceSqueeze()
       score->doLayout();
       Measure* measure = score->firstMeasure();
       QVERIFY(measure && !measure->nextMeasure());
-      QCOMPARE(measure->userStretch(), (file.startsWith("v0.104-") || file.startsWith("v0.109-") || file.startsWith("v0.112-")) ? qreal(1) : qreal(2));
+      QCOMPARE(measure->userStretch(), (file.startsWith("v0.104-") || file.startsWith("v0.109-") || file.startsWith("v0.112-") || file.startsWith("v0.113-")) ? qreal(1) : qreal(2));
       SpacingPlan4 natural;
       QString reason;
       QVERIFY2(buildSpacingPlan4(measure->system(), natural, &reason), qPrintable(reason));

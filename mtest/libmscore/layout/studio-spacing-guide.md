@@ -2744,3 +2744,20 @@ coverage. Both options start on; stretch is 1. Compare the natural file first,
 checking the group boundary, last-before-to-main gap and accidentals separately.
 Native tests/visual confirmation remain pending. See
 `v0.112-merged-grace-system-spacing.md`.
+
+### v0.113: slurred combined groups exposed a spacing fallback
+
+v0.112 passes native tests and its slur-free captures agree closely, but the
+user's paired-slur captures reveal a missing eligibility case. The earlier
+acceptance did not establish slurred-grace parity. Add a validated combined-pair
+scope for up to two automatic first-after-to-target slurs, retaining the local
+before anchor and strict rejection of unsupported slurs. Keep M2 unchanged.
+
+New `v0.113-spacing-slurred-merged-graces.mscx`,
+`v0.113-spacing-slurred-merged-graces-natural.mscx` and
+`v0.113-spacing-slurred-merged-grace-squeeze.mscx` recreate paired above/below
+slurs. Tests verify their parsed anchors, compare horizontal layout with plain
+v0.112 inputs, exercise compression/toggling and reject edits/third slurs.
+Both options start on. Native results remain pending. Curve placement still
+uses the legacy renderer and needs a separate attachment/collision audit. See
+`v0.113-merged-grace-slur-admission.md`.

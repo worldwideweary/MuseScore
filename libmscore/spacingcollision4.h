@@ -6,6 +6,7 @@
 #include <QRectF>
 #include <array>
 #include <vector>
+#include <utility>
 
 namespace Ms {
 class Element;
@@ -38,6 +39,7 @@ public:
 struct SpacingGraceContext4 {
     std::vector<const Chord*> mains;
     std::vector<const Chord*> afterMains; // Validated temporary after-grace projections.
+    std::vector<std::pair<const Chord*, const Chord*>> mergedPairs; // Validated owner/target slur scope.
     bool contains(const Chord* chord) const;
     bool containsAfter(const Chord* chord) const;
 };
@@ -63,7 +65,7 @@ bool spacingAfterGracePairPolicy4(const SpacingPaddingTable4&, const Chord* owne
 // Does not admit merged groups into ordinary or system queries.
 bool spacingMergedGracePairPolicy4(const SpacingPaddingTable4&, const Chord* owner, const Chord* target,
                                    const Element* first, const Element* second,
-                                   qreal shapeSpatium, SpacingPairPolicy4& result);
+                                   qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner = false);
 // Pure rectangular constraint; finite, normalized geometry/policy is required.
 // Returns -max(qreal) when this pair imposes no horizontal constraint.
 qreal spacingPairDistance4(const QRectF&, const QRectF&, const SpacingPairPolicy4&,

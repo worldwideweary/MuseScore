@@ -209,6 +209,11 @@ static bool commonItemContext4(const Element* item, bool allowGrace,
     if (chord->isGrace() && chord->parent() && chord->parent()->isChord())
         main = toChord(chord->parent());
     const bool localScope = main == scopedMain || (context && context->contains(main));
+    bool jointScope = false;
+    if (context) {
+        for (const auto& pair : context->mergedPairs)
+            jointScope = jointScope || main == pair.first || main == pair.second;
+    }
     int localSlurs = 0;
     for (const auto& entry : chord->score()->spannerMap().map()) {
         const Spanner* spanner = entry.second;
@@ -217,8 +222,14 @@ static bool commonItemContext4(const Element* item, bool allowGrace,
         if (spanner->startElement() == chord || spanner->endElement() == chord
             || (spanner->track() == chord->track() && spanner->tick() == chord->tick())
             || (spanner->track2() == chord->track() && spanner->tick2() == chord->tick())) {
-            if (!localScope || !spacingLocalGraceSlur4(toSlur(spanner), main) || ++localSlurs > 1)
-                return false;
+            bool supported = localScope && spacingLocalGraceSlur4(toSlur(spanner), main);
+            if (context) {
+                for (const auto& pair : context->mergedPairs) {
+                    if ((main == pair.first || main == pair.second)
+                        && spacingMergedGraceSlur4(toSlur(spanner), pair.first, pair.second)) supported = true;
+                }
+            }
+            if (!supported || ++localSlurs > (jointScope ? 2 : 1)) return false;
         }
     }
     return true;
@@ -380,8 +391,14 @@ static bool afterGraceScopePolicy4(const SpacingPaddingTable4& table, const Chor
         }
         return false;
     };
-    // No local slur allowance in the after-grace scope yet.
-    return belongs(first) && belongs(second) && pairPolicy4(table, first, second, shapeSpatium, result, true);
+    SpacingGraceContext4 joint;
+    if (includeBefore) {
+        joint.mains.push_back(toChord(target));
+        joint.afterMains.push_back(owner);
+        joint.mergedPairs.push_back({owner, toChord(target)});
+    }
+    return belongs(first) && belongs(second)
+        && pairPolicy4(table, first, second, shapeSpatium, result, true, includeBefore ? &joint : nullptr);
 }
 
 bool spacingAfterGracePairPolicy4(const SpacingPaddingTable4& table, const Chord* owner, const Element* target,
@@ -393,9 +410,9 @@ bool spacingAfterGracePairPolicy4(const SpacingPaddingTable4& table, const Chord
 
 bool spacingMergedGracePairPolicy4(const SpacingPaddingTable4& table, const Chord* owner, const Chord* target,
                                    const Element* first, const Element* second,
-                                   qreal shapeSpatium, SpacingPairPolicy4& result)
+                                   qreal shapeSpatium, SpacingPairPolicy4& result, bool includeOwner)
 {
-    return afterGraceScopePolicy4(table, owner, target, first, second, shapeSpatium, result, false, true);
+    return afterGraceScopePolicy4(table, owner, target, first, second, shapeSpatium, result, includeOwner, true);
 }
 
 qreal spacingPairDistance4(const QRectF& first, const QRectF& second, const SpacingPairPolicy4& policy,

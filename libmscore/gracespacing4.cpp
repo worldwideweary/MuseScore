@@ -42,6 +42,32 @@ bool spacingLocalGraceSlur4(const Slur* slur, const Chord* main)
     return true;
 }
 
+bool spacingMergedGraceSlur4(const Slur* slur, const Chord* owner, const Chord* target)
+{
+    if (!slur || !owner || !target || owner == target || owner->isGrace() || target->isGrace()
+        || !owner->measure() || !owner->segment() || !target->segment()
+        || owner->score() != target->score() || owner->track() != target->track()
+        || owner->measure() != target->measure() || owner->staffMove() || target->staffMove()
+        || owner->tick() + owner->actualTicks() != target->tick()
+        || owner->graceNotesAfter().empty() || target->graceNotesBefore().empty())
+        return false;
+    if (spacingLocalGraceSlur4(slur, target)) return true;
+    const Chord* first = owner->graceNotesAfter().front();
+    if (slur->score() != owner->score() || !slur->visible() || !slur->autoplace()
+        || slur->isNudged() || slur->lineType() != 0 || slur->nsegments() > 1
+        || slur->startElement() != first || slur->endElement() != target
+        || slur->track() != owner->track() || slur->track2() != target->track()
+        || slur->tick() != owner->tick() || slur->tick2() != target->tick()
+        || !first->isGraceAfter() || first->parent() != owner || first->staffMove()
+        || first->score() != owner->score() || first->track() != owner->track())
+        return false;
+    if (slur->nsegments()) {
+        const SlurSegment* segment = slur->frontSegment();
+        if (!segment->autoplace() || segment->isNudged() || segment->isEdited()) return false;
+    }
+    return true;
+}
+
 static const Chord* ownerChord4(const Element* item)
 {
     for (; item; item = item->parent()) {
@@ -341,13 +367,24 @@ static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result
     }
     if (merged) {
         const Chord* next = toChord(target);
-        GraceBeforePlan4 before;
-        if (!buildGraceBeforePlan4(next, before, reason)) return false;
-        for (const Chord* grace : next->graceNotesBefore()) {
-            if (!validChord(grace) || grace->up() != graces.front()->up())
+        const auto before = next->graceNotesBefore();
+        const Beam* beforeBeam = before.front()->beam();
+        for (const Chord* grace : before) {
+            if (!validChord(grace) || !grace->isGraceBefore() || grace->parent() != next
+                || grace->score() != owner->score() || grace->track() != owner->track()
+                || !grace->graceNotes().empty() || grace->beam() != beforeBeam
+                || grace->up() != graces.front()->up() || !(grace->mag() > 0) || !std::isfinite(grace->mag())
+                || (beforeBeam && (beforeBeam->cross() || beforeBeam->userModified())))
                 return fail("Merged query needs unedited same-direction grace groups");
         }
-        for (Chord* grace : next->graceNotesBefore()) graces.push_back(grace);
+        if (beforeBeam) {
+            if (beforeBeam->elements().size() != before.size()) return fail("Before beam extends outside merged group");
+            for (const ChordRest* member : beforeBeam->elements()) {
+                if (std::find(before.begin(), before.end(), member) == before.end())
+                    return fail("Before beam extends outside merged group");
+            }
+        }
+        for (Chord* grace : before) graces.push_back(grace);
     }
     const SpacingPaddingTable4 table(owner->score());
     SpacingShape4 targetShape;
@@ -420,7 +457,7 @@ bool buildGraceMergedPlan4(const Chord* owner, GraceMergedPlan4& result, QString
 }
 
 static bool afterSourceComponents4(const Chord* owner, const Element* target,
-                                    const SpacingPaddingTable4& table, SpacingShape4& result)
+                                    const SpacingPaddingTable4& table, SpacingShape4& result, bool merged = false)
 {
     SpacingShape4 source;
     for (const SpacingShapeElement4& e : spacingElementShape4(owner).elements) {
@@ -446,13 +483,15 @@ static bool afterSourceComponents4(const Chord* owner, const Element* target,
             continue;
         }
         SpacingPairPolicy4 policy;
+        const bool supported = merged
+            ? spacingMergedGracePairPolicy4(table, owner, toChord(target), e.item, e.item, owner->spatium(), policy, true)
+            : spacingAfterGracePairPolicy4(table, owner, target, e.item, e.item, owner->spatium(), policy, true);
         if (e.identity != SpacingIdentity4::ITEM || !e.item || chord != owner
             || !e.aggregateOwners.empty() || !e.sharedItems.empty()
             || !std::isfinite(e.rect.x()) || !std::isfinite(e.rect.y())
             || !std::isfinite(e.rect.width()) || !std::isfinite(e.rect.height())
             || e.rect.width() < 0 || e.rect.height() < 0
-            || !spacingAfterGracePairPolicy4(table, owner, target, e.item, e.item,
-                                             owner->spatium(), policy, true))
+            || !supported)
             return false;
         source.elements.push_back(e);
     }
@@ -472,7 +511,7 @@ bool buildGraceMergedGeometry4(const Chord* owner, GraceMergedGeometry4& result,
     const Chord* target = geometry.plan.target;
     const SpacingPaddingTable4 table(owner->score());
     SpacingShape4 source;
-    if (!afterSourceComponents4(owner, target, table, source))
+    if (!afterSourceComponents4(owner, target, table, source, true))
         return fail("Unadapted merged-grace source projection");
     geometry.source = source.translated(owner->pos());
     SpacingShape4 following;

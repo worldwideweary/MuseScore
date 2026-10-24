@@ -78,6 +78,10 @@ bool buildGraceAfterGeometry4(const Chord*, GraceAfterGeometry4&, QString* reaso
 // Failure does not move any items. Native/system widths remain unchanged.
 bool applyGraceAfterPlan4(Chord*, QString* reason = nullptr);
 
+// Automatic slur within a validated same-direction combined group: first
+// incoming after-grace (or the existing local before anchor) to target main.
+bool spacingMergedGraceSlur4(const Slur*, const Chord* owner, const Chord* target);
+
 // Only the unedited first-before-grace to its own main chord, same staff/voice.
 // This validates a spacing allowance; it does not select a new slur renderer.
 bool spacingLocalGraceSlur4(const Slur*, const Chord* main);

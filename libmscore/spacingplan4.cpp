@@ -169,6 +169,7 @@ bool prepareGraces4(System* system, SpacingGraceContext4& result, std::vector<Gr
                         if (!buildGraceMergedGeometry4(main, joint, reason)) return false;
                         prepared.afterMains.push_back(main);
                         prepared.mains.push_back(joint.plan.target);
+                        prepared.mergedPairs.push_back({main, joint.plan.target});
                         merged.push_back(joint);
                     }
                     continue;
