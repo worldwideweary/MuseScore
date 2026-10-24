@@ -2972,3 +2972,13 @@ comparisons. See `v0.132-system-plan-context-reuse.md`, including the requested
 measured percentages: 4.455 ms legacy versus 51.9915 ms experimental, about
 1,067% more elapsed time; Studio has not been timed. Apply after v0.131 and
 repeat both native mtests and the same Debug timing test. Native gains pending.
+
+### v0.133: isolate ordinary slur and ordinary accepted spacing
+
+v0.132 native mtests pass, but its median command improvement is only about
+0.52 ms. Audit the shared arrow/edit/full-system layout path and ordinary
+slur fallback. Supply matched ordinary slur and hairpin fixtures with no grace
+notes, both experimental settings enabled. See
+`v0.133-general-edit-layout-audit.md` for the source findings and timing steps.
+No engraving code change or rebuild: open the new v0.133 files in the current
+Debug application and measure on/off before another general optimization.
