@@ -43,6 +43,10 @@ struct SpacingAnchorInput4 {
     int staffMove = 0;
     std::vector<size_t> startingSlurs;
     std::vector<size_t> endingSlurs;
+    // Current collision-policy relevance, including track/tick aliases.
+    // Kept separate from exact endpoint indices so future policy need not
+    // mistake another grace member with the same tick for an attachment.
+    std::vector<size_t> relatedSlurs;
 };
 
 struct SpacingNoteInput4 {

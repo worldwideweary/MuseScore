@@ -2,6 +2,7 @@
 // Licensed under GNU GPL version 2; see LICENSE.GPL.
 #include "spacingprofile4.h"
 #include "spacingplan4.h"
+#include "spacinginput4.h"
 #include "spacinggeometry4.h"
 #include "spacingcollision4.h"
 #include "spacinglayout4.h"
@@ -552,7 +553,7 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
 }
 
 bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, const SpacingPlanOptions4& options,
-                       const std::vector<GraceMergedGeometry4>* preparedMerged)
+                       const std::vector<GraceMergedGeometry4>* preparedMerged, const SpacingInput4* input)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::PLAN);
     const auto fail = [&](const QString& message) { if (reason) *reason = message; return false; };
@@ -564,6 +565,8 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
     Score* score = system->score();
     if (!score)
         return fail("No score");
+    if (input && input->score() != score)
+        return fail("Prepared musical inputs belong to another score");
     for (int st = 0; st < score->nstaves(); ++st) {
         if (!score->staff(st)->show() || !system->staff(st)->show())
             return fail("Hidden staves require a later adapter");
@@ -576,7 +579,7 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
     if (!prepareGraces4(system, graces, afters, merged, reason, preparedMerged)) return false;
     // All remaining projection and distance work is read-only. Reuse chord
     // eligibility through this complete plan; later plans/edits start fresh.
-    SpacingContextCache4 contextCache;
+    SpacingContextCache4 contextCache(input);
     SpacingPlan4 plan;
     for (const auto& after : afters) plan.afterGraces.push_back(after.plan);
     for (const auto& joint : merged) plan.mergedGraces.push_back(joint.plan);

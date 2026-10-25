@@ -3429,6 +3429,17 @@ void TestSpacing::spacingInputSnapshot4()
             QVERIFY(anchor.orderInTrack == ordinal[anchor.track]++);
             next[anchor.track] = nextChordRest(const_cast<ChordRest*>(anchor.item));
             QCOMPARE(input.anchor(anchor.item), &anchor);
+            std::vector<const Slur*> expectedRoots;
+            for (const auto& entry : score->spannerMap().map()) {
+                  if (!entry.second->isSlur()) continue;
+                  const Slur* slur = toSlur(entry.second);
+                  if (slur->startElement() == anchor.item || slur->endElement() == anchor.item
+                      || (slur->track() == anchor.track && slur->tick() == anchor.tick)
+                      || (slur->track2() == anchor.track && slur->tick2() == anchor.tick)) expectedRoots.push_back(slur);
+                  }
+            std::vector<const Slur*> indexedRoots;
+            for (size_t index : anchor.relatedSlurs) indexedRoots.push_back(input.slurs()[index].slur);
+            QVERIFY(indexedRoots == expectedRoots); // Preserve identity/tick aliases and root order.
             }
       for (const auto& entry : next) QVERIFY(!entry.second);
       bool foundTie = false;
@@ -3453,6 +3464,91 @@ void TestSpacing::spacingInputSnapshot4()
                   QVERIFY(std::any_of(indices.begin(), indices.end(), [&](size_t i) { return input.slurs()[i].slur == slur.slur; }));
                   }
             }
+      QString difference;
+      const auto queriesMatch = [score, &difference](const SpacingInput4& prepared) {
+            SpacingGraceContext4 context;
+            for (const auto& anchor : prepared.anchors()) {
+                  if (anchor.kind != SpacingMemberKind4::MAIN || !anchor.main) continue;
+                  const Chord* main = anchor.main;
+                  if (!main->graceNotesBefore().empty()) context.mains.push_back(main);
+                  if (!main->graceNotesAfter().empty()) {
+                        context.afterMains.push_back(main);
+                        const ChordRest* next = nextChordRest(const_cast<Chord*>(main), true);
+                        if (next && next->isChord() && !toChord(next)->graceNotesBefore().empty())
+                              context.mergedPairs.push_back({main, toChord(next)});
+                        }
+                  }
+            SpacingPaddingTable4 table(score);
+            SpacingContextCache4 oldQuery;
+            SpacingContextCache4 indexedQuery(&prepared);
+            for (const auto& anchor : prepared.anchors()) {
+                  if (!anchor.item->isChord()) continue;
+                  const Chord* chord = toChord(anchor.item);
+                  difference = QString("Attachment query track %1 tick %2 member %3")
+                        .arg(anchor.track).arg(anchor.tick.ticks()).arg(int(anchor.memberIndex));
+                  if (oldQuery.forwardSlurKerning(chord) != indexedQuery.forwardSlurKerning(chord)) return false;
+                  for (const Note* note : chord->notes()) {
+                        SpacingPairPolicy4 oldPolicy, indexedPolicy;
+                        oldPolicy.padding = indexedPolicy.padding = -123;
+                        const bool oldAccepted = spacingPairPolicy4(table, note, note, chord->spatium(), oldPolicy, &context, &oldQuery);
+                        const bool indexedAccepted = spacingPairPolicy4(table, note, note, chord->spatium(), indexedPolicy, &context, &indexedQuery);
+                        if (oldAccepted != indexedAccepted || oldPolicy.padding != indexedPolicy.padding
+                            || oldPolicy.verticalClearance != indexedPolicy.verticalClearance
+                            || oldPolicy.kerning != indexedPolicy.kerning) return false;
+                        }
+                  }
+            for (System* system : score->systems()) {
+                  if (system->vbox()) continue;
+                  SpacingPlan4 oldPlan, indexedPlan;
+                  oldPlan.width = indexedPlan.width = -456;
+                  const bool oldAccepted = buildSpacingPlan4(system, oldPlan);
+                  const bool indexedAccepted = buildSpacingPlan4(system, indexedPlan, nullptr, SpacingPlanOptions4(), nullptr, &prepared);
+                  difference = "Prepared inputs changed system plan admission or width";
+                  if (oldAccepted != indexedAccepted || oldPlan.width != indexedPlan.width) return false;
+                  if (!oldAccepted) continue;
+                  difference = "Prepared inputs changed measure or segment placement";
+                  if (oldPlan.measures.size() != indexedPlan.measures.size()
+                      || oldPlan.segments.size() != indexedPlan.segments.size()) return false;
+                  for (size_t i = 0; i < oldPlan.measures.size(); ++i) {
+                        const auto& old = oldPlan.measures[i];
+                        const auto& indexed = indexedPlan.measures[i];
+                        if (old.measure != indexed.measure || old.x != indexed.x || old.width != indexed.width) return false;
+                        }
+                  for (size_t i = 0; i < oldPlan.segments.size(); ++i) {
+                        const auto& old = oldPlan.segments[i];
+                        const auto& indexed = indexedPlan.segments[i];
+                        if (old.segment != indexed.segment || old.x != indexed.x || old.width != indexed.width
+                            || old.widthOffset != indexed.widthOffset || old.stretch != indexed.stretch || old.ignored != indexed.ignored) return false;
+                        }
+                  difference = "Prepared inputs changed planned grace positions";
+                  if (oldPlan.afterGraces.size() != indexedPlan.afterGraces.size()
+                      || oldPlan.mergedGraces.size() != indexedPlan.mergedGraces.size()) return false;
+                  for (size_t i = 0; i < oldPlan.afterGraces.size(); ++i) {
+                        const auto& old = oldPlan.afterGraces[i];
+                        const auto& indexed = indexedPlan.afterGraces[i];
+                        if (old.owner != indexed.owner || old.target != indexed.target || old.positions.size() != indexed.positions.size()) return false;
+                        for (size_t j = 0; j < old.positions.size(); ++j)
+                              if (old.positions[j].chord != indexed.positions[j].chord || old.positions[j].x != indexed.positions[j].x) return false;
+                        }
+                  for (size_t i = 0; i < oldPlan.mergedGraces.size(); ++i) {
+                        const auto& old = oldPlan.mergedGraces[i];
+                        const auto& indexed = indexedPlan.mergedGraces[i];
+                        if (old.owner != indexed.owner || old.target != indexed.target || old.positions.size() != indexed.positions.size()) return false;
+                        for (size_t j = 0; j < old.positions.size(); ++j)
+                              if (old.positions[j].chord != indexed.positions[j].chord || old.positions[j].x != indexed.positions[j].x) return false;
+                        }
+                  }
+            difference.clear();
+            return true;
+            };
+      QVERIFY2(queriesMatch(input), qPrintable(difference));
+      {
+      SpacingInput4 foreign;
+      SpacingPlan4 untouched;
+      untouched.width = -789;
+      QVERIFY(!buildSpacingPlan4(score->firstMeasure()->system(), untouched, &reason, SpacingPlanOptions4(), nullptr, &foreign));
+      QCOMPARE(untouched.width, qreal(-789));
+      }
       QVERIFY(state() == before);
       QCOMPARE(score->undoStack()->getCurIdx(), history);
       QVERIFY(score->selection().elements() == selection && score->selection().state() == selectionState);
@@ -3512,11 +3608,13 @@ void TestSpacing::spacingInputSnapshot4()
             const auto& anchor = input.anchors()[slur->start.anchorIndex];
             QCOMPARE(anchor.tick, originalTick); // Same tick, different exact grace identity/order.
             QVERIFY(anchor.orderInTrack == originalOrder + 1);
+            QVERIFY2(queriesMatch(input), qPrintable(difference));
             QVERIFY(state() == moved);
             input = SpacingInput4();
             score->undoRedo(true, nullptr);
             QVERIFY2(buildSpacingInput4(score, input, &reason), qPrintable(reason));
             QCOMPARE(input.slur(selected)->start.element, static_cast<const Element*>(original));
+            QVERIFY2(queriesMatch(input), qPrintable(difference));
             }
       input = SpacingInput4();
       delete score;

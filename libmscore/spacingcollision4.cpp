@@ -2,6 +2,7 @@
 // Licensed under GNU GPL version 2; see LICENSE.GPL.
 #include "spacingprofile4.h"
 #include "spacingcollision4.h"
+#include "spacinginput4.h"
 #include "spacinggeometry4.h"
 #include "gracespacing4.h"
 #include "slur.h"
@@ -291,17 +292,24 @@ static bool mainStartSlur4(const Slur* slur, bool* direction = nullptr)
 // Studio Chord::computeKerningExceptions: a slur on the side opposite the
 // stem prohibits note kerning on that side. The forward after-grace and
 // main-start spans use this rule; established local/merged pairs keep theirs.
-static unsigned forwardSlurKerning4(const Chord* chord)
+static unsigned forwardSlurKerning4(const Chord* chord, const SpacingInput4* input = nullptr)
 {
     unsigned blocked = 0;
-    for (const auto& entry : chord->score()->spannerMap().map()) {
-        if (!entry.second->isSlur()) continue;
-        const Slur* slur = toSlur(entry.second);
-        if (slur->startElement() != chord && slur->endElement() != chord) continue;
+    const auto include = [chord, &blocked](const Slur* slur) {
+        if (slur->startElement() != chord && slur->endElement() != chord) return;
         bool up = slur->slurDirection() == Direction::UP;
-        if (!forwardAfterGraceSlur4(slur) && !mainStartSlur4(slur, &up)) continue;
+        if (!forwardAfterGraceSlur4(slur) && !mainStartSlur4(slur, &up)) return;
         if (up && !chord->up()) blocked |= 1;
         if (!up && chord->up()) blocked |= 2;
+    };
+    if (input) {
+        const auto* anchor = input->anchor(chord);
+        if (anchor)
+            for (size_t index : anchor->relatedSlurs) include(input->slurs()[index].slur);
+    }
+    else {
+        for (const auto& entry : chord->score()->spannerMap().map())
+            if (entry.second->isSlur()) include(toSlur(entry.second));
     }
     return blocked;
 }
@@ -309,13 +317,13 @@ static unsigned forwardSlurKerning4(const Chord* chord)
 unsigned SpacingContextCache4::forwardSlurKerning(const Chord* chord)
 {
     for (const auto& entry : _slurKerning) if (entry.first == chord) return entry.second;
-    const unsigned blocked = forwardSlurKerning4(chord);
+    const unsigned blocked = forwardSlurKerning4(chord, _input);
     _slurKerning.push_back({chord, blocked});
     return blocked;
 }
 
 static bool commonChordContext4(const Chord* chord, bool allowGrace,
-                                const SpacingGraceContext4* context, const Chord* scopedMain)
+                                const SpacingGraceContext4* context, const Chord* scopedMain, const SpacingInput4* input)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::CONTEXT);
     // Common notation only in this stage. Studio's line attachment and chord
@@ -336,24 +344,32 @@ static bool commonChordContext4(const Chord* chord, bool allowGrace,
             jointScope = jointScope || main == pair.first || main == pair.second;
     }
     int localSlurs = 0;
-    for (const auto& entry : chord->score()->spannerMap().map()) {
-        const Spanner* spanner = entry.second;
-        if (!spanner->isSlur())
-            continue;
-        if (spanner->startElement() == chord || spanner->endElement() == chord
-            || (spanner->track() == chord->track() && spanner->tick() == chord->tick())
-            || (spanner->track2() == chord->track() && spanner->tick2() == chord->tick())) {
-            // A visual slur edit does not change these physical note/stem
-            // obstacles or the supported musical anchors. Keep spacing active.
-            if (forwardAfterGraceSlur4(toSlur(spanner)) || mainStartSlur4(toSlur(spanner))) continue;
-            bool supported = localScope && spacingLocalGraceSlur4(toSlur(spanner), main, true);
-            if (context) {
-                for (const auto& pair : context->mergedPairs) {
-                    if ((main == pair.first || main == pair.second)
-                        && spacingMergedGraceSlur4(toSlur(spanner), pair.first, pair.second, true)) supported = true;
-                }
-            }
-            if (!supported || ++localSlurs > (jointScope ? 2 : 1)) return false;
+    const auto supportedSlur = [&](const Slur* slur) {
+        // Selection of relevant roots is independent of this existing policy.
+        // Preserve current behavior here until the general consumer is ready.
+        if (forwardAfterGraceSlur4(slur) || mainStartSlur4(slur)) return true;
+        bool supported = localScope && spacingLocalGraceSlur4(slur, main, true);
+        if (context) {
+            for (const auto& pair : context->mergedPairs)
+                if ((main == pair.first || main == pair.second)
+                    && spacingMergedGraceSlur4(slur, pair.first, pair.second, true)) supported = true;
+        }
+        return supported && ++localSlurs <= (jointScope ? 2 : 1);
+    };
+    if (input) {
+        const auto* anchor = input->anchor(chord);
+        if (!anchor) return false;
+        for (size_t index : anchor->relatedSlurs)
+            if (!supportedSlur(input->slurs()[index].slur)) return false;
+    }
+    else {
+        for (const auto& entry : chord->score()->spannerMap().map()) {
+            const Spanner* spanner = entry.second;
+            if (!spanner->isSlur()) continue;
+            if (spanner->startElement() == chord || spanner->endElement() == chord
+                || (spanner->track() == chord->track() && spanner->tick() == chord->tick())
+                || (spanner->track2() == chord->track() && spanner->tick2() == chord->tick()))
+                if (!supportedSlur(toSlur(spanner))) return false;
         }
     }
     return true;
@@ -401,6 +417,7 @@ static bool commonItemContext4(const Element* item, bool allowGrace,
 {
     if (!item || item->track() < 0 || item->onTabStaff())
         return false;
+    if (cache && cache->input() && cache->input()->score() != item->score()) return false;
     if (item->isRest() && toRest(item)->measure() && toRest(item)->measure()->isMMRest())
         return false;
     const Chord* chord = nullptr;
@@ -414,10 +431,11 @@ static bool commonItemContext4(const Element* item, bool allowGrace,
         return false;
     if (!chord)
         return true;
+    const SpacingInput4* input = cache ? cache->input() : nullptr;
     bool supported;
     if (cache && cache->lookup(chord, allowGrace, context, scopedMain, supported))
         return supported;
-    supported = commonChordContext4(chord, allowGrace, context, scopedMain);
+    supported = commonChordContext4(chord, allowGrace, context, scopedMain, input);
     if (cache) cache->remember(chord, supported);
     return supported;
 }

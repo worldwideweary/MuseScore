@@ -3198,3 +3198,16 @@ See v0.150-prepared-spacing-inputs.md. After CMake rebuild, run
 `tst_spacing spacingInputSnapshot4`; no new visual comparison is needed.
 Package-A geometry/direction/consumer integration and package-B lifecycle work
 remain outstanding. This stage makes no appearance or speed claim.
+
+
+### v0.151: differential indexed-attachment consumer
+
+v0.150 native combined tests pass. Extend the prepared view with a separate
+compatibility relevance index (exact endpoints OR existing track/tick aliases),
+then allow collision-query caches and buildSpacingPlan4 to borrow that view.
+Do not collect whole scores in pair/prefix loops. Existing policy evaluates the
+same indexed roots; default runtime callers remain on their current lookup.
+The same four native rows compare roots, policies and complete plans before/
+after actual start-anchor movement and undo; no visual run is needed. See
+v0.151-indexed-attachment-consumer.md. General endpoint/direction policy and
+shared runtime preparation ownership remain the next architecture steps.

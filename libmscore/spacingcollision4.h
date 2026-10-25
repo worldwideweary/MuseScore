@@ -14,6 +14,7 @@ class Element;
 class Chord;
 class Score;
 struct SpacingShape4;
+class SpacingInput4;
 enum class ElementType : char;
 
 enum class SpacingKerning4 { NON_KERNING, KERNING, ALLOW_COLLISION, LEFT_EDGE, CENTER, RIGHT_EDGE };
@@ -50,6 +51,7 @@ struct SpacingGraceContext4 {
 // reused, including native shape intersections; item checks and pair-specific
 // padding are always evaluated. Geometry must remain unchanged for its lifetime.
 class SpacingContextCache4 {
+    const SpacingInput4* _input = nullptr;
     bool _initialized = false, _allowGrace = false, _hasContext = false;
     const Chord* _scopedMain = nullptr;
     SpacingGraceContext4 _context, _mergedContext;
@@ -59,6 +61,10 @@ class SpacingContextCache4 {
     std::vector<std::pair<const Chord*, unsigned>> _slurKerning;
     std::unordered_map<const Element*, std::unordered_map<const Element*, bool>> _overlaps;
 public:
+    // Optional caller-owned musical view, prepared once outside inner loops.
+    // It must describe the same unchanged score for the entire query lifetime.
+    explicit SpacingContextCache4(const SpacingInput4* input = nullptr) : _input(input) {}
+    const SpacingInput4* input() const { return _input; }
     // Validated, non-null items; preserves the ordered native shape query.
     bool shapesIntersect(const Element* first, const Element* second);
     // Endpoint-side restrictions, reused only within this unchanged query.

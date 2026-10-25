@@ -10,6 +10,8 @@
 #include "slur.h"
 #include "spannermap.h"
 #include <utility>
+#include <map>
+#include <algorithm>
 
 namespace Ms {
 const SpacingAnchorInput4* SpacingInput4::anchor(const ChordRest* item) const
@@ -113,6 +115,11 @@ bool buildSpacingInput4(Score* score, SpacingInput4& result, QString* reason)
             }
         }
     }
+    std::map<std::pair<int, Fraction>, std::vector<size_t>> anchorsAt;
+    for (size_t i = 0; i < pending._anchors.size(); ++i) {
+        const auto& anchor = pending._anchors[i];
+        anchorsAt[{anchor.track, anchor.tick}].push_back(i);
+    }
     const auto endpoint = [&pending](const Element* element) {
         SpacingEndpointInput4 end;
         end.element = element;
@@ -156,6 +163,22 @@ bool buildSpacingInput4(Score* score, SpacingInput4& result, QString* reason)
             pending._anchors[stored.start.anchorIndex].startingSlurs.push_back(index);
         if (stored.end.anchorIndex != SPACING_INPUT_NONE4)
             pending._anchors[stored.end.anchorIndex].endingSlurs.push_back(index);
+        std::vector<size_t> related;
+        const auto addAt = [&anchorsAt, &related](int track, const Fraction& tick) {
+            const auto found = anchorsAt.find({track, tick});
+            if (found != anchorsAt.end()) related.insert(related.end(), found->second.begin(), found->second.end());
+        };
+        addAt(stored.track, stored.tick);
+        addAt(stored.track2, stored.tick2);
+        if (stored.start.kind != SpacingEndpointKind4::NOTE && stored.start.anchorIndex != SPACING_INPUT_NONE4)
+            related.push_back(stored.start.anchorIndex);
+        if (stored.end.kind != SpacingEndpointKind4::NOTE && stored.end.anchorIndex != SPACING_INPUT_NONE4)
+            related.push_back(stored.end.anchorIndex);
+        std::sort(related.begin(), related.end());
+        related.erase(std::unique(related.begin(), related.end()), related.end());
+        // Root iteration order is preserved once per recipient, even when
+        // start/end/tick conditions all match the same grace member.
+        for (size_t anchor : related) pending._anchors[anchor].relatedSlurs.push_back(index);
     }
     result = std::move(pending);
     if (reason) reason->clear();

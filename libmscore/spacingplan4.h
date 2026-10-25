@@ -13,6 +13,7 @@ class Segment;
 class System;
 class Beam;
 class Chord;
+class SpacingInput4;
 
 // Read-only preparation for cross-staff placement. This first context covers
 // one automatic eighth-note beam of up to two unmirrored normal notes per chord
@@ -76,9 +77,12 @@ struct SpacingPlanOptions4 {
 // Optional merged inputs must be complete successful geometry queries from the
 // current unchanged DOM. Discard them before any geometry preparation/write;
 // they are a handoff from beam preparation, never a cache across layout calls.
+// Optional musical input is caller-owned and shared only within an unchanged
+// preparation phase. This function never collects a score-wide view itself.
 bool buildSpacingPlan4(System*, SpacingPlan4& result, QString* reason = nullptr,
                        const SpacingPlanOptions4& options = SpacingPlanOptions4(),
-                       const std::vector<GraceMergedGeometry4>* preparedMerged = nullptr);
+                       const std::vector<GraceMergedGeometry4>* preparedMerged = nullptr,
+                       const SpacingInput4* input = nullptr);
 bool justifySpacingPlan4(SpacingPlan4&, qreal targetWidth);
 
 // Compare a fresh plan with the active horizontal fields published by system layout.
