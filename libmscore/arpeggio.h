@@ -32,7 +32,7 @@ class Arpeggio : public Element {
       qreal _userLen1;
       qreal _userLen2;
       qreal _height;
-      int _span;              // spanning staves
+      int _span;              // number of tracks (voices) spanned
       std::vector<SymId> symbols;
       bool _playArpeggio;
 
@@ -72,6 +72,7 @@ class Arpeggio : public Element {
       bool acceptDrop(EditData&) const override;
       Element* drop(EditData&) override;
       void layout() override;
+      void layoutHorizontal();
       void draw(QPainter*) const override;
       bool isEditable() const override { return true; }
       void editDrag(EditData&) override;
@@ -83,7 +84,12 @@ class Arpeggio : public Element {
       void reset() override;
 
       int span() const      { return _span; }
-      void setSpan(int val) { _span = val; }
+      void setSpan(int val) { _span = qMax(1, val); }
+      int endTrack() const;
+      std::vector<Chord*> spannedChords() const;
+      Note* topNote() const;
+      Note* bottomNote() const;
+      static Arpeggio* spanningArpeggio(const Chord* chord);
       void setHeight(qreal);
 
       qreal userLen1() const    { return _userLen1; }

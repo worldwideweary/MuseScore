@@ -14,6 +14,7 @@
 #include "arpeggio.h"
 #include "chord.h"
 #include "note.h"
+#include "ledgerline.h"
 #include "page.h"
 #include "part.h"
 #include "property.h"
@@ -22,6 +23,7 @@
 #include "staff.h"
 #include "sym.h"
 #include "xml.h"
+#include "undo.h"
 
 namespace Ms {
 
@@ -74,8 +76,12 @@ void Arpeggio::write(XmlWriter& xml) const
             xml.tag("userLen1", _userLen1 / spatium());
       if (!qFuzzyIsNull(_userLen2))
             xml.tag("userLen2", _userLen2 / spatium());
-      if (_span != 1)
-            xml.tag("span", _span);
+      // Legacy staff-spanning: the explicit track-span stores
+      // endpoints on other voices without changing file version
+      if (_span != 1) {
+            xml.tag("span", (voice() + _span - 1) / VOICES + 1);
+            xml.tag("spanTracks", _span);
+            }
       writeProperty(xml, Pid::PLAY);
       writeProperty(xml, Pid::TIME_STRETCH);
       xml.etag();
@@ -87,6 +93,8 @@ void Arpeggio::write(XmlWriter& xml) const
 
 void Arpeggio::read(XmlReader& e)
       {
+      int legacySpan = 1;
+      int trackSpan = 0;
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
             if (tag == "subtype")
@@ -96,7 +104,9 @@ void Arpeggio::read(XmlReader& e)
             else if (tag == "userLen2")
                   _userLen2 = e.readDouble() * spatium();
             else if (tag == "span")
-                  _span = e.readInt();
+                  legacySpan = qMax(1, e.readInt());
+            else if (tag == "spanTracks")
+                  trackSpan = qMax(1, e.readInt());
             else if (tag == "play")
                  _playArpeggio = e.readBool();
             else if (tag == "timeStretch")
@@ -104,6 +114,120 @@ void Arpeggio::read(XmlReader& e)
             else if (!Element::readProperties(e))
                   e.unknown();
             }
+      setSpan(trackSpan ? trackSpan : score()->mscVersion() >= 420
+              ? legacySpan : (legacySpan - 1) * VOICES + 1);
+      }
+
+//---------------------------------------------------------
+//   endTrack
+//    No caching of chord pointers, just uses the track
+//---------------------------------------------------------
+
+int Arpeggio::endTrack() const
+      {
+      return parent() && chord()->part()
+            ? qMin(track() + _span - 1, chord()->part()->endTrack() - 1)
+            : track() + _span - 1;
+      }
+
+//---------------------------------------------------------
+//   spannedChords
+//---------------------------------------------------------
+
+std::vector<Chord*> Arpeggio::spannedChords() const
+      {
+      std::vector<Chord*> result;
+      if (!parent() || !chord()->segment())
+            return result;
+      if (chord()->isGrace()) {
+            result.push_back(chord());
+            return result;
+            }
+      for (int t = track(); t <= endTrack(); ++t) {
+            Element* e = chord()->segment()->element(t);
+            if (e && e->isChord())
+                  result.push_back(toChord(e));
+            }
+      return result;
+      }
+
+//---------------------------------------------------------
+//   topNote
+//---------------------------------------------------------
+
+Note* Arpeggio::topNote() const
+      {
+      Note* note = chord()->upNote();
+      for (Chord* c : spannedChords()) {
+            Note* n = c->upNote();
+            if (n->pagePos().y() < note->pagePos().y())
+                  note = n;
+            }
+      return note;
+      }
+
+//---------------------------------------------------------
+//   bottomNote
+//---------------------------------------------------------
+
+Note* Arpeggio::bottomNote() const
+      {
+      Note* note = chord()->downNote();
+      for (Chord* c : spannedChords()) {
+            Note* n = c->downNote();
+            if (n->pagePos().y() > note->pagePos().y())
+                  note = n;
+            }
+      return note;
+      }
+
+//---------------------------------------------------------
+//   spanningArpeggio
+//---------------------------------------------------------
+
+Arpeggio* Arpeggio::spanningArpeggio(const Chord* c)
+      {
+      if (c->arpeggio())
+            return c->arpeggio();
+      if (!c->segment() || !c->part() || c->isGrace())
+            return nullptr;
+      for (int t = c->track() - 1; t >= c->part()->startTrack(); --t) {
+            Element* e = c->segment()->element(t);
+            if (e && e->isChord()) {
+                  Arpeggio* a = toChord(e)->arpeggio();
+                  if (a && a->endTrack() >= c->track())
+                        return a;
+                  }
+            }
+      return nullptr;
+      }
+
+//---------------------------------------------------------
+//   layoutHorizontal
+//    Called after every voice has laid out its noteheads
+//    and accidentals, but before segment spacing uses the
+//    shapes. Shares one horizontal position across tracks
+//---------------------------------------------------------
+
+void Arpeggio::layoutHorizontal()
+      {
+      if (span() == 1 || !parent())
+            return;
+      qreal left = x() + chord()->x() + width();
+      for (Chord* c : spannedChords()) {
+            for (Note* n : c->notes()) {
+                  qreal noteLeft = c->x() + n->x();
+                  left = qMin(left, noteLeft - score()->styleP(Sid::arpeggioNoteDistance) * mag());
+                  Accidental* a = n->accidental();
+                  if (a && a->visible())
+                        left = qMin(left, noteLeft + a->x() + a->bbox().left()
+                                    - score()->styleP(Sid::arpeggioAccidentalDistance) * mag());
+                  }
+            for (LedgerLine* l = c->ledgerLines(); l; l = l->next())
+                  left = qMin(left, c->x() + l->x() + l->bbox().left()
+                              - score()->styleP(Sid::arpeggioNoteDistance) * mag());
+            }
+      rxpos() = left - chord()->x() - width();
       }
 
 //---------------------------------------------------------
@@ -149,12 +273,13 @@ qreal Arpeggio::calcTop() const
                   // if the top is in the staff on a space, move it up
                   // if the bottom note is on a line, the distance is 0.25 spaces
                   // if the bottom note is on a space, the distance is 0.5 spaces
-                  int topNoteLine = chord()->upNote()->line();
-                  int lines = staff()->lines(tick());
+                  Note* topNote = this->topNote();
+                  int topNoteLine = topNote->line();
+                  int lines = topNote->staff()->lines(tick());
                   int bottomLine = (lines - 1) * 2;
                   if (topNoteLine <= 0 || topNoteLine % 2 == 0 || topNoteLine >= bottomLine)
                         return top;
-                  int downNoteLine = chord()->downNote()->line();
+                  int downNoteLine = bottomNote()->line();
                   if (downNoteLine % 2 == 1 && downNoteLine < bottomLine)
                         return top - 0.4 * spatium();
                   return top - 0.25 * spatium();
@@ -389,14 +514,9 @@ QVector<QLineF> Arpeggio::gripAnchorLines(Grip grip) const
       const QPointF gripCanvasPos = gripsPositions()[static_cast<int>(grip)] + pageOffset;
 
       if (grip == Grip::START)
-            result << QLineF(_chord->upNote()->canvasPos(), gripCanvasPos);
+            result << QLineF(topNote()->canvasPos(), gripCanvasPos);
       else if (grip == Grip::END) {
-            Note* downNote = _chord->downNote();
-            int btrack  = track() + (_span - 1) * VOICES;
-            Element* e = _chord->segment()->element(btrack);
-            if (e && e->isChord())
-                  downNote = toChord(e)->downNote();
-            result << QLineF(downNote->canvasPos(), gripCanvasPos);
+            result << QLineF(bottomNote()->canvasPos(), gripCanvasPos);
             }
       return result;
       }
@@ -419,29 +539,30 @@ void Arpeggio::startEdit(EditData& ed)
 
 bool Arpeggio::edit(EditData& ed)
       {
-      if (ed.curGrip != Grip::END || !(ed.modifiers & Qt::ShiftModifier))
+      if ((ed.curGrip != Grip::START && ed.curGrip != Grip::END)
+          || !(ed.modifiers & Qt::ShiftModifier)
+          || (ed.key != Qt::Key_Up && ed.key != Qt::Key_Down))
             return false;
-
-      if (ed.key == Qt::Key_Down) {
-            Staff* s = staff();
-            Part* part = s->part();
-            int n = part->nstaves();
-            int ridx = part->staves()->indexOf(s);
-            if (ridx >= 0) {
-                  if (_span + ridx < n)
-                        ++_span;
-                  }
-            }
-      else if (ed.key == Qt::Key_Up) {
-            if (_span > 1)
-                  --_span;
-            }
-      else
-            return false;
-      layout();
       Chord* c = chord();
-      rxpos() = -(width() + spatium() * .5);
-      c->layoutArpeggio2();
+      if (!c || !c->segment() || !c->part())
+            return false;
+      const bool start = ed.curGrip == Grip::START;
+      const int step = ed.key == Qt::Key_Up ? -1 : 1;
+      const int anchor = start ? track() : endTrack();
+      const int first = start ? c->part()->startTrack() : track();
+      const int last = start ? endTrack() : c->part()->endTrack() - 1;
+      for (int t = anchor + step; t >= first && t <= last; t += step) {
+            Element* e = c->segment()->element(t);
+            if (!e || !e->isChord())
+                  continue;
+            // Never overwrite another arpeggio or extend across its range
+            Arpeggio* other = spanningArpeggio(toChord(e));
+            if (other && other != this)
+                  break;
+            const int newSpan = start ? endTrack() - t + 1 : t - track() + 1;
+            score()->undo(new ChangeArpeggioAnchor(this, start ? toChord(e) : c, newSpan));
+            break;
+            }
       return true;
       }
 
@@ -645,6 +766,8 @@ QVariant Arpeggio::getProperty(Pid propertyId) const
       switch(propertyId) {
             case Pid::ARPEGGIO_TYPE:
                   return int(_arpeggioType);
+            case Pid::ARPEGGIO_SPAN:
+                  return _span;
             case Pid::TIME_STRETCH:
                   return Stretch();
             case Pid::ARP_USER_LEN1:
@@ -666,6 +789,9 @@ QVariant Arpeggio::getProperty(Pid propertyId) const
 bool Arpeggio::setProperty(Pid propertyId, const QVariant& val)
       {
       switch(propertyId) {
+            case Pid::ARPEGGIO_SPAN:
+                  setSpan(val.toInt());
+                  break;
             case Pid::ARPEGGIO_TYPE:
                   setArpeggioType(ArpeggioType(val.toInt()));
                   break;
@@ -686,6 +812,7 @@ bool Arpeggio::setProperty(Pid propertyId, const QVariant& val)
                         return false;
                   break;
             }
+      score()->setPlaylistDirty();
       triggerLayout();
       return true;
       }
@@ -697,6 +824,8 @@ bool Arpeggio::setProperty(Pid propertyId, const QVariant& val)
 QVariant Arpeggio::propertyDefault(Pid propertyId) const
       {
       switch(propertyId) {
+            case Pid::ARPEGGIO_SPAN:
+                  return 1;
             case Pid::ARP_USER_LEN1:
                   return 0.0;
             case Pid::ARP_USER_LEN2:

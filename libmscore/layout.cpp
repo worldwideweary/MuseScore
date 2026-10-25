@@ -3373,7 +3373,13 @@ void Score::getNextMeasure(LayoutContext& lc)
 //                                    chord->tremolo()->layout();
                               }
                         }
+
                   ChordBracket::layoutSegment(&s);
+
+                  for (Element* e : s.elist()) {
+                        if (e && e->isChord() && toChord(e)->arpeggio())
+                              toChord(e)->arpeggio()->layoutHorizontal();
+                        }
                   }
             else if (s.isEndBarLineType())
                   continue;

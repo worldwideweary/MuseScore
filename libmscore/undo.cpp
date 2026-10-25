@@ -25,6 +25,7 @@
 #include "global/log.h"
 
 #include "accidental.h"
+#include "arpeggio.h"
 #include "articulation.h"
 #include "barline.h"
 #include "beam.h"
@@ -2383,6 +2384,26 @@ void ChangeSpannerElements::flip(EditData*)
       startElement = oldStartElement;
       endElement   = oldEndElement;
       spanner->triggerLayout();
+      }
+
+//---------------------------------------------------------
+//   ChangeArpeggioAnchor
+//---------------------------------------------------------
+
+void ChangeArpeggioAnchor::flip(EditData*)
+      {
+      Chord* oldParent = arpeggio->chord();
+      int oldSpan = arpeggio->span();
+      oldParent->remove(arpeggio);
+      arpeggio->setParent(parent);
+      arpeggio->setTrack(parent->track());
+      arpeggio->setSpan(span);
+      parent->add(arpeggio);
+      oldParent->triggerLayout();
+      arpeggio->triggerLayout();
+      arpeggio->score()->setPlaylistDirty();
+      parent = oldParent;
+      span = oldSpan;
       }
 
 //---------------------------------------------------------
