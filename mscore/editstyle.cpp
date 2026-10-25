@@ -10,6 +10,11 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include <QSignalBlocker>
+#include <QSet>
+#include <memory>
+#include <vector>
+
 #include "editstyle.h"
 #include "icons.h"
 #include "musescore.h"
@@ -22,6 +27,7 @@
 #include "libmscore/excerpt.h"
 #include "libmscore/figuredbass.h"
 #include "libmscore/layout.h"
+#include "libmscore/harmony.h"
 #include "libmscore/score.h"
 #include "libmscore/style.h"
 #include "libmscore/sym.h"
@@ -33,6 +39,30 @@
 #include "inspector/offsetSelect.h"
 
 namespace Ms {
+
+// Refreshing the dialog must not turn widget notifications into score edits.
+// Preserve pre-existing signal blocks, including nested refreshes.
+class StyleSignalBlockers {
+      QSet<QObject*> objects;
+      std::vector<std::unique_ptr<QSignalBlocker>> blockers;
+   public:
+      StyleSignalBlockers(std::initializer_list<QObject*> controls = {}) {
+            for (QObject* control : controls)
+                  add(control);
+            }
+      void add(QObject* control) {
+            if (control && !objects.contains(control)) {
+                  objects.insert(control);
+                  blockers.emplace_back(new QSignalBlocker(control));
+                  }
+            }
+      };
+
+static void undoStyleValue(Score* score, Sid sid, const QVariant& value)
+      {
+      if (score->styleV(sid) != value)
+            score->undo(new ChangeStyleVal(score, sid, value));
+      }
 
 const char* lineStyles[] = {
       QT_TRANSLATE_NOOP("EditStyleBase", "Continuous"),
@@ -154,10 +184,24 @@ EditStyle::EditStyle(Score* s, QWidget* parent)
       { Sid::repeatBarlineDotSeparation, false, repeatBarlineDotSeparation, resetRepeatBarlineDotSeparation },
 
       { Sid::barGraceDistance,        false, barGraceDistance,        resetBarGraceDistance },
-      { Sid::chordExtensionMag,       false, extensionMag,            resetExtensionMag },
-      { Sid::chordExtensionAdjust,    false, extensionAdjust,         resetExtensionAdjust },
-      { Sid::chordModifierMag,        false, modifierMag,             resetModifierMag },
-      { Sid::chordModifierAdjust,     false, modifierAdjust,          resetModifierAdjust },
+      { Sid::chordExtensionMag,       true, extensionMag,            resetExtensionMag },
+      { Sid::chordExtensionAdjust,    true, extensionAdjust,         resetExtensionAdjust },
+      { Sid::chordModifierMag,        true, modifierMag,             resetModifierMag },
+      { Sid::chordModifierAdjust,     true, modifierAdjust,          resetModifierAdjust },
+      { Sid::harmonyHarmonyDistance, false, harmonyHarmonyDistance, resetHarmonyHarmonyDistance },
+      { Sid::displayCapoChords, false, displayCapoChords, nullptr },
+      { Sid::verticallyStackModifiers, false, verticallyStackModifiers, resetverticallyStackModifiers },
+      { Sid::chordBassNoteStagger, false, chordBassNoteStagger, resetchordBassNoteStagger },
+      { Sid::chordAlignmentExcludeModifiers, false, chordAlignmentExcludeModifiers, resetchordAlignmentExcludeModifiers },
+      { Sid::harmonyParenUseSmuflSym, false, harmonyParenUseSmuflSym, resetharmonyParenUseSmuflSym },
+      { Sid::verticallyAlignChordSymbols, false, verticallyAlignChordSymbols, resetverticallyAlignChordSymbols },
+      { Sid::chordStackedModifierMag, true, chordStackedModifierMag, resetchordStackedModifierMag },
+      { Sid::chordBassNoteScale, true, chordBassNoteScale, resetchordBassNoteScale },
+      { Sid::chordBassNoteGap, true, chordBassNoteGap, resetchordBassNoteGap },
+      { Sid::polychordDividerThickness, false, polychordDividerThickness, resetpolychordDividerThickness },
+      { Sid::polychordDividerSpacing, false, polychordDividerSpacing, resetpolychordDividerSpacing },
+      { Sid::chordSymPosition, false, chordSymPosition, resetchordSymPosition },
+      { Sid::chordAlignmentToFretboard, false, chordAlignmentToFretboard, resetchordAlignmentToFretboard },
       { Sid::useStandardNoteNames,    false, useStandardNoteNames,    0 },
       { Sid::useGermanNoteNames,      false, useGermanNoteNames,      0 },
       { Sid::useFullGermanNoteNames,  false, useFullGermanNoteNames,  0 },
@@ -506,6 +550,16 @@ EditStyle::EditStyle(Score* s, QWidget* parent)
       connect(disableVerticalSpread, SIGNAL(toggled(bool)),             SLOT(disableVerticalSpreadClicked(bool)));
       connect(headerOddEven,         SIGNAL(toggled(bool)),             SLOT(toggleHeaderOddEven(bool)));
       connect(footerOddEven,         SIGNAL(toggled(bool)),             SLOT(toggleFooterOddEven(bool)));
+      displayCapoChords->addItem(tr("Original symbols only"), 0);
+      displayCapoChords->addItem(tr("Original and transposed symbols"), 1);
+      displayCapoChords->addItem(tr("Transposed symbols only"), 2);
+      for (QComboBox* box : { chordSymPosition, chordAlignmentToFretboard }) {
+            box->addItem(tr("Text style"), "auto");
+            box->addItem(tr("Left"), "left");
+            box->addItem(tr("Center"), "center");
+            box->addItem(tr("Right"), "right");
+            }
+      connect(chordsLegacy, &QRadioButton::toggled, this, &EditStyle::setChordStyle);
       connect(chordDescriptionFileButton, SIGNAL(clicked()),            SLOT(selectChordDescriptionFile()));
       connect(chordsStandard,        SIGNAL(toggled(bool)),             SLOT(setChordStyle(bool)));
       connect(chordsJazz,            SIGNAL(toggled(bool)),             SLOT(setChordStyle(bool)));
@@ -1290,9 +1344,13 @@ QVariant EditStyle::getValue(Sid idx)
 void EditStyle::setValues()
       {
       const MStyle& lstyle = cs->style();
+      StyleSignalBlockers block({ swingOff, swingEighth, swingSixteenth,
+            chordsStandard, chordsJazz, chordsLegacy, chordsCustom, chordsXmlFile,
+            comboFBFont, doubleSpinFBSize, doubleSpinFBVertPos, spinFBLineHeight,
+            disableVerticalSpread, showIntervalMeasureNumber });
+      for (const StyleWidget& sw : styleWidgets)
+            block.add(sw.widget);
       for (StyleWidget& sw : styleWidgets) {
-            if (sw.widget)
-                  sw.widget->blockSignals(true);
             QVariant val = lstyle.value(sw.idx);
             const char* type = MStyle::valueType(sw.idx);
             if (sw.reset)
@@ -1385,8 +1443,6 @@ void EditStyle::setValues()
                   }
             else
                   unhandledType(&sw);
-            if (sw.widget)
-                  sw.widget->blockSignals(false);
             }
 
       textStyleChanged(textStyles->currentRow());
@@ -1409,8 +1465,16 @@ void EditStyle::setValues()
             }
       QString s(lstyle.value(Sid::chordDescriptionFile).toString());
       chordDescriptionFile->setText(s);
+      const QSignalBlocker blockStandard(chordsStandard);
+      const QSignalBlocker blockJazz(chordsJazz);
+      const QSignalBlocker blockLegacy(chordsLegacy);
+      const QSignalBlocker blockCustom(chordsCustom);
       QString cstyle(lstyle.value(Sid::chordStyle).toString());
-      if (cstyle == "std") {
+      if (cstyle == "legacy" || (cstyle == "std" && lstyle.value(Sid::chordSymbolLayoutVersion).toInt() == 0)) {
+            chordsLegacy->setChecked(true);
+            chordDescriptionGroup->setEnabled(false);
+            }
+      else if (cstyle == "std") {
             chordsStandard->setChecked(true);
             chordDescriptionGroup->setEnabled(false);
             }
@@ -1421,6 +1485,15 @@ void EditStyle::setValues()
       else {
             chordsCustom->setChecked(true);
             chordDescriptionGroup->setEnabled(true);
+            }
+      const bool legacyShiftLimits = lstyle.value(Sid::chordSymbolLayoutVersion).toInt() == 0;
+      for (QDoubleSpinBox* box : { maxChordShiftAbove, maxChordShiftBelow, maxFretShiftAbove, maxFretShiftBelow })
+            box->setEnabled(legacyShiftLimits);
+      if (!legacyShiftLimits) {
+            resetMaxChordShiftAbove->setEnabled(false);
+            resetMaxChordShiftBelow->setEnabled(false);
+            resetMaxFretShiftAbove->setEnabled(false);
+            resetMaxFretShiftBelow->setEnabled(false);
             }
       //formattingGroup->setEnabled(lstyle.chordList()->autoAdjust());
 
@@ -1446,9 +1519,9 @@ void EditStyle::fillScoreFontsComboBoxes()
       QString selectedMusicalSymbolFontName = cs->styleSt(Sid::musicalSymbolFont);
       QString selectedMusicalTextFontFamily = cs->styleSt(Sid::musicalTextFont);
 
-      musicalSymbolFontComboBox->blockSignals(true);
+      const QSignalBlocker blockSymbols(musicalSymbolFontComboBox);
+      const QSignalBlocker blockText(musicalTextFontComboBox);
       musicalSymbolFontComboBox->clear();
-      musicalTextFontComboBox->blockSignals(true);
       musicalTextFontComboBox->clear();
 
       int idx = 0;
@@ -1464,8 +1537,6 @@ void EditStyle::fillScoreFontsComboBoxes()
             ++idx;
             }
 
-      musicalSymbolFontComboBox->blockSignals(false);
-      musicalTextFontComboBox->blockSignals(false);
       }
 
 //---------------------------------------------------------
@@ -1502,7 +1573,7 @@ void EditStyle::setSwingParams(bool checked)
             val = TDuration(TDuration::DurationType::V_16TH).name();
             swingBox->setEnabled(true);
             }
-      cs->undo(new ChangeStyleVal(cs, Sid::swingUnit, val));
+      undoStyleValue(cs, Sid::swingUnit, val);
       cs->update();
       }
 
@@ -1531,6 +1602,11 @@ void EditStyle::setChordStyle(bool checked)
             file = "chords_std.xml";
             chordsXml = false;
             }
+      else if (chordsLegacy->isChecked()) {
+            val = QString("legacy");
+            file = "chords_std.xml";
+            chordsXml = false;
+            }
       else if (chordsJazz->isChecked()) {
             val  = QString("jazz");
             file = "chords_jazz.xml";
@@ -1547,13 +1623,33 @@ void EditStyle::setChordStyle(bool checked)
             chordDescriptionGroup->setEnabled(false);
             chordDescriptionFile->setText(file);
             }
-      cs->undo(new ChangeStyleVal(cs, Sid::chordsXmlFile, chordsXml));
-      cs->undo(new ChangeStyleVal(cs, Sid::chordStyle, val));
+      undoStyleValue(cs, Sid::chordSymbolLayoutVersion, val == "legacy" ? 0 : 1);
+      if (val != "custom") {
+            undoStyleValue(cs, Sid::chordSymbolAFontFace, val == "jazz" ? QString("MuseJazz Text") : QString("Edwin"));
+            undoStyleValue(cs, Sid::chordExtensionMag, 1.0);
+            undoStyleValue(cs, Sid::chordExtensionAdjust, 0.0);
+            undoStyleValue(cs, Sid::chordModifierMag, 1.0);
+            undoStyleValue(cs, Sid::chordModifierAdjust, 0.0);
+            undoStyleValue(cs, Sid::verticallyStackModifiers, false);
+            undoStyleValue(cs, Sid::chordBassNoteStagger, false);
+            undoStyleValue(cs, Sid::chordBassNoteScale, 1.0);
+            undoStyleValue(cs, Sid::chordBassNoteGap, 0.1);
+            undoStyleValue(cs, Sid::chordStackedModifierMag, 0.75);
+            undoStyleValue(cs, Sid::chordAlignmentExcludeModifiers, false);
+            const QString alignment = val == "legacy" ? QString("auto") : QString("center");
+            undoStyleValue(cs, Sid::chordSymPosition, alignment);
+            undoStyleValue(cs, Sid::chordAlignmentToFretboard, alignment);
+            undoStyleValue(cs, Sid::harmonyParenUseSmuflSym, val == "jazz");
+            undoStyleValue(cs, Sid::polychordDividerThickness, QVariant::fromValue(Spatium(0.11)));
+            undoStyleValue(cs, Sid::polychordDividerSpacing, QVariant::fromValue(Spatium(0.4)));
+            }
+      undoStyleValue(cs, Sid::chordsXmlFile, chordsXml);
+      undoStyleValue(cs, Sid::chordStyle, val);
       if (!file.isEmpty()) {
-            cs->undo(new ChangeStyleVal(cs, Sid::chordDescriptionFile, file));
+            undoStyleValue(cs, Sid::chordDescriptionFile, file);
             cs->update();
             }
-      //formattingGroup->setEnabled(cs->style().chordList()->autoAdjust());
+      setValues();
       }
 
 //---------------------------------------------------------
@@ -1584,7 +1680,7 @@ void EditStyle::enableVerticalSpreadClicked(bool checked)
 
 void EditStyle::disableVerticalSpreadClicked(bool checked)
       {
-      cs->undo(new ChangeStyleVal(cs, Sid::enableVerticalSpread, !checked));
+      undoStyleValue(cs, Sid::enableVerticalSpread, !checked);
       enableVerticalSpread->setChecked(!checked);
       cs->setLayoutAll();
       }
@@ -1719,20 +1815,20 @@ void EditStyle::valueChanged(int i)
                                  );
                               }
 #endif
-                          cs->undo(new ChangeStyleVal(cs, j.first, j.second));
+                          undoStyleValue(cs, j.first, j.second);
                           }
                   // fix values, the distances are defined different in MuseScore
-                  cs->undo(new ChangeStyleVal(cs, Sid::endBarDistance,
+                  undoStyleValue(cs, Sid::endBarDistance,
                     cs->styleV(Sid::endBarDistance).toDouble()
-                    + (cs->styleV(Sid::barWidth).toDouble() + cs->styleV(Sid::endBarWidth).toDouble()) * .5));
-                  cs->undo(new ChangeStyleVal(cs, Sid::doubleBarDistance,
+                    + (cs->styleV(Sid::barWidth).toDouble() + cs->styleV(Sid::endBarWidth).toDouble()) * .5);
+                  undoStyleValue(cs, Sid::doubleBarDistance,
                     cs->styleV(Sid::doubleBarDistance).toDouble()
-                    + (cs->styleV(Sid::barWidth).toDouble() + cs->styleV(Sid::barWidth).toDouble()) * .5));
+                    + (cs->styleV(Sid::barWidth).toDouble() + cs->styleV(Sid::barWidth).toDouble()) * .5);
 
                   // guess the repeat dot width = spatium * .3
-                  cs->undo(new ChangeStyleVal(cs, Sid::repeatBarlineDotSeparation,
+                  undoStyleValue(cs, Sid::repeatBarlineDotSeparation,
                     cs->styleV(Sid::repeatBarlineDotSeparation).toDouble()
-                    + (cs->styleV(Sid::barWidth).toDouble() + .3) * .5));
+                    + (cs->styleV(Sid::barWidth).toDouble() + .3) * .5);
 
 //                  if (scoreFont->textEnclosureThickness()) {
 //                        TextStyle ts = cs->textStyle(TextStyleType::REHEARSAL_MARK);
@@ -1742,7 +1838,32 @@ void EditStyle::valueChanged(int i)
                   }
             setValue = true;
             }
-      cs->undo(new ChangeStyleVal(cs, idx, val));
+      const std::set<Sid> presentationControls {
+            Sid::chordExtensionMag, Sid::chordExtensionAdjust,
+            Sid::chordModifierMag, Sid::chordModifierAdjust,
+            Sid::verticallyStackModifiers, Sid::chordStackedModifierMag,
+            Sid::chordBassNoteScale, Sid::chordBassNoteStagger, Sid::chordBassNoteGap,
+            Sid::polychordDividerThickness, Sid::polychordDividerSpacing,
+            Sid::chordSymPosition, Sid::chordAlignmentToFretboard,
+            Sid::chordAlignmentExcludeModifiers, Sid::harmonyParenUseSmuflSym
+            };
+      if (presentationControls.count(idx) && cs->styleI(Sid::chordSymbolLayoutVersion) == 0) {
+            // Opt into the modern renderer on the first presentation edit.
+            // Preserve old vertical offsets by converting their .2-spatium units
+            // to fractions of the reference chord font's cap height.
+            Harmony reference(cs);
+            const qreal cap = QFontMetricsF(reference.font(), MScore::paintDevice()).capHeight();
+            const qreal factor = cap > 0.0 ? 0.2 * cs->spatium() * reference.magS() / cap : 1.0;
+            for (Sid offset : { Sid::chordExtensionAdjust, Sid::chordModifierAdjust }) {
+                  if (offset != idx)
+                        undoStyleValue(cs, offset, cs->styleD(offset) * factor);
+                  }
+            undoStyleValue(cs, Sid::chordSymbolLayoutVersion, 1);
+            if (cs->styleSt(Sid::chordStyle) == "legacy")
+                  undoStyleValue(cs, Sid::chordStyle, QString("std"));
+            setValue = true;
+            }
+      undoStyleValue(cs, idx, val);
       cs->update();
       if (setValue)
             setValues();
@@ -1758,7 +1879,7 @@ void EditStyle::valueChanged(int i)
 void EditStyle::resetStyleValue(int i)
       {
       Sid idx = (Sid)i;
-      cs->undo(new ChangeStyleVal(cs, idx, MScore::defaultStyle().value(idx)));
+      undoStyleValue(cs, idx, MScore::defaultStyle().value(idx));
       setValues();
       cs->update();
       }
@@ -1769,6 +1890,11 @@ void EditStyle::resetStyleValue(int i)
 
 void EditStyle::textStyleChanged(int row)
       {
+      StyleSignalBlockers block({ textStyleFontFace, textStyleFontSize,
+            textStyleLineSpacing, textStyleFontStyle, textStyleAlign, textStyleOffset,
+            textStyleSpatiumDependent, textStyleFrameType, textStyleFramePadding,
+            textStyleFrameBorder, textStyleFrameBorderRadius, textStyleFrameForeground,
+            textStyleFrameBackground, textStyleColor, styleName });
       Tid tid = Tid(textStyles->item(row)->data(Qt::UserRole).toInt());
       const TextStyle* ts = textStyle(tid);
 
@@ -1870,7 +1996,7 @@ void EditStyle::textStyleValueChanged(Pid pid, QVariant value)
 
       for (const StyledProperty& a : *ts) {
             if (a.pid == pid) {
-                  cs->undoChangeStyleVal(a.sid, value);
+                  undoStyleValue(cs, a.sid, value);
                   break;
                   }
             }
@@ -1889,7 +2015,7 @@ void EditStyle::resetTextStyle(Pid pid)
 
       for (const StyledProperty& a : *ts) {
             if (a.pid == pid) {
-                  cs->undoChangeStyleVal(a.sid, MScore::defaultStyle().value(a.sid));
+                  undoStyleValue(cs, a.sid, MScore::defaultStyle().value(a.sid));
                   break;
                   }
             }
@@ -1925,7 +2051,7 @@ void EditStyle::endEditUserStyleName()
       Sid sid[] = { Sid::user1Name, Sid::user2Name, Sid::user3Name, Sid::user4Name, Sid::user5Name, Sid::user6Name,
                     Sid::user7Name, Sid::user8Name, Sid::user9Name, Sid::user10Name, Sid::user11Name, Sid::user12Name };
       QString name = styleName->text();
-      cs->undoChangeStyleVal(sid[idx], name);
+      undoStyleValue(cs, sid[idx], name);
       if (name == "") {
             name = textStyleUserName(tid);
             styleName->setText(name);

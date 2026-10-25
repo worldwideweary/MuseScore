@@ -10,6 +10,11 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include <QRawFont>
+#include <QTextLayout>
+#include <QGlyphRun>
+#include <QPainterPath>
+
 #include "box.h"
 #include "chordlist.h"
 #include "fret.h"
@@ -30,6 +35,103 @@
 #include "global/log.h"
 
 namespace Ms {
+
+// Use text-font SMuFL codepoints rather than the music font's symbol table.
+// Some bundled music fonts lack chord glyphs that their Text variant contains.
+static bool chordSymbolFont(QFont& font, const QString& family, ushort first, ushort second = 0)
+      {
+      for (const QString& candidate : { family, QString("Bravura Text") }) {
+            QFont f(font);
+            f.setFamily(candidate);
+            f.setStyleStrategy(QFont::StyleStrategy(f.styleStrategy() | QFont::NoFontMerging));
+            const QRawFont raw = QRawFont::fromFont(f);
+            if (raw.isValid() && raw.supportsCharacter(first) && (!second || raw.supportsCharacter(second))) {
+                  font = f;
+                  return true;
+                  }
+            }
+      return false;
+      }
+
+// Parentheses are engraving glyphs, not the Text font's chord symbols.
+// QFontMetrics can report coverage from fallback fonts; inspect the actual
+// primary font so an absent PUA glyph never becomes an unrelated character.
+static bool chordParenFont(QFont& font, const QString& family)
+      {
+      for (const QString& candidate : { family, QString("Bravura") }) {
+            QFont f(font);
+            f.setFamily(candidate);
+            f.setWeight(QFont::Normal);
+            f.setStyle(QFont::StyleNormal);
+            f.setStyleStrategy(QFont::StyleStrategy(f.styleStrategy() | QFont::NoFontMerging));
+            const QRawFont raw = QRawFont::fromFont(f);
+            if (raw.isValid() && raw.supportsCharacter(0xE875) && raw.supportsCharacter(0xE876)) {
+                  font = f;
+                  return true;
+                  }
+            }
+      return false;
+      }
+
+// Glyph outlines in harmony layout coordinates, including the actual font's
+// bearings, shaped text positions and any stretched modifier parentheses.
+static QPainterPath chordInk(const QList<TextSegment*>& segments, int begin, int end)
+      {
+      QPainterPath ink;
+      for (int i = begin; i < end; ++i) {
+            const TextSegment* ts = segments[i];
+            QTextLayout layout(ts->text, ts->font, MScore::paintDevice());
+            layout.beginLayout();
+            QTextLine line = layout.createLine();
+            if (line.isValid())
+                  line.setLineWidth(1e9);
+            layout.endLayout();
+            if (!line.isValid())
+                  continue;
+            for (const QGlyphRun& run : layout.glyphRuns()) {
+                  const auto glyphs = run.glyphIndexes();
+                  const auto positions = run.positions();
+                  const QRawFont raw = run.rawFont();
+                  for (int j = 0; j < glyphs.size(); ++j) {
+                        QTransform transform;
+                        transform.translate(ts->x, ts->y);
+                        transform.scale(1.0, ts->scaleY);
+                        transform.translate(positions[j].x(), positions[j].y() - line.ascent());
+                        ink.addPath(transform.map(raw.pathForGlyph(glyphs[j])));
+                        }
+                  }
+            }
+      return ink;
+      }
+
+// Equal visible clearances measured across the slash, rather than independent
+// X/Y offsets. The motion follows the normal to each font's own slash angle.
+static qreal balanceSlashBass(QList<TextSegment*>& segments, int slashIndex, qreal gap)
+      {
+      const QPainterPath upper = chordInk(segments, 0, slashIndex);
+      const QPainterPath slash = chordInk(segments, slashIndex, slashIndex + 1);
+      const QPainterPath bass = chordInk(segments, slashIndex + 1, segments.size());
+      if (upper.isEmpty() || slash.isEmpty() || bass.isEmpty())
+            return 0.0;
+      const QRectF slashBox = slash.boundingRect();
+      const qreal length = qSqrt(slashBox.width() * slashBox.width() + slashBox.height() * slashBox.height());
+      if (length < 0.01)
+            return 0.0;
+      const QPointF normal(slashBox.height() / length, slashBox.width() / length);
+      const QTransform project(normal.x(), -normal.y(), normal.y(), normal.x(), 0.0, 0.0);
+      const QRectF upperBounds = project.map(upper).boundingRect();
+      const QRectF slashBounds = project.map(slash).boundingRect();
+      const QRectF bassBounds = project.map(bass).boundingRect();
+      const qreal slashMove = upperBounds.right() + gap - slashBounds.left();
+      const qreal bassMove = slashBounds.right() + slashMove + gap - bassBounds.left();
+      segments[slashIndex]->x += normal.x() * slashMove;
+      segments[slashIndex]->y += normal.y() * slashMove;
+      for (int i = slashIndex + 1; i < segments.size(); ++i) {
+            segments[i]->x += normal.x() * bassMove;
+            segments[i]->y += normal.y() * bassMove;
+            }
+      return normal.x() * bassMove;
+      }
 
 //---------------------------------------------------------
 //   harmonyName
@@ -85,6 +187,8 @@ QString Harmony::harmonyName() const
       if (_rightParen)
             s += ")";
 
+      for (const Harmony* chord : _polychords)
+            s += "|" + chord->harmonyName();
       return s;
       }
 
@@ -115,6 +219,10 @@ bool Harmony::isRealizable() const
       {
       if (parent() && parent()->isFretDiagram() && parent()->parent() && parent()->parent()->isFBox())
             return false;
+
+      if (isPolychord())
+            return false;
+
       return (_rootTpc != Tpc::TPC_INVALID)
                   || (_harmonyType == HarmonyType::NASHVILLE); // unable to fully check at for nashville at the moment
       }
@@ -159,6 +267,7 @@ const ElementStyle chordSymbolStyle {
       { Sid::harmonyPlacement, Pid::PLACEMENT  },
       { Sid::minHarmonyDistance, Pid::MIN_DISTANCE },
       { Sid::harmonyPlay, Pid::PLAY },
+      { Sid::chordBassNoteScale, Pid::HARMONY_BASS_SCALE },
       { Sid::harmonyVoiceLiteral, Pid::HARMONY_VOICE_LITERAL },
       { Sid::harmonyVoicing, Pid::HARMONY_VOICING },
       { Sid::harmonyDuration, Pid::HARMONY_DURATION }
@@ -209,11 +318,14 @@ Harmony::Harmony(const Harmony& h)
       _userName   = h._userName;
       _function   = h._function;
       _play       = h._play;
+      _bassScale  = h._bassScale;
+      _dividerLines = h._dividerLines;
+      for (const Harmony* chord : h._polychords)
+            _polychords.append(chord->clone());
       _realizedHarmony = h._realizedHarmony;
       _realizedHarmony.setHarmony(this);
       for (const TextSegment* s : h.textList) {
-            TextSegment* ns = new TextSegment();
-            ns->set(s->text, s->font, s->x, s->y, s->offset);
+            TextSegment* ns = new TextSegment(*s);
             textList.append(ns);
             }
       }
@@ -224,6 +336,7 @@ Harmony::Harmony(const Harmony& h)
 
 Harmony::~Harmony()
       {
+      qDeleteAll(_polychords);
       for (const TextSegment* ts : qAsConst(textList))
             delete ts;
       if (_parsedForm)
@@ -242,6 +355,34 @@ void Harmony::write(XmlWriter& xml) const
       writeProperty(xml, Pid::HARMONY_TYPE);
       if (_leftParen)
             xml.tagE("leftParen");
+      if (isPolychord()) {
+            xml.stag("harmonyInfo");
+            writeHarmonyInfo(xml);
+            xml.etag();
+            for (const Harmony* chord : _polychords) {
+                  xml.stag("harmonyInfo");
+                  // Use the outer symbol's staff for clipboard transposition.
+                  Harmony copy(*chord);
+                  copy.setParent(parent());
+                  copy.setTrack(track());
+                  copy.writeHarmonyInfo(xml);
+                  xml.etag();
+                  }
+            }
+      else
+            writeHarmonyInfo(xml);
+      if (!_function.isEmpty())
+            xml.tag("function", _function);
+      TextBase::writeProperties(xml, false, true);
+      //Pid::PLAY, Pid::HARMONY_VOICE_LITERAL, Pid::HARMONY_VOICING, Pid::HARMONY_DURATION
+      //written by the above function call because they are part of element style
+      if (_rightParen)
+            xml.tagE("rightParen");
+      xml.etag();
+      }
+
+void Harmony::writeHarmonyInfo(XmlWriter& xml) const
+      {
       if (_rootTpc != Tpc::TPC_INVALID || _baseTpc != Tpc::TPC_INVALID) {
             int rRootTpc = _rootTpc;
             int rBaseTpc = _baseTpc;
@@ -300,14 +441,6 @@ void Harmony::write(XmlWriter& xml) const
             }
       else
             xml.tag("name", _textName);
-      if (!_function.isEmpty())
-            xml.tag("function", _function);
-      TextBase::writeProperties(xml, false, true);
-      //Pid::PLAY, Pid::HARMONY_VOICE_LITERAL, Pid::HARMONY_VOICING, Pid::HARMONY_DURATION
-      //written by the above function call because they are part of element style
-      if (_rightParen)
-            xml.tagE("rightParen");
-      xml.etag();
       }
 
 //---------------------------------------------------------
@@ -319,6 +452,9 @@ void Harmony::read(XmlReader& e)
       // Standalone MSCX files may omit Style (Studio normally saves it
       // separately). Load root/font/token definitions before using the list.
       score()->style().checkChordList();
+
+      bool firstInfo = true;
+
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
             if (tag == "base"
@@ -327,8 +463,27 @@ void Harmony::read(XmlReader& e)
             else if (tag == "baseCase"
                   || tag == "bassCase") // Mu4.6+ compatibility
                   _baseCase = static_cast<NoteCaseType>(e.readInt());
-            else if (tag == "harmonyInfo") // Mu 4.6+ copmpatibility
-                  Harmony::read(e); // recur into this method here, to read bass, extension, name and root
+            else if (tag == "harmonyInfo") {
+                  Harmony* chord = new Harmony(score());
+                  chord->read(e);
+                  if (firstInfo) {
+                        _rootTpc = chord->_rootTpc;
+                        _baseTpc = chord->_baseTpc;
+                        _id = chord->_id;
+                        _textName = chord->_textName;
+                        _degreeList = chord->_degreeList;
+                        if (chord->_rootCase != NoteCaseType::CAPITAL)
+                              _rootCase = chord->_rootCase;
+                        if (chord->_baseCase != NoteCaseType::CAPITAL)
+                              _baseCase = chord->_baseCase;
+                        delete _parsedForm;
+                        _parsedForm = chord->_parsedForm ? new ParsedChord(*chord->_parsedForm) : nullptr;
+                        delete chord;
+                        firstInfo = false;
+                        }
+                  else
+                        _polychords.append(chord);
+                  }
             else if (tag == "extension")
                   setId(e.readInt());
             else if (tag == "name")
@@ -380,6 +535,8 @@ void Harmony::read(XmlReader& e)
             else if (readProperty(tag, e, Pid::POS_ABOVE))
                   ;
             else if (readProperty(tag, e, Pid::HARMONY_TYPE))
+                  ;
+            else if (readProperty(tag, e, Pid::HARMONY_BASS_SCALE))
                   ;
             else if (readProperty(tag, e, Pid::PLAY))
                   ;
@@ -803,6 +960,7 @@ void Harmony::startEdit(EditData& ed)
       TextBase::layout1();
       triggerLayout();
 
+      _dividerLines.clear();
       TextBase::startEdit(ed);
       }
 
@@ -927,6 +1085,37 @@ void Harmony::setHarmony(const QString& s)
       // Standalone MSCX files may omit Style (Studio normally saves it
       // separately). Load root/font/token definitions before using the list.
       score()->style().checkChordList();
+
+      qDeleteAll(_polychords);
+      _polychords.clear();
+      _dividerLines.clear();
+      if (_harmonyType == HarmonyType::STANDARD && s.contains('|')) {
+            const QStringList names = s.split('|');
+            QList<Harmony*> chords;
+            bool valid = true;
+            for (const QString& name : names) {
+                  Harmony* chord = new Harmony(score());
+                  chord->setHarmony(name.trimmed());
+                  valid = valid && !name.trimmed().isEmpty() && tpcIsValid(chord->_rootTpc);
+                  chords.append(chord);
+                  }
+            if (valid) {
+                  Harmony* top = chords.takeFirst();
+                  setHarmony(names.first().trimmed());
+                  delete top;
+                  _polychords = chords;
+                  render();
+                  return;
+                  }
+            qDeleteAll(chords);
+            // Do not silently drop an invalid lower chord.
+            _rootTpc = _baseTpc = Tpc::TPC_INVALID;
+            _textName = s;
+            _id = -1;
+            render();
+            return;
+            }
+
       int r = Tpc::TPC_INVALID, b = Tpc::TPC_INVALID;
       const ChordDescription* cd = parseHarmony(s, &r, &b);
       if (!cd && _parsedForm && _parsedForm->parseable()) {
@@ -1405,14 +1594,14 @@ QPoint Harmony::calculateBoundingRect()
             qreal xx = 0.0;
             qreal yy = 0.0;
             if (fd) {
-                  if (align() & Align::RIGHT)
+                  if (horizontalAlignment() & Align::RIGHT)
                         xx = fd->width() / 2.0;
                   yy = rypos();
                   }
             else {
-                  if (align() & Align::RIGHT)
+                  if (horizontalAlignment() & Align::RIGHT)
                         xx = standardNoteWidth;
-                  else if (align() & Align::HCENTER)
+                  else if (horizontalAlignment() & Align::HCENTER)
                         xx = standardNoteWidth / 2.0;
                   yy = ypos - ((align() & Align::BOTTOM) ? _harmonyHeight - bbox().height() : 0.0);
                   }
@@ -1422,8 +1611,21 @@ QPoint Harmony::calculateBoundingRect()
             }
       else {
             QRectF bb;
-            for (TextSegment* ts : qAsConst(textList))
-                  bb |= ts->tightBoundingRect().translated(ts->x, ts->y);
+            QRectF hbox;
+            for (TextSegment* ts : qAsConst(textList)) {
+                  const QRectF rect = ts->tightBoundingRect().translated(ts->x, ts->y);
+                  bb |= rect;
+                  if (ts->hAlign)
+                        hbox |= rect;
+                  }
+            if (hbox.isEmpty() || isPolychord())
+                  hbox = bb;
+            const qreal thickness = score()->styleP(Sid::polychordDividerThickness) * magS();
+            for (QLineF& line : _dividerLines) {
+                  line.setP1(QPointF(bb.left(), line.y1()));
+                  line.setP2(QPointF(bb.right(), line.y2()));
+                  bb |= QRectF(line.p1(), line.p2()).normalized().adjusted(0, -thickness / 2, 0, thickness / 2);
+                  }
 
             qreal yy = -bb.y();  // Align::TOP
             if (align() & Align::VCENTER)
@@ -1433,21 +1635,21 @@ QPoint Harmony::calculateBoundingRect()
             else if (align() & Align::BOTTOM)
                   yy = -bb.height() - bb.y();
 
-            qreal xx = -bb.x(); // Align::LEFT
+            qreal xx = -hbox.x(); // Align::LEFT
             if (fd) {
-                  if (align() & Align::RIGHT)
-                        xx = fd->bbox().width() - bb.width();
-                  else if (align() & Align::HCENTER)
-                        xx = fd->centerX() - bb.width() / 2.0;
+                  if (horizontalAlignment() & Align::RIGHT)
+                        xx = fd->bbox().width() - hbox.width();
+                  else if (horizontalAlignment() & Align::HCENTER)
+                        xx = fd->centerX() - hbox.width() / 2.0;
 
                   newx = 0.0;
                   newy = ypos - yy - score()->styleP(Sid::harmonyFretDist);
                   }
             else {
-                  if (align() & Align::RIGHT)
-                        xx = -bb.x() -bb.width() + standardNoteWidth;
-                  else if (align() & Align::HCENTER)
-                        xx = -bb.x() -bb.width() / 2.0 + standardNoteWidth / 2.0;
+                  if (horizontalAlignment() & Align::RIGHT)
+                        xx = -hbox.x() -hbox.width() + standardNoteWidth;
+                  else if (horizontalAlignment() & Align::HCENTER)
+                        xx = -hbox.x() -hbox.width() / 2.0 + standardNoteWidth / 2.0;
 
                   newx = 0.0;
                   newy = ypos;
@@ -1521,14 +1723,25 @@ void Harmony::draw(QPainter* painter) const
       QColor color = textColor();
       painter->setPen(color);
       for (const TextSegment* ts : textList) {
+            painter->save();
+            painter->translate(ts->pos());
+            painter->scale(1.0, ts->scaleY);
             QFont f(ts->font);
             f.setPointSizeF(f.pointSizeF() * MScore::pixelRatio);
 #ifndef Q_OS_MACOS
-            TextBase::drawTextWorkaround(painter, f, ts->pos(), ts->text);
+            TextBase::drawTextWorkaround(painter, f, QPointF(), ts->text);
 #else
             painter->setFont(f);
-            painter->drawText(ts->pos(), ts->text);
+            painter->drawText(QPointF(), ts->text);
 #endif
+            painter->restore();
+            }
+      if (!_dividerLines.isEmpty()) {
+            QPen pen(color, score()->styleP(Sid::polychordDividerThickness) * magS(), Qt::SolidLine, Qt::FlatCap);
+            painter->setPen(pen);
+            const QPointF offset = textList.first()->offset;
+            for (const QLineF& line : _dividerLines)
+                  painter->drawLine(line.translated(offset));
             }
       }
 
@@ -1603,7 +1816,8 @@ QRectF TextSegment::boundingRect() const
 QRectF TextSegment::tightBoundingRect() const
       {
       QFontMetricsF fm(font, MScore::paintDevice());
-      return fm.tightBoundingRect(text);
+      const QRectF rect = fm.tightBoundingRect(text);
+      return QRectF(rect.x(), rect.y() * scaleY, rect.width(), rect.height() * scaleY);
       }
 
 //---------------------------------------------------------
@@ -1758,7 +1972,17 @@ void Harmony::render()
       fontList.clear();
       for (const ChordFont& cf : qAsConst(chordList->fonts)) {
             QFont ff(font());
-            ff.setPointSizeF(ff.pointSizeF() * cf.mag);
+            qreal fontMag = cf.mag;
+            if (chordList->autoAdjust() && (score()->styleI(Sid::chordSymbolLayoutVersion) > 0
+                  || score()->styleB(Sid::verticallyStackModifiers))) {
+                  // Modern presentation scales the entire token, including literal
+                  // words such as "add" and "sus", rather than just selected glyphs.
+                  if (cf.fontClass == "extension")
+                        fontMag /= qMax(0.05, score()->styleD(Sid::chordExtensionMag));
+                  else if (cf.fontClass == "modifier")
+                        fontMag /= qMax(0.05, score()->styleD(Sid::chordModifierMag));
+                  }
+            ff.setPointSizeF(ff.pointSizeF() * fontMag);
             if (!(cf.family.isEmpty() || cf.family == "default"))
                   ff.setFamily(cf.family);
             fontList.append(ff);
@@ -1769,6 +1993,7 @@ void Harmony::render()
       for (const TextSegment* s : qAsConst(textList))
             delete s;
       textList.clear();
+      _dividerLines.clear();
       qreal x = 0.0, y = 0.0;
 
       determineRootBaseSpelling();
@@ -1780,9 +2005,7 @@ void Harmony::render()
             // render root
             render(chordList->renderListRoot, x, y, _rootTpc, _rootSpelling, _rootRenderCase);
             // render extension
-            const ChordDescription* cd = getDescription();
-            if (cd)
-                  render(cd->renderList, x, y, 0);
+            renderSuffix(x, y);
             }
       else if (_harmonyType == HarmonyType::NASHVILLE) {
             // render function
@@ -1790,9 +2013,7 @@ void Harmony::render()
             qreal adjust = chordList->nominalAdjust();
             y += adjust * magS() * spatium() * .2;
             // render extension
-            const ChordDescription* cd = getDescription();
-            if (cd)
-                  render(cd->renderList, x, y, 0);
+            renderSuffix(x, y);
             }
       else {
             render(_textName, x, y);
@@ -1800,9 +2021,10 @@ void Harmony::render()
 
       // render bass
       if (_baseTpc != Tpc::TPC_INVALID)
-            render(chordList->renderListBase, x, y, _baseTpc, _baseSpelling, _baseRenderCase);
+            renderBass(x, y, _baseTpc);
 
-      if (_rootTpc != Tpc::TPC_INVALID && capo > 0 && capo < 12) {
+      if (_rootTpc != Tpc::TPC_INVALID && capo > 0 && capo < 12
+          && score()->styleI(Sid::displayCapoChords) != 0) {
             int tpcOffset[] = { 0, 5, -2, 3, -4, 1, 6, -1, 4, -3, 2, -5 };
             int capoRootTpc = _rootTpc + tpcOffset[capo];
             int capoBassTpc = _baseTpc;
@@ -1825,21 +2047,365 @@ void Harmony::render()
                         capoBassTpc -= 12;
                   }
 
-            render("(", x, y);
+            const bool transposedOnly = score()->styleI(Sid::displayCapoChords) == 2;
+            if (transposedOnly) {
+                  qDeleteAll(textList);
+                  textList.clear();
+                  x = y = 0.0;
+                  }
+            else
+                  render("(", x, y);
             render(chordList->renderListRoot, x, y, capoRootTpc, _rootSpelling, _rootRenderCase);
 
             // render extension
-            const ChordDescription* cd = getDescription();
-            if (cd)
-                  render(cd->renderList, x, y, 0);
+            renderSuffix(x, y);
 
             if (capoBassTpc != Tpc::TPC_INVALID)
-                  render(chordList->renderListBase, x, y, capoBassTpc, _baseSpelling, _baseRenderCase);
-            render(")", x, y);
+                  renderBass(x, y, capoBassTpc);
+            if (!transposedOnly)
+                  render(")", x, y);
             }
 
       if (_rightParen)
             render(" )", x, y);
+      if (isPolychord())
+            renderPolychords();
+      }
+
+Align Harmony::horizontalAlignment() const
+      {
+      const bool fret = parent() && parent()->isFretDiagram();
+      const QString value = score()->styleSt(fret ? Sid::chordAlignmentToFretboard : Sid::chordSymPosition);
+      if (value == "left") return Align::LEFT;
+      if (value == "center") return Align::HCENTER;
+      if (value == "right") return Align::RIGHT;
+      return align();
+      }
+
+// Transposing a polychord moves all its components together. Root and bass
+// setters for the outer chord are also used by score transposition commands.
+void Harmony::setRootTpc(int val)
+      {
+      if (tpcIsValid(_rootTpc) && tpcIsValid(val)) {
+            const int delta = val - _rootTpc;
+            auto shifted = [delta](int tpc) {
+                  if (!tpcIsValid(tpc))
+                        return tpc;
+                  tpc += delta;
+                  while (tpc < Tpc::TPC_MIN) tpc += 12;
+                  while (tpc > Tpc::TPC_MAX) tpc -= 12;
+                  return tpc;
+                  };
+            for (Harmony* chord : _polychords) {
+                  chord->_rootTpc = shifted(chord->_rootTpc);
+                  chord->_baseTpc = shifted(chord->_baseTpc);
+                  }
+            }
+      _rootTpc = val;
+      }
+
+// Render individual parsed tokens so scaling/positioning does not depend on
+// an explicit chord description's legacy render script.
+void Harmony::renderSuffix(qreal& x, qreal& y)
+      {
+      const ChordDescription* cd = getDescription();
+      if (!cd)
+            return;
+      if (score()->styleI(Sid::chordSymbolLayoutVersion) == 0
+          && !score()->styleB(Sid::verticallyStackModifiers)) {
+            render(cd->renderList, x, y, 0);
+            return;
+            }
+      ChordList* cl = score()->style().chordList();
+      ParsedChord parsed;
+      if (!parsed.parse(_textName, cl)) {
+            render(cd->renderList, x, y, 0);
+            return;
+            }
+      const qreal cap = QFontMetricsF(fontList.first(), MScore::paintDevice()).capHeight();
+      const bool stacked = score()->styleB(Sid::verticallyStackModifiers) && parsed.modifierList().size() > 1;
+      const bool exclude = score()->styleB(Sid::chordAlignmentExcludeModifiers);
+      const qreal stackScale = qMax(0.05, score()->styleD(Sid::chordStackedModifierMag));
+      QList<QList<TextSegment*>> rows;
+      QList<TextSegment*> currentRow;
+      QString currentModifier;
+      QStringList remainingModifiers = parsed.modifierList();
+      qreal stackX = x;
+      bool started = false;
+      bool parens = false;
+      qreal rowX = x;
+      for (const ChordToken& tok : parsed.tokens()) {
+            if (tok.names.isEmpty())
+                  continue;
+            const QString name = tok.names.first();
+            const bool modifier = tok.tokenClass == ChordTokenClass::MODIFIER;
+            if (score()->styleI(Sid::chordSymbolLayoutVersion) > 0
+                && tok.tokenClass == ChordTokenClass::QUALITY && (name == "o" || name == "0")) {
+                  QFont symbolFont(fontList.first());
+                  const bool jazz = score()->styleSt(Sid::chordStyle) == "jazz";
+                  ushort code = name == "o" ? 0xE870 : 0xE871;
+                  qreal scale = 0.5;
+                  bool available = false;
+                  if (jazz) {
+                        const ushort jazzCode = name == "o" ? 0xE18E : 0xE18F;
+                        QFont jazzFont(symbolFont);
+                        jazzFont.setFamily("MuseJazz Text");
+                        jazzFont.setStyleStrategy(QFont::StyleStrategy(jazzFont.styleStrategy() | QFont::NoFontMerging));
+                        const QRawFont raw = QRawFont::fromFont(jazzFont);
+                        if (raw.isValid() && raw.supportsCharacter(jazzCode)) {
+                              symbolFont = jazzFont;
+                              code = jazzCode;
+                              scale = 0.8;
+                              available = true;
+                              }
+                        }
+                  if (available || chordSymbolFont(symbolFont, score()->styleSt(Sid::musicalTextFont), code)) {
+                        symbolFont.setPointSizeF(symbolFont.pointSizeF() * scale);
+                        TextSegment* ts = new TextSegment(QString(QChar(code)), symbolFont,
+                              x, y - QFontMetricsF(fontList.first(), MScore::paintDevice()).xHeight());
+                        textList.append(ts);
+                        x += ts->width() + cap * 0.1;
+                        continue;
+                        }
+                  }
+            if (modifier && !started) {
+                  stackX = rowX = x + (stacked ? cap * 0.15 : 0.0);
+                  started = true;
+                  }
+            if (stacked && modifier && (name == "(" || name == ")")) {
+                  parens = true;
+                  continue;
+                  }
+            if (stacked && modifier && (name == "," || name == "/" || name == " " || name == "\\"))
+                  continue;
+            QList<RenderAction> actions;
+            bool found = false;
+            for (const ChordToken& defined : cl->chordTokenList) {
+                  if (!defined.names.contains(name))
+                        continue;
+                  if (defined.tokenClass == tok.tokenClass || defined.tokenClass == ChordTokenClass::ALL) {
+                        actions = defined.renderList;
+                        found = true;
+                        if (defined.tokenClass == tok.tokenClass)
+                              break;
+                        }
+                  }
+            if (!found) {
+                  RenderAction literal(RenderAction::RenderActionType::SET);
+                  literal.text = name;
+                  actions.append(literal);
+                  }
+            const int begin = textList.size();
+            const qreal tokenX = stacked && modifier ? rowX : x;
+            const qreal tokenScale = qMax(0.05, modifier ? score()->styleD(Sid::chordModifierMag)
+                  : tok.tokenClass == ChordTokenClass::EXTENSION ? score()->styleD(Sid::chordExtensionMag) : 1.0);
+            qreal tx = tokenX;
+            qreal ty = y;
+            render(actions, tx, ty, 0);
+            tx = tokenX + (tx - tokenX) * tokenScale;
+            const qreal adjustment = modifier ? score()->styleD(Sid::chordModifierAdjust)
+                  : tok.tokenClass == ChordTokenClass::EXTENSION ? score()->styleD(Sid::chordExtensionAdjust) : 0.0;
+            for (int i = begin; i < textList.size(); ++i) {
+                  TextSegment* ts = textList[i];
+                  ts->x = tokenX + (ts->x - tokenX) * tokenScale;
+                  ts->y = y + (ts->y - y) * tokenScale + adjustment * cap;
+                  ts->font.setPointSizeF(ts->font.pointSizeF() * tokenScale);
+                  ts->hAlign = !(modifier && exclude);
+                  if (stacked && modifier) {
+                        ts->x = rowX + (ts->x - rowX) * stackScale;
+                        ts->font.setPointSizeF(ts->font.pointSizeF() * stackScale);
+                        currentRow.append(ts);
+                        }
+                  }
+            if (stacked && modifier) {
+                  rowX += (tx - rowX) * stackScale;
+                  currentModifier += name;
+                  // modifierList is sorted for chord comparison; token order is
+                  // the user's display order. Match completed modifiers by value.
+                  if (remainingModifiers.contains(currentModifier)) {
+                        rows.append(currentRow);
+                        currentRow.clear();
+                        remainingModifiers.removeOne(currentModifier);
+                        currentModifier.clear();
+                        rowX = stackX;
+                        }
+                  }
+            else
+                  x = tx;
+            }
+      if (stacked && started) {
+            if (!currentRow.isEmpty())
+                  rows.append(currentRow);
+            qreal width = 0.0;
+            for (const auto& row : rows) {
+                  QRectF box;
+                  for (const TextSegment* ts : row)
+                        box |= ts->tightBoundingRect().translated(ts->x, ts->y);
+                  width = qMax(width, box.right() - stackX);
+                  }
+            // Match modern row spacing to the nominal letter height. Accidentals
+            // may protrude above a row, but must not spread every row apart.
+            const qreal modifierHeight = cap * stackScale
+                  * qMax(0.05, score()->styleD(Sid::chordModifierMag));
+            const qreal lineHeight = modifierHeight * 1.4;
+            const qreal stackCentre = -QFontMetricsF(fontList.first(), MScore::paintDevice()).xHeight();
+            QRectF stackBox;
+            for (int i = 0; i < rows.size(); ++i) {
+                  for (TextSegment* ts : rows[i]) {
+                        // Centre the nominal stack about the root's x-height.
+                        ts->y += (i - (rows.size() - 1) * 0.5) * lineHeight
+                              + stackCentre + modifierHeight * 0.5;
+                        stackBox |= ts->tightBoundingRect().translated(ts->x, ts->y);
+                        }
+                  }
+            if (parens && !stackBox.isEmpty()) {
+                  QFont f = fontList.first();
+                  QString left = "(";
+                  QString right = ")";
+                  const bool smufl = score()->styleB(Sid::harmonyParenUseSmuflSym)
+                        && chordParenFont(f, score()->scoreFont()->family());
+                  if (smufl) {
+                        left = QString(QChar(ushort(0xE875)));  // csymParensLeftTall
+                        right = QString(QChar(ushort(0xE876))); // csymParensRightTall
+                        // Scale the glyph uniformly, as modern SMuFL parentheses
+                        // do, before measuring the horizontal space it needs.
+                        const QFontMetricsF glyphMetrics(f, MScore::paintDevice());
+                        const qreal glyphHeight = qMax(glyphMetrics.tightBoundingRect(left).height(),
+                              glyphMetrics.tightBoundingRect(right).height());
+                        f.setPointSizeF(f.pointSizeF() * (stackBox.height() + cap * 0.12) / qMax(0.1, glyphHeight));
+                        }
+                  const QFontMetricsF fm(f, MScore::paintDevice());
+                  const qreal leftWidth = fm.width(left);
+                  const qreal rightWidth = fm.width(right);
+                  const qreal padding = cap * 0.08;
+                  for (auto& row : rows)
+                        for (TextSegment* ts : row)
+                              ts->x += leftWidth + padding;
+                  for (int side = 0; side < 2; ++side) {
+                        TextSegment* ts = new TextSegment(side ? right : left, f,
+                              side ? stackX + leftWidth + 2 * padding + width : stackX, 0.0);
+                        const QRectF rect = ts->tightBoundingRect();
+                        ts->scaleY = (stackBox.height() + cap * 0.12) / qMax(0.1, rect.height());
+                        ts->y = stackBox.top() - cap * 0.06 - rect.top() * ts->scaleY;
+                        ts->hAlign = !exclude;
+                        textList.append(ts);
+                        }
+                  width += leftWidth + rightWidth + 2 * padding;
+                  }
+            x = stackX + width;
+            }
+      }
+
+void Harmony::renderBass(qreal& x, qreal& y, int tpc)
+      {
+      const int begin = textList.size();
+      const qreal startX = x;
+      const qreal startY = y;
+      // Modern staggered bass uses the dedicated diagonal slash. Its placement
+      // follows letter metrics, so it scales with the bass independently of staff size.
+      QFont slashFont(fontList.first());
+      slashFont.setFamily(score()->styleSt(Sid::musicalTextFont));
+      // Leland Text has this glyph even though the Leland music font does not.
+      const uint diagonalSlashCode = 0xE87C; // SMuFL csymDiagonalArrangementSlash
+      if (score()->styleI(Sid::chordSymbolLayoutVersion) > 0
+          && score()->styleB(Sid::chordBassNoteStagger)
+          && chordSymbolFont(slashFont, score()->styleSt(Sid::musicalTextFont), ushort(diagonalSlashCode))) {
+            const QFontMetricsF fm(fontList.first(), MScore::paintDevice());
+            const qreal scale = qMax(0.05, _bassScale);
+            const qreal cap = fm.capHeight();
+            slashFont.setPointSizeF(slashFont.pointSizeF() * scale);
+            TextSegment* slash = new TextSegment(
+                  QString(QChar(ushort(diagonalSlashCode))),
+                  slashFont, x - 0.4 * cap * scale, y + 0.5 * cap * scale);
+            textList.append(slash);
+            x = slash->x + slash->width() - 0.4 * cap * scale;
+            y += (2.0 * cap - fm.xHeight()) * scale;
+            const int bassBegin = textList.size();
+            QList<RenderAction> actions;
+            actions.append(RenderAction(RenderAction::RenderActionType::NOTE));
+            actions.append(RenderAction(RenderAction::RenderActionType::ACCIDENTAL));
+            const qreal bassX = x;
+            const qreal bassY = y;
+            render(actions, x, y, tpc, _baseSpelling, _baseRenderCase);
+            for (int i = bassBegin; i < textList.size(); ++i) {
+                  TextSegment* ts = textList[i];
+                  ts->x = bassX + (ts->x - bassX) * scale;
+                  ts->y = bassY + (ts->y - bassY) * scale;
+                  ts->font.setPointSizeF(ts->font.pointSizeF() * scale);
+                  }
+            x = bassX + (x - bassX) * scale;
+            qreal gap = score()->styleD(Sid::chordBassNoteGap);
+            if (!qIsFinite(gap) || gap < 0.0)
+                  gap = 0.1;
+            x += balanceSlashBass(textList, begin, gap * cap);
+            y = startY;
+            return;
+            }
+      render(score()->style().chordList()->renderListBase, x, y, tpc, _baseSpelling, _baseRenderCase);
+      const qreal scale = qMax(0.05, _bassScale);
+      const qreal cap = QFontMetricsF(fontList.first(), MScore::paintDevice()).capHeight();
+      for (int i = begin; i < textList.size(); ++i) {
+            TextSegment* ts = textList[i];
+            ts->x = startX + (ts->x - startX) * scale;
+            ts->y = startY + (ts->y - startY) * scale;
+            ts->font.setPointSizeF(ts->font.pointSizeF() * scale);
+            if (score()->styleB(Sid::chordBassNoteStagger))
+                  ts->y += cap * 0.5;
+            }
+      x = startX + (x - startX) * scale;
+      y = startY;
+      }
+
+void Harmony::renderPolychords()
+      {
+      QList<QList<TextSegment*>> rows;
+      rows.append(textList);
+      QRectF bounds;
+      for (const TextSegment* ts : textList)
+            bounds |= ts->tightBoundingRect().translated(ts->x, ts->y);
+      qreal bottom = bounds.bottom();
+      qreal lastBaseline = 0.0;
+      const qreal gap = score()->styleP(Sid::polychordDividerSpacing) * magS();
+      const qreal thickness = score()->styleP(Sid::polychordDividerThickness) * magS();
+      for (Harmony* chord : _polychords) {
+            chord->setTrack(track());
+            chord->setFamily(family());
+            chord->setSize(size());
+            chord->_bassScale = _bassScale;
+            chord->render();
+            QRectF box;
+            for (const TextSegment* ts : chord->textList)
+                  box |= ts->tightBoundingRect().translated(ts->x, ts->y);
+            const qreal dy = bottom + 2 * gap + thickness - box.top();
+            _dividerLines.append(QLineF(0.0, bottom + gap + thickness / 2, 0.0, bottom + gap + thickness / 2));
+            QList<TextSegment*> row;
+            for (const TextSegment* ts : chord->textList) {
+                  TextSegment* copy = new TextSegment(*ts);
+                  copy->y += dy;
+                  row.append(copy);
+                  textList.append(copy);
+                  }
+            rows.append(row);
+            lastBaseline = dy;
+            bottom = box.bottom() + dy;
+            bounds |= box.translated(0.0, dy);
+            }
+      for (const auto& row : rows) {
+            QRectF box;
+            for (const TextSegment* ts : row)
+                  box |= ts->tightBoundingRect().translated(ts->x, ts->y);
+            qreal dx = bounds.left() - box.left();
+            if (horizontalAlignment() & Align::HCENTER)
+                  dx = bounds.center().x() - box.center().x();
+            else if (horizontalAlignment() & Align::RIGHT)
+                  dx = bounds.right() - box.right();
+            for (TextSegment* ts : row) {
+                  ts->x += dx;
+                  ts->y -= lastBaseline;
+                  }
+            }
+      for (QLineF& line : _dividerLines)
+            line.translate(0.0, -lastBaseline);
       }
 
 //---------------------------------------------------------
@@ -2175,6 +2741,8 @@ Element* Harmony::drop(EditData& data)
 QVariant Harmony::getProperty(Pid pid) const
       {
       switch (pid) {
+            case Pid::HARMONY_BASS_SCALE:
+                  return _bassScale;
             case Pid::PLAY:
                   return QVariant(_play);
                   break;
@@ -2202,6 +2770,13 @@ QVariant Harmony::getProperty(Pid pid) const
 bool Harmony::setProperty(Pid pid, const QVariant& v)
       {
       switch (pid) {
+            case Pid::HARMONY_BASS_SCALE:
+                  if (!qIsFinite(v.toDouble()) || v.toDouble() <= 0.0)
+                        return false;
+                  _bassScale = v.toDouble();
+                  render();
+                  triggerLayout();
+                  break;
             case Pid::PLAY:
                   setPlay(v.toBool());
                   break;
@@ -2237,6 +2812,8 @@ QVariant Harmony::propertyDefault(Pid id) const
       {
       QVariant v;
       switch (id) {
+            case Pid::HARMONY_BASS_SCALE:
+                  return score()->styleD(Sid::chordBassNoteScale);
             case Pid::HARMONY_TYPE:
                   v = int(HarmonyType::STANDARD);
                   break;

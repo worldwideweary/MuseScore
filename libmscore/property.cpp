@@ -249,6 +249,7 @@ static constexpr PropertyMetaData propertyList[] = {
       { Pid::HARMONY_VOICE_LITERAL,     P_TYPE::BOOL,           true,  "harmonyVoiceLiteral",    DUMMY_QT_TRANSLATE_NOOP("propertyName", "harmony voice literal")                         },
       { Pid::HARMONY_VOICING,           P_TYPE::INT,            true,  "harmonyVoicing",         DUMMY_QT_TRANSLATE_NOOP("propertyName", "harmony voicing")                               },
       { Pid::HARMONY_DURATION,          P_TYPE::INT,            true,  "harmonyDuration",        DUMMY_QT_TRANSLATE_NOOP("propertyName", "harmony duration")                              },
+      { Pid::HARMONY_BASS_SCALE, P_TYPE::REAL, true, "harmonyBassScale", DUMMY_QT_TRANSLATE_NOOP("propertyName", "harmony bass scale") },
 
       { Pid::SYSTEM_BRACKET,            P_TYPE::INT,            false, "type",                   DUMMY_QT_TRANSLATE_NOOP("propertyName", "type")                                          },
       { Pid::GAP,                       P_TYPE::BOOL,           false, 0,                        DUMMY_QT_TRANSLATE_NOOP("propertyName", "gap")                                           },

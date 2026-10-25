@@ -74,6 +74,48 @@
 
 namespace Ms {
 
+static void changeChordStyle(Score*);
+
+// A rollback can restore hundreds of style values. Defer only their expensive
+// refresh, and flush before any undo operation that may inspect styled elements.
+static int styleRefreshDepth = 0;
+static QMap<Score*, bool> pendingStyleRefresh;
+
+static void refreshChangedStyle(Score* score, bool chords)
+      {
+      if (styleRefreshDepth) {
+            pendingStyleRefresh[score] = pendingStyleRefresh.value(score, false) || chords;
+            return;
+            }
+      if (chords)
+            changeChordStyle(score);
+      score->styleChanged();
+      }
+
+class StyleRollbackRefresh {
+      bool active = false;
+   public:
+      void begin() {
+            if (!active) {
+                  ++styleRefreshDepth;
+                  active = true;
+                  }
+            }
+      void flush() {
+            if (!active)
+                  return;
+            active = false;
+            if (--styleRefreshDepth)
+                  return;
+            const auto pending = pendingStyleRefresh;
+            pendingStyleRefresh.clear();
+            for (auto i = pending.constBegin(); i != pending.constEnd(); ++i)
+                  refreshChangedStyle(i.key(), i.value());
+            }
+      ~StyleRollbackRefresh() { flush(); }
+      };
+
+
 extern Measure* tick2measure(int tick);
 
 //---------------------------------------------------------
@@ -225,12 +267,19 @@ void UndoCommand::filterChildren(UndoCommand::Filter f, Element* target)
 
 void UndoCommand::unwind()
       {
+      StyleRollbackRefresh refresh;
       while (!childList.empty()) {
             UndoCommand* c = childList.takeLast();
+            const ChangeStyleVal* style = dynamic_cast<const ChangeStyleVal*>(c);
+            if (style && style->canBatchRefresh())
+                  refresh.begin();
+            else
+                  refresh.flush();
             qDebug("unwind <%s>", c->name());
             c->undo(0);
             delete c;
             }
+      refresh.flush();
       }
 
 //---------------------------------------------------------
@@ -1722,18 +1771,32 @@ void ChangeStyle::undo(EditData* ed)
 //   ChangeStyleVal::flip
 //---------------------------------------------------------
 
+bool ChangeStyleVal::canBatchRefresh() const
+      {
+      // These have immediate geometry/default-resolution side effects.
+      return childCount() == 0 && idx != Sid::spatium && idx != Sid::defaultsVersion;
+      }
+
 void ChangeStyleVal::flip(EditData*)
       {
       QVariant v = score->styleV(idx);
       if (v != value) {
             score->style().set(idx, value);
+            bool chords = false;
             switch (idx) {
+                  case Sid::musicalSymbolFont:
+                        // Elements may render during styleChanged(), before layout
+                        // refreshes the cached score font. Use the new font now.
+                        score->setScoreFont(ScoreFont::fontFactory(value.toString()));
+                        break;
+                  case Sid::chordSymbolLayoutVersion:
+                  case Sid::chordStyle:
                   case Sid::chordExtensionMag:
                   case Sid::chordExtensionAdjust:
                   case Sid::chordModifierMag:
                   case Sid::chordModifierAdjust:
                   case Sid::chordDescriptionFile:
-                        changeChordStyle(score);
+                        chords = true;
                         break;
                   case Sid::spatium:
                         score->spatiumChanged(v.toDouble(), value.toDouble());
@@ -1744,7 +1807,7 @@ void ChangeStyleVal::flip(EditData*)
                   default:
                         break;
                   }
-            score->styleChanged();
+            refreshChangedStyle(score, chords);
             }
       value = v;
       }

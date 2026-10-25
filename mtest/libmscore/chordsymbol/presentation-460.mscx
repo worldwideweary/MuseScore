@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="4.60"><Score><Division>480</Division><Style>
+<chordStyle>std</chordStyle><chordDescriptionFile>chords_std.xml</chordDescriptionFile>
+<chordExtensionMag>0.8</chordExtensionMag><chordExtensionAdjust>-0.3</chordExtensionAdjust>
+<chordModifierMag>0.9</chordModifierMag><chordModifierAdjust>0.25</chordModifierAdjust>
+<verticallyStackModifiers>1</verticallyStackModifiers><chordStackedModifierMag>0.7</chordStackedModifierMag>
+<chordBassNoteScale>0.8</chordBassNoteScale><chordBassNoteStagger>1</chordBassNoteStagger>
+<polychordDividerThickness>0.13</polychordDividerThickness><polychordDividerSpacing>0.6</polychordDividerSpacing>
+<verticallyAlignChordSymbols>0</verticallyAlignChordSymbols><chordSymPosition>left</chordSymPosition>
+<chordAlignmentToFretboard>right</chordAlignmentToFretboard><chordAlignmentExcludeModifiers>1</chordAlignmentExcludeModifiers>
+<harmonyParenUseSmuflSym>0</harmonyParenUseSmuflSym><harmonyHarmonyDistance>0.7</harmonyHarmonyDistance>
+<displayCapoChords>1</displayCapoChords><capoPosition>0</capoPosition></Style>
+<Part><Staff id="1"><StaffType group="pitched"><name>stdNormal</name></StaffType></Staff><trackName>Piano</trackName><Instrument><trackName>Piano</trackName><Channel><program value="0"/></Channel></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig><Harmony><harmonyBassScale>0.65</harmonyBassScale><harmonyInfo><root>9</root><bass>13</bass><name>7(b9,#11)</name></harmonyInfo><harmonyInfo><root>15</root></harmonyInfo></Harmony><Rest><durationType>measure</durationType><duration>4/4</duration></Rest></voice></Measure></Staff></Score></museScore>

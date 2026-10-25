@@ -3914,7 +3914,7 @@
            <item row="0" column="0" colspan="3">
             <widget class="QCheckBox" name="accidentalsOctaveColumnsAlignLeft">
              <property name="toolTip">
-              <string>When a chord has accidentals octave apart, these will be placed in the same columns. However, sometimes one of these accidentals can be larger than another, causing thus moving the others. 
+              <string>When a chord has accidentals octave apart, these will be placed in the same columns. However, sometimes one of these accidentals can be larger than another, causing thus moving the others.
 By default, they will be placed such as that their right end are at the same level. Use this checkbox to override this behaviour.</string>
              </property>
              <property name="text">
@@ -11605,7 +11605,44 @@ By default, they will be placed such as that their right end are at the same lev
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout_55">
-               <item row="4" column="0" colspan="3">
+<item row="5" column="0" colspan="3"><widget class="QGroupBox" name="chordPresentation"><property name="title"><string>Chord presentation</string></property><layout class="QGridLayout" name="chordPresentationLayout">
+<item row="12" column="0"><widget class="QLabel" name="harmonyHarmonyDistanceLabel"><property name="text"><string>Minimum space between chord symbols:</string></property><property name="buddy"><cstring>harmonyHarmonyDistance</cstring></property></widget></item>
+<item row="12" column="1"><widget class="QDoubleSpinBox" name="harmonyHarmonyDistance"><property name="suffix"><string>sp</string></property><property name="maximum"><double>20</double></property><property name="singleStep"><double>0.1</double></property></widget></item>
+<item row="12" column="2"><widget class="QToolButton" name="resetHarmonyHarmonyDistance"><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="13" column="0"><widget class="QLabel" name="capoDisplayLabel"><property name="text"><string>Capo chord display:</string></property><property name="buddy"><cstring>displayCapoChords</cstring></property></widget></item>
+<item row="13" column="1" colspan="2"><widget class="QComboBox" name="displayCapoChords"/></item><item row="0" column="0" colspan="2"><widget class="QCheckBox" name="verticallyStackModifiers"><property name="text"><string>Vertically stack modifiers</string></property></widget></item>
+<item row="0" column="2" colspan="1"><widget class="QToolButton" name="resetverticallyStackModifiers"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="1" column="0" colspan="2"><widget class="QCheckBox" name="chordBassNoteStagger"><property name="text"><string>Stagger altered bass notes</string></property></widget></item>
+<item row="1" column="2" colspan="1"><widget class="QToolButton" name="resetchordBassNoteStagger"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="2" column="0" colspan="2"><widget class="QCheckBox" name="chordAlignmentExcludeModifiers"><property name="text"><string>Exclude modifiers from horizontal alignment</string></property></widget></item>
+<item row="2" column="2" colspan="1"><widget class="QToolButton" name="resetchordAlignmentExcludeModifiers"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="3" column="0" colspan="2"><widget class="QCheckBox" name="harmonyParenUseSmuflSym"><property name="text"><string>Use SMuFL parentheses</string></property></widget></item>
+<item row="3" column="2" colspan="1"><widget class="QToolButton" name="resetharmonyParenUseSmuflSym"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="4" column="0" colspan="2"><widget class="QCheckBox" name="verticallyAlignChordSymbols"><property name="text"><string>Vertically align chord symbols and fretboard diagrams</string></property></widget></item>
+<item row="4" column="2" colspan="1"><widget class="QToolButton" name="resetverticallyAlignChordSymbols"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="5" column="0" colspan="1"><widget class="QLabel" name="chordStackedModifierMagLabel"><property name="text"><string>Stacked modifier scale:</string></property><property name="buddy"><cstring>chordStackedModifierMag</cstring></property></widget></item>
+<item row="5" column="1" colspan="1"><widget class="QDoubleSpinBox" name="chordStackedModifierMag"><property name="suffix"><string>%</string></property><property name="minimum"><double>5.000000</double></property><property name="maximum"><double>300.000000</double></property><property name="decimals"><number>0</number></property><property name="singleStep"><double>1.000000</double></property></widget></item>
+<item row="5" column="2" colspan="1"><widget class="QToolButton" name="resetchordStackedModifierMag"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="6" column="0" colspan="1"><widget class="QLabel" name="chordBassNoteScaleLabel"><property name="text"><string>Bass note scale:</string></property><property name="buddy"><cstring>chordBassNoteScale</cstring></property></widget></item>
+<item row="6" column="1" colspan="1"><widget class="QDoubleSpinBox" name="chordBassNoteScale"><property name="suffix"><string>%</string></property><property name="minimum"><double>5.000000</double></property><property name="maximum"><double>300.000000</double></property><property name="decimals"><number>0</number></property><property name="singleStep"><double>1.000000</double></property></widget></item>
+<item row="6" column="2" colspan="1"><widget class="QToolButton" name="resetchordBassNoteScale"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="7" column="0"><widget class="QLabel" name="chordBassNoteGapLabel"><property name="text"><string>Slash chord gap:</string></property><property name="buddy"><cstring>chordBassNoteGap</cstring></property></widget></item>
+<item row="7" column="1"><widget class="QDoubleSpinBox" name="chordBassNoteGap"><property name="toolTip"><string>Visible clearance on both sides of the slash, measured perpendicular to it, as a percentage of chord capital height. Applies to staggered bass notes.</string></property><property name="suffix"><string>%</string></property><property name="minimum"><double>0</double></property><property name="maximum"><double>100</double></property><property name="decimals"><number>0</number></property><property name="singleStep"><double>1</double></property></widget></item>
+<item row="7" column="2"><widget class="QToolButton" name="resetchordBassNoteGap"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="8" column="0" colspan="1"><widget class="QLabel" name="polychordDividerThicknessLabel"><property name="text"><string>Polychord divider thickness:</string></property><property name="buddy"><cstring>polychordDividerThickness</cstring></property></widget></item>
+<item row="8" column="1" colspan="1"><widget class="QDoubleSpinBox" name="polychordDividerThickness"><property name="suffix"><string>sp</string></property><property name="minimum"><double>0.000000</double></property><property name="maximum"><double>2.000000</double></property><property name="decimals"><number>2</number></property><property name="singleStep"><double>0.050000</double></property></widget></item>
+<item row="8" column="2" colspan="1"><widget class="QToolButton" name="resetpolychordDividerThickness"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="9" column="0" colspan="1"><widget class="QLabel" name="polychordDividerSpacingLabel"><property name="text"><string>Polychord divider spacing:</string></property><property name="buddy"><cstring>polychordDividerSpacing</cstring></property></widget></item>
+<item row="9" column="1" colspan="1"><widget class="QDoubleSpinBox" name="polychordDividerSpacing"><property name="suffix"><string>sp</string></property><property name="minimum"><double>0.000000</double></property><property name="maximum"><double>5.000000</double></property><property name="decimals"><number>2</number></property><property name="singleStep"><double>0.050000</double></property></widget></item>
+<item row="9" column="2" colspan="1"><widget class="QToolButton" name="resetpolychordDividerSpacing"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="10" column="0" colspan="1"><widget class="QLabel" name="chordSymPositionLabel"><property name="text"><string>Alignment to notehead:</string></property><property name="buddy"><cstring>chordSymPosition</cstring></property></widget></item>
+<item row="10" column="1" colspan="1"><widget class="QComboBox" name="chordSymPosition"/></item>
+<item row="10" column="2" colspan="1"><widget class="QToolButton" name="resetchordSymPosition"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="11" column="0" colspan="1"><widget class="QLabel" name="chordAlignmentToFretboardLabel"><property name="text"><string>Alignment to fretboard diagram:</string></property><property name="buddy"><cstring>chordAlignmentToFretboard</cstring></property></widget></item>
+<item row="11" column="1" colspan="1"><widget class="QComboBox" name="chordAlignmentToFretboard"/></item>
+<item row="11" column="2" colspan="1"><widget class="QToolButton" name="resetchordAlignmentToFretboard"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+</layout></widget></item>
+               <item row="6" column="0" colspan="3">
                 <spacer name="verticalSpacer_61">
                  <property name="orientation">
                   <enum>Qt::Vertical</enum>
@@ -11633,31 +11670,23 @@ By default, they will be placed such as that their right end are at the same lev
                  <layout class="QGridLayout" name="gridLayout_45">
                   <item row="1" column="4">
                    <widget class="QDoubleSpinBox" name="modifierMag">
-                    <property name="singleStep">
-                     <double>0.100000000000000</double>
-                    </property>
-                   </widget>
+
+                   <property name="suffix"><string>%</string></property><property name="decimals"><number>0</number></property><property name="minimum"><double>5</double></property><property name="maximum"><double>500</double></property><property name="singleStep"><double>1</double></property></widget>
                   </item>
                   <item row="2" column="4">
                    <widget class="QDoubleSpinBox" name="modifierAdjust">
-                    <property name="minimum">
-                     <double>-99.989999999999995</double>
-                    </property>
-                   </widget>
+
+                   <property name="suffix"><string>%</string></property><property name="decimals"><number>0</number></property><property name="minimum"><double>-500</double></property><property name="maximum"><double>500</double></property><property name="singleStep"><double>1</double></property></widget>
                   </item>
                   <item row="1" column="1">
                    <widget class="QDoubleSpinBox" name="extensionMag">
-                    <property name="singleStep">
-                     <double>0.100000000000000</double>
-                    </property>
-                   </widget>
+
+                   <property name="suffix"><string>%</string></property><property name="decimals"><number>0</number></property><property name="minimum"><double>5</double></property><property name="maximum"><double>500</double></property><property name="singleStep"><double>1</double></property></widget>
                   </item>
                   <item row="2" column="1">
                    <widget class="QDoubleSpinBox" name="extensionAdjust">
-                    <property name="minimum">
-                     <double>-99.989999999999995</double>
-                    </property>
-                   </widget>
+
+                   <property name="suffix"><string>%</string></property><property name="decimals"><number>0</number></property><property name="minimum"><double>-500</double></property><property name="maximum"><double>500</double></property><property name="singleStep"><double>1</double></property></widget>
                   </item>
                   <item row="2" column="2">
                    <widget class="QToolButton" name="resetExtensionAdjust">
@@ -11911,6 +11940,7 @@ By default, they will be placed such as that their right end are at the same lev
                        </property>
                       </widget>
                      </item>
+                     <item><widget class="QRadioButton" name="chordsLegacy"><property name="text"><string>Legacy MuseScore</string></property></widget></item>
                      <item>
                       <widget class="QRadioButton" name="chordsCustom">
                        <property name="text">
@@ -12047,7 +12077,7 @@ By default, they will be placed such as that their right end are at the same lev
                   <item row="1" column="0">
                    <widget class="QLabel" name="label_1001">
                     <property name="text">
-                     <string>Minimum chord spacing:</string>
+                     <string>Minimum space to notation:</string>
                     </property>
                     <property name="buddy">
                      <cstring>minHarmonyDistance</cstring>

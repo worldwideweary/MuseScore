@@ -429,6 +429,21 @@ static const StyleType styleTypes[] {
       { Sid::chordExtensionAdjust,    "chordExtensionAdjust",    QVariant(0.0)   },
       { Sid::chordModifierMag,        "chordModifierMag",        QVariant(1.0)   },
       { Sid::chordModifierAdjust,     "chordModifierAdjust",     QVariant(0.0)   },
+      { Sid::chordSymbolLayoutVersion, "chordSymbolLayoutVersion", QVariant(0) },
+      { Sid::verticallyStackModifiers, "verticallyStackModifiers", QVariant(false) },
+      { Sid::chordStackedModifierMag, "chordStackedModifierMag", QVariant(0.75) },
+      { Sid::chordBassNoteStagger, "chordBassNoteStagger", QVariant(false) },
+      { Sid::chordBassNoteScale, "chordBassNoteScale", QVariant(1.0) },
+      { Sid::chordBassNoteGap, "chordBassNoteGap", QVariant(0.1) },
+      { Sid::polychordDividerThickness, "polychordDividerThickness", QVariant::fromValue(Spatium(0.11)) },
+      { Sid::polychordDividerSpacing, "polychordDividerSpacing", QVariant::fromValue(Spatium(0.4)) },
+      { Sid::chordAlignmentExcludeModifiers, "chordAlignmentExcludeModifiers", QVariant(false) },
+      { Sid::harmonyParenUseSmuflSym, "harmonyParenUseSmuflSym", QVariant(false) },
+      { Sid::verticallyAlignChordSymbols, "verticallyAlignChordSymbols", QVariant(true) },
+      { Sid::chordSymPosition, "chordSymPosition", QVariant(QString("auto")) },
+      { Sid::chordAlignmentToFretboard, "chordAlignmentToFretboard", QVariant(QString("auto")) },
+      { Sid::harmonyHarmonyDistance, "harmonyHarmonyDistance", QVariant::fromValue(Spatium(0.5)) },
+      { Sid::displayCapoChords, "displayCapoChords", QVariant(1) },
       { Sid::concertPitch,            "concertPitch",            QVariant(false) },
 
       { Sid::createMultiMeasureRests, "createMultiMeasureRests", QVariant(false) },
@@ -3076,8 +3091,16 @@ void MStyle::load(XmlReader& e, int mscVersion)
       {
       QString oldChordDescriptionFile = value(Sid::chordDescriptionFile).toString();
       bool chordListTag = false;
+      bool separateHarmonyDistance = false;
+      bool explicitChordLayoutVersion = false;
+      if (mscVersion >= 460)
+            set(Sid::chordSymbolLayoutVersion, 1);
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
+            if (tag == "harmonyHarmonyDistance")
+                  separateHarmonyDistance = true;
+            if (tag == "chordSymbolLayoutVersion")
+                  explicitChordLayoutVersion = true;
 
             if (/*mscVersion == 206 && */tag == "TextStyle")
                   //readTextStyle206(this, e);                                    // obsolete (Why?)
@@ -3117,10 +3140,19 @@ void MStyle::load(XmlReader& e, int mscVersion)
                   e.unknown();                                                    // or an unknown one...
             }
 
+      if (mscVersion < 460 && !separateHarmonyDistance && value(Sid::chordSymbolLayoutVersion).toInt() == 0)
+            set(Sid::harmonyHarmonyDistance, value(Sid::minHarmonyDistance));
+
       // if we just specified a new chord description file
       // and didn't encounter a ChordList tag
       // then load the chord description file
 
+      if (value(Sid::chordStyle).toString() == "legacy") {
+            if (!explicitChordLayoutVersion)
+                  set(Sid::chordSymbolLayoutVersion, 0);
+            if (value(Sid::chordDescriptionFile).toString() == "chords_legacy.xml")
+                  set(Sid::chordDescriptionFile, QString("chords_std.xml"));
+            }
       QString newChordDescriptionFile = value(Sid::chordDescriptionFile).toString();
       if (newChordDescriptionFile != oldChordDescriptionFile && !chordListTag) {
             if (!newChordDescriptionFile.startsWith("chords_") && value(Sid::chordStyle).toString() == "std") {
@@ -3921,8 +3953,6 @@ bool  MStyle::readProperties460(XmlReader& e, int mscVersion)
             }
       else if (tag == "pedalPosition")                              // Mu4.6+ only, let's skip
             e.skipCurrentElement();
-      else if (tag == "harmonyHarmonyDistance")                     // Mu4.6.3+ only, let's skip
-            e.skipCurrentElement();
       //else if (tag == "chordSymbolAAlign")                        // left,baseline -> center,baseline ToDo/Let's pass
       //      return false;
       //else if (tag == "chordSymbolBAlign")                        // left,baseline -> center,baseline ToDo/Let's pass
@@ -3972,18 +4002,8 @@ bool  MStyle::readProperties460(XmlReader& e, int mscVersion)
                   set(Sid::useFrenchNoteNames, chordSymbolSpelling == "french");
                   }
             }
-      else if (tag == "verticallyStackModifiers"
-            || tag == "chordStackedModiferMag"                     // typo in early Mu4.6-dev
-            || tag == "chordStackedModifierMag"
-            || tag == "chordBassNoteStagger"
-            || tag == "chordBassNoteScale"
-            || tag == "polychordDividerThickness"
-            || tag == "polychordDividerSpacing"
-            || tag == "verticallyAlignChordSymbols"
-            || tag == "chordSymPosition"
-            || tag == "chordAlignmentToFretboard"
-            || tag == "chordAlignmentExcludeModifiers")             // Mu4.6+ only, let's skip
-            e.skipCurrentElement();
+      else if (tag == "chordStackedModiferMag") // typo in early Studio 4.6-dev
+            set(Sid::chordStackedModifierMag, e.readDouble());
       else if (tag == "angleHangingSlursAwayFromStaff")             // Mu4.6+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "barlineToLineStartDistance")                 // Mu4.6+ only, let's skip
@@ -4220,8 +4240,6 @@ bool  MStyle::readProperties470(XmlReader& e, int mscVersion)
             e.skipCurrentElement();
       else if (tag == "pedalOffset")                                // Mu4.7+ only, let's skip
             e.skipCurrentElement();
-      else if (tag == "displayCapoChords")                          // Mu4.7+ only, let's skip
-            e.skipCurrentElement();
       else if (tag == "chordBracketNoteDistance"                    // Mu4.7+ only, let's skip
             || tag == "chordBracketLineWidth"                       // Mu4.7+ only, let's skip
             || tag == "chordBracketHookLen")                        // Mu4.7+ only, let's skip
@@ -4247,8 +4265,6 @@ bool  MStyle::readProperties470(XmlReader& e, int mscVersion)
       else if (tag.endsWith("MusicalSymbolSize"))                   // Mu4.7+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "defaultsVersion")                            // 4mm -> 4nn, let's skip, i.e. reset to Mu3's 302
-            e.skipCurrentElement();
-      else if (tag == "harmonyParenUseSmuflSym")                    // Mu4.7+ only, let's skip
             e.skipCurrentElement();
       else if (tag.endsWith("BeginLineArrowHeight")                 // Mu4.7+ only, let's skip
             || tag.endsWith("BeginLineArrowWidth")                  // Mu4.7+ only, let's skip
@@ -4312,12 +4328,28 @@ void MStyle::applyNewDefaults(const MStyle& other, const int defaultsVersion)
 void MStyle::save(XmlWriter& xml, bool optimize)
       {
       xml.stag("Style");
+      const bool modernChords = value(Sid::chordSymbolLayoutVersion).toInt() > 0;
+      if (modernChords)
+            xml.tag("chordSymbolLayoutVersion", value(Sid::chordSymbolLayoutVersion));
+      const std::set<Sid> chordPresentationFields {
+            Sid::chordStyle, Sid::chordDescriptionFile, Sid::chordExtensionMag,
+            Sid::chordExtensionAdjust, Sid::chordModifierMag, Sid::chordModifierAdjust,
+            Sid::verticallyStackModifiers, Sid::chordStackedModifierMag,
+            Sid::chordBassNoteScale, Sid::chordBassNoteStagger, Sid::chordBassNoteGap,
+            Sid::polychordDividerThickness, Sid::polychordDividerSpacing,
+            Sid::verticallyAlignChordSymbols, Sid::chordSymPosition,
+            Sid::chordAlignmentToFretboard, Sid::chordAlignmentExcludeModifiers,
+            Sid::harmonyParenUseSmuflSym, Sid::chordSymbolAFontFace,
+            Sid::harmonyHarmonyDistance, Sid::displayCapoChords, Sid::capoPosition
+            };
 
       for (const StyleType& st : styleTypes) {
             Sid idx = st.styleIdx();
             if (idx == Sid::spatium)       // special handling for spatium
                   continue;
-            if (optimize && isDefault(idx))
+            if (idx == Sid::chordSymbolLayoutVersion)
+                  continue;
+            if (optimize && isDefault(idx) && !(modernChords && chordPresentationFields.count(idx)))
                   continue;
             const char* type = st.valueType();
             if (!strcmp("Ms::Spatium", type))

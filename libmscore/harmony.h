@@ -32,6 +32,8 @@ struct TextSegment {
       qreal x, y;       // Position of segments relative to each other.
       QPointF offset;   // Offset for placing within the TextBase.
       bool select;
+      bool hAlign = true;
+      qreal scaleY = 1.0;
 
       qreal width() const;
       QRectF boundingRect() const;
@@ -85,9 +87,12 @@ class Harmony final : public TextBase {
 
       QList<HDegree> _degreeList;
       QList<QFont> fontList;              // temp values used in render()
+      QList<Harmony*> _polychords;        // additional chords, top to bottom; owned
+      QList<QLineF> _dividerLines;        // render cache, before alignment offset
       QList<TextSegment*> textList;       // rendered chord
 
       bool _leftParen, _rightParen;       // include opening and/or closing parenthesis
+      qreal _bassScale = 1.0;             // styled or per-symbol bass size
       bool _play;                         // whether or not to play back the harmony
 
       mutable QRectF _tbbox;
@@ -97,6 +102,11 @@ class Harmony final : public TextBase {
       NoteCaseType _rootRenderCase, _baseRenderCase;  // case to render
 
       void determineRootBaseSpelling();
+      void writeHarmonyInfo(XmlWriter&) const;
+      void renderSuffix(qreal&, qreal&);
+      void renderBass(qreal&, qreal&, int);
+      void renderPolychords();
+      Align horizontalAlignment() const;
       void draw(QPainter*) const override;
       void drawEditMode(QPainter* p, EditData& ed) override;
       void render(const QString&, qreal&, qreal&);
@@ -163,7 +173,9 @@ class Harmony final : public TextBase {
       int baseTpc() const                      { return _baseTpc;      }
       void setBaseTpc(int val)                 { _baseTpc = val;       }
       int rootTpc() const                      { return _rootTpc;      }
-      void setRootTpc(int val)                 { _rootTpc = val;       }
+      void setRootTpc(int val);
+      bool isPolychord() const                 { return !_polychords.isEmpty(); }
+      int chordCount() const                   { return 1 + _polychords.size(); }
       void setTextName(const QString& s)       { _textName = s;        }
       void setFunction(const QString& s)       { _function = s;        }
       QString rootName();

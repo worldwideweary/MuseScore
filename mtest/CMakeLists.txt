@@ -191,6 +191,7 @@ subdirs (
         libmscore/utils
         mscore/workspaces
         mscore/palette
+        mscore/chordpresentationui
         importmidi
         capella
         biab
