@@ -5018,6 +5018,51 @@ void TestSpacing::graceMergedSystem()
             QVERIFY2(buildSpacingPlan4(m->system(), compressed, &reason, options), qPrintable(reason));
             QVERIFY(compressed.width < natural.width);
             QCOMPARE(static_cast<int>(compressed.mergedGraces.size()), static_cast<int>(natural.mergedGraces.size()));
+            // The immediate preparation-to-plan handoff must match fresh
+            // queries, including when only a suffix survived the last write.
+            std::vector<GraceMergedGeometry4> readyMerged;
+            for (const auto& group : natural.mergedGraces) {
+                  GraceMergedGeometry4 ready;
+                  QVERIFY(buildGraceMergedGeometry4(group.owner, ready));
+                  readyMerged.push_back(std::move(ready));
+                  }
+            const auto samePlan = [](const SpacingPlan4& a, const SpacingPlan4& b) {
+                  if (a.width != b.width || a.measures.size() != b.measures.size()
+                      || a.segments.size() != b.segments.size() || a.afterGraces.size() != b.afterGraces.size()
+                      || a.mergedGraces.size() != b.mergedGraces.size()) return false;
+                  for (size_t i = 0; i < a.measures.size(); ++i) {
+                        const auto& x = a.measures[i]; const auto& y = b.measures[i];
+                        if (x.measure != y.measure || x.x != y.x || x.width != y.width) return false;
+                        }
+                  for (size_t i = 0; i < a.segments.size(); ++i) {
+                        const auto& x = a.segments[i]; const auto& y = b.segments[i];
+                        if (x.segment != y.segment || x.x != y.x || x.width != y.width
+                            || x.widthOffset != y.widthOffset || x.stretch != y.stretch || x.ignored != y.ignored) return false;
+                        }
+                  for (size_t i = 0; i < a.mergedGraces.size(); ++i) {
+                        const auto& x = a.mergedGraces[i]; const auto& y = b.mergedGraces[i];
+                        if (x.owner != y.owner || x.target != y.target || x.left != y.left || x.right != y.right
+                            || x.positions.size() != y.positions.size()) return false;
+                        for (size_t j = 0; j < x.positions.size(); ++j) {
+                              if (x.positions[j].chord != y.positions[j].chord || x.positions[j].x != y.positions[j].x) return false;
+                              }
+                        }
+                  return true;
+                  };
+            for (int retained : {0, 1, 2}) {
+                  auto handoff = readyMerged;
+                  if (retained == 1) handoff.erase(handoff.begin());
+                  if (retained == 2) handoff.clear();
+                  SpacingPlan4 planned, squeezedExpected, squeezedActual;
+                  QVERIFY(buildSpacingPlan4(m->system(), planned, &reason, SpacingPlanOptions4(), &handoff));
+                  QVERIFY(samePlan(planned, natural));
+                  QVERIFY(buildSpacingPlan4(m->system(), planned, &reason, options, &handoff));
+                  QVERIFY(samePlan(planned, compressed));
+                  squeezedExpected.width = squeezedActual.width = -123;
+                  const bool fitted = squeezeSpacingPlan4(m->system(), compressed.width, squeezedExpected);
+                  QCOMPARE(squeezeSpacingPlan4(m->system(), compressed.width, squeezedActual, nullptr, &handoff), fitted);
+                  QVERIFY(samePlan(squeezedExpected, squeezedActual));
+                  }
             QVERIFY(graceMergedSnapshot4(score) == modern);
             }
       QCOMPARE(count, 4);

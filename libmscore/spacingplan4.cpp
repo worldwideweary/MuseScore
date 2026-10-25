@@ -142,7 +142,8 @@ bool prepareCrossStaff4(System* system, CrossStaffGeometry4& result, QString* re
 // Validate published before-graces and prepare complete temporary after-group
 // projections. No native writes; publish outputs only after every group succeeds.
 bool prepareGraces4(System* system, SpacingGraceContext4& result, std::vector<GraceAfterGeometry4>& afterResult,
-                    std::vector<GraceMergedGeometry4>& mergedResult, QString* reason)
+                    std::vector<GraceMergedGeometry4>& mergedResult, QString* reason,
+                    const std::vector<GraceMergedGeometry4>* preparedMerged)
 {
     SpacingGraceContext4 prepared;
     std::vector<GraceAfterGeometry4> afters;
@@ -167,7 +168,18 @@ bool prepareGraces4(System* system, SpacingGraceContext4& result, std::vector<Gr
                     }
                     else {
                         GraceMergedGeometry4 joint;
-                        if (!buildGraceMergedGeometry4(main, joint, reason)) return false;
+                        const GraceMergedGeometry4* ready = nullptr;
+                        if (preparedMerged) {
+                            for (const auto& entry : *preparedMerged) {
+                                if (entry.plan.owner == main) { ready = &entry; break; }
+                            }
+                        }
+                        if (ready) {
+                            SpacingProfileScope4 reuse(SpacingProfileStage4::PLAN_GEOMETRY_REUSE);
+                            joint = *ready;
+                            if (reason) reason->clear();
+                        }
+                        else if (!buildGraceMergedGeometry4(main, joint, reason)) return false;
                         prepared.afterMains.push_back(main);
                         prepared.mains.push_back(joint.plan.target);
                         prepared.mergedPairs.push_back({main, joint.plan.target});
@@ -539,7 +551,8 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
     return true;
 }
 
-bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, const SpacingPlanOptions4& options)
+bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, const SpacingPlanOptions4& options,
+                       const std::vector<GraceMergedGeometry4>* preparedMerged)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::PLAN);
     const auto fail = [&](const QString& message) { if (reason) *reason = message; return false; };
@@ -560,7 +573,7 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
     SpacingGraceContext4 graces;
     std::vector<GraceAfterGeometry4> afters;
     std::vector<GraceMergedGeometry4> merged;
-    if (!prepareGraces4(system, graces, afters, merged, reason)) return false;
+    if (!prepareGraces4(system, graces, afters, merged, reason, preparedMerged)) return false;
     // All remaining projection and distance work is read-only. Reuse chord
     // eligibility through this complete plan; later plans/edits start fresh.
     SpacingContextCache4 contextCache;
@@ -793,7 +806,8 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
     return true;
 }
 
-bool squeezeSpacingPlan4(System* system, qreal targetWidth, SpacingPlan4& result, QString* reason)
+bool squeezeSpacingPlan4(System* system, qreal targetWidth, SpacingPlan4& result, QString* reason,
+                         const std::vector<GraceMergedGeometry4>* preparedMerged)
 {
     if (!std::isfinite(targetWidth) || targetWidth <= 0) {
         if (reason)
@@ -801,7 +815,7 @@ bool squeezeSpacingPlan4(System* system, qreal targetWidth, SpacingPlan4& result
         return false;
     }
     SpacingPlan4 candidate;
-    if (!buildSpacingPlan4(system, candidate, reason))
+    if (!buildSpacingPlan4(system, candidate, reason, SpacingPlanOptions4(), preparedMerged))
         return false;
     if (candidate.width <= targetWidth) {
         result = candidate;
@@ -815,7 +829,7 @@ bool squeezeSpacingPlan4(System* system, qreal targetWidth, SpacingPlan4& result
     options.stretchReduction = 1 - 0.33;
     options.squeezeFactor = 1 - 0.2;
     for (int pass = 0; pass < 3; ++pass) {
-        if (!buildSpacingPlan4(system, candidate, reason, options))
+        if (!buildSpacingPlan4(system, candidate, reason, options, preparedMerged))
             return false;
         if (candidate.width <= targetWidth) {
             result = candidate;

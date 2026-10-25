@@ -3014,3 +3014,15 @@ layout. Add independent/shared native comparisons and slurGeometryReuse timing.
 See v0.136-slur-operation-geometry-reuse.md. Apply after corrected v0.135,
 run native spacing/beam mtests, then repeat M1 timing. The separate N2 beam
 discrepancy remains unresolved; no measured performance gain is claimed yet.
+
+### v0.137: preparation-to-plan geometry handoff
+
+v0.136 native mtests pass and remove four geometry builds, leaving 49 per M1
+command. Hand complete validated geometry from beam preparation into the
+immediately following read-only plan. Clear the entire handoff before every
+possible preparation write and start each fitting/final call empty. Missing
+entries still query fresh. Add full/partial/empty handoff plan comparisons and
+planGeometryReuse timing. See v0.137-preparation-to-plan-geometry-handoff.md.
+Apply after v0.136, run native spacing/beam mtests and repeat M1 timing.
+Appearance and N2's separate discrepancy remain to be checked; no speed gain
+is claimed before native measurement.

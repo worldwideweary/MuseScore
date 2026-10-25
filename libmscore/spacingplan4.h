@@ -73,14 +73,19 @@ struct SpacingPlanOptions4 {
 // a plan only: no DOM positions, widths, styles or durations are changed.
 // All pointers are borrowed for this pass; discard the plan after edits/layout.
 // Unsupported contexts leave result untouched; reason explains the boundary.
+// Optional merged inputs must be complete successful geometry queries from the
+// current unchanged DOM. Discard them before any geometry preparation/write;
+// they are a handoff from beam preparation, never a cache across layout calls.
 bool buildSpacingPlan4(System*, SpacingPlan4& result, QString* reason = nullptr,
-                       const SpacingPlanOptions4& options = SpacingPlanOptions4());
+                       const SpacingPlanOptions4& options = SpacingPlanOptions4(),
+                       const std::vector<GraceMergedGeometry4>* preparedMerged = nullptr);
 bool justifySpacingPlan4(SpacingPlan4&, qreal targetWidth);
 
 // Try natural width, then Studio's first three positive-duration squeeze
 // passes. Publish only a fitting whole-system plan; stronger compression and
 // unsupported contexts leave result untouched for the existing fallback.
 bool squeezeSpacingPlan4(System*, qreal targetWidth, SpacingPlan4& result,
-                         QString* reason = nullptr);
+                         QString* reason = nullptr,
+                         const std::vector<GraceMergedGeometry4>* preparedMerged = nullptr);
 }
 #endif
