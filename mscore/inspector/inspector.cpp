@@ -463,6 +463,9 @@ void Inspector::update(Score* s)
                         case ElementType::TEXTLINE_SEGMENT:
                               ie = new InspectorTextLine(this);
                               break;
+                        case ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT:
+                              ie = new InspectorTextLine(this, true);
+                              break;
                         case ElementType::PEDAL_SEGMENT:
                               ie = new InspectorPedal(this);
                               break;

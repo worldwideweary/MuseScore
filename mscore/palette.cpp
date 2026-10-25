@@ -839,7 +839,7 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
             else if (element->isSLine() && !element->isGlissando() && !element->isGuitarBend()) {
                   Segment* startSegment = sel.startSegment();
                   Segment* endSegment = sel.endSegment();
-                  bool firstStaffOnly = (element->isVolta() || (element->isTextLine() && toTextLine(element)->systemFlag())) && !(modifiers & Qt::ControlModifier);
+                  bool firstStaffOnly = (element->isVolta() || element->isGradualTempoChange() || (element->isTextLine() && toTextLine(element)->systemFlag())) && !(modifiers & Qt::ControlModifier);
                   int startStaff = firstStaffOnly ? 0 : sel.staffStart();
                   int endStaff   = firstStaffOnly ? 1 : sel.staffEnd();
                   for (int i = startStaff; i < endStaff; ++i) {

@@ -350,6 +350,7 @@ void ScoreView::dragMoveEvent(QDragMoveEvent* event)
             case ElementType::TRILL:
             case ElementType::HAIRPIN:
             case ElementType::TEXTLINE:
+            case ElementType::GRADUAL_TEMPO_CHANGE:
                   event->setAccepted(dragTimeAnchorElement(pos));
                   break;
             case ElementType::IMAGE:
@@ -436,6 +437,7 @@ void ScoreView::dropEvent(QDropEvent* event)
             _score->addRefresh(editData.dropElement->canvasBoundingRect());
             switch (editData.dropElement->type()) {
                   case ElementType::TEXTLINE:
+                  case ElementType::GRADUAL_TEMPO_CHANGE:
                         firstStaffOnly = editData.dropElement->systemFlag();
                         // fall-thru
                   case ElementType::VOLTA:

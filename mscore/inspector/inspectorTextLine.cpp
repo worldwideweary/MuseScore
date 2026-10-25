@@ -12,6 +12,9 @@
 
 #include "inspector.h"
 #include "inspectorTextLine.h"
+#include <QDoubleSpinBox>
+#include <QHBoxLayout>
+#include <QLabel>
 
 namespace Ms {
 
@@ -19,7 +22,7 @@ namespace Ms {
 //   InspectorTextLine
 //---------------------------------------------------------
 
-InspectorTextLine::InspectorTextLine(QWidget* parent)
+InspectorTextLine::InspectorTextLine(QWidget* parent, bool tempoChange)
    : InspectorTextLineBase(parent)
       {
       ttl.setupUi(addWidget());
@@ -34,6 +37,19 @@ InspectorTextLine::InspectorTextLine(QWidget* parent)
 
       populatePlacement(ttl.placement);
       mapSignals(il, ppList);
+      if (tempoChange) {
+            ttl.systemTextLine->hide();
+            QWidget* row = addWidget();
+            QHBoxLayout* layout = new QHBoxLayout(row);
+            layout->addWidget(new QLabel(tr("Target tempo:"), row));
+            QDoubleSpinBox* amount = new QDoubleSpinBox(row);
+            amount->setRange(1.0, 1000.0);
+            amount->setDecimals(1);
+            amount->setSingleStep(5.0);
+            amount->setSuffix(" %");
+            layout->addWidget(amount);
+            mapSignals({ { Pid::TEMPO_CHANGE_FACTOR, 0, amount, nullptr } });
+            }
       }
 }
 

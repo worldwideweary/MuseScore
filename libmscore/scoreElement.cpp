@@ -137,7 +137,10 @@ static const ElementName elementNames[] = {
       { ElementType::GUITAR_BEND,          "GuitarBend",           QT_TRANSLATE_NOOP("elementName", "Guitar bend") },
       { ElementType::GUITAR_BEND_SEGMENT,  "GuitarBendSegment",    QT_TRANSLATE_NOOP("elementName", "Guitar bend segment") },
       { ElementType::HAMMER_ON_PULL_OFF,   "HammerOnPullOff",      QT_TRANSLATE_NOOP("elementName", "Hammer-on/pull-off") },
-      { ElementType::WHAMMY_BAR,           "WhammyBar",            QT_TRANSLATE_NOOP("elementName", "Whammy bar") }
+      { ElementType::WHAMMY_BAR,           "WhammyBar",            QT_TRANSLATE_NOOP("elementName", "Whammy bar") },
+
+      { ElementType::GRADUAL_TEMPO_CHANGE, "GradualTempoChange",   QT_TRANSLATE_NOOP("elementName", "Gradual Tempo Change") },
+      { ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT, "GradualTempoChangeSegment", QT_TRANSLATE_NOOP("elementName", "Gradual Tempo Change Segment") }
       };
 
 //---------------------------------------------------------
@@ -846,9 +849,19 @@ ElementType ScoreElement::name2type(const QStringRef& s, bool silent)
 
 bool ScoreElement::isSLineSegment() const
       {
-      return isHairpinSegment() || isOttavaSegment() || isPedalSegment()
-         || isTrillSegment() || isVoltaSegment() || isTextLineSegment()
-         || isGuitarBendSegment() || isGlissandoSegment() || isLetRingSegment() || isVibratoSegment() || isPalmMuteSegment();
+      return isGlissandoSegment()
+            || isGradualTempoChangeSegment()
+            || isGuitarBendSegment()
+            || isHairpinSegment()
+            || isLetRingSegment()
+            || isOttavaSegment()
+            || isPalmMuteSegment()
+            || isPedalSegment()
+            || isTextLineSegment()
+            || isTrillSegment()
+            || isVibratoSegment()
+            || isVoltaSegment()
+            ;
       }
 
 //---------------------------------------------------------

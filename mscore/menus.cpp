@@ -1662,6 +1662,23 @@ PalettePanel* MuseScore::newTempoPalettePanel(bool defaultPalettePanel)
                   sp->append(tt, qApp->translate("Palette", tp.name), QString(), 1.5);
                   }
             }
+
+      for (const auto& marking : { std::make_pair("accelerando", "accel."),
+                                   std::make_pair("allargando",  "allarg."),
+                                   std::make_pair("rallentando", "rall."),
+                                   std::make_pair("ritardando",  "rit.") }) {
+            GradualTempoChange* line = new GradualTempoChange(gscore);
+            line->setProperty(Pid::TEMPO_CHANGE_TYPE, QString(marking.first));
+            line->setBeginText(marking.second);
+            line->setLen(12.0 * gscore->spatium());
+            sp->append(line, marking.second);
+            }
+
+      TempoText* aTempo = new TempoText(gscore);
+      aTempo->setXmlText("a tempo");
+      aTempo->setFollowText(true);
+      aTempo->setTempoTextType("aTempo");
+      sp->append(aTempo, QT_TRANSLATE_NOOP("Palette", "A tempo"));
       sp->setMoreElements(false);
 
       return sp;

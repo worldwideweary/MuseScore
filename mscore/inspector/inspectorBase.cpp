@@ -93,6 +93,11 @@ QVariant InspectorBase::getValue(const InspectorItem& ii) const
             qFatal("not supported widget %s", w->metaObject()->className());
 
       switch (propertyType(ii.t)) {
+            // The score stores a ratio; the control displays percent.
+            case P_TYPE::REAL:
+                  if (ii.t == Pid::TEMPO_CHANGE_FACTOR)
+                        v = v.toDouble() / 100.0;
+                  break;
             case P_TYPE::POINT_SP:
                   v = v.toPointF() * inspector->element()->score()->spatium();
                   break;
@@ -157,6 +162,10 @@ void InspectorBase::setValue(const InspectorItem& ii, QVariant val)
       Pid id  = ii.t;
 
       switch (propertyType(id)) {
+            case P_TYPE::REAL:
+                  if (id == Pid::TEMPO_CHANGE_FACTOR)
+                        val = val.toDouble() * 100.0;
+                  break;
             case P_TYPE::POINT_SP:
                   val = val.toPointF() / inspector->element()->score()->spatium();
                   break;

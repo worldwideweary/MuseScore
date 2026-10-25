@@ -675,7 +675,7 @@ void Selection::updateSelectedElements()
             // ignore voltas
             if (sp->isVolta())
                   continue;
-            if (sp->isSlur() || sp->isHairpin() || sp->isOttava() || sp->isPedal() || sp-> isTrill() || sp->isTextLine()|| sp->isLetRing() || sp->isPalmMute()) {
+            if (sp->isSlur() || sp->isHairpin() || sp->isOttava() || sp->isPedal() || sp-> isTrill() || sp->isTextLine() || sp->isGradualTempoChange() || sp->isLetRing() || sp->isPalmMute()) {
                   // ignore if start & end elements not calculated yet
                   if (!sp->startElement() || !sp->endElement())
                         continue;
@@ -1003,6 +1003,7 @@ Enabling copying of more element types requires enabling pasting in Score::paste
                   case ElementType::TRILL_SEGMENT:
                   case ElementType::VIBRATO_SEGMENT:
                   case ElementType::TEXTLINE_SEGMENT:
+                  case ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT:
                   case ElementType::VOLTA_SEGMENT:
                   case ElementType::PEDAL_SEGMENT:
                   case ElementType::LAYOUT_BREAK:
@@ -1024,6 +1025,7 @@ Enabling copying of more element types requires enabling pasting in Score::paste
                   case ElementType::PEDAL:
                   case ElementType::TRILL:
                   case ElementType::TEXTLINE:
+                  case ElementType::GRADUAL_TEMPO_CHANGE:
                   case ElementType::SEGMENT:
                   case ElementType::SYSTEM:
                   case ElementType::COMPOUND:

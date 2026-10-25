@@ -31,6 +31,7 @@ class TempoText final : public TextBase  {
       bool _followText;       // parse text to determine tempo
       qreal _relative;
       bool _isRelative;
+      QString _tempoTextType;       // "aTempo" / "tempoPrimo" in Studio files
 
       void updateScore();
       void updateTempo();
@@ -56,6 +57,9 @@ class TempoText final : public TextBase  {
       void setRelative(qreal v)  { _isRelative = true; _relative = v; }
 
       bool followText() const    { return _followText; }
+      bool isATempo() const      { return _tempoTextType == "aTempo"; }
+      bool isTempoPrimo() const  { return _tempoTextType == "tempoPrimo"; }
+      void setTempoTextType(const QString& type) { _tempoTextType = type; }
       void setFollowText(bool v) { _followText = v;    }
       void undoSetFollowText(bool v);
       void updateRelative();

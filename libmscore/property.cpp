@@ -386,8 +386,11 @@ static constexpr PropertyMetaData propertyList[] = {
 
       { Pid::OVERRIDE_BEND_VISIBILITY_RULES, P_TYPE::BOOL,      true,  "overrideBendVisibilityRules", DUMMY_QT_TRANSLATE_NOOP("propertyName", "override bend fret visibility") },
 
-      { Pid::END,                       P_TYPE::INT,            false, "++end++",                DUMMY_QT_TRANSLATE_NOOP("propertyName", "<invalid property>")                            },
+      { Pid::TEMPO_CHANGE_TYPE,         P_TYPE::STRING,         true,  "tempoChangeType",        DUMMY_QT_TRANSLATE_NOOP("propertyName", "tempo change type")                             },
+      { Pid::TEMPO_EASING_METHOD,       P_TYPE::STRING,         true,  "tempoEasingMethod",      DUMMY_QT_TRANSLATE_NOOP("propertyName", "tempo easing method")                           },
+      { Pid::TEMPO_CHANGE_FACTOR,       P_TYPE::REAL,           true,  "tempoChangeFactor",      DUMMY_QT_TRANSLATE_NOOP("propertyName", "tempo change factor")                           },
 
+      { Pid::END,                       P_TYPE::INT,            false, "++end++",                DUMMY_QT_TRANSLATE_NOOP("propertyName", "<invalid property>")                            }
       };
 
 //---------------------------------------------------------

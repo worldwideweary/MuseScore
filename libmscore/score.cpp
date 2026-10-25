@@ -64,6 +64,7 @@
 #include "tempo.h"
 #include "tempotext.h"
 #include "text.h"
+#include "textline.h"
 #include "tie.h"
 #include "tiemap.h"
 #include "tuplet.h"
@@ -71,6 +72,8 @@
 #include "utils.h"
 #include "volta.h"
 #include "xml.h"
+
+#include <QtMath>
 
 #ifdef OMR
 #include "omr/omr.h"
@@ -448,6 +451,107 @@ void Score::fixTicks()
       // Now done in getNextMeasure(), do we keep?
       if (tempomap()->empty())
             tempomap()->setTempo(0, _defaultTempo);
+      rebuildGradualTempoChanges();
+      }
+
+void Score::rebuildGradualTempoChanges()
+      {
+      if (isMaster()) {
+            tempomap()->clearRamps();
+            // MuseScore Studio represents tempo ramps as a curve.
+            // 3.x's tempo map uses fixed events though, so the
+            // curve will need to be sampled (quarter-beat intervals here)
+            std::multimap<int, const GradualTempoChange*> changes;
+            for (const auto& entry : spanner()) {
+                  if (entry.second->isGradualTempoChange())
+                        changes.emplace(entry.second->tick().ticks(), toGradualTempoChange(entry.second));
+                  }
+            std::map<int, const TempoText*> restores;
+            std::map<int, qreal> fixedTempos;
+            qreal firstTempo = _defaultTempo;
+            bool firstTempoFound = false;
+            for (MeasureBase* mb = first(); mb; mb = mb->next()) {
+                  if (!mb->isMeasure())
+                        continue;
+                  for (Segment& s : toMeasure(mb)->segments()) {
+                        for (Element* e : s.annotations()) {
+                              if (!e->isTempoText())
+                                    continue;
+                              const TempoText* tt = toTempoText(e);
+                              if (tt->isATempo() || tt->isTempoPrimo())
+                                    restores[s.tick().ticks()] = tt;
+                              if ((!tt->isATempo() && !tt->isTempoPrimo()) || !tt->followText()) {
+                                    fixedTempos[s.tick().ticks()] = tt->tempo();
+                                    if (!firstTempoFound && !tt->isATempo() && !tt->isTempoPrimo()) {
+                                          firstTempo = tt->tempo();
+                                          firstTempoFound = true;
+                                          }
+                                    }
+                              }
+                        }
+                  }
+            if (changes.empty() && restores.empty())
+                  return;
+            auto restore = restores.begin();
+            auto applyRestores = [&](int until) {
+                  while (restore != restores.end() && restore->first <= until) {
+                        const TempoText* tt = restore->second;
+                        if (tt->followText()) {
+                              // Gradual lines compound, but "a tempo" text needs to return
+                              // to the latest fixed marking before those lines, not the
+                              // beginning of the most recent one
+                              const auto next = fixedTempos.upper_bound(restore->first);
+                              const qreal previousFixed =
+                                    next == fixedTempos.begin()
+                                          ? _defaultTempo
+                                          : std::prev(next)->second;
+                              tempomap()->setTempo(restore->first,
+                                    tt->isTempoPrimo() ? firstTempo : previousFixed);
+                              }
+                        ++restore;
+                        }
+                  };
+            for (const auto& entry : changes) {
+                  const GradualTempoChange* change = entry.second;
+                  const int start = entry.first;
+                  const int end = (change->tick() + change->ticks()).ticks();
+                  applyRestores(start);
+                  if (end <= start)
+                        continue;
+                  const qreal beforeChange = tempomap()->tempo(start);
+                  const qreal target = qBound(qreal(5.0 / 60.0),
+                        beforeChange * change->factor(), qreal(999.0 / 60.0));
+                  int limit = end;
+                  // An explicit tempo marking will interrupt the ramp
+                  for (auto i = tempomap()->upper_bound(start); i != tempomap()->end() && i->first < end; ++i) {
+                        if (i->second.type & TempoType::FIX) {
+                              limit = i->first;
+                              break;
+                              }
+                        }
+                  for (int t = start + DIVISION / 4; t < limit; t += DIVISION / 4) {
+                        qreal x = qreal(t - start) / qreal(end - start);
+                        const QString& method = change->easingMethod();
+                        if (method == "ease-in")
+                              x *= x;
+                        else if (method == "ease-out")
+                              x = 1.0 - (1.0 - x) * (1.0 - x);
+                        else if (method == "ease-in-out")
+                              x = x * x * (3.0 - 2.0 * x);
+                        else if (method == "exponential")
+                              x = (qPow(2.0, 10.0 * x) - 1.0) / 1023.0;
+                        tempomap()->setRampTempo(t, beforeChange + (target - beforeChange) * x);
+                        }
+                  if (limit == end) {
+                        auto existing = tempomap()->find(end);
+                        if (existing == tempomap()->end() || !(existing->second.type & TempoType::FIX))
+                              tempomap()->setRampTempo(end, target);
+                        }
+                  }
+            applyRestores(std::numeric_limits<int>::max());
+            tempomap()->finishRampChanges();
+            setPlaylistDirty();
+            }
       }
 
 //---------------------------------------------------------
@@ -1346,6 +1450,7 @@ void Score::addElement(Element* element)
             case ElementType::PEDAL:
             case ElementType::WHAMMY_BAR:
             case ElementType::TEXTLINE:
+            case ElementType::GRADUAL_TEMPO_CHANGE:
             case ElementType::HAIRPIN:
             case ElementType::LET_RING:
             case ElementType::PALM_MUTE:
@@ -1354,6 +1459,8 @@ void Score::addElement(Element* element)
                   if ((et == ElementType::TEXTLINE || et == ElementType::WHAMMY_BAR) && spanner->anchor() == Spanner::Anchor::NOTE)
                         break;
                   addSpanner(spanner);
+                  if (et == ElementType::GRADUAL_TEMPO_CHANGE)
+                        fixTicks();
                   for (SpannerSegment* ss : spanner->spannerSegments()) {
                         if (ss->system())
                               ss->system()->add(ss);
@@ -1521,6 +1628,7 @@ void Score::removeElement(Element* element)
             case ElementType::PALM_MUTE:
             case ElementType::WHAMMY_BAR:
             case ElementType::TEXTLINE:
+            case ElementType::GRADUAL_TEMPO_CHANGE:
             case ElementType::HAIRPIN:
                   {
                   Spanner* spanner = toSpanner(element);
@@ -1528,6 +1636,8 @@ void Score::removeElement(Element* element)
                         break;
                   spanner->triggerLayout();
                   removeSpanner(spanner);
+                  if (et == ElementType::GRADUAL_TEMPO_CHANGE)
+                        fixTicks();
                   }
                   break;
 

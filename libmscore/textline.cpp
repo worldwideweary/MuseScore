@@ -112,6 +112,11 @@ TextLineSegment::TextLineSegment(Spanner* sp, Score* s, bool system)
             initElementStyle(&textLineSegmentStyle);
       }
 
+TextLine* TextLineSegment::textLine() const
+      {
+      return static_cast<TextLine*>(spanner());
+      }
+
 //---------------------------------------------------------
 //   propertyDelegate
 //---------------------------------------------------------
@@ -359,7 +364,7 @@ void TextLine::undoChangeProperty(Pid id, const QVariant& v, PropertyFlags ps)
 
 SpannerSegment* TextLine::layoutSystem(System* system)
       {
-      TextLineSegment* tls = toTextLineSegment(TextLineBase::layoutSystem(system));
+      TextLineSegment* tls = static_cast<TextLineSegment*>(TextLineBase::layoutSystem(system));
 
       if (tls->spanner()) {
             for (SpannerSegment* ss : tls->spanner()->spannerSegments()) {
@@ -371,6 +376,151 @@ SpannerSegment* TextLine::layoutSystem(System* system)
             }
 
       return tls;
+      }
+
+//---------------------------------------------------------
+//   GradualTempoChange
+//---------------------------------------------------------
+
+static qreal defaultTempoChangeFactor(const QString& type)
+      {
+      if (type == "accelerando")
+            return 1.33;
+      if (type == "precipitando")
+            return 1.15;
+      if (type == "stringendo")
+            return 1.5;
+      if (type == "calando" || type == "morendo" || type == "smorzando")
+            return 0.5;
+      if (type == "sostenuto")
+            return 0.95;
+      if (type == "allargando" || type == "lentando" || type == "rallentando" || type == "ritardando")
+            return 0.75;
+
+      return 1.0;
+      }
+
+static QString defaultTempoChangeText(const QString& type)
+      {
+      if (type == "accelerando")
+            return "accel.";
+      if (type == "allargando")
+            return "allarg.";
+      if (type == "rallentando")
+            return "rall.";
+      if (type == "ritardando")
+            return "rit.";
+      if (type == "smorzando")
+            return "smorz.";
+      if (type == "stringendo")
+            return "string.";
+
+      return type == "undefined" ? "" : type;
+      }
+
+GradualTempoChange::GradualTempoChange(Score* s)
+   : TextLine(s, true)
+      {
+      setBeginText("rit.");
+      setLineStyle(Qt::DashLine);
+      setAnchor(Spanner::Anchor::SEGMENT);
+      }
+
+LineSegment* GradualTempoChange::createLineSegment()
+      {
+      GradualTempoChangeSegment* seg = new GradualTempoChangeSegment(this, score());
+      seg->setTrack(track());
+      return seg;
+      }
+
+void GradualTempoChange::write(XmlWriter& xml) const
+      {
+      if (!xml.canWrite(this))
+            return;
+      xml.stag(this);
+      xml.tag("tempoChangeType", _tempoChangeType);
+      xml.tag("tempoEasingMethod", _easingMethod);
+      if (_explicitFactor)
+            xml.tag("tempoChangeFactor", _factor);
+      writeProperty(xml, Pid::PLACEMENT);
+      writeProperty(xml, Pid::OFFSET);
+      TextLineBase::writeProperties(xml);
+      xml.etag();
+      }
+
+void GradualTempoChange::read(XmlReader& e)
+      {
+      while (e.readNextStartElement()) {
+            const QStringRef& tag = e.name();
+            if (tag == "tempoChangeType") {
+                  _tempoChangeType = e.readElementText();
+                  setBeginText(defaultTempoChangeText(_tempoChangeType));
+                  if (!_explicitFactor)
+                        _factor = defaultTempoChangeFactor(_tempoChangeType);
+                  }
+            else if (tag == "tempoEasingMethod")
+                  _easingMethod = e.readElementText();
+            else if (tag == "tempoChangeFactor") {
+                  _factor = e.readDouble();
+                  _explicitFactor = true;
+                  }
+            else if (tag == "snapAfter" || tag == "tempoAlignRightOfRehearsalMark")
+                  e.skipCurrentElement();
+            else if (!TextLineBase::readProperties(e))
+                  e.unknown();
+            }
+      }
+
+QVariant GradualTempoChange::getProperty(Pid id) const
+      {
+      switch (id) {
+            case Pid::TEMPO_CHANGE_TYPE:
+                  return _tempoChangeType;
+            case Pid::TEMPO_EASING_METHOD:
+                  return _easingMethod;
+            case Pid::TEMPO_CHANGE_FACTOR:
+                  return _factor;
+            default:
+                  return TextLine::getProperty(id);
+            }
+      }
+
+QVariant GradualTempoChange::propertyDefault(Pid id) const
+      {
+      switch (id) {
+            case Pid::TEMPO_CHANGE_TYPE:
+                  return QString("undefined");
+            case Pid::TEMPO_EASING_METHOD:
+                  return QString("normal");
+            case Pid::TEMPO_CHANGE_FACTOR:
+                  return defaultTempoChangeFactor(_tempoChangeType);
+            default:
+                  return TextLine::propertyDefault(id);
+            }
+      }
+
+bool GradualTempoChange::setProperty(Pid id, const QVariant& v)
+      {
+      switch (id) {
+            case Pid::TEMPO_CHANGE_TYPE:
+                  _tempoChangeType = v.toString();
+                  setBeginText(defaultTempoChangeText(_tempoChangeType));
+                  if (!_explicitFactor)
+                        _factor = defaultTempoChangeFactor(_tempoChangeType);
+                  break;
+            case Pid::TEMPO_EASING_METHOD:
+                  _easingMethod = v.toString();
+                  break;
+            case Pid::TEMPO_CHANGE_FACTOR:
+                  _factor = v.toDouble();
+                  _explicitFactor = true;
+                  break;
+            default:
+                  return TextLine::setProperty(id, v);
+            }
+      triggerLayout();
+      score()->fixTicks();
+      return true;
       }
 
 }     // namespace Ms
