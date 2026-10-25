@@ -3143,3 +3143,17 @@ assertions. Retain the full single-step matrix, use two complete same-system
 walks and four pairwise cross-system walks to reduce repeated full layouts.
 See v0.146-slur-test-undo-and-runtime.md. Apply after v0.145; run spacing/beam
 mtests and note elapsed spacing-suite time. No engraving algorithm changes.
+
+
+### v0.147: fresh-plan proof for bounded end-anchor updates
+
+v0.146 native mtests pass; spacing suite is approximately 75 seconds. Add a
+separate anchor-only command candidate and reuse the bounded native system/
+page update only when a fresh natural-width plan matches all active horizontal
+positions, widths, stretch, offsets and planned after/merged grace positions.
+No cross-command plan cache. Normal range layout handles mismatches and
+unsupported contexts. Offset behavior and reanchor undo commands are retained.
+See v0.147-slur-anchor-layout-proof.md. Apply after v0.146, run both mtests,
+and use the new natural-width score with MS_LAYOUT4_PROFILE=1 for an actual
+Debug reanchor comparison. slurAnchorProof/slurAnchorLayout identify the new
+path. Start-height matching and broader layout-policy coverage remain pending.

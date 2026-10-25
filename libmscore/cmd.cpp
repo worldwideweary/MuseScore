@@ -90,6 +90,7 @@ void CmdState::reset()
       _oneMeasureBase = true;
       _locked = false;
       _slurOffset4 = nullptr;
+      _slurAnchor4 = nullptr;
       }
 
 //---------------------------------------------------------
@@ -101,6 +102,7 @@ void CmdState::setTick(const Fraction& t)
       if (_locked)
             return;
       _slurOffset4 = nullptr;
+      _slurAnchor4 = nullptr;
 
       if (_startTick == Fraction(-1,1) || t < _startTick)
             _startTick = t;
@@ -191,7 +193,7 @@ void CmdState::_setUpdateMode(UpdateMode m)
 void CmdState::setUpdateMode(UpdateMode m)
       {
       if (m == UpdateMode::Layout)
-            cancelSlurOffset4();
+            cancelSlurEdit4();
       if (int(m) > int(_updateMode))
             _setUpdateMode(m);
       }
@@ -255,7 +257,7 @@ void Score::undoRedo(bool undo, EditData* ed)
                 && slur->tick() == tick && slur->tick2() == tick2 && slur->track() == track && slur->track2() == track2)
                   cmdState().requestSlurOffset4(offset);
             update(false);
-            cmdState().cancelSlurOffset4(); // Do not carry history proof into a later update.
+            cmdState().cancelSlurEdit4(); // Do not carry history proof into a later update.
             masterScore()->setPlaylistDirty();  // TODO: flag all individual operations
             updateSelection();
       }
@@ -325,9 +327,11 @@ void Score::update(bool resetCmdState)
             ms->deletePostponed();
             if (cs.layoutRange()) {
                   for (Score*& s : ms->scoreList()) {
-                        if (!cs.slurOffset4() || !s->doLayoutSlurOffset4(cs.slurOffset4()))
-                              s->doLayoutRange(cs.startTick(), cs.endTick());
+                        const bool retained = cs.slurOffset4() ? s->doLayoutSlurOffset4(cs.slurOffset4())
+                              : cs.slurAnchor4() && s->doLayoutSlurAnchor4(cs.slurAnchor4());
+                        if (!retained) s->doLayoutRange(cs.startTick(), cs.endTick());
                         }
+                  cs.cancelSlurEdit4(); // A proof belongs to one update only.
                   updateAll = true;
                   }
             }

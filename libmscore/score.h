@@ -284,7 +284,8 @@ class CmdState {
 
       bool _locked = false;
       const SlurSegment* _slurOffset4 = nullptr;
-      // A drag's proof must not survive a command-state reset.
+      const SlurSegment* _slurAnchor4 = nullptr;
+      // An edit's proof must not survive a command-state reset.
       quint64 _generation4 = 0;
 
       void setMeasureBase(const MeasureBase* mb);
@@ -313,8 +314,16 @@ class CmdState {
       const Element* element() const;
       const SlurSegment* slurOffset4() const { return _slurOffset4; }
       quint64 generation4() const { return _generation4; }
-      void requestSlurOffset4(const SlurSegment* s) { if (!_locked) _slurOffset4 = s; }
-      void cancelSlurOffset4() { if (!_locked) _slurOffset4 = nullptr; }
+      const SlurSegment* slurAnchor4() const { return _slurAnchor4; }
+      void requestSlurOffset4(const SlurSegment* s) {
+            if (!_locked) { _slurOffset4 = s; _slurAnchor4 = nullptr; }
+            }
+      void requestSlurAnchor4(const SlurSegment* s) {
+            if (!_locked) { _slurAnchor4 = s; _slurOffset4 = nullptr; }
+            }
+      void cancelSlurEdit4() {
+            if (!_locked) { _slurOffset4 = nullptr; _slurAnchor4 = nullptr; }
+            }
 
       void lock() { _locked = true; }
       void unlock() { _locked = false; }
@@ -1102,6 +1111,8 @@ class Score : public QObject, public ScoreElement {
       void doLayout();
       void doLayoutRange(const Fraction&, const Fraction&);
       bool doLayoutSlurOffset4(const SlurSegment*);
+      bool doLayoutSlurAnchor4(const SlurSegment*);
+      bool doLayoutSlurEdit4(const SlurSegment*, bool anchor);
       void layoutLinear(bool layoutAll, LayoutContext& lc);
 
       void layoutChords1(Segment* segment, int staffIdx, bool preserveMeasureRestX = false);

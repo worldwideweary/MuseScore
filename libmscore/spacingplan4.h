@@ -81,6 +81,11 @@ bool buildSpacingPlan4(System*, SpacingPlan4& result, QString* reason = nullptr,
                        const std::vector<GraceMergedGeometry4>* preparedMerged = nullptr);
 bool justifySpacingPlan4(SpacingPlan4&, qreal targetWidth);
 
+// Compare a fresh plan with the active horizontal fields published by system layout.
+// Query only; no preparation or DOM writes. Callers must establish that the
+// existing component geometry is current before building the supplied plan.
+bool spacingPlanMatches4(const SpacingPlan4&, QString* reason = nullptr);
+
 // Try natural width, then Studio's first three positive-duration squeeze
 // passes. Publish only a fitting whole-system plan; stronger compression and
 // unsupported contexts leave result untouched for the existing fallback.

@@ -6401,31 +6401,48 @@ void TestSpacing::slurAnchorTraversal4()
                   }
             return true;
             };
-      const auto initial = graceLayoutSnapshot4(score);
+      const auto snapshot = [score, selected]() {
+            auto values = graceLayoutSnapshot4(score);
+            values.push_back(qreal(selected->nsegments()));
+            for (const SpannerSegment* item : selected->spannerSegments()) {
+                  const SlurSegment* segment = toSlurSegment(item);
+                  values.insert(values.end(), {segment->x(), segment->y()});
+                  for (Grip grip : {Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END}) {
+                        const QPointF point = segment->ups(grip).pos();
+                        values.insert(values.end(), {point.x(), point.y()});
+                        }
+                  for (const QRectF& rect : segment->shape())
+                        values.insert(values.end(), {rect.x(), rect.y(), rect.width(), rect.height()});
+                  }
+            return values;
+            };
+      const auto initial = snapshot();
       for (Chord* target : targets) {
             Element* previous = selected->endElement();
-            const auto before = graceLayoutSnapshot4(score);
+            const auto before = snapshot();
             EditData ed;
             ed.key = Qt::Key_Right;
             ed.modifiers = Qt::ShiftModifier;
             ed.curGrip = Grip::END;
             score->startCmd();
             QVERIFY(selected->frontSegment()->edit(ed));
+            QVERIFY(score->cmdState().slurAnchor4());
             score->endCmd();
+            QVERIFY(!score->cmdState().slurAnchor4());
             QCOMPARE(selected->endElement(), static_cast<Element*>(target));
             QVERIFY(!score->undoStack()->slurOffset4(true));
             QVERIFY2(acceptedPlan(), qPrintable(planReason));
-            const auto changed = graceLayoutSnapshot4(score);
+            const auto changed = snapshot();
             score->doLayout();
-            QVERIFY(same(graceLayoutSnapshot4(score), changed));
+            QVERIFY(same(snapshot(), changed));
             score->undoRedo(true, nullptr);
             QCOMPARE(selected->endElement(), previous);
-            QVERIFY(same(graceLayoutSnapshot4(score), before));
+            QVERIFY(same(snapshot(), before));
             score->undoRedo(false, nullptr);
             QCOMPARE(selected->endElement(), static_cast<Element*>(target));
-            QVERIFY(same(graceLayoutSnapshot4(score), changed));
+            QVERIFY(same(snapshot(), changed));
             }
-      const auto final = graceLayoutSnapshot4(score);
+      const auto final = snapshot();
       // Both explicit slur sides can be extended: their endpoint-side flags
       // combine by OR and do not impose an artificial one-span count limit.
       EditData ed;
@@ -6438,11 +6455,11 @@ void TestSpacing::slurAnchorTraversal4()
       QCOMPARE(companion->endElement(), static_cast<Element*>(targets.front()));
       QVERIFY2(acceptedPlan(), qPrintable(planReason));
       score->undoRedo(true, nullptr);
-      QVERIFY(same(graceLayoutSnapshot4(score), final));
+      QVERIFY(same(snapshot(), final));
       for (size_t i = 0; i < targets.size(); ++i) score->undoRedo(true, nullptr);
       QCOMPARE(selected->endElement(), originalEnd);
       QVERIFY2(acceptedPlan(), qPrintable(planReason));
-      QVERIFY(same(graceLayoutSnapshot4(score), initial));
+      QVERIFY(same(snapshot(), initial));
       // Pull back through the original before-graces and the owner's later
       // after-graces. These endpoints can have the same tick as the start.
       int backwardSteps = 0;
@@ -6457,15 +6474,15 @@ void TestSpacing::slurAnchorTraversal4()
             ++backwardSteps;
             QCOMPARE(selected->endElement(), static_cast<Element*>(order[i]));
             QVERIFY2(acceptedPlan(), qPrintable(planReason));
-            const auto moved = graceLayoutSnapshot4(score);
+            const auto moved = snapshot();
             score->doLayout();
-            QVERIFY(same(graceLayoutSnapshot4(score), moved));
+            QVERIFY(same(snapshot(), moved));
             }
       QVERIFY(backwardSteps > 0);
       while (backwardSteps--) score->undoRedo(true, nullptr);
       QCOMPARE(selected->endElement(), originalEnd);
       QVERIFY2(acceptedPlan(), qPrintable(planReason));
-      QVERIFY(same(graceLayoutSnapshot4(score), initial));
+      QVERIFY(same(snapshot(), initial));
       delete score;
       }
 
@@ -6701,6 +6718,51 @@ void TestSpacing::slurOffsetLayout4()
             return values;
             };
       const auto horizontal = horizontalSnapshot();
+      // The anchor path may retain horizontal layout only after a fresh plan
+      // matches every field, including target-relative grace coordinates.
+      SpacingPlan4 unchanged;
+      QString proofReason;
+      QVERIFY2(buildSpacingPlan4(score->firstMeasure()->system(), unchanged, &proofReason), qPrintable(proofReason));
+      QVERIFY2(spacingPlanMatches4(unchanged, &proofReason), qPrintable(proofReason));
+      QVERIFY(!unchanged.segments.empty() && !unchanged.measures.empty() && !unchanged.mergedGraces.empty());
+      const auto active = std::find_if(unchanged.segments.begin(), unchanged.segments.end(),
+            [](const SpacingSegmentPlan4& s) { return !s.ignored; });
+      QVERIFY(active != unchanged.segments.end());
+      const size_t activeIndex = size_t(active - unchanged.segments.begin());
+      for (int field = 0; field < 8; ++field) {
+            SpacingPlan4 changed = unchanged;
+            switch (field) {
+                  case 0: changed.width += .01; break;
+                  case 1: changed.measures.front().x += .01; break;
+                  case 2: changed.measures.front().width += .01; break;
+                  case 3: changed.segments[activeIndex].x += .01; break;
+                  case 4: changed.segments[activeIndex].width += .01; break;
+                  case 5: changed.segments[activeIndex].stretch += .01; break;
+                  case 6: changed.segments[activeIndex].widthOffset += .01; break;
+                  case 7: changed.mergedGraces.front().positions.front().x += .01; break;
+                  }
+            QVERIFY(!spacingPlanMatches4(changed));
+            }
+      SpacingPlan4 nonfinite = unchanged;
+      nonfinite.width = std::numeric_limits<qreal>::quiet_NaN();
+      QVERIFY(!spacingPlanMatches4(nonfinite));
+      QVERIFY(same(horizontalSnapshot(), horizontal)); // All proof queries are read-only.
+      score->cmdState().reset();
+      score->cmdState().requestSlurAnchor4(selected->frontSegment());
+      QVERIFY(score->doLayoutSlurAnchor4(selected->frontSegment()));
+      score->cmdState().reset();
+      const auto anchored = snapshot();
+      QVERIFY(same(horizontalSnapshot(), horizontal));
+      const qreal oldWidth = score->firstMeasure()->width();
+      score->firstMeasure()->setWidth(oldWidth + .01);
+      const auto mismatched = snapshot();
+      score->cmdState().requestSlurAnchor4(selected->frontSegment());
+      QVERIFY(!score->doLayoutSlurAnchor4(selected->frontSegment()));
+      QVERIFY(same(snapshot(), mismatched));
+      score->firstMeasure()->setWidth(oldWidth);
+      score->cmdState().reset();
+      score->doLayout();
+      QVERIFY2(same(snapshot(), anchored), "Proven anchor update differs from complete native layout");
       score->cmdState().reset();
       score->cmdState().requestSlurOffset4(selected->frontSegment());
       QVERIFY(score->doLayoutSlurOffset4(selected->frontSegment()));
@@ -6738,6 +6800,20 @@ void TestSpacing::slurOffsetLayout4()
             QVERIFY(same(snapshot(), fast));
             ed.clearData();
             }
+      // Anchor and offset candidates are mutually exclusive and must not
+      // survive a later generic request or command reset.
+      score->cmdState().requestSlurAnchor4(selected->frontSegment());
+      score->setLayoutAll();
+      QVERIFY(!score->cmdState().slurAnchor4());
+      score->cmdState().requestSlurAnchor4(selected->frontSegment());
+      score->cmdState().reset();
+      QVERIFY(!score->cmdState().slurAnchor4());
+      score->cmdState().requestSlurAnchor4(selected->frontSegment());
+      score->cmdState().requestSlurOffset4(selected->frontSegment());
+      QVERIFY(!score->cmdState().slurAnchor4());
+      score->cmdState().requestSlurAnchor4(selected->frontSegment());
+      QVERIFY(!score->cmdState().slurOffset4());
+      score->cmdState().reset();
       // A later generic request cancels an already classified edit.
       score->cmdState().requestSlurOffset4(selected->frontSegment());
       score->setLayoutAll();
@@ -6786,6 +6862,8 @@ void TestSpacing::slurOffsetLayout4()
                   chord->setStaffMove(1);
                   score->cmdState().requestSlurOffset4(selected->frontSegment());
                   QVERIFY(!score->doLayoutSlurOffset4(selected->frontSegment()));
+                  score->cmdState().requestSlurAnchor4(selected->frontSegment());
+                  QVERIFY(!score->doLayoutSlurAnchor4(selected->frontSegment()));
                   chord->setStaffMove(0);
                   QVERIFY(same(snapshot(), before));
                   score->cmdState().reset();

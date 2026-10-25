@@ -873,4 +873,49 @@ bool justifySpacingPlan4(SpacingPlan4& target, qreal targetWidth)
     target = plan;
     return true;
 }
+
+bool spacingPlanMatches4(const SpacingPlan4& plan, QString* reason)
+{
+    const auto equal = [reason](qreal actual, qreal expected, const char* field) {
+        if (std::isfinite(actual) && std::isfinite(expected) && qAbs(actual - expected) <= 1e-6)
+            return true;
+        if (reason) *reason = QString("Changed horizontal %1").arg(field);
+        return false;
+    };
+    if (plan.measures.empty() || !plan.measures.front().measure
+        || !plan.measures.front().measure->system()) return false;
+    const System* system = plan.measures.front().measure->system();
+    if (!equal(system->width(), plan.width, "system width")) return false;
+    for (const auto& m : plan.measures) {
+        if (!m.measure || m.measure->system() != system
+            || !equal(m.measure->x(), m.x, "measure x")
+            || !equal(m.measure->width(), m.width, "measure width")) return false;
+    }
+    for (const auto& s : plan.segments) {
+        // Inactive headers can retain cache-only positions after earlier
+        // break choices. The fresh plan excludes their geometry as well.
+        if (s.ignored) continue;
+        if (!s.segment || !s.segment->measure() || s.segment->measure()->system() != system
+            || !equal(s.segment->measure()->x() + s.segment->x(), s.x, "segment x")
+            || !equal(s.segment->width(), s.width, "segment width")
+            || !equal(s.segment->stretch(), s.stretch, "segment stretch")
+            || !equal(s.segment->spacingWidthOffset4(), s.widthOffset, "segment width offset")) return false;
+    }
+    const auto graceMatches = [&equal](const GraceAfterPosition4& g, const Segment* target) {
+        if (!g.chord || !g.chord->parent() || !g.chord->parent()->isChord() || !target) return false;
+        const Chord* parent = toChord(g.chord->parent());
+        if (!parent->segment()) return false;
+        return equal(g.chord->x() + parent->x() + parent->segment()->x() - target->x(), g.x, "grace x");
+    };
+    for (const auto& after : plan.afterGraces)
+        for (const auto& g : after.positions)
+            if (!graceMatches(g, after.target)) return false;
+    for (const auto& merged : plan.mergedGraces) {
+        if (!merged.target) return false;
+        for (const auto& g : merged.positions)
+            if (!graceMatches(g, merged.target->segment())) return false;
+    }
+    return true;
+}
+
 }

@@ -343,6 +343,21 @@ void SlurSegment::changeAnchor(EditData& ed, Element* element)
       if (!cr || !scr || !ecr)
             return;
 
+      // Only a clean, explicit end-anchor edit can ask for horizontal reuse.
+      // Later layout requests cancel the tag; the update still proves the
+      // complete fresh spacing plan before retaining any horizontal fields.
+      const quint64 anchorGeneration = score()->cmdState().generation4();
+      System* anchorSystem = system();
+      const bool anchorOnly = ed.curGrip == Grip::END && isSingleType() && anchorSystem
+            && score()->styleB(Sid::spacingLayout4) && score()->isMaster()
+            && score()->masterScore()->scoreList().size() == 1
+            && score()->cmdState().updateMode() == UpdateMode::DoNothing
+            && !links() && !spanner()->links()
+            && slur()->slurDirection() != Direction::AUTO
+            && scr->measure() && ecr->measure() && cr->measure()
+            && scr->measure()->system() == anchorSystem
+            && ecr->measure()->system() == anchorSystem && cr->measure()->system() == anchorSystem;
+
       // save current start/end elements
       for (ScoreElement* e : spanner()->linkList()) {
             Spanner* sp = toSpanner(e);
@@ -416,6 +431,9 @@ void SlurSegment::changeAnchor(EditData& ed, Element* element)
             ed.view->startEdit(newSegment, ed.curGrip);
             triggerLayout();
             }
+      if (anchorOnly && anchorGeneration == score()->cmdState().generation4()
+          && system() == anchorSystem && isSingleType() && spanner()->nsegments() == 1)
+            score()->cmdState().requestSlurAnchor4(this);
       }
 
 //---------------------------------------------------------

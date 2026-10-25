@@ -5776,9 +5776,21 @@ class CmdStateLocker {
 
 bool Score::doLayoutSlurOffset4(const SlurSegment* segment)
       {
+      return doLayoutSlurEdit4(segment, false);
+      }
+
+bool Score::doLayoutSlurAnchor4(const SlurSegment* segment)
+      {
+      return doLayoutSlurEdit4(segment, true);
+      }
+
+bool Score::doLayoutSlurEdit4(const SlurSegment* segment, bool anchor)
+      {
       // Bounded path: one music system and up to two pitched staves on one page.
-      // The caller supplies an explicitly classified offset-only edit commit.
-      if (!segment || cmdState().slurOffset4() != segment || segment->score() != this || !isMaster()
+      // The caller supplies an explicitly classified edit commit. An anchor
+      // edit additionally needs a fresh horizontal proof before any writes.
+      const SlurSegment* candidate = anchor ? cmdState().slurAnchor4() : cmdState().slurOffset4();
+      if (!segment || candidate != segment || segment->score() != this || !isMaster()
           || masterScore()->scoreList().size() != 1 || movements()->size() != 1
           || !styleB(Sid::spacingLayout4) || layoutMode() != LayoutMode::PAGE
           || nstaves() < 1 || nstaves() > 2 || npages() != 1 || !firstMeasure() || !lastMeasure()
@@ -5831,7 +5843,16 @@ bool Score::doLayoutSlurOffset4(const SlurSegment* segment)
                   }
             }
 
-      SpacingProfileScope4 reused(SpacingProfileStage4::SLUR_OFFSET_LAYOUT);
+      if (anchor) {
+            // Start with natural terminal systems. Do not approximate squeezed
+            // or justified plans by fitting them to the old system width.
+            if (MScore::noHorizontalStretch || styleD(Sid::lastSystemFillLimit) != 1.0) return false;
+            SpacingProfileScope4 proof(SpacingProfileStage4::SLUR_ANCHOR_PROOF);
+            SpacingPlan4 plan;
+            if (!buildSpacingPlan4(system, plan) || !spacingPlanMatches4(plan)) return false;
+            }
+      SpacingProfileScope4 reused(anchor ? SpacingProfileStage4::SLUR_ANCHOR_LAYOUT
+                                        : SpacingProfileStage4::SLUR_OFFSET_LAYOUT);
       CmdStateLocker locker(this);
       LayoutContext lc(this);
       lc.startTick = firstMeasure()->tick();
