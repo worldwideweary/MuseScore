@@ -44,6 +44,7 @@ class TestSpacing : public QObject, public MTest {
       void initTestCase() { initMTest(); }
       void spacingInputSnapshot4_data();
       void spacingInputSnapshot4();
+      void spacingSlurAttachments4();
       void styleRoundTrip();
       void durationPolicy();
       void springForce();
@@ -3466,6 +3467,64 @@ void TestSpacing::spacingInputSnapshot4()
             }
       QString difference;
       const auto queriesMatch = [score, &difference](const SpacingInput4& prepared) {
+            // Independent root scan: expected membership uses exact captured
+            // element identity, never the compatibility tick-alias index.
+            for (int mode = 0; mode < 3; ++mode) {
+                  std::vector<Direction> directions;
+                  for (const auto& root : prepared.slurs()) directions.push_back(
+                        root.requestedDirection != Direction::AUTO ? root.requestedDirection
+                        : mode == 0 ? Direction::AUTO : mode == 1 ? Direction::UP : Direction::DOWN);
+                  SpacingSlurAttachments4 flags;
+                  if (!buildSpacingSlurAttachments4(prepared, flags, mode ? &directions : nullptr)) {
+                        difference = "Failed to prepare slur-side flags";
+                        return false;
+                        }
+                  if (flags.anchors.size() != prepared.anchors().size()) return false;
+                  size_t missingStarts = 0, missingEnds = 0;
+                  for (size_t i = 0; i < prepared.slurs().size(); ++i) {
+                        const auto& root = prepared.slurs()[i];
+                        missingStarts += root.start.anchorIndex == SPACING_INPUT_NONE4;
+                        missingEnds += root.end.anchorIndex == SPACING_INPUT_NONE4;
+                        }
+                  bool complete = !missingStarts && !missingEnds;
+                  if (flags.unmappedStarts != missingStarts || flags.unmappedEnds != missingEnds) return false;
+                  for (size_t a = 0; a < prepared.anchors().size(); ++a) {
+                        SpacingSlurSides4 expected;
+                        const ChordRest* chord = prepared.anchors()[a].item;
+                        for (size_t i = 0; i < prepared.slurs().size(); ++i) {
+                              const auto& root = prepared.slurs()[i];
+                              const auto owner = [](const Element* item) -> const Element* {
+                                    return item && item->isNote() ? toNote(item)->chord() : item;
+                                    };
+                              const bool start = owner(root.start.element) == chord;
+                              const bool end = owner(root.end.element) == chord;
+                              if (directions[i] == Direction::AUTO) {
+                                    expected.pendingStarts += start;
+                                    expected.pendingEnds += end;
+                                    }
+                              else if (directions[i] == Direction::UP) {
+                                    expected.startUp = expected.startUp || start;
+                                    expected.endUp = expected.endUp || end;
+                                    }
+                              else {
+                                    expected.startDown = expected.startDown || start;
+                                    expected.endDown = expected.endDown || end;
+                                    }
+                              }
+                        const auto& actual = flags.anchors[a];
+                        difference = "General slur-side flags differ from exact root scan";
+                        if (actual.startUp != expected.startUp || actual.startDown != expected.startDown
+                            || actual.endUp != expected.endUp || actual.endDown != expected.endDown
+                            || actual.pendingStarts != expected.pendingStarts || actual.pendingEnds != expected.pendingEnds) return false;
+                        for (bool up : {false, true}) {
+                              const unsigned blocked = up ? unsigned(expected.startDown || expected.endDown) * 2
+                                    : unsigned(expected.startUp || expected.endUp);
+                              if (actual.blockedKerning(up) != blocked) return false;
+                              }
+                        complete = complete && expected.complete();
+                        }
+                  if (flags.complete() != complete) return false;
+                  }
             SpacingGraceContext4 context;
             for (const auto& anchor : prepared.anchors()) {
                   if (anchor.kind != SpacingMemberKind4::MAIN || !anchor.main) continue;
@@ -3617,6 +3676,87 @@ void TestSpacing::spacingInputSnapshot4()
             QVERIFY2(queriesMatch(input), qPrintable(difference));
             }
       input = SpacingInput4();
+      delete score;
+      }
+
+void TestSpacing::spacingSlurAttachments4()
+      {
+      MasterScore* score = readScore(DIR + "v0.139-spacing-two-staff-slur-offsets.mscx");
+      QVERIFY(score);
+      score->doLayout();
+      SpacingInput4 input;
+      QVERIFY(buildSpacingInput4(score, input));
+      const Chord* start = nullptr;
+      const Chord* end = nullptr;
+      for (const auto& anchor : input.anchors()) {
+            if (anchor.kind == SpacingMemberKind4::AFTER && anchor.memberIndex == 1 && !start)
+                  start = toChord(anchor.item);
+            if (anchor.item->isChord()) end = toChord(anchor.item);
+            }
+      QVERIFY(start && end && start != end);
+      input = SpacingInput4();
+      // All directions, visibility and line styles coexist at a non-first
+      // grace endpoint. No first-member, count, same-track or curve gate.
+      std::vector<Slur*> roots;
+      for (Direction direction : {Direction::AUTO, Direction::UP, Direction::DOWN})
+            for (bool visible : {false, true})
+                  for (int line : {0, 1}) {
+                        Slur* root = new Slur(score);
+                        root->setTrack(start->track());
+                        root->setTrack2(end->track());
+                        root->setTick(start->tick());
+                        root->setTick2(end->tick());
+                        root->setStartElement(const_cast<Chord*>(start));
+                        root->setEndElement(const_cast<Chord*>(end));
+                        root->setSlurDirection(direction);
+                        root->setVisible(visible);
+                        root->setLineType(line);
+                        score->addSpanner(root);
+                        roots.push_back(root);
+                        }
+      QVERIFY(buildSpacingInput4(score, input));
+      SpacingSlurAttachments4 flags;
+      QVERIFY(buildSpacingSlurAttachments4(input, flags));
+      bool stale = false;
+      for (const auto& root : input.slurs())
+            stale = stale || (root.requestedDirection != Direction::AUTO
+                  && root.cachedUp != (root.requestedDirection == Direction::UP));
+      QVERIFY(stale); // Explicit requests changed; no layout resolved the cache.
+      const size_t a = size_t(input.anchor(start) - input.anchors().data());
+      QVERIFY(flags.anchors[a].startUp && flags.anchors[a].startDown);
+      QVERIFY(flags.anchors[a].pendingStarts >= 4);
+      QVERIFY(!flags.complete());
+      std::vector<Direction> directions(input.slurs().size(), Direction::UP);
+      for (size_t i = 0; i < input.slurs().size(); ++i)
+            if (input.slurs()[i].requestedDirection != Direction::AUTO)
+                  directions[i] = input.slurs()[i].requestedDirection;
+      QVERIFY(buildSpacingSlurAttachments4(input, flags, &directions));
+      QVERIFY(flags.complete());
+      QVERIFY(flags.anchors[a].complete());
+      QCOMPARE(flags.anchors[a].blockedKerning(false), 1u);
+      QCOMPARE(flags.anchors[a].blockedKerning(true), 2u);
+      // Validation must not partially publish a new attachment table.
+      const size_t previous = flags.anchors.size();
+      directions.push_back(Direction::AUTO);
+      QVERIFY(!buildSpacingSlurAttachments4(input, flags, &directions));
+      QVERIFY(flags.anchors.size() == previous && flags.complete());
+      directions.pop_back();
+      directions[0] = static_cast<Direction>(99);
+      QVERIFY(!buildSpacingSlurAttachments4(input, flags, &directions));
+      for (size_t i = 0; i < input.slurs().size(); ++i) {
+            directions[i] = input.slurs()[i].requestedDirection;
+            if (directions[i] == Direction::UP || directions[i] == Direction::DOWN) {
+                  directions[i] = directions[i] == Direction::UP ? Direction::DOWN : Direction::UP;
+                  QVERIFY(!buildSpacingSlurAttachments4(input, flags, &directions));
+                  break;
+                  }
+            }
+      QVERIFY(flags.anchors.size() == previous && flags.complete());
+      input = SpacingInput4();
+      for (Slur* root : roots) {
+            score->removeSpanner(root);
+            delete root;
+            }
       delete score;
       }
 

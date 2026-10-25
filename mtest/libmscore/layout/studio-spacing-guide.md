@@ -3211,3 +3211,42 @@ The same four native rows compare roots, policies and complete plans before/
 after actual start-anchor movement and undo; no visual run is needed. See
 v0.151-indexed-attachment-consumer.md. General endpoint/direction policy and
 shared runtime preparation ownership remain the next architecture steps.
+
+
+### v0.152: general exact-endpoint slur-side preparation
+
+v0.151 native tst_spacing and tst_beam pass. Build the general slur attachment
+flags from the pass-scoped input in one linear preparation, independently of
+curve admission, grace-member position, slur count, visibility and line style.
+Match pinned Studio ChordLayout::checkStartEndSlurs and the slur portion of
+Chord::computeKerningExceptions. Exact note endpoints map to their captured
+chord owner; equal-tick grace neighbors receive no attachment flags.
+
+Explicit directions are authoritative. A shared preparation producer can supply
+one resolved direction per root; unresolved AUTO directions remain counted as
+pending, and unmapped endpoints are counted separately. Never read cachedUp or
+live layout data to guess readiness. Validation is atomic, including direction
+count, enum values and contradictions with explicit directions. The side mask
+may be used as a complete policy only when its pending directions are resolved.
+This is the slur portion of kerning preparation; articulation policy is separate.
+
+Files changed: libmscore/spacinginput4.h/.cpp, tst_spacing.cpp and this guide.
+The existing four snapshot rows compare flags with an independent exact-root
+scan, before/after START reanchoring and undo. A new synthetic-root test covers
+multiple simultaneous slurs on a non-first grace, stale cached directions,
+hidden/dashed roots, producer-supplied directions and atomic failure. No new
+score file or visual comparison is needed. This patch includes its checkpoint
+here; no separate checkpoint file or ZIP is required.
+
+Runtime callers still use the verified existing policy. This preparation kernel
+does not yet change appearance or performance. Remaining problems: connect
+shared authoritative direction/stem preparation and replace curve-based admission;
+then address collection/publication ownership and hybrid fallback (audit A/B).
+Apply after v0.151, rebuild and run the usual combined spacing/beam CTest command.
+Local verification: eight C++11 syntax checks pass (Debug/NDEBUG for the
+collector, collision queries, planner and regenerated-moc spacing test), with
+unused-parameter and signedness warnings enabled. The extracted actual collector
+and attachment kernel pass 960 mock-DOM cases, including 768 direction-table
+comparisons against an independent exact-endpoint scan. Native application and
+mtests cannot run locally; their results remain pending. Kernel WIP checkpoint:
+47fdaa1. The final incremental patch is based on delivered v0.151 29b76cc.

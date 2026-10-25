@@ -32,6 +32,69 @@ const SpacingNoteInput4* SpacingInput4::note(const Note* item) const
     return found == _noteIndex.end() ? nullptr : &_notes[found->second];
 }
 
+bool SpacingSlurAttachments4::complete() const
+{
+    if (unmappedStarts || unmappedEnds) return false;
+    for (const auto& anchor : anchors) if (!anchor.complete()) return false;
+    return true;
+}
+
+bool buildSpacingSlurAttachments4(const SpacingInput4& input, SpacingSlurAttachments4& result,
+                                 const std::vector<Direction>* directions, QString* reason)
+{
+    const auto fail = [reason](const char* message) {
+        if (reason) *reason = QString::fromLatin1(message);
+        return false;
+    };
+    if (!input.score()) return fail("Missing musical inputs for slur attachments");
+    if (directions && directions->size() != input.slurs().size())
+        return fail("Slur direction input count differs from root count");
+    SpacingSlurAttachments4 pending;
+    pending.anchors.resize(input.anchors().size());
+    for (size_t i = 0; i < input.slurs().size(); ++i) {
+        const auto& slur = input.slurs()[i];
+        Direction direction = directions ? (*directions)[i] : slur.requestedDirection;
+        if ((direction != Direction::AUTO && direction != Direction::UP && direction != Direction::DOWN)
+            || (slur.requestedDirection != Direction::AUTO && slur.requestedDirection != Direction::UP
+                && slur.requestedDirection != Direction::DOWN))
+            return fail("Invalid prepared slur direction");
+        if (slur.requestedDirection != Direction::AUTO) {
+            if (direction != Direction::AUTO && direction != slur.requestedDirection)
+                return fail("Prepared direction contradicts explicit slur direction");
+            direction = slur.requestedDirection;
+        }
+        const auto attach = [&](const SpacingEndpointInput4& endpoint, bool start) {
+            if (endpoint.anchorIndex == SPACING_INPUT_NONE4) {
+                if (start) ++pending.unmappedStarts;
+                else ++pending.unmappedEnds;
+                return;
+            }
+            auto& sides = pending.anchors[endpoint.anchorIndex];
+            if (direction == Direction::AUTO) {
+                if (start) ++sides.pendingStarts;
+                else ++sides.pendingEnds;
+            }
+            else if (start) {
+                if (direction == Direction::UP) sides.startUp = true;
+                else sides.startDown = true;
+            }
+            else {
+                if (direction == Direction::UP) sides.endUp = true;
+                else sides.endDown = true;
+            }
+        };
+        // Exact endpoint identities only: another grace with the same tick
+        // has no attachment. Note endpoints map to their captured chord owner.
+        // Visibility, line style, system count and curve contracts do not filter
+        // Studio's checkStartEndSlurs flags; preserve that separation here.
+        attach(slur.start, true);
+        attach(slur.end, false);
+    }
+    result = std::move(pending);
+    if (reason) reason->clear();
+    return true;
+}
+
 bool buildSpacingInput4(Score* score, SpacingInput4& result, QString* reason)
 {
     const auto fail = [reason](const char* message) {

@@ -101,6 +101,40 @@ public:
     const SpacingSlurInput4* slur(const Slur*) const;
 };
 
+// Source-side attachment flags, independent of curve admission and shape readiness.
+// AUTO is never inferred from cachedUp. A producer may supply a direction per
+// root after preparing stems/voices; absent AUTO directions remain pending.
+struct SpacingSlurSides4 {
+    bool startUp = false;
+    bool startDown = false;
+    bool endUp = false;
+    bool endDown = false;
+    size_t pendingStarts = 0;
+    size_t pendingEnds = 0;
+    unsigned blockedKerning(bool stemUp) const {
+        return ((!stemUp && (startUp || endUp)) ? 1u : 0u)
+             | ((stemUp && (startDown || endDown)) ? 2u : 0u);
+    }
+    bool complete() const { return !pendingStarts && !pendingEnds; }
+};
+
+struct SpacingSlurAttachments4 {
+    // Same order as input.anchors(); includes each exact grace/note owner.
+    std::vector<SpacingSlurSides4> anchors;
+    size_t unmappedStarts = 0;
+    size_t unmappedEnds = 0;
+    bool complete() const;
+};
+
+// One linear preparation, never a score scan per collision query. If supplied,
+// directions must match input.slurs() in size/order: AUTO means not prepared.
+// Explicit score directions cannot be overridden. Unresolved directions and
+// unmapped endpoints are reported, not silently treated as absent attachments.
+// Failure leaves result unchanged; no live DOM or cached layout data is read.
+bool buildSpacingSlurAttachments4(const SpacingInput4&, SpacingSlurAttachments4& result,
+                                 const std::vector<Direction>* directions = nullptr,
+                                 QString* reason = nullptr);
+
 // Collects all tracks, grace members and root slurs without admission whitelists.
 // Uses raw endpoint accessors: unresolved anchors stay unresolved, never lazily
 // computed. No positions, styles, directions, selection or history are changed.
