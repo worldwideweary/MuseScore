@@ -3250,3 +3250,47 @@ and attachment kernel pass 960 mock-DOM cases, including 768 direction-table
 comparisons against an independent exact-endpoint scan. Native application and
 mtests cannot run locally; their results remain pending. Kernel WIP checkpoint:
 47fdaa1. The final incremental patch is based on delivered v0.151 29b76cc.
+
+
+### v0.153: prepared Studio slur-direction rules
+
+v0.152 native mtests pass; tst_spacing took 79 seconds in the user's build.
+Continue architecture package A with the pinned Studio 4.7.5 computeUp and
+isDirectionMixture rules. Capture cross-staff beam/stem presence and the exact
+multi-voice span query as musical metadata. A read-only resolver consumes one
+caller-prepared chord/rest direction per exact anchor and emits one direction
+per root, directly usable by v0.152's attachment preparation.
+
+Explicit directions remain authoritative. AUTO handles cross-staff start beams,
+voice priority, stem mixtures, grace endpoints, owner stems and normal chords
+across measures/systems. Index normal anchors once per track and binary-search
+the span start. Do not inspect cached Slur::up, captured anchor.up, curve
+eligibility or rendered segment count. A definite mixture resolves UP even if
+another stem is pending; otherwise required unprepared directions stay AUTO.
+Raw NOTE/missing/unmapped AUTO anchors stay pending rather than invoking the
+renderer's lazy anchor repair. Invalid direction arrays fail atomically.
+
+Files changed: libmscore/spacinginput4.h/.cpp, tst_spacing.cpp and this guide.
+Existing snapshot rows compare prepared results to an independent DOM traversal
+of the source rules before/after START reanchoring and undo. Three small existing
+fixtures additionally cover synthetic roots from every grace/main/rest/voice
+anchor, across systems and cross-staff beams. They test four fully prepared
+stem patterns, pending inputs, direction-to-attachment handoff and unchanged
+state on validation failure. They do not lay out synthetic slur curves or add
+new visual test scores. No extra screenshot or profile run is requested.
+
+Local checks: four C++11 syntax passes (Debug/NDEBUG collector and regenerated-moc
+spacing test), with unused-parameter/signedness warnings enabled. The actual
+collector, attachment and direction kernels pass 960 mock-DOM cases, including
+1,536 direction-table comparisons with full/partial pending stem inputs and
+independent endpoint/range expectations. Native application/mtests cannot run
+locally. WIP checkpoint ccf76aa preserves the direction kernel; the delivered
+incremental patch is based on v0.152 7294353.
+
+Runtime selection and rendered directions are unchanged in this stage. A
+prepared stem input must come from the shared producer; the source rule's
+cross-system note-line/stem refresh cannot be replaced with cached observations.
+Next: connect a shared preparation owner and renderer-consistent directions,
+then replace curve-based horizontal admission and resolve collection/publication
+ownership and hybrid fallback (audit A/B). Rebuild and run the usual combined
+spacing/beam CTest command to include all new rows.

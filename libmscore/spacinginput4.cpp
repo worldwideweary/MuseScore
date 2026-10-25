@@ -5,6 +5,7 @@
 #include "measure.h"
 #include "segment.h"
 #include "chord.h"
+#include "beam.h"
 #include "rest.h"
 #include "note.h"
 #include "slur.h"
@@ -95,6 +96,96 @@ bool buildSpacingSlurAttachments4(const SpacingInput4& input, SpacingSlurAttachm
     return true;
 }
 
+bool buildSpacingSlurDirections4(const SpacingInput4& input, const std::vector<Direction>& directions,
+                                std::vector<Direction>& result, QString* reason)
+{
+    const auto fail = [reason](const char* message) {
+        if (reason) *reason = QString::fromLatin1(message);
+        return false;
+    };
+    const auto valid = [](Direction d) {
+        return d == Direction::AUTO || d == Direction::UP || d == Direction::DOWN;
+    };
+    if (!input.score()) return fail("Missing musical inputs for slur directions");
+    if (directions.size() != input.anchors().size())
+        return fail("Prepared direction count differs from anchor count");
+    for (Direction direction : directions)
+        if (!valid(direction)) return fail("Invalid prepared chord/rest direction");
+    // Index each track once. Range queries below visit normal anchors only,
+    // rather than rescanning all voices or consulting rendered slur segments.
+    std::unordered_map<int, std::vector<size_t>> mains;
+    std::unordered_map<const Chord*, size_t> mainIndex;
+    for (size_t i = 0; i < input.anchors().size(); ++i) {
+        const auto& anchor = input.anchors()[i];
+        if (anchor.kind == SpacingMemberKind4::MAIN) {
+            mains[anchor.track].push_back(i);
+            if (anchor.main) mainIndex.emplace(anchor.main, i);
+        }
+    }
+    std::vector<Direction> pending;
+    pending.reserve(input.slurs().size());
+    for (const auto& slur : input.slurs()) {
+        if (!valid(slur.requestedDirection)) return fail("Invalid requested slur direction");
+        if (slur.requestedDirection != Direction::AUTO) {
+            pending.push_back(slur.requestedDirection);
+            continue;
+        }
+        const auto resolve = [&]() -> Direction {
+            // A raw NOTE/missing/foreign endpoint is retained as pending. The
+            // renderer's lazy anchor repair is not a spacing-query operation.
+            if (slur.start.anchorIndex == SPACING_INPUT_NONE4 || slur.end.anchorIndex == SPACING_INPUT_NONE4
+                || (slur.start.kind != SpacingEndpointKind4::CHORD && slur.start.kind != SpacingEndpointKind4::REST)
+                || (slur.end.kind != SpacingEndpointKind4::CHORD && slur.end.kind != SpacingEndpointKind4::REST))
+                return Direction::AUTO;
+            const auto& start = input.anchors()[slur.start.anchorIndex];
+            const auto& end = input.anchors()[slur.end.anchorIndex];
+            const bool startChord = slur.start.kind == SpacingEndpointKind4::CHORD;
+            const bool endChord = slur.end.kind == SpacingEndpointKind4::CHORD;
+            if (startChord && start.crossStaffBeam) return Direction::UP;
+            // Studio gives voice selection priority over the mixture rule.
+            if (slur.multipleVoices)
+                return start.track % VOICES || end.track % VOICES ? Direction::DOWN : Direction::UP;
+            const Direction stem = directions[slur.start.anchorIndex];
+            if (stem == Direction::AUTO) return Direction::AUTO;
+            const Direction opposite = stem == Direction::UP ? Direction::DOWN : Direction::UP;
+            if (!startChord || !endChord || start.track != end.track
+                || (start.kind != SpacingMemberKind4::MAIN && end.item == start.main)) return opposite;
+            // A definite mixture resolves UP even when another stem is still
+            // pending. Without a definite mixture, pending inputs stay pending.
+            bool unknown = false;
+            const auto mixed = [&](size_t index) {
+                if (directions[index] == Direction::AUTO) unknown = true;
+                return directions[index] != Direction::AUTO && directions[index] != stem;
+            };
+            if (end.kind != SpacingMemberKind4::MAIN && mixed(slur.end.anchorIndex)) return Direction::UP;
+            if (start.kind == SpacingMemberKind4::BEFORE && end.kind == SpacingMemberKind4::AFTER
+                && start.main == end.main) {
+                const auto found = mainIndex.find(start.main);
+                if (found != mainIndex.end() && input.anchors()[found->second].hasStem && mixed(found->second))
+                    return Direction::UP;
+            }
+            const auto found = mains.find(start.track);
+            if (found != mains.end()) {
+                const auto& track = found->second;
+                const auto first = std::lower_bound(track.begin(), track.end(), start.tick,
+                    [&input](size_t index, const Fraction& tick) { return input.anchors()[index].tick < tick; });
+                for (auto it = first; it != track.end(); ++it) {
+                    const auto& anchor = input.anchors()[*it];
+                    if (anchor.tick > end.tick) break;
+                    if ((start.kind != SpacingMemberKind4::MAIN || end.kind == SpacingMemberKind4::BEFORE)
+                        && anchor.tick == end.tick) break;
+                    if (anchor.main && mixed(*it)) return Direction::UP;
+                }
+            }
+            return unknown ? Direction::AUTO : opposite;
+        };
+        pending.push_back(resolve());
+    }
+    result = std::move(pending);
+    if (reason) reason->clear();
+    return true;
+}
+
 bool buildSpacingInput4(Score* score, SpacingInput4& result, QString* reason)
 {
     const auto fail = [reason](const char* message) {
@@ -124,6 +215,11 @@ bool buildSpacingInput4(Score* score, SpacingInput4& result, QString* reason)
         input.segmentEnabled = segment->enabled();
         input.segmentVisible = segment->visible();
         input.staffMove = item->staffMove();
+        if (item->isChord()) {
+            const Chord* chord = toChord(item);
+            input.crossStaffBeam = chord->beam() && chord->beam()->cross();
+            input.hasStem = chord->stem();
+        }
         const size_t index = pending._anchors.size();
         pending._anchorIndex.emplace(item, index);
         pending._anchors.push_back(std::move(input));
@@ -218,6 +314,22 @@ bool buildSpacingInput4(Score* score, SpacingInput4& result, QString* reason)
         input.cachedUp = slur->up();
         input.visible = slur->visible();
         input.lineType = slur->lineType();
+        // Match Studio computeUp's span, including the end chord/rest's
+        // duration. Do not resolve raw endpoints or update any stem here.
+        if (input.start.kind == SpacingEndpointKind4::CHORD
+            && input.end.anchorIndex != SPACING_INPUT_NONE4
+            && (input.end.kind == SpacingEndpointKind4::CHORD || input.end.kind == SpacingEndpointKind4::REST)
+            && input.start.anchorIndex != SPACING_INPUT_NONE4) {
+            const auto& start = pending._anchors[input.start.anchorIndex];
+            const auto& end = pending._anchors[input.end.anchorIndex];
+            for (const Measure* measure = start.measure; measure && measure->tick() <= end.tick;
+                 measure = measure->nextMeasure()) {
+                if (measure->hasVoices(start.item->staffIdx(), input.tick, slur->ticks() + end.item->ticks())) {
+                    input.multipleVoices = true;
+                    break;
+                }
+            }
+        }
         const size_t index = pending._slurs.size();
         pending._slurIndex.emplace(slur, index);
         pending._slurs.push_back(std::move(input));

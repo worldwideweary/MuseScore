@@ -45,6 +45,8 @@ class TestSpacing : public QObject, public MTest {
       void spacingInputSnapshot4_data();
       void spacingInputSnapshot4();
       void spacingSlurAttachments4();
+      void spacingSlurDirections4_data();
+      void spacingSlurDirections4();
       void styleRoundTrip();
       void durationPolicy();
       void springForce();
@@ -3355,6 +3357,87 @@ static std::vector<qreal> graceMergedSnapshot4(Score* score)
       return values;
       }
 
+// Independent DOM traversal of pinned Studio computeUp/isDirectionMixture.
+// Caller-provided directions let us test the rules without changing live stems.
+static Direction slurDirectionOracle153(const Slur* slur, const SpacingInput4& input,
+                                        const std::vector<Direction>& directions)
+      {
+      if (slur->slurDirection() != Direction::AUTO) return slur->slurDirection();
+      const Element* a = slur->startElement();
+      const Element* b = slur->endElement();
+      if (!a || !b || !a->isChordRest() || !b->isChordRest()) return Direction::AUTO;
+      const ChordRest* start = toChordRest(a);
+      const ChordRest* end = toChordRest(b);
+      const Chord* c1 = start->isChord() ? toChord(start) : nullptr;
+      const Chord* c2 = end->isChord() ? toChord(end) : nullptr;
+      const auto up = [&](const ChordRest* chord) {
+            return directions[size_t(input.anchor(chord) - input.anchors().data())] == Direction::UP;
+            };
+      if (c1 && c1->beam() && c1->beam()->cross()) return Direction::UP;
+      for (const Measure* m = start->measure(); m && m->tick() <= end->tick(); m = m->nextMeasure())
+            if (c1 && m->hasVoices(start->staffIdx(), slur->tick(), slur->ticks() + end->ticks()))
+                  return start->voice() > 0 || end->voice() > 0 ? Direction::DOWN : Direction::UP;
+      const auto mixture = [&]() {
+            if (c1->track() != c2->track()) return false;
+            if (c2->isGrace() && up(c2) != up(c1)) return true;
+            if (c1->isGraceBefore() && c2->isGraceAfter() && c1->parent() == c2->parent()) {
+                  const Chord* parent = toChord(c1->parent());
+                  if (parent->stem() && up(parent) != up(c1)) return true;
+                  }
+            for (const Segment* seg = c1->segment(); seg && seg->tick() <= c2->tick();
+                 seg = seg->next1(SegmentType::ChordRest)) {
+                  if ((c1->isGrace() || c2->isGraceBefore()) && seg->tick() == c2->tick()) return false;
+                  const Element* item = seg->element(c1->track());
+                  if (item && item->isChord() && up(toChord(item)) != up(c1)) return true;
+                  }
+            return false;
+            };
+      if (c1 && c2 && (!c1->isGrace() || c2 != c1->parent()) && mixture()) return Direction::UP;
+      return up(start) ? Direction::DOWN : Direction::UP;
+      }
+
+static bool slurDirectionsMatch153(const SpacingInput4& input)
+      {
+      for (int mode = 0; mode < 4; ++mode) {
+            std::vector<Direction> stems;
+            for (const auto& a : input.anchors()) stems.push_back(
+                  (mode == 0 ? a.up : mode == 1 ? true : mode == 2 ? false : (a.orderInTrack % 2) != 0)
+                        ? Direction::UP : Direction::DOWN);
+            std::vector<Direction> actual;
+            if (!buildSpacingSlurDirections4(input, stems, actual) || actual.size() != input.slurs().size()) return false;
+            for (size_t i = 0; i < actual.size(); ++i)
+                  if (actual[i] != slurDirectionOracle153(input.slurs()[i].slur, input, stems)) return false;
+            SpacingSlurAttachments4 sides;
+            if (!buildSpacingSlurAttachments4(input, sides, &actual)) return false;
+            }
+      // No cached stem/slur direction can fill a pending producer input.
+      std::vector<Direction> stems(input.anchors().size(), Direction::AUTO), actual;
+      if (!buildSpacingSlurDirections4(input, stems, actual)) return false;
+      for (size_t i = 0; i < actual.size(); ++i) {
+            const auto& root = input.slurs()[i];
+            Direction expected = root.requestedDirection;
+            if (expected == Direction::AUTO && root.start.anchorIndex != SPACING_INPUT_NONE4
+                && root.end.anchorIndex != SPACING_INPUT_NONE4
+                && root.start.kind != SpacingEndpointKind4::NOTE && root.end.kind != SpacingEndpointKind4::NOTE) {
+                  const auto& start = input.anchors()[root.start.anchorIndex];
+                  const auto& end = input.anchors()[root.end.anchorIndex];
+                  if (start.crossStaffBeam) expected = Direction::UP;
+                  else if (root.multipleVoices)
+                        expected = start.track % VOICES || end.track % VOICES ? Direction::DOWN : Direction::UP;
+                  }
+            if (actual[i] != expected) return false;
+            }
+      const auto saved = actual;
+      stems.push_back(Direction::UP);
+      if (buildSpacingSlurDirections4(input, stems, actual) || actual != saved) return false;
+      stems.pop_back();
+      if (!stems.empty()) {
+            stems[0] = static_cast<Direction>(99);
+            if (buildSpacingSlurDirections4(input, stems, actual) || actual != saved) return false;
+            }
+      return true;
+      }
+
 void TestSpacing::spacingInputSnapshot4_data()
       {
       QTest::addColumn<QString>("file");
@@ -3467,6 +3550,8 @@ void TestSpacing::spacingInputSnapshot4()
             }
       QString difference;
       const auto queriesMatch = [score, &difference](const SpacingInput4& prepared) {
+            difference = "Prepared Studio slur directions differ from DOM source-rule oracle";
+            if (!slurDirectionsMatch153(prepared)) return false;
             // Independent root scan: expected membership uses exact captured
             // element identity, never the compatibility tick-alias index.
             for (int mode = 0; mode < 3; ++mode) {
@@ -3752,6 +3837,56 @@ void TestSpacing::spacingSlurAttachments4()
                   }
             }
       QVERIFY(flags.anchors.size() == previous && flags.complete());
+      input = SpacingInput4();
+      for (Slur* root : roots) {
+            score->removeSpanner(root);
+            delete root;
+            }
+      delete score;
+      }
+
+void TestSpacing::spacingSlurDirections4_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::newRow("grace-cross-system") << QString("v0.145-spacing-slur-anchor-systems.mscx");
+      QTest::newRow("multiple-voices") << QString("v0.38-spacing-voices.mscx");
+      QTest::newRow("cross-staff-beams") << QString("v0.71-spacing-cross-chords-two-voices.mscx");
+      }
+
+void TestSpacing::spacingSlurDirections4()
+      {
+      QFETCH(QString, file);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score);
+      score->doLayout();
+      SpacingInput4 input;
+      QVERIFY(buildSpacingInput4(score, input));
+      std::vector<const ChordRest*> anchors;
+      for (const auto& a : input.anchors()) anchors.push_back(a.item);
+      QVERIFY(!anchors.empty());
+      input = SpacingInput4();
+      std::vector<Slur*> roots;
+      // A root starts on every member/voice/rest. Endpoints cycle through
+      // later/equal-tick members, across systems and back to earlier anchors.
+      // No native curve/layout call is made on these synthetic roots.
+      for (size_t i = 0; i < anchors.size(); ++i) {
+            Slur* root = new Slur(score);
+            const ChordRest* start = anchors[i];
+            const ChordRest* end = anchors[(i * 7 + anchors.size() / 2) % anchors.size()];
+            root->setTrack(start->track());
+            root->setTrack2(end->track());
+            root->setTick(start->tick());
+            root->setTick2(end->tick());
+            root->setStartElement(const_cast<ChordRest*>(start));
+            root->setEndElement(const_cast<ChordRest*>(end));
+            score->addSpanner(root);
+            roots.push_back(root);
+            }
+      QVERIFY(buildSpacingInput4(score, input));
+      QVERIFY(slurDirectionsMatch153(input));
+      const auto before = graceLayoutSnapshot4(score);
+      QVERIFY(slurDirectionsMatch153(input));
+      QVERIFY(before == graceLayoutSnapshot4(score));
       input = SpacingInput4();
       for (Slur* root : roots) {
             score->removeSpanner(root);

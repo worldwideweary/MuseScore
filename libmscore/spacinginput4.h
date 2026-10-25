@@ -41,6 +41,8 @@ struct SpacingAnchorInput4 {
     bool segmentEnabled = false;
     bool segmentVisible = false;
     int staffMove = 0;
+    bool crossStaffBeam = false;
+    bool hasStem = false;
     std::vector<size_t> startingSlurs;
     std::vector<size_t> endingSlurs;
     // Current collision-policy relevance, including track/tick aliases.
@@ -76,6 +78,7 @@ struct SpacingSlurInput4 {
     bool cachedUp = false; // Observation only; not an authoritative AUTO direction.
     bool visible = false;
     int lineType = 0;
+    bool multipleVoices = false; // Studio span query, captured without layout.
 };
 
 // A preparation-pass value, never a score-owned or cross-command cache.
@@ -134,6 +137,15 @@ struct SpacingSlurAttachments4 {
 bool buildSpacingSlurAttachments4(const SpacingInput4&, SpacingSlurAttachments4& result,
                                  const std::vector<Direction>* directions = nullptr,
                                  QString* reason = nullptr);
+
+// Pinned Studio computeUp/isDirectionMixture rules on captured musical inputs.
+// The caller supplies one prepared chord/rest direction per anchor; AUTO marks
+// an input not prepared yet. Captured anchor.up/cachedUp are never substituted.
+// Results follow root order and feed buildSpacingSlurAttachments4 directly.
+// AUTO in the result means required input is pending, not rejected notation.
+// No geometry, system membership or live DOM is read. Failure is atomic.
+bool buildSpacingSlurDirections4(const SpacingInput4&, const std::vector<Direction>& anchorDirections,
+                                std::vector<Direction>& result, QString* reason = nullptr);
 
 // Collects all tracks, grace members and root slurs without admission whitelists.
 // Uses raw endpoint accessors: unresolved anchors stay unresolved, never lazily
