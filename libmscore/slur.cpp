@@ -31,6 +31,7 @@
 #include "utils.h"
 
 #include <cmath>
+#include <QScopedValueRollback>
 
 namespace Ms {
 
@@ -446,7 +447,7 @@ void SlurSegment::computeBezier(QPointF p6o)
 
       if (autoplace() && isSingleType() && system() && score()->styleB(Sid::spacingLayout4)) {
             SpacingShape4 obstacles;
-            if (buildGraceMergedSlurObstacles4(slur(), obstacles, nullptr, true)) {
+            if (buildGraceMergedSlurObstacles4(slur(), obstacles, nullptr, true, slur()->_graceQuery4)) {
                   // Fit independently of user offsets. layoutSegment already
                   // received the raw anchors, so do not re-plan the same grace
                   // geometry through slurPos on each grip preview/relayout.
@@ -1365,7 +1366,7 @@ void Slur::slurPos(SlurPos* sp)
             sp->p1.setY(sp->p2.y() + __up * 0.25 * _spatium);
 
       if (!isIncoming() && !isOutgoing() && score()->styleB(Sid::spacingLayout4))
-            adjustGraceMergedSlurBeamAnchors4(this, sp->p1, sp->p2, nullptr, true);
+            adjustGraceMergedSlurBeamAnchors4(this, sp->p1, sp->p2, nullptr, true, _graceQuery4);
       }
 
 //---------------------------------------------------------
@@ -1568,6 +1569,9 @@ SpannerSegment* Slur::layoutSystem(System* system)
 
       if (isHammerOnPullOff() && _slurDirection == Direction::AUTO && staff() && staff()->isTabStaff(tick()))
             _up = true;
+
+      GraceMergedSlurQuery4 graceQuery;
+      QScopedValueRollback<GraceMergedSlurQuery4*> queryGuard(_graceQuery4, &graceQuery);
       SlurPos sPos;
       slurPos(&sPos);
 
@@ -1685,6 +1689,9 @@ void Slur::layout()
 
       if (isHammerOnPullOff() && _slurDirection == Direction::AUTO && staff() && staff()->isTabStaff(tick()))
             _up = true;
+
+      GraceMergedSlurQuery4 graceQuery;
+      QScopedValueRollback<GraceMergedSlurQuery4*> queryGuard(_graceQuery4, &graceQuery);
       SlurPos sPos;
       slurPos(&sPos);
 

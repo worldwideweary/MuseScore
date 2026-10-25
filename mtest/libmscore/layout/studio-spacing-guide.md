@@ -3003,3 +3003,14 @@ The consolidated patch applies after v0.132 and includes the v0.133/v0.134
 diagnostic files. Run native tst_spacing and tst_beam, then repeat the original
 merged-grace edit timing. Speed gains and the separate N2 beam issue remain
 unverified; Debug responsiveness is still the target.
+
+### v0.136: share validation during one slur layout call
+
+The v0.135 user mtests pass, but its M1 timing shows no clear speed gain.
+Share a successful complete merged-geometry query between beam-anchor and
+obstacle helpers within one Slur::layout/layoutSystem call. A scoped guard
+restores the borrowed pointer on return; no result survives edits or later
+layout. Add independent/shared native comparisons and slurGeometryReuse timing.
+See v0.136-slur-operation-geometry-reuse.md. Apply after corrected v0.135,
+run native spacing/beam mtests, then repeat M1 timing. The separate N2 beam
+discrepancy remains unresolved; no measured performance gain is claimed yet.

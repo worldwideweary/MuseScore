@@ -7,6 +7,7 @@
 namespace Ms {
 class Chord;
 class Slur;
+class GraceMergedSlurQuery4;
 struct GraceSlurCurve4 {
     QPointF start, control1, control2, end; // System x / staff-relative y.
 };
@@ -24,6 +25,6 @@ bool fitGraceSlurCurve4(const SpacingShape4&, const Chord* target, qreal spatium
 // Upper starts use the user-preferred visible-tip alignment above the actual
 // leading beam edge, including the rounded end-stroke radius.
 bool adjustGraceMergedSlurBeamAnchors4(const Slur*, QPointF& start, QPointF& end, QString* reason = nullptr,
-                                      bool allowVisualEdits = false);
+                                      bool allowVisualEdits = false, GraceMergedSlurQuery4* query = nullptr);
 }
 #endif

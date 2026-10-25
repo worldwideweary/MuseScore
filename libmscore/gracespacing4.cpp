@@ -578,7 +578,21 @@ bool buildGraceMergedGeometry4(const Chord* owner, GraceMergedGeometry4& result,
     return true;
 }
 
-bool buildGraceMergedSlurObstacles4(const Slur* slur, SpacingShape4& result, QString* reason, bool allowVisualEdits)
+const GraceMergedGeometry4* GraceMergedSlurQuery4::geometry(const Chord* owner, QString* reason)
+{
+    if (owner && _geometry.plan.owner == owner) {
+        SpacingProfileScope4 profile(SpacingProfileStage4::SLUR_GEOMETRY_REUSE);
+        if (reason) reason->clear();
+        return &_geometry;
+    }
+    GraceMergedGeometry4 fresh;
+    if (!buildGraceMergedGeometry4(owner, fresh, reason)) return nullptr;
+    _geometry = std::move(fresh);
+    return &_geometry;
+}
+
+bool buildGraceMergedSlurObstacles4(const Slur* slur, SpacingShape4& result, QString* reason, bool allowVisualEdits,
+                                   GraceMergedSlurQuery4* query)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::OBSTACLES);
     const auto fail = [reason](const char* message) {
@@ -596,8 +610,11 @@ bool buildGraceMergedSlurObstacles4(const Slur* slur, SpacingShape4& result, QSt
     if (!spacingMergedGraceSlur4(slur, owner, target, allowVisualEdits)
         || !owner->measure()->system() || owner->measure()->system() != target->measure()->system())
         return fail("Unadapted combined grace slur obstacles");
-    GraceMergedGeometry4 geometry;
-    if (!buildGraceMergedGeometry4(owner, geometry, reason)) return false;
+    GraceMergedGeometry4 localGeometry;
+    const GraceMergedGeometry4* shared = query ? query->geometry(owner, reason) : nullptr;
+    if (query && !shared) return false;
+    if (!query && !buildGraceMergedGeometry4(owner, localGeometry, reason)) return false;
+    const GraceMergedGeometry4& geometry = query ? *shared : localGeometry;
     SpacingShape4 obstacles;
     // Geometry already contains each validated physical component. Rebase
     // those rectangles from temporary target coordinates to CURRENT published

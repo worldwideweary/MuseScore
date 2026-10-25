@@ -60,6 +60,17 @@ struct GraceMergedGeometry4 {
 };
 // Read-only joint projection for system planning.
 bool buildGraceMergedGeometry4(const Chord*, GraceMergedGeometry4&, QString* reason = nullptr);
+// One slur-layout operation only: notes, beams and styles must remain unchanged.
+// Successful geometry may be shared by anchor/obstacle queries. Never retain
+// across editing, beam preparation or later layout operations. Failures are fresh.
+class GraceMergedSlurQuery4 {
+    GraceMergedGeometry4 _geometry;
+public:
+    const GraceMergedGeometry4* geometry(const Chord* owner, QString* reason = nullptr);
+    GraceMergedSlurQuery4() = default;
+    GraceMergedSlurQuery4(const GraceMergedSlurQuery4&) = delete;
+    GraceMergedSlurQuery4& operator=(const GraceMergedSlurQuery4&) = delete;
+};
 // Preparation before system spacing. Updates derived beam/
 // stem geometry at planned intra-group distances, restoring every member x.
 // Failure after preparation may leave derived geometry needing native relayout.
@@ -90,7 +101,8 @@ bool spacingMergedGraceSlur4(const Slur*, const Chord* owner, const Chord* targe
 // other grace members and the target's own components. No clearance inflation
 // or curve adjustment yet. Failure leaves result unchanged.
 // allowVisualEdits is for computing an unedited base before applying user offsets.
-bool buildGraceMergedSlurObstacles4(const Slur*, SpacingShape4&, QString* reason = nullptr, bool allowVisualEdits = false);
+bool buildGraceMergedSlurObstacles4(const Slur*, SpacingShape4&, QString* reason = nullptr, bool allowVisualEdits = false,
+                                   GraceMergedSlurQuery4* query = nullptr);
 
 // First-before-grace to its own main chord, same staff/voice.
 // Visual edits may be admitted explicitly for horizontal spacing or computing

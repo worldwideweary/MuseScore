@@ -16,6 +16,7 @@
 #include "slurtie.h"
 
 namespace Ms {
+class GraceMergedSlurQuery4;
 
 //---------------------------------------------------------
 //   @@ SlurSegment
@@ -69,6 +70,9 @@ class SlurSegment final : public SlurTieSegment {
 
 class Slur : public SlurTie {
 
+      friend class SlurSegment;
+      // Borrowed only during layout/layoutSystem, restored by a scoped guard.
+      GraceMergedSlurQuery4* _graceQuery4 = nullptr;
       void slurPosChord(SlurPos*);
       int _partialDirection { -1 }; // Studio: none=-1, incoming=0, outgoing=1, both=2
 

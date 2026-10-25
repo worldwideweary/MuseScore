@@ -4077,6 +4077,28 @@ void TestSpacing::graceMergedSlurBeamAnchors()
             QPointF a = legacy.p1, b = legacy.p2;
             QString reason;
             const bool accepted = adjustGraceMergedSlurBeamAnchors4(slur, a, b, &reason);
+            // One read-only layout query shares validation across anchors and
+            // obstacles, with identical physical components and atomic failure.
+            {
+                  GraceMergedSlurQuery4 query;
+                  QPointF sharedA = legacy.p1, sharedB = legacy.p2;
+                  QCOMPARE(adjustGraceMergedSlurBeamAnchors4(slur, sharedA, sharedB, nullptr, false, &query), accepted);
+                  QCOMPARE(sharedA, a);
+                  QCOMPARE(sharedB, b);
+                  SpacingShape4 expectedObstacles, sharedObstacles;
+                  const bool expected = buildGraceMergedSlurObstacles4(slur, expectedObstacles);
+                  QCOMPARE(buildGraceMergedSlurObstacles4(slur, sharedObstacles, nullptr, false, &query), expected);
+                  QCOMPARE(int(sharedObstacles.elements.size()), int(expectedObstacles.elements.size()));
+                  for (size_t i = 0; i < expectedObstacles.elements.size(); ++i) {
+                        const auto& x = expectedObstacles.elements[i];
+                        const auto& y = sharedObstacles.elements[i];
+                        QCOMPARE(y.rect, x.rect);
+                        QCOMPARE(y.item, x.item);
+                        QCOMPARE(int(y.identity), int(x.identity));
+                        QVERIFY(y.aggregateOwners == x.aggregateOwners);
+                        QVERIFY(y.sharedItems == x.sharedItems);
+                        }
+                  }
             QCOMPARE(accepted, start->up() == slur->up());
             QCOMPARE(a, modern.p1);
             QCOMPARE(b, modern.p2);

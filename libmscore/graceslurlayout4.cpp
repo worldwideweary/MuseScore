@@ -175,7 +175,8 @@ bool fitGraceSlurCurve4(const SpacingShape4& physical, const Chord* target, qrea
     return fail("Grace slur clearance exceeds bounded fitting passes");
 }
 
-bool adjustGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& startPoint, QPointF& endPoint, QString* reason, bool allowVisualEdits)
+bool adjustGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& startPoint, QPointF& endPoint, QString* reason, bool allowVisualEdits,
+                                      GraceMergedSlurQuery4* query)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::ANCHORS);
     const auto fail = [reason](const char* message) {
@@ -198,7 +199,10 @@ bool adjustGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& startPoint, QP
         || owner->measure()->system() != target->measure()->system())
         return fail("Unadapted combined grace beam anchors");
     GraceMergedGeometry4 geometry;
-    if (!buildGraceMergedGeometry4(owner, geometry, reason)) return false;
+    if (query) {
+        if (!query->geometry(owner, reason)) return false;
+    }
+    else if (!buildGraceMergedGeometry4(owner, geometry, reason)) return false;
     const qreal sp = slur->spatium();
     const qreal mag = start->chordMag();
     // Preserve Studio slurPos's beamWidthSp expression exactly. It uses the
