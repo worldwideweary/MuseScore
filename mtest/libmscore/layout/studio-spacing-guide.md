@@ -3081,3 +3081,15 @@ See v0.141-slur-offset-undo-layout.md. Apply after v0.140, run spacing/beam
 mtests, then repeat held-arrow offsets followed by held Undo/Redo on the same
 v0.140 score. Native results are pending. Longer Shift+Arrow spans retain the
 known admission fallback; this version does not expand their scope.
+
+### v0.142: pre-system kerning coordinate safety
+
+The v0.141 native-pass report was corrected: undo/redo feels better but
+spacing aborts at graceBeforePlan:legacy-beams. Source audit finds an
+unconditional v0.140 page-coordinate query; ledger-line pagePos requires a
+system that can be absent during grace preparation. Skip it for zero slur
+restriction, validate frames/staves/finiteness otherwise, and reject atomically
+when unavailable. Add pre-system ledger and restricted-frame regressions.
+See v0.142-grace-kerning-coordinate-guard.md. Apply after v0.141 and rerun
+spacing/beam mtests before resuming broader reanchor work. No native crash
+reproduction or confirmed fix is claimed before that rerun.

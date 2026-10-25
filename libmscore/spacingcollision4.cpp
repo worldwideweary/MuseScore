@@ -8,6 +8,7 @@
 #include "chord.h"
 #include "measure.h"
 #include "segment.h"
+#include "system.h"
 #include "clef.h"
 #include "note.h"
 #include "rest.h"
@@ -433,8 +434,24 @@ static bool pairPolicy4(const SpacingPaddingTable4& table, const Element* first,
         // Studio permits offset up-stem seconds to kern on either side.
         if (!(chord->up() && note->pos().x() > 0)) {
             const unsigned blocked = cache ? cache->forwardSlurKerning(chord) : forwardSlurKerning4(chord);
-            const unsigned side = second->pagePos().y() < note->pagePos().y() ? 1 : 2;
-            if (blocked & side) policy.kerning = SpacingKerning4::NON_KERNING;
+            if (blocked) {
+                // Grace preparation also queries this policy before measures
+                // belong to systems. LedgerLine::pagePos dereferences that
+                // system, so only inspect page coordinates in a ready frame.
+                const Measure* a = note->findMeasure();
+                const Measure* b = second->findMeasure();
+                const System* system = a ? a->system() : nullptr;
+                if (!system || !b || b->system() != system) return false;
+                const int staves = system->staves()->size();
+                if (note->vStaffIdx() < 0 || note->vStaffIdx() >= staves
+                    || second->vStaffIdx() < 0 || second->vStaffIdx() >= staves
+                    || second->staffIdx() < 0 || second->staffIdx() >= staves) return false;
+                const qreal firstY = note->pagePos().y();
+                const qreal secondY = second->pagePos().y();
+                if (!std::isfinite(firstY) || !std::isfinite(secondY)) return false;
+                const unsigned side = secondY < firstY ? 1 : 2;
+                if (blocked & side) policy.kerning = SpacingKerning4::NON_KERNING;
+            }
         }
     }
     if (allowGrace && first->type() == ElementType::STEM_SLASH) {

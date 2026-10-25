@@ -15,6 +15,7 @@
 #include "libmscore/system.h"
 #include "libmscore/shape.h"
 #include "libmscore/notedot.h"
+#include "libmscore/ledgerline.h"
 #include "libmscore/clef.h"
 #include "libmscore/rest.h"
 #include "libmscore/tie.h"
@@ -42,6 +43,7 @@ class TestSpacing : public QObject, public MTest {
       void styleRoundTrip();
       void durationPolicy();
       void springForce();
+      void graceKerningBeforeSystem4();
       void graceBeforePlan_data();
       void graceBeforePlan();
       void graceBeforeLayout_data();
@@ -2801,6 +2803,38 @@ void TestSpacing::systemInputs()
       QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
       for (size_t i = 0; i < legacy.size(); ++i)
             QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
+      delete score;
+      }
+
+// Policy queries before system collection must not require page coordinates.
+void TestSpacing::graceKerningBeforeSystem4()
+      {
+      MasterScore* score = readScore(DIR + "v0.79-spacing-grace-before.mscx");
+      QVERIFY(score);
+      score->doLayout();
+      Measure* measure = score->firstMeasure();
+      QVERIFY(measure);
+      Chord* main = toChord(measure->first(SegmentType::ChordRest)->cr(0));
+      QVERIFY(main && !main->notes().empty());
+      const SpacingPaddingTable4 table(score);
+      {
+      LedgerLine ledger(score);
+      ledger.setParent(main);
+      ledger.setTrack(main->track());
+      Element* parent = measure->parent();
+      measure->setParent(nullptr);
+      SpacingPairPolicy4 fresh, cached;
+      SpacingContextCache4 cache;
+      const bool accepted = spacingGracePairPolicy4(table, main, main->notes().front(), &ledger,
+            score->spatium(), fresh);
+      const bool reused = spacingGracePairPolicy4(table, main, main->notes().front(), &ledger,
+            score->spatium(), cached, &cache);
+      measure->setParent(parent);
+      QVERIFY(accepted && reused);
+      QCOMPARE(int(fresh.kerning), int(SpacingKerning4::KERNING));
+      QCOMPARE(int(cached.kerning), int(fresh.kerning));
+      ledger.setParent(nullptr);
+      }
       delete score;
       }
 
@@ -6204,6 +6238,22 @@ void TestSpacing::slurAnchorSpacing4()
                   QCOMPARE(int(cached.kerning), int(fresh.kerning));
                   }
             }
+      end->setUp(!upSlur); // This endpoint has an active opposite-stem restriction.
+      Measure* endMeasure = end->measure();
+      Element* parent = endMeasure->parent();
+      endMeasure->setParent(nullptr);
+      SpacingGraceContext4 context;
+      for (const auto& group : plan.mergedGraces) {
+            context.mains.push_back(group.target);
+            context.afterMains.push_back(group.owner);
+            context.mergedPairs.push_back({group.owner, group.target});
+            }
+      SpacingPairPolicy4 rejectedFrame;
+      rejectedFrame.padding = -123;
+      const bool ready = spacingPairPolicy4(table, note, &probe, score->spatium(), rejectedFrame, &context);
+      endMeasure->setParent(parent);
+      QVERIFY(!ready);
+      QCOMPARE(rejectedFrame.padding, qreal(-123));
       end->setUp(stemUp);
       probe.setParent(nullptr);
       }
