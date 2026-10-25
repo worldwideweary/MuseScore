@@ -5776,12 +5776,12 @@ class CmdStateLocker {
 
 bool Score::doLayoutSlurOffset4(const SlurSegment* segment)
       {
-      // Initial bounded path: one music system and one staff on one page.
+      // Bounded path: one music system and up to two pitched staves on one page.
       // The caller supplies an explicitly classified offset-only edit commit.
       if (!segment || cmdState().slurOffset4() != segment || segment->score() != this || !isMaster()
           || masterScore()->scoreList().size() != 1 || movements()->size() != 1
           || !styleB(Sid::spacingLayout4) || layoutMode() != LayoutMode::PAGE
-          || nstaves() != 1 || npages() != 1 || !firstMeasure() || !lastMeasure()
+          || nstaves() < 1 || nstaves() > 2 || npages() != 1 || !firstMeasure() || !lastMeasure()
           || int(cmdState().layoutFlags) != 0)
             return false;
       System* system = firstMeasure()->system();
@@ -5792,8 +5792,44 @@ bool Score::doLayoutSlurOffset4(const SlurSegment* segment)
             if (existing->page() != system->page() || (existing != system && !existing->vbox()))
                   return false;
             }
-      if (!staff(0)->show() || !system->staff(0)->show()
-          || staff(0)->isTabStaff(firstMeasure()->tick())) return false;
+      for (int i = 0; i < nstaves(); ++i) {
+            if (!staff(i)->show() || !system->staff(i)->show()
+                || !staff(i)->isPitchedStaff(firstMeasure()->tick())) return false;
+            }
+      if (nstaves() == 2) {
+            // Staff-distance changes must not feed back into cross-staff geometry.
+            // Check the whole retained system, including unedited voices/graces.
+            const auto independent = [](const ChordRest* cr) {
+                  if (cr->staffMove() || (cr->beam() && cr->beam()->cross())) return false;
+                  if (cr->isChord()) {
+                        const Tremolo* tremolo = toChord(cr)->tremolo();
+                        if (tremolo && tremolo->twoNotes()
+                            && (!tremolo->chord1() || !tremolo->chord2()
+                                || tremolo->chord1()->staffIdx() != tremolo->chord2()->staffIdx())) return false;
+                        }
+                  for (const Tuplet* t = cr->tuplet(); t; t = t->tuplet())
+                        if (t->cross()) return false;
+                  return true;
+                  };
+            for (Measure* m = firstMeasure(); m; m = m->nextMeasure()) {
+                  for (int i = 0; i < nstaves(); ++i)
+                        if (!staff(i)->isPitchedStaff(m->tick())) return false;
+                  for (const Segment& s : m->segments()) {
+                        for (const Element* item : s.elist()) {
+                              if (!item || !item->isChordRest()) continue;
+                              const ChordRest* cr = toChordRest(item);
+                              if (!independent(cr) || !cr->staff()->isPitchedStaff(s.tick())) return false;
+                              if (cr->isChord())
+                                    for (const Chord* grace : toChord(cr)->graceNotes())
+                                          if (!independent(grace)) return false;
+                              }
+                        }
+                  }
+            for (const auto& entry : spannerMap().map()) {
+                  const Spanner* sp = entry.second;
+                  if (sp->track2() >= 0 && sp->track() / VOICES != sp->track2() / VOICES) return false;
+                  }
+            }
 
       SpacingProfileScope4 reused(SpacingProfileStage4::SLUR_OFFSET_LAYOUT);
       CmdStateLocker locker(this);

@@ -3040,3 +3040,17 @@ See v0.138-slur-offset-layout.md. Native full-layout equivalence, undo/redo,
 UI and timing checks are pending. Apply after v0.137, run spacing/beam mtests,
 then repeat M1. Successful shortcut commands show slurOffsetLayout without
 plan/system-collection counters; no native speed claim is made yet.
+
+### v0.139 WIP: independent two-staff offset updates
+
+v0.138 native interaction is smooth: 35 shortcut commands at median 9.180 ms,
+80.1% below v0.137. All avoid system collection/spacing plans. See its updated
+result note; native mtest status still needs a separate reported result.
+Extend the same bounded update to two visible pitched staves without any
+cross-staff notes/graces/beams/tuplets/spanners. Keep native skyline, staff-
+distance and page layout. Add six native equivalence/undo rows across both
+beam styles, snapshot geometry on every staff and test cross-staff rejection.
+See v0.139-two-staff-slur-offset-layout.md. Apply after v0.138, run spacing/beam
+mtests and test v0.139-spacing-two-staff-slur-offsets.mscx on both staves.
+Multiple systems/pages and general note-changing edits remain future work;
+no two-staff performance or native equivalence result is claimed yet.

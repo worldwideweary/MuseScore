@@ -6034,14 +6034,24 @@ void TestSpacing::graceSlurSpacing()
 void TestSpacing::slurOffsetLayout4_data()
       {
       QTest::addColumn<bool>("modernBeams");
-      QTest::newRow("legacy-beams") << false;
-      QTest::newRow("studio-beams") << true;
+      QTest::addColumn<QString>("file");
+      QTest::addColumn<int>("editedStaff");
+      for (bool beams : { false, true }) {
+            const QString suffix = beams ? "-studio-beams" : "-legacy-beams";
+            QTest::newRow(qPrintable("one-staff" + suffix)) << beams
+                  << QString("v0.113-spacing-slurred-merged-graces-natural.mscx") << 0;
+            for (int staff : { 0, 1 })
+                  QTest::newRow(qPrintable(QString("two-staff-edit-%1").arg(staff + 1) + suffix)) << beams
+                        << QString("v0.139-spacing-two-staff-slur-offsets.mscx") << staff;
+            }
       }
 
 void TestSpacing::slurOffsetLayout4()
       {
       QFETCH(bool, modernBeams);
-      MasterScore* score = readScore(DIR + "v0.113-spacing-slurred-merged-graces-natural.mscx");
+      QFETCH(QString, file);
+      QFETCH(int, editedStaff);
+      MasterScore* score = readScore(DIR + file);
       QVERIFY(score);
       score->setStyleValue(Sid::beamLayout4, modernBeams);
       score->setStyleValue(Sid::spacingLayout4, true);
@@ -6050,20 +6060,49 @@ void TestSpacing::slurOffsetLayout4()
       for (const auto& entry : score->spannerMap().map()) {
             if (!entry.second->isSlur()) continue;
             Slur* candidate = toSlur(entry.second);
-            if (candidate->startElement() && candidate->startElement()->isChord()
+            if (candidate->staffIdx() == editedStaff && candidate->startElement() && candidate->startElement()->isChord()
                 && toChord(candidate->startElement())->isGraceAfter()) { selected = candidate; break; }
             }
       QVERIFY(selected && selected->frontSegment());
       const auto same = [](const std::vector<qreal>& a, const std::vector<qreal>& b) {
             if (a.size() != b.size()) return false;
-            for (size_t i = 0; i < a.size(); ++i) if (qAbs(a[i] - b[i]) > 1e-6) return false;
+            for (size_t i = 0; i < a.size(); ++i) if (!qIsFinite(a[i]) || !qIsFinite(b[i]) || qAbs(a[i] - b[i]) > 1e-6) return false;
             return true;
             };
-      const auto snapshot = [score]() {
-            auto values = graceMergedSnapshot4(score);
+      const auto horizontalSnapshot = [score]() {
+            auto values = graceLayoutSnapshot4(score);
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  for (const Segment& s : m->segments()) {
+                        for (const Element* item : s.elist()) {
+                              if (!item || !item->isChord()) continue;
+                              const Chord* main = toChord(item);
+                              QVector<const Chord*> chords { main };
+                              for (const Chord* grace : main->graceNotes()) chords.push_back(grace);
+                              for (const Chord* chord : chords) {
+                                    values.insert(values.end(), {chord->x(), chord->y(), qreal(chord->up()),
+                                          chord->stem() ? chord->stem()->len() : 0});
+                                    if (chord->beam() && chord->beam()->primarySegment4()) {
+                                          const QLineF& beam = *chord->beam()->primarySegment4();
+                                          values.insert(values.end(), {beam.x1(), beam.y1(), beam.x2(), beam.y2()});
+                                          }
+                                    }
+                              }
+                        }
+                  }
+            return values;
+            };
+      const auto snapshot = [score, &horizontalSnapshot]() {
+            auto values = horizontalSnapshot();
             for (const System* system : score->systems())
                   values.insert(values.end(), {system->x(), system->y(), system->width(), system->height(),
                         system->minTop(), system->minBottom()});
+            for (const System* system : score->systems()) {
+                  if (system->vbox()) continue;
+                  for (int i = 0; i < score->nstaves(); ++i) {
+                        const QRectF& box = system->staff(i)->bbox();
+                        values.insert(values.end(), {box.x(), box.y(), box.width(), box.height()});
+                        }
+                  }
             for (const auto& entry : score->spannerMap().map()) {
                   if (!entry.second->isSlur()) continue;
                   Slur* slur = toSlur(entry.second);
@@ -6081,12 +6120,12 @@ void TestSpacing::slurOffsetLayout4()
                   }
             return values;
             };
-      const auto horizontal = graceMergedSnapshot4(score);
+      const auto horizontal = horizontalSnapshot();
       score->cmdState().reset();
       score->cmdState().requestSlurOffset4(selected->frontSegment());
       QVERIFY(score->doLayoutSlurOffset4(selected->frontSegment()));
       score->cmdState().reset();
-      QVERIFY(same(graceMergedSnapshot4(score), horizontal));
+      QVERIFY(same(horizontalSnapshot(), horizontal));
       for (Grip grip : {Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END, Grip::DRAG}) {
             SlurSegment* segment = selected->frontSegment();
             const QPointF old = grip == Grip::DRAG ? segment->offset() : segment->ups(grip).off;
@@ -6105,7 +6144,7 @@ void TestSpacing::slurOffsetLayout4()
             score->endCmd();
             QVERIFY(!score->cmdState().slurOffset4());
             const auto fast = snapshot();
-            QVERIFY(same(graceMergedSnapshot4(score), horizontal));
+            QVERIFY(same(horizontalSnapshot(), horizontal));
             score->doLayout();
             QVERIFY2(same(snapshot(), fast), "Offset layout differs from complete native layout");
             score->undoRedo(true, nullptr);
@@ -6147,6 +6186,33 @@ void TestSpacing::slurOffsetLayout4()
       QVERIFY(!score->cmdState().slurOffset4());
       score->endCmd();
       resetEdit.clearData();
+      if (score->nstaves() == 2) {
+            // Cross-staff notes/graces and spanners must reject before any layout write.
+            Chord* main = nullptr;
+            for (const Segment& s : score->firstMeasure()->segments()) {
+                  Element* item = s.element(0);
+                  if (item && item->isChord() && !toChord(item)->graceNotes().isEmpty()) {
+                        main = toChord(item);
+                        break;
+                        }
+                  }
+            QVERIFY(main);
+            for (Chord* chord : {main, main->graceNotes().front()}) {
+                  const auto before = snapshot();
+                  chord->setStaffMove(1);
+                  score->cmdState().requestSlurOffset4(selected->frontSegment());
+                  QVERIFY(!score->doLayoutSlurOffset4(selected->frontSegment()));
+                  chord->setStaffMove(0);
+                  QVERIFY(same(snapshot(), before));
+                  score->cmdState().reset();
+                  }
+            const int track2 = selected->track2();
+            selected->setTrack2((1 - editedStaff) * VOICES);
+            score->cmdState().requestSlurOffset4(selected->frontSegment());
+            QVERIFY(!score->doLayoutSlurOffset4(selected->frontSegment()));
+            selected->setTrack2(track2);
+            score->cmdState().reset();
+            }
       score->setStyleValue(Sid::spacingLayout4, false);
       score->cmdState().requestSlurOffset4(selected->frontSegment());
       QVERIFY(!score->doLayoutSlurOffset4(selected->frontSegment()));
