@@ -20,11 +20,13 @@
 #include <limits>
 
 namespace Ms {
+// Anchor identity/timing bounds the pair to one chord/measure. Rendered
+// segment counts can still describe an earlier cross-system endpoint here.
 bool spacingLocalGraceSlur4(const Slur* slur, const Chord* main, bool allowVisualEdits)
 {
     if (!slur || !main || main->isGrace() || !main->segment() || main->staffMove()
         || slur->score() != main->score() || !slur->visible()
-        || (!allowVisualEdits && (!slur->autoplace() || slur->isNudged())) || slur->lineType() != 0 || slur->nsegments() > 1
+        || (!allowVisualEdits && (!slur->autoplace() || slur->isNudged())) || slur->lineType() != 0
         || slur->endElement() != main || slur->track() != main->track() || slur->track2() != main->track()
         || slur->tick() != main->tick() || slur->tick2() != main->tick())
         return false;
@@ -55,7 +57,7 @@ bool spacingMergedGraceSlur4(const Slur* slur, const Chord* owner, const Chord* 
     if (spacingLocalGraceSlur4(slur, target, allowVisualEdits)) return true;
     const Chord* first = owner->graceNotesAfter().front();
     if (slur->score() != owner->score() || !slur->visible()
-        || (!allowVisualEdits && (!slur->autoplace() || slur->isNudged())) || slur->lineType() != 0 || slur->nsegments() > 1
+        || (!allowVisualEdits && (!slur->autoplace() || slur->isNudged())) || slur->lineType() != 0
         || slur->startElement() != first || slur->endElement() != target
         || slur->track() != owner->track() || slur->track2() != target->track()
         || slur->tick() != owner->tick() || slur->tick2() != target->tick()

@@ -188,7 +188,9 @@ bool SpacingPaddingTable4::padding(ElementType first, ElementType second, qreal&
 // retains its exact owner/target contract; this longer slur uses native layout.
 static bool forwardAfterGraceSlur4(const Slur* slur)
 {
-    if (!slur || !slur->visible() || slur->lineType() != 0 || slur->nsegments() > 1
+    // Horizontal endpoint policy is independent of rendered system segments.
+    // The specialized grace-pair curve adapter keeps its separate bounds.
+    if (!slur || !slur->visible() || slur->lineType() != 0
         || slur->slurDirection() == Direction::AUTO || !slur->startElement() || !slur->endElement()
         || !slur->startElement()->isChord() || !slur->endElement()->isChord()) return false;
     const Chord* start = toChord(slur->startElement());

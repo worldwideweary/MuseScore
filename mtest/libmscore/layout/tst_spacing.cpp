@@ -61,6 +61,8 @@ class TestSpacing : public QObject, public MTest {
       void graceMergedSlurCurves_data();
       void graceMergedSlurCurves();
       void slurOffsetUndoAdmission4();
+      void slurAnchorSystems4_data();
+      void slurAnchorSystems4();
       void slurAnchorTraversal4_data();
       void slurAnchorTraversal4();
       void slurAnchorSpacing4_data();
@@ -6139,9 +6141,181 @@ void TestSpacing::slurOffsetUndoAdmission4()
       delete score;
       }
 
+void TestSpacing::slurAnchorSystems4_data()
+      {
+      QTest::addColumn<bool>("modernBeams");
+      QTest::addColumn<int>("editedStaff");
+      QTest::addColumn<bool>("upSlur");
+      // Pairwise coverage of all three axes. The single-step test retains
+      // the full eight-row matrix; repeating every traversal is expensive.
+      for (bool beams : {false, true})
+            for (int staff : {0, 1}) {
+                  const bool up = beams != bool(staff);
+                  QTest::newRow(qPrintable(QString("beams-%1-staff-%2-slur-%3").arg(beams).arg(staff).arg(up)))
+                        << beams << staff << up;
+                  }
+      }
+
+void TestSpacing::slurAnchorSystems4()
+      {
+      QFETCH(bool, modernBeams);
+      QFETCH(int, editedStaff);
+      QFETCH(bool, upSlur);
+      MasterScore* score = readScore(DIR + "v0.145-spacing-slur-anchor-systems.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      QVERIFY(score->firstMeasure()->system() != score->lastMeasure()->system());
+      Slur* selected = nullptr;
+      for (const auto& entry : score->spannerMap().map()) {
+            if (!entry.second->isSlur()) continue;
+            Slur* slur = toSlur(entry.second);
+            if (slur->staffIdx() == editedStaff && slur->startElement() && slur->startElement()->isChord()
+                && toChord(slur->startElement())->measure() == score->firstMeasure()
+                && slur->slurDirection() == (upSlur ? Direction::UP : Direction::DOWN)) selected = slur;
+            }
+      QVERIFY(selected);
+      QCOMPARE(int(selected->nsegments()), 1);
+      Element* originalEnd = selected->endElement();
+      std::vector<Chord*> targets;
+      for (const Segment& s : score->lastMeasure()->segments()) {
+            Element* item = s.element(editedStaff * VOICES);
+            if (!s.isChordRestType() || !item || !item->isChord()) continue;
+            Chord* main = toChord(item);
+            for (Chord* grace : main->graceNotesBefore()) targets.push_back(grace);
+            targets.push_back(main);
+            for (Chord* grace : main->graceNotesAfter()) targets.push_back(grace);
+            }
+      QVERIFY(targets.size() > 3);
+      const auto same = [](const std::vector<qreal>& a, const std::vector<qreal>& b) {
+            if (a.size() != b.size()) return false;
+            for (size_t i = 0; i < a.size(); ++i)
+                  if (!qIsFinite(a[i]) || !qIsFinite(b[i]) || qAbs(a[i] - b[i]) > 1e-6) return false;
+            return true;
+            };
+      QString reason;
+      const auto published = [score, &reason]() {
+            reason.clear();
+            const auto equal = [&reason](qreal actual, qreal expected, const QString& component) {
+                  if (qIsFinite(actual) && qIsFinite(expected) && qAbs(actual - expected) < 1e-6) return true;
+                  reason = QString("Cross-system %1: published %2, modern plan %3").arg(component)
+                        .arg(actual, 0, 'g', 17).arg(expected, 0, 'g', 17);
+                  return false;
+                  };
+            for (System* system : score->systems()) {
+                  if (system->vbox()) continue;
+                  SpacingPlan4 plan;
+                  if (!buildSpacingPlan4(system, plan, &reason)) return false;
+                  if (system->lastMeasure() != score->lastMeasure()
+                      && !justifySpacingPlan4(plan, system->width())) return false;
+                  if (!equal(system->width(), plan.width, "system width")) return false;
+                  for (const auto& m : plan.measures)
+                        if (!equal(m.measure->x(), m.x, "measure x")
+                            || !equal(m.measure->width(), m.width, "measure width")) return false;
+                  for (const auto& s : plan.segments) {
+                        if (s.ignored) continue;
+                        if (!equal(s.segment->measure()->x() + s.segment->x(), s.x, "segment x")
+                            || !equal(s.segment->width(), s.width, "segment width")) return false;
+                        }
+                  for (const auto& group : plan.mergedGraces) {
+                        auto members = group.owner->graceNotesAfter();
+                        for (Chord* grace : group.target->graceNotesBefore()) members.push_back(grace);
+                        if (members.size() != int(group.positions.size())) return false;
+                        for (int i = 0; i < members.size(); ++i) {
+                              const Chord* parent = toChord(members[i]->parent());
+                              const qreal actual = members[i]->x() + parent->segment()->x() + parent->x()
+                                    - group.target->segment()->x();
+                              if (!equal(actual, group.positions[i].x, "merged grace x")) return false;
+                              }
+                        }
+                  }
+            return true;
+            };
+      QVERIFY2(published(), qPrintable(reason));
+      const auto curve = [selected]() {
+            std::vector<qreal> values;
+            values.push_back(qreal(selected->nsegments()));
+            for (const SpannerSegment* item : selected->spannerSegments()) {
+                  const SlurSegment* segment = toSlurSegment(item);
+                  values.insert(values.end(), {segment->x(), segment->y()});
+                  for (Grip grip : {Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END}) {
+                        const QPointF point = segment->ups(grip).pos();
+                        values.insert(values.end(), {point.x(), point.y()});
+                        }
+                  for (const QRectF& rect : segment->shape())
+                        values.insert(values.end(), {rect.x(), rect.y(), rect.width(), rect.height()});
+                  }
+            return values;
+            };
+      const auto initial = graceLayoutSnapshot4(score);
+      const auto initialCurve = curve();
+      for (Chord* target : targets) {
+            Element* previous = selected->endElement();
+            const auto before = graceLayoutSnapshot4(score);
+            // Apply the same undoable anchor mutations as changeAnchor.
+            // Cross-system grip reselection needs a GUI view, absent here.
+            score->startCmd();
+            // changeAnchor records this BEFORE properties invalidate endpoints.
+            // It restores exact grace anchors after the tick command is undone.
+            score->undoStack()->push1(new ChangeStartEndSpanner(selected,
+                  selected->startElement(), selected->endElement()));
+            selected->undoChangeProperty(Pid::SPANNER_TICKS, target->tick() - selected->tick());
+            score->undo(new ChangeSpannerElements(selected, selected->startElement(), target));
+            score->endCmd();
+            QCOMPARE(selected->endElement(), static_cast<Element*>(target));
+            QCOMPARE(int(selected->nsegments()), 2);
+            QVERIFY(!score->undoStack()->slurOffset4(true));
+            QVERIFY2(published(), qPrintable(reason));
+            const auto changed = graceLayoutSnapshot4(score);
+            score->doLayout();
+            QVERIFY(same(graceLayoutSnapshot4(score), changed));
+            QVERIFY2(published(), qPrintable(reason));
+            score->undoRedo(true, nullptr);
+            QCOMPARE(selected->endElement(), previous);
+            QVERIFY2(same(graceLayoutSnapshot4(score), before), "Cross-system undo geometry differs from the preceding state");
+            QVERIFY2(published(), qPrintable(reason));
+            score->undoRedo(false, nullptr);
+            QCOMPARE(selected->endElement(), static_cast<Element*>(target));
+            QVERIFY(same(graceLayoutSnapshot4(score), changed));
+            QVERIFY2(published(), qPrintable(reason));
+            }
+      // A return to the original logical pair must work before the old
+      // two-segment render cache is cleaned up by the layout pass.
+      score->startCmd();
+      score->undoStack()->push1(new ChangeStartEndSpanner(selected,
+            selected->startElement(), selected->endElement()));
+      selected->undoChangeProperty(Pid::SPANNER_TICKS, originalEnd->tick() - selected->tick());
+      score->undo(new ChangeSpannerElements(selected, selected->startElement(), originalEnd));
+      QCOMPARE(int(selected->nsegments()), 2);
+      const Chord* owner = toChord(selected->startElement()->parent());
+      QVERIFY(spacingMergedGraceSlur4(selected, owner, toChord(originalEnd), true));
+      score->endCmd();
+      QCOMPARE(int(selected->nsegments()), 1);
+      QVERIFY2(published(), qPrintable(reason));
+      QVERIFY(same(graceLayoutSnapshot4(score), initial));
+      QVERIFY(same(curve(), initialCurve));
+      score->undoRedo(true, nullptr);
+      QCOMPARE(int(selected->nsegments()), 2);
+      QVERIFY2(published(), qPrintable(reason));
+      for (size_t i = 0; i < targets.size(); ++i) score->undoRedo(true, nullptr);
+      QCOMPARE(selected->endElement(), originalEnd);
+      QCOMPARE(int(selected->nsegments()), 1);
+      QVERIFY(same(graceLayoutSnapshot4(score), initial));
+      QVERIFY(same(curve(), initialCurve));
+      QVERIFY2(published(), qPrintable(reason));
+      delete score;
+      }
+
 void TestSpacing::slurAnchorTraversal4_data()
       {
-      slurAnchorSpacing4_data();
+      QTest::addColumn<bool>("modernBeams");
+      QTest::addColumn<int>("editedStaff");
+      QTest::addColumn<bool>("upSlur");
+      // Visit every musical stop with both beam styles, staves and slur
+      // directions represented. slurAnchorSpacing4 tests all combinations;
+      // slurAnchorSystems4 additionally covers every pair of those axes.
+      QTest::newRow("legacy-beams-upper-down") << false << 0 << false;
+      QTest::newRow("modern-beams-lower-up") << true << 1 << true;
       }
 
 void TestSpacing::slurAnchorTraversal4()

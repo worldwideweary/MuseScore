@@ -3119,3 +3119,27 @@ grace stops, published modern plans, fresh layout and undo/redo.
 See v0.144-grace-endpoint-admission-fix.md. Apply after v0.143, run spacing/beam
 mtests and reuse the v0.143 visual score. Native correctness remains pending;
 this correction does not implement the reanchor speed optimization.
+
+### v0.145 WIP: cross-system logical endpoint admission
+
+v0.144 native mtests pass. Remove rendered-segment-count admission gates from
+explicit forward after-grace spacing and logically same-chord/measure pair
+validators, including stale two-segment state during return to M1. Keep
+logical/membership/track/direction guards and existing curve formulas.
+Add eight two-system endpoint/tick mutation rows with published-plan checks,
+justified first-system/natural last-system comparison, fresh layout, undo/redo
+and original curve restoration. See v0.145-cross-system-slur-admission.md.
+Apply after v0.144 and run spacing/beam mtests. Use the normal-width
+v0.145-spacing-slur-anchor-systems.mscx for actual GUI grip handoff across
+the forced break. Native results are pending. General start-height matching
+and reanchor speed remain separate work; this version claims neither.
+
+### v0.146: cross-system test history and bounded traversal repetition
+
+The v0.145 GUI is reported stable, but all eight cross-system test rows fail
+undo geometry. Correct the synthetic command sequence to include the native
+anchor-preservation prefix before duration invalidation. Keep the failing
+assertions. Retain the full single-step matrix, use two complete same-system
+walks and four pairwise cross-system walks to reduce repeated full layouts.
+See v0.146-slur-test-undo-and-runtime.md. Apply after v0.145; run spacing/beam
+mtests and note elapsed spacing-suite time. No engraving algorithm changes.
