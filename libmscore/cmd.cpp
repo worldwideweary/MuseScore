@@ -227,14 +227,39 @@ void Score::undoRedo(bool undo, EditData* ed)
       {
       if (readOnly())
             return;
-      cmdState().reset();
-      if (undo)
-            undoStack()->undo(ed);
-      else
-            undoStack()->redo(ed);
-      update(false);
-      masterScore()->setPlaylistDirty();  // TODO: flag all individual operations
-      updateSelection();
+      const bool ownProfile = spacingProfileEnabled4() && !spacingProfileData4().collecting;
+      if (ownProfile) beginSpacingProfile4();
+      {
+            SpacingProfileScope4 profile(SpacingProfileStage4::UNDO_REDO);
+            cmdState().reset();
+            const SlurSegment* offset = styleB(Sid::spacingLayout4) && isMaster()
+                  && masterScore()->scoreList().size() == 1 ? undoStack()->slurOffset4(undo) : nullptr;
+            const Slur* slur = offset ? offset->slur() : nullptr;
+            const Element* start = slur ? slur->startElement() : nullptr;
+            const Element* end = slur ? slur->endElement() : nullptr;
+            const Fraction tick = slur ? slur->tick() : Fraction(0, 1);
+            const Fraction tick2 = slur ? slur->tick2() : Fraction(0, 1);
+            const int track = slur ? slur->track() : -1;
+            const int track2 = slur ? slur->track2() : -1;
+            const quint64 generation = cmdState().generation4();
+            const int index = undoStack()->getCurIdx();
+            if (undo)
+                  undoStack()->undo(ed);
+            else
+                  undoStack()->redo(ed);
+            // Confirm that the expected history entry ran and anchors stayed fixed.
+            // Normal property notifications have already populated the dirty range.
+            if (offset && offset->score() == this && !offset->links() && !slur->links()
+                && cmdState().generation4() == generation && undoStack()->getCurIdx() == index + (undo ? -1 : 1)
+                && slur->startElement() == start && slur->endElement() == end
+                && slur->tick() == tick && slur->tick2() == tick2 && slur->track() == track && slur->track2() == track2)
+                  cmdState().requestSlurOffset4(offset);
+            update(false);
+            cmdState().cancelSlurOffset4(); // Do not carry history proof into a later update.
+            masterScore()->setPlaylistDirty();  // TODO: flag all individual operations
+            updateSelection();
+      }
+      if (ownProfile) endSpacingProfile4();
       }
 
 //---------------------------------------------------------

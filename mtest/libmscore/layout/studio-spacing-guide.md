@@ -3068,3 +3068,16 @@ roundtrip and cached/fresh kerning tests. See v0.140-forward-grace-slur-spacing.
 Apply after v0.139, run spacing/beam mtests, then use
 v0.140-spacing-slur-anchor-changes.mscx to repeat M1 end-grip Shift+Right.
 Native correctness and visual results are pending; no speed claim is made.
+
+### v0.141 WIP: offset-only undo/redo updates
+
+v0.140 native mtests pass, but recordings expose slow undo despite improved
+direct arrows. Inspect every next history operation: exact leaf ChangeProperty
+objects, one unlinked slur segment, offsets plus GENERATED only. Verify actual
+index movement and unchanged anchors after native replay, then use the existing
+bounded update. Reject anchors/mixed/subclass/nested/multiple-target commands.
+Add undoRedo profiling and native history-admission/replay assertions.
+See v0.141-slur-offset-undo-layout.md. Apply after v0.140, run spacing/beam
+mtests, then repeat held-arrow offsets followed by held Undo/Redo on the same
+v0.140 score. Native results are pending. Longer Shift+Arrow spans retain the
+known admission fallback; this version does not expand their scope.

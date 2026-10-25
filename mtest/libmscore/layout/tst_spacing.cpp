@@ -3,6 +3,7 @@
 #include <QtTest/QtTest>
 #include "mtest/testutils.h"
 #include "libmscore/score.h"
+#include "libmscore/undo.h"
 #include "libmscore/measure.h"
 #include "libmscore/segment.h"
 #include "libmscore/spacinglayout4.h"
@@ -57,6 +58,7 @@ class TestSpacing : public QObject, public MTest {
       void graceSlurCurveFit();
       void graceMergedSlurCurves_data();
       void graceMergedSlurCurves();
+      void slurOffsetUndoAdmission4();
       void slurAnchorSpacing4_data();
       void slurAnchorSpacing4();
       void slurOffsetLayout4_data();
@@ -6033,6 +6035,74 @@ void TestSpacing::graceSlurSpacing()
       delete score;
       }
 
+void TestSpacing::slurOffsetUndoAdmission4()
+      {
+      MasterScore* score = readScore(DIR + "v0.139-spacing-two-staff-slur-offsets.mscx");
+      QVERIFY(score);
+      score->doLayout();
+      SlurSegment* first = nullptr;
+      SlurSegment* second = nullptr;
+      for (const auto& entry : score->spannerMap().map()) {
+            if (!entry.second->isSlur()) continue;
+            SlurSegment* segment = toSlur(entry.second)->frontSegment();
+            if (!first) first = segment;
+            else if (segment != first) { second = segment; break; }
+            }
+      QVERIFY(first && second);
+      const auto addOffset = [first](UndoMacro& macro) {
+            macro.appendChild(new ChangeProperty(first, Pid::SLUR_UOFF2, QPointF()));
+            };
+      {
+      UndoMacro macro(score);
+      QVERIFY(!macro.slurOffset4());
+      addOffset(macro);
+      macro.appendChild(new ChangeProperty(first, Pid::GENERATED, false));
+      QCOMPARE(macro.slurOffset4(), static_cast<const SlurSegment*>(first));
+      // Flattened same-segment key steps can retain the proof.
+      macro.appendChild(new ChangeProperty(first, Pid::SLUR_UOFF3, QPointF()));
+      QCOMPARE(macro.slurOffset4(), static_cast<const SlurSegment*>(first));
+      }
+      for (Pid property : {Pid::AUTOPLACE, Pid::SLUR_DIRECTION, Pid::SPANNER_TICKS, Pid::COLOR}) {
+            UndoMacro macro(score);
+            addOffset(macro);
+            macro.appendChild(new ChangeProperty(first, property, first->getProperty(property)));
+            QVERIFY(!macro.slurOffset4());
+            }
+      {
+      UndoMacro macro(score);
+      macro.appendChild(new ChangeProperty(first, Pid::GENERATED, false));
+      QVERIFY(!macro.slurOffset4());
+      addOffset(macro);
+      macro.appendChild(new ChangeProperty(second, Pid::OFFSET, QPointF()));
+      QVERIFY(!macro.slurOffset4());
+      }
+      {
+      UndoMacro macro(score);
+      auto* nested = new UndoMacro(score);
+      addOffset(*nested);
+      macro.appendChild(nested);
+      QVERIFY(!macro.slurOffset4());
+      }
+      {
+      // Subclasses cannot inherit a proof while overriding command execution.
+      class DerivedProperty : public ChangeProperty {
+         public:
+            explicit DerivedProperty(SlurSegment* segment) : ChangeProperty(segment, Pid::OFFSET, QPointF()) {}
+            };
+      UndoMacro macro(score);
+      macro.appendChild(new DerivedProperty(first));
+      QVERIFY(!macro.slurOffset4());
+      }
+      {
+      UndoMacro macro(score);
+      auto* parent = new ChangeProperty(first, Pid::OFFSET, QPointF());
+      parent->appendChild(new ChangeProperty(first, Pid::SLUR_UOFF1, QPointF()));
+      macro.appendChild(parent);
+      QVERIFY(!macro.slurOffset4());
+      }
+      delete score;
+      }
+
 void TestSpacing::slurAnchorSpacing4_data()
       {
       QTest::addColumn<bool>("modernBeams");
@@ -6082,6 +6152,7 @@ void TestSpacing::slurAnchorSpacing4()
       QVERIFY(selected->frontSegment()->edit(ed)); // Actual Shift+Right anchor command.
       QVERIFY(!score->cmdState().slurOffset4()); // Never classify an anchor edit as a visual offset.
       score->endCmd();
+      QVERIFY(!score->undoStack()->slurOffset4(true));
       QVERIFY(selected->endElement() && selected->endElement() != originalEnd);
       QVERIFY(selected->endElement()->isChord());
       Chord* end = toChord(selected->endElement());
@@ -6270,14 +6341,18 @@ void TestSpacing::slurOffsetLayout4()
             QCOMPARE(score->cmdState().slurOffset4(), static_cast<const SlurSegment*>(segment));
             score->endCmd();
             QVERIFY(!score->cmdState().slurOffset4());
+            QCOMPARE(score->undoStack()->slurOffset4(true), static_cast<const SlurSegment*>(segment));
             const auto fast = snapshot();
             QVERIFY(same(horizontalSnapshot(), horizontal));
             score->doLayout();
             QVERIFY2(same(snapshot(), fast), "Offset layout differs from complete native layout");
             score->undoRedo(true, nullptr);
+            QVERIFY(!score->cmdState().slurOffset4());
             segment = selected->frontSegment();
+            QCOMPARE(score->undoStack()->slurOffset4(false), static_cast<const SlurSegment*>(segment));
             QCOMPARE(grip == Grip::DRAG ? segment->offset() : segment->ups(grip).off, old);
             score->undoRedo(false, nullptr);
+            QVERIFY(!score->cmdState().slurOffset4());
             QVERIFY(same(snapshot(), fast));
             ed.clearData();
             }
