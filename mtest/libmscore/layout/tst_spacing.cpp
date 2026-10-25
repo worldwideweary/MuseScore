@@ -57,6 +57,8 @@ class TestSpacing : public QObject, public MTest {
       void graceSlurCurveFit();
       void graceMergedSlurCurves_data();
       void graceMergedSlurCurves();
+      void slurAnchorSpacing4_data();
+      void slurAnchorSpacing4();
       void slurOffsetLayout4_data();
       void slurOffsetLayout4();
       void graceMergedSlurBeamAnchors_data();
@@ -6028,6 +6030,131 @@ void TestSpacing::graceSlurSpacing()
       for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
       delete loaded;
       delete plain;
+      delete score;
+      }
+
+void TestSpacing::slurAnchorSpacing4_data()
+      {
+      QTest::addColumn<bool>("modernBeams");
+      QTest::addColumn<int>("editedStaff");
+      QTest::addColumn<bool>("upSlur");
+      for (bool beams : {false, true})
+            for (int staff : {0, 1})
+                  for (bool up : {false, true})
+                        QTest::newRow(qPrintable(QString("beams-%1-staff-%2-slur-%3").arg(beams).arg(staff).arg(up)))
+                              << beams << staff << up;
+      }
+
+void TestSpacing::slurAnchorSpacing4()
+      {
+      QFETCH(bool, modernBeams);
+      QFETCH(int, editedStaff);
+      QFETCH(bool, upSlur);
+      MasterScore* score = readScore(DIR + "v0.139-spacing-two-staff-slur-offsets.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      Slur* selected = nullptr;
+      for (const auto& entry : score->spannerMap().map()) {
+            if (!entry.second->isSlur()) continue;
+            Slur* slur = toSlur(entry.second);
+            if (slur->staffIdx() == editedStaff && slur->startElement()
+                && slur->startElement()->isChord() && toChord(slur->startElement())->measure() == score->firstMeasure()
+                && slur->slurDirection() == (upSlur ? Direction::UP : Direction::DOWN)) {
+                  selected = slur;
+                  break;
+                  }
+            }
+      QVERIFY(selected && selected->frontSegment());
+      Element* originalEnd = selected->endElement();
+      const auto same = [](const std::vector<qreal>& a, const std::vector<qreal>& b) {
+            if (a.size() != b.size()) return false;
+            for (size_t i = 0; i < a.size(); ++i)
+                  if (!qIsFinite(a[i]) || !qIsFinite(b[i]) || qAbs(a[i] - b[i]) > 1e-6) return false;
+            return true;
+            };
+      const auto original = graceLayoutSnapshot4(score);
+      EditData ed;
+      ed.key = Qt::Key_Right;
+      ed.modifiers = Qt::ShiftModifier;
+      ed.curGrip = Grip::END;
+      score->startCmd();
+      QVERIFY(selected->frontSegment()->edit(ed)); // Actual Shift+Right anchor command.
+      QVERIFY(!score->cmdState().slurOffset4()); // Never classify an anchor edit as a visual offset.
+      score->endCmd();
+      QVERIFY(selected->endElement() && selected->endElement() != originalEnd);
+      QVERIFY(selected->endElement()->isChord());
+      Chord* end = toChord(selected->endElement());
+      QCOMPARE(end->measure(), score->firstMeasure()->nextMeasure());
+      const auto extended = graceLayoutSnapshot4(score);
+      SpacingPlan4 plan;
+      QString reason;
+      QVERIFY2(buildSpacingPlan4(score->firstMeasure()->system(), plan, &reason), qPrintable(reason));
+      QVERIFY(!plan.mergedGraces.empty()); // The complete system still uses modern spacing.
+      // Longer spans retain native curve layout rather than borrowing the old pair's anchors/obstacles.
+      const Chord* owner = toChord(selected->startElement()->parent());
+      const Chord* oldTarget = toChord(originalEnd);
+      QVERIFY(!spacingMergedGraceSlur4(selected, owner, oldTarget, true));
+      score->doLayout();
+      QVERIFY2(same(graceLayoutSnapshot4(score), extended), "Anchor-change range layout differs from fresh layout");
+      score->undoRedo(true, nullptr);
+      QCOMPARE(selected->endElement(), originalEnd);
+      QVERIFY(same(graceLayoutSnapshot4(score), original));
+      score->undoRedo(false, nullptr);
+      QCOMPARE(selected->endElement(), static_cast<Element*>(end));
+      QVERIFY(same(graceLayoutSnapshot4(score), extended));
+
+      // Exercise Studio's endpoint-side kerning rule with an actual note and
+      // an unattached accidental probe in that note's coordinate system.
+      {
+      const SpacingPaddingTable4 table(score);
+      Note* note = end->notes().front();
+      const bool stemUp = end->up();
+      Accidental probe(score);
+      probe.setParent(note);
+      probe.setTrack(note->track());
+      for (bool up : {false, true}) {
+            end->setUp(up);
+            SpacingContextCache4 cache;
+            // Include all already-supported merged pairs in this read-only scope.
+            SpacingGraceContext4 context;
+            for (const auto& group : plan.mergedGraces) {
+                  context.mains.push_back(group.target);
+                  context.afterMains.push_back(group.owner);
+                  context.mergedPairs.push_back({group.owner, group.target});
+                  }
+            for (int side : {-1, 1}) {
+                  probe.setPos(0, side * score->spatium());
+                  SpacingPairPolicy4 fresh, cached;
+                  QVERIFY(spacingPairPolicy4(table, note, &probe, score->spatium(), fresh, &context));
+                  QVERIFY(spacingPairPolicy4(table, note, &probe, score->spatium(), cached, &context, &cache));
+                  const bool blocked = (upSlur && !up && side < 0) || (!upSlur && up && side > 0);
+                  QCOMPARE(int(fresh.kerning), int(blocked ? SpacingKerning4::NON_KERNING : SpacingKerning4::KERNING));
+                  QCOMPARE(int(cached.kerning), int(fresh.kerning));
+                  }
+            }
+      end->setUp(stemUp);
+      probe.setParent(nullptr);
+      }
+      // Unsupported automatic direction retains fallback, without touching output.
+      const Direction direction = selected->slurDirection();
+      selected->setSlurDirection(Direction::AUTO);
+      SpacingPlan4 rejected;
+      rejected.width = -123;
+      QVERIFY(!buildSpacingPlan4(score->firstMeasure()->system(), rejected));
+      QCOMPARE(rejected.width, qreal(-123));
+      selected->setSlurDirection(direction);
+      score->doLayout();
+      QVERIFY(same(graceLayoutSnapshot4(score), extended));
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto legacy = graceLayoutSnapshot4(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      QVERIFY(same(graceLayoutSnapshot4(score), extended));
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      QVERIFY(same(graceLayoutSnapshot4(score), legacy));
       delete score;
       }
 

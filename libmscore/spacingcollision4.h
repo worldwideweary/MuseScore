@@ -56,10 +56,13 @@ class SpacingContextCache4 {
     const Chord* _mergedOwner = nullptr;
     const Chord* _mergedTarget = nullptr;
     std::vector<std::pair<const Chord*, bool>> _chords;
+    std::vector<std::pair<const Chord*, unsigned>> _slurKerning;
     std::unordered_map<const Element*, std::unordered_map<const Element*, bool>> _overlaps;
 public:
     // Validated, non-null items; preserves the ordered native shape query.
     bool shapesIntersect(const Element* first, const Element* second);
+    // Endpoint-side restrictions, reused only within this unchanged query.
+    unsigned forwardSlurKerning(const Chord*);
     const SpacingGraceContext4* mergedContext(const Chord* owner, const Chord* target);
     bool lookup(const Chord*, bool allowGrace, const SpacingGraceContext4*,
                 const Chord* scopedMain, bool& result);

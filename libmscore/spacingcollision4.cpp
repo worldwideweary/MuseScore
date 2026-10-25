@@ -6,6 +6,8 @@
 #include "gracespacing4.h"
 #include "slur.h"
 #include "chord.h"
+#include "measure.h"
+#include "segment.h"
 #include "clef.h"
 #include "note.h"
 #include "rest.h"
@@ -181,6 +183,54 @@ bool SpacingPaddingTable4::padding(ElementType first, ElementType second, qreal&
     return true;
 }
 
+// Horizontal admission only. The specialized merged-grace curve/anchor adapter
+// retains its exact owner/target contract; this longer slur uses native layout.
+static bool forwardAfterGraceSlur4(const Slur* slur)
+{
+    if (!slur || !slur->visible() || slur->lineType() != 0 || slur->nsegments() > 1
+        || slur->slurDirection() == Direction::AUTO || !slur->startElement() || !slur->endElement()
+        || !slur->startElement()->isChord() || !slur->endElement()->isChord()) return false;
+    const Chord* start = toChord(slur->startElement());
+    const Chord* end = toChord(slur->endElement());
+    if (!start->isGraceAfter() || !start->parent() || !start->parent()->isChord() || end->isGrace()) return false;
+    const Chord* owner = toChord(start->parent());
+    if (!owner->measure() || !end->measure() || owner->isGrace()
+        || owner->measure()->nextMeasure() != end->measure()
+        || start->score() != slur->score() || owner->score() != slur->score() || end->score() != slur->score()
+        || owner->track() != start->track() || owner->track() != end->track()
+        || slur->track() != owner->track() || slur->track2() != end->track()
+        || owner->staffMove() || start->staffMove() || end->staffMove()
+        || owner->graceNotesAfter().empty() || owner->graceNotesAfter().front() != start
+        || slur->tick() != owner->tick() || slur->tick2() != end->tick()) return false;
+    const Segment* first = end->measure()->first(SegmentType::ChordRest);
+    return first && first->element(end->track()) == end;
+}
+
+// Studio Chord::computeKerningExceptions: a slur on the side opposite the
+// stem prohibits note kerning on that side. Only the newly admitted span is
+// adapted here; established local/merged slur behavior remains unchanged.
+static unsigned forwardSlurKerning4(const Chord* chord)
+{
+    unsigned blocked = 0;
+    for (const auto& entry : chord->score()->spannerMap().map()) {
+        if (!entry.second->isSlur()) continue;
+        const Slur* slur = toSlur(entry.second);
+        if (slur->startElement() != chord && slur->endElement() != chord) continue;
+        if (!forwardAfterGraceSlur4(slur)) continue;
+        if (slur->slurDirection() == Direction::UP && !chord->up()) blocked |= 1;
+        if (slur->slurDirection() == Direction::DOWN && chord->up()) blocked |= 2;
+    }
+    return blocked;
+}
+
+unsigned SpacingContextCache4::forwardSlurKerning(const Chord* chord)
+{
+    for (const auto& entry : _slurKerning) if (entry.first == chord) return entry.second;
+    const unsigned blocked = forwardSlurKerning4(chord);
+    _slurKerning.push_back({chord, blocked});
+    return blocked;
+}
+
 static bool commonChordContext4(const Chord* chord, bool allowGrace,
                                 const SpacingGraceContext4* context, const Chord* scopedMain)
 {
@@ -202,7 +252,7 @@ static bool commonChordContext4(const Chord* chord, bool allowGrace,
         for (const auto& pair : context->mergedPairs)
             jointScope = jointScope || main == pair.first || main == pair.second;
     }
-    int localSlurs = 0;
+    int localSlurs = 0, forwardSlurs = 0;
     for (const auto& entry : chord->score()->spannerMap().map()) {
         const Spanner* spanner = entry.second;
         if (!spanner->isSlur())
@@ -212,6 +262,10 @@ static bool commonChordContext4(const Chord* chord, bool allowGrace,
             || (spanner->track2() == chord->track() && spanner->tick2() == chord->tick())) {
             // A visual slur edit does not change these physical note/stem
             // obstacles or the supported musical anchors. Keep spacing active.
+            if (forwardAfterGraceSlur4(toSlur(spanner))) {
+                if (++forwardSlurs > 1) return false;
+                continue;
+            }
             bool supported = localScope && spacingLocalGraceSlur4(toSlur(spanner), main, true);
             if (context) {
                 for (const auto& pair : context->mergedPairs) {
@@ -373,6 +427,16 @@ static bool pairPolicy4(const SpacingPaddingTable4& table, const Element* first,
         policy.kerning = SpacingKerning4::RIGHT_EDGE;
     else
         policy.kerning = SpacingKerning4::KERNING;
+    if (first->isNote() && policy.kerning == SpacingKerning4::KERNING) {
+        const Note* note = toNote(first);
+        const Chord* chord = note->chord();
+        // Studio permits offset up-stem seconds to kern on either side.
+        if (!(chord->up() && note->pos().x() > 0)) {
+            const unsigned blocked = cache ? cache->forwardSlurKerning(chord) : forwardSlurKerning4(chord);
+            const unsigned side = second->pagePos().y() < note->pagePos().y() ? 1 : 2;
+            if (blocked & side) policy.kerning = SpacingKerning4::NON_KERNING;
+        }
+    }
     if (allowGrace && first->type() == ElementType::STEM_SLASH) {
         const auto chordOf = [](const Element* item) -> const Chord* {
             for (; item; item = item->parent()) {

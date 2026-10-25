@@ -3054,3 +3054,17 @@ See v0.139-two-staff-slur-offset-layout.md. Apply after v0.138, run spacing/beam
 mtests and test v0.139-spacing-two-staff-slur-offsets.mscx on both staves.
 Multiple systems/pages and general note-changing edits remain future work;
 no two-staff performance or native equivalence result is claimed yet.
+
+### v0.140 WIP: forward grace-slur anchor admission
+
+v0.139 native mtests pass; 252 two-staff offset edits use the shortcut at median
+16.7385 ms, with no plan/system collection counters. Shift+Right screenshots
+expose a separate anchor-change spacing fallback. Admit one explicit Up/Down
+after-grace span to the next measure's first chord on the same track. Keep
+native curve/range layout and adapt Studio's endpoint-side note kerning for
+this span. Automatic/cross-track/multi-segment/farther cases retain fallback.
+Add actual anchor-command/plan acceptance, fresh-layout, undo/redo, style-
+roundtrip and cached/fresh kerning tests. See v0.140-forward-grace-slur-spacing.md.
+Apply after v0.139, run spacing/beam mtests, then use
+v0.140-spacing-slur-anchor-changes.mscx to repeat M1 end-grip Shift+Right.
+Native correctness and visual results are pending; no speed claim is made.
