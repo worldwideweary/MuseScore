@@ -3093,3 +3093,16 @@ when unavailable. Add pre-system ledger and restricted-frame regressions.
 See v0.142-grace-kerning-coordinate-guard.md. Apply after v0.141 and rerun
 spacing/beam mtests before resuming broader reanchor work. No native crash
 reproduction or confirmed fix is claimed before that rerun.
+
+### v0.143 WIP: explicit forward after-grace traversal
+
+v0.142 native mtests pass. Remove v0.140's next-measure/first-chord restriction
+for qualified explicit after-grace slurs ending later than the owner's end.
+Combine multiple forward-span endpoint flags without an arbitrary count cap;
+keep original adjacent/local behavior and unsupported categories unchanged.
+Add eight actual Shift+Right traversal/plan/fresh-layout/undo/redo rows.
+See v0.143-forward-grace-slur-traversal.md. Apply after v0.142, run spacing/beam
+mtests and use v0.143-spacing-slur-anchor-traversal.mscx. This fixes the shown
+admission switch; reanchors still use range layout, with no new speed claim.
+The separately planned performance stage must prove horizontal geometry is
+unchanged before skipping fitting/preparation work.

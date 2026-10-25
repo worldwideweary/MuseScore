@@ -61,6 +61,8 @@ class TestSpacing : public QObject, public MTest {
       void graceMergedSlurCurves_data();
       void graceMergedSlurCurves();
       void slurOffsetUndoAdmission4();
+      void slurAnchorTraversal4_data();
+      void slurAnchorTraversal4();
       void slurAnchorSpacing4_data();
       void slurAnchorSpacing4();
       void slurOffsetLayout4_data();
@@ -6134,6 +6136,127 @@ void TestSpacing::slurOffsetUndoAdmission4()
       macro.appendChild(parent);
       QVERIFY(!macro.slurOffset4());
       }
+      delete score;
+      }
+
+void TestSpacing::slurAnchorTraversal4_data()
+      {
+      slurAnchorSpacing4_data();
+      }
+
+void TestSpacing::slurAnchorTraversal4()
+      {
+      QFETCH(bool, modernBeams);
+      QFETCH(int, editedStaff);
+      QFETCH(bool, upSlur);
+      MasterScore* score = readScore(DIR + "v0.139-spacing-two-staff-slur-offsets.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      Slur* selected = nullptr;
+      Slur* companion = nullptr;
+      for (const auto& entry : score->spannerMap().map()) {
+            if (!entry.second->isSlur()) continue;
+            Slur* slur = toSlur(entry.second);
+            if (slur->staffIdx() != editedStaff || !slur->startElement() || !slur->startElement()->isChord()
+                || toChord(slur->startElement())->measure() != score->firstMeasure()) continue;
+            if (slur->slurDirection() == (upSlur ? Direction::UP : Direction::DOWN)) selected = slur;
+            else companion = slur;
+            }
+      QVERIFY(selected && companion && selected->frontSegment());
+      Element* originalEnd = selected->endElement();
+      std::vector<Chord*> targets;
+      for (Measure* m = score->firstMeasure()->nextMeasure(); m; m = m->nextMeasure())
+            for (const Segment& s : m->segments()) {
+                  Element* item = s.element(editedStaff * VOICES);
+                  if (s.isChordRestType() && item && item->isChord()) targets.push_back(toChord(item));
+                  }
+      QVERIFY(targets.size() > 3);
+      const auto same = [](const std::vector<qreal>& a, const std::vector<qreal>& b) {
+            if (a.size() != b.size()) return false;
+            for (size_t i = 0; i < a.size(); ++i)
+                  if (!qIsFinite(a[i]) || !qIsFinite(b[i]) || qAbs(a[i] - b[i]) > 1e-6) return false;
+            return true;
+            };
+      QString planReason;
+      const auto acceptedPlan = [score, &planReason]() {
+            planReason.clear();
+            SpacingPlan4 plan;
+            System* system = score->firstMeasure()->system();
+            if (!buildSpacingPlan4(system, plan, &planReason)) return false;
+            if (plan.mergedGraces.empty()) { planReason = "Missing merged grace plan"; return false; }
+            const auto equal = [&planReason](qreal actual, qreal expected, const QString& component) {
+                  if (qIsFinite(actual) && qIsFinite(expected) && qAbs(actual - expected) < 1e-6) return true;
+                  planReason = QString("Published %1: %2, modern plan: %3").arg(component)
+                        .arg(actual, 0, 'g', 17).arg(expected, 0, 'g', 17);
+                  return false;
+                  };
+            // This fixture is an unstretched terminal system (fill limit 1).
+            // Plan availability alone would not prove its positions were used.
+            if (!equal(system->width(), plan.width, "system width")) return false;
+            for (const auto& m : plan.measures)
+                  if (!equal(m.measure->x(), m.x, "measure x")
+                      || !equal(m.measure->width(), m.width, "measure width")) return false;
+            for (const auto& s : plan.segments) {
+                  if (s.ignored) continue;
+                  if (!equal(s.segment->measure()->x() + s.segment->x(), s.x, "segment x")
+                      || !equal(s.segment->width(), s.width, "segment width")) return false;
+                  }
+            for (const auto& group : plan.mergedGraces) {
+                  auto members = group.owner->graceNotesAfter();
+                  for (Chord* chord : group.target->graceNotesBefore()) members.push_back(chord);
+                  if (members.size() != int(group.positions.size())) return false;
+                  for (int i = 0; i < members.size(); ++i) {
+                        const Chord* parent = toChord(members[i]->parent());
+                        const qreal actual = members[i]->x() + parent->segment()->x() + parent->x()
+                              - group.target->segment()->x();
+                        if (!equal(actual, group.positions[i].x, "merged grace x")) return false;
+                        }
+                  }
+            return true;
+            };
+      const auto initial = graceLayoutSnapshot4(score);
+      for (Chord* target : targets) {
+            Element* previous = selected->endElement();
+            const auto before = graceLayoutSnapshot4(score);
+            EditData ed;
+            ed.key = Qt::Key_Right;
+            ed.modifiers = Qt::ShiftModifier;
+            ed.curGrip = Grip::END;
+            score->startCmd();
+            QVERIFY(selected->frontSegment()->edit(ed));
+            score->endCmd();
+            QCOMPARE(selected->endElement(), static_cast<Element*>(target));
+            QVERIFY(!score->undoStack()->slurOffset4(true));
+            QVERIFY2(acceptedPlan(), qPrintable(planReason));
+            const auto changed = graceLayoutSnapshot4(score);
+            score->doLayout();
+            QVERIFY(same(graceLayoutSnapshot4(score), changed));
+            score->undoRedo(true, nullptr);
+            QCOMPARE(selected->endElement(), previous);
+            QVERIFY(same(graceLayoutSnapshot4(score), before));
+            score->undoRedo(false, nullptr);
+            QCOMPARE(selected->endElement(), static_cast<Element*>(target));
+            QVERIFY(same(graceLayoutSnapshot4(score), changed));
+            }
+      const auto final = graceLayoutSnapshot4(score);
+      // Both explicit slur sides can be extended: their endpoint-side flags
+      // combine by OR and do not impose an artificial one-span count limit.
+      EditData ed;
+      ed.key = Qt::Key_Right;
+      ed.modifiers = Qt::ShiftModifier;
+      ed.curGrip = Grip::END;
+      score->startCmd();
+      QVERIFY(companion->frontSegment()->edit(ed));
+      score->endCmd();
+      QCOMPARE(companion->endElement(), static_cast<Element*>(targets.front()));
+      QVERIFY2(acceptedPlan(), qPrintable(planReason));
+      score->undoRedo(true, nullptr);
+      QVERIFY(same(graceLayoutSnapshot4(score), final));
+      for (size_t i = 0; i < targets.size(); ++i) score->undoRedo(true, nullptr);
+      QCOMPARE(selected->endElement(), originalEnd);
+      QVERIFY2(acceptedPlan(), qPrintable(planReason));
+      QVERIFY(same(graceLayoutSnapshot4(score), initial));
       delete score;
       }
 

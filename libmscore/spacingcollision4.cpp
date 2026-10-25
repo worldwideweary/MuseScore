@@ -196,15 +196,16 @@ static bool forwardAfterGraceSlur4(const Slur* slur)
     if (!start->isGraceAfter() || !start->parent() || !start->parent()->isChord() || end->isGrace()) return false;
     const Chord* owner = toChord(start->parent());
     if (!owner->measure() || !end->measure() || owner->isGrace()
-        || owner->measure()->nextMeasure() != end->measure()
         || start->score() != slur->score() || owner->score() != slur->score() || end->score() != slur->score()
         || owner->track() != start->track() || owner->track() != end->track()
         || slur->track() != owner->track() || slur->track2() != end->track()
         || owner->staffMove() || start->staffMove() || end->staffMove()
         || owner->graceNotesAfter().empty() || owner->graceNotesAfter().front() != start
         || slur->tick() != owner->tick() || slur->tick2() != end->tick()) return false;
-    const Segment* first = end->measure()->first(SegmentType::ChordRest);
-    return first && first->element(end->track()) == end;
+    // The established adjacent grace pair retains its own admission/curve
+    // contract. Longer forward spans need only the endpoint kerning adapter,
+    // regardless of which later measure or chord the end is moved to.
+    return end->tick() > owner->tick() + owner->actualTicks();
 }
 
 // Studio Chord::computeKerningExceptions: a slur on the side opposite the
@@ -253,7 +254,7 @@ static bool commonChordContext4(const Chord* chord, bool allowGrace,
         for (const auto& pair : context->mergedPairs)
             jointScope = jointScope || main == pair.first || main == pair.second;
     }
-    int localSlurs = 0, forwardSlurs = 0;
+    int localSlurs = 0;
     for (const auto& entry : chord->score()->spannerMap().map()) {
         const Spanner* spanner = entry.second;
         if (!spanner->isSlur())
@@ -263,10 +264,7 @@ static bool commonChordContext4(const Chord* chord, bool allowGrace,
             || (spanner->track2() == chord->track() && spanner->tick2() == chord->tick())) {
             // A visual slur edit does not change these physical note/stem
             // obstacles or the supported musical anchors. Keep spacing active.
-            if (forwardAfterGraceSlur4(toSlur(spanner))) {
-                if (++forwardSlurs > 1) return false;
-                continue;
-            }
+            if (forwardAfterGraceSlur4(toSlur(spanner))) continue;
             bool supported = localScope && spacingLocalGraceSlur4(toSlur(spanner), main, true);
             if (context) {
                 for (const auto& pair : context->mergedPairs) {
