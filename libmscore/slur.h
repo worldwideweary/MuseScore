@@ -38,6 +38,14 @@ class SlurSegment final : public SlurTieSegment {
       bool _graceCurveAdjusted4 = false; // Derived, reset on every curve computation.
       QPointF _graceRawStart4, _graceRawEnd4;
       bool _graceRawAnchors4 = false;
+      struct OffsetEdit4 {
+            bool clean = false;
+            quint64 generation = 0;
+            const Element* start = nullptr;
+            const Element* end = nullptr;
+            Fraction tick, tick2;
+            int track = -1, track2 = -1;
+            } _offsetEdit4;
       void changeAnchor(EditData&, Element*) override;
 
    public:
@@ -62,6 +70,8 @@ class SlurSegment final : public SlurTieSegment {
       Element* propertyDelegate(Pid) override;
 
       void computeBezier(QPointF so = QPointF()) override;
+      void startEditDrag(EditData&) override;
+      void endEditDrag(EditData&) override;
       };
 
 //---------------------------------------------------------

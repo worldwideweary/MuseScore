@@ -57,6 +57,8 @@ class TestSpacing : public QObject, public MTest {
       void graceSlurCurveFit();
       void graceMergedSlurCurves_data();
       void graceMergedSlurCurves();
+      void slurOffsetLayout4_data();
+      void slurOffsetLayout4();
       void graceMergedSlurBeamAnchors_data();
       void graceMergedSlurBeamAnchors();
       void graceMergedSystem_data();
@@ -6026,6 +6028,128 @@ void TestSpacing::graceSlurSpacing()
       for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
       delete loaded;
       delete plain;
+      delete score;
+      }
+
+void TestSpacing::slurOffsetLayout4_data()
+      {
+      QTest::addColumn<bool>("modernBeams");
+      QTest::newRow("legacy-beams") << false;
+      QTest::newRow("studio-beams") << true;
+      }
+
+void TestSpacing::slurOffsetLayout4()
+      {
+      QFETCH(bool, modernBeams);
+      MasterScore* score = readScore(DIR + "v0.113-spacing-slurred-merged-graces-natural.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      Slur* selected = nullptr;
+      for (const auto& entry : score->spannerMap().map()) {
+            if (!entry.second->isSlur()) continue;
+            Slur* candidate = toSlur(entry.second);
+            if (candidate->startElement() && candidate->startElement()->isChord()
+                && toChord(candidate->startElement())->isGraceAfter()) { selected = candidate; break; }
+            }
+      QVERIFY(selected && selected->frontSegment());
+      const auto same = [](const std::vector<qreal>& a, const std::vector<qreal>& b) {
+            if (a.size() != b.size()) return false;
+            for (size_t i = 0; i < a.size(); ++i) if (qAbs(a[i] - b[i]) > 1e-6) return false;
+            return true;
+            };
+      const auto snapshot = [score]() {
+            auto values = graceMergedSnapshot4(score);
+            for (const System* system : score->systems())
+                  values.insert(values.end(), {system->x(), system->y(), system->width(), system->height(),
+                        system->minTop(), system->minBottom()});
+            for (const auto& entry : score->spannerMap().map()) {
+                  if (!entry.second->isSlur()) continue;
+                  Slur* slur = toSlur(entry.second);
+                  values.push_back(qreal(slur->spannerSegments().size()));
+                  for (const SpannerSegment* item : slur->spannerSegments()) {
+                        const SlurSegment* segment = toSlurSegment(item);
+                        values.insert(values.end(), {segment->x(), segment->y()});
+                        for (Grip grip : {Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END}) {
+                              const QPointF point = segment->ups(grip).pos();
+                              values.insert(values.end(), {point.x(), point.y()});
+                              }
+                        for (const QRectF& rect : segment->shape())
+                              values.insert(values.end(), {rect.x(), rect.y(), rect.width(), rect.height()});
+                        }
+                  }
+            return values;
+            };
+      const auto horizontal = graceMergedSnapshot4(score);
+      score->cmdState().reset();
+      score->cmdState().requestSlurOffset4(selected->frontSegment());
+      QVERIFY(score->doLayoutSlurOffset4(selected->frontSegment()));
+      score->cmdState().reset();
+      QVERIFY(same(graceMergedSnapshot4(score), horizontal));
+      for (Grip grip : {Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END, Grip::DRAG}) {
+            SlurSegment* segment = selected->frontSegment();
+            const QPointF old = grip == Grip::DRAG ? segment->offset() : segment->ups(grip).off;
+            EditData ed;
+            auto* data = new ElementEditData;
+            data->e = segment;
+            ed.addData(data);
+            ed.curGrip = grip;
+            score->startCmd();
+            segment->startEditDrag(ed);
+            if (grip == Grip::DRAG) segment->setOffset(old + QPointF(0, -.25 * score->spatium()));
+            else segment->ups(grip).off = old + QPointF(0, -.25 * score->spatium());
+            segment->computeBezier();
+            segment->endEditDrag(ed);
+            QCOMPARE(score->cmdState().slurOffset4(), static_cast<const SlurSegment*>(segment));
+            score->endCmd();
+            QVERIFY(!score->cmdState().slurOffset4());
+            const auto fast = snapshot();
+            QVERIFY(same(graceMergedSnapshot4(score), horizontal));
+            score->doLayout();
+            QVERIFY2(same(snapshot(), fast), "Offset layout differs from complete native layout");
+            score->undoRedo(true, nullptr);
+            segment = selected->frontSegment();
+            QCOMPARE(grip == Grip::DRAG ? segment->offset() : segment->ups(grip).off, old);
+            score->undoRedo(false, nullptr);
+            QVERIFY(same(snapshot(), fast));
+            ed.clearData();
+            }
+      // A later generic request cancels an already classified edit.
+      score->cmdState().requestSlurOffset4(selected->frontSegment());
+      score->setLayoutAll();
+      QVERIFY(!score->cmdState().slurOffset4());
+      score->cmdState().reset();
+      // Pending work before the commit must also retain the general path.
+      SlurSegment* segment = selected->frontSegment();
+      EditData ed;
+      auto* data = new ElementEditData;
+      data->e = segment;
+      ed.addData(data);
+      score->startCmd();
+      segment->startEditDrag(ed);
+      score->setLayoutAll();
+      segment->endEditDrag(ed);
+      QVERIFY(!score->cmdState().slurOffset4());
+      score->endCmd();
+      ed.clearData();
+      // A command reset between capture and commit invalidates the proof,
+      // even when its current dirty mode has become clean again.
+      segment = selected->frontSegment();
+      EditData resetEdit;
+      auto* resetData = new ElementEditData;
+      resetData->e = segment;
+      resetEdit.addData(resetData);
+      score->startCmd();
+      segment->startEditDrag(resetEdit);
+      score->cmdState().reset();
+      segment->endEditDrag(resetEdit);
+      QVERIFY(!score->cmdState().slurOffset4());
+      score->endCmd();
+      resetEdit.clearData();
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->cmdState().requestSlurOffset4(selected->frontSegment());
+      QVERIFY(!score->doLayoutSlurOffset4(selected->frontSegment()));
       delete score;
       }
 

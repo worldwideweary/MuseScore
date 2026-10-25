@@ -5882,6 +5882,7 @@ void MasterScore::setUpdateAll()
 
 void MasterScore::setLayoutAll(int staff, const Element* e)
       {
+      _cmdState.cancelSlurOffset4();
       _cmdState.setTick(Fraction(0,1));
       _cmdState.setTick(measures()->last() ? measures()->last()->endTick() : Fraction(0,1));
 
@@ -5902,6 +5903,7 @@ void MasterScore::setLayoutAll(int staff, const Element* e)
 
 void MasterScore::setLayout(const Fraction& t, int staff, const Element* e)
       {
+      _cmdState.cancelSlurOffset4();
       if (t >= Fraction(0,1))
             _cmdState.setTick(t);
 
@@ -5914,6 +5916,7 @@ void MasterScore::setLayout(const Fraction& t, int staff, const Element* e)
 
 void MasterScore::setLayout(const Fraction& tick1, const Fraction& tick2, int staff1, int staff2, const Element* e)
       {
+      _cmdState.cancelSlurOffset4();
       if (tick1 >= Fraction(0,1))
             _cmdState.setTick(tick1);
       if (tick2 >= Fraction(0,1))

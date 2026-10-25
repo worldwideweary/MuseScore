@@ -3026,3 +3026,17 @@ planGeometryReuse timing. See v0.137-preparation-to-plan-geometry-handoff.md.
 Apply after v0.136, run native spacing/beam mtests and repeat M1 timing.
 Appearance and N2's separate discrepancy remain to be checked; no speed gain
 is claimed before native measurement.
+
+### v0.138 WIP: classify offset-only slur edits and preserve horizontal layout
+
+v0.137 native mtests pass and M1 reaches 46.152 ms, still about ten times
+default elapsed time. Classify known slur-offset commits from captured anchors,
+ticks, tracks, property IDs and a command generation; cancel on other layout
+requests. For the initial single-staff/single-music-system/one-page Page-view
+scope, preserve horizontal layout while rerunning native system elements,
+skylines, staff distances and page placement. Fall back for other scopes and
+possible vertical overflow. Keep normal undo commands and final updates.
+See v0.138-slur-offset-layout.md. Native full-layout equivalence, undo/redo,
+UI and timing checks are pending. Apply after v0.137, run spacing/beam mtests,
+then repeat M1. Successful shortcut commands show slurOffsetLayout without
+plan/system-collection counters; no native speed claim is made yet.

@@ -75,6 +75,7 @@ class Segment;
 class Selection;
 class SigEvent;
 class Slur;
+class SlurSegment;
 class Spanner;
 class Staff;
 class System;
@@ -282,6 +283,9 @@ class CmdState {
       bool _oneMeasureBase = true;
 
       bool _locked = false;
+      const SlurSegment* _slurOffset4 = nullptr;
+      // A drag's proof must not survive a command-state reset.
+      quint64 _generation4 = 0;
 
       void setMeasureBase(const MeasureBase* mb);
 
@@ -307,6 +311,10 @@ class CmdState {
       int startStaff() const { return _startStaff; }
       int endStaff() const { return _endStaff; }
       const Element* element() const;
+      const SlurSegment* slurOffset4() const { return _slurOffset4; }
+      quint64 generation4() const { return _generation4; }
+      void requestSlurOffset4(const SlurSegment* s) { if (!_locked) _slurOffset4 = s; }
+      void cancelSlurOffset4() { if (!_locked) _slurOffset4 = nullptr; }
 
       void lock() { _locked = true; }
       void unlock() { _locked = false; }
@@ -1093,6 +1101,7 @@ class Score : public QObject, public ScoreElement {
 
       void doLayout();
       void doLayoutRange(const Fraction&, const Fraction&);
+      bool doLayoutSlurOffset4(const SlurSegment*);
       void layoutLinear(bool layoutAll, LayoutContext& lc);
 
       void layoutChords1(Segment* segment, int staffIdx, bool preserveMeasureRestX = false);

@@ -76,6 +76,7 @@ namespace Ms {
 
 void CmdState::reset()
       {
+      ++_generation4;
       layoutFlags         = LayoutFlag::NO_FLAGS;
       _updateMode         = UpdateMode::DoNothing;
       _startTick          = Fraction(-1,1);
@@ -88,6 +89,7 @@ void CmdState::reset()
       _mb = nullptr;
       _oneMeasureBase = true;
       _locked = false;
+      _slurOffset4 = nullptr;
       }
 
 //---------------------------------------------------------
@@ -98,6 +100,7 @@ void CmdState::setTick(const Fraction& t)
       {
       if (_locked)
             return;
+      _slurOffset4 = nullptr;
 
       if (_startTick == Fraction(-1,1) || t < _startTick)
             _startTick = t;
@@ -187,6 +190,8 @@ void CmdState::_setUpdateMode(UpdateMode m)
 
 void CmdState::setUpdateMode(UpdateMode m)
       {
+      if (m == UpdateMode::Layout)
+            cancelSlurOffset4();
       if (int(m) > int(_updateMode))
             _setUpdateMode(m);
       }
@@ -294,8 +299,10 @@ void Score::update(bool resetCmdState)
             CmdState& cs = ms->cmdState();
             ms->deletePostponed();
             if (cs.layoutRange()) {
-                  for (Score*& s : ms->scoreList())
-                        s->doLayoutRange(cs.startTick(), cs.endTick());
+                  for (Score*& s : ms->scoreList()) {
+                        if (!cs.slurOffset4() || !s->doLayoutSlurOffset4(cs.slurOffset4()))
+                              s->doLayoutRange(cs.startTick(), cs.endTick());
+                        }
                   updateAll = true;
                   }
             }

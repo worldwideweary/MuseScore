@@ -5771,6 +5771,64 @@ class CmdStateLocker {
       };
 
 //---------------------------------------------------------
+//   doLayoutSlurOffset4
+//---------------------------------------------------------
+
+bool Score::doLayoutSlurOffset4(const SlurSegment* segment)
+      {
+      // Initial bounded path: one music system and one staff on one page.
+      // The caller supplies an explicitly classified offset-only edit commit.
+      if (!segment || cmdState().slurOffset4() != segment || segment->score() != this || !isMaster()
+          || masterScore()->scoreList().size() != 1 || movements()->size() != 1
+          || !styleB(Sid::spacingLayout4) || layoutMode() != LayoutMode::PAGE
+          || nstaves() != 1 || npages() != 1 || !firstMeasure() || !lastMeasure()
+          || int(cmdState().layoutFlags) != 0)
+            return false;
+      System* system = firstMeasure()->system();
+      if (!system || lastMeasure()->system() != system || segment->system() != system
+          || !segment->isSingleType() || !system->page() || _systems.empty() || _systems.back() != system)
+            return false;
+      for (System* existing : qAsConst(_systems)) {
+            if (existing->page() != system->page() || (existing != system && !existing->vbox()))
+                  return false;
+            }
+      if (!staff(0)->show() || !system->staff(0)->show()
+          || staff(0)->isTabStaff(firstMeasure()->tick())) return false;
+
+      SpacingProfileScope4 reused(SpacingProfileStage4::SLUR_OFFSET_LAYOUT);
+      CmdStateLocker locker(this);
+      LayoutContext lc(this);
+      lc.startTick = firstMeasure()->tick();
+      lc.endTick = lastMeasure()->endTick();
+      lc.curSystem = system;
+      lc.page = system->page();
+      lc.curPage = 0;
+      lc.rangeDone = true;
+      lc.systemOldMeasure = system->measures().back();
+      lc.pageOldMeasure = lc.systemOldMeasure;
+      system->restoreLayout2();
+      const auto oldSegments = system->spannerSegments();
+      for (SpannerSegment* old : oldSegments)
+            old->setSystem(nullptr); // Reuse the existing objects, as System::clear does.
+      layoutSystemElements(system, lc);
+      system->layout2();
+
+      // Conservatively fall back if vertical growth could change pagination.
+      qreal needed = qMax(styleP(Sid::staffUpperBorder), system->minTop())
+            + system->height() + qMax(styleP(Sid::staffLowerBorder), system->minBottom());
+      for (int i = 0; i + 1 < _systems.size(); ++i)
+            needed += _systems[i]->height() + _systems[i]->minDistance(_systems[i + 1]);
+      const Page* page = system->page();
+      needed += page->headerExtension() + page->footerExtension();
+      if (page->headerExtension() || page->footerExtension())
+            needed += 2 * styleP(Sid::staffHeaderFooterPadding);
+      if (!std::isfinite(needed) || needed + 4 * spatium() > page->height() - page->tm() - page->bm()) return false;
+
+      lc.layout(); // Native page placement, final element layout and BSP refresh.
+      return true;
+      }
+
+//---------------------------------------------------------
 //   doLayoutRange
 //---------------------------------------------------------
 
