@@ -6165,13 +6165,25 @@ void TestSpacing::slurAnchorTraversal4()
             }
       QVERIFY(selected && companion && selected->frontSegment());
       Element* originalEnd = selected->endElement();
-      std::vector<Chord*> targets;
-      for (Measure* m = score->firstMeasure()->nextMeasure(); m; m = m->nextMeasure())
+      // Musical traversal order, including the grace stops omitted in v0.143.
+      // Build it independently from nextChordRest, the navigation under test.
+      std::vector<Chord*> order;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
             for (const Segment& s : m->segments()) {
                   Element* item = s.element(editedStaff * VOICES);
-                  if (s.isChordRestType() && item && item->isChord()) targets.push_back(toChord(item));
+                  if (!s.isChordRestType() || !item || !item->isChord()) continue;
+                  Chord* main = toChord(item);
+                  for (Chord* grace : main->graceNotesBefore()) order.push_back(grace);
+                  order.push_back(main);
+                  for (Chord* grace : main->graceNotesAfter()) order.push_back(grace);
                   }
-      QVERIFY(targets.size() > 3);
+      const auto originalIt = std::find(order.begin(), order.end(), originalEnd);
+      const auto startIt = std::find(order.begin(), order.end(), selected->startElement());
+      QVERIFY(originalIt != order.end() && startIt != order.end());
+      const int originalIndex = int(originalIt - order.begin());
+      const int startIndex = int(startIt - order.begin());
+      const std::vector<Chord*> targets(originalIt + 1, order.end());
+      QVERIFY(targets.size() > 3 && originalIndex > startIndex + 1);
       const auto same = [](const std::vector<qreal>& a, const std::vector<qreal>& b) {
             if (a.size() != b.size()) return false;
             for (size_t i = 0; i < a.size(); ++i)
@@ -6254,6 +6266,29 @@ void TestSpacing::slurAnchorTraversal4()
       score->undoRedo(true, nullptr);
       QVERIFY(same(graceLayoutSnapshot4(score), final));
       for (size_t i = 0; i < targets.size(); ++i) score->undoRedo(true, nullptr);
+      QCOMPARE(selected->endElement(), originalEnd);
+      QVERIFY2(acceptedPlan(), qPrintable(planReason));
+      QVERIFY(same(graceLayoutSnapshot4(score), initial));
+      // Pull back through the original before-graces and the owner's later
+      // after-graces. These endpoints can have the same tick as the start.
+      int backwardSteps = 0;
+      for (int i = originalIndex - 1; i > startIndex; --i) {
+            EditData back;
+            back.key = Qt::Key_Left;
+            back.modifiers = Qt::ShiftModifier;
+            back.curGrip = Grip::END;
+            score->startCmd();
+            QVERIFY(selected->frontSegment()->edit(back));
+            score->endCmd();
+            ++backwardSteps;
+            QCOMPARE(selected->endElement(), static_cast<Element*>(order[i]));
+            QVERIFY2(acceptedPlan(), qPrintable(planReason));
+            const auto moved = graceLayoutSnapshot4(score);
+            score->doLayout();
+            QVERIFY(same(graceLayoutSnapshot4(score), moved));
+            }
+      QVERIFY(backwardSteps > 0);
+      while (backwardSteps--) score->undoRedo(true, nullptr);
       QCOMPARE(selected->endElement(), originalEnd);
       QVERIFY2(acceptedPlan(), qPrintable(planReason));
       QVERIFY(same(graceLayoutSnapshot4(score), initial));

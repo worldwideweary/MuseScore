@@ -193,18 +193,32 @@ static bool forwardAfterGraceSlur4(const Slur* slur)
         || !slur->startElement()->isChord() || !slur->endElement()->isChord()) return false;
     const Chord* start = toChord(slur->startElement());
     const Chord* end = toChord(slur->endElement());
-    if (!start->isGraceAfter() || !start->parent() || !start->parent()->isChord() || end->isGrace()) return false;
+    if (!start->isGraceAfter() || !start->parent() || !start->parent()->isChord()) return false;
     const Chord* owner = toChord(start->parent());
-    if (!owner->measure() || !end->measure() || owner->isGrace()
-        || start->score() != slur->score() || owner->score() != slur->score() || end->score() != slur->score()
-        || owner->track() != start->track() || owner->track() != end->track()
+    const Chord* endMain = end;
+    if (end->isGrace()) {
+        if (!end->parent() || !end->parent()->isChord()) return false;
+        endMain = toChord(end->parent());
+        const auto members = end->isGraceAfter() ? endMain->graceNotesAfter() : endMain->graceNotesBefore();
+        if (std::find(members.begin(), members.end(), end) == members.end()) return false;
+    }
+    if (!owner->measure() || !endMain->measure() || owner->isGrace() || endMain->isGrace()
+        || start->score() != slur->score() || owner->score() != slur->score()
+        || end->score() != slur->score() || endMain->score() != slur->score()
+        || owner->track() != start->track() || owner->track() != end->track() || owner->track() != endMain->track()
         || slur->track() != owner->track() || slur->track2() != end->track()
-        || owner->staffMove() || start->staffMove() || end->staffMove()
+        || owner->staffMove() || start->staffMove() || end->staffMove() || endMain->staffMove()
         || owner->graceNotesAfter().empty() || owner->graceNotesAfter().front() != start
         || slur->tick() != owner->tick() || slur->tick2() != end->tick()) return false;
-    // The established adjacent grace pair retains its own admission/curve
-    // contract. Longer forward spans need only the endpoint kerning adapter,
-    // regardless of which later measure or chord the end is moved to.
+    // Grace anchors are visited by Shift+Arrow too. Tick alone cannot order
+    // an owner's after-graces: all share the owner's tick.
+    if (end->isGrace()) {
+        if (endMain->tick() > owner->tick()) return true;
+        if (endMain != owner || !end->isGraceAfter()) return false;
+        const auto after = owner->graceNotesAfter();
+        return std::find(after.begin() + 1, after.end(), end) != after.end();
+    }
+    // Keep the established adjacent main-note pair's specialized contract.
     return end->tick() > owner->tick() + owner->actualTicks();
 }
 

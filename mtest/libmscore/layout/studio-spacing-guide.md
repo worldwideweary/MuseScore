@@ -3106,3 +3106,16 @@ mtests and use v0.143-spacing-slur-anchor-traversal.mscx. This fixes the shown
 admission switch; reanchors still use range layout, with no new speed claim.
 The separately planned performance stage must prove horizontal geometry is
 unchanged before skipping fitting/preparation work.
+
+### v0.144: grace-endpoint traversal correction
+
+The v0.143 test's main-chord-only traversal model was incorrect: native
+Shift+Arrow visits grace notes too. Its eight pointer failures expose that
+mistake, while screenshots expose the independent rejection of grace endpoints.
+Admit later before/after-grace stops and later members of the source owner's
+after-group, validating parent/membership/track/tick metadata. Preserve the
+original main-pair contract and native navigation. Test forward and backward
+grace stops, published modern plans, fresh layout and undo/redo.
+See v0.144-grace-endpoint-admission-fix.md. Apply after v0.143, run spacing/beam
+mtests and reuse the v0.143 visual score. Native correctness remains pending;
+this correction does not implement the reanchor speed optimization.
