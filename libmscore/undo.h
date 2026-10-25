@@ -1180,6 +1180,24 @@ class ChangeSpannerElements : public UndoCommand {
       };
 
 //---------------------------------------------------------
+//   ChangeArpeggioAnchor
+//    [Arpeggio anchors] include the exact voice, unlike the
+//    ChangeParent's staff-only addressing. This exchanges
+//    parent, track, and span atomically on undo/redo
+//---------------------------------------------------------
+
+class Arpeggio;
+class ChangeArpeggioAnchor : public UndoCommand {
+      Arpeggio* arpeggio;
+      Chord* parent;
+      int span;
+      void flip(EditData*) override;
+   public:
+      ChangeArpeggioAnchor(Arpeggio* a, Chord* c, int s) : arpeggio(a), parent(c), span(s) {}
+      UNDO_NAME("ChangeArpeggioAnchor")
+      };
+
+//---------------------------------------------------------
 //   ChangeParent
 //---------------------------------------------------------
 

@@ -1687,35 +1687,53 @@ void renderTremolo(Chord* chord, QList<NoteEventList>& ell)
 //   renderArpeggio
 //---------------------------------------------------------
 
-void renderArpeggio(Chord *chord, QList<NoteEventList> & ell)
+void renderArpeggio(Chord* chord, Arpeggio* arpeggio, QList<NoteEventList>& ell)
       {
-      int notes = int(chord->notes().size());
+      std::vector<Note*> notes;
+      int duration = INT_MAX;
+
+      for (size_t i = 0; i < chord->notes().size(); ++i) {
+            ell[int(i)].clear();
+            // Use just one sustained event to render arpeggio with tied notes
+            Note* n = chord->notes()[i];
+            if (n->tieBack() && n->play())
+                  ell[int(i)].append(NoteEvent(0, 0, 1000));
+            }
+
+      for (Chord* c : arpeggio->spannedChords()) {
+            for (Note* n : c->notes()) {
+                  if (n->tieBack() || !n->play())
+                        continue;
+                  notes.push_back(n);
+                  duration = qMin(duration, c->actualTicks().ticks());
+                  }
+            }
+
+      if (duration <= 0 || notes.empty())
+            return;
+
+      const bool up =
+            arpeggio->arpeggioType() != ArpeggioType::DOWN
+            && arpeggio->arpeggioType() != ArpeggioType::DOWN_STRAIGHT;
+
+      std::stable_sort(notes.begin(), notes.end(), [up](const Note* a, const Note* b) {
+            return up ? a->ppitch() < b->ppitch() : a->ppitch() > b->ppitch();
+            });
+
       int l = 64;
-      while (l && (l * notes > chord->upNote()->playTicks()))
-            l = 2*l / 3;
-      int start, end, step;
-      bool up = chord->arpeggio()->arpeggioType() != ArpeggioType::DOWN && chord->arpeggio()->arpeggioType() != ArpeggioType::DOWN_STRAIGHT;
-      if (up) {
-            start = 0;
-            end   = notes;
-            step  = 1;
-            }
-      else {
-            start = notes - 1;
-            end   = -1;
-            step  = -1;
-            }
-      int j = 0;
-      for (int i = start; i != end; i += step) {
-            NoteEventList* events = &(ell)[i];
-            events->clear();
+      while (l && l * int(notes.size()) > duration)
+            l = 2 * l / 3;
 
-            auto tempoRatio = chord->score()->tempomap()->tempo(chord->tick().ticks()) / Score::defaultTempo();
-            int ot = (l * j * 1000) / chord->upNote()->playTicks() *
-               tempoRatio * chord->arpeggio()->Stretch();
+      const qreal tempoRatio = chord->score()->tempomap()->tempo(chord->tick().ticks()) / Score::defaultTempo();
+      for (size_t i = 0; i < chord->notes().size(); ++i) {
+            Note* n = chord->notes()[i];
+            auto it = std::find(notes.begin(), notes.end(), n);
+            if (it == notes.end() || chord->actualTicks().ticks() <= 0)
+                  continue;
 
-            events->append(NoteEvent(0, ot, 1000 - ot));
-            j++;
+            int ot = qBound(0, int((l * (it - notes.begin()) * 1000 / chord->actualTicks().ticks())
+                          * tempoRatio * arpeggio->Stretch()), 999);
+            ell[int(i)].append(NoteEvent(0, ot, 1000 - ot));
             }
       }
 
@@ -2360,11 +2378,12 @@ static QList<NoteEventList> renderChord(Chord* chord, int gateTime, int ontime, 
             ell.append(NoteEventList());
 
       bool arpeggio = false;
+      Arpeggio* spanningArpeggio = Arpeggio::spanningArpeggio(chord);
       if (chord->tremolo()) {
             renderTremolo(chord, ell);
             }
-      else if (chord->arpeggio() && chord->arpeggio()->playArpeggio()) {
-            renderArpeggio(chord, ell);
+      else if (spanningArpeggio && spanningArpeggio->playArpeggio()) {
+            renderArpeggio(chord, spanningArpeggio, ell);
             arpeggio = true;
             }
       else

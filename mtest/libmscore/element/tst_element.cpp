@@ -17,6 +17,7 @@
 
 #include "libmscore/accidental.h"
 #include "libmscore/articulation.h"
+#include "libmscore/arpeggio.h"
 #include "libmscore/chord.h"
 #include "libmscore/chordbracket.h"
 #include "libmscore/element.h"
@@ -116,6 +117,10 @@ class TestElement : public QObject, public MTest
       void testTabParenthesesUseRelativeSlightBendShape();
       void testHiddenBendArrivalFretting();
       void testGuitarBendWidthStyles();
+
+      void arpeggioSpanFormats();
+      void arpeggioVoiceAnchors();
+      void arpeggioVoicePlayback();
       };
 
 //---------------------------------------------------------
@@ -2374,6 +2379,147 @@ void TestElement::testWhammyBarDefaults()
       std::unique_ptr<WhammyBar> custom(static_cast<WhammyBar*>(writeReadElement(copy.get())));
       QVERIFY(custom);
       QCOMPARE(custom->endHookHeight().val(), 1.1);
+      }
+
+//---------------------------------------------------------
+//   arpeggioSpanFormats
+//    Legacy spans remain staff counts
+//    4.2+ and now 3.7-Evolution use track counts
+//---------------------------------------------------------
+
+void TestElement::arpeggioSpanFormats()
+      {
+      MasterScore s(score->style());
+      struct Case { int version; QByteArray tags; int span; };
+      const Case cases[] = {
+            {302, "<span>2</span>", 5},
+            {410, "<span>2</span>", 5},
+            {420, "<span>2</span>", 2},
+            {500, "<span>7</span>", 7},
+            {302, "<span>2</span><spanTracks>6</spanTracks>", 6},
+            {302, "<spanTracks>6</spanTracks><span>2</span>", 6},
+            {420, "<span>0</span>", 1}
+            };
+      for (const Case& c : cases) {
+            s.setMscVersion(c.version);
+            XmlReader xml(QByteArray("<Arpeggio>") + c.tags + "</Arpeggio>");
+            QVERIFY(xml.readNextStartElement());
+            Arpeggio a(&s);
+            a.read(xml);
+            QCOMPARE(a.span(), c.span);
+            }
+      s.setMscVersion(302);
+      Arpeggio a(&s);
+      a.setSpan(6);
+      Arpeggio* copy = toArpeggio(writeReadElement(&a));
+      QVERIFY(copy);
+      QCOMPARE(copy->span(), 6);
+      delete copy;
+      }
+
+//---------------------------------------------------------
+//   arpeggioVoiceAnchors
+//---------------------------------------------------------
+
+void TestElement::arpeggioVoiceAnchors()
+      {
+      MasterScore* s = readScore("libmscore/element/arpeggio-voices.mscx");
+      QVERIFY(s);
+      Segment* seg = s->firstSegment(SegmentType::ChordRest);
+      QVERIFY(seg);
+      Arpeggio* a = toChord(seg->element(5))->arpeggio();
+      QVERIFY(a);
+      EditData edit(nullptr);
+      edit.modifiers = Qt::ShiftModifier;
+      edit.curGrip = Grip::START;
+      edit.key = Qt::Key_Up;
+      for (int track : {4, 3, 1, 0}) {
+            s->startCmd();
+            QVERIFY(a->edit(edit));
+            s->endCmd();
+            QCOMPARE(a->track(), track);
+            QCOMPARE(a->chord(), toChord(seg->element(track)));
+            QCOMPARE(a->endTrack(), 6);
+            }
+      s->startCmd();
+      QVERIFY(a->edit(edit));
+      s->endCmd();
+      QCOMPARE(a->track(), 0); // stop at top of this part
+      edit.key = Qt::Key_Down;
+      for (int track : {1, 3, 4, 5, 6}) {
+            s->startCmd();
+            QVERIFY(a->edit(edit));
+            s->endCmd();
+            QCOMPARE(a->track(), track);
+            QCOMPARE(a->endTrack(), 6);
+            }
+      s->undoStack()->undo(&edit);
+      QCOMPARE(a->track(), 5); // exact voice restored, not voice 1
+      QCOMPARE(a->span(), 2);
+      s->undoStack()->redo(&edit);
+      QCOMPARE(a->track(), 6);
+      QCOMPARE(a->span(), 1);
+      edit.curGrip = Grip::END;
+      s->startCmd();
+      QVERIFY(a->edit(edit));
+      s->endCmd();
+      QCOMPARE(a->endTrack(), 6); // skip rest, stop before next instrument
+      s->startCmd();
+      s->undo(new ChangeArpeggioAnchor(a, toChord(seg->element(1)), 6));
+      s->endCmd();
+      QVERIFY(saveScore(s, "arpeggio-voices-roundtrip.mscx"));
+      MasterScore* copy = readCreatedScore("arpeggio-voices-roundtrip.mscx");
+      QVERIFY(copy);
+      Arpeggio* b = toChord(copy->firstSegment(SegmentType::ChordRest)->element(1))->arpeggio();
+      QVERIFY(b);
+      QCOMPARE(b->track(), 1);
+      QCOMPARE(b->span(), 6);
+      delete copy;
+      delete s;
+      }
+
+//---------------------------------------------------------
+//   arpeggioVoicePlayback
+//---------------------------------------------------------
+
+void TestElement::arpeggioVoicePlayback()
+      {
+      MasterScore* s = readScore("libmscore/element/arpeggio-voices.mscx");
+      QVERIFY(s);
+      Segment* seg = s->firstSegment(SegmentType::ChordRest);
+      Arpeggio* a = toChord(seg->element(5))->arpeggio();
+      s->startCmd();
+      s->undo(new ChangeArpeggioAnchor(a, toChord(seg->element(0)), 7));
+      s->endCmd();
+      for (bool down : {false, true}) {
+            a->setArpeggioType(down ? ArpeggioType::DOWN : ArpeggioType::NORMAL);
+            s->createPlayEvents();
+            std::vector<Note*> notes;
+            for (Chord* c : a->spannedChords()) {
+                  for (Note* n : c->notes())
+                        notes.push_back(n);
+                  }
+            std::sort(notes.begin(), notes.end(), [down](Note* x, Note* y) {
+                  return down ? x->ppitch() > y->ppitch() : x->ppitch() < y->ppitch();
+                  });
+            int previous = -1;
+            for (Note* n : notes) {
+                  QCOMPARE(int(n->playEvents().size()), 1);
+                  QVERIFY(n->playEvents().front().ontime() > previous);
+                  QCOMPARE(n->playEvents().front().offtime(), 1000);
+                  previous = n->playEvents().front().ontime();
+                  }
+            }
+      a->setPlayArpeggio(false);
+      s->createPlayEvents();
+      for (Chord* c : a->spannedChords()) {
+            for (Note* n : c->notes())
+                  QCOMPARE(n->playEvents().front().ontime(), 0);
+            }
+      s->doLayout();
+      QVERIFY(a->pageBoundingRect().top() <= a->topNote()->pagePos().y());
+      QVERIFY(a->pageBoundingRect().bottom() >= a->bottomNote()->pagePos().y());
+      delete s;
       }
 
 QTEST_MAIN(TestElement)

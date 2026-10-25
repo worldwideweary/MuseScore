@@ -559,6 +559,7 @@ void Chord::add(Element* e)
                   break;
             case ElementType::ARPEGGIO:
                   _arpeggio = toArpeggio(e);
+                  score()->setPlaylistDirty();
                   break;
             case ElementType::TREMOLO:
                   setTremolo(toTremolo(e));
@@ -644,6 +645,7 @@ void Chord::remove(Element* e)
 
             case ElementType::ARPEGGIO:
                   _arpeggio = 0;
+                  score()->setPlaylistDirty();
                   break;
             case ElementType::TREMOLO:
                   setTremolo(nullptr);
@@ -2749,42 +2751,13 @@ void Chord::layoutArpeggio2()
       {
       if (!_arpeggio)
             return;
-      qreal y           = upNote()->pagePos().y() - upNote()->headHeight() * .5;
-      int span          = _arpeggio->span();
-      int btrack        = track() + (span - 1) * VOICES;
-
-      Element* element = segment()->element(btrack);
-      ChordRest* bchord = element ? toChordRest(element) : nullptr;
-      Note* dnote       = (bchord && bchord->type() == ElementType::CHORD) ? toChord(bchord)->downNote() : downNote();
-
-      qreal h = dnote->pagePos().y() + dnote->headHeight() * .5 - y;
-      _arpeggio->setHeight(h);
+      Note* top = _arpeggio->topNote();
+      Note* bottom = _arpeggio->bottomNote();
+      qreal y = top->pagePos().y() - top->headHeight() * .5;
+      _arpeggio->rypos() = y - pagePos().y();
+      _arpeggio->setHeight(bottom->pagePos().y() + bottom->headHeight() * .5 - y);
       _arpeggio->layout();
 
-#if 0 // collect notes for arpeggio
-      QList<Note*> notes;
-      int n = _notes.size();
-      for (int j = n - 1; j >= 0; --j) {
-            Note* note = _notes[j];
-            if (note->tieBack())
-                  continue;
-            notes.prepend(note);
-            }
-
-      for (int i = 1; i < span; ++i) {
-            ChordRest* c = toChordRest(segment()->element(track() + i * VOICES));
-            if (c && c->type() == CHORD) {
-                  QList<Note*> nl = toChord(c)->notes();
-                  int n = nl.size();
-                  for (int j = n - 1; j >= 0; --j) {
-                        Note* note = nl[j];
-                        if (note->tieBack())
-                              continue;
-                        notes.prepend(note);
-                        }
-                  }
-            }
-#endif
       }
 
 //---------------------------------------------------------
