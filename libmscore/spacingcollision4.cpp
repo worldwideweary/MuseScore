@@ -6,6 +6,7 @@
 #include "gracespacing4.h"
 #include "slur.h"
 #include "chord.h"
+#include "beam.h"
 #include "measure.h"
 #include "segment.h"
 #include "system.h"
@@ -224,9 +225,72 @@ static bool forwardAfterGraceSlur4(const Slur* slur)
     return end->tick() > owner->tick() + owner->actualTicks();
 }
 
+// Ordinary main-note starts must not discard an otherwise supported grace
+// group merely because a second slur touches its owner/target. Curves remain
+// native. Automatic direction is admitted only where both Evolution and
+// Studio computeUp produce the same result in a bounded single-voice span.
+static bool mainStartSlur4(const Slur* slur, bool* direction = nullptr)
+{
+    if (!slur || !slur->visible() || slur->lineType() != 0
+        || !slur->startElement() || !slur->endElement()
+        || !slur->startElement()->isChord() || !slur->endElement()->isChord()) return false;
+    const Chord* start = toChord(slur->startElement());
+    const Chord* end = toChord(slur->endElement());
+    if (start->isGrace() || !start->segment() || !start->measure()) return false;
+    const Chord* main = end;
+    if (end->isGrace()) {
+        if (!end->parent() || !end->parent()->isChord()) return false;
+        main = toChord(end->parent());
+        const auto members = end->isGraceAfter() ? main->graceNotesAfter() : main->graceNotesBefore();
+        if (std::find(members.begin(), members.end(), end) == members.end()) return false;
+    }
+    if (main->isGrace() || !main->segment() || main->measure() != start->measure()
+        || slur->score() != start->score() || end->score() != start->score() || main->score() != start->score()
+        || start->track() != end->track() || main->track() != start->track()
+        || slur->track() != start->track() || slur->track2() != end->track()
+        || start->staffMove() || end->staffMove() || main->staffMove()
+        || slur->tick() != start->tick() || slur->tick2() != end->tick()
+        || (start->beam() && start->beam()->cross()) || (end->beam() && end->beam()->cross())
+        || (main->beam() && main->beam()->cross())) return false;
+    if (main->tick() < start->tick()
+        || (main->tick() == start->tick() && (main != start || !end->isGraceAfter()))) return false;
+    bool up = slur->slurDirection() == Direction::UP;
+    if (slur->slurDirection() == Direction::AUTO) {
+        // No cached Slur::up(): a newly added or reanchored slur may not have
+        // been laid out yet. Reject cases needing the broader direction audit.
+        if (start->voice() != 0
+            || start->measure()->hasVoices(start->staffIdx(), start->tick(),
+                                           main->tick() + main->actualTicks() - start->tick())) return false;
+        bool reached = false;
+        bool legacyMixture = false;
+        bool studioMixture = end->isGrace() && end->up() != start->up();
+        for (const Segment* segment = start->segment(); segment; segment = segment->next()) {
+            const Element* item = segment->element(start->track());
+            if (segment->isChordRestType() && item && item->isChordRest()) {
+                if (!item->isChord()) return false;
+                const Chord* chord = toChord(item);
+                if (chord->staffMove() || (chord->beam() && chord->beam()->cross())) return false;
+                legacyMixture = legacyMixture || chord->up() != start->up();
+                // Studio omits the end owner's main chord for a before-grace;
+                // Evolution includes it. Accept AUTO only when results agree.
+                if (segment != main->segment() || !end->isGraceBefore())
+                    studioMixture = studioMixture || chord->up() != start->up();
+                for (const Note* note : chord->notes())
+                    if (note->tieFor() || note->tieBack()) return false;
+            }
+            if (segment == main->segment()) { reached = true; break; }
+        }
+        if (!reached) return false;
+        up = legacyMixture || !start->up();
+        if (up != (studioMixture || !start->up())) return false;
+    }
+    if (direction) *direction = up;
+    return true;
+}
+
 // Studio Chord::computeKerningExceptions: a slur on the side opposite the
-// stem prohibits note kerning on that side. Only the newly admitted span is
-// adapted here; established local/merged slur behavior remains unchanged.
+// stem prohibits note kerning on that side. The forward after-grace and
+// main-start spans use this rule; established local/merged pairs keep theirs.
 static unsigned forwardSlurKerning4(const Chord* chord)
 {
     unsigned blocked = 0;
@@ -234,9 +298,10 @@ static unsigned forwardSlurKerning4(const Chord* chord)
         if (!entry.second->isSlur()) continue;
         const Slur* slur = toSlur(entry.second);
         if (slur->startElement() != chord && slur->endElement() != chord) continue;
-        if (!forwardAfterGraceSlur4(slur)) continue;
-        if (slur->slurDirection() == Direction::UP && !chord->up()) blocked |= 1;
-        if (slur->slurDirection() == Direction::DOWN && chord->up()) blocked |= 2;
+        bool up = slur->slurDirection() == Direction::UP;
+        if (!forwardAfterGraceSlur4(slur) && !mainStartSlur4(slur, &up)) continue;
+        if (up && !chord->up()) blocked |= 1;
+        if (!up && chord->up()) blocked |= 2;
     }
     return blocked;
 }
@@ -280,7 +345,7 @@ static bool commonChordContext4(const Chord* chord, bool allowGrace,
             || (spanner->track2() == chord->track() && spanner->tick2() == chord->tick())) {
             // A visual slur edit does not change these physical note/stem
             // obstacles or the supported musical anchors. Keep spacing active.
-            if (forwardAfterGraceSlur4(toSlur(spanner))) continue;
+            if (forwardAfterGraceSlur4(toSlur(spanner)) || mainStartSlur4(toSlur(spanner))) continue;
             bool supported = localScope && spacingLocalGraceSlur4(toSlur(spanner), main, true);
             if (context) {
                 for (const auto& pair : context->mergedPairs) {

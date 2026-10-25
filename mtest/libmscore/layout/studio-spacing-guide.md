@@ -3157,3 +3157,15 @@ See v0.147-slur-anchor-layout-proof.md. Apply after v0.146, run both mtests,
 and use the new natural-width score with MS_LAYOUT4_PROFILE=1 for an actual
 Debug reanchor comparison. slurAnchorProof/slurAnchorLayout identify the new
 path. Start-height matching and broader layout-policy coverage remain pending.
+
+### v0.148: preserve modern spacing with a second main-start slur
+
+v0.147 native mtests pass. The additional-slur screenshots/log use the
+v0.145 forced-break fixture, so they do not exercise the single-system shortcut.
+Admit bounded same-measure forward main-start slurs, validate normal/grace
+endpoints and apply endpoint-side kerning flags. AUTO requires a single-voice
+span where read-only Evolution and pinned Studio direction rules agree.
+Keep native curves and the existing efficiency scope. New four-row native
+test covers addition, X twice, before/after-grace traversal, published modern
+plans, fresh layout and undo/redo. Compare the v0.148 before/added scores.
+See v0.148-main-start-slur-admission.md. Native results remain pending.

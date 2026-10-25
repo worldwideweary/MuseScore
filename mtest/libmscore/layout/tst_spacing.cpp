@@ -61,6 +61,8 @@ class TestSpacing : public QObject, public MTest {
       void graceMergedSlurCurves_data();
       void graceMergedSlurCurves();
       void slurOffsetUndoAdmission4();
+      void mainStartSlurSpacing4_data();
+      void mainStartSlurSpacing4();
       void slurAnchorSystems4_data();
       void slurAnchorSystems4();
       void slurAnchorTraversal4_data();
@@ -6138,6 +6140,106 @@ void TestSpacing::slurOffsetUndoAdmission4()
       macro.appendChild(parent);
       QVERIFY(!macro.slurOffset4());
       }
+      delete score;
+      }
+
+void TestSpacing::mainStartSlurSpacing4_data()
+      {
+      QTest::addColumn<bool>("modernBeams");
+      QTest::addColumn<int>("startIndex");
+      for (bool beams : {false, true})
+            for (int index : {0, 1})
+                  QTest::newRow(qPrintable(QString("beams-%1-start-%2").arg(beams).arg(index))) << beams << index;
+      }
+
+void TestSpacing::mainStartSlurSpacing4()
+      {
+      QFETCH(bool, modernBeams);
+      QFETCH(int, startIndex);
+      MasterScore* score = readScore(DIR + "v0.145-spacing-slur-anchor-systems.mscx");
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->doLayout();
+      std::vector<Chord*> mains;
+      for (const Segment& segment : score->firstMeasure()->segments()) {
+            Element* item = segment.element(0);
+            if (segment.isChordRestType() && item && item->isChord()) mains.push_back(toChord(item));
+            }
+      QCOMPARE(int(mains.size()), 3);
+      const auto same = [](const std::vector<qreal>& a, const std::vector<qreal>& b) {
+            if (a.size() != b.size()) return false;
+            for (size_t i = 0; i < a.size(); ++i)
+                  if (!qIsFinite(a[i]) || !qIsFinite(b[i]) || qAbs(a[i] - b[i]) > 1e-6) return false;
+            return true;
+            };
+      QString reason;
+      const auto published = [score, &reason]() {
+            for (System* system : score->systems()) {
+                  if (system->vbox()) continue;
+                  SpacingPlan4 plan;
+                  if (!buildSpacingPlan4(system, plan, &reason)) return false;
+                  if (system->lastMeasure() != score->lastMeasure()
+                      && !justifySpacingPlan4(plan, system->width())) return false;
+                  if (!spacingPlanMatches4(plan, &reason)) return false;
+                  }
+            return true;
+            };
+      QVERIFY2(published(), qPrintable(reason));
+      const auto initial = graceLayoutSnapshot4(score);
+      Slur* added = new Slur(score);
+      added->setTrack(0);
+      added->setTrack2(0);
+      added->setTick(mains[startIndex]->tick());
+      added->setTick2(mains[startIndex + 1]->tick());
+      added->setStartElement(mains[startIndex]);
+      added->setEndElement(mains[startIndex + 1]);
+      added->setSlurDirection(Direction::AUTO);
+      score->startCmd();
+      score->undoAddElement(added);
+      score->endCmd();
+      QVERIFY2(published(), qPrintable(reason));
+      const auto withAutomatic = graceLayoutSnapshot4(score);
+      score->doLayout();
+      QVERIFY(same(graceLayoutSnapshot4(score), withAutomatic));
+      // Reproduce addition followed by X twice: the final direction becomes
+      // explicit without changing the displayed side of the original AUTO slur.
+      const bool automaticUp = added->up();
+      for (int flip = 0; flip < 2; ++flip) {
+            EditData edit;
+            edit.key = Qt::Key_X;
+            score->startCmd();
+            QVERIFY(added->frontSegment()->edit(edit));
+            score->endCmd();
+            QVERIFY2(published(), qPrintable(reason));
+            }
+      QCOMPARE(added->up(), automaticUp);
+      const auto explicitLayout = graceLayoutSnapshot4(score);
+      score->doLayout();
+      QVERIFY(same(graceLayoutSnapshot4(score), explicitLayout));
+      // Visit grace endpoints without crossing the forced system boundary.
+      // From A-to-C move forward into C's after-graces; from C-to-G move
+      // backward into G's before-graces, reproducing both ownership cases.
+      for (int step = 0; step < 2; ++step) {
+            EditData edit;
+            edit.key = startIndex == 0 ? Qt::Key_Right : Qt::Key_Left;
+            edit.modifiers = Qt::ShiftModifier;
+            edit.curGrip = Grip::END;
+            score->startCmd();
+            QVERIFY(added->frontSegment()->edit(edit));
+            score->endCmd();
+            QVERIFY(added->endElement()->isChord() && toChord(added->endElement())->isGrace());
+            QVERIFY2(published(), qPrintable(reason));
+            }
+      const auto graceEndpoint = graceLayoutSnapshot4(score);
+      score->doLayout();
+      QVERIFY(same(graceLayoutSnapshot4(score), graceEndpoint));
+      // Undo both moves, both flips and the addition, then redo addition alone.
+      for (int command = 0; command < 5; ++command) score->undoRedo(true, nullptr);
+      QVERIFY2(published(), qPrintable(reason));
+      QVERIFY(same(graceLayoutSnapshot4(score), initial));
+      score->undoRedo(false, nullptr);
+      QVERIFY2(published(), qPrintable(reason));
+      QVERIFY(same(graceLayoutSnapshot4(score), withAutomatic));
       delete score;
       }
 
