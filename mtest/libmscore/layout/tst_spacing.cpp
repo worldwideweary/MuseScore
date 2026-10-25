@@ -10,6 +10,8 @@
 #include "libmscore/spacinggeometry4.h"
 #include "libmscore/spacingcollision4.h"
 #include "libmscore/spacingplan4.h"
+#include "libmscore/spacinginput4.h"
+#include "libmscore/navigate.h"
 #include "libmscore/gracespacing4.h"
 #include "libmscore/graceslurlayout4.h"
 #include "libmscore/system.h"
@@ -40,6 +42,8 @@ class TestSpacing : public QObject, public MTest {
       Q_OBJECT
    private slots:
       void initTestCase() { initMTest(); }
+      void spacingInputSnapshot4_data();
+      void spacingInputSnapshot4();
       void styleRoundTrip();
       void durationPolicy();
       void springForce();
@@ -3348,6 +3352,174 @@ static std::vector<qreal> graceMergedSnapshot4(Score* score)
                   }
             }
       return values;
+      }
+
+void TestSpacing::spacingInputSnapshot4_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::addColumn<bool>("hasTies");
+      QTest::addColumn<bool>("hasNoteSpanners");
+      QTest::newRow("grace-one-system") << QString(DIR + "v0.139-spacing-two-staff-slur-offsets.mscx") << false << false;
+      QTest::newRow("grace-two-systems") << QString(DIR + "v0.145-spacing-slur-anchor-systems.mscx") << false << false;
+      QTest::newRow("ties-and-rests") << QString("libmscore/midi/testTieTrill.mscx") << true << false;
+      QTest::newRow("note-spanners-and-rests") << QString("libmscore/spanners/glissando-cloning01-ref.mscx") << false << true;
+      }
+
+void TestSpacing::spacingInputSnapshot4()
+      {
+      QFETCH(QString, file);
+      QFETCH(bool, hasTies);
+      QFETCH(bool, hasNoteSpanners);
+      MasterScore* score = readScore(file);
+      QVERIFY(score);
+      score->doLayout();
+      const auto state = [score]() {
+            auto values = graceLayoutSnapshot4(score);
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
+                  for (const Segment& segment : m->segments())
+                        for (const Element* item : segment.elist()) {
+                              if (!item || !item->isChord()) continue;
+                              const Chord* main = toChord(item);
+                              QVector<const Chord*> chords {main};
+                              for (const Chord* grace : main->graceNotes()) chords.push_back(grace);
+                              for (const Chord* chord : chords) {
+                                    values.insert(values.end(), {chord->x(), chord->y(), qreal(chord->up()),
+                                          chord->stem() ? chord->stem()->len() : 0});
+                                    if (chord->beam() && chord->beam()->primarySegment4()) {
+                                          const QLineF& beam = *chord->beam()->primarySegment4();
+                                          values.insert(values.end(), {beam.x1(), beam.y1(), beam.x2(), beam.y2()});
+                                          }
+                                    }
+                              }
+            for (const auto& entry : score->spannerMap().map()) {
+                  if (!entry.second->isSlur()) continue;
+                  for (const SpannerSegment* item : entry.second->spannerSegments()) {
+                        const SlurSegment* segment = toSlurSegment(item);
+                        values.insert(values.end(), {segment->x(), segment->y()});
+                        for (Grip grip : {Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END}) {
+                              const QPointF point = segment->ups(grip).pos();
+                              values.insert(values.end(), {point.x(), point.y()});
+                              }
+                        for (const QRectF& rect : segment->shape())
+                              values.insert(values.end(), {rect.x(), rect.y(), rect.width(), rect.height()});
+                        }
+                  }
+            return values;
+            };
+      const auto before = state();
+      const bool spacingStyle = score->styleB(Sid::spacingLayout4);
+      const bool beamStyle = score->styleB(Sid::beamLayout4);
+      const int history = score->undoStack()->getCurIdx();
+      const auto selection = score->selection().elements();
+      const auto selectionState = score->selection().state();
+      const auto updateMode = score->cmdState().updateMode();
+      const quint64 generation = score->cmdState().generation4();
+      QString reason;
+      SpacingInput4 input;
+      QVERIFY2(buildSpacingInput4(score, input, &reason), qPrintable(reason));
+      QCOMPARE(input.score(), static_cast<const Score*>(score));
+      QVERIFY(!input.anchors().empty());
+      // Independent oracle: actual editor navigation, rather than another
+      // copy of the collector's segment/grace flattening algorithm.
+      std::unordered_map<int, const ChordRest*> next;
+      std::unordered_map<int, size_t> ordinal;
+      for (const auto& anchor : input.anchors()) {
+            if (!ordinal.count(anchor.track)) next[anchor.track] = anchor.item;
+            QCOMPARE(anchor.item, next[anchor.track]);
+            QVERIFY(anchor.orderInTrack == ordinal[anchor.track]++);
+            next[anchor.track] = nextChordRest(const_cast<ChordRest*>(anchor.item));
+            QCOMPARE(input.anchor(anchor.item), &anchor);
+            }
+      for (const auto& entry : next) QVERIFY(!entry.second);
+      bool foundTie = false;
+      bool foundNoteSpanner = false;
+      for (const auto& note : input.notes()) {
+            QCOMPARE(input.note(note.note), &note);
+            QVERIFY(note.anchorIndex < input.anchors().size());
+            QCOMPARE(static_cast<const ChordRest*>(note.note->chord()), input.anchors()[note.anchorIndex].item);
+            QCOMPARE(note.tieFor, static_cast<const Tie*>(note.note->tieFor()));
+            QCOMPARE(note.tieBack, static_cast<const Tie*>(note.note->tieBack()));
+            foundTie = foundTie || note.tieFor || note.tieBack;
+            foundNoteSpanner = foundNoteSpanner || !note.spannersFor.empty() || !note.spannersBack.empty();
+            }
+      QVERIFY(!hasTies || foundTie);
+      QVERIFY(!hasNoteSpanners || foundNoteSpanner);
+      for (const auto& slur : input.slurs()) {
+            QCOMPARE(input.slur(slur.slur), &slur);
+            QCOMPARE(slur.start.element, static_cast<const Element*>(slur.slur->startElement()));
+            QCOMPARE(slur.end.element, static_cast<const Element*>(slur.slur->endElement()));
+            if (slur.start.anchorIndex != SPACING_INPUT_NONE4) {
+                  const auto& indices = input.anchors()[slur.start.anchorIndex].startingSlurs;
+                  QVERIFY(std::any_of(indices.begin(), indices.end(), [&](size_t i) { return input.slurs()[i].slur == slur.slur; }));
+                  }
+            }
+      QVERIFY(state() == before);
+      QCOMPARE(score->undoStack()->getCurIdx(), history);
+      QVERIFY(score->selection().elements() == selection && score->selection().state() == selectionState);
+      QVERIFY(score->cmdState().updateMode() == updateMode && score->cmdState().generation4() == generation);
+      QCOMPARE(score->styleB(Sid::spacingLayout4), spacingStyle);
+      QCOMPARE(score->styleB(Sid::beamLayout4), beamStyle);
+      const size_t anchors = input.anchors().size();
+      QVERIFY(!buildSpacingInput4(nullptr, input, &reason));
+      QCOMPARE(input.score(), static_cast<const Score*>(score));
+      QVERIFY(input.anchors().size() == anchors); // Failed build preserves prior output.
+      input = SpacingInput4(); // End the borrowed view before a structural edit.
+      {
+      Slur unresolved(score);
+      unresolved.setTrack(0);
+      unresolved.setTrack2(0);
+      unresolved.setTick(score->firstMeasure()->tick());
+      unresolved.setTick2(score->lastMeasure()->tick());
+      score->addSpanner(&unresolved);
+      const bool collected = buildSpacingInput4(score, input, &reason);
+      const SpacingSlurInput4* captured = input.slur(&unresolved);
+      const bool stillMissing = captured && captured->start.kind == SpacingEndpointKind4::MISSING
+            && captured->end.kind == SpacingEndpointKind4::MISSING
+            && !unresolved.startElement() && !unresolved.endElement();
+      input = SpacingInput4();
+      score->removeSpanner(&unresolved);
+      QVERIFY2(collected, qPrintable(reason));
+      QVERIFY(stillMissing); // Never invoke lazy startCR/endCR to complete it.
+      }
+      Slur* selected = nullptr;
+      for (const auto& entry : score->spannerMap().map()) {
+            if (!entry.second->isSlur()) continue;
+            Slur* slur = toSlur(entry.second);
+            if (!slur->startElement() || !slur->startElement()->isChord()) continue;
+            const Chord* start = toChord(slur->startElement());
+            if (start->isGraceAfter() && toChord(start->parent())->graceNotesAfter().size() > 1
+                && toChord(start->parent())->graceNotesAfter().front() == start) { selected = slur; break; }
+            }
+      if (selected) {
+            const Chord* original = toChord(selected->startElement());
+            const Chord* expected = toChord(original->parent())->graceNotesAfter().at(1);
+            QVERIFY2(buildSpacingInput4(score, input, &reason), qPrintable(reason));
+            const size_t originalOrder = input.anchor(original)->orderInTrack;
+            const Fraction originalTick = input.anchor(original)->tick;
+            input = SpacingInput4();
+            EditData edit;
+            edit.key = Qt::Key_Right;
+            edit.modifiers = Qt::ShiftModifier;
+            edit.curGrip = Grip::START;
+            score->startCmd();
+            QVERIFY(selected->frontSegment()->edit(edit));
+            score->endCmd();
+            QCOMPARE(static_cast<const Element*>(selected->startElement()), static_cast<const Element*>(expected));
+            const auto moved = state();
+            QVERIFY2(buildSpacingInput4(score, input, &reason), qPrintable(reason));
+            const auto* slur = input.slur(selected);
+            QCOMPARE(slur->start.element, static_cast<const Element*>(expected));
+            const auto& anchor = input.anchors()[slur->start.anchorIndex];
+            QCOMPARE(anchor.tick, originalTick); // Same tick, different exact grace identity/order.
+            QVERIFY(anchor.orderInTrack == originalOrder + 1);
+            QVERIFY(state() == moved);
+            input = SpacingInput4();
+            score->undoRedo(true, nullptr);
+            QVERIFY2(buildSpacingInput4(score, input, &reason), qPrintable(reason));
+            QCOMPARE(input.slur(selected)->start.element, static_cast<const Element*>(original));
+            }
+      input = SpacingInput4();
+      delete score;
       }
 
 // Combined same-direction groups use the optional plan; M2 retains fallback.

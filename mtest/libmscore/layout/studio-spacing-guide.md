@@ -3183,3 +3183,18 @@ HorizontalSpacing functions, inventories 101 named diagnostic sites and defines
 six mechanism-based work packages and acceptance gates. This is documentation
 only; no build, mtest or new screenshot is requested. See
 v0.149-spacing-architecture-audit.md and its three CSV inventories.
+
+
+### v0.150: pass-scoped musical-input prototype, no runtime selection change
+
+Implement the first package-A seam from the architecture audit: exact root
+slur endpoints, per-track before/main/after musical order, reverse anchor
+attachment indices and note tie/spanner metadata in a read-only view. It does
+not consult curve eligibility, first-grace/count/direction whitelists or lazy
+anchor completion. No runtime planner consumes it yet. Four focused native
+rows cover independent navigation order, immutable query behavior, unresolved
+anchors and actual START-grip movement with equal ticks/different identities.
+See v0.150-prepared-spacing-inputs.md. After CMake rebuild, run
+`tst_spacing spacingInputSnapshot4`; no new visual comparison is needed.
+Package-A geometry/direction/consumer integration and package-B lifecycle work
+remain outstanding. This stage makes no appearance or speed claim.
