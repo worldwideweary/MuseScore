@@ -1,0 +1,9 @@
+local_reference,pinned_source_path,git_blob_sha1
+horizontalspacing-4.7.5.cpp,src/engraving/rendering/score/horizontalspacing.cpp,573e19dcf63bb042499f1495f16f5c19d1003852
+systemlayout-4.7.5.cpp,src/engraving/rendering/score/systemlayout.cpp,516188a75a42d193b9cb4baa02aac0c9a08bf85e
+chordlayout-4.7.5.cpp,src/engraving/rendering/score/chordlayout.cpp,28b1e5413eb764c6f3b3ba341cd2437676ccc0cc
+measurelayout-4.7.5.cpp,src/engraving/rendering/score/measurelayout.cpp,b488b3a38b9489355d2cb1740fb5facf16d59920
+paddingtable-4.7.5.cpp,src/engraving/rendering/paddingtable.cpp,c308af1c64a903e51c9c4b01a5a27696f12211b2
+slurtielayout-4.7.5.cpp,src/engraving/rendering/score/slurtielayout.cpp,cc4d7659bffd339ebf6b757d4d70b284812d1fe1
+chord-dom-4.7.5.cpp,src/engraving/dom/chord.cpp,d04e8718721f3b8a0024858800d0caf9a8ac0253
+shape-4.7.5.h,src/engraving/infrastructure/shape.h,b3d1ab679eeadf9dd7a8c8172bb966b113de98be

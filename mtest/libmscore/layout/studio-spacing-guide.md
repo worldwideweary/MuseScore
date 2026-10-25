@@ -3169,3 +3169,17 @@ Keep native curves and the existing efficiency scope. New four-row native
 test covers addition, X twice, before/after-grace traversal, published modern
 plans, fresh layout and undo/redo. Compare the v0.148 before/added scores.
 See v0.148-main-start-slur-admission.md. Native results remain pending.
+
+### v0.149: architectural audit; pause case-specific expansion
+
+v0.148 native tests and requested end-anchor/addition visual sequence pass;
+start-anchor traversal exposes another admission boundary. Audit finds a hybrid
+fallthrough: modern rhythm/local packing can remain when final modern planning
+rejects. Full-prefix rebuilding, inferred rectangle identity and attachment/
+curve-scope coupling are structural problems. Preserve arithmetic, kernels,
+position stream, beam work and fixtures; consolidate prepared producer/attachment
+inputs and collection/publication lifecycle. The audit maps all 54 pinned
+HorizontalSpacing functions, inventories 101 named diagnostic sites and defines
+six mechanism-based work packages and acceptance gates. This is documentation
+only; no build, mtest or new screenshot is requested. See
+v0.149-spacing-architecture-audit.md and its three CSV inventories.
