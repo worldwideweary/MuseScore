@@ -552,8 +552,9 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
     return true;
 }
 
-bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, const SpacingPlanOptions4& options,
-                       const std::vector<GraceMergedGeometry4>* preparedMerged, const SpacingInput4* input)
+static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString* reason, const SpacingPlanOptions4& options,
+                                 const std::vector<GraceMergedGeometry4>* preparedMerged, const SpacingInput4* input,
+                                 const SpacingAttachmentPreparation4* preparation)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::PLAN);
     const auto fail = [&](const QString& message) { if (reason) *reason = message; return false; };
@@ -579,7 +580,7 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
     if (!prepareGraces4(system, graces, afters, merged, reason, preparedMerged)) return false;
     // All remaining projection and distance work is read-only. Reuse chord
     // eligibility through this complete plan; later plans/edits start fresh.
-    SpacingContextCache4 contextCache(input);
+    SpacingContextCache4 contextCache = preparation ? SpacingContextCache4(*preparation) : SpacingContextCache4(input);
     SpacingPlan4 plan;
     for (const auto& after : afters) plan.afterGraces.push_back(after.plan);
     for (const auto& joint : merged) plan.mergedGraces.push_back(joint.plan);
@@ -809,8 +810,22 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, co
     return true;
 }
 
-bool squeezeSpacingPlan4(System* system, qreal targetWidth, SpacingPlan4& result, QString* reason,
-                         const std::vector<GraceMergedGeometry4>* preparedMerged)
+bool buildSpacingPlan4(System* system, SpacingPlan4& result, QString* reason, const SpacingPlanOptions4& options,
+                       const std::vector<GraceMergedGeometry4>* preparedMerged, const SpacingInput4* input)
+{
+    return buildSpacingPlanImpl4(system, result, reason, options, preparedMerged, input, nullptr);
+}
+
+bool buildSpacingPlan4(System* system, SpacingPlan4& result, const SpacingAttachmentPreparation4& preparation,
+                       QString* reason, const SpacingPlanOptions4& options,
+                       const std::vector<GraceMergedGeometry4>* preparedMerged)
+{
+    return buildSpacingPlanImpl4(system, result, reason, options, preparedMerged, &preparation.input(), &preparation);
+}
+
+static bool squeezeSpacingPlanImpl4(System* system, qreal targetWidth, SpacingPlan4& result, QString* reason,
+                                   const std::vector<GraceMergedGeometry4>* preparedMerged,
+                                   const SpacingAttachmentPreparation4* preparation)
 {
     if (!std::isfinite(targetWidth) || targetWidth <= 0) {
         if (reason)
@@ -818,7 +833,8 @@ bool squeezeSpacingPlan4(System* system, qreal targetWidth, SpacingPlan4& result
         return false;
     }
     SpacingPlan4 candidate;
-    if (!buildSpacingPlan4(system, candidate, reason, SpacingPlanOptions4(), preparedMerged))
+    const SpacingInput4* input = preparation ? &preparation->input() : nullptr;
+    if (!buildSpacingPlanImpl4(system, candidate, reason, SpacingPlanOptions4(), preparedMerged, input, preparation))
         return false;
     if (candidate.width <= targetWidth) {
         result = candidate;
@@ -832,7 +848,7 @@ bool squeezeSpacingPlan4(System* system, qreal targetWidth, SpacingPlan4& result
     options.stretchReduction = 1 - 0.33;
     options.squeezeFactor = 1 - 0.2;
     for (int pass = 0; pass < 3; ++pass) {
-        if (!buildSpacingPlan4(system, candidate, reason, options, preparedMerged))
+        if (!buildSpacingPlanImpl4(system, candidate, reason, options, preparedMerged, input, preparation))
             return false;
         if (candidate.width <= targetWidth) {
             result = candidate;
@@ -844,6 +860,19 @@ bool squeezeSpacingPlan4(System* system, qreal targetWidth, SpacingPlan4& result
     if (reason)
         *reason = "Target needs stronger compression than the adapted squeeze passes";
     return false;
+}
+
+bool squeezeSpacingPlan4(System* system, qreal targetWidth, SpacingPlan4& result, QString* reason,
+                         const std::vector<GraceMergedGeometry4>* preparedMerged)
+{
+    return squeezeSpacingPlanImpl4(system, targetWidth, result, reason, preparedMerged, nullptr);
+}
+
+bool squeezeSpacingPlan4(System* system, qreal targetWidth, SpacingPlan4& result,
+                         const SpacingAttachmentPreparation4& preparation, QString* reason,
+                         const std::vector<GraceMergedGeometry4>* preparedMerged)
+{
+    return squeezeSpacingPlanImpl4(system, targetWidth, result, reason, preparedMerged, &preparation);
 }
 
 bool justifySpacingPlan4(SpacingPlan4& target, qreal targetWidth)

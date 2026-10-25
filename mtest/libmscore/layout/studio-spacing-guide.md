@@ -3294,3 +3294,47 @@ Next: connect a shared preparation owner and renderer-consistent directions,
 then replace curve-based horizontal admission and resolve collection/publication
 ownership and hybrid fallback (audit A/B). Rebuild and run the usual combined
 spacing/beam CTest command to include all new rows.
+
+
+### v0.154: one owner for attachment preparation and fitting queries
+
+v0.153 native mtests pass; tst_spacing took 75.5 seconds in the user's build.
+Compose the pass-scoped musical view, caller-prepared chord/rest directions,
+resolved slur directions and exact attachment-side tables into one move-only
+SpacingAttachmentPreparation4. Successful preparation consumes/resets the input;
+validation failure preserves both the input and the previous owner. Moved-from
+owners are empty and cannot report complete preparation. Const queries expose
+per-anchor sides and per-root directions without new DOM scans.
+
+Bind optional collision caches and natural/squeeze planner overloads to that
+owner. Every squeeze pass borrows the same musical/direction/attachment input;
+query-local shape/eligibility memoization still starts fresh. No score-wide
+collection or direction resolution occurs inside plan, pair or prefix loops.
+The existing grace projection preparation is read-only, so it does not invalidate
+this lifetime. Discard all borrowers before moving/replacing the owner, editing
+the score or preparing geometry that writes to native items.
+
+Files changed: spacinginput4.h/.cpp, spacingcollision4.h/.cpp, spacingplan4.h/.cpp,
+tst_spacing.cpp and this guide. Existing snapshot rows compare old/indexed/owned
+pair decisions and complete natural plans. They also compare fitting outcomes
+and all planned fields at natural and 95% target widths, before/after actual
+START reanchoring and undo. Owner tests cover lookup identities, kernel handoff,
+move/reset semantics, atomic failed replacement and invalid-owner plan/fitting
+rejection. No new fixture or screenshot is required.
+
+Local validation: twelve C++11 syntax passes (Debug/NDEBUG collector, collision,
+planner, grace spacing, layout and regenerated-moc test). Unused-parameter and
+signedness checks are enabled. The actual collector/direction/attachment/owner
+code passes 960 mock-DOM cases, including 1,536 preparation, lookup, move and
+failure-atomicity comparisons with fully/partially pending producer inputs.
+Native application/mtests cannot run locally. WIP checkpoint fcd840a saves the
+owner/planner seam; the incremental patch starts at delivered v0.153 9a22195.
+
+Runtime selection remains unchanged. The optional owned path preserves current
+curve-based admission; it does not yet substitute the general flags for that
+policy. Shared ownership establishes lifetime, not stem readiness: production
+must still refresh stems/note lines on later systems and use the same direction
+rules as the renderer. That renderer-consistent producer connection is next,
+followed by removing the curve-based horizontal gates and addressing collection/
+publication and hybrid fallback (audit A/B). Rebuild and run the usual combined
+spacing/beam CTest command; no visual or performance run is requested here.

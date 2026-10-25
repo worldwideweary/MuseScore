@@ -147,6 +147,39 @@ bool buildSpacingSlurAttachments4(const SpacingInput4&, SpacingSlurAttachments4&
 bool buildSpacingSlurDirections4(const SpacingInput4&, const std::vector<Direction>& anchorDirections,
                                 std::vector<Direction>& result, QString* reason = nullptr);
 
+// Owns the musical view, producer directions and derived attachment tables for
+// one unchanged preparation phase. Consumers borrow this owner, never separate
+// tables with unrelated lifetimes. Discard before edits or geometry writes.
+// Do not move or replace the owner while a consumer borrows it.
+class SpacingAttachmentPreparation4 {
+    SpacingInput4 _input;
+    std::vector<Direction> _anchorDirections;
+    std::vector<Direction> _slurDirections;
+    SpacingSlurAttachments4 _attachments;
+    friend bool prepareSpacingAttachments4(SpacingInput4&&, const std::vector<Direction>&,
+                                           SpacingAttachmentPreparation4&, QString*);
+public:
+    SpacingAttachmentPreparation4() = default;
+    SpacingAttachmentPreparation4(const SpacingAttachmentPreparation4&) = delete;
+    SpacingAttachmentPreparation4& operator=(const SpacingAttachmentPreparation4&) = delete;
+    SpacingAttachmentPreparation4(SpacingAttachmentPreparation4&&);
+    SpacingAttachmentPreparation4& operator=(SpacingAttachmentPreparation4&&);
+    const SpacingInput4& input() const { return _input; }
+    const std::vector<Direction>& anchorDirections() const { return _anchorDirections; }
+    const std::vector<Direction>& slurDirections() const { return _slurDirections; }
+    const SpacingSlurAttachments4& attachments() const { return _attachments; }
+    const SpacingSlurSides4* sides(const ChordRest*) const;
+    const Direction* direction(const Slur*) const;
+    bool complete() const { return _input.score() && _attachments.complete(); }
+};
+
+// Compose the two preparation kernels once, outside plan/pair/prefix loops.
+// On success, consume and reset input; on failure preserve both input and result.
+// Pending producer directions are retained as pending, never replaced with
+// captured stem/slur observations. No score collection or DOM writes occur.
+bool prepareSpacingAttachments4(SpacingInput4&& input, const std::vector<Direction>& anchorDirections,
+                                SpacingAttachmentPreparation4& result, QString* reason = nullptr);
+
 // Collects all tracks, grace members and root slurs without admission whitelists.
 // Uses raw endpoint accessors: unresolved anchors stay unresolved, never lazily
 // computed. No positions, styles, directions, selection or history are changed.

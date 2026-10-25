@@ -15,6 +15,7 @@ class Chord;
 class Score;
 struct SpacingShape4;
 class SpacingInput4;
+class SpacingAttachmentPreparation4;
 enum class ElementType : char;
 
 enum class SpacingKerning4 { NON_KERNING, KERNING, ALLOW_COLLISION, LEFT_EDGE, CENTER, RIGHT_EDGE };
@@ -52,6 +53,7 @@ struct SpacingGraceContext4 {
 // padding are always evaluated. Geometry must remain unchanged for its lifetime.
 class SpacingContextCache4 {
     const SpacingInput4* _input = nullptr;
+    const SpacingAttachmentPreparation4* _preparation = nullptr;
     bool _initialized = false, _allowGrace = false, _hasContext = false;
     const Chord* _scopedMain = nullptr;
     SpacingGraceContext4 _context, _mergedContext;
@@ -64,7 +66,11 @@ public:
     // Optional caller-owned musical view, prepared once outside inner loops.
     // It must describe the same unchanged score for the entire query lifetime.
     explicit SpacingContextCache4(const SpacingInput4* input = nullptr) : _input(input) {}
+    // Borrows the complete pass owner. Query memoization remains local to
+    // this cache; the owner can be reused by later read-only squeeze queries.
+    explicit SpacingContextCache4(const SpacingAttachmentPreparation4&);
     const SpacingInput4* input() const { return _input; }
+    const SpacingAttachmentPreparation4* preparation() const { return _preparation; }
     // Validated, non-null items; preserves the ordered native shape query.
     bool shapesIntersect(const Element* first, const Element* second);
     // Endpoint-side restrictions, reused only within this unchanged query.

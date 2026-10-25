@@ -186,6 +186,52 @@ bool buildSpacingSlurDirections4(const SpacingInput4& input, const std::vector<D
     return true;
 }
 
+SpacingAttachmentPreparation4::SpacingAttachmentPreparation4(SpacingAttachmentPreparation4&& other)
+{
+    *this = std::move(other);
+}
+
+SpacingAttachmentPreparation4& SpacingAttachmentPreparation4::operator=(SpacingAttachmentPreparation4&& other)
+{
+    if (this != &other) {
+        _input = std::move(other._input);
+        _anchorDirections = std::move(other._anchorDirections);
+        _slurDirections = std::move(other._slurDirections);
+        _attachments = std::move(other._attachments);
+        other._input = SpacingInput4();
+        other._anchorDirections.clear();
+        other._slurDirections.clear();
+        other._attachments = SpacingSlurAttachments4();
+    }
+    return *this;
+}
+
+const SpacingSlurSides4* SpacingAttachmentPreparation4::sides(const ChordRest* chord) const
+{
+    const auto* anchor = _input.anchor(chord);
+    return anchor ? &_attachments.anchors[size_t(anchor - _input.anchors().data())] : nullptr;
+}
+
+const Direction* SpacingAttachmentPreparation4::direction(const Slur* slur) const
+{
+    const auto* root = _input.slur(slur);
+    return root ? &_slurDirections[size_t(root - _input.slurs().data())] : nullptr;
+}
+
+bool prepareSpacingAttachments4(SpacingInput4&& input, const std::vector<Direction>& anchorDirections,
+                                SpacingAttachmentPreparation4& result, QString* reason)
+{
+    SpacingAttachmentPreparation4 pending;
+    if (!buildSpacingSlurDirections4(input, anchorDirections, pending._slurDirections, reason)
+        || !buildSpacingSlurAttachments4(input, pending._attachments, &pending._slurDirections, reason)) return false;
+    pending._anchorDirections = anchorDirections;
+    pending._input = std::move(input);
+    input = SpacingInput4();
+    result = std::move(pending);
+    if (reason) reason->clear();
+    return true;
+}
+
 bool buildSpacingInput4(Score* score, SpacingInput4& result, QString* reason)
 {
     const auto fail = [reason](const char* message) {

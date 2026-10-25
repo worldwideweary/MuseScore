@@ -14,6 +14,7 @@ class System;
 class Beam;
 class Chord;
 class SpacingInput4;
+class SpacingAttachmentPreparation4;
 
 // Read-only preparation for cross-staff placement. This first context covers
 // one automatic eighth-note beam of up to two unmirrored normal notes per chord
@@ -83,6 +84,13 @@ bool buildSpacingPlan4(System*, SpacingPlan4& result, QString* reason = nullptr,
                        const SpacingPlanOptions4& options = SpacingPlanOptions4(),
                        const std::vector<GraceMergedGeometry4>* preparedMerged = nullptr,
                        const SpacingInput4* input = nullptr);
+// Same existing policy, borrowing one shared attachment preparation. No input
+// collection or direction resolution occurs here or in subsequent squeeze passes.
+// This overload does not yet enable the general attachment admission policy.
+bool buildSpacingPlan4(System*, SpacingPlan4& result, const SpacingAttachmentPreparation4&,
+                       QString* reason = nullptr,
+                       const SpacingPlanOptions4& options = SpacingPlanOptions4(),
+                       const std::vector<GraceMergedGeometry4>* preparedMerged = nullptr);
 bool justifySpacingPlan4(SpacingPlan4&, qreal targetWidth);
 
 // Compare a fresh plan with the active horizontal fields published by system layout.
@@ -95,6 +103,9 @@ bool spacingPlanMatches4(const SpacingPlan4&, QString* reason = nullptr);
 // unsupported contexts leave result untouched for the existing fallback.
 bool squeezeSpacingPlan4(System*, qreal targetWidth, SpacingPlan4& result,
                          QString* reason = nullptr,
+                         const std::vector<GraceMergedGeometry4>* preparedMerged = nullptr);
+bool squeezeSpacingPlan4(System*, qreal targetWidth, SpacingPlan4& result,
+                         const SpacingAttachmentPreparation4&, QString* reason = nullptr,
                          const std::vector<GraceMergedGeometry4>* preparedMerged = nullptr);
 }
 #endif

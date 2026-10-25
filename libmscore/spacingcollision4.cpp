@@ -314,6 +314,11 @@ static unsigned forwardSlurKerning4(const Chord* chord, const SpacingInput4* inp
     return blocked;
 }
 
+SpacingContextCache4::SpacingContextCache4(const SpacingAttachmentPreparation4& preparation)
+    : _input(&preparation.input()), _preparation(&preparation)
+{
+}
+
 unsigned SpacingContextCache4::forwardSlurKerning(const Chord* chord)
 {
     for (const auto& entry : _slurKerning) if (entry.first == chord) return entry.second;

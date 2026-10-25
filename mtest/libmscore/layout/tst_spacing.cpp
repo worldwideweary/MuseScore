@@ -3357,6 +3357,37 @@ static std::vector<qreal> graceMergedSnapshot4(Score* score)
       return values;
       }
 
+static bool spacingPlansEqual154(const SpacingPlan4& a, const SpacingPlan4& b)
+      {
+      if (a.width != b.width || a.measures.size() != b.measures.size()
+          || a.segments.size() != b.segments.size() || a.afterGraces.size() != b.afterGraces.size()
+          || a.mergedGraces.size() != b.mergedGraces.size()) return false;
+      for (size_t i = 0; i < a.measures.size(); ++i)
+            if (a.measures[i].measure != b.measures[i].measure || a.measures[i].x != b.measures[i].x
+                || a.measures[i].width != b.measures[i].width) return false;
+      for (size_t i = 0; i < a.segments.size(); ++i) {
+            const auto& x = a.segments[i];
+            const auto& y = b.segments[i];
+            if (x.segment != y.segment || x.x != y.x || x.width != y.width || x.widthOffset != y.widthOffset
+                || x.stretch != y.stretch || x.ignored != y.ignored) return false;
+            }
+      for (size_t i = 0; i < a.afterGraces.size(); ++i) {
+            const auto& x = a.afterGraces[i];
+            const auto& y = b.afterGraces[i];
+            if (x.owner != y.owner || x.target != y.target || x.positions.size() != y.positions.size()) return false;
+            for (size_t j = 0; j < x.positions.size(); ++j)
+                  if (x.positions[j].chord != y.positions[j].chord || x.positions[j].x != y.positions[j].x) return false;
+            }
+      for (size_t i = 0; i < a.mergedGraces.size(); ++i) {
+            const auto& x = a.mergedGraces[i];
+            const auto& y = b.mergedGraces[i];
+            if (x.owner != y.owner || x.target != y.target || x.positions.size() != y.positions.size()) return false;
+            for (size_t j = 0; j < x.positions.size(); ++j)
+                  if (x.positions[j].chord != y.positions[j].chord || x.positions[j].x != y.positions[j].x) return false;
+            }
+      return true;
+      }
+
 // Independent DOM traversal of pinned Studio computeUp/isDirectionMixture.
 // Caller-provided directions let us test the rules without changing live stems.
 static Direction slurDirectionOracle153(const Slur* slur, const SpacingInput4& input,
@@ -3622,7 +3653,38 @@ void TestSpacing::spacingInputSnapshot4()
                               context.mergedPairs.push_back({main, toChord(next)});
                         }
                   }
+            SpacingInput4 ownedInput = prepared;
+            std::vector<Direction> stems;
+            for (const auto& a : prepared.anchors()) stems.push_back(a.up ? Direction::UP : Direction::DOWN);
+            SpacingAttachmentPreparation4 owner;
+            difference = "Failed to compose caller-owned attachment preparation";
+            if (!prepareSpacingAttachments4(std::move(ownedInput), stems, owner)
+                || ownedInput.score() || !ownedInput.anchors().empty() || !ownedInput.slurs().empty()) return false;
+            std::vector<Direction> expectedDirections;
+            if (!buildSpacingSlurDirections4(prepared, stems, expectedDirections)
+                || owner.slurDirections() != expectedDirections || owner.anchorDirections() != stems) return false;
+            for (const auto& a : owner.input().anchors())
+                  if (owner.sides(a.item) != &owner.attachments().anchors[size_t(&a - owner.input().anchors().data())]) return false;
+            for (size_t i = 0; i < owner.input().slurs().size(); ++i)
+                  if (owner.direction(owner.input().slurs()[i].slur) != &owner.slurDirections()[i]) return false;
+            if (owner.sides(nullptr) || owner.direction(nullptr)) return false;
+            // Failed replacement preserves both the existing owner and source.
+            ownedInput = prepared;
+            const auto* first = owner.sides(prepared.anchors().front().item);
+            auto invalid = stems;
+            invalid.push_back(Direction::AUTO);
+            if (prepareSpacingAttachments4(std::move(ownedInput), invalid, owner)
+                || ownedInput.score() != prepared.score() || ownedInput.anchors().size() != prepared.anchors().size()
+                || owner.sides(prepared.anchors().front().item) != first) return false;
+            ownedInput = SpacingInput4();
+            // A moved-from owner must not appear complete or retain score data.
+            SpacingAttachmentPreparation4 moved(std::move(owner));
+            if (owner.input().score() || owner.complete() || owner.sides(prepared.anchors().front().item)) return false;
+            owner = std::move(moved);
+            if (moved.input().score() || moved.complete() || moved.direction(nullptr)) return false;
             SpacingPaddingTable4 table(score);
+            SpacingContextCache4 ownedQuery(owner);
+            if (ownedQuery.input() != &owner.input() || ownedQuery.preparation() != &owner) return false;
             SpacingContextCache4 oldQuery;
             SpacingContextCache4 indexedQuery(&prepared);
             for (const auto& anchor : prepared.anchors()) {
@@ -3630,12 +3692,16 @@ void TestSpacing::spacingInputSnapshot4()
                   const Chord* chord = toChord(anchor.item);
                   difference = QString("Attachment query track %1 tick %2 member %3")
                         .arg(anchor.track).arg(anchor.tick.ticks()).arg(int(anchor.memberIndex));
-                  if (oldQuery.forwardSlurKerning(chord) != indexedQuery.forwardSlurKerning(chord)) return false;
+                  if (oldQuery.forwardSlurKerning(chord) != indexedQuery.forwardSlurKerning(chord)
+                      || oldQuery.forwardSlurKerning(chord) != ownedQuery.forwardSlurKerning(chord)) return false;
                   for (const Note* note : chord->notes()) {
-                        SpacingPairPolicy4 oldPolicy, indexedPolicy;
-                        oldPolicy.padding = indexedPolicy.padding = -123;
+                        SpacingPairPolicy4 oldPolicy, indexedPolicy, ownedPolicy;
+                        oldPolicy.padding = indexedPolicy.padding = ownedPolicy.padding = -123;
                         const bool oldAccepted = spacingPairPolicy4(table, note, note, chord->spatium(), oldPolicy, &context, &oldQuery);
                         const bool indexedAccepted = spacingPairPolicy4(table, note, note, chord->spatium(), indexedPolicy, &context, &indexedQuery);
+                        const bool ownedAccepted = spacingPairPolicy4(table, note, note, chord->spatium(), ownedPolicy, &context, &ownedQuery);
+                        if (oldAccepted != ownedAccepted || oldPolicy.padding != ownedPolicy.padding
+                            || oldPolicy.verticalClearance != ownedPolicy.verticalClearance || oldPolicy.kerning != ownedPolicy.kerning) return false;
                         if (oldAccepted != indexedAccepted || oldPolicy.padding != indexedPolicy.padding
                             || oldPolicy.verticalClearance != indexedPolicy.verticalClearance
                             || oldPolicy.kerning != indexedPolicy.kerning) return false;
@@ -3643,10 +3709,23 @@ void TestSpacing::spacingInputSnapshot4()
                   }
             for (System* system : score->systems()) {
                   if (system->vbox()) continue;
-                  SpacingPlan4 oldPlan, indexedPlan;
-                  oldPlan.width = indexedPlan.width = -456;
+                  SpacingPlan4 oldPlan, indexedPlan, ownedPlan;
+                  oldPlan.width = indexedPlan.width = ownedPlan.width = -456;
                   const bool oldAccepted = buildSpacingPlan4(system, oldPlan);
                   const bool indexedAccepted = buildSpacingPlan4(system, indexedPlan, nullptr, SpacingPlanOptions4(), nullptr, &prepared);
+                  const bool ownedAccepted = buildSpacingPlan4(system, ownedPlan, owner);
+                  difference = "Owned preparation changed complete natural plan or admission";
+                  if (oldAccepted != ownedAccepted || !spacingPlansEqual154(oldPlan, ownedPlan)) return false;
+                  if (oldAccepted) {
+                        for (qreal ratio : {qreal(1), qreal(0.95)}) {
+                              SpacingPlan4 oldFit, ownedFit;
+                              oldFit.width = ownedFit.width = -987;
+                              const bool oldFitted = squeezeSpacingPlan4(system, oldPlan.width * ratio, oldFit);
+                              const bool ownedFitted = squeezeSpacingPlan4(system, oldPlan.width * ratio, ownedFit, owner);
+                              difference = "Owned preparation changed fitting outcome or complete plan";
+                              if (oldFitted != ownedFitted || !spacingPlansEqual154(oldFit, ownedFit)) return false;
+                              }
+                        }
                   difference = "Prepared inputs changed system plan admission or width";
                   if (oldAccepted != indexedAccepted || oldPlan.width != indexedPlan.width) return false;
                   if (!oldAccepted) continue;
@@ -3691,6 +3770,10 @@ void TestSpacing::spacingInputSnapshot4()
       SpacingPlan4 untouched;
       untouched.width = -789;
       QVERIFY(!buildSpacingPlan4(score->firstMeasure()->system(), untouched, &reason, SpacingPlanOptions4(), nullptr, &foreign));
+      QCOMPARE(untouched.width, qreal(-789));
+      SpacingAttachmentPreparation4 missing;
+      QVERIFY(!buildSpacingPlan4(score->firstMeasure()->system(), untouched, missing));
+      QVERIFY(!squeezeSpacingPlan4(score->firstMeasure()->system(), 100, untouched, missing));
       QCOMPARE(untouched.width, qreal(-789));
       }
       QVERIFY(state() == before);
