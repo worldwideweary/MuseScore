@@ -2283,7 +2283,7 @@ void Chord::layoutPitched()
       // Evolution's handling without a cached extent from an earlier layout.
       if (gnb && score()->styleB(Sid::spacingLayout4)) {
             GraceBeforePlan4 plan;
-            if (buildGraceBeforePlan4(this, plan)) {
+            if (queryGraceBeforePlan4(this, plan)) {
                   for (int i = 0; i < gnb; ++i)
                         graceNotesBefore[i]->rxpos() = plan.positions[i].x;
                   _spaceLw = qMax(lll, -plan.left - chordX);

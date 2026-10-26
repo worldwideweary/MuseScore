@@ -3,6 +3,7 @@
 #include "spacingprofile4.h"
 #include "gracespacing4.h"
 #include "spacingcollision4.h"
+#include "spacinginput4.h"
 #include "spacinggeometry4.h"
 #include "beam.h"
 #include "barline.h"
@@ -20,6 +21,63 @@
 #include <limits>
 
 namespace Ms {
+bool SpacingGraceQueryFactory4::capture(const Chord* chord, SpacingAttachmentPreparation4& owner, QString* reason) const
+{
+    if (_capture) return _capture(chord, owner, reason);
+    if (reason) *reason = "Missing grace-query capture callback";
+    return false;
+}
+
+SpacingGraceQueryScope4::SpacingGraceQueryScope4(Score* score, const SpacingGraceQueryFactory4* factory)
+    : _score(score), _previous(score ? score->_spacingGraceQuery4 : nullptr)
+{
+    if (_score) _score->_spacingGraceQuery4 = factory;
+}
+
+SpacingGraceQueryScope4::~SpacingGraceQueryScope4()
+{
+    if (_score) _score->_spacingGraceQuery4 = _previous;
+}
+
+template<typename Query>
+static bool runGraceQuery4(const Chord* chord, QString* reason, const Query& query)
+{
+    const auto* factory = chord && chord->score() ? chord->score()->graceQueryFactory4() : nullptr;
+    if (!factory) return query(nullptr);
+    SpacingAttachmentPreparation4 owner;
+    if (!factory->capture(chord, owner, reason)) return false;
+    SpacingContextCache4 cache(owner, factory->policy());
+    return query(&cache); // Cache and owner end before the caller can write.
+}
+
+bool queryGraceBeforePlan4(const Chord* chord, GraceBeforePlan4& result, QString* reason)
+{
+    return runGraceQuery4(chord, reason, [&](SpacingContextCache4* cache) {
+        return buildGraceBeforePlan4(chord, result, reason, cache);
+    });
+}
+
+bool queryGraceAfterPlan4(const Chord* chord, GraceAfterPlan4& result, QString* reason)
+{
+    return runGraceQuery4(chord, reason, [&](SpacingContextCache4* cache) {
+        return buildGraceAfterPlan4(chord, result, reason, cache);
+    });
+}
+
+bool queryGraceAfterGeometry4(const Chord* chord, GraceAfterGeometry4& result, QString* reason)
+{
+    return runGraceQuery4(chord, reason, [&](SpacingContextCache4* cache) {
+        return buildGraceAfterGeometry4(chord, result, reason, cache);
+    });
+}
+
+bool queryGraceMergedGeometry4(const Chord* chord, GraceMergedGeometry4& result, QString* reason)
+{
+    return runGraceQuery4(chord, reason, [&](SpacingContextCache4* cache) {
+        return buildGraceMergedGeometry4(chord, result, reason, cache);
+    });
+}
+
 // Anchor identity/timing bounds the pair to one chord/measure. Rendered
 // segment counts can still describe an earlier cross-system endpoint here.
 bool spacingLocalGraceSlur4(const Slur* slur, const Chord* main, bool allowVisualEdits)
@@ -251,6 +309,7 @@ bool buildGraceBeforePlan4(const Chord* main, GraceBeforePlan4& result, QString*
         return fail("Unadapted main shape");
     target = target.translated(main->pos());
     GraceBeforePlan4 plan;
+    plan.slurPolicy = queryCache ? queryCache->slurPolicy() : SpacingSlurPolicy4::COMPATIBILITY;
     plan.positions.resize(graces.size());
     SpacingShape4 accumulated;
     for (int i = graces.size() - 1; i >= 0; --i) {
@@ -421,6 +480,7 @@ static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result
         return fail("Unadapted after-grace target shape");
     targetShape = targetShape.translated(target->pos());
     GraceAfterPlan4 plan;
+    plan.slurPolicy = cache->slurPolicy();
     plan.owner = owner;
     plan.target = targetSegment;
     plan.positions.resize(graces.size());
@@ -482,6 +542,7 @@ static bool buildGraceMergedPlanImpl4(const Chord* owner, GraceMergedPlan4& resu
     GraceAfterPlan4 joint;
     if (!buildGraceAfterPlanImpl4(owner, joint, reason, false, true, cache, components, shapes)) return false;
     GraceMergedPlan4 plan;
+    plan.slurPolicy = joint.slurPolicy;
     plan.owner = owner;
     plan.target = toChord(joint.target->element(owner->track()));
     plan.positions = joint.positions;
@@ -655,7 +716,7 @@ bool prepareGraceMergedBeams4(Chord* owner, QString* reason, GraceMergedGeometry
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::BEAMS);
     GraceMergedGeometry4 geometry;
-    if (!buildGraceMergedGeometry4(owner, geometry, reason)) return false;
+    if (!queryGraceMergedGeometry4(owner, geometry, reason)) return false;
     const auto fail = [reason](const char* message) {
         if (reason) *reason = QString::fromLatin1(message);
         return false;
@@ -704,7 +765,7 @@ bool prepareGraceMergedBeams4(Chord* owner, QString* reason, GraceMergedGeometry
         owner->segment()->createShape(owner->vStaffIdx());
         geometry.plan.target->segment()->createShape(geometry.plan.target->vStaffIdx());
         GraceMergedGeometry4 next;
-        if (!buildGraceMergedGeometry4(owner, next, reason)) return false;
+        if (!queryGraceMergedGeometry4(owner, next, reason)) return false;
         if (next.plan.positions.size() != members.size()) return fail("Merged grace membership changed during beam preparation");
         for (size_t i = 0; i < members.size(); ++i) {
             if (next.plan.positions[i].chord != members[i])
@@ -753,10 +814,10 @@ bool buildGraceAfterGeometry4(const Chord* owner, GraceAfterGeometry4& result, Q
     return true;
 }
 
-bool applyGraceAfterPlan4(Chord* owner, QString* reason)
+static bool graceAfterPublication4(Chord* owner, std::vector<qreal>& result, QString* reason, SpacingContextCache4* cache)
 {
     GraceAfterPlan4 plan;
-    if (!buildGraceAfterPlan4(owner, plan, reason)) return false;
+    if (!buildGraceAfterPlan4(owner, plan, reason, cache)) return false;
     const auto fail = [reason](const char* message) {
         if (reason) *reason = QString::fromLatin1(message);
         return false;
@@ -766,14 +827,14 @@ bool applyGraceAfterPlan4(Chord* owner, QString* reason)
     if (!std::isfinite(translation)) return fail("Nonfinite after-grace publication offset");
     const SpacingPaddingTable4 table(owner->score());
     SpacingShape4 source;
-    if (!afterSourceComponents4(owner, target, table, source))
+    if (!afterSourceComponents4(owner, target, table, source, false, cache))
         return fail("Unadapted after-grace source shape");
     std::vector<qreal> positions;
     for (const GraceAfterPosition4& p : plan.positions) {
         const qreal x = translation + p.x;
         if (!std::isfinite(x)) return fail("Nonfinite after-grace member position");
         SpacingShape4 shape;
-        if (!graceComponents4(p.chord, owner, table, shape, target))
+        if (!graceComponents4(p.chord, owner, table, shape, target, false, cache))
             return fail("Unadapted after-grace publication shape");
         // The segment interval still comes from native spacing at this stage.
         // Refuse to repack into it unless every source-to-grace constraint fits.
@@ -781,7 +842,7 @@ bool applyGraceAfterPlan4(Chord* owner, QString* reason)
             for (const auto& second : shape.elements) {
                 SpacingPairPolicy4 policy;
                 if (!spacingAfterGracePairPolicy4(table, owner, target, first.item, second.item,
-                                                  owner->spatium(), policy, true))
+                                                  owner->spatium(), policy, true, cache))
                     return fail("Unadapted source-to-after-grace constraint");
                 const qreal required = spacingPairDistance4(first.rect, second.rect, policy, owner->spatium(), 1);
                 if (x + 1e-6 < required)
@@ -790,10 +851,21 @@ bool applyGraceAfterPlan4(Chord* owner, QString* reason)
         }
         positions.push_back(x);
     }
+    result = std::move(positions);
+    if (reason) reason->clear();
+    return true;
+}
+
+
+bool applyGraceAfterPlan4(Chord* owner, QString* reason)
+{
+    std::vector<qreal> positions;
+    if (!runGraceQuery4(owner, reason, [&](SpacingContextCache4* cache) {
+        return graceAfterPublication4(owner, positions, reason, cache);
+    })) return false;
     const auto graces = owner->graceNotesAfter();
     for (int i = 0; i < graces.size(); ++i) graces[i]->rxpos() = positions[i];
     owner->segment()->createShape(owner->vStaffIdx());
-    if (reason) reason->clear();
     return true;
 }
 

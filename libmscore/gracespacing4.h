@@ -5,9 +5,14 @@
 #include <QtGlobal>
 #include <QString>
 #include <vector>
+#include <functional>
+#include <utility>
+#include "spacingcollision4.h"
 #include "spacinggeometry4.h"
 namespace Ms {
 class Chord;
+class Score;
+class SpacingAttachmentPreparation4;
 class Slur;
 class Segment;
 class SpacingContextCache4;
@@ -15,6 +20,35 @@ class SpacingContextCache4;
 // its musical-input owner when supplied. All nested packing/projection policies
 // use that same cache. Discard before any beam/shape/position writes. A null
 // cache preserves existing standalone query behavior.
+// A mutable producer borrows this factory, not an input owner or shape memo.
+// Each query captures fresh inputs, destroys its cache/owner, then returns to
+// the producer's write phase. Capture callbacks must be read-only and scoped;
+// never collect whole scores from pair loops or retain the supplied owner.
+class SpacingGraceQueryFactory4 {
+public:
+    using Capture = std::function<bool(const Chord*, SpacingAttachmentPreparation4&, QString*)>;
+private:
+    Capture _capture;
+    SpacingSlurPolicy4 _policy;
+public:
+    SpacingGraceQueryFactory4(Capture capture, SpacingSlurPolicy4 policy)
+        : _capture(std::move(capture)), _policy(policy) {}
+    bool capture(const Chord*, SpacingAttachmentPreparation4&, QString*) const;
+    SpacingSlurPolicy4 policy() const { return _policy; }
+};
+
+// Borrowed only within one native producer/publication scope. Nesting restores
+// the previous binding, including a null inner binding. Score must outlive it.
+class SpacingGraceQueryScope4 {
+    Score* _score;
+    const SpacingGraceQueryFactory4* _previous;
+public:
+    SpacingGraceQueryScope4(Score*, const SpacingGraceQueryFactory4*);
+    ~SpacingGraceQueryScope4();
+    SpacingGraceQueryScope4(const SpacingGraceQueryScope4&) = delete;
+    SpacingGraceQueryScope4& operator=(const SpacingGraceQueryScope4&) = delete;
+};
+
 struct GracePosition4 {
     const Chord* chord;
     qreal x; // Relative to the main chord, like Chord::graceNotesBefore().
@@ -22,6 +56,7 @@ struct GracePosition4 {
 struct GraceBeforePlan4 {
     std::vector<GracePosition4> positions; // Musical order, left to right.
     qreal left = 0; // Leftmost component in main-chord coordinates.
+    SpacingSlurPolicy4 slurPolicy = SpacingSlurPolicy4::COMPATIBILITY;
 };
 // Uses current native component shapes, excluding legacy spacing bounds and
 // old grace positions. No DOM writes; failure leaves result untouched.
@@ -41,6 +76,7 @@ struct GraceAfterPlan4 {
     std::vector<GraceAfterPosition4> positions; // Musical order, left to right.
     qreal left = 0;
     qreal right = 0; // Typed component extent in target-segment coordinates.
+    SpacingSlurPolicy4 slurPolicy = SpacingSlurPolicy4::COMPATIBILITY;
 };
 // Same-measure ordinary chord, undotted rest or normal ending barline; no merged before-graces.
 // Query only: does not move items or publish shapes. The system planner
@@ -57,6 +93,7 @@ struct GraceMergedPlan4 {
     std::vector<GraceAfterPosition4> positions; // After then before, in TARGET SEGMENT coordinates.
     qreal left = 0;
     qreal right = 0;
+    SpacingSlurPolicy4 slurPolicy = SpacingSlurPolicy4::COMPATIBILITY;
 };
 // Read-only same-direction joint packing for temporary system projection.
 // Every member keeps its parent; failure leaves the entire output untouched.
@@ -95,6 +132,14 @@ struct GraceAfterGeometry4 {
 // segment shapes or move musical ownership. Failure leaves result unchanged.
 bool buildGraceAfterGeometry4(const Chord*, GraceAfterGeometry4&, QString* reason = nullptr,
                                 SpacingContextCache4* queryCache = nullptr);
+
+// Query boundaries for mutable callers: the borrowed Score factory (if any)
+// creates/destroys fresh read-only state around this one query. Null binding
+// preserves the existing standalone builders and compatibility policy.
+bool queryGraceBeforePlan4(const Chord*, GraceBeforePlan4&, QString* reason = nullptr);
+bool queryGraceAfterPlan4(const Chord*, GraceAfterPlan4&, QString* reason = nullptr);
+bool queryGraceAfterGeometry4(const Chord*, GraceAfterGeometry4&, QString* reason = nullptr);
+bool queryGraceMergedGeometry4(const Chord*, GraceMergedGeometry4&, QString* reason = nullptr);
 
 // Local post-spacing publication only. Rebuild the plan, check every source-
 // to-grace constraint in the available interval, then publish all x positions.

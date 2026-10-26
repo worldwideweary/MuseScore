@@ -3590,3 +3590,50 @@ activating PREPARED in production. In particular, compatibility-packed geometry
 handed off from beam preparation cannot be reused under changed packing rules
 without rebuilding or proving matching policy provenance. Prefix collection,
 coherent fallback and publication ownership remain audit A/B work.
+
+
+### v0.160: fresh grace-query scopes and packing-policy provenance
+
+v0.159 native tst_spacing passes in 79.56 seconds in the user's build.
+This is the first bounded implementation stage following the remaining-stage
+estimate: establish the mutable producer/publication boundary before binding
+and activating the general prepared policy.
+
+A pass-local factory can now be borrowed by a Score through a nested RAII
+scope. Each before/after/merged query captures a fresh attachment owner and
+constructs its own physical query cache. Both die before control returns to
+code that writes beam, shape or position data. A failed capture refuses the
+query without silently using compatibility inputs. No production factory is
+bound yet; existing unbound calls retain their previous compatibility policy.
+Capture callbacks must be read-only and limited to the active musical domain.
+
+Before-grace application and beam preparation use these query boundaries.
+After-grace publication completes planning and all clearance checks with the
+same cache, then destroys it before publishing positions. Before/after/merged
+plans carry the policy used to pack them. The system planner rebuilds a handed
+off merged result when its policy differs; beam convergence also compares
+policy provenance. These tags are internal, not serialized score settings.
+
+Files changed: libmscore/gracespacing4.h/.cpp, chord.cpp, layout.cpp, score.h,
+spacingplan4.cpp, tst_spacing.cpp and this guide. Tests cover nested and disabled
+bindings, fresh capture around native beam writes, capture-failure atomicity,
+publication idempotence, and rebuilding mismatched packing-policy handoffs.
+The full-fixture capture helper exists only in tests; production integration
+must use scoped collection and explicit native producer readiness.
+
+Local checks: sixteen C++11 syntax checks covering Debug/NDEBUG grace spacing,
+collision, planner, layout, chord, slur, regenerated-moc tests and Score header
+integration, with unused-parameter/signedness checks. An extracted actual-code
+factory/scope/query-runner harness with instrumented mock owners and query
+backends passes 1,600 fresh-query lifetime checks plus nested scope, failed
+capture and exception-unwind checks. These are not native engraving tests;
+the application and mtests cannot run locally. WIP 41ad187 saves the core seam.
+
+Rebuild and run the usual combined tst_spacing/tst_beam CTest command. No new
+screenshot or profiling run is requested for this boundary-only checkpoint.
+Next: bind narrow native preparation and activate matching policy across early
+packing, final planning and publication, then run consistency and visual checks.
+Cross-boundary root direction and early coordinate-frame readiness must be
+resolved at that binding, not hidden by new grace-member/count exceptions.
+The broader prefix/fallback audit remains open and is not a reason to postpone
+all supported-path visual verification indefinitely.

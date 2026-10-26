@@ -175,7 +175,7 @@ bool prepareGraces4(System* system, SpacingGraceContext4& result, std::vector<Gr
                                 if (entry.plan.owner == main) { ready = &entry; break; }
                             }
                         }
-                        if (ready) {
+                        if (ready && ready->plan.slurPolicy == contextCache.slurPolicy()) {
                             SpacingProfileScope4 reuse(SpacingProfileStage4::PLAN_GEOMETRY_REUSE);
                             joint = *ready;
                             if (reason) reason->clear();

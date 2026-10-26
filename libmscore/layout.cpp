@@ -4165,7 +4165,7 @@ static bool prepareAfterGraceBeamForSpacing4(Chord* main, GraceAfterGeometry4 ge
         for (int i = 0; i < graces.size(); ++i) graces[i]->rxpos() = original[i];
         main->segment()->createShape(main->vStaffIdx());
         GraceAfterGeometry4 next;
-        if (!buildGraceAfterGeometry4(main, next)) return false;
+        if (!queryGraceAfterGeometry4(main, next)) return false;
         if (sameShape(geometry.source, next.source) && sameShape(geometry.target, next.target))
             return true;
         geometry = next;
@@ -4184,7 +4184,7 @@ static bool sameGraceBeamPreparation4(const GraceBeamPreparation4& saved, const 
 {
     const auto& a = saved.geometry.plan;
     const auto& b = fresh.plan;
-    if (a.owner != b.owner || a.target != b.target || a.left != b.left || a.right != b.right
+    if (a.slurPolicy != b.slurPolicy || a.owner != b.owner || a.target != b.target || a.left != b.left || a.right != b.right
         || a.positions.size() != b.positions.size() || saved.beams.size() != b.positions.size()) return false;
     for (size_t i = 0; i < b.positions.size(); ++i) {
         if (a.positions[i].chord != b.positions[i].chord || a.positions[i].x != b.positions[i].x
@@ -4229,13 +4229,13 @@ static bool prepareGraceBeamsForSpacing4(System* system, std::vector<GraceBeamPr
                 if (std::find(jointTargets.begin(), jointTargets.end(), main) != jointTargets.end()) continue;
                 if (!main->graceNotesAfter().empty()) {
                     GraceAfterGeometry4 geometry;
-                    if (buildGraceAfterGeometry4(main, geometry)) {
+                    if (queryGraceAfterGeometry4(main, geometry)) {
                         readyMerged.clear();
                         if (!prepareAfterGraceBeamForSpacing4(main, geometry)) return false;
                     }
                     else {
                         GraceMergedGeometry4 joint;
-                        if (buildGraceMergedGeometry4(main, joint)) {
+                        if (queryGraceMergedGeometry4(main, joint)) {
                             auto saved = std::find_if(preparedBeams.begin(), preparedBeams.end(),
                                 [main](const GraceBeamPreparation4& entry) { return entry.geometry.plan.owner == main; });
                             if (saved != preparedBeams.end() && sameGraceBeamPreparation4(*saved, joint)) {
@@ -4258,7 +4258,7 @@ static bool prepareGraceBeamsForSpacing4(System* system, std::vector<GraceBeamPr
                     continue;
                 }
                 GraceBeforePlan4 group;
-                if (!buildGraceBeforePlan4(main, group)) continue;
+                if (!queryGraceBeforePlan4(main, group)) continue;
                 bool placed = true;
                 for (const GracePosition4& p : group.positions)
                     placed = placed && std::isfinite(p.chord->x()) && qAbs(p.chord->x() - p.x) <= 1e-6;

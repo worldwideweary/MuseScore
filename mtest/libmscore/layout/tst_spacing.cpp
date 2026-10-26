@@ -3361,6 +3361,18 @@ static std::vector<qreal> graceMergedSnapshot4(Score* score)
       return values;
       }
 
+// Test-only full fixture capture. Production factories must use the active
+// measure/system domain and its producer declarations, never pair-loop scans.
+static bool captureGraceFixture160(const Chord* main, SpacingAttachmentPreparation4& owner, QString* reason)
+      {
+      if (!main || !main->score()) return false;
+      SpacingInput4 input;
+      if (!buildSpacingInput4(main->score(), input, reason)) return false;
+      std::vector<Direction> stems;
+      for (const auto& a : input.anchors()) stems.push_back(a.up ? Direction::UP : Direction::DOWN);
+      return prepareSpacingAttachments4(std::move(input), stems, owner, reason);
+      }
+
 static bool spacingShapesEqual159(const SpacingShape4& a, const SpacingShape4& b)
       {
       if (a.elements.size() != b.elements.size()) return false;
@@ -3390,14 +3402,16 @@ static bool spacingPlansEqual154(const SpacingPlan4& a, const SpacingPlan4& b)
       for (size_t i = 0; i < a.afterGraces.size(); ++i) {
             const auto& x = a.afterGraces[i];
             const auto& y = b.afterGraces[i];
-            if (x.owner != y.owner || x.target != y.target || x.positions.size() != y.positions.size()) return false;
+            if (x.owner != y.owner || x.target != y.target || x.positions.size() != y.positions.size()
+                || x.slurPolicy != y.slurPolicy) return false;
             for (size_t j = 0; j < x.positions.size(); ++j)
                   if (x.positions[j].chord != y.positions[j].chord || x.positions[j].x != y.positions[j].x) return false;
             }
       for (size_t i = 0; i < a.mergedGraces.size(); ++i) {
             const auto& x = a.mergedGraces[i];
             const auto& y = b.mergedGraces[i];
-            if (x.owner != y.owner || x.target != y.target || x.positions.size() != y.positions.size()) return false;
+            if (x.owner != y.owner || x.target != y.target || x.positions.size() != y.positions.size()
+                || x.slurPolicy != y.slurPolicy) return false;
             for (size_t j = 0; j < x.positions.size(); ++j)
                   if (x.positions[j].chord != y.positions[j].chord || x.positions[j].x != y.positions[j].x) return false;
             }
@@ -3909,6 +3923,20 @@ void TestSpacing::spacingInputSnapshot4()
                   difference = "Owned preparation changed complete natural plan or admission";
                   if (oldAccepted != ownedAccepted || !spacingPlansEqual154(oldPlan, ownedPlan)) return false;
                   if (oldAccepted) {
+                        std::vector<GraceMergedGeometry4> mismatched;
+                        for (const auto& a : systemOwner.input().anchors()) {
+                              if (a.kind != SpacingMemberKind4::MAIN || !a.main || a.main->graceNotesAfter().empty()) continue;
+                              GraceMergedGeometry4 handoff;
+                              if (!buildGraceMergedGeometry4(a.main, handoff)) continue;
+                              handoff.plan.slurPolicy = SpacingSlurPolicy4::PREPARED;
+                              mismatched.push_back(handoff);
+                              }
+                        if (!mismatched.empty()) {
+                              SpacingPlan4 rebuilt;
+                              difference = "Mismatched packing-policy provenance was reused";
+                              if (!buildSpacingPlan4(system, rebuilt, nullptr, SpacingPlanOptions4(), &mismatched)
+                                  || !spacingPlansEqual154(oldPlan, rebuilt)) return false;
+                              }
                         for (qreal ratio : {qreal(1), qreal(0.95)}) {
                               SpacingPlan4 oldFit, ownedFit, systemFit;
                               oldFit.width = ownedFit.width = systemFit.width = -987;
@@ -4206,6 +4234,63 @@ void TestSpacing::spacingSlurAttachments4()
       QVERIFY(!buildGraceMergedGeometry4(main, untouched, nullptr, &pendingQuery));
       QCOMPARE(untouched.plan.left, qreal(-159));
       QVERIFY(geometryBefore == graceBarlineSnapshot4(score));
+      }
+      {
+      const Chord* main = toChord(start->parent());
+      int captures = 0;
+      SpacingGraceQueryFactory4 factory([&](const Chord* chord, SpacingAttachmentPreparation4& owner, QString* reason) {
+            ++captures;
+            return captureGraceFixture160(chord, owner, reason);
+            }, SpacingSlurPolicy4::PREPARED);
+      QVERIFY(!score->graceQueryFactory4());
+      {
+      SpacingGraceQueryScope4 scope(score, &factory);
+      QCOMPARE(score->graceQueryFactory4(), &factory);
+      GraceMergedGeometry4 geometry;
+      QString reason;
+      QVERIFY2(queryGraceMergedGeometry4(main, geometry, &reason), qPrintable(reason));
+      QVERIFY(geometry.plan.slurPolicy == SpacingSlurPolicy4::PREPARED);
+      QCOMPARE(captures, 1);
+      GraceBeforePlan4 before;
+      QVERIFY2(queryGraceBeforePlan4(geometry.plan.target, before, &reason), qPrintable(reason));
+      QVERIFY(before.slurPolicy == SpacingSlurPolicy4::PREPARED);
+      QCOMPARE(captures, 2);
+      {
+      SpacingGraceQueryScope4 disabled(score, nullptr);
+      QVERIFY(!score->graceQueryFactory4());
+      GraceMergedGeometry4 rejected;
+      rejected.plan.left = -160;
+      QVERIFY(!queryGraceMergedGeometry4(main, rejected));
+      QCOMPARE(rejected.plan.left, qreal(-160));
+      QCOMPARE(captures, 2);
+      }
+      QCOMPARE(score->graceQueryFactory4(), &factory);
+      std::vector<Chord*> members;
+      for (Chord* grace : main->graceNotesAfter()) members.push_back(grace);
+      for (Chord* grace : geometry.plan.target->graceNotesBefore()) members.push_back(grace);
+      std::vector<qreal> positions;
+      for (Chord* grace : members) positions.push_back(grace->x());
+      const int previousCaptures = captures;
+      GraceMergedGeometry4 prepared;
+      QVERIFY2(prepareGraceMergedBeams4(const_cast<Chord*>(main), &reason, &prepared), qPrintable(reason));
+      QVERIFY(prepared.plan.slurPolicy == SpacingSlurPolicy4::PREPARED);
+      QVERIFY(captures >= previousCaptures + 2); // Fresh query before/after native beam writes.
+      for (size_t i = 0; i < members.size(); ++i) QCOMPARE(members[i]->x(), positions[i]);
+      SpacingGraceQueryFactory4 failed([](const Chord*, SpacingAttachmentPreparation4&, QString*) { return false; },
+                                      SpacingSlurPolicy4::PREPARED);
+      const auto native = graceBarlineSnapshot4(score);
+      {
+      SpacingGraceQueryScope4 failure(score, &failed);
+      GraceBeforePlan4 untouched;
+      untouched.left = -160;
+      QVERIFY(!queryGraceBeforePlan4(geometry.plan.target, untouched));
+      QCOMPARE(untouched.left, qreal(-160));
+      QVERIFY(!applyGraceAfterPlan4(const_cast<Chord*>(main)));
+      QVERIFY(graceBarlineSnapshot4(score) == native);
+      }
+      QCOMPARE(score->graceQueryFactory4(), &factory);
+      }
+      QVERIFY(!score->graceQueryFactory4());
       }
       for (Slur* root : roots) {
             score->removeSpanner(root);
@@ -6464,7 +6549,17 @@ void TestSpacing::graceAfterLayout()
                               .arg(actual, 0, 'g', 17).arg(p.x, 0, 'g', 17)));
                   }
             const qreal width = m->width();
+            int captures = 0;
+            SpacingGraceQueryFactory4 factory([&](const Chord* chord, SpacingAttachmentPreparation4& prepared, QString* why) {
+                  ++captures;
+                  return captureGraceFixture160(chord, prepared, why);
+                  }, SpacingSlurPolicy4::COMPATIBILITY);
+            {
+            SpacingGraceQueryScope4 scope(score, &factory);
             QVERIFY2(applyGraceAfterPlan4(owner, &reason), qPrintable(reason));
+            }
+            QCOMPARE(captures, 1);
+            QVERIFY(!score->graceQueryFactory4());
             QCOMPARE(m->width(), width);
             QVERIFY(graceLayoutSnapshot4(score) == native); // Idempotent local publication.
             Segment* target = m->tick2segment(owner->tick() + owner->actualTicks(), SegmentType::All);

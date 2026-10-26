@@ -29,6 +29,8 @@
 #include "synthesizerstate.h"
 
 namespace Ms {
+class SpacingGraceQueryFactory4;
+class SpacingGraceQueryScope4;
 
 namespace Avs {
       class AvsOmr;
@@ -417,8 +419,9 @@ class Movements : public std::vector<MasterScore*> {
 //---------------------------------------------------------------------------------------
 
 class Score : public QObject, public ScoreElement {
-      std::map<int, std::vector<int>> _repeatCourtesyDestinations;
+      friend class SpacingGraceQueryScope4;
 
+      std::map<int, std::vector<int>> _repeatCourtesyDestinations;
       Q_OBJECT
 
    public:
@@ -589,6 +592,7 @@ class Score : public QObject, public ScoreElement {
    protected:
       int _fileDivision; ///< division of current loading *.msc file
       LayoutMode _layoutMode { LayoutMode::PAGE };
+      const SpacingGraceQueryFactory4* _spacingGraceQuery4 = nullptr; // Scoped, never serialized.
       SynthesizerState _synthesizerState;
 
       void createPlayEvents(Chord*);
@@ -1162,6 +1166,7 @@ class Score : public QObject, public ScoreElement {
       void removeViewer(MuseScoreView* v)   { viewer.removeAll(v); }
       const QList<MuseScoreView*>& getViewer() const { return viewer;       }
 
+      const SpacingGraceQueryFactory4* graceQueryFactory4() const { return _spacingGraceQuery4; }
       LayoutMode layoutMode() const         { return _layoutMode; }
       void setLayoutMode(LayoutMode lm)     { _layoutMode = lm;   }
 
