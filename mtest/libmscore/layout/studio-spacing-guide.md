@@ -3538,3 +3538,55 @@ inputs to remove the remaining curve-specific horizontal gates, including the
 internal grace preparation queries. Prefix collection and coherent fallback
 remain audit package B. Rebuild and run the usual combined spacing/beam CTest
 command. No new screenshot or profiling run is requested at this checkpoint.
+
+
+### v0.159: retain prepared context through grace queries; test general slur policy
+
+v0.158 native tst_spacing passes in 83.27 seconds in the user's build. Thread
+one read-only context cache through before/after/merged grace packing and source,
+target and member projections. Construct the planner's cache before grace
+validation, not afterward. The same attachment input owner now reaches those
+nested queries as well as final note/segment constraints. Standalone null-cache
+callers retain their existing behavior. Mutable beam preparation and publication
+still end/discard read-only caches before writing native geometry.
+
+Add an explicit PREPARED slur-policy mode to the query cache. It uses exact
+attachment sides and declared stem directions, independently of curve scopes,
+first-member tests or slur counts. Known tick aliases do not create attachments;
+unknown raw endpoints at an alias remain ineligible rather than silently absent.
+Pending directions refuse that query without falling back to compatibility.
+Articulation/tie/note-spanner and physical group restrictions are unchanged.
+This mode is exercised only by tests: production constructors still select
+COMPATIBILITY. There is no new user setting and no general-policy activation.
+
+Files changed: gracespacing4.h/.cpp, spacingcollision4.h/.cpp, spacingplan4.cpp,
+tst_spacing.cpp and this guide. Existing snapshot rows compare standalone/shared
+packing and full source/target rectangle identity, ownership sets, offsets and
+admission, then natural/fitting plans before/after START reanchoring and undo.
+The borrower in the scope test now ends before owner replacement; subsequent
+geometry queries bind a fresh cache, respecting the documented lifetime.
+
+Extend the existing synthetic-root test: twelve simultaneous slurs, covering
+AUTO/UP/DOWN, visibility and line styles, start on a non-first after-grace.
+Compatibility rejects the merged query; the prepared mode packs and projects
+it without moving native positions. A pending owner still rejects atomically.
+Unresolved raw-anchor alias tests remain conservative. No new fixture, score
+load or visual comparison is introduced.
+
+Local checks: fourteen final C++11 syntax passes (Debug/NDEBUG grace spacing,
+collision, planner, layout, chord/slur renderer and regenerated-moc test), with
+unused-parameter/signedness checks. The 960-case actual-code mock suite also
+executes the new prepared readiness and side-mask consumers over the existing
+1,536 direction/owner combinations, with a compatibility fallback stub that
+aborts if reached. Cached side reads and unknown aliases are checked separately.
+Native physical packing/projection and application/mtests cannot run locally.
+WIP 95009f1 saves the shared grace-query seam; WIP 2f61d8e saves the prepared
+policy consumer. The incremental patch starts at delivered v0.158 4de92b3.
+
+Rebuild and run the usual combined spacing/beam CTest command. No intended
+visual change or profiling run is requested. Next: make early mutable grace
+production and post-spacing publication use matching attachment policy before
+activating PREPARED in production. In particular, compatibility-packed geometry
+handed off from beam preparation cannot be reused under changed packing rules
+without rebuilding or proving matching policy provenance. Prefix collection,
+coherent fallback and publication ownership remain audit A/B work.

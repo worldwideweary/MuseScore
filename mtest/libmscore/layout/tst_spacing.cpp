@@ -3361,6 +3361,18 @@ static std::vector<qreal> graceMergedSnapshot4(Score* score)
       return values;
       }
 
+static bool spacingShapesEqual159(const SpacingShape4& a, const SpacingShape4& b)
+      {
+      if (a.elements.size() != b.elements.size()) return false;
+      for (size_t i = 0; i < a.elements.size(); ++i) {
+            const auto& x = a.elements[i];
+            const auto& y = b.elements[i];
+            if (x.rect != y.rect || x.item != y.item || x.identity != y.identity
+                || x.aggregateOwners != y.aggregateOwners || x.sharedItems != y.sharedItems) return false;
+            }
+      return true;
+      }
+
 static bool spacingPlansEqual154(const SpacingPlan4& a, const SpacingPlan4& b)
       {
       if (a.width != b.width || a.measures.size() != b.measures.size()
@@ -3759,7 +3771,8 @@ void TestSpacing::spacingInputSnapshot4()
                   for (const auto& a : prepared.anchors())
                         if (a.measure->system() == system) expectedAnchors.push_back(a.item);
                   if (systemOwner.input().anchors().size() != expectedAnchors.size()) return false;
-                  SpacingContextCache4 systemQuery(systemOwner);
+                  {
+                  SpacingContextCache4 indexQuery(systemOwner);
                   for (size_t i = 0; i < expectedAnchors.size(); ++i) {
                         const auto& a = systemOwner.input().anchors()[i];
                         if (a.item != expectedAnchors[i]) return false;
@@ -3773,17 +3786,18 @@ void TestSpacing::spacingInputSnapshot4()
                         if (scopedRoots != allRoots) return false;
                         if (a.item->isChord()) {
                               const Chord* chord = toChord(a.item);
-                              if (oldQuery.forwardSlurKerning(chord) != systemQuery.forwardSlurKerning(chord)) return false;
+                              if (oldQuery.forwardSlurKerning(chord) != indexQuery.forwardSlurKerning(chord)) return false;
                               for (const Note* note : chord->notes()) {
                                     SpacingPairPolicy4 oldPolicy, localPolicy;
                                     oldPolicy.padding = localPolicy.padding = -123;
                                     const bool oldOK = spacingPairPolicy4(table, note, note, chord->spatium(), oldPolicy, &context, &oldQuery);
-                                    const bool localOK = spacingPairPolicy4(table, note, note, chord->spatium(), localPolicy, &context, &systemQuery);
+                                    const bool localOK = spacingPairPolicy4(table, note, note, chord->spatium(), localPolicy, &context, &indexQuery);
                                     if (oldOK != localOK || oldPolicy.padding != localPolicy.padding
                                         || oldPolicy.kerning != localPolicy.kerning || oldPolicy.verticalClearance != localPolicy.verticalClearance) return false;
                                     }
                               }
                         }
+                  }
                   // Omitted readiness stays pending, never certified by capture.
                   for (Direction d : systemOwner.anchorDirections()) if (d != Direction::AUTO) return false;
                   // Existing geometry is not enough to certify readiness. Only
@@ -3840,6 +3854,49 @@ void TestSpacing::spacingInputSnapshot4()
                         if (captureSystemSpacingAttachments4(system, {SpacingPreparedAnchor4(outside.item, Direction::UP)}, systemOwner)
                             || (!expectedAnchors.empty() && systemOwner.sides(expectedAnchors.front()) != savedLocal)) return false;
                         break;
+                        }
+                  SpacingContextCache4 systemQuery(systemOwner);
+                  difference = "Nested grace query changed packing, projection or admission";
+                  for (const auto& a : systemOwner.input().anchors()) {
+                        if (a.kind != SpacingMemberKind4::MAIN || !a.main) continue;
+                        const Chord* main = a.main;
+                        if (!main->graceNotesBefore().empty()) {
+                              GraceBeforePlan4 oldBefore, sharedBefore;
+                              oldBefore.left = sharedBefore.left = -159;
+                              const bool oldOK = buildGraceBeforePlan4(main, oldBefore);
+                              const bool sharedOK = buildGraceBeforePlan4(main, sharedBefore, nullptr, &systemQuery);
+                              if (oldOK != sharedOK || oldBefore.left != sharedBefore.left
+                                  || oldBefore.positions.size() != sharedBefore.positions.size()) return false;
+                              for (size_t i = 0; i < oldBefore.positions.size(); ++i)
+                                    if (oldBefore.positions[i].chord != sharedBefore.positions[i].chord
+                                        || oldBefore.positions[i].x != sharedBefore.positions[i].x) return false;
+                              }
+                        if (!main->graceNotesAfter().empty()) {
+                              GraceAfterGeometry4 oldAfter, sharedAfter;
+                              oldAfter.plan.left = sharedAfter.plan.left = -159;
+                              const bool oldAfterOK = buildGraceAfterGeometry4(main, oldAfter);
+                              const bool sharedAfterOK = buildGraceAfterGeometry4(main, sharedAfter, nullptr, &systemQuery);
+                              SpacingPlan4 oldPlan, sharedPlan;
+                              oldPlan.width = sharedPlan.width = 0;
+                              oldPlan.afterGraces.push_back(oldAfter.plan);
+                              sharedPlan.afterGraces.push_back(sharedAfter.plan);
+                              if (oldAfterOK != sharedAfterOK || !spacingPlansEqual154(oldPlan, sharedPlan)
+                                  || oldAfter.plan.left != sharedAfter.plan.left || oldAfter.plan.right != sharedAfter.plan.right
+                                  || !spacingShapesEqual159(oldAfter.source, sharedAfter.source)
+                                  || !spacingShapesEqual159(oldAfter.target, sharedAfter.target)) return false;
+                              GraceMergedGeometry4 oldMerged, sharedMerged;
+                              oldMerged.plan.left = sharedMerged.plan.left = -159;
+                              const bool oldMergedOK = buildGraceMergedGeometry4(main, oldMerged);
+                              const bool sharedMergedOK = buildGraceMergedGeometry4(main, sharedMerged, nullptr, &systemQuery);
+                              oldPlan.afterGraces.clear();
+                              sharedPlan.afterGraces.clear();
+                              oldPlan.mergedGraces.push_back(oldMerged.plan);
+                              sharedPlan.mergedGraces.push_back(sharedMerged.plan);
+                              if (oldMergedOK != sharedMergedOK || !spacingPlansEqual154(oldPlan, sharedPlan)
+                                  || oldMerged.plan.left != sharedMerged.plan.left || oldMerged.plan.right != sharedMerged.plan.right
+                                  || !spacingShapesEqual159(oldMerged.source, sharedMerged.source)
+                                  || !spacingShapesEqual159(oldMerged.target, sharedMerged.target)) return false;
+                              }
                         }
                   SpacingPlan4 oldPlan, indexedPlan, ownedPlan, systemPlan;
                   oldPlan.width = indexedPlan.width = ownedPlan.width = systemPlan.width = -456;
@@ -3980,10 +4037,26 @@ void TestSpacing::spacingInputSnapshot4()
       const bool stillMissing = captured && captured->start.kind == SpacingEndpointKind4::MISSING
             && captured->end.kind == SpacingEndpointKind4::MISSING
             && !unresolved.startElement() && !unresolved.endElement();
+      bool unknownRejected = true;
+      if (collected) {
+            const Chord* alias = nullptr;
+            std::vector<Direction> stems;
+            for (const auto& a : input.anchors()) {
+                  stems.push_back(a.up ? Direction::UP : Direction::DOWN);
+                  if (a.track == unresolved.track() && a.tick == unresolved.tick() && a.item->isChord()) alias = toChord(a.item);
+                  }
+            SpacingAttachmentPreparation4 owner;
+            unknownRejected = prepareSpacingAttachments4(std::move(input), stems, owner);
+            if (unknownRejected && alias) {
+                  SpacingContextCache4 query(owner, SpacingSlurPolicy4::PREPARED);
+                  unknownRejected = !query.preparedSlursReady(alias);
+                  }
+            }
       input = SpacingInput4();
       score->removeSpanner(&unresolved);
       QVERIFY2(collected, qPrintable(reason));
       QVERIFY(stillMissing); // Never invoke lazy startCR/endCR to complete it.
+      QVERIFY(unknownRejected); // Unknown tick aliases cannot become absent attachments.
       }
       Slur* selected = nullptr;
       for (const auto& entry : score->spannerMap().map()) {
@@ -4102,6 +4175,38 @@ void TestSpacing::spacingSlurAttachments4()
             }
       QVERIFY(flags.anchors.size() == previous && flags.complete());
       input = SpacingInput4();
+      {
+      const auto geometryBefore = graceBarlineSnapshot4(score);
+      QVERIFY(buildSpacingInput4(score, input));
+      std::vector<Direction> stems;
+      for (const auto& anchor : input.anchors()) stems.push_back(anchor.up ? Direction::UP : Direction::DOWN);
+      SpacingAttachmentPreparation4 owner;
+      QVERIFY(prepareSpacingAttachments4(std::move(input), stems, owner));
+      SpacingContextCache4 compatibility(owner);
+      SpacingContextCache4 prepared(owner, SpacingSlurPolicy4::PREPARED);
+      QVERIFY(compatibility.slurPolicy() == SpacingSlurPolicy4::COMPATIBILITY);
+      QVERIFY(prepared.preparedSlursReady(start));
+      QCOMPARE(prepared.forwardSlurKerning(start), start->up() ? 2u : 1u);
+      const Chord* main = toChord(start->parent());
+      GraceMergedGeometry4 rejected, candidate;
+      rejected.plan.left = -159;
+      QVERIFY(!buildGraceMergedGeometry4(main, rejected, nullptr, &compatibility));
+      QCOMPARE(rejected.plan.left, qreal(-159));
+      QString reason;
+      QVERIFY2(buildGraceMergedGeometry4(main, candidate, &reason, &prepared), qPrintable(reason));
+      QVERIFY(candidate.plan.owner == main && candidate.source.complete() && candidate.target.complete());
+      QVERIFY(!candidate.plan.positions.empty());
+      // A missing certificate cannot fall back to compatibility inside this mode.
+      SpacingAttachmentPreparation4 pending;
+      QVERIFY(captureSpacingAttachments4(score, {}, pending));
+      SpacingContextCache4 pendingQuery(pending, SpacingSlurPolicy4::PREPARED);
+      QVERIFY(!pendingQuery.preparedSlursReady(start));
+      GraceMergedGeometry4 untouched;
+      untouched.plan.left = -159;
+      QVERIFY(!buildGraceMergedGeometry4(main, untouched, nullptr, &pendingQuery));
+      QCOMPARE(untouched.plan.left, qreal(-159));
+      QVERIFY(geometryBefore == graceBarlineSnapshot4(score));
+      }
       for (Slur* root : roots) {
             score->removeSpanner(root);
             delete root;

@@ -18,6 +18,9 @@ class SpacingInput4;
 class SpacingAttachmentPreparation4;
 enum class ElementType : char;
 
+// Migration is explicit: production remains COMPATIBILITY until mutable grace
+// production/publication can use the same prepared policy as read-only plans.
+enum class SpacingSlurPolicy4 { COMPATIBILITY, PREPARED };
 enum class SpacingKerning4 { NON_KERNING, KERNING, ALLOW_COLLISION, LEFT_EDGE, CENTER, RIGHT_EDGE };
 struct SpacingPairPolicy4 {
     qreal padding = 0;
@@ -54,6 +57,7 @@ struct SpacingGraceContext4 {
 class SpacingContextCache4 {
     const SpacingInput4* _input = nullptr;
     const SpacingAttachmentPreparation4* _preparation = nullptr;
+    SpacingSlurPolicy4 _slurPolicy = SpacingSlurPolicy4::COMPATIBILITY;
     bool _initialized = false, _allowGrace = false, _hasContext = false;
     const Chord* _scopedMain = nullptr;
     SpacingGraceContext4 _context, _mergedContext;
@@ -68,9 +72,14 @@ public:
     explicit SpacingContextCache4(const SpacingInput4* input = nullptr) : _input(input) {}
     // Borrows the complete pass owner. Query memoization remains local to
     // this cache; the owner can be reused by later read-only squeeze queries.
-    explicit SpacingContextCache4(const SpacingAttachmentPreparation4&);
+    explicit SpacingContextCache4(const SpacingAttachmentPreparation4&,
+                                  SpacingSlurPolicy4 = SpacingSlurPolicy4::COMPATIBILITY);
     const SpacingInput4* input() const { return _input; }
     const SpacingAttachmentPreparation4* preparation() const { return _preparation; }
+    SpacingSlurPolicy4 slurPolicy() const { return _slurPolicy; }
+    // Exact-endpoint readiness, independent of curve eligibility/member counts.
+    // Kerning bits alone do not certify readiness; admission checks this first.
+    bool preparedSlursReady(const Chord*) const;
     // Validated, non-null items; preserves the ordered native shape query.
     bool shapesIntersect(const Element* first, const Element* second);
     // Endpoint-side restrictions, reused only within this unchanged query.

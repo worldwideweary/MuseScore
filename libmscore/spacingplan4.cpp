@@ -144,7 +144,7 @@ bool prepareCrossStaff4(System* system, CrossStaffGeometry4& result, QString* re
 // projections. No native writes; publish outputs only after every group succeeds.
 bool prepareGraces4(System* system, SpacingGraceContext4& result, std::vector<GraceAfterGeometry4>& afterResult,
                     std::vector<GraceMergedGeometry4>& mergedResult, QString* reason,
-                    const std::vector<GraceMergedGeometry4>* preparedMerged)
+                    const std::vector<GraceMergedGeometry4>* preparedMerged, SpacingContextCache4& contextCache)
 {
     SpacingGraceContext4 prepared;
     std::vector<GraceAfterGeometry4> afters;
@@ -163,7 +163,7 @@ bool prepareGraces4(System* system, SpacingGraceContext4& result, std::vector<Gr
                 if (prepared.contains(main)) continue;
                 if (!main->graceNotesAfter().empty()) {
                     GraceAfterGeometry4 geometry;
-                    if (buildGraceAfterGeometry4(main, geometry, reason)) {
+                    if (buildGraceAfterGeometry4(main, geometry, reason, &contextCache)) {
                         prepared.afterMains.push_back(main);
                         afters.push_back(geometry);
                     }
@@ -180,7 +180,7 @@ bool prepareGraces4(System* system, SpacingGraceContext4& result, std::vector<Gr
                             joint = *ready;
                             if (reason) reason->clear();
                         }
-                        else if (!buildGraceMergedGeometry4(main, joint, reason)) return false;
+                        else if (!buildGraceMergedGeometry4(main, joint, reason, &contextCache)) return false;
                         prepared.afterMains.push_back(main);
                         prepared.mains.push_back(joint.plan.target);
                         prepared.mergedPairs.push_back({main, joint.plan.target});
@@ -189,7 +189,7 @@ bool prepareGraces4(System* system, SpacingGraceContext4& result, std::vector<Gr
                     continue;
                 }
                 GraceBeforePlan4 plan;
-                if (!buildGraceBeforePlan4(main, plan, reason))
+                if (!buildGraceBeforePlan4(main, plan, reason, &contextCache))
                     return false;
                 for (const GracePosition4& p : plan.positions) {
                     if (std::abs(p.chord->x() - p.x) > 1e-6 || !std::isfinite(p.chord->x())) {
@@ -577,10 +577,11 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
     SpacingGraceContext4 graces;
     std::vector<GraceAfterGeometry4> afters;
     std::vector<GraceMergedGeometry4> merged;
-    if (!prepareGraces4(system, graces, afters, merged, reason, preparedMerged)) return false;
-    // All remaining projection and distance work is read-only. Reuse chord
-    // eligibility through this complete plan; later plans/edits start fresh.
+    // Grace packing/projection and the final system constraints are all
+    // read-only. Borrow the same input owner and query-local memo throughout;
+    // no standalone grace query silently drops the prepared attachment view.
     SpacingContextCache4 contextCache = preparation ? SpacingContextCache4(*preparation) : SpacingContextCache4(input);
+    if (!prepareGraces4(system, graces, afters, merged, reason, preparedMerged, contextCache)) return false;
     SpacingPlan4 plan;
     for (const auto& after : afters) plan.afterGraces.push_back(after.plan);
     for (const auto& joint : merged) plan.mergedGraces.push_back(joint.plan);

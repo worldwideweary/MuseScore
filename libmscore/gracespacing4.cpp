@@ -165,11 +165,12 @@ static bool graceDistance4(const SpacingPaddingTable4& table, const Chord* main,
 // Ordinary rests and staged barline targets contribute their own leaf shapes
 // under the explicit after-group policy. Attachments remain outside this scope.
 static bool afterTargetComponents4(const Element* target, const Chord* owner,
-                                    const SpacingPaddingTable4& table, SpacingShape4& result)
+                                    const SpacingPaddingTable4& table, SpacingShape4& result,
+                                    SpacingContextCache4* queryCache = nullptr, SpacingShapeCache4* shapes = nullptr)
 {
-    if (target->isChord()) return graceComponents4(toChord(target), owner, table, result, target);
+    if (target->isChord()) return graceComponents4(toChord(target), owner, table, result, target, false, queryCache, shapes);
     if (!target->isRest() && !target->isBarLine()) return false;
-    const SpacingShape4 shape = spacingElementShape4(target);
+    const SpacingShape4 shape = spacingElementShape4(target, shapes);
     if (shape.elements.empty()) return false;
     for (const auto& e : shape.elements) {
         SpacingPairPolicy4 policy;
@@ -178,14 +179,14 @@ static bool afterTargetComponents4(const Element* target, const Chord* owner,
             || !std::isfinite(e.rect.x()) || !std::isfinite(e.rect.y())
             || !std::isfinite(e.rect.width()) || !std::isfinite(e.rect.height())
             || e.rect.width() <= 0 || e.rect.height() <= 0
-            || !spacingAfterGracePairPolicy4(table, owner, target, target, target, owner->spatium(), policy))
+            || !spacingAfterGracePairPolicy4(table, owner, target, target, target, owner->spatium(), policy, false, queryCache))
             return false;
     }
     result = shape;
     return true;
 }
 
-bool buildGraceBeforePlan4(const Chord* main, GraceBeforePlan4& result, QString* reason)
+bool buildGraceBeforePlan4(const Chord* main, GraceBeforePlan4& result, QString* reason, SpacingContextCache4* queryCache)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::BEFORE);
     const auto fail = [reason](const char* message) {
@@ -246,7 +247,7 @@ bool buildGraceBeforePlan4(const Chord* main, GraceBeforePlan4& result, QString*
     }
     const SpacingPaddingTable4 table(main->score());
     SpacingShape4 target;
-    if (!graceComponents4(main, main, table, target))
+    if (!graceComponents4(main, main, table, target, nullptr, false, queryCache))
         return fail("Unadapted main shape");
     target = target.translated(main->pos());
     GraceBeforePlan4 plan;
@@ -256,8 +257,8 @@ bool buildGraceBeforePlan4(const Chord* main, GraceBeforePlan4& result, QString*
         const Chord* grace = graces[i];
         SpacingShape4 shape;
         qreal distance;
-        if (!graceComponents4(grace, main, table, shape)
-            || !graceDistance4(table, main, shape, accumulated, grace->spatium(), distance))
+        if (!graceComponents4(grace, main, table, shape, nullptr, false, queryCache)
+            || !graceDistance4(table, main, shape, accumulated, grace->spatium(), distance, nullptr, false, queryCache))
             return fail("Unadapted grace shape");
         const qreal offset = -std::max(distance, qreal(0));
         plan.positions[i] = {grace, offset};
@@ -265,7 +266,7 @@ bool buildGraceBeforePlan4(const Chord* main, GraceBeforePlan4& result, QString*
         accumulated.elements.insert(accumulated.elements.end(), shape.elements.begin(), shape.elements.end());
     }
     qreal distance;
-    if (!graceDistance4(table, main, accumulated, target, graces.front()->spatium(), distance))
+    if (!graceDistance4(table, main, accumulated, target, graces.front()->spatium(), distance, nullptr, false, queryCache))
         return fail("Unadapted group-to-main constraint");
     // Studio defaults, in score spatium, independent of minNoteDistance.
     const qreal groupX = std::min(-distance,
@@ -415,7 +416,7 @@ static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result
     SpacingShape4 targetShape;
     const bool targetReady = merged
         ? graceComponents4(toChord(target), owner, table, targetShape, target, true, cache, shapes)
-        : afterTargetComponents4(target, owner, table, targetShape);
+        : afterTargetComponents4(target, owner, table, targetShape, queryCache ? cache : nullptr, queryCache ? shapes : nullptr);
     if (!targetReady)
         return fail("Unadapted after-grace target shape");
     targetShape = targetShape.translated(target->pos());
@@ -462,16 +463,16 @@ static bool buildGraceAfterPlanImpl4(const Chord* owner, GraceAfterPlan4& result
     return true;
 }
 
-bool buildGraceAfterPlan4(const Chord* owner, GraceAfterPlan4& result, QString* reason)
+bool buildGraceAfterPlan4(const Chord* owner, GraceAfterPlan4& result, QString* reason, SpacingContextCache4* queryCache)
 {
-    return buildGraceAfterPlanImpl4(owner, result, reason, false);
+    return buildGraceAfterPlanImpl4(owner, result, reason, false, false, queryCache);
 }
 
-bool buildGraceAfterBarlinePlan4(const Chord* owner, GraceAfterPlan4& result, QString* reason)
+bool buildGraceAfterBarlinePlan4(const Chord* owner, GraceAfterPlan4& result, QString* reason, SpacingContextCache4* queryCache)
 {
     // Target-specific query shares production packing and keeps other target
     // types out of boundary-focused checks.
-    return buildGraceAfterPlanImpl4(owner, result, reason, true);
+    return buildGraceAfterPlanImpl4(owner, result, reason, true, false, queryCache);
 }
 
 static bool buildGraceMergedPlanImpl4(const Chord* owner, GraceMergedPlan4& result, QString* reason, SpacingContextCache4* cache,
@@ -490,9 +491,9 @@ static bool buildGraceMergedPlanImpl4(const Chord* owner, GraceMergedPlan4& resu
     return true;
 }
 
-bool buildGraceMergedPlan4(const Chord* owner, GraceMergedPlan4& result, QString* reason)
+bool buildGraceMergedPlan4(const Chord* owner, GraceMergedPlan4& result, QString* reason, SpacingContextCache4* queryCache)
 {
-    return buildGraceMergedPlanImpl4(owner, result, reason, nullptr);
+    return buildGraceMergedPlanImpl4(owner, result, reason, queryCache);
 }
 
 static bool afterSourceComponents4(const Chord* owner, const Element* target,
@@ -542,16 +543,17 @@ static bool afterSourceComponents4(const Chord* owner, const Element* target,
     return true;
 }
 
-bool buildGraceMergedGeometry4(const Chord* owner, GraceMergedGeometry4& result, QString* reason)
+bool buildGraceMergedGeometry4(const Chord* owner, GraceMergedGeometry4& result, QString* reason, SpacingContextCache4* queryCache)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::GEOMETRY);
     // Packing and projection only read the DOM. Discard eligibility before
     // returning; beam preparation and every later query start fresh.
-    SpacingContextCache4 cache;
+    SpacingContextCache4 localCache;
+    SpacingContextCache4* cache = queryCache ? queryCache : &localCache;
     SpacingShapeCache4 shapes;
     GracePackedComponents4 packed;
     GraceMergedGeometry4 geometry;
-    if (!buildGraceMergedPlanImpl4(owner, geometry.plan, reason, &cache, &packed, &shapes)) return false;
+    if (!buildGraceMergedPlanImpl4(owner, geometry.plan, reason, cache, &packed, &shapes)) return false;
     const auto fail = [reason](const char* message) {
         if (reason) *reason = QString::fromLatin1(message);
         return false;
@@ -559,7 +561,7 @@ bool buildGraceMergedGeometry4(const Chord* owner, GraceMergedGeometry4& result,
     const Chord* target = geometry.plan.target;
     const SpacingPaddingTable4 table(owner->score());
     SpacingShape4 source;
-    if (!afterSourceComponents4(owner, target, table, source, true, &cache, &shapes))
+    if (!afterSourceComponents4(owner, target, table, source, true, cache, &shapes))
         return fail("Unadapted merged-grace source projection");
     geometry.source = source.translated(owner->pos());
     // Packing already extracted and validated these exact physical shapes.
@@ -717,10 +719,12 @@ bool prepareGraceMergedBeams4(Chord* owner, QString* reason, GraceMergedGeometry
     return fail("Merged grace beam geometry did not stabilize");
 }
 
-bool buildGraceAfterGeometry4(const Chord* owner, GraceAfterGeometry4& result, QString* reason)
+bool buildGraceAfterGeometry4(const Chord* owner, GraceAfterGeometry4& result, QString* reason, SpacingContextCache4* queryCache)
 {
     GraceAfterGeometry4 geometry;
-    if (!buildGraceAfterPlan4(owner, geometry.plan, reason)) return false;
+    SpacingShapeCache4 shapes;
+    SpacingShapeCache4* sharedShapes = queryCache ? &shapes : nullptr;
+    if (!buildGraceAfterPlanImpl4(owner, geometry.plan, reason, false, false, queryCache, nullptr, sharedShapes)) return false;
     const auto fail = [reason](const char* message) {
         if (reason) *reason = QString::fromLatin1(message);
         return false;
@@ -728,16 +732,16 @@ bool buildGraceAfterGeometry4(const Chord* owner, GraceAfterGeometry4& result, Q
     const Element* target = geometry.plan.target->element(owner->track());
     const SpacingPaddingTable4 table(owner->score());
     SpacingShape4 source;
-    if (!afterSourceComponents4(owner, target, table, source))
+    if (!afterSourceComponents4(owner, target, table, source, false, queryCache, sharedShapes))
         return fail("Unadapted after-grace source projection");
     geometry.source = source.translated(owner->pos());
     SpacingShape4 following;
-    if (!afterTargetComponents4(target, owner, table, following))
+    if (!afterTargetComponents4(target, owner, table, following, queryCache, sharedShapes))
         return fail("Unadapted after-grace target projection");
     geometry.target = following.translated(target->pos());
     for (const GraceAfterPosition4& p : geometry.plan.positions) {
         SpacingShape4 member;
-        if (!graceComponents4(p.chord, owner, table, member, target))
+        if (!graceComponents4(p.chord, owner, table, member, target, false, queryCache, sharedShapes))
             return fail("Unadapted after-grace member projection");
         member = member.translated(QPointF(p.x, 0));
         geometry.target.elements.insert(geometry.target.elements.end(), member.elements.begin(), member.elements.end());

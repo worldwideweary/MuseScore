@@ -10,6 +10,11 @@ namespace Ms {
 class Chord;
 class Slur;
 class Segment;
+class SpacingContextCache4;
+// Optional query caches below borrow an unchanged preparation phase, including
+// its musical-input owner when supplied. All nested packing/projection policies
+// use that same cache. Discard before any beam/shape/position writes. A null
+// cache preserves existing standalone query behavior.
 struct GracePosition4 {
     const Chord* chord;
     qreal x; // Relative to the main chord, like Chord::graceNotesBefore().
@@ -23,7 +28,8 @@ struct GraceBeforePlan4 {
 // Chord::layoutPitched applies accepted plans before native shape/width collection.
 // The system planner admits these groups only after validating their published
 // positions; unsupported grace contexts still reject the entire system plan.
-bool buildGraceBeforePlan4(const Chord*, GraceBeforePlan4&, QString* reason = nullptr);
+bool buildGraceBeforePlan4(const Chord*, GraceBeforePlan4&, QString* reason = nullptr,
+                                SpacingContextCache4* queryCache = nullptr);
 
 struct GraceAfterPosition4 {
     const Chord* chord;
@@ -40,9 +46,11 @@ struct GraceAfterPlan4 {
 // Query only: does not move items or publish shapes. The system planner
 // separately validates its temporary projections before admission.
 // Rebuild after geometry changes; failure preserves every output field.
-bool buildGraceAfterPlan4(const Chord*, GraceAfterPlan4&, QString* reason = nullptr);
+bool buildGraceAfterPlan4(const Chord*, GraceAfterPlan4&, QString* reason = nullptr,
+                                SpacingContextCache4* queryCache = nullptr);
 // Read-only target-specific query for an ordinary normal ending barline.
-bool buildGraceAfterBarlinePlan4(const Chord*, GraceAfterPlan4&, QString* reason = nullptr);
+bool buildGraceAfterBarlinePlan4(const Chord*, GraceAfterPlan4&, QString* reason = nullptr,
+                                SpacingContextCache4* queryCache = nullptr);
 struct GraceMergedPlan4 {
     const Chord* owner = nullptr; // Owns the incoming after-graces.
     const Chord* target = nullptr; // Retains ownership of its before-graces.
@@ -52,14 +60,16 @@ struct GraceMergedPlan4 {
 };
 // Read-only same-direction joint packing for temporary system projection.
 // Every member keeps its parent; failure leaves the entire output untouched.
-bool buildGraceMergedPlan4(const Chord*, GraceMergedPlan4&, QString* reason = nullptr);
+bool buildGraceMergedPlan4(const Chord*, GraceMergedPlan4&, QString* reason = nullptr,
+                                SpacingContextCache4* queryCache = nullptr);
 struct GraceMergedGeometry4 {
     GraceMergedPlan4 plan;
     SpacingShape4 source; // Incoming owner's own components in its segment.
     SpacingShape4 target; // Target's own components plus all planned graces in target segment.
 };
 // Read-only joint projection for system planning.
-bool buildGraceMergedGeometry4(const Chord*, GraceMergedGeometry4&, QString* reason = nullptr);
+bool buildGraceMergedGeometry4(const Chord*, GraceMergedGeometry4&, QString* reason = nullptr,
+                                SpacingContextCache4* queryCache = nullptr);
 // One slur-layout operation only: notes, beams and styles must remain unchanged.
 // Successful geometry may be shared by anchor/obstacle queries. Never retain
 // across editing, beam preparation or later layout operations. Failures are fresh.
@@ -83,7 +93,8 @@ struct GraceAfterGeometry4 {
 };
 // Temporary typed projection for system planning. Does not update native
 // segment shapes or move musical ownership. Failure leaves result unchanged.
-bool buildGraceAfterGeometry4(const Chord*, GraceAfterGeometry4&, QString* reason = nullptr);
+bool buildGraceAfterGeometry4(const Chord*, GraceAfterGeometry4&, QString* reason = nullptr,
+                                SpacingContextCache4* queryCache = nullptr);
 
 // Local post-spacing publication only. Rebuild the plan, check every source-
 // to-grace constraint in the available interval, then publish all x positions.

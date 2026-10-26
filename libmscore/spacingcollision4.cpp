@@ -314,21 +314,48 @@ static unsigned forwardSlurKerning4(const Chord* chord, const SpacingInput4* inp
     return blocked;
 }
 
-SpacingContextCache4::SpacingContextCache4(const SpacingAttachmentPreparation4& preparation)
-    : _input(&preparation.input()), _preparation(&preparation)
+SpacingContextCache4::SpacingContextCache4(const SpacingAttachmentPreparation4& preparation, SpacingSlurPolicy4 policy)
+    : _input(&preparation.input()), _preparation(&preparation), _slurPolicy(policy)
 {
+}
+
+bool SpacingContextCache4::preparedSlursReady(const Chord* chord) const
+{
+    if (!_preparation || !chord || _input->score() != chord->score()) return false;
+    const auto* anchor = _input->anchor(chord);
+    const auto* sides = _preparation->sides(chord);
+    if (!anchor || !sides || !sides->complete()) return false;
+    const size_t index = size_t(anchor - _input->anchors().data());
+    if (_preparation->anchorDirections()[index] == Direction::AUTO) return false;
+    for (size_t rootIndex : anchor->relatedSlurs) {
+        const auto& root = _input->slurs()[rootIndex];
+        // Tick aliases do not create attachments. They only identify unknown
+        // raw anchors that could otherwise be silently treated as absent.
+        if (!root.start.element || !root.end.element
+            || root.start.kind == SpacingEndpointKind4::OTHER || root.end.kind == SpacingEndpointKind4::OTHER) return false;
+    }
+    return true;
 }
 
 unsigned SpacingContextCache4::forwardSlurKerning(const Chord* chord)
 {
     for (const auto& entry : _slurKerning) if (entry.first == chord) return entry.second;
-    const unsigned blocked = forwardSlurKerning4(chord, _input);
+    unsigned blocked = 0;
+    if (_slurPolicy == SpacingSlurPolicy4::PREPARED && _preparation) {
+        const auto* anchor = _input->anchor(chord);
+        const auto* sides = _preparation->sides(chord);
+        if (anchor && sides) {
+            const Direction stem = _preparation->anchorDirections()[size_t(anchor - _input->anchors().data())];
+            if (stem != Direction::AUTO) blocked = sides->blockedKerning(stem == Direction::UP);
+        }
+    }
+    else blocked = forwardSlurKerning4(chord, _input);
     _slurKerning.push_back({chord, blocked});
     return blocked;
 }
 
 static bool commonChordContext4(const Chord* chord, bool allowGrace,
-                                const SpacingGraceContext4* context, const Chord* scopedMain, const SpacingInput4* input)
+                                const SpacingGraceContext4* context, const Chord* scopedMain, const SpacingContextCache4* cache)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::CONTEXT);
     // Common notation only in this stage. Studio's line attachment and chord
@@ -339,6 +366,9 @@ static bool commonChordContext4(const Chord* chord, bool allowGrace,
         if (note->tieFor() || note->tieBack() || !note->spannerFor().empty() || !note->spannerBack().empty())
             return false;
     }
+    if (cache && cache->slurPolicy() == SpacingSlurPolicy4::PREPARED)
+        return cache->preparedSlursReady(chord);
+    const SpacingInput4* input = cache ? cache->input() : nullptr;
     const Chord* main = chord;
     if (chord->isGrace() && chord->parent() && chord->parent()->isChord())
         main = toChord(chord->parent());
@@ -436,11 +466,10 @@ static bool commonItemContext4(const Element* item, bool allowGrace,
         return false;
     if (!chord)
         return true;
-    const SpacingInput4* input = cache ? cache->input() : nullptr;
     bool supported;
     if (cache && cache->lookup(chord, allowGrace, context, scopedMain, supported))
         return supported;
-    supported = commonChordContext4(chord, allowGrace, context, scopedMain, input);
+    supported = commonChordContext4(chord, allowGrace, context, scopedMain, cache);
     if (cache) cache->remember(chord, supported);
     return supported;
 }
