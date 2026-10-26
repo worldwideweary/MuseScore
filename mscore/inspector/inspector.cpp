@@ -10,19 +10,17 @@
 //  the file LICENSE.GPL
 //=============================================================================
 
-#include <QStackedWidget>
-#include <QFormLayout>
-#include <QListWidget>
-#include <QSignalBlocker>
-#include <QDoubleSpinBox>
-#include <QSpinBox>
-#include <QComboBox>
 #include <QCheckBox>
-#include <QPushButton>
+#include <QComboBox>
+#include <QDoubleSpinBox>
+#include <QFormLayout>
 #include <QLabel>
-#include "libmscore/box.h"
-#include "libmscore/fret.h"
-#include "libmscore/harmony.h"
+#include <QListWidget>
+#include <QPushButton>
+#include <QSignalBlocker>
+#include <QSpinBox>
+#include <QStackedWidget>
+#include <QTimer>
 
 #include "musescore.h"
 #include "scoreview.h"
@@ -65,10 +63,13 @@
 #include "libmscore/accidental.h"
 #include "libmscore/articulation.h"
 #include "libmscore/beam.h"
+#include "libmscore/box.h"
 #include "libmscore/breath.h"
 #include "libmscore/chord.h"
 #include "libmscore/element.h"
 #include "libmscore/fermata.h"
+#include "libmscore/fret.h"
+#include "libmscore/harmony.h"
 #include "libmscore/hook.h"
 #include "libmscore/keysig.h"
 #include "libmscore/measure.h"
@@ -79,6 +80,8 @@
 #include "libmscore/score.h"
 #include "libmscore/segment.h"
 #include "libmscore/slurtie.h"
+#include "libmscore/tie.h"
+#include "libmscore/utils.h"
 #include "libmscore/staff.h"
 #include "libmscore/stafftextbase.h"
 #include "libmscore/stafftypechange.h"
@@ -474,6 +477,9 @@ void Inspector::update(Score* s)
                               break;
                         case ElementType::PALM_MUTE_SEGMENT:
                               ie = new InspectorPalmMute(this);
+                              break;
+                        case ElementType::LYRICSLINE_SEGMENT:
+                              ie = new InspectorPartialLyricsLine(this);
                               break;
                         case ElementType::SLUR_SEGMENT:
                         case ElementType::TIE_SEGMENT:
@@ -1669,6 +1675,11 @@ InspectorSlurTie::InspectorSlurTie(QWidget* parent)
    : InspectorElementBase(parent)
       {
       s.setupUi(addWidget());
+      repeatEndpoints = new QWidget(s.panel);
+      repeatEndpoints->setLayout(new QVBoxLayout);
+      repeatEndpoints->layout()->setContentsMargins(0, 0, 0, 0);
+      s.gridLayout->addWidget(repeatEndpoints, s.gridLayout->rowCount(), 0, 1, 3);
+
 
       Element* el = inspector->element();
       bool sameTypes = true;
@@ -1682,12 +1693,99 @@ InspectorSlurTie::InspectorSlurTie(QWidget* parent)
       if (sameTypes)
             s.title->setText(el->isSlurSegment() ? tr("Slur") : tr("Tie"));
 
-      const std::vector<InspectorItem> iiList = {
+      std::vector<InspectorItem> iiList = {
             { Pid::LINE_TYPE,       0, s.lineType,      s.resetLineType      },
             { Pid::SLUR_DIRECTION,  0, s.slurDirection, s.resetSlurDirection }
             };
+      if (sameTypes && el->isSlurSegment()) {
+            QComboBox* partial = new QComboBox(s.panel);
+            partial->addItem(tr("Normal"), -1);
+            partial->addItem(tr("Incoming"), 0);
+            partial->addItem(tr("Outgoing"), 1);
+            partial->addItem(tr("Incoming and outgoing"), 2);
+            const int row = s.gridLayout->rowCount();
+            s.gridLayout->addWidget(new QLabel(tr("Partial slur"), s.panel), row, 0);
+            s.gridLayout->addWidget(partial, row, 1, 1, 2);
+            iiList.push_back({ Pid::PARTIAL_SPANNER_DIRECTION, 0, partial, nullptr });
+            }
       const std::vector<InspectorPanel> ppList = { { s.title, s.panel } };
       mapSignals(iiList, ppList);
+      }
+
+InspectorPartialLyricsLine::InspectorPartialLyricsLine(QWidget* parent)
+   : InspectorElementBase(parent)
+      {
+      QWidget* panel = addWidget();
+      QFormLayout* layout = new QFormLayout(panel);
+      QSpinBox* verse = new QSpinBox(panel);
+      verse->setRange(1, 99);
+      QComboBox* placement = new QComboBox(panel);
+      populatePlacement(placement);
+      QComboBox* direction = new QComboBox(panel);
+      direction->addItem(tr("Incoming"), 0);
+      direction->addItem(tr("Outgoing"), 1);
+      direction->addItem(tr("Incoming and outgoing"), 2);
+      QCheckBox* melisma = new QCheckBox(tr("Extension line"), panel);
+      layout->addRow(new QLabel(tr("Partial lyric line"), panel));
+      layout->addRow(tr("Verse"), verse);
+      layout->addRow(tr("Placement"), placement);
+      layout->addRow(tr("Direction"), direction);
+      layout->addRow(melisma);
+      const std::vector<InspectorItem> items = {
+            { Pid::VERSE, 0, verse, nullptr },
+            { Pid::PLACEMENT, 0, placement, nullptr },
+            { Pid::PARTIAL_SPANNER_DIRECTION, 0, direction, nullptr },
+            { Pid::PARTIAL_LYRIC_MELISMA, 0, melisma, nullptr }
+            };
+      mapSignals(items, {});
+      }
+
+void InspectorSlurTie::postInit()
+      {
+      if (!repeatEndpoints)
+            return;
+      while (QLayoutItem* item = repeatEndpoints->layout()->takeAt(0)) {
+            // A refresh can run during a checkbox's toggled signal.
+            // Keep its sender and callback alive until event dispatch returns.
+            if (QWidget* widget = item->widget())
+                  widget->deleteLater();
+            delete item;
+            }
+      repeatEndpoints->hide();
+      Element* selected = inspector->element();
+      if (!selected || !selected->isTieSegment() || inspector->el()->size() != 1)
+            return;
+      Tie* tie = toTieSegment(selected)->tie();
+      Note* source = tie->startNote();
+      if (!source || (tie->isPartial() && tie->isIncoming()))
+            return;
+      const auto destinations = repeatTieDestinations(source);
+      if (destinations.empty())
+            return;
+      repeatEndpoints->layout()->addWidget(new QLabel(tr("Repeat destinations"), repeatEndpoints));
+      for (Note* destination : destinations) {
+            QCheckBox* check = new QCheckBox(tr("Measure %1, voice %2")
+                  .arg(destination->chord()->measure()->no() + 1).arg(destination->voice() + 1), repeatEndpoints);
+            check->setObjectName(QStringLiteral("repeatTieDestination"));
+            check->setChecked(destination->partialTie(true) != nullptr);
+            check->setEnabled(!destination->tieBack());
+            repeatEndpoints->layout()->addWidget(check);
+            Inspector* panel = inspector;
+            connect(check, &QCheckBox::toggled, this, [panel, source, destination](bool active) {
+                  Score* score = source->score();
+                  panel->setInspectorEdit(true);
+                  score->startCmd();
+                  if (active)
+                        score->undoAddPartialTie(destination, true);
+                  else if (Tie* incoming = destination->partialTie(true))
+                        score->undoRemoveElement(incoming);
+                  score->endCmd();
+                  panel->setInspectorEdit(false);
+                  // Rebuild controls after the sender has finished emitting.
+                  QTimer::singleShot(0, panel, [panel]() { panel->update(); });
+                  });
+            }
+      repeatEndpoints->show();
       }
 
 //---------------------------------------------------------

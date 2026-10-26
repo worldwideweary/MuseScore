@@ -634,6 +634,7 @@ class Score : public QObject, public ScoreElement {
 
       void cmdRemovePart(Part*);
       void cmdAddTie(bool addToChord = false);
+      Tie* undoAddPartialTie(Note*, bool incoming);
       void cmdToggleTie();
       Note* findOrCreateTieTarget(Note*);
       static std::vector<Note*> cmdTieNoteList(const Selection& selection, bool noteEntryMode);
@@ -1305,6 +1306,7 @@ class MasterScore : public Score {
       TempoMap* _tempomap;
       RepeatList* _repeatList;
       RepeatList* _repeatList2;
+      RepeatList* _notationRepeatList; // Always expanded; independent of playback preference.
       bool _expandRepeats     { MScore::playRepeats };
       bool _playlistDirty     { true };
       QList<Excerpt*> _excerpts;
@@ -1367,6 +1369,7 @@ class MasterScore : public Score {
 
       void setExpandRepeats(bool expandRepeats);
       bool expandRepeats() const { return _expandRepeats; }
+      const RepeatList& notationRepeatList() const;
       void updateRepeatListTempo();
       virtual const RepeatList& repeatList() const override;
       virtual const RepeatList& repeatList2() const override;

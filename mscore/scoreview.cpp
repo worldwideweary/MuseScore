@@ -4297,6 +4297,41 @@ void ScoreView::cmdAddSlur(const Slur* slurTemplate)
       const auto& sel = _score->selection();
       auto el         = sel.uniqueElements();
 
+      // A note and a repeat/jump barline define one hanging slur segment.
+      if (!sel.isRange() && el.size() == 2) {
+            Note* note = nullptr;
+            BarLine* barline = nullptr;
+            for (Element* selected : el) {
+                  if (selected->isNote())
+                        note = toNote(selected);
+                  else if (selected->isBarLine())
+                        barline = toBarLine(selected);
+                  }
+            if (note && barline) {
+                  const bool incoming = barline->tick() <= note->tick();
+                  Measure* boundary = incoming ? _score->tick2measure(barline->tick()) : barline->segment()->measure();
+                  const bool valid = boundary && !(incoming ? precedingRepeatMeasures(boundary) : followingRepeatMeasures(boundary)).empty();
+                  ChordRest* anchor = nullptr;
+                  if (valid) {
+                        for (Segment* segment = boundary->first(SegmentType::ChordRest); segment; segment = segment->next(SegmentType::ChordRest)) {
+                              Element* candidate = segment->element(note->track());
+                              if (candidate && candidate->isChord()) {
+                                    anchor = toChordRest(candidate);
+                                    if (incoming)
+                                          break;
+                                    }
+                              }
+                        }
+                  if (anchor && ((incoming && anchor->tick() <= note->tick()) || (!incoming && anchor->tick() >= note->tick()))) {
+                        Slur partial(_score);
+                        partial.setPartialDirection(incoming ? 0 : 1);
+                        addSlur(incoming ? anchor : note->chord(), incoming ? note->chord() : anchor, &partial);
+                        _score->endCmd();
+                        return;
+                        }
+                  }
+            }
+
       if (sel.isRange()) {
             int startTrack = sel.staffStart() * VOICES;
             int endTrack   = sel.staffEnd() * VOICES;
@@ -4371,7 +4406,7 @@ void ScoreView::addSlur(ChordRest* cr1, ChordRest* cr2, const Slur* slurTemplate
       cr1->score()->undoAddElement(slur);
       SlurSegment* ss = new SlurSegment(cr1->score());
       ss->setSpannerSegmentType(SpannerSegmentType::SINGLE);
-      if (cr1 == cr2)
+      if (cr1 == cr2 && slur->partialDirection() < 0)
             ss->setSlurOffset(Grip::END, QPointF(3.0 * cr1->score()->spatium(), 0.0));
       slur->add(ss);
 

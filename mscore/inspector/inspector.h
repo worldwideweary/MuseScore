@@ -430,9 +430,16 @@ class InspectorSlurTie : public InspectorElementBase {
       Q_OBJECT
 
       Ui::InspectorSlur s;
+      QWidget* repeatEndpoints { nullptr };
+      void postInit() override;
 
    public:
       InspectorSlurTie(QWidget* parent);
+      };
+
+class InspectorPartialLyricsLine : public InspectorElementBase {
+   public:
+      InspectorPartialLyricsLine(QWidget* parent);
       };
 
 //---------------------------------------------------------

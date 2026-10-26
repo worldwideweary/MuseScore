@@ -1261,6 +1261,20 @@ std::vector<Note*> Score::cmdTieNoteList(const Selection& selection, bool noteEn
 //   cmdAddTie
 //---------------------------------------------------------
 
+Tie* Score::undoAddPartialTie(Note* note, bool incoming)
+      {
+      if (Tie* existing = note->partialTie(incoming))
+            return existing;
+      Tie* tie = new Tie(note->score());
+      tie->setPartialDirection(incoming ? 0 : 1);
+      tie->setStartNote(note);
+      tie->setTrack(note->track());
+      tie->setTick(note->tick());
+      tie->setTicks(Fraction(0, 1));
+      undoAddElement(tie);
+      return tie;
+      }
+
 void Score::cmdAddTie(bool addToChord)
       {
       const std::vector<Note*> noteList = cmdTieNoteList(selection(), noteEntryMode());
@@ -1272,6 +1286,7 @@ void Score::cmdAddTie(bool addToChord)
 
       startCmd();
       Chord* lastAddedChord = 0;
+      bool advanceRepeatInput = false;
       for (Note* note : noteList) {
             if (note->tieFor()) {
                   qDebug("cmdAddTie: note %p has already tie? noteFor: %p", note, note->tieFor());
@@ -1279,6 +1294,22 @@ void Score::cmdAddTie(bool addToChord)
                         continue;
                   else
                         undoRemoveElement(note->tieFor());
+                  }
+
+            // In note entry a played jump can supply the existing target(s).
+            // Do not insert a new physical note into a skipped second ending.
+            if (noteEntryMode()) {
+                  const auto destinations = repeatTieDestinations(note);
+                  Measure* measure = note->chord()->measure();
+                  if (!destinations.empty() && !hasLinearPlaybackTransition(measure, measure->nextMeasure())) {
+                        undoAddPartialTie(note, false);
+                        for (Note* destination : destinations) {
+                              if (!destination->tieBack())
+                                    undoAddPartialTie(destination, true);
+                              }
+                        advanceRepeatInput = true;
+                        continue;
+                        }
                   }
 
             if (noteEntryMode()) {
@@ -1364,6 +1395,13 @@ void Score::cmdAddTie(bool addToChord)
                   }
             else {
                   Note* note2 = searchTieNote(note);
+                  const auto jumpNotes = repeatTieDestinations(note);
+                  if (note2 && !note->chord()->isGrace() && note2->chord()->measure() != note->chord()->measure()
+                      && (!hasLinearPlaybackTransition(note->chord()->measure(), note2->chord()->measure())
+                          || note2->tick() != note->chord()->tick() + note->chord()->actualTicks()))
+                        note2 = nullptr;
+                  if (note2 && note2->tieBack() && note2->tieBack()->startNote() != note)
+                        note2 = nullptr;
                   if (note2) {
                         Tie* tie = new Tie(this);
                         tie->setStartNote(note);
@@ -1373,10 +1411,35 @@ void Score::cmdAddTie(bool addToChord)
                         tie->setTicks(note2->chord()->segment()->tick() - note->chord()->segment()->tick());
                         undoAddElement(tie);
                         }
+                  if (!jumpNotes.empty()) {
+                        if (!note->tieFor())
+                              undoAddPartialTie(note, false);
+                        for (Note* destination : jumpNotes) {
+                              if (!destination->tieBack())
+                                    undoAddPartialTie(destination, true);
+                              }
+                        }
+                  }
+            }
+      if (noteEntryMode()) {
+            for (Note* source : noteList) {
+                  if (!source->tieFor() && !source->partialTie(false))
+                        continue;
+                  for (Note* destination : repeatTieDestinations(source)) {
+                        if (!destination->tieBack())
+                              undoAddPartialTie(destination, true);
+                        }
                   }
             }
       if (lastAddedChord)
             nextInputPos(lastAddedChord, false);
+      else if (advanceRepeatInput && _is.segment()) {
+            // No written continuation was inserted, but T still consumes one
+            // input position. Advance from the cursor (already ahead of a
+            // just-entered note), once for the whole chord.
+            _is.moveToNextInputPos();
+            setPlayPos(_is.tick());
+            }
       endCmd();
       }
 
@@ -1535,23 +1598,31 @@ void Score::cmdToggleTie()
       for (size_t i = 0; i < notes; ++i) {
             Note* n = noteList[i];
 
-            if (n->tieFor()) {
+            if (n->tieFor() || n->partialTie(false)) {
                   tieNoteList[i] = nullptr;
                   }
             else {
-                  Note* tieNote = findOrCreateTieTarget(n);
+                  const auto destinations = repeatTieDestinations(n);
+                  Measure* measure = n->chord()->measure();
+                  // A repeat-only transition must not create a physical note
+                  // in the skipped ending. Keep ordinary rest-to-note entry.
+                  const bool repeatOnly = !destinations.empty()
+                        && !hasLinearPlaybackTransition(measure, measure->nextMeasure());
+                  Note* tieNote = repeatOnly ? nullptr : findOrCreateTieTarget(n);
                   tieNoteList[i] = tieNote;
 
-                  if (tieNote)
+                  if (tieNote || !destinations.empty())
                         canAddTies = true;
                   }
             }
 
       if (canAddTies) {
             for (size_t i = 0; i < notes; ++i) {
+                  Note* note = noteList[i];
+                  if (note->tieFor() || note->partialTie(false))
+                        continue;
                   Note* note2 = tieNoteList[i];
                   if (note2) {
-                        Note* note = noteList[i];
 
                         Tie* tie = new Tie(this);
                         tie->setStartNote(note);
@@ -1564,11 +1635,20 @@ void Score::cmdToggleTie()
                         tie->setTicks(difference);
                         undoAddElement(tie);
                         }
+                  const auto destinations = repeatTieDestinations(note);
+                  if (!destinations.empty()) {
+                        if (!note->tieFor())
+                              undoAddPartialTie(note, false);
+                        for (Note* destination : destinations) {
+                              if (!destination->tieBack())
+                                    undoAddPartialTie(destination, true);
+                              }
+                        }
                   }
             }
       else {
             for (Note* n : noteList) {
-                  Tie* tie = n->tieFor();
+                  Tie* tie = n->tieFor() ? n->tieFor() : n->partialTie(false);
                   if (tie)
                         undoRemoveElement(tie);
                   }
@@ -2209,6 +2289,20 @@ void Score::deleteItem(Element* el)
                   }
                   break;
 
+            case ElementType::LYRICSLINE_SEGMENT: {
+                  Lyrics* lyrics = toLyricsLine(toSpannerSegment(el)->spanner())->lyrics();
+                  if (lyrics->isPartial()) {
+                        if (lyrics->plainText().isEmpty())
+                              undoRemoveElement(lyrics);
+                        else {
+                              lyrics->undoChangeProperty(Pid::PARTIAL_SPANNER_DIRECTION, -1);
+                              lyrics->undoChangeProperty(Pid::LYRIC_TICKS, Fraction(0, 1));
+                              lyrics->undoChangeProperty(Pid::SYLLABIC, int(Lyrics::Syllabic::SINGLE));
+                              }
+                        }
+                  break;
+                  }
+
             case ElementType::OTTAVA_SEGMENT:
             case ElementType::HAIRPIN_SEGMENT:
             case ElementType::TRILL_SEGMENT:
@@ -2218,7 +2312,6 @@ void Score::deleteItem(Element* el)
             case ElementType::VOLTA_SEGMENT:
             case ElementType::SLUR_SEGMENT:
             case ElementType::TIE_SEGMENT:
-            case ElementType::LYRICSLINE_SEGMENT:
             case ElementType::PEDAL_SEGMENT:
             case ElementType::GUITAR_BEND_SEGMENT:
             case ElementType::GLISSANDO_SEGMENT:
@@ -4626,6 +4719,19 @@ void Score::undoChangeInvisible(Element* e, bool v)
 
 void Score::undoAddElement(Element* element)
       {
+      if (element->isTie() && toTie(element)->isPartial()) {
+            Note* owner = toTie(element)->startNote();
+            for (ScoreElement* linked : owner->linkList()) {
+                  Note* note = toNote(linked);
+                  Tie* tie = note == owner ? toTie(element) : toTie(element->linkedClone());
+                  tie->setScore(note->score());
+                  tie->setStartNote(note);
+                  tie->setEndNote(nullptr);
+                  tie->setTrack(note->track());
+                  undo(new AddElement(tie));
+                  }
+            return;
+            }
       QList<Staff* > staffList;
       Staff* ostaff = element->staff();
       int strack = -1;
@@ -5363,6 +5469,42 @@ void Score::undoRemoveElement(Element* element)
       {
       if (!element)
             return;
+      // Remove dependent repeat endpoints with their source. A landing shared
+      // by another active source remains available to that source.
+      if (element->isTie()) {
+            Tie* tie = toTie(element);
+            if (!tie->isPartial() || !tie->isIncoming()) {
+                  Note* source = tie->startNote();
+                  if (source) {
+                        for (Note* destination : repeatTieDestinations(source)) {
+                              Tie* incoming = destination->partialTie(true);
+                              if (!incoming)
+                                    continue;
+                              bool shared = false;
+                              for (Measure* measure : precedingRepeatMeasures(destination->chord()->measure())) {
+                                    for (Segment* segment = measure->first(SegmentType::ChordRest); segment && !shared; segment = segment->next(SegmentType::ChordRest)) {
+                                          for (int track = source->part()->startTrack(); track < source->part()->endTrack() && !shared; ++track) {
+                                                Element* candidate = segment->element(track);
+                                                if (!candidate || !candidate->isChord())
+                                                      continue;
+                                                for (Note* note : toChord(candidate)->notes()) {
+                                                      if (note == source || (!note->tieFor() && !note->partialTie(false)))
+                                                            continue;
+                                                      const auto endpoints = repeatTieDestinations(note);
+                                                      if (std::find(endpoints.begin(), endpoints.end(), destination) != endpoints.end()) {
+                                                            shared = true;
+                                                            break;
+                                                            }
+                                                      }
+                                                }
+                                          }
+                                    }
+                              if (!shared)
+                                    undoRemoveElement(incoming);
+                              }
+                        }
+                  }
+            }
       QList<Segment*> segments;
       for (ScoreElement*& ee : element->linkList()) {
             Element* e = static_cast<Element*>(ee);

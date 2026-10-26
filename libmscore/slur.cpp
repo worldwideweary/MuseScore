@@ -180,6 +180,20 @@ bool SlurSegment::edit(EditData& ed)
             return true;
             }
 
+      if (ed.modifiers == (Qt::ShiftModifier | Qt::AltModifier)
+          && (ed.curGrip == Grip::START || ed.curGrip == Grip::END)
+          && (ed.key == Qt::Key_Left || ed.key == Qt::Key_Right)) {
+            bool incoming = sl->isIncoming();
+            bool outgoing = sl->isOutgoing();
+            if (ed.curGrip == Grip::START)
+                  incoming = ed.key == Qt::Key_Left;
+            else
+                  outgoing = ed.key == Qt::Key_Right;
+            const int direction = incoming ? (outgoing ? 2 : 0) : (outgoing ? 1 : -1);
+            sl->undoChangeProperty(Pid::PARTIAL_SPANNER_DIRECTION, direction);
+            return true;
+            }
+
       if (!((ed.modifiers & Qt::ShiftModifier) && (isSingleType() || (isBeginType() && ed.curGrip == Grip::START) || (isEndType() && ed.curGrip == Grip::END))))
             return false;
 
@@ -542,7 +556,7 @@ bool SlurSegment::isEdited() const
       }
 
 Slur::Slur(const Slur& s)
-   : SlurTie(s)
+   : SlurTie(s), _partialDirection(s._partialDirection)
       {
       }
 
@@ -1061,6 +1075,17 @@ void Slur::slurPos(SlurPos* sp)
                   sp->p2 += QPointF(xo, yo);
                   }
             }
+      if (isIncoming() && sp->system1) {
+            const Measure* measure = startCR()->measure();
+            qreal x = measure->x() + 0.25 * _spatium;
+            if (measure == sp->system1->firstMeasure())
+                  x = sp->system1->firstNoteRestSegmentX(true) - 1.5 * _spatium;
+            sp->p1.setX(qMin(x, sp->p1.x() - _spatium));
+            }
+      if (isOutgoing() && sp->system2) {
+            const Measure* measure = endCR()->measure();
+            sp->p2.setX(qMax(sp->p2.x() + _spatium, measure->x() + measure->width() - 0.25 * _spatium));
+            }
       }
 
 //---------------------------------------------------------
@@ -1086,6 +1111,10 @@ void Slur::write(XmlWriter& xml) const
       if (!xml.canWrite(this))
             return;
       xml.stag(this);
+      if (_partialDirection >= 0) {
+            static const char* names[] = { "incoming", "outgoing", "both" };
+            xml.tag("partialSpannerDirection", names[_partialDirection]);
+            }
       SlurTie::writeProperties(xml);
       xml.etag();
       }
@@ -1096,7 +1125,31 @@ void Slur::write(XmlWriter& xml) const
 
 bool Slur::readProperties(XmlReader& e)
       {
+      if (e.name() == "partialSpannerDirection") {
+            const QString direction = e.readElementText();
+            _partialDirection = direction == "incoming" ? 0 : direction == "outgoing" ? 1 : direction == "both" ? 2 : -1;
+            return true;
+            }
       return SlurTie::readProperties(e);
+      }
+
+QVariant Slur::getProperty(Pid id) const
+      {
+      return id == Pid::PARTIAL_SPANNER_DIRECTION ? QVariant(_partialDirection) : SlurTie::getProperty(id);
+      }
+
+QVariant Slur::propertyDefault(Pid id) const
+      {
+      return id == Pid::PARTIAL_SPANNER_DIRECTION ? QVariant(-1) : SlurTie::propertyDefault(id);
+      }
+
+bool Slur::setProperty(Pid id, const QVariant& value)
+      {
+      if (id != Pid::PARTIAL_SPANNER_DIRECTION)
+            return SlurTie::setProperty(id, value);
+      _partialDirection = qBound(-1, value.toInt(), 2);
+      triggerLayout();
+      return true;
       }
 
 //---------------------------------------------------------

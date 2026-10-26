@@ -86,6 +86,8 @@ enum class Pid : short {
       STEM_DIRECTION,
       NO_STEM,
       SLUR_DIRECTION,
+      PARTIAL_SPANNER_DIRECTION,
+      PARTIAL_LYRIC_MELISMA,
       LEADING_SPACE,
       DISTRIBUTE,
       MIRROR_HEAD,

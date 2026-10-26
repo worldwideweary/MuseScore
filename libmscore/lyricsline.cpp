@@ -86,6 +86,19 @@ void LyricsLine::styleChanged()
 
 void LyricsLine::layout()
       {
+      if (lyrics()->isPartial()) {
+            setLineWidth(score()->styleP(isEndMelisma() ? Sid::lyricsLineThickness : Sid::lyricsDashLineThickness));
+            _nextLyrics = nullptr;
+            ChordRest* last = score()->findCR(lyrics()->endTick(), track());
+            if (!last)
+                  last = lyrics()->chordRest();
+            setTick(lyrics()->tick());
+            setTick2(last->tick() + last->actualTicks());
+            setStartElement(lyrics()->chordRest());
+            setEndElement(last);
+            return;
+            }
+
       bool tempMelismaTicks = (lyrics()->ticks() == Fraction::fromTicks(Lyrics::TEMP_MELISMA_TICKS));
       if (isEndMelisma()) {         // melisma
             setLineWidth(score()->styleP(Sid::lyricsLineThickness));
@@ -177,6 +190,38 @@ SpannerSegment* LyricsLine::layoutSystem(System* system)
       Fraction etick = system->lastMeasure()->endTick();
 
       LyricsLineSegment* lineSegm = toLyricsLineSegment(getNextLayoutSystemSegment(system, [this]() { return createLineSegment(); }));
+
+      if (lyrics()->isPartial()) {
+            layout();
+            const ChordRest* first = lyrics()->chordRest();
+            const ChordRest* last = toChordRest(endElement());
+            const bool begins = tick() >= stick;
+            const bool ends = tick2() <= etick;
+            lineSegm->setSpannerSegmentType(begins ? (ends ? SpannerSegmentType::SINGLE : SpannerSegmentType::BEGIN)
+                                                 : (ends ? SpannerSegmentType::END : SpannerSegmentType::MIDDLE));
+            qreal left = system->firstNoteRestSegmentX(true);
+            qreal right = system->lastNoteRestSegmentX(true);
+            if (begins) {
+                  left = first->x() + first->segment()->x() + first->measure()->x() + lyrics()->x() + lyrics()->bbox().right()
+                         + score()->styleP(isEndMelisma() ? Sid::lyricsMelismaPad : Sid::lyricsDashPad);
+                  if (lyrics()->isIncoming()) {
+                        left = first->measure()->x() + 0.25 * spatium();
+                        if (first->measure() == system->firstMeasure())
+                              left = system->firstNoteRestSegmentX(true) - 1.5 * spatium();
+                        }
+                  }
+            if (ends) {
+                  right = last->x() + last->segment()->x() + last->measure()->x() + last->width();
+                  if (lyrics()->isOutgoing())
+                        right = last->measure()->x() + last->measure()->width() - 0.25 * spatium();
+                  }
+            lineSegm->setPos(QPointF(left, 0));
+            lineSegm->setPos2(QPointF(qMax(qreal(0), right - left), 0));
+            lineSegm->setSelectable(true);
+            lineSegm->setGenerated(false);
+            lineSegm->layout();
+            return lineSegm;
+            }
 
       SpannerSegmentType sst;
       if (tick() >= stick) {
@@ -321,8 +366,49 @@ LyricsLineSegment::LyricsLineSegment(Spanner* sp, Score* s)
 //   layout
 //---------------------------------------------------------
 
+Element* LyricsLineSegment::propertyDelegate(Pid id)
+      {
+      switch (id) {
+            case Pid::VERSE:
+            case Pid::PLACEMENT:
+            case Pid::PARTIAL_SPANNER_DIRECTION:
+            case Pid::PARTIAL_LYRIC_MELISMA:
+                  return lyrics();
+            default:
+                  return LineSegment::propertyDelegate(id);
+            }
+      }
+
+void LyricsLineSegment::undoChangeProperty(Pid id, const QVariant& value, PropertyFlags flags)
+      {
+      if (Element* owner = propertyDelegate(id))
+            static_cast<ScoreElement*>(owner)->undoChangeProperty(id, value, flags);
+      else
+            LineSegment::undoChangeProperty(id, value, flags);
+      }
+
 void LyricsLineSegment::layout()
       {
+      if (lyrics()->isPartial()) {
+            const Lyrics* lyric = lyrics();
+            rypos() = lyric->ipos().y() + lyric->chordRest()->ipos().y();
+            ryoffset() = lyric->offset().y() + lyric->chordRest()->offset().y();
+            if (lyricsLine()->isEndMelisma()) {
+                  _numOfDashes = pos2().x() > 0 ? 1 : 0;
+                  rypos() -= lyricsLine()->lineWidth() * 0.5;
+                  }
+            else {
+                  rypos() -= MScore::pixelRatio * lyric->fontMetrics().xHeight() * score()->styleD(Sid::lyricsDashYposRatio);
+                  _dashLength = score()->styleP(Sid::lyricsDashMaxLength) * mag();
+                  const qreal spacing = score()->styleP(Sid::lyricsDashMaxDistance);
+                  _numOfDashes = pos2().x() > 0 ? qMax(1, int(pos2().x() / qMax(spacing, spatium()))) : 0;
+                  _dashLength = qMin(_dashLength, pos2().x());
+                  }
+            const qreal halfWidth = lyricsLine()->lineWidth() * 0.5;
+            setbbox(QRectF(QPointF(), pos2()).normalized().adjusted(-halfWidth, -halfWidth, halfWidth, halfWidth));
+            return;
+            }
+
       ryoffset() = 0.0;
 
       bool        endOfSystem       = false;
@@ -457,7 +543,7 @@ void LyricsLineSegment::draw(QPainter* painter) const
       if (_numOfDashes < 1)               // nothing to draw
             return;
 
-      QPen pen(lyricsLine()->lyrics()->curColor());
+      QPen pen(selected() ? curColor() : lyricsLine()->lyrics()->curColor());
       pen.setWidthF(lyricsLine()->lineWidth());
       pen.setCapStyle(Qt::FlatCap);
       painter->setPen(pen);

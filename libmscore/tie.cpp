@@ -142,7 +142,7 @@ void TieSegment::editDrag(EditData& ed)
       Grip g = ed.curGrip;
       ups(g).off += ed.delta;
 
-      if (g == Grip::START || g == Grip::END) {
+      if (!tie()->isPartial() && (g == Grip::START || g == Grip::END)) {
             computeBezier();
             //
             // move anchor for slurs/ties
@@ -798,9 +798,68 @@ Tie::Tie(Score* s)
 
 void Tie::write(XmlWriter& xml) const
       {
-      xml.stag(this);
+      if (isPartial()) {
+            xml.stag("PartialTie");
+            xml.tag("partialSpannerDirection", isIncoming() ? "incoming" : "outgoing");
+            }
+      else
+            xml.stag(this);
       SlurTie::writeProperties(xml);
       xml.etag();
+      }
+
+bool Tie::readProperties(XmlReader& xml)
+      {
+      if (xml.name() == "partialSpannerDirection") {
+            const QString direction = xml.readElementText();
+            _partialDirection = direction == "incoming" ? 0 : 1;
+            return true;
+            }
+      return SlurTie::readProperties(xml);
+      }
+
+TieSegment* Tie::layoutPartial(System* system)
+      {
+      Note* note = startNote(); // owner for either direction
+      if (!note || !system)
+            return nullptr;
+      setTick(note->tick());
+      if (staff()->isTabStaff(tick()) && !staff()->staffType(tick())->showBackTied()) {
+            eraseSpannerSegments();
+            return nullptr;
+            }
+      const Chord* chord = note->chord();
+      const Measure* measure = chord->measure();
+      _up = _slurDirection == Direction::AUTO ? !chord->up() : _slurDirection == Direction::UP;
+      _isInside = chord->notes().size() > 1;
+      if (_slurDirection == Direction::AUTO && _isInside)
+            _up = note->line() <= chord->upNote()->line();
+      const qreal sp = spatium();
+      const QPointF origin = chord->pos() + chord->segment()->pos() + measure->pos();
+      qreal y = origin.y() + note->y() + (_up ? -0.75 : 0.75) * sp;
+      if (chord->vStaffIdx() != staffIdx())
+            y += system->staff(chord->vStaffIdx())->y() - system->staff(staffIdx())->y();
+      qreal left, right;
+      if (isIncoming()) {
+            right = origin.x() + note->x() + 0.5 * note->headWidth();
+            left = measure->x() + 0.25 * sp;
+            // Keep the free endpoint after the system header.
+            if (measure == system->firstMeasure())
+                  left = system->firstNoteRestSegmentX(true) - 1.5 * sp;
+            left = qMin(left, right - sp);
+            }
+      else {
+            left = origin.x() + note->x() + 0.5 * note->headWidth();
+            right = qMax(left + sp, measure->x() + measure->width() - 0.25 * sp);
+            }
+      setPos(0, 0);
+      fixupSegments(1);
+      TieSegment* segment = segmentAt(0);
+      segment->setSystem(system);
+      segment->setSpannerSegmentType(SpannerSegmentType::SINGLE);
+      segment->layoutSegment(QPointF(left, y), QPointF(right, y));
+      segment->finalizeSegment();
+      return segment;
       }
 
 //---------------------------------------------------------

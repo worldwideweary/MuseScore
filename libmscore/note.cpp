@@ -1314,6 +1314,15 @@ void Note::removeSpanner(Spanner* l)
 //   add
 //---------------------------------------------------------
 
+Tie* Note::partialTie(bool incoming) const
+      {
+      for (Element* e : _el) {
+            if (e->isTie() && toTie(e)->isPartial() && toTie(e)->isIncoming() == incoming)
+                  return toTie(e);
+            }
+      return nullptr;
+      }
+
 void Note::add(Element* e)
       {
       e->setParent(this);
@@ -1332,6 +1341,14 @@ void Note::add(Element* e)
                   break;
             case ElementType::TIE: {
                   Tie* tie = toTie(e);
+                  if (tie->isPartial()) {
+                        tie->setStartNote(this);
+                        tie->setEndNote(nullptr);
+                        tie->setTick(tick());
+                        tie->setTicks(Fraction(0, 1));
+                        _el.push_back(e);
+                        break;
+                        }
                   tie->setStartNote(this);
                   tie->setTick(tie->startNote()->tick());
                   tie->setTrack(track());
@@ -1376,6 +1393,12 @@ void Note::remove(Element* e)
                   break;
             case ElementType::TIE: {
                   Tie* tie = toTie(e);
+                  if (tie->isPartial()) {
+                        _el.remove(e);
+                        for (SpannerSegment* segment : tie->spannerSegments())
+                              segment->setSystem(nullptr);
+                        break;
+                        }
                   setTieFor(0);
                   if (tie->endNote())
                         tie->endNote()->setTieBack(0);
@@ -1708,6 +1731,14 @@ bool Note::readProperties(XmlReader& e)
             a->setTrack(track());
             a->read(e);
             add(a);
+            }
+      else if (tag == "PartialTie") {
+            Tie* tie = new Tie(score());
+            tie->setPartialDirection(1);
+            tie->setTrack(track());
+            tie->setStartNote(this);
+            tie->read(e);
+            add(tie);
             }
       else if (tag == "Spanner")
             Spanner::readSpanner(e, this, track());
@@ -2543,7 +2574,7 @@ void Note::layout2()
                   if (f->layoutType() == ElementType::NOTE)
                         f->layout();
                   }
-            else {
+            else if (!e->isTie()) {
                   e->setMag(mag());
                   e->layout();
                   }
@@ -2704,7 +2735,7 @@ void Note::scanElements(void* data, void (*func)(void*, Element*), bool all)
       //      if (_tieFor && !staff()->isTabStaff(chord->tick()))  // no ties in tablature
       //            _tieFor->scanElements(data, func, all);
       for (Element* e : _el) {
-            if (score()->tagIsValid(e->tag()))
+            if (score()->tagIsValid(e->tag()) && !(e->isTie() && toTie(e)->isPartial()))
                   e->scanElements(data, func, all);
             }
       for (Spanner* sp : qAsConst(_spannerFor))

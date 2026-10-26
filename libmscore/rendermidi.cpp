@@ -632,31 +632,32 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
       // taking NoteEvent length adjustments into account
       // but stopping at any note with multiple NoteEvents
       // and processing those notes recursively
-      if (note->tieFor()) {
-            Note* n = note->tieFor()->endNote();
-            while (n) {
-                  NoteEventList nel = n->playEvents();
-                  if (nel.size() == 1 && !isGlissandoFor(n)) {
-                        // add value of this note to main note
-                        // if we wish to suppress first note of ornament,
-                        // then do this regardless of number of NoteEvents
-                        tieLen += (n->chord()->actualTicks().ticks() * (nel[0].len())) / 1000;
-                        }
-                  else {
-                        // recurse
-                        collectNote(events, channel, n, velocityMultiplier, tickOffset, staff, config);
+      const int tick1 = chord->tick().ticks() + tickOffset;
+      const bool grace = note->chord()->isGrace();
+      const Note* next = grace ? (note->tieFor() ? note->tieFor()->endNote() : nullptr) : nextTiedNoteInPlayback(note, tick1);
+      const bool tieFor = next != nullptr;
+      const bool tieBack = grace ? note->tieBack() != nullptr : hasPreviousTiedNoteInPlayback(note, tick1);
+      int nextUTick = tick1 + ticks;
+      std::set<const Note*> graceVisited;
+      while (next) {
+            const NoteEventList eventsForNote = next->playEvents();
+            if (eventsForNote.size() == 1 && !isGlissandoFor(next))
+                  tieLen += next->chord()->actualTicks().ticks() * eventsForNote[0].len() / 1000;
+            else {
+                  collectNote(events, channel, next, velocityMultiplier, nextUTick - next->tick().ticks(), staff, config);
+                  break;
+                  }
+            if (grace) {
+                  if (!graceVisited.insert(next).second)
                         break;
-                        }
-                  if (n->tieFor() && n != n->tieFor()->endNote())
-                        n = n->tieFor()->endNote();
-                  else
-                        break;
+                  next = next->tieFor() ? next->tieFor()->endNote() : nullptr;
+                  }
+            else {
+                  const Note* following = nextTiedNoteInPlayback(next, nextUTick);
+                  nextUTick += next->chord()->actualTicks().ticks();
+                  next = following;
                   }
             }
-
-      int tick1    = chord->tick().ticks() + tickOffset;
-      bool tieFor  = note->tieFor();
-      bool tieBack = note->tieBack();
 
       NoteEventList nel = note->playEvents();
       int nels = nel.size();

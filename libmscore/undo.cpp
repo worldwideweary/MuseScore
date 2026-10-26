@@ -848,9 +848,15 @@ static void removeNote(const Note* note)
       {
       Score* score = note->score();
       if (note->tieFor() && note->tieFor()->endNote())
-            score->undo(new RemoveElement(note->tieFor()));
+            score->undoRemoveElement(note->tieFor());
       if (note->tieBack())
-            score->undo(new RemoveElement(note->tieBack()));
+            score->undoRemoveElement(note->tieBack());
+      // Partial tie segments live on the system, so remove them explicitly
+      // before removing their note and preserve them in the same undo macro.
+      for (bool incoming : { false, true }) {
+            if (Tie* partial = note->partialTie(incoming))
+                  score->undoRemoveElement(partial);
+            }
       for (Spanner* s : note->spannerBack()) {
             score->undo(new RemoveElement(s));
             }

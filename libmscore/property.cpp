@@ -79,6 +79,8 @@ static constexpr PropertyMetaData propertyList[] = {
       { Pid::STEM_DIRECTION,            P_TYPE::DIRECTION,      false, "StemDirection",          DUMMY_QT_TRANSLATE_NOOP("propertyName", "stem direction")                                },
       { Pid::NO_STEM,                   P_TYPE::BOOL,           false, "noStem",                 DUMMY_QT_TRANSLATE_NOOP("propertyName", "no stem")                                       },
       { Pid::SLUR_DIRECTION,            P_TYPE::DIRECTION,      false, "up",                     DUMMY_QT_TRANSLATE_NOOP("propertyName", "up")                                            },
+      { Pid::PARTIAL_SPANNER_DIRECTION, P_TYPE::INT, false, "partialSpannerDirection", DUMMY_QT_TRANSLATE_NOOP("propertyName", "partial spanner direction") },
+      { Pid::PARTIAL_LYRIC_MELISMA, P_TYPE::BOOL, false, "partialLyricMelisma", DUMMY_QT_TRANSLATE_NOOP("propertyName", "partial lyric extension") },
       { Pid::LEADING_SPACE,             P_TYPE::SPATIUM,        false, "leadingSpace",           DUMMY_QT_TRANSLATE_NOOP("propertyName", "leading space")                                 },
       { Pid::DISTRIBUTE,                P_TYPE::BOOL,           false, "distribute",             DUMMY_QT_TRANSLATE_NOOP("propertyName", "distributed")                                   },
       { Pid::MIRROR_HEAD,               P_TYPE::DIRECTION_H,    false, "mirror",                 DUMMY_QT_TRANSLATE_NOOP("propertyName", "mirror")                                        },

@@ -67,12 +67,23 @@ class Tie final : public SlurTie {
 
    private:
       bool _isInside{ false };
+      // Partial ties belong to a single note and never enter tieFor/tieBack.
+      // Keeping those chains linear avoids cycles at backwards repeat jumps.
+      int _partialDirection { -1 }; // -1 normal, 0 incoming, 1 outgoing
+
 
    public:
       Tie(Score* = 0);
 
       Tie* clone() const override       { return new Tie(*this);  }
       ElementType type() const override { return ElementType::TIE; }
+
+      bool isPartial() const { return _partialDirection >= 0; }
+      bool isIncoming() const { return _partialDirection == 0; }
+      void setPartialDirection(int direction) { _partialDirection = direction; }
+      int partialDirection() const { return _partialDirection; }
+      bool readProperties(XmlReader&) override;
+      TieSegment* layoutPartial(System*);
 
       void setStartNote(Note* note);
       void setEndNote(Note* note)                 { setEndElement((Element*)note); }

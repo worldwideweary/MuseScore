@@ -50,6 +50,8 @@ class Lyrics final : public TextBase {
                               ///< (melisma)
       Syllabic _syllabic;
       LyricsLine* _separator;
+      int _partialDirection { -1 };
+      bool _partialMelisma { true };
 
       bool isMelisma() const;
       void undoChangeProperty(Pid id, const QVariant&, PropertyFlags ps) override;
@@ -90,6 +92,11 @@ class Lyrics final : public TextBase {
       void remove(Element*) override;
       void endEdit(EditData&) override;
 
+      int partialDirection() const { return _partialDirection; }
+      bool isPartial() const { return _partialDirection >= 0; }
+      bool isIncoming() const { return _partialDirection == 0 || _partialDirection == 2; }
+      bool isOutgoing() const { return _partialDirection == 1 || _partialDirection == 2; }
+      bool partialMelisma() const { return _partialMelisma; }
       Fraction ticks() const                          { return _ticks;    }
       void setTicks(const Fraction& tick)             { _ticks = tick;    }
       Fraction endTick() const;
@@ -125,7 +132,7 @@ class LyricsLine final : public SLine {
 
       Lyrics* lyrics() const                          { return toLyrics(parent());   }
       Lyrics* nextLyrics() const                      { return _nextLyrics;         }
-      bool isEndMelisma() const                       { return lyrics()->ticks().isNotZero(); }
+      bool isEndMelisma() const                       { return lyrics()->isPartial() ? lyrics()->partialMelisma() : lyrics()->ticks().isNotZero(); }
       bool isDash() const                             { return !isEndMelisma(); }
       bool setProperty(Pid propertyId, const QVariant& v) override;
       SpannerSegment* layoutSystem(System*) override;
@@ -146,6 +153,8 @@ class LyricsLineSegment final : public LineSegment {
 
       LyricsLineSegment* clone() const override     { return new LyricsLineSegment(*this); }
       ElementType type() const override             { return ElementType::LYRICSLINE_SEGMENT; }
+      Element* propertyDelegate(Pid) override;
+      void undoChangeProperty(Pid, const QVariant&, PropertyFlags) override;
       void draw(QPainter*) const override;
       void layout() override;
       // helper functions

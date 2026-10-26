@@ -15,6 +15,14 @@
 #include "libmscore/score.h"
 #include "libmscore/measure.h"
 #include "libmscore/repeatlist.h"
+#include "libmscore/utils.h"
+#include "libmscore/chord.h"
+#include "libmscore/note.h"
+#include "libmscore/navigate.h"
+#include "libmscore/tie.h"
+#include "libmscore/lyrics.h"
+#include "libmscore/slur.h"
+#include "libmscore/undo.h"
 
 #define DIR QString("libmscore/repeat/")
 
@@ -31,6 +39,17 @@ class TestRepeat : public QObject, public MTest
 
    private slots:
       void initTestCase();
+      void notationRoutes_data();
+      void notationRoutes();
+      void partialTieRoundTrip();
+      void repeatTieNotes();
+      void automaticRepeatTies();
+      void repeatTiePlayback();
+      void partialLyricsLayout();
+      void partialSlurLayout();
+      void repeatTieNoteEntry_data();
+      void repeatTieNoteEntry();
+      void repeatTieToggle();
       void repeat01() { repeat("repeat01.mscx", "1;2;3; 2;3;4;5;6"); }        // repeat barline 2 measures ||: | :||
       void repeat02() { repeat("repeat02.mscx", "1;2; 2;3;4;5;6"); }          // repeat barline 1 measure ||: :||
       void repeat03() { repeat("repeat03.mscx", "1;2; 1;2;3;4;5;6"); }        // repeat barline end to start :||
@@ -160,6 +179,360 @@ void TestRepeat::repeat(const char* f1, const QString & ref)
       delete score;
       }
 
+
+// Keep notation independent of the Play Repeats preference. Expected edges are
+// non-linear transitions only, in first-encounter order, without duplicates.
+void TestRepeat::notationRoutes_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::addColumn<QString>("edges");
+      QTest::newRow("ordinary-repeat") << "repeat01.mscx" << "3>2";
+      QTest::newRow("second-ending") << "repeat06.mscx" << "2>4;3>2";
+      QTest::newRow("dc-al-fine") << "repeat07.mscx" << "6>1";
+      QTest::newRow("ds-al-coda") << "repeat08.mscx" << "4>7;6>2";
+      QTest::newRow("deduplicate") << "repeat15.mscx" << "2>2";
+      QTest::newRow("no-transition") << "repeat57.mscx" << "";
+      }
+
+void TestRepeat::notationRoutes()
+      {
+      QFETCH(QString, file);
+      QFETCH(QString, edges);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score);
+      score->setExpandRepeats(false);
+      QStringList actual;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            for (Measure* target : followingRepeatMeasures(m)) {
+                  actual << QString("%1>%2").arg(m->no() + 1).arg(target->no() + 1);
+                  const auto incoming = precedingRepeatMeasures(target);
+                  QVERIFY(std::find(incoming.begin(), incoming.end(), m) != incoming.end());
+                  }
+            }
+      QCOMPARE(actual.join(";"), edges);
+      QVERIFY(!score->expandRepeats());
+      // Reading the ordinary playback list must still produce a flat score.
+      QCOMPARE(score->repeatList().size(), 1);
+      delete score;
+      }
+
+void TestRepeat::partialTieRoundTrip()
+      {
+      MasterScore* score = readScore(DIR + "repeat06.mscx");
+      QVERIFY(score);
+      Note* note = toChord(score->firstMeasure()->first(SegmentType::ChordRest)->element(0))->upNote();
+      score->startCmd();
+      Tie* outgoing = score->undoAddPartialTie(note, false);
+      score->undoAddPartialTie(note, true);
+      score->endCmd();
+      QVERIFY(note->partialTie(true));
+      QVERIFY(note->partialTie(false));
+      QVERIFY(!note->tieFor());
+      QVERIFY(!note->tieBack());
+      QCOMPARE(int(outgoing->spannerSegments().size()), 1);
+      MasterScore* copy = score->clone();
+      QVERIFY(copy);
+      Note* copiedNote = toChord(copy->firstMeasure()->first(SegmentType::ChordRest)->element(0))->upNote();
+      QVERIFY(copiedNote->partialTie(true));
+      QVERIFY(copiedNote->partialTie(false));
+      QVERIFY(!copiedNote->tieFor());
+      QVERIFY(!copiedNote->tieBack());
+      QVERIFY(copiedNote->partialTie(true)->startNote() == copiedNote);
+      score->undoRedo(true, nullptr);
+      QVERIFY(!note->partialTie(true));
+      QVERIFY(!note->partialTie(false));
+      score->undoRedo(false, nullptr);
+      QVERIFY(note->partialTie(true));
+      QVERIFY(note->partialTie(false));
+      delete copy;
+      delete score;
+      }
+
+void TestRepeat::repeatTieNotes()
+      {
+      MasterScore* score = readScore(DIR + "repeat06.mscx");
+      QVERIFY(score);
+      std::vector<Note*> notes;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            Note* n = toChord(m->first(SegmentType::ChordRest)->element(0))->upNote();
+            n->setPitch(60);
+            notes.push_back(n);
+            }
+      auto toEnding = repeatTieDestinations(notes[1]);
+      QCOMPARE(int(toEnding.size()), 1);
+      QCOMPARE(toEnding.front(), notes[3]);
+      auto toRepeat = repeatTieDestinations(notes[2]);
+      QCOMPARE(int(toRepeat.size()), 1);
+      QCOMPARE(toRepeat.front(), notes[1]);
+      notes[3]->setPitch(61);
+      QVERIFY(repeatTieDestinations(notes[1]).empty());
+      delete score;
+      }
+
+void TestRepeat::automaticRepeatTies()
+      {
+      MasterScore* score = readScore(DIR + "repeat06.mscx");
+      QVERIFY(score);
+      std::vector<Note*> notes;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            Note* n = toChord(m->first(SegmentType::ChordRest)->element(0))->upNote();
+            n->setPitch(60);
+            notes.push_back(n);
+            }
+      score->setExpandRepeats(false);
+      score->select(notes[1]);
+      score->cmdAddTie();
+      QVERIFY(notes[1]->tieFor());
+      QCOMPARE(notes[1]->tieFor()->endNote(), notes[2]);
+      QVERIFY(notes[3]->partialTie(true));
+      QVERIFY(!notes[1]->partialTie(false));
+      QVERIFY(!score->expandRepeats());
+      // Deleting the source tie also removes its second-ending endpoint.
+      score->startCmd();
+      score->undoRemoveElement(notes[1]->tieFor());
+      score->endCmd();
+      QVERIFY(!notes[3]->partialTie(true));
+      score->undoRedo(true, nullptr);
+      QVERIFY(notes[1]->tieFor());
+      QVERIFY(notes[3]->partialTie(true));
+      score->undoRedo(true, nullptr);
+      QVERIFY(!notes[1]->tieFor());
+      QVERIFY(!notes[3]->partialTie(true));
+      score->undoRedo(false, nullptr);
+      QVERIFY(notes[1]->tieFor());
+      QVERIFY(notes[3]->partialTie(true));
+      score->select(notes[2]);
+      score->cmdAddTie();
+      // First ending is never played into second ending: use a hanging tie.
+      QVERIFY(!notes[2]->tieFor());
+      QVERIFY(notes[2]->partialTie(false));
+      QVERIFY(notes[1]->partialTie(true));
+      score->startCmd();
+      score->undoRemoveElement(notes[2]->chord());
+      score->endCmd();
+      QVERIFY(!notes[1]->partialTie(true));
+      QVERIFY(!notes[2]->partialTie(false));
+      QVERIFY(!notes[3]->partialTie(true));
+      score->undoRedo(true, nullptr);
+      QVERIFY(notes[1]->partialTie(true));
+      QVERIFY(notes[2]->partialTie(false));
+      QVERIFY(notes[3]->partialTie(true));
+      MasterScore* copy = score->clone();
+      QVERIFY(copy);
+      Note* copiedFirstEnding = toChord(copy->firstMeasure()->nextMeasure()->nextMeasure()->first(SegmentType::ChordRest)->element(0))->upNote();
+      QVERIFY(copiedFirstEnding->partialTie(false));
+      QVERIFY(!copiedFirstEnding->tieFor());
+      delete copy;
+      delete score;
+      }
+
+void TestRepeat::repeatTiePlayback()
+      {
+      MasterScore* score = readScore(DIR + "repeat06.mscx");
+      QVERIFY(score);
+      std::vector<Note*> notes;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            Note* n = toChord(m->first(SegmentType::ChordRest)->element(0))->upNote();
+            n->setPitch(60);
+            notes.push_back(n);
+            }
+      score->setExpandRepeats(true);
+      score->select(notes[1]);
+      score->cmdAddTie();
+      score->select(notes[2]);
+      score->cmdAddTie();
+      const int bar = notes[0]->chord()->actualTicks().ticks();
+      QCOMPARE(nextTiedNoteInPlayback(notes[1], bar), static_cast<const Note*>(notes[2]));
+      QCOMPARE(nextTiedNoteInPlayback(notes[2], bar * 2), static_cast<const Note*>(notes[1]));
+      QCOMPARE(nextTiedNoteInPlayback(notes[1], bar * 3), static_cast<const Note*>(notes[3]));
+      QVERIFY(!hasPreviousTiedNoteInPlayback(notes[1], bar));
+      QVERIFY(hasPreviousTiedNoteInPlayback(notes[1], bar * 3));
+      QVERIFY(hasPreviousTiedNoteInPlayback(notes[3], bar * 4));
+      score->startCmd();
+      score->undoRemoveElement(notes[3]->partialTie(true));
+      score->endCmd();
+      QVERIFY(!nextTiedNoteInPlayback(notes[1], bar * 3));
+      QVERIFY(!hasPreviousTiedNoteInPlayback(notes[3], bar * 4));
+      score->setExpandRepeats(false);
+      QVERIFY(!nextTiedNoteInPlayback(notes[2], bar * 2));
+      delete score;
+      }
+
+void TestRepeat::partialLyricsLayout()
+      {
+      for (int direction : { 0, 1, 2 }) {
+            for (bool melisma : { false, true }) {
+                  std::unique_ptr<MasterScore> score(readScore(DIR + "repeat06.mscx"));
+                  QVERIFY(score);
+                  Measure* measure = score->firstMeasure()->nextMeasure()->nextMeasure()->nextMeasure();
+                  Chord* chord = toChord(measure->first(SegmentType::ChordRest)->element(0));
+                  Lyrics* lyric = new Lyrics(score.get());
+                  lyric->setParent(chord);
+                  lyric->setTrack(0);
+                  lyric->setProperty(Pid::PARTIAL_SPANNER_DIRECTION, direction);
+                  lyric->setProperty(Pid::PARTIAL_LYRIC_MELISMA, melisma);
+                  if (direction == 1)
+                        lyric->setXmlText("jump");
+                  score->startCmd();
+                  score->undoAddElement(lyric);
+                  score->endCmd();
+                  LyricsLine* line = nullptr;
+                  for (Spanner* spanner : score->unmanagedSpanners()) {
+                        if (spanner->isLyricsLine() && spanner->parent() == lyric)
+                              line = toLyricsLine(spanner);
+                        }
+                  QVERIFY(line);
+                  QVERIFY(!line->spannerSegments().empty());
+                  SpannerSegment* segment = line->frontSegment();
+                  QVERIFY(segment->bbox().width() > 0);
+                  QVERIFY(segment->selectable());
+                  QVERIFY(!segment->generated());
+                  std::unique_ptr<MasterScore> copy(score->clone());
+                  QVERIFY(copy);
+                  score->startCmd();
+                  score->deleteItem(segment);
+                  score->endCmd();
+                  if (direction == 1) {
+                        QVERIFY(!lyric->isPartial());
+                        QCOMPARE(lyric->plainText(), QString("jump"));
+                        }
+                  else
+                        QVERIFY(chord->lyrics().empty());
+                  score->undoRedo(true, nullptr);
+                  QVERIFY(!chord->lyrics().empty());
+                  QVERIFY(chord->lyrics().front()->isPartial());
+                  }
+            }
+      }
+
+void TestRepeat::partialSlurLayout()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "repeat06.mscx"));
+      QVERIFY(score);
+      Measure* measure = score->firstMeasure()->nextMeasure()->nextMeasure()->nextMeasure();
+      Chord* chord = toChord(measure->first(SegmentType::ChordRest)->element(0));
+      Slur* slur = new Slur(score.get());
+      slur->setTrack(0);
+      slur->setTrack2(0);
+      slur->setTick(chord->tick());
+      slur->setTick2(chord->tick());
+      slur->setStartElement(chord);
+      slur->setEndElement(chord);
+      slur->setPartialDirection(0);
+      score->startCmd();
+      score->undoAddElement(slur);
+      score->endCmd();
+      QVERIFY(!slur->spannerSegments().empty());
+      QVERIFY(slur->frontSegment()->bbox().width() > 0);
+      std::unique_ptr<MasterScore> copy(score->clone());
+      QVERIFY(copy);
+      }
+
+void TestRepeat::repeatTieNoteEntry_data()
+      {
+      QTest::addColumn<bool>("justEntered");
+      QTest::addColumn<bool>("chord");
+      QTest::newRow("selected-note") << false << false;
+      QTest::newRow("just-entered-note") << true << false;
+      QTest::newRow("selected-chord") << false << true;
+      QTest::newRow("just-entered-chord") << true << true;
+      }
+
+void TestRepeat::repeatTieNoteEntry()
+      {
+      QFETCH(bool, justEntered);
+      QFETCH(bool, chord);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "repeat06.mscx"));
+      QVERIFY(score);
+      Measure* landing = score->firstMeasure()->nextMeasure();
+      Measure* ending = landing->nextMeasure();
+      Note* source = toChord(ending->first(SegmentType::ChordRest)->element(0))->upNote();
+      Note* destination = toChord(landing->first(SegmentType::ChordRest)->element(0))->upNote();
+      source->setPitch(destination->pitch());
+      Note* secondEnding = toChord(ending->nextMeasure()->first(SegmentType::ChordRest)->element(0))->upNote();
+      const int untouchedPitch = secondEnding->pitch();
+      const size_t untouchedNotes = secondEnding->chord()->notes().size();
+      Note* upperSource = nullptr;
+      Note* upperDestination = nullptr;
+      if (chord) {
+            upperSource = source->clone();
+            upperSource->setPitch(source->pitch() + 4);
+            source->chord()->add(upperSource);
+            upperDestination = destination->clone();
+            upperDestination->setPitch(upperSource->pitch());
+            destination->chord()->add(upperDestination);
+            }
+      score->select(source);
+      score->inputState().setTrack(source->track());
+      score->inputState().setSegment(source->chord()->segment());
+      score->setNoteEntryMode(true);
+      if (justEntered)
+            score->inputState().moveToNextInputPos();
+      Segment* previousInput = score->inputState().segment();
+      ChordRest* following = nextChordRest(score->inputState().cr());
+      QVERIFY(following);
+      score->cmdAddTie();
+      QCOMPARE(score->inputState().segment(), following->segment());
+      QCOMPARE(score->inputState().lastSegment(), previousInput);
+      QCOMPARE(score->playPos(), following->tick());
+      QCOMPARE(score->inputState().track(), source->track());
+      QVERIFY(source->partialTie(false));
+      QVERIFY(destination->partialTie(true));
+      QVERIFY(!source->tieFor());
+      QCOMPARE(secondEnding->pitch(), untouchedPitch);
+      QCOMPARE(secondEnding->chord()->notes().size(), untouchedNotes);
+      if (chord) {
+            QVERIFY(upperSource->partialTie(false));
+            QVERIFY(upperDestination->partialTie(true));
+            QVERIFY(!upperSource->tieFor());
+            }
+      score->setNoteEntryMode(false);
+      }
+
+// Exercise the command dispatched by T outside note entry, not cmdAddTie.
+void TestRepeat::repeatTieToggle()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "repeat06.mscx"));
+      QVERIFY(score);
+      std::vector<Note*> notes;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            Note* n = toChord(m->first(SegmentType::ChordRest)->element(0))->upNote();
+            n->setPitch(60);
+            notes.push_back(n);
+            }
+      score->setExpandRepeats(false);
+      score->select(notes[1]);
+      score->cmdToggleTie();
+      QVERIFY(notes[1]->tieFor());
+      QCOMPARE(notes[1]->tieFor()->endNote(), notes[2]);
+      QVERIFY(notes[3]->partialTie(true));
+      score->cmdToggleTie();
+      QVERIFY(!notes[1]->tieFor());
+      QVERIFY(!notes[3]->partialTie(true));
+      score->undoRedo(true, nullptr);
+      QVERIFY(notes[1]->tieFor());
+      QVERIFY(notes[3]->partialTie(true));
+
+      // The end of volta 1 jumps back, never into volta 2.
+      // A different pitch in volta 2 must remain untouched.
+      notes[3]->setPitch(62);
+      score->select(notes[2]);
+      score->cmdToggleTie();
+      QVERIFY(!notes[2]->tieFor());
+      QVERIFY(notes[2]->partialTie(false));
+      QVERIFY(notes[1]->partialTie(true));
+      QCOMPARE(notes[3]->pitch(), 62);
+      score->cmdToggleTie();
+      QVERIFY(!notes[2]->partialTie(false));
+      QVERIFY(!notes[1]->partialTie(true));
+      score->undoRedo(true, nullptr);
+      QVERIFY(notes[2]->partialTie(false));
+      QVERIFY(notes[1]->partialTie(true));
+      score->undoRedo(false, nullptr);
+      QVERIFY(!notes[2]->partialTie(false));
+      QVERIFY(!notes[1]->partialTie(true));
+      QVERIFY(!score->expandRepeats());
+      }
 
 QTEST_MAIN(TestRepeat)
 #include "tst_repeat.moc"

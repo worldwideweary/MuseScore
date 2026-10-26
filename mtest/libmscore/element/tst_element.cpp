@@ -24,11 +24,13 @@
 #include "libmscore/guitarbend.h"
 #include "libmscore/guitartechnique.h"
 #include "libmscore/ledgerline.h"
+#include "libmscore/lyrics.h"
 #include "libmscore/measure.h"
 #include "libmscore/note.h"
 #include "libmscore/page.h"
 #include "libmscore/score.h"
 #include "libmscore/segment.h"
+#include "libmscore/slur.h"
 #include "libmscore/staff.h"
 #include "libmscore/stafftext.h"
 #include "libmscore/stafftype.h"
@@ -71,6 +73,8 @@ class TestElement : public QObject, public MTest
    private slots:
       void initTestCase() { initMTest(); }
       void testIds();
+      void testPartialSlur();
+      void testPartialLyrics();
       void testChordBracketRoundTrip();
       void testChordBracketClone();
       void testChordBracketHandles();
@@ -443,6 +447,48 @@ void TestElement::testGuitarBendCreation()
                         QCOMPARE(b->startNote(), b->endNote());
                   else
                         QVERIFY(b->startNote() != b->endNote());
+                  }
+            }
+      }
+
+void TestElement::testPartialSlur()
+      {
+      for (int direction : { -1, 0, 1, 2 }) {
+            Slur original(score);
+            original.setProperty(Pid::PARTIAL_SPANNER_DIRECTION, direction);
+            Slur* copy = toSlur(writeReadElement(&original));
+            QVERIFY(copy);
+            QCOMPARE(copy->partialDirection(), direction);
+            QCOMPARE(copy->isIncoming(), direction == 0 || direction == 2);
+            QCOMPARE(copy->isOutgoing(), direction == 1 || direction == 2);
+            Slur* clone = original.clone();
+            QCOMPARE(clone->partialDirection(), direction);
+            delete copy;
+            delete clone;
+            }
+      }
+
+void TestElement::testPartialLyrics()
+      {
+      for (int direction : { 0, 1, 2 }) {
+            for (bool melisma : { false, true }) {
+                  Lyrics original(score);
+                  original.setProperty(Pid::PARTIAL_SPANNER_DIRECTION, direction);
+                  original.setProperty(Pid::PARTIAL_LYRIC_MELISMA, melisma);
+                  original.setNo(2);
+                  original.setTicks(Fraction(1, 4));
+                  Lyrics* copy = toLyrics(writeReadElement(&original));
+                  QVERIFY(copy);
+                  QCOMPARE(copy->partialDirection(), direction);
+                  QCOMPARE(copy->partialMelisma(), melisma);
+                  QCOMPARE(copy->no(), 2);
+                  QCOMPARE(copy->ticks(), Fraction(1, 4));
+                  QVERIFY(copy->plainText().isEmpty());
+                  Lyrics* clone = original.clone();
+                  QCOMPARE(clone->partialDirection(), direction);
+                  QCOMPARE(clone->partialMelisma(), melisma);
+                  delete copy;
+                  delete clone;
                   }
             }
       }

@@ -62,6 +62,8 @@ class SlurSegment final : public SlurTieSegment {
 class Slur : public SlurTie {
 
       void slurPosChord(SlurPos*);
+      int _partialDirection { -1 }; // Studio: none=-1, incoming=0, outgoing=1, both=2
+
 
    public:
       Slur(Score* = 0);
@@ -72,6 +74,13 @@ class Slur : public SlurTie {
       ElementType type() const override { return ElementType::SLUR; }
       void write(XmlWriter& xml) const override;
       bool readProperties(XmlReader&) override;
+      int partialDirection() const { return _partialDirection; }
+      void setPartialDirection(int d) { _partialDirection = d; }
+      bool isIncoming() const { return _partialDirection == 0 || _partialDirection == 2; }
+      bool isOutgoing() const { return _partialDirection == 1 || _partialDirection == 2; }
+      QVariant getProperty(Pid) const override;
+      QVariant propertyDefault(Pid) const override;
+      bool setProperty(Pid, const QVariant&) override;
       void layout() override;
       SpannerSegment* layoutSystem(System*) override;
       void setTrack(int val) override;
