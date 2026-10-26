@@ -378,8 +378,26 @@ void Score::prepareRepeatCourtesies()
             for (SegmentType type : {SegmentType::Clef, SegmentType::KeySig, SegmentType::TimeSig}) {
                   Segment* end = m->findSegmentR(type, m->ticks());
                   Segment* start = next->findSegmentR(type, Fraction(0,1));
+
                   if (type == SegmentType::Clef && !hasRealElements(start))
                         start = next->findSegmentR(SegmentType::HeaderClef, Fraction(0,1));
+
+                  if (type == SegmentType::Clef && !m->repeatEnd() && targets.empty()) {
+                        // Ordinary barlines retain the imported side of the clef.
+                        // Reparenting here changes native serialization and loses
+                        // MusicXML's explicit after-barline placement.
+                        bool explicitPosition = false;
+                        for (const Segment* candidate : {end, start}) {
+                              if (!candidate) continue;
+                              for (const Element* e : candidate->elist()) {
+                                    if (e && !e->generated() && toClef(e)->clefToBarlinePosition())
+                                          explicitPosition = true;
+                                    }
+                              }
+                        if (!explicitPosition)
+                              continue;
+                        }
+
                   // Imported changes may be split across barline sides on different
                   // staves. Combine them at their semantic start before placement.
                   if (hasRealElements(end) && hasRealElements(start)

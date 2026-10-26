@@ -96,7 +96,7 @@ class BarLine final : public Element {
       bool isEditable() const override    { return true; }
 
       Segment* segment() const        { return toSegment(parent()); }
-      Measure* measure() const        { return toMeasure(parent()->parent()); }
+      Measure* measure() const;
 
       void setSpanStaff(int val)      { _spanStaff = val;     }
       void setSpanFrom(int val)       { _spanFrom = val;      }

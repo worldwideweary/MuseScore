@@ -32,6 +32,7 @@ void Score::cmdJoinMeasure(Measure* m1, Measure* m2)
       if (m2->isMMRest())
             m2 = m2->mmRestLast();
       startCmd();
+      restoreSignatureSegments();
 
       deselectAll();
 

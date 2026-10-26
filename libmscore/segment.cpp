@@ -66,6 +66,13 @@ const char* Segment::subTypeName(SegmentType t)
             case SegmentType::EndBarLine:           return "EndBarLine";
             case SegmentType::KeySigAnnounce:       return "Key Sig Precaution";
             case SegmentType::TimeSigAnnounce:      return "Time Sig Precaution";
+            case SegmentType::ClefStartRepeatAnnounce: return "ClefStartRepeatAnnounce";
+            case SegmentType::KeySigStartRepeatAnnounce: return "KeySigStartRepeatAnnounce";
+            case SegmentType::TimeSigStartRepeatAnnounce: return "TimeSigStartRepeatAnnounce";
+            case SegmentType::ClefRepeatAnnounce: return "ClefRepeatAnnounce";
+            case SegmentType::KeySigRepeatAnnounce: return "KeySigRepeatAnnounce";
+            case SegmentType::TimeSigRepeatAnnounce: return "TimeSigRepeatAnnounce";
+
             default:
                   return "??";
             }
@@ -576,7 +583,7 @@ void Segment::add(Element* el)
                   }
 
             case ElementType::CLEF:
-                  Q_ASSERT(_segmentType == SegmentType::Clef || _segmentType == SegmentType::HeaderClef);
+                  Q_ASSERT(_segmentType & SegmentType::ClefTypes);
                   checkElement(el, track);
                   _elist[track] = el;
                   if (!el->generated()) {
@@ -587,7 +594,7 @@ void Segment::add(Element* el)
                   break;
 
             case ElementType::TIMESIG:
-                  Q_ASSERT(segmentType() == SegmentType::TimeSig || segmentType() == SegmentType::TimeSigAnnounce);
+                  Q_ASSERT(_segmentType & SegmentType::TimeSigTypes);
                   checkElement(el, track);
                   _elist[track] = el;
                   el->staff()->addTimeSig(toTimeSig(el));
@@ -595,10 +602,10 @@ void Segment::add(Element* el)
                   break;
 
             case ElementType::KEYSIG:
-                  Q_ASSERT(_segmentType == SegmentType::KeySig || _segmentType == SegmentType::KeySigAnnounce);
+                  Q_ASSERT(_segmentType & SegmentType::KeySigTypes);
                   checkElement(el, track);
                   _elist[track] = el;
-                  if (!el->generated())
+                  if (!el->generated() && !measure()->isMMRest())
                         el->staff()->setKey(tick(), toKeySig(el)->keySigEvent());
                   setEmpty(false);
                   break;
@@ -742,7 +749,7 @@ void Segment::remove(Element* el)
                   Q_ASSERT(_elist[track] == el);
 
                   _elist[track] = 0;
-                  if (!el->generated())
+                  if (!el->generated() && !measure()->isMMRest())
                         el->staff()->removeKey(tick());
                   break;
 
@@ -1647,7 +1654,8 @@ Spanner* Segment::lastSpanner(int activeStaff)
 
 bool Segment::notChordRestType(Segment* s)
       {
-      if (s->segmentType() == SegmentType::KeySig ||
+      if (s->isType(SegmentType::RepeatCourtesy | SegmentType::ContinuationCourtesy) ||
+          s->segmentType() == SegmentType::KeySig ||
           s->segmentType() == SegmentType::TimeSig ||
           s->segmentType() == SegmentType::Clef ||
           s->segmentType() == SegmentType::HeaderClef ||
@@ -2188,7 +2196,12 @@ void Segment::createShape(int staffIdx)
             // TODO: will skipping segments that contain only invisible annotations adversely affect playback or anything else?
             setVisible(true);
 
-            if (e->isHarmony()) {
+            if (e->isCourtesy() && isType(SegmentType::RepeatCourtesy | SegmentType::ContinuationCourtesy)) {
+                  // generated shared parentheses must reserve horizontal space
+                  // ordinary symbol annotations intentionally don't
+                  s.add(e->shape().translated(e->pos()));
+                  }
+            else if (e->isHarmony()) {
                   // use same spacing calculation as for chordrest
                   auto h = toHarmony(e);
                   if (h->bbox().isEmpty())
@@ -2225,6 +2238,24 @@ void Segment::createShape(int staffIdx)
 
 qreal Segment::minRight() const
       {
+      if (segmentType() == SegmentType::TimeSigAnnounce
+          && score()->styleI(Sid::timeSigPlacement) == int(TimeSigPlacement::ABOVE_STAVES)) {
+            const bool center = score()->styleB(Sid::timeSigCenterOnBarline);
+            const Sid margin = center ? Sid::timeSigVSMarginCentered : Sid::timeSigVSMarginNonCentered;
+            qreal barWidth = score()->styleP(Sid::barWidth);
+            bool repeat = false;
+            for (Segment* prev = prev1(); prev && prev->tick() == tick(); prev = prev->prev1()) {
+                  if (!prev->enabled()) continue;
+                  if (prev->isType(SegmentType::EndBarLine)) barWidth = qMax(barWidth, prev->minRight());
+                  if (prev->isType(SegmentType::TimeSigRepeatAnnounce)) repeat = true;
+                  }
+            if (score()->styleI(margin) != int(TimeSigVSMargin::CREATE_SPACE)) return barWidth;
+            qreal width = 0.0;
+            for (const Element* e : elist()) if (e && e->isTimeSig()) width = qMax(width, e->bbox().width());
+            return qMax(barWidth, width * (center && !repeat ? 0.5 : 1.0)
+                         + score()->styleP(Sid::systemTrailerRightMargin) + (repeat ? 0.5 * spatium() : 0.0));
+            }
+
       qreal distance = 0.0;
       for (const Shape& sh : shapes())
             distance = qMax(distance, sh.right());
@@ -2243,6 +2274,9 @@ qreal Segment::minRight() const
 
 qreal Segment::minLeft(const Shape& sl) const
       {
+      if (isType(SegmentType::TimeSigTypes)
+          && score()->styleI(Sid::timeSigPlacement) == int(TimeSigPlacement::ABOVE_STAVES)) return 0.0;
+
       qreal distance = 0.0;
       for (const Shape& sh : shapes()) {
             qreal d = sl.minHorizontalDistance(sh);
@@ -2270,6 +2304,11 @@ qreal Segment::minLeft() const
 
 qreal Segment::minHorizontalCollidingDistance(Segment* ns) const
       {
+      // Above-staff meters clear ordinary notation vertically in the skyline
+      // pass. Zero-width spacing markers must not push them off their barline.
+      if (ns && ns->isType(SegmentType::TimeSigTypes) && !isType(SegmentType::TimeSigTypes)
+          && score()->styleI(Sid::timeSigPlacement) == int(TimeSigPlacement::ABOVE_STAVES)) return 0.0;
+
       qreal w = 0.0;
       for (unsigned staffIdx = 0; staffIdx < _shapes.size(); ++staffIdx) {
             if (score()->staff(staffIdx) && !score()->staff(staffIdx)->show())
@@ -2287,6 +2326,10 @@ qreal Segment::minHorizontalCollidingDistance(Segment* ns) const
 
 qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
       {
+      const bool aboveMode = score()->styleI(Sid::timeSigPlacement) == int(TimeSigPlacement::ABOVE_STAVES);
+      const bool above = aboveMode && isType(SegmentType::TimeSigTypes);
+      const bool nextAbove = aboveMode && ns && ns->isType(SegmentType::TimeSigTypes);
+
 
       qreal ww = -DBL_MAX;        // can remain negative
       for (unsigned staffIdx = 0; staffIdx < _shapes.size(); ++staffIdx) {
@@ -2295,14 +2338,40 @@ qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
             qreal d = ns ? staffShape(staffIdx).minHorizontalDistance(ns->staffShape(staffIdx)) : 0.0;
             // first chordrest of a staff should clear the widest header for any staff
             // so make sure segment is as wide as it needs to be
-            if (systemHeaderGap)
+            if (systemHeaderGap && !above)
                   d = qMax(d, staffShape(staffIdx).right());
             ww      = qMax(ww, d);
             }
       qreal w = qMax(ww, 0.0);      // non-negative
+      if (above && ns && (ns->isChordRestType() || ns->isType(SegmentType::BarLineType))) return 0.0;
+      if (nextAbove && isChordRestType()) return score()->noteHeadWidth() + score()->styleP(Sid::noteBarDistance);
+      if (nextAbove && ns->tick() == tick()
+          && (isType(SegmentType::EndBarLine) || segmentType() == SegmentType::KeySig)) {
+            if (isType(SegmentType::EndBarLine)) {
+                  for (Segment* prev = prev1(); prev && prev->tick() == tick(); prev = prev->prev1())
+                        if (prev->enabled() && prev->isType(SegmentType::TimeSigRepeatAnnounce)
+                            && !ns->isType(SegmentType::TimeSigAnnounce))
+                              return 0.5 * spatium();
+                  }
+            return 0.0;
+            }
+
 
       SegmentType st  = segmentType();
       SegmentType nst = ns ? ns->segmentType() : SegmentType::Invalid;
+      auto spacingType = [](SegmentType t) {
+            // Only the new repeat/jump types need a legacy spacing equivalent.
+            // HeaderClef and the existing Announce types have distinct margins.
+            if (t & (SegmentType::ClefRepeatAnnounce | SegmentType::ClefStartRepeatAnnounce))
+                  return SegmentType::Clef;
+            if (t & (SegmentType::KeySigRepeatAnnounce | SegmentType::KeySigStartRepeatAnnounce))
+                  return SegmentType::KeySig;
+            if (t & (SegmentType::TimeSigRepeatAnnounce | SegmentType::TimeSigStartRepeatAnnounce))
+                  return SegmentType::TimeSig;
+            return t;
+            };
+      st = spacingType(st);
+      nst = spacingType(nst);
 
       if (isChordRestType()) {
             if (nst == SegmentType::EndBarLine) {
@@ -2389,7 +2458,7 @@ qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
          && (nst & (SegmentType::TimeSig | SegmentType::TimeSigAnnounce))) {
             w += score()->styleP(Sid::keyTimesigDistance);
             }
-      else if (st == SegmentType::KeySig && nst == SegmentType::StartRepeatBarLine)
+      else if (st == SegmentType::KeySig && (nst & (SegmentType::StartRepeatBarLine | SegmentType::EndBarLine)))
             w += score()->styleP(Sid::keyBarlineDistance);
       else if (st == SegmentType::StartRepeatBarLine)
             w += score()->styleP(Sid::noteBarDistance);
@@ -2405,7 +2474,7 @@ qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
             else if (nst == SegmentType::Clef)
                   w += score()->styleP(Sid::clefLeftMargin);
             }
-      else if (st == SegmentType::TimeSig && nst == SegmentType::StartRepeatBarLine)
+      else if (st == SegmentType::TimeSig && (nst & (SegmentType::StartRepeatBarLine | SegmentType::EndBarLine)))
             w += score()->styleP(Sid::timesigBarlineDistance);
       else if (st == SegmentType::Breath)
             w += spatium() * 1.5;

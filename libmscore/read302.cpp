@@ -53,6 +53,7 @@ bool Score::read(XmlReader& e)
             style().set(Sid::harmonyPlay, false);
             }
 
+      QList<int> timeSigSystemStaves;
       ScoreOrder* order { nullptr };
       while (e.readNextStartElement()) {
             e.setTrack(-1);
@@ -73,6 +74,15 @@ bool Score::read(XmlReader& e)
                         e.setTrack(0);
                         element->read(e);
                         e.addEidSpanner(toSpanner(element));
+                        }
+                  }
+            else if (tag == "SystemObjects") {
+                  while (e.readNextStartElement()) {
+                        if (e.name() == "Instance") {
+                              const int idx = e.intAttribute("staffId", 1) - 1;
+                              if (idx > 0) timeSigSystemStaves.append(idx);
+                              }
+                        e.skipCurrentElement();
                         }
                   }
             else if (tag == "Omr") {
@@ -197,6 +207,9 @@ bool Score::read(XmlReader& e)
                   int defaultsVersion = m->style().defaultStyleVersion();
                   s->setStyle(*MStyle::resolveStyleDefaults(defaultsVersion));
                   s->style().setDefaultStyleVersion(defaultsVersion);
+                  // Saved part styles are optimized against global defaults,
+                  // not the master style. Keep omitted part defaults independent
+                  s->style().initRepeatCourtesyDefaults(mscVersion());
                   Excerpt* ex    = new Excerpt(m);
 
                   ex->setPartScore(s);
@@ -338,6 +351,9 @@ bool Score::read(XmlReader& e)
 
       if (!masterScore()->omr())
             masterScore()->setShowOmr(false);
+
+      for (int idx : timeSigSystemStaves)
+            if (idx < nstaves()) staff(idx)->setTimeSigSystemObject(true);
 
       fixTicks();
       e.resolveEidSpanners(this);

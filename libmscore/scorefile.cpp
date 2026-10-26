@@ -155,6 +155,17 @@ void Score::writeMovement(XmlWriter& xml, bool selectionOnly)
       if (pageNumberOffset())
             xml.tag("page-offset", pageNumberOffset());
       xml.tag("Division", DIVISION);
+      bool hasTimeSigSystemStaves = false;
+      for (int idx = 1; idx < nstaves(); ++idx)
+            hasTimeSigSystemStaves |= staff(idx)->timeSigSystemObject();
+      if (hasTimeSigSystemStaves && !selectionOnly) {
+            xml.stag("SystemObjects");
+            for (int idx = 1; idx < nstaves(); ++idx)
+                  if (staff(idx)->timeSigSystemObject())
+                        xml.tagE(QString("Instance staffId=\"%1\"").arg(idx + 1));
+            xml.etag();
+            }
+
       xml.setCurTrack(-1);
 
       if (isTopScore())                    // only top score
@@ -308,6 +319,14 @@ void Score::readStaff(XmlReader& e)
                         //
                         Measure* m = e.lastMeasure(); // measure->prevMeasure();
                         Fraction f(m ? m->timesig() : Fraction(4,4));
+                        if (m) {
+                              Segment* endSig = m->findSegmentR(SegmentType::TimeSig, m->ticks());
+                              Element* el = endSig ? endSig->element(0) : nullptr;
+                              if (el && !el->generated()) {
+                                    TimeSig* ts = toTimeSig(el);
+                                    f = ts->sig() / ts->stretch().reduced();
+                                    }
+                              }
                         measure->setTicks(f);
                         measure->setTimesig(f);
 
@@ -882,7 +901,7 @@ Score::FileError MasterScore::loadCompressedMsc(QIODevice* io, bool ignoreVersio
       XmlReader e(dbuf);
       e.setDocName(masterScore()->fileInfo()->completeBaseName());
 
-      FileError retval = read1(e, ignoreVersionError);
+      FileError retval = read1(e, ignoreVersionError, !sbuf.isEmpty());
 
       QByteArray vbuf = uz.fileData("viewsettings.json"); // exists in Mu4 scores only
       if (!vbuf.isEmpty() && ignoreVersionError) {
@@ -1049,7 +1068,7 @@ void MasterScore::parseVersion(const QString& val)
 //    return true on success
 //---------------------------------------------------------
 
-Score::FileError MasterScore::read1(XmlReader& e, bool ignoreVersionError)
+Score::FileError MasterScore::read1(XmlReader& e, bool ignoreVersionError, bool externalStyle)
       {
       while (e.readNextStartElement()) {
             if (e.name() == "museScore") {
@@ -1076,6 +1095,8 @@ Score::FileError MasterScore::read1(XmlReader& e, bool ignoreVersionError)
                         style().setDefaultStyleVersion(defaultsVersion);
                         }
 
+                  if (!externalStyle)
+                        style().initRepeatCourtesyDefaults(mscVersion());
                   Score::FileError error;
                   if (mscVersion() <= 114)
                         error = read114(e);

@@ -213,7 +213,8 @@
         <string>Text Styles</string>
        </property>
       </item>
-     </widget>
+     <item><property name="text"><string>Time signatures</string></property></item>
+</widget>
      <widget class="QStackedWidget" name="pageStack">
       <property name="currentIndex">
        <number>0</number>
@@ -3855,6 +3856,26 @@
              </property>
             </widget>
            </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="repeatCourtesiesGroup">
+          <property name="title"><string>Clefs, key and time signatures at repeats and jumps</string></property>
+          <layout class="QVBoxLayout" name="repeatCourtesiesLayout">
+           <item><widget class="QCheckBox" name="changesBeforeBarlineRepeats"><property name="text"><string>At repeats, only show matching changes before the barline</string></property></widget></item>
+           <item><widget class="QCheckBox" name="changesBeforeBarlineOtherJumps"><property name="text"><string>At other jumps, only show matching changes before the barline</string></property></widget></item>
+           <item><widget class="QCheckBox" name="placeClefsBeforeRepeats"><property name="text"><string>Place clefs before repeats (otherwise after)</string></property></widget></item>
+           <item><widget class="QCheckBox" name="changesBetweenEndStartRepeat"><property name="text"><string>Allow changes between end-start repeats</string></property></widget></item>
+           <item><widget class="QCheckBox" name="showCourtesiesRepeats"><property name="text"><string>Show courtesies at repeats</string></property></widget></item>
+           <item><widget class="QCheckBox" name="useParensRepeatCourtesies"><property name="text"><string>Use parentheses at repeats</string></property></widget></item>
+           <item><widget class="QCheckBox" name="showCourtesiesOtherJumps"><property name="text"><string>Show courtesies at other jumps</string></property></widget></item>
+           <item><widget class="QCheckBox" name="useParensOtherJumpCourtesies"><property name="text"><string>Use parentheses at other jumps</string></property></widget></item>
+           <item><widget class="QCheckBox" name="showCourtesiesAfterCancellingRepeats"><property name="text"><string>Show when cancelling a courtesy before repeats</string></property></widget></item>
+           <item><widget class="QCheckBox" name="useParensRepeatCourtesiesAfterCancelling"><property name="text"><string>Use parentheses when cancelling repeat courtesies</string></property></widget></item>
+           <item><widget class="QCheckBox" name="showCourtesiesAfterCancellingOtherJumps"><property name="text"><string>Show when cancelling a courtesy before other jumps</string></property></widget></item>
+           <item><widget class="QCheckBox" name="useParensOtherJumpCourtesiesAfterCancelling"><property name="text"><string>Use parentheses when cancelling other-jump courtesies</string></property></widget></item>
+           <item><widget class="QCheckBox" name="smallParens"><property name="text"><string>Small parentheses</string></property></widget></item>
           </layout>
          </widget>
         </item>
@@ -13299,7 +13320,685 @@ By default, they will be placed such as that their right end are at the same lev
         </item>
        </layout>
       </widget>
-     </widget>
+           <widget class="QWidget" name="PageTimeSignatures">
+       <layout class="QVBoxLayout" name="timeSigPageLayout">
+        <item>
+         <layout class="QGridLayout" name="timeSigPlacementForm">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_timeSigPlacement">
+            <property name="text">
+             <string>Placement:</string>
+            </property>
+            <property name="buddy">
+             <cstring>timeSigPlacement</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="timeSigPlacement">
+            <item>
+             <property name="text">
+              <string>On all staves</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Above staves</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Across staves</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QToolButton" name="resetTimeSigPlacement">
+            <property name="accessibleName">
+             <string>Reset time signature placement</string>
+            </property>
+            <property name="text">
+             <string>Reset</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="timeSigAppearanceGroup">
+          <property name="title">
+           <string>Appearance</string>
+          </property>
+          <layout class="QVBoxLayout" name="timeSigAppearanceLayout">
+           <item>
+            <widget class="QStackedWidget" name="timeSigAppearanceStack">
+             <widget class="QWidget" name="timeSigNormalPage">
+              <layout class="QGridLayout" name="timeSigNormalForm">
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_timeSigNormalStyle">
+                 <property name="text">
+                  <string>Numeral style:</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>timeSigNormalStyle</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QComboBox" name="timeSigNormalStyle">
+                 <item>
+                  <property name="text">
+                   <string>Normal</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Narrow</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Sans serif</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="QToolButton" name="resetTimeSigNormalStyle">
+                 <property name="accessibleName">
+                  <string>Reset normal numeral style</string>
+                 </property>
+                 <property name="text">
+                  <string>Reset</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="label_timeSigNormalScale">
+                 <property name="text">
+                  <string>Scale (1.0 = 100%):</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>timeSigNormalScale</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="Ms::ScaleSelect" name="timeSigNormalScale" native="true"/>
+               </item>
+               <item row="1" column="2">
+                <widget class="QToolButton" name="resetTimeSigNormalScale">
+                 <property name="accessibleName">
+                  <string>Reset normal scale</string>
+                 </property>
+                 <property name="text">
+                  <string>Reset</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0" colspan="3">
+                <widget class="QCheckBox" name="timeSigNormalScaleLock">
+                 <property name="text">
+                  <string>Lock X and Y scales</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QLabel" name="label_timeSigNormalNumDist">
+                 <property name="text">
+                  <string>Gap between numbers (scaled):</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>timeSigNormalNumDist</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1">
+                <widget class="QDoubleSpinBox" name="timeSigNormalNumDist">
+                 <property name="decimals">
+                  <number>2</number>
+                 </property>
+                 <property name="minimum">
+                  <double>-10</double>
+                 </property>
+                 <property name="maximum">
+                  <double>100.0</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>0.1</double>
+                 </property>
+                 <property name="suffix">
+                  <string> sp</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="2">
+                <widget class="QToolButton" name="resetTimeSigNormalNumDist">
+                 <property name="accessibleName">
+                  <string>Reset normal gap between numbers</string>
+                 </property>
+                 <property name="text">
+                  <string>Reset</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="0">
+                <widget class="QLabel" name="label_timeSigNormalY">
+                 <property name="text">
+                  <string>Vertical placement:</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>timeSigNormalY</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="1">
+                <widget class="QDoubleSpinBox" name="timeSigNormalY">
+                 <property name="decimals">
+                  <number>2</number>
+                 </property>
+                 <property name="minimum">
+                  <double>-100</double>
+                 </property>
+                 <property name="maximum">
+                  <double>100.0</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>0.1</double>
+                 </property>
+                 <property name="suffix">
+                  <string> sp</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="2">
+                <widget class="QToolButton" name="resetTimeSigNormalY">
+                 <property name="accessibleName">
+                  <string>Reset normal vertical placement</string>
+                 </property>
+                 <property name="text">
+                  <string>Reset</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="5" column="0" colspan="3">
+                <widget class="QPushButton" name="timeSigNormalResetAppearance">
+                 <property name="text">
+                  <string>Reset appearance</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+             <widget class="QWidget" name="timeSigAbovePage">
+              <layout class="QGridLayout" name="timeSigAboveForm">
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_timeSigAboveStyle">
+                 <property name="text">
+                  <string>Numeral style:</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>timeSigAboveStyle</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QComboBox" name="timeSigAboveStyle">
+                 <item>
+                  <property name="text">
+                   <string>Normal</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Narrow</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Sans serif</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="QToolButton" name="resetTimeSigAboveStyle">
+                 <property name="accessibleName">
+                  <string>Reset above numeral style</string>
+                 </property>
+                 <property name="text">
+                  <string>Reset</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="label_timeSigAboveScale">
+                 <property name="text">
+                  <string>Scale (1.0 = 100%):</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>timeSigAboveScale</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="Ms::ScaleSelect" name="timeSigAboveScale" native="true"/>
+               </item>
+               <item row="1" column="2">
+                <widget class="QToolButton" name="resetTimeSigAboveScale">
+                 <property name="accessibleName">
+                  <string>Reset above scale</string>
+                 </property>
+                 <property name="text">
+                  <string>Reset</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0" colspan="3">
+                <widget class="QCheckBox" name="timeSigAboveScaleLock">
+                 <property name="text">
+                  <string>Lock X and Y scales</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QLabel" name="label_timeSigAboveNumDist">
+                 <property name="text">
+                  <string>Gap between numbers (scaled):</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>timeSigAboveNumDist</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1">
+                <widget class="QDoubleSpinBox" name="timeSigAboveNumDist">
+                 <property name="decimals">
+                  <number>2</number>
+                 </property>
+                 <property name="minimum">
+                  <double>-10</double>
+                 </property>
+                 <property name="maximum">
+                  <double>100.0</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>0.1</double>
+                 </property>
+                 <property name="suffix">
+                  <string> sp</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="2">
+                <widget class="QToolButton" name="resetTimeSigAboveNumDist">
+                 <property name="accessibleName">
+                  <string>Reset above gap between numbers</string>
+                 </property>
+                 <property name="text">
+                  <string>Reset</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="0">
+                <widget class="QLabel" name="label_timeSigAboveY">
+                 <property name="text">
+                  <string>Vertical placement:</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>timeSigAboveY</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="1">
+                <widget class="QDoubleSpinBox" name="timeSigAboveY">
+                 <property name="decimals">
+                  <number>2</number>
+                 </property>
+                 <property name="minimum">
+                  <double>-100</double>
+                 </property>
+                 <property name="maximum">
+                  <double>100.0</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>0.1</double>
+                 </property>
+                 <property name="suffix">
+                  <string> sp</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="2">
+                <widget class="QToolButton" name="resetTimeSigAboveY">
+                 <property name="accessibleName">
+                  <string>Reset above vertical placement</string>
+                 </property>
+                 <property name="text">
+                  <string>Reset</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="5" column="0" colspan="3">
+                <widget class="QPushButton" name="timeSigAboveResetAppearance">
+                 <property name="text">
+                  <string>Reset appearance</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+             <widget class="QWidget" name="timeSigAcrossPage">
+              <layout class="QGridLayout" name="timeSigAcrossForm">
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_timeSigAcrossStyle">
+                 <property name="text">
+                  <string>Numeral style:</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>timeSigAcrossStyle</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QComboBox" name="timeSigAcrossStyle">
+                 <item>
+                  <property name="text">
+                   <string>Normal</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Narrow</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Sans serif</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="QToolButton" name="resetTimeSigAcrossStyle">
+                 <property name="accessibleName">
+                  <string>Reset across numeral style</string>
+                 </property>
+                 <property name="text">
+                  <string>Reset</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="label_timeSigAcrossScale">
+                 <property name="text">
+                  <string>Scale (1.0 = 100%):</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>timeSigAcrossScale</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="Ms::ScaleSelect" name="timeSigAcrossScale" native="true"/>
+               </item>
+               <item row="1" column="2">
+                <widget class="QToolButton" name="resetTimeSigAcrossScale">
+                 <property name="accessibleName">
+                  <string>Reset across scale</string>
+                 </property>
+                 <property name="text">
+                  <string>Reset</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0" colspan="3">
+                <widget class="QCheckBox" name="timeSigAcrossScaleLock">
+                 <property name="text">
+                  <string>Lock X and Y scales</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QLabel" name="label_timeSigAcrossNumDist">
+                 <property name="text">
+                  <string>Gap between numbers (scaled):</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>timeSigAcrossNumDist</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1">
+                <widget class="QDoubleSpinBox" name="timeSigAcrossNumDist">
+                 <property name="decimals">
+                  <number>2</number>
+                 </property>
+                 <property name="minimum">
+                  <double>-10</double>
+                 </property>
+                 <property name="maximum">
+                  <double>100.0</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>0.1</double>
+                 </property>
+                 <property name="suffix">
+                  <string> sp</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="2">
+                <widget class="QToolButton" name="resetTimeSigAcrossNumDist">
+                 <property name="accessibleName">
+                  <string>Reset across gap between numbers</string>
+                 </property>
+                 <property name="text">
+                  <string>Reset</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="0">
+                <widget class="QLabel" name="label_timeSigAcrossY">
+                 <property name="text">
+                  <string>Vertical placement:</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>timeSigAcrossY</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="1">
+                <widget class="QDoubleSpinBox" name="timeSigAcrossY">
+                 <property name="decimals">
+                  <number>2</number>
+                 </property>
+                 <property name="minimum">
+                  <double>-100</double>
+                 </property>
+                 <property name="maximum">
+                  <double>100.0</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>0.1</double>
+                 </property>
+                 <property name="suffix">
+                  <string> sp</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="2">
+                <widget class="QToolButton" name="resetTimeSigAcrossY">
+                 <property name="accessibleName">
+                  <string>Reset across vertical placement</string>
+                 </property>
+                 <property name="text">
+                  <string>Reset</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="5" column="0" colspan="3">
+                <widget class="QPushButton" name="timeSigAcrossResetAppearance">
+                 <property name="text">
+                  <string>Reset appearance</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="timeSigAboveOptions">
+          <property name="title">
+           <string>Above-staves alignment</string>
+          </property>
+          <layout class="QGridLayout" name="timeSigAboveAlignmentForm">
+           <item row="0" column="0" colspan="3">
+            <widget class="QCheckBox" name="timeSigCenterOnBarline">
+             <property name="text">
+              <string>Center on barlines</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_timeSigVSMarginCentered">
+             <property name="text">
+              <string>End of staff (centered):</string>
+             </property>
+             <property name="buddy">
+              <cstring>timeSigVSMarginCentered</cstring>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QComboBox" name="timeSigVSMarginCentered">
+             <item>
+              <property name="text">
+               <string>Hang into page margin</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Inset time signature</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Inset barline</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QToolButton" name="resetTimeSigVSMarginCentered">
+             <property name="accessibleName">
+              <string>Reset centered end-of-staff alignment</string>
+             </property>
+             <property name="text">
+              <string>Reset</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_timeSigVSMarginNonCentered">
+             <property name="text">
+              <string>End of staff (left aligned):</string>
+             </property>
+             <property name="buddy">
+              <cstring>timeSigVSMarginNonCentered</cstring>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QComboBox" name="timeSigVSMarginNonCentered">
+             <item>
+              <property name="text">
+               <string>Hang into page margin</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Inset time signature</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Inset barline</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QToolButton" name="resetTimeSigVSMarginNonCentered">
+             <property name="accessibleName">
+              <string>Reset left-aligned end-of-staff alignment</string>
+             </property>
+             <property name="text">
+              <string>Reset</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="timeSigCenterAcrossStaveGroup">
+          <property name="text">
+           <string>Center across each staff group</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="timeSigDisplayGroup">
+          <property name="title">
+           <string>Additional display staves (this score)</string>
+          </property>
+          <layout class="QVBoxLayout" name="timeSigDisplayLayout">
+           <item>
+            <widget class="QLabel" name="timeSigDisplayExplanation">
+             <property name="text">
+              <string>The top visible staff is always included.</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QListWidget" name="timeSigDisplayStaves">
+             <property name="maximumHeight">
+              <number>100</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="timeSigUseTopStaff">
+             <property name="text">
+              <string>Use top staff only</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <spacer name="timeSigPageSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+</widget>
     </widget>
    </item>
    <item row="1" column="0">
@@ -13390,6 +14089,7 @@ By default, they will be placed such as that their right end are at the same lev
    <header>radiobuttongroupbox.h</header>
    <container>1</container>
   </customwidget>
+  <customwidget><class>Ms::ScaleSelect</class><extends>QWidget</extends><header>inspector/scaleSelect.h</header><container>1</container></customwidget>
  </customwidgets>
  <tabstops>
   <tabstop>pageList</tabstop>

@@ -210,6 +210,9 @@ class Measure final : public MeasureBase {
 
       void connectTremolo();
 
+      void layoutRepeatCourtesies();
+      void layoutCourtesyParentheses();
+      void sortRepeatSegments();
       qreal createEndBarLines(bool);
       void barLinesSetSpan(Segment*);
       void setEndBarLineType(BarLineType val, int track, bool visible = true, QColor color = QColor());

@@ -354,6 +354,7 @@ static constexpr PropertyMetaData propertyList[] = {
 
       { Pid::CLEF_TYPE_CONCERT,         P_TYPE::CLEF_TYPE,      true,  "concertClefType",        DUMMY_QT_TRANSLATE_NOOP("propertyName", "concert clef type")                             },
       { Pid::CLEF_TYPE_TRANSPOSING,     P_TYPE::CLEF_TYPE,      true,  "transposingClefType",    DUMMY_QT_TRANSLATE_NOOP("propertyName", "transposing clef type")                         },
+      { Pid::CLEF_TO_BARLINE_POS,       P_TYPE::INT,            true, "clefToBarlinePos",       DUMMY_QT_TRANSLATE_NOOP("propertyName", "clef position relative to barline") },
       { Pid::KEY,                       P_TYPE::INT,            true,  "accidental",             DUMMY_QT_TRANSLATE_NOOP("propertyName", "key")                                           },
       { Pid::ACTION,                    P_TYPE::STRING,         false, "action",                 0                                                                                        },
       { Pid::MIN_DISTANCE,              P_TYPE::SPATIUM,        false, "minDistance",            DUMMY_QT_TRANSLATE_NOOP("propertyName", "autoplace minimum distance")                    },

@@ -281,10 +281,16 @@ void Clef::read(XmlReader& e)
                   _clefTypes._transposingClef = Clef::clefType(e.readElementText());
             else if (tag == "showCourtesyClef")
                   _showCourtesy = e.readInt();
+            else if (tag == "clefToBarlinePos")
+                  _clefToBarlinePosition = qBound(0, e.readInt(), 2);
             else if (tag == "forInstrumentChange")
                   _forInstrumentChange = e.readBool();
-            else if (tag == "isHeader")   // Mu4.2+ compatibility
-                  e.skipCurrentElement(); // skip, don't log
+            else if (tag == "isHeader")
+                  _isHeader = e.readBool();
+            else if (tag == "isCourtesy") {
+                  setIsCourtesy(e.readBool());
+                  setFlag(ElementFlag::COURTESY_TAG_READ, true);
+                  }
             else if (!Element::readProperties(e))
                   e.unknown();
             }
@@ -299,6 +305,9 @@ void Clef::read(XmlReader& e)
 void Clef::write(XmlWriter& xml) const
       {
       xml.stag(this);
+      if (isCourtesy())
+            xml.tag("isCourtesy", true);
+      writeProperty(xml, Pid::CLEF_TO_BARLINE_POS);
       writeProperty(xml, Pid::CLEF_TYPE_CONCERT);
       writeProperty(xml, Pid::CLEF_TYPE_TRANSPOSING);
       if (!_showCourtesy)
@@ -450,6 +459,7 @@ Clef* Clef::otherClef()
 QVariant Clef::getProperty(Pid propertyId) const
       {
       switch(propertyId) {
+            case Pid::CLEF_TO_BARLINE_POS: return _clefToBarlinePosition;
             case Pid::CLEF_TYPE_CONCERT:     return int(_clefTypes._concertClef);
             case Pid::CLEF_TYPE_TRANSPOSING: return int(_clefTypes._transposingClef);
             case Pid::SHOW_COURTESY: return showCourtesy();
@@ -466,6 +476,7 @@ QVariant Clef::getProperty(Pid propertyId) const
 bool Clef::setProperty(Pid propertyId, const QVariant& v)
       {
       switch(propertyId) {
+            case Pid::CLEF_TO_BARLINE_POS: _clefToBarlinePosition = qBound(0, v.toInt(), 2); break;
             case Pid::CLEF_TYPE_CONCERT:
                   setConcertClef(ClefType(v.toInt()));
                   break;
@@ -488,6 +499,7 @@ bool Clef::setProperty(Pid propertyId, const QVariant& v)
 QVariant Clef::propertyDefault(Pid id) const
       {
       switch(id) {
+            case Pid::CLEF_TO_BARLINE_POS: return 0;
             case Pid::CLEF_TYPE_CONCERT:     return int(ClefType::INVALID);
             case Pid::CLEF_TYPE_TRANSPOSING: return int(ClefType::INVALID);
             case Pid::SHOW_COURTESY: return true;

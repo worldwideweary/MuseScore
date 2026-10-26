@@ -408,6 +408,12 @@ enum class HarmonyType :char {
 //   Placement
 //---------------------------------------------------------
 
+// Modern time-signature drawing styles. XML uses named tokens; style values
+// remain integers to use Evolution's existing property/editor infrastructure.
+enum class TimeSigPlacement : unsigned char { NORMAL, ABOVE_STAVES, ACROSS_STAVES };
+enum class TimeSigStyle : unsigned char { NORMAL, NARROW, LARGE };
+enum class TimeSigVSMargin : unsigned char { HANG_INTO_MARGIN, RIGHT_ALIGN_TO_BARLINE, CREATE_SPACE };
+
 enum class Placement : char {
       ///.\{
       ABOVE, BELOW
@@ -450,27 +456,36 @@ enum class OffsetType : char {
 //    Type values determine the order of segments for a given tick
 //-------------------------------------------------------------------
 
-enum class SegmentType : short {
+enum class SegmentType : int {
       ///.\{
-      Invalid            = 0x0,
-      BeginBarLine       = 0x1,
-      HeaderClef         = 0x2,
-      KeySig             = 0x4,
-      Ambitus            = 0x8,
-      TimeSig            = 0x10,
-      StartRepeatBarLine = 0x20,
-      Clef               = 0x40,
-      BarLine            = 0x80,
-      Breath             = 0x100,
-      //--
-      ChordRest          = 0x200,
-      //--
-      EndBarLine         = 0x400,
-      KeySigAnnounce     = 0x800,
-      TimeSigAnnounce    = 0x1000,
+      Invalid = 0,
+      BeginBarLine                 = 0x1,
+      HeaderClef                   = 0x2,
+      ClefStartRepeatAnnounce      = 0x4,
+      KeySigStartRepeatAnnounce    = 0x8,
+      TimeSigStartRepeatAnnounce   = 0x10,
+      KeySig                       = 0x20,
+      Ambitus                      = 0x40,
+      TimeSig                      = 0x80,
+      StartRepeatBarLine           = 0x100,
+      Clef                         = 0x200,
+      BarLine                      = 0x400,
+      Breath                       = 0x800,
+      ChordRest                    = 0x1000,
+      ClefRepeatAnnounce           = 0x2000,
+      KeySigRepeatAnnounce         = 0x4000,
+      TimeSigRepeatAnnounce        = 0x8000,
+      EndBarLine                   = 0x10000,
+      KeySigAnnounce               = 0x20000,
+      TimeSigAnnounce              = 0x40000,
       All                = -1, ///< Includes all barline types
       /// Alias for `BeginBarLine | StartRepeatBarLine | BarLine | EndBarLine`
-      BarLineType        = BeginBarLine | StartRepeatBarLine | BarLine | EndBarLine
+      BarLineType        = BeginBarLine | StartRepeatBarLine | BarLine | EndBarLine,
+      RepeatCourtesy     = ClefRepeatAnnounce | KeySigRepeatAnnounce | TimeSigRepeatAnnounce,
+      ContinuationCourtesy = ClefStartRepeatAnnounce | KeySigStartRepeatAnnounce | TimeSigStartRepeatAnnounce,
+      ClefTypes          = HeaderClef | Clef | ClefRepeatAnnounce | ClefStartRepeatAnnounce,
+      KeySigTypes        = KeySig | KeySigAnnounce | KeySigRepeatAnnounce | KeySigStartRepeatAnnounce,
+      TimeSigTypes       = TimeSig | TimeSigAnnounce | TimeSigRepeatAnnounce | TimeSigStartRepeatAnnounce
       ///\}
       };
 

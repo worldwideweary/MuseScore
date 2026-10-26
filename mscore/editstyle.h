@@ -77,6 +77,7 @@ class EditStyle : public AbstractDialog, private Ui::EditStyleBase {
       const StyleWidget& styleWidget(Sid) const;
 
       void adjustPagesStackSize(int currentPageIndex);
+      void updateTimeSigControls();
       void setHeaderFooterToolTip();
 
       static EditStylePage pageForElement(Element*);

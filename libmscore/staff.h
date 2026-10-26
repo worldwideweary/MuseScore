@@ -78,6 +78,7 @@ class Staff final : public ScoreElement {
       int _barLineFrom         { 0     };    ///< line of start staff to draw the barline from (0 = staff top line, ...)
       int _barLineTo           { 0     };    ///< line of end staff to draw the bar line to (0= staff bottom line, ...)
 
+      bool _timeSigSystemObject { false }; // additional modern large-meter display staff
       bool _invisible          { false };
       bool _cutaway            { false };
       bool _showIfEmpty        { false };       ///< show this staff if system is empty and hideEmptyStaves is true
@@ -167,6 +168,8 @@ class Staff final : public ScoreElement {
       void removeKey(const Fraction&);
 
       bool show() const;
+      bool timeSigSystemObject() const { return _timeSigSystemObject; }
+      void setTimeSigSystemObject(bool value) { _timeSigSystemObject = value; }
       bool stemless(const Fraction&) const;
       bool cutaway() const           { return _cutaway;     }
       void setCutaway(bool val)      { _cutaway = val;      }

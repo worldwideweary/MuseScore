@@ -600,6 +600,7 @@ bool Score::rewriteMeasures(Measure* fm, Measure* lm, const Fraction& ns, int st
 
 bool Score::rewriteMeasures(Measure* fm, const Fraction& ns, int staffIdx)
       {
+      restoreSignatureSegments();
       Measure* lm  = fm;
       Measure* fm1 = fm;
       Measure* nm  = nullptr;
@@ -739,6 +740,7 @@ bool Score::rewriteMeasures(Measure* fm, const Fraction& ns, int staffIdx)
 
 void Score::cmdAddTimeSig(Measure* fm, int staffIdx, TimeSig* ts, bool local)
       {
+      restoreSignatureSegments();
       deselectAll();
 
       if (fm->isMMRest())
@@ -913,15 +915,17 @@ void Score::cmdRemoveTimeSig(TimeSig* ts)
             return;
             }
 
-      Measure* m = ts->measure();
-      Segment* s = ts->segment();
-
-      //
-      // we cannot remove a courtesy time signature
-      //
-      if (m->tick() != s->tick())
+      // Courtesy segments are visual aids, not meter changes
+      if (!ts->segment()->isTimeSigType() || ts->generated() || ts->isCourtesy())
             return;
-      Fraction tick = m->tick();
+
+      restoreSignatureSegments();
+      Segment* s = ts->segment();
+      Measure* m = tick2measure(s->tick());
+      if (!m)
+            return;
+
+      Fraction tick = s->tick();
 
       // if we remove all time sigs from segment, segment will be already removed by now
       // but this would leave us no means of detecting that we have have measures in a local timesig
@@ -2319,6 +2323,7 @@ void Score::deleteItem(Element* el)
 
 void Score::deleteMeasures(MeasureBase* is, MeasureBase* ie, bool preserveTies)
       {
+      restoreSignatureSegments();
 // qDebug("deleteMeasures %p %p", is, ie);
 
 #if 0
@@ -3232,6 +3237,7 @@ void Score::nextInputPos(ChordRest* cr, bool doSelect)
 
 void Score::insertMeasure(ElementType type, MeasureBase* measure, bool createEmptyMeasures, bool moveSignaturesClef)
       {
+      restoreSignatureSegments();
       Fraction tick;
       if (measure) {
             if (measure->isMeasure() && toMeasure(measure)->isMMRest()) {

@@ -12,6 +12,7 @@
 
 #include "articulation.h"
 #include "barline.h"
+#include "timesig.h"
 #include "fermata.h"
 #include "image.h"
 #include "marker.h"
@@ -587,6 +588,10 @@ bool BarLine::isBottom() const
 
 void BarLine::draw(QPainter* painter) const
       {
+      painter->save();
+      // Palette barlines have no segment/measure ancestry.
+      const Measure* m = parent() && parent()->isSegment() ? measure() : nullptr;
+      clipTimeSignatureDrawing(this, m ? m->system() : nullptr, painter);
       switch (barLineType()) {
             case BarLineType::NORMAL: {
                   qreal lw = score()->styleP(Sid::barWidth) * mag();
@@ -732,6 +737,8 @@ void BarLine::draw(QPainter* painter) const
                   }
                   break;
             }
+
+      painter->restore();
 
       // draw irregular measure mark
 
@@ -969,6 +976,18 @@ Element* BarLine::drop(EditData& data)
             return e;
             }
       return 0;
+      }
+
+//---------------------------------------------------------
+//   measure
+//---------------------------------------------------------
+
+Measure* BarLine::measure() const
+      {
+      if (parent())
+            return toMeasure(parent()->parent());
+
+      return nullptr;
       }
 
 //---------------------------------------------------------

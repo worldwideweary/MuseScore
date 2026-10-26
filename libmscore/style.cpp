@@ -410,6 +410,20 @@ static const StyleType styleTypes[] {
       { Sid::genCourtesyTimesig,      "genCourtesyTimesig",      QVariant(true) },
       { Sid::genCourtesyKeysig,       "genCourtesyKeysig",       QVariant(true) },
       { Sid::genCourtesyClef,         "genCourtesyClef",         QVariant(true) },
+      { Sid::changesBeforeBarlineRepeats, "changesBeforeBarlineRepeats", QVariant(false) },
+      { Sid::changesBeforeBarlineOtherJumps, "changesBeforeBarlineOtherJumps", QVariant(false) },
+      { Sid::placeClefsBeforeRepeats, "placeClefsBeforeRepeats", QVariant(false) },
+      { Sid::changesBetweenEndStartRepeat, "changesBetweenEndStartRepeat", QVariant(true) },
+      { Sid::showCourtesiesRepeats, "showCourtesiesRepeats", QVariant(false) },
+      { Sid::useParensRepeatCourtesies, "useParensRepeatCourtesies", QVariant(true) },
+      { Sid::showCourtesiesOtherJumps, "showCourtesiesOtherJumps", QVariant(false) },
+      { Sid::useParensOtherJumpCourtesies, "useParensOtherJumpCourtesies", QVariant(true) },
+      { Sid::showCourtesiesAfterCancellingRepeats, "showCourtesiesAfterCancellingRepeats", QVariant(false) },
+      { Sid::useParensRepeatCourtesiesAfterCancelling, "useParensRepeatCourtesiesAfterCancelling", QVariant(true) },
+      { Sid::showCourtesiesAfterCancellingOtherJumps, "showCourtesiesAfterCancellingOtherJumps", QVariant(false) },
+      { Sid::useParensOtherJumpCourtesiesAfterCancelling, "useParensOtherJumpCourtesiesAfterCancelling", QVariant(true) },
+      { Sid::smallParens, "smallParens", QVariant(true) },
+
       { Sid::swingRatio,              "swingRatio",              QVariant(60)   },
       { Sid::swingUnit,               "swingUnit",               QVariant(QString("")) },
       { Sid::useStandardNoteNames,    "useStandardNoteNames",    QVariant(true) },
@@ -1509,6 +1523,27 @@ static const StyleType styleTypes[] {
       { Sid::guitarBendLineWidthTab,          "guitarBendLineWidthTab",      Spatium(0.15) },
       { Sid::guitarDiveLineWidth,             "guitarDiveLineWidth",         Spatium(0.13) },
       { Sid::guitarDiveLineWidthTab,          "guitarDiveLineWidthTab",      Spatium(0.15) },
+
+      { Sid::timeSigPlacement,                "timeSigPlacement",            int(TimeSigPlacement::NORMAL) },
+      { Sid::timeSigCenterOnBarline,          "timeSigCenterOnBarline",      true },
+      { Sid::timeSigVSMarginCentered,         "timeSigVSMarginCentered",     int(TimeSigVSMargin::HANG_INTO_MARGIN) },
+      { Sid::timeSigVSMarginNonCentered,      "timeSigVSMarginNonCentered",  int(TimeSigVSMargin::RIGHT_ALIGN_TO_BARLINE) },
+      { Sid::timeSigCenterAcrossStaveGroup,   "timeSigCenterAcrossStaveGroup", false },
+      { Sid::timeSigNormalStyle,              "timeSigNormalStyle",          int(TimeSigStyle::NORMAL) },
+      { Sid::timeSigNormalScale,              "timeSigNormalScale",          QVariant(QSizeF(1.0, 1.0)) },
+      { Sid::timeSigNormalScaleLock,          "timeSigNormalScaleLock",      true },
+      { Sid::timeSigNormalNumDist,            "timeSigNormalNumDist",        Spatium(0.0) },
+      { Sid::timeSigNormalY,                  "timeSigNormalY",              Spatium(0.0) },
+      { Sid::timeSigAboveStyle,               "timeSigAboveStyle",           int(TimeSigStyle::NORMAL) },
+      { Sid::timeSigAboveScale,               "timeSigAboveScale",           QVariant(QSizeF(2.0, 2.0)) },
+      { Sid::timeSigAboveScaleLock,           "timeSigAboveScaleLock",       true },
+      { Sid::timeSigAboveNumDist,             "timeSigAboveNumDist",         Spatium(0.1) },
+      { Sid::timeSigAboveY,                   "timeSigAboveY",               Spatium(-1.0) },
+      { Sid::timeSigAcrossStyle,              "timeSigAcrossStyle",          int(TimeSigStyle::NARROW) },
+      { Sid::timeSigAcrossScale,              "timeSigAcrossScale",          QVariant(QSizeF(4.0, 4.0)) },
+      { Sid::timeSigAcrossScaleLock,          "timeSigAcrossScaleLock",      true },
+      { Sid::timeSigAcrossNumDist,            "timeSigAcrossNumDist",        Spatium(0.1) },
+      { Sid::timeSigAcrossY,                  "timeSigAcrossY",              Spatium(0.0) }
       };
 
 MStyle  MScore::_baseStyle;
@@ -2892,6 +2927,9 @@ void MStyle::set(const Sid t, const QVariant& val)
       {
       const int idx = int(t);
       _values[idx] = val;
+      // The pre-4.5 name remains an alias for existing scores and style files.
+      if (t == Sid::timesigScale) _values[int(Sid::timeSigNormalScale)] = val;
+      else if (t == Sid::timeSigNormalScale) _values[int(Sid::timesigScale)] = val;
       if (t == Sid::spatium)
             precomputeValues();
       else {
@@ -2906,6 +2944,24 @@ void MStyle::set(const Sid t, const QVariant& val)
 //   readProperties
 //---------------------------------------------------------
 
+// Preserve Studio's string tokens in native files, so the same settings can
+// be read by Studio without translating numeric enum values.
+static QStringList timeSigDrawingTokens(Sid sid)
+      {
+      switch (sid) {
+            case Sid::timeSigPlacement:
+                  return { "normal", "aboveStaves", "acrossStaves" };
+            case Sid::timeSigNormalStyle:
+            case Sid::timeSigAboveStyle:
+            case Sid::timeSigAcrossStyle:
+                  return { "normal", "narrow", "large" };
+            case Sid::timeSigVSMarginCentered:
+            case Sid::timeSigVSMarginNonCentered:
+                  return { "hangIntoMargin", "rightAlignToBarline", "createSpace" };
+            default: return {};
+            }
+      }
+
 bool MStyle::readProperties(XmlReader& e)
       {
       const QStringRef& tag(e.name());
@@ -2914,7 +2970,19 @@ bool MStyle::readProperties(XmlReader& e)
             Sid idx = st.styleIdx();
             if (st.name() == tag) {
                   const char* type = st.valueType();
-                  if (!strcmp("Ms::Spatium", type))
+                  const QStringList tokens = timeSigDrawingTokens(idx);
+                  if (!tokens.isEmpty()) {
+                        const QString text = e.readElementText();
+                        int index = tokens.indexOf(text);
+                        if (index < 0) {
+                              bool ok = false;
+                              index = text.toInt(&ok);
+                              if (!ok || index < 0 || index >= tokens.size())
+                                    index = st.defaultValue().toInt();
+                              }
+                        set(idx, index);
+                        }
+                  else if (!strcmp("Ms::Spatium", type))
                         set(idx, Spatium(e.readElementText().toDouble()));
                   else if (!strcmp("double", type))
                         set(idx, QVariant(e.readElementText().toDouble()));
@@ -3087,6 +3155,24 @@ bool MStyle::load(QFile* qf, bool ign)
 
 extern void readPageFormat(MStyle* style, XmlReader& e);
 
+void MStyle::initRepeatCourtesyDefaults(int mscVersion)
+      {
+      if (mscVersion >= 450) {
+            set(Sid::changesBeforeBarlineRepeats, true);
+            set(Sid::changesBeforeBarlineOtherJumps, true);
+            set(Sid::changesBetweenEndStartRepeat, true);
+            set(Sid::showCourtesiesRepeats, true);
+            set(Sid::useParensRepeatCourtesies, true);
+            set(Sid::showCourtesiesOtherJumps, true);
+            set(Sid::useParensOtherJumpCourtesies, true);
+            set(Sid::showCourtesiesAfterCancellingRepeats, true);
+            set(Sid::useParensRepeatCourtesiesAfterCancelling, true);
+            set(Sid::showCourtesiesAfterCancellingOtherJumps, true);
+            set(Sid::useParensOtherJumpCourtesiesAfterCancelling, true);
+            set(Sid::smallParens, true);
+            }
+      }
+
 void MStyle::load(XmlReader& e, int mscVersion)
       {
       QString oldChordDescriptionFile = value(Sid::chordDescriptionFile).toString();
@@ -3095,6 +3181,9 @@ void MStyle::load(XmlReader& e, int mscVersion)
       bool explicitChordLayoutVersion = false;
       if (mscVersion >= 460)
             set(Sid::chordSymbolLayoutVersion, 1);
+
+      initRepeatCourtesyDefaults(mscVersion);
+
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
             if (tag == "harmonyHarmonyDistance")
@@ -3824,6 +3913,10 @@ bool  MStyle::readProperties450(XmlReader& e, int mscVersion)
 
       const QStringRef& tag(e.name());
 
+      const Sid drawingSid = styleIdx(tag.toString());
+      if (drawingSid >= Sid::timeSigPlacement && drawingSid <= Sid::timeSigAcrossY)
+            return false; // handled by the native style reader, including enum tokens
+
       if (     tag == "lyricsAvoidBarlines")                        // Mu4.5+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "maskBarlinesForText")                        // Mu4.5+ only, let's skip
@@ -3872,20 +3965,6 @@ bool  MStyle::readProperties450(XmlReader& e, int mscVersion)
             || tag == "glissandoShowText")                          // Mu4.5+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "defaultsVersion")                            // 4mm -> 4nn, let's skip, i.e. reset to Mu3's 302
-            e.skipCurrentElement();
-      else if (tag == "changesBeforeBarlineRepeats"
-            || tag == "changesBeforeBarlineOtherJumps"
-            || tag == "placeClefsBeforeRepeats"
-            || tag == "changesBetweenEndStartRepeat"
-            || tag == "showCourtesiesRepeats"
-            || tag == "useParensRepeatCourtesies"
-            || tag == "showCourtesiesOtherJumps"
-            || tag == "useParensOtherJumpCourtesies"
-            || tag == "showCourtesiesAfterCancellingRepeats"
-            || tag == "useParensRepeatCourtesiesAfterCancelling"
-            || tag == "showCourtesiesAfterCancellingOtherJumps"
-            || tag == "useParensOtherJumpCourtesiesAfterCancelling"
-            || tag == "smallParens")                                // Mu4.5+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "spatium")                                    // pre-4.5(?) typo
             set(Sid::spatium, e.readDouble() * DPMM);
@@ -4352,7 +4431,10 @@ void MStyle::save(XmlWriter& xml, bool optimize)
             if (optimize && isDefault(idx) && !(modernChords && chordPresentationFields.count(idx)))
                   continue;
             const char* type = st.valueType();
-            if (!strcmp("Ms::Spatium", type))
+            const QStringList tokens = timeSigDrawingTokens(idx);
+            if (!tokens.isEmpty())
+                  xml.tag(st.name(), tokens.value(value(idx).toInt(), tokens.at(st.defaultValue().toInt())));
+            else if (!strcmp("Ms::Spatium", type))
                   xml.tag(st.name(), value(idx).value<Spatium>().val());
             else if (!strcmp("Ms::Direction", type))
                   xml.tag(st.name(), value(idx).toInt());

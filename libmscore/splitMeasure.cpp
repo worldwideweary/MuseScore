@@ -40,6 +40,7 @@ void Score::cmdSplitMeasure(ChordRest* cr)
 
 void Score::splitMeasure(Segment* segment)
       {
+      restoreSignatureSegments();
       if (segment->rtick().isZero()) {
             MScore::setError(CANNOT_SPLIT_MEASURE_FIRST_BEAT);
             return;

@@ -395,6 +395,20 @@ enum class Sid : short {
       genCourtesyTimesig,
       genCourtesyKeysig,
       genCourtesyClef,
+      changesBeforeBarlineRepeats,
+      changesBeforeBarlineOtherJumps,
+      placeClefsBeforeRepeats,
+      changesBetweenEndStartRepeat,
+      showCourtesiesRepeats,
+      useParensRepeatCourtesies,
+      showCourtesiesOtherJumps,
+      useParensOtherJumpCourtesies,
+      showCourtesiesAfterCancellingRepeats,
+      useParensRepeatCourtesiesAfterCancelling,
+      showCourtesiesAfterCancellingOtherJumps,
+      useParensOtherJumpCourtesiesAfterCancelling,
+      smallParens,
+
 
       swingRatio,
       swingUnit,
@@ -1497,6 +1511,28 @@ enum class Sid : short {
       guitarDiveLineWidth,
       guitarDiveLineWidthTab,
 
+      // Time-signature drawing settings (MuseScore Studio 4.5+).
+      timeSigPlacement,
+      timeSigCenterOnBarline,
+      timeSigVSMarginCentered,
+      timeSigVSMarginNonCentered,
+      timeSigCenterAcrossStaveGroup,
+      timeSigNormalStyle,
+      timeSigNormalScale,
+      timeSigNormalScaleLock,
+      timeSigNormalNumDist,
+      timeSigNormalY,
+      timeSigAboveStyle,
+      timeSigAboveScale,
+      timeSigAboveScaleLock,
+      timeSigAboveNumDist,
+      timeSigAboveY,
+      timeSigAcrossStyle,
+      timeSigAcrossScale,
+      timeSigAcrossScaleLock,
+      timeSigAcrossNumDist,
+      timeSigAcrossY,
+
       STYLES
       ///\}
       };
@@ -1523,6 +1559,7 @@ class MStyle {
       int _defaultStyleVersion = -1;
 
    public:
+      void initRepeatCourtesyDefaults(int mscVersion);
       MStyle();
 
       void precomputeValues();

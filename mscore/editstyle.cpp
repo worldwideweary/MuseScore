@@ -37,6 +37,10 @@
 #include "inspector/alignSelect.h"
 #include "inspector/fontStyleSelect.h"
 #include "inspector/offsetSelect.h"
+#include "inspector/scaleSelect.h"
+#include "libmscore/staff.h"
+#include "libmscore/part.h"
+#include <QStandardItemModel>
 
 namespace Ms {
 
@@ -64,6 +68,22 @@ static void undoStyleValue(Score* score, Sid sid, const QVariant& value)
             score->undo(new ChangeStyleVal(score, sid, value));
       }
 
+// Display staff selections are score structure, not global style values.
+// Keep them in the dialog's existing undo command so Cancel restores them too.
+class ChangeTimeSigDisplayStaff final : public UndoCommand {
+      Staff* _staff;
+      bool _value;
+      void flip(EditData*) override {
+            const bool previous = _staff->timeSigSystemObject();
+            _staff->setTimeSigSystemObject(_value);
+            _value = previous;
+            _staff->score()->setLayoutAll();
+            }
+   public:
+      ChangeTimeSigDisplayStaff(Staff* staff, bool value) : _staff(staff), _value(value) {}
+      UNDO_NAME("ChangeTimeSigDisplayStaff")
+      };
+
 const char* lineStyles[] = {
       QT_TRANSLATE_NOOP("EditStyleBase", "Continuous"),
       QT_TRANSLATE_NOOP("EditStyleBase", "Dashed"),
@@ -81,6 +101,12 @@ EditStyle::EditStyle(Score* s, QWidget* parent)
       {
       setObjectName("EditStyle");
       setupUi(this);
+      for (QComboBox* combo : {timeSigPlacement, timeSigNormalStyle, timeSigAboveStyle, timeSigAcrossStyle,
+                              timeSigVSMarginCentered, timeSigVSMarginNonCentered})
+            for (int index = 0; index < combo->count(); ++index) combo->setItemData(index, index);
+      if (auto model = qobject_cast<QStandardItemModel*>(timeSigVSMarginNonCentered->model()))
+            model->item(0)->setEnabled(false); // hanging requires centered alignment
+
       setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
       buttonApplyToAllParts = buttonBox->addButton(tr("Apply to all Parts"), QDialogButtonBox::ApplyRole);
       buttonTogglePagelist->setIcon(QIcon(*icons[int(Icons::goNext_ICON)]));
@@ -373,6 +399,20 @@ EditStyle::EditStyle(Score* s, QWidget* parent)
       { Sid::genCourtesyTimesig,       false, genCourtesyTimesig,           0 },
       { Sid::genCourtesyKeysig,        false, genCourtesyKeysig,            0 },
       { Sid::genCourtesyClef,          false, genCourtesyClef,              0 },
+      { Sid::changesBeforeBarlineRepeats, false, changesBeforeBarlineRepeats, 0 },
+      { Sid::changesBeforeBarlineOtherJumps, false, changesBeforeBarlineOtherJumps, 0 },
+      { Sid::placeClefsBeforeRepeats, false, placeClefsBeforeRepeats, 0 },
+      { Sid::changesBetweenEndStartRepeat, false, changesBetweenEndStartRepeat, 0 },
+      { Sid::showCourtesiesRepeats, false, showCourtesiesRepeats, 0 },
+      { Sid::useParensRepeatCourtesies, false, useParensRepeatCourtesies, 0 },
+      { Sid::showCourtesiesOtherJumps, false, showCourtesiesOtherJumps, 0 },
+      { Sid::useParensOtherJumpCourtesies, false, useParensOtherJumpCourtesies, 0 },
+      { Sid::showCourtesiesAfterCancellingRepeats, false, showCourtesiesAfterCancellingRepeats, 0 },
+      { Sid::useParensRepeatCourtesiesAfterCancelling, false, useParensRepeatCourtesiesAfterCancelling, 0 },
+      { Sid::showCourtesiesAfterCancellingOtherJumps, false, showCourtesiesAfterCancellingOtherJumps, 0 },
+      { Sid::useParensOtherJumpCourtesiesAfterCancelling, false, useParensOtherJumpCourtesiesAfterCancelling, 0 },
+      { Sid::smallParens, false, smallParens, 0 },
+
       { Sid::swingRatio,               false, swingBox,                     0 },
       { Sid::chordsXmlFile,            false, chordsXmlFile,                0 },
       { Sid::dotMag,                   true,  dotMag,                       resetDotMag },
@@ -459,6 +499,29 @@ EditStyle::EditStyle(Score* s, QWidget* parent)
       { Sid::hammerOnPullOffTappingFontFace, false, tappingFontFace, resetTappingFontFace },
       { Sid::hammerOnPullOffTappingFontSize, false, tappingFontSize, resetTappingFontSize },
       { Sid::hammerOnPullOffTappingFontSpatiumDependent, false,     tappingFontStaffSize, resetTappingFontStaffSize },
+
+      { Sid::bendLineWidth,     false, bendLineWidth,     resetBendLineWidth     },
+      { Sid::bendArrowWidth,    false, bendArrowWidth,    resetBendArrowWidth    },
+      { Sid::timeSigPlacement, false, timeSigPlacement, resetTimeSigPlacement },
+      { Sid::timeSigCenterOnBarline, false, timeSigCenterOnBarline, 0 },
+      { Sid::timeSigVSMarginCentered, false, timeSigVSMarginCentered, resetTimeSigVSMarginCentered },
+      { Sid::timeSigVSMarginNonCentered, false, timeSigVSMarginNonCentered, resetTimeSigVSMarginNonCentered },
+      { Sid::timeSigCenterAcrossStaveGroup, false, timeSigCenterAcrossStaveGroup, 0 },
+      { Sid::timeSigNormalStyle, false, timeSigNormalStyle, resetTimeSigNormalStyle },
+      { Sid::timeSigNormalScale, false, timeSigNormalScale, resetTimeSigNormalScale },
+      { Sid::timeSigNormalScaleLock, false, timeSigNormalScaleLock, 0 },
+      { Sid::timeSigNormalNumDist, false, timeSigNormalNumDist, resetTimeSigNormalNumDist },
+      { Sid::timeSigNormalY, false, timeSigNormalY, resetTimeSigNormalY },
+      { Sid::timeSigAboveStyle, false, timeSigAboveStyle, resetTimeSigAboveStyle },
+      { Sid::timeSigAboveScale, false, timeSigAboveScale, resetTimeSigAboveScale },
+      { Sid::timeSigAboveScaleLock, false, timeSigAboveScaleLock, 0 },
+      { Sid::timeSigAboveNumDist, false, timeSigAboveNumDist, resetTimeSigAboveNumDist },
+      { Sid::timeSigAboveY, false, timeSigAboveY, resetTimeSigAboveY },
+      { Sid::timeSigAcrossStyle, false, timeSigAcrossStyle, resetTimeSigAcrossStyle },
+      { Sid::timeSigAcrossScale, false, timeSigAcrossScale, resetTimeSigAcrossScale },
+      { Sid::timeSigAcrossScaleLock, false, timeSigAcrossScaleLock, 0 },
+      { Sid::timeSigAcrossNumDist, false, timeSigAcrossNumDist, resetTimeSigAcrossNumDist },
+      { Sid::timeSigAcrossY, false, timeSigAcrossY, resetTimeSigAcrossY },
       };
 
       for (QComboBox* cb : std::vector<QComboBox*> {
@@ -619,6 +682,8 @@ EditStyle::EditStyle(Score* s, QWidget* parent)
                   connect(qobject_cast<QButtonGroup*>(sw.widget), SIGNAL(buttonClicked(int)), mapper2, SLOT(map()));
             else if (qobject_cast<AlignSelect*>(sw.widget))
                   connect(qobject_cast<AlignSelect*>(sw.widget), SIGNAL(alignChanged(Align)), mapper2, SLOT(map()));
+            else if (qobject_cast<ScaleSelect*>(sw.widget))
+                  connect(qobject_cast<ScaleSelect*>(sw.widget), SIGNAL(scaleChanged(QSizeF)), mapper2, SLOT(map()));
             else if (qobject_cast<OffsetSelect*>(sw.widget))
                   connect(qobject_cast<OffsetSelect*>(sw.widget), SIGNAL(offsetChanged(QPointF)), mapper2, SLOT(map()));
             else if (FontStyleSelect* fontStyle = qobject_cast<FontStyleSelect*>(sw.widget))
@@ -632,6 +697,48 @@ EditStyle::EditStyle(Score* s, QWidget* parent)
 
             mapper2->setMapping(sw.widget, int(sw.idx));
             }
+
+      struct MeterControls { Sid first; ScaleSelect* scale; QCheckBox* lock; QPushButton* reset; };
+      for (const MeterControls& mode : {
+            MeterControls{Sid::timeSigNormalStyle, timeSigNormalScale, timeSigNormalScaleLock, timeSigNormalResetAppearance},
+            MeterControls{Sid::timeSigAboveStyle, timeSigAboveScale, timeSigAboveScaleLock, timeSigAboveResetAppearance},
+            MeterControls{Sid::timeSigAcrossStyle, timeSigAcrossScale, timeSigAcrossScaleLock, timeSigAcrossResetAppearance}}) {
+            ScaleSelect* select = mode.scale;
+            const Sid scaleSid = Sid(int(mode.first) + 1);
+            const Sid firstSid = mode.first;
+            connect(mode.lock, &QCheckBox::toggled, this, [this, select, scaleSid](bool locked) {
+                  select->setLock(locked);
+                  const QSizeF scale = select->scale();
+                  if (locked && !qFuzzyCompare(scale.width(), scale.height())) {
+                        const QSizeF equal(scale.width(), scale.width());
+                        select->setScale(equal);
+                        cs->undo(new ChangeStyleVal(cs, scaleSid, equal));
+                        cs->update();
+                        }
+                  });
+            connect(mode.reset, &QPushButton::clicked, this, [this, firstSid]() {
+                  for (int i = 0; i < 5; ++i) {
+                        const Sid sid = Sid(int(firstSid) + i);
+                        cs->undo(new ChangeStyleVal(cs, sid, MScore::defaultStyle().value(sid)));
+                        }
+                  setValues(); cs->update();
+                  });
+            }
+      connect(timeSigPlacement, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) { updateTimeSigControls(); });
+      connect(timeSigCenterOnBarline, &QCheckBox::toggled, this, [this](bool) { updateTimeSigControls(); });
+      connect(timeSigCenterAcrossStaveGroup, &QCheckBox::toggled, this, [this](bool) { updateTimeSigControls(); });
+      connect(timeSigDisplayStaves, &QListWidget::itemChanged, this, [this](QListWidgetItem* item) {
+            const int idx = item->data(Qt::UserRole).toInt();
+            if (idx <= 0 || idx >= cs->nstaves()) return;
+            const bool selected = item->checkState() == Qt::Checked;
+            if (cs->staff(idx)->timeSigSystemObject() != selected) {
+                  cs->undo(new ChangeTimeSigDisplayStaff(cs->staff(idx), selected)); cs->update();
+                  }
+            });
+      connect(timeSigUseTopStaff, &QPushButton::clicked, this, [this]() {
+            for (int row = 0; row < timeSigDisplayStaves->count(); ++row)
+                  timeSigDisplayStaves->item(row)->setCheckState(Qt::Unchecked);
+            });
 
       int topBottomMargin = automaticCapitalization->rect().height() - preferences.getDouble(PREF_UI_THEME_FONTSIZE);
       topBottomMargin /= 2;
@@ -775,6 +882,38 @@ EditStyle::EditStyle(Score* s, QWidget* parent)
 //---------------------------------------------------------
 //   adjustPagesStackSize
 //---------------------------------------------------------
+
+void EditStyle::updateTimeSigControls()
+      {
+      const int mode = qBound(0, cs->styleI(Sid::timeSigPlacement), 2);
+      timeSigAppearanceStack->setCurrentIndex(mode);
+      timeSigAboveOptions->setVisible(mode == 1);
+      timeSigCenterAcrossStaveGroup->setVisible(mode == 2);
+      timeSigDisplayGroup->setVisible(mode != 0 && cs->nstaves() > 1);
+      const bool center = cs->styleB(Sid::timeSigCenterOnBarline);
+      timeSigVSMarginCentered->setEnabled(center);
+      label_timeSigVSMarginCentered->setEnabled(center);
+      resetTimeSigVSMarginCentered->setEnabled(center && !cs->style().isDefault(Sid::timeSigVSMarginCentered));
+      timeSigVSMarginNonCentered->setEnabled(!center);
+      label_timeSigVSMarginNonCentered->setEnabled(!center);
+      resetTimeSigVSMarginNonCentered->setEnabled(!center && !cs->style().isDefault(Sid::timeSigVSMarginNonCentered));
+      const bool centeredAcross = cs->styleB(Sid::timeSigCenterAcrossStaveGroup);
+      timeSigAcrossY->setEnabled(!centeredAcross);
+      label_timeSigAcrossY->setEnabled(!centeredAcross);
+      resetTimeSigAcrossY->setEnabled(!centeredAcross && !cs->style().isDefault(Sid::timeSigAcrossY));
+      timeSigNormalScale->setLock(cs->styleB(Sid::timeSigNormalScaleLock));
+      timeSigAboveScale->setLock(cs->styleB(Sid::timeSigAboveScaleLock));
+      timeSigAcrossScale->setLock(cs->styleB(Sid::timeSigAcrossScaleLock));
+      const Sid modes[] = {Sid::timeSigNormalStyle, Sid::timeSigAboveStyle, Sid::timeSigAcrossStyle};
+      QPushButton* reset[] = {timeSigNormalResetAppearance, timeSigAboveResetAppearance, timeSigAcrossResetAppearance};
+      for (int modeIdx = 0; modeIdx < 3; ++modeIdx) {
+            bool changed = false;
+            for (int i = 0; i < 5; ++i) changed |= !cs->style().isDefault(Sid(int(modes[modeIdx]) + i));
+            reset[modeIdx]->setEnabled(changed);
+            }
+      if (pageStack->currentWidget() == PageTimeSignatures)
+            pageStack->setMinimumSize(PageTimeSignatures->sizeHint());
+      }
 
 void EditStyle::adjustPagesStackSize(int currentPageIndex)
       {
@@ -1002,6 +1141,8 @@ EditStylePage EditStyle::pageForElement(Element* e)
                   return &EditStyle::PageSystem;
             case ElementType::CLEF:
                   return &EditStyle::PageClefs;
+            case ElementType::TIMESIG:
+                  return &EditStyle::PageTimeSignatures;
             case ElementType::KEYSIG:
                   return &EditStyle::PageAccidentals;
             case ElementType::MEASURE:
@@ -1313,6 +1454,11 @@ QVariant EditStyle::getValue(Sid idx)
                MStyle::valueName(idx));
 
             }
+      else if (!strcmp("QSizeF", type)) {
+            ScaleSelect* select = qobject_cast<ScaleSelect*>(sw.widget);
+            if (!select) qFatal("unhandled QSizeF style widget");
+            return select->scale();
+            }
       else if (!strcmp("QPointF", type)) {
             OffsetSelect* cb = qobject_cast<Ms::OffsetSelect*>(sw.widget);
             if (cb)
@@ -1430,6 +1576,11 @@ void EditStyle::setValues()
                   AlignSelect* as = qobject_cast<Ms::AlignSelect*>(sw.widget);
                   as->setAlign(val.value<Align>());
                   }
+            else if (!strcmp("QSizeF", type)) {
+                  ScaleSelect* select = qobject_cast<ScaleSelect*>(sw.widget);
+                  if (select) select->setScale(val.toSizeF());
+                  else unhandledType(&sw);
+                  }
             else if (!strcmp("QPointF", type)) {
                   OffsetSelect* as = qobject_cast<Ms::OffsetSelect*>(sw.widget);
                   if (as)
@@ -1445,6 +1596,18 @@ void EditStyle::setValues()
                   unhandledType(&sw);
             }
 
+      {
+            QSignalBlocker blocker(timeSigDisplayStaves);
+            timeSigDisplayStaves->clear();
+            for (int idx = 1; idx < cs->nstaves(); ++idx) {
+                  Staff* staff = cs->staff(idx);
+                  auto item = new QListWidgetItem(tr("Staff %1: %2").arg(idx + 1).arg(staff->part()->partName()), timeSigDisplayStaves);
+                  item->setData(Qt::UserRole, idx);
+                  item->setFlags(Qt::ItemFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemIsSelectable));
+                  item->setCheckState(staff->timeSigSystemObject() ? Qt::Checked : Qt::Unchecked);
+                  }
+            }
+      updateTimeSigControls();
       textStyleChanged(textStyles->currentRow());
 
       //TODO: convert the rest:
@@ -1870,6 +2033,7 @@ void EditStyle::valueChanged(int i)
       const StyleWidget& sw = styleWidget(idx);
       if (sw.reset)
             sw.reset->setEnabled(!cs->style().isDefault(idx));
+      if (idx >= Sid::timeSigPlacement && idx <= Sid::timeSigAcrossY) updateTimeSigControls();
       }
 
 //---------------------------------------------------------

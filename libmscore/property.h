@@ -363,6 +363,7 @@ enum class Pid : short {
 
       CLEF_TYPE_CONCERT,
       CLEF_TYPE_TRANSPOSING,
+      CLEF_TO_BARLINE_POS,
       KEY,
       ACTION, // for Icon
       MIN_DISTANCE,

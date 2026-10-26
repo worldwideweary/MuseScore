@@ -98,6 +98,9 @@ enum class ElementFlag {
       ENABLED                = 0x01000000,    // used for segments
       EMPTY                  = 0x02000000,
       WRITTEN                = 0x04000000,
+      IS_COURTESY            = 0x08000000, // clef/key/time signatures, never a musical change
+      COURTESY_TAG_READ      = 0x10000000, // legacy XML disambiguation
+
       };
 
 typedef QFlags<ElementFlag> ElementFlags;
@@ -233,6 +236,9 @@ class Element : public ScoreElement {
       bool placeBelow() const                 { return placement() == Placement::BELOW; }
       virtual bool placeMultiple() const      { return true; }
 
+      bool isCourtesy() const { return flag(ElementFlag::IS_COURTESY); }
+      void setIsCourtesy(bool v) { setFlag(ElementFlag::IS_COURTESY, v); }
+      bool courtesyTagRead() const { return flag(ElementFlag::COURTESY_TAG_READ); }
       bool generated() const                  { return flag(ElementFlag::GENERATED);  }
       void setGenerated(bool val)             { setFlag(ElementFlag::GENERATED, val);   }
 

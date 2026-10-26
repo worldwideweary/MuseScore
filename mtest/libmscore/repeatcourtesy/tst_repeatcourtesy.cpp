@@ -50,6 +50,73 @@ class TestRepeatCourtesy : public QObject, public MTest {
             }
    private slots:
       void initTestCase() { initMTest(); }
+      void endBarlinePreservesSystemHeaderSpacing() {
+            std::unique_ptr<MasterScore> s(readScore(DIR + "header-spacing.mscx")); QVERIFY(s);
+            s->style().set(Sid::systemHeaderTimeSigDistance, Spatium(6.0));
+            s->doLayout();
+            Measure* m = s->firstMeasure(); QVERIFY(m && m->isFirstInSystem());
+            Segment* chordRest = m->first(SegmentType::ChordRest); QVERIFY(chordRest);
+            QVERIFY(!chordRest->next(SegmentType::ChordRest));
+            m->computeMinWidth();
+            const qreal expectedX = chordRest->x();
+            QVERIFY(expectedX > 0.0);
+            for (int pass = 0; pass < 3; ++pass) {
+                  m->createEndBarLines(false);
+                  QVERIFY(qAbs(chordRest->x() - expectedX) < 0.001);
+                  }
+            }
+      void ordinaryClefPlacement_data() {
+            QTest::addColumn<bool>("afterBarline");
+            QTest::newRow("before-barline") << false;
+            QTest::newRow("after-barline") << true;
+            }
+      void ordinaryClefPlacement() {
+            QFETCH(bool, afterBarline);
+            std::unique_ptr<MasterScore> s(readScore(DIR + "repeat.mscx")); QVERIFY(s);
+            Measure* next = s->lastMeasure(); QVERIFY(next);
+            Measure* previous = next->prevMeasure(); QVERIFY(previous);
+            QVERIFY(!previous->repeatEnd());
+            Measure* owner = afterBarline ? next : previous;
+            const Fraction rtick = afterBarline ? Fraction(0,1) : previous->ticks();
+            Segment* segment = owner->getSegmentR(SegmentType::Clef, rtick);
+            auto clef = new Clef(s.get());
+            clef->setTrack(0); clef->setClefType(ClefType::F); clef->setGenerated(false);
+            segment->add(clef);
+            const Fraction absoluteTick = clef->tick();
+            for (int pass = 0; pass < 3; ++pass) {
+                  s->doLayout();
+                  QCOMPARE(clef->segment(), segment);
+                  QCOMPARE(segment->measure(), owner);
+                  QVERIFY(segment->rtick() == rtick);
+                  QVERIFY(clef->tick() == absoluteTick);
+                  QCOMPARE(segment->segmentType(), SegmentType::Clef);
+                  }
+            }
+      void legacyClefSerialization() {
+            std::unique_ptr<MasterScore> s(readScore("libmscore/compat206/clefs.mscx")); QVERIFY(s);
+            QVERIFY(saveCompareScore(s.get(), "courtesy-legacy-clefs-test.mscx",
+                                     "libmscore/compat206/clefs-ref.mscx"));
+            }
+      void legacyAnnounceSpacing_data() {
+            QTest::addColumn<int>("kind");
+            QTest::addColumn<int>("margin");
+            QTest::newRow("key") << int(SegmentType::KeySigAnnounce) << int(Sid::keysigLeftMargin);
+            QTest::newRow("meter") << int(SegmentType::TimeSigAnnounce) << int(Sid::timesigLeftMargin);
+            }
+      void legacyAnnounceSpacing() {
+            QFETCH(int, kind); QFETCH(int, margin);
+            std::unique_ptr<MasterScore> s(readScore(DIR + "repeat.mscx")); QVERIFY(s);
+            s->style().set(Sid::timeSigPlacement, int(TimeSigPlacement::NORMAL));
+            Measure* m = s->firstMeasure();
+            Segment barline(m, SegmentType::EndBarLine, m->ticks());
+            Segment announce(m, SegmentType(kind), m->ticks());
+            const Sid sid = Sid(margin);
+            const qreal value = s->styleV(sid).value<Spatium>().val();
+            const qreal before = barline.minHorizontalDistance(&announce, false);
+            s->style().set(sid, Spatium(value + 1.0));
+            const qreal after = barline.minHorizontalDistance(&announce, false);
+            QVERIFY(qAbs(after - before - s->spatium()) < 0.001);
+            }
       void parentlessPaletteBarlines() {
             MasterScore score(MScore::baseStyle());
             QImage image(180, 180, QImage::Format_ARGB32_Premultiplied);
