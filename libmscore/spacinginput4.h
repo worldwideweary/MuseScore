@@ -9,6 +9,7 @@
 #include "slurdirection4.h"
 #include <limits>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace Ms {
@@ -204,6 +205,19 @@ struct SpacingPreparedAnchor4 {
 // Never call this score-wide operation from a plan/pair/prefix fitting loop.
 bool captureSpacingAttachments4(Score*, const std::vector<SpacingPreparedAnchor4>& prepared,
                                 SpacingAttachmentPreparation4& result, QString* reason = nullptr);
+
+// Pass-local producer completion records. Only the native measure-production
+// boundary calls produced(); invalidate before reprocessing or any skipped pass.
+// Store identity certificates, not cached directions. After later beam writes,
+// declarations() reads the current direction only for still-present certified
+// anchors. Nothing is inferred merely from geometry existing in the score.
+class SpacingDirectionReadiness4 {
+    std::unordered_map<const Measure*, std::unordered_set<const ChordRest*>> _produced;
+public:
+    void invalidate(const Measure* measure) { _produced.erase(measure); }
+    void produced(const Measure*);
+    std::vector<SpacingPreparedAnchor4> declarations(const System*) const;
+};
 
 // Collects all tracks, grace members and root slurs without admission whitelists.
 // Uses raw endpoint accessors: unresolved anchors stay unresolved, never lazily

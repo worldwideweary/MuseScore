@@ -11,6 +11,7 @@
 #include "libmscore/spacingcollision4.h"
 #include "libmscore/spacingplan4.h"
 #include "libmscore/spacinginput4.h"
+#include "libmscore/layout.h"
 #include "libmscore/navigate.h"
 #include "libmscore/gracespacing4.h"
 #include "libmscore/graceslurlayout4.h"
@@ -3491,6 +3492,10 @@ void TestSpacing::spacingInputSnapshot4()
       MasterScore* score = readScore(file);
       QVERIFY(score);
       score->doLayout();
+      {
+      LayoutContext context(score);
+      QCOMPARE(bool(context.spacingDirections4), score->styleB(Sid::spacingLayout4));
+      }
       const auto state = [score]() {
             auto values = graceLayoutSnapshot4(score);
             for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
@@ -3781,6 +3786,52 @@ void TestSpacing::spacingInputSnapshot4()
                         }
                   // Omitted readiness stays pending, never certified by capture.
                   for (Direction d : systemOwner.anchorDirections()) if (d != Direction::AUTO) return false;
+                  // Existing geometry is not enough to certify readiness. Only
+                  // completed native measure production supplies the tokens.
+                  SpacingDirectionReadiness4 readiness;
+                  if (!readiness.declarations(system).empty()) return false;
+                  const Measure* firstMeasure = system->firstMeasure();
+                  readiness.produced(firstMeasure);
+                  const auto partial = readiness.declarations(system);
+                  std::vector<const ChordRest*> partialExpected;
+                  for (const auto& a : prepared.anchors())
+                        if (a.measure == firstMeasure) partialExpected.push_back(a.item);
+                  if (partial.size() != partialExpected.size()) return false;
+                  for (size_t i = 0; i < partial.size(); ++i)
+                        if (partial[i].item != partialExpected[i] || partial[i].direction == Direction::AUTO) return false;
+                  SpacingAttachmentPreparation4 partialOwner;
+                  if (!captureSystemSpacingAttachments4(system, partial, partialOwner)) return false;
+                  for (size_t i = 0; i < partialOwner.input().anchors().size(); ++i) {
+                        const auto& a = partialOwner.input().anchors()[i];
+                        const Direction expected = a.measure == firstMeasure ? (a.up ? Direction::UP : Direction::DOWN) : Direction::AUTO;
+                        if (partialOwner.anchorDirections()[i] != expected) return false;
+                        }
+                  readiness.invalidate(firstMeasure);
+                  if (!readiness.declarations(system).empty()) return false;
+                  for (const MeasureBase* mb : system->measures())
+                        if (mb->isMeasure()) readiness.produced(toMeasure(mb));
+                  const auto allDirections = readiness.declarations(system);
+                  if (allDirections.size() != expectedAnchors.size()) return false;
+                  for (size_t i = 0; i < allDirections.size(); ++i)
+                        if (allDirections[i].item != expectedAnchors[i]) return false;
+                  SpacingAttachmentPreparation4 readyOwner;
+                  if (!captureSystemSpacingAttachments4(system, allDirections, readyOwner)) return false;
+                  for (size_t i = 0; i < readyOwner.input().anchors().size(); ++i) {
+                        const auto& a = readyOwner.input().anchors()[i];
+                        if (readyOwner.anchorDirections()[i] != (a.up ? Direction::UP : Direction::DOWN)) return false;
+                        }
+                  for (size_t i = 0; i < readyOwner.input().slurs().size(); ++i) {
+                        const auto& root = readyOwner.input().slurs()[i];
+                        if (root.start.anchorIndex != SPACING_INPUT_NONE4 && root.end.anchorIndex != SPACING_INPUT_NONE4) {
+                              const Direction* global = owner.direction(root.slur);
+                              if (!global || *global != readyOwner.slurDirections()[i]) return false;
+                              }
+                        }
+                  SpacingDirectionReadiness4 freshPass;
+                  if (!freshPass.declarations(system).empty()) return false;
+                  // Bind the positively certified owner for the plan/fitting
+                  // parity checks below, just as production now does.
+                  systemOwner = std::move(readyOwner);
                   const auto* savedLocal = expectedAnchors.empty() ? nullptr : systemOwner.sides(expectedAnchors.front());
                   if (captureSystemSpacingAttachments4(nullptr, {}, systemOwner)
                       || (!expectedAnchors.empty() && systemOwner.sides(expectedAnchors.front()) != savedLocal)) return false;

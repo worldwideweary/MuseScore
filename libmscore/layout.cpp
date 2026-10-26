@@ -3222,6 +3222,7 @@ void Score::getNextMeasure(LayoutContext& lc)
       //-----------------------------------------
 
       Measure* measure = toMeasure(lc.curMeasure);
+      if (lc.spacingDirections4) lc.spacingDirections4->invalidate(measure);
       measure->moveTicks(lc.tick - measure->tick());
 
       if (lineMode() && (measure->tick() < lc.startTick || measure->tick() > lc.endTick)) {
@@ -3427,6 +3428,10 @@ void Score::getNextMeasure(LayoutContext& lc)
             s.createShapes();
             }
 
+      // Notes, beam membership, initial directions and local shapes have now
+      // completed native production. Subsequent beam writes may update values;
+      // the pass-local record certifies identities, not a stale up() snapshot.
+      if (lc.spacingDirections4) lc.spacingDirections4->produced(measure);
       lc.tick += measure->ticks();
       }
 
@@ -4659,7 +4664,9 @@ System* Score::collectSystem(LayoutContext& lc)
       bool studioFits = false;
       if (styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch && graceGeometryReady) {
             SpacingAttachmentPreparation4 attachments;
-            studioFits = captureSystemSpacingAttachments4(system, {}, attachments)
+            const auto directions = lc.spacingDirections4 ? lc.spacingDirections4->declarations(system)
+                  : std::vector<SpacingPreparedAnchor4>();
+            studioFits = captureSystemSpacingAttachments4(system, directions, attachments)
                   && squeezeSpacingPlan4(system, systemWidth, studioPlan, attachments, nullptr, &readyMerged);
             }
       if (studioFits) {
@@ -6120,6 +6127,7 @@ LayoutContext::LayoutContext(Score* s)
       : score(s)
       {
       firstSystemIndent = score && score->styleB(Sid::enableIndentationOnFirstSystem);
+      if (score && score->styleB(Sid::spacingLayout4)) spacingDirections4.reset(new SpacingDirectionReadiness4);
       }
 
 //---------------------------------------------------------

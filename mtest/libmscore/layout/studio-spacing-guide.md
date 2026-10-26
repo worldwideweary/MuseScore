@@ -3491,3 +3491,50 @@ provide authoritative readiness/direction inputs within the captured system
 lifetime and replace curve-specific horizontal admission. Collection/prefix
 rebuilding, coherent fallback and final publication remain audit package B;
 this stage does not claim those problems are resolved.
+
+
+### v0.158: native measure-production readiness reaches scoped capture
+
+v0.157 native tst_spacing passes in 78.04 seconds in the user's build. Supply
+explicit direction readiness from the native preparation lifetime instead of
+leaving every finalized-system anchor pending. LayoutContext owns the records
+only when spacingLayout4 is enabled; no record survives a layout command.
+
+Invalidate a measure's identities before getNextMeasure reprocessing, including
+its line-mode early-return path. Mark them only after native note/line, initial
+stem/beam membership, chord/grace layout and local shape production finish.
+These are completion certificates for that phase, not cached up() values. After
+final grace-beam preparation, emit current directions only for live anchors with
+those certificates and capture the system owner. Missing/unprocessed measures
+remain AUTO. Current beam writes can change values without making a stored
+direction snapshot stale; removed/replaced identities are not dereferenced.
+
+Files changed: spacinginput4.h/.cpp, layout.h/.cpp, tst_spacing.cpp and this
+guide. The context allocates readiness records only for the experimental path.
+The owner still ends before horizontal publication. Prefix fitting is unchanged.
+The current initial-direction phase is certified here; this does not claim all
+later cross-staff/page-pass stem constraints are final.
+
+Native snapshot tests check that already existing geometry does not imply a
+certificate, partial-measure readiness stays partial, invalidation removes it,
+new passes start empty and emitted identities retain native order. Captured
+ready inputs feed the same local-root direction, pair-policy, complete natural
+plan and fitting parity checks before/after START reanchoring and undo. Context
+allocation is checked against the actual enabled/disabled style. No new test
+fixture or score load is added.
+
+Local validation: fourteen C++11 syntax passes (Debug/NDEBUG collector, layout,
+planner, collision, slur renderer, regenerated-moc spacing test and score.cpp's
+incomplete-owner header integration), with unused-parameter/signedness checks.
+Actual extracted code passes the 960-case mock-DOM suite with readiness ordering,
+partial domains, invalidation/fresh-pass and post-beam direction-change checks;
+existing direction, interval and owner checks remain applicable. Native app and
+mtests cannot run locally. WIP checkpoint efcf083 saves the producer readiness
+integration; the incremental patch starts at delivered v0.157 23e514e.
+
+No new direction/side-policy consumer is activated: admission and kerning still
+use the previously verified rules. Next: use prepared direction/endpoint-side
+inputs to remove the remaining curve-specific horizontal gates, including the
+internal grace preparation queries. Prefix collection and coherent fallback
+remain audit package B. Rebuild and run the usual combined spacing/beam CTest
+command. No new screenshot or profiling run is requested at this checkpoint.

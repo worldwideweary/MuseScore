@@ -271,6 +271,51 @@ bool captureSpacingAttachments4(Score* score, const std::vector<SpacingPreparedA
     return captureSpacingAttachmentsImpl4(std::move(input), prepared, result, reason);
 }
 
+template<typename F>
+static void visitDirectionAnchors4(const Measure* measure, const F& visit)
+{
+    for (const Segment& segment : measure->segments()) {
+        if (!segment.isChordRestType()) continue;
+        for (const Element* item : segment.elist()) {
+            if (!item || !item->isChordRest()) continue;
+            const ChordRest* anchor = toChordRest(item);
+            const Chord* main = item->isChord() ? toChord(item) : nullptr;
+            if (main) for (const Chord* grace : main->graceNotesBefore()) visit(grace);
+            visit(anchor);
+            if (main) for (const Chord* grace : main->graceNotesAfter()) visit(grace);
+        }
+    }
+}
+
+void SpacingDirectionReadiness4::produced(const Measure* measure)
+{
+    if (!measure) return;
+    std::unordered_set<const ChordRest*> anchors;
+    visitDirectionAnchors4(measure, [&anchors](const ChordRest* anchor) {
+        if (anchor) anchors.insert(anchor);
+    });
+    _produced[measure] = std::move(anchors);
+}
+
+std::vector<SpacingPreparedAnchor4> SpacingDirectionReadiness4::declarations(const System* system) const
+{
+    std::vector<SpacingPreparedAnchor4> result;
+    if (!system) return result;
+    for (const MeasureBase* mb : system->measures()) {
+        if (!mb || !mb->isMeasure()) continue;
+        const Measure* measure = toMeasure(mb);
+        const auto ready = _produced.find(measure);
+        if (ready == _produced.end()) continue;
+        // Walk live anchors before consulting the identity set: old pointers
+        // from replaced/deleted elements are never dereferenced.
+        visitDirectionAnchors4(measure, [&](const ChordRest* anchor) {
+            if (anchor && ready->second.count(anchor))
+                result.emplace_back(anchor, anchor->up() ? Direction::UP : Direction::DOWN);
+        });
+    }
+    return result;
+}
+
 struct SpacingInputBuilder4 {
 static bool build(Score* score, const SpacingInputScope4& scope, SpacingInput4& result, QString* reason)
 {
