@@ -3671,6 +3671,41 @@ void TestSpacing::spacingInputSnapshot4()
             for (size_t i = 0; i < owner.input().slurs().size(); ++i)
                   if (owner.direction(owner.input().slurs()[i].slur) != &owner.slurDirections()[i]) return false;
             if (owner.sides(nullptr) || owner.direction(nullptr)) return false;
+            // Identity-based capture is an explicit post-producer operation.
+            // Reverse declaration order to ensure it is not snapshot-index based.
+            std::vector<SpacingPreparedAnchor4> declarations;
+            for (const auto& a : prepared.anchors()) declarations.emplace_back(a.item, a.up ? Direction::UP : Direction::DOWN);
+            std::reverse(declarations.begin(), declarations.end());
+            SpacingAttachmentPreparation4 captured;
+            difference = "Post-producer attachment capture differs from composed kernels";
+            if (!captureSpacingAttachments4(score, declarations, captured)
+                || captured.anchorDirections() != owner.anchorDirections()
+                || captured.slurDirections() != owner.slurDirections() || captured.complete() != owner.complete()) return false;
+            const auto* saved = captured.sides(prepared.anchors().front().item);
+            const auto preserved = [&]() {
+                  return captured.sides(prepared.anchors().front().item) == saved
+                        && captured.anchorDirections() == owner.anchorDirections() && captured.slurDirections() == owner.slurDirections();
+                  };
+            auto bad = declarations;
+            bad.push_back(bad.front());
+            if (captureSpacingAttachments4(score, bad, captured) || !preserved()) return false;
+            bad = declarations;
+            bad[0].direction = static_cast<Direction>(99);
+            if (captureSpacingAttachments4(score, bad, captured) || !preserved()) return false;
+            bad[0] = SpacingPreparedAnchor4(nullptr, Direction::UP);
+            if (captureSpacingAttachments4(score, bad, captured) || !preserved()) return false;
+            if (captureSpacingAttachments4(nullptr, declarations, captured) || !preserved()) return false;
+            {
+            Chord foreign(nullptr);
+            bad[0] = SpacingPreparedAnchor4(&foreign, Direction::UP);
+            if (captureSpacingAttachments4(score, bad, captured) || !preserved()) return false;
+            }
+            SpacingAttachmentPreparation4 omitted;
+            if (!captureSpacingAttachments4(score, {}, omitted)) return false;
+            for (Direction d : omitted.anchorDirections()) if (d != Direction::AUTO) return false;
+            // Subsequent planner/cache tests borrow the factory-created owner.
+            owner = std::move(captured);
+
             // Failed replacement preserves both the existing owner and source.
             ownedInput = prepared;
             const auto* first = owner.sides(prepared.anchors().front().item);
@@ -4060,16 +4095,48 @@ void TestSpacing::slurRendererDirection4()
             std::map<const Slur*, Direction> values;
             SpacingInput4 musical;
             if (!buildSpacingInput4(score, musical)) return values;
-            std::vector<Direction> stems;
-            for (const auto& a : musical.anchors()) stems.push_back(a.up ? Direction::UP : Direction::DOWN);
+            std::vector<SpacingPreparedAnchor4> declarations;
+            for (const auto& a : musical.anchors()) declarations.emplace_back(a.item, a.up ? Direction::UP : Direction::DOWN);
+            musical = SpacingInput4();
             SpacingAttachmentPreparation4 owner;
-            if (!prepareSpacingAttachments4(std::move(musical), stems, owner)) return values;
+            if (!captureSpacingAttachments4(score, declarations, owner)) return values;
             for (size_t i = 0; i < owner.input().slurs().size(); ++i)
                   values[owner.input().slurs()[i].slur] = owner.slurDirections()[i];
             return values;
             };
       auto directions = expected(); // Owner ends before native producer writes.
       QVERIFY(directions.size() == roots.size());
+      const auto readState = [score]() {
+            auto values = graceBarlineSnapshot4(score);
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
+                  for (const Segment& segment : m->segments())
+                        for (const Element* item : segment.elist()) {
+                              if (!item || !item->isChord()) continue;
+                              const Chord* main = toChord(item);
+                              QVector<const Chord*> chords {main};
+                              for (const Chord* grace : main->graceNotes()) chords.push_back(grace);
+                              for (const Chord* chord : chords) {
+                                    values.push_back(qreal(chord->up()));
+                                    for (const Note* note : chord->notes())
+                                          values.insert(values.end(), {qreal(note->line()), note->x(), note->y()});
+                                    }
+                              }
+            for (const auto& entry : score->spannerMap().map())
+                  if (entry.second->isSlur()) values.push_back(qreal(toSlur(entry.second)->up()));
+            return values;
+            };
+      const auto beforeQuery = readState();
+      const int queryHistory = score->undoStack()->getCurIdx();
+      const auto queryMode = score->cmdState().updateMode();
+      const auto queryGeneration = score->cmdState().generation4();
+      for (const Slur* root : roots) {
+            Direction readOnly = Direction::AUTO;
+            QVERIFY(resolvePreparedSlurDirection4(root, readOnly));
+            QVERIFY(readOnly == directions[root]);
+            }
+      QVERIFY(readState() == beforeQuery);
+      QCOMPARE(score->undoStack()->getCurIdx(), queryHistory);
+      QVERIFY(score->cmdState().updateMode() == queryMode && score->cmdState().generation4() == queryGeneration);
       for (Slur* root : roots) {
             QVERIFY(directions[root] != Direction::AUTO);
             QCOMPARE(root->up(), directions[root] == Direction::UP);
@@ -4089,9 +4156,11 @@ void TestSpacing::slurRendererDirection4()
       const int history = score->undoStack()->getCurIdx();
       Direction unchanged = Direction::DOWN;
       QVERIFY(!prepareSlurDirection4(nullptr, unchanged));
+      QVERIFY(!resolvePreparedSlurDirection4(nullptr, unchanged));
       QVERIFY(unchanged == Direction::DOWN);
       Slur missing(score);
       QVERIFY(!prepareSlurDirection4(&missing, unchanged));
+      QVERIFY(!resolvePreparedSlurDirection4(&missing, unchanged));
       QVERIFY(!missing.startElement() && !missing.endElement() && unchanged == Direction::DOWN);
       missing.setSlurDirection(Direction::UP);
       QVERIFY(prepareSlurDirection4(&missing, unchanged) && unchanged == Direction::UP);

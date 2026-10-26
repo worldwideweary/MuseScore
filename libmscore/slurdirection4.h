@@ -25,5 +25,10 @@ Direction resolveSpacingSlurDirection4(const SpacingSlurDirectionFacts4&);
 // properties or anchors. Call before capturing immutable musical/geometry
 // inputs, never inside collision queries. Failure preserves result.
 bool prepareSlurDirection4(Slur*, Direction& result);
+
+// Read-only native adapter after required note-line/stem producer work. Does
+// not establish readiness itself. Uses current prepared inputs, never Slur::up,
+// and never calls updateLine/computeUp or repairs raw anchors. Failure is atomic.
+bool resolvePreparedSlurDirection4(const Slur*, Direction& result);
 }
 #endif

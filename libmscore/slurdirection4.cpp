@@ -29,7 +29,7 @@ static void refreshChordDirection4(Chord* chord)
     chord->computeUp();
 }
 
-static bool slurDirectionMixture4(Chord* start, Chord* end)
+static bool slurDirectionMixture4(const Chord* start, const Chord* end, bool refresh)
 {
     if (start->track() != end->track()) return false;
     const bool up = start->up();
@@ -38,22 +38,22 @@ static bool slurDirectionMixture4(Chord* start, Chord* end)
         const Chord* main = toChord(start->parent());
         if (main->stem() && main->up() != up) return true;
     }
-    for (Segment* segment = start->segment(); segment && segment->tick() <= end->tick();
+    for (const Segment* segment = start->segment(); segment && segment->tick() <= end->tick();
          segment = segment->next1(SegmentType::ChordRest)) {
         if ((start->isGrace() || end->isGraceBefore()) && segment->tick() == end->tick()) return false;
-        Element* item = segment->element(start->track());
+        const Element* item = segment->element(start->track());
         if (!item || !item->isChord()) continue;
-        Chord* chord = toChord(item);
+        const Chord* chord = toChord(item);
         const System* firstSystem = start->measure()->system();
         const System* system = chord->measure()->system();
-        if (chord->staff() && !chord->staff()->isDrumStaff(chord->tick())
-            && firstSystem && system && firstSystem != system) refreshChordDirection4(chord);
+        if (refresh && chord->staff() && !chord->staff()->isDrumStaff(chord->tick())
+            && firstSystem && system && firstSystem != system) refreshChordDirection4(const_cast<Chord*>(chord));
         if (chord->up() != up) return true;
     }
     return false;
 }
 
-bool prepareSlurDirection4(Slur* slur, Direction& result)
+static bool slurDirectionImpl4(const Slur* slur, Direction& result, bool refresh)
 {
     if (!slur) return false;
     SpacingSlurDirectionFacts4 facts;
@@ -63,24 +63,24 @@ bool prepareSlurDirection4(Slur* slur, Direction& result)
         return true;
     }
     if (facts.requested != Direction::AUTO) return false;
-    Element* a = slur->startElement();
-    Element* b = slur->endElement();
+    const Element* a = slur->startElement();
+    const Element* b = slur->endElement();
     if (!a || !b || !a->isChordRest() || !b->isChordRest()) return false;
-    ChordRest* start = toChordRest(a);
-    ChordRest* end = toChordRest(b);
+    const ChordRest* start = toChordRest(a);
+    const ChordRest* end = toChordRest(b);
     if (!start->measure() || !end->measure() || start->score() != slur->score() || end->score() != slur->score())
         return false;
     // Tablature stays on Evolution's existing renderer until its separate audit.
     if (!start->staff() || !end->staff() || start->staff()->isTabStaff(start->tick())
         || end->staff()->isTabStaff(end->tick())) return false;
-    Chord* c1 = start->isChord() ? toChord(start) : nullptr;
-    Chord* c2 = end->isChord() ? toChord(end) : nullptr;
-    if (c2 && c2->staff() && !c2->staff()->isDrumStaff(c2->tick())
-        && start->measure()->system() != end->measure()->system()) refreshChordDirection4(c2);
+    const Chord* c1 = start->isChord() ? toChord(start) : nullptr;
+    const Chord* c2 = end->isChord() ? toChord(end) : nullptr;
+    if (refresh && c2 && c2->staff() && !c2->staff()->isDrumStaff(c2->tick())
+        && start->measure()->system() != end->measure()->system()) refreshChordDirection4(const_cast<Chord*>(c2));
     facts.anchorsReady = true;
     facts.crossStaffStart = c1 && c1->beam() && c1->beam()->cross();
     if (!facts.crossStaffStart) {
-        for (Measure* measure = start->measure(); measure && measure->tick() <= end->tick();
+        for (const Measure* measure = start->measure(); measure && measure->tick() <= end->tick();
              measure = measure->nextMeasure()) {
             if (c1 && measure->hasVoices(start->staffIdx(), slur->tick(), slur->ticks() + end->ticks())) {
                 facts.multipleVoices = true;
@@ -90,11 +90,22 @@ bool prepareSlurDirection4(Slur* slur, Direction& result)
         facts.secondaryVoice = start->voice() > 0 || end->voice() > 0;
         facts.startStem = start->up() ? Direction::UP : Direction::DOWN;
         if (!facts.multipleVoices && c1 && c2 && (!c1->isGrace() || c2 != c1->parent())
-            && slurDirectionMixture4(c1, c2)) facts.mixture = SpacingStemMixture4::MIXED;
+            && slurDirectionMixture4(c1, c2, refresh)) facts.mixture = SpacingStemMixture4::MIXED;
     }
     const Direction prepared = resolveSpacingSlurDirection4(facts);
     if (prepared == Direction::AUTO) return false;
     result = prepared;
     return true;
 }
+
+bool prepareSlurDirection4(Slur* slur, Direction& result)
+{
+    return slurDirectionImpl4(slur, result, true);
+}
+
+bool resolvePreparedSlurDirection4(const Slur* slur, Direction& result)
+{
+    return slurDirectionImpl4(slur, result, false);
+}
+
 }

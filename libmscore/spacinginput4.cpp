@@ -239,6 +239,31 @@ bool prepareSpacingAttachments4(SpacingInput4&& input, const std::vector<Directi
     return true;
 }
 
+bool captureSpacingAttachments4(Score* score, const std::vector<SpacingPreparedAnchor4>& prepared,
+                                SpacingAttachmentPreparation4& result, QString* reason)
+{
+    SpacingInput4 input;
+    if (!buildSpacingInput4(score, input, reason)) return false;
+    std::vector<Direction> directions(input.anchors().size(), Direction::AUTO);
+    std::vector<bool> declared(input.anchors().size(), false);
+    for (const auto& entry : prepared) {
+        const auto* anchor = input.anchor(entry.item);
+        if (!anchor || (entry.direction != Direction::AUTO && entry.direction != Direction::UP
+                        && entry.direction != Direction::DOWN)) {
+            if (reason) *reason = "Invalid or unmapped prepared chord/rest direction";
+            return false;
+        }
+        const size_t index = size_t(anchor - input.anchors().data());
+        if (declared[index]) {
+            if (reason) *reason = "Duplicate prepared chord/rest direction";
+            return false;
+        }
+        declared[index] = true;
+        directions[index] = entry.direction;
+    }
+    return prepareSpacingAttachments4(std::move(input), directions, result, reason);
+}
+
 bool buildSpacingInput4(Score* score, SpacingInput4& result, QString* reason)
 {
     const auto fail = [reason](const char* message) {

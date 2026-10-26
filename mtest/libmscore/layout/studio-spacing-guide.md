@@ -3391,3 +3391,48 @@ the native producer and immutable owner in the horizontal preparation lifetime,
 then replace curve-based horizontal gates and address collection/publication
 and hybrid fallback (audit A/B). Native results are required before that next
 runtime change. No new screenshot/profile run is required for this checkpoint.
+
+
+### v0.156: producer/query boundary and identity-based capture
+
+v0.155 native mtests pass; tst_spacing took 75.89 seconds in the user's build.
+Separate native direction production from a const prepared-direction query.
+prepareSlurDirection4 retains the v0.155 renderer behavior and later-system
+note-line/stem refresh. resolvePreparedSlurDirection4 uses the same rule adapter
+without any refresh or raw-anchor repair. It requires already prepared inputs;
+calling a read-only query does not certify that cached stems are current.
+
+Add captureSpacingAttachments4 as an explicit post-producer handoff. Callers
+supply prepared chord/rest directions by exact identity rather than snapshot
+indices. The capture collects one musical view, maps those declarations and
+composes the existing direction/attachment owner. Undeclared anchors remain
+AUTO; live/captured up() is never substituted for a readiness declaration.
+Null/foreign/unmapped anchors, duplicates, invalid directions and missing scores
+fail without replacing the prior owner. Pending readiness is retained normally.
+
+Files changed: slurdirection4.h/.cpp, spacinginput4.h/.cpp, tst_spacing.cpp and
+this guide. Existing snapshot rows use reversed-order declarations, validate
+failure atomicity and pending omissions, then borrow the captured owner through
+natural/fitting plans, START reanchoring and undo. Native renderer tests compare
+the const query with the captured owner and verify unchanged note lines/y,
+stem direction, horizontal layout, cached slur direction and command/history
+state across the query. Producer writes occur outside that read-only interval.
+No new test score or new fixture load is introduced.
+
+Local checks: ten C++11 syntax passes (Debug/NDEBUG direction adapter, collector,
+slur renderer, planner and regenerated-moc test), with unused-parameter and
+signedness warnings enabled. Extracted actual implementation passes 960 mock-DOM
+cases, the existing 1,536 prepared-input and 432 priority comparisons, identity
+capture/atomicity checks and an explicit stale later-system test: const query
+leaves refresh counters and stale stems unchanged, native production refreshes
+them, then const query agrees without further writes. Percussion/TAB checks
+remain active. Native application/mtests cannot run locally. WIP checkpoint
+6363a2a saves the producer/query boundary; the incremental patch starts at
+v0.155 4c6d4e9. Rebuild and run the usual combined spacing/beam CTest command.
+
+No additional renderer or admission behavior is selected in this stage. Capture
+is deliberately not installed in plan/pair/prefix loops: it is score-wide and
+belongs outside those loops. Next: bind the producer, readiness declarations
+and immutable owner to horizontal layout lifetime, then replace curve-specific
+admission and resolve collection/publication and hybrid fallback (audit A/B).
+No new screenshot or profiling run is requested at this checkpoint.

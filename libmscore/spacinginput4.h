@@ -181,6 +181,22 @@ public:
 bool prepareSpacingAttachments4(SpacingInput4&& input, const std::vector<Direction>& anchorDirections,
                                 SpacingAttachmentPreparation4& result, QString* reason = nullptr);
 
+// Explicit producer handoff by identity, independent of snapshot index order.
+// AUTO means not prepared; omitted anchors remain AUTO too. This is a caller
+// readiness declaration, never inferred from a stored or live up() observation.
+struct SpacingPreparedAnchor4 {
+    const ChordRest* item;
+    Direction direction;
+    SpacingPreparedAnchor4(const ChordRest* chord, Direction d) : item(chord), direction(d) {}
+};
+
+// Capture after all native producer writes, once per caller-owned preparation
+// phase. No native writes/direction production occur here. Reject null, foreign,
+// duplicate or invalid declarations atomically, including unmapped anchors.
+// Never call this score-wide operation from a plan/pair/prefix fitting loop.
+bool captureSpacingAttachments4(Score*, const std::vector<SpacingPreparedAnchor4>& prepared,
+                                SpacingAttachmentPreparation4& result, QString* reason = nullptr);
+
 // Collects all tracks, grace members and root slurs without admission whitelists.
 // Uses raw endpoint accessors: unresolved anchors stay unresolved, never lazily
 // computed. No positions, styles, directions, selection or history are changed.
