@@ -3747,19 +3747,68 @@ void TestSpacing::spacingInputSnapshot4()
                   }
             for (System* system : score->systems()) {
                   if (system->vbox()) continue;
-                  SpacingPlan4 oldPlan, indexedPlan, ownedPlan;
-                  oldPlan.width = indexedPlan.width = ownedPlan.width = -456;
+                  SpacingAttachmentPreparation4 systemOwner;
+                  difference = "Failed to capture finalized-system musical inputs";
+                  if (!captureSystemSpacingAttachments4(system, {}, systemOwner)) return false;
+                  std::vector<const ChordRest*> expectedAnchors;
+                  for (const auto& a : prepared.anchors())
+                        if (a.measure->system() == system) expectedAnchors.push_back(a.item);
+                  if (systemOwner.input().anchors().size() != expectedAnchors.size()) return false;
+                  SpacingContextCache4 systemQuery(systemOwner);
+                  for (size_t i = 0; i < expectedAnchors.size(); ++i) {
+                        const auto& a = systemOwner.input().anchors()[i];
+                        if (a.item != expectedAnchors[i]) return false;
+                        const auto* global = prepared.anchor(a.item);
+                        if (!global || a.track != global->track || a.tick != global->tick || a.kind != global->kind
+                            || a.memberIndex != global->memberIndex || a.main != global->main) return false;
+                        std::vector<const Slur*> scopedRoots, allRoots;
+                        for (size_t index : a.relatedSlurs) scopedRoots.push_back(systemOwner.input().slurs()[index].slur);
+                        for (size_t index : global->relatedSlurs) allRoots.push_back(prepared.slurs()[index].slur);
+                        difference = "System interval capture changed local root identity or native map order";
+                        if (scopedRoots != allRoots) return false;
+                        if (a.item->isChord()) {
+                              const Chord* chord = toChord(a.item);
+                              if (oldQuery.forwardSlurKerning(chord) != systemQuery.forwardSlurKerning(chord)) return false;
+                              for (const Note* note : chord->notes()) {
+                                    SpacingPairPolicy4 oldPolicy, localPolicy;
+                                    oldPolicy.padding = localPolicy.padding = -123;
+                                    const bool oldOK = spacingPairPolicy4(table, note, note, chord->spatium(), oldPolicy, &context, &oldQuery);
+                                    const bool localOK = spacingPairPolicy4(table, note, note, chord->spatium(), localPolicy, &context, &systemQuery);
+                                    if (oldOK != localOK || oldPolicy.padding != localPolicy.padding
+                                        || oldPolicy.kerning != localPolicy.kerning || oldPolicy.verticalClearance != localPolicy.verticalClearance) return false;
+                                    }
+                              }
+                        }
+                  // Omitted readiness stays pending, never certified by capture.
+                  for (Direction d : systemOwner.anchorDirections()) if (d != Direction::AUTO) return false;
+                  const auto* savedLocal = expectedAnchors.empty() ? nullptr : systemOwner.sides(expectedAnchors.front());
+                  if (captureSystemSpacingAttachments4(nullptr, {}, systemOwner)
+                      || (!expectedAnchors.empty() && systemOwner.sides(expectedAnchors.front()) != savedLocal)) return false;
+                  for (const auto& outside : prepared.anchors()) {
+                        if (outside.measure->system() == system) continue;
+                        if (captureSystemSpacingAttachments4(system, {SpacingPreparedAnchor4(outside.item, Direction::UP)}, systemOwner)
+                            || (!expectedAnchors.empty() && systemOwner.sides(expectedAnchors.front()) != savedLocal)) return false;
+                        break;
+                        }
+                  SpacingPlan4 oldPlan, indexedPlan, ownedPlan, systemPlan;
+                  oldPlan.width = indexedPlan.width = ownedPlan.width = systemPlan.width = -456;
                   const bool oldAccepted = buildSpacingPlan4(system, oldPlan);
                   const bool indexedAccepted = buildSpacingPlan4(system, indexedPlan, nullptr, SpacingPlanOptions4(), nullptr, &prepared);
                   const bool ownedAccepted = buildSpacingPlan4(system, ownedPlan, owner);
+                  const bool systemAccepted = buildSpacingPlan4(system, systemPlan, systemOwner);
+                  difference = "System-scoped preparation changed complete natural plan or admission";
+                  if (oldAccepted != systemAccepted || !spacingPlansEqual154(oldPlan, systemPlan)) return false;
                   difference = "Owned preparation changed complete natural plan or admission";
                   if (oldAccepted != ownedAccepted || !spacingPlansEqual154(oldPlan, ownedPlan)) return false;
                   if (oldAccepted) {
                         for (qreal ratio : {qreal(1), qreal(0.95)}) {
-                              SpacingPlan4 oldFit, ownedFit;
-                              oldFit.width = ownedFit.width = -987;
+                              SpacingPlan4 oldFit, ownedFit, systemFit;
+                              oldFit.width = ownedFit.width = systemFit.width = -987;
                               const bool oldFitted = squeezeSpacingPlan4(system, oldPlan.width * ratio, oldFit);
                               const bool ownedFitted = squeezeSpacingPlan4(system, oldPlan.width * ratio, ownedFit, owner);
+                              const bool systemFitted = squeezeSpacingPlan4(system, oldPlan.width * ratio, systemFit, systemOwner);
+                              difference = "System-scoped preparation changed fitting outcome or complete plan";
+                              if (oldFitted != systemFitted || !spacingPlansEqual154(oldFit, systemFit)) return false;
                               difference = "Owned preparation changed fitting outcome or complete plan";
                               if (oldFitted != ownedFitted || !spacingPlansEqual154(oldFit, ownedFit)) return false;
                               }
@@ -3814,6 +3863,20 @@ void TestSpacing::spacingInputSnapshot4()
       QVERIFY(!squeezeSpacingPlan4(score->firstMeasure()->system(), 100, untouched, missing));
       QCOMPARE(untouched.width, qreal(-789));
       }
+      {
+      SpacingInput4 unchanged = input;
+      const auto* original = unchanged.anchor(input.anchors().front().item);
+      SpacingInputScope4 invalid;
+      invalid.measures = {score->firstMeasure(), score->firstMeasure()};
+      QVERIFY(!buildSpacingInput4(score, invalid, unchanged, &reason));
+      QCOMPARE(unchanged.anchor(input.anchors().front().item), original);
+      if (!input.slurs().empty()) {
+            invalid.measures = {score->firstMeasure()};
+            invalid.slurs = {input.slurs().front().slur, input.slurs().front().slur};
+            QVERIFY(!buildSpacingInput4(score, invalid, unchanged, &reason));
+            QCOMPARE(unchanged.anchor(input.anchors().front().item), original);
+            }
+      }
       QVERIFY(state() == before);
       QCOMPARE(score->undoStack()->getCurIdx(), history);
       QVERIFY(score->selection().elements() == selection && score->selection().state() == selectionState);
@@ -3825,6 +3888,35 @@ void TestSpacing::spacingInputSnapshot4()
       QCOMPARE(input.score(), static_cast<const Score*>(score));
       QVERIFY(input.anchors().size() == anchors); // Failed build preserves prior output.
       input = SpacingInput4(); // End the borrowed view before a structural edit.
+      {
+      // Keep native insertion keys while changing current ticks. The ordered
+      // interval query must still follow actual map order after invalidation.
+      Slur first(score), second(score);
+      first.setTrack(0);
+      first.setTick(score->firstMeasure()->tick());
+      first.setTicks(Fraction(1, 4));
+      second.setTrack(0);
+      second.setTick(score->lastMeasure()->tick());
+      second.setTicks(Fraction(1, 4));
+      score->addSpanner(&first);
+      score->addSpanner(&second);
+      const int stop = score->lastMeasure()->endTick().ticks() + Fraction(1, 2).ticks();
+      const auto orderedMatches = [&]() {
+            const auto actual = score->spannerMap().findOverlappingInMapOrder(0, stop);
+            std::vector<Spanner*> expected;
+            for (const auto& entry : score->spannerMap().map())
+                  if (entry.second->tick().ticks() <= stop && entry.second->tick2().ticks() >= 0)
+                        expected.push_back(entry.second);
+            return actual == expected;
+            };
+      const bool initialOrder = orderedMatches();
+      first.setTick(score->lastMeasure()->endTick());
+      const bool movedOrder = orderedMatches();
+      score->removeSpanner(&second);
+      const bool removedOrder = orderedMatches();
+      score->removeSpanner(&first);
+      QVERIFY(initialOrder && movedOrder && removedOrder);
+      }
       {
       Slur unresolved(score);
       unresolved.setTrack(0);

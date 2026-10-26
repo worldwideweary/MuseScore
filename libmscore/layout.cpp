@@ -65,6 +65,7 @@
 #include "beamlayout4.h"
 #include "spacinglayout4.h"
 #include "spacingplan4.h"
+#include "spacinginput4.h"
 #include "gracespacing4.h"
 #include <map>
 #include <cmath>
@@ -4651,8 +4652,17 @@ System* Score::collectSystem(LayoutContext& lc)
       SpacingPlan4 studioPlan;
       bool useStudioPlan = false;
       std::map<Measure*, const SpacingMeasurePlan4*> studioMeasures;
-      if (styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch && graceGeometryReady
-          && squeezeSpacingPlan4(system, systemWidth, studioPlan, nullptr, &readyMerged)) {
+      // One system-scoped musical view, captured AFTER beam/shape writes.
+      // Reuse it through read-only fitting; destroy before publishing positions.
+      // Pending direction inputs remain pending: this step preserves the current
+      // collision admission/kerning policy, not the general attachment policy.
+      bool studioFits = false;
+      if (styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch && graceGeometryReady) {
+            SpacingAttachmentPreparation4 attachments;
+            studioFits = captureSystemSpacingAttachments4(system, {}, attachments)
+                  && squeezeSpacingPlan4(system, systemWidth, studioPlan, attachments, nullptr, &readyMerged);
+            }
+      if (studioFits) {
             useStudioPlan = !justifySystem4(lm, lc.curMeasure, studioPlan.width, systemWidth,
                                              styleD(Sid::lastSystemFillLimit))
                   || justifySpacingPlan4(studioPlan, systemWidth);

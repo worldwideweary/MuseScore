@@ -3436,3 +3436,58 @@ belongs outside those loops. Next: bind the producer, readiness declarations
 and immutable owner to horizontal layout lifetime, then replace curve-specific
 admission and resolve collection/publication and hybrid fallback (audit A/B).
 No new screenshot or profiling run is requested at this checkpoint.
+
+
+### v0.157: finalized-system capture enters horizontal fitting
+
+v0.156 native mtests pass; tst_spacing took 75.95 seconds in the user's build.
+Install the prepared-input owner in finalized-system horizontal fitting. Capture
+one musical domain after grace beam/shape preparation, borrow it throughout the
+natural/squeeze plan attempts, then destroy it before publishing segment/measure
+positions. Prefix fitting is unchanged; no whole-score snapshot is collected
+for each candidate prefix or each finalized system.
+
+Add a shared collector for explicit contiguous measure/root domains. The full
+score prototype delegates to it. System capture visits that system's measures
+and gets intersecting roots from the native interval index. It preserves raw
+external endpoint identity/kind without pretending they have local anchor
+indices. Ordinals are local to the captured track/domain. Local pending flags
+and global complete() reflect partial coverage; external endpoints do not make
+the captured view invalid. Readiness declarations remain omitted/AUTO in this
+first runtime binding: existing admission/kerning policy consumes the identity
+index; general side flags are not activated and stale up() is not certified.
+
+Native map order must be preserved even when setTick dirties the interval index
+without moving an old insertion key. Add lazy map-order ranks to SpannerMap's
+ordered interval query. Build them only on demand and invalidate them with the
+existing add/remove/clear/tick/length dirty operations. This indexes topology,
+not geometry, positions or layout admission. Ordinary interval callers do not
+build ranks. First ordered use after invalidation may scan roots/rebuild the
+native interval tree; subsequent systems reuse those indices. There is no
+unconditional whole-root-map scan per system and no whole-score anchor scan.
+
+Files changed: spacinginput4.h/.cpp, spannermap.h/.cpp, layout.cpp,
+tst_spacing.cpp and this guide. Native tests compare local anchors/root order,
+pair decisions, complete natural plans and fitting outcomes against full/native
+queries before/after START reanchoring and undo. They check scope/capture failure
+atomicity, outside-domain declarations, map-key/current-tick differences and
+remove invalidation. Existing full/range/edit/undo geometry tests now exercise
+the production finalized-system binding. No new test fixture is loaded.
+
+Local verification: twelve C++11 syntax passes (Debug/NDEBUG root index,
+collector, layout, planner, collision and regenerated-moc test), with unused-
+parameter/signedness checks. Actual collector/direction/owner code passes the
+960 mock-DOM suite plus multi-measure partial domains, external endpoints and
+contiguity/atomicity checks. The actual native ordered interval implementation
+passes 3,200 independent ordering checks across initial queries, moved ticks,
+removal, reinsertion and clear. Prior preparation/priority/producer checks stay
+active. Native application/mtests cannot run locally. WIP 6321c5d saves the lazy
+ordered query; WIP 7803361 saves scoped capture and fitting integration. The
+incremental patch begins at delivered v0.156 4bea04e.
+
+Rebuild and run the usual combined spacing/beam CTest command. No intended visual
+change, new screenshot or profiling run is requested for this checkpoint. Next:
+provide authoritative readiness/direction inputs within the captured system
+lifetime and replace curve-specific horizontal admission. Collection/prefix
+rebuilding, coherent fallback and final publication remain audit package B;
+this stage does not claim those problems are resolved.

@@ -13,6 +13,7 @@
 
 namespace Ms {
 class Score;
+class System;
 class Chord;
 class ChordRest;
 class Element;
@@ -27,6 +28,13 @@ enum class SpacingMemberKind4 { BEFORE, MAIN, AFTER };
 enum class SpacingEndpointKind4 { MISSING, CHORD, REST, NOTE, OTHER };
 constexpr size_t SPACING_INPUT_NONE4 = std::numeric_limits<size_t>::max();
 
+// A contiguous musical domain and its roots, in native map order. Root raw
+// endpoints outside the domain retain identity/kind but have no anchor index.
+struct SpacingInputScope4 {
+    std::vector<const Measure*> measures;
+    std::vector<const Slur*> slurs;
+};
+
 struct SpacingAnchorInput4 {
     const ChordRest* item = nullptr;
     const Chord* main = nullptr; // Null for a rest; owner for every grace member.
@@ -34,7 +42,7 @@ struct SpacingAnchorInput4 {
     const Segment* segment = nullptr;
     Fraction tick;
     int track = -1;
-    size_t orderInTrack = 0; // Musical order within this track, not across voices.
+    size_t orderInTrack = 0; // Musical order within the captured domain/track, not across voices.
     SpacingMemberKind4 kind = SpacingMemberKind4::MAIN;
     size_t memberIndex = 0; // Accessor order within BEFORE/AFTER; MAIN uses zero.
     bool up = false;
@@ -94,7 +102,7 @@ class SpacingInput4 {
     std::unordered_map<const ChordRest*, size_t> _anchorIndex;
     std::unordered_map<const Note*, size_t> _noteIndex;
     std::unordered_map<const Slur*, size_t> _slurIndex;
-    friend bool buildSpacingInput4(Score*, SpacingInput4&, QString*);
+    friend struct SpacingInputBuilder4;
 public:
     const Score* score() const { return _score; }
     const std::vector<SpacingAnchorInput4>& anchors() const { return _anchors; }
@@ -202,5 +210,15 @@ bool captureSpacingAttachments4(Score*, const std::vector<SpacingPreparedAnchor4
 // computed. No positions, styles, directions, selection or history are changed.
 // Structural failure leaves result unchanged. Score's map accessor is not const.
 bool buildSpacingInput4(Score*, SpacingInput4& result, QString* reason = nullptr);
+// No whole-score measure/root walk; the caller supplies the native domain.
+bool buildSpacingInput4(Score*, const SpacingInputScope4&, SpacingInput4& result, QString* reason = nullptr);
+
+// Finalized-system handoff: contiguous measures plus roots from the native
+// interval index, retaining native map order within equal start ticks. Current
+// collision policy borrows this view across all read-only squeeze passes.
+// Omitted readiness declarations remain AUTO, including external endpoints.
+// No producers or geometry writes occur. Never use this in prefix fitting.
+bool captureSystemSpacingAttachments4(System*, const std::vector<SpacingPreparedAnchor4>& prepared,
+                                      SpacingAttachmentPreparation4& result, QString* reason = nullptr);
 }
 #endif

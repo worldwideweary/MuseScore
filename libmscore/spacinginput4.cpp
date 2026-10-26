@@ -10,6 +10,7 @@
 #include "note.h"
 #include "slur.h"
 #include "spannermap.h"
+#include "system.h"
 #include <utility>
 #include <map>
 #include <algorithm>
@@ -239,11 +240,9 @@ bool prepareSpacingAttachments4(SpacingInput4&& input, const std::vector<Directi
     return true;
 }
 
-bool captureSpacingAttachments4(Score* score, const std::vector<SpacingPreparedAnchor4>& prepared,
-                                SpacingAttachmentPreparation4& result, QString* reason)
+static bool captureSpacingAttachmentsImpl4(SpacingInput4&& input, const std::vector<SpacingPreparedAnchor4>& prepared,
+                                          SpacingAttachmentPreparation4& result, QString* reason)
 {
-    SpacingInput4 input;
-    if (!buildSpacingInput4(score, input, reason)) return false;
     std::vector<Direction> directions(input.anchors().size(), Direction::AUTO);
     std::vector<bool> declared(input.anchors().size(), false);
     for (const auto& entry : prepared) {
@@ -264,7 +263,16 @@ bool captureSpacingAttachments4(Score* score, const std::vector<SpacingPreparedA
     return prepareSpacingAttachments4(std::move(input), directions, result, reason);
 }
 
-bool buildSpacingInput4(Score* score, SpacingInput4& result, QString* reason)
+bool captureSpacingAttachments4(Score* score, const std::vector<SpacingPreparedAnchor4>& prepared,
+                                SpacingAttachmentPreparation4& result, QString* reason)
+{
+    SpacingInput4 input;
+    if (!buildSpacingInput4(score, input, reason)) return false;
+    return captureSpacingAttachmentsImpl4(std::move(input), prepared, result, reason);
+}
+
+struct SpacingInputBuilder4 {
+static bool build(Score* score, const SpacingInputScope4& scope, SpacingInput4& result, QString* reason)
 {
     const auto fail = [reason](const char* message) {
         if (reason) *reason = QString::fromLatin1(message);
@@ -318,7 +326,11 @@ bool buildSpacingInput4(Score* score, SpacingInput4& result, QString* reason)
         }
         return true;
     };
-    for (const Measure* measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+    const Measure* previous = nullptr;
+    for (const Measure* measure : scope.measures) {
+        if (!measure || measure->score() != score || (previous && previous->nextMeasure() != measure))
+            return fail("Invalid or noncontiguous spacing input measures");
+        previous = measure;
         for (const Segment& segment : measure->segments()) {
             if (!segment.isChordRestType()) continue;
             for (const Element* element : segment.elist()) {
@@ -375,10 +387,8 @@ bool buildSpacingInput4(Score* score, SpacingInput4& result, QString* reason)
         if (found != pending._anchorIndex.end()) end.anchorIndex = found->second;
         return end;
     };
-    for (const auto& entry : score->spannerMap().map()) {
-        if (!entry.second || !entry.second->isSlur()) continue;
-        const Slur* slur = toSlur(entry.second);
-        if (slur->score() != score || pending._slurIndex.count(slur))
+    for (const Slur* slur : scope.slurs) {
+        if (!slur || slur->score() != score || pending._slurIndex.count(slur))
             return fail("Invalid or duplicate root slur input");
         SpacingSlurInput4 input;
         input.slur = slur;
@@ -437,4 +447,46 @@ bool buildSpacingInput4(Score* score, SpacingInput4& result, QString* reason)
     if (reason) reason->clear();
     return true;
 }
+};
+
+bool buildSpacingInput4(Score* score, const SpacingInputScope4& scope, SpacingInput4& result, QString* reason)
+{
+    return SpacingInputBuilder4::build(score, scope, result, reason);
+}
+
+bool buildSpacingInput4(Score* score, SpacingInput4& result, QString* reason)
+{
+    SpacingInputScope4 scope;
+    if (score) {
+        for (const Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) scope.measures.push_back(m);
+        for (const auto& entry : score->spannerMap().map())
+            if (entry.second && entry.second->isSlur()) scope.slurs.push_back(toSlur(entry.second));
+    }
+    return SpacingInputBuilder4::build(score, scope, result, reason);
+}
+
+bool captureSystemSpacingAttachments4(System* system, const std::vector<SpacingPreparedAnchor4>& prepared,
+                                      SpacingAttachmentPreparation4& result, QString* reason)
+{
+    const auto fail = [reason](const char* message) {
+        if (reason) *reason = QString::fromLatin1(message);
+        return false;
+    };
+    if (!system || !system->score()) return fail("Missing system for attachment capture");
+    Score* score = system->score();
+    SpacingInputScope4 scope;
+    for (const MeasureBase* mb : system->measures()) {
+        if (!mb || !mb->isMeasure()) return fail("Non-measure system attachment domain");
+        scope.measures.push_back(toMeasure(mb));
+    }
+    if (scope.measures.empty()) return fail("Empty system attachment domain");
+    const auto roots = score->spannerMap().findOverlappingInMapOrder(scope.measures.front()->tick().ticks(),
+                                                                  scope.measures.back()->endTick().ticks());
+    for (const Spanner* root : roots)
+        if (root && root->isSlur()) scope.slurs.push_back(toSlur(root));
+    SpacingInput4 input;
+    if (!buildSpacingInput4(score, scope, input, reason)) return false;
+    return captureSpacingAttachmentsImpl4(std::move(input), prepared, result, reason);
+}
+
 }
