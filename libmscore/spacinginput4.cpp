@@ -141,15 +141,21 @@ bool buildSpacingSlurDirections4(const SpacingInput4& input, const std::vector<D
             const auto& end = input.anchors()[slur.end.anchorIndex];
             const bool startChord = slur.start.kind == SpacingEndpointKind4::CHORD;
             const bool endChord = slur.end.kind == SpacingEndpointKind4::CHORD;
-            if (startChord && start.crossStaffBeam) return Direction::UP;
-            // Studio gives voice selection priority over the mixture rule.
-            if (slur.multipleVoices)
-                return start.track % VOICES || end.track % VOICES ? Direction::DOWN : Direction::UP;
-            const Direction stem = directions[slur.start.anchorIndex];
-            if (stem == Direction::AUTO) return Direction::AUTO;
-            const Direction opposite = stem == Direction::UP ? Direction::DOWN : Direction::UP;
+            SpacingSlurDirectionFacts4 facts;
+            facts.anchorsReady = true;
+            facts.crossStaffStart = startChord && start.crossStaffBeam;
+            facts.multipleVoices = slur.multipleVoices;
+            facts.secondaryVoice = start.track % VOICES || end.track % VOICES;
+            facts.startStem = directions[slur.start.anchorIndex];
+            if (facts.crossStaffStart || facts.multipleVoices || facts.startStem == Direction::AUTO)
+                return resolveSpacingSlurDirection4(facts);
+            const Direction stem = facts.startStem;
+            const auto mixedDirection = [&facts]() {
+                facts.mixture = SpacingStemMixture4::MIXED;
+                return resolveSpacingSlurDirection4(facts);
+            };
             if (!startChord || !endChord || start.track != end.track
-                || (start.kind != SpacingMemberKind4::MAIN && end.item == start.main)) return opposite;
+                || (start.kind != SpacingMemberKind4::MAIN && end.item == start.main)) return resolveSpacingSlurDirection4(facts);
             // A definite mixture resolves UP even when another stem is still
             // pending. Without a definite mixture, pending inputs stay pending.
             bool unknown = false;
@@ -157,12 +163,12 @@ bool buildSpacingSlurDirections4(const SpacingInput4& input, const std::vector<D
                 if (directions[index] == Direction::AUTO) unknown = true;
                 return directions[index] != Direction::AUTO && directions[index] != stem;
             };
-            if (end.kind != SpacingMemberKind4::MAIN && mixed(slur.end.anchorIndex)) return Direction::UP;
+            if (end.kind != SpacingMemberKind4::MAIN && mixed(slur.end.anchorIndex)) return mixedDirection();
             if (start.kind == SpacingMemberKind4::BEFORE && end.kind == SpacingMemberKind4::AFTER
                 && start.main == end.main) {
                 const auto found = mainIndex.find(start.main);
                 if (found != mainIndex.end() && input.anchors()[found->second].hasStem && mixed(found->second))
-                    return Direction::UP;
+                    return mixedDirection();
             }
             const auto found = mains.find(start.track);
             if (found != mains.end()) {
@@ -174,10 +180,11 @@ bool buildSpacingSlurDirections4(const SpacingInput4& input, const std::vector<D
                     if (anchor.tick > end.tick) break;
                     if ((start.kind != SpacingMemberKind4::MAIN || end.kind == SpacingMemberKind4::BEFORE)
                         && anchor.tick == end.tick) break;
-                    if (anchor.main && mixed(*it)) return Direction::UP;
+                    if (anchor.main && mixed(*it)) return mixedDirection();
                 }
             }
-            return unknown ? Direction::AUTO : opposite;
+            facts.mixture = unknown ? SpacingStemMixture4::PENDING : SpacingStemMixture4::NONE;
+            return resolveSpacingSlurDirection4(facts);
         };
         pending.push_back(resolve());
     }

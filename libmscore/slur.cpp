@@ -23,6 +23,7 @@
 #include "part.h"
 #include "score.h"
 #include "slur.h"
+#include "slurdirection4.h"
 #include "gracespacing4.h"
 #include "graceslurlayout4.h"
 #include "stem.h"
@@ -1567,7 +1568,10 @@ SpannerSegment* Slur::layoutSystem(System* system)
                   setEndElement(startCR());
                   setTick2(tick());
                   }
-            switch (_slurDirection) {
+            Direction preparedDirection = Direction::AUTO;
+            if (score()->styleB(Sid::spacingLayout4) && prepareSlurDirection4(this, preparedDirection))
+                  _up = preparedDirection == Direction::UP;
+            else switch (_slurDirection) {
                   case Direction::UP:
                         _up = true;
                         break;
@@ -1699,7 +1703,10 @@ void Slur::layout()
             setEndElement(startCR());
             setTick2(tick());
             }
-      switch (_slurDirection) {
+      Direction preparedDirection = Direction::AUTO;
+      if (score()->styleB(Sid::spacingLayout4) && prepareSlurDirection4(this, preparedDirection))
+            _up = preparedDirection == Direction::UP;
+      else switch (_slurDirection) {
             case Direction::UP:
                   _up = true;
                   break;

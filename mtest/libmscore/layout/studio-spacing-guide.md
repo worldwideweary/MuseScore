@@ -3338,3 +3338,56 @@ rules as the renderer. That renderer-consistent producer connection is next,
 followed by removing the curve-based horizontal gates and addressing collection/
 publication and hybrid fallback (audit A/B). Rebuild and run the usual combined
 spacing/beam CTest command; no visual or performance run is requested here.
+
+
+### v0.155: shared direction priority in both native slur render paths
+
+v0.154 native mtests pass; tst_spacing took 76.16 seconds in the user's build.
+Connect the prepared direction rules to native rendering under spacingLayout4.
+The original layout() and layoutSystem() direction blocks remain byte-for-byte
+unchanged for the setting-off path. A common pure priority kernel now serves
+both the indexed prepared-input resolver and a native Studio direction producer.
+Both render entry points use that producer when experimental spacing is on.
+
+The producer follows pinned 4.7.5 computeUp/isDirectionMixture: cross-staff start
+beam priority, multiple voices before mixture, exact grace endpoint/owner-stem
+handling, same-track main chords across measures and later-system stem refresh.
+No whole-score musical snapshot is collected in Slur::layout/layoutSystem or a
+collision loop. Pitch-staff end chords on another system have note lines and
+stem direction refreshed; intervening pitched chords refresh only when both
+systems exist and differ. Percussion skips that refresh. Tablature stays on
+Evolution's original renderer until its deferred audit. Explicit directions are
+literal; missing/non-chordrest AUTO raw anchors retain normal native handling.
+
+This producer is a write phase: Evolution's Note::updateLine updates derived
+note y as well as line, and Chord::computeUp updates stem direction. Run it
+before capturing immutable musical/geometry inputs, not inside a spacing
+query or while an attachment owner is borrowed. It does not lay out entire
+scores, pack grace groups, change slur anchor properties or add a new cache.
+
+Files changed: new slurdirection4.h/.cpp and libmscore CMake source registration,
+spacinginput4.h/.cpp, slur.cpp, tst_spacing.cpp and this guide. Native tests add
+432 priority combinations and three small existing fixtures checking native
+full-layout and immediate-layout AUTO directions against the prepared owner,
+then full layout again. Fixtures cover grace/two-system, multiple-voice and
+cross-staff spans; no backward synthetic curves are rendered. Existing plan,
+reanchor and undo tests remain active. No new visual test score is added.
+
+Local validation: twelve final C++11 syntax passes (Debug/NDEBUG producer,
+collector, slur renderer, planner, grace spacing and regenerated-moc test), with
+unused-parameter/signedness checks. Actual extracted collector, preparation,
+shared rule and producer bodies pass 960 mock-DOM cases, 1,536 prepared-input
+comparisons, 432 priority checks and explicit later-system refresh, percussion
+and tablature checks. Removing only the new opt-in calls/include reconstructs
+the previous slur.cpp exactly. Native application/mtests cannot run locally.
+WIP checkpoint 2582ab8 preserves the renderer bridge; apply the incremental
+patch after delivered v0.154 a50237d. Reconfigure/rebuild for the new source file
+and run the usual combined spacing/beam CTest command.
+
+This stage can change AUTO slur direction with experimental spacing enabled.
+The planner still uses existing curve-based admission; this is not yet a
+production-wide activation of the general attachment-side policy. Next: order
+the native producer and immutable owner in the horizontal preparation lifetime,
+then replace curve-based horizontal gates and address collection/publication
+and hybrid fallback (audit A/B). Native results are required before that next
+runtime change. No new screenshot/profile run is required for this checkpoint.

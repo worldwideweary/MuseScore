@@ -6,6 +6,7 @@
 #include <cstddef>
 #include "fraction.h"
 #include "types.h"
+#include "slurdirection4.h"
 #include <limits>
 #include <unordered_map>
 #include <vector>

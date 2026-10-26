@@ -47,6 +47,9 @@ class TestSpacing : public QObject, public MTest {
       void spacingSlurAttachments4();
       void spacingSlurDirections4_data();
       void spacingSlurDirections4();
+      void slurDirectionPriority4();
+      void slurRendererDirection4_data();
+      void slurRendererDirection4();
       void styleRoundTrip();
       void durationPolicy();
       void springForce();
@@ -3975,6 +3978,125 @@ void TestSpacing::spacingSlurDirections4()
             score->removeSpanner(root);
             delete root;
             }
+      delete score;
+      }
+
+void TestSpacing::slurDirectionPriority4()
+      {
+      for (Direction requested : {Direction::AUTO, Direction::UP, Direction::DOWN})
+            for (Direction stem : {Direction::AUTO, Direction::UP, Direction::DOWN})
+                  for (SpacingStemMixture4 mixture : {SpacingStemMixture4::NONE, SpacingStemMixture4::MIXED, SpacingStemMixture4::PENDING})
+                        for (int bits = 0; bits < 16; ++bits) {
+                              SpacingSlurDirectionFacts4 f;
+                              f.requested = requested;
+                              f.startStem = stem;
+                              f.mixture = mixture;
+                              f.anchorsReady = bits & 1;
+                              f.crossStaffStart = bits & 2;
+                              f.multipleVoices = bits & 4;
+                              f.secondaryVoice = bits & 8;
+                              Direction expected = requested;
+                              if (requested == Direction::AUTO && f.anchorsReady) {
+                                    if (f.crossStaffStart) expected = Direction::UP;
+                                    else if (f.multipleVoices) expected = f.secondaryVoice ? Direction::DOWN : Direction::UP;
+                                    else if (stem != Direction::AUTO) {
+                                          if (mixture == SpacingStemMixture4::MIXED) expected = Direction::UP;
+                                          else if (mixture == SpacingStemMixture4::NONE)
+                                                expected = stem == Direction::UP ? Direction::DOWN : Direction::UP;
+                                          }
+                                    }
+                              QVERIFY(resolveSpacingSlurDirection4(f) == expected);
+                              }
+      }
+
+void TestSpacing::slurRendererDirection4_data()
+      {
+      spacingSlurDirections4_data();
+      }
+
+void TestSpacing::slurRendererDirection4()
+      {
+      QFETCH(QString, file);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      SpacingInput4 input;
+      QVERIFY(buildSpacingInput4(score, input));
+      // Add a forward main-note AUTO span on each actual track, including
+      // secondary voices and cross-staff beam starts. Existing grace spans
+      // exercise the non-main endpoints; no synthetic backward curves.
+      std::map<int, std::pair<const Chord*, const Chord*>> bounds;
+      for (const auto& anchor : input.anchors()) {
+            if (anchor.kind != SpacingMemberKind4::MAIN || !anchor.main) continue;
+            auto& pair = bounds[anchor.track];
+            if (!pair.first) pair.first = anchor.main;
+            pair.second = anchor.main;
+            }
+      input = SpacingInput4();
+      for (const auto& entry : bounds) {
+            const Chord* start = entry.second.first;
+            const Chord* end = entry.second.second;
+            if (start == end || start->tick() >= end->tick()) continue;
+            Slur* root = new Slur(score);
+            root->setTrack(start->track());
+            root->setTrack2(end->track());
+            root->setTick(start->tick());
+            root->setTick2(end->tick());
+            root->setStartElement(const_cast<Chord*>(start));
+            root->setEndElement(const_cast<Chord*>(end));
+            score->addSpanner(root);
+            }
+      std::vector<Slur*> roots;
+      for (const auto& entry : score->spannerMap().map()) {
+            if (!entry.second->isSlur()) continue;
+            Slur* root = toSlur(entry.second);
+            root->setSlurDirection(Direction::AUTO);
+            roots.push_back(root);
+            }
+      QVERIFY(!roots.empty());
+      score->doLayout(); // Native layoutSystem path.
+      const auto expected = [&]() {
+            std::map<const Slur*, Direction> values;
+            SpacingInput4 musical;
+            if (!buildSpacingInput4(score, musical)) return values;
+            std::vector<Direction> stems;
+            for (const auto& a : musical.anchors()) stems.push_back(a.up ? Direction::UP : Direction::DOWN);
+            SpacingAttachmentPreparation4 owner;
+            if (!prepareSpacingAttachments4(std::move(musical), stems, owner)) return values;
+            for (size_t i = 0; i < owner.input().slurs().size(); ++i)
+                  values[owner.input().slurs()[i].slur] = owner.slurDirections()[i];
+            return values;
+            };
+      auto directions = expected(); // Owner ends before native producer writes.
+      QVERIFY(directions.size() == roots.size());
+      for (Slur* root : roots) {
+            QVERIFY(directions[root] != Direction::AUTO);
+            QCOMPARE(root->up(), directions[root] == Direction::UP);
+            Direction produced = Direction::AUTO;
+            QVERIFY(prepareSlurDirection4(root, produced));
+            QVERIFY(produced == directions[root]);
+            root->layout(); // Native immediate-edit path.
+            QCOMPARE(root->up(), directions[root] == Direction::UP);
+            }
+      score->doLayout();
+      directions = expected();
+      QVERIFY(directions.size() == roots.size());
+      for (Slur* root : roots) QCOMPARE(root->up(), directions[root] == Direction::UP);
+      // Native producer validation does not resolve missing raw anchors or
+      // create history entries; literal explicit directions need no geometry.
+      {
+      const int history = score->undoStack()->getCurIdx();
+      Direction unchanged = Direction::DOWN;
+      QVERIFY(!prepareSlurDirection4(nullptr, unchanged));
+      QVERIFY(unchanged == Direction::DOWN);
+      Slur missing(score);
+      QVERIFY(!prepareSlurDirection4(&missing, unchanged));
+      QVERIFY(!missing.startElement() && !missing.endElement() && unchanged == Direction::DOWN);
+      missing.setSlurDirection(Direction::UP);
+      QVERIFY(prepareSlurDirection4(&missing, unchanged) && unchanged == Direction::UP);
+      QCOMPARE(score->undoStack()->getCurIdx(), history);
+      }
       delete score;
       }
 
