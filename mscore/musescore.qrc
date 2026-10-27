@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
+      <file alias="data/harmony_to_diagram.xml">../share/harmony_to_diagram.xml</file>
         <file>data/icons/edit.svg</file>
         <file alias="styles/Leland.mss">../share/styles/Leland.mss</file>
         <file alias="styles/Edwin.mss">../share/styles/Edwin.mss</file>

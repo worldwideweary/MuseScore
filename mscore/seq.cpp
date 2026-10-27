@@ -1435,7 +1435,7 @@ void Seq::process(unsigned framesPerPeriod, float* buffer)
 //   initInstruments
 //---------------------------------------------------------
 
-void Seq::initInstruments(bool realTime)
+void Seq::initInstruments(bool realTime, int firstChannel)
       {
       // Add midi out ports if necessary
       if (cs && (cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio)) {
@@ -1448,7 +1448,8 @@ void Seq::initInstruments(bool realTime)
                   _driver->updateOutPortCount(maxMidiOutPort + 1);
             }
 
-      for (const MidiMapping& mm : cs->midiMapping()) {
+      for (int i = firstChannel; i < int(cs->midiMapping().size()); ++i) {
+            const MidiMapping& mm = cs->midiMapping()[i];
             const Channel* channel = mm.articulation();
             for (const MidiCoreEvent& e : channel->initList()) {
                   if (e.type() == ME_INVALID)
@@ -1489,7 +1490,10 @@ void Seq::renderChunk(const MidiRenderer::Chunk& ch, EventMap* eventMap)
       MidiRenderer::Context ctx(synState);
       ctx.metronome = true;
       ctx.renderHarmony = true;
+      const size_t mappingCount = cs->midiMapping().size();
       midi.renderChunk(ch, eventMap, ctx);
+      if (mappingCount != cs->midiMapping().size())
+            initInstruments(true, int(mappingCount));
       renderEventsStatus.setOccupied(ch.utick1(), ch.utick2());
       }
 
@@ -1530,13 +1534,23 @@ void Seq::collectEvents(int utick)
             renderEvents.clear();
             }
 
-      int unrenderedUtick = renderEventsStatus.occupiedRangeEnd(utick);
-      while (unrenderedUtick - utick < minUtickBufferSize) {
+      bool bendPlayback = false;
+      for (const auto& entry : cs->spanner()) {
+            if (entry.second->isGuitarBend() && entry.second->getProperty(Pid::PLAY).toBool()) {
+                  bendPlayback = true;
+                  break;
+                  }
+            }
+      // Allocate every bend lane while stopped. The audio thread reads the
+      // mapping vector, so background rendering must not grow it during play.
+      const int renderStart = bendPlayback ? 0 : utick;
+      int unrenderedUtick = renderEventsStatus.occupiedRangeEnd(renderStart);
+      while (bendPlayback || unrenderedUtick - utick < minUtickBufferSize) {
             const MidiRenderer::Chunk chunk = midi.getChunkAt(unrenderedUtick);
             if (!chunk)
                   break;
             renderChunk(chunk, &events);
-            unrenderedUtick = renderEventsStatus.occupiedRangeEnd(utick);
+            unrenderedUtick = renderEventsStatus.occupiedRangeEnd(renderStart);
             }
 
       updateEventsEnd();
@@ -2370,6 +2384,17 @@ void Seq::setController(int channel, int ctrl, int data)
 void Seq::sendEvent(const NPlayEvent& ev)
       {
       guiToSeq(SeqMsg(SeqMsgId::PLAY, ev));
+      // Mixer/program/pedal changes sent from the GUI must follow lanes that
+      // were created during rendering, without adding visible mixer channels.
+      if (cs && ev.type() == ME_CONTROLLER) {
+            for (const MidiMapping& mapping : cs->midiMapping()) {
+                  if (mapping.bendSource() != ev.channel())
+                        continue;
+                  NPlayEvent copy = ev;
+                  copy.setChannel(mapping.articulation()->channel());
+                  guiToSeq(SeqMsg(SeqMsgId::PLAY, copy));
+                  }
+            }
       }
 
 //---------------------------------------------------------
@@ -2559,7 +2584,9 @@ void Seq::putEvent(const NPlayEvent& event, unsigned framePos)
             }
 
       // audio
-      int syntiIdx= _synti->index(cs->midiMapping(channel)->articulation()->synti());
+      const int source = cs->midiMapping(channel)->bendSource();
+      const Channel* articulation = cs->midiMapping(source >= 0 ? source : channel)->articulation();
+      int syntiIdx = _synti->index(articulation->synti());
       _synti->play(event, syntiIdx);
 
       // midi

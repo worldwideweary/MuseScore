@@ -136,6 +136,8 @@ enum class Sid : short {
       figuredBassStyle,
       systemFrameDistance,
       frameSystemDistance,
+      paddingToNotationAbove,
+      paddingToNotationBelow,
       minMeasureWidth,
 
       barWidth,
@@ -1439,6 +1441,38 @@ enum class Sid : short {
       autoplaceEnabled,
       usePre_3_6_defaults,
       defaultsVersion,
+
+      tabFretNumberFontFace,
+      tabFretNumberFontSize,
+      tabFretLetterFontFace,
+      tabFretLetterFontSize,
+
+      alignPreBendAndPreDiveToGraceNote,
+      showFretOnFullBendRelease,
+      guitarBendHeightAboveTABStaff,
+      guitarBendArrowWidth,
+      guitarBendArrowHeight,
+      guitarBendPartialBendHeight,
+      guitarDivesAboveStaff,
+      rhTappingSymbolNormalStave,
+      rhTappingSymbolTab,
+      lhTappingSymbolNormalStave,
+      lhTappingSymbolTab,
+      lhTappingShowItemsNormalStave,
+      lhTappingShowItemsTab,
+      lhTappingSlurTopAndBottomNoteOnTab,
+      useCueSizeFretForGraceBends,
+      useFractionCharacters,
+      guitarBendUseFull,
+      hammerOnPullOffTappingFontFace,
+      hammerOnPullOffTappingFontSize,
+      hammerOnPullOffTappingFontSpatiumDependent,
+      hammerOnPullOffTappingFontStyle,
+
+      guitarBendLineWidth,
+      guitarBendLineWidthTab,
+      guitarDiveLineWidth,
+      guitarDiveLineWidthTab,
 
       STYLES
       ///\}

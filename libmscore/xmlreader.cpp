@@ -11,14 +11,185 @@
 //=============================================================================
 
 #include "beam.h"
+#include "chord.h"
 #include "measure.h"
+#include "note.h"
 #include "score.h"
 #include "spanner.h"
 #include "staff.h"
 #include "tuplet.h"
+#include "tie.h"
 #include "xml.h"
 
 namespace Ms {
+
+// Studio 4.5+ links elements by stable string IDs instead of the older
+// location/index representation. Resolve backward and forward references
+// in this reader only; 3.x writing continues to use its native link format.
+void XmlReader::linkElementEid(const QString& id, ScoreElement* element)
+      {
+      if (!id.isEmpty() && element)
+            _pendingEidLinks.insert(id, element);
+      }
+
+void XmlReader::registerElementEid(const QString& id, ScoreElement* element)
+      {
+      if (!id.isEmpty() && element && !_elementsByEid.contains(id))
+            _elementsByEid.insert(id, element);
+      }
+
+void XmlReader::resolveElementEidLinks(Score* score)
+      {
+      if (_pendingEidLinks.isEmpty())
+            return;
+      // Some imported objects (e.g. redundant C-major key signatures) are
+      // deleted during reading. Never dereference registered objects unless
+      // they still belong to the completed score graph.
+      QSet<ScoreElement*> live;
+      for (Score* s : score->scoreList()) {
+            s->scanElements(&live, [](void* data, Element* item) {
+                  // Chords are containers and are not themselves emitted by
+                  // scanElements(). Include each live item's parent chain.
+                  for (Element* parent = item; parent; parent = parent->parent())
+                        static_cast<QSet<ScoreElement*>*>(data)->insert(parent);
+                  if (item->isNote()) {
+                        auto* elements = static_cast<QSet<ScoreElement*>*>(data);
+                        if (toNote(item)->tieFor())
+                              elements->insert(toNote(item)->tieFor());
+                        if (toNote(item)->tieBack())
+                              elements->insert(toNote(item)->tieBack());
+                        }
+                  });
+            for (Staff* staff : s->staves())
+                  live.insert(staff);
+            for (const auto& sp : s->spanner())
+                  live.insert(sp.second);
+            }
+      for (auto it = _pendingEidLinks.begin(); it != _pendingEidLinks.end();) {
+            ScoreElement* source = it.value();
+            ScoreElement* target = _elementsByEid.value(it.key(), nullptr);
+            if (!live.contains(source) || !live.contains(target)) {
+                  ++it;
+                  continue;
+                  }
+            if (source != target && source->type() == target->type() && !source->links())
+                  source->linkTo(target);
+            it = _pendingEidLinks.erase(it);
+            }
+      }
+
+// Studio 5 stores note bends inline and other guitar lines in SpannerMap.
+// Resolve EID endpoints only after all notes/chords exist and ticks are fixed.
+void XmlReader::addEidSpanner(Spanner* spanner)
+      {
+      if (!_pendingEidSpanners.contains(spanner))
+            _pendingEidSpanners.append(spanner);
+      }
+
+void XmlReader::setSpannerEidAnchor(Spanner* spanner, const QString& id, bool start)
+      {
+      auto& anchors = _eidSpannerAnchors[spanner];
+      if (start)
+            anchors.first = id;
+      else
+            anchors.second = id;
+      }
+
+void XmlReader::resolveEidSpanners(Score* score)
+      {
+      QSet<ScoreElement*> live;
+      score->scanElements(&live, [](void* data, Element* item) {
+            for (Element* parent = item; parent; parent = parent->parent())
+                  static_cast<QSet<ScoreElement*>*>(data)->insert(parent);
+            });
+      for (auto it = _pendingEidSpanners.begin(); it != _pendingEidSpanners.end();) {
+            Spanner* spanner = *it;
+            if (spanner->score() != score) {
+                  ++it;
+                  continue;
+                  }
+            const auto anchors = _eidSpannerAnchors.take(spanner);
+            bool valid = true;
+            if (!anchors.first.isEmpty() || !anchors.second.isEmpty()) {
+                  ScoreElement* first = elementByEid(anchors.first);
+                  ScoreElement* last = elementByEid(anchors.second);
+                  valid = live.contains(first) && live.contains(last);
+                  if (valid && spanner->anchor() == Spanner::Anchor::NOTE)
+                        valid = first->isNote() && last->isNote();
+                  else if (valid && spanner->anchor() == Spanner::Anchor::CHORD)
+                        valid = first->isChord() && last->isChord();
+                  else if (valid && spanner->anchor() == Spanner::Anchor::MEASURE)
+                        valid = first->isMeasure() && last->isMeasure();
+                  if (valid)
+                        valid = static_cast<Element*>(last)->tick() >= static_cast<Element*>(first)->tick();
+                  if (valid && spanner->isTie())
+                        valid = first->isNote() && last->isNote() && first != last
+                              && !toNote(static_cast<Element*>(first))->tieFor()
+                              && !toNote(static_cast<Element*>(last))->tieBack();
+                  if (valid) {
+                        auto* start = static_cast<Element*>(first);
+                        auto* end = static_cast<Element*>(last);
+                        // Measures have no staff track. A measure-anchored
+                        // line keeps its serialized staff instead of inheriting -1.
+                        if (spanner->anchor() != Spanner::Anchor::MEASURE) {
+                              spanner->setTrack(start->track());
+                              spanner->setTrack2(end->track());
+                              }
+                        else {
+                              if (spanner->track() < 0)
+                                    spanner->setTrack(0);
+                              if (spanner->track2() < 0)
+                                    spanner->setTrack2(spanner->track());
+                              }
+                        spanner->setTick(start->tick());
+                        const Fraction endTick = spanner->anchor() == Spanner::Anchor::MEASURE
+                              ? toMeasure(end)->endTick() : end->tick();
+                        spanner->setTicks(endTick - start->tick());
+                        spanner->setStartElement(start);
+                        spanner->setEndElement(end);
+                        if (spanner->anchor() == Spanner::Anchor::NOTE) {
+                              spanner->setParent(start);
+                              if (spanner->isTie()) {
+                                    Tie* tie = toTie(spanner);
+                                    tie->setStartNote(toNote(start));
+                                    tie->setEndNote(toNote(end));
+                                    toNote(start)->setTieFor(tie);
+                                    toNote(end)->setTieBack(tie);
+                                    }
+                              else {
+                                    toNote(start)->addSpannerFor(spanner);
+                                    toNote(end)->addSpannerBack(spanner);
+                                    if (spanner->isGlissando() || spanner->isGuitarBend())
+                                          toNote(end)->chord()->setEndsGlissando(true);
+                                    if (spanner->isGuitarBend())
+                                          score->setPlaylistDirty();
+                                    }
+                              }
+                        }
+                  }
+            else {
+                  valid = spanner->anchor() != Spanner::Anchor::NOTE
+                        && spanner->anchor() != Spanner::Anchor::CHORD
+                        && spanner->tick() >= Fraction(0, 1) && spanner->ticks() > Fraction(0, 1);
+                  if (spanner->track2() < 0)
+                        spanner->setTrack2(spanner->track());
+                  }
+            valid = valid && spanner->track() >= 0 && spanner->track2() >= 0
+                  && spanner->staffIdx() < score->nstaves()
+                  && spanner->track2() / VOICES < score->nstaves();
+            if (valid) {
+                  // Ties are owned through their note pointers in 3.x, rather
+                  // than being ordinary entries in the score spanner map.
+                  if (!spanner->isTie())
+                        score->addSpanner(spanner);
+                  }
+            else {
+                  qDebug("Cannot resolve Studio 5 spanner %s", spanner->name());
+                  delete spanner;
+                  }
+            it = _pendingEidSpanners.erase(it);
+            }
+      }
 
 //---------------------------------------------------------
 //   ~XmlReader
@@ -26,6 +197,7 @@ namespace Ms {
 
 XmlReader::~XmlReader()
       {
+      qDeleteAll(_pendingEidSpanners);
       if (!_connectors.empty() || !_pendingConnectors.empty()) {
             qDebug("XmlReader::~XmlReader: there are unpaired connectors left");
             for (auto& c : _connectors) {

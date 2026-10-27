@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include <algorithm>
 #include <vector>
 #include <QtTest/QtTest>
 #include "mtest/testutils.h"
@@ -65,6 +66,22 @@ void TestPaletteModel::testDuplicateItemNames()
       for (auto name = paletteItemNames.begin(); name != paletteItemNames.end(); ++name) {
             if (name.value().size() != 1) {
                   // Exceptions - allowed duplicates
+                  // The legend insertion action is exposed in both palettes.
+                  if (name.key() == "Insert fretboard diagram legend" && name.value().size() == 2
+                        && std::count(name.value().begin(), name.value().end(), QStringLiteral("Fretboard Diagrams palette")) == 1
+                        && std::count(name.value().begin(), name.value().end(), QStringLiteral("Frames & Measures palette")) == 1)
+                        continue;
+                  // Guitar intentionally collects techniques also available
+                  // in their original palettes. Still reject duplicates within
+                  // Guitar or among more than two palettes.
+                  const bool sharedGuitarItem = name.key() == "Let ring" || name.key() == "Palm mute"
+                        || name.key() == "Thumb position" || name.key() == "Fretboard diagram legend"
+                        || name.key().startsWith("RH Guitar Fingering ")
+                        || name.key().startsWith("LH Guitar Fingering ")
+                        || name.key().startsWith("String number ");
+                  if (sharedGuitarItem && name.value().size() == 2
+                        && std::count(name.value().begin(), name.value().end(), QStringLiteral("Guitar palette")) == 1)
+                        continue;
                   if (name.key().endsWith(" repeat sign") || // repeat barlines in "Barlines" and "Repeats & Jumps" palette
                       //name.key().startsWith("To Coda") || // 2 different "To Coda" in "Repeats & Jumps" palette (so far Master palette only)
                       name.key() == "Open" || // articulations in "Articulations" and channel switch text in "Text" palette

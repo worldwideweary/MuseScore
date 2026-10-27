@@ -176,7 +176,7 @@ void System::removeLastMeasure()
 Box* System::vbox() const
       {
       if (!ml.empty()) {
-            if (ml[0]->isVBox() || ml[0]->isTBox())
+            if (ml[0]->isVBoxBase())
                   return toBox(ml[0]);
             }
       return 0;
@@ -1085,6 +1085,7 @@ void System::add(Element* el)
             case ElementType::TIE_SEGMENT:
             case ElementType::PEDAL_SEGMENT:
             case ElementType::LYRICSLINE_SEGMENT:
+            case ElementType::GUITAR_BEND_SEGMENT:
             case ElementType::GLISSANDO_SEGMENT:
             case ElementType::LET_RING_SEGMENT:
             case ElementType::PALM_MUTE_SEGMENT:
@@ -1152,6 +1153,7 @@ void System::remove(Element* el)
             case ElementType::TIE_SEGMENT:
             case ElementType::PEDAL_SEGMENT:
             case ElementType::LYRICSLINE_SEGMENT:
+            case ElementType::GUITAR_BEND_SEGMENT:
             case ElementType::GLISSANDO_SEGMENT:
                   if (!_spannerSegments.removeOne(toSpannerSegment(el))) {
                         qDebug("System::remove: %p(%s) not found, score %p", el, el->name(), score());
@@ -1404,9 +1406,11 @@ Element* System::prevSegmentElement()
 qreal System::minDistance(System* s2) const
       {
       if (vbox() && !s2->vbox())
-            return qMax(vbox()->bottomGap(), s2->minTop());
+            return qMax(vbox()->bottomGap(), s2->minTop()
+                  + vbox()->paddingToNotationBelow().val() * vbox()->spatium());
       else if (!vbox() && s2->vbox())
-            return qMax(s2->vbox()->topGap(), minBottom());
+            return qMax(s2->vbox()->topGap(), minBottom()
+                  + s2->vbox()->paddingToNotationAbove().val() * s2->vbox()->spatium());
       else if (vbox() && s2->vbox())
             return s2->vbox()->topGap() + vbox()->bottomGap();
 

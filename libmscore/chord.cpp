@@ -20,6 +20,7 @@
 #include "drumset.h"
 #include "fingering.h"
 #include "glissando.h"
+#include "guitarbend.h"
 #include "hook.h"
 #include "key.h"
 #include "ledgerline.h"
@@ -1041,6 +1042,32 @@ void Chord::write(XmlWriter& xml) const
       writeProperty(xml, Pid::STEM_DIRECTION);
       for (Note* n : _notes)
             n->write(xml);
+      for (const Note* owner : _notes) {
+            QList<QList<int>> written;
+            for (const Element* child : owner->el()) {
+                  if (!child->isSymbol())
+                        continue;
+                  const QList<int>& indices = toSymbol(child)->parenthesisNotes();
+                  if (indices.isEmpty() || written.contains(indices))
+                        continue;
+                  written.append(indices);
+                  xml.stag("NoteParenGroup");
+                  for (const Element* side : owner->el()) {
+                        if (!side->isSymbol() || toSymbol(side)->parenthesisNotes() != indices)
+                              continue;
+                        xml.stag("Parenthesis");
+                        if (toSymbol(side)->sym() == SymId::noteheadParenthesisRight)
+                              xml.tag("horizontalDirection", "right");
+                        side->writeProperties(xml);
+                        xml.etag();
+                        }
+                  xml.stag("Notes");
+                  for (int index : indices)
+                        xml.tag("NoteIdx", index);
+                  xml.etag();
+                  xml.etag();
+                  }
+            }
       if (_arpeggio)
             _arpeggio->write(xml);
       if (_tremolo && tremoloChordType() != TremoloChordType::TremoloSecondNote)
@@ -1079,6 +1106,70 @@ bool Chord::readProperties(XmlReader& e)
             note->setChord(this);
             note->read(e);
             add(note);
+            }
+      else if (tag == "NoteParenGroup") {
+            // Since 4.7 the note flag can be linked to a staff which has no
+            // actual parentheses. Only the explicit group supplies drawings.
+            QList<Symbol*> parentheses;
+            QList<int> indices;
+            while (e.readNextStartElement()) {
+                  if (e.name() == "Parenthesis") {
+                        auto* symbol = new Symbol(score());
+                        symbol->setSym(SymId::noteheadParenthesisLeft);
+                        symbol->setTrack(track());
+                        while (e.readNextStartElement()) {
+                              if (e.name() == "horizontalDirection") {
+                                    if (e.readElementText() == "right")
+                                          symbol->setSym(SymId::noteheadParenthesisRight);
+                                    }
+                              else if (!symbol->readProperties(e))
+                                    e.unknown();
+                              }
+                        parentheses.append(symbol);
+                        }
+                  else if (e.name() == "Notes") {
+                        while (e.readNextStartElement()) {
+                              if (e.name() == "NoteIdx")
+                                    indices.append(e.readInt());
+                              else if (e.name() == "NoteEID") {
+                                    const ScoreElement* note = e.elementByEid(e.readElementText());
+                                    const auto found = std::find(notes().begin(), notes().end(), note);
+                                    if (found != notes().end())
+                                          indices.append(int(found - notes().begin()));
+                                    }
+                              else
+                                    e.unknown();
+                              }
+                        }
+                  else
+                        e.unknown();
+                  }
+            if (parentheses.isEmpty()) {
+                  for (SymId id : { SymId::noteheadParenthesisLeft, SymId::noteheadParenthesisRight }) {
+                        auto* symbol = new Symbol(score());
+                        symbol->setSym(id);
+                        symbol->setTrack(track());
+                        parentheses.append(symbol);
+                        }
+                  }
+            indices.erase(std::remove_if(indices.begin(), indices.end(), [this](int index) {
+                  return index < 0 || index >= int(notes().size());
+                  }), indices.end());
+            if (!indices.isEmpty()) {
+                  const int anchor = *std::min_element(indices.begin(), indices.end());
+                  const int last = *std::max_element(indices.begin(), indices.end());
+                  indices.clear();
+                  for (int index = anchor; index <= last; ++index)
+                        indices.append(index);
+                  for (const Symbol* prototype : parentheses) {
+                        Symbol* symbol = prototype->clone();
+                        symbol->setFlexibleTabParenthesis(staff() && staff()->isTabStaff(tick()));
+                        if (indices.size() > 1)
+                              symbol->setParenthesisNotes(indices);
+                        notes()[anchor]->add(symbol);
+                        }
+                  }
+            qDeleteAll(parentheses);
             }
       else if (ChordRest::readProperties(e))
             ;
@@ -2063,8 +2154,8 @@ void Chord::layoutPitched()
       if (_endsGlissando) {
             for (const Note* note : notes()) {
                   for (const Spanner* sp : note->spannerBack()) {
-                        if (sp->isGlissando()) {
-                              if (toGlissando(sp)->visible()) {
+                        if (sp->isGlissando() || sp->isGuitarBend()) {
+                              if (sp->visible()) {
                                     if (!rtick().isZero()                 // if not at beginning of measure
                                        || graceNotesBefore.size() > 0) {  // or there are graces before
                                           lll += _spatium * 0.5 + minTieLength;
@@ -2154,6 +2245,19 @@ void Chord::layoutPitched()
 
       for (Note* note : _notes)
             note->layout2();
+
+      // Reserve shared-parenthesis width during horizontal layout, before
+      // the later system pass adds any attached single-note bend geometry.
+      for (Note* note : _notes) {
+            note->layoutTabBendParentheses(false);
+            for (Element* child : note->el()) {
+                  if (!child->isSymbol() || toSymbol(child)->parenthesisNotes().isEmpty() || !child->visible())
+                        continue;
+                  const QRectF bounds = child->bbox().translated(child->pos() + note->pos());
+                  _spaceLw = qMax(_spaceLw, -bounds.left());
+                  _spaceRw = qMax(_spaceRw, bounds.right());
+                  }
+            }
 
       // align note-based fingerings
       std::vector<Fingering*> alignNote;
@@ -2484,6 +2588,27 @@ void Chord::layoutTablature()
 
       qreal graceMag = score()->styleD(Sid::graceNoteMag);
 
+      // Studio aligns linked TAB grace chords to their notation counterparts.
+      // Use the parent chord origins as well: their local X positions may
+      // differ because notation chords have accidentals or displaced heads.
+      auto linkedGraceX = [this](Chord* grace, qreal fallback) {
+            for (ScoreElement* element : grace->linkList()) {
+                  if (!element->isChord() || element->score() != score())
+                        continue;
+                  const Chord* linked = toChord(element);
+                  if (!linked->isGrace() || !linked->staff()
+                        || linked->staffIdx() >= staffIdx()
+                        || linked->staff()->isTabStaff(linked->tick()))
+                        continue;
+                  if (!linked->parent() || !linked->parent()->isChord())
+                        continue;
+                  const Chord* parent = toChord(linked->parent());
+                  if (parent->segment() == segment())
+                        return linked->x() + parent->x() - x();
+                  }
+            return fallback;
+            };
+
       QVector<Chord*> graceNotesBefore = Chord::graceNotesBefore();
       int nb = graceNotesBefore.size();
       if (nb) {
@@ -2491,6 +2616,7 @@ void Chord::layoutTablature()
               for (int i = nb-1; i >= 0; --i) {
                     Chord* c = graceNotesBefore.value(i);
                     xl -= c->_spaceRw/* * 1.2*/;
+                    xl = linkedGraceX(c, xl);
                     c->setPos(xl, 0);
                     xl -= c->_spaceLw + minNoteDistance * graceMag;
                     }
@@ -2516,6 +2642,7 @@ void Chord::layoutTablature()
            for (int i = 0; i <= na - 1; i++) {
                  Chord* c = gna.value(i);
                  xr += c->_spaceLw * (i == 0 ? 1.3 : 1);
+                 xr = linkedGraceX(c, xr);
                  c->setPos(xr, 0);
                  xr += c->_spaceRw + minNoteDistance * graceMag;
                  }
@@ -2537,6 +2664,18 @@ void Chord::layoutTablature()
 
       for (size_t i = 0; i < numOfNotes; ++i)
             _notes.at(i)->layout2();
+      // Reserve shared-parenthesis width during horizontal layout, before
+      // the later system pass adds any attached single-note bend geometry.
+      for (Note* note : _notes) {
+            note->layoutTabBendParentheses(false);
+            for (Element* child : note->el()) {
+                  if (!child->isSymbol() || toSymbol(child)->parenthesisNotes().isEmpty() || !child->visible())
+                        continue;
+                  const QRectF bounds = child->bbox().translated(child->pos() + note->pos());
+                  _spaceLw = qMax(_spaceLw, -bounds.left());
+                  _spaceRw = qMax(_spaceRw, bounds.right());
+                  }
+            }
       QRectF bb;
       processSiblings([&bb] (Element* e) { bb |= e->bbox().translated(e->pos()); } );
       if (_tabDur)
@@ -3018,7 +3157,7 @@ void Chord::updateEndsGlissando()
       // scan all chord notes for glissandi ending on this chord
       for (Note* note : notes()) {
             for (Spanner* sp : note->spannerBack())
-                  if (sp->type() == ElementType::GLISSANDO) {
+                  if (sp->isGlissando() || sp->isGuitarBend()) {
                         _endsGlissando = true;
                         return;
                         }
@@ -3059,8 +3198,23 @@ qreal Chord::chordMag() const
       qreal m = 1.0;
       if (isSmall())
             m *= score()->styleD(Sid::smallNoteMag);
-      if (_noteType != NoteType::NORMAL)
-            m *= score()->styleD(Sid::graceNoteMag);
+      if (_noteType != NoteType::NORMAL) {
+            bool fullSizeBendFret = false;
+            if (staff() && staff()->isTabStaff(tick()) && !score()->styleB(Sid::useCueSizeFretForGraceBends)) {
+                  for (const Note* note : _notes) {
+                        for (const Spanner* sp : note->spannerFor()) {
+                              if (!sp->isGuitarBend())
+                                    continue;
+                              const GuitarBendType type = toGuitarBend(sp)->bendType();
+                              if (type == GuitarBendType::PRE_BEND || type == GuitarBendType::GRACE_NOTE_BEND
+                                    || type == GuitarBendType::PRE_DIVE)
+                                    fullSizeBendFret = true;
+                              }
+                        }
+                  }
+            if (!fullSizeBendFret)
+                  m *= score()->styleD(Sid::graceNoteMag);
+            }
       return m;
       }
 
@@ -3168,7 +3322,28 @@ static bool noteIsBefore(const Note* n1, const Note* n2)
 
 void Chord::sortNotes()
       {
+      // Keep group membership attached to notes when pitch edits reorder them.
+      QMap<Symbol*, QList<Note*>> groups;
+      for (Note* note : notes()) {
+            for (Element* child : note->el()) {
+                  if (!child->isSymbol() || toSymbol(child)->parenthesisNotes().isEmpty())
+                        continue;
+                  Symbol* symbol = toSymbol(child);
+                  for (int index : symbol->parenthesisNotes())
+                        if (index >= 0 && index < int(notes().size()))
+                              groups[symbol].append(notes()[index]);
+                  }
+            }
       std::sort(notes().begin(), notes().end(), noteIsBefore);
+      for (auto i = groups.begin(); i != groups.end(); ++i) {
+            QList<int> indices;
+            for (Note* note : i.value()) {
+                  auto it = std::find(notes().begin(), notes().end(), note);
+                  if (it != notes().end())
+                        indices.append(int(std::distance(notes().begin(), it)));
+                  }
+            i.key()->setParenthesisNotes(indices);
+            }
       }
 
 //---------------------------------------------------------
@@ -3716,26 +3891,73 @@ void Chord::layoutArticulations2()
       //    now place all articulations with staff top or bottom anchor
       //
 
+      // Technique marks use the visible note/stem edges. The legacy staff
+      // anchor calculation adds both stem clearance and an extra staff gap,
+      // placing tapping and thumb-position marks far above high notes.
+      qreal techniqueTop = upNote()->pos().y() + upNote()->bbox().top();
+      qreal techniqueBottom = downNote()->pos().y() + downNote()->bbox().bottom();
+      if (stem()) {
+            const QRectF stemBox = stem()->bbox().translated(stem()->pos());
+            if (up())
+                  techniqueTop = qMin(techniqueTop, stemBox.top());
+            else
+                  techniqueBottom = qMax(techniqueBottom, stemBox.bottom());
+            }
+      if (hook()) {
+            const QRectF hookBox = hook()->bbox().translated(hook()->pos());
+            techniqueTop = qMin(techniqueTop, hookBox.top());
+            techniqueBottom = qMax(techniqueBottom, hookBox.bottom());
+            }
+      techniqueTop = qMin(-distance0, techniqueTop - (up() ? distance2 : distance1));
+      techniqueBottom = qMax(staff()->height() + distance0,
+            techniqueBottom + (up() ? distance1 : distance2));
+      // Account for chord-anchored marks laid out in the preceding pass.
+      for (const Articulation* a : qAsConst(_articulations)) {
+            if (!a->visible() || a->anchor() == ArticulationAnchor::TOP_STAFF
+                  || a->anchor() == ArticulationAnchor::BOTTOM_STAFF)
+                  continue;
+            const QRectF r = a->bbox().translated(a->pos());
+            if (a->up())
+                  techniqueTop = qMin(techniqueTop, r.top() - distance0);
+            else
+                  techniqueBottom = qMax(techniqueBottom, r.bottom() + distance0);
+            }
       staffTopY = qMin(staffTopY, chordTopY - distance0 - 0.5 * _spatium);
       staffBotY = qMax(staffBotY, chordBotY + distance0 + 0.5 * _spatium);
       for (Articulation* a : qAsConst(_articulations)) {
             ArticulationAnchor aa = a->anchor();
             if (aa == ArticulationAnchor::TOP_STAFF || aa == ArticulationAnchor::BOTTOM_STAFF) {
                   a->layout();
+                  const bool technique = a->tappingHand() || a->symId() == SymId::stringsThumbPosition
+                        || a->symId() == SymId::stringsHarmonic;
                   if (a->up()) {
-                        a->setPos(x, staffTopY);
+                        a->setPos(x, technique ? techniqueTop - a->bbox().bottom() : staffTopY);
                         if (a->visible())
                               staffTopY -= distance0;
                         }
                   else {
-                        a->setPos(x, staffBotY);
+                        a->setPos(x, technique ? techniqueBottom - a->bbox().top() : staffBotY);
                         if (a->visible())
                               staffBotY += distance0;
                         }
                   a->doAutoplace();
+                  if (a->visible()) {
+                        const QRectF r = a->bbox().translated(a->pos());
+                        if (a->up()) {
+                              techniqueTop = qMin(techniqueTop, r.top() - distance0);
+                              if (technique)
+                                    staffTopY = techniqueTop;
+                              }
+                        else {
+                              techniqueBottom = qMax(techniqueBottom, r.bottom() + distance0);
+                              if (technique)
+                                    staffBotY = techniqueBottom;
+                              }
+                        }
                   }
             }
       for (Articulation* a : qAsConst(_articulations)) {
+            a->layoutTappingHalfSlurs();
             if (a->addToSkyline()) {
                   // the segment shape has already been calculated
                   // so measure width and spacing is already determined

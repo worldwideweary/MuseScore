@@ -384,7 +384,7 @@ class Seq : public QObject, public Sequencer {
       void setScoreView(ScoreView*);
       MasterScore* score() const   { return cs; }
       ScoreView* viewer() const { return cv; }
-      void initInstruments(bool realTime = false);
+      void initInstruments(bool realTime = false, int firstChannel = 0);
 
       Driver* driver()                                 { return _driver; }
       void setDriver(Driver* d)                        { _driver = d;    }

@@ -407,8 +407,14 @@ EditStyle::EditStyle(Score* s, QWidget* parent)
       { Sid::staffTextPosBelow,       false, staffTextPosBelow,     resetStaffTextPosBelow    },
       { Sid::staffTextMinDistance,    false, staffTextMinDistance,  resetStaffTextMinDistance },
 
-      { Sid::bendLineWidth,     false, bendLineWidth,     resetBendLineWidth     },
-      { Sid::bendArrowWidth,    false, bendArrowWidth,    resetBendArrowWidth    },
+      { Sid::bendLineWidth,           false, bendLineWidth,         resetBendLineWidth     },
+      { Sid::bendArrowWidth,          false, bendArrowWidth,        resetBendArrowWidth    },
+      { Sid::useCueSizeFretForGraceBends, false, useCueSizeFretForGraceBends, resetCueSizeGraceBends },
+      { Sid::useFractionCharacters,   false, bendFractionCharacters, resetBendFractionCharacters },
+      { Sid::guitarBendUseFull,       false, guitarBendUseFull,     resetGuitarBendUseFull },
+      { Sid::hammerOnPullOffTappingFontFace, false, tappingFontFace, resetTappingFontFace },
+      { Sid::hammerOnPullOffTappingFontSize, false, tappingFontSize, resetTappingFontSize },
+      { Sid::hammerOnPullOffTappingFontSpatiumDependent, false,     tappingFontStaffSize, resetTappingFontStaffSize },
       };
 
       for (QComboBox* cb : std::vector<QComboBox*> {

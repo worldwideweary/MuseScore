@@ -1335,6 +1335,7 @@ void Score::addElement(Element* element)
                   }
                   break;
 
+            case ElementType::HAMMER_ON_PULL_OFF:
             case ElementType::SLUR:
                   addLayoutFlags(LayoutFlag::PLAY_EVENTS);
                   // fall through
@@ -1343,13 +1344,14 @@ void Score::addElement(Element* element)
             case ElementType::TRILL:
             case ElementType::VIBRATO:
             case ElementType::PEDAL:
+            case ElementType::WHAMMY_BAR:
             case ElementType::TEXTLINE:
             case ElementType::HAIRPIN:
             case ElementType::LET_RING:
             case ElementType::PALM_MUTE:
                   {
                   Spanner* spanner = toSpanner(element);
-                  if (et == ElementType::TEXTLINE && spanner->anchor() == Spanner::Anchor::NOTE)
+                  if ((et == ElementType::TEXTLINE || et == ElementType::WHAMMY_BAR) && spanner->anchor() == Spanner::Anchor::NOTE)
                         break;
                   addSpanner(spanner);
                   for (SpannerSegment* ss : spanner->spannerSegments()) {
@@ -1419,7 +1421,8 @@ void Score::addElement(Element* element)
                   break;
             case ElementType::HARMONY:
             case ElementType::FRET_DIAGRAM:
-                  element->part()->updateHarmonyChannels(true);
+                  if (!(parent && parent->isFBox()))
+                        element->part()->updateHarmonyChannels(true);
                   break;
             case ElementType::IMAGE:
                   toImage(element)->setUsed(true);
@@ -1462,7 +1465,7 @@ void Score::removeElement(Element* element)
             System* system = mb->system();
 
             if (!system) { // vertical boxes are not shown in continuous view so no system
-                  Q_ASSERT(lineMode() && (element->isVBox() || element->isTBox()));
+                  Q_ASSERT(lineMode() && element->isVBoxBase());
                   return;
                   }
 
@@ -1505,6 +1508,7 @@ void Score::removeElement(Element* element)
                         cr->setBeam(0);
                   break;
 
+            case ElementType::HAMMER_ON_PULL_OFF:
             case ElementType::SLUR:
                   addLayoutFlags(LayoutFlag::PLAY_EVENTS);
                   // fall through
@@ -1515,11 +1519,12 @@ void Score::removeElement(Element* element)
             case ElementType::PEDAL:
             case ElementType::LET_RING:
             case ElementType::PALM_MUTE:
+            case ElementType::WHAMMY_BAR:
             case ElementType::TEXTLINE:
             case ElementType::HAIRPIN:
                   {
                   Spanner* spanner = toSpanner(element);
-                  if (et == ElementType::TEXTLINE && spanner->anchor() == Spanner::Anchor::NOTE)
+                  if ((et == ElementType::TEXTLINE || et == ElementType::WHAMMY_BAR) && spanner->anchor() == Spanner::Anchor::NOTE)
                         break;
                   spanner->triggerLayout();
                   removeSpanner(spanner);
@@ -1587,7 +1592,8 @@ void Score::removeElement(Element* element)
                   break;
             case ElementType::HARMONY:
             case ElementType::FRET_DIAGRAM:
-                  element->part()->updateHarmonyChannels(true, true);
+                  if (!(parent && parent->isFBox()))
+                        element->part()->updateHarmonyChannels(true, true);
                   break;
             case ElementType::IMAGE:
                   toImage(element)->setUsed(false);
@@ -3366,6 +3372,10 @@ void Score::deselect(Element* el)
 
 void Score::select(Element* e, SelectType type, int staffIdx)
       {
+      // Note-attached guitar spanners can be selected through their parent
+      // object (navigation/Inspector). The visible segment owns the grips.
+      if (e && e->isGuitarBend() && !toSpanner(e)->segmentsEmpty())
+            e = toSpanner(e)->frontSegment();
       _selection.setSource(SelectionSource::SCORE);
 
       // Move the playhead to the selected element's preferred play position.

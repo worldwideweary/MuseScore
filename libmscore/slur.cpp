@@ -10,8 +10,14 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include <algorithm>
+
 #include "articulation.h"
 #include "chord.h"
+#include "note.h"
+#include "accidental.h"
+#include "symbol.h"
+#include "mscore.h"
 #include "measure.h"
 #include "navigate.h"
 #include "part.h"
@@ -63,6 +69,71 @@ void SlurSegment::draw(QPainter* painter) const
             }
       painter->setPen(pen);
       painter->drawPath(path);
+      if (!_hopoText.isEmpty()) {
+            painter->setPen(curColor());
+            painter->setFont(hopoFont(MScore::pixelRatio));
+            painter->drawText(_hopoTextPos, _hopoText);
+            }
+
+      }
+
+QFont SlurSegment::hopoFont(qreal pixelRatio) const
+      {
+      QFont font(score()->styleSt(Sid::hammerOnPullOffTappingFontFace));
+      const FontStyle style = FontStyle(score()->styleI(Sid::hammerOnPullOffTappingFontStyle));
+      font.setBold(style & FontStyle::Bold);
+      font.setItalic(style & FontStyle::Italic);
+      qreal size = score()->styleD(Sid::hammerOnPullOffTappingFontSize);
+      if (score()->styleB(Sid::hammerOnPullOffTappingFontSpatiumDependent))
+            size *= spatium() / SPATIUM20;
+      font.setPointSizeF(qMax(0.1, size * pixelRatio));
+      return font;
+      }
+
+void SlurSegment::layoutHopoText()
+      {
+      _hopoText.clear();
+      _hopoTextRect = QRectF();
+      if (!spanner()->isHammerOnPullOff() || !slur()->startCR() || !slur()->endCR()
+            || !slur()->startCR()->isChord() || !slur()->endCR()->isChord())
+            return;
+      const Chord* a = toChord(slur()->startCR());
+      const Chord* b = toChord(slur()->endCR());
+      const bool tab = staff() && staff()->isTabStaff(tick());
+      const Note* first = a->upNote();
+      const Note* last = b->upNote();
+      // TAB H/P describes the physical fret movement, not a pitch modified
+      // simultaneously by a bend or the whammy bar.
+      if (tab) {
+            bool found = false;
+            for (auto i = a->notes().rbegin(); i != a->notes().rend(); ++i) {
+                  for (auto j = b->notes().rbegin(); j != b->notes().rend(); ++j) {
+                        if ((*i)->string() == (*j)->string() && (*i)->pitch() != (*j)->pitch()) {
+                              first = *i;
+                              last = *j;
+                              found = true;
+                              break;
+                              }
+                        }
+                  if (found)
+                        break;
+                  }
+            }
+      _hopoText = (tab ? last->fret() > first->fret() : last->pitch() > first->pitch()) ? "H" : "P";
+      const QRectF ink = QFontMetricsF(hopoFont(), MScore::paintDevice()).tightBoundingRect(_hopoText);
+      const QPointF firstPos = a->upNote()->pagePos() - pagePos();
+      const QPointF lastPos = b->upNote()->pagePos() - pagePos();
+      const qreal x = 0.5 * (firstPos.x() + a->upNote()->bbox().right() + lastPos.x() + b->upNote()->bbox().left());
+      qreal bottom = qMin(firstPos.y() + a->upNote()->bbox().top(), lastPos.y() + b->upNote()->bbox().top()) - 0.5 * spatium();
+      if (system())
+            bottom = qMin(bottom, system()->staffYpage(staffIdx()) - pagePos().y() - 0.5 * spatium());
+      if (slur()->up())
+            bottom = qMin(bottom, path.boundingRect().top() - 0.25 * spatium());
+      // Letter placement is independent of the slur's UP/DOWN direction.
+      _hopoTextRect = ink;
+      _hopoTextRect.moveBottomLeft(QPointF(x - 0.5 * ink.width(), bottom));
+      _hopoTextPos = _hopoTextRect.topLeft() - ink.topLeft();
+      _shape.add(_hopoTextRect);
       }
 
 //---------------------------------------------------------
@@ -450,7 +521,11 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
                   rypos() += up ? -min : min;
                   }
             }
-      setbbox(path.boundingRect());
+      layoutHopoText();
+      QRectF bounds = path.boundingRect();
+      if (!_hopoTextRect.isEmpty())
+            bounds |= _hopoTextRect;
+      setbbox(bounds);
       }
 
 //---------------------------------------------------------
@@ -635,6 +710,53 @@ void Slur::slurPos(SlurPos* sp)
             sp->p1 += scr->parent()->pos();
       if (ecr->isGrace())
             sp->p2 += ecr->parent()->pos();
+
+      // Notation HOPO curves use the normal centred slur anchors, as in
+      // Studio. Fret-side clearance is specific to the TAB representation.
+      if (isHammerOnPullOff() && note1 && note2 && useTablature) {
+            auto enclosed = [](const Note* note) {
+                  QRectF bounds = note->bbox();
+                  for (const Element* child : note->el()) {
+                        if (!child->isSymbol() || !child->visible())
+                              continue;
+                        const SymId id = toSymbol(child)->sym();
+                        if (id == SymId::noteheadParenthesisLeft || id == SymId::noteheadParenthesisRight)
+                              bounds |= child->bbox().translated(child->pos());
+                        }
+                  const auto& notes = note->chord()->notes();
+                  const int index = int(std::distance(notes.begin(), std::find(notes.begin(), notes.end(), note)));
+                  for (const Note* owner : notes) {
+                        if (owner == note)
+                              continue;
+                        for (const Element* child : owner->el()) {
+                              if (child->isSymbol() && child->visible() && toSymbol(child)->parenthesisNotes().contains(index))
+                                    bounds |= child->bbox().translated(child->pos() + owner->pos() - note->pos());
+                              }
+                        }
+                  if (note->accidental() && note->accidental()->visible()) {
+                        const QRectF accidental = note->accidental()->bbox().translated(note->accidental()->pos());
+                        if (accidental.bottom() >= bounds.top() && accidental.top() <= bounds.bottom()) {
+                              bounds.setLeft(qMin(bounds.left(), accidental.left()));
+                              bounds.setRight(qMax(bounds.right(), accidental.right()));
+                              }
+                        }
+                  return bounds;
+                  };
+            const QRectF first = enclosed(note1);
+            const QRectF last = enclosed(note2);
+            const qreal gap = 0.2 * _spatium;
+            // Slur segments already carry the staff's page Y. Their path
+            // points must be relative to that staff, not to the system top.
+            const QPointF origin1(sp->system1->pagePos().x(), sp->system1->staffYpage(vStaffIdx()));
+            const QPointF origin2(sp->system2->pagePos().x(), sp->system2->staffYpage(vStaffIdx()));
+            sp->p1 = note1->pagePos() - origin1
+                  + QPointF(first.right() + gap, _up ? first.top() - gap : first.bottom() + gap);
+            sp->p2 = note2->pagePos() - origin2
+                  + QPointF(last.left() - gap, _up ? last.top() - gap : last.bottom() + gap);
+            if (sp->system1 == sp->system2 && sp->p2.x() < sp->p1.x() + 0.5 * _spatium)
+                  sp->p2.setX(sp->p1.x() + 0.5 * _spatium);
+            return;
+            }
 
       // adjust for cross-staff
       if (scr->vStaffIdx() != vStaffIdx() && sp->system1) {
@@ -1105,6 +1227,8 @@ SpannerSegment* Slur::layoutSystem(System* system)
             sst = SpannerSegmentType::END;
       slurSegment->setSpannerSegmentType(sst);
 
+      if (isHammerOnPullOff() && _slurDirection == Direction::AUTO && staff() && staff()->isTabStaff(tick()))
+            _up = true;
       SlurPos sPos;
       slurPos(&sPos);
 
@@ -1220,6 +1344,8 @@ void Slur::layout()
                   break;
             }
 
+      if (isHammerOnPullOff() && _slurDirection == Direction::AUTO && staff() && staff()->isTabStaff(tick()))
+            _up = true;
       SlurPos sPos;
       slurPos(&sPos);
 

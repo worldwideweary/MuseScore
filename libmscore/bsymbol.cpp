@@ -158,7 +158,10 @@ Element* BSymbol::drop(EditData& data)
 
 void BSymbol::layout()
       {
-      if (staff())
+      // Note::layout2 supplies note/grace magnification (and derived
+      // parenthesis sizing) before measuring the symbol. Resetting it here
+      // makes draw() use a different scale from the already computed bbox.
+      if (staff() && !(parent() && parent()->isNote()))
             setMag(staff()->mag(tick()));
       if (!parent()) {
             setOffset(.0, .0);

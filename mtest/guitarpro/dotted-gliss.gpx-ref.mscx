@@ -128,6 +128,8 @@
     <Staff id="1">
       <VBox>
         <height>10</height>
+        <paddingToNotationAbove>2</paddingToNotationAbove>
+        <paddingToNotationBelow>2</paddingToNotationBelow>
         <linkedMain/>
         <Text>
           <linkedMain/>
@@ -376,6 +378,8 @@ Innuendo</text>
       <Staff id="1">
         <VBox>
           <height>10</height>
+          <paddingToNotationAbove>2</paddingToNotationAbove>
+          <paddingToNotationBelow>2</paddingToNotationBelow>
           <linked>
             </linked>
           <Text>

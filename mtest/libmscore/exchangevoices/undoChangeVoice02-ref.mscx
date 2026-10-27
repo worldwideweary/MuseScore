@@ -76,6 +76,8 @@
     <Staff id="1">
       <VBox>
         <height>10</height>
+        <paddingToNotationAbove>0</paddingToNotationAbove>
+        <paddingToNotationBelow>0</paddingToNotationBelow>
         <linkedMain/>
         <Text>
           <linkedMain/>
@@ -604,6 +606,8 @@
       <Staff id="1">
         <VBox>
           <height>10</height>
+          <paddingToNotationAbove>0</paddingToNotationAbove>
+          <paddingToNotationBelow>0</paddingToNotationBelow>
           <linked>
             </linked>
           <Text>

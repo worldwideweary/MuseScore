@@ -1455,10 +1455,17 @@ Shortcut Shortcut::_sc[] = {
          MsWidget::SCORE_TAB,
          STATE_NORMAL | STATE_NOTE_ENTRY,
          "insert-fretframe",
-         QT_TRANSLATE_NOOP("action","Insert Fretboard Diagram Frame"),
-         QT_TRANSLATE_NOOP("action","Insert fretboard diagram frame"),
+         QT_TRANSLATE_NOOP("action","Insert Fretboard Diagram Legend"),
+         QT_TRANSLATE_NOOP("action","Insert fretboard diagram legend"),
          0,
          Icons::fframe_ICON
+         },
+      {
+         MsWidget::SCORE_TAB,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         "append-fretframe",
+         QT_TRANSLATE_NOOP("action","Append Fretboard Diagram Legend"),
+         QT_TRANSLATE_NOOP("action","Append fretboard diagram legend")
          },
       {
          MsWidget::SCORE_TAB,

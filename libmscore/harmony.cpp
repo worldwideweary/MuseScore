@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "box.h"
 #include "chordlist.h"
 #include "fret.h"
 #include "harmony.h"
@@ -112,6 +113,8 @@ QString Harmony::baseName()
 
 bool Harmony::isRealizable() const
       {
+      if (parent() && parent()->isFretDiagram() && parent()->parent() && parent()->parent()->isFBox())
+            return false;
       return (_rootTpc != Tpc::TPC_INVALID)
                   || (_harmonyType == HarmonyType::NASHVILLE); // unable to fully check at for nashville at the moment
       }
@@ -242,10 +245,10 @@ void Harmony::write(XmlWriter& xml) const
       if (_rootTpc != Tpc::TPC_INVALID || _baseTpc != Tpc::TPC_INVALID) {
             int rRootTpc = _rootTpc;
             int rBaseTpc = _baseTpc;
-            if (staff()) {
-                  // parent can be a fret diagram
-                  Segment* segment = getParentSeg();
-                  Fraction tick = segment ? segment->tick() : Fraction(-1,1);
+            Segment* segment = getParentSeg();
+            if (staff() && segment) {
+                  // Clipboard transposition applies only to staff-attached symbols.
+                  Fraction tick = segment->tick();
                   const Interval& interval = part()->instrument(tick)->transpose();
                   if (xml.clipboardmode() && !score()->styleB(Sid::concertPitch) && interval.chromatic) {
                         rRootTpc = transposeTpc(_rootTpc, interval, true);
@@ -313,6 +316,9 @@ void Harmony::write(XmlWriter& xml) const
 
 void Harmony::read(XmlReader& e)
       {
+      // Standalone MSCX files may omit Style (Studio normally saves it
+      // separately). Load root/font/token definitions before using the list.
+      score()->style().checkChordList();
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
             if (tag == "base"
@@ -918,6 +924,9 @@ void Harmony::endEdit(EditData& ed)
 
 void Harmony::setHarmony(const QString& s)
       {
+      // Standalone MSCX files may omit Style (Studio normally saves it
+      // separately). Load root/font/token definitions before using the list.
+      score()->style().checkChordList();
       int r = Tpc::TPC_INVALID, b = Tpc::TPC_INVALID;
       const ChordDescription* cd = parseHarmony(s, &r, &b);
       if (!cd && _parsedForm && _parsedForm->parseable()) {
@@ -1011,16 +1020,11 @@ Harmony* Harmony::findInSeg(Segment* seg) const
 
 Segment* Harmony::getParentSeg() const
       {
-      Segment* seg;
-      if (parent()->isFretDiagram()) {
-            // When this harmony is the child of a fret diagram, we need to go up twice
-            // to get to the parent seg.
-            seg = toSegment(parent()->parent());
-            }
-      else {
-            seg = toSegment(parent());
-            }
-      return seg;
+      Element* owner = parent();
+      if (owner && owner->isFretDiagram())
+            owner = owner->parent();
+      // Legend diagrams belong to a frame; palette harmonies can be detached.
+      return owner && owner->isSegment() ? toSegment(owner) : nullptr;
       }
 
 //---------------------------------------------------------
@@ -1032,7 +1036,10 @@ Segment* Harmony::getParentSeg() const
 
 Harmony* Harmony::findNext() const
       {
-      Segment* cur = getParentSeg()->next1();
+      Segment* segment = getParentSeg();
+      if (!segment)
+            return nullptr;
+      Segment* cur = segment->next1();
       while (cur) {
             Harmony* h = findInSeg(cur);
             if (h) {
@@ -1052,7 +1059,10 @@ Harmony* Harmony::findNext() const
 
 Harmony* Harmony::findPrev() const
       {
-      Segment* cur = getParentSeg()->prev1();
+      Segment* segment = getParentSeg();
+      if (!segment)
+            return nullptr;
+      Segment* cur = segment->prev1();
       while (cur) {
             Harmony* h = findInSeg(cur);
             if (h) {
@@ -1075,6 +1085,8 @@ Harmony* Harmony::findPrev() const
 Fraction Harmony::ticksTillNext(int utick, bool stopAtMeasureEnd) const
       {
       Segment* seg = getParentSeg();
+      if (!seg)
+            return Fraction(0, 1);
       Fraction duration = seg->ticks();
       Segment* cur = seg->next();
       auto rsIt = score()->repeatList().findRepeatSegmentFromUTick(utick);
@@ -1633,6 +1645,12 @@ void Harmony::render(const QList<RenderAction>& renderList, qreal& x, qreal& y, 
       int fontIdx    = 0;
       qreal _spatium = spatium();
       qreal mag      = magS();
+      if (parent() && parent()->isFretDiagram() && parent()->parent() && parent()->parent()->isFBox()) {
+            const Element* frame = parent()->parent();
+            mag *= frame->getProperty(Pid::FRET_FRAME_TEXT_SCALE).toDouble();
+            if (!frame->getProperty(Pid::SIZE_SPATIUM_DEPENDENT).toBool())
+                  mag *= SPATIUM20 / spatium();
+            }
 
 // qDebug("===");
       for (const RenderAction& a : renderList) {
@@ -1730,6 +1748,9 @@ void Harmony::render(const QList<RenderAction>& renderList, qreal& x, qreal& y, 
 
 void Harmony::render()
       {
+      // Standalone MSCX files may omit Style (Studio normally saves it
+      // separately). Load root/font/token definitions before using the list.
+      score()->style().checkChordList();
       int capo = score()->styleI(Sid::capoPosition);
 
       ChordList* chordList = score()->style().chordList();

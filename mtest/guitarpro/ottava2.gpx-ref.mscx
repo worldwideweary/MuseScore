@@ -194,6 +194,8 @@
     <Staff id="1">
       <VBox>
         <height>10</height>
+        <paddingToNotationAbove>2</paddingToNotationAbove>
+        <paddingToNotationBelow>2</paddingToNotationBelow>
         <linkedMain/>
         </VBox>
       <Measure>
@@ -647,6 +649,8 @@
       <Staff id="1">
         <VBox>
           <height>10</height>
+          <paddingToNotationAbove>2</paddingToNotationAbove>
+          <paddingToNotationBelow>2</paddingToNotationBelow>
           <linked>
             </linked>
           <Text>
@@ -1108,6 +1112,8 @@
       <Staff id="1">
         <VBox>
           <height>10</height>
+          <paddingToNotationAbove>2</paddingToNotationAbove>
+          <paddingToNotationBelow>2</paddingToNotationBelow>
           <linked>
             <location>
               <staves>-1</staves>

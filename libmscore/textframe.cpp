@@ -100,6 +100,7 @@ void TBox::write(XmlWriter& xml) const
 
 void TBox::read(XmlReader& e)
       {
+      initLegacyNotationClearance();
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
             if (tag == "Text")

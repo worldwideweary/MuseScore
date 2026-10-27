@@ -12,6 +12,7 @@
 
 #ifndef __INSPECTOR_H__
 #define __INSPECTOR_H__
+#include <QListWidget>
 
 #include "inspectorBase.h"
 #include "inspectorElementBase.h"
@@ -115,6 +116,15 @@ class InspectorVBox : public InspectorBase {
 
    public:
       InspectorVBox(QWidget* parent);
+      };
+
+// Fretboard legend controls use the existing Widgets Inspector, not QML.
+class InspectorFBox : public InspectorBase {
+      QListWidget* _diagrams;
+      void moveDiagram(int direction);
+   public:
+      explicit InspectorFBox(QWidget* parent);
+      void postInit() override;
       };
 
 //---------------------------------------------------------

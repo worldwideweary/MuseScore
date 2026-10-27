@@ -267,7 +267,7 @@ void StaffType::write(XmlWriter& xml) const
 //   read
 //---------------------------------------------------------
 
-void StaffType::read(XmlReader& e)
+void StaffType::read(XmlReader& e, const Score* score)
       {
       QString group = e.attribute("group", fileGroupNames[(int)StaffGroup::STANDARD]);
       if (group == fileGroupNames[(int)StaffGroup::TAB])
@@ -284,6 +284,10 @@ void StaffType::read(XmlReader& e)
       if (_group == StaffGroup::TAB)
             setGenKeysig(false);
 
+      bool fretUseTextStyle = false;
+      QString fretTextStyle;
+      bool explicitFretFont = false;
+      bool explicitFretSize = false;
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
             if (tag == "name")
@@ -329,10 +333,18 @@ void StaffType::read(XmlReader& e)
                   setDurationFontSize(e.readDouble());
             else if (tag == "durationFontY")
                   setDurationFontUserY(e.readDouble());
-            else if (tag == "fretFontName")
+            else if (tag == "fretUseTextStyle")
+                  fretUseTextStyle = e.readBool();
+            else if (tag == "fretTextStyle")
+                  fretTextStyle = e.readElementText();
+            else if (tag == "fretFontName") {
                   setFretFontName(e.readElementText());
-            else if (tag == "fretFontSize")
+                  explicitFretFont = true;
+                  }
+            else if (tag == "fretFontSize") {
                   setFretFontSize(e.readDouble());
+                  explicitFretSize = true;
+                  }
             else if (tag == "fretFontY")
                   setFretFontUserY(e.readDouble());
             else if (tag == "symbolRepeat")
@@ -359,6 +371,25 @@ void StaffType::read(XmlReader& e)
                   setShowBackTied(e.readBool());      // scores, this prop was lacking and controlled by "slashStyle"
             else
                   e.unknown();
+            }
+      // Studio 4.7 stores TAB fret fonts as text styles. Resolve the two
+      // built-in styles into 3.x's explicit staff font settings after reading
+      // all tags, so XML order does not affect the result. Explicit settings
+      // take precedence when a file supplies both representations.
+      if (isTabStaff() && fretUseTextStyle && score
+            && (fretTextStyle == "tab_fret_number" || fretTextStyle == "tab_fret_letter")) {
+            const bool numbers = fretTextStyle == "tab_fret_number";
+            const QString family = score->styleSt(numbers ? Sid::tabFretNumberFontFace : Sid::tabFretLetterFontFace);
+            if (!explicitFretFont) {
+                  for (const TablatureFretFont& font : _fretFonts) {
+                        if (font.family == family) {
+                              setFretFontName(font.displayName);
+                              break;
+                              }
+                        }
+                  }
+            if (!explicitFretSize)
+                  setFretFontSize(score->styleD(numbers ? Sid::tabFretNumberFontSize : Sid::tabFretLetterFontSize));
             }
       }
 

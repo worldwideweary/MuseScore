@@ -70,7 +70,7 @@ void StaffTypeChange::read(XmlReader& e)
             const QStringRef& tag(e.name());
             if (tag == "StaffType") {
                   StaffType* st = new StaffType();
-                  st->read(e);
+                  st->read(e, score());
                   // Measure::add() will replace this with a pointer to a copy in the staff
                   setStaffType(st, true);
                   }

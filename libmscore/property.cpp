@@ -110,6 +110,15 @@ static constexpr PropertyMetaData propertyList[] = {
 
       { Pid::BOX_WIDTH,                 P_TYPE::SPATIUM,        false, "width",                  DUMMY_QT_TRANSLATE_NOOP("propertyName", "width")                                         },
       { Pid::BOX_AUTOSIZE,              P_TYPE::BOOL,           false, "boxAutoSize",            DUMMY_QT_TRANSLATE_NOOP("propertyName", "autosize frame")                                },
+      { Pid::PADDING_TO_NOTATION_ABOVE, P_TYPE::SPATIUM,        false, "paddingToNotationAbove", DUMMY_QT_TRANSLATE_NOOP("propertyName", "clearance for notation above") },
+      { Pid::PADDING_TO_NOTATION_BELOW, P_TYPE::SPATIUM,        false, "paddingToNotationBelow", DUMMY_QT_TRANSLATE_NOOP("propertyName", "clearance for notation below") },
+      { Pid::FRET_FRAME_TEXT_SCALE,     P_TYPE::REAL,           false, "fretFrameTextScale",     DUMMY_QT_TRANSLATE_NOOP("propertyName", "text scale") },
+      { Pid::FRET_FRAME_DIAGRAM_SCALE,  P_TYPE::REAL,           false, "fretFrameDiagramScale",  DUMMY_QT_TRANSLATE_NOOP("propertyName", "diagram scale") },
+      { Pid::FRET_FRAME_COLUMN_GAP,     P_TYPE::SPATIUM,        false, "fretFrameColumnGap",     DUMMY_QT_TRANSLATE_NOOP("propertyName", "column gap") },
+      { Pid::FRET_FRAME_ROW_GAP,        P_TYPE::SPATIUM,        false, "fretFrameRowGap",        DUMMY_QT_TRANSLATE_NOOP("propertyName", "row gap") },
+      { Pid::FRET_FRAME_CHORDS_PER_ROW, P_TYPE::INT,            false, "fretFrameChordsPerRow",  DUMMY_QT_TRANSLATE_NOOP("propertyName", "chords per row") },
+      { Pid::FRET_FRAME_H_ALIGN,        P_TYPE::INT,            false, "fretFrameHorizontalAlign", DUMMY_QT_TRANSLATE_NOOP("propertyName", "horizontal alignment") },
+      { Pid::FRET_FRAME_DIAGRAMS_ORDER, P_TYPE::STRING,         false, "fretFrameDiagramsOrder", DUMMY_QT_TRANSLATE_NOOP("propertyName", "diagrams order") },
       { Pid::TOP_GAP,                   P_TYPE::SP_REAL,        false, "topGap",                 DUMMY_QT_TRANSLATE_NOOP("propertyName", "top gap")                                       },
       { Pid::BOTTOM_GAP,                P_TYPE::SP_REAL,        false, "bottomGap",              DUMMY_QT_TRANSLATE_NOOP("propertyName", "bottom gap")                                    },
       { Pid::LEFT_MARGIN,               P_TYPE::REAL,           false, "leftMargin",             DUMMY_QT_TRANSLATE_NOOP("propertyName", "left margin")                                   },
@@ -358,7 +367,19 @@ static constexpr PropertyMetaData propertyList[] = {
 
       { Pid::PREFER_SHARP_FLAT,         P_TYPE::INT,            true,  "preferSharpFlat",        DUMMY_QT_TRANSLATE_NOOP("propertyName", "prefer sharps or flats")                        },
 
-      { Pid::END,                       P_TYPE::INT,            false, "++end++",                DUMMY_QT_TRANSLATE_NOOP("propertyName", "<invalid property>")                            }
+      { Pid::GUITAR_BEND_TYPE,          P_TYPE::INT,            true,  "guitarBendType",         "guitarBendType" },
+      { Pid::GUITAR_BEND_AMOUNT,        P_TYPE::INT,            true,  "guitarBendAmount",       "guitarBendAmount" },
+      { Pid::BEND_START_TIME_FACTOR,    P_TYPE::REAL,           true,  "bendStartTimeFactor",    "bendStartTimeFactor" },
+      { Pid::BEND_END_TIME_FACTOR,      P_TYPE::REAL,           true,  "bendEndTimeFactor",      "bendEndTimeFactor" },
+      { Pid::BEND_TARGET_TIME_FACTOR,   P_TYPE::REAL,           true,  "bendTargetTimeFactor",   "bendTargetTimeFactor" },
+      { Pid::BEND_SHOW_HOLD_LINE,       P_TYPE::INT,            true,  "bendShowHoldLine",       "bendShowHoldLine" },
+
+      { Pid::BEND_VERTEX_OFF,           P_TYPE::POINT_SP,       false, "bendVertexOffset",       DUMMY_QT_TRANSLATE_NOOP("propertyName", "bend vertex offset") },
+
+      { Pid::OVERRIDE_BEND_VISIBILITY_RULES, P_TYPE::BOOL,      true,  "overrideBendVisibilityRules", DUMMY_QT_TRANSLATE_NOOP("propertyName", "override bend fret visibility") },
+
+      { Pid::END,                       P_TYPE::INT,            false, "++end++",                DUMMY_QT_TRANSLATE_NOOP("propertyName", "<invalid property>")                            },
+
       };
 
 //---------------------------------------------------------

@@ -235,6 +235,8 @@
         <height>25.5926</height>
         <topMargin>3</topMargin>
         <boxAutoSize>0</boxAutoSize>
+        <paddingToNotationAbove>2</paddingToNotationAbove>
+        <paddingToNotationBelow>2</paddingToNotationBelow>
         <Text>
           <style>Frame</style>
           <text>îèéààéà</text>
@@ -249,6 +251,8 @@
         <height>47.762</height>
         <topGap>10</topGap>
         <boxAutoSize>0</boxAutoSize>
+        <paddingToNotationAbove>2</paddingToNotationAbove>
+        <paddingToNotationBelow>2</paddingToNotationBelow>
         <Text>
           <style>Frame</style>
           <text>êêàééééç*éô</text>

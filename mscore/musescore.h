@@ -882,6 +882,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       static PalettePanel* newNoteHeadsPalettePanel();
       static PalettePanel* newArticulationsPalettePanel();
       static PalettePanel* newOrnamentsPalettePanel();
+      static PalettePanel* newGuitarPalettePanel();
       static PalettePanel* newAccordionPalettePanel();
       static PalettePanel* newBracketsPalettePanel();
       static PalettePanel* newBreathPalettePanel();

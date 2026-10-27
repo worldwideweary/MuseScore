@@ -10,6 +10,9 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include <memory>
+
+#include "box.h"
 #include "chord.h"
 #include "fret.h"
 #include "harmony.h"
@@ -549,6 +552,105 @@ void FretDiagram::layoutHorizontal()
 //   layout
 //---------------------------------------------------------
 
+// Synchronize schematic data as part of the source edit's undo macro. Do not
+// link whole elements: legend orientation, placement and visibility are local.
+class ChangeLegendFretPattern : public UndoCommand {
+      FretDiagram* _target;
+      std::unique_ptr<FretDiagram> _pattern;
+      void flip(EditData*) override {
+            std::swap(_target->_strings, _pattern->_strings);
+            std::swap(_target->_frets, _pattern->_frets);
+            std::swap(_target->_fretOffset, _pattern->_fretOffset);
+            std::swap(_target->_showNut, _pattern->_showNut);
+            std::swap(_target->_dots, _pattern->_dots);
+            std::swap(_target->_markers, _pattern->_markers);
+            std::swap(_target->_barres, _pattern->_barres);
+            // Styled values are omitted by writeProperty(). Keep the source's
+            // override flags with its values, and restore the old flags on undo.
+            for (Pid pid : { Pid::FRET_STRINGS, Pid::FRET_FRETS, Pid::FRET_NUT }) {
+                  const PropertyFlags flags = _target->propertyFlags(pid);
+                  _target->setPropertyFlags(pid, _pattern->propertyFlags(pid));
+                  _pattern->setPropertyFlags(pid, flags);
+                  }
+            _target->triggerLayout();
+            }
+   public:
+      ChangeLegendFretPattern(FretDiagram* target, const FretDiagram* source)
+         : _target(target), _pattern(source->clone()) {}
+      };
+
+void FretDiagram::updateLegendPatterns()
+      {
+      if (!parent() || !parent()->isSegment() || !harmony()
+            || harmony()->harmonyType() != HarmonyType::STANDARD)
+            return;
+      const QString key = harmony()->harmonyName();
+      if (key.isEmpty())
+            return;
+      // Collection chooses the first explicit diagram for a repeated chord.
+      // Edits to later occurrences must not replace that canonical shape.
+      const FretDiagram* first = nullptr;
+      for (Measure* m = score()->firstMeasure(); m && !first; m = m->nextMeasure()) {
+            for (const Segment& segment : m->segments()) {
+                  for (const Element* e : segment.annotations()) {
+                        if (!e->isFretDiagram())
+                              continue;
+                        const auto* fd = toFretDiagram(e);
+                        if (fd->harmony() && fd->harmony()->harmonyType() == HarmonyType::STANDARD
+                              && fd->harmony()->harmonyName() == key) {
+                              first = fd;
+                              break;
+                              }
+                        }
+                  if (first)
+                        break;
+                  }
+            }
+      if (first != this)
+            return;
+      for (MeasureBase* mb = score()->first(); mb; mb = mb->next()) {
+            if (!mb->isFBox())
+                  continue;
+            for (Element* e : toFBox(mb)->el()) {
+                  if (!e->isFretDiagram())
+                        continue;
+                  auto* target = toFretDiagram(e);
+                  if (target->harmony() && target->harmony()->harmonyName() == key)
+                        score()->undo(new ChangeLegendFretPattern(target, this));
+                  }
+            }
+      }
+
+void FretDiagram::undoChangeProperty(Pid pid, const QVariant& value, PropertyFlags flags)
+      {
+      if (getProperty(pid) == value && propertyFlags(pid) == flags)
+            return;
+      Element::undoChangeProperty(pid, value, flags);
+      switch (pid) {
+            case Pid::FRET_STRINGS:
+            case Pid::FRET_FRETS:
+            case Pid::FRET_OFFSET:
+            case Pid::FRET_NUT:
+                  for (ScoreElement* e : linkList())
+                        toFretDiagram(e)->updateLegendPatterns();
+                  break;
+            default:
+                  break;
+            }
+      }
+
+void FretDiagram::triggerLayout() const
+      {
+      if (parent() && parent()->isFBox()) {
+            // A frame has no rhythmic span. Invalidating only its tick can
+            // retain the old frame/system height after an orientation change.
+            // Recompute the legend rows and their surrounding page spacing.
+            parent()->triggerLayoutAll();
+            }
+      else
+            Element::triggerLayout();
+      }
+
 void FretDiagram::layout()
       {
       layoutHorizontal();
@@ -560,7 +662,16 @@ void FretDiagram::layout()
 
       if (_harmony)
             _harmony->layout();
-      if (_harmony && _harmony->autoplace() && _harmony->parent()) {
+      if (_harmony && parent()->isFBox()) {
+            // Match Studio's diagram-local clearance without staff skyline
+            // autoplace: the top of the diagram includes its X/O markers.
+            const qreal distance = bbox().top()
+                  - _harmony->bbox().translated(_harmony->pos()).bottom();
+            const qreal diff = distance - _harmony->minDistance().val() * spatium();
+            if (diff < 0.0)
+                  _harmony->rypos() += diff;
+            }
+      if (_harmony && _harmony->autoplace() && parent()->isSegment()) {
             Segment* s = toSegment(parent());
             Measure* m = s->measure();
             int si     = staffIdx();
@@ -1010,6 +1121,7 @@ void FretDiagram::undoSetFretDot(int _string, int _fret, bool _add /*= true*/, F
       for (ScoreElement*& e : linkList()) {
             FretDiagram* fd = toFretDiagram(e);
             fd->score()->undo(new FretDot(fd, _string, _fret, _add, _dtype));
+            fd->updateLegendPatterns();
             }
       }
 
@@ -1022,6 +1134,7 @@ void FretDiagram::undoSetFretMarker(int _string, FretMarkerType _mtype)
       for (ScoreElement*& e : linkList()) {
             FretDiagram* fd = toFretDiagram(e);
             fd->score()->undo(new FretMarker(fd, _string, _mtype));
+            fd->updateLegendPatterns();
             }
       }
 
@@ -1035,6 +1148,7 @@ void FretDiagram::undoSetFretBarre(int _string, int _fret, bool _add /*= false*/
       for (ScoreElement*& e : linkList()) {
             FretDiagram* fd = toFretDiagram(e);
             fd->score()->undo(new FretBarre(fd, _string, _fret, _add));
+            fd->updateLegendPatterns();
             }
       }
 
@@ -1147,6 +1261,7 @@ void FretDiagram::undoFretClear()
       for (ScoreElement*& e : linkList()) {
             FretDiagram* fd = toFretDiagram(e);
             fd->score()->undo(new FretClear(fd));
+            fd->updateLegendPatterns();
             }
       }
 
@@ -1277,7 +1392,8 @@ Element* FretDiagram::drop(EditData& data)
 
 void FretDiagram::scanElements(void* data, void (*func)(void*, Element*), bool all)
       {
-      Q_UNUSED(all);
+      if (parent() && parent()->isFBox() && !visible() && !all)
+            return;
       func(data, this);
       // don't display harmony in palette
       if (_harmony && !!parent())

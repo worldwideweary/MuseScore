@@ -140,6 +140,11 @@ enum class ElementType : char {
       STICKING,
       CHORD_BRACKET,
 
+      GUITAR_BEND,
+      GUITAR_BEND_SEGMENT,
+      HAMMER_ON_PULL_OFF,
+      WHAMMY_BAR,
+
       MAXTYPE
       ///\}
       };

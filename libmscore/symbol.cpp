@@ -10,8 +10,12 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include <QtMath>
+
 #include "image.h"
 #include "measure.h"
+#include "note.h"
+#include "stafftype.h"
 #include "page.h"
 #include "score.h"
 #include "staff.h"
@@ -37,6 +41,9 @@ Symbol::Symbol(const Symbol& s)
       {
       _sym       = s._sym;
       _scoreFont = s._scoreFont;
+      _flexibleTabParenthesis = s._flexibleTabParenthesis;
+      _tabParenthesisPath = s._tabParenthesisPath;
+      _parenthesisNotes = s._parenthesisNotes;
       }
 
 //---------------------------------------------------------
@@ -64,8 +71,84 @@ QString Symbol::accessibleInfo() const
 //    values when calling this method
 //---------------------------------------------------------
 
+bool Symbol::isTabFretParenthesis() const
+      {
+      return (_sym == SymId::noteheadParenthesisLeft || _sym == SymId::noteheadParenthesisRight)
+            && parent() && parent()->isNote() && staff() && staff()->isTabStaff(tick());
+      }
+
+QFont Symbol::tabFretParenthesisFont(qreal pixelRatio) const
+      {
+      const StaffType* tab = staff()->staffTypeForElement(this);
+      QFont font(tab->fretFont());
+      font.setPointSizeF(tab->fretFontSize() * magS() * pixelRatio);
+      return font;
+      }
+
+qreal Symbol::tabFretParenthesisWidth() const
+      {
+      const QString text = _sym == SymId::noteheadParenthesisLeft ? "(" : ")";
+      return QFontMetricsF(tabFretParenthesisFont(), MScore::paintDevice()).width(text);
+      }
+
+// Curves use Studio's tapered cubic construction. Ordinary fret parentheses
+// retain their font glyph; only a taller attached shape needs a drawn curve.
+void Symbol::layoutTabParenthesis(const QRectF& contents)
+      {
+      _tabParenthesisPath = QPainterPath();
+      if (!_flexibleTabParenthesis && _parenthesisNotes.isEmpty())
+            return;
+      const StaffType* tab = staff()->staffTypeForElement(this);
+      if (_parenthesisNotes.size() < 2 && isTabFretParenthesis()
+            && contents.height() <= 1.5 * tab->fretBoxH() * magS()) {
+            layout();
+            const QRectF fret = toNote(parent())->bbox();
+            setPos(QPointF(_sym == SymId::noteheadParenthesisLeft
+                  ? fret.left() - tabFretParenthesisWidth() : fret.right(), 0.0));
+            return;
+            }
+      const qreal sp = spatium();
+      const qreal height = contents.height();
+      const qreal direction = _sym == SymId::noteheadParenthesisLeft ? -1.0 : 1.0;
+      // Studio's empirical powers use its 1200-DPI engraving coordinates.
+      // Evaluate them in those units, then convert back to 3.x coordinates.
+      // Using SPATIUM20 here made the midpoint roughly twice as thick.
+      const qreal studioScale = 1200.0 / DPI;
+      const qreal shoulder = qMax(0.25 * sp * mag(),
+            0.2 * qPow(height * studioScale, 0.95) * qPow(mag(), 0.1) / studioScale);
+      const qreal exponent = isTabFretParenthesis() ? 0.36 : 0.33;
+      const qreal studioDefaultSpatium = 1.75 * 1200.0 / INCH;
+      const qreal thickness = qMin(0.2 * sp, sp / qPow(studioDefaultSpatium, 1.0 - exponent)
+            * qPow(height / sp, exponent) * mag());
+      const qreal forward = direction * (shoulder + thickness);
+      const qreal back = direction * (shoulder - thickness);
+      _tabParenthesisPath.moveTo(0.0, 0.0);
+      _tabParenthesisPath.cubicTo(QPointF(forward, 0.2 * height),
+            QPointF(forward, 0.8 * height), QPointF(0.0, height));
+      _tabParenthesisPath.cubicTo(QPointF(back, 0.8 * height),
+            QPointF(back, 0.2 * height), QPointF(0.0, 0.0));
+      _tabParenthesisPath.closeSubpath();
+      // Studio draws a 0.05-sp outline around the filled curve. Include
+      // that ink so layout/hit testing agree with the rounded end caps.
+      const qreal halfOutline = 0.025 * sp * mag();
+      setbbox(_tabParenthesisPath.boundingRect().adjusted(-halfOutline, -halfOutline, halfOutline, halfOutline));
+      const qreal gap = 0.15 * sp * mag();
+      setPos(QPointF(direction < 0.0 ? contents.left() - gap : contents.right() + gap,
+            contents.top()));
+      }
+
 void Symbol::layout()
       {
+      _tabParenthesisPath = QPainterPath();
+      if (isTabFretParenthesis()) {
+            const QString text = _sym == SymId::noteheadParenthesisLeft ? "(" : ")";
+            const StaffType* tab = staff()->staffTypeForElement(this);
+            const QFontMetricsF fm(tabFretParenthesisFont(), MScore::paintDevice());
+            setbbox(fm.tightBoundingRect(text).translated(0.0, tab->fretFontYOffset() * magS()));
+            setPos(QPointF());
+            BSymbol::layout();
+            return;
+            }
       // foreach(Element* e, leafs())     done in BSymbol::layout() ?
       //      e->layout();
       setbbox(_scoreFont ? _scoreFont->bbox(_sym, magS()) : symBbox(_sym));
@@ -91,6 +174,20 @@ void Symbol::layout()
 
 void Symbol::draw(QPainter* p) const
       {
+      if (!_tabParenthesisPath.isEmpty()) {
+            p->setPen(QPen(curColor(), 0.05 * spatium() * mag(), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+            p->setBrush(curColor());
+            p->drawPath(_tabParenthesisPath);
+            return;
+            }
+      if (isTabFretParenthesis()) {
+            const StaffType* tab = staff()->staffTypeForElement(this);
+            p->setPen(curColor());
+            p->setFont(tabFretParenthesisFont(MScore::pixelRatio));
+            p->drawText(QPointF(0.0, tab->fretFontYOffset() * magS()),
+                  _sym == SymId::noteheadParenthesisLeft ? "(" : ")");
+            return;
+            }
       if (!isNoteDot() || !staff()->isTabStaff(tick())) {
             p->setPen(curColor());
             if (_scoreFont)
@@ -108,6 +205,14 @@ void Symbol::write(XmlWriter& xml) const
       {
       xml.stag(this);
       xml.tag("name", Sym::id2name(_sym));
+      if (_flexibleTabParenthesis)
+            xml.tag("flexibleTabParenthesis", true);
+      if (!_parenthesisNotes.isEmpty()) {
+            QStringList indices;
+            for (int index : _parenthesisNotes)
+                  indices.append(QString::number(index));
+            xml.tag("parenthesisNotes", indices.join(','));
+            }
       if (_scoreFont)
             xml.tag("font", _scoreFont->name());
       BSymbol::writeProperties(xml);
@@ -140,6 +245,13 @@ void Symbol::read(XmlReader& e)
                         }
                   setSym(symId);
                   }
+            else if (tag == "parenthesisNotes") {
+                  _parenthesisNotes.clear();
+                  for (const QString& index : e.readElementText().split(','))
+                        _parenthesisNotes.append(index.toInt());
+                  }
+            else if (tag == "flexibleTabParenthesis")
+                  _flexibleTabParenthesis = e.readBool();
             else if (tag == "font")
                   _scoreFont = ScoreFont::fontFactory(e.readElementText());
             else if (tag == "Symbol") {

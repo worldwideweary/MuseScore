@@ -46,6 +46,8 @@ class FBox;
 class ChordRest;
 class Slur;
 class Tie;
+class GuitarBend;
+class GuitarBendSegment;
 class Glissando;
 class GlissandoSegment;
 class SystemDivider;
@@ -279,7 +281,10 @@ class ScoreElement {
       CONVERT(TBox,          TBOX)
       CONVERT(FBox,          FBOX)
       CONVERT(Tie,           TIE)
-      CONVERT(Slur,          SLUR)
+      CONVERT(HammerOnPullOff, HAMMER_ON_PULL_OFF)
+      bool isSlur() const { return type() == ElementType::SLUR || isHammerOnPullOff(); }
+      CONVERT(GuitarBend, GUITAR_BEND)
+      CONVERT(GuitarBendSegment, GUITAR_BEND_SEGMENT)
       CONVERT(Glissando,     GLISSANDO)
       CONVERT(GlissandoSegment,     GLISSANDO_SEGMENT)
       CONVERT(SystemDivider, SYSTEM_DIVIDER)
@@ -315,7 +320,7 @@ class ScoreElement {
       CONVERT(Dynamic,       DYNAMIC)
       CONVERT(InstrumentName, INSTRUMENT_NAME)
       CONVERT(Accidental,    ACCIDENTAL)
-      CONVERT(TextLine,      TEXTLINE)
+      bool isTextLine() const { return type() == ElementType::TEXTLINE || type() == ElementType::WHAMMY_BAR; }
       CONVERT(TextLineSegment,      TEXTLINE_SEGMENT)
       CONVERT(Pedal,         PEDAL)
       CONVERT(PedalSegment,  PEDAL_SEGMENT)
@@ -379,7 +384,7 @@ class ScoreElement {
          ;
          }
       bool isLineSegment() const {
-         return isGlissandoSegment()
+         return isGuitarBendSegment() || isGlissandoSegment()
          || isLyricsLineSegment()
          || isTextLineBaseSegment()
          || isTrillSegment()
@@ -399,7 +404,7 @@ class ScoreElement {
             ;
             }
       bool isSLine() const {
-            return isTextLineBase() || isTrill() || isGlissando() || isVibrato();
+            return isGuitarBend() || isTextLineBase() || isTrill() || isGlissando() || isVibrato();
             }
 
       bool isSpanner() const {
@@ -529,6 +534,8 @@ static inline const a* to##a(const ScoreElement* e) { Q_ASSERT(e == 0 || e->is##
       CONVERT(Spanner)
       CONVERT(Tie)
       CONVERT(Slur)
+      CONVERT(GuitarBend)
+      CONVERT(GuitarBendSegment)
       CONVERT(Glissando)
       CONVERT(GlissandoSegment)
       CONVERT(SystemDivider)

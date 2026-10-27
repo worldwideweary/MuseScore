@@ -32,6 +32,10 @@ class Symbol : public BSymbol {
    protected:
       SymId _sym;
       const ScoreFont* _scoreFont = nullptr;
+      bool _flexibleTabParenthesis = false;
+      QPainterPath _tabParenthesisPath;
+      QList<int> _parenthesisNotes;
+      QFont tabFretParenthesisFont(qreal pixelRatio = 1.0) const;
 
    public:
       Symbol(Score* s, ElementFlags f = ElementFlag::MOVABLE);
@@ -45,6 +49,14 @@ class Symbol : public BSymbol {
       void setSym(SymId s, const ScoreFont* sf = nullptr) { _sym  = s; _scoreFont = sf;    }
       SymId sym() const                  { return _sym;  }
       QString symName() const;
+      bool isTabFretParenthesis() const;
+      qreal tabFretParenthesisWidth() const;
+      void layoutTabParenthesis(const QRectF& contents);
+      const QList<int>& parenthesisNotes() const { return _parenthesisNotes; }
+      void setParenthesisNotes(const QList<int>& notes) { _parenthesisNotes = notes; }
+      const QPainterPath& tabParenthesisPath() const { return _tabParenthesisPath; }
+      bool flexibleTabParenthesis() const { return _flexibleTabParenthesis; }
+      void setFlexibleTabParenthesis(bool value) { _flexibleTabParenthesis = value; }
 
       QString accessibleInfo() const override;
 

@@ -25,6 +25,7 @@
 #include "fermata.h"
 #include "fingering.h"
 #include "glissando.h"
+#include "guitarbend.h"
 #include "hairpin.h"
 #include "harmony.h"
 #include "hook.h"
@@ -54,6 +55,7 @@
 #include "stemslash.h"
 #include "style.h"
 #include "sym.h"
+#include "symbol.h"
 #include "system.h"
 #include "systemdivider.h"
 #include "tie.h"
@@ -2256,7 +2258,7 @@ void LayoutContext::getNextPage()
 
 System* Score::getNextSystem(LayoutContext& lc)
       {
-      bool isVBox = lc.curMeasure->isVBox();
+      bool isVBox = lc.curMeasure->isVBoxBase();
       System* system;
       if (lc.systemList.empty()) {
             system = new System(this);
@@ -4380,7 +4382,7 @@ System* Score::collectSystem(LayoutContext& lc)
                   mb->layout();
                   createBrackets = toHBox(mb)->createSystemHeader();
                   }
-            else if (mb->isVBox())
+            else if (mb->isVBoxBase())
                   mb->setPos(pos);
             pos.rx() += ww;
             }
@@ -4659,6 +4661,62 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
             for (Element* e : s->annotations()) {
                   if (e->isSticking())
                         e->layout();
+                  }
+            }
+
+      // Note-anchored bends are not in the managed spanner map. Lay them
+      // out and register their geometry before slurs and staff-text autoplace.
+      QSet<GuitarBend*> guitarBends;
+      QSet<Note*> guitarNotes;
+      for (const Segment* segment : sl) {
+            for (Element* element : segment->elist()) {
+                  if (!element || !element->isChord())
+                        continue;
+                  const Chord* chord = toChord(element);
+                  std::vector<const Chord*> chords { chord };
+                  for (const Chord* grace : chord->graceNotes())
+                        chords.push_back(grace);
+                  for (const Chord* c : chords) {
+                        for (Note* note : c->notes()) {
+                              guitarNotes.insert(note);
+                              for (Spanner* sp : note->spannerFor())
+                                    if (sp->isGuitarBend())
+                                          guitarBends.insert(toGuitarBend(sp));
+                              for (Spanner* sp : note->spannerBack())
+                                    if (sp->isGuitarBend())
+                                          guitarBends.insert(toGuitarBend(sp));
+                              }
+                        }
+                  }
+            }
+      for (GuitarBend* bend : guitarBends) {
+            if (!bend->visible() || !bend->staff() || !bend->staff()->show())
+                  continue;
+            bend->layout();
+            for (SpannerSegment* segment : bend->spannerSegments()) {
+                  if (segment->system() != system || !segment->addToSkyline())
+                        continue;
+                  const int idx = segment->staffIdx();
+                  // Note-anchor positions include the staff's system Y;
+                  // each SysStaff skyline uses coordinates relative to it.
+                  const QPointF origin = segment->pagePos()
+                        - QPointF(system->pagePos().x(), system->staffYpage(idx));
+                  system->staff(idx)->skyline().add(segment->shape().translated(origin));
+                  }
+            }
+
+      // Parentheses which enclose a single-note bend need the final bend
+      // geometry, including labels and user offsets, before text autoplace.
+      for (Note* note : guitarNotes) {
+            note->layoutTabBendParentheses();
+            for (Element* child : note->el()) {
+                  if (!child->isSymbol() || (!toSymbol(child)->flexibleTabParenthesis() && toSymbol(child)->parenthesisNotes().isEmpty())
+                        || !child->addToSkyline())
+                        continue;
+                  const int idx = child->staffIdx();
+                  const QPointF origin = child->pagePos()
+                        - QPointF(system->pagePos().x(), system->staffYpage(idx));
+                  system->staff(idx)->skyline().add(child->shape().translated(origin));
                   }
             }
 
@@ -5290,10 +5348,15 @@ class CmdStateLocker {
 void Score::doLayoutRange(const Fraction& st, const Fraction& et)
       {
       CmdStateLocker cmdStateLocker(this);
+      bool legendChanged = false;
+      for (MeasureBase* mb = first(); mb; mb = mb->next()) {
+            if (mb->isFBox())
+                  legendChanged |= toFBox(mb)->syncDiagrams();
+            }
       LayoutContext lc(this);
 
-      Fraction stick(st);
-      Fraction etick(et);
+      Fraction stick(legendChanged ? Fraction(0, 1) : st);
+      Fraction etick(legendChanged ? Fraction(-1, 1) : et);
       Q_ASSERT(!(stick == Fraction(-1,1) && etick == Fraction(-1,1)));
 
       if (!last() || (lineMode() && !firstMeasure())) {

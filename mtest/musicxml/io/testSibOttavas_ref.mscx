@@ -119,6 +119,8 @@
     <Staff id="1">
       <VBox>
         <height>10</height>
+        <paddingToNotationAbove>2</paddingToNotationAbove>
+        <paddingToNotationBelow>2</paddingToNotationBelow>
         <LayoutBreak>
           <subtype>page</subtype>
           </LayoutBreak>

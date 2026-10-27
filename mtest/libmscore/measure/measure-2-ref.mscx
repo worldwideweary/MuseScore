@@ -106,6 +106,8 @@
     <Staff id="1">
       <VBox>
         <height>10</height>
+        <paddingToNotationAbove>0</paddingToNotationAbove>
+        <paddingToNotationBelow>0</paddingToNotationBelow>
         <Text>
           <style>Title</style>
           <text>Test</text>
@@ -389,6 +391,8 @@
       <Staff id="1">
         <VBox>
           <height>10</height>
+          <paddingToNotationAbove>0</paddingToNotationAbove>
+          <paddingToNotationBelow>0</paddingToNotationBelow>
           <Text>
             <style>Title</style>
             <text>Test</text>
@@ -635,6 +639,8 @@
       <Staff id="1">
         <VBox>
           <height>10</height>
+          <paddingToNotationAbove>0</paddingToNotationAbove>
+          <paddingToNotationBelow>0</paddingToNotationBelow>
           <Text>
             <style>Title</style>
             <text>Test</text>

@@ -95,6 +95,10 @@ class XmlReader : public QXmlStreamReader {
       QMap<int, LinkedElements*> _elinks; // for reading old files (< 3.01)
       QMap<int, QList<QPair<LinkedElements*, Location>>> _staffLinkedElements; // one list per staff
       LinksIndexer _linksIndexer;
+      QHash<QString, ScoreElement*> _elementsByEid;
+      QMultiHash<QString, ScoreElement*> _pendingEidLinks;
+      QHash<Spanner*, QPair<QString, QString>> _eidSpannerAnchors;
+      QList<Spanner*> _pendingEidSpanners;
       QMultiMap<int, int> _tracks;
 
       QList<TextStyleMap> userTextStyles;
@@ -113,6 +117,13 @@ class XmlReader : public QXmlStreamReader {
       XmlReader& operator=(const XmlReader&) = delete;
       ~XmlReader();
 
+      void registerElementEid(const QString&, ScoreElement*);
+      void linkElementEid(const QString&, ScoreElement*);
+      void resolveElementEidLinks(Score*);
+      ScoreElement* elementByEid(const QString& id) const { return _elementsByEid.value(id, nullptr); }
+      void addEidSpanner(Spanner*);
+      void setSpannerEidAnchor(Spanner*, const QString&, bool start);
+      void resolveEidSpanners(Score*);
       bool hasAccidental { false };                     // used for userAccidental backward compatibility
       void unknown();
 

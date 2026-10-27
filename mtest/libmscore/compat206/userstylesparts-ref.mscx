@@ -235,6 +235,8 @@
       <VBox>
         <height>36.9323</height>
         <boxAutoSize>0</boxAutoSize>
+        <paddingToNotationAbove>2</paddingToNotationAbove>
+        <paddingToNotationBelow>2</paddingToNotationBelow>
         <linkedMain/>
         <Text>
           <linkedMain/>
@@ -514,6 +516,8 @@
         <VBox>
           <height>36.9323</height>
           <boxAutoSize>0</boxAutoSize>
+          <paddingToNotationAbove>2</paddingToNotationAbove>
+          <paddingToNotationBelow>2</paddingToNotationBelow>
           <linked>
             </linked>
           <Text>
@@ -753,6 +757,8 @@
         <VBox>
           <height>36.9323</height>
           <boxAutoSize>0</boxAutoSize>
+          <paddingToNotationAbove>2</paddingToNotationAbove>
+          <paddingToNotationBelow>2</paddingToNotationBelow>
           <linked>
             <location>
               <staves>-1</staves>
@@ -1016,6 +1022,8 @@
         <VBox>
           <height>36.9323</height>
           <boxAutoSize>0</boxAutoSize>
+          <paddingToNotationAbove>2</paddingToNotationAbove>
+          <paddingToNotationBelow>2</paddingToNotationBelow>
           <linked>
             <location>
               <staves>-2</staves>

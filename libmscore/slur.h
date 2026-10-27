@@ -26,11 +26,17 @@ class SlurSegment final : public SlurTieSegment {
 
    protected:
       qreal _extraHeight = 0.0;
+      QString _hopoText;
+      QRectF _hopoTextRect;
+      QPointF _hopoTextPos;
+      QFont hopoFont(qreal pixelRatio = 1.0) const;
+      void layoutHopoText();
       void changeAnchor(EditData&, Element*) override;
 
    public:
       SlurSegment(Score* s) : SlurTieSegment(s) {}
-      SlurSegment(const SlurSegment& ss) : SlurTieSegment(ss) {}
+      SlurSegment(const SlurSegment& ss) : SlurTieSegment(ss),
+            _hopoText(ss._hopoText), _hopoTextRect(ss._hopoTextRect), _hopoTextPos(ss._hopoTextPos) {}
 
       SlurSegment* clone() const override  { return new SlurSegment(*this); }
       ElementType type() const override    { return ElementType::SLUR_SEGMENT; }
@@ -38,6 +44,8 @@ class SlurSegment final : public SlurTieSegment {
       void draw(QPainter*) const override;
 
       void layoutSegment(const QPointF& p1, const QPointF& p2);
+      const QRectF& hopoTextRect() const { return _hopoTextRect; }
+      const QString& hopoText() const { return _hopoText; }
 
       bool isEdited() const;
       bool edit(EditData&) override;
@@ -51,7 +59,7 @@ class SlurSegment final : public SlurTieSegment {
 //   @@ Slur
 //---------------------------------------------------------
 
-class Slur final : public SlurTie {
+class Slur : public SlurTie {
 
       void slurPosChord(SlurPos*);
 

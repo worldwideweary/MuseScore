@@ -540,6 +540,7 @@ void Score::readAddConnector(ConnectorInfoReader* info, bool pasteMode)
             case ElementType::PEDAL:
             case ElementType::OTTAVA:
             case ElementType::TRILL:
+            case ElementType::WHAMMY_BAR:
             case ElementType::TEXTLINE:
             case ElementType::PALM_MUTE:
             case ElementType::LET_RING:

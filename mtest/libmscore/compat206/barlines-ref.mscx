@@ -429,6 +429,8 @@
       <VBox>
         <height>10</height>
         <boxAutoSize>0</boxAutoSize>
+        <paddingToNotationAbove>2</paddingToNotationAbove>
+        <paddingToNotationBelow>2</paddingToNotationBelow>
         <Text>
           <style>Title</style>
           <text>barlines</text>

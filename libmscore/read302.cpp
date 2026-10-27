@@ -59,6 +59,22 @@ bool Score::read(XmlReader& e)
             const QStringRef& tag(e.name());
             if (tag == "Staff")
                   readStaff(e);
+            else if (tag == "SpannerMap") {
+                  while (e.readNextStartElement()) {
+                        Element* element = Element::name2Element(e.name(), this);
+                        if (!element || !element->isSpanner()) {
+                              delete element;
+                              e.unknown();
+                              continue;
+                              }
+                        // Score-level Studio maps omit track zero by default.
+                        // The surrounding Score reader has no active staff.
+                        element->setTrack(0);
+                        e.setTrack(0);
+                        element->read(e);
+                        e.addEidSpanner(toSpanner(element));
+                        }
+                  }
             else if (tag == "Omr") {
 #ifdef OMR
                   masterScore()->setOmr(new Omr(this));
@@ -323,6 +339,8 @@ bool Score::read(XmlReader& e)
             masterScore()->setShowOmr(false);
 
       fixTicks();
+      e.resolveEidSpanners(this);
+      e.resolveElementEidLinks(this);
 
       for (Part*& p : _parts) {
             p->updateHarmonyChannels(false);

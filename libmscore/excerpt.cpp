@@ -466,6 +466,10 @@ void Excerpt::cloneStaves(Score* oscore, Score* score, const QList<int>& map, QM
 
       MeasureBaseList* nmbl = score->measures();
       for (MeasureBase* mb = oscore->measures()->first(); mb; mb = mb->next()) {
+            // Legends are score-local, matching Studio's default exclusion
+            // from parts. A part can insert its own legend for its own chords.
+            if (mb->isFBox())
+                  continue;
             MeasureBase* nmb = 0;
             if (mb->isHBox())
                   nmb = new HBox(score);

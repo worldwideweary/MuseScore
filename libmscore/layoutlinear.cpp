@@ -109,7 +109,7 @@ void Score::resetSystems(bool layoutAll, LayoutContext& lc)
 
       while (lc.curMeasure) {
             qreal ww = 0.0;
-            if (lc.curMeasure->isVBox() || lc.curMeasure->isTBox()) {
+            if (lc.curMeasure->isVBoxBase()) {
                   lc.curMeasure->setParent(nullptr);
                   getNextMeasure(lc);
                   continue;

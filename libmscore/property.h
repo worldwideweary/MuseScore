@@ -116,6 +116,16 @@ enum class Pid : short {
       BOX_HEIGHT,
       BOX_WIDTH,
       BOX_AUTOSIZE,
+      PADDING_TO_NOTATION_ABOVE,
+      PADDING_TO_NOTATION_BELOW,
+      FRET_FRAME_TEXT_SCALE,
+      FRET_FRAME_DIAGRAM_SCALE,
+      FRET_FRAME_COLUMN_GAP,
+      FRET_FRAME_ROW_GAP,
+      FRET_FRAME_CHORDS_PER_ROW,
+      FRET_FRAME_H_ALIGN,
+      FRET_FRAME_DIAGRAMS_ORDER,
+
       TOP_GAP,
       BOTTOM_GAP,
       LEFT_MARGIN,
@@ -365,6 +375,15 @@ enum class Pid : short {
       PATH, // for ChordLine to make its shape changes undoable
 
       PREFER_SHARP_FLAT,
+
+      GUITAR_BEND_TYPE,
+      GUITAR_BEND_AMOUNT,
+      BEND_START_TIME_FACTOR,
+      BEND_END_TIME_FACTOR,
+      BEND_TARGET_TIME_FACTOR,
+      BEND_SHOW_HOLD_LINE,
+      BEND_VERTEX_OFF,
+      OVERRIDE_BEND_VISIBILITY_RULES,
 
       END
       };

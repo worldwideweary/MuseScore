@@ -99,6 +99,8 @@ the video game: a tone poem</metaTag>
     <Staff id="1">
       <VBox>
         <height>18.8698</height>
+        <paddingToNotationAbove>2</paddingToNotationAbove>
+        <paddingToNotationBelow>2</paddingToNotationBelow>
         <Text>
           <style>Title</style>
           <text><font size="22"/>Inferred Credits 1</text>

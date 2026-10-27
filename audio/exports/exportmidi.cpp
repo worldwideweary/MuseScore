@@ -11,6 +11,7 @@
 //=============================================================================
 
 #include "exportmidi.h"
+#include <QSet>
 
 #include "audio/midi/midifile.h"
 #include "audio/midi/event.h"
@@ -258,102 +259,120 @@ bool ExportMidi::write(QIODevice* device, bool midiExpandRepeats, bool exportRPN
             track.setOutPort(part->midiPort());
             track.setOutChannel(part->midiChannel());
 
-            // Pass through the all instruments in the part
-            const InstrumentList* il = part->instruments();
-            for (auto j = il->begin(); j!= il->end(); j++) {
-                  // Pass through the all channels of the instrument
-                  // "normal", "pizzicato", "tremolo" for Strings,
-                  // "normal", "mute" for Trumpet
-                  for (const Channel* instrChan : j->second->channel()) {
-                        const Channel* ch = part->masterScore()->playbackChannel(instrChan);
-                        char port    = part->masterScore()->midiPort(ch->channel());
-                        char channel = part->masterScore()->midiChannel(ch->channel());
+            // Only multi-port parts need per-event routing tags. Single-port
+            // parts retain their existing track-level port metadata.
+            QSet<int> partPorts;
+            for (const MidiMapping& mapping : cs->masterScore()->midiMapping()) {
+                  if (mapping.part() == part)
+                        partPorts.insert(mapping.port());
+                  }
+            // Include render-only bend lanes as well as instrument channels.
+            for (const MidiMapping& mapping : cs->masterScore()->midiMapping()) {
+                  if (mapping.part() != part)
+                        continue;
+                  const Channel* ch = mapping.articulation();
+                  char port = mapping.port();
+                  char channel = mapping.channel();
 
-                        if (staff->isTop()) {
-                              track.insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_RESET_ALL_CTRL, 0));
-                              // We need this to get the correct pitch of bends
-                              // Hidden under preferences because some software
-                              // crashes when receiving RPNs: https://musescore.org/en/node/37431
-                              if (channel != 9 && exportRPNs) {
-                                    // set pitch bend sensitivity to 12 semitones:
-                                    track.insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_LRPN, 0));
-                                    track.insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_HRPN, 0));
-                                    track.insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_HDATA, 12));
-
-                                    // reset fine tuning
-                                    /*track.insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_LRPN, 1));
-                                    track.insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_HRPN, 0));
-                                    track.insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_HDATA, 64));*/
-
-                                    // deactivate rpn
-                                    track.insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_LRPN, 127));
-                                    track.insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_HRPN, 127));
+                  auto insert = [&](int tick, const MidiEvent& event) {
+                        // Multiple physical ports may share channel numbers.
+                        // Restore the port before each event, even when mapping
+                        // blocks are interleaved at the same MIDI tick.
+                        if (partPorts.size() > 1) {
+                              MidiEvent portEvent;
+                              portEvent.setType(ME_META);
+                              portEvent.setMetaType(META_PORT_CHANGE);
+                              portEvent.setLen(1);
+                              portEvent.setEData({ static_cast<unsigned char>(port) });
+                              track.insert(tick, portEvent);
                               }
+                        track.insert(tick, event);
+                        };
 
-                              if (ch->program() != -1)
-                                    track.insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_PROGRAM, ch->program()));
-                              track.insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_VOLUME, ch->volume()));
-                              track.insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_PANPOT, ch->pan()));
-                              track.insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_REVERB_SEND, ch->reverb()));
-                              track.insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_CHORUS_SEND, ch->chorus()));
+                  if (staff->isTop()) {
+                        insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_RESET_ALL_CTRL, 0));
+                        // We need this to get the correct pitch of bends
+                        // Hidden under preferences because some software
+                        // crashes when receiving RPNs: https://musescore.org/en/node/37431
+                        if (channel != 9 && exportRPNs) {
+                              // set pitch bend sensitivity to 12 semitones:
+                              insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_LRPN, 0));
+                              insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_HRPN, 0));
+                              insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_HDATA, 12));
+
+                              // reset fine tuning
+                              /*insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_LRPN, 1));
+                              insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_HRPN, 0));
+                              insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_HDATA, 64));*/
+
+                              // deactivate rpn
+                              insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_LRPN, 127));
+                              insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_HRPN, 127));
+                        }
+
+                        if (ch->program() != -1)
+                              insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_PROGRAM, ch->program()));
+                        insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_VOLUME, ch->volume()));
+                        insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_PANPOT, ch->pan()));
+                        insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_REVERB_SEND, ch->reverb()));
+                        insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_CHORUS_SEND, ch->chorus()));
+                        }
+
+                  // Export port to MIDI META event
+                  if (track.outPort() >= 0 && track.outPort() <= 127) {
+                        MidiEvent ev;
+                        ev.setType(ME_META);
+                        ev.setMetaType(META_PORT_CHANGE);
+                        ev.setLen(1);
+                        ev.setEData({ static_cast<unsigned char>(track.outPort()) });
+                        insert(0, ev);
+                        }
+
+                  for (auto i = events.begin(); i != events.end(); ++i) {
+                        const NPlayEvent& event = i->second;
+
+                        if (event.isMuted())
+                              continue;
+                        if (event.discard() == staffIdx + 1 && event.velo() > 0)
+                              // turn note off so we can restrike it in another track
+                              insert(pauseMap.addPauseTicks(i->first), MidiEvent(ME_NOTEON, channel,
+                                                               event.pitch(), 0));
+
+                        if (event.getOriginatingStaff() != staffIdx)
+                              continue;
+
+                        if (event.discard() && event.velo() == 0)
+                              // ignore noteoff but restrike noteon
+                              continue;
+
+                        if (!exportRPNs && event.type() == ME_CONTROLLER && event.portamento())
+                              // ignore portamento control events if exportRPN isn't switched on
+                              continue;
+
+                        char eventPort    = cs->masterScore()->midiPort(event.channel());
+                        char eventChannel = cs->masterScore()->midiChannel(event.channel());
+                        if (port != eventPort || channel != eventChannel)
+                              continue;
+
+                        if (event.type() == ME_NOTEON) {
+                              // use the note values instead of the event values if portamento is suppressed
+                              if (!exportRPNs && event.portamento())
+                                    insert(pauseMap.addPauseTicks(i->first), MidiEvent(ME_NOTEON, channel,
+                                          event.note()->pitch(), event.velo()));
+                              else
+                                    insert(pauseMap.addPauseTicks(i->first), MidiEvent(ME_NOTEON, channel,
+                                          event.pitch(), event.velo()));
                               }
-
-                        // Export port to MIDI META event
-                        if (track.outPort() >= 0 && track.outPort() <= 127) {
-                              MidiEvent ev;
-                              ev.setType(ME_META);
-                              ev.setMetaType(META_PORT_CHANGE);
-                              ev.setLen(1);
-                              ev.setEData({ static_cast<unsigned char>(track.outPort()) });
-                              track.insert(0, ev);
+                        else if (event.type() == ME_CONTROLLER) {
+                              insert(pauseMap.addPauseTicks(i->first), MidiEvent(ME_CONTROLLER, channel,
+                                    event.controller(), event.value()));
                               }
-
-                        for (auto i = events.begin(); i != events.end(); ++i) {
-                              const NPlayEvent& event = i->second;
-
-                              if (event.isMuted())
-                                    continue;
-                              if (event.discard() == staffIdx + 1 && event.velo() > 0)
-                                    // turn note off so we can restrike it in another track
-                                    track.insert(pauseMap.addPauseTicks(i->first), MidiEvent(ME_NOTEON, channel,
-                                                                     event.pitch(), 0));
-
-                              if (event.getOriginatingStaff() != staffIdx)
-                                    continue;
-
-                              if (event.discard() && event.velo() == 0)
-                                    // ignore noteoff but restrike noteon
-                                    continue;
-
-                              if (!exportRPNs && event.type() == ME_CONTROLLER && event.portamento())
-                                    // ignore portamento control events if exportRPN isn't switched on
-                                    continue;
-
-                              char eventPort    = cs->masterScore()->midiPort(event.channel());
-                              char eventChannel = cs->masterScore()->midiChannel(event.channel());
-                              if (port != eventPort || channel != eventChannel)
-                                    continue;
-
-                              if (event.type() == ME_NOTEON) {
-                                    // use the note values instead of the event values if portamento is suppressed
-                                    if (!exportRPNs && event.portamento())
-                                          track.insert(pauseMap.addPauseTicks(i->first), MidiEvent(ME_NOTEON, channel,
-                                                event.note()->pitch(), event.velo()));
-                                    else
-                                          track.insert(pauseMap.addPauseTicks(i->first), MidiEvent(ME_NOTEON, channel,
-                                                event.pitch(), event.velo()));
-                                    }
-                              else if (event.type() == ME_CONTROLLER) {
-                                    track.insert(pauseMap.addPauseTicks(i->first), MidiEvent(ME_CONTROLLER, channel,
-                                          event.controller(), event.value()));
-                                    }
-                              else if(event.type() == ME_PITCHBEND) {
-                                    track.insert(pauseMap.addPauseTicks(i->first), MidiEvent(ME_PITCHBEND, channel,
-                                                                     event.dataA(), event.dataB()));
-                                    }
-                              else {
-                                    qDebug("writeMidi: unknown midi event 0x%02x", event.type());
-                                    }
+                        else if(event.type() == ME_PITCHBEND) {
+                              insert(pauseMap.addPauseTicks(i->first), MidiEvent(ME_PITCHBEND, channel,
+                                                               event.dataA(), event.dataB()));
+                              }
+                        else {
+                              qDebug("writeMidi: unknown midi event 0x%02x", event.type());
                               }
                         }
                   }

@@ -176,6 +176,8 @@ class MidiMapping {
       signed char _channel;
       Channel* masterChannel;
       PartChannelSettingsLink link;
+      int _bendSource = -1;
+      int _bendLane = -1;
 
       MidiMapping() = default; // should be created only within MasterScore
       friend class MasterScore;
@@ -185,6 +187,7 @@ class MidiMapping {
       const Part* part() const { return _part; }
       Channel* articulation() { return _articulation.get(); }
       const Channel* articulation() const { return _articulation.get(); }
+      int bendSource() const { return _bendSource; }
       signed char port() const { return _port; }
       signed char channel() const { return _channel; }
       };
@@ -1425,6 +1428,7 @@ class MasterScore : public Score {
       int midiChannel(int idx) const           { return _midiMapping[idx].channel(); }
       void rebuildMidiMapping();
       void checkMidiMapping();
+      int guitarBendChannel(int source, int lane);
       bool exportMidiMapping()                 { return !isSimpleMidiMaping; }
       int getNextFreeMidiMapping(int p = -1, int ch = -1);
       int getNextFreeDrumMidiMapping();

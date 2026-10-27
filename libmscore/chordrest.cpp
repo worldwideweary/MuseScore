@@ -256,7 +256,7 @@ bool ChordRest::readProperties(XmlReader& e)
                   bm = Beam::Mode(val.toInt());
             _beamMode = Beam::Mode(bm);
             }
-      else if (tag == "Articulation" || tag == "Ornament") { // + 4.x compat
+      else if (tag == "Articulation" || tag == "Ornament" || tag == "Tapping") { // + 4.x compat
             Articulation* atr = new Articulation(score());
             atr->setTrack(track());
             atr->read(e);
@@ -319,6 +319,7 @@ void ChordRest::readAddConnector(ConnectorInfoReader* info, bool pasteMode)
       {
       const ElementType type = info->type();
       switch (type) {
+            case ElementType::HAMMER_ON_PULL_OFF:
             case ElementType::SLUR:
                   {
                   Spanner* spanner = toSpanner(info->connector());

@@ -229,6 +229,8 @@
     <Staff id="1">
       <VBox>
         <height>10</height>
+        <paddingToNotationAbove>2</paddingToNotationAbove>
+        <paddingToNotationBelow>2</paddingToNotationBelow>
         <Text>
           <style>Title</style>
           <text><font size="22"/>Test Part Names</text>

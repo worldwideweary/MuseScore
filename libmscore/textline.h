@@ -44,7 +44,7 @@ class TextLineSegment final : public TextLineBaseSegment {
 //   @@ TextLine
 //---------------------------------------------------------
 
-class TextLine final : public TextLineBase {
+class TextLine : public TextLineBase {
 
       Sid getTextLinePos(bool above) const;
       Sid getPropertyStyle(Pid) const override;

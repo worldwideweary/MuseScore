@@ -1333,6 +1333,19 @@ static Fraction fraction(const XmlWriter& xml, const Element* current, const Fra
 bool Spanner::readProperties(XmlReader& e)
       {
       const QStringRef tag(e.name());
+      if (tag == "startElement" || tag == "endElement") {
+            const bool start = tag == "startElement";
+            e.setSpannerEidAnchor(this, e.readElementText(), start);
+            return true;
+            }
+      if (tag == "track2") {
+            setTrack2(e.readInt() + e.trackOffset());
+            return true;
+            }
+      if (tag == "startTick") {
+            setTick(e.readFraction());
+            return true;
+            }
       if (e.pasteMode()) {
             if (tag == "ticks_f") {
                   setTicks(e.readFraction());

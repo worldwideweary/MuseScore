@@ -124,7 +124,11 @@ class FretUndoData {
 //   Note that, while strings are zero-indexed, frets are one-indexed
 //---------------------------------------------------------
 
+class ChangeLegendFretPattern;
+
 class FretDiagram final : public Element {
+      friend class ChangeLegendFretPattern;
+      void updateLegendPatterns();
       int _strings       { 6  };
       int _frets         { 4  };
       int _fretOffset    { 0  };
@@ -174,6 +178,9 @@ class FretDiagram final : public Element {
       ElementType type() const override { return ElementType::FRET_DIAGRAM; }
       void layoutHorizontal();
       void layout() override;
+      void triggerLayout() const override;
+      using Element::undoChangeProperty;
+      void undoChangeProperty(Pid, const QVariant&, PropertyFlags) override;
       void calculateBoundingRect();
       void write(XmlWriter& xml) const override;
       void writeNew(XmlWriter& xml) const;

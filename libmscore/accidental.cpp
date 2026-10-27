@@ -12,6 +12,7 @@
 
 #include "accidental.h"
 #include "note.h"
+#include "chord.h"
 #include "symbol.h"
 #include "sym.h"
 #include "score.h"
@@ -354,6 +355,35 @@ void Accidental::setSubtype(const QString& tag)
 //   layout
 //---------------------------------------------------------
 
+// The note/group pair already encloses this accidental. Keep the stored
+// accidental bracket property, but suppress its nested pair as Studio does.
+bool Accidental::parentNoteHasParentheses() const
+      {
+      const Note* n = note();
+      if (!n || !n->chord())
+            return false;
+      int index = 0;
+      for (const Note* member : n->chord()->notes()) {
+            if (member == n)
+                  break;
+            ++index;
+            }
+      for (const Note* owner : n->chord()->notes()) {
+            for (const Element* child : owner->el()) {
+                  if (!child->isSymbol() || !child->visible() || !score()->tagIsValid(child->tag()))
+                        continue;
+                  const Symbol* symbol = toSymbol(child);
+                  if (symbol->sym() != SymId::noteheadParenthesisLeft
+                        && symbol->sym() != SymId::noteheadParenthesisRight)
+                        continue;
+                  if ((owner == n && symbol->parenthesisNotes().isEmpty())
+                        || symbol->parenthesisNotes().contains(index))
+                        return true;
+                  }
+            }
+      return false;
+      }
+
 void Accidental::layout()
       {
       el.clear();
@@ -391,7 +421,7 @@ void Accidental::layoutSingleGlyphAccidental()
       QRectF r;
 
       SymId s = symbol();
-      if (_bracket == AccidentalBracket::PARENTHESIS) {
+      if (_bracket == AccidentalBracket::PARENTHESIS && !parentNoteHasParentheses()) {
             switch (_accidentalType) {
                   case AccidentalType::FLAT2:
                         s = SymId::accidentalDoubleFlatParens;
@@ -431,7 +461,7 @@ void Accidental::layoutMultiGlyphAccidental()
       qreal x = 0.0;
 
       // should always be true
-      if (_bracket != AccidentalBracket::NONE) {
+      if (_bracket != AccidentalBracket::NONE && !parentNoteHasParentheses()) {
             SymId id = SymId::noSym;
             switch (_bracket) {
                   case AccidentalBracket::PARENTHESIS:
@@ -458,7 +488,7 @@ void Accidental::layoutMultiGlyphAccidental()
       r |= symBbox(s).translated(x, 0.0);
 
       // should always be true
-      if (_bracket != AccidentalBracket::NONE) {
+      if (_bracket != AccidentalBracket::NONE && !parentNoteHasParentheses()) {
             x += symAdvance(s) + margin;
             SymId id = SymId::noSym;
             switch (_bracket) {

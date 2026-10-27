@@ -51,6 +51,8 @@ bool LineSegment::readProperties(XmlReader& e)
       else if (tag == "off2") {
             setUserOff2(e.readPoint() * score()->spatium());
             }
+      else if (tag == "bendVertexOffset" && type() == ElementType::GUITAR_BEND_SEGMENT)
+            readProperty(e, Pid::BEND_VERTEX_OFF);
       else if (!SpannerSegment::readProperties(e)) {
             e.unknown();
             return false;
@@ -1247,7 +1249,9 @@ void SLine::writeProperties(XmlWriter& xml) const
       //
       bool modified = false;
       for (const SpannerSegment* seg : spannerSegments()) {
-            if (!seg->autoplace() || !seg->visible() ||
+            if ((seg->type() == ElementType::GUITAR_BEND_SEGMENT
+                  && (!seg->getProperty(Pid::BEND_VERTEX_OFF).toPointF().isNull() || !seg->userOff2().isNull()))
+               || !seg->autoplace() || !seg->visible() ||
                (seg->propertyFlags(Pid::MIN_DISTANCE) == PropertyFlags::UNSTYLED || seg->getProperty(Pid::MIN_DISTANCE) != seg->propertyDefault(Pid::MIN_DISTANCE)) ||
                (!seg->isStyled(Pid::OFFSET) && (!seg->offset().isNull() || !seg->userOff2().isNull()))) {
                   modified = true;
@@ -1272,6 +1276,8 @@ void SLine::writeProperties(XmlWriter& xml) const
             xml.tag("offset", seg->offset() / _spatium);
             xml.tag("off2", seg->userOff2() / _spatium);
             seg->writeProperty(xml, Pid::MIN_DISTANCE);
+            if (seg->type() == ElementType::GUITAR_BEND_SEGMENT)
+                  seg->writeProperty(xml, Pid::BEND_VERTEX_OFF);
             seg->Element::writeProperties(xml);
             xml.etag();
             }
@@ -1293,7 +1299,7 @@ bool SLine::readProperties(XmlReader& e)
       else if (tag == "tick")             // obsolete
             setTick(Fraction::fromTicks(e.readInt()));
       else if (tag == "ticks")
-            setTicks(Fraction::fromTicks(e.readInt()));
+            setTicks(score()->mscVersion() >= 500 ? e.readFraction() : Fraction::fromTicks(e.readInt()));
       else if (tag == "Segment") {
             LineSegment* ls = createLineSegment();
             ls->setTrack(track()); // needed in read to get the right staff mag
