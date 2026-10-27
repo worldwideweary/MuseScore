@@ -13272,53 +13272,47 @@ huts egin du: %2</translation>
 <context>
     <name>Ms::InspectorChordBracket</name>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="16"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="22"/>
         <source>Chord bracket</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="24"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="32"/>
         <source>Both</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="25"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="33"/>
         <source>Top (left hand)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="26"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="34"/>
         <source>Bottom (right hand)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="31"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="39"/>
         <source> sp</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="33"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="41"/>
         <source>Right side</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="36"/>
-        <source>Number of voices spanned, including the anchor voice.
-For example, 5 reaches the same voice on the next staff.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="49"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="58"/>
         <source>Hooks:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="50"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="59"/>
         <source>Hook length:</source>
         <translation type="unfinished">Kakoen luzera:</translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="51"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="60"/>
         <source>Placement:</source>
         <translation type="unfinished">Kokapena:</translation>
     </message>
@@ -15306,17 +15300,17 @@ gaitu behar duzu</translation>
 <context>
     <name>Ms::PaletteElementEditor</name>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="59"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="62"/>
         <source>Create Key Signature</source>
         <translation>Armadura sortu</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="61"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="64"/>
         <source>Create Time Signature</source>
         <translation>Konpas neurria sortu</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="76"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="79"/>
         <source>The palette was hidden or changed</source>
         <translation>Paleta ezkutatu edo aldatu da</translation>
     </message>
@@ -15337,12 +15331,12 @@ gaitu behar duzu</translation>
 <context>
     <name>Ms::PaletteWorkspace</name>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="843"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="909"/>
         <source>Do you want to permanently delete this custom palette?</source>
         <translation>Paleta pertsonalizatu hau betirako ezabatu nahi duzu?</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="870"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="936"/>
         <source>Do you want to restore this palette to its default state? All changes to this palette will be lost.</source>
         <translation>Paleta hau lehenetsira berrezarri nahi duzu? Paletari egindako aldaketa guztiak galduko dira.</translation>
     </message>
@@ -17429,42 +17423,42 @@ Ibilaldi horiek ikusi nahiko zenituzke?</translation>
 <context>
     <name>Ms::UserPaletteController</name>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="314"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="317"/>
         <source>Delete permanently</source>
         <translation>Betiko ezabatu</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="315"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="318"/>
         <source>Hide</source>
         <translation>Ezkutatu</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="361"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="364"/>
         <source>Do you want to hide this custom palette cell or permanently delete it?</source>
         <translation>Paleta pertsonalizatu honetako gelaxka hau ezkutatu edo betiko ezabatu nahi duzu?</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="361"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="364"/>
         <source>Do you want to hide these custom palette cells or permanently delete them?</source>
         <translation>Paleta pertsonalizatu honetako gelaxka hauek ezkutatu edo betiko ezabatu nahi dituzu?</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="370"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="373"/>
         <source>Do you want to permanently delete this custom palette cell?</source>
         <translation>Paleta gelaxka pertsonalizatu hau behin betiko ezabatu nahi duzu?</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="370"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="373"/>
         <source>Do you want to permanently delete these custom palette cells?</source>
         <translation>Paleta gelaxka pertsonalizatu hauek behin betiko ezabatu nahi duzu?</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="390"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="393"/>
         <source>Do you want to hide this custom palette or permanently delete it?</source>
         <translation>Paleta pertsonalizatu hau ezkutatu edo betiko ezabatu nahi duzu?</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="390"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="393"/>
         <source>Do you want to hide these custom palettes or permanently delete them?</source>
         <translation>Paleta pertsonalizatu hauek ezkutatu edo betiko ezabatu nahi dituzu?</translation>
     </message>
@@ -17520,7 +17514,7 @@ Ibilaldi horiek ikusi nahiko zenituzke?</translation>
         <translation>Aurreratua editatua</translation>
     </message>
     <message>
-        <location filename="../../mscore/workspace.cpp" line="1312"/>
+        <location filename="../../mscore/workspace.cpp" line="1314"/>
         <source>%1 edited</source>
         <extracomment>Name of the edited read-only workspace, %1 is replaced with the old workspace name</extracomment>
         <translation>%1 editatua</translation>

@@ -3923,7 +3923,7 @@ space unit</extracomment>
     <message>
         <location filename="../../mscore/editstyle.ui" line="4228"/>
         <source>Reset &apos;Note left margin&apos; value</source>
-        <translation>&apos;音符の左余白&apos; の値をリセット&#x3000;</translation>
+        <translation>&apos;音符の左余白&apos; の値をリセット　</translation>
     </message>
     <message>
         <location filename="../../mscore/editstyle.ui" line="4837"/>
@@ -9839,7 +9839,7 @@ time and key signatures</source>
     <message>
         <location filename="../../mscore/inspector/inspector_tbox.ui" line="340"/>
         <source>Reset &apos;Left margin&apos; value</source>
-        <translation>&apos;左余白&apos; の値をリセット&#x3000;</translation>
+        <translation>&apos;左余白&apos; の値をリセット　</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspector_tbox.ui" line="353"/>
@@ -9849,12 +9849,12 @@ time and key signatures</source>
     <message>
         <location filename="../../mscore/inspector/inspector_tbox.ui" line="366"/>
         <source>Reset &apos;Top margin&apos; value</source>
-        <translation>&apos;上余白&apos; の値をリセット&#x3000;</translation>
+        <translation>&apos;上余白&apos; の値をリセット　</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspector_tbox.ui" line="379"/>
         <source>Reset &apos;Bottom margin&apos; value</source>
-        <translation>&apos;下余白&apos; の値をリセット&#x3000;</translation>
+        <translation>&apos;下余白&apos; の値をリセット　</translation>
     </message>
 </context>
 <context>
@@ -10851,7 +10851,7 @@ time and key signatures</source>
     <message>
         <location filename="../../mscore/inspector/inspector_vbox.ui" line="227"/>
         <source>Reset &apos;Left margin&apos; value</source>
-        <translation>&apos;左余白&apos; の値をリセット&#x3000;</translation>
+        <translation>&apos;左余白&apos; の値をリセット　</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspector_vbox.ui" line="278"/>
@@ -10861,7 +10861,7 @@ time and key signatures</source>
     <message>
         <location filename="../../mscore/inspector/inspector_vbox.ui" line="297"/>
         <source>Reset &apos;Bottom margin&apos; value</source>
-        <translation>&apos;下余白&apos; の値をリセット&#x3000;</translation>
+        <translation>&apos;下余白&apos; の値をリセット　</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspector_vbox.ui" line="310"/>
@@ -10907,7 +10907,7 @@ time and key signatures</source>
     <message>
         <location filename="../../mscore/inspector/inspector_vbox.ui" line="384"/>
         <source>Reset &apos;Top margin&apos; value</source>
-        <translation>&apos;上余白&apos; の値をリセット&#x3000;</translation>
+        <translation>&apos;上余白&apos; の値をリセット　</translation>
     </message>
     <message>
         <location filename="../../mscore/inspector/inspector_vbox.ui" line="397"/>
@@ -13271,53 +13271,47 @@ failed: %2</source>
 <context>
     <name>Ms::InspectorChordBracket</name>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="16"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="22"/>
         <source>Chord bracket</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="24"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="32"/>
         <source>Both</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="25"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="33"/>
         <source>Top (left hand)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="26"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="34"/>
         <source>Bottom (right hand)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="31"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="39"/>
         <source> sp</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="33"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="41"/>
         <source>Right side</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="36"/>
-        <source>Number of voices spanned, including the anchor voice.
-For example, 5 reaches the same voice on the next staff.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="49"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="58"/>
         <source>Hooks:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="50"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="59"/>
         <source>Hook length:</source>
         <translation type="unfinished">フックの長さ:</translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="51"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="60"/>
         <source>Placement:</source>
         <translation type="unfinished">配置:</translation>
     </message>
@@ -15301,17 +15295,17 @@ connection enabled</source>
 <context>
     <name>Ms::PaletteElementEditor</name>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="59"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="62"/>
         <source>Create Key Signature</source>
         <translation>調号作成</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="61"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="64"/>
         <source>Create Time Signature</source>
         <translation>拍子記号を作成</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="76"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="79"/>
         <source>The palette was hidden or changed</source>
         <translation>パレットは非表示または変更されました</translation>
     </message>
@@ -15332,12 +15326,12 @@ connection enabled</source>
 <context>
     <name>Ms::PaletteWorkspace</name>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="843"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="909"/>
         <source>Do you want to permanently delete this custom palette?</source>
         <translation>このカスタムパレットを完全に削除しますか？</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="870"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="936"/>
         <source>Do you want to restore this palette to its default state? All changes to this palette will be lost.</source>
         <translation>このパレットを初期設定に戻しますか？変更した内容は全て失われます。</translation>
     </message>
@@ -16708,7 +16702,7 @@ failed: %2</source>
     <message>
         <location filename="../../mscore/fotomode.cpp" line="496"/>
         <source>Scalable Vector Graphics</source>
-        <translation>SVG形式&#x3000;</translation>
+        <translation>SVG形式　</translation>
     </message>
     <message>
         <location filename="../../mscore/fotomode.cpp" line="525"/>
@@ -17427,44 +17421,44 @@ Please select a measure and try again</source>
 <context>
     <name>Ms::UserPaletteController</name>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="314"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="317"/>
         <source>Delete permanently</source>
         <translation>削除</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="315"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="318"/>
         <source>Hide</source>
         <translation>隠す</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="361"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="364"/>
         <source>Do you want to hide this custom palette cell or permanently delete it?</source>
         <translation>このカスタムパレットセルを隠しますか？
 それとも完全に削除しますか？</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="361"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="364"/>
         <source>Do you want to hide these custom palette cells or permanently delete them?</source>
         <translation>カスタムパレットセルを非表示にしますか、それとも完全に削除しますか？</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="370"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="373"/>
         <source>Do you want to permanently delete this custom palette cell?</source>
         <translation>このカスタムパレットのセルを完全に削除しますか？</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="370"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="373"/>
         <source>Do you want to permanently delete these custom palette cells?</source>
         <translation>これらのカスタムパレットのセルを完全に削除しますか？</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="390"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="393"/>
         <source>Do you want to hide this custom palette or permanently delete it?</source>
         <translation>このカスタムパレットを隠しますか？
 または完全に削除しますか？</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="390"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="393"/>
         <source>Do you want to hide these custom palettes or permanently delete them?</source>
         <translation>カスタムパレットを非表示にしますか、それとも完全に削除しますか？</translation>
     </message>
@@ -17520,7 +17514,7 @@ Please select a measure and try again</source>
         <translation>アドバンス 編集済み</translation>
     </message>
     <message>
-        <location filename="../../mscore/workspace.cpp" line="1312"/>
+        <location filename="../../mscore/workspace.cpp" line="1314"/>
         <source>%1 edited</source>
         <extracomment>Name of the edited read-only workspace, %1 is replaced with the old workspace name</extracomment>
         <translation>%1 編集済み</translation>
@@ -21399,17 +21393,17 @@ failed: %2</source>
     <message>
         <location filename="../../libmscore/stafftype.cpp" line="1353"/>
         <source>Perc. 1 line</source>
-        <translation>パーカッション&#x3000;1線譜</translation>
+        <translation>パーカッション　1線譜</translation>
     </message>
     <message>
         <location filename="../../libmscore/stafftype.cpp" line="1354"/>
         <source>Perc. 3 lines</source>
-        <translation>パーカッション&#x3000;3線譜</translation>
+        <translation>パーカッション　3線譜</translation>
     </message>
     <message>
         <location filename="../../libmscore/stafftype.cpp" line="1355"/>
         <source>Perc. 5 lines</source>
-        <translation>パーカッション&#x3000;5線譜</translation>
+        <translation>パーカッション　5線譜</translation>
     </message>
     <message>
         <location filename="../../libmscore/stafftype.cpp" line="1360"/>
@@ -24220,7 +24214,7 @@ Note: &quot;Ctrl+Shift+1&quot; is one key combination.</source>
     <message>
         <location filename="../../mscore/timedialog.ui" line="278"/>
         <source>Add time signature to master palette</source>
-        <translation>マスターパレットに拍子記号を追加&#x3000;</translation>
+        <translation>マスターパレットに拍子記号を追加　</translation>
     </message>
     <message>
         <location filename="../../mscore/timedialog.ui" line="281"/>
@@ -34276,7 +34270,7 @@ This score already has part scores. Changing local time signatures while part sc
     <message>
         <location filename="../../libmscore/sym.cpp" line="3522"/>
         <source>Sharp sharp</source>
-        <translation>シャープ&#x3000;シャープ</translation>
+        <translation>シャープ　シャープ</translation>
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3523"/>

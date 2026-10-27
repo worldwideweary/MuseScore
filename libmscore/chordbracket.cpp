@@ -76,7 +76,7 @@ void ChordBracket::write(XmlWriter& xml) const
             return;
       xml.stag(this);
       Element::writeProperties(xml);
-      xml.tag("bracketHookLen", _hookLength.val());
+      writeProperty(xml, Pid::BRACKET_HOOK_LEN);
       writeProperty(xml, Pid::BRACKET_HOOK_POS, true);
       writeProperty(xml, Pid::BRACKET_RIGHT_SIDE, true);
       if (!qFuzzyIsNull(userLen1()))

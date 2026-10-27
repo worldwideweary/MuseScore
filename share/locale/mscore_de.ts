@@ -13283,54 +13283,47 @@ fehlgeschlagen: %2</translation>
 <context>
     <name>Ms::InspectorChordBracket</name>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="16"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="22"/>
         <source>Chord bracket</source>
         <translation>Akkordklammer</translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="24"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="32"/>
         <source>Both</source>
         <translation>Beide</translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="25"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="33"/>
         <source>Top (left hand)</source>
         <translation>Oben (linke Hand)</translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="26"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="34"/>
         <source>Bottom (right hand)</source>
         <translation>Unten (reche Hand)</translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="31"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="39"/>
         <source> sp</source>
         <translation> sp</translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="33"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="41"/>
         <source>Right side</source>
         <translation>Rechte Seite</translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="36"/>
-        <source>Number of voices spanned, including the anchor voice.
-For example, 5 reaches the same voice on the next staff.</source>
-        <translation>Anzahl der umfassten Stimmen, einschließlich der Ankerstimme.
-Beispielsweise erreicht der Wert 5 dieselbe Stimme im nächsten Notensystem.</translation>
-    </message>
-    <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="49"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="58"/>
         <source>Hooks:</source>
         <translation>Haken:</translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="50"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="59"/>
         <source>Hook length:</source>
         <translation>Hakenlänge:</translation>
     </message>
     <message>
-        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="51"/>
+        <location filename="../../mscore/inspector/inspectorChordBracket.cpp" line="60"/>
         <source>Placement:</source>
         <translation>Platzierung:</translation>
     </message>
@@ -15317,17 +15310,17 @@ um sie zur Liste auf der rechten Seite hinzuzufügen:</translation>
 <context>
     <name>Ms::PaletteElementEditor</name>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="59"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="62"/>
         <source>Create Key Signature</source>
         <translation>Tonart erstellen</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="61"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="64"/>
         <source>Create Time Signature</source>
         <translation>Taktart erstellen</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="76"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="79"/>
         <source>The palette was hidden or changed</source>
         <translation>Die Palette wurde versteckt oder geändert</translation>
     </message>
@@ -15348,12 +15341,12 @@ um sie zur Liste auf der rechten Seite hinzuzufügen:</translation>
 <context>
     <name>Ms::PaletteWorkspace</name>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="843"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="909"/>
         <source>Do you want to permanently delete this custom palette?</source>
         <translation>Soll diese benutzerdefinierte Palette dauerhaft gelöscht werden?</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="870"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="936"/>
         <source>Do you want to restore this palette to its default state? All changes to this palette will be lost.</source>
         <translation>Soll diese Palette auf ihre Standardeinstellungen zurückgesetzt werden? Alle Änderungen an diese Palette gehen damit verloren.</translation>
     </message>
@@ -17447,42 +17440,42 @@ Möchten Sie jetzt damit beginnen ?</translation>
 <context>
     <name>Ms::UserPaletteController</name>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="314"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="317"/>
         <source>Delete permanently</source>
         <translation>Dauerhaft löschen</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="315"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="318"/>
         <source>Hide</source>
         <translation>Verstecken</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="361"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="364"/>
         <source>Do you want to hide this custom palette cell or permanently delete it?</source>
         <translation>Soll diese benutzerdefinierte Palettenzelle versteckt oder dauerhaft gelöscht werden?</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="361"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="364"/>
         <source>Do you want to hide these custom palette cells or permanently delete them?</source>
         <translation>Sollen diese benutzerdefinierten Palettenzellen versteckt oder dauerhaft gelöscht werden?</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="370"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="373"/>
         <source>Do you want to permanently delete this custom palette cell?</source>
         <translation>Soll diese benutzerdefinierte Palettenzelle dauerhaft gelöscht werden?</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="370"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="373"/>
         <source>Do you want to permanently delete these custom palette cells?</source>
         <translation>Sollen diese benutzerdefinierten Palettenzellen dauerhaft gelöscht werden?</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="390"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="393"/>
         <source>Do you want to hide this custom palette or permanently delete it?</source>
         <translation>Soll diese benutzerdefinierte Palette versteckt oder dauerhaft gelöscht werden?</translation>
     </message>
     <message>
-        <location filename="../../mscore/palette/paletteworkspace.cpp" line="390"/>
+        <location filename="../../mscore/palette/paletteworkspace.cpp" line="393"/>
         <source>Do you want to hide these custom palettes or permanently delete them?</source>
         <translation>Sollen diese benutzerdefinierten Paletten versteckt oder dauerhaft gelöscht werden?</translation>
     </message>
@@ -17538,7 +17531,7 @@ Möchten Sie jetzt damit beginnen ?</translation>
         <translation>Erweitert, bearbeitet</translation>
     </message>
     <message>
-        <location filename="../../mscore/workspace.cpp" line="1312"/>
+        <location filename="../../mscore/workspace.cpp" line="1314"/>
         <source>%1 edited</source>
         <extracomment>Name of the edited read-only workspace, %1 is replaced with the old workspace name</extracomment>
         <translation>%1, bearbeitet</translation>
