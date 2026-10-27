@@ -40,6 +40,7 @@
 #include "../../dom/bracket.h"
 #include "../../dom/breath.h"
 #include "../../dom/chord.h"
+#include "../../dom/chordbracket.h"
 #include "../../dom/chordline.h"
 #include "../../dom/chordlist.h"
 #include "../../dom/clef.h"
@@ -1744,6 +1745,32 @@ void TRead::read(Arpeggio* a, XmlReader& e, ReadContext& ctx)
     }
 }
 
+void TRead::read(ChordBracket* b, XmlReader& e, ReadContext& ctx)
+{
+    while (e.readNextStartElement()) {
+        const AsciiStringView tag(e.name());
+        if (readProperty(b, tag, e, ctx, Pid::BRACKET_HOOK_LEN)) {
+        } else if (readProperty(b, tag, e, ctx, Pid::BRACKET_HOOK_POS)) {
+        } else if (readProperty(b, tag, e, ctx, Pid::BRACKET_RIGHT_SIDE)) {
+        } else if (tag == "subtype") {
+            b->setArpeggioType(TConv::fromXml(e.readAsciiText(), ArpeggioType::BRACKET));
+        } else if (tag == "userLen1") {
+            b->setUserLen1(e.readDouble() * b->spatium());
+        } else if (tag == "userLen2") {
+            b->setUserLen2(e.readDouble() * b->spatium());
+        } else if (tag == "span") {
+            // Evolution's chord brackets count tracks, unlike 3.x arpeggios.
+            b->setSpan(e.readInt());
+        } else if (tag == "play") {
+            b->setPlayArpeggio(e.readBool());
+        } else if (tag == "timeStretch") {
+            b->setStretch(e.readDouble());
+        } else if (!readItemProperties(b, e, ctx)) {
+            e.unknown();
+        }
+    }
+}
+
 void TRead::read(Ornament* o, XmlReader& xml, ReadContext& ctx)
 {
     while (xml.readNextStartElement()) {
@@ -2372,6 +2399,12 @@ bool TRead::readProperties(Chord* ch, XmlReader& e, ReadContext& ctx)
         TRead::read(arpeggio, e, ctx);
         arpeggio->setParent(ch);
         ch->setArpeggio(arpeggio);
+    } else if (tag == "ChordBracket") {
+        ChordBracket* bracket = Factory::createChordBracket(ch);
+        bracket->setTrack(ch->track());
+        TRead::read(bracket, e, ctx);
+        bracket->setParent(ch);
+        ch->add(bracket);
     } else if (tag == "Tremolo") {
         TremoloCompat tcompat;
         tcompat.parent = ch;

@@ -46,6 +46,7 @@ class Accidental;
 class MMRestRange;
 class ActionIcon;
 class Arpeggio;
+class ChordBracket;
 class Articulation;
 class Audio;
 class BagpipeEmbellishment;
@@ -187,6 +188,7 @@ public:
     static void read(MMRestRange* r, XmlReader& xml, ReadContext& ctx);
     static void read(ActionIcon* i, XmlReader& xml, ReadContext& ctx);
     static void read(Arpeggio* a, XmlReader& xml, ReadContext& ctx);
+    static void read(ChordBracket* b, XmlReader& xml, ReadContext& ctx);
     static void read(Articulation* a, XmlReader& xml, ReadContext& ctx);
     static void read(Audio* a, XmlReader& xml, ReadContext& ctx);
 
