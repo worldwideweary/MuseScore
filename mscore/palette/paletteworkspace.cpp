@@ -26,7 +26,10 @@
 #include "palettecelldialog.h"
 #include "palettewidget.h"
 #include "paletteworkspace.h"
+#include "libmscore/chordbracket.h"
 #include "timedialog.h"
+
+#include <QSignalBlocker>
 
 namespace Ms {
 
@@ -600,6 +603,69 @@ PaletteWorkspace::PaletteWorkspace(PaletteTreeModel* user, PaletteTreeModel* mas
 PaletteWorkspace::~PaletteWorkspace()
       {
       preferences.removeOnSetListener(preferencesListenerID);
+      }
+
+//---------------------------------------------------------
+//   ensureVisibleChordBrackets
+//   Add backported Chord Bracket palette items to an existing
+//   Lines palette
+//---------------------------------------------------------
+
+void PaletteWorkspace::ensureVisibleChordBrackets()
+      {
+      if (!userPalette || !masterPalette)
+            return;
+
+      auto linesIndex = [](PaletteTreeModel* model) {
+            for (int row = 0; row < model->rowCount(); ++row) {
+                  const QModelIndex index = model->index(row, 0);
+                  const PalettePanel* panel = model->findPalettePanel(index);
+                  if (panel && panel->type() == PalettePanel::Type::Line)
+                        return index;
+                  }
+            return QModelIndex();
+            };
+
+      const QModelIndex userLines = linesIndex(userPalette);
+      const QModelIndex masterLines = linesIndex(masterPalette);
+      if (!userLines.isValid() || !masterLines.isValid())
+            return;
+
+      // Loading built-in presets shouldn't be considered a "user-edit",
+      // so don't schedule a save while workspace is being loaded
+      const QSignalBlocker blockWorkspaceChanges(this);
+
+      for (int row = 0; row < masterPalette->rowCount(masterLines); ++row) {
+            const PaletteCellConstPtr source = masterPalette->findCell(masterPalette->index(row, 0, masterLines));
+            if (!source || !source->element || source->element->type() != ElementType::CHORD_BRACKET)
+                  continue;
+
+            const Direction hookPos = static_cast<const ChordBracket*>(source->element.get())->hookPos();
+            QModelIndex existing;
+            for (int userRow = 0; userRow < userPalette->rowCount(userLines); ++userRow) {
+                  const QModelIndex index = userPalette->index(userRow, 0, userLines);
+                  const PaletteCellConstPtr cell = userPalette->findCell(index);
+                  if (cell && cell->element && cell->element->type() == ElementType::CHORD_BRACKET
+                      && static_cast<const ChordBracket*>(cell->element.get())->hookPos() == hookPos) {
+                        existing = index;
+                        break;
+                        }
+                  }
+
+            if (existing.isValid()) {
+                  userPalette->setData(existing, true, PaletteTreeModel::VisibleRole);
+                  continue;
+                  }
+
+            QMimeData data;
+            data.setData(PaletteCell::mimeDataFormat, source->mimeData());
+            const int insertRow = userPalette->rowCount(userLines);
+            if (userPalette->dropMimeData(&data, Qt::CopyAction, insertRow, 0, userLines)) {
+                  const QModelIndex inserted = userPalette->index(insertRow, 0, userLines);
+                  userPalette->setData(inserted, false, PaletteTreeModel::CustomRole);
+                  userPalette->setData(inserted, true, PaletteTreeModel::VisibleRole);
+                  }
+            }
       }
 
 //---------------------------------------------------------

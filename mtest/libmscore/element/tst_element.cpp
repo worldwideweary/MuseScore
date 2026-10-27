@@ -113,11 +113,20 @@ void TestElement::testIds()
 
 void TestElement::testChordBracketRoundTrip()
       {
+      ChordBracket styled(score);
+      Element* styledElement = writeReadElement(&styled);
+      QVERIFY(styledElement && styledElement->isChordBracket());
+      ChordBracket* styledCopy = toChordBracket(styledElement);
+      QCOMPARE(styledCopy->hookLength().val(), score->styleS(Sid::chordBracketHookLen).val());
+      QCOMPARE(int(styledCopy->propertyFlags(Pid::BRACKET_HOOK_LEN)), int(PropertyFlags::STYLED));
+      delete styledCopy;
+
       for (Direction hooks : { Direction::AUTO, Direction::UP, Direction::DOWN }) {
             for (bool right : { false, true }) {
                   for (int span : { 1, 2, 5 }) {
                         ChordBracket bracket(score);
                         bracket.setProperty(Pid::BRACKET_HOOK_LEN, Spatium(1.2));
+                        bracket.setPropertyFlags(Pid::BRACKET_HOOK_LEN, PropertyFlags::UNSTYLED);
                         bracket.setProperty(Pid::BRACKET_HOOK_POS, QVariant::fromValue(hooks));
                         bracket.setProperty(Pid::BRACKET_RIGHT_SIDE, right);
                         bracket.setSpan(span);
@@ -127,6 +136,7 @@ void TestElement::testChordBracketRoundTrip()
                         QVERIFY(element && element->isChordBracket());
                         ChordBracket* copy = toChordBracket(element);
                         QCOMPARE(copy->hookLength().val(), 1.2);
+                        QCOMPARE(int(copy->propertyFlags(Pid::BRACKET_HOOK_LEN)), int(PropertyFlags::UNSTYLED));
                         QCOMPARE(int(copy->hookPos()), int(hooks));
                         QCOMPARE(copy->rightSide(), right);
                         QCOMPARE(copy->span(), span);

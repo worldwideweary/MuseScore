@@ -4176,10 +4176,11 @@ bool  MStyle::readProperties470(XmlReader& e, int mscVersion)
             e.skipCurrentElement();
       else if (tag == "displayCapoChords")                          // Mu4.7+ only, let's skip
             e.skipCurrentElement();
-      else if (tag == "chordBracketNoteDistance"                    // Mu4.7+ only, let's skip
-            || tag == "chordBracketLineWidth"                       // Mu4.7+ only, let's skip
-            || tag == "chordBracketHookLen")                        // Mu4.7+ only, let's skip
-            e.skipCurrentElement();
+      // backported:
+      // else if (tag == "chordBracketNoteDistance"                    // Mu4.7+ only, let's skip
+            // || tag == "chordBracketLineWidth"                       // Mu4.7+ only, let's skip
+            // || tag == "chordBracketHookLen")                        // Mu4.7+ only, let's skip
+            // e.skipCurrentElement();
       else if (tag == "keySigShowNaturalsChangingSharpsFlats")      // Mu4.7+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "systemTextLineLineSpacing")                  // Mu4.7+ only, let's skip
