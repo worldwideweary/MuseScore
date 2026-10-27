@@ -32,6 +32,8 @@ namespace mu::engraving {
 class XmlReader;
 class EngravingItem;
 class TextBase;
+class Tapping;
+class TappingHalfSlur;
 class TempoText;
 class Dynamic;
 class Expression;
@@ -70,6 +72,8 @@ class FiguredBass;
 class FiguredBassItem;
 class Fingering;
 
+class GuitarBend;
+class HammerOnPullOff;
 class Glissando;
 class GradualTempoChange;
 class Groups;
@@ -177,6 +181,8 @@ public:
     // types
 
     static void read(TextBase* t, XmlReader& xml, ReadContext& ctx);
+    static void read(Tapping* t, XmlReader& xml, ReadContext& ctx);
+    static void read(TappingHalfSlur* t, XmlReader& xml, ReadContext& ctx);
     static void read(TempoText* t, XmlReader& xml, ReadContext& ctx);
     static void read(Dynamic* d, XmlReader& xml, ReadContext& ctx);
     static void read(SystemText* t, XmlReader& xml, ReadContext& ctx);
@@ -216,6 +222,8 @@ public:
     static void read(Fingering* f, XmlReader& xml, ReadContext& ctx);
     static void read(FretDiagram* d, XmlReader& xml, ReadContext& ctx);
 
+    static void read(GuitarBend* g, XmlReader& xml, ReadContext& ctx);
+    static void read(HammerOnPullOff* h, XmlReader& xml, ReadContext& ctx);
     static void read(Glissando* g, XmlReader& xml, ReadContext& ctx);
     static void read(GradualTempoChange* c, XmlReader& xml, ReadContext& ctx);
     static void read(Groups* g, XmlReader& xml, ReadContext& ctx);

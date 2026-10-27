@@ -250,6 +250,7 @@ void ConnectorInfoReader::readAddConnector(ChordRest* item, ConnectorInfoReader*
 {
     const ElementType type = info->type();
     switch (type) {
+    case ElementType::HAMMER_ON_PULL_OFF:
     case ElementType::SLUR:
     {
         Spanner* spanner = toSpanner(info->connector());
@@ -360,6 +361,7 @@ void ConnectorInfoReader::readAddConnector(Note* item, ConnectorInfoReader* info
     switch (type) {
     case ElementType::TIE:
     case ElementType::TEXTLINE:
+    case ElementType::GUITAR_BEND:
     case ElementType::GLISSANDO:
     {
         Spanner* sp = toSpanner(info->connector());
@@ -389,7 +391,7 @@ void ConnectorInfoReader::readAddConnector(Note* item, ConnectorInfoReader* info
                 item->setTieBack(toTie(sp));
             } else {
                 bool isNoteAnchoredTextLine = sp->isNoteLine() && toNoteLine(sp)->enforceMinLength();
-                if ((sp->isGlissando() || isNoteAnchoredTextLine) && item->explicitParent() && item->explicitParent()->isChord()) {
+                if ((sp->isGlissando() || sp->isGuitarBend() || isNoteAnchoredTextLine) && item->explicitParent() && item->explicitParent()->isChord()) {
                     toChord(item->explicitParent())->setEndsNoteAnchoredLine(true);
                 }
                 item->addSpannerBack(sp);

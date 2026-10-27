@@ -231,10 +231,15 @@ void EngravingCompat::adjustVBoxDistances(MasterScore* masterScore)
             MeasureBase* nextmb = mb->next();
             if (mb->isVBoxBase()) {
                 VBox* vbox = static_cast<VBox*>(mb);
-                vbox->setProperty(Pid::PADDING_TO_NOTATION_ABOVE, Spatium()); // Because pre-4.6 these didn't exist
-                vbox->setPropertyFlags(Pid::PADDING_TO_NOTATION_ABOVE, PropertyFlags::UNSTYLED);
-                vbox->setProperty(Pid::PADDING_TO_NOTATION_BELOW, Spatium());
-                vbox->setPropertyFlags(Pid::PADDING_TO_NOTATION_BELOW, PropertyFlags::UNSTYLED);
+                for (Pid pid : { Pid::PADDING_TO_NOTATION_ABOVE, Pid::PADDING_TO_NOTATION_BELOW }) {
+                    // 37E can explicitly store these newer properties in a
+                    // legacy score. Only migrate a side absent from the file;
+                    // the reader marks explicitly read values UNSTYLED.
+                    if (vbox->propertyFlags(pid) == PropertyFlags::STYLED) {
+                        vbox->setProperty(pid, Spatium());
+                        vbox->setPropertyFlags(pid, PropertyFlags::UNSTYLED);
+                    }
+                }
                 if (nextmb && nextmb->isVBoxBase()) {
                     VBox* first = static_cast<VBox*>(mb);
                     VBox* second = static_cast<VBox*>(nextmb);

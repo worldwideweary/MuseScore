@@ -21,6 +21,8 @@
  */
 #include "tread.h"
 
+#include <memory>
+
 #include "../../types/typesconv.h"
 #include "../../types/symnames.h"
 #include "../../infrastructure/rtti.h"
@@ -54,6 +56,8 @@
 #include "../../dom/fingering.h"
 #include "../../dom/fret.h"
 #include "../../dom/glissando.h"
+#include "../../dom/guitarbend.h"
+#include "../../dom/hammeronpulloff.h"
 #include "../../dom/gradualtempochange.h"
 #include "../../dom/groups.h"
 #include "../../dom/hairpin.h"
@@ -81,6 +85,7 @@
 #include "../../dom/mmrestrange.h"
 #include "../../dom/mscore.h"
 #include "../../dom/note.h"
+#include "../../dom/parenthesis.h"
 #include "../../dom/notedot.h"
 #include "../../dom/noteline.h"
 #include "../../dom/ornament.h"
@@ -112,6 +117,7 @@
 #include "../../dom/systemdivider.h"
 #include "../../dom/systemtext.h"
 #include "../../dom/tempotext.h"
+#include "../../dom/tapping.h"
 #include "../../dom/text.h"
 #include "../../dom/textline.h"
 #include "../../dom/textlinebase.h"
@@ -139,12 +145,12 @@ using namespace muse::draw;
 using namespace mu::engraving;
 using namespace mu::engraving::read400;
 
-using ReadTypes = rtti::TypeList<Accidental, ActionIcon, Ambitus, Arpeggio, Articulation,
+using ReadTypes = rtti::TypeList<Accidental, ActionIcon, Ambitus, Arpeggio, Tapping, Articulation,
                                  BagpipeEmbellishment, BarLine, Beam, Bend,  HBox, VBox, FBox, TBox, Bracket, Breath,
                                  Chord, ChordLine, Clef,
                                  Dynamic, Expression,
                                  Fermata, FiguredBass, Fingering, FretDiagram,
-                                 Glissando, GradualTempoChange,
+                                 Glissando, GradualTempoChange, GuitarBend, HammerOnPullOff,
                                  Hairpin, Harmony, HarmonicMark, HarpPedalDiagram, Hook,
                                  Image, InstrumentChange,
                                  Jump,
@@ -155,7 +161,7 @@ using ReadTypes = rtti::TypeList<Accidental, ActionIcon, Ambitus, Arpeggio, Arti
                                  Page, PalmMute, Pedal, PlayTechAnnotation,
                                  Rasgueado, RehearsalMark, Rest,
                                  Ornament, Ottava,
-                                 Segment, Slur, Spacer, StaffState, StaffText, StaffTypeChange, Stem, StemSlash, Sticking,
+                                 Segment, TappingHalfSlur, Slur, Spacer, StaffState, StaffText, StaffTypeChange, Stem, StemSlash, Sticking,
                                  Symbol, FSymbol, System, SystemDivider, SystemText,
                                  TempoText, Text, TextLine, Tie, TimeSig, TremoloBar, Trill, Tuplet,
                                  Vibrato, Volta,
@@ -174,6 +180,39 @@ public:
         return false;
     }
 };
+
+// Unofficial 3.7-Evolution guitar extension. Keep parsing in the 3.x
+// context so note locations, linked elements and style units remain 3.x.
+void TRead::read(GuitarBend* bend, XmlReader& xml, ReadContext& ctx)
+{
+    bend->eraseSpannerSegments();
+    while (xml.readNextStartElement()) {
+        const AsciiStringView tag = xml.name();
+        if (tag == "guitarBendType") {
+            int type = xml.readInt();
+            if (type >= 0 && type <= 7) {
+                bend->setBendType(static_cast<GuitarBendType>(type));
+            }
+        } else if (tag == "GuitarBendHold") {
+            GuitarBendHold* hold = new GuitarBendHold(bend);
+            read(static_cast<SLine*>(hold), xml, ctx);
+            bend->setHoldLine(hold);
+        } else if (readProperty(bend, tag, xml, ctx, Pid::DIRECTION)
+                   || readProperty(bend, tag, xml, ctx, Pid::BEND_SHOW_HOLD_LINE)
+                   || readProperty(bend, tag, xml, ctx, Pid::BEND_START_TIME_FACTOR)
+                   || readProperty(bend, tag, xml, ctx, Pid::BEND_END_TIME_FACTOR)
+                   || readProperty(bend, tag, xml, ctx, Pid::BEND_TARGET_TIME_FACTOR)
+                   || readProperty(bend, tag, xml, ctx, Pid::GUITAR_BEND_AMOUNT)) {
+        } else if (!readProperties(static_cast<SLine*>(bend), xml, ctx)) {
+            xml.unknown();
+        }
+    }
+}
+
+void TRead::read(HammerOnPullOff* hopo, XmlReader& xml, ReadContext& ctx)
+{
+    read(static_cast<Slur*>(hopo), xml, ctx);
+}
 
 void TRead::readItem(EngravingItem* item, XmlReader& xml, ReadContext& ctx)
 {
@@ -286,6 +325,8 @@ PropertyValue TRead::readPropertyValue(Pid id, XmlReader& e, ReadContext& ctx)
         return PropertyValue(TConv::fromXml(e.readAsciiText(), PlayingTechniqueType::Natural));
     case P_TYPE::TEMPOCHANGE_TYPE:
         return PropertyValue(TConv::fromXml(e.readAsciiText(), GradualTempoChangeType::Undefined));
+    case P_TYPE::PARENTHESES_MODE:
+        return PropertyValue(TConv::fromXml(e.readAsciiText(), ParenthesesMode::NONE));
     default:
         ASSERT_X("unhandled PID type");
         break;
@@ -1878,6 +1919,38 @@ bool TRead::readProperties(Articulation* a, XmlReader& xml, ReadContext& ctx)
     return true;
 }
 
+void TRead::read(Tapping* t, XmlReader& xml, ReadContext& ctx)
+{
+    while (xml.readNextStartElement()) {
+        AsciiStringView tag = xml.name();
+        if (tag == "hand") {
+            t->setHand(TConv::fromXml(xml.readAsciiText(), TappingHand::INVALID));
+        } else if (tag == TConv::toXml(ElementType::TAPPING_HALF_SLUR)) {
+            TappingHalfSlur* tappingHalfSlur = new TappingHalfSlur(t);
+            read(tappingHalfSlur, xml, ctx);
+            tappingHalfSlur->setParent(t);
+            if (tappingHalfSlur->isHalfSlurAbove()) {
+                t->setHalfSlurAbove(tappingHalfSlur);
+            } else {
+                t->setHalfSlurBelow(tappingHalfSlur);
+            }
+        } else if (!readProperties(toArticulation(t), xml, ctx)) {
+            xml.unknown();
+        }
+    }
+}
+
+void TRead::read(TappingHalfSlur* t, XmlReader& xml, ReadContext& ctx)
+{
+    while (xml.readNextStartElement()) {
+        if (xml.name() == "isHalfSlurAbove") {
+            t->setIsHalfSlurAbove(xml.readBool());
+        } else if (!readProperties(toSlur(t), xml, ctx)) {
+            xml.unknown();
+        }
+    }
+}
+
 void TRead::read(Audio* a, XmlReader& e, ReadContext&)
 {
     while (e.readNextStartElement()) {
@@ -2006,7 +2079,19 @@ void TRead::read(VBox* b, XmlReader& xml, ReadContext& ctx)
 
 void TRead::read(FBox* b, XmlReader& xml, ReadContext& ctx)
 {
-    TRead::read(static_cast<Box*>(b), xml, ctx);
+    while (xml.readNextStartElement()) {
+        const AsciiStringView tag(xml.name());
+        if (readProperty(b, tag, xml, ctx, Pid::FRET_FRAME_TEXT_SCALE)) {
+        } else if (readProperty(b, tag, xml, ctx, Pid::FRET_FRAME_DIAGRAM_SCALE)) {
+        } else if (readProperty(b, tag, xml, ctx, Pid::FRET_FRAME_COLUMN_GAP)) {
+        } else if (readProperty(b, tag, xml, ctx, Pid::FRET_FRAME_ROW_GAP)) {
+        } else if (readProperty(b, tag, xml, ctx, Pid::FRET_FRAME_CHORDS_PER_ROW)) {
+        } else if (readProperty(b, tag, xml, ctx, Pid::FRET_FRAME_H_ALIGN)) {
+        } else if (TRead::readProperties(static_cast<Box*>(b), xml, ctx)) {
+        } else {
+            xml.unknown();
+        }
+    }
 }
 
 void TRead::read(TBox* b, XmlReader& e, ReadContext& ctx)
@@ -2033,7 +2118,9 @@ bool TRead::readBoxProperties(Box* b, XmlReader& e, ReadContext& ctx)
 bool TRead::readProperties(Box* b, XmlReader& e, ReadContext& ctx)
 {
     const AsciiStringView tag(e.name());
-    if (tag == "height") {
+    if (TRead::readProperty(b, tag, e, ctx, Pid::PADDING_TO_NOTATION_ABOVE)) {
+    } else if (TRead::readProperty(b, tag, e, ctx, Pid::PADDING_TO_NOTATION_BELOW)) {
+    } else if (tag == "height") {
         b->setBoxHeight(Spatium(e.readDouble()));
     } else if (tag == "width") {
         b->setBoxWidth(Spatium(e.readDouble()));
@@ -2322,6 +2409,85 @@ void TRead::read(FSymbol* sym, XmlReader& e, ReadContext& ctx)
     sym->setFont(font);
 }
 
+// 37E writes Studio's explicit groups in a legacy (3.02) document.
+// Keep the group local to this staff: TAB and notation may deliberately differ.
+static void readLegacyNoteParenGroup(Chord* ch, XmlReader& e, ReadContext& ctx)
+{
+    std::unique_ptr<Parenthesis> left(Factory::createParenthesis(ch));
+    std::unique_ptr<Parenthesis> right(Factory::createParenthesis(ch));
+    right->setDirection(DirectionH::RIGHT);
+    left->setTrack(ch->track());
+    right->setTrack(ch->track());
+    std::vector<Note*> notes;
+    while (e.readNextStartElement()) {
+        const AsciiStringView tag(e.name());
+        if (tag == "Parenthesis") {
+            std::unique_ptr<Parenthesis> p(Factory::createParenthesis(ch));
+            p->setTrack(ch->track());
+            while (e.readNextStartElement()) {
+                const AsciiStringView property(e.name());
+                if (TRead::readProperty(p.get(), property, e, ctx, Pid::HORIZONTAL_DIRECTION)) {
+                } else if (!TRead::readItemProperties(p.get(), e, ctx)) {
+                    e.unknown();
+                }
+            }
+            if (p->direction() == DirectionH::LEFT) {
+                left = std::move(p);
+            } else {
+                right = std::move(p);
+            }
+        } else if (tag == "Notes") {
+            while (e.readNextStartElement()) {
+                if (e.name() == "NoteIdx") {
+                    const int idx = e.readInt();
+                    if (idx >= 0 && size_t(idx) < ch->notes().size()) {
+                        Note* note = ch->notes().at(idx);
+                        if (std::find(notes.begin(), notes.end(), note) == notes.end()) {
+                            notes.push_back(note);
+                        }
+                    }
+                } else {
+                    e.unknown();
+                }
+            }
+        } else {
+            e.unknown();
+        }
+    }
+    if (notes.empty()) {
+        return;
+    }
+    // An explicit group supersedes fallback per-note Symbol parentheses.
+    // Work on a copy because removal changes the chord's group vector.
+    const auto oldGroups = ch->noteParentheses();
+    // Do not replace an earlier explicit multi-note group on malformed input.
+    for (const NoteParenthesisInfo* group : oldGroups) {
+        if (group->notes().size() <= 1) {
+            continue;
+        }
+        for (Note* note : group->notes()) {
+            if (std::find(notes.begin(), notes.end(), note) != notes.end()) {
+                return;
+            }
+        }
+    }
+    for (NoteParenthesisInfo* group : oldGroups) {
+        bool overlaps = false;
+        for (Note* note : group->notes()) {
+            overlaps |= std::find(notes.begin(), notes.end(), note) != notes.end();
+        }
+        if (overlaps) {
+            ch->removeNoteParenthesisInfo(group);
+            delete group;
+        }
+    }
+    // Construction sets an ownership parent, but parentItem() requires the
+    // explicit parent set by the native reader before layout.
+    left->setParent(ch);
+    right->setParent(ch);
+    ch->addNoteParenthesisInfo(new NoteParenthesisInfo(left.release(), right.release(), notes));
+}
+
 void TRead::read(Chord* ch, XmlReader& e, ReadContext& ctx)
 {
     while (e.readNextStartElement()) {
@@ -2352,6 +2518,13 @@ bool TRead::readProperties(Chord* ch, XmlReader& e, ReadContext& ctx)
         note->setParent(ch);
         TRead::read(note, e, ctx);
         ch->add(note);
+    } else if (tag == "NoteParenGroup") {
+        readLegacyNoteParenGroup(ch, e, ctx);
+    } else if (tag == "Tapping") {
+        Tapping* tapping = Factory::createTapping(ch);
+        tapping->setTrack(ch->track());
+        TRead::read(tapping, e, ctx);
+        ch->add(tapping);
     } else if (TRead::readProperties(toChordRest(ch), e, ctx)) {
     } else if (tag == "Stem") {
         Stem* s = Factory::createStem(ch);
@@ -2983,6 +3156,8 @@ bool TRead::readProperties(LineSegment* l, XmlReader& e, ReadContext& ctx)
         l->setSpannerSegmentType(SpannerSegmentType(e.readInt()));
     } else if (tag == "off2") {
         l->setUserOff2(e.readPoint() * l->style().spatium());
+    } else if (tag == "bendVertexOffset" && l->isGuitarBendSegment()) {
+        toGuitarBendSegment(l)->setVertexPointOff(e.readPoint() * l->style().spatium());
     } else if (!readItemProperties(l, e, ctx)) {
         return false;
     }
@@ -3144,6 +3319,16 @@ bool TRead::readProperties(Note* n, XmlReader& e, ReadContext& ctx)
         } else {
             n->setGhost(e.readInt());
         }
+    } else if (tag == "studioGhost") {
+        // 37E preserves Studio's ghost flag separately from MU3 dead notes.
+        n->setGhost(e.readBool());
+    } else if (tag == "studioParenthesesManaged") {
+        // The explicit NoteParenGroup supplies the drawing, not this marker.
+        e.skipCurrentElement();
+    } else if (tag == "overrideBendVisibilityRules") {
+        n->setOverrideBendVisibilityRules(e.readBool());
+    } else if (TRead::readProperty(n, tag, e, ctx, Pid::HAS_PARENTHESES)) {
+    } else if (TRead::readProperty(n, tag, e, ctx, Pid::HIDE_GENERATED_PARENTHESES)) {
     } else if (tag == "dead") {
         n->setDeadNote(e.readInt());
     } else if (tag == "headType") {
@@ -3161,11 +3346,25 @@ bool TRead::readProperties(Note* n, XmlReader& e, ReadContext& ctx)
         Symbol* s = new Symbol(n);
         s->setTrack(n->track());
         TRead::read(s, e, ctx);
-        if (s->sym() == SymId::noteheadParenthesisLeft) {
-            n->setParenthesesMode(ParenthesesMode::BOTH);
-            ctx.score()->deleteLater(s);
-        } else if (s->sym() == SymId::noteheadParenthesisRight) {
-            n->setParenthesesMode(ParenthesesMode::BOTH);
+        if (s->sym() == SymId::noteheadParenthesisLeft || s->sym() == SymId::noteheadParenthesisRight) {
+            // Reading must not run an editing command: setParenthesesMode()
+            // propagates to linked notes, adding TAB parentheses to notation.
+            n->setProperty(Pid::HAS_PARENTHESES, ParenthesesMode::BOTH);
+            const NoteParenthesisInfo* info = n->parenthesisInfo();
+            if (!info) {
+                Parenthesis* left = Factory::createParenthesis(n->chord());
+                Parenthesis* right = Factory::createParenthesis(n->chord());
+                left->setTrack(n->track());
+                right->setTrack(n->track());
+                right->setDirection(DirectionH::RIGHT);
+                left->setParent(n->chord());
+                right->setParent(n->chord());
+                n->chord()->addNoteParenthesisInfo(new NoteParenthesisInfo(left, right, { n }));
+                info = n->parenthesisInfo();
+            }
+            Parenthesis* side = s->sym() == SymId::noteheadParenthesisLeft ? info->leftParen() : info->rightParen();
+            side->setVisible(s->visible());
+            side->setColor(s->color());
             ctx.score()->deleteLater(s);
         } else {
             n->add(s);
@@ -3644,7 +3843,7 @@ bool TRead::readProperties(SlurTie* s, XmlReader& e, ReadContext& ctx)
     if (TRead::readProperty(s, tag, e, ctx, Pid::SLUR_DIRECTION)) {
     } else if (tag == "lineType") {
         s->setStyleType(static_cast<SlurStyleType>(e.readInt()));
-    } else if (tag == "SlurSegment" || tag == "TieSegment") {
+    } else if (tag == "SlurSegment" || tag == "TieSegment" || tag == "HammerOnPullOffSegment" || tag == "TappingHalfSlurSegment") {
         const int idx = e.intAttribute("no", 0);
         const int n = int(s->spannerSegments().size());
         for (int i = n; i < idx; ++i) {
