@@ -58,6 +58,36 @@ void TempoMap::setTempo(int tick, qreal tempo)
       normalize();
       }
 
+void TempoMap::setRampTempo(int tick, qreal tempo)
+      {
+      auto e = find(tick);
+      if (e != end()) {
+            if (e->second.type & TempoType::FIX)
+                  return;
+            e->second.tempo = tempo;
+            e->second.type |= TempoType::RAMP;
+            }
+      else
+            insert(std::pair<const int, TEvent>(tick, TEvent(tempo, 0.0, TempoType::RAMP)));
+      }
+
+void TempoMap::clearRamps()
+      {
+      for (auto e = begin(); e != end();) {
+            if (e->second.type & TempoType::RAMP) {
+                  if (e->second.type & (TempoType::PAUSE | TempoType::FIX)) {
+                        e->second.type &= ~TempoTypes(TempoType::RAMP);
+                        ++e;
+                        }
+                  else
+                        e = erase(e);
+                  }
+            else
+                  ++e;
+            }
+      normalize();
+      }
+
 //---------------------------------------------------------
 //   TempoMap::normalize
 //---------------------------------------------------------

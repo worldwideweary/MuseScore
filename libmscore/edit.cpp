@@ -2210,6 +2210,7 @@ void Score::deleteItem(Element* el)
             case ElementType::TRILL_SEGMENT:
             case ElementType::VIBRATO_SEGMENT:
             case ElementType::TEXTLINE_SEGMENT:
+            case ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT:
             case ElementType::VOLTA_SEGMENT:
             case ElementType::SLUR_SEGMENT:
             case ElementType::TIE_SEGMENT:
@@ -4641,7 +4642,10 @@ void Score::undoAddElement(Element* element)
          || (et == ElementType::MARKER)
          || (et == ElementType::TEMPO_TEXT)
          || (et == ElementType::VOLTA)
-         || (((et == ElementType::TEXTLINE || et == ElementType::WHAMMY_BAR)) && element->systemFlag())
+         || ( (et == ElementType::TEXTLINE
+               || et == ElementType::WHAMMY_BAR
+               || et == ElementType::GRADUAL_TEMPO_CHANGE)
+                     && element->systemFlag() )
          ) {
             for (Score*& s : scoreList())
                   staffList.append(s->staff(0));
@@ -4656,15 +4660,23 @@ void Score::undoAddElement(Element* element)
                         ne = element;
                   else {
                         // only create linked volta/systemTextLine for first staff
-                        if (((et == ElementType::VOLTA) || ((et == ElementType::TEXTLINE || et == ElementType::WHAMMY_BAR))) && element->track() != 0)
+                        if (element->track() != 0
+                              && (et == ElementType::VOLTA
+                                 || et == ElementType::TEXTLINE
+                                 || et == ElementType::WHAMMY_BAR
+                                 || et == ElementType::GRADUAL_TEMPO_CHANGE)) {
                               continue;
+                              }
                         ne = element->linkedClone();
                         ne->setScore(score);
                         ne->setSelected(false);
                         ne->setTrack(staffIdx * VOICES + element->voice());
                         }
 
-                  if (et == ElementType::VOLTA || ((et == ElementType::TEXTLINE || et == ElementType::WHAMMY_BAR))) {
+                  if (et == ElementType::VOLTA
+                      || et == ElementType::TEXTLINE
+                      || et == ElementType::WHAMMY_BAR
+                      || et == ElementType::GRADUAL_TEMPO_CHANGE) {
                         Spanner* nsp = toSpanner(ne);
                         Spanner* sp = toSpanner(element);
                         int staffIdx1 = sp->track() / VOICES;
@@ -4783,6 +4795,7 @@ void Score::undoAddElement(Element* element)
          && et != ElementType::TRILL
          && et != ElementType::VIBRATO
          && et != ElementType::TEXTLINE
+         && et != ElementType::GRADUAL_TEMPO_CHANGE
          && et != ElementType::PEDAL
          && et != ElementType::BREATH
          && et != ElementType::DYNAMIC
@@ -4865,6 +4878,7 @@ void Score::undoAddElement(Element* element)
                 || element->isSlur()
                 || element->isVibrato()
                 || element->isTextLine()
+                || element->isGradualTempoChange()
                 || element->isPedal()
                 || element->isLyrics()
                 || element->isAmbitus())) {
@@ -5029,6 +5043,7 @@ void Score::undoAddElement(Element* element)
                      || element->isTrill()
                      || element->isVibrato()
                      || element->isTextLine()
+                     || element->isGradualTempoChange()
                      || element->isPedal()) {
                         Spanner* sp   = toSpanner(element);
                         Spanner* nsp  = toSpanner(ne);

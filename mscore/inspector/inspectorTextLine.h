@@ -28,7 +28,7 @@ class InspectorTextLine : public InspectorTextLineBase {
       Ui::InspectorTextLine ttl;
 
    public:
-      InspectorTextLine(QWidget* parent);
+      InspectorTextLine(QWidget* parent, bool tempoChange = false);
       };
 
 } // namespace Ms

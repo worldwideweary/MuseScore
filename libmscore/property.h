@@ -393,6 +393,10 @@ enum class Pid : short {
       BEND_VERTEX_OFF,
       OVERRIDE_BEND_VISIBILITY_RULES,
 
+      TEMPO_CHANGE_TYPE,
+      TEMPO_EASING_METHOD,
+      TEMPO_CHANGE_FACTOR,
+
       END
       };
 

@@ -23,7 +23,7 @@ class Note;
 //   @@ TextLineSegment
 //---------------------------------------------------------
 
-class TextLineSegment final : public TextLineBaseSegment {
+class TextLineSegment : public TextLineBaseSegment {
 
       Sid getTextLinePos(bool above) const;
       Sid getPropertyStyle(Pid) const override;
@@ -36,7 +36,7 @@ class TextLineSegment final : public TextLineBaseSegment {
 
       virtual Element* propertyDelegate(Pid) override;
 
-      TextLine* textLine() const              { return toTextLine(spanner()); }
+      TextLine* textLine() const;
       void layout() override;
       };
 
@@ -68,6 +68,40 @@ class TextLine : public TextLineBase {
       LineSegment* createLineSegment() override;
       QVariant propertyDefault(Pid) const override;
       bool setProperty(Pid propertyId, const QVariant&) override;
+      };
+
+// A tempo line shares the text line layout, but has a distinct XML element.
+class GradualTempoChangeSegment final : public TextLineSegment {
+   public:
+      GradualTempoChangeSegment(Spanner* sp, Score* s)
+         : TextLineSegment(sp, s, true) {}
+      ElementType type() const override { return ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT; }
+      GradualTempoChangeSegment* clone() const override { return new GradualTempoChangeSegment(*this); }
+      Element* propertyDelegate(Pid id) override {
+            if (id == Pid::TEMPO_CHANGE_TYPE || id == Pid::TEMPO_EASING_METHOD || id == Pid::TEMPO_CHANGE_FACTOR)
+                  return spanner();
+            return TextLineSegment::propertyDelegate(id);
+            }
+      };
+
+class GradualTempoChange final : public TextLine {
+      QString _tempoChangeType = "undefined";
+      QString _easingMethod = "normal";
+      qreal _factor = 1.0;
+      bool _explicitFactor = false;
+
+   public:
+      GradualTempoChange(Score*);
+      ElementType type() const override { return ElementType::GRADUAL_TEMPO_CHANGE; }
+      GradualTempoChange* clone() const override { return new GradualTempoChange(*this); }
+      LineSegment* createLineSegment() override;
+      void write(XmlWriter&) const override;
+      void read(XmlReader&) override;
+      QVariant getProperty(Pid) const override;
+      QVariant propertyDefault(Pid) const override;
+      bool setProperty(Pid, const QVariant&) override;
+      qreal factor() const { return _factor; }
+      const QString& easingMethod() const { return _easingMethod; }
       };
 
 }     // namespace Ms

@@ -67,6 +67,8 @@ void TempoText::write(XmlWriter& xml) const
       xml.setRealNumberPrecision(previousPrecision);
       if (_followText)
             xml.tag("followText", _followText);
+      if (!_tempoTextType.isEmpty())
+            xml.tag("type", _tempoTextType);
       TextBase::writeProperties(xml);
       xml.etag();
       }
@@ -83,6 +85,8 @@ void TempoText::read(XmlReader& e)
                   setTempo(e.readDouble());
             else if (tag == "followText")
                   _followText = e.readInt();
+            else if (tag == "type")
+                  _tempoTextType = e.readElementText();
             else if (!TextBase::readProperties(e))
                   e.unknown();
             }

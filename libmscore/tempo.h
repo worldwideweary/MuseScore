@@ -56,6 +56,9 @@ class TempoMap : public std::map<int, TEvent> {
       int time2tick(qreal time) const;
 
       void setTempo(int t, qreal);
+      void setRampTempo(int t, qreal);
+      void clearRamps();
+      void finishRampChanges() { normalize(); }
       void setPause(int t, qreal);
       void delTempo(int tick);
 

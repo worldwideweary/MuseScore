@@ -145,6 +145,9 @@ enum class ElementType : char {
       HAMMER_ON_PULL_OFF,
       WHAMMY_BAR,
 
+      GRADUAL_TEMPO_CHANGE,
+      GRADUAL_TEMPO_CHANGE_SEGMENT,
+
       MAXTYPE
       ///\}
       };

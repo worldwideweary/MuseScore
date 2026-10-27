@@ -2679,7 +2679,7 @@ static bool breakMultiMeasureRest(Measure* m)
             if (!s->visible())
                 continue;
             // break for first measure of volta or textline and first measure *after* volta
-            if ((s->isVolta() || s->isTextLine()) && (s->tick() == m->tick() || s->tick2() == m->tick()))
+            if ((s->isVolta() || s->isTextLine() || s->isGradualTempoChange()) && (s->tick() == m->tick() || s->tick2() == m->tick()))
                   return true;
             }
 
@@ -5422,6 +5422,7 @@ void Score::doLayoutRange(const Fraction& st, const Fraction& et)
             lc.nextMeasure = m;     //_showVBox ? first() : firstMeasure();
             lc.startTick   = m->tick();
             layoutLinear(layoutAll, lc);
+            rebuildGradualTempoChanges();
             return;
             }
       if (!layoutAll && m->system()) {
@@ -5501,6 +5502,7 @@ void Score::doLayoutRange(const Fraction& st, const Fraction& et)
       lc.curSystem = collectSystem(lc);
 
       lc.layout();
+      rebuildGradualTempoChanges();
       }
 
 //---------------------------------------------------------

@@ -94,6 +94,8 @@ class DurationElement;
 class Accidental;
 class TextLine;
 class TextLineSegment;
+class GradualTempoChange;
+class GradualTempoChangeSegment;
 class Pedal;
 class PedalSegment;
 class LedgerLine;
@@ -322,6 +324,8 @@ class ScoreElement {
       CONVERT(Accidental,    ACCIDENTAL)
       bool isTextLine() const { return type() == ElementType::TEXTLINE || type() == ElementType::WHAMMY_BAR; }
       CONVERT(TextLineSegment,      TEXTLINE_SEGMENT)
+      CONVERT(GradualTempoChange, GRADUAL_TEMPO_CHANGE)
+      CONVERT(GradualTempoChangeSegment, GRADUAL_TEMPO_CHANGE_SEGMENT)
       CONVERT(Pedal,         PEDAL)
       CONVERT(PedalSegment,  PEDAL_SEGMENT)
       CONVERT(OttavaSegment, OTTAVA_SEGMENT)
@@ -377,6 +381,7 @@ class ScoreElement {
          return isHairpinSegment()
          || isLetRingSegment()
          || isTextLineSegment()
+         || isGradualTempoChangeSegment()
          || isOttavaSegment()
          || isPalmMuteSegment()
          || isPedalSegment()
@@ -400,6 +405,7 @@ class ScoreElement {
             || isPalmMute()
             || isPedal()
             || isTextLine()
+            || isGradualTempoChange()
             || isVolta()
             ;
             }
@@ -515,6 +521,8 @@ static inline a* to##a(ScoreElement* e)             { Q_ASSERT(e == 0 || e->is##
 static inline const a* to##a(const ScoreElement* e) { Q_ASSERT(e == 0 || e->is##a()); return (const a*)e; }
 
       CONVERT(Element)
+      CONVERT(GradualTempoChange)
+      CONVERT(GradualTempoChangeSegment)
       CONVERT(Note)
       CONVERT(Chord)
       CONVERT(BarLine)

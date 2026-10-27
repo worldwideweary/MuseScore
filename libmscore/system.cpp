@@ -1076,6 +1076,7 @@ void System::add(Element* el)
                   score()->addElement(el);
                   break;
             case ElementType::TEXTLINE_SEGMENT:
+            case ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT:
             case ElementType::HAIRPIN_SEGMENT:
             case ElementType::OTTAVA_SEGMENT:
             case ElementType::TRILL_SEGMENT:
@@ -1144,6 +1145,7 @@ void System::remove(Element* el)
                   score()->removeElement(el);
                   break;
             case ElementType::TEXTLINE_SEGMENT:
+            case ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT:
             case ElementType::HAIRPIN_SEGMENT:
             case ElementType::OTTAVA_SEGMENT:
             case ElementType::TRILL_SEGMENT:
@@ -1295,7 +1297,7 @@ void System::scanElements(void* data, void (*func)(void*, Element*), bool all)
                   }
             if (all || (score()->staff(staffIdx)->show() && _staves[staffIdx]->show() && v)
                     || spanner->isVolta()
-                    || (spanner->isTextLine() && spanner->systemFlag()))
+                    || ((spanner->isTextLine() || spanner->isGradualTempoChange()) && spanner->systemFlag()))
                   ss->scanElements(data, func, all);
             }
       }
