@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="3.02"><programVersion>3.7.0</programVersion><Score><Division>480</Division><Style>
+<Spatium>1.764</Spatium><musicalSymbolFont>Leland</musicalSymbolFont><createMultiMeasureRests>0</createMultiMeasureRests>
+<showCourtesiesRepeats>1</showCourtesiesRepeats><useParensRepeatCourtesies>1</useParensRepeatCourtesies><showCourtesiesOtherJumps>1</showCourtesiesOtherJumps><useParensOtherJumpCourtesies>1</useParensOtherJumpCourtesies><showCourtesiesAfterCancellingRepeats>1</showCourtesiesAfterCancellingRepeats><useParensRepeatCourtesiesAfterCancelling>1</useParensRepeatCourtesiesAfterCancelling><showCourtesiesAfterCancellingOtherJumps>1</showCourtesiesAfterCancellingOtherJumps><useParensOtherJumpCourtesiesAfterCancelling>1</useParensOtherJumpCourtesiesAfterCancelling><smallParens>1</smallParens><changesBeforeBarlineRepeats>0</changesBeforeBarlineRepeats><changesBeforeBarlineOtherJumps>0</changesBeforeBarlineOtherJumps>
+</Style><Part><Staff id="1"><StaffType group="pitched"><name>stdNormal</name></StaffType></Staff><trackName>Piano</trackName><Instrument><trackName>Piano</trackName><instrumentId>keyboard.piano</instrumentId><Channel><program value="0"/></Channel></Instrument></Part><Staff id="1">
+<Measure><voice><Clef><concertClefType>G</concertClefType><transposingClefType>G</transposingClefType></Clef><KeySig><accidental>-1</accidental></KeySig><TimeSig><sigN>3</sigN><sigD>4</sigD></TimeSig><Rest><durationType>measure</durationType><duration>3/4</duration></Rest><Clef><concertClefType>F</concertClefType><transposingClefType>F</transposingClefType></Clef></voice></Measure>
+<Measure><voice><KeySig><accidental>1</accidental></KeySig><TimeSig><sigN>2</sigN><sigD>4</sigD></TimeSig><Rest><durationType>measure</durationType><duration>2/4</duration></Rest></voice></Measure>
+<Measure><Jump><text>D.C.</text><jumpTo>start</jumpTo><playUntil>end</playUntil><continueAt></continueAt></Jump><voice><Rest><durationType>measure</durationType><duration>2/4</duration></Rest></voice></Measure>
+<Measure><voice><Rest><durationType>measure</durationType><duration>2/4</duration></Rest></voice></Measure>
+<Measure><voice><Rest><durationType>measure</durationType><duration>2/4</duration></Rest></voice></Measure>
+</Staff></Score></museScore>

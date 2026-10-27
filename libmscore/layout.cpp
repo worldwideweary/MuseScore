@@ -82,6 +82,7 @@ namespace Ms {
 
 void Score::rebuildBspTree()
       {
+      for (System* sys : qAsConst(systems())) layoutTimeSignatureDrawing(sys);
       for (Page* page : qAsConst(pages()))
             page->rebuildBspTree();
       }
@@ -2302,12 +2303,13 @@ void Score::createMMRest(Measure* m, Measure* lm, const Fraction& len)
       if (mmr) {
             // reuse existing mmrest
             if (mmr->ticks() != len) {
-                  Segment* s = mmr->findSegmentR(SegmentType::EndBarLine, mmr->ticks());
-                  // adjust length
+                  Fraction oldEnd = mmr->ticks();
+                  for (Segment& seg : mmr->segments()) {
+                        if (seg.rtick() == oldEnd && seg.isType(SegmentType::EndBarLine
+                            | SegmentType::Clef | SegmentType::KeySig | SegmentType::TimeSig))
+                              seg.setRtick(len);
+                        }
                   mmr->setTicks(len);
-                  // move existing end barline
-                  if (s)
-                        s->setRtick(len);
                   }
             mmr->removeSystemTrailer();
             }
@@ -2351,23 +2353,46 @@ void Score::createMMRest(Measure* m, Measure* lm, const Fraction& len)
                   }
             }
 
-      Segment* clefSeg = lm->findSegmentR(SegmentType::Clef | SegmentType::HeaderClef, lm->ticks());
-      if (clefSeg) {
-            Segment* mmrClefSeg = mmr->undoGetSegment(clefSeg->segmentType(), lm->endTick());
-            for (int staffIdx = 0; staffIdx < nstaves(); ++staffIdx) {
-                  const int track = staff2track(staffIdx);
-                  Element* e = clefSeg->element(track);
-                  if (e && e->isClef()) {
-                        Clef* clef = toClef(e);
-                        if (!mmrClefSeg->element(track)) {
-                              Clef* mmrClef = clef->generated() ? clef->clone() : toClef(clef->linkedClone());
-                              mmrClef->setParent(mmrClefSeg);
-                              undoAddElement(mmrClef);
+      // End changes are local display copies. Adding them via
+      // undoAddElement() would propagate another copy into linked measures
+      for (SegmentType type : {SegmentType::Clef, SegmentType::KeySig, SegmentType::TimeSig}) {
+            Segment* source = lm->findSegmentR(type, lm->ticks());
+            Segment* dest = mmr->findSegmentR(type, mmr->ticks());
+            if (source && !dest)
+                  dest = mmr->undoGetSegmentR(type, mmr->ticks());
+            if (!dest)
+                  continue;
+            for (int track = 0; track < ntracks(); track += VOICES) {
+                  Element* original = source ? source->element(track) : nullptr;
+                  Element* copy = dest->element(track);
+                  if (!original) {
+                        if (copy) {
+                              copy->undoUnlink();
+                              undo(new RemoveElement(copy));
+                              }
+                        continue;
+                        }
+                  if (!copy) {
+                        copy = original->generated() ? original->clone() : original->linkedClone();
+                        copy->setParent(dest);
+                        undo(new AddElement(copy));
+                        }
+                  else {
+                        if (!original->generated() && !copy->linkList().contains(original)) {
+                              copy->undoUnlink();
+                              undo(new Link(copy, original));
+                              }
+                        if (type == SegmentType::Clef) {
+                              toClef(copy)->setClefType(toClef(original)->clefTypeList());
+                              toClef(copy)->setShowCourtesy(toClef(original)->showCourtesy());
+                              }
+                        else if (type == SegmentType::KeySig) {
+                              toKeySig(copy)->setKeySigEvent(toKeySig(original)->keySigEvent());
+                              toKeySig(copy)->setShowCourtesy(toKeySig(original)->showCourtesy());
                               }
                         else {
-                              Clef* mmrClef = toClef(mmrClefSeg->element(track));
-                              mmrClef->setClefType(clef->clefType());
-                              mmrClef->setShowCourtesy(clef->showCourtesy());
+                              toTimeSig(copy)->setFrom(toTimeSig(original));
+                              toTimeSig(copy)->setShowCourtesySig(toTimeSig(original)->showCourtesySig());
                               }
                         }
                   }
@@ -2414,32 +2439,8 @@ void Score::createMMRest(Measure* m, Measure* lm, const Fraction& len)
                   }
             }
 
-      //
-      // check for clefs
-      //
-      Segment* cs = lm->findSegmentR(SegmentType::Clef, lm->ticks());
-      Segment* ns = mmr->findSegment(SegmentType::Clef, lm->endTick());
-      if (cs) {
-            if (ns == 0)
-                  ns = mmr->undoGetSegmentR(SegmentType::Clef, lm->ticks());
-            ns->setEnabled(cs->enabled());
-            ns->setTrailer(cs->trailer());
-            for (int staffIdx = 0; staffIdx < _staves.size(); ++staffIdx) {
-                  int track = staffIdx * VOICES;
-                  Clef* clef = toClef(cs->element(track));
-                  if (clef) {
-                        if (ns->element(track) == 0)
-                              ns->add(clef->clone());
-                        else {
-                              //TODO: check if same clef
-                              }
-                        }
-                  }
-            }
-      else if (ns) {
-            // TODO: remove elements from ns?
-            undo(new RemoveElement(ns));
-            }
+      Segment* cs;
+      Segment* ns;
 
       //
       // check for time signature
@@ -2610,6 +2611,10 @@ static bool validMMRestMeasure(Measure* m)
 
       int n = 0;
       for (Segment* s = m->first(); s; s = s->next()) {
+            // Generated repeat/jump signatures and their parentheses describe
+            // navigation, not measure content, so they must not break/block MM rests
+            if (s->isType(SegmentType::RepeatCourtesy | SegmentType::ContinuationCourtesy))
+                  continue;
             for (Element* e : s->annotations()) {
                   if (!e->staff()->show() || !e->visible())
                       continue;
@@ -2723,7 +2728,10 @@ static bool breakMultiMeasureRest(Measure* m)
                         continue;
                   if (s->isStartRepeatBarLineType())
                         return true;
-                  if (s->isType(SegmentType::KeySig | SegmentType::TimeSig) && m->tick().isNotZero())
+                  // A change stored at this measure's end applies to the next
+                  // measure. It must not split the MM rest before this one
+                  if (s->isType(SegmentType::KeySig | SegmentType::TimeSig)
+                      && m->tick().isNotZero() && s->rtick() != m->ticks())
                         return true;
                   if (s->isClefType()) {
                         if (s->tick() != m->endTick() && m->tick().isNotZero())
@@ -2732,6 +2740,8 @@ static bool breakMultiMeasureRest(Measure* m)
                   }
             }
       if (pm) {
+            if (pm->findSegmentR(SegmentType::KeySig | SegmentType::TimeSig, pm->ticks()))
+                  return true;
             Segment* s = pm->findSegmentR(SegmentType::EndBarLine, pm->ticks());
             if (s) {
                   for (int staffIdx = 0; staffIdx < s->score()->nstaves(); ++staffIdx) {
@@ -4512,9 +4522,10 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
                                     skyline.add(r.translated(bl->pos() + p));
                                     }
                               }
-                        else if (s.segmentType() & SegmentType::TimeSig) {
+                        else if (s.segmentType() & SegmentType::TimeSigTypes) {
                               TimeSig* ts = toTimeSig(s.element(staffIdx * VOICES));
-                              if (ts && ts->addToSkyline()) {
+                              if (ts && ts->addToSkyline()
+                                  && ts->timeSigPlacement() == TimeSigPlacement::NORMAL) {
                                     skyline.add(ts->shape().translated(ts->pos() + p));
                                     }
                               }
@@ -4568,6 +4579,20 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
                                           }
                                     }
                               }
+                        }
+                  }
+            }
+
+      // Reserve large-meter space before text and other annotations autoplace.
+      if (styleI(Sid::timeSigPlacement) == int(TimeSigPlacement::ABOVE_STAVES)) {
+            layoutTimeSignatureDrawing(system, false);
+            for (MeasureBase* mb : system->measures()) {
+                  if (!mb->isMeasure()) continue;
+                  for (Segment& seg : toMeasure(mb)->segments()) {
+                        if (!seg.enabled() || !seg.isType(SegmentType::TimeSigTypes)) continue;
+                        for (Element* e : seg.elist())
+                              if (e && e->isTimeSig() && !e->bbox().isEmpty())
+                                    e->autoplaceSegmentElement(true, true);
                         }
                   }
             }
@@ -5060,6 +5085,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
                   }
             }
 
+
+
       }
 
 //---------------------------------------------------------
@@ -5330,6 +5357,7 @@ void LayoutContext::collectPage()
             page->bbox().setRect(0.0, 0.0, score->loWidth(), height + page->bm());
             }
 
+      for (System* sys : page->systems()) score->layoutTimeSignatureDrawing(sys);
       page->rebuildBspTree();
       }
 
@@ -5389,6 +5417,15 @@ void Score::doLayoutRange(const Fraction& st, const Fraction& et)
       if (etick < Fraction(0,1))
             etick = last()->endTick();
 
+      // A change at a jump destination can affect a courtesy practically anywhere in the score
+      if (styleB(Sid::showCourtesiesRepeats) || styleB(Sid::showCourtesiesOtherJumps)
+          || styleB(Sid::changesBeforeBarlineRepeats) || styleB(Sid::changesBeforeBarlineOtherJumps)) {
+            stick = Fraction(0,1);
+            etick = last()->endTick();
+            layoutAll = true;
+            }
+
+      prepareRepeatCourtesies();
       lc.endTick     = etick;
       _scoreFont     = ScoreFont::fontFactory(style().value(Sid::musicalSymbolFont).toString());
       _noteHeadWidth = _scoreFont->width(SymId::noteheadBlack, spatium() / SPATIUM20);

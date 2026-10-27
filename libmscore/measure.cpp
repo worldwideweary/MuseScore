@@ -56,6 +56,7 @@
 #include "sig.h"
 #include "spacer.h"
 #include "staff.h"
+#include "symbol.h"
 #include "stafflines.h"
 #include "stafftext.h"
 #include "stafftype.h"
@@ -232,6 +233,7 @@ Measure::Measure(const Measure& m)
       _repeatCount  = m._repeatCount;
       _noMode       = m._noMode;
       _userStretch  = m._userStretch;
+      _repeatCourtesyOffsets = m.repeatCourtesyOffsets();
 
       _mstaves.reserve(m._mstaves.size());
       for (MStaff* ms : m._mstaves)
@@ -312,6 +314,8 @@ MMRestRange* Measure::mmRangeText(int staffIdx) const           { return _mstave
 
 Measure::~Measure()
       {
+      for (const auto& entry : _repeatCourtesyCache)
+            delete entry.second;
       for (Segment* s = first(); s;) {
             Segment* ns = s->next();
             delete s;
@@ -1961,6 +1965,7 @@ void Measure::write(XmlWriter& xml, int staff, bool writeSystemElements, bool fo
 
       xml.setCurTick(tick());
       xml.setCurTrack(staff * VOICES);
+      writeRepeatCourtesyOffsets(xml, staff);
 
       if (_mmRestCount > 0)
             xml.tag("multiMeasureRest", _mmRestCount);
@@ -2065,6 +2070,8 @@ void Measure::read(XmlReader& e, int staffIdx)
                   el->read(e);
                   add(el);
                   }
+            else if (tag == "courtesyOffset")
+                  readRepeatCourtesyOffset(e, staffIdx);
             else if (tag == "stretch") {
                   double val = e.readDouble();
                   if (val < 0.0)
@@ -2315,6 +2322,8 @@ void Measure::readVoice(XmlReader& e, int staffIdx, bool irregular)
                                     }
                               }
                         }
+                  if (score()->mscVersion() >= 410 || clef->headerTagRead())
+                        header = clef->isHeaderClef();
                   segment = getSegment(header ? SegmentType::HeaderClef : SegmentType::Clef, e.tick());
                   segment->add(clef);
                   }
@@ -2324,7 +2333,9 @@ void Measure::readVoice(XmlReader& e, int staffIdx, bool irregular)
                   ts->read(e);
                   // if time sig not at beginning of measure => courtesy time sig
                   Fraction currTick = e.tick();
-                  bool courtesySig = (currTick > tick());
+                  bool courtesySig = ts->courtesyTagRead() || score()->mscVersion() >= 450
+                        ? ts->isCourtesy() : currTick > tick();
+                  ts->setIsCourtesy(courtesySig);
                   if (courtesySig) {
                         // if courtesy sig., just add it without map processing
                         segment = getSegment(SegmentType::TimeSigAnnounce, currTick);
@@ -2335,6 +2346,8 @@ void Measure::readVoice(XmlReader& e, int staffIdx, bool irregular)
                         segment = getSegment(SegmentType::TimeSig, currTick);
                         segment->add(ts);
 
+                        if (currTick == endTick())
+                              continue;
                         timeStretch = ts->stretch().reduced();
                         _timesig    = ts->sig() / timeStretch;
 
@@ -2359,7 +2372,9 @@ void Measure::readVoice(XmlReader& e, int staffIdx, bool irregular)
                         }
                   else {
                         // if key sig not at beginning of measure => courtesy key sig
-                        bool courtesySig = (curTick == endTick());
+                        bool courtesySig = ks->courtesyTagRead() || score()->mscVersion() >= 450
+                              ? ks->isCourtesy() : curTick == endTick();
+                        ks->setIsCourtesy(courtesySig);
                         segment = getSegment(courtesySig ? SegmentType::KeySigAnnounce : SegmentType::KeySig, curTick);
                         segment->add(ks);
                         if (!courtesySig)
@@ -4149,7 +4164,7 @@ qreal Measure::createEndBarLines(bool isLastMeasureInSystem)
             if (seg) {
                   Segment* s1;
                   Segment* s2;
-                  if (repeatEnd()) {
+                  if (repeatEnd() && !score()->styleB(Sid::placeClefsBeforeRepeats)) {
                         s1 = seg;
                         s2 = clefSeg;
                         }
@@ -4164,8 +4179,15 @@ qreal Measure::createEndBarLines(bool isLastMeasureInSystem)
                   }
             }
 
-      // fix segment layout
-      Segment* s = seg->prevActive();
+      layoutRepeatCourtesies();
+      sortRepeatSegments();
+      // fix segment layout, including the first courtesy before an end barline
+      Segment* s = seg ? seg->prevActive() : last();
+      // Stop on the last chord/rest itself. Walking past a single-rest
+      // measure reaches its system header, which must not be recomputed
+      // with isSystemHeader=false (that drops the header-to-note gap).
+      while (s && !s->isChordRestType() && s->prevActive())
+            s = s->prevActive();
       if (s) {
             qreal x    = s->rxpos();
             computeMinWidth(s, x, false);
@@ -4421,6 +4443,9 @@ void Measure::addSystemHeader(bool isFirstSystem)
             }
       else if (s)
             s->setEnabled(false);
+      // Headers may be recreated while fitting measures to systems, after
+      // the repeat/courtesy pass has already ordered the existing segments.
+      sortRepeatSegments();
       checkHeader();
       }
 
@@ -4442,7 +4467,7 @@ void Measure::addSystemTrailer(Measure* nm)
       Segment* s = findSegmentR(SegmentType::TimeSigAnnounce, _rtick);
       if (nm && score()->genCourtesyTimesig() && !hideCourtesy  && !score()->floatMode()) {
             Segment* tss = nm->findSegmentR(SegmentType::TimeSig, Fraction(0,1));
-            if (tss) {
+            if (tss && !findSegmentR(SegmentType::TimeSig, ticks())) {
                   int nstaves = score()->nstaves();
                   for (int track = 0; track < nstaves * VOICES; track += VOICES) {
                         ts = toTimeSig(tss->element(track));
@@ -4486,7 +4511,7 @@ void Measure::addSystemTrailer(Measure* nm)
       // courtesy key signatures, clefs
 
       int n      = score()->nstaves();
-      bool show  = hasCourtesyKeySig();
+      bool show  = hasCourtesyKeySig() && !findSegmentR(SegmentType::KeySig, ticks());
       s          = findSegmentR(SegmentType::KeySigAnnounce, _rtick);
 
       Segment* clefSegment = findSegmentR(SegmentType::Clef, ticks());
@@ -4765,6 +4790,19 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
       setStretchedWidth(x);
       }
 
+// Cross-measure spacing starts here rather than in
+// Segment::minHorizontalDistance(). Reserve the same outer parenthesis gap.
+static qreal continuationParenPadding(const Segment* segment)
+      {
+      if (!segment->enabled() || !segment->isType(SegmentType::ContinuationCourtesy)) return 0.0;
+      for (const Element* e : segment->annotations()) {
+            if (e && e->isCourtesy() && e->isSymbol() && e->visible() && !e->bbox().isEmpty()
+                && toSymbol(e)->sym() == SymId::timeSigParensLeft)
+                  return 0.5 * segment->spatium();
+            }
+      return 0.0;
+      }
+
 void Measure::computeMinWidth()
       {
       Segment* s;
@@ -4807,6 +4845,7 @@ void Measure::computeMinWidth()
             x = qMax(x, score()->styleP(Sid::keysigLeftMargin));
       else if (s->isTimeSigType())
             x = qMax(x, score()->styleP(Sid::timesigLeftMargin));
+      x += continuationParenPadding(s);
       x += s->extraLeadingSpace().val() * spatium();
       bool isSystemHeader = s->header();
 
@@ -4830,6 +4869,7 @@ qreal Measure::computeFirstSegmentXPosition(Segment* segment)
       else if (segment->isTimeSigType())
             x = qMax(x, score()->styleP(Sid::timesigLeftMargin));
 
+      x += continuationParenPadding(segment);
       x += segment->extraLeadingSpace().val() * spatium();
 
       return x;

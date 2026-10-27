@@ -98,7 +98,7 @@ enum class ClefType : signed char;
 enum class BeatType : char;
 enum class Key : signed char;
 enum class HairpinType : signed char;
-enum class SegmentType : short;
+enum class SegmentType : int;
 enum class OttavaType : char;
 enum class Voicing : signed char;
 enum class HDuration : signed char;
@@ -397,6 +397,8 @@ class Movements : public std::vector<MasterScore*> {
 //---------------------------------------------------------------------------------------
 
 class Score : public QObject, public ScoreElement {
+      std::map<int, std::vector<int>> _repeatCourtesyDestinations;
+
       Q_OBJECT
 
    public:
@@ -609,6 +611,7 @@ class Score : public QObject, public ScoreElement {
       virtual ElementType type() const override { return ElementType::SCORE; }
 
       void rebuildBspTree();
+      void layoutTimeSignatureDrawing(System*, bool finalPass = true);
       bool noStaves() const         { return _staves.empty(); }
       void insertPart(Part*, int);
       void removePart(Part*);
@@ -1015,6 +1018,9 @@ class Score : public QObject, public ScoreElement {
       void adjustBracketsIns(int sidx, int eidx);
       void adjustKeySigs(int sidx, int eidx, KeyList km);
 
+      void prepareRepeatCourtesies();
+      void restoreSignatureSegments();
+      std::vector<Measure*> followingRepeatMeasures(const Measure*) const;
       virtual inline const RepeatList& repeatList() const;
       virtual inline const RepeatList& repeatList2() const;
       qreal utick2utime(int tick) const;
@@ -1398,7 +1404,7 @@ class MasterScore : public Score {
       void setTempomap(TempoMap* tm);
 
       bool saveFile(bool generateBackup = true);
-      FileError read1(XmlReader&, bool ignoreVersionError);
+      FileError read1(XmlReader&, bool ignoreVersionError, bool externalStyle = false);
       FileError loadCompressedMsc(QIODevice*, bool ignoreVersionError);
       FileError loadMsc(QString name, bool ignoreVersionError);
       FileError loadMsc(QString name, QIODevice*, bool ignoreVersionError);

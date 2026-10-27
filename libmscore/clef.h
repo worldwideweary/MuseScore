@@ -138,6 +138,9 @@ class Clef final : public Element {
       bool _showCourtesy = true;
       bool m_isSmall = false;
       bool _forInstrumentChange = false;
+      bool _isHeader = false;
+      bool _headerTagRead = false;
+      int _clefToBarlinePosition = 0; // Auto / Before / After: MuseScore Studio values
 
       ClefTypeList _clefTypes { ClefType::INVALID };
 
@@ -162,6 +165,9 @@ class Clef final : public Element {
       bool isSmall() const             { return m_isSmall; }
       void setSmall(bool val);
 
+      bool isHeaderClef() const { return _isHeader; }
+      bool headerTagRead() const { return _headerTagRead; }
+      int clefToBarlinePosition() const { return _clefToBarlinePosition; }
       bool showCourtesy() const        { return _showCourtesy; }
       void setShowCourtesy(bool v)     { _showCourtesy = v; }
       void undoSetShowCourtesy(bool v);

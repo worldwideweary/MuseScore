@@ -156,7 +156,7 @@ void ScoreView::createElementPropertyMenu(Element* e, QMenu* popup)
             TimeSig* ts = toTimeSig(e);
             // if the time sig. is not generated (= not courtesy) add the specific menu item
             QAction* a;
-            if (!ts->generated() && ts->measure() != score()->firstMeasure()) {
+            if (!ts->generated() && ts->changeMeasure() != score()->firstMeasure()) {
                   a = popup->addAction(ts->showCourtesySig()
                      ? tr("Hide Courtesy Time Signature")
                      : tr("Show Courtesy Time Signature") );
@@ -488,7 +488,7 @@ void ScoreView::editTimeSigProperties(TimeSig* ts)
             ts->undoChangeProperty(Pid::GROUPS, QVariant::fromValue<Groups>(r->groups()));
 
             if (r->sig() != ts->sig()) {
-                  score()->cmdAddTimeSig(ts->measure(), ts->staffIdx(), r, true);
+                  score()->cmdAddTimeSig(ts->changeMeasure(), ts->staffIdx(), r, true);
                   r = 0;
                   }
             }

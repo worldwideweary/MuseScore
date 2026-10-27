@@ -1509,6 +1509,7 @@ InspectorClef::InspectorClef(QWidget* parent)
 
       const std::vector<InspectorItem> iiList = {
             { Pid::LEADING_SPACE, 1, s.leadingSpace,  s.resetLeadingSpace  },
+            { Pid::CLEF_TO_BARLINE_POS, 0, c.barlinePosition, c.resetBarlinePosition },
             { Pid::SHOW_COURTESY, 0, c.showCourtesy,  c.resetShowCourtesy  }
             };
       const std::vector<InspectorPanel> ppList = {

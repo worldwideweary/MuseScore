@@ -21,6 +21,10 @@ namespace Ms {
 
 class MuseScoreView;
 class Segment;
+class System;
+
+// Clip staff/bar lines under large meters without painting over the paper.
+void clipTimeSignatureDrawing(const Element*, const System*, QPainter*);
 
 //---------------------------------------------------------
 //   TimeSigType
@@ -73,6 +77,16 @@ class TimeSig final : public Element {
       bool operator==(const TimeSig&) const;
       bool operator!=(const TimeSig& ts) const { return !(*this == ts); }
 
+      TimeSigPlacement timeSigPlacement() const;
+      bool showOnThisStaff() const;
+      void alignAboveBarline();
+      int lastStaffInDrawingGroup() const;
+      TimeSigStyle drawingStyle() const;
+      QSizeF drawingScale() const;
+      qreal numeralDistance() const;
+      qreal drawingYOffset() const;
+      SymId drawingSymbol(SymId) const;
+      Sid getPropertyStyle(Pid) const override;
       qreal mag() const override;
       void draw(QPainter*) const override;
       void write(XmlWriter& xml) const override;
@@ -93,6 +107,7 @@ class TimeSig final : public Element {
       Element* drop(EditData&) override;
 
       Segment* segment() const           { return (Segment*)parent(); }
+      Measure* changeMeasure() const; // semantic measure for a real end-of-measure change
       Measure* measure() const           { return (Measure*)parent()->parent(); }
 
       bool showCourtesySig() const       { return _showCourtesySig; }

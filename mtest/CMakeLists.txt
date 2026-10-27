@@ -175,6 +175,7 @@ subdirs (
         libmscore/readwriteundoreset
         libmscore/remove
         libmscore/repeat
+        libmscore/repeatcourtesy
         libmscore/rhythmicGrouping
         libmscore/selectionfilter
         libmscore/selectionrangedelete
@@ -192,6 +193,7 @@ subdirs (
         mscore/workspaces
         mscore/palette
         mscore/chordpresentationui
+        mscore/repeatcourtesyui
         importmidi
         capella
         biab

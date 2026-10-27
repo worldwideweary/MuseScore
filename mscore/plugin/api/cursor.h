@@ -28,7 +28,7 @@ class ChordRest;
 class StaffText;
 class Measure;
 
-enum class SegmentType : short;
+enum class SegmentType : int;
 
 namespace PluginAPI {
 

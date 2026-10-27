@@ -22,6 +22,8 @@
 #include "measurebase.h"
 #include "segmentlist.h"
 
+#include <map>
+
 namespace Ms {
 
 class XmlWriter;
@@ -83,6 +85,9 @@ class Measure final : public MeasureBase {
 
       MeasureNumberMode _noMode;
       bool _breakMultiMeasureRest;
+      // Detached display objects remain alive for selection/undo across layout.
+      std::map<QString, Element*> _repeatCourtesyCache;
+      std::map<QString, QPointF> _repeatCourtesyOffsets;
 
       void push_back(Segment* e);
       void push_front(Segment* e);
@@ -98,6 +103,13 @@ class Measure final : public MeasureBase {
       ~Measure();
 
       Measure* clone() const override     { return new Measure(*this); }
+      void cacheRepeatCourtesy(Element*);
+      Element* takeRepeatCourtesy(Segment*, int track, int role = 0);
+      void restoreRepeatCourtesyOffset(Element*) const;
+      std::map<QString, QPointF> repeatCourtesyOffsets() const;
+      void writeRepeatCourtesyOffsets(XmlWriter&, int staff) const;
+      void readRepeatCourtesyOffset(XmlReader&, int staff);
+      void deselectInactiveRepeatCourtesies();
       ElementType type() const override { return ElementType::MEASURE; }
       void setScore(Score* s) override;
       Measure* cloneMeasure(Score*, const Fraction& tick, TieMap*);
@@ -210,6 +222,9 @@ class Measure final : public MeasureBase {
 
       void connectTremolo();
 
+      void layoutRepeatCourtesies();
+      void layoutCourtesyParentheses();
+      void sortRepeatSegments();
       qreal createEndBarLines(bool);
       void barLinesSetSpan(Segment*);
       void setEndBarLineType(BarLineType val, int track, bool visible = true, QColor color = QColor());

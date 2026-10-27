@@ -64,6 +64,12 @@ void SegmentList::check()
                   case SegmentType::Breath:
                   case SegmentType::EndBarLine:
                   case SegmentType::TimeSigAnnounce:
+                  case SegmentType::ClefStartRepeatAnnounce:
+                  case SegmentType::KeySigStartRepeatAnnounce:
+                  case SegmentType::TimeSigStartRepeatAnnounce:
+                  case SegmentType::ClefRepeatAnnounce:
+                  case SegmentType::KeySigRepeatAnnounce:
+                  case SegmentType::TimeSigRepeatAnnounce:
                   case SegmentType::KeySigAnnounce:
                         break;
                   default:

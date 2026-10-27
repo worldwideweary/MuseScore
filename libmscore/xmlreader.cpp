@@ -872,17 +872,15 @@ LinkedElements* XmlReader::getLink(bool masterScore, const Location& l, int loca
             staffLinks.push_back(staffLinks.constLast()); // nothing should reference exactly this local index, so it shouldn't matter what to append
             }
 
-      for (int i = 0; i < staffLinks.size(); ++i) {
-            if (staffLinks[i].second == l) {
-                  if (localIndex == 0)
-                        return staffLinks[i].first;
-                  i += localIndex;
-                  if ((i < 0) || (i >= staffLinks.size()))
-                        return nullptr;
-                  if (staffLinks[i].second == l)
-                        return staffLinks[i].first;
-                  return nullptr;
-                  }
+      // A displayed Multimeasure rest is read before its remaining underlying measures,
+      // and therefore end-signatures can put entries for the same absolute tick in
+      // separate runs, with an earlier underlying rest between those runs.
+      // Local indices count entries at the requested location, not intervening
+      // entries at other locations
+      int remaining = localIndex;
+      for (const auto& entry : staffLinks) {
+            if (entry.second == l && remaining-- == 0)
+                  return entry.first;
             }
       return nullptr;
       }

@@ -29,6 +29,7 @@
 #include "repeat.h"
 #include "score.h"
 #include "segment.h"
+#include "symbol.h"
 #include "sig.h"
 #include "staff.h"
 #include "staffstate.h"
@@ -66,6 +67,13 @@ const char* Segment::subTypeName(SegmentType t)
             case SegmentType::EndBarLine:           return "EndBarLine";
             case SegmentType::KeySigAnnounce:       return "Key Sig Precaution";
             case SegmentType::TimeSigAnnounce:      return "Time Sig Precaution";
+            case SegmentType::ClefStartRepeatAnnounce: return "ClefStartRepeatAnnounce";
+            case SegmentType::KeySigStartRepeatAnnounce: return "KeySigStartRepeatAnnounce";
+            case SegmentType::TimeSigStartRepeatAnnounce: return "TimeSigStartRepeatAnnounce";
+            case SegmentType::ClefRepeatAnnounce: return "ClefRepeatAnnounce";
+            case SegmentType::KeySigRepeatAnnounce: return "KeySigRepeatAnnounce";
+            case SegmentType::TimeSigRepeatAnnounce: return "TimeSigRepeatAnnounce";
+
             default:
                   return "??";
             }
@@ -576,10 +584,10 @@ void Segment::add(Element* el)
                   }
 
             case ElementType::CLEF:
-                  Q_ASSERT(_segmentType == SegmentType::Clef || _segmentType == SegmentType::HeaderClef);
+                  Q_ASSERT(_segmentType & SegmentType::ClefTypes);
                   checkElement(el, track);
                   _elist[track] = el;
-                  if (!el->generated()) {
+                  if (!el->generated() && !el->isCourtesy()) {
                         el->staff()->setClef(toClef(el));
 //                        updateNoteLines(this, el->track());   TODO::necessary?
                         }
@@ -587,18 +595,19 @@ void Segment::add(Element* el)
                   break;
 
             case ElementType::TIMESIG:
-                  Q_ASSERT(segmentType() == SegmentType::TimeSig || segmentType() == SegmentType::TimeSigAnnounce);
+                  Q_ASSERT(_segmentType & SegmentType::TimeSigTypes);
                   checkElement(el, track);
                   _elist[track] = el;
-                  el->staff()->addTimeSig(toTimeSig(el));
+                  if (!el->isCourtesy())
+                        el->staff()->addTimeSig(toTimeSig(el));
                   setEmpty(false);
                   break;
 
             case ElementType::KEYSIG:
-                  Q_ASSERT(_segmentType == SegmentType::KeySig || _segmentType == SegmentType::KeySigAnnounce);
+                  Q_ASSERT(_segmentType & SegmentType::KeySigTypes);
                   checkElement(el, track);
                   _elist[track] = el;
-                  if (!el->generated())
+                  if (!el->generated() && !el->isCourtesy() && !measure()->isMMRest())
                         el->staff()->setKey(tick(), toKeySig(el)->keySigEvent());
                   setEmpty(false);
                   break;
@@ -735,19 +744,21 @@ void Segment::remove(Element* el)
 
             case ElementType::TIMESIG:
                   _elist[track] = 0;
-                  el->staff()->removeTimeSig(toTimeSig(el));
+                  if (!el->isCourtesy())
+                        el->staff()->removeTimeSig(toTimeSig(el));
                   break;
 
             case ElementType::KEYSIG:
                   Q_ASSERT(_elist[track] == el);
 
                   _elist[track] = 0;
-                  if (!el->generated())
+                  if (!el->generated() && !el->isCourtesy() && !measure()->isMMRest())
                         el->staff()->removeKey(tick());
                   break;
 
             case ElementType::CLEF:
-                  el->staff()->removeClef(toClef(el));
+                  if (!el->isCourtesy())
+                        el->staff()->removeClef(toClef(el));
                   // updateNoteLines(this, el->track());
                   // fall through
 
@@ -1647,7 +1658,8 @@ Spanner* Segment::lastSpanner(int activeStaff)
 
 bool Segment::notChordRestType(Segment* s)
       {
-      if (s->segmentType() == SegmentType::KeySig ||
+      if (s->isType(SegmentType::RepeatCourtesy | SegmentType::ContinuationCourtesy) ||
+          s->segmentType() == SegmentType::KeySig ||
           s->segmentType() == SegmentType::TimeSig ||
           s->segmentType() == SegmentType::Clef ||
           s->segmentType() == SegmentType::HeaderClef ||
@@ -2188,7 +2200,12 @@ void Segment::createShape(int staffIdx)
             // TODO: will skipping segments that contain only invisible annotations adversely affect playback or anything else?
             setVisible(true);
 
-            if (e->isHarmony()) {
+            if (e->isCourtesy() && isType(SegmentType::RepeatCourtesy | SegmentType::ContinuationCourtesy)) {
+                  // generated shared parentheses must reserve horizontal space
+                  // ordinary symbol annotations intentionally don't
+                  s.add(e->shape().translated(e->pos()));
+                  }
+            else if (e->isHarmony()) {
                   // use same spacing calculation as for chordrest
                   auto h = toHarmony(e);
                   if (h->bbox().isEmpty())
@@ -2225,6 +2242,24 @@ void Segment::createShape(int staffIdx)
 
 qreal Segment::minRight() const
       {
+      if (segmentType() == SegmentType::TimeSigAnnounce
+          && score()->styleI(Sid::timeSigPlacement) == int(TimeSigPlacement::ABOVE_STAVES)) {
+            const bool center = score()->styleB(Sid::timeSigCenterOnBarline);
+            const Sid margin = center ? Sid::timeSigVSMarginCentered : Sid::timeSigVSMarginNonCentered;
+            qreal barWidth = score()->styleP(Sid::barWidth);
+            bool repeat = false;
+            for (Segment* prev = prev1(); prev && prev->tick() == tick(); prev = prev->prev1()) {
+                  if (!prev->enabled()) continue;
+                  if (prev->isType(SegmentType::EndBarLine)) barWidth = qMax(barWidth, prev->minRight());
+                  if (prev->isType(SegmentType::TimeSigRepeatAnnounce)) repeat = true;
+                  }
+            if (score()->styleI(margin) != int(TimeSigVSMargin::CREATE_SPACE)) return barWidth;
+            qreal width = 0.0;
+            for (const Element* e : elist()) if (e && e->isTimeSig()) width = qMax(width, e->bbox().width());
+            return qMax(barWidth, width * (center && !repeat ? 0.5 : 1.0)
+                         + score()->styleP(Sid::systemTrailerRightMargin) + (repeat ? 0.5 * spatium() : 0.0));
+            }
+
       qreal distance = 0.0;
       for (const Shape& sh : shapes())
             distance = qMax(distance, sh.right());
@@ -2243,6 +2278,9 @@ qreal Segment::minRight() const
 
 qreal Segment::minLeft(const Shape& sl) const
       {
+      if (isType(SegmentType::TimeSigTypes)
+          && score()->styleI(Sid::timeSigPlacement) == int(TimeSigPlacement::ABOVE_STAVES)) return 0.0;
+
       qreal distance = 0.0;
       for (const Shape& sh : shapes()) {
             qreal d = sl.minHorizontalDistance(sh);
@@ -2270,6 +2308,11 @@ qreal Segment::minLeft() const
 
 qreal Segment::minHorizontalCollidingDistance(Segment* ns) const
       {
+      // Above-staff meters clear ordinary notation vertically in the skyline
+      // pass. Zero-width spacing markers must not push them off their barline.
+      if (ns && ns->isType(SegmentType::TimeSigTypes) && !isType(SegmentType::TimeSigTypes)
+          && score()->styleI(Sid::timeSigPlacement) == int(TimeSigPlacement::ABOVE_STAVES)) return 0.0;
+
       qreal w = 0.0;
       for (unsigned staffIdx = 0; staffIdx < _shapes.size(); ++staffIdx) {
             if (score()->staff(staffIdx) && !score()->staff(staffIdx)->show())
@@ -2285,8 +2328,178 @@ qreal Segment::minHorizontalCollidingDistance(Segment* ns) const
 //    calculate the minimum layout distance to Segment ns
 //---------------------------------------------------------
 
+namespace {
+bool isCourtesyParenthesis(const Segment* segment, const Element* e)
+      {
+      return segment->isType(SegmentType::RepeatCourtesy | SegmentType::ContinuationCourtesy)
+            && e && e->isCourtesy() && e->isSymbol() && e->visible() && e->addToSkyline()
+            && !e->bbox().isEmpty()
+            && (toSymbol(e)->sym() == SymId::timeSigParensLeft || toSymbol(e)->sym() == SymId::timeSigParensRight);
+      }
+
+bool hasCourtesyParenthesis(const Segment* segment)
+      {
+      if (!segment || !segment->enabled()) return false;
+      for (const Element* e : segment->annotations())
+            if (isCourtesyParenthesis(segment, e)) return true;
+      return false;
+      }
+
+struct CourtesySpacingParts {
+      Shape body;
+      std::vector<const Element*> parens;
+      bool valid = true;
+      };
+
+CourtesySpacingParts courtesySpacingParts(const Segment* segment, int staff)
+      {
+      CourtesySpacingParts result;
+      result.body = segment->staffShape(staff);
+      if (!segment->score()->staff(staff)->show()) return result;
+      for (const Element* e : segment->annotations()) {
+            if (!e || e->staffIdx() != staff || !isCourtesyParenthesis(segment, e)) continue;
+            const Shape shape = e->shape().translated(e->pos());
+            for (const QRectF& rect : shape) {
+                  const auto it = std::find(result.body.begin(), result.body.end(), rect);
+                  if (it == result.body.end()) {
+                        // Stale shapes must retain the conservative legacy path.
+                        result.valid = false;
+                        return result;
+                        }
+                  result.body.erase(it);
+                  }
+            result.parens.push_back(e);
+            }
+      return result;
+      }
+
+// These are the signature rows of Studio's external ParenPaddingTable.
+// The parenthesis's anchor determines the directional after-parenthesis row.
+qreal courtesyParenthesisPadding(const Element* paren, const Element* other, bool parenFirst)
+      {
+      const Segment* segment = toSegment(paren->parent());
+      const Element* anchor = segment->element(paren->track());
+      qreal padding = 0.1;
+      if (other->isBarLine()) padding = 0.5;
+      else if (other->isSymbol()) padding = 1.0; // two courtesy parentheses
+      else if (!parenFirst) padding = 0.25;
+      else if (other->isClef()) padding = anchor && anchor->isClef() ? 0.25 : 0.2;
+      else if (other->isKeySig()) padding = anchor && anchor->isKeySig() ? 0.25 : 0.35;
+      else if (other->isTimeSig()) padding = anchor && anchor->isClef() ? 0.2 : 0.25;
+      return padding * paren->score()->spatium() * 0.5 * (paren->mag() + other->mag());
+      }
+
+qreal courtesyParenthesisDistance(const Shape& left, const Shape& right, qreal spatium)
+      {
+      qreal distance = -DBL_MAX;
+      const qreal clearance = 0.1 * spatium;
+      for (const QRectF& a : left) {
+            for (const QRectF& b : right) {
+                  if ((a.height() > 0.0 && b.height() > 0.0
+                       && a.bottom() + clearance > b.top() && a.top() - clearance < b.bottom())
+                      || qFuzzyIsNull(a.width()) || qFuzzyIsNull(b.width()))
+                        distance = qMax(distance, a.right() - b.left());
+                  }
+            }
+      return distance;
+      }
+
+qreal courtesySignaturePadding(const Element* left, const Element* right)
+      {
+      const Score* score = left->score();
+      qreal padding = score->spatium();
+      if (left->isClef()) {
+            if (right->isClef()) padding *= 0.75;
+            else if (right->isKeySig()) padding = score->styleP(Sid::clefKeyDistance);
+            else if (right->isTimeSig()) padding = score->styleP(Sid::clefTimesigDistance);
+            else if (right->isBarLine()) padding = score->styleP(Sid::clefBarlineDistance);
+            }
+      else if (left->isBarLine()) {
+            if (right->isClef()) padding = score->styleP(Sid::clefLeftMargin);
+            else if (right->isKeySig()) padding = score->styleP(Sid::keysigLeftMargin);
+            else if (right->isTimeSig()) padding = score->styleP(Sid::timesigLeftMargin);
+            }
+      else if (left->isKeySig() && right->isTimeSig()) padding = score->styleP(Sid::keyTimesigDistance);
+      else if (left->isTimeSig() && right->isKeySig()) padding = score->styleP(Sid::keyTimesigDistance);
+      else if (left->isKeySig() && right->isBarLine()) padding = score->styleP(Sid::keyBarlineDistance);
+      else if (left->isTimeSig() && right->isBarLine()) padding = score->styleP(Sid::timesigBarlineDistance);
+      return padding * 0.5 * (left->mag() + right->mag());
+      }
+}
+
 qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
       {
+      const bool aboveMode = score()->styleI(Sid::timeSigPlacement) == int(TimeSigPlacement::ABOVE_STAVES);
+      const bool above = aboveMode && isType(SegmentType::TimeSigTypes);
+      const bool nextAbove = aboveMode && ns && ns->isType(SegmentType::TimeSigTypes);
+
+      if (nextAbove && isHeaderClefType()) {
+            // Studio anchors an above-staff meter at the visible key, or
+            // beyond the clef plus the header-to-line margin when no key exists.
+            Segment* key = nextActive();
+            if (key && key->isKeySigType() && !key->allElementsInvisible()) return 0.0;
+            return minRight() + ns->minLeft() + score()->styleP(Sid::headerToLineStartDistance);
+            }
+      if (above && ns && ns->isChordRestType()
+          && (systemHeaderGap || (rtick().isZero() && measure()->isFirstInSystem()))) {
+            // The meter does not replace the in-staff header. Studio's
+            // previous-segment scan still spaces the first chord against it.
+            // A clef read from the score can be HeaderClef without header(),
+            // so a single staff without an opening barline also needs this
+            // at the start of a system, even when the caller passes false.
+            for (Segment* header = prevActive(); header && header->measure() == measure()
+                  && header->rtick().isZero(); header = header->prevActive()) {
+                  if (header->isType(SegmentType::TimeSigTypes) || header->allElementsInvisible()) continue;
+                  if (header->isType(SegmentType::HeaderClef | SegmentType::KeySig
+                        | SegmentType::KeySigStartRepeatAnnounce | SegmentType::Ambitus))
+                        return qMax(0.0, header->minHorizontalDistance(ns, true) - (x() - header->x()));
+                  break;
+                  }
+            }
+
+      const SegmentType signatures = SegmentType::ClefTypes | SegmentType::KeySigTypes
+            | SegmentType::TimeSigTypes | SegmentType::BarLineType;
+      bool separateParens = ns && !systemHeaderGap && !above && !nextAbove && isType(signatures) && ns->isType(signatures)
+            && (hasCourtesyParenthesis(this) || hasCourtesyParenthesis(ns));
+      std::vector<CourtesySpacingParts> leftParts, rightParts;
+      if (separateParens) {
+            for (unsigned staff = 0; staff < _shapes.size(); ++staff) {
+                  leftParts.push_back(courtesySpacingParts(this, staff));
+                  rightParts.push_back(courtesySpacingParts(ns, staff));
+                  if (!leftParts.back().valid || !rightParts.back().valid) separateParens = false;
+                  }
+            }
+
+      if (separateParens) {
+            // Studio applies padding per item pair, not to the combined
+            // segment shape: key-to-meter and key-to-parenthesis compete.
+            qreal w = 0.0;
+            for (unsigned staff = 0; staff < _shapes.size(); ++staff) {
+                  if (!score()->staff(staff)->show()) continue;
+                  const Element* left = element(staff * VOICES);
+                  const Element* right = ns->element(staff * VOICES);
+                  const qreal staffSpatium = left ? left->spatium() : right ? right->spatium() : spatium();
+                  const auto& lp = leftParts[staff];
+                  const auto& rp = rightParts[staff];
+                  if (left && right)
+                        w = qMax(w, lp.body.minHorizontalDistance(rp.body) + courtesySignaturePadding(left, right));
+                  for (const Element* paren : lp.parens) {
+                        const Shape shape = paren->shape().translated(paren->pos());
+                        if (right)
+                              w = qMax(w, courtesyParenthesisDistance(shape, rp.body, staffSpatium)
+                                    + courtesyParenthesisPadding(paren, right, true));
+                        for (const Element* nextParen : rp.parens)
+                              w = qMax(w, courtesyParenthesisDistance(shape, nextParen->shape().translated(nextParen->pos()), staffSpatium)
+                                    + courtesyParenthesisPadding(paren, nextParen, true));
+                        }
+                  if (left) {
+                        for (const Element* paren : rp.parens)
+                              w = qMax(w, courtesyParenthesisDistance(lp.body, paren->shape().translated(paren->pos()), staffSpatium)
+                                    + courtesyParenthesisPadding(paren, left, false));
+                        }
+                  }
+            return qMax(w, 0.0) + ns->extraLeadingSpace().val() * spatium();
+            }
 
       qreal ww = -DBL_MAX;        // can remain negative
       for (unsigned staffIdx = 0; staffIdx < _shapes.size(); ++staffIdx) {
@@ -2295,14 +2508,40 @@ qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
             qreal d = ns ? staffShape(staffIdx).minHorizontalDistance(ns->staffShape(staffIdx)) : 0.0;
             // first chordrest of a staff should clear the widest header for any staff
             // so make sure segment is as wide as it needs to be
-            if (systemHeaderGap)
+            if (systemHeaderGap && !above)
                   d = qMax(d, staffShape(staffIdx).right());
             ww      = qMax(ww, d);
             }
       qreal w = qMax(ww, 0.0);      // non-negative
+      if (above && ns && (ns->isChordRestType() || ns->isType(SegmentType::BarLineType))) return 0.0;
+      if (nextAbove && isChordRestType()) return score()->noteHeadWidth() + score()->styleP(Sid::noteBarDistance);
+      if (nextAbove && ns->tick() == tick()
+          && (isType(SegmentType::EndBarLine) || segmentType() == SegmentType::KeySig)) {
+            if (isType(SegmentType::EndBarLine)) {
+                  for (Segment* prev = prev1(); prev && prev->tick() == tick(); prev = prev->prev1())
+                        if (prev->enabled() && prev->isType(SegmentType::TimeSigRepeatAnnounce)
+                            && !ns->isType(SegmentType::TimeSigAnnounce))
+                              return 0.5 * spatium();
+                  }
+            return 0.0;
+            }
+
 
       SegmentType st  = segmentType();
       SegmentType nst = ns ? ns->segmentType() : SegmentType::Invalid;
+      auto spacingType = [](SegmentType t) {
+            // Only the new repeat/jump types need a legacy spacing equivalent.
+            // HeaderClef and the existing Announce types have distinct margins.
+            if (t & (SegmentType::ClefRepeatAnnounce | SegmentType::ClefStartRepeatAnnounce))
+                  return SegmentType::Clef;
+            if (t & (SegmentType::KeySigRepeatAnnounce | SegmentType::KeySigStartRepeatAnnounce))
+                  return SegmentType::KeySig;
+            if (t & (SegmentType::TimeSigRepeatAnnounce | SegmentType::TimeSigStartRepeatAnnounce))
+                  return SegmentType::TimeSig;
+            return t;
+            };
+      st = spacingType(st);
+      nst = spacingType(nst);
 
       if (isChordRestType()) {
             if (nst == SegmentType::EndBarLine) {
@@ -2389,7 +2628,7 @@ qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
          && (nst & (SegmentType::TimeSig | SegmentType::TimeSigAnnounce))) {
             w += score()->styleP(Sid::keyTimesigDistance);
             }
-      else if (st == SegmentType::KeySig && nst == SegmentType::StartRepeatBarLine)
+      else if (st == SegmentType::KeySig && (nst & (SegmentType::StartRepeatBarLine | SegmentType::EndBarLine)))
             w += score()->styleP(Sid::keyBarlineDistance);
       else if (st == SegmentType::StartRepeatBarLine)
             w += score()->styleP(Sid::noteBarDistance);
@@ -2405,12 +2644,29 @@ qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
             else if (nst == SegmentType::Clef)
                   w += score()->styleP(Sid::clefLeftMargin);
             }
-      else if (st == SegmentType::TimeSig && nst == SegmentType::StartRepeatBarLine)
+      else if (st == SegmentType::TimeSig && (nst & (SegmentType::StartRepeatBarLine | SegmentType::EndBarLine)))
             w += score()->styleP(Sid::timesigBarlineDistance);
       else if (st == SegmentType::Breath)
             w += spatium() * 1.5;
       else if (st == SegmentType::Ambitus)
             w += score()->styleP(Sid::ambitusMargin);
+
+      // Studio reserves half a spatium between a barline and an outer
+      // courtesy parenthesis. Include its ink, rather than only its anchor.
+      auto hasCourtesyParen = [](const Segment* segment, SymId side) {
+            if (!segment || !segment->enabled()) return false;
+            for (const Element* e : segment->annotations()) {
+                  if (e && e->isCourtesy() && e->isSymbol() && e->visible()
+                      && toSymbol(e)->sym() == side)
+                        return true;
+                  }
+            return false;
+            };
+      if ((isType(SegmentType::BarLineType) && ns && ns->isType(SegmentType::ContinuationCourtesy)
+           && hasCourtesyParen(ns, SymId::timeSigParensLeft))
+          || (isType(SegmentType::RepeatCourtesy) && ns && ns->isType(SegmentType::BarLineType)
+              && hasCourtesyParen(this, SymId::timeSigParensRight)))
+            w = qMax(w, ww + 0.5 * spatium());
 
       if (w < 0.0)
             w = 0.0;

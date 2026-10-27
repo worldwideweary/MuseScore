@@ -30,6 +30,7 @@ class Segment;
 
 class KeySig final : public Element {
       bool _showCourtesy;
+      int _courtesyPreviousKey = 100; // layout-only cancellation context
       bool _hideNaturals;     // used in layout to override score style (needed for the Continuous panel)
       KeySigEvent _sig;
       void addLayout(SymId sym, qreal x, int y);
@@ -71,6 +72,7 @@ class KeySig final : public Element {
       void setMode(KeyMode v)             { _sig.setMode(v); }
       void undoSetMode(KeyMode v);
 
+      void setCourtesyPreviousKey(Key key) { _courtesyPreviousKey = int(key); }
       void setHideNaturals(bool hide)     { _hideNaturals = hide; }
 
       void setForInstrumentChange(bool forInstrumentChange) { _sig.setForInstrumentChange(forInstrumentChange); }

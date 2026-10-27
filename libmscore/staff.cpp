@@ -412,7 +412,7 @@ void Staff::dumpTimeSigs(const char* title) const
 
 void Staff::setClef(Clef* clef)
       {
-      if (clef->generated())
+      if (clef->generated() || clef->measure()->isMMRest())
             return;
       Fraction tick = clef->segment()->tick();
       for (Segment* s = clef->segment()->next1(); s && s->tick() == tick; s = s->next1()) {
@@ -433,7 +433,7 @@ void Staff::setClef(Clef* clef)
 
 void Staff::removeClef(const Clef* clef)
       {
-      if (clef->generated())
+      if (clef->generated() || clef->measure()->isMMRest())
             return;
       Fraction tick = clef->segment()->tick();
       for (Segment* s = clef->segment()->next1(); s && s->tick() == tick; s = s->next1()) {
@@ -536,7 +536,10 @@ const Groups& Staff::group(const Fraction& tick) const
 
 void Staff::addTimeSig(TimeSig* timesig)
       {
-      if (timesig->segment()->segmentType() == SegmentType::TimeSig)
+      // Displayed MMRest signatures are linked copies of musical changes,
+      // so they must not replace the underlying signature in the staff map
+      if (timesig->segment()->segmentType() == SegmentType::TimeSig
+          && !timesig->measure()->isMMRest())
             timesigs[timesig->segment()->tick().ticks()] = timesig;
 //      dumpTimeSigs("after addTimeSig");
       }
@@ -547,8 +550,12 @@ void Staff::addTimeSig(TimeSig* timesig)
 
 void Staff::removeTimeSig(TimeSig* timesig)
       {
-      if (timesig->segment()->segmentType() == SegmentType::TimeSig)
-            timesigs.erase(timesig->segment()->tick().ticks());
+      if (timesig->segment()->segmentType() == SegmentType::TimeSig
+          && !timesig->measure()->isMMRest()) {
+            auto i = timesigs.find(timesig->segment()->tick().ticks());
+            if (i != timesigs.end() && i->second == timesig)
+                  timesigs.erase(i);
+            }
 //      dumpTimeSigs("after removeTimeSig");
       }
 
@@ -1124,6 +1131,7 @@ void Staff::init(const InstrumentTemplate* t, const StaffType* staffType, int ci
 
 void Staff::init(const Staff* s)
       {
+      _timeSigSystemObject = s->_timeSigSystemObject;
       _staffTypeList     = s->_staffTypeList;
       setDefaultClefType(s->defaultClefType());
       for (BracketItem* i : s->_brackets){

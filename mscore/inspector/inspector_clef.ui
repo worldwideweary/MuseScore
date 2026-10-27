@@ -108,6 +108,13 @@
         </property>
        </widget>
       </item>
+      <item row="1" column="0"><widget class="QLabel" name="positionLabel"><property name="text"><string>Barline position:</string></property></widget></item>
+      <item row="1" column="1"><widget class="QComboBox" name="barlinePosition">
+       <item><property name="text"><string>Automatic</string></property></item>
+       <item><property name="text"><string>Before</string></property></item>
+       <item><property name="text"><string>After</string></property></item>
+      </widget></item>
+      <item row="1" column="2"><widget class="Ms::ResetButton" name="resetBarlinePosition" native="true"><property name="accessibleName"><string>Reset barline position</string></property></widget></item>
      </layout>
     </widget>
    </item>

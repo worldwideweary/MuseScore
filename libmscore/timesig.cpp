@@ -18,6 +18,9 @@
 #include "sym.h"
 #include "symbol.h"
 #include "timesig.h"
+#include "system.h"
+#include "page.h"
+#include "measure.h"
 #include "xml.h"
 #include "utils.h"
 
@@ -51,9 +54,89 @@ TimeSig::TimeSig(Score* s)
 //   mag
 //---------------------------------------------------------
 
+TimeSigPlacement TimeSig::timeSigPlacement() const
+      {
+      return score() ? TimeSigPlacement(score()->styleI(Sid::timeSigPlacement)) : TimeSigPlacement::NORMAL;
+      }
+
+bool TimeSig::showOnThisStaff() const
+      {
+      if (timeSigPlacement() == TimeSigPlacement::NORMAL || !parent() || !parent()->isSegment()) return true;
+      System* sys = measure()->system();
+      auto visible = [&](int idx) {
+            return score()->staff(idx)->show() && (!sys || idx >= sys->staves()->size() || sys->staff(idx)->show());
+            };
+      for (int idx = 0; idx < score()->nstaves(); ++idx) {
+            if (idx && !score()->staff(idx)->timeSigSystemObject()) continue;
+            int display = idx;
+            while (display < score()->nstaves() && !visible(display)) ++display;
+            if (display == staffIdx()) return true;
+            }
+      return false;
+      }
+
+int TimeSig::lastStaffInDrawingGroup() const
+      {
+      int last = staffIdx();
+      System* sys = parent() && parent()->isSegment() ? measure()->system() : nullptr;
+      for (int idx = staffIdx() + 1; idx < score()->nstaves(); ++idx) {
+            if (!score()->staff(idx)->show() || (sys && idx < sys->staves()->size() && !sys->staff(idx)->show())) continue;
+            Element* next = parent() && parent()->isSegment() ? segment()->element(idx * VOICES) : nullptr;
+            if (next && next->isTimeSig() && toTimeSig(next)->showOnThisStaff()) break;
+            last = idx;
+            }
+      return last;
+      }
+
+TimeSigStyle TimeSig::drawingStyle() const
+      {
+      Sid sid = timeSigPlacement() == TimeSigPlacement::ABOVE_STAVES ? Sid::timeSigAboveStyle
+              : timeSigPlacement() == TimeSigPlacement::ACROSS_STAVES ? Sid::timeSigAcrossStyle : Sid::timeSigNormalStyle;
+      return score() ? TimeSigStyle(score()->styleI(sid)) : TimeSigStyle::NORMAL;
+      }
+
+Sid TimeSig::getPropertyStyle(Pid id) const
+      {
+      if (id == Pid::SCALE)
+            return timeSigPlacement() == TimeSigPlacement::ABOVE_STAVES ? Sid::timeSigAboveScale
+                 : timeSigPlacement() == TimeSigPlacement::ACROSS_STAVES ? Sid::timeSigAcrossScale : Sid::timeSigNormalScale;
+      return Element::getPropertyStyle(id);
+      }
+
+QSizeF TimeSig::drawingScale() const
+      {
+      return score() && isStyled(Pid::SCALE) ? score()->styleV(getPropertyStyle(Pid::SCALE)).toSizeF() : _scale;
+      }
+
+qreal TimeSig::numeralDistance() const
+      {
+      Sid sid = timeSigPlacement() == TimeSigPlacement::ABOVE_STAVES ? Sid::timeSigAboveNumDist
+              : timeSigPlacement() == TimeSigPlacement::ACROSS_STAVES ? Sid::timeSigAcrossNumDist : Sid::timeSigNormalNumDist;
+      return score() ? score()->styleP(sid) : 0.0;
+      }
+
+qreal TimeSig::drawingYOffset() const
+      {
+      Sid sid = timeSigPlacement() == TimeSigPlacement::ABOVE_STAVES ? Sid::timeSigAboveY
+              : timeSigPlacement() == TimeSigPlacement::ACROSS_STAVES ? Sid::timeSigAcrossY : Sid::timeSigNormalY;
+      return score() ? score()->styleP(sid) : 0.0;
+      }
+
+SymId TimeSig::drawingSymbol(SymId id) const
+      {
+      if (!score() || drawingStyle() == TimeSigStyle::NORMAL) return id;
+      QString base = Sym::id2name(id);
+      // Studio uses the small plus sign with its large/narrow numeral sets.
+      if (id == SymId::timeSigPlus) base = "timeSigPlusSmall";
+      SymId variant = Sym::name2id(base + (drawingStyle() == TimeSigStyle::NARROW ? "Narrow" : "Large"));
+      if (variant != SymId::noSym && (score()->scoreFont()->isValid(variant)
+          || ScoreFont::fallbackFont()->isValid(variant))) return variant;
+      return id; // fonts without a stylistic alternate keep a legible base glyph
+      }
+
 qreal TimeSig::mag() const
       {
-      return staff() ? staff()->mag(tick()) : 1.0;
+      return timeSigPlacement() == TimeSigPlacement::NORMAL && staff() ? staff()->mag(tick()) : 1.0;
       }
 
 //---------------------------------------------------------
@@ -83,6 +166,14 @@ bool TimeSig::acceptDrop(EditData& data) const
 //   drop
 //---------------------------------------------------------
 
+Measure* TimeSig::changeMeasure() const
+      {
+      if (!parent() || !parent()->isSegment())
+            return nullptr;
+
+      return score()->tick2measure(segment()->tick());
+      }
+
 Element* TimeSig::drop(EditData& data)
       {
       Element* e = data.dropElement;
@@ -90,7 +181,7 @@ Element* TimeSig::drop(EditData& data)
             // change timesig applies to all staves, can't simply set subtype
             // for this one only
             // ownership of e is transferred to cmdAddTimeSig
-            score()->cmdAddTimeSig(measure(), staffIdx(), toTimeSig(e), false);
+            score()->cmdAddTimeSig(changeMeasure(), staffIdx(), toTimeSig(e), false);
             return 0;
             }
       delete e;
@@ -126,6 +217,8 @@ void TimeSig::setDenominatorString(const QString& a)
 void TimeSig::write(XmlWriter& xml) const
       {
       xml.stag(this);
+      if (parent() && parent()->isSegment() && (isCourtesy() || segment()->rtick().isNotZero()))
+            xml.tag("isCourtesy", isCourtesy());
       writeProperty(xml, Pid::TIMESIG_TYPE);
       Element::writeProperties(xml);
 
@@ -208,6 +301,10 @@ void TimeSig::read(XmlReader& e)
                   _groups.read(e);
             else if (readStyledProperty(e, tag))
                   ;
+            else if (tag == "isCourtesy") {
+                  setIsCourtesy(e.readBool());
+                  setFlag(ElementFlag::COURTESY_TAG_READ, true);
+                  }
             else if (!Element::readProperties(e))
                   e.unknown();
             }
@@ -252,10 +349,11 @@ Pid TimeSig::propertyId(const QStringRef& name) const
 
 void TimeSig::layout()
       {
-      setPos(0.0, 0.0);
+      setPos(0.0, drawingYOffset());
       qreal _spatium = spatium();
 
       setbbox(QRectF());                  // prepare for an empty time signature
+      if (!showOnThisStaff()) { ns.clear(); ds.clear(); return; }
       pointLargeLeftParen = QPointF();
       pz = QPointF();
       pn = QPointF();
@@ -298,30 +396,30 @@ void TimeSig::layout()
       // C and Ccut are placed at the middle of the staff: use yoff directly
       if (sigType ==  TimeSigType::FOUR_FOUR) {
             pz = QPointF(0.0, yoff);
-            setbbox(symBbox(SymId::timeSigCommon).translated(pz));
+            setbbox(score()->scoreFont()->bbox(drawingSymbol(SymId::timeSigCommon), QSizeF(magS() * drawingScale())).translated(pz));
             ns.clear();
-            ns.push_back(SymId::timeSigCommon);
+            ns.push_back(drawingSymbol(SymId::timeSigCommon));
             ds.clear();
             }
       else if (sigType == TimeSigType::ALLA_BREVE) {
             pz = QPointF(0.0, yoff);
-            setbbox(symBbox(SymId::timeSigCutCommon).translated(pz));
+            setbbox(score()->scoreFont()->bbox(drawingSymbol(SymId::timeSigCutCommon), QSizeF(magS() * drawingScale())).translated(pz));
             ns.clear();
-            ns.push_back(SymId::timeSigCutCommon);
+            ns.push_back(drawingSymbol(SymId::timeSigCutCommon));
             ds.clear();
             }
       else if (sigType == TimeSigType::CUT_BACH) {
             pz = QPointF(0.0, yoff);
-            setbbox(symBbox(SymId::timeSigCut2).translated(pz));
+            setbbox(score()->scoreFont()->bbox(drawingSymbol(SymId::timeSigCut2), QSizeF(magS() * drawingScale())).translated(pz));
             ns.clear();
-            ns.push_back(SymId::timeSigCut2);
+            ns.push_back(drawingSymbol(SymId::timeSigCut2));
             ds.clear();
             }
       else if (sigType == TimeSigType::CUT_TRIPLE) {
             pz = QPointF(0.0, yoff);
-            setbbox(symBbox(SymId::timeSigCut3).translated(pz));
+            setbbox(score()->scoreFont()->bbox(drawingSymbol(SymId::timeSigCut3), QSizeF(magS() * drawingScale())).translated(pz));
             ns.clear();
-            ns.push_back(SymId::timeSigCut3);
+            ns.push_back(drawingSymbol(SymId::timeSigCut3));
             ds.clear();
             }
       else {
@@ -335,7 +433,10 @@ void TimeSig::layout()
                   }
 
             ScoreFont* font = score()->scoreFont();
-            QSizeF mag(magS() * _scale);
+            for (SymId& id : ns) id = drawingSymbol(id);
+            for (SymId& id : ds) id = drawingSymbol(id);
+            const QSizeF scale = drawingScale();
+            QSizeF mag(magS() * scale);
 
             QRectF numRect = font->bbox(ns, mag);
             QRectF denRect = font->bbox(ds, mag);
@@ -344,7 +445,8 @@ void TimeSig::layout()
             // number of lines is odd: 0.0 (strings are directly above and below the middle line)
             // number of lines even:   0.05 (strings are moved up/down to leave 1/10sp between them)
 
-            qreal displ = (numOfLines & 1) ? 0.0 : (0.05 * _spatium);
+            qreal displ = ((numOfLines & 1) ? 0.0 : (0.05 * _spatium))
+                        + 0.5 * numeralDistance() * scale.height();
 
             //align on the wider
             qreal pzY = yoff - (denRect.width() < 0.01 ? 0.0 : (displ + numRect.height() * .5));
@@ -376,6 +478,38 @@ void TimeSig::layout()
                   addbbox(QRect(pointLargeRightParen.x(), pointLargeRightParen.y() - denRect.height(),  _spatium / 2, numRect.height() + denRect.height()));
                   }
             }
+      if (timeSigPlacement() == TimeSigPlacement::ABOVE_STAVES) {
+            rypos() = -bbox().bottom() + drawingYOffset();
+            rxpos() = -bbox().left();
+            if (parent() && parent()->isSegment()) {
+                  if (segment()->isType(SegmentType::TimeSigRepeatAnnounce)) rxpos() = -bbox().right();
+                  else if (segment()->isType(SegmentType::TimeSigAnnounce)) {
+                        const bool center = score()->styleB(Sid::timeSigCenterOnBarline);
+                        const Sid margin = center ? Sid::timeSigVSMarginCentered : Sid::timeSigVSMarginNonCentered;
+                        if (score()->styleI(margin) == int(TimeSigVSMargin::RIGHT_ALIGN_TO_BARLINE)) rxpos() = -bbox().right();
+                        else if (center) rxpos() = -bbox().center().x();
+                        }
+                  }
+            }
+      else if (timeSigPlacement() == TimeSigPlacement::ACROSS_STAVES) {
+            rypos() = -bbox().top() + drawingYOffset();
+            System* sys = parent() && parent()->isSegment() ? measure()->system() : nullptr;
+            if (sys && staffIdx() < sys->staves()->size() && score()->styleB(Sid::timeSigCenterAcrossStaveGroup)) {
+                  const int last = lastStaffInDrawingGroup();
+                  if (last < sys->staves()->size()) {
+                        // Studio positions the meter's reference baseline halfway
+                        // between the bottom edges of the first and last staves.
+                        // Do not substitute glyph-bbox centering: font metrics and
+                        // one-line/custom/small staves need the same anchor rule.
+                        auto bottom = [this, sys](int idx) {
+                              const Staff* st = score()->staff(idx);
+                              const qreal height = (st->lines(tick()) - 1) * st->lineDistance(tick()) * st->spatium(tick());
+                              return sys->staff(idx)->y() + height;
+                              };
+                        rypos() = 0.5 * (bottom(last) - bottom(staffIdx()));
+                        }
+                  }
+            }
       }
 
 //---------------------------------------------------------
@@ -384,16 +518,120 @@ void TimeSig::layout()
 
 void TimeSig::draw(QPainter* painter) const
       {
+      if (!showOnThisStaff()) return;
       if (staff() && !const_cast<const Staff*>(staff())->staffType(tick())->genTimesig())
             return;
       painter->setPen(curColor());
 
-      drawSymbols(ns, painter, pz, _scale);
-      drawSymbols(ds, painter, pn, _scale);
+      drawSymbols(ns, painter, pz, drawingScale());
+      drawSymbols(ds, painter, pn, drawingScale());
 
       if (_largeParentheses) {
-            drawSymbol(SymId::timeSigParensLeft,  painter, pointLargeLeftParen,  _scale.width());
-            drawSymbol(SymId::timeSigParensRight, painter, pointLargeRightParen, _scale.width());
+            drawSymbol(SymId::timeSigParensLeft,  painter, pointLargeLeftParen,  drawingScale().width());
+            drawSymbol(SymId::timeSigParensRight, painter, pointLargeRightParen, drawingScale().width());
+            }
+      }
+
+void TimeSig::alignAboveBarline()
+      {
+      if (timeSigPlacement() != TimeSigPlacement::ABOVE_STAVES || !parent() || !parent()->isSegment() || bbox().isEmpty()) return;
+      Segment* seg = segment();
+      if (seg->isType(SegmentType::TimeSigRepeatAnnounce)) { rxpos() = -bbox().right(); return; }
+      Segment* bar = nullptr;
+      Segment* key = nullptr;
+      bool repeatCourtesy = false;
+      for (Segment* prev = seg->prev1(); prev && prev->tick() == seg->tick(); prev = prev->prev1()) {
+            if (!prev->enabled() || prev->measure()->system() != measure()->system()) continue;
+            if (!bar && prev->isType(SegmentType::EndBarLine)) bar = prev;
+            if (!key && prev->segmentType() == SegmentType::KeySig && prev->minRight() > 0.01) key = prev;
+            if (prev->isType(SegmentType::TimeSigRepeatAnnounce)) repeatCourtesy = true;
+            }
+      const qreal origin = measure()->x() + seg->x();
+      const bool center = score()->styleB(Sid::timeSigCenterOnBarline);
+      const Sid margin = center ? Sid::timeSigVSMarginCentered : Sid::timeSigVSMarginNonCentered;
+      const bool insetSignature = seg->isType(SegmentType::TimeSigAnnounce)
+                           && score()->styleI(margin) == int(TimeSigVSMargin::RIGHT_ALIGN_TO_BARLINE);
+      if (bar && (!repeatCourtesy || insetSignature)) {
+            const qreal x = bar->measure()->x() + bar->x() + bar->minRight() - 0.5 * score()->styleP(Sid::barWidth);
+            rxpos() = x - origin - (insetSignature ? bbox().right() : center ? bbox().center().x() : bbox().left());
+            }
+      else if (key)
+            rxpos() = key->measure()->x() + key->x() - origin - bbox().left();
+      else rxpos() = -bbox().left() + (repeatCourtesy ? 0.5 * spatium() : 0.0);
+      }
+
+void clipTimeSignatureDrawing(const Element* line, const System* sys, QPainter* painter)
+      {
+      if (!sys || line->score()->styleI(Sid::timeSigPlacement) == int(TimeSigPlacement::NORMAL)) return;
+      const qreal padding = 0.25 * line->spatium();
+      const QRectF bounds = line->bbox().adjusted(-line->spatium(), -line->spatium(), line->spatium(), line->spatium());
+      const QPointF origin = line->pagePos();
+      QPainterPath clip;
+      clip.addRect(bounds);
+      bool masked = false;
+      QList<Element*> candidates;
+#ifdef USE_BSP
+      // Reuse the page's spatial index so repainting a long continuous system
+      // does not rescan every measure for every staff line or barline.
+      if (sys->page()) candidates = sys->page()->items(bounds.translated(origin).adjusted(-padding, -padding, padding, padding));
+#else
+      for (MeasureBase* mb : sys->measures()) {
+            if (!mb->isMeasure()) continue;
+            for (const Segment& seg : toMeasure(mb)->segments()) {
+                  if (!seg.enabled() || !seg.isType(SegmentType::TimeSigTypes)) continue;
+                  for (Element* e : seg.elist()) if (e && e->isTimeSig()) candidates.append(e);
+                  }
+            }
+#endif
+      for (const Element* e : candidates) {
+            if (!e->isTimeSig() || !e->visible() || e->bbox().isEmpty()) continue;
+            const TimeSig* ts = toTimeSig(e);
+            if (!ts->parent() || !ts->parent()->isSegment() || !ts->segment()->enabled()
+                || ts->measure()->system() != sys || !ts->showOnThisStaff()) continue;
+            QRectF mask = ts->bbox().translated(ts->pagePos() - origin);
+            mask.adjust(-padding, -padding, padding, padding);
+            if (!bounds.intersects(mask)) continue;
+            QPainterPath hole; hole.addRect(mask);
+            clip = clip.subtracted(hole);
+            masked = true;
+            }
+      if (masked) painter->setClipPath(clip, Qt::IntersectClip);
+      }
+
+void Score::layoutTimeSignatureDrawing(System* sys, bool finalPass)
+      {
+      if (styleI(Sid::timeSigPlacement) == int(TimeSigPlacement::NORMAL)) return;
+      for (MeasureBase* mb : sys->measures()) {
+            if (!mb->isMeasure()) continue;
+            Measure* m = toMeasure(mb);
+            for (Segment& seg : m->segments()) {
+                  if (!seg.enabled() || !seg.isType(SegmentType::TimeSigTypes)) continue;
+                  for (Element* e : seg.elist()) {
+                        if (!e || !e->isTimeSig()) continue;
+                        TimeSig* ts = toTimeSig(e);
+                        if (!finalPass || ts->timeSigPlacement() == TimeSigPlacement::ACROSS_STAVES) ts->layout();
+                        else if (!ts->showOnThisStaff()) ts->setbbox(QRectF());
+                        ts->alignAboveBarline();
+                        }
+                  // An inset trailer and a repeat-destination courtesy are distinct
+                  // meters. Keep both, packing the latter to the trailer's left.
+                  if (seg.isType(SegmentType::TimeSigAnnounce)
+                      && styleI(styleB(Sid::timeSigCenterOnBarline) ? Sid::timeSigVSMarginCentered : Sid::timeSigVSMarginNonCentered)
+                         == int(TimeSigVSMargin::RIGHT_ALIGN_TO_BARLINE)) {
+                        Segment* repeat = m->findSegmentR(SegmentType::TimeSigRepeatAnnounce, m->ticks());
+                        if (repeat && repeat->enabled()) {
+                              for (Element* e : seg.elist()) {
+                                    if (!e || !e->isTimeSig() || e->bbox().isEmpty()) continue;
+                                    Element* previous = repeat->element(e->track());
+                                    if (!previous || previous->bbox().isEmpty()) continue;
+                                    const qreal left = seg.x() + e->x() + e->bbox().left() - 0.5 * spatium();
+                                    previous->rxpos() = left - repeat->x() - previous->bbox().right();
+                                    }
+                              }
+                        }
+                  }
+            m->layoutCourtesyParentheses();
+            for (Segment& seg : m->segments()) if (seg.enabled()) seg.createShapes();
             }
       }
 
@@ -454,7 +692,7 @@ QVariant TimeSig::getProperty(Pid propertyId) const
             case Pid::TIMESIG_TYPE:
                   return int(_timeSigType);
             case Pid::SCALE:
-                  return _scale;
+                  return drawingScale();
             default:
                   return Element::getProperty(propertyId);
             }
@@ -521,7 +759,7 @@ QVariant TimeSig::propertyDefault(Pid id) const
             case Pid::TIMESIG_TYPE:
                   return int(TimeSigType::NORMAL);
             case Pid::SCALE:
-                  return score()->styleV(Sid::timesigScale);
+                  return score()->styleV(getPropertyStyle(Pid::SCALE));
             default:
                   return Element::propertyDefault(id);
             }

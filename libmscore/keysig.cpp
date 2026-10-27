@@ -112,7 +112,7 @@ void KeySig::layout()
             Clef* c = nullptr;
             if (segment()) {
                   for (Segment* seg = segment()->prev1(); !c && seg && seg->tick() == tick(); seg = seg->prev1())
-                        if (seg->enabled() && (seg->isClefType() || seg->isHeaderClefType()))
+                        if (seg->enabled() && seg->isType(SegmentType::ClefTypes))
                               c = toClef(seg->element(track()));
                   }
             if (c)
@@ -151,7 +151,7 @@ void KeySig::layout()
             const bool newSection = (!segment()
                || (segment()->rtick().isZero() && (!prevMeasure || prevMeasure->sectionBreak()))
                );
-            naturalsOn = !newSection && (score()->styleI(Sid::keySigNaturals) != int(KeySigNatural::NONE) || (t1 == 0));
+            naturalsOn = (!newSection || isCourtesy()) && (score()->styleI(Sid::keySigNaturals) != int(KeySigNatural::NONE) || (t1 == 0));
             }
 
 
@@ -166,7 +166,9 @@ void KeySig::layout()
       int coffset = 0;
       Key t2      = Key::C;
       if (naturalsOn) {
-            if (staff())
+            if (_courtesyPreviousKey != 100)
+                  t2 = Key(_courtesyPreviousKey);
+            else if (staff())
                   t2 = staff()->key(tick() - Fraction(1, 480*4));
             if (t2 == Key::C)
                   naturalsOn = false;
@@ -365,6 +367,8 @@ void KeySig::setKey(Key key)
 void KeySig::write(XmlWriter& xml) const
       {
       xml.stag(this);
+      if (parent() && parent()->isSegment() && (isCourtesy() || segment()->rtick().isNotZero()))
+            xml.tag("isCourtesy", isCourtesy());
       Element::writeProperties(xml);
       if (_sig.isAtonal()) {
             xml.tag("custom", 1);
@@ -480,6 +484,10 @@ void KeySig::read(XmlReader& e)
                   subtype = e.readInt();
             else if (tag == "forInstrumentChange")
                   setForInstrumentChange(e.readBool());
+            else if (tag == "isCourtesy") {
+                  setIsCourtesy(e.readBool());
+                  setFlag(ElementFlag::COURTESY_TAG_READ, true);
+                  }
             else if (!Element::readProperties(e))
                   e.unknown();
             }
