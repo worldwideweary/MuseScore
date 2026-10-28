@@ -1,5 +1,41 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.173 WIP: independent stem anchors for continued slurs
+
+User verification: v0.172 beam and spacing mtests pass, spacing in 79.16 s.
+The new MS37E/MS475 clips confirm that the unedited lower P2 slur now stays
+fixed. Close that sibling-curve issue. A separate continued-slur difference
+remains: while its start moves within P1, Evolution's upper P2 endpoint changes
+height even though its end chord stays fixed. Studio's P2 endpoint stays put.
+
+Re-fetched the pinned Studio v4.7.5 slurtielayout.cpp and verified git blob
+cc4d7659bffd339ebf6b757d4d70b284812d1fe1. In slurPos, the continued-slur stem
+selection anchors each unbeamed endpoint on the slur side to its own stem,
+including when the remote stem direction differs. Evolution's older selection
+can depend on both endpoints being unbeamed or on the start's beam branch;
+otherwise its pitch-dependent floating branch can move the opposite endpoint.
+
+Under spacingLayout4, apply the source's continued-slur unbeamed stem-side
+selection in both directions. Retain existing stem-offset metrics for this
+increment. Keep same-system slurs, tablature and tremolo-containing endpoints
+on their existing branches. No new retained state, spacing query, reflow pass,
+manual offset reset or historical-layout shortcut is introduced.
+
+Add continuedSlurStemAnchors4 using v0.167-grace-policy-systems.mscx. Probe all
+main and grace chords across both systems, with UP and DOWN slurs. Require
+both the raw fixed anchor and rendered fixed endpoint to stay constant when
+only the remote anchor changes. Verify same-system anchor positions remain
+unchanged and toggling the style off restores the captured legacy coordinates
+for every probe. Require published note/beam geometry to remain unchanged.
+
+Changed files: libmscore/slur.cpp, mtest/libmscore/layout/tst_spacing.cpp and
+this guide. Local validation: Debug/NDEBUG C++11 syntax checks with regenerated
+moc and warning flags, whitespace check and exact patch replay. Native mtests
+and visual verification remain pending. Apply after v0.172, rerun the usual
+spacing/beam pair, then repeat the supplied clip's P2 start-anchor traversal.
+Also check the reverse case, extending an end anchor into the next system.
+Broader beam-side vertical clearance and measured nudge latency remain open.
+
 ## v0.172 correction: preserve the regression command's end anchor
 
 The user's v0.171 tst_spacing XML reports one failing case,

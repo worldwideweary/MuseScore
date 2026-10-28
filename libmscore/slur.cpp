@@ -1143,6 +1143,18 @@ void Slur::slurPos(SlurPos* sp)
                   sa2 = SlurAnchor::STEM;
             }
 
+      if (score()->styleB(Sid::spacingLayout4) && !useTablature
+          && sp->system1 && sp->system2 && sp->system1 != sp->system2
+          && (!sc || !sc->tremolo()) && (!ec || !ec->tremolo())) {
+            // Studio 4.7.5 slurPos: continued slurs anchor an unbeamed
+            // stem-side endpoint to its own stem. Do not let a remote beam,
+            // stem-direction change or pitch float that fixed local endpoint.
+            if (scr->up() == _up && stem1 && !scr->beam())
+                  sa1 = SlurAnchor::STEM;
+            if (ecr->up() == _up && stem2 && !ecr->beam())
+                  sa2 = SlurAnchor::STEM;
+            }
+
       qreal __up = _up ? -1.0 : 1.0;
       qreal hw1 = note1 ? note1->tabHeadWidth(stt) : scr->width();      // if stt == 0, tabHeadWidth()
       qreal hw2 = note2 ? note2->tabHeadWidth(stt) : ecr->width();      // defaults to headWidth()

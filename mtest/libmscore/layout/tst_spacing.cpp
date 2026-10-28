@@ -75,6 +75,7 @@ class TestSpacing : public QObject, public MTest {
       void graceMergedSlurCurves_data();
       void graceMergedSlurCurves();
       void graceSlurSiblingAnchors4();
+      void continuedSlurStemAnchors4();
       void slurOffsetUndoAdmission4();
       void mainStartSlurSpacing4_data();
       void mainStartSlurSpacing4();
@@ -7551,6 +7552,93 @@ void TestSpacing::mainStartSlurSpacing4()
       QVERIFY2(published(), qPrintable(reason));
       QVERIFY(same(graceLayoutSnapshot4(score), withAutomatic));
       delete score;
+      }
+
+void TestSpacing::continuedSlurStemAnchors4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.167-grace-policy-systems.mscx"));
+      QVERIFY(score);
+      score->doLayout();
+      QVERIFY(score->firstMeasure()->system() != score->lastMeasure()->system());
+      std::vector<Chord*> first, last;
+      const auto collect = [](Measure* measure, std::vector<Chord*>& chords) {
+            for (const Segment& segment : measure->segments()) {
+                  Element* item = segment.element(0);
+                  if (!segment.isChordRestType() || !item || !item->isChord()) continue;
+                  Chord* main = toChord(item);
+                  for (Chord* grace : main->graceNotesBefore()) chords.push_back(grace);
+                  chords.push_back(main);
+                  for (Chord* grace : main->graceNotesAfter()) chords.push_back(grace);
+                  }
+            };
+      collect(score->firstMeasure(), first);
+      collect(score->lastMeasure(), last);
+      const auto same = [](const QPointF& a, const QPointF& b) {
+            return qIsFinite(a.x()) && qIsFinite(a.y()) && qIsFinite(b.x()) && qIsFinite(b.y())
+                  && qAbs(a.x() - b.x()) < 1e-6 && qAbs(a.y() - b.y()) < 1e-6;
+            };
+      const auto initialNotes = graceMergedSnapshot4(score.get());
+      for (bool up : {false, true}) {
+            Chord* fixedStart = nullptr;
+            Chord* fixedEnd = nullptr;
+            for (Chord* chord : first)
+                  if (!fixedStart && !chord->isGrace() && !chord->beam() && chord->stem() && chord->up() == up)
+                        fixedStart = chord;
+            for (Chord* chord : last)
+                  if (!chord->isGrace() && !chord->beam() && chord->stem() && chord->up() == up)
+                        fixedEnd = chord;
+            QVERIFY(fixedStart && fixedEnd);
+            Slur continued(score.get());
+            continued.setTrack(0);
+            continued.setTrack2(0);
+            continued.setSlurDirection(up ? Direction::UP : Direction::DOWN);
+            const auto positions = [&](Chord* start, Chord* end) {
+                  continued.setTick(start->tick());
+                  continued.setTicks(end->tick() - start->tick());
+                  continued.setStartElement(start);
+                  continued.setEndElement(end);
+                  continued.layout(); // Resolve the explicit side through the native entry point.
+                  SlurPos pos;
+                  continued.slurPos(&pos);
+                  return pos;
+                  };
+            // Retain legacy coordinates for every probe, then verify that
+            // toggling off restores them without changing published notation.
+            score->setStyleValue(Sid::spacingLayout4, false);
+            std::vector<SlurPos> legacyStarts, legacyEnds;
+            for (Chord* start : first) legacyStarts.push_back(positions(start, fixedEnd));
+            for (Chord* end : last) legacyEnds.push_back(positions(fixedStart, end));
+            const SlurPos legacyLocal = positions(first.front(), first.back());
+            score->setStyleValue(Sid::spacingLayout4, true);
+            const SlurPos baseline = positions(fixedStart, fixedEnd);
+            const QPointF visibleStart = continued.frontSegment()->pos() + continued.frontSegment()->ups(Grip::START).pos();
+            const QPointF visibleEnd = continued.backSegment()->pos() + continued.backSegment()->ups(Grip::END).pos();
+            for (Chord* start : first) {
+                  const SlurPos current = positions(start, fixedEnd);
+                  QVERIFY2(same(current.p2, baseline.p2), "Remote start changed the fixed end anchor");
+                  QVERIFY2(same(continued.backSegment()->pos() + continued.backSegment()->ups(Grip::END).pos(), visibleEnd),
+                           "Remote start moved the fixed rendered end");
+                  }
+            for (Chord* end : last) {
+                  const SlurPos current = positions(fixedStart, end);
+                  QVERIFY2(same(current.p1, baseline.p1), "Remote end changed the fixed start anchor");
+                  QVERIFY2(same(continued.frontSegment()->pos() + continued.frontSegment()->ups(Grip::START).pos(), visibleStart),
+                           "Remote end moved the fixed rendered start");
+                  }
+            const SlurPos modernLocal = positions(first.front(), first.back());
+            QVERIFY(same(modernLocal.p1, legacyLocal.p1) && same(modernLocal.p2, legacyLocal.p2));
+            score->setStyleValue(Sid::spacingLayout4, false);
+            for (size_t i = 0; i < first.size(); ++i) {
+                  const SlurPos current = positions(first[i], fixedEnd);
+                  QVERIFY(same(current.p1, legacyStarts[i].p1) && same(current.p2, legacyStarts[i].p2));
+                  }
+            for (size_t i = 0; i < last.size(); ++i) {
+                  const SlurPos current = positions(fixedStart, last[i]);
+                  QVERIFY(same(current.p1, legacyEnds[i].p1) && same(current.p2, legacyEnds[i].p2));
+                  }
+            }
+      score->setStyleValue(Sid::spacingLayout4, true);
+      QVERIFY(graceMergedSnapshot4(score.get()) == initialNotes);
       }
 
 void TestSpacing::graceSlurSiblingAnchors4()
