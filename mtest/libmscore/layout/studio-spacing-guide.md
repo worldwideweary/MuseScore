@@ -3692,3 +3692,172 @@ spacing/beam mtests. Cumulative patches start at delivered v0.160; apply either
 the incremental sequence or the cumulative patch, never both. A separate full-
 series recovery patch is for rebuilding the original base, not for an existing
 patched checkout.
+
+
+### v0.163 WIP: root-direction declarations across capture domains
+
+Add identity-validated producer direction declarations for roots whose endpoints
+can lie outside a measure/system snapshot. Local endpoint membership remains
+unchanged. Duplicate, foreign, invalid or explicitly contradictory declarations
+fail before consuming input or replacing an owner. AUTO remains pending.
+Existing callers keep their previous behavior when no declarations are supplied.
+
+Files: spacinginput4.h/.cpp, tst_spacing.cpp and this guide. Extend the existing
+synthetic-root fixture with authoritative AUTO-root direction, duplicate/invalid
+rejection and owner/input preservation. Native tests remain deferred. Next bind
+native producer certificates and fresh root resolution at mutable boundaries;
+this API does not read cached Slur::up() or activate the policy itself.
+
+
+### v0.164 WIP: bind native producer and fresh query scopes
+
+Bind bounded measure factories after native beam directions/mirroring and before
+recursive chord layout. Bind system factories around prefix preparation and
+final fitting/publication. Capture callbacks remain read-only, create fresh
+owners per query and never retain physical memos across writes. Root producers
+run outside callbacks, at most once per LayoutContext; root directions are
+resolved again from current inputs rather than cached Slur::up(). The early
+root producer runs before createBeams so its stem refresh cannot override that
+measure's subsequent native beam direction production.
+
+Files: layout.cpp, spacinginput4.h/.cpp and this guide. Direction readiness now
+has a separate root-production certificate; existing measure certificates are
+established before recursive packing as well as at the completed-measure boundary.
+All bindings still request COMPATIBILITY pending the next activation checkpoint.
+Production does not collect whole-score views. Native testing remains deferred.
+Next thread explicit policy through natural/squeeze plans and activate matching
+prepared policy at all bound phases together.
+
+
+### v0.165 WIP: activate matching prepared policy through production
+
+Switch the bounded native factories to PREPARED and explicitly carry their mode
+into prefix natural planning and final natural/squeeze passes. Plan options now
+name the policy; prepared mode without an attachment owner rejects atomically.
+The no-owner/standalone compatibility APIs retain their defaults. Every squeeze
+retry preserves the selected policy. Policy provenance continues to prevent
+reuse of merged packing from a different mode.
+
+Files: spacingplan4.h/.cpp, layout.cpp and this guide. Early packing, mutable
+beam preparation, final planning and post-spacing publication are now connected
+under one prepared policy when spacingLayout4 is enabled. No new setting or
+serialization is introduced. Legacy style-off factories remain unbound. General
+articulation/tie/note-spanner, unsupported item and stronger-compression limits
+remain; this is not completion of the broader spacing audit. Native tests are
+deferred. Next add production-route consistency assertions and a compact visual
+score for internal/endpoint slurs, manual edits and boundary crossings.
+
+
+### v0.166 WIP: retained-layout proof uses the activated policy
+
+Update the anchor-edit horizontal proof to snapshot settled native inputs and
+request PREPARED explicitly. This avoids proving a newly prepared layout with
+compatibility constraints and unnecessarily taking the slower full-layout path.
+The snapshot API requires completed producers for every intersecting root span;
+it performs no refresh, lazy anchor resolution or geometry writes and is not
+used as a shortcut during mutable collection. Offset-only edits remain on their
+existing fast path without this extra proof.
+
+Files: spacinginput4.h/.cpp, layout.cpp, tst_spacing.cpp and this guide. Add one
+production-route test using the existing two-staff fixture: native publication
+must match a fresh prepared plan, all grace plans retain prepared provenance,
+no-owner prepared requests fail atomically, natural-width squeezing agrees with
+natural planning, queries preserve geometry and no factory binding escapes.
+Native test execution is deferred. Next prepare the visual gate and complete
+local syntax/protocol validation of the aggregate changes.
+
+
+### v0.167 WIP: aggregate production checks and visual gate
+
+Add v0.167-grace-policy-natural.mscx and v0.167-grace-policy-systems.mscx.
+Both enable beamLayout4 and spacingLayout4. They derive from the existing
+v0.145 fixture: two pitched staves, before/after merged groups, explicit upper
+and lower slurs, plus a new main-note root crossing the barline (AUTO on the
+upper staff, forced DOWN below). The second score forces that barline onto the
+next system. P1/P2 labels and the versioned title identify the comparison.
+
+Extend preparedSpacingProduction4 with both scores. Compare actual publication
+against prepared natural/squeeze/justification rules, not a compatibility plan
+or an assumption that every system is natural. Check policy provenance, query
+read-only behavior, atomic rejection, absence of escaped factory bindings and
+style OFF/ON round-trip geometry. Native test execution remains deferred.
+Files: tst_spacing.cpp, these two scores and this guide.
+
+This batch reaches the supported-path visual gate after aggregate native tests.
+Apply the cumulative-since-v0.162 patch OR incremental v0.163 through v0.167.
+Run ctest -j1 --output-on-failure -R '^(tst_spacing|tst_beam)$' once. Only after
+it passes, open the two v0.167 files in Evolution and Studio 4.7.5. Compare P1/P2
+main-to-grace gaps, internal grace spacing, beam heights and slope; the cross-
+barline AUTO/forced slurs should not change spacing according to whether the
+barline is a system break. Slur curve engraving itself is still a separate
+known difference: evaluate its effect on spacing, not exact curve equality.
+
+In Evolution, move an inner slur grip vertically and undo/redo it; note spacing
+must remain fixed. Shift+Arrow through first/second grace and main anchors,
+then back; a spacing change must follow actual endpoint-side constraints, not
+revert wholesale to compatibility packing. Preserve the existing manual
+control-point edits and one-command-per-arrow undo behavior. Toggle spacing
+OFF/ON and reopen to check persistence. Please provide one overview per engine
+for each score plus close-ups of any differing P1/P2 gap; no broad new corpus
+is requested at this gate.
+
+Outstanding beyond this gate: unsupported engraving/item coverage, the broader
+hybrid-fallback and full-prefix audit, and Debug performance profiling of the
+new root/query preparation. No claim is made that this completes all Studio
+spacing, fixes cross-staff inset tremolo behavior or ports slur curve layout.
+
+
+### v0.168 WIP: first-layout AUTO root look-ahead production
+
+A native AUTO root can reach a measure that has not yet run getNextMeasure.
+Before certifying that root, explicitly refresh native note lines/stem direction
+for its unproduced endpoint/span chords. Use the same updateLine/computeUp
+operations as the native slur direction producer; skip TAB/percussion and leave
+already certified native anchors untouched. Do not certify an entire future
+measure merely because some root inputs were refreshed. This runs only in the
+mutable producer phase, never in a query callback, pair loop or snapshot.
+
+Certify the current measure's initial native directions before this look-ahead,
+so it preserves the current native grace/voice choices; createBeams afterward
+can still update directions and subsequent declarations read those live values.
+Root production remains once per layout context and root direction resolution
+remains fresh after beam writes. Files: spacinginput4.cpp, layout.cpp and guide.
+
+The visual gate remains the two v0.167 scores and aggregate spacing/beam CTest
+command documented above. Native execution is deferred to the user's machine;
+local checks cannot establish rendered Studio parity or Debug responsiveness.
+
+
+Extend the production-route fixture test with both endpoint measures detached:
+corrupt an unproduced end chord's line/direction, certify only the start measure,
+run root production, restore the parents, then require corrected end inputs,
+unchanged start direction and no false certificate for the future measure. Both
+new v0.167 files must exercise this check. No assertion runs with detached
+measure parents. This adds tst_spacing.cpp to the v0.168 files.
+
+
+Normalize AUTO producer declarations on explicitly directed roots back to that
+literal direction, keeping the owner's direction vector consistent with its
+attachment flags. Add an assertion for that case to the existing declaration
+validation test. A pending AUTO request still remains pending.
+
+
+Local aggregate validation: fourteen Debug/NDEBUG C++11 syntax checks across
+input/collision/grace spacing, direction resolver, planner, layout and regenerated-
+moc spacing tests, with unused-parameter and signedness warnings enabled. Final
+changed input/layout/test files were checked again after the look-ahead and
+literal-direction fixes. The actual preparation function passes 3,600 extracted
+root-declaration validation/atomicity cases with mocked direction/flag kernels;
+the actual local-side helper passes 9,826 mock-DOM coordinate cases. XML fixture
+checks validate structure, note totals, connector balance and enabled settings.
+These are local syntax/protocol checks, not native rendering or mtest results.
+
+Saved checkpoints in this batch: v0.163 root declarations, v0.164 native query
+factories, v0.165 prepared-policy activation, v0.166 retained-layout proof,
+v0.167 visual/production fixtures, v0.168 first-layout producer look-ahead and
+literal-direction normalization. Incremental patches apply in that order from
+v0.162; the cumulative-since-v0.162 patch replaces the whole sequence. A separate
+cumulative-since-v0.160 option includes v0.161/v0.162 for a checkout still there.
+Do not apply both cumulative and incremental forms. No intermediate native test
+result is assumed in these WIPs; the next gate is one aggregate native build and
+spacing/beam CTest run, then the two visual score comparisons if it passes.

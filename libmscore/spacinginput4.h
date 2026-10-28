@@ -24,6 +24,7 @@ class Note;
 class Tie;
 class Spanner;
 class Slur;
+struct SpacingPreparedSlur4;
 
 enum class SpacingMemberKind4 { BEFORE, MAIN, AFTER };
 enum class SpacingEndpointKind4 { MISSING, CHORD, REST, NOTE, OTHER };
@@ -167,7 +168,7 @@ class SpacingAttachmentPreparation4 {
     std::vector<Direction> _slurDirections;
     SpacingSlurAttachments4 _attachments;
     friend bool prepareSpacingAttachments4(SpacingInput4&&, const std::vector<Direction>&,
-                                           SpacingAttachmentPreparation4&, QString*);
+                                           SpacingAttachmentPreparation4&, QString*, const std::vector<SpacingPreparedSlur4>*);
 public:
     SpacingAttachmentPreparation4() = default;
     SpacingAttachmentPreparation4(const SpacingAttachmentPreparation4&) = delete;
@@ -183,12 +184,23 @@ public:
     bool complete() const { return _input.score() && _attachments.complete(); }
 };
 
+// Root-level producer declarations can resolve directions whose endpoints lie
+// outside this capture domain. They never create local endpoint identities.
+// AUTO deliberately preserves a pending root. Duplicate/foreign roots or
+// declarations contradicting an explicit request fail atomically.
+struct SpacingPreparedSlur4 {
+    const Slur* item;
+    Direction direction;
+    SpacingPreparedSlur4(const Slur* root, Direction d) : item(root), direction(d) {}
+};
+
 // Compose the two preparation kernels once, outside plan/pair/prefix loops.
 // On success, consume and reset input; on failure preserve both input and result.
 // Pending producer directions are retained as pending, never replaced with
 // captured stem/slur observations. No score collection or DOM writes occur.
 bool prepareSpacingAttachments4(SpacingInput4&& input, const std::vector<Direction>& anchorDirections,
-                                SpacingAttachmentPreparation4& result, QString* reason = nullptr);
+                                SpacingAttachmentPreparation4& result, QString* reason = nullptr,
+                                const std::vector<SpacingPreparedSlur4>* roots = nullptr);
 
 // Explicit producer handoff by identity, independent of snapshot index order.
 // AUTO means not prepared; omitted anchors remain AUTO too. This is a caller
@@ -204,7 +216,8 @@ struct SpacingPreparedAnchor4 {
 // duplicate or invalid declarations atomically, including unmapped anchors.
 // Never call this score-wide operation from a plan/pair/prefix fitting loop.
 bool captureSpacingAttachments4(Score*, const std::vector<SpacingPreparedAnchor4>& prepared,
-                                SpacingAttachmentPreparation4& result, QString* reason = nullptr);
+                                SpacingAttachmentPreparation4& result, QString* reason = nullptr,
+                                const std::vector<SpacingPreparedSlur4>* roots = nullptr);
 
 // Pass-local producer completion records. Only the native measure-production
 // boundary calls produced(); invalidate before reprocessing or any skipped pass.
@@ -213,9 +226,14 @@ bool captureSpacingAttachments4(Score*, const std::vector<SpacingPreparedAnchor4
 // anchors. Nothing is inferred merely from geometry existing in the score.
 class SpacingDirectionReadiness4 {
     std::unordered_map<const Measure*, std::unordered_set<const ChordRest*>> _produced;
+    std::unordered_set<const Slur*> _rootProducers;
 public:
     void invalidate(const Measure* measure) { _produced.erase(measure); }
     void produced(const Measure*);
+    // Native write phase only. Certificate records production, not direction;
+    // subsequent captures resolve from current inputs without producer writes.
+    bool prepareRoot(Slur*);
+    bool rootPrepared(const Slur* root) const { return _rootProducers.count(root) != 0; }
     std::vector<SpacingPreparedAnchor4> declarations(const System*) const;
     std::vector<SpacingPreparedAnchor4> declarations(const Measure*) const;
 };
@@ -233,7 +251,14 @@ bool buildSpacingInput4(Score*, const SpacingInputScope4&, SpacingInput4& result
 // External root endpoints remain pending; no cached direction is substituted.
 // Works before the measure belongs to a system. Failure preserves result.
 bool captureMeasureSpacingAttachments4(const Measure*, const std::vector<SpacingPreparedAnchor4>& prepared,
-                                       SpacingAttachmentPreparation4& result, QString* reason = nullptr);
+                                       SpacingAttachmentPreparation4& result, QString* reason = nullptr,
+                                const std::vector<SpacingPreparedSlur4>* roots = nullptr);
+
+// Snapshot an already laid-out system for a retained-layout proof or test.
+// Caller guarantees all native direction producers for intersecting root spans
+// have completed. Never use this shortcut during measure collection or fitting.
+// No producers, lazy anchor repair or native geometry writes occur here.
+bool snapshotLaidOutSystemSpacing4(System*, SpacingAttachmentPreparation4& result, QString* reason = nullptr);
 
 // Finalized-system handoff: contiguous measures plus roots from the native
 // interval index, retaining native map order within equal start ticks. Current
@@ -241,6 +266,7 @@ bool captureMeasureSpacingAttachments4(const Measure*, const std::vector<Spacing
 // Omitted readiness declarations remain AUTO, including external endpoints.
 // No producers or geometry writes occur. Never use this in prefix fitting.
 bool captureSystemSpacingAttachments4(System*, const std::vector<SpacingPreparedAnchor4>& prepared,
-                                      SpacingAttachmentPreparation4& result, QString* reason = nullptr);
+                                      SpacingAttachmentPreparation4& result, QString* reason = nullptr,
+                                const std::vector<SpacingPreparedSlur4>* roots = nullptr);
 }
 #endif

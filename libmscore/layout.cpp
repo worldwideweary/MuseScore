@@ -66,6 +66,7 @@
 #include "spacinglayout4.h"
 #include "spacingplan4.h"
 #include "spacinginput4.h"
+#include "slurdirection4.h"
 #include "gracespacing4.h"
 #include <map>
 #include <cmath>
@@ -3161,6 +3162,74 @@ std::pair<qreal, qreal> extendedStemLenWithTwoNoteTremolo(Tremolo* tremolo, qrea
 //   getNextMeasure
 //---------------------------------------------------------
 
+// Own native producer certificates for a bounded domain, never a physical
+// query cache. Each callback builds and destroys a fresh read-only owner.
+static std::vector<const Measure*> spacingMeasures4(const System* system)
+{
+    std::vector<const Measure*> result;
+    if (system) for (const MeasureBase* mb : system->measures())
+        if (mb && mb->isMeasure()) result.push_back(toMeasure(mb));
+    return result;
+}
+
+class NativeGraceInputs4 {
+    Score* _score;
+    SpacingDirectionReadiness4* _readiness;
+    std::vector<const Measure*> _measures;
+    SpacingGraceQueryFactory4 _factory;
+    std::vector<const Slur*> roots(const std::vector<const Measure*>& measures) const
+    {
+        std::vector<const Slur*> result;
+        if (!_score || measures.empty()) return result;
+        const auto overlaps = _score->spannerMap().findOverlappingInMapOrder(
+            measures.front()->tick().ticks(), measures.back()->endTick().ticks());
+        for (const Spanner* item : overlaps)
+            if (item && item->isSlur()) result.push_back(toSlur(item));
+        return result;
+    }
+    std::vector<SpacingPreparedSlur4> declarations(const std::vector<const Measure*>& measures) const
+    {
+        std::vector<SpacingPreparedSlur4> result;
+        if (!_readiness) return result;
+        for (const Slur* root : roots(measures)) {
+            if (!_readiness->rootPrepared(root)) continue;
+            Direction direction = Direction::AUTO;
+            resolvePreparedSlurDirection4(root, direction); // Read-only; AUTO on failure.
+            result.emplace_back(root, direction);
+        }
+        return result;
+    }
+    bool capture(const Chord* chord, SpacingAttachmentPreparation4& owner, QString* reason) const
+    {
+        if (!_readiness || !chord || chord->score() != _score
+            || std::find(_measures.begin(), _measures.end(), chord->measure()) == _measures.end()) return false;
+        const std::vector<const Measure*> local { chord->measure() };
+        const auto directions = _readiness->declarations(chord->measure());
+        const auto rootDirections = declarations(local);
+        return captureMeasureSpacingAttachments4(chord->measure(), directions, owner, reason, &rootDirections);
+    }
+public:
+    NativeGraceInputs4(Score* score, std::vector<const Measure*> measures, SpacingDirectionReadiness4* readiness)
+        : _score(score), _readiness(readiness), _measures(std::move(measures)),
+          _factory([this](const Chord* chord, SpacingAttachmentPreparation4& owner, QString* reason) {
+              return capture(chord, owner, reason);
+          }, SpacingSlurPolicy4::PREPARED)
+    {
+        // Outside every read-only query. A successful root is produced at most
+        // once per LayoutContext, then only its current direction is resolved.
+        if (_readiness) for (const Slur* root : roots(_measures))
+            _readiness->prepareRoot(const_cast<Slur*>(root));
+    }
+    const SpacingGraceQueryFactory4* factory() const { return &_factory; }
+    bool captureSystem(System* system, SpacingAttachmentPreparation4& owner, QString* reason = nullptr) const
+    {
+        if (!_readiness || spacingMeasures4(system) != _measures) return false;
+        const auto directions = _readiness->declarations(system);
+        const auto rootDirections = declarations(_measures);
+        return captureSystemSpacingAttachments4(system, directions, owner, reason, &rootDirections);
+    }
+};
+
 void Score::getNextMeasure(LayoutContext& lc)
       {
       lc.prevMeasure = lc.curMeasure;
@@ -3324,6 +3393,14 @@ void Score::getNextMeasure(LayoutContext& lc)
                   }
             }
 
+      std::unique_ptr<NativeGraceInputs4> graceInputs;
+      if (lc.spacingDirections4) {
+            // Initial native directions are ready. The certificate stores
+            // identities; createBeams may still change their live values.
+            lc.spacingDirections4->produced(measure);
+            graceInputs.reset(new NativeGraceInputs4(score(), { measure }, lc.spacingDirections4.get()));
+            }
+
       createBeams(lc, measure);
 
       // Both chords' note lines and beam memberships are now current. Resolve
@@ -3400,6 +3477,10 @@ void Score::getNextMeasure(LayoutContext& lc)
             }
       else if (seg)
             score()->undoRemoveElement(seg);
+
+      // The initial identity certificate already exists; read current
+      // post-beam directions when each query captures its inputs.
+      SpacingGraceQueryScope4 graceScope(score(), graceInputs ? graceInputs->factory() : nullptr);
 
       for (Segment& s : measure->segments()) {
             // TODO? maybe we do need to process it here to make it possible to enable later
@@ -4277,7 +4358,8 @@ static bool prepareGraceBeamsForSpacing4(System* system, std::vector<GraceBeamPr
 // Fit only ordinary prefixes whose header/barline geometry remains unchanged
 // when the next measure is accepted or this system is finalized. Keep the
 // native width accumulator intact for unsupported-context fallback/backtracking.
-static bool systemFittingWidth4(System* system, qreal& width, std::vector<GraceBeamPreparation4>& preparedBeams)
+static bool systemFittingWidth4(System* system, qreal& width, std::vector<GraceBeamPreparation4>& preparedBeams,
+                                SpacingDirectionReadiness4* readiness)
 {
     if (MScore::noHorizontalStretch || system->score()->styleB(Sid::hideEmptyStaves))
         return false;
@@ -4299,11 +4381,16 @@ static bool systemFittingWidth4(System* system, qreal& width, std::vector<GraceB
         }
         first = false;
     }
+    NativeGraceInputs4 inputs(system->score(), spacingMeasures4(system), readiness);
+    SpacingGraceQueryScope4 graceScope(system->score(), inputs.factory());
     std::vector<GraceMergedGeometry4> readyMerged;
     if (!prepareGraceBeamsForSpacing4(system, preparedBeams, readyMerged)) return false;
     SpacingPlan4 plan;
-    if (!buildSpacingPlan4(system, plan, nullptr, SpacingPlanOptions4(), &readyMerged))
-        return false;
+    SpacingAttachmentPreparation4 attachments;
+    SpacingPlanOptions4 options;
+    options.slurPolicy = inputs.factory()->policy();
+    if (!inputs.captureSystem(system, attachments)
+        || !buildSpacingPlan4(system, plan, attachments, nullptr, options, &readyMerged)) return false;
     width = plan.width;
     return true;
 }
@@ -4455,7 +4542,7 @@ System* Score::collectSystem(LayoutContext& lc)
 
             qreal fittingWidth = minWidth + ww;
             if (styleB(Sid::spacingLayout4))
-                  systemFittingWidth4(system, fittingWidth, preparedBeams);
+                  systemFittingWidth4(system, fittingWidth, preparedBeams, lc.spacingDirections4.get());
             bool doBreak = (system->measures().size() > 1) && (fittingWidth > systemWidth);
             if (doBreak) {
                   breakMeasure = lc.curMeasure;
@@ -4652,6 +4739,10 @@ System* Score::collectSystem(LayoutContext& lc)
       // Collection and squeezing still use the existing measure widths. A
       // complete fitting plan, including bounded squeezing when necessary,
       // is required before any native positions change.
+      std::unique_ptr<NativeGraceInputs4> finalInputs;
+      if (lc.spacingDirections4)
+            finalInputs.reset(new NativeGraceInputs4(this, spacingMeasures4(system), lc.spacingDirections4.get()));
+      SpacingGraceQueryScope4 finalGraceScope(this, finalInputs ? finalInputs->factory() : nullptr);
       std::vector<GraceMergedGeometry4> readyMerged;
       const bool graceGeometryReady = prepareGraceBeamsForSpacing4(system, preparedBeams, readyMerged);
       SpacingPlan4 studioPlan;
@@ -4659,15 +4750,14 @@ System* Score::collectSystem(LayoutContext& lc)
       std::map<Measure*, const SpacingMeasurePlan4*> studioMeasures;
       // One system-scoped musical view, captured AFTER beam/shape writes.
       // Reuse it through read-only fitting; destroy before publishing positions.
-      // Pending direction inputs remain pending: this step preserves the current
-      // collision admission/kerning policy, not the general attachment policy.
+      // Early packing, beam preparation, natural/squeeze fitting and local
+      // publication all request the same prepared attachment policy.
       bool studioFits = false;
       if (styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch && graceGeometryReady) {
             SpacingAttachmentPreparation4 attachments;
-            const auto directions = lc.spacingDirections4 ? lc.spacingDirections4->declarations(system)
-                  : std::vector<SpacingPreparedAnchor4>();
-            studioFits = captureSystemSpacingAttachments4(system, directions, attachments)
-                  && squeezeSpacingPlan4(system, systemWidth, studioPlan, attachments, nullptr, &readyMerged);
+            studioFits = finalInputs && finalInputs->captureSystem(system, attachments)
+                  && squeezeSpacingPlan4(system, systemWidth, studioPlan, attachments, nullptr, &readyMerged,
+                                         finalInputs->factory()->policy());
             }
       if (studioFits) {
             useStudioPlan = !justifySystem4(lm, lc.curMeasure, studioPlan.width, systemWidth,
@@ -5866,7 +5956,12 @@ bool Score::doLayoutSlurEdit4(const SlurSegment* segment, bool anchor)
             if (MScore::noHorizontalStretch || styleD(Sid::lastSystemFillLimit) != 1.0) return false;
             SpacingProfileScope4 proof(SpacingProfileStage4::SLUR_ANCHOR_PROOF);
             SpacingPlan4 plan;
-            if (!buildSpacingPlan4(system, plan) || !spacingPlanMatches4(plan)) return false;
+            SpacingAttachmentPreparation4 attachments;
+            SpacingPlanOptions4 options;
+            options.slurPolicy = SpacingSlurPolicy4::PREPARED;
+            if (!snapshotLaidOutSystemSpacing4(system, attachments)
+                || !buildSpacingPlan4(system, plan, attachments, nullptr, options)
+                || !spacingPlanMatches4(plan)) return false;
             }
       SpacingProfileScope4 reused(anchor ? SpacingProfileStage4::SLUR_ANCHOR_LAYOUT
                                         : SpacingProfileStage4::SLUR_OFFSET_LAYOUT);

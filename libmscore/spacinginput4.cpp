@@ -11,6 +11,7 @@
 #include "slur.h"
 #include "spannermap.h"
 #include "system.h"
+#include "staff.h"
 #include <utility>
 #include <map>
 #include <algorithm>
@@ -227,11 +228,26 @@ const Direction* SpacingAttachmentPreparation4::direction(const Slur* slur) cons
 }
 
 bool prepareSpacingAttachments4(SpacingInput4&& input, const std::vector<Direction>& anchorDirections,
-                                SpacingAttachmentPreparation4& result, QString* reason)
+                                SpacingAttachmentPreparation4& result, QString* reason, const std::vector<SpacingPreparedSlur4>* roots)
 {
     SpacingAttachmentPreparation4 pending;
-    if (!buildSpacingSlurDirections4(input, anchorDirections, pending._slurDirections, reason)
-        || !buildSpacingSlurAttachments4(input, pending._attachments, &pending._slurDirections, reason)) return false;
+    if (!buildSpacingSlurDirections4(input, anchorDirections, pending._slurDirections, reason)) return false;
+    if (roots) {
+        std::unordered_set<const Slur*> seen;
+        for (const auto& entry : *roots) {
+            const auto* root = input.slur(entry.item);
+            if (!root || !seen.insert(entry.item).second
+                || (entry.direction != Direction::AUTO && entry.direction != Direction::UP
+                    && entry.direction != Direction::DOWN)) {
+                if (reason) *reason = "Invalid, duplicate or unmapped prepared slur direction";
+                return false;
+            }
+            pending._slurDirections[size_t(root - input.slurs().data())] =
+                entry.direction == Direction::AUTO && root->requestedDirection != Direction::AUTO
+                    ? root->requestedDirection : entry.direction;
+        }
+    }
+    if (!buildSpacingSlurAttachments4(input, pending._attachments, &pending._slurDirections, reason)) return false;
     pending._anchorDirections = anchorDirections;
     pending._input = std::move(input);
     input = SpacingInput4();
@@ -241,7 +257,7 @@ bool prepareSpacingAttachments4(SpacingInput4&& input, const std::vector<Directi
 }
 
 static bool captureSpacingAttachmentsImpl4(SpacingInput4&& input, const std::vector<SpacingPreparedAnchor4>& prepared,
-                                          SpacingAttachmentPreparation4& result, QString* reason)
+                                          SpacingAttachmentPreparation4& result, QString* reason, const std::vector<SpacingPreparedSlur4>* roots)
 {
     std::vector<Direction> directions(input.anchors().size(), Direction::AUTO);
     std::vector<bool> declared(input.anchors().size(), false);
@@ -260,15 +276,15 @@ static bool captureSpacingAttachmentsImpl4(SpacingInput4&& input, const std::vec
         declared[index] = true;
         directions[index] = entry.direction;
     }
-    return prepareSpacingAttachments4(std::move(input), directions, result, reason);
+    return prepareSpacingAttachments4(std::move(input), directions, result, reason, roots);
 }
 
 bool captureSpacingAttachments4(Score* score, const std::vector<SpacingPreparedAnchor4>& prepared,
-                                SpacingAttachmentPreparation4& result, QString* reason)
+                                SpacingAttachmentPreparation4& result, QString* reason, const std::vector<SpacingPreparedSlur4>* roots)
 {
     SpacingInput4 input;
     if (!buildSpacingInput4(score, input, reason)) return false;
-    return captureSpacingAttachmentsImpl4(std::move(input), prepared, result, reason);
+    return captureSpacingAttachmentsImpl4(std::move(input), prepared, result, reason, roots);
 }
 
 template<typename F>
@@ -295,6 +311,47 @@ void SpacingDirectionReadiness4::produced(const Measure* measure)
         if (anchor) anchors.insert(anchor);
     });
     _produced[measure] = std::move(anchors);
+}
+
+bool SpacingDirectionReadiness4::prepareRoot(Slur* root)
+{
+    if (_rootProducers.count(root)) return true;
+    if (!root) return false;
+    // A first-layout root may reach beyond the current collected system. Such
+    // chords have not run getNextMeasure yet. Prepare their native line/stem
+    // inputs explicitly instead of treating imported up() values as ready.
+    // Already-certified anchors are left alone, preserving native beam choices.
+    const auto refreshPending = [this](const Element* item) {
+        if (!item || !item->isChord()) return;
+        Chord* chord = const_cast<Chord*>(toChord(item));
+        const auto ready = _produced.find(chord->measure());
+        if (ready != _produced.end() && ready->second.count(chord)) return;
+        if (!chord->staff() || chord->staff()->isTabStaff(chord->tick())
+            || chord->staff()->isDrumStaff(chord->tick())) return;
+        for (Note* note : chord->notes()) note->updateLine();
+        chord->computeUp();
+    };
+    if (root->slurDirection() == Direction::AUTO) {
+        const Element* start = root->startElement();
+        const Element* end = root->endElement();
+        if (start && end && start->isChordRest() && end->isChordRest()
+            && toChordRest(start)->measure() && toChordRest(end)->measure()
+            && start->score() == root->score() && end->score() == root->score()) {
+            refreshPending(start);
+            refreshPending(end);
+            const ChordRest* a = toChordRest(start);
+            const ChordRest* b = toChordRest(end);
+            if (a->track() == b->track()) {
+                for (const Segment* segment = a->segment(); segment && segment->tick() <= b->tick();
+                     segment = segment->next1(SegmentType::ChordRest))
+                    refreshPending(segment->element(a->track()));
+            }
+        }
+    }
+    Direction direction = Direction::AUTO;
+    if (!prepareSlurDirection4(root, direction)) return false;
+    _rootProducers.insert(root);
+    return true;
 }
 
 std::vector<SpacingPreparedAnchor4> SpacingDirectionReadiness4::declarations(const Measure* measure) const
@@ -519,20 +576,20 @@ bool buildSpacingInput4(Score* score, SpacingInput4& result, QString* reason)
 
 static bool captureDomainSpacingAttachments4(Score* score, SpacingInputScope4 scope,
                                              const std::vector<SpacingPreparedAnchor4>& prepared,
-                                             SpacingAttachmentPreparation4& result, QString* reason)
+                                             SpacingAttachmentPreparation4& result, QString* reason, const std::vector<SpacingPreparedSlur4>* roots)
 {
-    const auto roots = score->spannerMap().findOverlappingInMapOrder(scope.measures.front()->tick().ticks(),
+    const auto overlapping = score->spannerMap().findOverlappingInMapOrder(scope.measures.front()->tick().ticks(),
                                                                   scope.measures.back()->endTick().ticks());
-    for (const Spanner* root : roots)
+    for (const Spanner* root : overlapping)
         if (root && root->isSlur()) scope.slurs.push_back(toSlur(root));
     SpacingInput4 input;
     if (!buildSpacingInput4(score, scope, input, reason)) return false;
-    return captureSpacingAttachmentsImpl4(std::move(input), prepared, result, reason);
+    return captureSpacingAttachmentsImpl4(std::move(input), prepared, result, reason, roots);
 }
 
 
 bool captureMeasureSpacingAttachments4(const Measure* measure, const std::vector<SpacingPreparedAnchor4>& prepared,
-                                       SpacingAttachmentPreparation4& result, QString* reason)
+                                       SpacingAttachmentPreparation4& result, QString* reason, const std::vector<SpacingPreparedSlur4>* roots)
 {
     if (!measure || !measure->score()) {
         if (reason) *reason = "Missing measure for attachment capture";
@@ -540,11 +597,11 @@ bool captureMeasureSpacingAttachments4(const Measure* measure, const std::vector
     }
     SpacingInputScope4 scope;
     scope.measures.push_back(measure);
-    return captureDomainSpacingAttachments4(measure->score(), std::move(scope), prepared, result, reason);
+    return captureDomainSpacingAttachments4(measure->score(), std::move(scope), prepared, result, reason, roots);
 }
 
 bool captureSystemSpacingAttachments4(System* system, const std::vector<SpacingPreparedAnchor4>& prepared,
-                                      SpacingAttachmentPreparation4& result, QString* reason)
+                                      SpacingAttachmentPreparation4& result, QString* reason, const std::vector<SpacingPreparedSlur4>* roots)
 {
     const auto fail = [reason](const char* message) {
         if (reason) *reason = QString::fromLatin1(message);
@@ -558,7 +615,33 @@ bool captureSystemSpacingAttachments4(System* system, const std::vector<SpacingP
         scope.measures.push_back(toMeasure(mb));
     }
     if (scope.measures.empty()) return fail("Empty system attachment domain");
-    return captureDomainSpacingAttachments4(score, std::move(scope), prepared, result, reason);
+    return captureDomainSpacingAttachments4(score, std::move(scope), prepared, result, reason, roots);
+}
+
+bool snapshotLaidOutSystemSpacing4(System* system, SpacingAttachmentPreparation4& result, QString* reason)
+{
+    if (!system || !system->score()) {
+        if (reason) *reason = "Missing laid-out system";
+        return false;
+    }
+    SpacingDirectionReadiness4 readiness;
+    for (const MeasureBase* mb : system->measures())
+        if (mb && mb->isMeasure()) readiness.produced(toMeasure(mb));
+    const auto directions = readiness.declarations(system);
+    std::vector<SpacingPreparedSlur4> roots;
+    if (!system->measures().empty() && system->measures().front()->isMeasure()
+        && system->measures().back()->isMeasure()) {
+        const auto overlaps = system->score()->spannerMap().findOverlappingInMapOrder(
+            system->measures().front()->tick().ticks(), toMeasure(system->measures().back())->endTick().ticks());
+        for (const Spanner* item : overlaps) {
+            if (!item || !item->isSlur()) continue;
+            const Slur* root = toSlur(item);
+            Direction direction = Direction::AUTO;
+            resolvePreparedSlurDirection4(root, direction);
+            roots.emplace_back(root, direction);
+        }
+    }
+    return captureSystemSpacingAttachments4(system, directions, result, reason, &roots);
 }
 
 }

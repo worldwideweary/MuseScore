@@ -46,6 +46,8 @@ class TestSpacing : public QObject, public MTest {
       void spacingInputSnapshot4_data();
       void spacingInputSnapshot4();
       void spacingSlurAttachments4();
+      void preparedSpacingProduction4_data();
+      void preparedSpacingProduction4();
       void spacingSlurDirections4_data();
       void spacingSlurDirections4();
       void slurDirectionPriority4();
@@ -4129,6 +4131,93 @@ void TestSpacing::spacingInputSnapshot4()
       delete score;
       }
 
+void TestSpacing::preparedSpacingProduction4_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::newRow("retained") << QString("v0.139-spacing-two-staff-slur-offsets.mscx");
+      QTest::newRow("natural-root-boundary") << QString("v0.167-grace-policy-natural.mscx");
+      QTest::newRow("system-root-boundary") << QString("v0.167-grace-policy-systems.mscx");
+      }
+
+void TestSpacing::preparedSpacingProduction4()
+      {
+      QFETCH(QString, file);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score);
+      score->doLayout();
+      const auto native = graceLayoutSnapshot4(score);
+      int checked = 0;
+      for (System* system : score->systems()) {
+            if (system->vbox()) continue;
+            SpacingAttachmentPreparation4 owner;
+            QString reason;
+            QVERIFY2(snapshotLaidOutSystemSpacing4(system, owner, &reason), qPrintable(reason));
+            SpacingPlanOptions4 options;
+            options.slurPolicy = SpacingSlurPolicy4::PREPARED;
+            SpacingPlan4 untouched;
+            untouched.width = -166;
+            QVERIFY(!buildSpacingPlan4(system, untouched, &reason, options));
+            QCOMPARE(untouched.width, qreal(-166));
+            SpacingPlan4 plan;
+            QVERIFY2(buildSpacingPlan4(system, plan, owner, &reason, options), qPrintable(reason));
+            for (const auto& group : plan.afterGraces) QVERIFY(group.slurPolicy == SpacingSlurPolicy4::PREPARED);
+            for (const auto& group : plan.mergedGraces) QVERIFY(group.slurPolicy == SpacingSlurPolicy4::PREPARED);
+            SpacingPlan4 published;
+            QVERIFY2(squeezeSpacingPlan4(system, system->width(), published, owner, &reason, nullptr,
+                                         SpacingSlurPolicy4::PREPARED), qPrintable(reason));
+            QVERIFY(justifySpacingPlan4(published, system->width()));
+            QVERIFY2(spacingPlanMatches4(published, &reason), qPrintable(reason));
+            SpacingPlan4 fitted;
+            QVERIFY(squeezeSpacingPlan4(system, plan.width, fitted, owner, &reason, nullptr, SpacingSlurPolicy4::PREPARED));
+            QVERIFY(spacingPlansEqual154(plan, fitted));
+            const auto* old = owner.input().anchors().empty() ? nullptr : owner.input().anchors().front().item;
+            QVERIFY(!snapshotLaidOutSystemSpacing4(nullptr, owner));
+            if (old) QVERIFY(owner.input().anchor(old));
+            ++checked;
+            }
+      QVERIFY(checked > 0);
+      QVERIFY(graceLayoutSnapshot4(score) == native); // All proof queries were read-only.
+      QVERIFY(!score->graceQueryFactory4()); // No borrowed binding escaped layout.
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      const auto toggled = graceLayoutSnapshot4(score);
+      QCOMPARE(toggled.size(), native.size());
+      for (size_t i = 0; i < native.size(); ++i) QVERIFY(qAbs(native[i] - toggled[i]) < 1e-6);
+      int lookAheadChecked = 0;
+      for (const auto& entry : score->spannerMap().map()) {
+            if (!entry.second->isSlur()) continue;
+            Slur* root = toSlur(entry.second);
+            if (root->slurDirection() != Direction::AUTO || !root->startElement() || !root->endElement()
+                || !root->startElement()->isChord() || !root->endElement()->isChord()) continue;
+            Chord* start = toChord(root->startElement());
+            Chord* end = toChord(root->endElement());
+            if (start->measure() == end->measure() || end->notes().empty()) continue;
+            const int line = end->notes().front()->line();
+            const bool up = end->up(), startUp = start->up();
+            SpacingDirectionReadiness4 readiness;
+            readiness.produced(start->measure());
+            end->notes().front()->setLine(line + 8);
+            end->setUp(!up);
+            Element* firstParent = start->measure()->parent();
+            Element* lastParent = end->measure()->parent();
+            start->measure()->setParent(nullptr);
+            end->measure()->setParent(nullptr);
+            const bool produced = readiness.prepareRoot(root);
+            start->measure()->setParent(firstParent);
+            end->measure()->setParent(lastParent); // Restore before assertions.
+            QVERIFY(produced && readiness.rootPrepared(root));
+            QCOMPARE(end->notes().front()->line(), line);
+            QCOMPARE(end->up(), up);
+            QCOMPARE(start->up(), startUp);
+            QVERIFY(readiness.declarations(end->measure()).empty()); // No false measure certificate.
+            ++lookAheadChecked;
+            }
+      if (file.startsWith("v0.167")) QVERIFY(lookAheadChecked > 0);
+      delete score;
+      }
+
 void TestSpacing::spacingSlurAttachments4()
       {
       MasterScore* score = readScore(DIR + "v0.139-spacing-two-staff-slur-offsets.mscx");
@@ -4234,6 +4323,31 @@ void TestSpacing::spacingSlurAttachments4()
                   }
             }
       QVERIFY(flags.anchors.size() == previous && flags.complete());
+      {
+      SpacingInput4 declaredInput;
+      QVERIFY(buildSpacingInput4(score, declaredInput));
+      std::vector<Direction> stems(declaredInput.anchors().size(), Direction::UP);
+      SpacingAttachmentPreparation4 declared;
+      std::vector<SpacingPreparedSlur4> rootDeclarations { { roots.front(), Direction::DOWN } };
+      QVERIFY(prepareSpacingAttachments4(std::move(declaredInput), stems, declared, nullptr, &rootDeclarations));
+      QVERIFY(declared.direction(roots.front()) && *declared.direction(roots.front()) == Direction::DOWN);
+      const auto* saved = declared.sides(start);
+      QVERIFY(buildSpacingInput4(score, declaredInput));
+      rootDeclarations.push_back(rootDeclarations.front());
+      QVERIFY(!prepareSpacingAttachments4(std::move(declaredInput), stems, declared, nullptr, &rootDeclarations));
+      QVERIFY(declaredInput.score() == score && declared.sides(start) == saved);
+      rootDeclarations = { { roots.front(), static_cast<Direction>(99) } };
+      QVERIFY(!prepareSpacingAttachments4(std::move(declaredInput), stems, declared, nullptr, &rootDeclarations));
+      QVERIFY(declaredInput.score() == score && declared.sides(start) == saved);
+      rootDeclarations = { { roots[4], Direction::DOWN } }; // Explicit UP cannot be overridden.
+      QVERIFY(!prepareSpacingAttachments4(std::move(declaredInput), stems, declared, nullptr, &rootDeclarations));
+      rootDeclarations = { { nullptr, Direction::UP } };
+      QVERIFY(!prepareSpacingAttachments4(std::move(declaredInput), stems, declared, nullptr, &rootDeclarations));
+      QVERIFY(declaredInput.score() == score && declared.sides(start) == saved);
+      rootDeclarations = { { roots[4], Direction::AUTO } }; // A literal UP request stays resolved.
+      QVERIFY(prepareSpacingAttachments4(std::move(declaredInput), stems, declared, nullptr, &rootDeclarations));
+      QVERIFY(declared.direction(roots[4]) && *declared.direction(roots[4]) == Direction::UP);
+      }
       input = SpacingInput4();
       {
       const auto geometryBefore = graceBarlineSnapshot4(score);

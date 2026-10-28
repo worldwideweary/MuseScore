@@ -69,6 +69,7 @@ struct SpacingPlanOptions4 {
     qreal stretchReduction = 1;
     qreal squeezeFactor = 1;
     bool minimumMeasureWidths = true;
+    SpacingSlurPolicy4 slurPolicy = SpacingSlurPolicy4::COMPATIBILITY;
 };
 
 // Inputs must already have current shapes and segment ticks. This WIP returns
@@ -84,9 +85,8 @@ bool buildSpacingPlan4(System*, SpacingPlan4& result, QString* reason = nullptr,
                        const SpacingPlanOptions4& options = SpacingPlanOptions4(),
                        const std::vector<GraceMergedGeometry4>* preparedMerged = nullptr,
                        const SpacingInput4* input = nullptr);
-// Same existing policy, borrowing one shared attachment preparation. No input
-// collection or direction resolution occurs here or in subsequent squeeze passes.
-// This overload does not yet enable the general attachment admission policy.
+// Borrow one attachment preparation for the explicitly requested policy. No
+// collection or native producer writes occur in planning or squeeze passes.
 bool buildSpacingPlan4(System*, SpacingPlan4& result, const SpacingAttachmentPreparation4&,
                        QString* reason = nullptr,
                        const SpacingPlanOptions4& options = SpacingPlanOptions4(),
@@ -106,6 +106,7 @@ bool squeezeSpacingPlan4(System*, qreal targetWidth, SpacingPlan4& result,
                          const std::vector<GraceMergedGeometry4>* preparedMerged = nullptr);
 bool squeezeSpacingPlan4(System*, qreal targetWidth, SpacingPlan4& result,
                          const SpacingAttachmentPreparation4&, QString* reason = nullptr,
-                         const std::vector<GraceMergedGeometry4>* preparedMerged = nullptr);
+                         const std::vector<GraceMergedGeometry4>* preparedMerged = nullptr,
+                         SpacingSlurPolicy4 policy = SpacingSlurPolicy4::COMPATIBILITY);
 }
 #endif

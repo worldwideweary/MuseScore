@@ -580,7 +580,12 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
     // Grace packing/projection and the final system constraints are all
     // read-only. Borrow the same input owner and query-local memo throughout;
     // no standalone grace query silently drops the prepared attachment view.
-    SpacingContextCache4 contextCache = preparation ? SpacingContextCache4(*preparation) : SpacingContextCache4(input);
+    if (options.slurPolicy != SpacingSlurPolicy4::COMPATIBILITY
+        && options.slurPolicy != SpacingSlurPolicy4::PREPARED) return fail("Invalid slur packing policy");
+    if (options.slurPolicy == SpacingSlurPolicy4::PREPARED && !preparation)
+        return fail("Prepared slur policy requires an attachment owner");
+    SpacingContextCache4 contextCache = preparation ? SpacingContextCache4(*preparation, options.slurPolicy)
+                                                  : SpacingContextCache4(input);
     if (!prepareGraces4(system, graces, afters, merged, reason, preparedMerged, contextCache)) return false;
     SpacingPlan4 plan;
     for (const auto& after : afters) plan.afterGraces.push_back(after.plan);
@@ -826,7 +831,7 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, const SpacingAttach
 
 static bool squeezeSpacingPlanImpl4(System* system, qreal targetWidth, SpacingPlan4& result, QString* reason,
                                    const std::vector<GraceMergedGeometry4>* preparedMerged,
-                                   const SpacingAttachmentPreparation4* preparation)
+                                   const SpacingAttachmentPreparation4* preparation, SpacingSlurPolicy4 policy)
 {
     if (!std::isfinite(targetWidth) || targetWidth <= 0) {
         if (reason)
@@ -835,7 +840,9 @@ static bool squeezeSpacingPlanImpl4(System* system, qreal targetWidth, SpacingPl
     }
     SpacingPlan4 candidate;
     const SpacingInput4* input = preparation ? &preparation->input() : nullptr;
-    if (!buildSpacingPlanImpl4(system, candidate, reason, SpacingPlanOptions4(), preparedMerged, input, preparation))
+    SpacingPlanOptions4 natural;
+    natural.slurPolicy = policy;
+    if (!buildSpacingPlanImpl4(system, candidate, reason, natural, preparedMerged, input, preparation))
         return false;
     if (candidate.width <= targetWidth) {
         result = candidate;
@@ -845,6 +852,7 @@ static bool squeezeSpacingPlanImpl4(System* system, qreal targetWidth, SpacingPl
     // pass, with minimum-measure widths overridden. Stop before its negative
     // duration advances and subsequent collision-allowing width reduction.
     SpacingPlanOptions4 options;
+    options.slurPolicy = policy;
     options.minimumMeasureWidths = false;
     options.stretchReduction = 1 - 0.33;
     options.squeezeFactor = 1 - 0.2;
@@ -866,14 +874,14 @@ static bool squeezeSpacingPlanImpl4(System* system, qreal targetWidth, SpacingPl
 bool squeezeSpacingPlan4(System* system, qreal targetWidth, SpacingPlan4& result, QString* reason,
                          const std::vector<GraceMergedGeometry4>* preparedMerged)
 {
-    return squeezeSpacingPlanImpl4(system, targetWidth, result, reason, preparedMerged, nullptr);
+    return squeezeSpacingPlanImpl4(system, targetWidth, result, reason, preparedMerged, nullptr, SpacingSlurPolicy4::COMPATIBILITY);
 }
 
 bool squeezeSpacingPlan4(System* system, qreal targetWidth, SpacingPlan4& result,
                          const SpacingAttachmentPreparation4& preparation, QString* reason,
-                         const std::vector<GraceMergedGeometry4>* preparedMerged)
+                         const std::vector<GraceMergedGeometry4>* preparedMerged, SpacingSlurPolicy4 policy)
 {
-    return squeezeSpacingPlanImpl4(system, targetWidth, result, reason, preparedMerged, &preparation);
+    return squeezeSpacingPlanImpl4(system, targetWidth, result, reason, preparedMerged, &preparation, policy);
 }
 
 bool justifySpacingPlan4(SpacingPlan4& target, qreal targetWidth)
