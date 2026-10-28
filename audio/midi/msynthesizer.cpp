@@ -20,10 +20,25 @@
 #include "midi/midipatch.h"
 
 #include "mscore/preferences.h"
+#ifdef MSCORE_EXPERIMENTAL_FLUIDSYNTH2
+#include "auxiliarybus.h"
+#include "effects/zita1/zita.h"
+#include <QByteArray>
+#endif
 
 namespace Ms {
 
 extern QString dataPath;
+
+struct MasterSynthesizer::AuxiliaryState {
+      AuxiliaryReverbSettings settings;
+#ifdef MSCORE_EXPERIMENTAL_FLUIDSYNTH2
+      std::unique_ptr<ZitaReverb> reverb;
+      std::atomic<bool> sourceSendsEnabled { false };
+      AuxiliaryBus<MAX_BUFFERSIZE / 2> bus;
+      float returnLevel = 1.0f;  // render-thread copy, never written by the GUI
+#endif
+      };
 
 //---------------------------------------------------------
 //   MasterSynthesizer
@@ -33,6 +48,11 @@ MasterSynthesizer::MasterSynthesizer()
    : QObject(0)
       {
       defaultGainAsDecibels = convertGainToDecibels(defaultGain);
+      _auxiliary.reset(new AuxiliaryState);
+#ifdef MSCORE_EXPERIMENTAL_FLUIDSYNTH2
+      if (!qgetenv("MSCORE_FLUID2_REVERB_SEND").isEmpty())
+            qWarning("Fluid2: MSCORE_FLUID2_REVERB_SEND is retired; use the mixer's Audio reverb send control");
+#endif
       }
 
 //---------------------------------------------------------
@@ -47,6 +67,7 @@ void MasterSynthesizer::init()
       if (!f.open(QIODevice::ReadOnly)) {
             // qDebug("cannot read synthesizer settings <%s>", qPrintable(s));
             setState(defaultState);
+            ensureSoundFonts();
             return;
             }
       XmlReader e(&f);
@@ -60,6 +81,7 @@ void MasterSynthesizer::init()
             f.remove();
             setState(defaultState);
             }
+      ensureSoundFonts();
       }
 
 //---------------------------------------------------------
@@ -85,18 +107,83 @@ void MasterSynthesizer::reset()
       {
       for (Synthesizer* s : _synthesizer)
             s->reset();
+      clearAuxiliary();
+      }
+
+void MasterSynthesizer::clearAuxiliary()
+      {
+#ifdef MSCORE_EXPERIMENTAL_FLUIDSYNTH2
+      // GUI calls only request a reset; the audio thread clears the delay lines.
+      _auxiliary->bus.requestReset();
+#endif
       }
 
 //---------------------------------------------------------
 //   play
 //---------------------------------------------------------
 
-void MasterSynthesizer::play(const NPlayEvent& event, unsigned syntiIdx)
+void MasterSynthesizer::play(const NPlayEvent& event, unsigned syntiIdx, int sourceChannel, float sourceSend)
       {
       if (syntiIdx >= _synthesizer.size())
             return;
+      const int source = sourceChannel >= 0 ? sourceChannel : event.channel();
+      if (sourceSend >= 0.0f)
+            setSourceSend(syntiIdx, source, sourceSend);
       _synthesizer[syntiIdx]->setActive(true);
-      _synthesizer[syntiIdx]->play(event);
+      _synthesizer[syntiIdx]->playWithSource(event, source);
+      }
+
+bool MasterSynthesizer::setSourceSend(unsigned syntiIdx, int source, float gain)
+      {
+#ifdef MSCORE_EXPERIMENTAL_FLUIDSYNTH2
+      return _auxiliary->sourceSendsEnabled.load() && syntiIdx < _synthesizer.size()
+            && _synthesizer[syntiIdx]->setSourceSend(source, gain);
+#else
+      Q_UNUSED(syntiIdx);
+      Q_UNUSED(source);
+      Q_UNUSED(gain);
+      return false;
+#endif
+      }
+
+bool MasterSynthesizer::supportsSourceSends(const QString& synthName) const
+      {
+#ifdef MSCORE_EXPERIMENTAL_FLUIDSYNTH2
+      if (_auxiliary->sourceSendsEnabled.load()) {
+            for (const Synthesizer* s : _synthesizer) {
+                  if (synthName == s->name())
+                        return s->supportsSourceSends();
+                  }
+            }
+#else
+      Q_UNUSED(synthName);
+#endif
+      return false;
+      }
+
+bool MasterSynthesizer::auxiliaryReverbAvailable() const
+      {
+#ifdef MSCORE_EXPERIMENTAL_FLUIDSYNTH2
+      return _auxiliary->sourceSendsEnabled.load();
+#else
+      return false;
+#endif
+      }
+
+AuxiliaryReverbSettings::Values MasterSynthesizer::auxiliaryReverbValues() const
+      {
+      return _auxiliary->settings.snapshot();
+      }
+
+bool MasterSynthesizer::setAuxiliaryReverbParameter(int id, double value)
+      {
+      return _auxiliary->settings.set(id, value);
+      }
+
+void MasterSynthesizer::resetAuxiliaryReverb()
+      {
+      _auxiliary->settings.replace(AuxiliaryReverbSettings::defaults());
+      clearAuxiliary();
       }
 
 //---------------------------------------------------------
@@ -163,6 +250,8 @@ void MasterSynthesizer::allSoundsOff(int channel)
       {
       for (Synthesizer* s : _synthesizer)
             s->allSoundsOff(channel);
+      if (channel == -1)
+            clearAuxiliary();
       }
 
 //---------------------------------------------------------
@@ -202,6 +291,16 @@ bool MasterSynthesizer::hasSoundFontsLoaded() const
             if (!s->soundFontsInfo().empty())
                   return true;
             }
+      return false;
+      }
+
+bool MasterSynthesizer::ensureSoundFonts()
+      {
+      // A loaded Zerberus/SFZ setup is already usable. Never replace its
+      // deliberate empty Fluid list merely because Fluid has no font.
+      if (hasSoundFontsLoaded()) return true;
+      for (Synthesizer* synth : _synthesizer)
+            if (synth->loadDefaultSoundFonts()) return true;
       return false;
       }
 
@@ -260,6 +359,14 @@ Effect* MasterSynthesizer::effect(int idx)
 
 void MasterSynthesizer::setSampleRate(float val)
       {
+      // Use the same processing exclusion as setEffect before replacing DSP.
+      lock2 = true;
+      while (lock1)
+#if (!defined (_MSCVER) && !defined (_MSC_VER))
+            sleep(1);
+#else
+            Sleep(1000);
+#endif
       _sampleRate = val;
       for (Synthesizer* s : _synthesizer) {
             s->init(_sampleRate);
@@ -269,8 +376,22 @@ void MasterSynthesizer::setSampleRate(float val)
             e->init(_sampleRate);
       for (Effect* e : _effectList[1])
             e->init(_sampleRate);
+#ifdef MSCORE_EXPERIMENTAL_FLUIDSYNTH2
+      _auxiliary->sourceSendsEnabled = false;
+      _auxiliary->reverb.reset();
+      for (const Synthesizer* s : _synthesizer) {
+            if (s->supportsSourceSends()) {
+                  _auxiliary->reverb.reset(new ZitaReverb);
+                  _auxiliary->reverb->init(_sampleRate);
+                  _auxiliary->reverb->set_opmix(1.0f);  // no second dry signal
+                  _auxiliary->settings.requestApply();
+                  _auxiliary->sourceSendsEnabled = true;
+                  break;
+                  }
+            }
+      clearAuxiliary();
+#endif
       lock2 = false;
-      lock1 = false;
       }
 
 //---------------------------------------------------------
@@ -279,6 +400,9 @@ void MasterSynthesizer::setSampleRate(float val)
 
 void MasterSynthesizer::process(unsigned n, float* p)
       {
+      // Reject before taking the process guard, including the oversize case.
+      if (!p || !n || n > MAX_BUFFERSIZE / 2)
+            return;
       if (lock2)
             return;
       lock1 = true;
@@ -286,13 +410,34 @@ void MasterSynthesizer::process(unsigned n, float* p)
             lock1 = false;
             return;
             }
-      // avoid overflow
-      if (n > MAX_BUFFERSIZE / 2)
-            return;
-      for (Synthesizer* s : _synthesizer) {
-            if (s->active())
-                  s->process(n, p, effect1Buffer, effect2Buffer);
+      auto render = [this, n, p](float* auxiliary) {
+            for (Synthesizer* s : _synthesizer) {
+                  if (s->active()) {
+                        if (auxiliary)
+                              s->processWithAux(n, p, effect1Buffer, effect2Buffer, auxiliary);
+                        else
+                              s->process(n, p, effect1Buffer, effect2Buffer);
+                        }
+                  }
+            };
+#ifdef MSCORE_EXPERIMENTAL_FLUIDSYNTH2
+      if (_auxiliary->reverb) {
+            AuxiliaryReverbSettings::Values values;
+            if (_auxiliary->settings.consume(values)) {
+                  applyAuxiliaryReverbSettings(values, *_auxiliary->reverb);
+                  _auxiliary->returnLevel = values[AuxiliaryReverbSettings::ReturnLevel];
+                  }
+            _auxiliary->bus.process(n, p, render,
+                  [this]() { _auxiliary->reverb->clear(); },
+                  [this](unsigned frames, float* input, float* wet) {
+                        _auxiliary->reverb->process(int(frames), input, wet);
+                        for (unsigned i = 0; i < frames * 2; ++i)
+                              wet[i] *= _auxiliary->returnLevel;
+                        });
             }
+      else
+#endif
+            render(nullptr);
 
       if (_effect[0] && _effect[1]) {
             memset(effect1Buffer, 0, n * sizeof(float) * 2);
@@ -342,8 +487,19 @@ int MasterSynthesizer::indexOfEffect(int ab)
 bool MasterSynthesizer::setState(const SynthesizerState& ss)
       {
       bool result = true;
+      auto auxiliaryValues = AuxiliaryReverbSettings::defaults();
       for (const SynthesizerGroup& g : ss) {
-            if (g.name() == "master") {
+            // Effects without saved parameters return an empty default group.
+            if (g.name().isEmpty() && g.empty())
+                  continue;
+            if (g.name() == AuxiliaryReverbSettings::stateGroup()) {
+                  for (const IdValue& v : g) {
+                        bool ok = false;
+                        const double value = v.data.toDouble(&ok);
+                        if (ok) AuxiliaryReverbSettings::update(auxiliaryValues, v.id, value);
+                        }
+                  }
+            else if (g.name() == "master") {
                   for (const IdValue& v : g) {
                         switch (v.id) {
                               case 0:
@@ -387,6 +543,8 @@ bool MasterSynthesizer::setState(const SynthesizerState& ss)
                         }
                   }
             }
+      _auxiliary->settings.replace(auxiliaryValues);
+      clearAuxiliary();
       return result;
       }
 
@@ -412,6 +570,12 @@ SynthesizerState MasterSynthesizer::state() const
             ss.push_back(_effect[0]->state());
       if (_effect[1])
             ss.push_back(_effect[1]->state());
+      SynthesizerGroup auxiliary;
+      auxiliary.setName(AuxiliaryReverbSettings::stateGroup());
+      const auto values = auxiliaryReverbValues();
+      for (int id = 0; id < AuxiliaryReverbSettings::Count; ++id)
+            auxiliary.push_back(IdValue(id, QString::number(values[id], 'g', 9)));
+      ss.push_back(auxiliary);
       return ss;
       }
 

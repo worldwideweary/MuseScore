@@ -14,6 +14,8 @@
 #define __MSYNTHESIZER_H__
 
 #include <atomic>
+#include <memory>
+#include "auxiliaryreverbsettings.h"
 #include "effects/effect.h"
 #include "libmscore/synthesizerstate.h"
 
@@ -60,6 +62,10 @@ class MasterSynthesizer : public QObject {
 
       float effect1Buffer[MAX_BUFFERSIZE];
       float effect2Buffer[MAX_BUFFERSIZE];
+      // Allocators and the out-of-line constructor must agree on this layout
+      // even when a consumer (such as testutils) lacks the backend define.
+      struct AuxiliaryState;
+      std::unique_ptr<AuxiliaryState> _auxiliary;
       int indexOfEffect(int ab, const QString& name);
       float convertGainToDecibels(float gain) const;
 
@@ -82,7 +88,13 @@ class MasterSynthesizer : public QObject {
       void setSampleRate(float val);
 
       void process(unsigned, float*);
-      void play(const NPlayEvent&, unsigned);
+      void play(const NPlayEvent&, unsigned, int sourceChannel = -1, float sourceSend = -1.0f);
+      bool setSourceSend(unsigned syntiIdx, int source, float gain);
+      bool supportsSourceSends(const QString& synthName) const;
+      bool auxiliaryReverbAvailable() const;
+      AuxiliaryReverbSettings::Values auxiliaryReverbValues() const;
+      bool setAuxiliaryReverbParameter(int id, double value);
+      void resetAuxiliaryReverb();
 
       void setMasterTuning(double val);
       double masterTuning() const      { return _masterTuning; }
@@ -100,9 +112,11 @@ class MasterSynthesizer : public QObject {
       const std::vector<Effect*>& effectList(int ab) const { return _effectList[ab]; }
       const std::vector<Synthesizer*> synthesizer() const { return _synthesizer; }
       bool hasSoundFontsLoaded() const;
+      bool ensureSoundFonts();
       void registerEffect(int ab, Effect*);
 
       void reset();
+      void clearAuxiliary();
       void allSoundsOff(int channel);
       void allNotesOff(int channel);
 

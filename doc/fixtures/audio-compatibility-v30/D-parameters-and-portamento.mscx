@@ -1,0 +1,217 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<museScore version="3.02">
+  <Score>
+    <Division>480</Division>
+    <Part>
+      <Staff id="1">
+        <StaffType group="pitched">
+          <name>stdNormal</name>
+        </StaffType>
+      </Staff>
+      <trackName>Strings</trackName>
+      <Instrument>
+        <longName>Strings</longName>
+        <trackName>Strings</trackName>
+        <singleNoteDynamics>0</singleNoteDynamics>
+        <Channel>
+          <program value="48" />
+          <synti>Fluid</synti>
+        </Channel>
+        <MidiAction name="baseline">
+          <controller ctrl="121" value="0" />
+          <controller ctrl="7" value="96" />
+          <controller ctrl="10" value="64" />
+        </MidiAction>
+        <MidiAction name="octave">
+          <controller ctrl="99" value="120" />
+          <controller ctrl="98" value="51" />
+          <controller ctrl="38" value="12" />
+          <controller ctrl="6" value="64" />
+        </MidiAction>
+        <MidiAction name="neutral">
+          <controller ctrl="38" value="0" />
+          <controller ctrl="6" value="64" />
+        </MidiAction>
+        <MidiAction name="fifth">
+          <controller ctrl="38" value="7" />
+          <controller ctrl="6" value="64" />
+        </MidiAction>
+        <MidiAction name="reset">
+          <controller ctrl="121" value="0" />
+        </MidiAction>
+        <MidiAction name="glide">
+          <controller ctrl="5" value="4" />
+          <controller ctrl="37" value="0" />
+          <controller ctrl="65" value="0" />
+          <controller ctrl="84" value="60" />
+        </MidiAction>
+        <MidiAction name="end">
+          <controller ctrl="121" value="0" />
+        </MidiAction>
+      </Instrument>
+    </Part>
+    <Staff id="1">
+      <VBox>
+        <height>20</height>
+        <Text>
+          <style>Title</style>
+          <text>Audio compatibility D - Parameters and portamento</text>
+        </Text>
+        <Text>
+          <style>Subtitle</style>
+          <text>Same SoundFont and dry effects in both backends. Notes D1-D5 are all written A4.
+Expected sound: A4, A5, A4, E5, A4. D6 glides C4 to C5 in 512 ms; D7 is straight C5.</text>
+        </Text>
+      </VBox>
+      <Measure>
+        <voice>
+          <Clef>
+            <concertClefType>G</concertClefType>
+            <transposingClefType>G</transposingClefType>
+          </Clef>
+          <TimeSig>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+          </TimeSig>
+          <Tempo>
+            <tempo>1.6</tempo>
+            <text>quarter = 96</text>
+          </Tempo>
+          <StaffText>
+            <text>D1 Baseline A4</text>
+            <MidiAction channel="0" name="baseline" />
+          </StaffText>
+          <Chord>
+            <durationType>half</durationType>
+            <Note>
+              <pitch>69</pitch>
+              <tpc>17</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>half</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <text>D2 NRPN coarse +12: hear A5</text>
+            <MidiAction channel="0" name="octave" />
+          </StaffText>
+          <Chord>
+            <durationType>half</durationType>
+            <Note>
+              <pitch>69</pitch>
+              <tpc>17</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>half</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <text>D3 Same selection, offset 0: hear A4</text>
+            <MidiAction channel="0" name="neutral" />
+          </StaffText>
+          <Chord>
+            <durationType>half</durationType>
+            <Note>
+              <pitch>69</pitch>
+              <tpc>17</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>half</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <text>D4 Same selection, +7: hear E5</text>
+            <MidiAction channel="0" name="fifth" />
+          </StaffText>
+          <Chord>
+            <durationType>half</durationType>
+            <Note>
+              <pitch>69</pitch>
+              <tpc>17</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>half</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <text>D5 CC121: hear A4</text>
+            <MidiAction channel="0" name="reset" />
+          </StaffText>
+          <Chord>
+            <durationType>half</durationType>
+            <Note>
+              <pitch>69</pitch>
+              <tpc>17</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>half</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <text>D6 Explicit portamento C4 to C5, 512 ms</text>
+            <MidiAction channel="0" name="glide" />
+          </StaffText>
+          <Chord>
+            <durationType>half</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>half</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <text>D7 Reference C5, no glide</text>
+          </StaffText>
+          <Chord>
+            <durationType>half</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>half</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <text>D8 Reset and silence</text>
+            <MidiAction channel="0" name="end" />
+          </StaffText>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>1/1</duration>
+          </Rest>
+        </voice>
+      </Measure>
+    </Staff>
+  </Score>
+</museScore>

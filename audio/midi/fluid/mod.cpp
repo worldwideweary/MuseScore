@@ -135,11 +135,11 @@ float Mod::get_value(Channel* chan, Voice* voice)
                               v1 = chan->channel_pressure;
                               break;
                         case FLUID_MOD_PITCHWHEEL:
-                              v1 = chan->pitch_bend;
+                              v1 = voice->releasePitchBend >= 0 ? voice->releasePitchBend : chan->pitch_bend;
                               range1 = 0x4000;
                               break;
                         case FLUID_MOD_PITCHWHEELSENS:
-                              v1 = chan->pitch_wheel_sensitivity;
+                              v1 = voice->releasePitchBend >= 0 ? voice->releasePitchSensitivity : chan->pitch_wheel_sensitivity;
                               break;
                         default:
                               v1 = 0.0;
@@ -228,10 +228,11 @@ float Mod::get_value(Channel* chan, Voice* voice)
                               v2 = chan->channel_pressure;
                               break;
                         case FLUID_MOD_PITCHWHEEL:
-                              v2 = chan->pitch_bend;
+                              v2 = voice->releasePitchBend >= 0 ? voice->releasePitchBend : chan->pitch_bend;
+                              range2 = 0x4000;
                               break;
                         case FLUID_MOD_PITCHWHEELSENS:
-                              v2 = chan->pitch_wheel_sensitivity;
+                              v2 = voice->releasePitchBend >= 0 ? voice->releasePitchSensitivity : chan->pitch_wheel_sensitivity;
                               break;
                         default:
                               v1 = 0.0f;

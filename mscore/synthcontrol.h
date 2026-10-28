@@ -37,12 +37,21 @@ class SynthControl : public QWidget, Ui::SynthControl {
       Score* _score;
       EnablePlayForWidget* enablePlay;
       bool _dirty    { false };
+      QWidget* _auxiliaryReverbPage { nullptr };
+      QGroupBox* _auxiliaryReverbRoom { nullptr };
+      QGroupBox* _auxiliaryReverbTone { nullptr };
+      QLabel* _auxiliaryReverbNotice { nullptr };
+      QPushButton* _auxiliaryReverbReset { nullptr };
+      QList<QLabel*> _auxiliaryReverbLabels;
+      QList<QDoubleSpinBox*> _auxiliaryReverbSpins;
 
       virtual void closeEvent(QCloseEvent*) override;
       virtual void showEvent(QShowEvent*) override;
       virtual bool eventFilter(QObject*, QEvent*) override;
       virtual void keyPressEvent(QKeyEvent*) override;
       void updateGui();
+      void buildAuxiliaryReverbPage();
+      void updateAuxiliaryReverbGui();
       void readSettings();
       void updateExpressivePatches();
       void updateMixer();
@@ -71,7 +80,7 @@ class SynthControl : public QWidget, Ui::SynthControl {
 
    protected:
       virtual void changeEvent(QEvent *event) override;
-      void retranslate()  { retranslateUi(this); }
+      void retranslate()  { retranslateUi(this); updateAuxiliaryReverbGui(); }
 
    public slots:
       void setGain(float);

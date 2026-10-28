@@ -17,6 +17,10 @@
 // -----------------------------------------------------------------------
 
 #include <math.h>
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstring>
 #include "zita.h"
 
 namespace Ms {
@@ -363,6 +367,29 @@ void ZitaReverb::fini ()
       {
       for (int i = 0; i < 8; i++)
             _delay [i].fini ();
+      }
+
+void ZitaReverb::clear()
+      {
+      for (Vdelay* delay : { &_vdelay0, &_vdelay1 }) {
+            if (delay->_line)
+                  memset(delay->_line, 0, delay->_size * sizeof(float));
+            delay->_ir = delay->_iw = 0;
+            }
+      for (int i = 0; i < 8; ++i) {
+            if (_diff1[i]._line)
+                  memset(_diff1[i]._line, 0, _diff1[i]._size * sizeof(float));
+            _diff1[i]._i = 0;
+            if (_delay[i]._line)
+                  memset(_delay[i]._line, 0, _delay[i]._size * sizeof(float));
+            _delay[i]._i = 0;
+            _filt1[i]._slo = _filt1[i]._shi = 0.0f;
+            }
+      _pareq1.reset();
+      _pareq2.reset();
+      _cntA2 = _cntB2 = _cntC2 = -1;
+      _g0 = _d0 = _g1 = _d1 = 0.0f;
+      _nsamp = 0;
       }
 
 //---------------------------------------------------------

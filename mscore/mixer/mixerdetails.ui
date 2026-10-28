@@ -413,6 +413,39 @@
          </property>
         </widget>
        </item>
+       <item row="7" column="0">
+        <widget class="QLabel" name="labelAudioReverbSend">
+         <property name="text">
+          <string>Audio reverb send:</string>
+         </property>
+         <property name="buddy">
+          <cstring>audioReverbSendSpinBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="1">
+        <widget class="QSlider" name="audioReverbSendSlider">
+         <property name="minimumSize">
+          <size><width>75</width><height>0</height></size>
+         </property>
+         <property name="toolTip">
+          <string>Send this instrument to the shared audio reverb. Requires the isolated FluidSynth 2 backend.</string>
+         </property>
+         <property name="maximum"><number>100</number></property>
+         <property name="pageStep"><number>10</number></property>
+         <property name="orientation"><enum>Qt::Horizontal</enum></property>
+        </widget>
+       </item>
+       <item row="7" column="2">
+        <widget class="QDoubleSpinBox" name="audioReverbSendSpinBox">
+         <property name="toolTip">
+          <string>Send this instrument to the shared audio reverb. Requires the isolated FluidSynth 2 backend.</string>
+         </property>
+         <property name="decimals"><number>0</number></property>
+         <property name="maximum"><double>100.000000000000000</double></property>
+         <property name="suffix"><string>%</string></property>
+        </widget>
+       </item>
        <item row="6" column="0">
         <widget class="QLabel" name="labelPan">
          <property name="text">
@@ -470,7 +503,7 @@
          </property>
         </widget>
        </item>
-       <item row="7" column="0" colspan="3">
+       <item row="8" column="0" colspan="3">
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>
           <widget class="QLabel" name="labelColor">

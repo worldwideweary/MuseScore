@@ -42,6 +42,7 @@
 #include "libmscore/measure.h"
 #include "libmscore/note.h"
 #include "libmscore/part.h"
+#include "libmscore/playbacktiming.h"
 #include "libmscore/rendermidi.h"
 #include "libmscore/repeatlist.h"
 #include "libmscore/score.h"
@@ -261,6 +262,7 @@ Seq::~Seq()
 
 void Seq::setScoreView(ScoreView* v)
       {
+      PlaybackTiming timing("sequencer score switch");
       if (oggInit) {
             ov_clear(&vf);
             oggInit = false;
@@ -281,10 +283,12 @@ void Seq::setScoreView(ScoreView* v)
 
       playlistChanged = true;
       _synti->reset();
+      timing.phase("stop/reset");
       if (cs) {
             initInstruments();
             connect(cs, SIGNAL(playlistChanged()), this, SLOT(setPlaylistChanged()));
             }
+      timing.phase("instrument initialization");
       }
 
 //---------------------------------------------------------
@@ -748,6 +752,15 @@ void Seq::processMessages()
                         break;
                   case SeqMsgId::PLAY:
                         putEvent(msg.event);
+                        break;
+                  case SeqMsgId::AUDIO_REVERB_SEND:
+                        if (cs && msg.intVal >= 0 && msg.intVal < int(cs->midiMapping().size())) {
+                              const int source = cs->midiMapping(msg.intVal)->bendSource();
+                              const int root = source >= 0 ? source : msg.intVal;
+                              const Channel* channel = cs->midiMapping(root)->articulation();
+                              _synti->setSourceSend(_synti->index(channel->synti()), root,
+                                    channel->audioReverbSend() / 100.0f);
+                              }
                         break;
                   case SeqMsgId::SEEK:
                         setPos(msg.intVal);
@@ -1518,10 +1531,13 @@ void Seq::collectEvents(int utick)
       if (state == Transport::PLAY && playlistChanged)
             return;
 
+      PlaybackTiming timing("collect playback");
+
       mutex.lock();
 
       if (midiRenderFuture.isRunning())
             midiRenderFuture.waitForFinished();
+      timing.phase("wait for renderer");
 
       if (playlistChanged) {
             midi.setScoreChanged();
@@ -1535,26 +1551,70 @@ void Seq::collectEvents(int utick)
             }
 
       bool bendPlayback = false;
-      for (const auto& entry : cs->spanner()) {
-            if (entry.second->isGuitarBend() && entry.second->getProperty(Pid::PLAY).toBool()) {
-                  bendPlayback = true;
-                  break;
+      bool lvPlayback = false;
+      // These policies only affect preparation of a changed playlist. Avoid
+      // rescanning every engraving element on each start/seek of a large score.
+      if (playlistChanged) {
+            for (const auto& entry : cs->spanner()) {
+                  if (entry.second->isGuitarBend() && entry.second->getProperty(Pid::PLAY).toBool()) {
+                        bendPlayback = true;
+                        break;
+                        }
                   }
+            cs->scanElements(&lvPlayback, [](void* data, Element* element) {
+                  if (!element->isNote()) return;
+                  for (const Element* attached : toNote(element)->el()) {
+                        if (attached->isLaissezVib()) {
+                              *static_cast<bool*>(data) = true;
+                              break;
+                              }
+                        }
+                  }, true);
             }
-      // Allocate every bend lane while stopped. The audio thread reads the
-      // mapping vector, so background rendering must not grow it during play.
-      const int renderStart = bendPlayback ? 0 : utick;
+      // Ordinary LV needs a complete controller schedule, but only its own
+      // measures and tie dependencies need playback events prepared up front.
+      // Keep unrelated music on the existing incremental rendering path.
+      bool fullPlayback = bendPlayback;
+      if (lvPlayback && playlistChanged) {
+            const SynthesizerState synthState = mscore->synthesizerState();
+            MidiRenderer::Context context(synthState);
+            context.metronome = false;
+            context.renderHarmony = false;
+            EventMap controls;
+            if (!midi.renderLaissezVibControls(&controls, context))
+                  fullPlayback = true; // isolated bend lanes must be allocated while stopped
+            if (!fullPlayback)
+                  events.insert(controls.begin(), controls.end());
+            }
+      timing.phase("feature scan/LV preparation");
+      const int renderStart = fullPlayback ? 0 : utick;
+      bool rendered = false;
+      unsigned chunks = 0;
       int unrenderedUtick = renderEventsStatus.occupiedRangeEnd(renderStart);
-      while (bendPlayback || unrenderedUtick - utick < minUtickBufferSize) {
+      while (fullPlayback || unrenderedUtick - utick < minUtickBufferSize) {
             const MidiRenderer::Chunk chunk = midi.getChunkAt(unrenderedUtick);
             if (!chunk)
                   break;
             renderChunk(chunk, &events);
+            ++chunks;
+            rendered = true;
             unrenderedUtick = renderEventsStatus.occupiedRangeEnd(renderStart);
             }
+      if (lvPlayback && fullPlayback && rendered)
+            midi.renderLaissezVib(&events);
+      timing.phase("render chunks");
+      if (timing.enabled())
+            qDebug("Audio preparation: collect requested=%d, changed=%d, mode=%s, LV=%d, chunks=%u, buffered-end=%d, events=%llu",
+                  utick, playlistChanged, fullPlayback ? "full" : "chunked", lvPlayback, chunks, unrenderedUtick,
+                  static_cast<unsigned long long>(events.size()));
 
       updateEventsEnd();
-      playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : events.cbegin();
+      // A GUI seek collects before its SEEK message reaches the audio thread.
+      // Rewinding the live iterator here lets an intervening callback replay
+      // every earlier note/controller against the old clock (including D4's
+      // +7 NRPN). Only setPos() may move it while transport is playing.
+      if (state != Transport::PLAY)
+            playPos = mscore->loop() ? events.find(cs->loopInTick().ticks()) : events.cbegin();
       playlistChanged = false;
       mutex.unlock();
       }
@@ -1622,6 +1682,13 @@ void Seq::setPos(int utick)
       if (cs == 0)
             return;
       stopNotes(-1, true);
+      // Controller chase may replay temporary NRPN/RPN/bend values. Released
+      // voices still respond to these, and CC121 need not clear their stored
+      // generator offsets. Finish old voices before restoring the destination.
+      // Send the same boundary to MIDI out as well as the internal synths.
+      for (unsigned ch = 0; ch < cs->midiMapping().size(); ++ch)
+            putEvent(NPlayEvent(ME_CONTROLLER, ch, CTRL_ALL_SOUNDS_OFF, 0));
+      _synti->allSoundsOff(-1); // includes clearing the shared auxiliary return
 
       int ucur;
       mutex.lock();
@@ -2347,6 +2414,7 @@ void Seq::stopNotes(int channel, bool realTime)
       if (channel == -1) {
             for(unsigned ch = 0; ch < cs->midiMapping().size(); ch++) {
                   send(NPlayEvent(ME_CONTROLLER, ch, CTRL_SUSTAIN, 0));
+                  send(NPlayEvent(ME_CONTROLLER, ch, CTRL_SOSTENUTO, 0));
                   turnAllNotesOff(ch);
                   send(NPlayEvent(ME_CONTROLLER, ch, CTRL_ALL_NOTES_OFF, 0));
                   if (cs->midiChannel(ch) != 9)
@@ -2355,6 +2423,7 @@ void Seq::stopNotes(int channel, bool realTime)
             }
       else {
             send(NPlayEvent(ME_CONTROLLER, channel, CTRL_SUSTAIN, 0));
+            send(NPlayEvent(ME_CONTROLLER, channel, CTRL_SOSTENUTO, 0));
             turnAllNotesOff(channel);
             send(NPlayEvent(ME_CONTROLLER, channel, CTRL_ALL_NOTES_OFF, 0));
             if (cs->midiChannel(channel) != 9)
@@ -2573,6 +2642,13 @@ SeqMsg SeqMsgFifo::dequeue()
 //   putEvent
 //---------------------------------------------------------
 
+void Seq::updateAudioReverbSend(int channel)
+      {
+      // Read the latest saved setting when processed, rather than replaying
+      // stale slider values after an undo, score change or channel remapping.
+      guiToSeq(SeqMsg(SeqMsgId::AUDIO_REVERB_SEND, channel));
+      }
+
 void Seq::putEvent(const NPlayEvent& event, unsigned framePos)
       {
       if (!cs)
@@ -2587,7 +2663,8 @@ void Seq::putEvent(const NPlayEvent& event, unsigned framePos)
       const int source = cs->midiMapping(channel)->bendSource();
       const Channel* articulation = cs->midiMapping(source >= 0 ? source : channel)->articulation();
       int syntiIdx = _synti->index(articulation->synti());
-      _synti->play(event, syntiIdx);
+      _synti->play(event, syntiIdx, source >= 0 ? source : channel,
+            articulation->audioReverbSend() / 100.0f);
 
       // midi
       if (_driver != 0 && (cachedPrefs.useJackMidi || cachedPrefs.useAlsaAudio || cachedPrefs.usePortAudio))
@@ -2750,7 +2827,9 @@ void Seq::updateSynthesizerState(int tick1, int tick2)
       EventMap::const_iterator i2 = ev.upper_bound(tick2);
 
       for (; i1 != i2; ++i1) {
-            if (i1->second.type() == ME_CONTROLLER)
+            // CC84 belongs to its original next attack, not to channel state.
+            // Target-tick setup is dispatched normally from playPos afterward.
+            if (i1->second.isStatefulController())
                   playEvent(i1->second, 0);
             }
       }

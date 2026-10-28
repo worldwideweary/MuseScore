@@ -103,6 +103,7 @@
 #define PREF_MIGRATION_APPLY_EDWIN_FOR_XML_FILES            "import/compatibility/apply_edwin_for_xml"
 #define PREF_MIGRATION_DO_NOT_ASK_ME_AGAIN_XML              "import/compatibility/do_not_ask_me_again_xml"
 #define PREF_APP_PALETTESCALE                               "application/paletteScale"
+#define PREF_IO_AUDIO_ENGINE                                "io/audio/engine"
 #define PREF_IO_ALSA_DEVICE                                 "io/alsa/device"
 #define PREF_IO_ALSA_FRAGMENTS                              "io/alsa/fragments"
 #define PREF_IO_ALSA_PERIODSIZE                             "io/alsa/periodSize"

@@ -26,11 +26,35 @@
 #include "effects/effectgui.h"
 #include "libmscore/part.h"
 #include "libmscore/instrument.h"
+#include <QFormLayout>
+#include <QSignalBlocker>
 
 namespace Ms {
 
 extern MasterSynthesizer* synti;
 extern bool useFactorySettings;
+
+namespace {
+struct AuxiliaryControl {
+      const char* label;
+      const char* suffix;
+      double scale;
+      int decimals;
+      double step;
+      };
+const std::array<AuxiliaryControl, AuxiliaryReverbSettings::Count> auxiliaryControls {{
+      { QT_TRANSLATE_NOOP("SynthControl", "Pre-delay:"), QT_TRANSLATE_NOOP("SynthControl", " ms"), 1000, 1, 1 },
+      { QT_TRANSLATE_NOOP("SynthControl", "Crossover:"), QT_TRANSLATE_NOOP("SynthControl", " Hz"), 1, 0, 10 },
+      { QT_TRANSLATE_NOOP("SynthControl", "Low decay (RT60):"), QT_TRANSLATE_NOOP("SynthControl", " s"), 1, 2, .1 },
+      { QT_TRANSLATE_NOOP("SynthControl", "Mid decay (RT60):"), QT_TRANSLATE_NOOP("SynthControl", " s"), 1, 2, .1 },
+      { QT_TRANSLATE_NOOP("SynthControl", "HF damping:"), QT_TRANSLATE_NOOP("SynthControl", " Hz"), 1, 0, 100 },
+      { QT_TRANSLATE_NOOP("SynthControl", "Low EQ frequency:"), QT_TRANSLATE_NOOP("SynthControl", " Hz"), 1, 0, 10 },
+      { QT_TRANSLATE_NOOP("SynthControl", "Low EQ gain:"), QT_TRANSLATE_NOOP("SynthControl", " dB"), 1, 1, .5 },
+      { QT_TRANSLATE_NOOP("SynthControl", "High EQ frequency:"), QT_TRANSLATE_NOOP("SynthControl", " Hz"), 1, 0, 100 },
+      { QT_TRANSLATE_NOOP("SynthControl", "High EQ gain:"), QT_TRANSLATE_NOOP("SynthControl", " dB"), 1, 1, .5 },
+      { QT_TRANSLATE_NOOP("SynthControl", "Return level:"), QT_TRANSLATE_NOOP("SynthControl", "%"), 100, 0, 5 }
+      }};
+}
 
 //---------------------------------------------------------
 //   SynthControl
@@ -53,6 +77,9 @@ SynthControl::SynthControl(QWidget* parent)
             tabWidget->insertTab(idx++, s->gui(), tr(s->name()));
             s->gui()->synthesizerChanged();
             connect(s->gui(), SIGNAL(valueChanged()), SLOT(setDirty()));
+            connect(s->gui(), &SynthesizerGui::soundFontChangeRequested, this, []() {
+                  if (seq) seq->stopWait();
+                  });
             }
 
       // effectA        combo box
@@ -77,6 +104,7 @@ SynthControl::SynthControl(QWidget* parent)
                   connect(gui, SIGNAL(valueChanged()), SLOT(setDirty()));
                   }
             }
+      buildAuxiliaryReverbPage();
       readSettings();
 
       updateGui();
@@ -136,6 +164,7 @@ void SynthControl::closeEvent(QCloseEvent* ev)
 
 void SynthControl::showEvent(QShowEvent* e)
       {
+      updateAuxiliaryReverbGui();
       enablePlay->showEvent(e);
       QWidget::showEvent(e);
       activateWindow();
@@ -223,6 +252,7 @@ void SynthControl::setMeter(float l, float r, float left_peak, float right_peak)
 //---------------------------------------------------------
 void SynthControl::setScore(Score* s) {
       _score = s;
+      updateAuxiliaryReverbGui();
 
       loadButton->setEnabled(true);
       saveButton->setEnabled(true);
@@ -392,6 +422,7 @@ void SynthControl::recallButtonClicked()
       QFile f(s);
       if (!f.open(QIODevice::ReadOnly)) {
             qDebug("cannot read synthesizer settings <%s>", qPrintable(s));
+            if (synti->ensureSoundFonts()) updateGui();
             return;
             }
       XmlReader e(&f);
@@ -403,6 +434,7 @@ void SynthControl::recallButtonClicked()
             }
       state.setIsDefault(true);
       synti->setState(state);
+      synti->ensureSoundFonts();
       updateGui();
 
       storeButton->setEnabled(false);
@@ -435,8 +467,82 @@ void SynthControl::storeButtonClicked()
 //   Gui
 //---------------------------------------------------------
 
+void SynthControl::buildAuxiliaryReverbPage()
+      {
+      _auxiliaryReverbPage = new QWidget(tabWidget);
+      _auxiliaryReverbPage->setObjectName("instrumentReverbPage");
+      QVBoxLayout* page = new QVBoxLayout(_auxiliaryReverbPage);
+      QHBoxLayout* columns = new QHBoxLayout;
+      _auxiliaryReverbRoom = new QGroupBox(_auxiliaryReverbPage);
+      _auxiliaryReverbTone = new QGroupBox(_auxiliaryReverbPage);
+      QFormLayout* room = new QFormLayout(_auxiliaryReverbRoom);
+      QFormLayout* tone = new QFormLayout(_auxiliaryReverbTone);
+      columns->addWidget(_auxiliaryReverbRoom);
+      columns->addWidget(_auxiliaryReverbTone);
+      page->addLayout(columns);
+      const auto minimums = AuxiliaryReverbSettings::minimums();
+      const auto maximums = AuxiliaryReverbSettings::maximums();
+      for (int id = 0; id < AuxiliaryReverbSettings::Count; ++id) {
+            const auto& control = auxiliaryControls[id];
+            QDoubleSpinBox* spin = new QDoubleSpinBox(_auxiliaryReverbPage);
+            spin->setObjectName(QString("instrumentReverbParameter%1").arg(id));
+            spin->setDecimals(control.decimals);
+            spin->setRange(minimums[id] * control.scale, maximums[id] * control.scale);
+            spin->setSingleStep(control.step);
+            spin->setKeyboardTracking(false);
+            QLabel* label = new QLabel(_auxiliaryReverbPage);
+            label->setBuddy(spin);
+            (id < AuxiliaryReverbSettings::EQ1Frequency ? room : tone)->addRow(label, spin);
+            _auxiliaryReverbLabels.append(label);
+            _auxiliaryReverbSpins.append(spin);
+            const double scale = control.scale;
+            connect(spin, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
+                  this, [this, id, scale](double value) {
+                        if (synti->setAuxiliaryReverbParameter(id, value / scale)) setDirty();
+                        });
+            }
+      _auxiliaryReverbNotice = new QLabel(_auxiliaryReverbPage);
+      _auxiliaryReverbNotice->setWordWrap(true);
+      page->addWidget(_auxiliaryReverbNotice);
+      _auxiliaryReverbReset = new QPushButton(_auxiliaryReverbPage);
+      page->addWidget(_auxiliaryReverbReset, 0, Qt::AlignLeft);
+      connect(_auxiliaryReverbReset, &QPushButton::clicked, this, [this]() {
+            synti->resetAuxiliaryReverb();
+            updateAuxiliaryReverbGui();
+            setDirty();
+            });
+      page->addStretch();
+      tabWidget->addTab(_auxiliaryReverbPage, tr("Instrument Reverb"));
+      }
+
+void SynthControl::updateAuxiliaryReverbGui()
+      {
+      if (!_auxiliaryReverbPage) return;
+      const bool available = synti->auxiliaryReverbAvailable();
+      const auto values = synti->auxiliaryReverbValues();
+      tabWidget->setTabText(tabWidget->indexOf(_auxiliaryReverbPage), tr("Instrument Reverb"));
+      _auxiliaryReverbRoom->setTitle(tr("Room"));
+      _auxiliaryReverbTone->setTitle(tr("Tone and return"));
+      for (int id = 0; id < AuxiliaryReverbSettings::Count; ++id) {
+            const auto& control = auxiliaryControls[id];
+            QDoubleSpinBox* spin = _auxiliaryReverbSpins[id];
+            const QSignalBlocker block(spin);
+            _auxiliaryReverbLabels[id]->setText(qApp->translate("SynthControl", control.label));
+            spin->setSuffix(qApp->translate("SynthControl", control.suffix));
+            spin->setValue(values[id] * control.scale);
+            }
+      _auxiliaryReverbRoom->setEnabled(available);
+      _auxiliaryReverbTone->setEnabled(available);
+      _auxiliaryReverbReset->setEnabled(available);
+      _auxiliaryReverbReset->setText(tr("Reset shared reverb"));
+      _auxiliaryReverbNotice->setText(available
+            ? tr("Shared by instruments using Audio reverb send in the mixer. Master effects apply after this return. Use Save to Score to keep these settings with the score.")
+            : tr("Requires the isolated FluidSynth 2 backend. Saved return settings are retained while this backend is unavailable."));
+      }
+
 void SynthControl::updateGui()
       {
+      updateAuxiliaryReverbGui();
       masterTuning->setValue(synti->masterTuning());
       setGain(synti->gain());
 

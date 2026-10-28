@@ -21,9 +21,36 @@
 
 #include "libmscore/score.h"
 #include "libmscore/part.h"
+#include "libmscore/undo.h"
 #include "seq.h"
 
 namespace Ms {
+
+// Retain the saved instrument channel, not a transient playback copy: channel
+// remapping can replace that copy while the command remains on the undo stack.
+class ChangeAudioReverbSend final : public UndoCommand {
+      MasterScore* score;
+      Channel* savedChannel;
+      int percent;
+      void flip(EditData*) override
+            {
+            const int previous = savedChannel->audioReverbSend();
+            savedChannel->setAudioReverbSend(percent);
+            const int index = savedChannel->channel();
+            if (index >= 0 && index < int(score->midiMapping().size())) {
+                  MidiMapping* mapping = score->midiMapping(index);
+                  if (mapping->scoreChannel() == savedChannel)
+                        mapping->articulation()->setAudioReverbSend(percent);
+                  }
+            percent = previous;
+            if (seq)
+                  seq->updateAudioReverbSend(index);
+            }
+   public:
+      ChangeAudioReverbSend(MasterScore* s, Channel* ch, int value)
+            : score(s), savedChannel(ch), percent(value) {}
+      UNDO_NAME("ChangeAudioReverbSend")
+      };
 
 //---------------------------------------------------------
 //   MixerTrackItem
@@ -185,6 +212,30 @@ void MixerTrackItem::setReverb(char value)
                   seq->setController(_chan->channel(), CTRL_REVERB_SEND, _chan->reverb());
                   }
             }
+      }
+
+//---------------------------------------------------------
+//   setAudioReverbSend
+//---------------------------------------------------------
+
+void MixerTrackItem::setAudioReverbSend(int percent)
+      {
+      percent = qBound(0, percent, 100);
+      auto change = [this, percent](Channel* channel) {
+            if (channel->audioReverbSend() != percent) {
+                  MasterScore* master = _part->masterScore();
+                  Channel* saved = master->midiMapping(channel->channel())->scoreChannel();
+                  _part->score()->undo(new ChangeAudioReverbSend(master, saved, percent));
+                  }
+            };
+      if (_trackType == TrackType::PART) {
+            for (const auto& entry : *_part->instruments()) {
+                  for (const Channel* channel : entry.second->channel())
+                        change(playbackChannel(channel));
+                  }
+            }
+      else
+            change(_chan);
       }
 
 //---------------------------------------------------------

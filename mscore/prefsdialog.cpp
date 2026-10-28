@@ -69,6 +69,17 @@ PreferenceDialog::PreferenceDialog(QWidget* parent)
       {
       setObjectName("PreferenceDialog");
       setupUi(this);
+      fluidEngine->addItem(tr("Original Fluid"), 0);
+#ifdef MSCORE_EXPERIMENTAL_FLUIDSYNTH2
+      fluidEngine->addItem(tr("FluidSynth 2"), 1);
+#else
+      fluidEngine->addItem(tr("FluidSynth 2 (not available in this build)"), 1);
+      fluidEngine->setEnabled(false);
+      fluidEngineNotice->setText(tr("This build uses Original Fluid. FluidSynth 2 support was not compiled in."));
+#endif
+      if (qEnvironmentVariableIsSet("MSCORE_USE_FLUIDSYNTH2"))
+            fluidEngineNotice->setText(tr("Restart MuseScore to apply changes. An environment override currently controls engine selection."));
+
       setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
       setModal(true);
       shortcutsChanged = false;
@@ -308,6 +319,7 @@ void PreferenceDialog::start()
 
       // Most widgets go here.
       normalWidgets = std::vector<PreferenceItem*>{
+                  new IntPreferenceItem(PREF_IO_AUDIO_ENGINE, fluidEngine),
                   new IntPreferenceItem(PREF_APP_AUTOSAVE_AUTOSAVETIME, autoSaveTime),
                   new BoolPreferenceItem(PREF_APP_AUTOSAVE_USEAUTOSAVE, autoSave),
                   new StringPreferenceItem(PREF_APP_PLAYBACK_METRONOME_DOWNBEAT_SOUND, metronomeDownbeatSound),
@@ -1440,6 +1452,7 @@ void PreferenceDialog::apply()
       if(buttonBox->button(QDialogButtonBox::Apply)->isEnabled() == false)
             return;
 
+      const int previousEngine = preferences.getInt(PREF_IO_AUDIO_ENGINE);
       bool uiStyleThemeChanged = false;
       bool audioModified = false;
 
@@ -1581,6 +1594,8 @@ void PreferenceDialog::apply()
 
       buttonBox->button(QDialogButtonBox::Apply)->setText(tr("Apply"));
       qDebug() << "Final: " << timer.elapsed();
+      if (previousEngine != preferences.getInt(PREF_IO_AUDIO_ENGINE))
+            QMessageBox::information(this, tr("Audio Engine"), tr("Restart MuseScore to apply the audio engine selection."));
       }
 
 //---------------------------------------------------------

@@ -14,6 +14,8 @@
 #define __EFFECT_H__
 
 #include <vector>
+#include <QObject>
+#include <QString>
 #include "libmscore/synthesizerstate.h"
 
 namespace Ms {

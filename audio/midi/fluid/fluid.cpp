@@ -19,6 +19,7 @@
  */
 
 #include "fluid.h"
+#include "soundfontpaths.h"
 #include "sfont.h"
 #include "conv.h"
 #include "gen.h"
@@ -684,6 +685,12 @@ std::vector<SoundFontInfo> Fluid::soundFontsInfo() const
 //    return false on error
 //---------------------------------------------------------
 
+bool Fluid::loadDefaultSoundFonts()
+      {
+      if (!soundFonts().isEmpty()) return true;
+      return loadSoundFonts({QStringLiteral("MuseScore_General.sf3")});
+      }
+
 bool Fluid::loadSoundFonts(const QStringList& sl)
       {
       QStringList ol = soundFonts();
@@ -706,15 +713,7 @@ bool Fluid::loadSoundFonts(const QStringList& sl)
             QString s = sl[i];
             if (s.isEmpty())
                   continue;
-            QString path;
-            QFileInfo fis(s);
-            QString fileName = fis.fileName();
-            for (const QFileInfo& fi : qAsConst(l)) {
-                  if (fi.fileName() == fileName) {
-                        path = fi.absoluteFilePath();
-                        break;
-                        }
-                  }
+            const QString path = Ms::SoundFontPaths::resolve(s, l);
             if (path.isEmpty()) {
                   qDebug("Fluid: sf <%s> not found", qPrintable(s));
                   ok = false;
@@ -944,47 +943,17 @@ bool Fluid::setState(const SynthesizerGroup& sp)
       }
 
 //---------------------------------------------------------
-//   collectFiles
-//---------------------------------------------------------
-
-static void collectFiles(QFileInfoList* l, const QString& path)
-      {
-      QDir dir(path);
-      for (const QFileInfo& s : dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot)) {
-            if (path == s.absoluteFilePath())
-                  return;
-
-            if (s.isDir() && !s.isHidden())
-                  collectFiles(l, s.absoluteFilePath());
-            else {
-                  QString suffix = s.suffix().toLower();
-                  if (suffix == "sf" || suffix == "sf2" || suffix == "sf3")
-                        l->append(s);
-                  }
-            }
-      }
-
-//---------------------------------------------------------
 //   sfFiles
 //---------------------------------------------------------
 
 QFileInfoList Fluid::sfFiles()
       {
-      QFileInfoList l;
-
-      QStringList pl = preferences.getString(PREF_APP_PATHS_MYSOUNDFONTS).split(";");
-      pl.prepend(QFileInfo(QString("%1%2").arg(mscoreGlobalShare, "sound")).absoluteFilePath());
-
-      // append extensions directory
-      QStringList extensionsDir = Ms::Extension::getDirectoriesByType(Ms::Extension::soundfontsDir);
-      pl.append(extensionsDir);
-
-      foreach (const QString& s, pl) {
-            QString ss(s);
-            if (!s.isEmpty() && s[0] == '~')
-                  ss = QDir::homePath() + s.mid(1);
-            collectFiles(&l, ss);
-            }
-      return l;
+      const QStringList user = preferences.getString(PREF_APP_PATHS_MYSOUNDFONTS).split(";");
+      const QStringList extensions = Ms::Extension::getDirectoriesByType(Ms::Extension::soundfontsDir);
+      QString buildFolder;
+#ifdef MSCORE_BUILD_SOUNDFONT_DIR
+      buildFolder = QString::fromUtf8(MSCORE_BUILD_SOUNDFONT_DIR);
+#endif
+      return Ms::SoundFontPaths::discover(mscoreGlobalShare, user, extensions, buildFolder);
       }
 }

@@ -394,6 +394,7 @@ class Fluid : public Synthesizer {
       Preset* get_channel_preset(int chan) const { return channel[chan]->preset(); }
 
       virtual bool loadSoundFonts(const QStringList& s);
+      bool loadDefaultSoundFonts() override;
       virtual bool addSoundFont(const QString& s);
       virtual bool removeSoundFont(const QString& s);
       QStringList soundFonts() const;

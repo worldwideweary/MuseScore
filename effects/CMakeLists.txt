@@ -38,6 +38,16 @@ add_library (effects STATIC
       ${INCS}
       )
 
+# CompressorGui uses Awl::Knob. Carry that dependency with the static effects
+# library so AWL is linked after its users, including audio-backed mtests.
+target_link_libraries(effects awl)
+
+if(MSCORE_EXPERIMENTAL_FLUIDSYNTH2)
+    # Master Zita and the instrument return share this DSP implementation.
+    # Keep widgets/compressor/other effects at the host's Debug settings.
+    mscore_fluid2_optimize_debug_source("${CMAKE_CURRENT_SOURCE_DIR}/zita1/zita.cpp")
+endif()
+
 if (BUILD_PCH)
     target_use_pch(effects)
 endif (BUILD_PCH)

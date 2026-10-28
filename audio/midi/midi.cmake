@@ -4,6 +4,7 @@ set (FLUID_DIR ${CMAKE_CURRENT_LIST_DIR}/fluid)
 set (FLUID_SRC
     ${FLUID_DIR}/fluid.cpp
     ${FLUID_DIR}/fluid.h
+    ${FLUID_DIR}/soundfontpaths.h
     ${FLUID_DIR}/chan.cpp
     ${FLUID_DIR}/conv.cpp
     ${FLUID_DIR}/conv.h
@@ -68,6 +69,8 @@ set (MIDI_SRC
     ${CMAKE_CURRENT_LIST_DIR}/midipatch.h
     ${CMAKE_CURRENT_LIST_DIR}/msynthesizer.cpp
     ${CMAKE_CURRENT_LIST_DIR}/msynthesizer.h
+    ${CMAKE_CURRENT_LIST_DIR}/auxiliarybus.h
+    ${CMAKE_CURRENT_LIST_DIR}/auxiliaryreverbsettings.h
     ${CMAKE_CURRENT_LIST_DIR}/synthesizer.h
     ${CMAKE_CURRENT_LIST_DIR}/synthesizergui.cpp
     ${CMAKE_CURRENT_LIST_DIR}/synthesizergui.h

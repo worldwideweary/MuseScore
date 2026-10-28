@@ -67,7 +67,8 @@ enum class SeqMsgId : char {
       INDEPENDENT_METRONOME_TIME_SIGNATURE,
       INDEPENDENT_METRONOME_FOLLOW,
       INDEPENDENT_METRONOME_ACCENTS,
-      METRONOME_GAIN
+      METRONOME_GAIN,
+      AUDIO_REVERB_SEND
       };
 
 struct SeqMsg {
@@ -133,6 +134,7 @@ struct ActiveNoteEventInfo {
 
 class Seq : public QObject, public Sequencer {
       Q_OBJECT
+      friend class TestAudioSequencer;
 
       mutable QMutex mutex;
 
@@ -389,6 +391,7 @@ class Seq : public QObject, public Sequencer {
       Driver* driver()                                 { return _driver; }
       void setDriver(Driver* d)                        { _driver = d;    }
       MasterSynthesizer* synti() const                 { return _synti;  }
+      void updateAudioReverbSend(int channel);
       void setMasterSynthesizer(MasterSynthesizer* ms) { _synti = ms;    }
 
       int getCurTick();

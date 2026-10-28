@@ -3346,12 +3346,15 @@ Adjusting latency can help synchronize your MIDI hardware with MuseScore's inter
        <item>
         <widget class="QGroupBox" name="groupBox_audioEngine">
          <property name="toolTip">
-          <string>Causes the audio engine to restart.  This can allow you to connect to MIDI devices that have been started since you started MuseScore.</string>
+          <string>Choose the SoundFont engine or restart audio and MIDI devices. Changing the SoundFont engine requires restarting MuseScore.</string>
          </property>
          <property name="title">
           <string>Audio Engine</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_11">
+          <item row="1" column="0"><widget class="QLabel" name="fluidEngineLabel"><property name="text"><string>SoundFont engine:</string></property><property name="buddy"><cstring>fluidEngine</cstring></property></widget></item>
+          <item row="1" column="1"><widget class="QComboBox" name="fluidEngine"/></item>
+          <item row="2" column="0" colspan="2"><widget class="QLabel" name="fluidEngineNotice"><property name="text"><string>Restart MuseScore to apply engine changes. Instrument reverb sends and LV playback require FluidSynth 2.</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
           <item row="0" column="0">
            <widget class="QPushButton" name="rescanDrivers">
             <property name="text">

@@ -205,6 +205,7 @@ void Preferences::init(bool storeInMemoryOnly)
             {PREF_IMPORT_OVERTURE_CHARSET,                         new StringPreference("GBK", false)},
             {PREF_IMPORT_STYLE_STYLEFILE,                          new StringPreference("", false)},
      #ifdef USE_ALSA
+            {PREF_IO_AUDIO_ENGINE,                                 new IntPreference(0, false)},
             {PREF_IO_ALSA_DEVICE,                                  new StringPreference("default", false)},
             {PREF_IO_ALSA_FRAGMENTS,                               new IntPreference(3, false)},
             {PREF_IO_ALSA_PERIODSIZE,                              new IntPreference(1024, false)},

@@ -147,6 +147,7 @@ void Voice::init(Sample* _sample, Channel* _channel, int _key, int _vel,
 
       id             = _id;
       _noteTuning    = tuning;
+      releasePitchBend = -1;
       chan           = _channel->getNum();
       key            = _key;
       vel            = _vel;
@@ -1471,6 +1472,15 @@ void Voice::modulate_all()
             }
       }
 
+// Keep the wheel contribution stable while the release envelope decays.
+void Voice::lockReleasePitch()
+      {
+      if (channel && releasePitchBend < 0) {
+            releasePitchBend = channel->pitch_bend;
+            releasePitchSensitivity = channel->pitch_wheel_sensitivity;
+            }
+      }
+
 /*
  * fluid_voice_noteoff
  */
@@ -1479,6 +1489,7 @@ void Voice::noteoff()
       if (channel && channel->sustained())
             status = FLUID_VOICE_SUSTAINED;
       else {
+            lockReleasePitch();
             if (volenv_section == FLUID_VOICE_ENVATTACK) {
                   /* A voice is turned off during the attack section of the volume
                   * envelope.  The attack section ramps up linearly with
@@ -1517,6 +1528,8 @@ void Voice::kill_excl()
       {
       if (!isPlaying())
             return;
+
+      lockReleasePitch();
 
       /* Turn off the exclusive class information for this voice,
          so that it doesn't get killed twice

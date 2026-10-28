@@ -1,0 +1,550 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<museScore version="3.02">
+  <Score>
+    <Division>480</Division>
+    <metaTag name="workTitle">Audio compatibility A - Controllers</metaTag>
+    <Part>
+      <Staff id="1">
+        <StaffType group="pitched">
+          <name>stdNormal</name>
+        </StaffType>
+      </Staff>
+      <trackName>Strings / program changes</trackName>
+      <Instrument>
+        <longName>Strings / program changes</longName>
+        <trackName>Strings / program changes</trackName>
+        <Channel>
+          <controller ctrl="0" value="0" />
+          <controller ctrl="32" value="0" />
+          <program value="48" />
+          <synti>Fluid</synti>
+        </Channel>
+        <MidiAction name="baseline">
+          <controller ctrl="7" value="96" />
+          <controller ctrl="11" value="127" />
+          <controller ctrl="10" value="64" />
+          <controller ctrl="1" value="0" />
+          <controller ctrl="64" value="0" />
+          <program value="48" />
+        </MidiAction>
+        <MidiAction name="volume">
+          <controller ctrl="7" value="48" />
+        </MidiAction>
+        <MidiAction name="expression">
+          <controller ctrl="7" value="96" />
+          <controller ctrl="11" value="40" />
+        </MidiAction>
+        <MidiAction name="left">
+          <controller ctrl="11" value="127" />
+          <controller ctrl="10" value="0" />
+        </MidiAction>
+        <MidiAction name="right">
+          <controller ctrl="10" value="127" />
+        </MidiAction>
+        <MidiAction name="vibrato">
+          <controller ctrl="10" value="64" />
+          <controller ctrl="1" value="127" />
+        </MidiAction>
+        <MidiAction name="pedal">
+          <controller ctrl="1" value="0" />
+          <controller ctrl="64" value="127" />
+          <program value="0" />
+        </MidiAction>
+        <MidiAction name="release">
+          <controller ctrl="64" value="0" />
+        </MidiAction>
+        <MidiAction name="flute">
+          <program value="73" />
+        </MidiAction>
+        <MidiAction name="piano">
+          <program value="0" />
+        </MidiAction>
+        <MidiAction name="strings">
+          <controller ctrl="7" value="96" />
+          <controller ctrl="11" value="127" />
+          <controller ctrl="10" value="64" />
+          <program value="48" />
+        </MidiAction>
+        <MidiAction name="finish">
+          <controller ctrl="64" value="0" />
+          <controller ctrl="1" value="0" />
+        </MidiAction>
+        <singleNoteDynamics>0</singleNoteDynamics>
+      </Instrument>
+    </Part>
+    <Staff id="1">
+      <VBox>
+        <height>22</height>
+        <Text>
+          <style>Title</style>
+          <text>Audio compatibility A - Controllers</text>
+        </Text>
+        <Text>
+          <style>Subtitle</style>
+          <size>10</size>
+          <text>Compare legacy Fluid and FluidSynth 2 with the same SoundFont.
+Set master effects to NoEffect and Audio reverb send to 0. Follow the measure labels.</text>
+        </Text>
+      </VBox>
+      <Measure>
+        <voice>
+          <Clef>
+            <concertClefType>G</concertClefType>
+            <transposingClefType>G</transposingClefType>
+          </Clef>
+          <TimeSig>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+          </TimeSig>
+          <Tempo>
+            <tempo>1.6</tempo>
+            <text>quarter = 96</text>
+          </Tempo>
+          <StaffText>
+            <MidiAction channel="0" name="baseline" />
+            <text>A1 Baseline: centered strings</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>64</pitch>
+              <tpc>18</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <MidiAction channel="0" name="volume" />
+            <text>A2 Volume 48: quieter</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>64</pitch>
+              <tpc>18</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+        </voice>
+        <LayoutBreak>
+          <subtype>line</subtype>
+        </LayoutBreak>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <MidiAction channel="0" name="expression" />
+            <text>A3 Volume restored; expression 40: quieter</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>64</pitch>
+              <tpc>18</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <MidiAction channel="0" name="left" />
+            <text>A4 Expression restored; pan fully left</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>64</pitch>
+              <tpc>18</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+        </voice>
+        <LayoutBreak>
+          <subtype>line</subtype>
+        </LayoutBreak>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <MidiAction channel="0" name="right" />
+            <text>A5 Pan fully right</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>64</pitch>
+              <tpc>18</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <MidiAction channel="0" name="vibrato" />
+            <text>A6 Centered; modulation 127 (font dependent)</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>64</pitch>
+              <tpc>18</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+        </voice>
+        <LayoutBreak>
+          <subtype>line</subtype>
+        </LayoutBreak>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <MidiAction channel="0" name="pedal" />
+            <text>A7 Piano; sustain ON: short notes should overlap</text>
+          </StaffText>
+          <Chord>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>eighth</durationType>
+          </Rest>
+          <Chord>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>64</pitch>
+              <tpc>18</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>eighth</durationType>
+          </Rest>
+          <Chord>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>eighth</durationType>
+          </Rest>
+          <Chord>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>eighth</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <MidiAction channel="0" name="release" />
+            <text>A8 Sustain OFF: tails release</text>
+          </StaffText>
+          <Chord>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>eighth</durationType>
+          </Rest>
+          <Chord>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>64</pitch>
+              <tpc>18</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>eighth</durationType>
+          </Rest>
+          <Chord>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>eighth</durationType>
+          </Rest>
+          <Chord>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>eighth</durationType>
+          </Rest>
+        </voice>
+        <LayoutBreak>
+          <subtype>line</subtype>
+        </LayoutBreak>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <MidiAction channel="0" name="flute" />
+            <text>A9 Program change: flute</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>64</pitch>
+              <tpc>18</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <MidiAction channel="0" name="piano" />
+            <text>A10 Program change: piano</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>64</pitch>
+              <tpc>18</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+        </voice>
+        <LayoutBreak>
+          <subtype>line</subtype>
+        </LayoutBreak>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <MidiAction channel="0" name="strings" />
+            <text>A11 Program change: strings again</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>64</pitch>
+              <tpc>18</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <MidiAction channel="0" name="finish" />
+            <text>A12 Rest: stop/seek and replay checks</text>
+          </StaffText>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+      </Measure>
+    </Staff>
+  </Score>
+</museScore>

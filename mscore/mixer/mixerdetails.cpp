@@ -31,6 +31,7 @@
 #include "synthcontrol.h"
 #include "audio/midi/msynthesizer.h"
 #include "preferences.h"
+#include <QSignalBlocker>
 
 namespace Ms {
 
@@ -56,6 +57,8 @@ MixerDetails::MixerDetails(QWidget *parent) :
       connect(chorusSpinBox,       SIGNAL(valueChanged(double)),           SLOT(chorusChanged(double)));
       connect(reverbSlider,        &QSlider::valueChanged,       this,     &MixerDetails::reverbChanged);
       connect(reverbSpinBox,       SIGNAL(valueChanged(double)),           SLOT(reverbChanged(double)));
+      connect(audioReverbSendSlider, &QSlider::valueChanged, this, &MixerDetails::audioReverbSendChanged);
+      connect(audioReverbSendSpinBox, SIGNAL(valueChanged(double)), SLOT(audioReverbSendChanged(double)));
       connect(portSpinBox,         SIGNAL(valueChanged(int)),              SLOT(midiChannelChanged(int)));
       connect(channelSpinBox,      SIGNAL(valueChanged(int)),              SLOT(midiChannelChanged(int)));
       connect(drumkitCheck,        SIGNAL(toggled(bool)),                  SLOT(drumkitToggled(bool)));
@@ -81,6 +84,7 @@ void MixerDetails::setTrack(MixerTrackItemPtr track)
 
 void MixerDetails::updateFromTrack()
       {
+      updateAudioReverbSend();
       if (mutePerVoiceHolder) {
             mutePerVoiceHolder->deleteLater();
             mutePerVoiceHolder = nullptr;
@@ -359,6 +363,22 @@ void MixerDetails::trackColorChanged(QColor col)
 //   propertyChanged
 //---------------------------------------------------------
 
+void MixerDetails::updateAudioReverbSend()
+      {
+      const Channel* channel = _mti ? _mti->focusedChan() : nullptr;
+      const bool available = channel && synti && synti->supportsSourceSends(channel->synti());
+      const QSignalBlocker sliderBlock(audioReverbSendSlider);
+      const QSignalBlocker spinBlock(audioReverbSendSpinBox);
+      audioReverbSendSlider->setValue(channel ? channel->audioReverbSend() : 0);
+      audioReverbSendSpinBox->setValue(channel ? channel->audioReverbSend() : 0);
+      audioReverbSendSlider->setEnabled(available);
+      audioReverbSendSpinBox->setEnabled(available);
+      labelAudioReverbSend->setEnabled(available);
+      audioReverbSendSlider->setVisible(available);
+      audioReverbSendSpinBox->setVisible(available);
+      labelAudioReverbSend->setVisible(available);
+      }
+
 void MixerDetails::propertyChanged(Channel::Prop property)
       {
       if (!_mti)
@@ -368,6 +388,10 @@ void MixerDetails::propertyChanged(Channel::Prop property)
       Channel* chan = _midiMap->articulation();
 
       switch (property) {
+            case Channel::Prop::AUDIO_REVERB_SEND:
+            case Channel::Prop::SYNTI:
+                  updateAudioReverbSend();
+                  break;
             case Channel::Prop::VOLUME: {
                   volumeSlider->blockSignals(true);
                   volumeSpinBox->blockSignals(true);
@@ -465,6 +489,16 @@ void MixerDetails::reverbChanged(double v)
             return;
 
       _mti->setReverb(v);
+      }
+
+void MixerDetails::audioReverbSendChanged(double value)
+      {
+      if (!_mti || !audioReverbSendSpinBox->isEnabled())
+            return;
+      Score* score = _mti->part()->score();
+      score->startCmd();
+      _mti->setAudioReverbSend(qRound(value));
+      score->endCmd();
       }
 
 //---------------------------------------------------------

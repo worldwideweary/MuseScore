@@ -126,6 +126,12 @@ class MidiRenderer {
 
       void renderScore(EventMap* events, const Context& ctx);
       void renderChunk(const Chunk&, EventMap* events, const Context& ctx);
+      // Finalize ordinary LV only after all note gates are available. Call once
+      // per complete event map; isolated bend LV is emitted with its curve.
+      void renderLaissezVib(EventMap* events);
+      // Append only ordinary LV controllers. False requests the stopped bend
+      // policy; no controllers or bend channels are created on that path.
+      bool renderLaissezVibControls(EventMap* events, const Context& ctx);
 
       void setScoreChanged() { needUpdate = true; }
       void setMinChunkSize(int sizeMeasures) { minChunkSize = sizeMeasures; needUpdate = true; }

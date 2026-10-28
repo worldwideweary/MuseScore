@@ -87,6 +87,9 @@
 
 #include "audio/midi/event.h"
 #include "audio/midi/fluid/fluid.h"
+#ifdef MSCORE_EXPERIMENTAL_FLUIDSYNTH2
+#include "audio/midi/fluid2/fluid2.h"
+#endif
 #include "audio/midi/msynthesizer.h"
 #include "audio/midi/synthesizer.h"
 #include "audio/midi/synthesizergui.h"
@@ -4519,8 +4522,17 @@ MasterSynthesizer* synthesizerFactory()
       {
       MasterSynthesizer* ms = new MasterSynthesizer();
 
-      FluidS::Fluid* fluid = new FluidS::Fluid();
-      ms->registerSynthesizer(fluid);
+#ifdef MSCORE_EXPERIMENTAL_FLUIDSYNTH2
+      // Latch the choice for this process: changing Preferences must not switch
+      // export to another engine while live playback still uses the old one.
+      static const bool useFluid2 = qEnvironmentVariableIsSet("MSCORE_USE_FLUIDSYNTH2")
+            ? qgetenv("MSCORE_USE_FLUIDSYNTH2") == "1"
+            : preferences.getInt(PREF_IO_AUDIO_ENGINE) == 1;
+      if (useFluid2)
+            ms->registerSynthesizer(new Fluid2(true));
+      else
+#endif
+            ms->registerSynthesizer(new FluidS::Fluid());
 
 #ifdef AEOLUS
       ms->registerSynthesizer(::createAeolus());
@@ -8160,7 +8172,7 @@ bool MuseScore::saveMp3(Score* score, QIODevice* device, bool& wasCanceled)
                                           continue;
                                     e.setChannel(a->channel());
                                     int syntiIdx= synth->index(score->masterScore()->midiMapping(a->channel())->articulation()->synti());
-                                    synth->play(e, syntiIdx);
+                                    synth->play(e, syntiIdx, a->channel(), a->audioReverbSend() / 100.0f);
                                     }
                               }
                         }
@@ -8201,9 +8213,12 @@ bool MuseScore::saveMp3(Score* score, QIODevice* device, bool& wasCanceled)
                         const NPlayEvent& e = playPos->second;
                         if (!(!e.velo() && e.discard()) && e.isChannelEvent()) {
                               int channelIdx = e.channel();
-                              Channel* c = score->masterScore()->midiMapping(channelIdx)->articulation();
+                              const MidiMapping* mapping = score->masterScore()->midiMapping(channelIdx);
+                              const int source = mapping->bendSource();
+                              const int root = source >= 0 ? source : channelIdx;
+                              const Channel* c = score->masterScore()->midiMapping(root)->articulation();
                               if (!c->mute()) {
-                                    synth->play(e, synth->index(c->synti()));
+                                    synth->play(e, synth->index(c->synti()), root, c->audioReverbSend() / 100.0f);
                                     }
                               }
                         }

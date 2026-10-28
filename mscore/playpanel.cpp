@@ -24,6 +24,7 @@
 #include "audio/midi/msynthesizer.h"
 
 #include "libmscore/measure.h"
+#include "libmscore/playbacktiming.h"
 #include "libmscore/repeatlist.h"
 #include "libmscore/tempo.h"
 #include "libmscore/score.h"
@@ -200,12 +201,16 @@ void PlayPanel::setScore(Score* s)
       {
       if (cs != 0 && cs == s)
             return;
+      PlaybackTiming timing("Play Panel metadata");
       cs = s;
       bool enable = cs != 0;
       volumeSlider->setEnabled(enable);
       posSlider->setEnabled(enable);
       speedSlider->setEnabled(enable);
-      if (cs && seq && seq->canStart()) {
+      // The panel displays score metadata; canStart() collects MIDI events.
+      // Leave that preparation to an actual play/seek request, including when
+      // a previously opened panel is hidden while switching a large score.
+      if (cs && seq) {
             setTempo(cs->tempomap()->tempo(0));
             setSpeed(cs->tempomap()->relTempo());
             setEndpos(cs->repeatList().ticks());

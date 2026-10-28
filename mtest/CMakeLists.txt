@@ -196,6 +196,7 @@ subdirs (
         mscore/palette
         mscore/chordpresentationui
         mscore/repeatcourtesyui
+        mscore/audiosequencer
         importmidi
         capella
         biab
@@ -217,6 +218,10 @@ subdirs (
 if (OMR)
 subdirs(omr)
 endif (OMR)
+
+if (MSCORE_EXPERIMENTAL_FLUIDSYNTH2)
+      add_subdirectory(audio/fluid2)
+endif()
 
 if (BUILD_PCH)
       target_use_pch(testResources)

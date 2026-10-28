@@ -17,6 +17,7 @@
 
 #include <set>
 #include <cmath>
+#include <tuple>
 
 #include "arpeggio.h"
 #include "articulation.h"
@@ -30,11 +31,13 @@
 #include "guitarbend.h"
 #include "hairpin.h"
 #include "instrument.h"
+#include "laissezvibplayback.h"
 #include "measure.h"
 #include "navigate.h"
 #include "note.h"
 #include "noteevent.h"
 #include "part.h"
+#include "playbacktiming.h"
 #include "rendermidi.h"
 #include "repeat.h"
 #include "repeatlist.h"
@@ -319,6 +322,129 @@ static void playNote(EventMap* events,
 //   collectNote
 //---------------------------------------------------------
 
+static bool hasLaissezVib(const Note* note)
+      {
+      for (const Element* element : note->el())
+            if (element->isLaissezVib()) return true;
+      return false;
+      }
+
+// Grace chords are attached to the principal chord rather than the segment.
+// Their LV windows must also stay inside a continuous rendering chunk.
+static bool hasLaissezVib(const Chord* chord)
+      {
+      for (const Note* note : chord->notes())
+            if (hasLaissezVib(note)) return true;
+      for (const Chord* grace : chord->graceNotes())
+            for (const Note* note : grace->notes())
+                  if (hasLaissezVib(note)) return true;
+      return false;
+      }
+
+// Discover LV dependencies without generating playback events for unrelated
+// music. A source can precede its LV endpoint in another repeat segment.
+static std::set<const Measure*> laissezVibMeasures(Score* score)
+      {
+      std::set<const Measure*> result;
+      std::vector<std::pair<const Note*, int>> sources;
+      const RepeatList& roadmap = score->repeatList();
+      for (const RepeatSegment* segment : roadmap) {
+            const int offset = segment->utick - segment->tick;
+            const Measure* end = segment->lastMeasure()->nextMeasure();
+            for (const Measure* measure = segment->firstMeasure(); measure != end; measure = measure->nextMeasure()) {
+                  for (Segment* seg = measure->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+                        for (int track = 0; track < score->ntracks(); ++track) {
+                              const Element* element = seg->element(track);
+                              if (!element || !element->isChord()) continue;
+                              const Chord* chord = toChord(element);
+                              if (hasLaissezVib(chord)) result.insert(measure);
+                              for (const Note* note : chord->notes()) {
+                                    if (note->tieFor() || note->partialTie(false))
+                                          sources.emplace_back(note, note->tick().ticks() + offset);
+                                    }
+                              }
+                        }
+                  }
+            }
+      if (result.empty()) return result;
+      // Cache by written note AND performance time. Long tied passages must
+      // not be walked once for every candidate source in the same chain.
+      using Position = std::pair<const Note*, int>;
+      std::map<Position, bool> resolved;
+      for (const auto& source : sources) {
+            const Note* note = source.first;
+            int tick = source.second;
+            std::set<Position> visited;
+            std::vector<Position> path;
+            bool endpointLV = false;
+            while (tick < roadmap.ticks() && visited.insert({ note, tick }).second) {
+                  const Position position(note, tick);
+                  const auto cached = resolved.find(position);
+                  if (cached != resolved.end()) { endpointLV = cached->second; break; }
+                  path.push_back(position);
+                  const Note* next = nextTiedNoteInPlayback(note, tick);
+                  if (!next) { endpointLV = hasLaissezVib(note); break; }
+                  if (next->chord()->isGrace()) break;
+                  tick += note->chord()->actualTicks().ticks();
+                  note = next;
+                  }
+            for (const Position& position : path) {
+                  resolved[position] = endpointLV;
+                  if (endpointLV) result.insert(position.first->chord()->measure());
+                  }
+            }
+      return result;
+      }
+
+static void prepareLaissezVibMeasures(Score* score, const std::set<const Measure*>& measures)
+      {
+      const Measure* first = nullptr;
+      for (const Measure* measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+            if (measures.count(measure)) {
+                  if (!first) first = measure;
+                  }
+            else if (first) {
+                  score->createPlayEvents(first, measure);
+                  first = nullptr;
+                  }
+            }
+      if (first) score->createPlayEvents(first, nullptr);
+      }
+
+// Compute the same LV window for ordinary notes and isolated bend channels.
+// A repeat/jump ends the hold even when the following written measure differs.
+static LaissezVibHold bendLaissezVibHold(const Note* terminal, int on, int off,
+      int tickOffset, const Score* score)
+      {
+      if (!hasLaissezVib(terminal) || off - on < 2 || terminal->chord()->isGrace())
+            return { 0, 0 };
+      const Measure* measure = terminal->chord()->measure();
+      if (!measure) return { 0, 0 };
+      const int captureOffset = qMax(1, (off - on + 1) / 10);
+      const Measure* following = measure->nextMeasure();
+      int release = (following ? following : measure)->endTick().ticks() + tickOffset + captureOffset;
+      for (const RepeatSegment* segment : score->repeatList()) {
+            const int end = segment->utick + segment->len();
+            if (on < segment->utick || on >= end) continue;
+            // Cross-boundary tie/bend chains remain a separate integration step.
+            if (off >= end) return { 0, 0 };
+            release = qMin(release, end);
+            break;
+            }
+      return { qMin(off - 1, on + captureOffset), release };
+      }
+
+static const Bend* legacyBendFor(const Note* note)
+      {
+      const Bend* result = nullptr;
+      for (const Element* element : note->el()) {
+            if (element->type() != ElementType::BEND || !toBend(element)->playBend()) continue;
+            if (result) return nullptr; // ambiguous stacked legacy bends
+            result = toBend(element);
+            }
+      return result;
+      }
+
 // Render each bend chain as one sustained MIDI note with its own pitch wheel.
 static std::vector<const GuitarBend*> guitarBendsFor(const Note* note)
       {
@@ -408,11 +534,12 @@ static bool renderGuitarBendChain(EventMap* events, int channel, const Note* not
       if (!root)
             return false;
 
-      struct Step { const Note* note; std::vector<const GuitarBend*> bends; const Note* next; };
+      struct Step { const Note* note; std::vector<const GuitarBend*> bends; const Note* next; const Bend* legacy; };
       std::vector<Step> steps;
       seen.clear();
       const Note* current = root;
       int bendCount = 0;
+      int legacyCount = 0;
       while (current && !seen.contains(current)) {
             const Chord* chord = current->chord();
             seen.insert(current);
@@ -436,13 +563,27 @@ static bool renderGuitarBendChain(EventMap* events, int channel, const Note* not
                   }
             else if (current->tieFor())
                   next = current->tieFor()->endNote();
-            steps.push_back({ current, bends, next });
+            const Bend* legacy = legacyBendFor(current);
+            if (legacy) ++legacyCount;
+            steps.push_back({ current, bends, next, legacy });
             if (!next)
                   break;
             current = next;
             }
-      if (!bendCount || steps.empty() || (steps.back().next && seen.contains(steps.back().next)))
+      if ((!bendCount && !legacyCount) || steps.empty() || (steps.back().next && seen.contains(steps.back().next)))
             return false;
+
+      // Leave unmarked 3.x bends on their original playback path. Only an LV
+      // chain needs isolation; ornaments and mixed bend types are deferred.
+      const bool legacyLV = !bendCount && legacyCount == 1 && hasLaissezVib(steps.back().note);
+      if (legacyCount) {
+            if (!legacyLV) return false;
+            for (const Step& step : steps) {
+                  if (step.note->chord()->isGrace() || step.note->playEvents().size() != 1
+                        || isGlissandoFor(step.note)) return false;
+                  if (step.legacy && step.legacy->points().size() < 2) return false;
+                  }
+            }
 
       const bool graceStart = root->chord()->isGrace();
       const Note* owner = graceStart && steps.front().next ? steps.front().next : root;
@@ -475,8 +616,20 @@ static bool renderGuitarBendChain(EventMap* events, int channel, const Note* not
             if (following->isChord())
                   off = qMin(off, guitarGraceBendStart(toChord(following)) + tickOffset - 1);
             }
+      if (legacyLV) {
+            // Preserve the original NoteEvent gates, including normal ties.
+            const NoteEvent& firstEvent = owner->playEvents().front();
+            on += owner->chord()->actualTicks().ticks() * firstEvent.ontime() / 1000;
+            off = on - 1;
+            for (const Step& step : steps)
+                  off += step.note->chord()->actualTicks().ticks() * step.note->playEvents().front().len() / 1000;
+            }
       if (off <= on)
             return false;
+      const LaissezVibHold hold = legacyLV
+            ? bendLaissezVibHold(last, on, off, tickOffset, staff->score()) : LaissezVibHold { 0, 0 };
+      const bool lv = hold.start < hold.end;
+      if (legacyLV && !lv) return false;
       // Setup graces describe the initial pitch offset; choose the first
       // audible note's key so the soundfont uses the same key zone as Studio.
       const Note* soundingStart = root;
@@ -499,6 +652,27 @@ static bool renderGuitarBendChain(EventMap* events, int channel, const Note* not
       std::map<int, qreal> curve;
       curve[on] = 0.0;
       for (const Step& step : steps) {
+            if (step.legacy) {
+                  const auto& points = step.legacy->points();
+                  const int a = noteTime(step.note);
+                  const int length = step.note->playTicks();
+                  // Match the legacy renderer's wheel conversion: pitch 100
+                  // maps to a 2-semitone displacement in the +/-12 range.
+                  for (int i = 0; i + 1 < points.size(); ++i) {
+                        const PitchValue& first = points[i];
+                        const PitchValue& next = points[i + 1];
+                        if (next.time < first.time) return false;
+                        const int from = a + qRound(first.time * length / 60.0);
+                        const int to = a + qRound(next.time * length / 60.0);
+                        const int count = qMax(1, (to - from) / 8);
+                        for (int j = 0; j <= count; ++j) {
+                              const int tick = from + (to - from) * j / count;
+                              const qreal pitch = first.pitch + qreal(next.pitch - first.pitch) * j / count;
+                              curve[qBound(on, tick, off)] = offset(step.note) + pitch / 50.0;
+                              }
+                        }
+                  continue;
+                  }
             if (step.bends.empty())
                   continue;
             const int a = step.note == root ? on : noteTime(step.note);
@@ -547,20 +721,33 @@ static bool renderGuitarBendChain(EventMap* events, int channel, const Note* not
             return true;
       MasterScore* master = staff->masterScore();
       const int sourceChannel = channel;
-      // Reuse a lane only after its note-off AND wheel reset. Interval checking
-      // also handles voices, crossing strings and chains rendered out of order.
+      // A held bend keeps its channel through CC66-off and wheel reset.
+      // Inspect both gates and pedal intervals, including out-of-order voices.
+      const int resetTick = lv ? hold.end + 1 : off + 1;
       for (int lane = 0; ; ++lane) {
             channel = master->guitarBendChannel(sourceChannel, lane);
             if (channel < 0)
                   return false;
             int active = 0;
+            bool pedal = false;
             bool busy = false;
             for (const auto& entry : *events) {
                   const NPlayEvent& event = entry.second;
-                  if (entry.first > off + 1)
+                  if (entry.first > resetTick)
                         break;
-                  if (event.channel() != channel || event.type() != ME_NOTEON)
+                  if (event.channel() != channel) continue;
+                  if (event.type() == ME_CONTROLLER && event.controller() == CTRL_SOSTENUTO) {
+                        if (event.value() >= 64) {
+                              pedal = true;
+                              if (entry.first >= on) busy = true;
+                              }
+                        else {
+                              if (pedal && entry.first + 1 >= on) busy = true;
+                              pedal = false;
+                              }
                         continue;
+                        }
+                  if (event.type() != ME_NOTEON) continue;
                   if (event.velo() > 0) {
                         ++active;
                         if (entry.first >= on)
@@ -572,7 +759,7 @@ static bool renderGuitarBendChain(EventMap* events, int channel, const Note* not
                         --active;
                         }
                   }
-            if (!active && !busy)
+            if (!active && !pedal && !busy)
                   break;
             }
       events->registerChannel(channel);
@@ -583,6 +770,14 @@ static bool renderGuitarBendChain(EventMap* events, int channel, const Note* not
             if (init.type() == ME_INVALID)
                   continue;
             NPlayEvent event(init.type(), channel, init.dataA(), init.dataB());
+            event.setOriginatingStaff(staff->idx());
+            events->insert(std::make_pair(qMax(0, on - 1), event));
+            }
+      // Newly allocated lanes need the range in the event stream as well,
+      // covering live playback, WAV export and external MIDI consistently.
+      for (const auto& control : { std::pair<int, int>(CTRL_LRPN, 0),
+            { CTRL_HRPN, 0 }, { CTRL_HDATA, 12 }, { CTRL_LRPN, 127 }, { CTRL_HRPN, 127 } }) {
+            NPlayEvent event(ME_CONTROLLER, channel, control.first, control.second);
             event.setOriginatingStaff(staff->idx());
             events->insert(std::make_pair(qMax(0, on - 1), event));
             }
@@ -607,7 +802,14 @@ static bool renderGuitarBendChain(EventMap* events, int channel, const Note* not
       events->insert(std::make_pair(off, attack));
       NPlayEvent reset(ME_PITCHBEND, channel, 0, 64);
       reset.setOriginatingStaff(staff->idx());
-      events->insert(std::make_pair(off + 1, reset));
+      events->insert(std::make_pair(resetTick, reset));
+      if (lv) {
+            for (const auto& change : { LaissezVibSwitch { hold.start, true }, { hold.end, false } }) {
+                  NPlayEvent pedal(ME_CONTROLLER, channel, CTRL_SOSTENUTO, change.on ? 127 : 0);
+                  pedal.setOriginatingStaff(staff->idx());
+                  events->insert(std::make_pair(change.tick, pedal));
+                  }
+            }
       return true;
       }
 
@@ -905,12 +1107,21 @@ static void collectProgramChanges(EventMap* events, Measure const * m, Staff* st
                               NamedEventList* nel = instr->midiAction(ma, ca.channel);
                               if (!nel)
                                     continue;
+                              // These actions configure the next attack. Notes
+                              // were collected first, so ordinary end insertion
+                              // would leave one-shot CC84 armed for a later note.
+                              // Keep the whole action's authored controller order.
+                              const bool portamentoSetup = std::any_of(nel->events.begin(), nel->events.end(), [](const MidiCoreEvent& event) {
+                                    return NPlayEvent(event).portamento();
+                                    });
                               for (MidiCoreEvent event : nel->events) {
                                     event.setChannel(channel);
                                     NPlayEvent e1(event);
                                     e1.setOriginatingStaff(firstStaffIdx);
                                     if (e1.dataA() == CTRL_PROGRAM)
                                           events->insert(std::pair<int, NPlayEvent>(tick.ticks()-1, e1));
+                                    else if (portamentoSetup)
+                                          events->insertBeforeNoteOn(tick.ticks(), e1);
                                     else
                                           events->insert(std::pair<int, NPlayEvent>(tick.ticks(), e1));
                                     }
@@ -2702,19 +2913,197 @@ void Score::renderMidi(EventMap* events, bool metronome, bool expandRepeats, con
 
 void MidiRenderer::renderScore(EventMap* events, const Context& ctx)
       {
+      PlaybackTiming timing("full MIDI render");
       updateState();
+      timing.phase("roadmap/chunk partition");
+      prepareLaissezVibMeasures(score, laissezVibMeasures(score));
+      timing.phase("LV dependencies");
       for (const Chunk& chunk : chunks) {
             renderChunk(chunk, events, ctx);
+            }
+      renderLaissezVib(events);
+      timing.phase("all chunks/LV finalization");
+      }
+
+// Prepare only LV-related note gates, then retain only their CC66 stream.
+// Ordinary live playback can keep rendering the rest of the score on demand.
+bool MidiRenderer::renderLaissezVibControls(EventMap* events, const Context& ctx)
+      {
+      PlaybackTiming timing("LV controller prepass");
+      updateState();
+      const auto measures = laissezVibMeasures(score);
+      timing.phase("roadmap/dependency selection");
+      if (measures.empty()) return true;
+      bool needsBendPolicy = false;
+      // Isolated bend channels still require the established stopped rendering
+      // policy. Do not allocate lanes in a controller-only prepass.
+      for (const Measure* measure : measures) {
+            for (Segment* seg = measure->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+                  for (int track = 0; track < score->ntracks(); ++track) {
+                        const Element* element = seg->element(track);
+                        if (!element || !element->isChord()) continue;
+                        std::vector<const Chord*> chords { toChord(element) };
+                        for (const Chord* grace : toChord(element)->graceNotes()) chords.push_back(grace);
+                        for (const Chord* chord : chords) {
+                              for (const Note* note : chord->notes()) {
+                                    if (legacyBendFor(note)) needsBendPolicy = true;
+                                    for (const Spanner* spanner : note->spannerFor())
+                                          if (spanner->isGuitarBend() && spanner->getProperty(Pid::PLAY).toBool()) needsBendPolicy = true;
+                                    for (const Spanner* spanner : note->spannerBack())
+                                          if (spanner->isGuitarBend() && spanner->getProperty(Pid::PLAY).toBool()) needsBendPolicy = true;
+                                    }
+                              }
+                        }
+                  }
+            }
+      prepareLaissezVibMeasures(score, measures);
+      timing.phase("prepare selected measures");
+      if (needsBendPolicy) return false;
+      EventMap temporary;
+      for (const RepeatSegment* segment : score->repeatList()) {
+            const int offset = segment->utick - segment->tick;
+            const Measure* end = segment->lastMeasure()->nextMeasure();
+            const Measure* first = nullptr;
+            const Measure* last = nullptr;
+            for (const Measure* measure = segment->firstMeasure(); measure != end; measure = measure->nextMeasure()) {
+                  if (measures.count(measure)) {
+                        if (!first) first = measure;
+                        last = measure;
+                        }
+                  else if (first) {
+                        renderChunk(Chunk(offset, first, last), &temporary, ctx);
+                        first = last = nullptr;
+                        }
+                  }
+            if (first) renderChunk(Chunk(offset, first, last), &temporary, ctx);
+            }
+      // Hand-authored CC66 remains on the ordinary chunk path. Return only
+      // the generated LV stream, avoiding duplicate manual controller events.
+      for (auto it = temporary.begin(); it != temporary.end();) {
+            if (it->second.type() == ME_CONTROLLER && it->second.controller() == CTRL_SOSTENUTO)
+                  it = temporary.erase(it);
+            else
+                  ++it;
+            }
+      renderLaissezVib(&temporary);
+      timing.phase("selected ranges/LV finalization");
+      for (const auto& entry : temporary) {
+            const NPlayEvent& event = entry.second;
+            if (event.type() != ME_CONTROLLER || event.controller() != CTRL_SOSTENUTO) continue;
+            events->registerChannel(event.channel());
+            events->insert(entry);
+            }
+      return true;
+      }
+
+void MidiRenderer::renderLaissezVib(EventMap* events)
+      {
+      using Key = std::tuple<const Note*, int, int, int>;
+      std::map<Key, int> attacks;
+      std::map<int, std::vector<LaissezVibHold>> holds;
+      std::map<int, int> origins;
+      const auto& mappings = score->masterScore()->midiMapping();
+      const RepeatList& roadmap = score->repeatList();
+      for (auto it = events->begin(); it != events->end(); ++it) {
+            const auto& entry = *it;
+            const NPlayEvent& event = entry.second;
+            const Note* note = event.note();
+            if (event.type() != ME_NOTEON || !note) continue;
+            const bool grace = note->chord()->isGrace();
+            // Simple grace notes have their own events. Tied/bent grace chains
+            // and graces absorbed into an ornament need separate ownership.
+            if (grace) {
+                  bool bent = legacyBendFor(note) != nullptr;
+                  for (const Spanner* spanner : note->spannerFor())
+                        bent |= spanner->isGuitarBend() && spanner->getProperty(Pid::PLAY).toBool();
+                  for (const Spanner* spanner : note->spannerBack())
+                        bent |= spanner->isGuitarBend() && spanner->getProperty(Pid::PLAY).toBool();
+                  if (note->tieFor() || note->tieBack() || bent || isGlissandoFor(note)) continue;
+                  }
+            // Isolated bend chains emit their own capture/release and reserve
+            // their channel before subsequent notes are allocated.
+            if (event.channel() < int(mappings.size()) && mappings[event.channel()].bendSource() >= 0)
+                  continue;
+            if (event.noteEventIndex() >= 0
+                && event.noteEventIndex() + 1 != int(note->playEvents().size())) continue;
+            const Key key(note, event.channel(), event.pitch(), event.noteEventIndex());
+            if (event.velo() > 0) {
+                  if (entry.first >= 0 && entry.first < roadmap.ticks())
+                        attacks[key] = entry.first;
+                  continue;
+                  }
+            const auto found = attacks.find(key);
+            if (found == attacks.end()) continue;
+            const int on = found->second;
+            const int off = entry.first;
+            attacks.erase(found);
+            if (off - on < 2) continue;
+
+            const Note* terminal = note;
+            const int attackOffset = on - roadmap.utick2tick(on);
+            int terminalTick = note->chord()->tick().ticks() + attackOffset;
+            // A written note can occur again after a backwards repeat. Bound
+            // traversal by performance time, not by written-note identity.
+            std::set<std::pair<const Note*, int>> visited;
+            bool legacyBend = false;
+            while (terminalTick < roadmap.ticks() && visited.insert({ terminal, terminalTick }).second) {
+                  legacyBend |= legacyBendFor(terminal) != nullptr;
+                  const Note* next = grace ? nullptr : nextTiedNoteInPlayback(terminal, terminalTick);
+                  if (!next) break;
+                  terminalTick += terminal->chord()->actualTicks().ticks();
+                  terminal = next;
+                  }
+            // A legacy combination rejected by the isolated renderer must not
+            // receive an ordinary hold followed by a premature wheel reset.
+            if (legacyBend || terminalTick >= roadmap.ticks() || !hasLaissezVib(terminal)) continue;
+            // A grace's emitted gate supplies its capture time; its chord's
+            // measure supplies the written release window, as for a normal note.
+            // On ties, only the endpoint's LV controls the chain's one attack.
+            const Measure* measure = terminal->chord()->measure();
+            if (!measure) continue;
+            const Measure* following = measure->nextMeasure();
+            const int duration = off - on + 1;
+            const int captureOffset = qMax(1, duration / 10);
+            const int capture = qMin(off - 1, on + captureOffset);
+            const int endpointOffset = terminalTick - terminal->chord()->tick().ticks();
+            const int nominalEnd = (following ? following : measure)->endTick().ticks() + endpointOffset;
+            // Clip at the endpoint's playback segment, which can differ from
+            // the attack's segment when the note is tied across a repeat/jump.
+            int boundary = roadmap.ticks();
+            for (const RepeatSegment* segment : roadmap) {
+                  if (terminalTick >= segment->utick && terminalTick < segment->utick + segment->len()) {
+                        boundary = segment->utick + segment->len();
+                        break;
+                        }
+                  }
+            const int release = qMin(boundary, nominalEnd + captureOffset);
+            if (capture < release) {
+                  holds[event.channel()].push_back({ capture, release });
+                  origins[event.channel()] = event.getOriginatingStaff();
+                  }
+            }
+      for (const auto& channel : holds) {
+            for (const LaissezVibSwitch& change : laissezVibSwitches(channel.second)) {
+                  NPlayEvent event(ME_CONTROLLER, channel.first, CTRL_SOSTENUTO, change.on ? 127 : 0);
+                  event.setOriginatingStaff(origins[channel.first]);
+                  events->insert(std::make_pair(change.tick, event));
+                  }
             }
       }
 
 void MidiRenderer::renderChunk(const Chunk& chunk, EventMap* events, const Context& ctx)
       {
+      PlaybackTiming timing("MIDI chunk");
+      if (timing.enabled())
+            qDebug("Audio preparation: MIDI chunk written=[%d,%d), playback=[%d,%d)",
+                  chunk.tick1(), chunk.tick2(), chunk.utick1(), chunk.utick2());
       // TODO: avoid doing it multiple times for the same measures
       score->createPlayEvents(chunk.startMeasure(), chunk.endMeasure());
+      timing.phase("note play events");
 
       score->updateChannel();
       score->updateVelo();
+      timing.phase("channel/velocity metadata");
 
       SynthesizerState s = score->synthesizerState();
       int method = s.method();
@@ -2764,13 +3153,14 @@ void MidiRenderer::renderChunk(const Chunk& chunk, EventMap* events, const Conte
 
       // create sustain pedal events
       renderSpanners(chunk, events);
+      timing.phase("notes and spanners");
 
       // Ordinary channel automation must reach the independent bend lanes.
       // Snapshot first, so inserting copies cannot recursively copy the copies.
       std::vector<std::pair<int, NPlayEvent>> controls;
       const auto& mappings = score->masterScore()->midiMapping();
       for (const auto& entry : *events) {
-            if (entry.second.type() != ME_CONTROLLER)
+            if (entry.second.type() != ME_CONTROLLER || entry.second.controller() == CTRL_SOSTENUTO)
                   continue;
             for (const MidiMapping& mapping : mappings) {
                   if (mapping.bendSource() != entry.second.channel())
@@ -2805,7 +3195,7 @@ void MidiRenderer::renderChunk(const Chunk& chunk, EventMap* events, const Conte
       for (auto i = events->begin(); i != events->end();) {
             if (i->second.type() == ME_CONTROLLER) {
                   auto& event = i->second;
-                  if (event.channel() == lastChannel &&
+                  if (event.isStatefulController() && event.controller() != CTRL_SOSTENUTO && event.channel() == lastChannel &&
                      event.controller() == lastController &&
                      event.value() == lastValue) {
                         i = events->erase(i);
@@ -2821,6 +3211,8 @@ void MidiRenderer::renderChunk(const Chunk& chunk, EventMap* events, const Conte
                   i++;
                   }
             }
+      // Ordinary LV is finalized after the complete performance is collected.
+      timing.phase("controller routing/fixup");
       }
 
 //---------------------------------------------------------
@@ -2830,12 +3222,17 @@ void MidiRenderer::renderChunk(const Chunk& chunk, EventMap* events, const Conte
 void MidiRenderer::updateState()
       {
       if (needUpdate) {
+            PlaybackTiming timing("MIDI roadmap/partition");
             // Update the related structures inside score
             // to avoid doing it multiple times on chunks rendering
             score->updateSwing();
             score->updateCapo();
+            timing.phase("swing/capo metadata");
 
             updateChunksPartition();
+            timing.phase("chunk partition");
+            if (timing.enabled())
+                  qDebug("Audio preparation: MIDI partition chunks=%llu", static_cast<unsigned long long>(chunks.size()));
 
             needUpdate = false;
             }
@@ -2850,6 +3247,18 @@ void MidiRenderer::updateState()
 
 bool MidiRenderer::canBreakChunk(const Measure* last)
       {
+      // A release reaches the end of the following measure. Keep that window
+      // together when partitioning continuous playback into rendering chunks.
+      for (const Measure* m = last; m; m = m == last ? last->prevMeasure() : nullptr) {
+            for (Segment* segment = m->first(SegmentType::ChordRest); segment;
+                 segment = segment->next(SegmentType::ChordRest)) {
+                  for (int track = 0; track < m->score()->ntracks(); ++track) {
+                        const Element* element = segment->element(track);
+                        if (!element || !element->isChord()) continue;
+                        if (hasLaissezVib(toChord(element))) return false;
+                        }
+                  }
+            }
       Score* score = last->score();
 
       // Check for hairpins that overlap measure end:

@@ -213,7 +213,7 @@ add_library(mscoreapp STATIC
       drumroll.h drumtools.h drumview.h easeinoutcanvas.h editdrumset.h
       editinstrument.h editpitch.h editraster.h editstaff.h
       editstafftype.h editstringdata.h editstyle.h enableplayforwidget.h
-      exampleview.h excerptsdialog.h exportdialog.h
+      exampleview.h excerptsdialog.h exportdialog.h exportaudio.h
       file.h fotomode.h fretcanvas.h greendotbutton.h
       harmonycanvas.h harmonyedit.h help.h helpBrowser.h
       instrdialog.h instrwidget.h
@@ -259,6 +259,7 @@ add_library(mscoreapp STATIC
       excerptsdialog.cpp metaedit.cpp zoombox.cpp realizeharmonydialog.cpp
       exportdialog.cpp
       exportaudio.cpp
+      renderaudio.cpp
       synthcontrol.cpp drumroll.cpp piano.cpp
       drumview.cpp scoretab.cpp keyedit.cpp harmonyedit.cpp
       updatechecker.cpp

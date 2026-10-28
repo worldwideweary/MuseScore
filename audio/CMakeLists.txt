@@ -12,6 +12,12 @@
 
 set(MODULE audio)
 
+option(MSCORE_EXPERIMENTAL_FLUIDSYNTH2 "Build the experimental FluidSynth 2 adapter" OFF)
+if(MSCORE_EXPERIMENTAL_FLUIDSYNTH2)
+    include("${PROJECT_SOURCE_DIR}/build/FluidSynth2.cmake")
+    mscore_setup_fluidsynth2()
+endif()
+
 include (${CMAKE_CURRENT_LIST_DIR}/midi/midi.cmake)
 include (${CMAKE_CURRENT_LIST_DIR}/exports/exports.cmake)
 
@@ -24,6 +30,29 @@ add_library (${MODULE} STATIC
       ${MIDI_SRC}
       ${EXPORTS_SRC}
       )
+
+if(MSCORE_EXPERIMENTAL_FLUIDSYNTH2)
+    # Development runs need the same bundled font which installation exposes
+    # as MuseScore_General.sf3. Installed/user/extension folders retain priority.
+    target_compile_definitions(${MODULE} PRIVATE
+        MSCORE_BUILD_SOUNDFONT_DIR="${PROJECT_SOURCE_DIR}/share/sound")
+    # Keep dependency compiler flags (such as _DEFAULT_SOURCE) off audio's
+    # shared PCH consumers. Only the adapter compiles against FluidSynth.
+    add_library(mscore_fluid2 STATIC midi/fluid2/fluid2.cpp midi/fluid2/fluid2.h
+        midi/fluid2/fluid2gui.cpp midi/fluid2/fluid2gui.h
+        midi/fluid2/audiobuffer.h midi/fluid2/channelrouting.h
+        midi/fluid2/synthbanks.cpp midi/fluid2/synthbanks.h midi/fluid2/sendmix.h)
+    target_include_directories(mscore_fluid2 PRIVATE ${PROJECT_SOURCE_DIR})
+    target_link_libraries(mscore_fluid2 PRIVATE ${QT_LIBRARIES} MScore::FluidSynth2)
+    mscore_fluid2_optimize_debug(mscore_fluid2)
+    set_target_properties(mscore_fluid2 PROPERTIES
+        DISABLE_PRECOMPILE_HEADERS ON
+        POSITION_INDEPENDENT_CODE ON
+        )
+    # The optional host auxiliary return owns a separate existing Zita effect.
+    target_link_libraries(${MODULE} mscore_fluid2 effects)
+    target_compile_definitions(${MODULE} PUBLIC MSCORE_EXPERIMENTAL_FLUIDSYNTH2)
+endif()
 
 target_include_directories(${MODULE} 
    PRIVATE 

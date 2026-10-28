@@ -14,6 +14,7 @@
 #define __INSTRUMENT_H__
 
 #include <QtGlobal>
+#include <QAtomicInt>
 #include <QString>
 
 #include "clef.h"
@@ -116,6 +117,9 @@ class Channel {
 
       char _chorus;
       char _reverb;
+      // QAtomicInt copies its value when a Channel is cloned. The sequencer
+      // can read it while the mixer edits it, without sharing clone state.
+      QAtomicInt _audioReverbSend { 0 };  // percent, not CC91
 
       int _program;     // current values as shown in mixer
       int _bank;        // initialized from "init"
@@ -144,7 +148,7 @@ public:
 
       enum class Prop : char {
             VOLUME, PAN, CHORUS, REVERB, NAME, DESCR, PROGRAM, BANK, COLOR,
-            SOLOMUTE, SOLO, MUTE, SYNTI, CHANNEL, USER_BANK_CONTROL
+            SOLOMUTE, SOLO, MUTE, SYNTI, CHANNEL, USER_BANK_CONTROL, AUDIO_REVERB_SEND
             };
 
 private:
@@ -171,6 +175,8 @@ public:
       void setChorus(char value);
       char reverb() const { return _reverb; }
       void setReverb(char value);
+      int audioReverbSend() const { return _audioReverbSend.loadAcquire(); }
+      void setAudioReverbSend(int percent);
 
       int program() const { return _program; }
       void setProgram(int value);

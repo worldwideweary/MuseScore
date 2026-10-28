@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="3.02">
+  <Score>
+    <Division>480</Division>
+    <Part>
+      <Staff id="1"><StaffType group="pitched"><name>std</name></StaffType></Staff>
+      <trackName>Export test</trackName>
+      <Instrument id="piano">
+        <trackName>Export test</trackName>
+        <Channel><program value="0"/><synti>Fluid</synti></Channel>
+      </Instrument>
+    </Part>
+    <Staff id="1">
+      <Measure>
+        <voice>
+          <Clef><concertClefType>G</concertClefType><transposingClefType>G</transposingClefType></Clef>
+          <TimeSig><sigN>2</sigN><sigD>4</sigD></TimeSig>
+          <Tempo><tempo>4</tempo><text>quarter = 240</text></Tempo>
+          <Chord><durationType>quarter</durationType><Note><pitch>69</pitch><tpc>17</tpc></Note></Chord>
+          <Rest><durationType>quarter</durationType></Rest>
+        </voice>
+      </Measure>
+    </Staff>
+  </Score>
+</museScore>

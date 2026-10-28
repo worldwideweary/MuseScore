@@ -68,6 +68,7 @@ class Voice
       static float sinc_table7[FLUID_INTERP_MAX][7];
 
       Fluid* _fluid;
+      void lockReleasePitch();
       double _noteTuning;             // +/- in midicent
 
       //keeps number of frames that are now in cache
@@ -100,6 +101,9 @@ class Voice
       std::tuple<unsigned, bool> interpolateGeneratedDSPData(unsigned n);
 
 public:
+      // Released tails retain wheel pitch; held and pedal-held voices stay live.
+      int releasePitchBend = -1;
+      int releasePitchSensitivity = 12;
 	unsigned int id;                // the id is incremented for every new noteon.
 					        // it's used for noteoff's
 	unsigned char status;

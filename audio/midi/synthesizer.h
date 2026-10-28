@@ -57,13 +57,25 @@ class Synthesizer {
       virtual double masterTuning() const { return 440.0; }
 
       virtual bool loadSoundFonts(const QStringList&) = 0;
+      // Optional startup/default recovery; an explicit empty list still unloads.
+      virtual bool loadDefaultSoundFonts() { return false; }
       virtual bool addSoundFont(const QString&)    { return false; }
       virtual bool removeSoundFont(const QString&) { return false; }
 
       virtual std::vector<SoundFontInfo> soundFontsInfo() const = 0;
 
       virtual void process(unsigned, float*, float*, float*) = 0;
+      // Optional additive stereo auxiliary input for a host effect. Existing
+      // backends retain their process method and contribute no auxiliary audio.
+      virtual void processWithAux(unsigned frames, float* output, float* effectA, float* effectB, float* /*auxiliary*/)
+            { process(frames, output, effectA, effectB); }
+      virtual bool setSourceSend(int /*source*/, float /*gain*/) { return false; }
+      virtual bool supportsSourceSends() const { return false; }
+      virtual float sourceSend(int /*source*/) const { return 0.0f; }
       virtual void play(const PlayEvent&) = 0;
+      // sourceChannel is the logical mixer channel; an isolated bend lane
+      // retains its own MIDI channel but inherits its source's audio sends.
+      virtual void playWithSource(const PlayEvent& event, int /*sourceChannel*/) { play(event); }
 
       virtual const QList<MidiPatch*>& getPatchInfo() const = 0;
 

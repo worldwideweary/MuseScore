@@ -47,6 +47,7 @@ class MixerDetails : public QWidget, public Ui::MixerDetails, public ChannelList
       QList<QPushButton*> voiceButtons;
 
       void updateFromTrack();
+      void updateAudioReverbSend();
 
 public slots:
       void partNameChanged();
@@ -56,6 +57,7 @@ public slots:
       void panChanged(double);
       void chorusChanged(double);
       void reverbChanged(double);
+      void audioReverbSendChanged(double);
       void drumkitToggled(bool);
       void midiChannelChanged(int);
 

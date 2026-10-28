@@ -1,0 +1,124 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<museScore version="3.02">
+  <Score>
+    <Division>480</Division>
+    <Style>
+      <createMultiMeasureRests>0</createMultiMeasureRests>
+    </Style>
+    <Part>
+      <Staff id="1">
+        <StaffType group="pitched">
+          <name>std</name>
+        </StaffType>
+      </Staff>
+      <trackName>Electric Guitar</trackName>
+      <Instrument id="electric-guitar">
+        <longName>Electric Guitar</longName>
+        <trackName>Electric Guitar</trackName>
+        <Channel>
+          <program value="27" />
+        </Channel>
+        <Articulation>
+          <velocity>100</velocity>
+          <gateTime>100</gateTime>
+        </Articulation>
+      </Instrument>
+    </Part>
+    <Staff id="1">
+      <VBox>
+        <height>15</height>
+        <Text>
+          <style>Title</style>
+          <text>Audio v0.08 - legacy bend tied to an LV endpoint</text>
+        </Text>
+        <Text>
+          <style>Subtitle</style>
+          <size>10</size>
+          <text>One attack, rising bend, then a normal tie. The LV on the second note sustains the bent pitch.</text>
+        </Text>
+      </VBox>
+      <Measure>
+        <voice>
+          <Clef>
+            <concertClefType>G</concertClefType>
+            <transposingClefType>G</transposingClefType>
+          </Clef>
+          <TimeSig>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+          </TimeSig>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+              <Bend>
+                <point time="0" pitch="0" vibrato="0" />
+                <point time="15" pitch="100" vibrato="0" />
+                <point time="60" pitch="100" vibrato="0" />
+              </Bend>
+              <Spanner type="Tie">
+                <Tie />
+                <next>
+                  <location>
+                    <fractions>1/4</fractions>
+                  </location>
+                </next>
+              </Spanner>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+              <LaissezVib />
+              <Spanner type="Tie">
+                <prev>
+                  <location>
+                    <fractions>-1/4</fractions>
+                  </location>
+                </prev>
+              </Spanner>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>half</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>1/1</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>1/1</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>1/1</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>1/1</duration>
+          </Rest>
+        </voice>
+      </Measure>
+    </Staff>
+  </Score>
+</museScore>

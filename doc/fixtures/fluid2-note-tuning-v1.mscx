@@ -1,0 +1,350 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<museScore version="3.02">
+  <Score>
+    <Division>480</Division>
+    <Part>
+      <Staff id="1">
+        <StaffType group="pitched">
+          <name>std</name>
+        </StaffType>
+      </Staff>
+      <trackName>Piano 1</trackName>
+      <Instrument id="piano">
+        <longName>Piano 1</longName>
+        <trackName>Piano 1</trackName>
+        <Channel>
+          <program value="0" />
+        </Channel>
+      </Instrument>
+    </Part>
+    <Part>
+      <Staff id="2">
+        <StaffType group="pitched">
+          <name>std</name>
+        </StaffType>
+      </Staff>
+      <trackName>Piano 2</trackName>
+      <Instrument id="piano">
+        <longName>Piano 2</longName>
+        <trackName>Piano 2</trackName>
+        <Channel>
+          <program value="0" />
+        </Channel>
+      </Instrument>
+    </Part>
+    <Staff id="1">
+      <VBox>
+        <height>18</height>
+        <Text>
+          <style>Title</style>
+          <text>FluidSynth 2 - Per-note tuning v1</text>
+        </Text>
+        <Text>
+          <style>Subtitle</style>
+          <size>10</size>
+          <text>Compare the experimental backend with the old backend.
+Bars 1-2: offsets in cents; bars 3-4: change E alone in a chord.
+Bars 5-6: opposite offsets on two staves. Then test master tuning and WAV export.</text>
+        </Text>
+      </VBox>
+      <Measure>
+        <voice>
+          <Clef>
+            <concertClefType>G</concertClefType>
+            <transposingClefType>G</transposingClefType>
+          </Clef>
+          <TimeSig>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+          </TimeSig>
+          <StaffText>
+            <size>9</size>
+            <text>+0 cents</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <StaffText>
+            <size>9</size>
+            <text>+100 cents</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+              <tuning>100</tuning>
+            </Note>
+          </Chord>
+          <StaffText>
+            <size>9</size>
+            <text>-100 cents</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+              <tuning>-100</tuning>
+            </Note>
+          </Chord>
+          <StaffText>
+            <size>9</size>
+            <text>+0 cents</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <size>9</size>
+            <text>+0 cents</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <StaffText>
+            <size>9</size>
+            <text>+50 cents</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+              <tuning>50</tuning>
+            </Note>
+          </Chord>
+          <StaffText>
+            <size>9</size>
+            <text>-50 cents</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+              <tuning>-50</tuning>
+            </Note>
+          </Chord>
+          <StaffText>
+            <size>9</size>
+            <text>+0 cents</text>
+          </StaffText>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+        </voice>
+        <LayoutBreak>
+          <subtype>line</subtype>
+        </LayoutBreak>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <size>9</size>
+            <text>Normal chord</text>
+          </StaffText>
+          <Chord>
+            <durationType>whole</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+            </Note>
+            <Note>
+              <pitch>64</pitch>
+              <tpc>18</tpc>
+            </Note>
+            <Note>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <size>9</size>
+            <text>E only: +100 cents</text>
+          </StaffText>
+          <Chord>
+            <durationType>whole</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+            </Note>
+            <Note>
+              <pitch>64</pitch>
+              <tpc>18</tpc>
+              <tuning>100</tuning>
+            </Note>
+            <Note>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+        </voice>
+        <LayoutBreak>
+          <subtype>line</subtype>
+        </LayoutBreak>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <size>9</size>
+            <text>Staff 1: +50 cents</text>
+          </StaffText>
+          <Chord>
+            <durationType>half</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+              <tuning>50</tuning>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>half</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <size>9</size>
+            <text>Staff 1: -50 cents</text>
+          </StaffText>
+          <Chord>
+            <durationType>half</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+              <tuning>-50</tuning>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>half</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+        </voice>
+        <LayoutBreak>
+          <subtype>line</subtype>
+        </LayoutBreak>
+      </Measure>
+    </Staff>
+    <Staff id="2">
+      <Measure>
+        <voice>
+          <Clef>
+            <concertClefType>G</concertClefType>
+            <transposingClefType>G</transposingClefType>
+          </Clef>
+          <TimeSig>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+          </TimeSig>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>1/1</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>1/1</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>1/1</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>1/1</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <size>9</size>
+            <text>Staff 2: -50 cents</text>
+          </StaffText>
+          <Chord>
+            <durationType>half</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+              <tuning>-50</tuning>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>half</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <size>9</size>
+            <text>Staff 2: +50 cents</text>
+          </StaffText>
+          <Chord>
+            <durationType>half</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+              <tuning>50</tuning>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>half</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+    </Staff>
+  </Score>
+</museScore>

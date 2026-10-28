@@ -69,6 +69,7 @@ public:
       void setPan(char value);
       void setChorus(char value);
       void setReverb(char value);
+      void setAudioReverbSend(int percent);
 
       void setMute(bool value);
       void setSolo(bool value);

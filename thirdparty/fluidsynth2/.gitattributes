@@ -1,0 +1,21 @@
+# Preserve the upstream snapshot byte for byte, including existing CRLF files.
+/fluidsynth-2.3.4/** -text
+/MANIFEST.sha256 text eol=lf
+
+# Send existing CRLF text as binary in format-patch: mailinfo otherwise strips
+# its carriage returns during an ordinary git am, breaking the source hashes.
+/fluidsynth-2.3.4/cmake_admin/CheckDIRSymbolExists.cmake -diff
+/fluidsynth-2.3.4/cmake_admin/CheckSTDC.cmake -diff
+/fluidsynth-2.3.4/contrib/debian.fluidsynth.install -diff
+/fluidsynth-2.3.4/contrib/debian.libfluidsynth1.install -diff
+/fluidsynth-2.3.4/doc/polymono/leg_00.txt -diff
+/fluidsynth-2.3.4/doc/polymono/leg_01.txt -diff
+/fluidsynth-2.3.4/doc/polymono/leg_por_00.txt -diff
+/fluidsynth-2.3.4/doc/polymono/leg_por_01.txt -diff
+/fluidsynth-2.3.4/doc/polymono/poly_mono_0.txt -diff
+/fluidsynth-2.3.4/doc/polymono/poly_mono_1.txt -diff
+/fluidsynth-2.3.4/doc/polymono/poly_mono_2.txt -diff
+/fluidsynth-2.3.4/doc/polymono/poly_mono_3.txt -diff
+/fluidsynth-2.3.4/doc/polymono/poly_mono_4.txt -diff
+/fluidsynth-2.3.4/doc/polymono/poly_mono_5.txt -diff
+/fluidsynth-2.3.4/test-android/gradlew.bat -diff

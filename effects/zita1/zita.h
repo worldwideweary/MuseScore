@@ -260,6 +260,9 @@ class ZitaReverb : public Effect
 
       virtual void init(float fsamp);
       void fini();
+      // Discard delay/filter history without reallocating or changing controls.
+      // Call only on the processing thread, or while processing is stopped.
+      void clear();
 
       virtual void process(int n, float* inp, float* out);
 

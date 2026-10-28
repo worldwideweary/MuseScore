@@ -1,0 +1,144 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<museScore version="3.02">
+  <Score>
+    <Division>480</Division>
+    <Style>
+      <createMultiMeasureRests>0</createMultiMeasureRests>
+    </Style>
+    <Part>
+      <Staff id="1">
+        <StaffType group="pitched">
+          <name>std</name>
+        </StaffType>
+      </Staff>
+      <trackName>Piano</trackName>
+      <Instrument id="piano">
+        <longName>Piano</longName>
+        <trackName>Piano</trackName>
+        <Channel>
+          <program value="0" />
+        </Channel>
+        <Articulation>
+          <velocity>100</velocity>
+          <gateTime>100</gateTime>
+        </Articulation>
+      </Instrument>
+    </Part>
+    <Staff id="1">
+      <VBox>
+        <height>15</height>
+        <Text>
+          <style>Title</style>
+          <text>Audio v0.10 - tie chain revisiting written notes</text>
+        </Text>
+        <Text>
+          <style>Subtitle</style>
+          <size>10</size>
+          <text>Modern FluidSynth. One C attack continues through both passes, then into measure 3.
+LV belongs to the chain endpoint in measure 3. No new attack should occur at either repeat landing.
+The bent/grace variants of cross-boundary chains remain outside this test.</text>
+        </Text>
+      </VBox>
+      <Measure>
+        <voice>
+          <Clef>
+            <concertClefType>G</concertClefType>
+            <transposingClefType>G</transposingClefType>
+          </Clef>
+          <TimeSig>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+          </TimeSig>
+          <Chord>
+            <durationType>whole</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+              <PartialTie>
+                <partialSpannerDirection>incoming</partialSpannerDirection>
+              </PartialTie>
+              <Spanner type="Tie">
+                <Tie />
+                <next>
+                  <location>
+                    <measures>1</measures>
+                    <fractions>0/1</fractions>
+                  </location>
+                </next>
+              </Spanner>
+            </Note>
+          </Chord>
+        </voice>
+        <startRepeat />
+      </Measure>
+      <Measure>
+        <voice>
+          <Chord>
+            <durationType>whole</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+              <PartialTie>
+                <partialSpannerDirection>outgoing</partialSpannerDirection>
+              </PartialTie>
+              <Spanner type="Tie">
+                <prev>
+                  <location>
+                    <measures>-1</measures>
+                    <fractions>0/1</fractions>
+                  </location>
+                </prev>
+              </Spanner>
+              <Spanner type="Tie">
+                <Tie />
+                <next>
+                  <location>
+                    <measures>1</measures>
+                    <fractions>0/1</fractions>
+                  </location>
+                </next>
+              </Spanner>
+            </Note>
+          </Chord>
+        </voice>
+        <endRepeat>2</endRepeat>
+      </Measure>
+      <Measure>
+        <voice>
+          <Chord>
+            <durationType>whole</durationType>
+            <Note>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+              <LaissezVib />
+              <Spanner type="Tie">
+                <prev>
+                  <location>
+                    <measures>-1</measures>
+                    <fractions>0/1</fractions>
+                  </location>
+                </prev>
+              </Spanner>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>1/1</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>1/1</duration>
+          </Rest>
+        </voice>
+      </Measure>
+    </Staff>
+  </Score>
+</museScore>

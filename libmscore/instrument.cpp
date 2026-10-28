@@ -613,6 +613,15 @@ void Channel::setReverb(char value)
       _mustUpdateInit = true;
       }
 
+void Channel::setAudioReverbSend(int percent)
+      {
+      percent = qBound(0, percent, 100);
+      if (_audioReverbSend.fetchAndStoreRelaxed(percent) != percent) {
+            firePropertyChanged(Prop::AUDIO_REVERB_SEND);
+            }
+      // This audio setting must never add a MIDI controller to initList().
+      }
+
 //---------------------------------------------------------
 //   setName
 //---------------------------------------------------------
@@ -761,6 +770,9 @@ void Channel::write(XmlWriter& xml, const Part* part) const
             xml.tag("descr", _descr);
       if (_color != DEFAULT_COLOR)
             xml.tag("color", _color);
+      const int send = audioReverbSend();
+      if (send)
+            xml.tag("audioReverbSend", send);
 
       for (const MidiCoreEvent& e : initList()) {
             if (e.type() == ME_INVALID)
@@ -808,6 +820,7 @@ void Channel::write(XmlWriter& xml, const Part* part) const
 
 void Channel::read(XmlReader& e, Part* part)
       {
+      _audioReverbSend.storeRelease(0);  // absent in older scores, including reused channels
       // synti = 0;
       _name = e.attribute("name");
       if (_name == "")
@@ -878,6 +891,8 @@ void Channel::read(XmlReader& e, Part* part)
                   _descr = e.readElementText();
             else if (tag == "color")
                   _color = e.readInt();
+            else if (tag == "audioReverbSend")
+                  setAudioReverbSend(e.readInt());
             else if (tag == "mute")
                   _mute = e.readInt();
             else if (tag == "solo")
@@ -1089,6 +1104,9 @@ void PartChannelSettingsLink::applyProperty(Channel::Prop p, const Channel* from
                   break;
             case Channel::Prop::REVERB:
                   to->setReverb(from->reverb());
+                  break;
+            case Channel::Prop::AUDIO_REVERB_SEND:
+                  to->setAudioReverbSend(from->audioReverbSend());
                   break;
             case Channel::Prop::NAME:
                   to->setName(from->name());

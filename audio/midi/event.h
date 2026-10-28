@@ -279,6 +279,10 @@ class NPlayEvent : public PlayEvent {
       void setDiscard(int d) { _discard = d; }
       int discard() const { return _discard; }
       bool isMuted() const;
+      // CC84 selects a previous key for the next attack only. Replaying it
+      // while seeking would arm a new glide at an unrelated later note.
+      bool isStatefulController() const
+            { return type() == ME_CONTROLLER && controller() != CTRL_PORTAMENTO_CONTROL; }
       void setPortamento(bool p) { _portamento = p; }
       bool portamento() const { 
             return (_portamento == true || 
@@ -356,6 +360,17 @@ class EventMap : public std::multimap<int, NPlayEvent> {
       int _highestChannel = 15;
    public:
       void fixupMIDI();
+      // Preserve setup order at the same tick, without advancing controller
+      // timestamps or moving note-offs. Used for named portamento actions.
+      iterator insertBeforeNoteOn(int tick, const NPlayEvent& event)
+            {
+            const auto range = equal_range(tick);
+            auto before = range.first;
+            for (; before != range.second; ++before)
+                  if (before->second.channel() == event.channel()
+                      && before->second.type() == ME_NOTEON && before->second.velo() > 0) break;
+            return insert(before, std::make_pair(tick, event));
+            }
       void registerChannel(int c) { if (c > _highestChannel) _highestChannel = c; }
       };
 

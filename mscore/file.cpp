@@ -56,6 +56,7 @@
 #include "libmscore/note.h"
 #include "libmscore/page.h"
 #include "libmscore/part.h"
+#include "libmscore/playbacktiming.h"
 #include "libmscore/repeatlist.h"
 #include "libmscore/rest.h"
 #include "libmscore/score.h"
@@ -383,6 +384,7 @@ void MuseScore::askAboutApplyingEdwinIfNeed(const QString& fileSuffix)
 
 Score* MuseScore::openScore(const QString& fn, bool switchTab, const bool considerInCurrentSession, const QString& name)
       {
+      PlaybackTiming timing("open score");
       //
       // make sure we load a file only once
       //
@@ -399,6 +401,7 @@ Score* MuseScore::openScore(const QString& fn, bool switchTab, const bool consid
       askAboutApplyingEdwinIfNeed(fi.suffix().toLower());
 
       MasterScore* score = readScore(fn);
+      timing.phase("read");
       if (score) {
             if (!name.isEmpty())
                   score->masterScore()->fileInfo()->setFile(name);
@@ -426,12 +429,15 @@ Score* MuseScore::openScore(const QString& fn, bool switchTab, const bool consid
             score->styleChanged();
             score->doLayout();
 
+            timing.phase("migration/layout");
+
             if (considerInCurrentSession) {
                   const int tabIdx = appendScore(score);
                   if (switchTab && !isModalDialogOpen())
                         setCurrentScoreView(tabIdx);
                   writeSessionFile(false);
                   }
+            timing.phase("attach score and panels");
             }
       return score;
       }
@@ -1899,6 +1905,7 @@ void MuseScore::printFile()
 bool MuseScore::saveAs(Score* cs_, bool saveCopy, const QString& path, const QString& ext, SaveReplacePolicy* replacePolicy)
       {
       bool rv = false;
+      bool audioExportCanceled = false;
       QString suffix = "." + ext;
       QString fn(path);
       if (!fn.endsWith(suffix))
@@ -1993,7 +2000,7 @@ bool MuseScore::saveAs(Score* cs_, bool saveCopy, const QString& path, const QSt
             }
 #ifdef HAS_AUDIOFILE
       else if (ext == "wav" || ext == "flac" || ext == "ogg")
-            rv = saveAudio(cs_, fn);
+            rv = saveAudio(cs_, fn, audioExportCanceled);
 #endif
 #ifdef USE_LAME
       else if (ext == "mp3")
@@ -2020,7 +2027,7 @@ bool MuseScore::saveAs(Score* cs_, bool saveCopy, const QString& path, const QSt
                qPrintable(ext));
             return false;
             }
-      if (!rv && !MScore::noGui)
+      if (!rv && !audioExportCanceled && !MScore::noGui)
             QMessageBox::critical(this, tr("MuseScore:"), tr("Cannot write into %1").arg(fn));
 
       if (layoutMode != cs_->layoutMode()) {
@@ -2300,6 +2307,7 @@ void importExtension(QString name)
 
 Score::FileError readScore(MasterScore* score, QString name, bool ignoreVersionError)
       {
+      PlaybackTiming timing("read score");
       ScoreLoad sl;
 
       QFileInfo info(name);
@@ -2408,6 +2416,7 @@ Score::FileError readScore(MasterScore* score, QString name, bool ignoreVersionE
                   score->setCreated(true); // force save as for imported files
             }
 
+      timing.phase("file/import");
       for (Part* p : qAsConst(score->parts())) {
             p->updateHarmonyChannels(false);
             }
@@ -2421,12 +2430,15 @@ Score::FileError readScore(MasterScore* score, QString name, bool ignoreVersionE
       score->updateChannel();
       score->updateExpressive(MuseScore::synthesizer("Fluid"));
       score->setSaved(false);
+      timing.phase("playback metadata");
       score->update();
       score->styleChanged();
+      timing.phase("update/layout/style");
 
       if (!ignoreVersionError && !MScore::noGui)
             if (!score->sanityCheck(QString()))
                   return Score::FileError::FILE_CORRUPTED;
+      timing.phase("sanity check");
       return Score::FileError::FILE_NO_ERROR;
       }
 

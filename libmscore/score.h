@@ -188,6 +188,8 @@ class MidiMapping {
       const Part* part() const { return _part; }
       Channel* articulation() { return _articulation.get(); }
       const Channel* articulation() const { return _articulation.get(); }
+      Channel* scoreChannel() { return masterChannel; }
+      const Channel* scoreChannel() const { return masterChannel; }
       int bendSource() const { return _bendSource; }
       signed char port() const { return _port; }
       signed char channel() const { return _channel; }
