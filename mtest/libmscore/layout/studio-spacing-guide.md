@@ -1,5 +1,26 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.172 correction: preserve the regression command's end anchor
+
+The user's v0.171 tst_spacing XML reports one failing case,
+graceSlurSiblingAnchors4, at the command/fresh-layout comparison. Its preceding
+fixed-position obstacle, prepared-policy and lower-curve assertions pass.
+The new test's command setup reread upper->endElement() after changing
+SPANNER_TICK/SPANNER_TICKS. These property setters invalidate the end pointer;
+the subsequent ChangeSpannerElements therefore received a null endpoint.
+This does not reproduce native changeAnchor, which preserves ecr in advance.
+
+Retain the original end identity before any property changes and pass that
+pointer into ChangeSpannerElements. Assert both endpoints and the fixed end
+tick before and after command completion. Preserve all existing geometry,
+fresh-layout, undo and redo checks; distinguish fresh-layout and redo failures
+in their messages. Files changed: tst_spacing.cpp and this guide. Production
+layout code is unchanged from v0.171.
+
+Local validation: C++11 Debug/NDEBUG syntax checks with regenerated moc,
+whitespace and exact patch replay. Native tests remain pending. Apply after
+v0.171 and rerun the usual spacing/beam pair, then repeat the P2 visual edit.
+
 ## v0.171 WIP: keep sibling grace-slur curve admission on prepared inputs
 
 User verification after v0.170: all 63 native mtests pass. The resource/catalog

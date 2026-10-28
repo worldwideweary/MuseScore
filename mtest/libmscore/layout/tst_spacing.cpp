@@ -7571,8 +7571,10 @@ void TestSpacing::graceSlurSiblingAnchors4()
             }
       QVERIFY(upper && lower && upper->startElement() == lower->startElement());
       Chord* originalStart = toChord(upper->startElement());
+      Element* originalEnd = upper->endElement();
       Chord* owner = toChord(originalStart->parent());
       Chord* target = toChord(lower->endElement());
+      QCOMPARE(originalEnd, static_cast<Element*>(target));
       const Fraction originalTick = upper->tick();
       const Fraction originalEndTick = upper->tick2();
       QVERIFY(owner->graceNotesAfter().size() >= 4 && target->graceNotesBefore().size() >= 2);
@@ -7647,21 +7649,29 @@ void TestSpacing::graceSlurSiblingAnchors4()
       score->undoStack()->push1(new ChangeStartEndSpanner(upper, upper->startElement(), upper->endElement()));
       upper->undoChangeProperty(Pid::SPANNER_TICK, previousSystem->tick());
       upper->undoChangeProperty(Pid::SPANNER_TICKS, originalEndTick - previousSystem->tick());
-      score->undo(new ChangeSpannerElements(upper, previousSystem, upper->endElement()));
+      // Both property setters invalidate endElement(). Preserve its identity
+      // from before those mutations, as native changeAnchor does with ecr.
+      score->undo(new ChangeSpannerElements(upper, previousSystem, originalEnd));
+      QCOMPARE(upper->startElement(), static_cast<Element*>(previousSystem));
+      QCOMPARE(upper->endElement(), originalEnd);
+      QVERIFY(upper->tick2() == originalEndTick);
       score->endCmd();
+      QCOMPARE(upper->startElement(), static_cast<Element*>(previousSystem));
+      QCOMPARE(upper->endElement(), originalEnd);
+      QVERIFY(upper->tick2() == originalEndTick);
       const auto changedNotes = graceLayoutSnapshot4(score.get());
       const auto changedCurve = curve();
       score->doLayout();
-      QVERIFY(same(graceLayoutSnapshot4(score.get()), changedNotes));
-      QVERIFY(same(curve(), changedCurve));
+      QVERIFY2(same(graceLayoutSnapshot4(score.get()), changedNotes), "Cross-system command versus fresh note layout differs");
+      QVERIFY2(same(curve(), changedCurve), "Cross-system command versus fresh lower curve differs");
       score->undoRedo(true, nullptr);
       QCOMPARE(upper->startElement(), static_cast<Element*>(originalStart));
       QVERIFY(same(graceLayoutSnapshot4(score.get()), initialNotes));
       QVERIFY(same(curve(), initialCurve));
       score->undoRedo(false, nullptr);
       QCOMPARE(upper->startElement(), static_cast<Element*>(previousSystem));
-      QVERIFY(same(graceLayoutSnapshot4(score.get()), changedNotes));
-      QVERIFY(same(curve(), changedCurve));
+      QVERIFY2(same(graceLayoutSnapshot4(score.get()), changedNotes), "Cross-system redo note layout differs");
+      QVERIFY2(same(curve(), changedCurve), "Cross-system redo lower curve differs");
       }
 
 void TestSpacing::slurAnchorSystems4_data()
