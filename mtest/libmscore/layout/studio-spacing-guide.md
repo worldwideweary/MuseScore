@@ -1,5 +1,48 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.171 WIP: keep sibling grace-slur curve admission on prepared inputs
+
+User verification after v0.170: all 63 native mtests pass. The resource/catalog
+detour is closed. Blue paper identifies Evolution; white identifies Studio
+4.7.5. Compare captures at 200 percent zoom, using pieces when necessary.
+The v0.167 natural and system-boundary captures show close horizontal agreement,
+and save/reopen preserves layout. Editing P2's upper start anchor can subtly
+reshape its unedited lower slur, especially when entering the preceding system
+or moving between grace members. Nudge responsiveness remains slower than the
+legacy layout; no new timing measurements are available.
+
+Source finding: GraceMergedSlurQuery4 still rebuilt its geometry with the
+COMPATIBILITY policy after horizontal publication had switched to PREPARED.
+The compatibility consumer admits particular sibling anchor patterns. Changing
+the upper anchor can reject that late rebuild and disable the lower slur's
+existing collision fitter even when its published obstacles have not moved.
+Route experimental late curve geometry through a fresh prepared capture of the
+owner's already-produced measure. Root directions are resolved read-only, with
+external raw endpoint identities retained. Both shared and standalone anchor/
+obstacle calls use this query. Reject prepared failures without a compatibility
+retry. The query's attachment owner/cache end before any curve writes; successful
+geometry sharing remains limited to one unchanged slur-layout operation.
+
+Add graceSlurSiblingAnchors4 using the existing v0.167 systems input. At fixed
+published notation, visit the preceding system, owner main, interior/final
+after-graces, and both before-graces: require prepared admission, identical
+physical obstacles, and an unchanged lower curve. Separately exercise an
+undoable cross-system start edit, compare incremental versus fresh layout,
+and check undo/redo restoration. Do not freeze horizontal layout across a real
+endpoint-side constraint change. No extra score is required.
+
+Changed files: libmscore/spacinginput4.{h,cpp}, gracespacing4.{h,cpp},
+graceslurlayout4.cpp; mtest/libmscore/layout/tst_spacing.cpp and this guide.
+Local validation: Debug/NDEBUG C++11 syntax checks with unused-parameter and
+signed-comparison diagnostics, regenerated moc, whitespace and exact patch
+replay. Native compilation/GUI tests are pending on the user's machine.
+
+Next: rerun spacing/beam mtests and the same P2 upper-start edit. Check the
+unedited lower slur and note positions separately. The beam-end/interior-anchor
+vertical clearance difference versus Studio is recorded for its own slur-anchor
+audit; this patch does not change those clearance constants. Time remaining
+nudge latency after this visual check; no performance improvement is claimed.
+
 ## v0.170 detour: US English palette labels (independent of v0.169)
 
 Installing the current build resolved the user's startup-resource abort. The

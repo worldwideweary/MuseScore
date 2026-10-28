@@ -23,6 +23,7 @@
 #include "libmscore/rest.h"
 #include "libmscore/tie.h"
 #include <limits>
+#include <memory>
 #include "libmscore/chordrest.h"
 #include "libmscore/beam.h"
 #include "libmscore/barline.h"
@@ -73,6 +74,7 @@ class TestSpacing : public QObject, public MTest {
       void graceSlurCurveFit();
       void graceMergedSlurCurves_data();
       void graceMergedSlurCurves();
+      void graceSlurSiblingAnchors4();
       void slurOffsetUndoAdmission4();
       void mainStartSlurSpacing4_data();
       void mainStartSlurSpacing4();
@@ -7549,6 +7551,117 @@ void TestSpacing::mainStartSlurSpacing4()
       QVERIFY2(published(), qPrintable(reason));
       QVERIFY(same(graceLayoutSnapshot4(score), withAutomatic));
       delete score;
+      }
+
+void TestSpacing::graceSlurSiblingAnchors4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.167-grace-policy-systems.mscx"));
+      QVERIFY(score);
+      score->doLayout();
+      Slur* upper = nullptr;
+      Slur* lower = nullptr;
+      for (const auto& entry : score->spannerMap().map()) {
+            if (!entry.second->isSlur()) continue;
+            Slur* root = toSlur(entry.second);
+            const Element* start = root->startElement();
+            if (root->staffIdx() || !start || !start->isChord()
+                || !toChord(start)->isGraceAfter() || toChord(start)->measure() != score->lastMeasure()) continue;
+            if (root->slurDirection() == Direction::UP) upper = root;
+            if (root->slurDirection() == Direction::DOWN) lower = root;
+            }
+      QVERIFY(upper && lower && upper->startElement() == lower->startElement());
+      Chord* originalStart = toChord(upper->startElement());
+      Chord* owner = toChord(originalStart->parent());
+      Chord* target = toChord(lower->endElement());
+      const Fraction originalTick = upper->tick();
+      const Fraction originalEndTick = upper->tick2();
+      QVERIFY(owner->graceNotesAfter().size() >= 4 && target->graceNotesBefore().size() >= 2);
+      Chord* previousSystem = nullptr;
+      for (const Segment& segment : score->firstMeasure()->segments()) {
+            Element* item = segment.element(owner->track());
+            if (segment.isChordRestType() && item && item->isChord()) previousSystem = toChord(item);
+            }
+      QVERIFY(previousSystem && previousSystem->measure()->system() != owner->measure()->system());
+      const auto curve = [lower]() {
+            std::vector<qreal> values;
+            values.push_back(qreal(lower->nsegments()));
+            for (const SpannerSegment* item : lower->spannerSegments()) {
+                  const SlurSegment* segment = toSlurSegment(item);
+                  values.insert(values.end(), {segment->x(), segment->y()});
+                  for (Grip grip : {Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END}) {
+                        const QPointF point = segment->ups(grip).pos();
+                        values.insert(values.end(), {point.x(), point.y()});
+                        }
+                  for (const QRectF& rect : segment->shape())
+                        values.insert(values.end(), {rect.x(), rect.y(), rect.width(), rect.height()});
+                  }
+            return values;
+            };
+      const auto same = [](const std::vector<qreal>& a, const std::vector<qreal>& b) {
+            if (a.size() != b.size()) return false;
+            for (size_t i = 0; i < a.size(); ++i)
+                  if (!qIsFinite(a[i]) || !qIsFinite(b[i]) || qAbs(a[i] - b[i]) > 1e-6) return false;
+            return true;
+            };
+      QString reason;
+      SpacingShape4 initialObstacles;
+      QVERIFY2(buildGraceMergedSlurObstacles4(lower, initialObstacles, &reason), qPrintable(reason));
+      const auto initialNotes = graceLayoutSnapshot4(score.get());
+      const auto initialCurve = curve();
+      // Hold published notation fixed to isolate curve admission from any
+      // legitimate horizontal response to an endpoint-side constraint change.
+      // Include a stale cross-system render cache and both beam boundaries.
+      const std::vector<Chord*> anchors {previousSystem, owner, owner->graceNotesAfter()[1],
+            owner->graceNotesAfter().back(), target->graceNotesBefore().front(),
+            target->graceNotesBefore().back(), originalStart};
+      for (Chord* start : anchors) {
+            upper->setStartElement(start);
+            upper->setTick(start->tick());
+            upper->setTicks(originalEndTick - start->tick());
+            {
+                  GraceMergedSlurQuery4 query;
+                  const GraceMergedGeometry4* geometry = query.geometry(owner, &reason);
+                  QVERIFY2(geometry, qPrintable(reason));
+                  QVERIFY(geometry->plan.slurPolicy == SpacingSlurPolicy4::PREPARED);
+                  SpacingShape4 obstacles;
+                  QVERIFY2(buildGraceMergedSlurObstacles4(lower, obstacles, &reason, false, &query), qPrintable(reason));
+                  QCOMPARE(int(obstacles.elements.size()), int(initialObstacles.elements.size()));
+                  for (size_t i = 0; i < obstacles.elements.size(); ++i) {
+                        QCOMPARE(obstacles.elements[i].item, initialObstacles.elements[i].item);
+                        const QRectF a = obstacles.elements[i].rect;
+                        const QRectF b = initialObstacles.elements[i].rect;
+                        QVERIFY(qAbs(a.x() - b.x()) < 1e-6 && qAbs(a.y() - b.y()) < 1e-6
+                              && qAbs(a.width() - b.width()) < 1e-6 && qAbs(a.height() - b.height()) < 1e-6);
+                        }
+                  }
+            lower->layout();
+            QVERIFY2(same(curve(), initialCurve), "Unedited lower slur changed at fixed published note positions");
+            QVERIFY(same(graceLayoutSnapshot4(score.get()), initialNotes));
+            }
+      upper->setTick(originalTick);
+      upper->setTicks(originalEndTick - originalTick);
+      // Exercise native command completion, fresh layout and history as well.
+      // Reanchoring across systems can change spacing legitimately; require
+      // incremental and fresh results to agree rather than freezing the plan.
+      score->startCmd();
+      score->undoStack()->push1(new ChangeStartEndSpanner(upper, upper->startElement(), upper->endElement()));
+      upper->undoChangeProperty(Pid::SPANNER_TICK, previousSystem->tick());
+      upper->undoChangeProperty(Pid::SPANNER_TICKS, originalEndTick - previousSystem->tick());
+      score->undo(new ChangeSpannerElements(upper, previousSystem, upper->endElement()));
+      score->endCmd();
+      const auto changedNotes = graceLayoutSnapshot4(score.get());
+      const auto changedCurve = curve();
+      score->doLayout();
+      QVERIFY(same(graceLayoutSnapshot4(score.get()), changedNotes));
+      QVERIFY(same(curve(), changedCurve));
+      score->undoRedo(true, nullptr);
+      QCOMPARE(upper->startElement(), static_cast<Element*>(originalStart));
+      QVERIFY(same(graceLayoutSnapshot4(score.get()), initialNotes));
+      QVERIFY(same(curve(), initialCurve));
+      score->undoRedo(false, nullptr);
+      QCOMPARE(upper->startElement(), static_cast<Element*>(previousSystem));
+      QVERIFY(same(graceLayoutSnapshot4(score.get()), changedNotes));
+      QVERIFY(same(curve(), changedCurve));
       }
 
 void TestSpacing::slurAnchorSystems4_data()

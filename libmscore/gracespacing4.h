@@ -107,7 +107,10 @@ struct GraceMergedGeometry4 {
 // Read-only joint projection for system planning.
 bool buildGraceMergedGeometry4(const Chord*, GraceMergedGeometry4&, QString* reason = nullptr,
                                 SpacingContextCache4* queryCache = nullptr);
-// One slur-layout operation only: notes, beams and styles must remain unchanged.
+// One late slur-layout operation only, after native note/beam/root producers
+// have completed: notes, beams and styles must remain unchanged. Experimental
+// layout captures prepared attachments in the owner's measure; it never uses
+// the compatibility planner as a fallback for a rejected prepared query.
 // Successful geometry may be shared by anchor/obstacle queries. Never retain
 // across editing, beam preparation or later layout operations. Failures are fresh.
 class GraceMergedSlurQuery4 {

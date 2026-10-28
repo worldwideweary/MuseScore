@@ -259,6 +259,9 @@ bool captureMeasureSpacingAttachments4(const Measure*, const std::vector<Spacing
 // have completed. Never use this shortcut during measure collection or fitting.
 // No producers, lazy anchor repair or native geometry writes occur here.
 bool snapshotLaidOutSystemSpacing4(System*, SpacingAttachmentPreparation4& result, QString* reason = nullptr);
+// Same settled-producer contract, bounded to one measure for late grace-slur
+// queries. External root endpoints retain identity and read-only directions.
+bool snapshotLaidOutMeasureSpacing4(const Measure*, SpacingAttachmentPreparation4& result, QString* reason = nullptr);
 
 // Finalized-system handoff: contiguous measures plus roots from the native
 // interval index, retaining native map order within equal start ticks. Current

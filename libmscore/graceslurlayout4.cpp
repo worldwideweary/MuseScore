@@ -198,11 +198,8 @@ bool adjustGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& startPoint, QP
     if (!spacingMergedGraceSlur4(slur, owner, target, allowVisualEdits) || !owner->measure()->system()
         || owner->measure()->system() != target->measure()->system())
         return fail("Unadapted combined grace beam anchors");
-    GraceMergedGeometry4 geometry;
-    if (query) {
-        if (!query->geometry(owner, reason)) return false;
-    }
-    else if (!buildGraceMergedGeometry4(owner, geometry, reason)) return false;
+    GraceMergedSlurQuery4 localQuery;
+    if (!(query ? query : &localQuery)->geometry(owner, reason)) return false;
     const qreal sp = slur->spatium();
     const qreal mag = start->chordMag();
     // Preserve Studio slurPos's beamWidthSp expression exactly. It uses the

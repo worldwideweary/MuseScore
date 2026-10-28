@@ -651,7 +651,18 @@ const GraceMergedGeometry4* GraceMergedSlurQuery4::geometry(const Chord* owner, 
         return &_geometry;
     }
     GraceMergedGeometry4 fresh;
-    if (!buildGraceMergedGeometry4(owner, fresh, reason)) return nullptr;
+    if (owner && owner->score() && owner->score()->styleB(Sid::spacingLayout4)) {
+        // Slur layout consumes completed note/beam geometry. Use the same
+        // exact attachment policy as horizontal publication: a sibling's
+        // anchor edit must not switch this curve back to compatibility rules.
+        // Bound capture to this measure, and release all borrowed inputs
+        // before the caller adjusts anchors or fits its curve.
+        SpacingAttachmentPreparation4 attachments;
+        if (!snapshotLaidOutMeasureSpacing4(owner->measure(), attachments, reason)) return nullptr;
+        SpacingContextCache4 cache(attachments, SpacingSlurPolicy4::PREPARED);
+        if (!buildGraceMergedGeometry4(owner, fresh, reason, &cache)) return nullptr;
+    }
+    else if (!buildGraceMergedGeometry4(owner, fresh, reason)) return nullptr;
     _geometry = std::move(fresh);
     return &_geometry;
 }
@@ -675,11 +686,10 @@ bool buildGraceMergedSlurObstacles4(const Slur* slur, SpacingShape4& result, QSt
     if (!spacingMergedGraceSlur4(slur, owner, target, allowVisualEdits)
         || !owner->measure()->system() || owner->measure()->system() != target->measure()->system())
         return fail("Unadapted combined grace slur obstacles");
-    GraceMergedGeometry4 localGeometry;
-    const GraceMergedGeometry4* shared = query ? query->geometry(owner, reason) : nullptr;
-    if (query && !shared) return false;
-    if (!query && !buildGraceMergedGeometry4(owner, localGeometry, reason)) return false;
-    const GraceMergedGeometry4& geometry = query ? *shared : localGeometry;
+    GraceMergedSlurQuery4 localQuery;
+    const GraceMergedGeometry4* shared = (query ? query : &localQuery)->geometry(owner, reason);
+    if (!shared) return false;
+    const GraceMergedGeometry4& geometry = *shared;
     SpacingShape4 obstacles;
     // Geometry already contains each validated physical component. Rebase
     // those rectangles from temporary target coordinates to CURRENT published

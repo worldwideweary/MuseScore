@@ -618,6 +618,33 @@ bool captureSystemSpacingAttachments4(System* system, const std::vector<SpacingP
     return captureDomainSpacingAttachments4(score, std::move(scope), prepared, result, reason, roots);
 }
 
+static std::vector<SpacingPreparedSlur4> laidOutRootDirections4(Score* score, const Fraction& start, const Fraction& end)
+{
+    std::vector<SpacingPreparedSlur4> roots;
+    const auto overlaps = score->spannerMap().findOverlappingInMapOrder(start.ticks(), end.ticks());
+    for (const Spanner* item : overlaps) {
+        if (!item || !item->isSlur()) continue;
+        const Slur* root = toSlur(item);
+        Direction direction = Direction::AUTO;
+        resolvePreparedSlurDirection4(root, direction);
+        roots.emplace_back(root, direction);
+    }
+    return roots;
+}
+
+bool snapshotLaidOutMeasureSpacing4(const Measure* measure, SpacingAttachmentPreparation4& result, QString* reason)
+{
+    if (!measure || !measure->score() || !measure->system()) {
+        if (reason) *reason = "Missing laid-out measure";
+        return false;
+    }
+    SpacingDirectionReadiness4 readiness;
+    readiness.produced(measure);
+    const auto directions = readiness.declarations(measure);
+    const auto roots = laidOutRootDirections4(measure->score(), measure->tick(), measure->endTick());
+    return captureMeasureSpacingAttachments4(measure, directions, result, reason, &roots);
+}
+
 bool snapshotLaidOutSystemSpacing4(System* system, SpacingAttachmentPreparation4& result, QString* reason)
 {
     if (!system || !system->score()) {
@@ -631,15 +658,8 @@ bool snapshotLaidOutSystemSpacing4(System* system, SpacingAttachmentPreparation4
     std::vector<SpacingPreparedSlur4> roots;
     if (!system->measures().empty() && system->measures().front()->isMeasure()
         && system->measures().back()->isMeasure()) {
-        const auto overlaps = system->score()->spannerMap().findOverlappingInMapOrder(
-            system->measures().front()->tick().ticks(), toMeasure(system->measures().back())->endTick().ticks());
-        for (const Spanner* item : overlaps) {
-            if (!item || !item->isSlur()) continue;
-            const Slur* root = toSlur(item);
-            Direction direction = Direction::AUTO;
-            resolvePreparedSlurDirection4(root, direction);
-            roots.emplace_back(root, direction);
-        }
+        roots = laidOutRootDirections4(system->score(), system->measures().front()->tick(),
+                                      toMeasure(system->measures().back())->endTick());
     }
     return captureSystemSpacingAttachments4(system, directions, result, reason, &roots);
 }
