@@ -1,5 +1,31 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.170 detour: US English palette labels (independent of v0.169)
+
+Installing the current build resolved the user's startup-resource abort. The
+fresh palette result now reaches the duplicate-name assertion: Advanced reports
+Unfingered in Articulations and Text. Both are intentional Open entries already
+allowed by the test. The US English catalog incorrectly translated Open to
+Unfingered in Palette and symUserNames; this catalog was untouched by the beam/
+spacing patch series. Correct both entries to Open, preserving the test and
+workspace content. No duplicate is added or removed and no test exception is
+broadened. Files: share/locale/mscore_en_US.ts and this guide.
+
+This patch applies over either v0.168 or optional resource-staging v0.169. The
+latter is not required when using installed resources, as the user now does.
+Regenerate catalogs using cmake --build . --target lrelease from the build root,
+then cmake --install . so the tests load the corrected installed catalog.
+Rebuilding only the C++ targets does not run the explicit lrelease target.
+Rerun the palette/workspaces pair before returning to the visual gate. Native
+Qt GUI test execution remains on the user's machine.
+
+Local validation: parse the two source-context entries, compile the corrected
+catalog with Qt 5.15 lrelease and round-trip the QM to confirm both labels are
+Open. Compiling the original catalog reproduces Unfingered in both contexts.
+The patch is also verified to apply over both v0.168 and v0.169. No native GUI
+mtest execution is claimed locally.
+
+
 This diagnostic checkpoint begins the spacing investigation after the beam-angle
 milestone. It adds scores only: no spacing algorithm, style toggle or build
 changes. Apply its source patch after v0.28, or open the supplied scores directly
