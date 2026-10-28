@@ -3637,3 +3637,58 @@ Cross-boundary root direction and early coordinate-frame readiness must be
 resolved at that binding, not hidden by new grace-member/count exceptions.
 The broader prefix/fallback audit remains open and is not a reason to postpone
 all supported-path visual verification indefinitely.
+
+
+### v0.161 WIP: local slur-side coordinates before system placement
+
+Restored the delivered v0.160 source by replaying saved patches against the
+original upstream base in a temporary Git index. Native v0.160 results remain
+unverified; the user has authorized deferred aggregate testing.
+
+Prepared-policy side comparisons now use same-measure, same-visual-staff
+coordinates when available. Native grace-chord and ledger-line origin rules
+are retained; a missing system no longer makes these local queries fail merely
+because pagePos is unavailable. Cross-staff and other frames still require the
+existing ready-system check. Compatibility mode is unchanged. No prepared
+production binding is activated by this patch.
+
+Files: spacingcollision4.h/.cpp, tst_spacing.cpp and this guide. The existing
+attachment fixture compares local side with native page coordinates, detaches
+the measure, then repeats and restores it before assertions. Native tests are
+deferred. Next: share scoped capture between early measure and final system
+queries, without full-score collection in inner loops.
+
+
+### v0.162 WIP: shared early-measure/final-system capture
+
+Factor native interval-root selection, snapshot construction and atomic owner
+capture into one domain helper. Add a measure-scoped entry point that does not
+require a system. Direction readiness declarations can now be requested for a
+measure; the system declaration path concatenates those same results. No score-
+wide collection or producer writes are introduced in these capture functions.
+External root endpoints remain pending, rather than borrowing cached up().
+
+Files: spacinginput4.h/.cpp, tst_spacing.cpp and this guide. Extend the existing
+attachment fixture to capture a certified measure, detach it from its system,
+capture again, and check domain membership, null-capture atomicity and readiness
+invalidation. Restore the parent before assertions. No additional fixture load.
+
+Native build/mtests are deferred at the user's request. No production prepared
+factory is bound yet. Outstanding integration is explicit: produce root directions
+across capture boundaries, bind the measure/system factories at their native
+write boundaries, and activate one policy consistently through fitting and
+publication. Do not infer those readiness guarantees from existing shapes.
+Workspace recovery and rebuilding local QA consumed this batch; the earlier
+remaining-stage estimate is not yet met. These WIPs are not a visual-test-ready
+activation and do not claim Studio parity.
+
+Batch local validation: restored the Qt header/moc syntax environment, then ran
+six C++11 syntax checks (Debug/NDEBUG collision, input capture and regenerated-
+moc spacing tests) with unused-parameter/signedness checks. The actual local-side
+helper also passes 9,826 coordinate cases in an instrumented mock DOM, including
+staff offsets, normal/grace chord origins, ledger-line origins and atomic
+failure. These checks do not execute native engraving or replace the deferred
+spacing/beam mtests. Cumulative patches start at delivered v0.160; apply either
+the incremental sequence or the cumulative patch, never both. A separate full-
+series recovery patch is for rebuilding the original base, not for an existing
+patched checkout.

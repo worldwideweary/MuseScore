@@ -297,21 +297,28 @@ void SpacingDirectionReadiness4::produced(const Measure* measure)
     _produced[measure] = std::move(anchors);
 }
 
+std::vector<SpacingPreparedAnchor4> SpacingDirectionReadiness4::declarations(const Measure* measure) const
+{
+    std::vector<SpacingPreparedAnchor4> result;
+    if (!measure) return result;
+    const auto ready = _produced.find(measure);
+    if (ready == _produced.end()) return result;
+    // Walk live anchors before testing identity; never dereference stale members.
+    visitDirectionAnchors4(measure, [&](const ChordRest* anchor) {
+        if (anchor && ready->second.count(anchor))
+            result.emplace_back(anchor, anchor->up() ? Direction::UP : Direction::DOWN);
+    });
+    return result;
+}
+
 std::vector<SpacingPreparedAnchor4> SpacingDirectionReadiness4::declarations(const System* system) const
 {
     std::vector<SpacingPreparedAnchor4> result;
     if (!system) return result;
     for (const MeasureBase* mb : system->measures()) {
         if (!mb || !mb->isMeasure()) continue;
-        const Measure* measure = toMeasure(mb);
-        const auto ready = _produced.find(measure);
-        if (ready == _produced.end()) continue;
-        // Walk live anchors before consulting the identity set: old pointers
-        // from replaced/deleted elements are never dereferenced.
-        visitDirectionAnchors4(measure, [&](const ChordRest* anchor) {
-            if (anchor && ready->second.count(anchor))
-                result.emplace_back(anchor, anchor->up() ? Direction::UP : Direction::DOWN);
-        });
+        const auto local = declarations(toMeasure(mb));
+        result.insert(result.end(), local.begin(), local.end());
     }
     return result;
 }
@@ -510,6 +517,32 @@ bool buildSpacingInput4(Score* score, SpacingInput4& result, QString* reason)
     return SpacingInputBuilder4::build(score, scope, result, reason);
 }
 
+static bool captureDomainSpacingAttachments4(Score* score, SpacingInputScope4 scope,
+                                             const std::vector<SpacingPreparedAnchor4>& prepared,
+                                             SpacingAttachmentPreparation4& result, QString* reason)
+{
+    const auto roots = score->spannerMap().findOverlappingInMapOrder(scope.measures.front()->tick().ticks(),
+                                                                  scope.measures.back()->endTick().ticks());
+    for (const Spanner* root : roots)
+        if (root && root->isSlur()) scope.slurs.push_back(toSlur(root));
+    SpacingInput4 input;
+    if (!buildSpacingInput4(score, scope, input, reason)) return false;
+    return captureSpacingAttachmentsImpl4(std::move(input), prepared, result, reason);
+}
+
+
+bool captureMeasureSpacingAttachments4(const Measure* measure, const std::vector<SpacingPreparedAnchor4>& prepared,
+                                       SpacingAttachmentPreparation4& result, QString* reason)
+{
+    if (!measure || !measure->score()) {
+        if (reason) *reason = "Missing measure for attachment capture";
+        return false;
+    }
+    SpacingInputScope4 scope;
+    scope.measures.push_back(measure);
+    return captureDomainSpacingAttachments4(measure->score(), std::move(scope), prepared, result, reason);
+}
+
 bool captureSystemSpacingAttachments4(System* system, const std::vector<SpacingPreparedAnchor4>& prepared,
                                       SpacingAttachmentPreparation4& result, QString* reason)
 {
@@ -525,13 +558,7 @@ bool captureSystemSpacingAttachments4(System* system, const std::vector<SpacingP
         scope.measures.push_back(toMeasure(mb));
     }
     if (scope.measures.empty()) return fail("Empty system attachment domain");
-    const auto roots = score->spannerMap().findOverlappingInMapOrder(scope.measures.front()->tick().ticks(),
-                                                                  scope.measures.back()->endTick().ticks());
-    for (const Spanner* root : roots)
-        if (root && root->isSlur()) scope.slurs.push_back(toSlur(root));
-    SpacingInput4 input;
-    if (!buildSpacingInput4(score, scope, input, reason)) return false;
-    return captureSpacingAttachmentsImpl4(std::move(input), prepared, result, reason);
+    return captureDomainSpacingAttachments4(score, std::move(scope), prepared, result, reason);
 }
 
 }

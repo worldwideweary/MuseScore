@@ -217,6 +217,7 @@ public:
     void invalidate(const Measure* measure) { _produced.erase(measure); }
     void produced(const Measure*);
     std::vector<SpacingPreparedAnchor4> declarations(const System*) const;
+    std::vector<SpacingPreparedAnchor4> declarations(const Measure*) const;
 };
 
 // Collects all tracks, grace members and root slurs without admission whitelists.
@@ -226,6 +227,13 @@ public:
 bool buildSpacingInput4(Score*, SpacingInput4& result, QString* reason = nullptr);
 // No whole-score measure/root walk; the caller supplies the native domain.
 bool buildSpacingInput4(Score*, const SpacingInputScope4&, SpacingInput4& result, QString* reason = nullptr);
+
+// Early measure handoff using the same collector as the final system. The
+// caller supplies readiness declarations after native direction production.
+// External root endpoints remain pending; no cached direction is substituted.
+// Works before the measure belongs to a system. Failure preserves result.
+bool captureMeasureSpacingAttachments4(const Measure*, const std::vector<SpacingPreparedAnchor4>& prepared,
+                                       SpacingAttachmentPreparation4& result, QString* reason = nullptr);
 
 // Finalized-system handoff: contiguous measures plus roots from the native
 // interval index, retaining native map order within equal start ticks. Current

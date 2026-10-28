@@ -4144,6 +4144,38 @@ void TestSpacing::spacingSlurAttachments4()
             if (anchor.item->isChord()) end = toChord(anchor.item);
             }
       QVERIFY(start && end && start != end);
+      // Page translation and a missing system must not change local side tests.
+      const Note* first = start->notes().front();
+      const Note* second = toChord(start->parent())->notes().front();
+      const unsigned expectedSide = second->pagePos().y() < first->pagePos().y() ? 1 : 2;
+      unsigned placedSide = 0, detachedSide = 0;
+      QVERIFY(spacingLocalSlurSide4(first, second, placedSide));
+      Measure* localMeasure = start->measure();
+      SpacingDirectionReadiness4 measureReady;
+      QVERIFY(measureReady.declarations(localMeasure).empty());
+      measureReady.produced(localMeasure);
+      const auto localDeclarations = measureReady.declarations(localMeasure);
+      SpacingAttachmentPreparation4 measureOwner;
+      QVERIFY(captureMeasureSpacingAttachments4(localMeasure, localDeclarations, measureOwner));
+      const size_t localAnchors = measureOwner.input().anchors().size();
+      QVERIFY(localAnchors > 0);
+      Element* savedParent = localMeasure->parent();
+      localMeasure->setParent(nullptr);
+      const bool detachedAccepted = spacingLocalSlurSide4(first, second, detachedSide);
+      SpacingAttachmentPreparation4 detachedOwner;
+      const bool detachedCaptured = captureMeasureSpacingAttachments4(localMeasure, localDeclarations, detachedOwner);
+      localMeasure->setParent(savedParent); // Restore before any assertion exits.
+      QVERIFY(detachedCaptured);
+      QCOMPARE(detachedOwner.input().anchors().size(), localAnchors);
+      for (const auto& anchor : detachedOwner.input().anchors()) QVERIFY(anchor.measure == localMeasure);
+      const auto* savedSides = measureOwner.sides(start);
+      QVERIFY(!captureMeasureSpacingAttachments4(nullptr, localDeclarations, measureOwner));
+      QCOMPARE(measureOwner.sides(start), savedSides);
+      measureReady.invalidate(localMeasure);
+      QVERIFY(measureReady.declarations(localMeasure).empty());
+      QVERIFY(detachedAccepted);
+      QCOMPARE(placedSide, expectedSide);
+      QCOMPARE(detachedSide, expectedSide);
       input = SpacingInput4();
       // All directions, visibility and line styles coexist at a non-first
       // grace endpoint. No first-member, count, same-track or curve gate.

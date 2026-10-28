@@ -12,11 +12,16 @@
 namespace Ms {
 class Element;
 class Chord;
+class Note;
 class Score;
 struct SpacingShape4;
 class SpacingInput4;
 class SpacingAttachmentPreparation4;
 enum class ElementType : char;
+
+// Same-measure, same-staff vertical comparison without system/page access.
+// Result uses the slur side mask (above=1, below/equal=2); failure is atomic.
+bool spacingLocalSlurSide4(const Note*, const Element*, unsigned& result);
 
 // Migration is explicit: production remains COMPATIBILITY until mutable grace
 // production/publication can use the same prepared policy as read-only plans.

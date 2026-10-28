@@ -14,6 +14,9 @@
 #include "clef.h"
 #include "note.h"
 #include "rest.h"
+#include "staff.h"
+#include "stafftype.h"
+#include "stafflines.h"
 #include "score.h"
 #include "shape.h"
 #include "spanner.h"
@@ -501,6 +504,46 @@ bool SpacingContextCache4::shapesIntersect(const Element* first, const Element* 
     return overlap;
 }
 
+// Compare within one staff frame before system/page placement exists. Match
+// Evolution's native pagePos overrides: ledger lines ignore chord position;
+// grace chords use their own y plus staff-type offset, not the main chord y.
+bool spacingLocalSlurSide4(const Note* first, const Element* second, unsigned& result)
+{
+    if (!first || !second || first->score() != second->score()) return false;
+    const Measure* measure = first->findMeasure();
+    if (!measure || second->findMeasure() != measure) return false;
+    const int staff = first->vStaffIdx();
+    const int otherStaff = second->isLedgerLine() ? second->staffIdx() : second->vStaffIdx();
+    if (staff < 0 || staff != otherStaff || staff >= first->score()->nstaves()) return false;
+    const auto ordinate = [measure](const Element* item, qreal& y) {
+        if (item->isLedgerLine()) {
+            y = item->y();
+            return std::isfinite(y);
+        }
+        y = 0;
+        for (const Element* part = item; part; part = part->parent()) {
+            y += part->y();
+            if (!part->isChordRest()) continue;
+            const ChordRest* cr = toChordRest(part);
+            if (cr->isChord() && toChord(cr)->isGrace()) {
+                if (!cr->staff()) return false;
+                y += cr->staff()->staffType(cr->tick())->yoffset().val() * cr->spatium();
+            }
+            else {
+                const StaffLines* lines = const_cast<Measure*>(measure)->staffLines(cr->vStaffIdx());
+                if (!lines) return false;
+                y += lines->y();
+            }
+            return std::isfinite(y);
+        }
+        return false; // No supported staff-coordinate root.
+    };
+    qreal a = 0, b = 0;
+    if (!ordinate(first, a) || !ordinate(second, b)) return false;
+    result = b < a ? 1 : 2;
+    return true;
+}
+
 static bool pairPolicy4(const SpacingPaddingTable4& table, const Element* first, const Element* second,
                         qreal shapeSpatium, SpacingPairPolicy4& result, bool allowGrace,
                         const SpacingGraceContext4* context = nullptr, const Chord* scopedMain = nullptr,
@@ -566,21 +609,26 @@ static bool pairPolicy4(const SpacingPaddingTable4& table, const Element* first,
         if (!(chord->up() && note->pos().x() > 0)) {
             const unsigned blocked = cache ? cache->forwardSlurKerning(chord) : forwardSlurKerning4(chord);
             if (blocked) {
-                // Grace preparation also queries this policy before measures
-                // belong to systems. LedgerLine::pagePos dereferences that
-                // system, so only inspect page coordinates in a ready frame.
-                const Measure* a = note->findMeasure();
-                const Measure* b = second->findMeasure();
-                const System* system = a ? a->system() : nullptr;
-                if (!system || !b || b->system() != system) return false;
-                const int staves = system->staves()->size();
-                if (note->vStaffIdx() < 0 || note->vStaffIdx() >= staves
-                    || second->vStaffIdx() < 0 || second->vStaffIdx() >= staves
-                    || second->staffIdx() < 0 || second->staffIdx() >= staves) return false;
-                const qreal firstY = note->pagePos().y();
-                const qreal secondY = second->pagePos().y();
-                if (!std::isfinite(firstY) || !std::isfinite(secondY)) return false;
-                const unsigned side = secondY < firstY ? 1 : 2;
+                unsigned side = 0;
+                const bool local = cache && cache->slurPolicy() == SpacingSlurPolicy4::PREPARED
+                    && spacingLocalSlurSide4(note, second, side);
+                if (!local) {
+                    // Grace preparation also queries this policy before measures
+                    // belong to systems. LedgerLine::pagePos dereferences that
+                    // system, so only inspect page coordinates in a ready frame.
+                    const Measure* a = note->findMeasure();
+                    const Measure* b = second->findMeasure();
+                    const System* system = a ? a->system() : nullptr;
+                    if (!system || !b || b->system() != system) return false;
+                    const int staves = system->staves()->size();
+                    if (note->vStaffIdx() < 0 || note->vStaffIdx() >= staves
+                        || second->vStaffIdx() < 0 || second->vStaffIdx() >= staves
+                        || second->staffIdx() < 0 || second->staffIdx() >= staves) return false;
+                    const qreal firstY = note->pagePos().y();
+                    const qreal secondY = second->pagePos().y();
+                    if (!std::isfinite(firstY) || !std::isfinite(secondY)) return false;
+                    side = secondY < firstY ? 1 : 2;
+                }
                 if (blocked & side) policy.kerning = SpacingKerning4::NON_KERNING;
             }
         }
