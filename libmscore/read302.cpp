@@ -11,7 +11,9 @@
 //=============================================================================
 
 #include "audio.h"
+#include "chordrest.h"
 #include "excerpt.h"
+#include "measure.h"
 #include "measurebase.h"
 #include "page.h"
 #include "part.h"
@@ -19,12 +21,14 @@
 #include "score.h"
 #include "scoreOrder.h"
 #include "sig.h"
+#include "slur.h"
 #include "spanner.h"
 #include "staff.h"
 #include "stafftext.h"
 #include "style.h"
 #include "sym.h"
 #include "text.h"
+#include "utils.h"
 #include "xml.h"
 
 #ifdef OMR
@@ -395,10 +399,55 @@ void Score::linkMeasures(Score* score)
 //   read
 //---------------------------------------------------------
 
+// Match Studio's load-time removal of stale partial-slur directions. A linear
+// arrival at the first volta is not a jump; the skipped-to second volta is.
+static void resetInvalidPartialSlurs(Score* score)
+      {
+      std::vector<Slur*> partials;
+      for (const auto& entry : score->spanner()) {
+            if (entry.second->isSlur() && toSlur(entry.second)->partialDirection() >= 0)
+                  partials.push_back(toSlur(entry.second));
+            }
+      if (partials.empty())
+            return;
+      // RepeatList needs resolved measure anchors when processing voltas.
+      // At this point they have been read but have not yet been laid out.
+      for (const auto& entry : score->spanner()) {
+            if (entry.second->isVolta()) {
+                  entry.second->computeStartElement();
+                  entry.second->computeEndElement();
+                  }
+            }
+      score->setPlaylistDirty();
+      for (Slur* slur : partials) {
+            const ChordRest* start = slur->startCR();
+            const ChordRest* end = slur->endCR();
+            if (!start || !end || !start->measure() || !end->measure())
+                  continue;
+            const bool invalidIn = slur->isIncoming()
+                  && (start->tick() != start->measure()->tick() || precedingRepeatMeasures(start->measure()).empty());
+            const bool invalidOut = slur->isOutgoing()
+                  && (end->tick() + end->actualTicks() != end->measure()->endTick() || followingRepeatMeasures(end->measure()).empty());
+            if (!invalidIn && !invalidOut)
+                  continue;
+            // A one-note slur cannot become an ordinary zero-length slur.
+            if (start == end) {
+                  score->removeElement(slur);
+                  delete slur;
+                  continue;
+                  }
+            const bool incoming = slur->isIncoming() && !invalidIn;
+            const bool outgoing = slur->isOutgoing() && !invalidOut;
+            slur->setPartialDirection(incoming ? (outgoing ? 2 : 0) : (outgoing ? 1 : -1));
+            }
+      }
+
 bool MasterScore::read(XmlReader& e)
       {
       if (!Score::read(e))
             return false;
+      for (Score* score : scoreList())
+            resetInvalidPartialSlurs(score);
       for (Staff*& s : staves())
             s->updateOttava();
       setCreated(false);

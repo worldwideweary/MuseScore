@@ -280,6 +280,7 @@ class ScoreView : public QWidget, public MuseScoreView {
       virtual void lyricsReturn() override;
       virtual void lyricsEndEdit() override;
       virtual void lyricsUpDown(bool up, bool end) override;
+      bool lyricsPartial(bool melisma);
       virtual void lyricsMinus() override;
       virtual void lyricsUnderscore() override;
       virtual void textTab(bool back = false) override;

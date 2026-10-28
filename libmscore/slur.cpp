@@ -12,10 +12,10 @@
 
 #include <algorithm>
 
+#include "accidental.h"
 #include "articulation.h"
 #include "chord.h"
 #include "note.h"
-#include "accidental.h"
 #include "symbol.h"
 #include "mscore.h"
 #include "measure.h"
@@ -177,6 +177,20 @@ bool SlurSegment::edit(EditData& ed)
       if (ed.key == Qt::Key_Home) {
             ups(ed.curGrip).off = QPointF();          //TODO
             sl->layout();
+            return true;
+            }
+
+      if (ed.modifiers == (Qt::ShiftModifier | Qt::AltModifier)
+          && (ed.curGrip == Grip::START || ed.curGrip == Grip::END)
+          && (ed.key == Qt::Key_Left || ed.key == Qt::Key_Right)) {
+            bool incoming = sl->isIncoming();
+            bool outgoing = sl->isOutgoing();
+            if (ed.curGrip == Grip::START)
+                  incoming = ed.key == Qt::Key_Left;
+            else
+                  outgoing = ed.key == Qt::Key_Right;
+            const int direction = incoming ? (outgoing ? 2 : 0) : (outgoing ? 1 : -1);
+            sl->undoChangeProperty(Pid::PARTIAL_SPANNER_DIRECTION, direction);
             return true;
             }
 
@@ -358,6 +372,8 @@ void SlurSegment::computeBezier(QPointF p6o)
             else
                   shoulderW = 0.5; // 0.6;
             }
+      if (slur()->partialDirection() >= 0 && slur()->startCR() == slur()->endCR())
+            shoulderH = std::sqrt(qMax(qreal(0), d) / 4.0) * _spatium + _extraHeight;
 
       shoulderH -= p6o.y();
 
@@ -459,6 +475,35 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       if (staffType())
             rypos() += staffType()->yoffset().val() * spatium();
 
+      if (autoplace() && slur()->partialDirection() >= 0
+          && ups(Grip::START).off.isNull() && ups(Grip::END).off.isNull()) {
+            // Studio keeps partial-slur endpoints away from staff lines.
+            // Its one-note 0.25sp constraint is applied before this adjustment.
+            const qreal lineDistance = (staffType() ? staffType()->lineDistance().val() : 1.0) * spatium();
+            const qreal margin = 0.175 + 0.5 * score()->styleS(Sid::staffLineWidth).val() * spatium() / lineDistance;
+            const int lines = staff() ? staff()->lines(slur()->tick()) : 0;
+            for (Grip grip : { Grip::START, Grip::END }) {
+                  qreal y = ups(grip).p.y() / lineDistance;
+                  if (y <= -margin || y >= lines - 1 + margin)
+                        continue;
+                  const qreal fraction = y - std::floor(y);
+                  qreal adjustment = 0;
+                  if (slur()->up()) {
+                        if (fraction < margin)
+                              adjustment = -(fraction + margin);
+                        else if (fraction > 1 - margin)
+                              adjustment = -(fraction - (1 - margin));
+                        }
+                  else {
+                        if (fraction < margin)
+                              adjustment = margin - fraction;
+                        else if (fraction > 1 - margin)
+                              adjustment = 1 - fraction + margin;
+                        }
+                  ups(grip).p.ry() += adjustment * lineDistance;
+                  }
+            }
+
       computeBezier();
 
       if (autoplace() && system()) {
@@ -542,7 +587,7 @@ bool SlurSegment::isEdited() const
       }
 
 Slur::Slur(const Slur& s)
-   : SlurTie(s)
+   : SlurTie(s), _partialDirection(s._partialDirection)
       {
       }
 
@@ -656,6 +701,50 @@ void Slur::slurPosChord(SlurPos* sp)
 //    calculate position of start- and endpoint of slur
 //    relative to System() position
 //---------------------------------------------------------
+
+// Studio uses the chord at the measure boundary for a floating anchor, not
+// the ordinary slur attachment (which can sit a quarter-spatium into a stem).
+static ChordRest* partialSlurBoundaryCR(const Measure* measure, int track, bool incoming)
+      {
+      ChordRest* result = nullptr;
+      for (Segment* segment = measure->first(SegmentType::ChordRest); segment;
+           segment = segment->next(SegmentType::ChordRest)) {
+            if (Element* element = segment->element(track)) {
+                  result = toChordRest(element);
+                  if (incoming)
+                        break;
+                  }
+            }
+      return result;
+      }
+
+static qreal partialSlurBoundaryY(const ChordRest* cr, int staffIdx, bool up, qreal sp, qreal fallback)
+      {
+      if (!cr || !cr->isChord() || cr->vStaffIdx() != staffIdx)
+            return fallback;
+      const Chord* chord = toChord(cr);
+      Shape shape = chord->shape();
+      for (const Note* note : chord->notes()) {
+            const Accidental* accidental = note->accidental();
+            if (accidental && accidental->addToSkyline()) {
+                  const QRectF bounds = accidental->bbox().translated(accidental->pos() + note->pos());
+                  auto i = std::find(shape.begin(), shape.end(), bounds);
+                  if (i != shape.end())
+                        shape.erase(i);
+                  }
+            }
+      // 3.x also stores horizontal-only spacing rectangles in this shape.
+      // Lyrics/extra leading space must not become a vertical anchor.
+      shape.erase(std::remove_if(shape.begin(), shape.end(), [](const QRectF& r) {
+            return qFuzzyIsNull(r.height());
+            }), shape.end());
+      if (shape.empty())
+            return fallback;
+      qreal y = up ? shape.top() : shape.bottom();
+      if (!chord->stem() || chord->up() != up)
+            y += (up ? -0.4 : 0.4) * sp;
+      return y;
+      }
 
 void Slur::slurPos(SlurPos* sp)
       {
@@ -816,7 +905,7 @@ void Slur::slurPos(SlurPos* sp)
                   // clear the stem (x)
                   // allow slight overlap (y) as per Gould
                   // don't allow overlap with hook if not disabling the autoplace checks against start/end segments in SlurSegment::layoutSegment()
-                  qreal yadj = -0.25;     // sc->hook() ? 0.25 : -0.25;
+                  qreal yadj = isIncoming() || isOutgoing() ? -0.5 : -0.25;
                   yadj *= _spatium * __up;
                   pt += QPointF(0.35 * _spatium, yadj);
                   // account for articulations
@@ -834,7 +923,7 @@ void Slur::slurPos(SlurPos* sp)
                   if (useTablature)
                         pt.rx() = hw2 * 0.5;
                   // don't allow overlap with beam
-                  qreal yadj = ec->beam() ? 0.75 : -0.25;
+                  qreal yadj = ec->beam() ? 0.75 : (isIncoming() || isOutgoing() ? -0.5 : -0.25);
                   yadj *= _spatium * __up;
                   pt += QPointF(-0.35 * _spatium, yadj);
                   // account for articulations
@@ -1061,6 +1150,29 @@ void Slur::slurPos(SlurPos* sp)
                   sp->p2 += QPointF(xo, yo);
                   }
             }
+      bool constrainLeftAnchor = false;
+      if (isIncoming() && sp->system1) {
+            const Measure* measure = startCR()->measure();
+            const ChordRest* firstCR = partialSlurBoundaryCR(measure, track(), true);
+            sp->p1.setX(measure->firstNoteRestSegmentX(true));
+            sp->p1.setY(partialSlurBoundaryY(firstCR, vStaffIdx(), _up, _spatium, sp->p1.y()));
+            constrainLeftAnchor = firstCR == endCR();
+            }
+      if (isOutgoing() && sp->system2) {
+            const Measure* measure = endCR()->measure();
+            const ChordRest* lastCR = partialSlurBoundaryCR(measure, track(), false);
+            sp->p2.setX(measure->endingXForOpenEndedLines());
+            if (lastCR == startCR())
+                  sp->p2.setY(sp->p1.y() + __up * 0.25 * _spatium);
+            else {
+                  qreal y = partialSlurBoundaryY(lastCR, vStaffIdx(), _up, _spatium, sp->p1.y());
+                  if (__up * (sp->p1.y() - y) > 2.5 * _spatium)
+                        y = sp->p1.y() - __up * 2.5 * _spatium;
+                  sp->p2.setY(y);
+                  }
+            }
+      if (constrainLeftAnchor)
+            sp->p1.setY(sp->p2.y() + __up * 0.25 * _spatium);
       }
 
 //---------------------------------------------------------
@@ -1086,6 +1198,10 @@ void Slur::write(XmlWriter& xml) const
       if (!xml.canWrite(this))
             return;
       xml.stag(this);
+      if (_partialDirection >= 0) {
+            static const char* names[] = { "incoming", "outgoing", "both" };
+            xml.tag("partialSpannerDirection", names[_partialDirection]);
+            }
       SlurTie::writeProperties(xml);
       xml.etag();
       }
@@ -1096,7 +1212,31 @@ void Slur::write(XmlWriter& xml) const
 
 bool Slur::readProperties(XmlReader& e)
       {
+      if (e.name() == "partialSpannerDirection") {
+            const QString direction = e.readElementText();
+            _partialDirection = direction == "incoming" ? 0 : direction == "outgoing" ? 1 : direction == "both" ? 2 : -1;
+            return true;
+            }
       return SlurTie::readProperties(e);
+      }
+
+QVariant Slur::getProperty(Pid id) const
+      {
+      return id == Pid::PARTIAL_SPANNER_DIRECTION ? QVariant(_partialDirection) : SlurTie::getProperty(id);
+      }
+
+QVariant Slur::propertyDefault(Pid id) const
+      {
+      return id == Pid::PARTIAL_SPANNER_DIRECTION ? QVariant(-1) : SlurTie::propertyDefault(id);
+      }
+
+bool Slur::setProperty(Pid id, const QVariant& value)
+      {
+      if (id != Pid::PARTIAL_SPANNER_DIRECTION)
+            return SlurTie::setProperty(id, value);
+      _partialDirection = qBound(-1, value.toInt(), 2);
+      triggerLayout();
+      return true;
       }
 
 //---------------------------------------------------------

@@ -22,12 +22,14 @@
 #include "part.h"
 #include "pitchspelling.h"
 #include "score.h"
+#include "repeatlist.h"
 #include "segment.h"
 #include "sig.h"
 #include "staff.h"
 #include "sym.h"
 #include "system.h"
 #include "tuplet.h"
+#include "tie.h"
 #include "utils.h"
 
 namespace Ms {
@@ -765,10 +767,162 @@ int diatonicUpDown(Key k, int pitch, int steps)
       return pitch;
       }
 
+// Find actual discontinuities rather than guessing from repeat barlines. This
+// also handles skipped voltas, D.C./D.S., coda jumps and repeated destinations.
+static std::vector<Measure*> repeatNeighbours(const Measure* measure, bool following)
+      {
+      std::vector<Measure*> result;
+      if (!measure)
+            return result;
+      Score* score = measure->score();
+      const RepeatList& roadmap = score->masterScore()->notationRepeatList();
+      for (int i = 1; i < roadmap.size(); ++i) {
+            const Measure* from = roadmap[i - 1]->lastMeasure();
+            const Measure* to = roadmap[i]->firstMeasure();
+            if (!from || !to || from->nextMeasure() == to)
+                  continue;
+            const Measure* source = following ? from : to;
+            if (source->tick() != measure->tick())
+                  continue;
+            const Measure* target = following ? to : from;
+            Measure* mapped = score->tick2measure(target->tick());
+            if (mapped && std::find(result.begin(), result.end(), mapped) == result.end())
+                  result.push_back(mapped);
+            }
+      return result;
+      }
+
+std::vector<Measure*> followingRepeatMeasures(const Measure* measure)
+      {
+      return repeatNeighbours(measure, true);
+      }
+
+std::vector<Measure*> precedingRepeatMeasures(const Measure* measure)
+      {
+      return repeatNeighbours(measure, false);
+      }
+
 //---------------------------------------------------------
 //   searchTieNote
 //    search Note to tie to "note"
 //---------------------------------------------------------
+
+bool hasLinearPlaybackTransition(const Measure* from, const Measure* to)
+      {
+      if (!from || !to || from->nextMeasure() != to)
+            return false;
+      const RepeatList& roadmap = from->score()->masterScore()->notationRepeatList();
+      bool foundFrom = false, foundTo = false;
+      for (int i = 0; i < roadmap.size(); ++i) {
+            const RepeatSegment* segment = roadmap[i];
+            const Measure* masterFrom = from->masterScore()->tick2measure(from->tick());
+            const Measure* masterTo = from->masterScore()->tick2measure(to->tick());
+            const bool containsFrom = segment->containsMeasure(masterFrom);
+            const bool containsTo = segment->containsMeasure(masterTo);
+            foundFrom |= containsFrom;
+            foundTo |= containsTo;
+            if (containsFrom && containsTo)
+                  return true;
+            if (segment->lastMeasure() == masterFrom && i + 1 < roadmap.size()
+                && roadmap[i + 1]->firstMeasure() == masterTo)
+                  return true;
+            }
+      return !foundFrom && !foundTo; // malformed roadmaps: retain ordinary adjacent notation
+      }
+
+std::vector<Note*> repeatTieDestinations(Note* note)
+      {
+      std::vector<Note*> result;
+      if (!note || !note->chord() || note->chord()->isGrace())
+            return result;
+      const Chord* source = note->chord();
+      const Measure* measure = source->measure();
+      if (source->tick() + source->actualTicks() != measure->endTick())
+            return result;
+      const int firstTrack = source->part()->staves()->front()->idx() * VOICES;
+      const int lastTrack = firstTrack + source->part()->nstaves() * VOICES;
+      for (Measure* target : followingRepeatMeasures(measure)) {
+            Segment* onset = target->findSegment(SegmentType::ChordRest, target->tick());
+            if (!onset)
+                  continue;
+            Note* found = nullptr;
+            for (int track = firstTrack; track < lastTrack; ++track) {
+                  Element* e = onset->element(track);
+                  if (!e || !e->isChord())
+                        continue;
+                  Chord* chord = toChord(e);
+                  if (chord->vStaffIdx() != source->vStaffIdx())
+                        continue;
+                  const auto grace = chord->graceNotesBefore();
+                  if (!grace.isEmpty())
+                        chord = grace.front();
+                  Note* candidate = chord->findNote(note->pitch(), note->unisonIndex());
+                  if (candidate && (!found || track == note->track()))
+                        found = candidate;
+                  }
+            if (found && std::find(result.begin(), result.end(), found) == result.end())
+                  result.push_back(found);
+            }
+      return result;
+      }
+
+// Resolve against performance time rather than score order. A landing note is
+// tied only on a pass arriving from an enabled source, never on its first pass.
+const Note* nextTiedNoteInPlayback(const Note* note, int utick)
+      {
+      const Chord* chord = note->chord();
+      if (note->tieFor() && note->tieFor()->endNote() && note->tieFor()->endNote()->chord()->isGrace())
+            return note->tieFor()->endNote();
+      const RepeatList& roadmap = note->score()->repeatList();
+      const int nextTick = utick + chord->actualTicks().ticks();
+      if (nextTick <= utick || nextTick >= roadmap.ticks())
+            return nullptr;
+      const int landedTick = roadmap.utick2tick(nextTick);
+      if (note->tieFor() && note->tieFor()->endNote() && note->tieFor()->endNote()->tick().ticks() == landedTick)
+            return note->tieFor()->endNote();
+      if (!note->tieFor() && !note->partialTie(false))
+            return nullptr;
+      for (Note* destination : repeatTieDestinations(const_cast<Note*>(note))) {
+            if (destination->tick().ticks() == landedTick && destination->partialTie(true))
+                  return destination;
+            }
+      return nullptr;
+      }
+
+bool hasPreviousTiedNoteInPlayback(const Note* note, int utick)
+      {
+      if (utick <= 0)
+            return false;
+      const RepeatList& roadmap = note->score()->repeatList();
+      const auto arrivesFrom = [note, utick, &roadmap](const Note* source) {
+            const int start = utick - source->chord()->actualTicks().ticks();
+            return start >= 0 && roadmap.utick2tick(start) == source->tick().ticks()
+                  && nextTiedNoteInPlayback(source, start) == note;
+            };
+      if (note->tieBack() && note->tieBack()->startNote() && arrivesFrom(note->tieBack()->startNote()))
+            return true;
+      if (!note->partialTie(true))
+            return false;
+      for (Measure* measure : precedingRepeatMeasures(note->chord()->measure())) {
+            for (Segment* segment = measure->last(); segment; segment = segment->prev()) {
+                  if (!segment->isChordRestType())
+                        continue;
+                  for (int track = note->part()->startTrack(); track < note->part()->endTrack(); ++track) {
+                        Element* element = segment->element(track);
+                        if (!element || !element->isChord())
+                              continue;
+                        Chord* chord = toChord(element);
+                        if (chord->tick() + chord->actualTicks() != measure->endTick())
+                              continue;
+                        for (Note* source : chord->notes()) {
+                              if (source->pitch() == note->pitch() && arrivesFrom(source))
+                                    return true;
+                              }
+                        }
+                  }
+            }
+      return false;
+      }
 
 Note* searchTieNote(Note* note)
       {

@@ -140,6 +140,7 @@ add_custom_target(mtest_build_and_install
 endif (NOT MSVC)
 
 subdirs (
+        mscore/inspector
         libmscore/compat114
         libmscore/compat206
 #        libmscore/album            # obsolete

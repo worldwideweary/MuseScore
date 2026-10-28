@@ -22,6 +22,7 @@
 #include "keysig.h"
 #include "mscore.h"
 #include "measure.h"
+#include "lyricscompat.h"
 #include "revisions.h"
 #include "page.h"
 #include "part.h"
@@ -902,6 +903,8 @@ Score::FileError MasterScore::loadCompressedMsc(QIODevice* io, bool ignoreVersio
       e.setDocName(masterScore()->fileInfo()->completeBaseName());
 
       FileError retval = read1(e, ignoreVersionError, !sbuf.isEmpty());
+      if (retval == FileError::FILE_NO_ERROR)
+            importStudioRepeatLyrics(this, dbuf);
 
       QByteArray vbuf = uz.fileData("viewsettings.json"); // exists in Mu4 scores only
       if (!vbuf.isEmpty() && ignoreVersionError) {
@@ -1006,6 +1009,14 @@ Score::FileError MasterScore::loadMsc(QString name, QIODevice* io, bool ignoreVe
       if (name.endsWith(".mscz", Qt::CaseInsensitive) || name.endsWith(".mscz,", Qt::CaseInsensitive))
             return loadCompressedMsc(io, ignoreVersionError);
       else {
+            if (ignoreVersionError) {
+                  const QByteArray data = io->readAll();
+                  XmlReader reader(data);
+                  const FileError result = read1(reader, true);
+                  if (result == FileError::FILE_NO_ERROR)
+                        importStudioRepeatLyrics(this, data);
+                  return result;
+                  }
             XmlReader r(io);
             return read1(r, ignoreVersionError);
             }

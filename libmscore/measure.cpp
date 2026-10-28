@@ -21,6 +21,7 @@
 #include "ambitus.h"
 #include "articulation.h"
 #include "barline.h"
+#include "barlinegeometry.h"
 #include "beam.h"
 #include "box.h"
 #include "bracket.h"
@@ -79,6 +80,58 @@
 #include "xml.h"
 
 namespace Ms {
+
+// System coordinates for open-ended slurs and lyric lines. Match Studio 4.7's
+// default header (1sp), repeat/end (0.25sp), and following-barline (0.65sp) gaps.
+qreal Measure::firstNoteRestSegmentX(bool leading) const
+      {
+      const qreal sp = spatium();
+      const System* sys = system();
+      const Segment* firstCR = first(SegmentType::ChordRest);
+      if (!firstCR)
+            return x() + sp;
+      const qreal noteRestX = x() + firstCR->x();
+      if (!leading)
+            return noteRestX;
+      const Segment* header = firstCR->prevActive();
+      while (header && header->allElementsInvisible())
+            header = header->prevActive();
+      if (header) {
+            qreal width = 0.0;
+            for (int staff = 0; staff < score()->nstaves(); ++staff) {
+                  const Element* item = header->element(staff * VOICES);
+                  if ((!sys || sys->staff(staff)->show()) && item && item->addToSkyline()) {
+                        qreal right = item->bbox().right();
+                        if (item->isBarLine() && toBarLine(item)->barLineType() == BarLineType::START_REPEAT)
+                              right = startRepeatRightEdge(toBarLine(item));
+                        width = qMax(width, item->x() + right);
+                        }
+                  }
+            const qreal margin = (header->isStartRepeatBarLineType() ? 0.25 : 1.0) * sp;
+            const qreal startX = header->measure()->x() + header->x() + width + margin;
+            // 3.x can place the first note closer to repeat dots than Studio.
+            // Capping at that note would consume the requested dot clearance.
+            return header->isStartRepeatBarLineType() ? startX : qMin(startX, noteRestX);
+            }
+      const Measure* previous = prevMeasure();
+      if (previous && !previous->sectionBreak() && sys && sys->firstMeasure() != this) {
+            const BarLine* bar = previous->endBarLine();
+            if (bar && bar->segment()) {
+                  const qreal width = bar->addToSkyline() ? bar->x() + bar->bbox().right() : 0.0;
+                  return qMin(previous->x() + bar->segment()->x() + width + 0.65 * sp, noteRestX);
+                  }
+            }
+      return noteRestX;
+      }
+
+qreal Measure::endingXForOpenEndedLines() const
+      {
+      const Segment* bar = last();
+      while (bar && (!bar->enabled() || !bar->isType(SegmentType::BarLineType)))
+            bar = bar->prevEnabled();
+      const qreal endX = bar ? x() + bar->x() : system() ? system()->bbox().width() : x() + width();
+      return endX - 0.25 * spatium();
+      }
 
 //---------------------------------------------------------
 //   MStaff
@@ -4701,6 +4754,36 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
             }
 
       while (s) {
+            // All incoming partial ties need room, including second endings,
+            // ordinary barlines and system headers. Drawing uses the same
+            // free endpoint; reserve the longest tie's hanging minimum and
+            // the ordinary minimum for shorter chord ties.
+            if (s->isChordRestType() && s->enabled() && s->visible()) {
+                  std::vector<qreal> tieEnds;
+                  for (int track = 0; track < score()->ntracks(); ++track) {
+                        const Element* item = s->element(track);
+                        const Staff* staff = score()->staff(track / VOICES);
+                        if (!item || !item->isChord() || !staff->show()
+                            || (staff->isTabStaff(s->tick()) && !staff->staffType(s->tick())->showBackTied()))
+                              continue;
+                        for (const Note* note : toChord(item)->notes()) {
+                              Tie* tie = note->partialTie(true);
+                              if (note->visible() && tie && tie->addToSkyline())
+                                    tieEnds.push_back(tie->incomingEndOffset() - tie->incomingStartOffset());
+                              }
+                        }
+                  if (!tieEnds.empty()) {
+                        const qreal longest = *std::max_element(tieEnds.begin(), tieEnds.end());
+                        const qreal oldX = x;
+                        for (qreal end : tieEnds) {
+                              const Sid minimum = qAbs(end - longest) < 0.001 * spatium()
+                                    ? Sid::minHangingTieLength : Sid::minTieLength;
+                              x = qMax(x, score()->styleP(minimum) - end);
+                              }
+                        if (x > oldX && s->prevActive())
+                              s->prevActive()->setWidth(s->prevActive()->width() + x - oldX);
+                        }
+                  }
             s->rxpos() = x;
             // segments with all elements invisible are skipped, though these are already
             // skipped in computeMinWidth() -- the only way this would be an issue here is

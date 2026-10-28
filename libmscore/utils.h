@@ -75,6 +75,17 @@ extern Note* prevChordNote(Note* note);
 extern Segment* nextSeg1(Segment* s, int& track);
 extern Segment* prevSeg1(Segment* seg, int& track);
 
+// Distinct non-linear transitions in playback order, mapped into the owning score.
+// Linear neighbours are deliberately omitted. The source may be in an excerpt.
+extern std::vector<Measure*> followingRepeatMeasures(const Measure* measure);
+extern std::vector<Measure*> precedingRepeatMeasures(const Measure* measure);
+
+// Same-pitch onsets reachable immediately after a repeat/jump. No intervening
+// rests, later matching chords or other parts are searched.
+extern std::vector<Note*> repeatTieDestinations(Note* note);
+extern bool hasLinearPlaybackTransition(const Measure* from, const Measure* to);
+extern const Note* nextTiedNoteInPlayback(const Note*, int utick);
+extern bool hasPreviousTiedNoteInPlayback(const Note*, int utick);
 extern Note* searchTieNote(Note* note);
 extern Note* searchTieNote114(Note* note);
 

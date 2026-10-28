@@ -3806,6 +3806,13 @@ void layoutTies(Chord* ch, System* system, const Fraction& stick)
       if (!staff->show())
             return;
       for (Note* note : ch->notes()) {
+            for (Element* attached : note->el()) {
+                  if (!attached->isTie() || !toTie(attached)->isPartial())
+                        continue;
+                  TieSegment* partial = toTie(attached)->layoutPartial(system);
+                  if (partial && partial->addToSkyline())
+                        staff->skyline().add(partial->shape().translated(partial->pos()));
+                  }
             Tie* t = note->tieFor();
             if (t) {
                   TieSegment* ts = t->layoutFor(system);

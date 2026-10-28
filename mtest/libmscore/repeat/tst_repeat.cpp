@@ -11,10 +11,26 @@
 //=============================================================================
 
 #include <QtTest/QtTest>
+#include <QDomDocument>
 #include "mtest/testutils.h"
 #include "libmscore/score.h"
 #include "libmscore/measure.h"
 #include "libmscore/repeatlist.h"
+#include "libmscore/utils.h"
+#include "libmscore/chord.h"
+#include "libmscore/note.h"
+#include "libmscore/navigate.h"
+#include "libmscore/tie.h"
+#include "libmscore/lyrics.h"
+#include "libmscore/slur.h"
+#include "libmscore/stem.h"
+#include "libmscore/staff.h"
+#include "libmscore/stafftype.h"
+#include "libmscore/accidental.h"
+#include "libmscore/undo.h"
+#include "libmscore/barline.h"
+#include "libmscore/segment.h"
+#include "libmscore/system.h"
 
 #define DIR QString("libmscore/repeat/")
 
@@ -31,6 +47,47 @@ class TestRepeat : public QObject, public MTest
 
    private slots:
       void initTestCase();
+      void notationRoutes_data();
+      void notationRoutes();
+      void partialTieRoundTrip();
+      void partialTieClearance_data();
+      void partialTieClearance();
+      void partialTieOffsets();
+      void partialTieChordPlacement_data();
+      void partialTieChordPlacement();
+      void repeatTieNotes();
+      void automaticRepeatTies();
+      void repeatTiePlayback();
+      void partialLyricsLayout();
+      void partialLyricsRendering_data();
+      void partialLyricsRendering();
+      void nativeLyricsWithoutRepeat();
+      void partialLyricsDashCount_data();
+      void partialLyricsDashCount();
+      void lyricDashDimensions_data();
+      void lyricDashDimensions();
+      void partialLyricsMelismaEnd_data();
+      void partialLyricsMelismaEnd();
+      void partialSlurLayout();
+      void partialSlurClearance_data();
+      void partialSlurClearance();
+      void partialSlurSystemHeader();
+      void partialSlurHeight_data();
+      void partialSlurHeight();
+      void oneNotePartialSlurStaffClearance();
+      void partialSlurRepeatDotGap_data();
+      void partialSlurRepeatDotGap();
+      void startRepeatNoteSpacing_data();
+      void startRepeatNoteSpacing();
+      void incomingTieMinimumSpace_data();
+      void incomingTieMinimumSpace();
+      void partialSlurBoundaryValidity_data();
+      void partialSlurBoundaryValidity();
+      void invalidOneNotePartialSlur_data();
+      void invalidOneNotePartialSlur();
+      void repeatTieNoteEntry_data();
+      void repeatTieNoteEntry();
+      void repeatTieToggle();
       void repeat01() { repeat("repeat01.mscx", "1;2;3; 2;3;4;5;6"); }        // repeat barline 2 measures ||: | :||
       void repeat02() { repeat("repeat02.mscx", "1;2; 2;3;4;5;6"); }          // repeat barline 1 measure ||: :||
       void repeat03() { repeat("repeat03.mscx", "1;2; 1;2;3;4;5;6"); }        // repeat barline end to start :||
@@ -160,6 +217,1408 @@ void TestRepeat::repeat(const char* f1, const QString & ref)
       delete score;
       }
 
+
+// Keep notation independent of the Play Repeats preference. Expected edges are
+// non-linear transitions only, in first-encounter order, without duplicates.
+void TestRepeat::notationRoutes_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::addColumn<QString>("edges");
+      QTest::newRow("ordinary-repeat") << "repeat01.mscx" << "3>2";
+      QTest::newRow("second-ending") << "repeat06.mscx" << "2>4;3>2";
+      QTest::newRow("dc-al-fine") << "repeat07.mscx" << "6>1";
+      QTest::newRow("ds-al-coda") << "repeat08.mscx" << "4>7;6>2";
+      QTest::newRow("deduplicate") << "repeat15.mscx" << "2>2";
+      QTest::newRow("no-transition") << "repeat57.mscx" << "";
+      }
+
+void TestRepeat::notationRoutes()
+      {
+      QFETCH(QString, file);
+      QFETCH(QString, edges);
+      MasterScore* score = readScore(DIR + file);
+      QVERIFY(score);
+      score->setExpandRepeats(false);
+      QStringList actual;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            for (Measure* target : followingRepeatMeasures(m)) {
+                  actual << QString("%1>%2").arg(m->no() + 1).arg(target->no() + 1);
+                  const auto incoming = precedingRepeatMeasures(target);
+                  QVERIFY(std::find(incoming.begin(), incoming.end(), m) != incoming.end());
+                  }
+            }
+      QCOMPARE(actual.join(";"), edges);
+      QVERIFY(!score->expandRepeats());
+      // Reading the ordinary playback list must still produce a flat score.
+      QCOMPARE(score->repeatList().size(), 1);
+      delete score;
+      }
+
+void TestRepeat::partialTieRoundTrip()
+      {
+      MasterScore* score = readScore(DIR + "repeat06.mscx");
+      QVERIFY(score);
+      Note* note = toChord(score->firstMeasure()->first(SegmentType::ChordRest)->element(0))->upNote();
+      score->startCmd();
+      Tie* outgoing = score->undoAddPartialTie(note, false);
+      score->undoAddPartialTie(note, true);
+      score->endCmd();
+      QVERIFY(note->partialTie(true));
+      QVERIFY(note->partialTie(false));
+      QVERIFY(!note->tieFor());
+      QVERIFY(!note->tieBack());
+      QCOMPARE(int(outgoing->spannerSegments().size()), 1);
+      MasterScore* copy = score->clone();
+      QVERIFY(copy);
+      Note* copiedNote = toChord(copy->firstMeasure()->first(SegmentType::ChordRest)->element(0))->upNote();
+      QVERIFY(copiedNote->partialTie(true));
+      QVERIFY(copiedNote->partialTie(false));
+      QVERIFY(!copiedNote->tieFor());
+      QVERIFY(!copiedNote->tieBack());
+      QVERIFY(copiedNote->partialTie(true)->startNote() == copiedNote);
+      score->undoRedo(true, nullptr);
+      QVERIFY(!note->partialTie(true));
+      QVERIFY(!note->partialTie(false));
+      score->undoRedo(false, nullptr);
+      QVERIFY(note->partialTie(true));
+      QVERIFY(note->partialTie(false));
+      delete copy;
+      delete score;
+      }
+
+// Reference cases from the paired 37E/4.7.5 comparison suite.
+void TestRepeat::partialTieClearance_data()
+      {
+      QTest::addColumn<QString>("file");
+      for (int i = 1; i <= 5; ++i) {
+            const QString name = QString("partial-tie-R%1.mscx").arg(i, 2, 10, QChar('0'));
+            QTest::newRow(qPrintable(name)) << name;
+            }
+      QTest::newRow("repeat at system start") << QString("partial-tie-R01-system.mscx");
+      }
+
+void TestRepeat::partialTieClearance()
+      {
+      QFETCH(QString, file);
+      std::unique_ptr<MasterScore> score(readScore(DIR + file));
+      QVERIFY(score);
+      int checked = 0;
+      for (Measure* measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+            for (Segment* seg = measure->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+                  for (int track = 0; track < score->ntracks(); ++track) {
+                        const Element* el = seg->element(track);
+                        if (!el || !el->isChord())
+                              continue;
+                        for (Note* note : toChord(el)->notes()) {
+                              for (bool incoming : { false, true }) {
+                                    Tie* tie = note->partialTie(incoming);
+                                    if (!tie)
+                                          continue;
+                                    QCOMPARE(int(tie->spannerSegments().size()), 1);
+                                    const TieSegment* ts = tie->segmentAt(0);
+                                    const qreal freeX = ts->ups(incoming ? Grip::START : Grip::END).p.x();
+                                    System* system = measure->system();
+                                    const Segment* header = seg->prevActive();
+                                    if (incoming && measure == system->firstMeasure()
+                                        && !(header && header->isStartRepeatBarLineType())) {
+                                          QVERIFY(qAbs(freeX - system->firstNoteRestSegmentX(true)) < 0.001);
+                                          }
+                                    else {
+                                          // The free end must clear the whole barline, dots included.
+                                          const Segment* barSeg = incoming ? seg->prev1() : seg->next1();
+                                          while (barSeg && !barSeg->isType(SegmentType::BarLineType))
+                                                barSeg = incoming ? barSeg->prev1() : barSeg->next1();
+                                          QVERIFY(barSeg);
+                                          const Element* bar = barSeg->element(note->chord()->vStaffIdx() * VOICES);
+                                          QVERIFY(bar && bar->isBarLine());
+                                          const qreal x = barSeg->measure()->x() + barSeg->x() + bar->x();
+                                          const qreal gap = incoming ? freeX - x - bar->shape().right()
+                                                                    : x + bar->shape().left() - freeX;
+                                          const qreal expected = incoming && toBarLine(bar)->barLineType() != BarLineType::START_REPEAT
+                                                ? 0.65 : 0.25;
+                                          QVERIFY2(qAbs(gap / score->spatium() - expected) < 0.001,
+                                                qPrintable(QString("free-end clearance: %1 sp, expected %2 sp").arg(gap / score->spatium()).arg(expected)));
+                                          }
+                                    ++checked;
+                                    }
+                              }
+                        }
+                  }
+            }
+      QVERIFY(checked > 0);
+      }
+
+void TestRepeat::partialTieOffsets()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "repeat06.mscx"));
+      QVERIFY(score);
+      Note* note = toChord(score->firstMeasure()->first(SegmentType::ChordRest)->element(0))->upNote();
+      score->startCmd();
+      score->undoAddPartialTie(note, true);
+      score->undoAddPartialTie(note, false);
+      score->endCmd();
+      const Grip grips[] = { Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END };
+      const QPointF offsets[] = { QPointF(-2.5, 0), QPointF(-0.5, 0.75), QPointF(0.25, -0.5), QPointF(1, 0.25) };
+      for (bool incoming : { false, true }) {
+            Tie* tie = note->partialTie(incoming);
+            for (int i = 0; i < 4; ++i)
+                  tie->segmentAt(0)->ups(grips[i]).off = offsets[i] * score->spatium();
+            tie->layoutPartial(note->chord()->measure()->system());
+            for (int i = 0; i < 4; ++i)
+                  QCOMPARE(tie->segmentAt(0)->ups(grips[i]).off, offsets[i] * score->spatium());
+            }
+      QTemporaryDir temporary;
+      QVERIFY(temporary.isValid());
+      const QString path = temporary.filePath("partial-tie-offsets.mscx");
+      QVERIFY(saveScore(score.get(), path));
+      std::unique_ptr<MasterScore> reloaded(readCreatedScore(path));
+      QVERIFY(reloaded);
+      Note* restored = toChord(reloaded->firstMeasure()->first(SegmentType::ChordRest)->element(0))->upNote();
+      for (bool incoming : { false, true }) {
+            Tie* tie = restored->partialTie(incoming);
+            QVERIFY(tie);
+            QCOMPARE(int(tie->spannerSegments().size()), 1);
+            for (int i = 0; i < 4; ++i)
+                  QVERIFY((tie->segmentAt(0)->ups(grips[i]).off / reloaded->spatium() - offsets[i]).manhattanLength() < 0.001);
+            }
+      }
+
+// Compare the repeat landing with R05's ordinary tie landing on the same
+// pitches/voices. Extra leading space exposes reversals and wrong head anchors.
+void TestRepeat::partialTieChordPlacement_data()
+      {
+      QTest::addColumn<double>("leadingSpace");
+      QTest::addColumn<int>("direction");
+      for (double space : { 0.0, 12.0 }) {
+            for (Direction dir : { Direction::AUTO, Direction::UP, Direction::DOWN }) {
+                  const QByteArray name = QString("space-%1-direction-%2").arg(space).arg(int(dir)).toLatin1();
+                  QTest::newRow(name.constData()) << space << int(dir);
+                  }
+            }
+      }
+
+void TestRepeat::partialTieChordPlacement()
+      {
+      QFETCH(double, leadingSpace);
+      QFETCH(int, direction);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "partial-tie-R05.mscx"));
+      QVERIFY(score);
+      Measure* landing = score->firstMeasure()->nextMeasure();
+      Measure* linear = landing->nextMeasure()->nextMeasure()->nextMeasure();
+      score->startCmd();
+      landing->first(SegmentType::ChordRest)->setExtraLeadingSpace(Spatium(leadingSpace));
+      for (int track = 0; track < score->ntracks(); ++track) {
+            Element* el = landing->first(SegmentType::ChordRest)->element(track);
+            if (!el || !el->isChord())
+                  continue;
+            Chord* reference = toChord(linear->first(SegmentType::ChordRest)->element(track));
+            QVERIFY(reference);
+            for (Note* note : toChord(el)->notes()) {
+                  QVERIFY(note->partialTie(true));
+                  score->undoAddPartialTie(note, false);
+                  for (bool incoming : { false, true })
+                        note->partialTie(incoming)->setSlurDirection(Direction(direction));
+                  for (Note* ref : reference->notes()) {
+                        if (ref->pitch() == note->pitch()) {
+                              QVERIFY(ref->tieBack());
+                              ref->tieBack()->setSlurDirection(Direction(direction));
+                              }
+                        }
+                  }
+            }
+      score->setLayoutAll();
+      score->endCmd();
+
+      QTemporaryDir temporary;
+      QVERIFY(temporary.isValid());
+      for (int pass = 0; pass < 2; ++pass) {
+            landing = score->firstMeasure()->nextMeasure();
+            linear = landing->nextMeasure()->nextMeasure()->nextMeasure();
+            QCOMPARE(landing->first(SegmentType::ChordRest)->extraLeadingSpace().val(), leadingSpace);
+            int checked = 0;
+            for (int track = 0; track < score->ntracks(); ++track) {
+                  Element* el = landing->first(SegmentType::ChordRest)->element(track);
+                  if (!el || !el->isChord())
+                        continue;
+                  Chord* reference = toChord(linear->first(SegmentType::ChordRest)->element(track));
+                  QVERIFY(reference);
+                  for (Note* note : toChord(el)->notes()) {
+                        Note* refNote = nullptr;
+                        for (Note* ref : reference->notes()) {
+                              if (ref->pitch() == note->pitch())
+                                    refNote = ref;
+                              }
+                        QVERIFY(refNote && refNote->tieBack());
+                        Tie* normal = refNote->tieBack();
+                        for (bool incoming : { false, true }) {
+                              Tie* partial = note->partialTie(incoming);
+                              QVERIFY(partial);
+                              QCOMPARE(int(partial->slurDirection()), direction);
+                              QCOMPARE(partial->up(), normal->up());
+                              QCOMPARE(partial->isInside(), normal->isInside());
+                              const Grip grip = incoming ? Grip::END : Grip::START;
+                              const TieSegment* normalSegment = incoming ? normal->backSegment() : normal->frontSegment();
+                              const Note* anchorNote = incoming ? normal->endNote() : normal->startNote();
+                              const auto origin = [](const Note* n) {
+                                    const Chord* c = n->chord();
+                                    return n->pos() + c->pos() + c->segment()->pos() + c->measure()->pos();
+                                    };
+                              const QPointF partialAnchor = partial->segmentAt(0)->ups(grip).p - origin(note);
+                              const QPointF normalAnchor = normalSegment->ups(grip).p - origin(anchorNote);
+                              QVERIFY(partial->segmentAt(0)->ups(Grip::END).p.x() > partial->segmentAt(0)->ups(Grip::START).p.x());
+                              QVERIFY2(qAbs(partialAnchor.x() - normalAnchor.x()) < 0.001,
+                                    qPrintable(QString("track %1 pitch %2 incoming %3: partial x %4, normal x %5")
+                                          .arg(track).arg(note->pitch()).arg(incoming).arg(partialAnchor.x()).arg(normalAnchor.x())));
+                              // Inside/outside vertical placement must stay on the correct
+                              // side of its note, including the down-stem second voice.
+                              QVERIFY(partial->up() ? partialAnchor.y() < 0 : partialAnchor.y() > 0);
+                              // Automatic R05 placement matches the ordinary landing.
+                              // Forced directions may need a different staff-line avoidance
+                              // adjustment because the curve lengths differ.
+                              if (direction == int(Direction::AUTO))
+                                    QVERIFY(qAbs(partialAnchor.y() - normalAnchor.y()) < 0.001);
+                              ++checked;
+                              }
+                        }
+                  }
+            QCOMPARE(checked, 14); // seven notes, incoming and outgoing
+            if (pass == 0) {
+                  const QString path = temporary.filePath("chord-partial-ties.mscx");
+                  QVERIFY(saveScore(score.get(), path));
+                  score.reset(readCreatedScore(path));
+                  QVERIFY(score);
+                  }
+            }
+      }
+
+void TestRepeat::repeatTieNotes()
+      {
+      MasterScore* score = readScore(DIR + "repeat06.mscx");
+      QVERIFY(score);
+      std::vector<Note*> notes;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            Note* n = toChord(m->first(SegmentType::ChordRest)->element(0))->upNote();
+            n->setPitch(60);
+            notes.push_back(n);
+            }
+      auto toEnding = repeatTieDestinations(notes[1]);
+      QCOMPARE(int(toEnding.size()), 1);
+      QCOMPARE(toEnding.front(), notes[3]);
+      auto toRepeat = repeatTieDestinations(notes[2]);
+      QCOMPARE(int(toRepeat.size()), 1);
+      QCOMPARE(toRepeat.front(), notes[1]);
+      notes[3]->setPitch(61);
+      QVERIFY(repeatTieDestinations(notes[1]).empty());
+      delete score;
+      }
+
+void TestRepeat::automaticRepeatTies()
+      {
+      MasterScore* score = readScore(DIR + "repeat06.mscx");
+      QVERIFY(score);
+      std::vector<Note*> notes;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            Note* n = toChord(m->first(SegmentType::ChordRest)->element(0))->upNote();
+            n->setPitch(60);
+            notes.push_back(n);
+            }
+      score->setExpandRepeats(false);
+      score->select(notes[1]);
+      score->cmdAddTie();
+      QVERIFY(notes[1]->tieFor());
+      QCOMPARE(notes[1]->tieFor()->endNote(), notes[2]);
+      QVERIFY(notes[3]->partialTie(true));
+      QVERIFY(!notes[1]->partialTie(false));
+      QVERIFY(!score->expandRepeats());
+      // Deleting the source tie also removes its second-ending endpoint.
+      score->startCmd();
+      score->undoRemoveElement(notes[1]->tieFor());
+      score->endCmd();
+      QVERIFY(!notes[3]->partialTie(true));
+      score->undoRedo(true, nullptr);
+      QVERIFY(notes[1]->tieFor());
+      QVERIFY(notes[3]->partialTie(true));
+      score->undoRedo(true, nullptr);
+      QVERIFY(!notes[1]->tieFor());
+      QVERIFY(!notes[3]->partialTie(true));
+      score->undoRedo(false, nullptr);
+      QVERIFY(notes[1]->tieFor());
+      QVERIFY(notes[3]->partialTie(true));
+      score->select(notes[2]);
+      score->cmdAddTie();
+      // First ending is never played into second ending: use a hanging tie.
+      QVERIFY(!notes[2]->tieFor());
+      QVERIFY(notes[2]->partialTie(false));
+      QVERIFY(notes[1]->partialTie(true));
+      score->startCmd();
+      score->undoRemoveElement(notes[2]->chord());
+      score->endCmd();
+      QVERIFY(!notes[1]->partialTie(true));
+      QVERIFY(!notes[2]->partialTie(false));
+      QVERIFY(!notes[3]->partialTie(true));
+      score->undoRedo(true, nullptr);
+      QVERIFY(notes[1]->partialTie(true));
+      QVERIFY(notes[2]->partialTie(false));
+      QVERIFY(notes[3]->partialTie(true));
+      MasterScore* copy = score->clone();
+      QVERIFY(copy);
+      Note* copiedFirstEnding = toChord(copy->firstMeasure()->nextMeasure()->nextMeasure()->first(SegmentType::ChordRest)->element(0))->upNote();
+      QVERIFY(copiedFirstEnding->partialTie(false));
+      QVERIFY(!copiedFirstEnding->tieFor());
+      delete copy;
+      delete score;
+      }
+
+void TestRepeat::repeatTiePlayback()
+      {
+      MasterScore* score = readScore(DIR + "repeat06.mscx");
+      QVERIFY(score);
+      std::vector<Note*> notes;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            Note* n = toChord(m->first(SegmentType::ChordRest)->element(0))->upNote();
+            n->setPitch(60);
+            notes.push_back(n);
+            }
+      score->setExpandRepeats(true);
+      score->select(notes[1]);
+      score->cmdAddTie();
+      score->select(notes[2]);
+      score->cmdAddTie();
+      const int bar = notes[0]->chord()->actualTicks().ticks();
+      QCOMPARE(nextTiedNoteInPlayback(notes[1], bar), static_cast<const Note*>(notes[2]));
+      QCOMPARE(nextTiedNoteInPlayback(notes[2], bar * 2), static_cast<const Note*>(notes[1]));
+      QCOMPARE(nextTiedNoteInPlayback(notes[1], bar * 3), static_cast<const Note*>(notes[3]));
+      QVERIFY(!hasPreviousTiedNoteInPlayback(notes[1], bar));
+      QVERIFY(hasPreviousTiedNoteInPlayback(notes[1], bar * 3));
+      QVERIFY(hasPreviousTiedNoteInPlayback(notes[3], bar * 4));
+      score->startCmd();
+      score->undoRemoveElement(notes[3]->partialTie(true));
+      score->endCmd();
+      QVERIFY(!nextTiedNoteInPlayback(notes[1], bar * 3));
+      QVERIFY(!hasPreviousTiedNoteInPlayback(notes[3], bar * 4));
+      score->setExpandRepeats(false);
+      QVERIFY(!nextTiedNoteInPlayback(notes[2], bar * 2));
+      delete score;
+      }
+
+void TestRepeat::partialLyricsLayout()
+      {
+      for (int direction : { 0, 1, 2 }) {
+            for (bool melisma : { false, true }) {
+                  std::unique_ptr<MasterScore> score(readScore(DIR + "repeat06.mscx"));
+                  QVERIFY(score);
+                  Measure* measure = score->firstMeasure()->nextMeasure()->nextMeasure()->nextMeasure();
+                  Chord* chord = toChord(measure->first(SegmentType::ChordRest)->element(0));
+                  Lyrics* lyric = new Lyrics(score.get());
+                  lyric->setParent(chord);
+                  lyric->setTrack(0);
+                  lyric->setProperty(Pid::PARTIAL_SPANNER_DIRECTION, direction);
+                  lyric->setProperty(Pid::PARTIAL_LYRIC_MELISMA, melisma);
+                  if (direction == 1)
+                        lyric->setXmlText("jump");
+                  score->startCmd();
+                  score->undoAddElement(lyric);
+                  score->endCmd();
+                  LyricsLine* line = nullptr;
+                  for (Spanner* spanner : score->unmanagedSpanners()) {
+                        if (spanner->isLyricsLine() && spanner->parent() == lyric)
+                              line = toLyricsLine(spanner);
+                        }
+                  QVERIFY(line);
+                  QVERIFY(!line->spannerSegments().empty());
+                  SpannerSegment* segment = line->frontSegment();
+                  QVERIFY(segment->bbox().width() > 0);
+                  QVERIFY(segment->selectable());
+                  QVERIFY(!segment->generated());
+                  std::unique_ptr<MasterScore> copy(score->clone());
+                  QVERIFY(copy);
+                  score->startCmd();
+                  score->deleteItem(segment);
+                  score->endCmd();
+                  if (direction == 1) {
+                        QVERIFY(!lyric->isPartial());
+                        QCOMPARE(lyric->plainText(), QString("jump"));
+                        }
+                  else
+                        QVERIFY(chord->lyrics().empty());
+                  score->undoRedo(true, nullptr);
+                  QVERIFY(!chord->lyrics().empty());
+                  QVERIFY(chord->lyrics().front()->isPartial());
+                  }
+            }
+      }
+
+void TestRepeat::partialLyricsRendering_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::addColumn<int>("expectedLines");
+      QTest::addColumn<bool>("native");
+      QTest::newRow("L01-37E") << QString("partial-lyrics-L01.mscx") << 2 << false;
+      QTest::newRow("L01-475") << QString("partial-lyrics-L01-475.mscx") << 2 << true;
+      QTest::newRow("L02-37E") << QString("partial-lyrics-L02.mscx") << 2 << false;
+      QTest::newRow("L02-475") << QString("partial-lyrics-L02-475.mscx") << 2 << true;
+      QTest::newRow("L03-37E") << QString("partial-lyrics-L03.mscx") << 6 << false;
+      QTest::newRow("L03-475") << QString("partial-lyrics-L03-475.mscx") << 6 << true;
+      QTest::newRow("L04-37E") << QString("partial-lyrics-L04.mscx") << 3 << false;
+      QTest::newRow("L04-475") << QString("partial-lyrics-L04-475.mscx") << 3 << true;
+      QTest::newRow("X01-37E") << QString("partial-lyrics-X01.mscx") << 3 << false;
+      QTest::newRow("X01-475") << QString("partial-lyrics-X01-475.mscx") << 3 << true;
+      QTest::newRow("L04-475-compressed") << QString("partial-lyrics-L04-475.mscz") << 3 << true;
+      QTest::newRow("X01-475-compressed") << QString("partial-lyrics-X01-475.mscz") << 3 << true;
+      }
+
+void TestRepeat::partialLyricsRendering()
+      {
+      QFETCH(QString, file);
+      QFETCH(int, expectedLines);
+      QFETCH(bool, native);
+      std::unique_ptr<MasterScore> score;
+      if (native) {
+            score.reset(new MasterScore(MScore::defaultStyle()));
+            QCOMPARE(int(score->loadMsc(root + "/" + DIR + file, true)), int(Score::FileError::FILE_NO_ERROR));
+            score->doLayout();
+            }
+      else
+            score.reset(readScore(DIR + file));
+      QVERIFY(score);
+      const auto content = [](MasterScore* value) {
+            QStringList result;
+            for (Measure* m = value->firstMeasure(); m; m = m->nextMeasure()) {
+                  result << QString("measure:%1:%2").arg(m->tick().toString()).arg(m->ticks().toString());
+                  for (Segment* seg = m->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+                        for (int track = 0; track < value->ntracks(); ++track) {
+                              Element* item = seg->element(track);
+                              if (!item || !item->isChordRest())
+                                    continue;
+                              ChordRest* cr = toChordRest(item);
+                              const QString start = QString("%1:%2:%3:").arg(track).arg(cr->tick().toString()).arg(cr->actualTicks().toString());
+                              if (item->isChord()) {
+                                    for (Note* note : toChord(item)->notes())
+                                          result << start + QString::number(note->pitch());
+                                    }
+                              else
+                                    result << start + "rest";
+                              }
+                        }
+                  }
+            return result;
+            };
+      const auto lyricProperties = [](MasterScore* value) {
+            QStringList result;
+            for (Measure* m = value->firstMeasure(); m; m = m->nextMeasure()) {
+                  for (Segment* seg = m->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+                        for (int track = 0; track < value->ntracks(); ++track) {
+                              Element* item = seg->element(track);
+                              if (item && item->isChordRest()) {
+                                    for (Lyrics* lyric : toChordRest(item)->lyrics()) {
+                                          if (lyric->isPartial())
+                                                result << QString("%1:%2:%3:%4:%5:%6:%7:%8").arg(track).arg(lyric->tick().reduced().toString())
+                                                      .arg(lyric->no()).arg(int(lyric->placement())).arg(lyric->partialDirection())
+                                                      .arg(lyric->partialMelisma()).arg(lyric->ticks().reduced().toString()).arg(lyric->plainText());
+                                          }
+                                    }
+                              }
+                        }
+                  }
+            result.sort();
+            return result;
+            };
+      QStringList expectedProperties = lyricProperties(score.get());
+      if (native) {
+            std::unique_ptr<MasterScore> reference(readScore(DIR + file.left(file.indexOf("-475")) + ".mscx"));
+            QVERIFY(reference);
+            QCOMPARE(content(score.get()), content(reference.get()));
+            expectedProperties = lyricProperties(reference.get());
+            }
+      QTemporaryDir temporary;
+      QVERIFY(temporary.isValid());
+      for (int pass = 0; pass < 2; ++pass) {
+            QCOMPARE(lyricProperties(score.get()), expectedProperties);
+            int checked = 0;
+            for (Spanner* sp : score->unmanagedSpanners()) {
+                  if (!sp->isLyricsLine())
+                        continue;
+                  LyricsLine* line = toLyricsLine(sp);
+                  if (!line->lyrics()->isPartial())
+                        continue;
+                  QVERIFY(!line->spannerSegments().empty());
+                  for (SpannerSegment* ss : line->spannerSegments()) {
+                        LyricsLineSegment* seg = toLyricsLineSegment(ss);
+                        QVERIFY(seg->system());
+                        QVERIFY2(seg->pos2().x() > 0, "Partial lyric line has no drawable horizontal span");
+                        QVERIFY(line->lineWidth() > 0);
+                        std::vector<Element*> rendered;
+                        seg->system()->scanElements(&rendered, [](void* data, Element* item) {
+                              static_cast<std::vector<Element*>*>(data)->push_back(item);
+                              }, false);
+                        QVERIFY(std::find(rendered.begin(), rendered.end(), seg) != rendered.end());
+                        QImage image(512, 64, QImage::Format_ARGB32_Premultiplied);
+                        image.fill(Qt::transparent);
+                        QPainter painter(&image);
+                        painter.translate(8, 32);
+                        painter.scale(496.0 / seg->pos2().x(), 1.0);
+                        seg->draw(&painter);
+                        painter.end();
+                        bool ink = false;
+                        for (int y = 0; y < image.height() && !ink; ++y) {
+                              for (int x = 0; x < image.width(); ++x) {
+                                    if (qAlpha(image.pixel(x, y))) {
+                                          ink = true;
+                                          break;
+                                          }
+                                    }
+                              }
+                        QVERIFY2(ink, "Partial lyric segment exists but paints no extender or dashes");
+                        }
+                  ++checked;
+                  }
+            QCOMPARE(checked, expectedLines);
+            if (pass == 0) {
+                  const QString path = temporary.filePath("partial-lyrics.mscx");
+                  QVERIFY(saveScore(score.get(), path));
+                  score.reset(readCreatedScore(path));
+                  QVERIFY(score);
+                  }
+            }
+      }
+
+void TestRepeat::nativeLyricsWithoutRepeat()
+      {
+      QFile input(root + "/" + DIR + "partial-lyrics-X01-475.mscx");
+      QVERIFY(input.open(QIODevice::ReadOnly));
+      QDomDocument document;
+      QVERIFY(document.setContent(input.readAll()));
+      for (const QString& tag : { QString("Spanner"), QString("startRepeat"), QString("endRepeat") }) {
+            QDomNodeList nodes = document.elementsByTagName(tag);
+            while (nodes.count() > 0) {
+                  QDomNode node = nodes.at(0);
+                  node.parentNode().removeChild(node);
+                  }
+            }
+      QTemporaryDir temporary;
+      QVERIFY(temporary.isValid());
+      const QString path = temporary.filePath("ordinary-native-lyrics.mscx");
+      QFile output(path);
+      QVERIFY(output.open(QIODevice::WriteOnly));
+      QVERIFY(output.write(document.toByteArray()) > 0);
+      output.close();
+      std::unique_ptr<MasterScore> score(new MasterScore(MScore::defaultStyle()));
+      QCOMPARE(int(score->loadMsc(path, true)), int(Score::FileError::FILE_NO_ERROR));
+      int checked = 0;
+      bool sawHold = false;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            for (Segment* seg = m->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+                  for (int track = 0; track < score->ntracks(); ++track) {
+                        Element* item = seg->element(track);
+                        if (item && item->isChordRest()) {
+                              for (Lyrics* lyric : toChordRest(item)->lyrics()) {
+                                    QVERIFY(!lyric->isPartial());
+                                    if (lyric->plainText() == "hold") {
+                                          QCOMPARE(lyric->ticks(), Fraction::fromTicks(Lyrics::TEMP_MELISMA_TICKS));
+                                          sawHold = true;
+                                          }
+                                    ++checked;
+                                    }
+                              }
+                        }
+                  }
+            }
+      QVERIFY(checked > 0);
+      QVERIFY(sawHold);
+      }
+
+void TestRepeat::partialLyricsMelismaEnd_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::newRow("L04-above-over-breaks") << QString("partial-lyrics-L04.mscx");
+      QTest::newRow("X01-combined") << QString("partial-lyrics-X01.mscx");
+      }
+
+void TestRepeat::partialLyricsMelismaEnd()
+      {
+      QFETCH(QString, file);
+      std::unique_ptr<MasterScore> score(readScore(DIR + file));
+      QVERIFY(score);
+      int checked = 0;
+      for (Spanner* sp : score->unmanagedSpanners()) {
+            if (!sp->isLyricsLine())
+                  continue;
+            LyricsLine* line = toLyricsLine(sp);
+            if (!line->lyrics()->isPartial() || !line->isEndMelisma() || line->lyrics()->isOutgoing())
+                  continue;
+            QVERIFY(!line->spannerSegments().empty());
+            ChordRest* cr = toChordRest(line->endElement());
+            QVERIFY(cr && cr->isChord());
+            Chord* chord = toChord(cr);
+            const Note* note = chord->up() ? chord->downNote() : chord->upNote();
+            const SpannerSegment* segment = line->backSegment();
+            const qreal expected = note->pagePos().x() + note->headWidth();
+            const qreal actual = segment->pagePos().x() + toLyricsLineSegment(segment)->pos2().x();
+            QVERIFY(qAbs(actual - expected) < 0.001);
+            ++checked;
+            }
+      QVERIFY(checked > 0);
+      }
+
+static int paintedDashCount(const LyricsLineSegment* segment)
+      {
+      QImage image(1024, 64, QImage::Format_ARGB32_Premultiplied);
+      image.fill(Qt::transparent);
+      QPainter painter(&image);
+      painter.translate(8, 32);
+      painter.scale(1000.0 / qMax(qreal(1), segment->pos2().x()), 1.0);
+      segment->draw(&painter);
+      painter.end();
+      int count = 0;
+      bool previous = false;
+      for (int x = 0; x < image.width(); ++x) {
+            bool ink = false;
+            for (int y = 0; y < image.height(); ++y)
+                  ink = ink || qAlpha(image.pixel(x, y));
+            if (ink && !previous)
+                  ++count;
+            previous = ink;
+            }
+      return count;
+      }
+
+void TestRepeat::partialLyricsDashCount_data()
+      {
+      QTest::addColumn<double>("distance");
+      QTest::addColumn<int>("expected");
+      QTest::newRow("L03-first-ending") << -1.0 << 2;
+      QTest::newRow("short") << 0.5 << 1;
+      QTest::newRow("over-one-spacing") << 1.1 << 2;
+      QTest::newRow("over-two-spacings") << 2.1 << 3;
+      QTest::newRow("empty") << 0.0 << 0;
+      }
+
+void TestRepeat::partialLyricsDashCount()
+      {
+      QFETCH(double, distance);
+      QFETCH(int, expected);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "partial-lyrics-L03.mscx"));
+      QVERIFY(score);
+      LyricsLineSegment* segment = nullptr;
+      for (Spanner* sp : score->unmanagedSpanners()) {
+            if (!sp->isLyricsLine())
+                  continue;
+            LyricsLine* line = toLyricsLine(sp);
+            Lyrics* lyric = line->lyrics();
+            if (lyric->measure()->no() == 3 && lyric->isPartial() && !line->isEndMelisma())
+                  segment = toLyricsLineSegment(line->frontSegment());
+            }
+      QVERIFY(segment);
+      if (distance >= 0) {
+            segment->setPos2(QPointF(distance * score->styleP(Sid::lyricsDashMaxDistance), 0));
+            segment->layout();
+            }
+      QCOMPARE(paintedDashCount(segment), expected);
+      }
+
+void TestRepeat::lyricDashDimensions_data()
+      {
+      QTest::addColumn<bool>("native");
+      QTest::newRow("37E") << false;
+      QTest::newRow("475") << true;
+      }
+
+void TestRepeat::lyricDashDimensions()
+      {
+      QFETCH(bool, native);
+      std::unique_ptr<MasterScore> score(new MasterScore(MScore::defaultStyle()));
+      const QString file = native ? "partial-lyrics-L02-475.mscx" : "partial-lyrics-L02.mscx";
+      QCOMPARE(int(score->loadMsc(root + "/" + DIR + file, native)), int(Score::FileError::FILE_NO_ERROR));
+      score->doLayout();
+      QCOMPARE(score->styleS(Sid::lyricsDashMaxLength).val(), 0.6);
+      QCOMPARE(score->styleS(Sid::lyricsDashLineThickness).val(), 0.1);
+      LyricsLine* line = nullptr;
+      for (Spanner* sp : score->unmanagedSpanners()) {
+            if (sp->isLyricsLine() && !toLyricsLine(sp)->isEndMelisma())
+                  line = toLyricsLine(sp);
+            }
+      QVERIFY(line && !line->spannerSegments().empty());
+      for (int pass = 0; pass < 2; ++pass) {
+            const qreal length = pass ? 0.9 : 0.6;
+            const qreal thickness = pass ? 0.22 : 0.1;
+            score->setStyleValue(Sid::lyricsDashMaxLength, Spatium(length));
+            score->setStyleValue(Sid::lyricsDashLineThickness, Spatium(thickness));
+            line->styleChanged();
+            LyricsLineSegment* seg = toLyricsLineSegment(line->frontSegment());
+            seg->setPos2(QPointF(3 * score->spatium(), 0));
+            seg->layout();
+            QImage image(1024, 256, QImage::Format_ARGB32_Premultiplied);
+            image.fill(Qt::transparent);
+            QPainter painter(&image);
+            painter.translate(64, 128);
+            painter.scale(8, 8);
+            seg->draw(&painter);
+            painter.end();
+            int left = image.width(), right = -1, top = image.height(), bottom = -1;
+            for (int y = 0; y < image.height(); ++y) {
+                  for (int x = 0; x < image.width(); ++x) {
+                        if (!qAlpha(image.pixel(x, y)))
+                              continue;
+                        left = qMin(left, x); right = qMax(right, x);
+                        top = qMin(top, y); bottom = qMax(bottom, y);
+                        }
+                  }
+            QVERIFY(right >= left && bottom >= top);
+            QVERIFY(qAbs((right - left + 1) / 8.0 / score->spatium() - length) < 0.02);
+            QVERIFY(qAbs((bottom - top + 1) / 8.0 / score->spatium() - thickness) < 0.02);
+            }
+      QTemporaryDir directory;
+      const QString saved = directory.path() + "/dash-custom.mscx";
+      QVERIFY(saveScore(score.get(), saved));
+      std::unique_ptr<MasterScore> copy(readCreatedScore(saved));
+      QVERIFY(copy);
+      QCOMPARE(copy->styleS(Sid::lyricsDashMaxLength).val(), 0.9);
+      QCOMPARE(copy->styleS(Sid::lyricsDashLineThickness).val(), 0.22);
+      }
+
+void TestRepeat::partialSlurLayout()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "repeat06.mscx"));
+      QVERIFY(score);
+      Measure* measure = score->firstMeasure()->nextMeasure()->nextMeasure()->nextMeasure();
+      Chord* chord = toChord(measure->first(SegmentType::ChordRest)->element(0));
+      Slur* slur = new Slur(score.get());
+      slur->setTrack(0);
+      slur->setTrack2(0);
+      slur->setTick(chord->tick());
+      slur->setTick2(chord->tick());
+      slur->setStartElement(chord);
+      slur->setEndElement(chord);
+      slur->setPartialDirection(0);
+      score->startCmd();
+      score->undoAddElement(slur);
+      score->endCmd();
+      QVERIFY(!slur->spannerSegments().empty());
+      QVERIFY(slur->frontSegment()->bbox().width() > 0);
+      std::unique_ptr<MasterScore> copy(score->clone());
+      QVERIFY(copy);
+      }
+
+static qreal paintedHeaderRight(const Element*);
+
+void TestRepeat::partialSlurClearance_data()
+      {
+      QTest::addColumn<QString>("file");
+      for (int i = 1; i <= 4; ++i) {
+            const QString file = QString("partial-slur-S%1.mscx").arg(i, 2, 10, QChar('0'));
+            QTest::newRow(qPrintable(file)) << file;
+            }
+      }
+
+void TestRepeat::partialSlurClearance()
+      {
+      QFETCH(QString, file);
+      std::unique_ptr<MasterScore> score(readScore(DIR + file));
+      QVERIFY(score);
+      int checked = 0;
+      for (const auto& entry : score->spanner()) {
+            if (!entry.second->isSlur())
+                  continue;
+            Slur* slur = toSlur(entry.second);
+            if (slur->partialDirection() < 0)
+                  continue;
+            QVERIFY(!slur->spannerSegments().empty());
+            if (slur->isIncoming()) {
+                  const SlurSegment* seg = slur->frontSegment();
+                  const Measure* measure = slur->startCR()->measure();
+                  const Segment* firstCR = measure->first(SegmentType::ChordRest);
+                  const Segment* header = firstCR->prevActive();
+                  while (header && header->allElementsInvisible())
+                        header = header->prevActive();
+                  if (header) {
+                        const Element* item = header->element(slur->staffIdx() * VOICES);
+                        QVERIFY(item);
+                        const qreal right = measure->x() + header->x() + item->x()
+                              + (header->isStartRepeatBarLineType() ? paintedHeaderRight(item) : item->bbox().right());
+                        const qreal margin = (header->isStartRepeatBarLineType() ? 0.25 : 1.0) * score->spatium();
+                        const qreal expected = header->isStartRepeatBarLineType() ? right + margin
+                              : qMin(right + margin, measure->x() + firstCR->x());
+                        const qreal tolerance = header->isStartRepeatBarLineType() ? 0.04 * score->spatium() : 0.001;
+                        QVERIFY(qAbs(seg->ups(Grip::START).p.x() - expected) < tolerance);
+                        QVERIFY(seg->ups(Grip::START).p.x() >= right);
+                        }
+                  else {
+                        QVERIFY(qAbs(seg->ups(Grip::START).p.x() - measure->firstNoteRestSegmentX(true)) < 0.001);
+                        }
+                  ++checked;
+                  }
+            if (slur->isOutgoing()) {
+                  const SlurSegment* seg = slur->backSegment();
+                  const Measure* measure = slur->endCR()->measure();
+                  const BarLine* bar = measure->endBarLine();
+                  QVERIFY(bar);
+                  const qreal left = measure->x() + bar->segment()->x() + bar->x() + bar->bbox().left();
+                  QVERIFY(qAbs(seg->ups(Grip::END).p.x() - (left - 0.25 * score->spatium())) < 0.001);
+                  ++checked;
+                  }
+            if (slur->startCR() == slur->endCR() && slur->isIncoming() != slur->isOutgoing()) {
+                  SlurPos raw;
+                  slur->slurPos(&raw);
+                  const qreal delta = slur->isIncoming() ? raw.p1.y() - raw.p2.y() : raw.p2.y() - raw.p1.y();
+                  QVERIFY(qAbs(delta / score->spatium() - (slur->up() ? -0.25 : 0.25)) < 0.001);
+                  }
+            }
+      QVERIFY(checked > 0);
+      }
+
+void TestRepeat::partialSlurSystemHeader()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "partial-slur-S02.mscx"));
+      QVERIFY(score);
+      Slur* incoming = nullptr;
+      for (const auto& entry : score->spanner()) {
+            if (entry.second->isSlur()) {
+                  Slur* slur = toSlur(entry.second);
+                  if (slur->startCR()->measure() == slur->startCR()->measure()->system()->firstMeasure())
+                        incoming = slur;
+                  }
+            }
+      QVERIFY(incoming);
+      // There is no jump arrival at the first ending. Like Studio 4.7.5,
+      // loading the score should have reset its incoming flag.
+      QCOMPARE(incoming->partialDirection(), -1);
+      // Still exercise header clearance if the user explicitly enables it.
+      incoming->setPartialDirection(0);
+      score->setLayoutAll();
+      score->doLayout();
+      const SlurSegment* seg = incoming->frontSegment();
+      const qreal partialTop = seg->y() + seg->bbox().top();
+      const qreal partialEndY = seg->y() + seg->ups(Grip::END).pos().y();
+      // Vanilla 37E ignores the partial property and draws an ordinary slur.
+      // Its curve is the control for the reported inflated first-ending slur.
+      incoming->setProperty(Pid::PARTIAL_SPANNER_DIRECTION, -1);
+      score->setLayoutAll();
+      score->doLayout();
+      seg = incoming->frontSegment();
+      const qreal ordinaryTop = seg->y() + seg->bbox().top();
+      const qreal ordinaryEndY = seg->y() + seg->ups(Grip::END).pos().y();
+      QVERIFY(qAbs(partialEndY - ordinaryEndY) < score->spatium());
+      QVERIFY(qAbs(partialTop - ordinaryTop) < score->spatium());
+      }
+
+void TestRepeat::partialSlurHeight_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::addColumn<double>("scale");
+      QTest::addColumn<bool>("forceDown");
+      for (int i = 1; i <= 4; ++i) {
+            const QString file = QString("partial-slur-S%1.mscx").arg(i, 2, 10, QChar('0'));
+            for (double scale : { 0.75, 1.0, 1.5 }) {
+                  for (bool forceDown : { false, true })
+                        QTest::newRow(qPrintable(file + QString("-%1-%2").arg(scale).arg(forceDown ? "down" : "original")))
+                              << file << scale << forceDown;
+                  }
+            }
+      }
+
+void TestRepeat::partialSlurHeight()
+      {
+      QFETCH(QString, file);
+      QFETCH(double, scale);
+      QFETCH(bool, forceDown);
+      std::unique_ptr<MasterScore> score(readScore(DIR + file));
+      QVERIFY(score);
+      if (forceDown) {
+            for (const auto& entry : score->spanner()) {
+                  if (entry.second->isSlur() && toSlur(entry.second)->partialDirection() >= 0)
+                        toSlur(entry.second)->setSlurDirection(Direction::DOWN);
+                  }
+            }
+      const qreal oldSpatium = score->spatium();
+      score->setSpatium(oldSpatium * scale);
+      score->spatiumChanged(oldSpatium, score->spatium());
+      score->setLayoutAll();
+      score->doLayout();
+      int checked = 0;
+      for (const auto& entry : score->spanner()) {
+            if (!entry.second->isSlur())
+                  continue;
+            Slur* slur = toSlur(entry.second);
+            if (slur->partialDirection() < 0)
+                  continue;
+            // These fixtures have C4 quarter notes with up stems. Studio's
+            // floating end meets the stem tip; the note-owned end sits 0.25sp
+            // into the stem. This is independent of score size and line length.
+            if (slur->startCR() == slur->endCR() && slur->isIncoming() != slur->isOutgoing()) {
+                  SlurPos raw;
+                  slur->slurPos(&raw);
+                  const qreal delta = slur->isIncoming() ? raw.p1.y() - raw.p2.y() : raw.p2.y() - raw.p1.y();
+                  QVERIFY(qAbs(delta / score->spatium() - (slur->up() ? -0.25 : 0.25)) < 0.001);
+                  ++checked;
+                  }
+            else if (slur->up()) {
+                  for (bool incoming : { true, false }) {
+                        if (incoming ? !slur->isIncoming() : !slur->isOutgoing())
+                              continue;
+                        const ChordRest* cr = incoming ? slur->startCR() : slur->endCR();
+                        const Chord* chord = toChord(cr);
+                        QVERIFY(chord->stem());
+                        const qreal stemTip = chord->stem()->y() + chord->stem()->bbox().top();
+                        const SlurSegment* segment = incoming ? slur->frontSegment() : slur->backSegment();
+                        const Grip grip = incoming ? Grip::START : Grip::END;
+                        QVERIFY(qAbs(segment->ups(grip).p.y() - stemTip) < 0.001);
+                        ++checked;
+                        }
+                  }
+            else {
+                  for (bool incoming : { true, false }) {
+                        if (incoming ? !slur->isIncoming() : !slur->isOutgoing())
+                              continue;
+                        const Chord* chord = toChord(incoming ? slur->startCR() : slur->endCR());
+                        const Note* note = chord->downNote();
+                        const qreal noteBottom = note->y() + note->bbox().bottom();
+                        const SlurSegment* segment = incoming ? slur->frontSegment() : slur->backSegment();
+                        const Grip grip = incoming ? Grip::START : Grip::END;
+                        QVERIFY(qAbs(segment->ups(grip).p.y() - noteBottom - 0.4 * score->spatium()) < 0.001);
+                        ++checked;
+                        }
+                  }
+            }
+      QVERIFY(checked > 0);
+      }
+
+// Measure painted ink rather than trusting BarLine::bbox(): 3.x calculates
+// repeat-dot layout width at font magnification 1, unlike the actual drawing.
+static qreal paintedHeaderRight(const Element* element)
+      {
+      constexpr int scale = 16;
+      constexpr int origin = 64;
+      QImage image(2048, 2048, QImage::Format_ARGB32_Premultiplied);
+      image.fill(Qt::transparent);
+      QPainter painter(&image);
+      painter.translate(origin, origin);
+      painter.scale(scale, scale);
+      element->draw(&painter);
+      painter.end();
+      int right = -1;
+      for (int y = 0; y < image.height(); ++y) {
+            const QRgb* row = reinterpret_cast<const QRgb*>(image.constScanLine(y));
+            for (int x = right + 1; x < image.width(); ++x) {
+                  if (qAlpha(row[x]))
+                        right = x;
+                  }
+            }
+      if (right == image.width() - 1)
+            return std::numeric_limits<qreal>::quiet_NaN(); // clipped test image
+      return qreal(right + 1 - origin) / scale;
+      }
+
+void TestRepeat::oneNotePartialSlurStaffClearance()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "partial-slur-S03.mscx"));
+      QVERIFY(score);
+      Slur* slur = nullptr;
+      for (const auto& entry : score->spanner()) {
+            if (entry.second->isSlur() && toSlur(entry.second)->isIncoming()
+                && entry.second->startElement() == entry.second->endElement())
+                  slur = toSlur(entry.second);
+            }
+      QVERIFY(slur);
+      SlurSegment* segment = slur->frontSegment();
+      // For the C4 stem tip at 1.5sp, the half-spatium inset puts the
+      // attached end on line 2. Staff clearance moves it to 1.77sp, while
+      // the constrained free end is at 1.75sp: a near-horizontal 0.02sp tilt.
+      const qreal startY = segment->ups(Grip::START).p.y() / score->spatium();
+      const qreal endY = segment->ups(Grip::END).p.y() / score->spatium();
+      QVERIFY(qAbs(startY - 1.75) < 0.02);
+      QVERIFY(qAbs(endY - 1.77) < 0.02);
+      QVERIFY(qAbs(endY - startY) < 0.05);
+      const QPointF edit(0.2 * score->spatium(), -0.3 * score->spatium());
+      segment->ups(Grip::END).off = edit;
+      score->setLayoutAll();
+      score->doLayout();
+      QCOMPARE(slur->frontSegment()->ups(Grip::END).off, edit);
+      }
+
+void TestRepeat::partialSlurRepeatDotGap_data()
+      {
+      QTest::addColumn<double>("scale");
+      QTest::addColumn<double>("staffMag");
+      for (double scale : { 0.4, 0.75, 1.0, 1.5 }) {
+            for (double staffMag : { 0.7, 1.0 })
+                  QTest::newRow(qPrintable(QString("size-%1-staff-%2").arg(scale).arg(staffMag))) << scale << staffMag;
+            }
+      }
+
+void TestRepeat::partialSlurRepeatDotGap()
+      {
+      QFETCH(double, scale);
+      QFETCH(double, staffMag);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "partial-slur-S03.mscx"));
+      QVERIFY(score);
+      const qreal oldSpatium = score->spatium();
+      score->setSpatium(oldSpatium * scale);
+      score->spatiumChanged(oldSpatium, score->spatium());
+      score->staff(0)->staffType(Fraction(0, 1))->setUserMag(staffMag);
+      score->setLayoutAll();
+      score->doLayout();
+      int checked = 0;
+      for (const auto& entry : score->spanner()) {
+            if (!entry.second->isSlur() || !toSlur(entry.second)->isIncoming())
+                  continue;
+            Slur* slur = toSlur(entry.second);
+            const Measure* measure = slur->startCR()->measure();
+            const Segment* first = measure->first(SegmentType::ChordRest);
+            const Segment* header = first->prevActive();
+            QVERIFY(header && header->isStartRepeatBarLineType());
+            const Element* bar = header->element(0);
+            QVERIFY(bar && bar->isBarLine());
+            const qreal inkRight = measure->x() + header->x() + bar->x() + paintedHeaderRight(bar);
+            const qreal expected = inkRight + 0.25 * score->spatium();
+            const qreal actual = slur->frontSegment()->ups(Grip::START).p.x();
+            QVERIFY2(qAbs(actual - expected) < 0.04 * score->spatium(), qPrintable(QString("Repeat-dot clearance: start %1, expected %2, painted edge %3, spatium %4")
+                        .arg(actual).arg(expected).arg(inkRight).arg(score->spatium())));
+            QVERIFY(actual < slur->frontSegment()->ups(Grip::END).p.x());
+            ++checked;
+            }
+      QCOMPARE(checked, 2);
+      }
+
+void TestRepeat::startRepeatNoteSpacing_data()
+      {
+      QTest::addColumn<int>("pitch");
+      QTest::addColumn<int>("tpc");
+      QTest::newRow("C3-below") << 48 << 14;
+      QTest::newRow("C4-ledger") << 60 << 14;
+      QTest::newRow("C5-on-staff") << 72 << 14;
+      QTest::newRow("C6-above") << 84 << 14;
+      QTest::newRow("Csharp4-accidental") << 61 << 21;
+      }
+
+void TestRepeat::startRepeatNoteSpacing()
+      {
+      QFETCH(int, pitch);
+      QFETCH(int, tpc);
+      QFile input(root + "/" + DIR + "partial-slur-S01.mscx");
+      QVERIFY(input.open(QIODevice::ReadOnly));
+      QDomDocument document;
+      QVERIFY(document.setContent(input.readAll()));
+      const QDomNodeList notes = document.elementsByTagName("Note");
+      for (int i = 0; i < notes.count(); ++i) {
+            QDomElement note = notes.at(i).toElement();
+            note.firstChildElement("pitch").firstChild().setNodeValue(QString::number(pitch));
+            note.firstChildElement("tpc").firstChild().setNodeValue(QString::number(tpc));
+            }
+      QTemporaryDir directory;
+      QVERIFY(directory.isValid());
+      const QString saved = directory.path() + "/repeat-note-spacing.mscx";
+      QFile output(saved);
+      QVERIFY(output.open(QIODevice::WriteOnly));
+      output.write(document.toByteArray());
+      output.close();
+      std::unique_ptr<MasterScore> score(readCreatedScore(saved));
+      QVERIFY(score);
+      Measure* repeat = score->firstMeasure()->nextMeasure();
+      const Segment* first = repeat->first(SegmentType::ChordRest);
+      const Segment* header = first->prevActive();
+      QVERIFY(header && header->isStartRepeatBarLineType());
+      const Element* bar = header->element(0);
+      QVERIFY(bar && bar->isBarLine());
+      const Chord* chord = toChord(first->element(0));
+      const Note* note = chord->upNote();
+      const qreal right = bar->pagePos().x() + paintedHeaderRight(bar);
+      const qreal gap = note->pagePos().x() + note->bbox().left() - right;
+      QVERIFY2(gap + 0.04 * score->spatium() >= score->styleP(Sid::barNoteDistance),
+               qPrintable(QString("Repeat-dot to note gap %1sp, required %2sp")
+                          .arg(gap / score->spatium()).arg(score->styleP(Sid::barNoteDistance) / score->spatium())));
+      if (pitch == 61) {
+            const Accidental* accidental = note->accidental();
+            QVERIFY(accidental);
+            const qreal accidentalGap = accidental->pagePos().x() + accidental->bbox().left() - right;
+            QVERIFY(accidentalGap + 0.04 * score->spatium() >= score->styleP(Sid::barAccidentalDistance));
+            }
+      }
+
+void TestRepeat::incomingTieMinimumSpace_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::addColumn<double>("minimum");
+      QTest::addColumn<QString>("boundary");
+      for (const QString& file : { QString("partial-lyrics-X01.mscx"), QString("partial-tie-R05.mscx") }) {
+            for (double minimum : { 1.5, 2.25 }) {
+                  for (const QString& boundary : { QString("repeat"), QString("barline"), QString("header") })
+                        QTest::newRow(qPrintable(file + QString("-%1-").arg(minimum) + boundary)) << file << minimum << boundary;
+                  }
+            }
+      }
+
+void TestRepeat::incomingTieMinimumSpace()
+      {
+      QFETCH(QString, file);
+      QFETCH(double, minimum);
+      QFETCH(QString, boundary);
+      std::unique_ptr<MasterScore> score(readScore(DIR + file));
+      QVERIFY(score);
+      if (boundary != "repeat")
+            score->firstMeasure()->nextMeasure()->setRepeatStart(false);
+      if (boundary == "header")
+            score->firstMeasure()->undoSetLineBreak(true);
+      score->setStyleValue(Sid::minHangingTieLength, Spatium(minimum));
+      score->setLayoutAll();
+      score->doLayout();
+      Measure* landing = score->firstMeasure()->nextMeasure();
+      if (boundary == "header")
+            QCOMPARE(landing, landing->system()->firstMeasure());
+      if (boundary != "repeat")
+            QVERIFY(!landing->repeatStart());
+      int checked = 0;
+      int secondEndingTies = 0;
+      for (Measure* measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+            for (Segment* first = measure->first(SegmentType::ChordRest); first; first = first->next(SegmentType::ChordRest)) {
+                  std::vector<qreal> lengths;
+                  for (int track = 0; track < score->ntracks(); ++track) {
+                        Element* item = first->element(track);
+                        if (!item || !item->isChord())
+                              continue;
+                        for (Note* note : toChord(item)->notes()) {
+                              Tie* tie = note->partialTie(true);
+                              if (!tie)
+                                    continue;
+                              QVERIFY(!tie->spannerSegments().empty());
+                              const TieSegment* segment = tie->frontSegment();
+                              const qreal length = (segment->ups(Grip::END).pos().x() - segment->ups(Grip::START).pos().x()) / score->spatium();
+                              lengths.push_back(length);
+                              QVERIFY2(length + 0.01 >= score->styleS(Sid::minTieLength).val(),
+                                    qPrintable(QString("Measure %1: short chord tie %2sp; segment x %3sp, start offset %4sp, end offset %5sp, parent x %6sp").arg(measure->no()+1).arg(length).arg(first->x()/score->spatium()).arg(tie->incomingStartOffset()/score->spatium()).arg(tie->incomingEndOffset()/score->spatium()).arg(measure->x()/score->spatium())));
+                              ++checked;
+                              if (measure->prevMeasure() && measure->prevMeasure()->repeatEnd() && !measure->repeatStart())
+                                    ++secondEndingTies;
+                              }
+                        }
+                  if (!lengths.empty()) {
+                        const qreal longest = *std::max_element(lengths.begin(), lengths.end());
+                        QVERIFY2(longest + 0.01 >= minimum,
+                              qPrintable(QString("Measure %1: longest incoming tie %2sp; requested %3sp").arg(measure->no()+1).arg(longest).arg(minimum)));
+                        }
+                  }
+            }
+      QVERIFY(checked >= 3);
+      if (file == "partial-lyrics-X01.mscx")
+            QVERIFY(secondEndingTies >= 3);
+      QTemporaryDir directory;
+      const QString saved = directory.path() + "/hanging-tie-length.mscx";
+      QVERIFY(saveScore(score.get(), saved));
+      std::unique_ptr<MasterScore> copy(readCreatedScore(saved));
+      QVERIFY(copy);
+      QCOMPARE(copy->styleS(Sid::minHangingTieLength).val(), minimum);
+      }
+
+void TestRepeat::partialSlurBoundaryValidity_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::newRow("37E") << QString("partial-slur-S02.mscx");
+      QTest::newRow("475") << QString("partial-slur-S02-475.mscx");
+      }
+
+void TestRepeat::partialSlurBoundaryValidity()
+      {
+      QFETCH(QString, file);
+      std::unique_ptr<MasterScore> score(new MasterScore(MScore::defaultStyle()));
+      QCOMPARE(int(score->loadMsc(root + "/" + DIR + file, true)), int(Score::FileError::FILE_NO_ERROR));
+      score->doLayout();
+      const QMap<int, int> expected { { 2, 1 }, { 3, -1 }, { 4, 0 } };
+      int checked = 0;
+      for (const auto& entry : score->spanner()) {
+            if (!entry.second->isSlur())
+                  continue;
+            Slur* slur = toSlur(entry.second);
+            const int measure = slur->startCR()->measure()->no();
+            QVERIFY(expected.contains(measure));
+            QCOMPARE(slur->partialDirection(), expected.value(measure));
+            ++checked;
+            // Round-trip BOTH flags at all three anchors: A may only go out,
+            // D may do neither, and E may only come in. Keep manual offsets.
+            slur->setPartialDirection(2);
+            for (Grip grip : { Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END })
+                  slur->frontSegment()->ups(grip).off = QPointF(0.15, -0.2) * score->spatium();
+            }
+      QCOMPARE(checked, 3);
+      QTemporaryDir directory;
+      QVERIFY(directory.isValid());
+      const QString saved = directory.path() + "/slur-boundaries.mscx";
+      QVERIFY(saveScore(score.get(), saved));
+      std::unique_ptr<MasterScore> copy(readCreatedScore(saved));
+      QVERIFY(copy);
+      checked = 0;
+      for (const auto& entry : copy->spanner()) {
+            if (!entry.second->isSlur())
+                  continue;
+            Slur* slur = toSlur(entry.second);
+            const int measure = slur->startCR()->measure()->no();
+            QVERIFY(expected.contains(measure));
+            QCOMPARE(slur->partialDirection(), expected.value(measure));
+            for (Grip grip : { Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END })
+                  QVERIFY(QLineF(slur->frontSegment()->ups(grip).off / copy->spatium(), QPointF(0.15, -0.2)).length() < 0.001);
+            ++checked;
+            }
+      QCOMPARE(checked, 3);
+      }
+
+void TestRepeat::invalidOneNotePartialSlur_data()
+      {
+      QTest::addColumn<bool>("incoming");
+      QTest::addColumn<int>("direction");
+      QTest::addColumn<bool>("removed");
+      QTest::newRow("first-note-outgoing") << true << 1 << true;
+      QTest::newRow("first-note-both") << true << 2 << true;
+      QTest::newRow("last-note-incoming") << false << 0 << true;
+      QTest::newRow("last-note-both") << false << 2 << true;
+      QTest::newRow("valid-incoming") << true << 0 << false;
+      QTest::newRow("valid-outgoing") << false << 1 << false;
+      }
+
+void TestRepeat::invalidOneNotePartialSlur()
+      {
+      QFETCH(bool, incoming);
+      QFETCH(int, direction);
+      QFETCH(bool, removed);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "partial-slur-S03.mscx"));
+      QVERIFY(score);
+      Slur* target = nullptr;
+      for (const auto& entry : score->spanner()) {
+            if (entry.second->isSlur() && toSlur(entry.second)->partialDirection() == (incoming ? 0 : 1))
+                  target = toSlur(entry.second);
+            }
+      QVERIFY(target);
+      QCOMPARE(target->startCR(), target->endCR());
+      const Fraction tick = target->tick();
+      const int lineType = target->lineType();
+      target->setPartialDirection(direction);
+      QTemporaryDir directory;
+      QVERIFY(directory.isValid());
+      const QString saved = directory.path() + "/invalid-one-note-slur.mscx";
+      QVERIFY(saveScore(score.get(), saved));
+      std::unique_ptr<MasterScore> copy(readCreatedScore(saved));
+      QVERIFY(copy);
+      int checked = 0;
+      bool found = false;
+      for (const auto& entry : copy->spanner()) {
+            if (entry.second->isSlur()) {
+                  if (entry.second->tick() == tick) {
+                        QVERIFY(!removed);
+                        Slur* slur = toSlur(entry.second);
+                        QCOMPARE(slur->partialDirection(), direction);
+                        QCOMPARE(slur->lineType(), lineType);
+                        QCOMPARE(slur->startCR(), slur->endCR());
+                        found = true;
+                        }
+                  ++checked;
+                  }
+            }
+      QCOMPARE(found, !removed);
+      QCOMPARE(checked, removed ? 2 : 3);
+      }
+
+void TestRepeat::repeatTieNoteEntry_data()
+      {
+      QTest::addColumn<bool>("justEntered");
+      QTest::addColumn<bool>("chord");
+      QTest::newRow("selected-note") << false << false;
+      QTest::newRow("just-entered-note") << true << false;
+      QTest::newRow("selected-chord") << false << true;
+      QTest::newRow("just-entered-chord") << true << true;
+      }
+
+void TestRepeat::repeatTieNoteEntry()
+      {
+      QFETCH(bool, justEntered);
+      QFETCH(bool, chord);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "repeat06.mscx"));
+      QVERIFY(score);
+      Measure* landing = score->firstMeasure()->nextMeasure();
+      Measure* ending = landing->nextMeasure();
+      Note* source = toChord(ending->first(SegmentType::ChordRest)->element(0))->upNote();
+      Note* destination = toChord(landing->first(SegmentType::ChordRest)->element(0))->upNote();
+      source->setPitch(destination->pitch());
+      Note* secondEnding = toChord(ending->nextMeasure()->first(SegmentType::ChordRest)->element(0))->upNote();
+      const int untouchedPitch = secondEnding->pitch();
+      const size_t untouchedNotes = secondEnding->chord()->notes().size();
+      Note* upperSource = nullptr;
+      Note* upperDestination = nullptr;
+      if (chord) {
+            upperSource = source->clone();
+            upperSource->setPitch(source->pitch() + 4);
+            source->chord()->add(upperSource);
+            upperDestination = destination->clone();
+            upperDestination->setPitch(upperSource->pitch());
+            destination->chord()->add(upperDestination);
+            }
+      score->select(source);
+      score->inputState().setTrack(source->track());
+      score->inputState().setSegment(source->chord()->segment());
+      score->setNoteEntryMode(true);
+      if (justEntered)
+            score->inputState().moveToNextInputPos();
+      Segment* previousInput = score->inputState().segment();
+      ChordRest* following = nextChordRest(score->inputState().cr());
+      QVERIFY(following);
+      score->cmdAddTie();
+      QCOMPARE(score->inputState().segment(), following->segment());
+      QCOMPARE(score->inputState().lastSegment(), previousInput);
+      QCOMPARE(score->playPos(), following->tick());
+      QCOMPARE(score->inputState().track(), source->track());
+      QVERIFY(source->partialTie(false));
+      QVERIFY(destination->partialTie(true));
+      QVERIFY(!source->tieFor());
+      QCOMPARE(secondEnding->pitch(), untouchedPitch);
+      QCOMPARE(secondEnding->chord()->notes().size(), untouchedNotes);
+      if (chord) {
+            QVERIFY(upperSource->partialTie(false));
+            QVERIFY(upperDestination->partialTie(true));
+            QVERIFY(!upperSource->tieFor());
+            }
+      score->setNoteEntryMode(false);
+      }
+
+// Exercise the command dispatched by T outside note entry, not cmdAddTie.
+void TestRepeat::repeatTieToggle()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "repeat06.mscx"));
+      QVERIFY(score);
+      std::vector<Note*> notes;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            Note* n = toChord(m->first(SegmentType::ChordRest)->element(0))->upNote();
+            n->setPitch(60);
+            notes.push_back(n);
+            }
+      score->setExpandRepeats(false);
+      score->select(notes[1]);
+      score->cmdToggleTie();
+      QVERIFY(notes[1]->tieFor());
+      QCOMPARE(notes[1]->tieFor()->endNote(), notes[2]);
+      QVERIFY(notes[3]->partialTie(true));
+      score->cmdToggleTie();
+      QVERIFY(!notes[1]->tieFor());
+      QVERIFY(!notes[3]->partialTie(true));
+      score->undoRedo(true, nullptr);
+      QVERIFY(notes[1]->tieFor());
+      QVERIFY(notes[3]->partialTie(true));
+
+      // The end of volta 1 jumps back, never into volta 2.
+      // A different pitch in volta 2 must remain untouched.
+      notes[3]->setPitch(62);
+      score->select(notes[2]);
+      score->cmdToggleTie();
+      QVERIFY(!notes[2]->tieFor());
+      QVERIFY(notes[2]->partialTie(false));
+      QVERIFY(notes[1]->partialTie(true));
+      QCOMPARE(notes[3]->pitch(), 62);
+      score->cmdToggleTie();
+      QVERIFY(!notes[2]->partialTie(false));
+      QVERIFY(!notes[1]->partialTie(true));
+      score->undoRedo(true, nullptr);
+      QVERIFY(notes[2]->partialTie(false));
+      QVERIFY(notes[1]->partialTie(true));
+      score->undoRedo(false, nullptr);
+      QVERIFY(!notes[2]->partialTie(false));
+      QVERIFY(!notes[1]->partialTie(true));
+      QVERIFY(!score->expandRepeats());
+      }
 
 QTEST_MAIN(TestRepeat)
 #include "tst_repeat.moc"

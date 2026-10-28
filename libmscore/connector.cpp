@@ -350,6 +350,9 @@ bool ConnectorInfoReader::read()
       {
       XmlReader& e = *_reader;
       const QString name(e.attribute("type"));
+      // Native Studio lyric lines are converted to lyric owners after reading.
+      if (name == "PartialLyricsLine")
+            return false;
       _type = ScoreElement::name2type(&name);
 
       e.fillLocation(_currentLoc);

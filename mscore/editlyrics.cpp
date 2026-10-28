@@ -18,6 +18,8 @@
 #include "libmscore/score.h"
 #include "libmscore/segment.h"
 #include "libmscore/undo.h"
+#include "libmscore/measure.h"
+#include "libmscore/utils.h"
 
 namespace Ms {
 
@@ -279,8 +281,82 @@ void ScoreView::lyricsTab(bool back, bool end, bool moveOnly)
 //   lyricsMinus
 //---------------------------------------------------------
 
+// Partial lines retain one lyric owner, so repeated keypresses can extend the
+// line without creating empty syllables at every intervening note.
+bool ScoreView::lyricsPartial(bool melisma)
+      {
+      Lyrics* current = toLyrics(editData.element);
+      ChordRest* chord = current->chordRest();
+      const bool landing = chord->tick() == chord->measure()->tick()
+            && !precedingRepeatMeasures(chord->measure()).empty();
+      if (current->isPartial()) {
+            ChordRest* last = _score->findCR(current->endTick(), current->track());
+            if (!last)
+                  last = chord;
+            _score->startCmd();
+            current->undoChangeProperty(Pid::PARTIAL_LYRIC_MELISMA, melisma);
+            if (last->tick() + last->actualTicks() == last->measure()->endTick()
+                && !followingRepeatMeasures(last->measure()).empty()) {
+                  current->undoChangeProperty(Pid::PARTIAL_SPANNER_DIRECTION, current->isIncoming() ? 2 : 1);
+                  }
+            else {
+                  Segment* next = last->segment();
+                  while ((next = next->next1(SegmentType::ChordRest))) {
+                        Element* element = next->element(current->track());
+                        if (!element || !element->isChord())
+                              continue;
+                        if (next->measure() == last->measure() || hasLinearPlaybackTransition(last->measure(), next->measure()))
+                              current->undoChangeProperty(Pid::LYRIC_TICKS, next->tick() - chord->tick());
+                        break;
+                        }
+                  }
+            _score->endCmd();
+            return true;
+            }
+      if (current->plainText().isEmpty() && landing) {
+            _score->startCmd();
+            current->undoChangeProperty(Pid::PARTIAL_SPANNER_DIRECTION, 0);
+            current->undoChangeProperty(Pid::PARTIAL_LYRIC_MELISMA, melisma);
+            current->undoChangeProperty(Pid::LYRIC_TICKS, Fraction(0, 1));
+            _score->endCmd();
+            return true;
+            }
+      if (chord->tick() + chord->actualTicks() != chord->measure()->endTick()
+          || followingRepeatMeasures(chord->measure()).empty())
+            return false;
+      Lyrics* owner = current;
+      if (owner->plainText().isEmpty()) {
+            owner = nullptr;
+            for (Segment* segment = chord->segment()->prev1(SegmentType::ChordRest); segment; segment = segment->prev1(SegmentType::ChordRest)) {
+                  Element* e = segment->element(current->track());
+                  if (!e || !e->isChordRest())
+                        continue;
+                  Lyrics* candidate = toChordRest(e)->lyrics(current->no(), current->placement());
+                  if (candidate && (!candidate->plainText().isEmpty() || candidate->isPartial())) {
+                        owner = candidate;
+                        break;
+                        }
+                  // Do not steal a syllable across a repeat/jump boundary.
+                  if (segment->tick() == segment->measure()->tick() && !precedingRepeatMeasures(segment->measure()).empty())
+                        break;
+                  }
+            }
+      if (!owner)
+            return false;
+      _score->startCmd();
+      owner->undoChangeProperty(Pid::PARTIAL_SPANNER_DIRECTION, owner->isIncoming() ? 2 : 1);
+      owner->undoChangeProperty(Pid::PARTIAL_LYRIC_MELISMA, melisma);
+      owner->undoChangeProperty(Pid::LYRIC_TICKS, chord->tick() - owner->tick());
+      _score->endCmd();
+      changeState(ViewState::NORMAL);
+      _score->select(owner);
+      return true;
+      }
+
 void ScoreView::lyricsMinus()
       {
+      if (lyricsPartial(false))
+            return;
       Lyrics* lyrics   = toLyrics(editData.element);
       int track        = lyrics->track();
       Segment* segment = lyrics->segment();
@@ -373,6 +449,8 @@ void ScoreView::lyricsMinus()
 
 void ScoreView::lyricsUnderscore()
       {
+      if (lyricsPartial(true))
+            return;
       Lyrics* lyrics       = toLyrics(editData.element);
       int track            = lyrics->track();
       Segment* segment     = lyrics->segment();

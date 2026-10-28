@@ -33,7 +33,7 @@
     <lyricsLineThickness>0.1</lyricsLineThickness>
     <lyricsMelismaPad>0.1</lyricsMelismaPad>
     <lyricsDashPad>0.05</lyricsDashPad>
-    <lyricsDashLineThickness>0.15</lyricsDashLineThickness>
+    <lyricsDashLineThickness>0.1</lyricsDashLineThickness>
     <lyricsDashYposRatio>0.67</lyricsDashYposRatio>
     <lyricsOddFontFace>FreeSerif</lyricsOddFontFace>
     <lyricsOddFontSize>11</lyricsOddFontSize>

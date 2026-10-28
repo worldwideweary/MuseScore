@@ -12,6 +12,7 @@
 
 #include "articulation.h"
 #include "barline.h"
+#include "barlinegeometry.h"
 #include "timesig.h"
 #include "fermata.h"
 #include "image.h"
@@ -1303,6 +1304,24 @@ void BarLine::endEditDrag(EditData& ed)
 //---------------------------------------------------------
 //   layoutWidth
 //---------------------------------------------------------
+
+qreal startRepeatRightEdge(const BarLine* bar)
+      {
+      if (bar->barLineType() != BarLineType::START_REPEAT)
+            return bar->bbox().right();
+      const Score* score = bar->score();
+      const qreal mag = bar->mag();
+      const qreal thick = score->styleP(Sid::endBarWidth) * mag;
+      const qreal thin = score->styleP(Sid::barWidth) * mag;
+      // Follow the magnification factors in BarLine::draw exactly.
+      const qreal dotX = thick * 0.5
+            + (thick * 0.5 + score->styleP(Sid::endBarDistance) * 0.5 + thin * 0.5) * mag
+            + (thin * 0.5 + score->styleP(Sid::repeatBarlineDotSeparation) * 0.67) * mag;
+      qreal right = dotX + bar->symBbox(SymId::repeatDot).right();
+      if (score->styleB(Sid::repeatBarTips))
+            right = qMax(right, bar->symBbox(SymId::bracketTop).right());
+      return right;
+      }
 
 qreal BarLine::layoutWidth(Score* score, BarLineType type)
       {

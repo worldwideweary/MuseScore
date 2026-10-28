@@ -839,6 +839,7 @@ void MasterScore::setPlaylistDirty()
       _playlistDirty = true;
       _repeatList->setScoreChanged();
       _repeatList2->setScoreChanged();
+      _notationRepeatList->setScoreChanged();
       }
 
 //---------------------------------------------------------
@@ -1913,6 +1914,7 @@ void MasterScore::updateRepeatListTempo()
       {
       _repeatList->updateTempo();
       _repeatList2->updateTempo();
+      _notationRepeatList->updateTempo();
       }
 
 //---------------------------------------------------------
@@ -1923,6 +1925,13 @@ const RepeatList& MasterScore::repeatList() const
       {
       _repeatList->update(_expandRepeats);
       return *_repeatList;
+      }
+
+// Always use the played roadmap for notation, even when Play Repeats is off.
+const RepeatList& MasterScore::notationRepeatList() const
+      {
+      _notationRepeatList->update(true);
+      return *_notationRepeatList;
       }
 
 //---------------------------------------------------------
@@ -5710,6 +5719,7 @@ MasterScore::MasterScore()
       _sigmap      = new TimeSigMap();
       _repeatList  = new RepeatList(this);
       _repeatList2 = new RepeatList(this);
+      _notationRepeatList = new RepeatList(this);
       _revisions   = new Revisions;
       setMasterScore(this);
 
@@ -5753,6 +5763,7 @@ MasterScore::~MasterScore()
       delete _revisions;
       delete _repeatList;
       delete _repeatList2;
+      delete _notationRepeatList;
       delete _sigmap;
       delete _tempomap;
       qDeleteAll(_excerpts);

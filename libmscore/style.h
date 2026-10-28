@@ -477,6 +477,7 @@ enum class Sid : short {
       tieMidWidth,
       tieDottedWidth,
       minTieLength,
+      minHangingTieLength,
       slurMinDistance,
       tieMinDistance,
 

@@ -200,6 +200,8 @@ class Measure final : public MeasureBase {
       void insertStaves(int s, int e);
 
       qreal tick2pos(Fraction) const;
+      qreal firstNoteRestSegmentX(bool leading = false) const;
+      qreal endingXForOpenEndedLines() const;
       Segment* tick2segment(const Fraction& tick, SegmentType st = SegmentType::ChordRest);
 
       void sortStaves(QList<int>& dst);

@@ -11,6 +11,8 @@
 //=============================================================================
 
 #include "barline.h"
+#include "barlinegeometry.h"
+#include "accidental.h"
 #include "beam.h"
 #include "clef.h"
 #include "chord.h"
@@ -2593,11 +2595,32 @@ qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
                   else
                         w += score()->styleP(Sid::barNoteDistance);
 
-                  if (st == SegmentType::StartRepeatBarLine) {
-                        if (Element* barLine = element(0)) {
-                              const qreal blWidth = barLine->width();
-                              if (w < blWidth)
-                                    w += blWidth;
+                  }
+            if (st == SegmentType::StartRepeatBarLine) {
+                  // Studio treats barlines as non-kerning against notes: even
+                  // a note above/below the staff must clear the repeat dots.
+                  for (int staffIdx = 0; staffIdx < score()->nstaves(); ++staffIdx) {
+                        if (!score()->staff(staffIdx)->show())
+                              continue;
+                        const Element* e = element(staffIdx * VOICES);
+                        if (!e || !e->isBarLine())
+                              continue;
+                        const qreal right = e->x() + startRepeatRightEdge(toBarLine(e));
+                        for (int voice = 0; voice < VOICES; ++voice) {
+                              const Element* next = ns->element(staffIdx * VOICES + voice);
+                              if (!next || !next->isChord())
+                                    continue;
+                              const Chord* chord = toChord(next);
+                              for (const Note* note : chord->notes()) {
+                                    if (!note->visible())
+                                          continue;
+                                    const qreal noteX = chord->x() + note->x();
+                                    w = qMax(w, right + score()->styleP(Sid::barNoteDistance) - noteX - note->bbox().left());
+                                    const Accidental* accidental = note->accidental();
+                                    if (accidental && accidental->addToSkyline())
+                                          w = qMax(w, right + score()->styleP(Sid::barAccidentalDistance)
+                                                - noteX - accidental->x() - accidental->bbox().left());
+                                    }
                               }
                         }
                   }

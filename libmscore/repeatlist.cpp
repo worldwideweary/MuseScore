@@ -110,10 +110,6 @@ RepeatList::RepeatList(Score* s)
 //   ~RepeatList
 //---------------------------------------------------------
 
-RepeatList::~RepeatList()
-      {
-      qDeleteAll(*this);
-      }
 
 //---------------------------------------------------------
 //   ticks
@@ -322,6 +318,15 @@ public:
       int getRepeatCount() const { return repeatCount; }
       void addToRepeatCount(int add) { repeatCount += add; }
       };
+
+// RepeatListElement must be complete here: it owns cloned volta elements.
+RepeatList::~RepeatList()
+      {
+      qDeleteAll(*this);
+      for (QList<RepeatListElement*>* section : qAsConst(_rlElements))
+            qDeleteAll(*section);
+      qDeleteAll(_rlElements);
+      }
 
 ///---------------------------------------------------------
 /// \brief Collects all RepeatListElementType elements in the score

@@ -51,6 +51,8 @@ Lyrics::Lyrics(Score* s)
 Lyrics::Lyrics(const Lyrics& l)
    : TextBase(l)
       {
+      _partialDirection = l._partialDirection;
+      _partialMelisma = l._partialMelisma;
       _even      = l._even;
       _no        = l._no;
       _ticks     = l._ticks;
@@ -86,6 +88,11 @@ void Lyrics::write(XmlWriter& xml) const
       if (!xml.canWrite(this))
             return;
       xml.stag(this);
+      if (isPartial()) {
+            static const char* names[] = { "incoming", "outgoing", "both" };
+            xml.tag("partialSpannerDirection", names[_partialDirection]);
+            xml.tag("partialLyricMelisma", _partialMelisma);
+            }
       writeProperty(xml, Pid::VERSE);
       if (_syllabic != Syllabic::SINGLE) {
             static const char* sl[] = {
@@ -129,7 +136,13 @@ bool Lyrics::readProperties(XmlReader& e)
       {
       const QStringRef& tag(e.name());
 
-      if (tag == "no")
+      if (tag == "partialSpannerDirection") {
+            const QString direction = e.readElementText();
+            _partialDirection = direction == "incoming" ? 0 : direction == "outgoing" ? 1 : direction == "both" ? 2 : -1;
+            }
+      else if (tag == "partialLyricMelisma")
+            _partialMelisma = e.readBool();
+      else if (tag == "no")
             _no = e.readInt();
       else if (tag == "syllabic") {
             QString val(e.readElementText());
@@ -209,6 +222,8 @@ void Lyrics::remove(Element* el)
 
 bool Lyrics::isMelisma() const
       {
+      if (isPartial())
+            return _partialMelisma;
       // entered as melisma using underscore?
       if (_ticks > Fraction(0,1))
             return true;
@@ -339,7 +354,7 @@ void Lyrics::layout()
 
       rxpos() = x;
 
-      if (_ticks > Fraction(0,1) || _syllabic == Syllabic::BEGIN || _syllabic == Syllabic::MIDDLE) {
+      if (isPartial() || _ticks > Fraction(0,1) || _syllabic == Syllabic::BEGIN || _syllabic == Syllabic::MIDDLE) {
             if (!_separator) {
                   _separator = new LyricsLine(score());
                   _separator->setTick(cr->tick());
@@ -542,6 +557,10 @@ void Lyrics::removeFromScore()
 QVariant Lyrics::getProperty(Pid propertyId) const
       {
       switch (propertyId) {
+            case Pid::PARTIAL_SPANNER_DIRECTION:
+                  return _partialDirection;
+            case Pid::PARTIAL_LYRIC_MELISMA:
+                  return _partialMelisma;
             case Pid::SYLLABIC:
                   return int(_syllabic);
             case Pid::LYRIC_TICKS:
@@ -560,6 +579,12 @@ QVariant Lyrics::getProperty(Pid propertyId) const
 bool Lyrics::setProperty(Pid propertyId, const QVariant& v)
       {
       switch (propertyId) {
+            case Pid::PARTIAL_SPANNER_DIRECTION:
+                  _partialDirection = qBound(-1, v.toInt(), 2);
+                  break;
+            case Pid::PARTIAL_LYRIC_MELISMA:
+                  _partialMelisma = v.toBool();
+                  break;
             case Pid::PLACEMENT:
                   setPlacement(Placement(v.toInt()));
                   break;
@@ -600,6 +625,10 @@ bool Lyrics::setProperty(Pid propertyId, const QVariant& v)
 QVariant Lyrics::propertyDefault(Pid id) const
       {
       switch (id) {
+            case Pid::PARTIAL_SPANNER_DIRECTION:
+                  return -1;
+            case Pid::PARTIAL_LYRIC_MELISMA:
+                  return true;
             case Pid::SUB_STYLE:
                   return int(isEven() ? Tid::LYRICS_EVEN : Tid::LYRICS_ODD);
             case Pid::PLACEMENT:

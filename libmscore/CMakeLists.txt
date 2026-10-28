@@ -74,6 +74,7 @@ add_library (libmscore STATIC
       read302.cpp realizedharmony.cpp stafftypelist.cpp stafftypechange.cpp
       bracketItem.cpp
       lyricsline.cpp
+      lyricscompat.cpp lyricscompat.h
       layoutlinear.cpp
       connector.cpp location.cpp skyline.cpp
       scorediff.cpp

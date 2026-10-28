@@ -42,7 +42,7 @@
       <line-width type="heavy barline">5.5</line-width>
       <line-width type="beam">5</line-width>
       <line-width type="bracket">4.4</line-width>
-      <line-width type="dashes">1.5</line-width>
+      <line-width type="dashes">1</line-width>
       <line-width type="enclosure">1</line-width>
       <line-width type="ending">1.1</line-width>
       <line-width type="extend">1</line-width>

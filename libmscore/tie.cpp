@@ -11,12 +11,15 @@
 //=============================================================================
 
 #include "accidental.h"
+#include "barline.h"
+#include "barlinegeometry.h"
 #include "chord.h"
 #include "hook.h"
 #include "ledgerline.h"
 #include "measure.h"
 #include "notedot.h"
 #include "score.h"
+#include "segment.h"
 #include "stem.h"
 #include "system.h"
 #include "tie.h"
@@ -142,7 +145,7 @@ void TieSegment::editDrag(EditData& ed)
       Grip g = ed.curGrip;
       ups(g).off += ed.delta;
 
-      if (g == Grip::START || g == Grip::END) {
+      if (!tie()->isPartial() && (g == Grip::START || g == Grip::END)) {
             computeBezier();
             //
             // move anchor for slurs/ties
@@ -503,8 +506,9 @@ void TieSegment::finalizeSegment()
 
 void TieSegment::adjustX()
       {
-      Note* sn = tie()->startNote();
-      Note* en = tie()->endNote();
+      const bool incoming = tie()->isPartial() && tie()->isIncoming();
+      Note* sn = incoming ? nullptr : tie()->startNote();
+      Note* en = incoming ? tie()->startNote() : tie()->endNote();
       Chord* sc = sn ? sn->chord() : nullptr;
       Chord* ec = en ? en->chord() : nullptr;
 
@@ -677,10 +681,15 @@ bool TieSegment::isEdited() const
 
 void Tie::slurPos(SlurPos* sp)
       {
+      // Partial ties keep their owner in startNote() in both directions.
+      // Use that note for both local anchors, without changing the linear
+      // tie chains, so the ordinary placement rules also provide an end anchor.
+      const Note* sn = startNote();
+      const Note* en = isPartial() ? sn : endNote();
       bool useTablature = staff() && staff()->isTabStaff(tick());
       const StaffType* stt = useTablature ? staff()->staffType(tick()) : 0;
       qreal _spatium    = spatium();
-      qreal hw          = startNote()->tabHeadWidth(stt);   // if stt == 0, defaults to headWidth()
+      qreal hw          = sn->tabHeadWidth(stt);   // if stt == 0, defaults to headWidth()
       qreal __up        = _up ? -1.0 : 1.0;
       // y offset for ties inside chord margins (typically multi-note chords): lined up with note top or bottom margin
       //    or outside (typically single-note chord): overlaps note and is above/below it
@@ -693,8 +702,8 @@ void Tie::slurPos(SlurPos* sp)
             : 0.75 * _spatium * __up;
       qreal yOffInside  = useTablature ? yOffOutside * 0.5 : hw * .3 * __up;
 
-      Chord* sc = startNote()->chord();
-      Chord* ec = endNote() ? endNote()->chord() : nullptr;
+      Chord* sc = sn->chord();
+      Chord* ec = en ? en->chord() : nullptr;
       sp->system1 = sc->measure()->system();
       if (!sp->system1) {
             Measure* m = sc->measure();
@@ -712,8 +721,8 @@ void Tie::slurPos(SlurPos* sp)
       sp->p1    = sc->pos() + sc->segment()->pos() + sc->measure()->pos();
 
       //------p1
-      x1 = startNote()->pos().x() + hw;
-      y1 = startNote()->pos().y();
+      x1 = sn->pos().x() + hw;
+      y1 = sn->pos().y();
       qreal xo = 0;
       if (sc->notes().size() > 1 || (ec && ec->notes().size() > 1)) {
             _isInside = true;
@@ -746,12 +755,12 @@ void Tie::slurPos(SlurPos* sp)
       sp->system2 = ec->measure()->system();
 
       // force tie to be horizontal except for cross-staff or if there is a difference of line (tpc, clef, tpc)
-      bool horizontal = startNote()->line() == endNote()->line() && sc->vStaffIdx() == ec->vStaffIdx();
+      bool horizontal = sn->line() == en->line() && sc->vStaffIdx() == ec->vStaffIdx();
 
-      hw = endNote()->tabHeadWidth(stt);
-      x2 = endNote()->x();
+      hw = en->tabHeadWidth(stt);
+      x2 = en->x();
       if (!horizontal)
-            y2 = endNote()->pos().y() + (isInside() ? yOffInside : yOffOutside);
+            y2 = en->pos().y() + (isInside() ? yOffInside : yOffOutside);
       if (isInside())
             xo = 0.0;
       else {
@@ -798,9 +807,159 @@ Tie::Tie(Score* s)
 
 void Tie::write(XmlWriter& xml) const
       {
-      xml.stag(this);
+      if (isPartial()) {
+            xml.stag("PartialTie");
+            xml.tag("partialSpannerDirection", isIncoming() ? "incoming" : "outgoing");
+            }
+      else
+            xml.stag(this);
       SlurTie::writeProperties(xml);
       xml.etag();
+      }
+
+bool Tie::readProperties(XmlReader& xml)
+      {
+      if (xml.name() == "partialSpannerDirection") {
+            const QString direction = xml.readElementText();
+            _partialDirection = direction == "incoming" ? 0 : 1;
+            return true;
+            }
+      return SlurTie::readProperties(xml);
+      }
+
+// Free endpoint shared by spacing and drawing. Do not clamp it to the
+// landing chord: spacing must be able to move that chord to make room.
+qreal Tie::incomingStartOffset() const
+      {
+      const Note* note = startNote();
+      if (!isPartial() || !isIncoming() || !note)
+            return 0.0;
+      const Chord* chord = note->chord();
+      const Measure* measure = chord->measure();
+      const System* system = measure->system();
+      const qreal sp = spatium();
+      if (!system)
+            return 0.0;
+      if (measure == system->firstMeasure()) {
+            const Segment* firstCR = measure->first(SegmentType::ChordRest);
+            const Segment* header = firstCR ? firstCR->prevActive() : nullptr;
+            while (header && header->allElementsInvisible())
+                  header = header->prevActive();
+            if (!header)
+                  return sp - measure->x();
+            qreal width = 0.0;
+            for (int staff = 0; staff < score()->nstaves(); ++staff) {
+                  const Element* item = header->element(staff * VOICES);
+                  if (system->staff(staff)->show() && item && item->addToSkyline()) {
+                        const qreal right = header->isStartRepeatBarLineType() && item->isBarLine()
+                              ? startRepeatRightEdge(toBarLine(item)) : item->bbox().right();
+                        width = qMax(width, item->x() + right);
+                        }
+                  }
+            return header->x() + width + (header->isStartRepeatBarLineType() ? 0.25 : 1.0) * sp;
+            }
+      const int firstTrack = chord->vStaffIdx() * VOICES;
+      const Segment* adjacent = chord->segment()->prev1();
+      while (adjacent && (!adjacent->enabled() || !adjacent->visible()
+             || adjacent->allElementsInvisible() || adjacent->isBreathType()
+             || !adjacent->hasElements(firstTrack, firstTrack + VOICES - 1)))
+            adjacent = adjacent->prev1();
+      if (!adjacent)
+            return 0.25 * sp;
+      const Element* item = nullptr;
+      for (int track = firstTrack; track < firstTrack + VOICES && !item; ++track)
+            item = adjacent->element(track);
+      const bool startRepeat = item->isBarLine() && toBarLine(item)->barLineType() == BarLineType::START_REPEAT;
+      const qreal right = startRepeat ? startRepeatRightEdge(toBarLine(item)) : item->shape().right();
+      // The preceding measure's right edge is the current measure's origin.
+      // Avoid depending on stale system positions during minimum-width layout.
+      qreal x = adjacent->x();
+      if (adjacent->measure() != measure) {
+            const Segment* last = adjacent->measure()->lastEnabled();
+            while (last && (!last->visible() || last->allElementsInvisible()))
+                  last = last->prevActive();
+            // width() already includes rhythmic stretch here, whereas the
+            // segment positions still describe the unstretched minimum.
+            // Use the actual trailing shape in either layout phase.
+            if (last)
+                  x -= last->x() + last->minRight();
+            }
+      return x + item->x() + right + (item->isBarLine() && !startRepeat ? 0.65 : 0.25) * sp;
+      }
+
+qreal Tie::incomingEndOffset()
+      {
+      Note* note = startNote();
+      if (!isPartial() || !isIncoming() || !note || !note->chord()->measure()->system())
+            return 0;
+      calculateDirection();
+      SlurPos positions;
+      slurPos(&positions);
+      // A local, unregistered segment reuses the real landing/collision rule.
+      TieSegment probe(score());
+      probe.setSpanner(this);
+      probe.setTrack(track());
+      probe.setParent(positions.system2);
+      probe.ups(Grip::START).p = positions.p1;
+      probe.ups(Grip::END).p = positions.p2;
+      if (!spannerSegments().empty())
+            probe.ups(Grip::END).off = frontSegment()->ups(Grip::END).off;
+      probe.adjustX();
+      const Chord* chord = note->chord();
+      const qreal result = probe.ups(Grip::END).pos().x() - chord->segment()->x() - chord->measure()->x();
+      probe.setParent(nullptr);
+      return result;
+      }
+
+TieSegment* Tie::layoutPartial(System* system)
+      {
+      Note* note = startNote(); // owner for either direction
+      if (!note || !system)
+            return nullptr;
+      setTick(note->tick());
+      if (staff()->isTabStaff(tick()) && !staff()->staffType(tick())->showBackTied()) {
+            eraseSpannerSegments();
+            return nullptr;
+            }
+      const Chord* chord = note->chord();
+      const Measure* measure = chord->measure();
+      calculateDirection();
+      SlurPos positions;
+      slurPos(&positions);
+      const QPointF anchor = isIncoming() ? positions.p2 : positions.p1;
+      const qreal sp = spatium();
+      const qreal y = anchor.y();
+      qreal left = anchor.x();
+      qreal right = left;
+      if (isIncoming())
+            left = measure->x() + incomingStartOffset();
+      else {
+            // Preserve Studio's outgoing clearance from the next visible item.
+            const int firstTrack = chord->vStaffIdx() * VOICES;
+            const Segment* adjacent = chord->segment()->next1();
+            while (adjacent && (!adjacent->enabled() || !adjacent->visible()
+                   || adjacent->allElementsInvisible() || adjacent->isBreathType()
+                   || !adjacent->hasElements(firstTrack, firstTrack + VOICES - 1)))
+                  adjacent = adjacent->next1();
+            if (adjacent) {
+                  const Element* item = nullptr;
+                  for (int track = firstTrack; track < firstTrack + VOICES && !item; ++track)
+                        item = adjacent->element(track);
+                  const Shape shape = item->shape();
+                  const qreal x = adjacent->measure()->x() + adjacent->x() + item->x();
+                  // Studio's default lineEndToBarlineDistance.
+                  right = x + shape.left() - 0.25 * sp;
+                  }
+            }
+      setPos(0, 0);
+      fixupSegments(1);
+      TieSegment* segment = segmentAt(0);
+      segment->setSystem(system);
+      segment->setSpannerSegmentType(SpannerSegmentType::SINGLE);
+      segment->layoutSegment(QPointF(left, y), QPointF(right, y));
+      segment->adjustX(); // only the note-owned endpoint, as for an ordinary tie
+      segment->finalizeSegment();
+      return segment;
       }
 
 //---------------------------------------------------------

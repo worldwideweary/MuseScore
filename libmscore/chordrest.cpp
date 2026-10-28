@@ -193,9 +193,14 @@ void ChordRest::writeProperties(XmlWriter& xml) const
             if (s->generated() || !s->isSlur() || toSlur(s)->broken() || !xml.canWrite(s))
                   continue;
 
-            if (s->startElement() == this)
+            // A one-note partial slur owns both connectors on this chord.
+            // Writing only its start loses the fragment when it is reopened.
+            const bool partial = toSlur(s)->partialDirection() >= 0;
+            const bool writeStart = s->startElement() == this && (s->endElement() != this || partial);
+            const bool writeEnd = s->endElement() == this && (s->startElement() != this || partial);
+            if (writeStart)
                   s->writeSpannerStart(xml, this, track());
-            else if (s->endElement() == this)
+            if (writeEnd)
                   s->writeSpannerEnd(xml, this, track());
             }
       }

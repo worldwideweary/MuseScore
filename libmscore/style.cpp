@@ -100,7 +100,7 @@ static const StyleType styleTypes[] {
       { Sid::lyricsMinDistance,       "lyricsMinDistance",       Spatium(0.25)  },
       { Sid::lyricsLineHeight,        "lyricsLineHeight",        1.0 },
       { Sid::lyricsDashMinLength,     "lyricsDashMinLength",     Spatium(0.4) },
-      { Sid::lyricsDashMaxLength,     "lyricsDashMaxLength",     Spatium(0.8) },
+      { Sid::lyricsDashMaxLength,     "lyricsDashMaxLength",     Spatium(0.6) },
       { Sid::lyricsDashMaxDistance,   "lyricsDashMaxDistance",   Spatium(16.0) },
       { Sid::lyricsDashForce,         "lyricsDashForce",         QVariant(true) },
       { Sid::lyricsAlignVerseNumber,  "lyricsAlignVerseNumber",  true },
@@ -109,7 +109,7 @@ static const StyleType styleTypes[] {
 
       { Sid::lyricsMelismaPad,        "lyricsMelismaPad",        Spatium(0.10) }, // the empty space before a melisma line
       { Sid::lyricsDashPad,           "lyricsDashPad",           Spatium(0.05) }, // the min. empty space before and after a dash
-      { Sid::lyricsDashLineThickness, "lyricsDashLineThickness", Spatium(0.15) }, // in sp. units
+      { Sid::lyricsDashLineThickness, "lyricsDashLineThickness", Spatium(0.1) }, // in sp. units
       { Sid::lyricsDashYposRatio,     "lyricsDashYposRatio",     0.60          }, // the fraction of lyrics font x-height to raise the dashes above text base line
 
       { Sid::lyricsOddFontFace,       "lyricsOddFontFace",       "Edwin" },
@@ -495,6 +495,7 @@ static const StyleType styleTypes[] {
       { Sid::tieMidWidth,             "tieMidWidth",             Spatium(.21) },
       { Sid::tieDottedWidth,          "tieDottedWidth",          Spatium(.10) },
       { Sid::minTieLength,            "minTieLength",            Spatium(1.0) },
+      { Sid::minHangingTieLength,     "minHangingTieLength",     Spatium(1.5) },
       { Sid::slurMinDistance,         "slurMinDistance",         Spatium(0.5) },
       { Sid::tieMinDistance,          "tieMinDistance",          Spatium(0.5) },
       { Sid::sectionPause,            "sectionPause",            QVariant(qreal(3.0)) },
@@ -3287,11 +3288,8 @@ bool MStyle::readProperties400(XmlReader& e, int mscVersion)
       //     return false;
       else if (tag == "dontHideStavesInFirstSystem")                              // pre-4.x typo
             set(Sid::dontHideStavesInFirstSystem, e.readBool());
-      else if (tag == "lyricsDashLineThickness") {                                // 0.15 -> 0.1
-            qreal lyricsDashLineThickness = e.readDouble();
-            if (!qFuzzyCompare(lyricsDashLineThickness, 0.1))                     // Changed from 4.x default
-                  set(Sid::lyricsDashLineThickness, Spatium(lyricsDashLineThickness));
-            }
+      else if (tag == "lyricsDashLineThickness")
+            set(Sid::lyricsDashLineThickness, Spatium(e.readDouble()));
       else if (tag == "minMeasureWidth") {                                        // 5 -> 8
             qreal minMeasureWidth = e.readDouble();
             if (!qFuzzyCompare(minMeasureWidth, 8.0))                             // Changed from 4.x default
