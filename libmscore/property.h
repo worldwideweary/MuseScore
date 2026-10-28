@@ -256,6 +256,7 @@ enum class Pid : short {
       HARMONY_VOICE_LITERAL,
       HARMONY_VOICING,
       HARMONY_DURATION,
+      HARMONY_BASS_SCALE,
 
       SYSTEM_BRACKET,
       GAP,

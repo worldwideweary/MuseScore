@@ -2193,7 +2193,7 @@ void Segment::createShape(int staffIdx)
                   auto h = toHarmony(e);
                   if (h->bbox().isEmpty())
                         h->layout1();
-                  const qreal margin = styleP(Sid::minHarmonyDistance) * 0.5;
+                  const qreal margin = styleP(Sid::harmonyHarmonyDistance) * 0.5;
                   qreal x1 = e->bbox().x() - margin + e->pos().x();
                   qreal x2 = e->bbox().x() + e->bbox().width() + margin + e->pos().x();
                   s.addHorizontalSpacing(Shape::SPACING_HARMONY, x1, x2);

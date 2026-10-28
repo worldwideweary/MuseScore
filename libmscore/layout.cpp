@@ -3841,6 +3841,8 @@ void layoutHarmonies(const std::vector<Segment*>& sl)
 
 void alignHarmonies(const System* system, const std::vector<Segment*>& sl, bool harmony, const qreal maxShiftAbove, const qreal maxShiftBelow)
       {
+      if (!system->score()->styleB(Sid::verticallyAlignChordSymbols))
+            return;
 
       // Help class.
       // Contains harmonies/fretboard per segment.
@@ -3964,7 +3966,12 @@ void alignHarmonies(const System* system, const std::vector<Segment*>& sl, bool 
                   }
             };
 
-      if (almostZero(maxShiftAbove) && almostZero(maxShiftBelow))
+      // Modern presentation uses a single on/off alignment choice. The legacy
+      // per-direction limits remain effective for scores using legacy layout.
+      const bool modern = system->score()->styleI(Sid::chordSymbolLayoutVersion) > 0;
+      const qreal aboveLimit = modern ? DBL_MAX / 4 : maxShiftAbove;
+      const qreal belowLimit = modern ? DBL_MAX / 4 : maxShiftBelow;
+      if (almostZero(aboveLimit) && almostZero(belowLimit))
             return;
 
       // Collect all fret diagrams and chord symbol and store them per staff.
@@ -3988,8 +3995,8 @@ void alignHarmonies(const System* system, const std::vector<Segment*>& sl, bool 
             int pass { 0 };
             while (moved && (pass++ < 10)) {
                   moved = false;
-                  moved |= staves[idx].align(true, staves[idx].getReferenceHeight(true), maxShiftAbove);
-                  moved |= staves[idx].align(false, staves[idx].getReferenceHeight(false), maxShiftBelow);
+                  moved |= staves[idx].align(true, staves[idx].getReferenceHeight(true), aboveLimit);
+                  moved |= staves[idx].align(false, staves[idx].getReferenceHeight(false), belowLimit);
                   }
 
             // Add all aligned objects to the sky line.

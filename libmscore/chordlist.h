@@ -134,6 +134,7 @@ class ParsedChord {
       const QString& extension() const          { return _extension; }
       const QString& modifiers() const          { return _modifiers; }
       const QStringList& modifierList() const   { return _modifierList; }
+      const QList<ChordToken>& tokens() const   { return _tokenList; }
       const QString& xmlKind() const            { return _xmlKind; }
       const QString& xmlText() const            { return _xmlText; }
       const QString& xmlSymbols() const         { return _xmlSymbols; }

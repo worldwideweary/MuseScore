@@ -727,6 +727,7 @@ class ChangeStyleVal : public UndoCommand {
 
    public:
       ChangeStyleVal(Score* s, Sid i, const QVariant& v) : score(s), idx(i), value(v) {}
+      bool canBatchRefresh() const;
       UNDO_NAME("ChangeStyleVal")
       };
 

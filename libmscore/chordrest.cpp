@@ -1301,7 +1301,7 @@ Shape ChordRest::shape() const
                   Harmony* h = toHarmony(e);
                   // calculate bbox only (do not reset position)
                   if (h->bbox().isEmpty()) h->layout1();
-                  const qreal margin = styleP(Sid::minHarmonyDistance) * 0.5;
+                  const qreal margin = styleP(Sid::harmonyHarmonyDistance) * 0.5;
                   x1 = qMin(x1, e->bbox().x() - margin + e->pos().x());
                   x2 = qMax(x2, e->bbox().x() + e->bbox().width() + margin + e->pos().x());
                   adjustWidth = true;
@@ -1321,7 +1321,7 @@ Shape ChordRest::shape() const
                   adjustWidth = true;
                   if (fd->harmony()) {
                         Harmony* h = fd->harmony();
-                        margin = styleP(Sid::minHarmonyDistance) * 0.5;
+                        margin = styleP(Sid::harmonyHarmonyDistance) * 0.5;
                         if (h->bbox().isEmpty())
                               h->layout1();
                         leftX = firstBeat ? 0 : h->bbox().x() - margin + h->pos().x() + e->pos().x();

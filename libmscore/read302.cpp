@@ -131,7 +131,7 @@ bool Score::read(XmlReader& e)
                   _markIrregularMeasures = e.readInt();
             else if (tag == "Style") {
                   qreal sp = style().value(Sid::spatium).toDouble();
-                  style().load(e, MSCVERSION);
+                  style().load(e, mscVersion());
                   // if (_layoutMode == LayoutMode::FLOAT || _layoutMode == LayoutMode::SYSTEM) {
                   if (_layoutMode == LayoutMode::FLOAT) {
                         // style should not change spatium in
