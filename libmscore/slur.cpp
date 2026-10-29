@@ -1124,6 +1124,9 @@ void Slur::slurPos(SlurPos* sp)
             && scr->staff()->isPitchedStaff(scr->tick()) && ecr->staff()->isPitchedStaff(ecr->tick())
             && scr->vStaffIdx() == ecr->vStaffIdx()
             && (!sc || !sc->tremolo()) && (!ec || !ec->tremolo());
+      const bool beamEnds4 = beamHeights4 && !isIncoming() && !isOutgoing()
+            && (!scr->beam() || !scr->beam()->cross())
+            && (!ecr->beam() || !ecr->beam()->cross());
 
       enum class SlurAnchor : char {
             NONE, STEM
@@ -1160,6 +1163,29 @@ void Slur::slurPos(SlurPos* sp)
                   sa2 = SlurAnchor::STEM;
             }
 
+      if (beamEnds4) {
+            // Studio 4.7.5 slurPos / stemSideForBeam: select each endpoint
+            // independently. A final start or first end in a beam is eligible
+            // for the stem inset even when its partner is also beamed.
+            sa1 = sa2 = SlurAnchor::NONE;
+            if (sc && sc->hook() && scr->up() == _up)
+                  sa1 = SlurAnchor::STEM;
+            if (scr->up() == ecr->up() && scr->up() == _up) {
+                  const Beam* firstBeam = scr->beam();
+                  const Beam* lastBeam = ecr->beam();
+                  const bool beamSideStart = firstBeam && !firstBeam->elements().empty()
+                        && firstBeam->elements().back() != scr;
+                  const bool beamSideEnd = lastBeam && !lastBeam->elements().empty()
+                        && lastBeam->elements().front() != ecr;
+                  if (stem1 && !beamSideStart) sa1 = SlurAnchor::STEM;
+                  if (stem2 && !beamSideEnd) sa2 = SlurAnchor::STEM;
+                  }
+            else if (sp->system1 && sp->system2 && sp->system1 != sp->system2) {
+                  if (scr->up() == _up && stem1 && !scr->beam()) sa1 = SlurAnchor::STEM;
+                  if (ecr->up() == _up && stem2 && !ecr->beam()) sa2 = SlurAnchor::STEM;
+                  }
+            }
+
       qreal __up = _up ? -1.0 : 1.0;
       qreal hw1 = note1 ? note1->tabHeadWidth(stt) : scr->width();      // if stt == 0, tabHeadWidth()
       qreal hw2 = note2 ? note2->tabHeadWidth(stt) : ecr->width();      // defaults to headWidth()
@@ -1175,8 +1201,13 @@ void Slur::slurPos(SlurPos* sp)
                   // allow slight overlap (y) as per Gould
                   // don't allow overlap with hook if not disabling the autoplace checks against start/end segments in SlurSegment::layoutSegment()
                   qreal yadj = isIncoming() || isOutgoing() ? -0.5 : -0.25;
+                  qreal xOffset = 0.35;
+                  if (beamEnds4 && sc->beam()) {
+                        yadj = -.5 * sc->chordMag();
+                        xOffset = qMax(qreal(.35) * sc->chordMag(), qreal(.2));
+                        }
                   yadj *= _spatium * __up;
-                  pt += QPointF(0.35 * _spatium, yadj);
+                  pt += QPointF(xOffset * _spatium, yadj);
                   // account for articulations
                   pt.ry() = fixArticulations(pt.y(), sc, __up, true);
                   sp->p1 += pt;
@@ -1193,8 +1224,13 @@ void Slur::slurPos(SlurPos* sp)
                         pt.rx() = hw2 * 0.5;
                   // don't allow overlap with beam
                   qreal yadj = ec->beam() ? 0.75 : (isIncoming() || isOutgoing() ? -0.5 : -0.25);
+                  qreal xOffset = 0.35;
+                  if (beamEnds4 && ec->beam()) {
+                        yadj = !ec->beam()->elements().empty() && ec->beam()->elements().front() != ec ? .75 : -.5;
+                        xOffset = qMax(qreal(.35) * ec->chordMag(), qreal(.2));
+                        }
                   yadj *= _spatium * __up;
-                  pt += QPointF(-0.35 * _spatium, yadj);
+                  pt += QPointF(-xOffset * _spatium, yadj);
                   // account for articulations
                   pt.ry() = fixArticulations(pt.y(), ec, __up, true);
                   sp->p2 += pt;

@@ -78,6 +78,7 @@ class TestSpacing : public QObject, public MTest {
       void continuedSlurStemAnchors4();
       void beamSlurAnchorHeights4_data();
       void beamSlurAnchorHeights4();
+      void beamEndSlurAnchors4();
       void slurOffsetUndoAdmission4();
       void mainStartSlurSpacing4_data();
       void mainStartSlurSpacing4();
@@ -7554,6 +7555,104 @@ void TestSpacing::mainStartSlurSpacing4()
       QVERIFY2(published(), qPrintable(reason));
       QVERIFY(same(graceLayoutSnapshot4(score), withAutomatic));
       delete score;
+      }
+
+void TestSpacing::beamEndSlurAnchors4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.113-spacing-slurred-merged-graces-natural.mscx"));
+      QVERIFY(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      const auto notation = graceMergedSnapshot4(score.get());
+      std::vector<Chord*> mains;
+      std::vector<Beam*> beams;
+      for (Measure* measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+            for (const Segment& segment : measure->segments()) {
+                  Element* item = segment.element(0);
+                  if (!segment.isChordRestType() || !item || !item->isChord()) continue;
+                  Chord* main = toChord(item);
+                  mains.push_back(main);
+                  for (Chord* grace : main->graceNotes()) {
+                        Beam* beam = grace->beam();
+                        if (beam && !beam->cross() && beam->elements().size() >= 2
+                            && std::find(beams.begin(), beams.end(), beam) == beams.end()) beams.push_back(beam);
+                        }
+                  }
+            }
+      int startsUp = 0, startsDown = 0, endsUp = 0, endsDown = 0;
+      const auto close = [](qreal a, qreal b) { return qIsFinite(a) && qIsFinite(b) && qAbs(a - b) < 1e-6; };
+      for (Beam* beam : beams) {
+            for (bool startEnd : {true, false}) {
+                  ChordRest* member = startEnd ? beam->elements().back() : beam->elements().front();
+                  QVERIFY(member->isChord());
+                  Chord* anchor = toChord(member);
+                  Chord* other = nullptr;
+                  for (Chord* main : mains) {
+                        if (main->beam() || !main->stem() || main->tremolo() || main->up() != anchor->up()) continue;
+                        if ((startEnd && main->tick() > anchor->tick()) || (!startEnd && main->tick() < anchor->tick())) {
+                              other = main;
+                              break;
+                              }
+                        }
+                  if (!other) continue;
+                  Chord* start = startEnd ? anchor : other;
+                  Chord* end = startEnd ? other : anchor;
+                  Slur probe(score.get());
+                  probe.setTrack(start->track());
+                  probe.setTrack2(end->track());
+                  probe.setTick(start->tick());
+                  probe.setTicks(end->tick() - start->tick());
+                  probe.setStartElement(start);
+                  probe.setEndElement(end);
+                  const Direction direction = anchor->up() ? Direction::UP : Direction::DOWN;
+                  probe.setSlurDirection(direction);
+                  score->setStyleValue(Sid::spacingLayout4, false);
+                  probe.layout();
+                  SlurPos legacy;
+                  probe.slurPos(&legacy);
+                  score->setStyleValue(Sid::spacingLayout4, true);
+                  probe.layout();
+                  SlurPos modern;
+                  probe.slurPos(&modern);
+                  QVERIFY(probe.slurDirection() == direction);
+                  QCOMPARE(probe.up(), anchor->up());
+                  // Read the actual local stem tip; the source inset is on
+                  // its note side, with distinct start/end grace scaling.
+                  const QPointF stemTip = anchor->stemPos() - anchor->pagePos() + anchor->stem()->p2();
+                  const qreal sign = anchor->up() ? -1 : 1;
+                  qreal originY = anchor->y() + anchor->segment()->y() + anchor->measure()->y();
+                  if (anchor->isGrace()) originY += anchor->parent()->y();
+                  const qreal inset = -.5 * (startEnd ? anchor->chordMag() : qreal(1)) * score->spatium();
+                  const QPointF actual = startEnd ? modern.p1 : modern.p2;
+                  QVERIFY2(close(sign * (actual.y() - originY - stemTip.y()), inset),
+                           "Beam boundary anchor does not use its own stem inset");
+                  qreal originX = anchor->x() + anchor->segment()->x() + anchor->measure()->x()
+                        + anchor->notes().front()->x();
+                  if (anchor->isGrace()) originX += anchor->parent()->x();
+                  const qreal offset = qMax(qreal(.35) * anchor->chordMag(), qreal(.2)) * score->spatium();
+                  QVERIFY(close(actual.x(), originX + stemTip.x() + (startEnd ? offset : -offset)));
+                  // A normal relayout must preserve endpoint user offsets.
+                  SlurSegment* segment = startEnd ? probe.frontSegment() : probe.backSegment();
+                  const Grip grip = startEnd ? Grip::START : Grip::END;
+                  const QPointF userOffset(.2 * score->spatium(), -.25 * score->spatium());
+                  segment->ups(grip).off = userOffset;
+                  probe.layout();
+                  segment = startEnd ? probe.frontSegment() : probe.backSegment();
+                  QCOMPARE(segment->ups(grip).off, userOffset);
+                  QVERIFY(probe.slurDirection() == direction);
+                  score->setStyleValue(Sid::spacingLayout4, false);
+                  SlurPos restored;
+                  probe.slurPos(&restored);
+                  QCOMPARE(restored.p1, legacy.p1);
+                  QCOMPARE(restored.p2, legacy.p2);
+                  if (startEnd) { if (anchor->up()) ++startsUp; else ++startsDown; }
+                  else { if (anchor->up()) ++endsUp; else ++endsDown; }
+                  }
+            }
+      QVERIFY(startsUp > 0 && startsDown > 0 && endsUp > 0 && endsDown > 0);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      QVERIFY(graceMergedSnapshot4(score.get()) == notation);
       }
 
 void TestSpacing::beamSlurAnchorHeights4_data()

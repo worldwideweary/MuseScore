@@ -1,5 +1,50 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.175 WIP: beam-end slur anchor selection and insets
+
+User verification: v0.174 native mtests pass and other notation remains stable
+while editing. Slow nudge/undo behavior is deferred at the user's request until
+more visual work is complete. The supplied P2 captures still show a vertical
+curve/attachment difference. No claim of identical saved properties between
+those two captures is made; compare explicitly UP anchors in the next check.
+
+The earlier apparent F-natural direction regression is explained: the uploaded
+score stores that slur as AUTO with no manual grip offsets. Ctrl+R resets its
+explicit UP request to AUTO without an immediate visible change; moving into
+the destination's before-grace group can then select DOWN. X makes the request
+explicit. The pinned Studio rules agree; do not change direction policy here.
+
+Source: Studio v4.7.5 slurPos and stemSideForBeam, verified reference blob
+cc4d7659bffd339ebf6b757d4d70b284812d1fe1. When both endpoint stems agree with
+the slur side, select the stem inset independently at each endpoint except the
+beam-side exemptions: non-final start and non-first end. Evolution's older
+selection could leave the final start/first end near a notehead merely because
+one partner was beamed. Use the source selection for pitched, same-effective-
+staff endpoints without tremolos or cross-staff beams under spacingLayout4.
+Retain the existing continued-slur handling outside that scope.
+
+For selected beamed stem anchors, port the source's inset: start vertical
+inset -0.5 times chord magnification, end -0.5 (or 0.75 when not the first beam
+member), with horizontal stem offset max(0.35 times magnification, 0.2) spaces.
+Keep established unbeamed stem offsets and the first-after/main leading-edge
+adapter. This isolates the beam-end change and preserves the recently verified
+fixed endpoint behavior. Disabled-style layout retains its original formulas.
+
+Add beamEndSlurAnchors4 using the existing v0.113 natural UP/DOWN input. Probe
+last-beamed starts and first-beamed ends with a matching unbeamed partner;
+check physical stem-tip inset, horizontal stem offset, explicit side, user
+offset preservation, style-off restoration and unchanged published notation.
+Require nonempty UP/DOWN start/end coverage. Existing first/interior beam and
+cross-system/sibling tests remain active. No additional score is required.
+
+Changed files: libmscore/slur.cpp, mtest/libmscore/layout/tst_spacing.cpp and
+this guide. Local validation: Debug/NDEBUG C++11 syntax checks with regenerated
+moc and warning flags; whitespace and exact patch replay. Native mtests and
+visual verification remain pending. Apply after v0.174, run the usual beam/
+spacing pair, then repeat P2's explicitly UP start traversal, especially the
+last note of each beam and F-natural. Review endpoint height separately from
+the remaining legacy curve solver. Performance work stays deferred.
+
 ## v0.174 WIP: vertical clearance in the general beam-side slur branches
 
 User verification: v0.173 native mtests pass. Pulling a start anchor into the
