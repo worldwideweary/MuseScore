@@ -1,5 +1,44 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.174 WIP: vertical clearance in the general beam-side slur branches
+
+User verification: v0.173 native mtests pass. Pulling a start anchor into the
+preceding system and the second forward-extension demonstration now keep the
+fixed local endpoint steady. The lower sibling slur also stays unchanged.
+Close those endpoint/sibling issues, retaining the existing regression checks.
+
+Next source-backed step: outside the validated first-after-grace/main adapter,
+Evolution's beam-side start and forced stem-side end still use stem height plus
+one full spatium. Studio v4.7.5 slurPos uses actual stem length, half its source
+beam-width term, and max(0.35 * intrinsic magnification, 0.2) staff spaces of
+clearance. Its start beam term includes beam magS(); its end term does not.
+Reference blob remains cc4d7659bffd339ebf6b757d4d70b284812d1fe1.
+
+Apply those vertical metrics in the existing pitched, same-effective-staff
+beam-side branches under spacingLayout4, excluding tremolo endpoints. Preserve
+the branch's horizontal coordinate and final native articulation adjustment.
+The existing first-after-grace adapter continues to supply its established
+leading-edge alignment. Cross-staff beams, tablature, disabled style and branch
+selection at beam ends retain their existing handling. This is a clearance
+increment, not a complete slur-renderer replacement. No new spacing query,
+layout pass, persistent cache or edit batching is added.
+
+Add beamSlurAnchorHeights4 with ordinary H1-H8 and existing v0.113 UP/DOWN grace
+inputs. Query first/interior starts through the last member of each usable
+beam; both anchors are inside that beam, so the first-after/main adapter cannot
+mask the general branch. Measure clearance beyond actual stem tips, retain
+horizontal coordinates, verify style-off restoration and unchanged published
+notation. Existing sibling/cross-system tests remain active. No new score is
+required: v0.167 P2 already supplies interior grace starts for visual checking.
+
+Changed files: libmscore/slur.cpp, mtest/libmscore/layout/tst_spacing.cpp and
+this guide. Local validation: Debug/NDEBUG C++11 syntax checks, regenerated moc,
+warning/whitespace checks and exact patch replay. Native mtests and comparison
+against Studio remain pending. Apply after v0.173, run the usual spacing/beam
+pair, then compare P2's upper slur while its start visits the interior grace
+notes. Retain 200 percent zoom for captures. Beam-end branch selection and
+measured nudge latency remain subsequent work.
+
 ## v0.173 WIP: independent stem anchors for continued slurs
 
 User verification: v0.172 beam and spacing mtests pass, spacing in 79.16 s.

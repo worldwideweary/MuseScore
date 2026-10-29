@@ -76,6 +76,8 @@ class TestSpacing : public QObject, public MTest {
       void graceMergedSlurCurves();
       void graceSlurSiblingAnchors4();
       void continuedSlurStemAnchors4();
+      void beamSlurAnchorHeights4_data();
+      void beamSlurAnchorHeights4();
       void slurOffsetUndoAdmission4();
       void mainStartSlurSpacing4_data();
       void mainStartSlurSpacing4();
@@ -7552,6 +7554,101 @@ void TestSpacing::mainStartSlurSpacing4()
       QVERIFY2(published(), qPrintable(reason));
       QVERIFY(same(graceLayoutSnapshot4(score), withAutomatic));
       delete score;
+      }
+
+void TestSpacing::beamSlurAnchorHeights4_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::newRow("ordinary") << QString("studio-spacing-baseline.mscx");
+      QTest::newRow("graces-up-down") << QString("v0.113-spacing-slurred-merged-graces-natural.mscx");
+      }
+
+void TestSpacing::beamSlurAnchorHeights4()
+      {
+      QFETCH(QString, file);
+      std::unique_ptr<MasterScore> score(readScore(DIR + file));
+      QVERIFY(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      const auto notation = graceMergedSnapshot4(score.get());
+      std::vector<Beam*> beams;
+      const auto include = [&beams](Chord* chord) {
+            if (chord->beam() && std::find(beams.begin(), beams.end(), chord->beam()) == beams.end())
+                  beams.push_back(chord->beam());
+            };
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            for (const Segment& segment : m->segments()) {
+                  for (Element* item : segment.elist()) {
+                        if (!segment.isChordRestType() || !item || !item->isChord()) continue;
+                        Chord* chord = toChord(item);
+                        include(chord);
+                        for (Chord* grace : chord->graceNotes()) include(grace);
+                        }
+                  }
+            }
+      int checked = 0;
+      bool upSeen = false, downSeen = false, interiorSeen = false;
+      for (Beam* beam : beams) {
+            if (beam->cross() || beam->elements().size() < 2) continue;
+            std::vector<Chord*> members;
+            bool usable = true;
+            for (ChordRest* member : beam->elements()) {
+                  if (!member->isChord() || !toChord(member)->stem() || toChord(member)->tremolo()
+                      || !member->staff()->isPitchedStaff(member->tick())
+                      || (!members.empty() && member->up() != members.front()->up())) { usable = false; break; }
+                  members.push_back(toChord(member));
+                  }
+            if (!usable) continue;
+            Chord* end = members.back();
+            const qreal sign = end->up() ? -1 : 1;
+            const auto tip = [sign](Chord* chord) {
+                  qreal y = chord->y() + chord->segment()->y() + chord->measure()->y();
+                  if (chord->isGrace()) y += chord->parent()->y();
+                  return y + chord->stemPos().y() - chord->pagePos().y() + sign * chord->stem()->len();
+                  };
+            for (size_t i = 0; i + 1 < members.size(); ++i) {
+                  Chord* start = members[i];
+                  Slur probe(score.get());
+                  probe.setTrack(start->track());
+                  probe.setTrack2(end->track());
+                  probe.setTick(start->tick());
+                  probe.setTicks(end->tick() - start->tick());
+                  probe.setStartElement(start);
+                  probe.setEndElement(end);
+                  probe.setSlurDirection(start->up() ? Direction::UP : Direction::DOWN);
+                  // Both anchors lie within one beam, so the merged first-
+                  // after-grace/main adapter cannot mask this general branch.
+                  score->setStyleValue(Sid::spacingLayout4, false);
+                  probe.layout();
+                  SlurPos legacy;
+                  probe.slurPos(&legacy);
+                  score->setStyleValue(Sid::spacingLayout4, true);
+                  SlurPos modern;
+                  probe.slurPos(&modern);
+                  const qreal startClearance = score->styleS(Sid::beamWidth).val() * beam->magS() / 2
+                        + qMax(qreal(.35) * start->chordMag(), qreal(.2)) * score->spatium();
+                  const qreal endClearance = score->styleS(Sid::beamWidth).val() / 2
+                        + qMax(qreal(.35) * end->chordMag(), qreal(.2)) * score->spatium();
+                  QVERIFY(qAbs(sign * (modern.p1.y() - tip(start)) - startClearance) < 1e-6);
+                  QVERIFY(qAbs(sign * (modern.p2.y() - tip(end)) - endClearance) < 1e-6);
+                  QCOMPARE(modern.p1.x(), legacy.p1.x());
+                  QCOMPARE(modern.p2.x(), legacy.p2.x());
+                  score->setStyleValue(Sid::spacingLayout4, false);
+                  SlurPos restored;
+                  probe.slurPos(&restored);
+                  QCOMPARE(restored.p1, legacy.p1);
+                  QCOMPARE(restored.p2, legacy.p2);
+                  upSeen = upSeen || start->up();
+                  downSeen = downSeen || !start->up();
+                  interiorSeen = interiorSeen || i > 0;
+                  ++checked;
+                  }
+            }
+      QVERIFY(checked > 0 && interiorSeen);
+      if (file.startsWith("v0.113")) QVERIFY(upSeen && downSeen);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      QVERIFY(graceMergedSnapshot4(score.get()) == notation);
       }
 
 void TestSpacing::continuedSlurStemAnchors4()

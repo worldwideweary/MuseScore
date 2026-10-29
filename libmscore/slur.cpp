@@ -1119,6 +1119,11 @@ void Slur::slurPos(SlurPos* sp)
 
       Stem* stem1 = sc && staffHasStems ? sc->stem() : 0;
       Stem* stem2 = ec && staffHasStems ? ec->stem() : 0;
+      const bool beamHeights4 = score()->styleB(Sid::spacingLayout4) && !useTablature
+            && scr->staff() && ecr->staff()
+            && scr->staff()->isPitchedStaff(scr->tick()) && ecr->staff()->isPitchedStaff(ecr->tick())
+            && scr->vStaffIdx() == ecr->vStaffIdx()
+            && (!sc || !sc->tremolo()) && (!ec || !ec->tremolo());
 
       enum class SlurAnchor : char {
             NONE, STEM
@@ -1238,6 +1243,15 @@ void Slur::slurPos(SlurPos* sp)
                               yo = sc->downNote()->pos().y() - sh;
                         else
                               yo = sc->upNote()->pos().y() + sh;
+                        if (beamHeights4) {
+                              // Studio 4.7.5 slurPos: actual stem length,
+                              // beamWidthSp/2 and magnification-aware clearance.
+                              // Keep the existing horizontal attachment here.
+                              const qreal beamWidthSp = score()->styleS(Sid::beamWidth).val() * beam1->magS();
+                              sh = stem1->len() + beamWidthSp / 2
+                                    + qMax(qreal(.35) * sc->chordMag(), qreal(.2)) * _spatium;
+                              yo = sc->stemPos().y() - sc->pagePos().y() + __up * sh;
+                              }
                         xo       = stem1->pos().x();
 
                         // account for articulations
@@ -1353,6 +1367,14 @@ void Slur::slurPos(SlurPos* sp)
                                     yo = ec->downNote()->pos().y() - sh;
                               else
                                     yo = ec->upNote()->pos().y() + sh;
+                              if (beamHeights4) {
+                                    // The source's end branch uses the style
+                                    // space value without the start's magS().
+                                    const qreal beamWidthSp = beam2 ? score()->styleS(Sid::beamWidth).val() : 0;
+                                    sh = stem2->len() + beamWidthSp / 2
+                                          + qMax(qreal(.35) * ec->chordMag(), qreal(.2)) * _spatium;
+                                    yo = ec->stemPos().y() - ec->pagePos().y() + __up * sh;
+                                    }
                               xo = stem2->pos().x();
 
                               // account for articulations
