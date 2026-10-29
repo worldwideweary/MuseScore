@@ -1,5 +1,49 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.176 visual checkpoint: consolidated slur beam-boundary sweep
+
+User verification: v0.175 beam/spacing mtests pass. The four new blue captures
+show edited upper tips staying at stem/beam level and an unchanged lower slur.
+No unrelated notation shift is reported while reanchoring. This is the result
+the preceding check was looking for; close the v0.175 attachment increment.
+Undo/nudge performance remains deferred by the user's request.
+
+Add v0.176-slur-beam-boundaries.mscx, a score-only comparison overview. No
+production code, test source or build configuration changes. A native rebuild
+or another mtest run is not required for this checkpoint. Both experimental
+styles are saved ON; all 18 slurs have an explicit direction and no manual
+offsets. The upper staff uses UP stems/slurs and the lower uses DOWN, except
+that G5 reverses the destination main stem as an opposed-stem control.
+
+| Label | Anchor pair | Main comparison |
+|---|---|---|
+| O1 | First to last ordinary note within a beam | Beam-side clearance over a complete group |
+| O2 | Last ordinary beam note to following main | Start attaches at the beam-end stem inset |
+| O3 | Preceding main to first ordinary beam note | End attaches at the beam-start stem inset |
+| O4 | Interior ordinary beam note to last | Interior clearance without the merged-grace adapter |
+| G1 | First after-grace to following main | Established combined-grace curve/leading-edge control |
+| G2 | Last after-grace to following main | Final after-grace stem inset |
+| G3 | First before-grace to its main | First/interior beam-side clearance |
+| G4 | Last before-grace to its main | Final before-grace stem inset |
+| G5 | First before-grace to opposite-stem main | Explicit side and floating-endpoint control |
+
+There are three cases per system. Open the same original file independently in
+Evolution and Studio 4.7.5, keep 200 percent zoom, and capture pieces with labels
+if needed. Start with O1-O3 and G3-G4, retaining both staves in each capture.
+The stem inset can lie on the note side of the tip: do not require every anchor
+to share one uniform distance above/below a beam. Compare endpoint height and
+collision clearance separately from overall arc shape. Ordinary slur curvature
+still uses Evolution's solver; this is a diagnostic sweep, not a parity claim.
+If one case differs, report its label and retain its initial explicit side.
+
+Local validation: XML parsing; 18 complete 4/4 staff-measures; 18 matching next/
+previous slur connectors, checked fractions and exact serialized grace indices;
+nine explicit UP and nine explicit DOWN roots; both experimental styles ON;
+whitespace and exact patch replay. Native rendering is pending on the user's
+machine. Files changed: the new score and this guide. Next: review this compact
+overview and address any material attachment/collision difference it exposes,
+without reopening performance work yet.
+
 ## v0.175 WIP: beam-end slur anchor selection and insets
 
 User verification: v0.174 native mtests pass and other notation remains stable
