@@ -1,5 +1,49 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.180 visual checkpoint: return to cross-staff accidental/voice spacing
+
+User verification: v0.179 beam/spacing mtests pass. The new G1/G2 capture
+shows the intended shallower G1 seed and retained G2 clearance. Accept that
+bounded initial-curve increment. The lower G1 arc is still deeper than Studio's
+and its destination main stem is visibly longer. Record ordinary unbeamed
+stem-length policy and residual curvature as separate comparisons; do not
+claim full slur parity or tune a compensating arc offset from the screenshot.
+Undo/nudge performance remains deferred by the user's request.
+
+Return to broad horizontal-spacing visual verification after the attachment
+preparation and slur work. Reissue the existing X10 accidental/two-companion
+control with v0.180 filenames and titles. The music is identical to v0.71;
+this is not a new packing rule or an enlarged eligibility scope. Both styles
+are ON. No production code, test source or build changes occur here.
+
+| File | Purpose |
+|---|---|
+| v0.180-spacing-cross-voices-natural.mscx | Compact spacing at the 100-percent last-system fill threshold |
+| v0.180-spacing-cross-voices-justified.mscx | The same music stretched to the system margins |
+
+Each file contains one 2/4 piano measure: four cross-staff eighth-note thirds
+with a lower-to-upper transition, plus independent upper and lower sixteenth
+streams cycling sharp/natural/flat/natural. There are no slurs or grace notes.
+The older X10 fixtures and their existing crossStaffInterleaved regression
+coverage remain unchanged. These new copies are for clearly labeled current
+visual comparisons and do not require another build or mtest run.
+
+Open the original natural file independently in Evolution and Studio 4.7.5,
+at 200 percent, and capture both staves. Compare shared onset alignment,
+accidental-to-note and preceding-note gaps on both companions, flags versus
+the cross beam/stems, and the lower-to-upper transition between beam notes
+2 and 3. Then compare the justified file to distinguish compact collision
+floors from stretching/rhythmic proportions. Unequal gaps required by signs
+or stems are valid; do not aim for uniformly equal distances by eye.
+
+Files changed: the two v0.180 scores and this guide. Local validation: XML
+parsing, exact title-only equivalence to the older inputs, three complete
+2/4 moving streams with 4/8/8 onsets, both styles ON, natural/justified fill
+settings, whitespace and exact patch replay. Native rendering is pending.
+Next: review these two compact captures and use any material discrepancy to
+choose the next source audit. General ordinary-stem and full slur-curve ports
+remain recorded separately; performance profiling is not reopened here.
+
 ## v0.179 WIP: Studio initial shoulder height for fitted grace slurs
 
 User verification: v0.177/v0.178 build and beam/spacing mtests pass. The new
