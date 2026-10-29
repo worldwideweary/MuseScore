@@ -1,5 +1,72 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.183 checkpoint: selected post-preparation visual round complete
+
+The v0.182 blue/white fitting captures group measures identically:
+F1-F3 / F4-F6. The preceding-note-to-grace, internal grace and last-grace-to-
+main/accidental gaps look close, including the down-stem groups and single
+grace controls. The isolated S1 squeeze pair retains visible clearance with
+no new horizontal collision. Accept this selected horizontal verification
+round. Slur shapes and ordinary main-stem lengths still differ in places;
+these captures do not establish complete Studio engraving parity.
+
+The last runtime increment is v0.179, for which the user reports passing
+beam/spacing mtests. v0.180-v0.182 only reissue existing comparison music and
+record results. Their screenshots are visual evidence, not new native mtest
+runs or a compatibility-corpus result. Both independent styles remain
+default OFF; the visual scores save both ON.
+
+| Accepted in this round | Evidence and limit |
+|---|---|
+| Prepared slur attachment/edit stability | Earlier P2 traversal/system-boundary checks retain fixed sibling and local endpoints; native regressions pass. This is not a full general slur renderer port. |
+| Beam-side slur clearance and boundary selection | v0.176 sweep plus v0.177-v0.179 corrections: O1/O4 gap, beam-end insets, G2 clearance and source initial grace-curve height. Lower G1 still differs with its longer main stem. |
+| Cross-staff accidentals and two companion streams | v0.180 natural/justified views retain aligned onsets and readable signs/flags; natural Evolution width is about half a staff space wider across that measure. |
+| Automatic cross-staff fitting | v0.181 keeps F1-F2 / F3-F4 / F5-F6 and clear regenerated starts/middle barlines in both apps. Wider cross-staff contexts remain bounded. |
+| Before-grace accidental fitting and squeeze | v0.182 retains F1-F3 / F4-F6 and close horizontal gaps in F1-F6/S1; exact curve/stem parity is separate. |
+
+### Remaining work and implementation order
+
+The prepared attachment/direction work has removed the former horizontal
+dependence on selected grace/slur anchor identities in its admitted scope.
+It has not completed the full source audit's geometry/lifecycle packages.
+A fresh read of current sources confirms these specific boundaries:
+
+1. Collection/publication: layout.cpp still has systemFittingWidth4 for
+   candidate collection, a final useStudioPlan decision, and systemSpacingWidths4
+   in the non-plan distribution path. A rejected full plan is not equivalent
+   to untouched legacy arithmetic because other modern local/rhythmic work
+   can already have run. Make that outcome explicit and test consistent
+   provisional/final inputs before broadening eligibility. Do not infer an
+   engine switch from a different slur curve or timing alone.
+2. Geometry ownership: spacinggeometry4.cpp still resolves native rectangles
+   against candidate rectangles in spacingResolveShape4. Prepared endpoint
+   metadata does not replace that identity inference. Complete a spacing-only
+   producer-identity seam with full native-rectangle coverage, retaining shared
+   owners and failure atomicity; choosing the first coincident owner is invalid.
+3. Broader policies/contexts: spacingplan4.cpp still explicitly rejects hidden
+   staves, frames/MMRests, cue/gap/centered measure rests and unsupported note
+   decoration/annotation contexts. Broader cross-staff/rest/tuplet/tremolo
+   contexts also remain bounded. Port source inputs/policies with representative
+   mechanism tests; do not remove guards merely to increase admission counts.
+4. Separate visual/performance follow-ups: ordinary unbeamed stem-length
+   policy, general slur curvature/clearance, and Debug nudge/undo/reanchor
+   latency. Preserve the accepted fast edit paths and manual offsets. The
+   user's request to defer performance work remains in force.
+
+Next implementation batch: establish explicit provisional/final engine-outcome
+evidence using the existing accepted corpus, then develop the producer-identity
+and collection/publication seam together. This is the next architectural work,
+not a promise of a small fixed number of patches or of full score parity after
+one more visual example. Keep recoverable WIPs, test at coherent milestones,
+and request new captures only for a concrete visual behavior change. The
+current visual round needs no additional screenshots or repeated test runs.
+
+Files changed: this guide only. No product, styles, tests or scores change in
+v0.183; no rebuild or mtest rerun is required. Validation: current collection,
+fallback, ownership and explicit rejection entry points rechecked; recorded
+visual results reconciled with the supplied captures; whitespace and exact
+patch replay. Those source/document checks are not native behavioral tests.
+
 ## v0.182 visual checkpoint: cross-staff fitting accepted; grace fitting next
 
 The v0.181 blue/white captures group measures identically:
