@@ -1693,6 +1693,8 @@ void renderArpeggio(Chord* chord, Arpeggio* arpeggio, QList<NoteEventList>& ell)
       int duration = INT_MAX;
 
       for (size_t i = 0; i < chord->notes().size(); ++i) {
+            if (!arpeggio->containsNote(chord->notes()[i]))
+                  continue;
             ell[int(i)].clear();
             // Use just one sustained event to render arpeggio with tied notes
             Note* n = chord->notes()[i];
@@ -1702,7 +1704,7 @@ void renderArpeggio(Chord* chord, Arpeggio* arpeggio, QList<NoteEventList>& ell)
 
       for (Chord* c : arpeggio->spannedChords()) {
             for (Note* n : c->notes()) {
-                  if (n->tieBack() || !n->play())
+                  if (n->tieBack() || !n->play() || !arpeggio->containsNote(n))
                         continue;
                   notes.push_back(n);
                   duration = qMin(duration, c->actualTicks().ticks());
@@ -2383,6 +2385,12 @@ static QList<NoteEventList> renderChord(Chord* chord, int gateTime, int ontime, 
             renderTremolo(chord, ell);
             }
       else if (spanningArpeggio && spanningArpeggio->playArpeggio()) {
+            // Preserve ordinary articulation events for any notes outside the
+            // anchored range, including a partially covered chord.
+            if (std::any_of(chord->notes().begin(), chord->notes().end(), [spanningArpeggio](Note* n) {
+                  return !spanningArpeggio->containsNote(n);
+                  }))
+                  renderChordArticulation(chord, ell, gateTime);
             renderArpeggio(chord, spanningArpeggio, ell);
             arpeggio = true;
             }
@@ -2396,8 +2404,8 @@ static QList<NoteEventList> renderChord(Chord* chord, int gateTime, int ontime, 
                   el->clear();
                   continue;
                   }
-            if (arpeggio)
-                  continue; // don't add extra events and apply gateTime to arpeggio
+            if (arpeggio && spanningArpeggio->containsNote(chord->notes()[i]))
+                  continue; // only covered notes bypass ordinary gate time
 
             // If we are here then we still need to render the note.
             // Render its body if necessary and apply gateTime.

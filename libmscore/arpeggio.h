@@ -87,6 +87,7 @@ class Arpeggio : public Element {
       void setSpan(int val) { _span = qMax(1, val); }
       int endTrack() const;
       std::vector<Chord*> spannedChords() const;
+      bool containsNote(const Note*) const;
       Note* topNote() const;
       Note* bottomNote() const;
       static Arpeggio* spanningArpeggio(const Chord* chord);

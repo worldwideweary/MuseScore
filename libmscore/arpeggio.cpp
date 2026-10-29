@@ -11,6 +11,8 @@
 //=============================================================================
 
 #include "accidental.h"
+#include <algorithm>
+
 #include "arpeggio.h"
 #include "chord.h"
 #include "note.h"
@@ -130,6 +132,37 @@ int Arpeggio::endTrack() const
             : track() + _span - 1;
       }
 
+// Compare musical positions without page coordinates. Playback can be rendered
+// independently of page layout. Within a staff, larger line numbers are lower;
+// equal positions use voice order, then track as a final tie breaker.
+static int compareArpeggioNotes(const Note* a, const Note* b)
+      {
+      int sa = a->chord()->vStaffIdx();
+      int sb = b->chord()->vStaffIdx();
+      if (sa != sb)
+            return sa < sb ? -1 : 1;
+      if (a->line() != b->line())
+            return a->line() < b->line() ? -1 : 1;
+      if (a->voice() != b->voice())
+            return a->voice() < b->voice() ? -1 : 1;
+      if (a->track() != b->track())
+            return a->track() < b->track() ? -1 : 1;
+      return 0;
+      }
+
+bool Arpeggio::containsNote(const Note* n) const
+      {
+      if (!n || !parent() || !chord()->segment())
+            return false;
+      Chord* c = n->chord();
+      if (chord()->isGrace())
+            return c == chord();
+      if (c->isGrace() || c->segment() != chord()->segment() || c->part() != chord()->part())
+            return false;
+      return compareArpeggioNotes(topNote(), n) <= 0
+          && compareArpeggioNotes(n, bottomNote()) <= 0;
+      }
+
 //---------------------------------------------------------
 //   spannedChords
 //---------------------------------------------------------
@@ -143,10 +176,20 @@ std::vector<Chord*> Arpeggio::spannedChords() const
             result.push_back(chord());
             return result;
             }
-      for (int t = track(); t <= endTrack(); ++t) {
+      Part* part = chord()->part();
+      if (!part)
+            return result;
+      for (int t = part->startTrack(); t < part->endTrack(); ++t) {
             Element* e = chord()->segment()->element(t);
-            if (e && e->isChord())
-                  result.push_back(toChord(e));
+            if (!e || !e->isChord())
+                  continue;
+            Chord* c = toChord(e);
+            for (Note* n : c->notes()) {
+                  if (containsNote(n)) {
+                        result.push_back(c);
+                        break;
+                        }
+                  }
             }
       return result;
       }
@@ -186,12 +229,16 @@ Arpeggio* Arpeggio::spanningArpeggio(const Chord* c)
             return c->arpeggio();
       if (!c->segment() || !c->part() || c->isGrace())
             return nullptr;
-      for (int t = c->track() - 1; t >= c->part()->startTrack(); --t) {
+      for (int t = c->part()->startTrack(); t < c->part()->endTrack(); ++t) {
             Element* e = c->segment()->element(t);
             if (e && e->isChord()) {
                   Arpeggio* a = toChord(e)->arpeggio();
-                  if (a && a->endTrack() >= c->track())
-                        return a;
+                  if (a) {
+                        for (Note* n : c->notes()) {
+                              if (a->containsNote(n))
+                                    return a;
+                              }
+                        }
                   }
             }
       return nullptr;
@@ -541,23 +588,42 @@ bool Arpeggio::edit(EditData& ed)
       Chord* c = chord();
       if (!c || !c->segment() || !c->part())
             return false;
+      if (c->isGrace())
+            return true;
       const bool start = ed.curGrip == Grip::START;
-      const int step = ed.key == Qt::Key_Up ? -1 : 1;
-      const int anchor = start ? track() : endTrack();
-      const int first = start ? c->part()->startTrack() : track();
-      const int last = start ? endTrack() : c->part()->endTrack() - 1;
-      for (int t = anchor + step; t >= first && t <= last; t += step) {
+      const bool down = ed.key == Qt::Key_Down;
+      const int end = endTrack();
+      std::vector<Chord*> candidates;
+      // Retain native Studio's valid start/end track limits for interchange.
+      // Within those limits, visit occupied chords by musical position.
+      for (int t = c->part()->startTrack(); t < c->part()->endTrack(); ++t) {
+            if ((start && t > end) || (!start && t < track()))
+                  continue;
             Element* e = c->segment()->element(t);
             if (!e || !e->isChord())
                   continue;
-            // Never overwrite another arpeggio or extend across its range
-            Arpeggio* other = spanningArpeggio(toChord(e));
-            if (other && other != this)
-                  break;
-            const int newSpan = start ? endTrack() - t + 1 : t - track() + 1;
-            score()->undo(new ChangeArpeggioAnchor(this, start ? toChord(e) : c, newSpan));
-            break;
+            Chord* candidate = toChord(e);
+            if (start ? compareArpeggioNotes(candidate->upNote(), bottomNote()) > 0
+                      : compareArpeggioNotes(topNote(), candidate->downNote()) > 0)
+                  continue;
+            candidates.push_back(candidate);
             }
+      std::sort(candidates.begin(), candidates.end(), [start](Chord* a, Chord* b) {
+            return compareArpeggioNotes(start ? a->upNote() : a->downNote(),
+                                       start ? b->upNote() : b->downNote()) < 0;
+            });
+      const int current = start ? track() : end;
+      auto it = std::find_if(candidates.begin(), candidates.end(), [current](Chord* ch) {
+            return ch->track() == current;
+            });
+      if (it == candidates.end() || (down ? it + 1 == candidates.end() : it == candidates.begin()))
+            return true;
+      Chord* target = *(down ? it + 1 : it - 1);
+      Arpeggio* other = spanningArpeggio(target);
+      if (other && other != this)
+            return true;
+      const int newSpan = start ? end - target->track() + 1 : target->track() - track() + 1;
+      score()->undo(new ChangeArpeggioAnchor(this, start ? target : c, newSpan));
       return true;
       }
 
