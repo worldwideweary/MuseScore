@@ -1,5 +1,50 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.182 visual checkpoint: cross-staff fitting accepted; grace fitting next
+
+The v0.181 blue/white captures group measures identically:
+F1-F2 / F3-F4 / F5-F6. Regenerated system starts, middle barlines, incoming
+accidentals, simultaneous voices and the lower-to-upper beam transitions show
+no new visible collision. The small v0.180 natural-width difference has not
+changed these automatic breaks. Accept this bounded cross-staff verification;
+it is not a claim of exact width or general-score parity.
+
+The accepted control covers one complete automatic cross-staff eighth-note
+beam per measure, normal unmirrored single notes/thirds, and up to two complete
+unbeamed sixteenth companion streams with typed accidentals on visible piano
+staves. Existing tests retain collection/placement, multiple fitting widths,
+repeat stability and disabled-style restoration. This visual result does not
+extend admission to independent beams within one measure, cross-barline beams,
+larger/mirrored chords, mixed moving rhythms, rest/tuplet/grace/tremolo cross
+contexts or unsupported decorations. Those boundaries stay explicit.
+
+The remaining compact grace-spacing check for this post-preparation verification
+round reuses the existing v0.90 inputs, with only versioned filenames/titles:
+
+| File | Check |
+|---|---|
+| v0.182-spacing-grace-accidental-fitting.mscx | F1-F6: four-note up/down groups with natural/sharp main notes, then single up/down grace controls, on a narrow page with automatic breaks |
+| v0.182-spacing-grace-accidental-squeeze.mscx | S1: isolated down-stem group/main natural at stretch 2 on the existing two-inch printable-width control |
+
+Both experimental styles are ON. The local slurs, spellings, rhythms, beam
+directions, stretch and page settings are copied unchanged. Start with fitting:
+compare F labels per system, the preceding note into each grace group, internal
+grace gaps and the last grace into the main note/accidental. Then compare S1
+for compact accidental clearance and the group-to-main gap. Retain 200 percent
+zoom in both apps and capture pieces as needed. Curve shape and ordinary main
+stem length remain separately recorded; this check targets horizontal layout.
+
+Files changed: the two v0.182 scores and this guide only. No runtime, test-source
+or build changes; no rebuild or mtest rerun is required. Existing graceFitting
+and graceSqueeze still exercise the original, musically identical inputs.
+Local validation: XML parsing, exact title-only equivalence, complete 4/4 main
+durations, grace counts 4/4/4/4/1/1 and 4, retained local slur connectors, both
+styles ON, no forced breaks, whitespace and exact patch replay. Native visual
+review is pending. Next: assess this compact fitting/squeeze pair, then record
+the accepted coverage and remaining implementation priorities for this round.
+Ordinary unbeamed stems, broader slur parity and performance remain separate;
+no new eligibility rule or optimization is introduced at this checkpoint.
+
 ## v0.181 visual checkpoint: accumulated width and automatic system fitting
 
 The v0.180 natural/justified blue and white captures show consistent sign-to-
