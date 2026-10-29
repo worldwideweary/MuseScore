@@ -758,6 +758,65 @@ void PaletteWorkspace::ensureVisibleArrowLines()
       }
 
 //---------------------------------------------------------
+//   ensureVisibleGradualTempoChanges
+//   Add new Tempo line presets to saved palettes.
+//---------------------------------------------------------
+
+void PaletteWorkspace::ensureVisibleGradualTempoChanges()
+      {
+      if (!userPalette || !masterPalette)
+            return;
+
+      auto tempoIndex = [](PaletteTreeModel* model) {
+            for (int row = 0; row < model->rowCount(); ++row) {
+                  const QModelIndex index = model->index(row, 0);
+                  const PalettePanel* panel = model->findPalettePanel(index);
+                  if (panel && panel->type() == PalettePanel::Type::Tempo)
+                        return index;
+                  }
+            return QModelIndex();
+            };
+
+      const QModelIndex userTempo = tempoIndex(userPalette);
+      const QModelIndex masterTempo = tempoIndex(masterPalette);
+      if (!userTempo.isValid() || !masterTempo.isValid())
+            return;
+
+      const QSignalBlocker blockWorkspaceChanges(this);
+      for (int row = 0; row < masterPalette->rowCount(masterTempo); ++row) {
+            const PaletteCellConstPtr source = masterPalette->findCell(masterPalette->index(row, 0, masterTempo));
+            if (!source || !source->element || source->element->type() != ElementType::GRADUAL_TEMPO_CHANGE)
+                  continue;
+
+            QModelIndex existing;
+            for (int userRow = 0; userRow < userPalette->rowCount(userTempo); ++userRow) {
+                  const QModelIndex index = userPalette->index(userRow, 0, userTempo);
+                  const PaletteCellConstPtr cell = userPalette->findCell(index);
+                  if (cell && !cell->custom && cell->element
+                      && cell->element->type() == ElementType::GRADUAL_TEMPO_CHANGE
+                      && cell->name == source->name) {
+                        existing = index;
+                        break;
+                        }
+                  }
+
+            if (existing.isValid()) {
+                  userPalette->setData(existing, true, PaletteTreeModel::VisibleRole);
+                  continue;
+                  }
+
+            QMimeData data;
+            data.setData(PaletteCell::mimeDataFormat, source->mimeData());
+            const int insertRow = userPalette->rowCount(userTempo);
+            if (userPalette->dropMimeData(&data, Qt::CopyAction, insertRow, 0, userTempo)) {
+                  const QModelIndex inserted = userPalette->index(insertRow, 0, userTempo);
+                  userPalette->setData(inserted, false, PaletteTreeModel::CustomRole);
+                  userPalette->setData(inserted, true, PaletteTreeModel::VisibleRole);
+                  }
+            }
+      }
+
+//---------------------------------------------------------
 //   PaletteWorkspace::singlePalette
 //---------------------------------------------------------
 
