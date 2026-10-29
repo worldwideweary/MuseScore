@@ -523,9 +523,11 @@ void SlurSegment::computeBezier(QPointF p6o)
                   const qreal baseAngle = std::atan2(span.y(), span.x());
                   const qreal baseLength = std::hypot(span.x(), span.y());
                   const qreal spaces = baseLength / _spatium;
-                  const qreal baseWidth = spaces <= 2 ? .6 : spaces > 18 ? .7 : spaces > 10 ? .6 : .5;
-                  const qreal baseHeight = spaces <= 2 ? spaces * .25 * _spatium
-                        : (std::min(qreal(3), std::log10(1 + (spaces - 2) * .5) * 2) + .5) * _spatium;
+                  const qreal baseWidth = spaces < 2 ? .6 : spaces < 10 ? .5 : spaces < 18 ? .6 : .7;
+                  // Studio v4.7.5 computeShoulderHeight. This validated
+                  // after-grace/main span ends on an unbeamed main chord, so
+                  // the source's wholly-over-beams reduction does not apply.
+                  const qreal baseHeight = std::sqrt(spaces / 4) * _spatium;
                   const qreal sign = slur()->up() ? -1 : 1;
                   QTransform toSystem;
                   toSystem.translate(anchors.p1.x(), anchors.p1.y());

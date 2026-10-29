@@ -5872,6 +5872,30 @@ void TestSpacing::graceMergedLaterSlurCurves4()
             Chord* target = toChord(root->endElement());
             QVERIFY(root->frontSegment()->usesGraceCurve4());
             const auto sibling = points(root->frontSegment());
+            // Unobstructed reference spans: Studio's shoulders are one space
+            // high over four spaces, and two over sixteen. Put the artificial
+            // span left of the score so physical collisions cannot hide a
+            // different initial-height rule. Exercise the real renderer in
+            // both directions, then restore its actual published anchors.
+            const qreal sp = score->spatium();
+            const qreal sign = root->up() ? -1 : 1;
+            const qreal reference[][4] = {{4, 1, 3, 1}, {16, 3.2, 12.8, 2}};
+            for (const auto& shape : reference) {
+                  const QPointF a(-20 * sp, sign * 12 * sp);
+                  const QPointF b = a + QPointF(shape[0] * sp, 0);
+                  SlurSegment* segment = root->frontSegment();
+                  segment->layoutSegment(a, b);
+                  const bool fitted = segment->usesGraceCurve4();
+                  const auto actual = points(segment);
+                  root->layout();
+                  QVERIFY(fitted);
+                  QVERIFY((actual[1] - a).manhattanLength() < 1e-6);
+                  QVERIFY((actual[2] - a - QPointF(shape[1] * sp, sign * shape[3] * sp)).manhattanLength() < 1e-6);
+                  QVERIFY((actual[3] - a - QPointF(shape[2] * sp, sign * shape[3] * sp)).manhattanLength() < 1e-6);
+                  QVERIFY((actual[4] - b).manhattanLength() < 1e-6);
+                  QVERIFY(same(points(root->frontSegment()), sibling));
+                  QVERIFY(notation() == initialNotes);
+                  }
             for (Chord* start : after) {
                   Slur probe(score.get());
                   probe.setTrack(start->track());

@@ -1,5 +1,44 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.179 WIP: Studio initial shoulder height for fitted grace slurs
+
+User verification: v0.177/v0.178 build and beam/spacing mtests pass. The new
+blue captures show a visible O1/O4 tip-to-beam gap and G2's upper arc clearing
+the following grace beam. O2/O3 and G3-G5 retain their expected attachment
+branches. Accept those attachment/clearance increments. The lower G1 arc still
+hangs deeper than the white Studio capture; this sweep is not a claim of full
+slur-shape parity. Undo/nudge performance remains deferred.
+
+The existing fitted combined-grace renderer seeds its collision fitter with
+Evolution's piecewise/logarithmic shoulder height. Studio v4.7.5 computeBezier
+and computeShoulderHeight instead use sqrt(length-in-spaces / 4) * spatium,
+with width thresholds at 2, 10 and 18 spaces. Use those source initial metrics
+inside the existing admitted combined-grace fitting branch. Its destination
+main is validated as unbeamed, so isOverBeams is false and the source's 0.75
+over-beams reduction does not apply. Reference remains slurtielayout.cpp blob
+cc4d7659bffd339ebf6b757d4d70b284812d1fe1.
+
+Keep the existing collision iterations, physical inputs, endpoint offsets,
+control edits and translated stem/beam anchors. Ordinary slurs and local
+before-grace curves outside the admitted fitter retain their current solver.
+No extra geometry capture, layout pass or persistent state is added.
+
+Extend graceMergedLaterSlurCurves4 with unobstructed reference spans through
+the actual renderer in both directions. A four-space level span must have
+one-space control height; a sixteen-space span must have two-space control
+height. Put each synthetic span left of the notation to keep collision
+adjustments from masking the initial rule, then restore and compare actual
+curves and notation. Existing fitted clearance, offsets, style restoration and
+sibling invariance checks remain active.
+
+Files changed: libmscore/slur.cpp, tst_spacing.cpp and this guide. Local
+validation: Debug/NDEBUG C++11 syntax checks with regenerated moc and warning
+flags, whitespace and exact patch replay. Native mtests and visual rendering
+remain pending. Next: rebuild and run the beam/spacing pair, then compare G1
+and G2 on both staves using the existing v0.176 score and supplied Studio
+captures. Watch the lower G1 depth and retain clearance over the intervening
+notes/stems. No new score or repeat of the full beam suite is required.
+
 ## v0.178 WIP: translate Studio's beamed stem-length metric
 
 Source audit of the O1 tip clearance found a representation difference:
