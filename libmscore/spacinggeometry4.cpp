@@ -46,6 +46,112 @@ static bool sameRect4(const QRectF& a, const QRectF& b)
     return a.x() == b.x() && a.y() == b.y() && a.width() == b.width() && a.height() == b.height();
 }
 
+static Shape producedElementShape4(const Element* item, SpacingShape4& items)
+{
+    if (item->isNote()) return toNote(item)->shapeWithItems4(&items);
+    if (item->isChord()) return toChord(item)->shapeWithItems4(&items);
+    if (item->isRest()) return toRest(item)->shapeWithItems4(&items);
+    const Shape native = item->shape();
+    const Element* owner = nullptr;
+    switch (item->type()) {
+    case ElementType::STEM:
+    case ElementType::HOOK:
+    case ElementType::STEM_SLASH:
+    case ElementType::LEDGER_LINE:
+    case ElementType::ACCIDENTAL:
+    case ElementType::NOTEDOT:
+    case ElementType::CLEF:
+    case ElementType::KEYSIG:
+    case ElementType::TIMESIG:
+    case ElementType::BAR_LINE:
+    case ElementType::ARPEGGIO:
+        owner = item;
+        break;
+    default:
+        break; // Unknown composites must not masquerade as one leaf.
+    }
+    items.elements.clear();
+    for (const QRectF& rect : native)
+        items.elements.push_back(SpacingShapeElement4(rect, owner));
+    return native;
+}
+
+SpacingShapeBuilder4::SpacingShapeBuilder4(Shape& native, SpacingShape4* items)
+    : _native(native), _items(items)
+{
+    if (_items) _items->elements.clear();
+}
+
+void SpacingShapeBuilder4::add(const QRectF& rect, const Element* owner)
+{
+#ifndef NDEBUG
+    _native.add(rect, owner ? owner->name() : nullptr);
+#else
+    _native.add(rect);
+#endif
+    if (_items) _items->elements.push_back(SpacingShapeElement4(rect, owner));
+}
+
+void SpacingShapeBuilder4::add(const Shape& native, const SpacingShape4& items, const QPointF& offset)
+{
+    _native.add(native.translated(offset));
+    if (_items) {
+        const SpacingShape4 translated = items.translated(offset);
+        _items->elements.insert(_items->elements.end(), translated.elements.begin(), translated.elements.end());
+    }
+}
+
+void SpacingShapeBuilder4::addElement(const Element* item, const QPointF& offset)
+{
+    if (!item) return;
+    if (!_items) {
+        _native.add(item->shape().translated(offset));
+        return;
+    }
+    SpacingShape4 items;
+    const Shape native = producedElementShape4(item, items);
+    add(native, items, offset);
+}
+
+void SpacingShapeBuilder4::addChordRest(const ChordRest* item)
+{
+    if (!_items) {
+        _native.add(item->ChordRest::shape());
+        return;
+    }
+    SpacingShape4 items;
+    _native.add(item->ChordRest::shapeWithItems4(&items));
+    _items->elements.insert(_items->elements.end(), items.elements.begin(), items.elements.end());
+}
+
+void SpacingShapeBuilder4::addHorizontalSpacing(Shape::HorizontalSpacingType type, qreal left, qreal right,
+                                              const Element* owner)
+{
+    _native.addHorizontalSpacing(type, left, right);
+    if (_items) {
+        SpacingShapeElement4 element(_native.back(), owner);
+        // Known general bounds and empty barline lyric bounds have the
+        // legacy-spacer policy. Actual lyric/harmony aggregates stay opaque.
+        if (owner && (type == Shape::SPACING_GENERAL || (owner->isBarLine() && type == Shape::SPACING_LYRICS)))
+            element.identity = SpacingIdentity4::LEGACY_SPACER;
+        else { element.item = nullptr; element.identity = SpacingIdentity4::UNCLASSIFIED; }
+        _items->elements.push_back(element);
+    }
+}
+
+bool captureProducedSpacingShape4(const Shape& native, const SpacingShape4& produced, SpacingShape4& result)
+{
+    if (native.size() != produced.elements.size()) return false;
+    for (size_t i = 0; i < native.size(); ++i) {
+        const auto& e = produced.elements[i];
+        if (!sameRect4(native[i], e.rect) || !e.item || !e.aggregateOwners.empty() || !e.sharedItems.empty()
+            || (e.identity != SpacingIdentity4::ITEM && e.identity != SpacingIdentity4::LEGACY_SPACER)
+            || (e.identity == SpacingIdentity4::LEGACY_SPACER && !e.item->isChord() && !e.item->isBarLine())) return false;
+    }
+    result = produced;
+    return true;
+}
+
 SpacingShape4 spacingResolveShape4(const Shape& native, const SpacingShape4& candidates, bool allowSharedItems)
 {
     SpacingShape4 result;
@@ -144,35 +250,17 @@ SpacingShape4 spacingResolveShape4(const Shape& native, const SpacingShape4& can
     return result;
 }
 
-static void appendShape4(SpacingShape4& target, const SpacingShape4& source, const QPointF& offset)
+static SpacingShape4 unclassifiedShape4(const Shape& native)
 {
-    const SpacingShape4 translated = source.translated(offset);
-    target.elements.insert(target.elements.end(), translated.elements.begin(), translated.elements.end());
-}
-
-static void appendLeaf4(SpacingShape4& target, const Element* item)
-{
-    if (!item)
-        return;
-    const Shape native = item->shape();
-    for (const QRectF& rect : native)
-        target.elements.push_back(SpacingShapeElement4(rect.translated(item->pos()), item));
-}
-
-static void appendLegacySpacer4(SpacingShape4& target, const Element* owner,
-                                Shape::HorizontalSpacingType type, qreal left, qreal right)
-{
-    Shape native;
-    native.addHorizontalSpacing(type, left, right);
-    for (const QRectF& rect : native) {
-        SpacingShapeElement4 element(rect, owner);
-        element.identity = SpacingIdentity4::LEGACY_SPACER;
-        target.elements.push_back(element);
-    }
+    SpacingShape4 result;
+    result.elements.reserve(native.size());
+    for (const QRectF& rect : native) result.elements.push_back(SpacingShapeElement4(rect));
+    return result;
 }
 
 SpacingShape4 spacingElementShape4(const Element* item, SpacingShapeCache4* cache)
 {
+    if (!item) return {};
     if (cache) {
         if (const SpacingShape4* cached = cache->find(item)) {
             SpacingProfileScope4 reuse(SpacingProfileStage4::SHAPE_REUSE);
@@ -180,113 +268,24 @@ SpacingShape4 spacingElementShape4(const Element* item, SpacingShapeCache4* cach
         }
     }
     SpacingProfileScope4 profile(SpacingProfileStage4::ELEMENT_SHAPE);
-    if (!item)
-        return {};
-    const Shape native = item->shape();
-    SpacingShape4 candidates;
-    if (item->isNote()) {
-        const Note* note = toNote(item);
-        candidates.elements.push_back(SpacingShapeElement4(note->bbox(), note));
-        for (const NoteDot* dot : note->dots())
-            candidates.elements.push_back(SpacingShapeElement4(
-                note->symBbox(SymId::augmentationDot).translated(dot->pos()), dot));
-        const Accidental* accidental = note->accidental();
-        if (accidental && accidental->addToSkyline())
-            candidates.elements.push_back(SpacingShapeElement4(accidental->bbox().translated(accidental->pos()), accidental));
-        // Note::shape uses these children's bbox, not their composite shape.
-        for (const Element* child : note->el()) {
-            if (child->addToSkyline())
-                candidates.elements.push_back(SpacingShapeElement4(child->bbox().translated(child->pos()), child));
-        }
-    }
-    else if (item->isChord()) {
-        const Chord* chord = toChord(item);
-        // Reconcile against Chord::shape below, which remains authoritative
-        // about omitted cross-staff stems and autoplace-dependent components.
-        appendLeaf4(candidates, chord->hook());
-        appendLeaf4(candidates, chord->stem());
-        appendLeaf4(candidates, chord->stemSlash());
-        appendLeaf4(candidates, chord->arpeggio());
-        for (const Note* note : chord->notes()) {
-            appendShape4(candidates, spacingElementShape4(note, cache), note->pos());
-            for (const Element* child : note->el()) {
-                if (child->addToSkyline())
-                    candidates.elements.push_back(SpacingShapeElement4(
-                        child->bbox().translated(child->pos() + note->pos()), child));
-            }
-        }
-        for (const LedgerLine* line = chord->ledgerLines(); line; line = line->next())
-            appendLeaf4(candidates, line);
-        for (const Element* child : chord->el()) {
-            if (child->addToSkyline())
-                appendShape4(candidates, spacingElementShape4(child, cache), child->pos());
-        }
-        for (const Chord* grace : chord->graceNotes())
-            appendShape4(candidates, spacingElementShape4(grace, cache), grace->pos());
-        if (chord->addToSkyline() && (!qFuzzyIsNull(chord->spacingLeft4()) || !qFuzzyIsNull(chord->spacingRight4())))
-            appendLegacySpacer4(candidates, chord, Shape::SPACING_GENERAL, -chord->spacingLeft4(), chord->spacingRight4());
-    }
-    else if (item->isRest()) {
-        // MMRest body/number and rest-dot identity need their own adapter.
-        const Rest* rest = toRest(item);
-        if (!rest->isGap() && rest->measure() && !rest->measure()->isMMRest())
-            candidates.elements.push_back(SpacingShapeElement4(rest->bbox(), rest));
-        for (const Element* child : rest->el()) {
-            if (child->addToSkyline())
-                appendShape4(candidates, spacingElementShape4(child, cache), child->pos());
-        }
-    }
-    else {
-        // These native leaf shapes have one source item. Unknown composite
-        // types retain their rectangles without pretending to be one leaf.
-        switch (item->type()) {
-        case ElementType::STEM:
-        case ElementType::HOOK:
-        case ElementType::STEM_SLASH:
-        case ElementType::LEDGER_LINE:
-        case ElementType::ACCIDENTAL:
-        case ElementType::NOTEDOT:
-        case ElementType::CLEF:
-        case ElementType::KEYSIG:
-        case ElementType::TIMESIG:
-        case ElementType::BAR_LINE:
-        case ElementType::ARPEGGIO:
-            for (const QRectF& rect : native)
-                candidates.elements.push_back(SpacingShapeElement4(rect, item));
-            break;
-        default:
-            break;
-        }
-    }
-    SpacingShape4 resolved = spacingResolveShape4(native, candidates);
-    if (cache) cache->remember(item, resolved);
-    return resolved;
+    SpacingShape4 produced, result;
+    const Shape native = producedElementShape4(item, produced);
+    if (!captureProducedSpacingShape4(native, produced, result)) result = unclassifiedShape4(native);
+    if (cache) cache->remember(item, result);
+    return result;
 }
 
 SpacingShape4 spacingStaffShape4(const Segment* segment, int staffIdx)
 {
-    if (!segment || staffIdx < 0 || static_cast<size_t>(staffIdx) >= segment->shapes().size())
-        return {};
+    if (!segment || staffIdx < 0 || static_cast<size_t>(staffIdx) >= segment->shapes().size()) return {};
     const Shape& native = segment->staffShape(staffIdx);
-    SpacingShape4 candidates;
-    if (segment->segmentType() & SegmentType::BarLineType) {
-        const Element* item = segment->element(staffIdx * VOICES);
-        if (item && item->isBarLine()) {
-            candidates.elements.push_back(SpacingShapeElement4(toBarLine(item)->layoutRect().translated(item->pos()), item));
-            appendLegacySpacer4(candidates, item, Shape::SPACING_GENERAL, 0, 0);
-            appendLegacySpacer4(candidates, item, Shape::SPACING_LYRICS, 0, 0);
-        }
-    }
-    else if (segment->score()->staff(staffIdx)->show()) {
-        for (const Element* item : segment->elist()) {
-            if (item && item->vStaffIdx() == staffIdx && (item->addToSkyline() || item->isChord()))
-                appendShape4(candidates, spacingElementShape4(item), item->pos());
-        }
-        for (const Element* item : segment->annotations()) {
-            if (item && item->staffIdx() == staffIdx && item->addToSkyline())
-                appendShape4(candidates, spacingElementShape4(item), item->pos());
-        }
-    }
-    return spacingResolveShape4(native, candidates, true);
+    SpacingShape4 produced, result;
+    const Shape emitted = segment->shapeWithItems4(staffIdx, &produced);
+    // First prove that the side output covers its own emitted geometry; then
+    // prove it is the currently published native staff shape. Never repair a
+    // stale, reordered or incomplete snapshot by searching coincident owners.
+    if (!captureProducedSpacingShape4(emitted, produced, result)
+        || !captureProducedSpacingShape4(native, result, result)) return unclassifiedShape4(native);
+    return result;
 }
 }

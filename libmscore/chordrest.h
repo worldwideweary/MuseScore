@@ -22,6 +22,7 @@
 #include "symbol.h"
 
 namespace Ms {
+struct SpacingShape4;
 
 enum class CrossMeasure : signed char {
       UNKNOWN = -1,
@@ -183,6 +184,7 @@ class ChordRest : public DurationElement {
       virtual Element* prevSegmentElement() override;
       virtual QString accessibleExtraInfo() const override;
       virtual Shape shape() const override;
+      Shape shapeWithItems4(SpacingShape4*) const;
       virtual void layoutStem1() {}
       virtual void computeUp()   { _up = true; }
 

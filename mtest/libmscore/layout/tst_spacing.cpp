@@ -85,6 +85,8 @@ class TestSpacing : public QObject, public MTest {
       void beamEndSlurAnchors4();
       void spacingDecisionScopes4();
       void spacingNativeDecisions4();
+      void spacingDecisionCorpus4_data();
+      void spacingDecisionCorpus4();
       void acciaccaturaSlash4_data();
       void acciaccaturaSlash4();
       void slurOffsetUndoAdmission4();
@@ -473,6 +475,46 @@ void TestSpacing::geometryResolution()
       QCOMPARE(tagged.elements[0].item, static_cast<const Element*>(&note));
       QCOMPARE(tagged.elements[1].item, static_cast<const Element*>(dot));
       QCOMPARE(tagged.elements[2].item, static_cast<const Element*>(accidental));
+      // The native producer emits identities with each primitive, including
+      // coincident primitives. No rectangle matching or owner selection occurs.
+      SpacingShape4 produced;
+      const Shape emitted = note.shapeWithItems4(&produced);
+      SpacingShape4 captured;
+      QVERIFY(captureProducedSpacingShape4(emitted, produced, captured));
+      QCOMPARE(int(captured.elements.size()), 3);
+      QCOMPARE(captured.elements[0].item, static_cast<const Element*>(&note));
+      QCOMPARE(captured.elements[1].item, static_cast<const Element*>(dot));
+      QCOMPARE(captured.elements[2].item, static_cast<const Element*>(accidental));
+      const QRectF accidentalBox = accidental->bbox();
+      const QPointF accidentalPos = accidental->pos();
+      accidental->setbbox(note.bbox());
+      accidental->setPos(QPointF());
+      SpacingShape4 coincident;
+      const Shape coincidentNative = note.shapeWithItems4(&coincident);
+      accidental->setbbox(accidentalBox);
+      accidental->setPos(accidentalPos);
+      QVERIFY(captureProducedSpacingShape4(coincidentNative, coincident, captured));
+      QCOMPARE(captured.elements[0].rect, captured.elements[2].rect);
+      QCOMPARE(captured.elements[0].item, static_cast<const Element*>(&note));
+      QCOMPARE(captured.elements[2].item, static_cast<const Element*>(accidental));
+      for (int mode = 0; mode < 9; ++mode) {
+            SpacingShape4 broken = produced;
+            switch (mode) {
+            case 0: broken.elements.pop_back(); break;
+            case 1: broken.elements.push_back(broken.elements.front()); break;
+            case 2: std::swap(broken.elements[0], broken.elements[1]); break;
+            case 3: broken.elements.front().rect.translate(1e-12, 0); break;
+            case 4: broken.elements.front().item = nullptr; break;
+            case 5: broken.elements.front().identity = SpacingIdentity4::AMBIGUOUS; break;
+            case 6: broken.elements.front().sharedItems.push_back(accidental); break;
+            case 7: broken.elements.front().aggregateOwners.push_back(accidental); break;
+            case 8: broken.elements.front().identity = SpacingIdentity4::LEGACY_SPACER; break;
+            }
+            QVERIFY(!captureProducedSpacingShape4(emitted, broken, captured));
+            QCOMPARE(captured.elements[0].rect, captured.elements[2].rect);
+            QCOMPARE(captured.elements[0].item, static_cast<const Element*>(&note));
+            QCOMPARE(captured.elements[2].item, static_cast<const Element*>(accidental));
+            }
       const QPointF offset(7, -3);
       const SpacingShape4 shifted = tagged.translated(offset);
       for (size_t i = 0; i < tagged.elements.size(); ++i) {
@@ -674,6 +716,8 @@ void TestSpacing::geometryInputs()
       int itemPairQueries = 0;
       int notePairQueries = 0;
       int opaqueShapeFallbacks = 0;
+      int producedStaffs = 0;
+      bool checkedStale = false;
       const SpacingPaddingTable4 paddingTable(score);
       for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
             const qreal measureWidth = m->width();
@@ -681,10 +725,50 @@ void TestSpacing::geometryInputs()
                   const qreal x = seg.x(), width = seg.width(), offset = seg.spacingWidthOffset4();
                   const std::vector<Shape> native = seg.shapes();
                   for (int staffIdx = 0; staffIdx < score->nstaves(); ++staffIdx) {
+                        const bool visible = seg.visible();
+                        SpacingShape4 produced, captured;
+                        const Shape emitted = seg.shapeWithItems4(staffIdx, &produced);
+                        QCOMPARE(emitted.size(), produced.elements.size());
+                        for (size_t i = 0; i < emitted.size(); ++i)
+                              QCOMPARE(static_cast<const QRectF&>(emitted[i]), produced.elements[i].rect);
+                        // Native cached shapes can have omitted barline owners
+                        // or later layout writes. Complete/current captures
+                        // retain exact source owners; all others stay opaque.
+                        const bool current = captureProducedSpacingShape4(emitted, produced, captured)
+                              && captureProducedSpacingShape4(native[staffIdx], produced, captured);
+                        producedStaffs += current && !captured.elements.empty();
                         const SpacingShape4 tagged = spacingStaffShape4(&seg, staffIdx);
+                        QCOMPARE(seg.visible(), visible);
+                        if (!checkedStale && current && seg.isChordRestType() && !native[staffIdx].empty()) {
+                              for (int mode = 0; mode < 2; ++mode) {
+                                    Shape& changed = seg.staffShape(staffIdx);
+                                    if (mode == 0) changed.front().translate(.125 * score->spatium(), 0);
+                                    else changed.add(native[staffIdx].front()); // uncovered coincident primitive
+                                    const Shape stale = changed;
+                                    const SpacingShape4 rejected = spacingStaffShape4(&seg, staffIdx);
+                                    changed = native[staffIdx]; // restore before assertions
+                                    QCOMPARE(rejected.elements.size(), stale.size());
+                                    for (size_t i = 0; i < rejected.elements.size(); ++i) {
+                                          QCOMPARE(rejected.elements[i].rect, static_cast<const QRectF&>(stale[i]));
+                                          QVERIFY(rejected.elements[i].identity == SpacingIdentity4::UNCLASSIFIED);
+                                          QVERIFY(!rejected.elements[i].item);
+                                          QVERIFY(rejected.elements[i].aggregateOwners.empty() && rejected.elements[i].sharedItems.empty());
+                                          }
+                                    }
+                              checkedStale = true;
+                              }
                         QCOMPARE(static_cast<int>(tagged.elements.size()), static_cast<int>(native[staffIdx].size()));
                         for (size_t i = 0; i < tagged.elements.size(); ++i) {
                               const SpacingShapeElement4& e = tagged.elements[i];
+                              if (current) {
+                                    QCOMPARE(e.item, captured.elements[i].item);
+                                    QVERIFY(e.identity == captured.elements[i].identity);
+                                    }
+                              else {
+                                    QVERIFY(!e.item);
+                                    QVERIFY(e.identity == SpacingIdentity4::UNCLASSIFIED);
+                                    }
+                              QVERIFY(e.aggregateOwners.empty() && e.sharedItems.empty());
                               QCOMPARE(e.rect, static_cast<const QRectF&>(native[staffIdx][i]));
                               QCOMPARE(static_cast<const QRectF&>(seg.staffShape(staffIdx)[i]), static_cast<const QRectF&>(native[staffIdx][i]));
                               if (e.identity == SpacingIdentity4::LEGACY_SPACER) {
@@ -785,6 +869,8 @@ void TestSpacing::geometryInputs()
       QVERIFY(itemPairQueries > 0);
       QVERIFY(notePairQueries > 0);
       QVERIFY(opaqueShapeFallbacks > 0);
+      QVERIFY(producedStaffs > 0);
+      QVERIFY(checkedStale);
       if (file.contains("accidentals")) {
             QVERIFY(signs > 0);
             QVERIFY(crossStaffHeads > 0);
@@ -8971,9 +9057,22 @@ void TestSpacing::spacingNativeDecisions4()
       score->doLayout();
       }
       const bool unchanged = same(graceMergedSnapshot4(score.get()), decorated);
+      // A spacing query must not invoke the native lazy harmony layout when
+      // unsupported decoration geometry is missing. Reject the snapshot.
+      const QRectF harmonyBox = harmony->bbox();
+      harmony->setbbox(QRectF());
+      const SpacingShape4 missingAnnotation = spacingStaffShape4(segment, 0);
+      const bool noLazyLayout = harmony->bbox().isEmpty();
+      harmony->setbbox(harmonyBox);
       segment->remove(harmony);
       delete harmony;
       QVERIFY(unchanged);
+      QVERIFY(noLazyLayout);
+      QVERIFY(!missingAnnotation.elements.empty());
+      for (const auto& e : missingAnnotation.elements) {
+            QVERIFY(e.identity == SpacingIdentity4::UNCLASSIFIED);
+            QVERIFY(!e.item && e.aggregateOwners.empty() && e.sharedItems.empty());
+            }
       bool fallback = false;
       for (const auto& e : events) {
             if (e.pass != SpacingPass4::FINAL) continue;
@@ -8982,6 +9081,83 @@ void TestSpacing::spacingNativeDecisions4()
             fallback = true;
             }
       QVERIFY(fallback);
+      }
+
+void TestSpacing::spacingDecisionCorpus4_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::newRow("voices") << QString("v0.38-spacing-voices.mscx");
+      QTest::newRow("cross-staff-fitting") << QString("v0.181-spacing-cross-staff-fitting.mscx");
+      QTest::newRow("grace-fitting") << QString("v0.187-acciaccatura-fitting.mscx");
+      QTest::newRow("grace-squeeze") << QString("v0.187-acciaccatura-squeeze.mscx");
+      QTest::newRow("merged-system-boundary") << QString("v0.167-grace-policy-systems.mscx");
+      }
+
+void TestSpacing::spacingDecisionCorpus4()
+      {
+      QFETCH(QString, file);
+      std::unique_ptr<MasterScore> score(readScore(DIR + file));
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::vector<SpacingDecision4> events;
+      {
+      SpacingDecisionScope4 scope(score.get(), [&events](const SpacingDecision4& e) { events.push_back(e); });
+      score->doLayout();
+      }
+      QVERIFY(!spacingDecisionObserved4(score.get()));
+      const auto observed = graceMergedSnapshot4(score.get());
+      score->doLayout();
+      const auto unobserved = graceMergedSnapshot4(score.get());
+      QCOMPARE(int(observed.size()), int(unobserved.size()));
+      for (size_t i = 0; i < observed.size(); ++i)
+            QVERIFY2(qAbs(observed[i] - unobserved[i]) < 1e-6, "Observation changed published geometry");
+      std::vector<System*> systems;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            QVERIFY(m->system());
+            if (systems.empty() || systems.back() != m->system()) systems.push_back(m->system());
+            }
+      int finals = 0, candidates = 0;
+      Fraction nextTick = score->firstMeasure()->tick();
+      for (size_t i = 0; i < events.size(); ++i) {
+            const SpacingDecision4& e = events[i];
+            QVERIFY(e.measures > 0 && e.firstTick < e.endTick);
+            QVERIFY(qIsFinite(e.width) && qIsFinite(e.available));
+            QVERIFY(e.width > 0 && e.available > 0);
+            QVERIFY(e.path == SpacingPath4::FULL_PLAN || e.path == SpacingPath4::NATIVE_WIDTHS
+                  || e.path == SpacingPath4::POOLED_WIDTHS);
+            if (e.path == SpacingPath4::FULL_PLAN) QVERIFY(e.reason.isEmpty());
+            else QVERIFY2(!e.reason.isEmpty(), "Mixed fallback must identify its rejection stage");
+            if (e.pass == SpacingPass4::CANDIDATE) {
+                  ++candidates;
+                  continue;
+                  }
+            QVERIFY(finals < int(systems.size()));
+            const System* system = systems[finals++];
+            QVERIFY(e.firstTick == nextTick);
+            QVERIFY(e.firstTick == system->firstMeasure()->tick());
+            QVERIFY(e.endTick == system->lastMeasure()->endTick());
+            int measures = 0;
+            for (const MeasureBase* mb : system->measures()) measures += mb->isMeasure();
+            QCOMPARE(e.measures, measures);
+            QVERIFY(qAbs(e.width - system->width()) < 1e-6);
+            // Final headers/squeezing can change width or eligibility. Match
+            // the retained prefix by identity/range, never equate its two widths
+            // or require a rejected overfull candidate to be the final prefix.
+            bool retainedPrefix = false;
+            for (size_t j = 0; j < i; ++j) {
+                  const auto& candidate = events[j];
+                  retainedPrefix = retainedPrefix || (candidate.pass == SpacingPass4::CANDIDATE
+                        && candidate.firstTick == e.firstTick && candidate.endTick == e.endTick
+                        && candidate.measures == e.measures);
+                  }
+            QVERIFY2(retainedPrefix, "Final system has no corresponding collected prefix");
+            nextTick = e.endTick;
+            }
+      QVERIFY(candidates >= finals);
+      QCOMPARE(finals, int(systems.size()));
+      QVERIFY(nextTick == score->lastMeasure()->endTick());
       }
 
 void TestSpacing::acciaccaturaSlash4_data()

@@ -1,5 +1,145 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.192 aggregate gate: decision coverage and source-produced geometry
+
+Batch v0.189-v0.192 into one native build/test phase over v0.188. Keep each
+recoverable WIP and its individual patch, plus one combined patch replacing the
+four increments. Apply the combined OR individual increments, never both.
+
+| Stage | Batch content | Native status |
+|---|---|---|
+| v0.189 | Actual candidate/final evidence across voices, cross-staff fitting, grace fitting/squeeze and merged system boundaries | Pending |
+| v0.190 | Optional call-local identity output from the native Note/Chord/Rest/ChordRest shape producers; ordered capture and coincident-owner tests | Pending |
+| v0.191 | Shared native staff assembly and activation of exact source/current-shape coverage, whole-snapshot rejection and no lazy annotation layout | Pending |
+| v0.192 | Final contract checks, native-only base-shape append preservation and this aggregate gate | Pending |
+
+No DOM pointer metadata is added to stored native Shape or ShapeElement, and no
+style, serialization, note/stem/beam/slur engraving rule or score is changed.
+Spacing snapshots borrow exact producer identities only within the current
+query. Coincident primitives retain each actual owner instead of searching for
+possible owners by rectangle. Native staff geometry must still match the fresh
+source output exactly. Unknown producers, omitted barline owners or stale
+geometry reject the entire snapshot; a partial identity result is not published.
+Existing collision policies and planner eligibility guards remain authoritative.
+
+The final geometryInputs assertions distinguish complete/current captures from
+legitimate opaque native geometry, including barline bounds without a local
+barline item. Both cases must retain every native rectangle in order, without
+changing visibility or native geometry. Complete captures require exact owners;
+opaque captures require all identities unclassified. Injected changed and extra
+coincident primitives must reject the whole snapshot after restoring the fixture.
+Malformed aggregate/shared metadata and an invalid legacy-spacer owner also fail
+atomically. Native-only base shape assembly keeps its original direct add rather
+than introducing an unnecessary translation/copy of lyric/harmony bounds.
+
+Local validation: C++11 Debug/NDEBUG syntax and regenerated-moc checks for all
+changed producers, planner/layout consumers and spacing tests, with unused-
+parameter and signedness warnings enabled. Recheck the final changed planner
+adapter/test sources. An extracted-source harness compares the original v0.188
+and new Note/Chord/Rest assembly, with and without side output, across 12,288
+mock-DOM cases per mode; native rectangles match, every emitted primitive is
+covered, and ordered/coincident capture plus atomic rejection pass. This harness
+uses mocked DOM/base inputs, not the native renderer or a score compatibility
+corpus. Whitespace and exact individual/combined patch replay are checked.
+Native build, rendering and mtest execution remain pending on the user's machine.
+
+Rebuild once, then run the usual aggregate pair once:
+
+    ctest -j1 --output-on-failure -R '^(tst_spacing|tst_beam)$'
+
+No profiling switch or log collection is needed. After passing, reuse existing
+scores with both experimental styles ON for a short regression spot-check:
+
+| Existing score | Expected review |
+|---|---|
+| v0.181-spacing-cross-staff-fitting.mscx | F1-F2 / F3-F4 / F5-F6; aligned companion onsets and clear accidentals at regenerated system starts |
+| v0.187-acciaccatura-fitting.mscx and v0.187-acciaccatura-squeeze.mscx | F1-F3 / F4-F6; unchanged grace/main accidental gaps, slash placement and clear S1 squeeze |
+| v0.167-grace-policy-systems.mscx | P2 anchor traversal across the system boundary and undo retain the fixed local endpoint/sibling stability already accepted |
+
+Use earlier captures as the reference. No replacement visual score or new
+screenshots are required if these checks look unchanged; capture only a concrete
+new discrepancy. This batch completes the live rectangle-matching replacement
+for the existing source-producer seam, not the entire general spacing lifecycle
+or broader engraving coverage. Candidate collection/final publication still have
+distinct planning and fallback stages, now with broader evidence tests. Broader
+policy work, ordinary stem/slur visual differences and Debug edit performance
+remain separate. Performance stays deferred as requested.
+
+Files in this checkpoint: spacinggeometry4.cpp, tst_spacing.cpp and this guide.
+Next: resolve aggregate native failures or new visual regressions before further
+collection/publication lifecycle consolidation. Continue batching related work.
+
+## v0.191 WIP: source-produced staff geometry capture activated
+
+Share Segment's native staff assembly between ordinary createShape and a
+read-only shapeWithItems4 call. Native visibility writes stay at their original
+points; spacing queries write neither visibility nor native shapes. The side
+output follows actual staff/voice routing, child order, barlines and their two
+empty native bounds. Bracket/lyric/harmony aggregates remain unclassified;
+unknown composite or missing geometry is never promoted to a supported item.
+
+Activate source-produced identities in spacingElementShape4 and
+spacingStaffShape4. Require complete ordered coverage of emitted geometry and
+an exact match with current native staff geometry. On mismatch, return every
+native rectangle in order with all identities unclassified; never repair by
+searching matching rectangles or combining a partial new result with old owners.
+Spacing-only owners remain query-local. Coincident primitives keep each real
+producer; collision projection validates each owner through existing policies.
+The old conservative rectangle resolver remains only for compatibility tests
+and diagnostics, with no live production caller.
+
+Extend existing geometryInputs rows (both beam settings) to verify complete
+source coverage, unchanged visibility/native geometry and exact actual owners.
+Inject changed and extra coincident native primitives, restore before assertions
+and require whole-snapshot rejection. Extend the existing unsupported-harmony
+case to require no lazy layout even when its bbox is empty. No new native layout
+passes are added for these checks. All planner eligibility guards and collision
+policies remain; this is not a complete collection/publication lifecycle port.
+
+Files: segment.h/.cpp, spacinggeometry4.h/.cpp, tst_spacing.cpp and this guide.
+Local C++ syntax checks pass for the affected producers; native execution remains
+pending for the aggregate. Next: validate the full batch, record its limits and
+package one combined patch over v0.188 plus recoverable individual increments.
+
+## v0.190 WIP: identities emitted by native element shape producers
+
+Add optional, call-local SpacingShape4 output to the same Note, Chord, Rest and
+ChordRest shape assembly used by native layout. SpacingShapeBuilder4 emits each
+rectangle and its actual producer together. Null output keeps native geometry
+only; native Shape/ShapeElement gain no pointer fields, persisted metadata or
+cache. Preserve component order, autoplace/skyline conditions, cross-staff stem
+omission and existing general bounds. Unknown composite children, MMRest bodies
+and lyric/harmony aggregates remain explicitly unclassified. Read-only output
+never triggers the existing lazy harmony/fret-diagram layout operations.
+
+Add strict ordered capture with complete coverage and atomic failure. It checks
+source geometry and metadata in order, without matching rectangles to possible
+owners. Coincident direct primitives keep their individual real producers.
+Extend geometryResolution with coincident note/accidental output and malformed,
+missing, extra, reordered and changed-geometry rejection; existing output stays
+intact on failure. Production spacing still uses its previous resolver in this
+checkpoint. Next: share native staff assembly and activate source-based capture
+against the stored staff geometry, rejecting the entire snapshot on mismatch.
+
+Files: spacinggeometry4.h/.cpp, note/chord/rest/chordrest headers and sources,
+tst_spacing.cpp and this guide. Native build/tests remain deferred to the batch.
+
+## v0.189 WIP: collected/final decision evidence across accepted contexts
+
+Extend actual layout-decision tests to the accepted moving voices, automatic
+cross-staff fitting, before-grace fitting/squeeze and merged system-boundary
+scores. Check finite widths, explicit mixed-fallback reasons, final tick/count
+coverage of every retained system and correspondence to an earlier collected
+prefix. Candidate and final widths/eligibility need not be identical: trailer
+preparation, overfull backout, squeeze and justification occur between them.
+Compare observed publication with a subsequent unobserved layout. Do not claim
+that all accepted visual examples use the full planner or force an engine path.
+
+Files: tst_spacing.cpp and this guide. Native execution is deferred until the
+next aggregate gate. No product behavior, score or eligibility guard changes.
+Next: add source-produced item identities without storing DOM pointers in native
+shapes, then connect them to read-only spacing capture with atomic rejection.
+
 ## v0.188 checkpoint: v0.184-v0.187 aggregate accepted
 
 The user reports passing native tst_beam and tst_spacing for the aggregate;

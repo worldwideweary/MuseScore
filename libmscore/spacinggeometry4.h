@@ -7,11 +7,13 @@
 #include <QRectF>
 #include <vector>
 #include <utility>
+#include "shape.h"
 
 namespace Ms {
 class Element;
 class Segment;
 class Shape;
+class ChordRest;
 
 enum class SpacingIdentity4 { ITEM, UNCLASSIFIED, AMBIGUOUS, LEGACY_SPACER, SHARED_ITEM };
 // LEGACY_SPACER records a known producer's aggregate bound. It is retained in
@@ -41,6 +43,29 @@ struct SpacingShape4 {
     SpacingShape4 translated(const QPointF&) const;
 };
 
+// Optional side output of the native shape producer. The same add operation
+// emits geometry and its actual owner; native Shape keeps no DOM pointers.
+// A null output performs native geometry assembly only. A non-null output is
+// local to this call and requires already laid-out children (no lazy layout).
+class SpacingShapeBuilder4 {
+    Shape& _native;
+    SpacingShape4* _items;
+public:
+    SpacingShapeBuilder4(Shape& native, SpacingShape4* items);
+    void add(const QRectF&, const Element* owner = nullptr);
+    void add(const Shape&, const SpacingShape4&, const QPointF& offset = QPointF());
+    void addElement(const Element*, const QPointF& offset = QPointF());
+    void addChordRest(const ChordRest*);
+    void addHorizontalSpacing(Shape::HorizontalSpacingType, qreal left, qreal right,
+                              const Element* owner = nullptr);
+};
+
+// Strict ordered coverage, not rectangle-to-candidate matching. Coincident
+// rectangles retain their individual producers. Failure leaves result intact.
+bool captureProducedSpacingShape4(const Shape&, const SpacingShape4& produced, SpacingShape4& result);
+
+// Compatibility/diagnostic resolver only; live spacing capture uses the native
+// producer's ordered side output above, never this candidate search.
 // Preserve every native rectangle, in order. Ownership is resolved only where
 // all matching candidates agree. Coincident legacy aggregates may retain a
 // complete producer set when multiplicities match. Previously resolved sets

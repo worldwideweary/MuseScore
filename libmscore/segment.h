@@ -17,6 +17,7 @@
 #include "shape.h"
 
 namespace Ms {
+struct SpacingShape4;
 
 class Measure;
 class Segment;
@@ -63,6 +64,7 @@ class Segment final : public Element {
       std::vector<qreal>    _dotPosX;     // size = staves
 
 
+      void createShape4(int staffIdx, Shape&, SpacingShape4*, Segment* visibilityTarget) const;
       void init();
       void checkEmpty() const;
       void checkElement(Element*, int track);
@@ -229,6 +231,8 @@ class Segment final : public Element {
       Shape& staffShape(int staffIdx)                 { return _shapes[staffIdx]; }
       void createShapes();
       void createShape(int staffIdx);
+      // Read-only reconstruction through the native producer; owns no DOM data.
+      Shape shapeWithItems4(int staffIdx, SpacingShape4*) const;
       qreal minRight() const;
       qreal minLeft(const Shape&) const;
       qreal minLeftAfterBarline(const Shape&, qreal padding) const;

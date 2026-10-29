@@ -22,6 +22,7 @@
 #include "chordrest.h"
 
 namespace Ms {
+struct SpacingShape4;
 
 class Note;
 class Hook;
@@ -236,6 +237,7 @@ class Chord final : public ChordRest {
       Note* firstGraceOrNote();
 
       Shape shape() const override;
+      Shape shapeWithItems4(SpacingShape4*) const;
       };
 
 
