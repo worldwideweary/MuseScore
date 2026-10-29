@@ -4,7 +4,9 @@
 #define MS_SPACINGPLAN4_H
 #include <QtGlobal>
 #include <QString>
+#include <functional>
 #include <vector>
+#include "fraction.h"
 #include "gracespacing4.h"
 
 namespace Ms {
@@ -15,6 +17,38 @@ class Beam;
 class Chord;
 class SpacingInput4;
 class SpacingAttachmentPreparation4;
+class Score;
+
+// Value-only evidence of the path actually selected by native system layout.
+// NATIVE_WIDTHS with the style ON is a mixed fallback, not untouched legacy.
+enum class SpacingPass4 { CANDIDATE, FINAL };
+enum class SpacingPath4 { STYLE_OFF, FULL_PLAN, NATIVE_WIDTHS, POOLED_WIDTHS, NO_STRETCH };
+struct SpacingDecision4 {
+    SpacingPass4 pass = SpacingPass4::CANDIDATE;
+    SpacingPath4 path = SpacingPath4::STYLE_OFF;
+    Fraction firstTick = Fraction(0, 1), endTick = Fraction(0, 1);
+    int measures = 0;
+    qreal width = 0, available = 0;
+    QString reason;
+};
+// Query/test observer, scoped to one score and the current thread. Callbacks
+// consume values only: they must not mutate the score or initiate layout.
+// No score, system or geometry pointers are retained in an event.
+class SpacingDecisionScope4 {
+    const Score* _score;
+    std::function<void(const SpacingDecision4&)> _handler;
+    SpacingDecisionScope4* _previous;
+    friend bool spacingDecisionObserved4(const Score*);
+    friend void recordSpacingDecision4(const System*, SpacingPass4, SpacingPath4, qreal, qreal, const QString&);
+public:
+    SpacingDecisionScope4(const Score*, std::function<void(const SpacingDecision4&)>);
+    ~SpacingDecisionScope4();
+    SpacingDecisionScope4(const SpacingDecisionScope4&) = delete;
+    SpacingDecisionScope4& operator=(const SpacingDecisionScope4&) = delete;
+};
+bool spacingDecisionObserved4(const Score*);
+void recordSpacingDecision4(const System*, SpacingPass4, SpacingPath4, qreal width, qreal available,
+                            const QString& reason = QString());
 
 // Read-only preparation for cross-staff placement. This first context covers
 // one automatic eighth-note beam of up to two unmirrored normal notes per chord

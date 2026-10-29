@@ -4359,24 +4359,28 @@ static bool prepareGraceBeamsForSpacing4(System* system, std::vector<GraceBeamPr
 // when the next measure is accepted or this system is finalized. Keep the
 // native width accumulator intact for unsupported-context fallback/backtracking.
 static bool systemFittingWidth4(System* system, qreal& width, std::vector<GraceBeamPreparation4>& preparedBeams,
-                                SpacingDirectionReadiness4* readiness)
+                                SpacingDirectionReadiness4* readiness, QString* reason = nullptr)
 {
-    if (MScore::noHorizontalStretch || system->score()->styleB(Sid::hideEmptyStaves))
+    const auto fail = [reason](const char* text) {
+        if (reason) *reason = QString::fromLatin1(text);
         return false;
+    };
+    if (MScore::noHorizontalStretch || system->score()->styleB(Sid::hideEmptyStaves))
+        return fail("Candidate stretch/hidden-staff boundary");
     bool first = true;
     for (MeasureBase* mb : system->measures()) {
         if (!mb->isMeasure())
-            return false;
+            return fail("Candidate contains a frame");
         const Measure* m = toMeasure(mb);
         if (m->noBreak() || m->repeatStart() || m->repeatEnd() || m->trailer()
             || measureMayHaveBeamsJoinedIntoNext(m))
-            return false;
+            return fail("Candidate break/repeat/trailer/joined-beam boundary");
         // Courtesy and changing headers need candidate-boundary preparation.
         if (!first) {
             for (const Segment& s : m->segments()) {
                 if (s.enabled() && s.visible() && !s.allElementsInvisible()
                     && (s.isHeaderClefType() || s.isKeySigType() || s.isTimeSigType()))
-                    return false;
+                    return fail("Candidate changing-header boundary");
             }
         }
         first = false;
@@ -4384,14 +4388,16 @@ static bool systemFittingWidth4(System* system, qreal& width, std::vector<GraceB
     NativeGraceInputs4 inputs(system->score(), spacingMeasures4(system), readiness);
     SpacingGraceQueryScope4 graceScope(system->score(), inputs.factory());
     std::vector<GraceMergedGeometry4> readyMerged;
-    if (!prepareGraceBeamsForSpacing4(system, preparedBeams, readyMerged)) return false;
+    if (!prepareGraceBeamsForSpacing4(system, preparedBeams, readyMerged))
+        return fail("Candidate grace-beam preparation rejected");
     SpacingPlan4 plan;
     SpacingAttachmentPreparation4 attachments;
     SpacingPlanOptions4 options;
     options.slurPolicy = inputs.factory()->policy();
-    if (!inputs.captureSystem(system, attachments)
-        || !buildSpacingPlan4(system, plan, attachments, nullptr, options, &readyMerged)) return false;
+    if (!inputs.captureSystem(system, attachments, reason)
+        || !buildSpacingPlan4(system, plan, attachments, reason, options, &readyMerged)) return false;
     width = plan.width;
+    if (reason) reason->clear();
     return true;
 }
 
@@ -4541,8 +4547,20 @@ System* Score::collectSystem(LayoutContext& lc)
             // collect at least one measure and the break
 
             qreal fittingWidth = minWidth + ww;
-            if (styleB(Sid::spacingLayout4))
-                  systemFittingWidth4(system, fittingWidth, preparedBeams, lc.spacingDirections4.get());
+            if (styleB(Sid::spacingLayout4)) {
+                  const bool observed = spacingDecisionObserved4(this);
+                  QString reason;
+                  const bool planned = systemFittingWidth4(system, fittingWidth, preparedBeams,
+                        lc.spacingDirections4.get(), observed ? &reason : nullptr);
+                  if (observed)
+                        recordSpacingDecision4(system, SpacingPass4::CANDIDATE,
+                              MScore::noHorizontalStretch ? SpacingPath4::NO_STRETCH
+                              : planned ? SpacingPath4::FULL_PLAN : SpacingPath4::NATIVE_WIDTHS,
+                              fittingWidth, systemWidth, reason);
+                  }
+            else if (spacingDecisionObserved4(this))
+                  recordSpacingDecision4(system, SpacingPass4::CANDIDATE, SpacingPath4::STYLE_OFF,
+                        fittingWidth, systemWidth);
             bool doBreak = (system->measures().size() > 1) && (fittingWidth > systemWidth);
             if (doBreak) {
                   breakMeasure = lc.curMeasure;
@@ -4753,16 +4771,24 @@ System* Score::collectSystem(LayoutContext& lc)
       // Early packing, beam preparation, natural/squeeze fitting and local
       // publication all request the same prepared attachment policy.
       bool studioFits = false;
+      const bool observeDecision = spacingDecisionObserved4(this);
+      QString decisionReason;
       if (styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch && graceGeometryReady) {
             SpacingAttachmentPreparation4 attachments;
-            studioFits = finalInputs && finalInputs->captureSystem(system, attachments)
-                  && squeezeSpacingPlan4(system, systemWidth, studioPlan, attachments, nullptr, &readyMerged,
+            studioFits = finalInputs && finalInputs->captureSystem(system, attachments, observeDecision ? &decisionReason : nullptr)
+                  && squeezeSpacingPlan4(system, systemWidth, studioPlan, attachments, observeDecision ? &decisionReason : nullptr, &readyMerged,
                                          finalInputs->factory()->policy());
+            if (observeDecision && !finalInputs)
+                  decisionReason = "Final prepared-input factory unavailable";
             }
+      else if (observeDecision && styleB(Sid::spacingLayout4))
+            decisionReason = MScore::noHorizontalStretch ? "Horizontal stretch disabled" : "Final grace-beam preparation rejected";
       if (studioFits) {
             useStudioPlan = !justifySystem4(lm, lc.curMeasure, studioPlan.width, systemWidth,
                                              styleD(Sid::lastSystemFillLimit))
                   || justifySpacingPlan4(studioPlan, systemWidth);
+            if (observeDecision && !useStudioPlan)
+                  decisionReason = "Final plan justification rejected";
             if (useStudioPlan) {
                   for (const SpacingMeasurePlan4& m : studioPlan.measures)
                         studioMeasures[m.measure] = &m;
@@ -4867,6 +4893,13 @@ System* Score::collectSystem(LayoutContext& lc)
             pos.rx() += ww;
             }
       system->setWidth(pos.x());
+      if (observeDecision)
+            recordSpacingDecision4(system, SpacingPass4::FINAL,
+                  !styleB(Sid::spacingLayout4) ? SpacingPath4::STYLE_OFF
+                  : MScore::noHorizontalStretch ? SpacingPath4::NO_STRETCH
+                  : useStudioPlan ? SpacingPath4::FULL_PLAN
+                  : !studioWidths.empty() ? SpacingPath4::POOLED_WIDTHS : SpacingPath4::NATIVE_WIDTHS,
+                  system->width(), systemWidth, decisionReason);
       if (useStudioPlan) {
             // Segment widths are now final. Publish the plan's target-relative
             // graces directly, including compressed plans, without applying an

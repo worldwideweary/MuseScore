@@ -1,5 +1,145 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.187 aggregate gate: layout decisions plus acciaccatura slash geometry
+
+Batch v0.184-v0.187 for one native build/test phase as requested. Each WIP is
+independently committed and has its own patch; the combined patch applies
+directly over v0.183 and includes all four. Use the combined patch OR the four
+incrementals, never both. No intermediate native test verification is assumed.
+
+| Stage | Completed implementation | Native verification |
+|---|---|---|
+| v0.184 | Scoped value-only outcome observer, nested routing/restoration tests | Pending in aggregate |
+| v0.185 | Actual candidate/final path and rejection evidence, observation transparency and real annotation-fallback tests | Pending in aggregate |
+| v0.186 | Experimental acciaccatura slash angle/reach/thickness with UP/DOWN, hooked/beamed and style-restoration tests | Pending in aggregate |
+| v0.187 | Versioned compact fitting/squeeze comparison pack and this checkpoint | Rendering pending |
+
+Run the usual native pair once after rebuilding:
+
+    ctest -j1 --output-on-failure -R '^(tst_spacing|tst_beam)$'
+
+This includes spacingDecisionScopes4, spacingNativeDecisions4 and both
+acciaccaturaSlash4 data rows automatically. Keep MS_LAYOUT4_PROFILE unset;
+this is not a performance/profiling round. The outcome observer is opt-in
+and needs no user environment switch or log capture.
+
+The visual pack copies the v0.182 music and settings, changing only the title
+text/size. Both styles are ON. Existing Studio v0.182 captures remain useful;
+new Studio captures are only necessary if a specific comparison needs detail.
+
+| File | Review |
+|---|---|
+| v0.187-acciaccatura-fitting.mscx | F1-F6 together: diagonal slash angle/reach for beamed and single-flag UP/DOWN groups; separately inspect beam slope, horizontal grace/accidental gaps and automatic breaks |
+| v0.187-acciaccatura-squeeze.mscx | S1: compressed down-stem slash, preceding-note clearance and last-grace-to-main/accidental gap |
+
+Use 200 percent captures, in pieces if necessary. Distinguish the diagonal
+acciaccatura slash from the group's beam. The slash now follows Studio's base
+angle plus its beam-angle adjustment; no separate beam-slope rule was changed
+in this batch. Preserve that distinction if either line still differs.
+Slur shape and ordinary main-stem length remain separate recorded differences.
+
+Files changed in v0.187: the two scores and guide only. Local aggregate
+validation: C++11 Debug/NDEBUG syntax/moc checks for changed production/test
+sources, warning/whitespace checks, preserved musical/XML semantics and exact
+individual/combined patch replay. Native mtests and rendering remain pending.
+This batch provides decision evidence, not the completed general producer-
+identity or single-lifecycle port. Next: resolve aggregate failures or visible
+slash/packing differences, then use the actual path evidence for lifecycle
+consolidation. Continue grouping related WIPs into larger test phases; do not
+request separate native builds for each small checkpoint.
+
+## v0.186 WIP: acciaccatura slash angle, reach and thickness
+
+Treat the acciaccatura's diagonal slash separately from beam slope, slur shape
+and ordinary stem length. Evolution StemSlash::layout uses fixed vertical
+reach and notehead width, making a different angle. Studio v4.7.5 layoutStemSlash
+uses a 40-degree default, 2sp position and .125sp thickness; beamed strokes
+are 2sp long, adjust angle by half the beam angle, and lengthen 10 percent
+in the obtuse case. Hooked strokes reach the flag's right edge, with the
+source's font-specific multi-flag adjustment. The branch matches Evolution's
+curved flags; independent Studio slash-style controls are not added here.
+
+Under beamLayout4, apply those defaults to same-staff pitched grace slashes.
+Translate the stem tip/bbox representation: use the native line tip and the
+beam's outside half width, avoiding Evolution's extra pen-cap bbox padding.
+Cache the computed stroke width with its existing local line geometry. Drawing
+and bbox consume the same width. Disabled style, moved/cross-staff graces and
+TAB retain the original path. No slur or ordinary-stem algorithm changes.
+
+Source blobs: tlayout.cpp 925cdbb651aa972dd9577765988869bc2f4a3d64 and
+styledef.cpp 15d5e0496f530c7392cd190ce8476e9ca77b2241, pinned v4.7.5.
+The port's beam maximum-slope thresholds and desired-slant rule were also
+compared with the pinned BeamTremoloLayout source; no independent slope-rule
+change is justified by that comparison. Record slash and beam angles separately
+in the next captures. This does not declare all grace-beam angles identical.
+
+Add acciaccaturaSlash4 under both horizontal-spacing settings, exercising
+beamed and single-hook UP/DOWN cases in the existing v0.182 fitting input.
+Check source angle/length/thickness, flag reach, bbox coverage, manual offset,
+repeat-layout stability and exact disabled-beam-style restoration. Temporarily
+exercise both signs of beam slope and the obtuse extension, restoring physical
+geometry before assertions. Existing spacing/beam suites cover the changed
+slash component's contribution to grace packing and final publication.
+
+Files changed: stemslash.cpp/.h, tst_spacing.cpp and this guide. Local
+validation: Debug/NDEBUG syntax, moc, warning/whitespace and exact patch replay.
+Native test/rendering results remain pending for the aggregate. Next: package
+v0.184-v0.186 with one clearly versioned visual score, then request the full
+beam/spacing pair once and a compact slash/beam comparison. Performance work
+and broad producer-identity/lifecycle consolidation remain separate work.
+
+## v0.185 WIP: observe actual collection and final distribution paths
+
+Connect the v0.184 observer to candidate fitting and final width publication.
+Report the actual selected full plan, style-off, no-stretch, native-width mixed
+fallback or pooled-width mixed fallback path. Candidate records include a
+temporarily admitted measure even if it is subsequently backed out; final
+records describe the retained system. Preserve that distinction in analysis.
+
+Capture rejection stage/reason only when observation is active. Carry planner
+and prepared-input reasons through the existing candidate/final calls. Keep
+the decision order, width arithmetic, preparation, justification and fallback
+paths unchanged. No output/logging or timing is enabled by this observer;
+it supplies correctness evidence for subsequent lifecycle consolidation.
+
+Add spacingNativeDecisions4 on the existing H1 score: require real candidate
+and final evidence for style-off, full-plan and disabled stretch; compare
+published geometry with/without observation. Add a chord symbol to exercise
+a real unsupported annotation, requiring an explicit mixed fallback with a
+reason and unchanged publication under observation. No new score is needed.
+
+Files changed: layout.cpp, tst_spacing.cpp and this guide. Local validation:
+Debug/NDEBUG syntax, moc, warning/whitespace checks and exact patch replay.
+Native test results are pending for the aggregate batch. Next: implement and
+verify Studio-style acciaccatura slash geometry, then deliver one combined
+patch and one compact visual/testing request for the completed batch.
+
+## v0.184 WIP: scoped layout-outcome evidence contract
+
+The user requests larger aggregate testing phases for the next rounds. Keep
+recoverable commits/patches, continue through related stages, and request one
+native test run plus a compact visual pack at the aggregate boundary.
+Acciaccatura slash angle is an explicit separate visual item: do not subsume
+it under slur shape or ordinary stem length, or assume the slash is its beam.
+
+Add value-only SpacingDecision4 events and an opt-in SpacingDecisionScope4
+observer in the existing planner source/header. Events record candidate/final
+stage, selected path, measure tick range/count, width/available width and reason.
+NATIVE_WIDTHS under the modern style denotes mixed fallback, not untouched
+legacy layout. Scopes are score-filtered, thread-local and restored on exit;
+events retain no score/system/geometry pointers. Callbacks are read-only.
+Native layout does not emit events yet in this increment.
+
+Add spacingDecisionScopes4 for nested scope routing/restoration, value lifetime,
+disabled observation and unchanged notation. No new clock, logging, persistent
+cache, serialization, user control or layout selection is introduced.
+
+Files changed: spacingplan4.cpp/.h, tst_spacing.cpp and this guide. Local
+validation: C++11 Debug/NDEBUG syntax, moc, warning/whitespace checks and exact
+patch replay. Native mtests remain pending for the aggregate batch. Next:
+connect candidate/final decisions without changing their arithmetic, then
+include the source-based acciaccatura slash geometry change and test together.
+
 ## v0.183 checkpoint: selected post-preparation visual round complete
 
 The v0.182 blue/white fitting captures group measures identically:

@@ -34,6 +34,9 @@
 #include "libmscore/pitchspelling.h"
 #include "libmscore/stem.h"
 #include "libmscore/slur.h"
+#include "libmscore/harmony.h"
+#include "libmscore/stemslash.h"
+#include "libmscore/hook.h"
 #include "libmscore/spannermap.h"
 
 using namespace Ms;
@@ -80,6 +83,10 @@ class TestSpacing : public QObject, public MTest {
       void beamSlurAnchorHeights4_data();
       void beamSlurAnchorHeights4();
       void beamEndSlurAnchors4();
+      void spacingDecisionScopes4();
+      void spacingNativeDecisions4();
+      void acciaccaturaSlash4_data();
+      void acciaccaturaSlash4();
       void slurOffsetUndoAdmission4();
       void mainStartSlurSpacing4_data();
       void mainStartSlurSpacing4();
@@ -8871,6 +8878,211 @@ void TestSpacing::slurOffsetLayout4()
       score->cmdState().requestSlurOffset4(selected->frontSegment());
       QVERIFY(!score->doLayoutSlurOffset4(selected->frontSegment()));
       delete score;
+      }
+
+void TestSpacing::spacingDecisionScopes4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "studio-spacing-natural-h1.mscx"));
+      QVERIFY(score);
+      score->doLayout();
+      const System* system = score->firstMeasure()->system();
+      QVERIFY(system);
+      const auto notation = graceMergedSnapshot4(score.get());
+      std::vector<SpacingDecision4> outer, inner;
+      QVERIFY(!spacingDecisionObserved4(score.get()));
+      QVERIFY(!spacingDecisionObserved4(nullptr));
+      {
+      SpacingDecisionScope4 scope(score.get(), [&outer](const SpacingDecision4& e) { outer.push_back(e); });
+      QVERIFY(spacingDecisionObserved4(score.get()));
+      recordSpacingDecision4(system, SpacingPass4::CANDIDATE, SpacingPath4::FULL_PLAN, 12, 20);
+      {
+      SpacingDecisionScope4 nested(score.get(), [&inner](const SpacingDecision4& e) { inner.push_back(e); });
+      recordSpacingDecision4(system, SpacingPass4::FINAL, SpacingPath4::NATIVE_WIDTHS, 15, 20, "probe");
+      }
+      recordSpacingDecision4(system, SpacingPass4::FINAL, SpacingPath4::FULL_PLAN, 20, 20);
+      }
+      QVERIFY(!spacingDecisionObserved4(score.get()));
+      recordSpacingDecision4(system, SpacingPass4::FINAL, SpacingPath4::STYLE_OFF, 7, 20);
+      QCOMPARE(int(outer.size()), 2);
+      QCOMPARE(int(inner.size()), 1);
+      QVERIFY(outer.front().pass == SpacingPass4::CANDIDATE && outer.back().pass == SpacingPass4::FINAL);
+      QVERIFY(inner.front().path == SpacingPath4::NATIVE_WIDTHS);
+      QCOMPARE(inner.front().reason, QString("probe"));
+      QCOMPARE(inner.front().width, qreal(15));
+      QCOMPARE(inner.front().available, qreal(20));
+      QCOMPARE(inner.front().measures, 1);
+      QVERIFY(inner.front().firstTick == score->firstMeasure()->tick());
+      QVERIFY(inner.front().endTick == score->lastMeasure()->endTick());
+      QVERIFY(graceMergedSnapshot4(score.get()) == notation);
+      }
+
+void TestSpacing::spacingNativeDecisions4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "studio-spacing-natural-h1.mscx"));
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, true);
+      const auto same = [](const std::vector<qreal>& a, const std::vector<qreal>& b) {
+            if (a.size() != b.size()) return false;
+            for (size_t i = 0; i < a.size(); ++i) if (qAbs(a[i] - b[i]) > 1e-6) return false;
+            return true;
+            };
+      for (int mode = 0; mode < 3; ++mode) {
+            score->setStyleValue(Sid::spacingLayout4, mode != 0);
+            QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, mode == 2);
+            score->doLayout();
+            const auto baseline = graceMergedSnapshot4(score.get());
+            std::vector<SpacingDecision4> events;
+            {
+            SpacingDecisionScope4 scope(score.get(), [&events](const SpacingDecision4& e) { events.push_back(e); });
+            score->doLayout();
+            }
+            QVERIFY(same(graceMergedSnapshot4(score.get()), baseline));
+            bool candidate = false, final = false;
+            for (const auto& e : events) {
+                  QVERIFY(qIsFinite(e.width) && qIsFinite(e.available));
+                  QCOMPARE(e.measures, 1);
+                  QVERIFY(e.firstTick == score->firstMeasure()->tick());
+                  QVERIFY(e.endTick == score->lastMeasure()->endTick());
+                  candidate = candidate || e.pass == SpacingPass4::CANDIDATE;
+                  final = final || e.pass == SpacingPass4::FINAL;
+                  const SpacingPath4 expected = mode == 0 ? SpacingPath4::STYLE_OFF
+                        : mode == 2 ? SpacingPath4::NO_STRETCH : SpacingPath4::FULL_PLAN;
+                  QVERIFY2(e.path == expected, qPrintable(QString("mode %1: %2").arg(mode).arg(e.reason)));
+                  if (e.pass == SpacingPass4::FINAL) QVERIFY(qAbs(e.width - score->firstMeasure()->system()->width()) < 1e-6);
+                  }
+            QVERIFY(candidate && final);
+            QVERIFY(!spacingDecisionObserved4(score.get()));
+            }
+      // A real chord symbol exposes the explicitly unsupported annotation
+      // path. It must be reported as mixed fallback, never as style-off legacy.
+      score->setStyleValue(Sid::spacingLayout4, true);
+      Segment* segment = nullptr;
+      for (Segment& s : score->firstMeasure()->segments()) if (s.isChordRestType()) { segment = &s; break; }
+      QVERIFY(segment);
+      Harmony* harmony = new Harmony(score.get());
+      harmony->setTrack(0);
+      segment->add(harmony);
+      harmony->setHarmony("C7");
+      score->doLayout();
+      const auto decorated = graceMergedSnapshot4(score.get());
+      std::vector<SpacingDecision4> events;
+      {
+      SpacingDecisionScope4 scope(score.get(), [&events](const SpacingDecision4& e) { events.push_back(e); });
+      score->doLayout();
+      }
+      const bool unchanged = same(graceMergedSnapshot4(score.get()), decorated);
+      segment->remove(harmony);
+      delete harmony;
+      QVERIFY(unchanged);
+      bool fallback = false;
+      for (const auto& e : events) {
+            if (e.pass != SpacingPass4::FINAL) continue;
+            QVERIFY(e.path == SpacingPath4::NATIVE_WIDTHS || e.path == SpacingPath4::POOLED_WIDTHS);
+            QVERIFY(!e.reason.isEmpty());
+            fallback = true;
+            }
+      QVERIFY(fallback);
+      }
+
+void TestSpacing::acciaccaturaSlash4_data()
+      {
+      QTest::addColumn<bool>("modernSpacing");
+      QTest::newRow("native-spacing") << false;
+      QTest::newRow("studio-spacing") << true;
+      }
+
+void TestSpacing::acciaccaturaSlash4()
+      {
+      QFETCH(bool, modernSpacing);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.182-spacing-grace-accidental-fitting.mscx"));
+      QVERIFY(score);
+      score->setStyleValue(Sid::spacingLayout4, modernSpacing);
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      std::vector<Chord*> chords;
+      std::vector<QLineF> legacy;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            for (const Segment& segment : m->segments()) {
+                  const Element* e = segment.element(0);
+                  if (!e || !e->isChord()) continue;
+                  for (Chord* grace : toChord(e)->graceNotes()) {
+                        if (!grace->stemSlash()) continue;
+                        chords.push_back(grace);
+                        legacy.push_back(grace->stemSlash()->slashLine());
+                        }
+                  }
+            }
+      QCOMPARE(int(chords.size()), 6);
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->doLayout();
+      std::vector<QLineF> modern;
+      int beamedUp = 0, beamedDown = 0, singleUp = 0, singleDown = 0;
+      const auto close = [](const QPointF& a, const QPointF& b) { return (a - b).manhattanLength() < 1e-6; };
+      for (Chord* c : chords) {
+            const StemSlash* slash = c->stemSlash();
+            QVERIFY(slash);
+            const QLineF line = slash->slashLine();
+            modern.push_back(line);
+            const qreal sign = c->up() ? -1 : 1;
+            const qreal actual = std::atan2(sign * line.dy(), line.dx());
+            qreal expected = 40 * std::acos(qreal(-1)) / 180;
+            const Beam* beam = c->beam();
+            if (beam) {
+                  const QLineF* primary = beam->primarySegment4();
+                  QVERIFY(primary && primary->dx() > 0);
+                  const qreal beamAngle = std::atan2(primary->dy(), primary->dx());
+                  expected += sign * beamAngle / 2;
+                  const bool obtuse = (c->up() && beamAngle < 0) || (!c->up() && beamAngle > 0);
+                  QVERIFY(qAbs(line.length() / c->spatium() - (obtuse ? 2.2 : 2.0)) < 1e-6);
+                  // Exercise both slope signs, including the longer obtuse
+                  // stroke, independently of this fixture's natural contour.
+                  QLineF* edited = const_cast<QLineF*>(primary);
+                  const QLineF saved = *edited;
+                  for (qreal slope : {qreal(-.25), qreal(.25)}) {
+                        edited->setP2(QPointF(saved.x2(), saved.y1() + saved.dx() * slope));
+                        c->stemSlash()->layout();
+                        const QLineF changed = c->stemSlash()->slashLine();
+                        *edited = saved;
+                        c->stemSlash()->layout();
+                        const qreal theta = 40 * std::acos(qreal(-1)) / 180 + sign * std::atan(slope) / 2;
+                        const bool longer = (c->up() && slope < 0) || (!c->up() && slope > 0);
+                        QVERIFY(qAbs(std::atan2(sign * changed.dy(), changed.dx()) - theta) < 1e-6);
+                        QVERIFY(qAbs(changed.length() / c->spatium() - (longer ? 2.2 : 2.0)) < 1e-6);
+                        QVERIFY(close(c->stemSlash()->slashLine().p1(), line.p1()));
+                        QVERIFY(close(c->stemSlash()->slashLine().p2(), line.p2()));
+                        }
+                  if (c->up()) ++beamedUp; else ++beamedDown;
+                  }
+            else {
+                  QVERIFY(c->hook());
+                  QVERIFY(qAbs(line.x2() - c->hook()->bbox().translated(c->hook()->pos()).right()) < 1e-6);
+                  if (c->up()) ++singleUp; else ++singleDown;
+                  }
+            QVERIFY2(qAbs(actual - expected) < 1e-6, "Acciaccatura slash does not use the source angle/beam adjustment");
+            QVERIFY(qAbs(slash->lineWidth() - .125 * c->spatium() * c->mag()) < 1e-6);
+            QVERIFY(slash->bbox().contains(line.p1()) && slash->bbox().contains(line.p2()));
+            const QPointF offset(.2 * c->spatium(), -.1 * c->spatium());
+            c->stemSlash()->setOffset(offset);
+            c->stemSlash()->layout();
+            QCOMPARE(c->stemSlash()->offset(), offset);
+            QVERIFY(close(c->stemSlash()->slashLine().p1(), line.p1()));
+            QVERIFY(close(c->stemSlash()->slashLine().p2(), line.p2()));
+            c->stemSlash()->setOffset(QPointF());
+            }
+      QCOMPARE(beamedUp, 2); QCOMPARE(beamedDown, 2);
+      QCOMPARE(singleUp, 1); QCOMPARE(singleDown, 1);
+      score->doLayout();
+      for (size_t i = 0; i < chords.size(); ++i) {
+            QVERIFY(close(chords[i]->stemSlash()->slashLine().p1(), modern[i].p1()));
+            QVERIFY(close(chords[i]->stemSlash()->slashLine().p2(), modern[i].p2()));
+            }
+      score->setStyleValue(Sid::beamLayout4, false);
+      score->doLayout();
+      for (size_t i = 0; i < chords.size(); ++i) {
+            QVERIFY(close(chords[i]->stemSlash()->slashLine().p1(), legacy[i].p1()));
+            QVERIFY(close(chords[i]->stemSlash()->slashLine().p2(), legacy[i].p2()));
+            QCOMPARE(chords[i]->stemSlash()->lineWidth(), score->styleP(Sid::stemWidth));
+            }
       }
 
 QTEST_MAIN(TestSpacing)

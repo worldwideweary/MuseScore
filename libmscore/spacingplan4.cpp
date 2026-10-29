@@ -24,6 +24,56 @@
 
 namespace Ms {
 namespace {
+SpacingDecisionScope4*& activeSpacingDecision4()
+{
+    static thread_local SpacingDecisionScope4* scope = nullptr;
+    return scope;
+}
+}
+
+SpacingDecisionScope4::SpacingDecisionScope4(const Score* score, std::function<void(const SpacingDecision4&)> handler)
+    : _score(score), _handler(std::move(handler)), _previous(activeSpacingDecision4())
+{
+    activeSpacingDecision4() = this;
+}
+
+SpacingDecisionScope4::~SpacingDecisionScope4()
+{
+    Q_ASSERT(activeSpacingDecision4() == this);
+    activeSpacingDecision4() = _previous;
+}
+
+bool spacingDecisionObserved4(const Score* score)
+{
+    if (!score) return false;
+    for (const SpacingDecisionScope4* scope = activeSpacingDecision4(); scope; scope = scope->_previous)
+        if (scope->_score == score && scope->_handler) return true;
+    return false;
+}
+
+void recordSpacingDecision4(const System* system, SpacingPass4 pass, SpacingPath4 path,
+                            qreal width, qreal available, const QString& reason)
+{
+    if (!system) return;
+    SpacingDecisionScope4* scope = activeSpacingDecision4();
+    while (scope && (scope->_score != system->score() || !scope->_handler)) scope = scope->_previous;
+    if (!scope) return;
+    SpacingDecision4 event;
+    event.pass = pass;
+    event.path = path;
+    event.width = width;
+    event.available = available;
+    event.reason = reason;
+    for (const MeasureBase* mb : system->measures()) {
+        if (!mb->isMeasure()) continue;
+        const Measure* m = toMeasure(mb);
+        if (!event.measures++) event.firstTick = m->tick();
+        event.endTick = m->endTick();
+    }
+    scope->_handler(event);
+}
+
+namespace {
 struct Geometry4 {
     std::vector<SpacingShape4> staff;
     qreal minLeft = -std::numeric_limits<qreal>::max();
