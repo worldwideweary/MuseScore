@@ -502,6 +502,14 @@ void TRead::read(TempoText* t, XmlReader& e, ReadContext& ctx)
             t->setTempo(TConv::fromXml(e.readAsciiText(), Constants::DEFAULT_TEMPO));
         } else if (tag == "followText") {
             t->setFollowText(e.readInt());
+        } else if (tag == "type") {
+            // Preserve a tempo and tempo primo semantics in 3.x scores.
+            const auto type = e.readAsciiText();
+            if (type == "aTempo") {
+                t->setATempo();
+            } else if (type == "tempoPrimo") {
+                t->setTempoPrimo();
+            }
         } else if (!readProperties(toTextBase(t), e, ctx)) {
             e.unknown();
         }
