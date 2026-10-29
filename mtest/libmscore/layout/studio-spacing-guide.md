@@ -1,5 +1,45 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.181 visual checkpoint: accumulated width and automatic system fitting
+
+The v0.180 natural/justified blue and white captures show consistent sign-to-
+note clearance, simultaneous voice alignment and the cross-staff transition.
+No new collision is visible. The natural Evolution first-to-last note span is
+slightly wider: approximately 293 versus 286.5 screenshot pixels at a roughly
+13-pixel staff space, about half a space across the measure. These are image
+measurements of ledger/head rows, not exported layout coordinates. The
+justified streams are regularly subdivided in both applications. Keep the
+small natural-width difference recorded; do not claim exact spacing parity.
+
+Next check whether accumulated widths affect automatic system membership or
+barline/accidental spacing. Reissue v0.73-spacing-cross-staff-fitting.mscx as
+v0.181-spacing-cross-staff-fitting.mscx with only its title version changed.
+F1-F6 alternate the plain and accidental two-companion measures on a 6-inch
+page with 4.8-inch printable width. There are no explicit breaks; both styles
+are ON and final-system fill is zero. The previous accepted rendering grouped
+F1-F2 / F3-F4 / F5-F6. Treat that as a recorded comparison, not a new forced
+break requirement or a claim about the latest captures.
+
+Open the original v0.181 file independently in Evolution and Studio 4.7.5 at
+200 percent. Capture all three systems, in pieces if needed. First compare
+which F labels share a system. Then inspect the middle barline and the next
+measure's first notes/accidentals, regenerated system-start clefs and first
+notes, aligned voice onsets, and cross-staff transitions. If line breaks
+differ, retain the labels in the captures; do not insert manual breaks to
+make the applications agree.
+
+Files changed: the new v0.181 score and this guide only. Existing crossStaffFitting
+and crossStaffInterleaved regression inputs/checks remain unchanged. No build
+or mtest rerun is needed for this score-only checkpoint; the last runtime
+increment v0.179 already has the user's passing beam/spacing result. Local
+validation: XML parsing, exact title-only equivalence, six measures on each
+staff, 18 complete 2/4 streams, both styles ON, page/fill/break settings,
+whitespace and exact patch replay. Native visual review is pending. Next:
+assess automatic membership and measure-boundary clearance, then summarize
+this bounded cross-staff verification before choosing another layout family.
+Ordinary unbeamed stem lengths, full slur parity and performance remain
+recorded separately; no new production algorithm or eligibility scope here.
+
 ## v0.180 visual checkpoint: return to cross-staff accidental/voice spacing
 
 User verification: v0.179 beam/spacing mtests pass. The new G1/G2 capture
