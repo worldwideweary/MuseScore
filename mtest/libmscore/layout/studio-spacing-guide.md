@@ -1,5 +1,38 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.188 checkpoint: v0.184-v0.187 aggregate accepted
+
+The user reports passing native tst_beam and tst_spacing for the aggregate;
+tst_spacing completes in 83.88 seconds. This verifies the new scoped observer,
+actual collection/final-publication evidence and acciaccatura slash regressions
+alongside the existing suites. Record the duration as a suite result only:
+this batch adds test work, and no interactive nudge/undo timing was measured.
+Performance work remains deferred at the user's request.
+
+The supplied matching v0.187 Evolution/Studio 4.7.5 captures cover F1-F6 and S1.
+The diagonal slash angle/reach looks close in beamed UP/DOWN and single-flag
+controls. Both fitting layouts retain F1-F3 / F4-F6; the compressed S1 group
+keeps visible clearance. Accept this bounded slash and horizontal regression
+gate. Small horizontal placement differences remain, especially within S1;
+slur shapes and ordinary main-stem lengths also remain visibly different.
+These captures do not establish exact geometry parity. Beam slope remains
+distinct from the diagonal slash; v0.186 changed no beam-slope rule.
+
+Continue with a coherent architectural batch: extend actual provisional/final
+decision coverage across the accepted corpus, then develop the producer-identity
+and collection/publication seam with mechanism tests. Keep full-plan and mixed
+fallback outcomes explicit; do not broaden admission by deleting guards or
+infer producer identity from the first coincident rectangle. Preserve shared
+ownership, failure atomicity, legacy/style-off behavior and accepted edit paths.
+Keep recoverable WIP commits/patches and request one native beam/spacing run at
+the next aggregate gate, with captures only for a concrete visual change.
+
+Files changed: this guide only. No runtime, tests, styles or scores change;
+no rebuild, repeated native run or additional v0.187 screenshot is required.
+Validation: supplied native results/captures reconciled with the batch scope,
+whitespace checks and exact incremental patch replay. Broader lifecycle and
+producer-identity work remains outstanding.
+
 ## v0.187 aggregate gate: layout decisions plus acciaccatura slash geometry
 
 Batch v0.184-v0.187 for one native build/test phase as requested. Each WIP is
