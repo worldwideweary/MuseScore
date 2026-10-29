@@ -92,6 +92,7 @@
 #include "../../dom/ottava.h"
 #include "../../dom/page.h"
 #include "../../dom/palmmute.h"
+#include "../../dom/partialtie.h"
 #include "../../dom/part.h"
 #include "../../dom/pedal.h"
 #include "../../dom/playtechannotation.h"
@@ -3174,8 +3175,14 @@ void TRead::read(Location* l, XmlReader& e, ReadContext&)
 
 void TRead::read(Lyrics* l, XmlReader& e, ReadContext& ctx)
 {
+    PartialSpannerDirection partial = PartialSpannerDirection::NONE;
+    bool melisma = true;
     while (e.readNextStartElement()) {
-        if (!TRead::readProperties(l, e, ctx)) {
+        if (e.name() == "partialSpannerDirection") {
+            partial = TConv::fromXml(e.readAsciiText(), PartialSpannerDirection::NONE);
+        } else if (e.name() == "partialLyricMelisma") {
+            melisma = e.readBool();
+        } else if (!TRead::readProperties(l, e, ctx)) {
             e.unknown();
         }
     }
@@ -3186,6 +3193,64 @@ void TRead::read(Lyrics* l, XmlReader& e, ReadContext& ctx)
         if (l->autoplace() && !version.isEmpty() && version < u"3.1") {
             PointF off = l->propertyDefault(Pid::OFFSET).value<PointF>();
             l->ryoffset() = off.y();
+        }
+    }
+    if (partial != PartialSpannerDirection::NONE) {
+        ctx.repeatLyrics.push_back({ l, partial, melisma });
+    }
+}
+
+// A 3.7-Evolution partial lyric is saved on its lyric owner. Convert empty
+// incoming owners into native PartialLyricsLine objects. Keep outgoing text as
+// an ordinary lyric, whose separator already understands repeats in Studio.
+void TRead::resolveRepeatLyrics(Score* score, ReadContext& ctx)
+{
+    for (auto it = ctx.repeatLyrics.begin(); it != ctx.repeatLyrics.end();) {
+        Lyrics* lyric = it->lyric;
+        if (lyric->score() != score) {
+            ++it;
+            continue;
+        }
+        const ReadContext::RepeatLyric entry = *it;
+        it = ctx.repeatLyrics.erase(it);
+        ChordRest* first = lyric->chordRest();
+        ChordRest* last = score->findCR(lyric->endTick(), lyric->track());
+        if (!last) {
+            last = first;
+        }
+        const bool incoming = entry.direction == PartialSpannerDirection::INCOMING
+                              || entry.direction == PartialSpannerDirection::BOTH;
+        const bool outgoing = entry.direction == PartialSpannerDirection::OUTGOING
+                              || entry.direction == PartialSpannerDirection::BOTH;
+        const bool empty = lyric->plainText().isEmpty();
+        if (incoming || empty) {
+            PartialLyricsLine* line = Factory::createPartialLyricsLine(score->dummy());
+            line->setIsEndMelisma(entry.melisma);
+            line->setVerse(lyric->verse());
+            line->setPlacement(lyric->placement());
+            line->setPropertyFlags(Pid::PLACEMENT, lyric->propertyFlags(Pid::PLACEMENT));
+            line->setColor(lyric->color());
+            line->setVisible(lyric->visible());
+            line->setTrack(lyric->track());
+            line->setTrack2(lyric->track());
+            line->setTick(first->tick());
+            line->setTick2((empty ? last : first)->endTick());
+            score->addSpanner(line);
+        }
+        if (empty) {
+            first->remove(lyric);
+            delete lyric;
+        } else if (outgoing) {
+            if (entry.melisma) {
+                lyric->setTicks(std::max(lyric->ticks(), Lyrics::TEMP_MELISMA_TICKS));
+                lyric->setSyllabic(LyricsSyllabic::SINGLE);
+            } else {
+                lyric->setTicks(Fraction(0, 1));
+                lyric->setSyllabic(LyricsSyllabic::BEGIN);
+            }
+        } else {
+            lyric->setTicks(Fraction(0, 1));
+            lyric->setSyllabic(LyricsSyllabic::SINGLE);
         }
     }
 }
@@ -3325,6 +3390,22 @@ bool TRead::readProperties(Note* n, XmlReader& e, ReadContext& ctx)
         a->setTrack(n->track());
         TRead::read(a, e, ctx);
         n->add(a);
+    } else if (tag == "PartialTie") {
+        PartialTie* partial = Factory::createPartialTie(n);
+        partial->setTrack(n->track());
+        while (e.readNextStartElement()) {
+            if (e.name() == "partialSpannerDirection") {
+                partial->setPartialSpannerDirection(TConv::fromXml(e.readAsciiText(), PartialSpannerDirection::OUTGOING));
+            } else if (!readProperties(static_cast<SlurTie*>(partial), e, ctx)) {
+                e.unknown();
+            }
+        }
+        if (partial->isOutgoing()) {
+            partial->setStartNote(n);
+        } else {
+            partial->setEndNote(n);
+        }
+        n->add(partial);
     } else if (tag == "Spanner") {
         readSpanner(e, ctx, n, n->track());
     } else if (tag == "tpc2") {
@@ -3874,6 +3955,10 @@ void TRead::read(Slur* s, XmlReader& e, ReadContext& ctx)
 
 bool TRead::readProperties(Slur* s, XmlReader& e, ReadContext& ctx)
 {
+    if (e.name() == "partialSpannerDirection") {
+        s->setPartialSpannerDirection(TConv::fromXml(e.readAsciiText(), PartialSpannerDirection::NONE));
+        return true;
+    }
     return readProperties(toSlurTie(s), e, ctx);
 }
 
@@ -3913,7 +3998,10 @@ void TRead::read(SlurTieSegment* s, XmlReader& e, ReadContext& ctx)
     double _spatium = s->style().spatium();
     while (e.readNextStartElement()) {
         const AsciiStringView tag(e.name());
-        if (s->score()->mscVersion() < 400 && (tag == "o1" || tag == "o2" || tag == "o3" || tag == "o4")) {
+        // Evolution partial ties already use the native 4.x grip-offset format.
+        // Keep the legacy migration policy for ordinary pre-4.0 slurs and ties.
+        if (s->score()->mscVersion() < 400 && !s->isPartialTieSegment()
+            && (tag == "o1" || tag == "o2" || tag == "o3" || tag == "o4")) {
             e.skipCurrentElement(); // Ignore slur user offsets from pre-4.0
         } else if (tag == "o1") {
             s->ups(Grip::START).off = e.readPoint() * _spatium;

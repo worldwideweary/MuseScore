@@ -306,6 +306,8 @@ public:
     static void read(Vibrato* v, XmlReader& xml, ReadContext& ctx);
     static void read(Volta* v, XmlReader& xml, ReadContext& ctx);
 
+    static void resolveRepeatLyrics(Score* score, ReadContext& ctx);
+
     // compat
     struct TremoloCompat {
         Chord* parent = nullptr;

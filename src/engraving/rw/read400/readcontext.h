@@ -23,6 +23,7 @@
 #pragma once
 
 #include <map>
+#include <vector>
 #include <optional>
 #include <unordered_map>
 
@@ -47,6 +48,7 @@ class BarLine;
 class Beam;
 class EngravingObject;
 class LinkedObjects;
+class Lyrics;
 class Measure;
 class Score;
 class Spanner;
@@ -74,6 +76,14 @@ struct TextStyleMap {
 class ReadContext : public muse::Contextable
 {
 public:
+    struct RepeatLyric {
+        Lyrics* lyric = nullptr;
+        PartialSpannerDirection direction = PartialSpannerDirection::NONE;
+        bool melisma = true;
+    };
+    // Resolve 3.7-Evolution lyric spans after all chord/rests have been read.
+    std::vector<RepeatLyric> repeatLyrics;
+
     muse::GlobalInject<IEngravingFontsProvider> engravingFonts;
 
 public:

@@ -293,6 +293,7 @@ bool Read400::readScoreTag(Score* score, XmlReader& e, ReadContext& ctx)
         return false;
     }
 
+    TRead::resolveRepeatLyrics(score, ctx);
     score->connectTies();
 
     score->m_fileDivision = Constants::DIVISION;
@@ -757,6 +758,7 @@ bool Read400::pasteStaff(XmlReader& e, Segment* dst, staff_idx_t dstStaff, Fract
     }
 
     for (Score* s : score->scoreList()) {     // for all parts
+        TRead::resolveRepeatLyrics(s, ctx);
         s->connectTies();
 
         for (Spanner* sp : score->unmanagedSpanners()) {

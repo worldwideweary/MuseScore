@@ -197,6 +197,7 @@ bool Read302::readScoreTag(Score* score, XmlReader& e, ReadContext& ctx)
         return false;
     }
 
+    TRead::resolveRepeatLyrics(score, ctx);
     score->connectTies();
 
     score->m_fileDivision = Constants::DIVISION;
