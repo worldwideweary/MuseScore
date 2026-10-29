@@ -45,10 +45,25 @@ using namespace Ms;
 
 #define DIR QString("libmscore/layout/")
 
+// Standalone layout probes are not score-owned spanners. Their rendered
+// segments join System's non-owning list and must leave it before deletion.
+class SlurProbeRegistration4 {
+      Slur& _slur;
+public:
+      explicit SlurProbeRegistration4(Slur& slur) : _slur(slur) {}
+      SlurProbeRegistration4(const SlurProbeRegistration4&) = delete;
+      SlurProbeRegistration4& operator=(const SlurProbeRegistration4&) = delete;
+      ~SlurProbeRegistration4() {
+            for (SpannerSegment* segment : _slur.spannerSegments()) segment->setSystem(nullptr);
+            // Spanner::pushUnusedSegment already detaches pooled segments.
+            }
+      };
+
 class TestSpacing : public QObject, public MTest {
       Q_OBJECT
    private slots:
       void initTestCase() { initMTest(); }
+      void slurProbeLifetime4();
       void spacingInputSnapshot4_data();
       void spacingInputSnapshot4();
       void spacingSlurAttachments4();
@@ -6037,6 +6052,7 @@ void TestSpacing::graceMergedLaterSlurCurves4()
                   }
             for (Chord* start : after) {
                   Slur probe(score.get());
+                  SlurProbeRegistration4 registration(probe);
                   probe.setTrack(start->track());
                   probe.setTrack2(target->track());
                   probe.setTick(owner->tick());
@@ -7896,6 +7912,7 @@ void TestSpacing::beamEndSlurAnchors4()
                   Chord* start = startEnd ? anchor : other;
                   Chord* end = startEnd ? other : anchor;
                   Slur probe(score.get());
+                  SlurProbeRegistration4 registration(probe);
                   probe.setTrack(start->track());
                   probe.setTrack2(end->track());
                   probe.setTick(start->tick());
@@ -7950,6 +7967,49 @@ void TestSpacing::beamEndSlurAnchors4()
       QVERIFY(startsUp > 0 && startsDown > 0 && endsUp > 0 && endsDown > 0);
       score->setStyleValue(Sid::spacingLayout4, true);
       QVERIFY(graceMergedSnapshot4(score.get()) == notation);
+      }
+
+void TestSpacing::slurProbeLifetime4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.167-grace-policy-systems.mscx"));
+      QVERIFY(score);
+      score->doLayout();
+      Chord* start = nullptr;
+      Chord* end = nullptr;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
+            for (const Segment& segment : m->segments()) {
+                  Element* item = segment.element(0);
+                  if (!segment.isChordRestType() || !item || !item->isChord()) continue;
+                  if (!start) start = toChord(item);
+                  end = toChord(item);
+                  }
+      QVERIFY(start && end && start->measure()->system() != end->measure()->system());
+      std::vector<QList<SpannerSegment*>> before;
+      for (System* system : score->systems()) before.push_back(system->spannerSegments());
+      for (int repeat = 0; repeat < 8; ++repeat) {
+            {
+            Slur probe(score.get());
+            SlurProbeRegistration4 registration(probe);
+            probe.setTrack(0);
+            probe.setTrack2(0);
+            probe.setTick(start->tick());
+            probe.setTicks(end->tick() - start->tick());
+            probe.setStartElement(start);
+            probe.setEndElement(end);
+            probe.setSlurDirection(Direction::UP);
+            probe.layout();
+            QVERIFY(probe.nsegments() >= 2);
+            for (SpannerSegment* segment : probe.spannerSegments()) {
+                  QVERIFY(segment->system());
+                  QVERIFY(segment->system()->spannerSegments().contains(segment));
+                  }
+            }
+            size_t index = 0;
+            for (System* system : score->systems())
+                  QVERIFY(system->spannerSegments() == before[index++]);
+            }
+      // Exercise native cleanup after the probes have released their segments.
+      score->doLayout();
       }
 
 void TestSpacing::beamSlurAnchorHeights4_data()
@@ -8009,6 +8069,7 @@ void TestSpacing::beamSlurAnchorHeights4()
             for (size_t i = 0; i + 1 < members.size(); ++i) {
                   Chord* start = members[i];
                   Slur probe(score.get());
+                  SlurProbeRegistration4 registration(probe);
                   probe.setTrack(start->track());
                   probe.setTrack2(end->track());
                   probe.setTick(start->tick());
@@ -8099,6 +8160,7 @@ void TestSpacing::continuedSlurStemAnchors4()
                         fixedEnd = chord;
             QVERIFY(fixedStart && fixedEnd);
             Slur continued(score.get());
+            SlurProbeRegistration4 registration(continued);
             continued.setTrack(0);
             continued.setTrack2(0);
             continued.setSlurDirection(up ? Direction::UP : Direction::DOWN);

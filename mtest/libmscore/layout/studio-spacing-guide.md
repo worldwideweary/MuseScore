@@ -1,5 +1,29 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.210 correction: detach standalone slur probe segments
+
+The v0.209 rerun XML aborts with signal 11 in beamSlurAnchorHeights4:ordinary,
+before measureRestPlanning4. smallNotation4 and the preceding style/curve tests
+pass in that run; the v0.209 malformed-rest correction is not yet native-verified.
+
+Standalone stack slurs call layout(), registering their rendered segments in
+System's non-owning spanner list. Spanner's destructor deletes segments without
+unregistering them; System::clear/destructor subsequently dereferences entries.
+Use a test-only SlurProbeRegistration4 guard, declared after the standalone
+Slur, which calls setSystem(nullptr) before the slur is destroyed. Pooled segments were already detached by
+pushUnusedSegment. Apply it to the three temporary probe sites and the continued
+slur fixture. RAII also releases registration on early QVERIFY returns.
+
+Add slurProbeLifetime4: repeatedly lay out a two-system probe, verify registration
+while live, then require every system's exact original segment list restored
+after scope exit, followed by native relayout. Production code is unchanged.
+An ASan mock reproduces heap-use-after-free with the extracted native spanner
+destructor/setSystem path when registration is unmanaged; the guard passes
+1,000 create/detach/destroy cycles. Leak detection is disabled because the local
+container blocks LeakSanitizer process inspection. This is not native execution.
+Local regenerated-moc Debug/NDEBUG syntax and patch replay pass; native rerun
+is required over v0.209 before visual comparison or aggregate acceptance.
+
 ## v0.209 correction: effective malformed-rest rejection probe
 
 The user's v0.208 native XML reports eight failures, all measureRestPlanning4
