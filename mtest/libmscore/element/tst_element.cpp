@@ -123,6 +123,7 @@ class TestElement : public QObject, public MTest
       void arpeggioVoicePlayback();
       void arpeggioEndpointVoices();
       void arpeggioPitchOrderPlayback();
+      void arpeggioLivePlayEvents();
       };
 
 //---------------------------------------------------------
@@ -2694,6 +2695,53 @@ void TestElement::arpeggioPitchOrderPlayback()
       QVERIFY(extra->playEvents().front().ontime() > 0);
       QVERIFY(!mixed->downNote()->playEvents().empty());
       QCOMPARE(mixed->downNote()->playEvents().front().ontime(), 0);
+      delete s;
+      }
+
+//---------------------------------------------------------
+//   arpeggioLivePlayEvents
+//---------------------------------------------------------
+
+void TestElement::arpeggioLivePlayEvents()
+      {
+      MasterScore* s = readScore("libmscore/element/arpeggio-pitch-order.mscx");
+      QVERIFY(s);
+      Segment* seg = s->firstSegment(SegmentType::ChordRest);
+      QVERIFY(seg);
+      Arpeggio* a = toChord(seg->element(5))->arpeggio();
+      QVERIFY(a);
+      s->startCmd();
+      s->undo(new ChangeArpeggioAnchor(a, toChord(seg->element(0)), 1));
+      s->endCmd();
+      Note* n = toChord(seg->element(6))->upNote();
+      QVERIFY(!n->playEvents().empty());
+      QCOMPARE(n->playEvents().front().ontime(), 0);
+      EditData edit(nullptr);
+      edit.modifiers = Qt::ShiftModifier;
+      edit.curGrip = Grip::END;
+      edit.key = Qt::Key_Down;
+      for (int track : {1, 2, 6}) {
+            s->startCmd();
+            QVERIFY(a->edit(edit));
+            s->endCmd();
+            QCOMPARE(a->endTrack(), track);
+            }
+      // No explicit createPlayEvents() and no playback: data must already
+      // contain the new onset before a piano roll viewer reads it.
+      QVERIFY(!n->playEvents().empty());
+      QVERIFY(n->playEvents().front().ontime() > 0);
+      s->undoStack()->undo(&edit);
+      QCOMPARE(a->endTrack(), 2);
+      QCOMPARE(n->playEvents().front().ontime(), 0);
+      s->undoStack()->redo(&edit);
+      QCOMPARE(a->endTrack(), 6);
+      QVERIFY(n->playEvents().front().ontime() > 0);
+      edit.key = Qt::Key_Up;
+      s->startCmd();
+      QVERIFY(a->edit(edit));
+      s->endCmd();
+      QCOMPARE(a->endTrack(), 2);
+      QCOMPARE(n->playEvents().front().ontime(), 0);
       delete s;
       }
 

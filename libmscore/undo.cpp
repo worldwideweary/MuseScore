@@ -2402,6 +2402,11 @@ void ChangeArpeggioAnchor::flip(EditData*)
       oldParent->triggerLayout();
       arpeggio->triggerLayout();
       arpeggio->score()->setPlaylistDirty();
+      // Update the event data before the piano roll redraws. Rebuild the
+      // affected measure so newly included and excluded voices both refresh.
+      // The range renderer also handles tied continuations beyond its end.
+      if (Measure* m = parent->measure())
+            arpeggio->score()->createPlayEvents(m, m->nextMeasure());
       parent = oldParent;
       span = oldSpan;
       }
