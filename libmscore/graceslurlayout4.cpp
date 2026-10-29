@@ -18,6 +18,29 @@
 #include <cmath>
 
 namespace Ms {
+SlurStemMetrics4 slurStemMetrics4(const Chord* chord)
+{
+    SlurStemMetrics4 result;
+    if (!chord || !chord->stem()) return result;
+    result.length = std::abs(chord->stem()->p2().y());
+    const Beam* beam = chord->beam();
+    if (beam && !beam->cross()) {
+        qreal intrinsicMag = beam->mag();
+        if (beam->isGrace()) {
+            // Studio BeamLayout::layout1 uses the largest small-note factor;
+            // its grace factor is applied separately to the drawn beam width.
+            intrinsicMag = 0;
+            for (const ChordRest* member : beam->elements())
+                intrinsicMag = std::max(intrinsicMag, member->isSmall()
+                    ? chord->score()->styleD(Sid::smallNoteMag) : qreal(1));
+        }
+        const Spatium width = chord->score()->styleS(Sid::beamWidth);
+        result.length += beam->point(width) * intrinsicMag / 2;
+        result.beamWidthSp = width.val() * intrinsicMag * (chord->score()->spatium() / SPATIUM20);
+    }
+    return result;
+}
+
 bool fitGraceSlurCurve4(const SpacingShape4& physical, const Chord* target, qreal spatium,
                        bool up, GraceSlurCurve4& result, bool startFloated, bool endFloated, QString* reason)
 {
@@ -202,9 +225,10 @@ bool adjustGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& startPoint, QP
     if (!(query ? query : &localQuery)->geometry(owner, reason)) return false;
     const qreal sp = slur->spatium();
     const qreal mag = start->chordMag();
-    // Preserve Studio slurPos's beamWidthSp expression exactly. It uses the
-    // style's space value times magS(), not the drawn beam width in points.
-    const qreal beamWidth = start->score()->styleS(Sid::beamWidth).val() * start->beam()->magS();
+    // Translate Studio's intrinsic beam magnitude before using slurPos's
+    // beamWidthSp expression. Grace draw scaling is a separate source metric.
+    const SlurStemMetrics4 startStem = slurStemMetrics4(start);
+    const qreal beamWidth = startStem.beamWidthSp;
     if (!(sp > 0) || !(mag > 0) || !(beamWidth > 0)
         || !std::isfinite(sp) || !std::isfinite(mag) || !std::isfinite(beamWidth)
         || !(start->stem()->len() > 0) || !(target->stem()->len() > 0)
@@ -223,7 +247,7 @@ bool adjustGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& startPoint, QP
     // Studio slurPos's beamed, non-final, stem-side start branch. Use the
     // source's beamWidthSp term here; the beam layout anchor width and drawn
     // beam polygon width are separate metrics.
-    const qreal startHeight = start->stem()->len() + beamWidth / 2 + std::max(qreal(.35) * mag, qreal(.2)) * sp;
+    const qreal startHeight = startStem.length + beamWidth / 2 + std::max(qreal(.35) * mag, qreal(.2)) * sp;
     const qreal startStemY = start->stemPos().y() - start->pagePos().y();
     QPointF adjustedStart = origin(start) + QPointF(
         start->stemPosX() + .15 * sp * mag + sign * start->stem()->lineWidthMag() / 2,
@@ -247,7 +271,7 @@ bool adjustGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& startPoint, QP
         // The stem-side start forces the same-direction main endpoint to its
         // stem. This scope's target is unbeamed and has ordinary magnitude.
         const qreal endMag = target->chordMag();
-        const qreal endHeight = target->stem()->len() + std::max(qreal(.35) * endMag, qreal(.2)) * sp;
+        const qreal endHeight = slurStemMetrics4(target).length + std::max(qreal(.35) * endMag, qreal(.2)) * sp;
         const qreal endStemY = target->stemPos().y() - target->pagePos().y();
         adjustedEnd = origin(target) + QPointF(
             target->stemPosX() + sign * target->stem()->lineWidthMag() / 2 - .15 * sp * endMag,

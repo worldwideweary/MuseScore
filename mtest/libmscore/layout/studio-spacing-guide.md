@@ -1,5 +1,91 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.178 WIP: translate Studio's beamed stem-length metric
+
+Source audit of the O1 tip clearance found a representation difference:
+Studio's Stem::length includes a nominal beam-side half width, while TLayout::layoutStem
+shortens its drawn line by that width. BeamTremoloLayout::chordBeamAnchorY and
+extendStem establish the relationship. Evolution Beam::layout2 stores its stem
+length directly to the beam center. Copying Studio's slurPos length expression
+without this translation left ordinary and grace beam-side slur tips too close
+to the drawn beam. Keep the source's separate beamWidthSp/2 term unchanged.
+
+Studio also keeps intrinsic beam magnitude (the largest small-note factor)
+separate from grace draw scaling. Evolution's grace Beam::mag bundles the
+grace factor. Translate both the nominal half width and start beamWidthSp term
+using the source intrinsic magnitude, retaining the separate grace-note
+factor in its clearance term. Do not use Evolution's grace draw magnitude for
+Studio's intrinsic magS expression.
+
+Add SlurStemMetrics4: read the physical stem tip (including user length), then
+add half the source nominal beam width for a non-cross beam and expose the
+translated start beamWidthSp. Use those metrics in the modern general beam-side
+branches and the existing first-after/main adapter. Selected beam-end stem
+insets still use the native drawn tip,
+which already corresponds to Studio's drawn-line endpoint. Preserve horizontal
+coordinates, preferred upper leading-edge alignment and disabled-style paths.
+The change moves slur anchors only; it does not lengthen stems or move beams.
+
+Pinned v4.7.5 reference blobs, fetched and hashed during this audit:
+slurtielayout.cpp cc4d7659bffd339ebf6b757d4d70b284812d1fe1;
+stem.cpp 7d6a6132307e72b3fe1eeaff953a28dc3cb40daf;
+tlayout.cpp 925cdbb651aa972dd9577765988869bc2f4a3d64;
+beamtremololayout.cpp 4b276f044d16fb610be32f218d46853ca5564abf.
+
+Update the general and combined beam-anchor regression checks to measure
+clearance from the physical line tip plus the source nominal half beam width.
+Exercise a manual stem extension in the general branch: the start follows the
+extension, the other endpoint stays fixed, and restoring it preserves notation.
+Existing UP/DOWN ordinary/grace, style-off, offsets and sibling checks remain.
+
+Files changed: libmscore/slur.cpp, libmscore/graceslurlayout4.cpp/.h,
+tst_spacing.cpp and this guide. Local validation: Debug/NDEBUG C++11 syntax
+checks with regenerated moc and warning flags, whitespace and exact patch
+replay. A standalone harness running the actual metric helper against mocked
+DOM accessors passes 6,912 source-length inversions across ordinary/grace,
+small/mixed groups, directions, user lengths and beam/cross/no-beam inputs.
+The former direct-tip length fails 1,728 beamed cases in that harness. This is
+local metric validation, not native score rendering or mtests.
+Native build/mtests and visual results remain pending. Apply v0.177
+then v0.178, or the combined patch over v0.176, and run the usual beam/spacing
+pair once. Reopen the original v0.176 comparison score independently in both
+apps. Inspect O1/O4 for visible beam clearance and G2 for a clean arc over the
+following group, retaining both staves at 200 percent. Check G1/G3/G4/G5 for
+collateral changes. Broad curvature differences and incomplete physical beam
+polygons remain outside a full parity claim; performance work stays deferred.
+
+## v0.177 WIP: fit slurs from later after-grace anchors
+
+The v0.176 blue/white comparison shows broadly consistent beam-end selection
+in O2/O3 and before-grace attachments in G3/G4. It also exposes two remaining
+differences: O1's tips sit closer to the beam in Evolution, and G2's upper arc
+runs into the following before-grace beam instead of arching clear. Do not
+close the entire visual sweep yet. Undo/nudge performance stays deferred.
+
+The existing combined-grace obstacle collector admits only the first incoming
+after-grace. Studio v4.7.5 getSegmentShape/avoidCollisions removes the actual
+start chord's components, independently of its index in the grace group. Let
+the late collector admit any actual after-group member with the same validated
+owner/target relationship. It then excludes that member, retains the other
+members and target at their current positions, and uses the existing bounded
+curve fitter. No new spacing pass or retained cache is added. Keep the original
+first-after horizontal compatibility predicate and leading-edge adapter.
+
+Add graceMergedLaterSlurCurves4 using the existing v0.176 score. Its G2 roots
+cover UP/DOWN, probing all four incoming anchors. Check rendered clearance
+against the admitted physical components, following before-note inclusion,
+start-component exclusion, offset preview/relayout consistency, style-off
+restoration, unchanged sibling curves and published notation on both staves.
+Use one score layout followed by local slur layouts rather than repeating full
+score layout per probe. This does not claim a complete ordinary slur solver or
+full physical beam-polygon support in the combined component collector.
+
+Files changed: libmscore/gracespacing4.cpp/.h, tst_spacing.cpp and this guide.
+Local validation: Debug/NDEBUG C++11 syntax checks with regenerated moc and
+warning flags, whitespace and exact patch replay. Native mtests/rendering are
+pending. Next: finish tracing O1's stem/beam metric difference, then run the
+beam/spacing pair and repeat the same v0.176 visual score, especially G2.
+
 ## v0.176 visual checkpoint: consolidated slur beam-boundary sweep
 
 User verification: v0.175 beam/spacing mtests pass. The four new blue captures

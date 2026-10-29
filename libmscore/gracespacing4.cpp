@@ -103,7 +103,8 @@ bool spacingLocalGraceSlur4(const Slur* slur, const Chord* main, bool allowVisua
     return true;
 }
 
-bool spacingMergedGraceSlur4(const Slur* slur, const Chord* owner, const Chord* target, bool allowVisualEdits)
+static bool mergedGraceSlur4(const Slur* slur, const Chord* owner, const Chord* target,
+                            bool allowVisualEdits, bool laterAfterAnchor)
 {
     if (!slur || !owner || !target || owner == target || owner->isGrace() || target->isGrace()
         || !owner->measure() || !owner->segment() || !target->segment()
@@ -113,7 +114,13 @@ bool spacingMergedGraceSlur4(const Slur* slur, const Chord* owner, const Chord* 
         || owner->graceNotesAfter().empty() || target->graceNotesBefore().empty())
         return false;
     if (spacingLocalGraceSlur4(slur, target, allowVisualEdits)) return true;
-    const Chord* first = owner->graceNotesAfter().front();
+    const auto after = owner->graceNotesAfter();
+    const Chord* first = after.front();
+    if (laterAfterAnchor) {
+        if (!slur->startElement() || !slur->startElement()->isChord()) return false;
+        first = toChord(slur->startElement());
+        if (std::find(after.begin(), after.end(), first) == after.end()) return false;
+    }
     if (slur->score() != owner->score() || !slur->visible()
         || (!allowVisualEdits && (!slur->autoplace() || slur->isNudged())) || slur->lineType() != 0
         || slur->startElement() != first || slur->endElement() != target
@@ -127,6 +134,14 @@ bool spacingMergedGraceSlur4(const Slur* slur, const Chord* owner, const Chord* 
         if (!allowVisualEdits && (!segment->autoplace() || segment->isNudged() || segment->isEdited())) return false;
     }
     return true;
+}
+
+bool spacingMergedGraceSlur4(const Slur* slur, const Chord* owner, const Chord* target, bool allowVisualEdits)
+{
+    // Compatibility spacing still admits only the original first-after or
+    // local-before attachment. Late curve fitting can use any actual member
+    // of the after group without changing that horizontal-spacing contract.
+    return mergedGraceSlur4(slur, owner, target, allowVisualEdits, false);
 }
 
 static const Chord* ownerChord4(const Element* item)
@@ -683,7 +698,7 @@ bool buildGraceMergedSlurObstacles4(const Slur* slur, SpacingShape4& result, QSt
     if (!start->isGraceAfter() || !start->parent() || !start->parent()->isChord())
         return fail("Combined grace obstacles need the incoming after-grace anchor");
     const Chord* owner = toChord(start->parent());
-    if (!spacingMergedGraceSlur4(slur, owner, target, allowVisualEdits)
+    if (!mergedGraceSlur4(slur, owner, target, allowVisualEdits, true)
         || !owner->measure()->system() || owner->measure()->system() != target->measure()->system())
         return fail("Unadapted combined grace slur obstacles");
     GraceMergedSlurQuery4 localQuery;

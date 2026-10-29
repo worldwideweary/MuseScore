@@ -153,7 +153,7 @@ bool applyGraceAfterPlan4(Chord*, QString* reason = nullptr);
 // incoming after-grace (or the existing local before anchor) to target main.
 bool spacingMergedGraceSlur4(const Slur*, const Chord* owner, const Chord* target, bool allowVisualEdits = false);
 
-// Read-only physical obstacles for first-after-grace to target-main slurs in
+// Read-only physical obstacles for any after-grace to target-main slurs in
 // the validated combined scope. Uses CURRENT published positions, not planned
 // grace offsets. Coordinates match Slur::slurPos (system x, staff-relative y).
 // Excludes the start anchor, ledgers and synthetic spacing bounds; includes

@@ -74,6 +74,7 @@ class TestSpacing : public QObject, public MTest {
       void graceSlurCurveFit();
       void graceMergedSlurCurves_data();
       void graceMergedSlurCurves();
+      void graceMergedLaterSlurCurves4();
       void graceSlurSiblingAnchors4();
       void continuedSlurStemAnchors4();
       void beamSlurAnchorHeights4_data();
@@ -5464,10 +5465,14 @@ void TestSpacing::graceMergedSlurBeamAnchors()
             const QPointF startOrigin = start->pos() + start->parent()->pos()
                   + start->segment()->pos() + start->measure()->pos();
             const qreal startTipY = startOrigin.y() + start->stemPos().y() - start->pagePos().y()
-                  + sign * start->stem()->len();
+                  + start->stem()->p2().y();
             // Measure the anchor's distance beyond the actual stem tip.
-            const qreal sourceBeamTerm = score->styleS(Sid::beamWidth).val() * start->beam()->magS() / 2;
-            const qreal sourceClearance = sourceBeamTerm + qMax(.35 * start->chordMag(), qreal(.2)) * sp;
+            // These fixtures have full-size members. Studio's intrinsic beam
+            // magnitude is 1 even when the drawn grace beam is scaled to .7.
+            for (const ChordRest* member : start->beam()->elements()) QVERIFY(!member->isSmall());
+            const qreal sourceBeamTerm = score->styleS(Sid::beamWidth).val() * (sp / SPATIUM20) / 2;
+            const qreal nominalHalfBeam = start->beam()->point(score->styleS(Sid::beamWidth)) / 2;
+            const qreal sourceClearance = nominalHalfBeam + sourceBeamTerm + qMax(.35 * start->chordMag(), qreal(.2)) * sp;
             QVERIFY(qAbs(sign * (a.y() - startTipY) - sourceClearance) < 1e-6);
             QVERIFY(qAbs(a.y() - startTipY) < qAbs(legacy.p1.y() - startTipY));
             if (slur->up()) {
@@ -5811,6 +5816,135 @@ void TestSpacing::graceMergedSlurCurves()
       score->doLayout();
       QVERIFY(same(curves(score), legacy));
       delete score;
+      }
+
+// Later after-grace anchors must avoid the following group's physical music,
+// even though compatibility spacing still recognizes only the first anchor.
+void TestSpacing::graceMergedLaterSlurCurves4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.176-slur-beam-boundaries.mscx"));
+      QVERIFY(score);
+      score->doLayout();
+      const auto notation = [&score]() {
+            auto values = graceLayoutSnapshot4(score.get());
+            const auto append = [&values](const Chord* chord) {
+                  values.insert(values.end(), {chord->x(), chord->y(), qreal(chord->up()),
+                        chord->stem() ? chord->stem()->len() : 0});
+                  if (chord->beam() && chord->beam()->primarySegment4()) {
+                        const QLineF& beam = *chord->beam()->primarySegment4();
+                        values.insert(values.end(), {beam.x1(), beam.y1(), beam.x2(), beam.y2()});
+                        }
+                  };
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  for (const Segment& segment : m->segments()) {
+                        for (const Element* item : segment.elist()) {
+                              if (!item || !item->isChord()) continue;
+                              const Chord* chord = toChord(item);
+                              append(chord);
+                              for (const Chord* grace : chord->graceNotes()) append(grace);
+                              }
+                        }
+                  }
+            return values;
+            };
+      const auto initialNotes = notation();
+      const auto points = [](const SlurSegment* segment) {
+            std::vector<QPointF> result {segment->pos()};
+            for (Grip grip : {Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END})
+                  result.push_back(segment->ups(grip).pos());
+            return result;
+            };
+      const auto same = [](const std::vector<QPointF>& a, const std::vector<QPointF>& b) {
+            if (a.size() != b.size()) return false;
+            for (size_t i = 0; i < a.size(); ++i)
+                  if ((a[i] - b[i]).manhattanLength() > 1e-6) return false;
+            return true;
+            };
+      int upCount = 0, downCount = 0;
+      for (const auto& entry : score->spannerMap().map()) {
+            if (!entry.second->isSlur()) continue;
+            Slur* root = toSlur(entry.second);
+            Chord* original = toChord(root->startElement());
+            if (!original->isGraceAfter()) continue;
+            Chord* owner = toChord(original->parent());
+            const auto after = owner->graceNotesAfter();
+            if (original == after.front()) continue; // The two G2 roots.
+            Chord* target = toChord(root->endElement());
+            QVERIFY(root->frontSegment()->usesGraceCurve4());
+            const auto sibling = points(root->frontSegment());
+            for (Chord* start : after) {
+                  Slur probe(score.get());
+                  probe.setTrack(start->track());
+                  probe.setTrack2(target->track());
+                  probe.setTick(owner->tick());
+                  probe.setTicks(target->tick() - owner->tick());
+                  probe.setStartElement(start);
+                  probe.setEndElement(target);
+                  probe.setSlurDirection(root->slurDirection());
+                  probe.layout();
+                  SlurSegment* segment = probe.frontSegment();
+                  QVERIFY2(segment && segment->usesGraceCurve4(),
+                        qPrintable(QString("later grace curve, track %1, index %2")
+                              .arg(start->track()).arg(start->graceIndex())));
+                  QCOMPARE(spacingMergedGraceSlur4(&probe, owner, target), start == after.front());
+                  SpacingShape4 obstacles;
+                  QString reason;
+                  QVERIFY2(buildGraceMergedSlurObstacles4(&probe, obstacles, &reason), qPrintable(reason));
+                  const CubicBezier rendered(segment->ups(Grip::START).pos() + segment->pos(),
+                        segment->ups(Grip::BEZIER1).pos() + segment->pos(),
+                        segment->ups(Grip::BEZIER2).pos() + segment->pos(),
+                        segment->ups(Grip::END).pos() + segment->pos());
+                  bool beforeNoteSeen = false;
+                  for (const auto& component : obstacles.elements) {
+                        const Element* parent = component.item;
+                        while (parent && !parent->isChord()) parent = parent->parent();
+                        QVERIFY(parent && parent != start);
+                        beforeNoteSeen = beforeNoteSeen || (component.item->isNote() && toChord(parent)->isGraceBefore());
+                        const qreal margin = parent == target ? 0 : (component.item->isNote() ? .4 : .1) * score->spatium();
+                        const QRectF padded = component.rect.adjusted(0, probe.up() ? -margin : 0,
+                              0, probe.up() ? 0 : margin);
+                        for (int sample = 0; sample <= 1000; ++sample) {
+                              const QPointF p = rendered.pointAtPercent(sample / qreal(1000));
+                              if (p.x() > padded.left() && p.x() < padded.right())
+                                    QVERIFY2(probe.up() ? p.y() < padded.top() : p.y() > padded.bottom(),
+                                          qPrintable(QString("later grace clearance: track %1, grace %2, sample %3")
+                                                .arg(start->track()).arg(start->graceIndex()).arg(sample)));
+                              }
+                        }
+                  QVERIFY(beforeNoteSeen);
+                  const auto modern = points(segment);
+                  const QPointF base = segment->ups(Grip::START).pos();
+                  const QPointF delta(0, -.25 * score->spatium());
+                  segment->ups(Grip::START).off = delta;
+                  segment->computeBezier();
+                  QVERIFY((segment->ups(Grip::START).pos() - base - delta).manhattanLength() < 1e-6);
+                  probe.layout();
+                  segment = probe.frontSegment();
+                  QVERIFY(segment->usesGraceCurve4());
+                  QCOMPARE(segment->ups(Grip::START).off, delta);
+                  QVERIFY((segment->ups(Grip::START).pos() - base - delta).manhattanLength() < 1e-6);
+                  segment->ups(Grip::START).off = QPointF();
+                  probe.layout();
+                  QVERIFY(same(points(probe.frontSegment()), modern));
+                  score->setStyleValue(Sid::spacingLayout4, false);
+                  probe.layout();
+                  QVERIFY(!probe.frontSegment()->usesGraceCurve4());
+                  const auto legacy = points(probe.frontSegment());
+                  score->setStyleValue(Sid::spacingLayout4, true);
+                  probe.layout();
+                  QVERIFY(same(points(probe.frontSegment()), modern));
+                  score->setStyleValue(Sid::spacingLayout4, false);
+                  probe.layout();
+                  QVERIFY(same(points(probe.frontSegment()), legacy));
+                  score->setStyleValue(Sid::spacingLayout4, true);
+                  QVERIFY(same(points(root->frontSegment()), sibling));
+                  QVERIFY(notation() == initialNotes);
+                  if (root->up()) ++upCount;
+                  else ++downCount;
+                  }
+            }
+      QCOMPARE(upCount, 4);
+      QCOMPARE(downCount, 4);
       }
 
 // Read-only collision input: no slur curve or published spacing changes yet.
@@ -7699,12 +7833,15 @@ void TestSpacing::beamSlurAnchorHeights4()
                   members.push_back(toChord(member));
                   }
             if (!usable) continue;
+            // Full-size ordinary and grace members: the source's intrinsic
+            // beam magnitude is 1, separately from grace draw magnification.
+            for (const Chord* member : members) QVERIFY(!member->isSmall());
             Chord* end = members.back();
             const qreal sign = end->up() ? -1 : 1;
-            const auto tip = [sign](Chord* chord) {
+            const auto tip = [](Chord* chord) {
                   qreal y = chord->y() + chord->segment()->y() + chord->measure()->y();
                   if (chord->isGrace()) y += chord->parent()->y();
-                  return y + chord->stemPos().y() - chord->pagePos().y() + sign * chord->stem()->len();
+                  return y + chord->stemPos().y() - chord->pagePos().y() + chord->stem()->p2().y();
                   };
             for (size_t i = 0; i + 1 < members.size(); ++i) {
                   Chord* start = members[i];
@@ -7725,14 +7862,28 @@ void TestSpacing::beamSlurAnchorHeights4()
                   score->setStyleValue(Sid::spacingLayout4, true);
                   SlurPos modern;
                   probe.slurPos(&modern);
-                  const qreal startClearance = score->styleS(Sid::beamWidth).val() * beam->magS() / 2
+                  const qreal nominalHalfBeam = beam->point(score->styleS(Sid::beamWidth)) / 2;
+                  const qreal startClearance = nominalHalfBeam + score->styleS(Sid::beamWidth).val() * (score->spatium() / SPATIUM20) / 2
                         + qMax(qreal(.35) * start->chordMag(), qreal(.2)) * score->spatium();
-                  const qreal endClearance = score->styleS(Sid::beamWidth).val() / 2
+                  const qreal endClearance = nominalHalfBeam + score->styleS(Sid::beamWidth).val() / 2
                         + qMax(qreal(.35) * end->chordMag(), qreal(.2)) * score->spatium();
                   QVERIFY(qAbs(sign * (modern.p1.y() - tip(start)) - startClearance) < 1e-6);
                   QVERIFY(qAbs(sign * (modern.p2.y() - tip(end)) - endClearance) < 1e-6);
                   QCOMPARE(modern.p1.x(), legacy.p1.x());
                   QCOMPARE(modern.p2.x(), legacy.p2.x());
+                  // The source length includes manual length as well. Read
+                  // the physical tip, not only Stem::len(), which omits it.
+                  const qreal savedLength = start->stem()->userLen();
+                  const qreal extension = .25 * score->spatium();
+                  start->stem()->setUserLen(savedLength + extension);
+                  start->stem()->layout();
+                  SlurPos extended;
+                  probe.slurPos(&extended);
+                  start->stem()->setUserLen(savedLength);
+                  start->stem()->layout();
+                  QVERIFY(qAbs(sign * (extended.p1.y() - modern.p1.y()) - extension) < 1e-6);
+                  QCOMPARE(extended.p1.x(), modern.p1.x());
+                  QCOMPARE(extended.p2, modern.p2);
                   score->setStyleValue(Sid::spacingLayout4, false);
                   SlurPos restored;
                   probe.slurPos(&restored);

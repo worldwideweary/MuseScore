@@ -1283,8 +1283,8 @@ void Slur::slurPos(SlurPos* sp)
                               // Studio 4.7.5 slurPos: actual stem length,
                               // beamWidthSp/2 and magnification-aware clearance.
                               // Keep the existing horizontal attachment here.
-                              const qreal beamWidthSp = score()->styleS(Sid::beamWidth).val() * beam1->magS();
-                              sh = stem1->len() + beamWidthSp / 2
+                              const SlurStemMetrics4 metrics = slurStemMetrics4(sc);
+                              sh = metrics.length + metrics.beamWidthSp / 2
                                     + qMax(qreal(.35) * sc->chordMag(), qreal(.2)) * _spatium;
                               yo = sc->stemPos().y() - sc->pagePos().y() + __up * sh;
                               }
@@ -1407,7 +1407,7 @@ void Slur::slurPos(SlurPos* sp)
                                     // The source's end branch uses the style
                                     // space value without the start's magS().
                                     const qreal beamWidthSp = beam2 ? score()->styleS(Sid::beamWidth).val() : 0;
-                                    sh = stem2->len() + beamWidthSp / 2
+                                    sh = slurStemMetrics4(ec).length + beamWidthSp / 2
                                           + qMax(qreal(.35) * ec->chordMag(), qreal(.2)) * _spatium;
                                     yo = ec->stemPos().y() - ec->pagePos().y() + __up * sh;
                                     }

@@ -11,6 +11,14 @@ class GraceMergedSlurQuery4;
 struct GraceSlurCurve4 {
     QPointF start, control1, control2, end; // System x / staff-relative y.
 };
+// Studio stores beamed stem length beyond the drawn center-line tip, and
+// keeps grace-beam scaling separate from its intrinsic beam magnitude.
+// Translate both metrics for modern pitched slur-clearance branches.
+struct SlurStemMetrics4 {
+    qreal length = 0;       // Includes manual stem length and source beam inset.
+    qreal beamWidthSp = 0;  // Studio slurPos's separate start beam-width term.
+};
+SlurStemMetrics4 slurStemMetrics4(const Chord*);
 // Studio v4.7.5 localized collision adjustment for the validated ordinary
 // combined-grace scope. The caller supplies unedited automatic anchors and
 // typed physical obstacles. Endpoint balance follows the validated anchor branches.
