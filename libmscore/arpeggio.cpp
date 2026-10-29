@@ -157,13 +157,7 @@ std::vector<Chord*> Arpeggio::spannedChords() const
 
 Note* Arpeggio::topNote() const
       {
-      Note* note = chord()->upNote();
-      for (Chord* c : spannedChords()) {
-            Note* n = c->upNote();
-            if (n->pagePos().y() < note->pagePos().y())
-                  note = n;
-            }
-      return note;
+      return chord()->upNote();
       }
 
 //---------------------------------------------------------
@@ -172,13 +166,14 @@ Note* Arpeggio::topNote() const
 
 Note* Arpeggio::bottomNote() const
       {
-      Note* note = chord()->downNote();
-      for (Chord* c : spannedChords()) {
-            Note* n = c->downNote();
-            if (n->pagePos().y() > note->pagePos().y())
-                  note = n;
+      Chord* c = chord();
+      // Follow the endpoint voice rather than the lowest intermediate note.
+      if (c->segment() && !c->isGrace()) {
+            Element* e = c->segment()->element(endTrack());
+            if (e && e->isChord())
+                  return toChord(e)->downNote();
             }
-      return note;
+      return c->downNote();
       }
 
 //---------------------------------------------------------

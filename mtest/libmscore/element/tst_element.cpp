@@ -121,6 +121,7 @@ class TestElement : public QObject, public MTest
       void arpeggioSpanFormats();
       void arpeggioVoiceAnchors();
       void arpeggioVoicePlayback();
+      void arpeggioEndpointVoices();
       };
 
 //---------------------------------------------------------
@@ -2529,6 +2530,69 @@ void TestElement::arpeggioVoicePlayback()
       s->doLayout();
       QVERIFY(a->pageBoundingRect().top() <= a->topNote()->pagePos().y());
       QVERIFY(a->pageBoundingRect().bottom() >= a->bottomNote()->pagePos().y());
+      delete s;
+      }
+
+void TestElement::arpeggioEndpointVoices()
+      {
+      MasterScore* s = readScore("libmscore/element/arpeggio-crossed-voices.mscx");
+      QVERIFY(s);
+      Segment* seg = s->firstSegment(SegmentType::ChordRest);
+      QVERIFY(seg);
+      Chord* first = toChord(seg->element(0));
+      Chord* last = toChord(seg->element(6));
+      QVERIFY(first && last);
+      Arpeggio* a = toChord(seg->element(5))->arpeggio();
+      QVERIFY(a);
+      s->doLayout();
+      // The last voice lies above both earlier voices on the lower staff.
+      QVERIFY(last->downNote()->pagePos().y() < toChord(seg->element(4))->downNote()->pagePos().y());
+      QVERIFY(last->downNote()->pagePos().y() < toChord(seg->element(5))->downNote()->pagePos().y());
+      s->startCmd();
+      s->undo(new ChangeArpeggioAnchor(a, first, 1));
+      s->endCmd();
+      EditData edit(nullptr);
+      edit.modifiers = Qt::ShiftModifier;
+      edit.curGrip = Grip::END;
+      edit.key = Qt::Key_Down;
+      for (int track : {1, 3, 4, 5, 6}) {
+            s->startCmd();
+            QVERIFY(a->edit(edit));
+            s->endCmd();
+            QCOMPARE(a->endTrack(), track);
+            QCOMPARE(a->topNote(), first->upNote());
+            QCOMPARE(a->bottomNote(), toChord(seg->element(track))->downNote());
+            }
+      // Moving the start to voice 2 must ignore the higher voice 4 inside the span.
+      edit.curGrip = Grip::START;
+      s->startCmd();
+      QVERIFY(a->edit(edit));
+      s->endCmd();
+      QCOMPARE(a->track(), 1);
+      QCOMPARE(a->topNote(), toChord(seg->element(1))->upNote());
+      QCOMPARE(a->bottomNote(), last->downNote());
+      edit.key = Qt::Key_Up;
+      s->startCmd();
+      QVERIFY(a->edit(edit));
+      s->endCmd();
+      QCOMPARE(a->track(), 0);
+      QCOMPARE(a->topNote(), first->upNote());
+      s->undoStack()->undo(&edit);
+      QCOMPARE(a->track(), 1);
+      QCOMPARE(a->topNote(), toChord(seg->element(1))->upNote());
+      s->undoStack()->redo(&edit);
+      QCOMPARE(a->track(), 0);
+      QCOMPARE(a->topNote(), first->upNote());
+      QCOMPARE(a->bottomNote(), last->downNote());
+      edit.curGrip = Grip::END;
+      edit.key = Qt::Key_Up;
+      for (int track : {5, 4, 3, 1, 0}) {
+            s->startCmd();
+            QVERIFY(a->edit(edit));
+            s->endCmd();
+            QCOMPARE(a->endTrack(), track);
+            QCOMPARE(a->bottomNote(), toChord(seg->element(track))->downNote());
+            }
       delete s;
       }
 
