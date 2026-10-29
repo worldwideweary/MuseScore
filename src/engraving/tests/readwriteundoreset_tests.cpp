@@ -21,7 +21,12 @@
  */
 #include <gtest/gtest.h>
 
+#include <memory>
+
 #include "engraving/dom/masterscore.h"
+#include "engraving/dom/arpeggio.h"
+#include "engraving/dom/chord.h"
+#include "engraving/dom/segment.h"
 #include "engraving/editing/undo.h"
 
 #include "utils/scorerw.h"
@@ -99,4 +104,42 @@ TEST_F(Engraving_ReadWriteUndoResetTests, testMMRestLinksRecreateMMRest)
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, writeFile, recreateMMRestRefFile));
 
     delete score;
+}
+
+TEST_F(Engraving_ReadWriteUndoResetTests, legacyArpeggioVoiceSpans)
+{
+    std::unique_ptr<MasterScore> score(ScoreRW::readScore(RWUNDORESET_DATA_DIR + u"arpeggio-voices-37e.mscx"));
+    ASSERT_TRUE(score);
+
+    const auto check = [](MasterScore* s) {
+        // Same staff, cross staff, reversed tag order, legacy staff count,
+        // default span, and an invalid extension clamped to one track.
+        struct Case { track_idx_t track; int span; };
+        const Case cases[] = { { 1, 3 }, { 1, 6 }, { 1, 6 }, { 0, 5 }, { 2, 1 }, { 0, 1 } };
+        Segment* segment = s->firstSegment(SegmentType::ChordRest);
+        for (const Case& c : cases) {
+            ASSERT_TRUE(segment);
+            EngravingItem* element = segment->element(c.track);
+            ASSERT_TRUE(element && element->isChord());
+            Arpeggio* arpeggio = toChord(element)->arpeggio();
+            ASSERT_TRUE(arpeggio);
+            EXPECT_EQ(arpeggio->track(), c.track);
+            EXPECT_EQ(arpeggio->span(), c.span);
+            EXPECT_EQ(arpeggio->endTrack(), c.track + c.span - 1);
+            EXPECT_EQ(arpeggio->arpeggioType(), ArpeggioType::DOWN);
+            EXPECT_FALSE(arpeggio->playArpeggio());
+            EXPECT_DOUBLE_EQ(arpeggio->Stretch(), 1.5);
+            EXPECT_NEAR(arpeggio->userLen1() / arpeggio->spatium(), 0.25, 0.000001);
+            EXPECT_NEAR(arpeggio->userLen2() / arpeggio->spatium(), 0.5, 0.000001);
+            segment = segment->next1(SegmentType::ChordRest);
+        }
+    };
+
+    check(score.get());
+    ASSERT_FALSE(HasFatalFailure());
+    const String output(u"arpeggio-voices-37e-roundtrip.mscx");
+    ASSERT_TRUE(ScoreRW::saveScore(score.get(), output));
+    score.reset(ScoreRW::readScore(output, true));
+    ASSERT_TRUE(score);
+    check(score.get());
 }

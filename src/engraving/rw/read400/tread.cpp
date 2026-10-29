@@ -1773,6 +1773,7 @@ void TRead::read(ActionIcon* i, XmlReader& e, ReadContext&)
 
 void TRead::read(Arpeggio* a, XmlReader& e, ReadContext& ctx)
 {
+    int trackSpan = 0;
     while (e.readNextStartElement()) {
         const AsciiStringView tag(e.name());
         if (tag == "subtype") {
@@ -1784,6 +1785,11 @@ void TRead::read(Arpeggio* a, XmlReader& e, ReadContext& ctx)
         } else if (tag == "span") {
             // Span now refers to number of voices spanned, not staves
             a->setSpan((e.readInt() - 1) * VOICES + 1);
+        } else if (tag == "spanTracks") {
+            trackSpan = e.readInt();
+            if (trackSpan < 1) {
+                trackSpan = 1;
+            }
         } else if (tag == "play") {
             a->setPlayArpeggio(e.readBool());
         } else if (tag == "timeStretch") {
@@ -1791,6 +1797,11 @@ void TRead::read(Arpeggio* a, XmlReader& e, ReadContext& ctx)
         } else if (!readItemProperties(a, e, ctx)) {
             e.unknown();
         }
+    }
+    // 3.7-Evolution writes both tags. The exact voice span takes precedence,
+    // even when the legacy staff-count tag appears later in the file.
+    if (trackSpan > 0) {
+        a->setSpan(trackSpan);
     }
 }
 
