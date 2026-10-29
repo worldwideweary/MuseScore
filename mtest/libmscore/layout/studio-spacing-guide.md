@@ -1,5 +1,36 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.193 correction: unison regression asserts source-produced owners
+
+The supplied native TestSpacing result for v0.192 has four failure nodes, all
+at polyrhythmInputs' old QVERIFY(shared): unisons natural/justified under both
+beam settings. The new geometryResolution, geometryInputs, decision observer,
+actual-decision corpus and acciaccatura tests pass. The failed assertion still
+requires SHARED_ITEM, the old rectangle resolver's representation. Source-based
+capture deliberately emits two direct ITEM primitives for these two coincident
+noteheads. This is a missed regression-test migration, not evidence to restore
+rectangle inference. The remaining assertions in each failed data row have not
+yet run, so the complete suite still needs native verification.
+
+Replace the representation check with stronger behavior checks: identify the
+actual notes in both simultaneous voices, require two distinct owner pointers,
+exactly one direct rectangle for each, correct note/chord-local translation and
+coincident geometry. Run the same assertions on collision projection, requiring
+it to retain both producers exactly once. Keep all subsequent rhythmic, plan/
+publication, repeat-layout and style-off restoration checks. No production,
+fixture, style or engraving code changes.
+
+The supplied Evolution captures retain F1-F2 / F3-F4 / F5-F6 in the cross-staff
+score, F1-F3 / F4-F6 in the grace score and clear S1 squeeze. No obvious new
+collision is visible. They do not replace the failed native gate or establish
+exact Studio parity; P2 traversal/undo is not newly demonstrated by these images.
+
+Files: tst_spacing.cpp and this guide. Local validation: regenerated moc,
+Debug/NDEBUG C++11 syntax with warning/whitespace checks and exact incremental
+patch replay. Apply this increment over v0.192, rebuild and rerun the usual
+beam/spacing pair once. Native verification is pending. No new screenshots or
+performance measurements are requested for this test-only correction.
+
 ## v0.192 aggregate gate: decision coverage and source-produced geometry
 
 Batch v0.189-v0.192 into one native build/test phase over v0.188. Keep each

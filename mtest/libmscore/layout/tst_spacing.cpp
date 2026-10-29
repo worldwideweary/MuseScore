@@ -1723,15 +1723,41 @@ void TestSpacing::polyrhythmInputs()
                   QVERIFY(first);
                   for (int staff = 0; staff < 2; ++staff) {
                         const SpacingShape4 shape = spacingStaffShape4(first, staff);
-                        bool shared = false;
-                        for (const SpacingShapeElement4& item : shape.elements) {
-                              if (item.identity == SpacingIdentity4::SHARED_ITEM) {
-                                    QVERIFY(!item.item);
-                                    QCOMPARE(static_cast<int>(item.sharedItems.size()), 2);
-                                    shared = true;
-                                    }
+                        const Note* owners[2];
+                        for (int voice = 0; voice < 2; ++voice) {
+                              const ChordRest* cr = first->cr(staff * VOICES + voice);
+                              QVERIFY(cr && cr->isChord());
+                              QCOMPARE(int(toChord(cr)->notes().size()), 1);
+                              owners[voice] = toChord(cr)->notes().front();
                               }
-                        QVERIFY(shared);
+                        QVERIFY(owners[0] != owners[1]);
+                        // Native emission keeps each coincident primitive's
+                        // actual owner; SHARED_ITEM belonged to the old
+                        // rectangle-matching adapter. Both owners must survive
+                        // raw capture and collision projection exactly once.
+                        SpacingShape4 projected;
+                        const SpacingPaddingTable4 table(score);
+                        QVERIFY(spacingCollisionProjection4(table, shape, first->spatium(), projected));
+                        QVERIFY(projected.complete());
+                        const SpacingShape4* views[] = { &shape, &projected };
+                        for (const SpacingShape4* view : views) {
+                              int counts[2] = { 0, 0 };
+                              QRectF rectangles[2];
+                              for (const SpacingShapeElement4& item : view->elements) {
+                                    for (int voice = 0; voice < 2; ++voice) {
+                                          if (item.item != owners[voice]) continue;
+                                          QVERIFY(item.identity == SpacingIdentity4::ITEM);
+                                          QVERIFY(item.aggregateOwners.empty() && item.sharedItems.empty());
+                                          const Note* note = owners[voice];
+                                          QCOMPARE(item.rect, note->bbox().translated(note->pos()).translated(note->chord()->pos()));
+                                          rectangles[voice] = item.rect;
+                                          ++counts[voice];
+                                          }
+                                    }
+                              QCOMPARE(counts[0], 1);
+                              QCOMPARE(counts[1], 1);
+                              QCOMPARE(rectangles[0], rectangles[1]);
+                              }
                         }
                   }
             QVERIFY2(buildSpacingPlan4(m->system(), applied, &reason), qPrintable(reason));
