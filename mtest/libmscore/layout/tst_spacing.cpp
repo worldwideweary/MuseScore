@@ -3,6 +3,7 @@
 #include <QtTest/QtTest>
 #include "mtest/testutils.h"
 #include "libmscore/score.h"
+#include "libmscore/xml.h"
 #include "libmscore/undo.h"
 #include "libmscore/measure.h"
 #include "libmscore/segment.h"
@@ -58,6 +59,8 @@ class TestSpacing : public QObject, public MTest {
       void slurDirectionPriority4();
       void slurRendererDirection4_data();
       void slurRendererDirection4();
+      void smallNotation4_data();
+      void smallNotation4();
       void styleRoundTrip();
       void durationPolicy();
       void springForce();
@@ -179,15 +182,27 @@ void TestSpacing::styleRoundTrip()
       {
       MasterScore* score = readScore(DIR + "studio-spacing-natural-h1.mscx");
       QVERIFY(score);
+      QVERIFY(score->styleB(Sid::scaleRythmicSpacingForSmallNotes));
+      for (bool enabled : {false, true}) {
+            MStyle imported;
+            const QByteArray bytes = QByteArray("<Style><scaleRythmicSpacingForSmallNotes>")
+                  + (enabled ? "1" : "0") + "</scaleRythmicSpacingForSmallNotes></Style>";
+            XmlReader reader(bytes);
+            QVERIFY(reader.readNextStartElement());
+            imported.load(reader, 475);
+            QCOMPARE(imported.value(Sid::scaleRythmicSpacingForSmallNotes).toBool(), enabled);
+            }
       QVERIFY(!score->styleB(Sid::spacingLayout4));
       QVERIFY(score->styleB(Sid::beamLayout4));
       score->setStyleValue(Sid::spacingLayout4, true);
       score->setStyleValue(Sid::beamLayout4, false);
+      score->setStyleValue(Sid::scaleRythmicSpacingForSmallNotes, false);
       QVERIFY(saveScore(score, "studio-spacing-roundtrip.mscx"));
       MasterScore* loaded = readCreatedScore("studio-spacing-roundtrip.mscx");
       QVERIFY(loaded);
       QVERIFY(loaded->styleB(Sid::spacingLayout4));
       QVERIFY(!loaded->styleB(Sid::beamLayout4));
+      QVERIFY(!loaded->styleB(Sid::scaleRythmicSpacingForSmallNotes));
       score->setStyleValue(Sid::spacingLayout4, false);
       QVERIFY(saveScore(score, "studio-spacing-off.mscx"));
       MasterScore* off = readCreatedScore("studio-spacing-off.mscx");
@@ -9192,6 +9207,126 @@ void TestSpacing::spacingDecisionCorpus4()
       QVERIFY(nextTick == score->lastMeasure()->endTick());
       }
 
+void TestSpacing::smallNotation4_data()
+      {
+      QTest::addColumn<QString>("mode");
+      QTest::addColumn<bool>("beams");
+      for (const QString& mode : {QString("natural"), QString("justified"), QString("fitting"), QString("squeeze")})
+            for (bool beams : {false, true})
+                  QTest::newRow(qPrintable(mode + (beams ? "-studio" : "-legacy"))) << mode << beams;
+      }
+
+void TestSpacing::smallNotation4()
+      {
+      QFETCH(QString, mode);
+      QFETCH(bool, beams);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.206-small-notation-" + mode + ".mscx"));
+      QVERIFY(score);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      score->setStyleValue(Sid::beamLayout4, beams);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto snapshot = [&]() {
+            auto values = graceMergedSnapshot4(score.get());
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
+                  for (const Segment& s : m->segments()) for (const Element* e : s.elist()) {
+                        if (!e) continue;
+                        values.insert(values.end(), {e->x(), e->y(), e->mag(), e->bbox().width(), e->bbox().height()});
+                        if (e->isChord()) for (const Note* n : toChord(e)->notes())
+                              values.insert(values.end(), {n->x(), n->y(), n->mag(), n->headWidth()});
+                        }
+            return values;
+            };
+      const auto near = [](const std::vector<qreal>& a, const std::vector<qreal>& b) {
+            if (a.size() != b.size()) return false;
+            for (size_t i = 0; i < a.size(); ++i)
+                  if (!qIsFinite(a[i]) || !qIsFinite(b[i]) || qAbs(a[i] - b[i]) > 1e-6) return false;
+            return true;
+            };
+      const auto legacy = snapshot();
+      score->setStyleValue(Sid::scaleRythmicSpacingForSmallNotes, false);
+      score->doLayout();
+      QVERIFY(near(snapshot(), legacy)); // The option has no effect on the legacy engine.
+      score->setStyleValue(Sid::scaleRythmicSpacingForSmallNotes, true);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      std::vector<SpacingDecision4> events;
+      {
+      SpacingDecisionScope4 observer(score.get(), [&events](const SpacingDecision4& e) { events.push_back(e); });
+      score->doLayout();
+      }
+      int finals = 0;
+      for (const auto& e : events) if (e.pass == SpacingPass4::FINAL) {
+            ++finals;
+            QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+            }
+      QVERIFY(finals > 0);
+      const auto modern = snapshot();
+      QString reason;
+      for (System* system : score->systems()) {
+            if (system->vbox()) continue;
+            SpacingAttachmentPreparation4 owner;
+            QVERIFY2(snapshotLaidOutSystemSpacing4(system, owner, &reason), qPrintable(reason));
+            SpacingSystemRequest4 request;
+            request.pass = SpacingPass4::FINAL;
+            request.availableWidth = system->width();
+            request.fillLimit = score->styleD(Sid::lastSystemFillLimit);
+            request.next = system->lastMeasure()->next();
+            SpacingPlan4 selected;
+            QVERIFY2(selectSystemSpacingPlan4(system, request, owner, selected, &reason), qPrintable(reason));
+            QVERIFY2(spacingPlanPublicationValid4(system, selected, &reason), qPrintable(reason));
+            QVERIFY2(spacingPlanMatches4(selected, &reason), qPrintable(reason));
+            }
+      // Independently labeled fixtures pin the source mixed-size decisions.
+      if (mode == "natural") {
+            int number = 0;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  ++number;
+                  for (const Segment& s : m->segments()) {
+                        if (!s.isChordRestType() || !s.enabled()) continue;
+                        const bool scaled = number == 1 || number == 5 || number == 6 || number == 8
+                              || (number == 3 && s.rtick().ticks() % 480 == 0);
+                        score->setStyleValue(Sid::scaleRythmicSpacingForSmallNotes, false);
+                        const qreal normal = segmentSpacingStretch4(&s);
+                        score->setStyleValue(Sid::scaleRythmicSpacingForSmallNotes, true);
+                        for (qreal size : {qreal(.1), qreal(.5), qreal(.7), qreal(1), qreal(2)}) {
+                              score->setStyleValue(Sid::smallNoteMag, size);
+                              QVERIFY(qAbs(segmentSpacingStretch4(&s) - normal * (scaled ? size : 1)) < 1e-9);
+                              }
+                        for (qreal bad : {qreal(0), std::numeric_limits<qreal>::quiet_NaN()}) {
+                              score->setStyleValue(Sid::smallNoteMag, bad);
+                              QVERIFY(scaled ? segmentSpacingStretch4(&s) == 0 : segmentSpacingStretch4(&s) == normal);
+                              }
+                        score->setStyleValue(Sid::smallNoteMag, .7);
+                        }
+                  }
+            QCOMPARE(number, 8);
+            }
+      if (mode == "natural" && beams) {
+            score->startCmd();
+            score->undoChangeStyleVal(Sid::scaleRythmicSpacingForSmallNotes, false);
+            score->endCmd();
+            score->doLayout();
+            const auto unscaled = snapshot();
+            QVERIFY(!near(unscaled, modern));
+            score->undoRedo(true, nullptr);
+            score->doLayout();
+            QVERIFY(near(snapshot(), modern));
+            score->undoRedo(false, nullptr);
+            score->doLayout();
+            QVERIFY(near(snapshot(), unscaled));
+            score->undoRedo(true, nullptr);
+            }
+      score->doLayout();
+      QVERIFY(near(snapshot(), modern));
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      QVERIFY(near(snapshot(), legacy));
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      QVERIFY(near(snapshot(), modern));
+      QVERIFY(!score->graceQueryFactory4());
+      }
+
 void TestSpacing::measureRestPlanning4_data()
       {
       QTest::addColumn<QString>("file");
@@ -9352,17 +9487,18 @@ void TestSpacing::measureRestPlanning4()
             // valid. Rejection cannot replace a previously complete plan.
             Rest* probe = saved.front().first;
             SpacingPlan4 retained = natural;
+            const qreal probeMag = probe->mag();
             Segment* boundary = probe->measure()->last();
             QVERIFY(boundary && boundary->isEndBarLineType());
             for (int mode = 0; mode < 5; ++mode) {
                   if (mode == 0) probe->setGap(true);
-                  if (mode == 1) probe->setSmall(true);
+                  if (mode == 1) probe->setMag(0);
                   if (mode == 2) probe->setVisible(false);
                   if (mode == 3) probe->setStaffMove(1);
                   if (mode == 4) boundary->setSegmentType(SegmentType::KeySig);
                   const bool accepted = build(retained);
                   const bool published = publishSpacingPlanSegments4(system, selected, &reason);
-                  probe->setGap(false); probe->setSmall(false); probe->setVisible(true); probe->setStaffMove(0);
+                  probe->setGap(false); probe->setMag(probeMag); probe->setVisible(true); probe->setStaffMove(0);
                   boundary->setSegmentType(SegmentType::EndBarLine);
                   QVERIFY(!accepted && !published);
                   QVERIFY(spacingPlansEqual154(retained, natural));

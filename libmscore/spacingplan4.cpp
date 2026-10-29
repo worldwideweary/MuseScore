@@ -381,7 +381,8 @@ bool ordinaryMeasureRest4(const Rest* rest)
         && rest->isFullMeasureRest() && rest->rtick().isZero()
         && rest->actualTicks() == rest->measure()->ticks()
         && rest->visible() && rest->addToSkyline() && !rest->onTabStaff()
-        && !rest->isGap() && !rest->isSmall() && !rest->staffMove()
+        && !rest->isGap() && !rest->staffMove()
+        && rest->mag() > 0 && std::isfinite(rest->mag())
         && !rest->tuplet() && !rest->beam() && !rest->dots()
         && rest->el().empty() && rest->lyrics().empty()
         && std::isfinite(rest->ipos().x()) && std::isfinite(rest->x()) && std::isfinite(rest->y())
@@ -739,8 +740,8 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                 for (const Element* item : segment.elist()) {
                     if (item && item->isRest()) {
                         const Rest* rest = toRest(item);
-                        if (rest->isGap() || rest->isSmall())
-                            return fail("Gap and cue rests require a later adapter");
+                        if (rest->isGap())
+                            return fail("Gap rests require a later adapter");
                         if (rest->isFullMeasureRest() && !ordinaryMeasureRest4(rest))
                             return fail("Decorated, hidden or moved measure rests require a later adapter");
                     }
@@ -752,12 +753,12 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                     if ((chord->staffMove() != 0 || (chord->beam() && chord->beam()->cross()))
                         && !cross.chords.count(chord))
                         return fail("Cross-staff geometry requires its later stem constraints");
-                    if (chord->isSmall() || (!chord->graceNotes().empty() && !graces.contains(chord) && !graces.containsAfter(chord)))
-                        return fail("Cue and grace-note rhythm requires a later adapter");
+                    if (!chord->graceNotes().empty() && !graces.contains(chord) && !graces.containsAfter(chord))
+                        return fail("Unadapted grace-note rhythm");
                     for (const Note* note : chord->notes()) {
                         SpacingPairPolicy4 policy;
-                        if (!note->visible() || note->isSmall() || !spacingPairPolicy4(table, note, note, note->spatium(), policy, &graces, &contextCache))
-                            return fail("Unadapted note visibility, cue or decoration context");
+                        if (!note->visible() || !spacingPairPolicy4(table, note, note, note->spatium(), policy, &graces, &contextCache))
+                            return fail("Unadapted note visibility or decoration context");
                     }
                 }
                 if (!cacheGeometry4(&segment, table, g, cross, graces, afters, merged, contextCache))

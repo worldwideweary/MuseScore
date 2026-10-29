@@ -2051,7 +2051,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="8" column="0" colspan="9">
+               <item row="9" column="0" colspan="9">
                 <widget class="Line" name="line_6">
                  <property name="orientation">
                   <enum>Qt::Horizontal</enum>
@@ -2059,6 +2059,20 @@
                 </widget>
                </item>
 
+               <item row="8" column="0" colspan="8">
+                <widget class="QCheckBox" name="scaleRythmicSpacingForSmallNotes">
+                 <property name="text"><string>Scale rhythmic spacing for small notes</string></property>
+                 <property name="toolTip"><string>With Studio 4 horizontal spacing enabled, scale rhythmic spacing by the small note size. Normal-size notes or rests ending at the next onset retain normal spacing.</string></property>
+                </widget>
+               </item>
+               <item row="8" column="8">
+                <widget class="QToolButton" name="resetScaleRythmicSpacingForSmallNotes">
+                 <property name="toolTip"><string>Reset to default</string></property>
+                 <property name="accessibleName"><string>Reset 'Scale rhythmic spacing for small notes' value</string></property>
+                 <property name="text"><string notr="true"/></property>
+                 <property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property>
+                </widget>
+               </item>
                <item row="7" column="0" colspan="8">
                 <widget class="QCheckBox" name="spacingLayout4">
                  <property name="text"><string>Use Studio 4 horizontal spacing (experimental)</string></property>
@@ -14205,6 +14219,8 @@ By default, they will be placed such as that their right end are at the same lev
   <tabstop>resetLastSystemFillThreshold</tabstop>
   <tabstop>spacingLayout4</tabstop>
   <tabstop>resetSpacingLayout4</tabstop>
+  <tabstop>scaleRythmicSpacingForSmallNotes</tabstop>
+  <tabstop>resetScaleRythmicSpacingForSmallNotes</tabstop>
   <tabstop>genClef</tabstop>
   <tabstop>genKeysig</tabstop>
   <tabstop>genCourtesyClef</tabstop>

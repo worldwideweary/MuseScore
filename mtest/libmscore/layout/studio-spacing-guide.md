@@ -1,5 +1,132 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.208 aggregate gate: ordinary small/cue notation
+
+Apply the combined v0.204-v0.208 patch over accepted v0.203. It includes the
+previously undelivered v0.204 and the v0.203 acceptance notes. Alternatively
+apply the five ordered checkpoint patches; do not apply both routes.
+
+| Checkpoint | Result |
+|---|---|
+| v0.204 | Pinned cue eligibility and saved default-ON Studio option |
+| v0.205 | Ordinary small chord/note/rest admission and style control/reset |
+| v0.206 | Eight native rows and four visual scores |
+| v0.207 | Import, scaling limits and mixed beamed controls |
+| v0.208 | Style undo/redo, final local verification and combined testing gate |
+
+The shared source spelling is scaleRythmicSpacingForSmallNotes. The new control
+is beside experimental spacing in Format/Style, with a tooltip explaining that
+it applies to Studio horizontal spacing. It reads/saves both native and 4.7.5
+style values. Normal-size items ending at the next onset block cue rhythmic
+scaling, whereas longer held companions do not. Individual small noteheads use
+their actual collision geometry without triggering chord/rest rhythmic scaling.
+Existing magnitude-aware pair padding is reused; no beam slope, rest y, stem
+length or slur curve formulas change. Small full rests retain late centering.
+Grace/cue combinations, unsupported cross-staff, tremolo, TAB, hidden staves,
+frames/MMRest and other existing fallback boundaries remain guarded.
+
+Local validation passes: Debug/NDEBUG C++11 syntax for measure, style, planner
+and regenerated-moc spacing tests; 16,384 pinned-source cue eligibility mock
+comparisons in each mode; complete fixture voice-duration/style checks; UI XML
+uniqueness and uic generation; exact incremental and combined Git tree replay.
+Full editstyle.cpp syntax is blocked by the local auxiliary application include
+setup (singleapp/src/QtSingleApplication); the native GUI build is still required.
+Mock checks are not native execution or rendered comparison. No performance
+claim is made. Native build, mtests and visual acceptance remain pending.
+
+Rebuild once after applying the batch, then run:
+
+    ctest -j1 --output-on-failure -R '^(tst_spacing|tst_beam)$'
+
+Compare the four v0.206-small-notation scores (natural, justified, fitting and
+squeeze) in 37E and 4.7.5 at the same zoom. Both experimental styles and cue
+rhythm scaling are saved ON, with small-note size 70%. Review C1 small chords,
+C2 normal control, C3 alternating sizes, C4 small noteheads only, C5 small rests,
+C6 normal held companion, C7 normal ending companion and C8 small full rest.
+The narrow file uses C3. Check collision clearance, beat spacing, automatic
+breaks and full-rest centering. Labels are explanatory system text and do not
+constrain spacing. Native tests cover both beam settings, option OFF behavior,
+size limits, import/round-trip, repeated layout, full-plan publication matching,
+legacy/off-on restoration and option undo/redo. New screenshots of the accepted
+v0.201 rest or older grace controls are unnecessary if unchanged.
+
+The separate R3-R5 vertical-rest difference, ordinary stem/slur visuals and
+performance remain queued; TAB remains last. Resolve this batch's failures or
+new visual differences before widening the next context.
+
+## v0.207 WIP: source-policy and style persistence checks
+
+Add 4.7.5-style import probes for both saved values and native rhythmic probes
+at 10%, 50%, 70%, 100% and 200%, plus zero/NaN rejection on scaled onsets.
+The fixtures include ordinary beamed small, normal, alternating-size and
+small-head-only groups. Existing grace/cross-staff guards remain in place.
+
+An extracted-function comparison against pinned horizontalspacing.cpp blob
+573e19dcf63bb042499f1495f16f5c19d1003852 checks 16,384 onset combinations in
+each of Debug/NDEBUG, with identical cue eligibility results. This is a mock
+policy comparison, not native rendering. Native build/tests remain pending.
+
+## v0.206 WIP: mixed-size native matrix and visual controls
+
+Add four v0.206 small-notation fixtures with both experimental toggles ON and
+explicit smallNoteMag=.7 / scaleRythmicSpacingForSmallNotes=1. C1 all-small
+chords, C2 normal control, C3 alternating sizes, C4 individually small heads,
+C5 small rests, C6 normal held companion, C7 normal ending companion and C8
+small full-measure rest cover the source policy distinctions. The narrow score
+uses C3. No forced breaks or score offsets are saved.
+
+Eight native rows exercise natural/justified/fitting/squeeze with both beam
+settings, require FULL_PLAN final decisions and fresh selected plans matching
+native placement, then check repeat and legacy/off-on restoration. Natural
+controls assert the independently labeled rhythmic ratios. Extend style
+round-trip coverage for the saved OFF value. Native execution is pending.
+
+## v0.205 WIP: small-item geometry admission and style control
+
+Admit ordinary small chords, individually small noteheads and small rests using
+current native producer geometry and the existing average-magnification padding.
+Full-measure rests retain their source projection and centering preflight, with
+finite positive magnitude required. Grace groups, tremolos, cross-staff special
+contexts and TAB keep their existing eligibility boundaries.
+
+Expose the saved Studio option beside experimental spacing in Format/Style,
+with an aligned reset button and explicit tooltip describing when it applies.
+The option defaults ON, as in pinned 4.7.5; legacy spacing does not consume it.
+Update the earlier rest rejection probe from cue-size to invalid magnitude:
+small full rests are now intentionally supported. Native execution is pending.
+
+## v0.204 WIP: cue rhythmic policy and saved style
+
+Stage the pinned 4.7.5 needsCueSizeSpacing rule and its default-ON saved
+scaleRythmicSpacingForSmallNotes option (source spelling retained). Normal-size
+items ending at the next onset block scaling; longer held companions do not.
+Apply the small-note magnitude once to the modern rhythmic weight, before the
+existing user stretch. Individually small noteheads do not trigger this rule.
+Remove the 4.5 import skip so the shared style name reads through the generic
+style reader. Existing full-plan small-item guards remain until geometry
+admission, UI and regression coverage are completed together.
+
+This is an intermediate checkpoint, not the grouped native testing gate.
+Native execution remains pending. Accepted v0.203 results and the separate
+vertical-rest follow-up remain recorded below.
+
+## Accepted v0.203 rest-spacing gate
+
+On 2026-10-29 the user reported tst_spacing and tst_beam passing after the
+v0.199-v0.203 batch and supplied all four v0.201 visual pairs (37E blue paper,
+4.7.5 white). Accept this bounded horizontal-rest gate. Natural and justified
+rest centers and note/accidental clearance look sound; automatic fitting retains
+R1-R3 / R4-R6 in both engines, and the narrow S1 interval remains clear.
+This records user-run native results and visual review, not local native execution
+or pixel-for-pixel identity of complete page layouts.
+
+Keep a separate vertical-rest follow-up: the multi-voice full rests in R3, R4
+and R5 sit about one staff space farther outward in 37E than in 4.7.5. This batch
+retained native rest y placement; the captures show that remaining vertical
+policy difference alongside accepted horizontal placement. Do not compensate
+with score offsets. General slur/stem differences and performance remain queued;
+small/cue notation is the next horizontal coverage phase and TAB remains last.
+
 ## v0.203 aggregate gate: ordinary full-measure rests
 
 Apply this grouped v0.199-v0.203 batch over accepted v0.198. The combined patch
@@ -9,11 +136,11 @@ or test run is requested or assumed.
 
 | Checkpoint | Result | Native status |
 |---|---|---|
-| v0.199 | Record accepted v0.198 build/mtests/P2 traversal; stage rest snapshot policy | Pending for this batch |
-| v0.200 | Admit bounded full-measure rests and preflight late centering | Pending |
-| v0.201 | Eight native rest rows, decision/lifecycle controls and four visual fixtures | Pending |
-| v0.202 | Reject malformed rectangles before omission; require actual fitting/squeeze cases | Pending |
-| v0.203 | Preserve non-rest projection path, bound internal signatures, align fixtures and finish combined gate | Pending |
+| v0.199 | Record accepted v0.198 build/mtests/P2 traversal; stage rest snapshot policy | Accepted |
+| v0.200 | Admit bounded full-measure rests and preflight late centering | Accepted |
+| v0.201 | Eight native rest rows, decision/lifecycle controls and four visual fixtures | Accepted |
+| v0.202 | Reject malformed rectangles before omission; require actual fitting/squeeze cases | Accepted |
+| v0.203 | Preserve non-rest projection path, bound internal signatures, align fixtures and finish combined gate | Accepted |
 
 Full rests supply their uncentered source geometry to natural, squeeze and
 justification planning. Subtract computed x only, retaining manual offsets.
@@ -41,7 +168,8 @@ manual offsets or system breaks. The extracted-production rest harness passes
 2,592 projection cases, 15,552 malformed projection rejections, 22 excluded
 contexts, 120 valid publications and 960 atomic publication rejections per mode.
 It uses mock DOM inputs and real Qt rectangles, not the native renderer or real
-system solver. Native execution and visual acceptance are still pending.
+system solver. The user-run native pair and bounded visual gate are accepted
+as recorded above.
 
 Rebuild once after applying the combined patch, then run once:
 

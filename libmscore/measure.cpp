@@ -3760,6 +3760,20 @@ static Fraction shortestSpacingChordRest4(const Segment* segment)
     return shortest;
 }
 
+// Studio 4.7.5 needsCueSizeSpacing: a normal-size item ending at the
+// next onset prevents cue rhythm scaling; a longer held item does not.
+static bool needsCueSizeSpacing4(const Segment* segment)
+{
+    bool small = false;
+    for (const Element* item : segment->elist()) {
+        if (!item || !item->isChordRest()) continue;
+        const ChordRest* cr = toChordRest(item);
+        if (cr->isSmall()) small = true;
+        else if (cr->actualTicks() == segment->ticks()) return false;
+    }
+    return small;
+}
+
 double segmentSpacingStretch4(const Segment* segment)
 {
     const Segment* previous = segment->prev(SegmentType::ChordRest);
@@ -3769,7 +3783,12 @@ double segmentSpacingStretch4(const Segment* segment)
         previous ? shortestSpacingChordRest4(previous).toDouble() : 0);
     // Studio clamps per-measure user stretch; apply it once, to natural widths
     // and springs, rather than also multiplying the whole measure afterwards.
-    return rhythm * qBound(qreal(0.1), segment->measure()->userStretch(), qreal(10));
+    qreal scale = 1;
+    if (segment->score()->styleB(Sid::scaleRythmicSpacingForSmallNotes) && needsCueSizeSpacing4(segment)) {
+        scale = segment->score()->styleD(Sid::smallNoteMag);
+        if (!(scale > 0) || !std::isfinite(scale)) return 0;
+    }
+    return rhythm * scale * qBound(qreal(0.1), segment->measure()->userStretch(), qreal(10));
 }
 
 // Select one beamed stream, allowing un-beamed chord voices as constraints.

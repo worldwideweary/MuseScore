@@ -403,6 +403,7 @@ static const StyleType styleTypes[] {
       { Sid::measureNumberSystem,     "measureNumberSystem",     QVariant(true) },
       { Sid::measureNumberAllStaves,  "measureNumberAllStaffs",  QVariant(false) }, // need to keep staffs and not staves here for backward compatibility
       { Sid::smallNoteMag,            "smallNoteMag",            QVariant(.7) },
+      { Sid::scaleRythmicSpacingForSmallNotes, "scaleRythmicSpacingForSmallNotes", QVariant(true) },
       { Sid::graceNoteMag,            "graceNoteMag",            QVariant(0.7) },
       { Sid::smallStaffMag,           "smallStaffMag",           QVariant(0.7) },
       { Sid::smallClefMag,            "smallClefMag",            QVariant(0.8) },
@@ -3938,8 +3939,6 @@ bool  MStyle::readProperties450(XmlReader& e, int mscVersion)
       else if (tag.startsWith("timeSig"))                           // Mu4.5+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "trillAlwaysShowCueNote")                     // Mu4.5+ only, let's skip
-            e.skipCurrentElement();
-      else if (tag == "scaleRythmicSpacingForSmallNotes")           // Mu4.5+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "mergeMatchingRests")                         // Mu4.5+ only, let's skip
             e.skipCurrentElement();

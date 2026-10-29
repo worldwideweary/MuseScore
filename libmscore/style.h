@@ -389,6 +389,7 @@ enum class Sid : short {
       measureNumberAllStaves,
 
       smallNoteMag,
+      scaleRythmicSpacingForSmallNotes,
       graceNoteMag,
       smallStaffMag,
       smallClefMag,
