@@ -21,6 +21,7 @@
 #include <cmath>
 #include <limits>
 #include <map>
+#include <set>
 
 namespace Ms {
 namespace {
@@ -934,6 +935,48 @@ bool squeezeSpacingPlan4(System* system, qreal targetWidth, SpacingPlan4& result
     return squeezeSpacingPlanImpl4(system, targetWidth, result, reason, preparedMerged, &preparation, policy);
 }
 
+bool spacingSystemJustified4(const Measure* last, const MeasureBase* next,
+                             qreal naturalWidth, qreal availableWidth, qreal fillLimit)
+{
+    if (last && last->sectionBreak()) next = nullptr;
+    while (next) {
+        if (next->isMeasure() || next->isHBox()) return true;
+        if (next->sectionBreak()) break;
+        next = next->next();
+    }
+    return !(availableWidth > 0 && naturalWidth / availableWidth < fillLimit);
+}
+
+bool selectSystemSpacingPlan4(System* system, const SpacingSystemRequest4& request,
+                              const SpacingAttachmentPreparation4& attachments, SpacingPlan4& result,
+                              QString* reason, const std::vector<GraceMergedGeometry4>* preparedMerged)
+{
+    const auto fail = [reason](const char* text) { if (reason) *reason = text; return false; };
+    if (!system || !system->score() || system->measures().empty()) return fail("Missing spacing system");
+    if (request.pass != SpacingPass4::CANDIDATE && request.pass != SpacingPass4::FINAL)
+        return fail("Invalid spacing system pass");
+    if (!(request.availableWidth > 0) || !std::isfinite(request.availableWidth))
+        return fail("Invalid spacing system width");
+    if (request.pass == SpacingPass4::FINAL && !std::isfinite(request.fillLimit))
+        return fail("Invalid spacing system fill limit");
+    SpacingPlan4 plan;
+    if (request.pass == SpacingPass4::CANDIDATE) {
+        SpacingPlanOptions4 options;
+        options.slurPolicy = request.slurPolicy;
+        if (!buildSpacingPlan4(system, plan, attachments, reason, options, preparedMerged)) return false;
+    }
+    else {
+        if (!squeezeSpacingPlan4(system, request.availableWidth, plan, attachments, reason,
+                                preparedMerged, request.slurPolicy)) return false;
+        if (spacingSystemJustified4(system->lastMeasure(), request.next, plan.width, request.availableWidth,
+                                    request.fillLimit) && !justifySpacingPlan4(plan, request.availableWidth))
+            return fail("Final plan justification rejected");
+    }
+    result = std::move(plan);
+    if (reason) reason->clear();
+    return true;
+}
+
 bool justifySpacingPlan4(SpacingPlan4& target, qreal targetWidth)
 {
     if (target.measures.empty() || !std::isfinite(targetWidth) || targetWidth < target.width)
@@ -962,6 +1005,91 @@ bool justifySpacingPlan4(SpacingPlan4& target, qreal targetWidth)
     if (qAbs(plan.width - targetWidth) > 1e-6)
         return false;
     target = plan;
+    return true;
+}
+
+bool spacingPlanPublicationValid4(const System* system, const SpacingPlan4& plan, QString* reason)
+{
+    const auto fail = [reason](const char* text) { if (reason) *reason = text; return false; };
+    if (!system || !system->score() || plan.measures.empty() || !(plan.width > 0) || !std::isfinite(plan.width))
+        return fail("Invalid publication system or width");
+    std::map<const Segment*, qreal> segmentX;
+    std::set<const Chord*> mains;
+    size_t mi = 0, si = 0;
+    qreal edge = system->leftMargin();
+    for (const MeasureBase* mb : system->measures()) {
+        if (!mb || !mb->isMeasure() || mi >= plan.measures.size()) return fail("Changed publication measure domain");
+        const Measure* measure = toMeasure(mb);
+        const auto& m = plan.measures[mi++];
+        if (m.measure != measure || measure->system() != system || !std::isfinite(m.x)
+            || !(m.width > 0) || !std::isfinite(m.width) || !std::isfinite(edge)
+            || qAbs(m.x - edge) > 1e-6) return fail("Invalid publication measure placement");
+        edge = m.x + m.width;
+        for (const Segment& segment : measure->segments()) {
+            if (si >= plan.segments.size()) return fail("Incomplete publication segment domain");
+            const auto& s = plan.segments[si++];
+            if (s.segment != &segment || !segmentX.emplace(&segment, s.x - m.x).second || s.ignored != !active4(&segment)
+                || !std::isfinite(s.x) || !std::isfinite(s.width) || s.width < 0
+                || !std::isfinite(s.x - m.x)
+                || !std::isfinite(s.stretch) || s.stretch < 0 || !std::isfinite(s.widthOffset)
+                || (!s.ignored && segment.isChordRestType() && !(s.stretch > 0)))
+                return fail("Invalid publication segment placement");
+            if (!s.ignored) for (const Element* item : segment.elist())
+                if (item && item->isChord()) mains.insert(toChord(item));
+        }
+    }
+    if (mi != plan.measures.size() || si != plan.segments.size() || !std::isfinite(edge)
+        || qAbs(edge - plan.width) > 1e-6) return fail("Incomplete publication plan extent");
+    std::set<const Chord*> owners, members;
+    const auto positions = [&](const std::vector<GraceAfterPosition4>& written, const QVector<Chord*>& expected,
+                               const Segment* target) {
+        const auto targetX = segmentX.find(target);
+        if (targetX == segmentX.end()) return false;
+        if (written.size() != static_cast<size_t>(expected.size())) return false;
+        for (size_t i = 0; i < written.size(); ++i) {
+            const Chord* chord = expected[int(i)];
+            if (!chord || written[i].chord != chord || !std::isfinite(written[i].x)
+                || !chord->parent() || !chord->parent()->isChord()
+                || !mains.count(toChord(chord->parent())) || !std::isfinite(toChord(chord->parent())->x())
+                || !members.insert(chord).second) return false;
+            const Chord* parent = toChord(chord->parent());
+            const auto parentX = segmentX.find(parent->segment());
+            if (parentX == segmentX.end()
+                || !std::isfinite(targetX->second - parentX->second - parent->x() + written[i].x)) return false;
+        }
+        return true;
+    };
+    for (const auto& group : plan.afterGraces) {
+        if (!mains.count(group.owner) || !segmentX.count(group.target) || !owners.insert(group.owner).second
+            || !positions(group.positions, group.owner->graceNotesAfter(), group.target))
+            return fail("Invalid publication after-grace ownership");
+    }
+    for (const auto& group : plan.mergedGraces) {
+        if (!mains.count(group.owner) || !mains.count(group.target) || group.owner == group.target
+            || !owners.insert(group.owner).second) return fail("Invalid publication merged-grace ownership");
+        auto expected = group.owner->graceNotesAfter();
+        for (Chord* chord : group.target->graceNotesBefore()) expected.push_back(chord);
+        if (!positions(group.positions, expected, group.target->segment())) return fail("Invalid publication merged-grace members");
+    }
+    for (const Chord* main : mains)
+        if (!main->graceNotesAfter().empty() && !owners.count(main)) return fail("Missing publication after-grace group");
+    if (reason) reason->clear();
+    return true;
+}
+
+bool publishSpacingPlanSegments4(System* system, const SpacingPlan4& plan, QString* reason)
+{
+    if (!spacingPlanPublicationValid4(system, plan, reason)) return false;
+    std::map<const Measure*, qreal> origins;
+    for (const auto& m : plan.measures) origins[m.measure] = m.x;
+    // No fallible validation/query follows the first write. All segment and
+    // late grace destinations have already passed complete-domain preflight.
+    for (const auto& s : plan.segments) {
+        s.segment->rxpos() = s.x - origins.at(s.segment->measure());
+        s.segment->setWidth(s.width);
+        s.segment->setStretch(s.stretch);
+        s.segment->setSpacingWidthOffset4(s.widthOffset);
+    }
     return true;
 }
 

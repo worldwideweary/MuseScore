@@ -23,6 +23,7 @@
 #include "libmscore/rest.h"
 #include "libmscore/tie.h"
 #include <limits>
+#include <array>
 #include <memory>
 #include "libmscore/chordrest.h"
 #include "libmscore/beam.h"
@@ -87,6 +88,8 @@ class TestSpacing : public QObject, public MTest {
       void spacingNativeDecisions4();
       void spacingDecisionCorpus4_data();
       void spacingDecisionCorpus4();
+      void systemSpacingLifecycle4_data();
+      void systemSpacingLifecycle4();
       void acciaccaturaSlash4_data();
       void acciaccaturaSlash4();
       void slurOffsetUndoAdmission4();
@@ -9184,6 +9187,196 @@ void TestSpacing::spacingDecisionCorpus4()
       QVERIFY(candidates >= finals);
       QCOMPARE(finals, int(systems.size()));
       QVERIFY(nextTick == score->lastMeasure()->endTick());
+      }
+
+void TestSpacing::systemSpacingLifecycle4_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::newRow("ordinary") << QString("studio-spacing-natural-h1.mscx");
+      QTest::newRow("after-graces") << QString("v0.97-spacing-after-grace-system-natural.mscx");
+      QTest::newRow("merged-graces") << QString("v0.139-spacing-two-staff-slur-offsets.mscx");
+      QTest::newRow("root-system-boundary") << QString("v0.167-grace-policy-systems.mscx");
+      QTest::newRow("cross-staff-fitting") << QString("v0.181-spacing-cross-staff-fitting.mscx");
+      QTest::newRow("grace-squeeze") << QString("v0.187-acciaccatura-squeeze.mscx");
+      }
+
+void TestSpacing::systemSpacingLifecycle4()
+      {
+      QFETCH(QString, file);
+      std::unique_ptr<MasterScore> score(readScore(DIR + file));
+      QVERIFY(score);
+      score->setStyleValue(Sid::beamLayout4, true);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      score->doLayout();
+      const auto snapshot = [&]() {
+            auto values = graceMergedSnapshot4(score.get());
+            for (const System* system : score->systems()) values.push_back(system->width());
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
+                  for (const Segment& s : m->segments())
+                        values.insert(values.end(), {s.x(), s.width(), s.stretch(), s.spacingWidthOffset4()});
+            return values;
+            };
+      const auto native = snapshot();
+      QVERIFY(!spacingSystemJustified4(nullptr, nullptr, 34, 100, .35));
+      QVERIFY(spacingSystemJustified4(nullptr, nullptr, 35, 100, .35));
+      QVERIFY(spacingSystemJustified4(nullptr, score->firstMeasure(), 1, 100, 1));
+      int checked = 0, graceGroups = 0;
+      const qreal nan = std::numeric_limits<qreal>::quiet_NaN();
+      for (System* system : score->systems()) {
+            if (system->vbox()) continue;
+            SpacingPlan4 selected;
+            QString reason;
+            {
+            SpacingAttachmentPreparation4 attachments;
+            QVERIFY2(snapshotLaidOutSystemSpacing4(system, attachments, &reason), qPrintable(reason));
+            SpacingPlanOptions4 options;
+            options.slurPolicy = SpacingSlurPolicy4::PREPARED;
+            SpacingPlan4 natural, candidate;
+            QVERIFY2(buildSpacingPlan4(system, natural, attachments, &reason, options), qPrintable(reason));
+            SpacingSystemRequest4 request;
+            request.availableWidth = natural.width / 2;
+            QVERIFY2(selectSystemSpacingPlan4(system, request, attachments, candidate, &reason), qPrintable(reason));
+            QVERIFY(spacingPlansEqual154(natural, candidate)); // An overfull prefix is still a valid candidate.
+            QVERIFY(candidate.width > request.availableWidth);
+            request.pass = SpacingPass4::FINAL;
+            request.availableWidth = system->width();
+            request.fillLimit = score->styleD(Sid::lastSystemFillLimit);
+            request.next = system->lastMeasure()->next();
+            SpacingPlan4 expected;
+            QVERIFY2(squeezeSpacingPlan4(system, request.availableWidth, expected, attachments, &reason, nullptr,
+                                         SpacingSlurPolicy4::PREPARED), qPrintable(reason));
+            if (spacingSystemJustified4(system->lastMeasure(), request.next, expected.width,
+                                        request.availableWidth, request.fillLimit))
+                  QVERIFY(justifySpacingPlan4(expected, request.availableWidth));
+            QVERIFY2(selectSystemSpacingPlan4(system, request, attachments, selected, &reason), qPrintable(reason));
+            QVERIFY(spacingPlansEqual154(selected, expected));
+            QVERIFY(reason.isEmpty());
+            const SpacingPlan4 retained = selected;
+            for (int mode = 0; mode < 5; ++mode) {
+                  SpacingSystemRequest4 broken = request;
+                  switch (mode) {
+                  case 0: broken.pass = static_cast<SpacingPass4>(-1); break;
+                  case 1: broken.availableWidth = 0; break;
+                  case 2: broken.availableWidth = nan; break;
+                  case 3: broken.fillLimit = nan; break;
+                  case 4: broken.slurPolicy = static_cast<SpacingSlurPolicy4>(-1); break;
+                  }
+                  QVERIFY(!selectSystemSpacingPlan4(system, broken, attachments, selected, &reason));
+                  QVERIFY(!reason.isEmpty());
+                  QVERIFY(spacingPlansEqual154(selected, retained));
+                  }
+            request.availableWidth = .001 * score->spatium();
+            QVERIFY(!selectSystemSpacingPlan4(system, request, attachments, selected, &reason));
+            QVERIFY(spacingPlansEqual154(selected, retained));
+            }
+            // No attachment or physical query view survives into publication.
+            QVERIFY2(spacingPlanPublicationValid4(system, selected, &reason), qPrintable(reason));
+            QVERIFY2(spacingPlanMatches4(selected, &reason), qPrintable(reason));
+            QVERIFY(snapshot() == native);
+            QVERIFY(selected.segments.size() > 1);
+            for (int mode = 0; mode < 16; ++mode) {
+                  SpacingPlan4 broken = selected;
+                  broken.segments.front().x += .25 * score->spatium();
+                  switch (mode) {
+                  case 0: broken.width = nan; break;
+                  case 1: broken.measures.pop_back(); break;
+                  case 2: broken.measures.push_back(broken.measures.front()); break;
+                  case 3: broken.measures.front().measure = nullptr; break;
+                  case 4: broken.measures.front().x += 1; break;
+                  case 5: broken.measures.back().width += 1; break;
+                  case 6: broken.segments.pop_back(); break;
+                  case 7: broken.segments.push_back(broken.segments.front()); break;
+                  case 8: std::swap(broken.segments.front(), broken.segments.back()); break;
+                  case 9: broken.segments.back().width = nan; break;
+                  case 10: broken.segments.back().stretch = -1; break;
+                  case 11: broken.segments.back().widthOffset = nan; break;
+                  case 12: broken.segments.back().ignored = !broken.segments.back().ignored; break;
+                  case 13: broken.segments.back().segment = nullptr; break;
+                  case 14: broken.segments.front().x = nan; break;
+                  case 15: broken.width += 1; break;
+                  }
+                  QVERIFY(!publishSpacingPlanSegments4(system, broken, &reason));
+                  QVERIFY(!reason.isEmpty());
+                  QVERIFY(snapshot() == native); // Even a late failure must not write the earlier changed x.
+                  }
+            for (int kind = 0; kind < 2; ++kind) {
+                  if (kind == 0 ? selected.afterGraces.empty() : selected.mergedGraces.empty()) continue;
+                  ++graceGroups;
+                  QVERIFY(!(kind == 0 ? selected.afterGraces.front().positions.empty()
+                                       : selected.mergedGraces.front().positions.empty()));
+                  for (int mode = 0; mode < 6; ++mode) {
+                        SpacingPlan4 broken = selected;
+                        broken.segments.front().x += .25 * score->spatium();
+                        if (kind == 0) {
+                              auto& group = broken.afterGraces.front();
+                              switch (mode) {
+                              case 0: group.owner = nullptr; break;
+                              case 1: group.target = nullptr; break;
+                              case 2: group.positions.front().chord = nullptr; break;
+                              case 3: group.positions.front().x = nan; break;
+                              case 4: group.positions.pop_back(); break;
+                              case 5: broken.afterGraces.push_back(group); break;
+                              }
+                              }
+                        else {
+                              auto& group = broken.mergedGraces.front();
+                              switch (mode) {
+                              case 0: group.owner = nullptr; break;
+                              case 1: group.target = nullptr; break;
+                              case 2: group.positions.front().chord = nullptr; break;
+                              case 3: group.positions.front().x = nan; break;
+                              case 4: group.positions.pop_back(); break;
+                              case 5: broken.mergedGraces.push_back(group); break;
+                              }
+                              }
+                        QVERIFY(!publishSpacingPlanSegments4(system, broken, &reason));
+                        QVERIFY(!reason.isEmpty());
+                        QVERIFY(snapshot() == native);
+                        }
+                  SpacingPlan4 overflow = selected;
+                  const Segment* source = kind == 0 ? overflow.afterGraces.front().owner->segment()
+                                                    : overflow.mergedGraces.front().owner->segment();
+                  const Segment* target = kind == 0 ? overflow.afterGraces.front().target
+                                                    : overflow.mergedGraces.front().target->segment();
+                  if (source != target) {
+                        for (auto& entry : overflow.segments) {
+                              if (entry.segment == source) entry.x = -std::numeric_limits<qreal>::max();
+                              if (entry.segment == target) entry.x = std::numeric_limits<qreal>::max();
+                              }
+                        // Finite stored fields can still overflow the target-
+                        // to-parent conversion used by late grace publication.
+                        QVERIFY(!publishSpacingPlanSegments4(system, overflow, &reason));
+                        QVERIFY(!reason.isEmpty());
+                        QVERIFY(snapshot() == native);
+                        }
+                  }
+            // Check the actual segment commit, then restore native cache fields
+            // before assertions. Ignored headers can legitimately retain cache-
+            // only positions different from a newly reconstructed ignored entry.
+            std::vector<std::array<qreal, 4>> saved;
+            for (const auto& s : selected.segments)
+                  saved.push_back({{s.segment->x(), s.segment->width(), s.segment->stretch(), s.segment->spacingWidthOffset4()}});
+            const bool committed = publishSpacingPlanSegments4(system, selected, &reason);
+            bool fields = committed;
+            for (size_t i = 0; i < selected.segments.size(); ++i) {
+                  const auto& s = selected.segments[i];
+                  qreal origin = 0;
+                  for (const auto& m : selected.measures) if (m.measure == s.segment->measure()) origin = m.x;
+                  fields = fields && s.segment->x() == s.x - origin && s.segment->width() == s.width
+                        && s.segment->stretch() == s.stretch && s.segment->spacingWidthOffset4() == s.widthOffset;
+                  s.segment->rxpos() = saved[i][0];
+                  s.segment->setWidth(saved[i][1]);
+                  s.segment->setStretch(saved[i][2]);
+                  s.segment->setSpacingWidthOffset4(saved[i][3]);
+                  }
+            QVERIFY2(committed && fields, qPrintable(reason));
+            QVERIFY(snapshot() == native);
+            ++checked;
+            }
+      QVERIFY(checked > 0);
+      if (file.startsWith("v0.97") || file.startsWith("v0.139")) QVERIFY(graceGroups > 0);
+      QVERIFY(!score->graceQueryFactory4());
       }
 
 void TestSpacing::acciaccaturaSlash4_data()

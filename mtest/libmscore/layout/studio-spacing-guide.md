@@ -1,5 +1,163 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.198 aggregate gate: shared system planning and publication preflight
+
+Group v0.194-v0.198 into one testing batch over accepted v0.193. Each stage has
+a recoverable commit and incremental patch; the combined patch includes all five
+and replaces their ordered application. Apply the combined OR increments, never
+both. No intermediate native test result is assumed.
+
+| Stage | Result | Native status |
+|---|---|---|
+| v0.194 | Accepted v0.193 gate recorded; common natural/final plan-selection request and shared terminal/section fill policy | Pending |
+| v0.195 | Native candidate/final callers share beam preparation, fresh attachment capture and read-only selection | Pending |
+| v0.196 | Whole-domain publication preflight and atomic segment commit; final evidence follows late grace publication | Pending |
+| v0.197 | Six-context lifecycle/equivalence and malformed-plan atomicity regressions | Pending |
+| v0.198 | Converted-coordinate finite checks, final local validation and this aggregate gate | Pending |
+
+Candidate-only boundary guards remain: a natural collected prefix can be overfull
+and subsequently backed out. Final requests still use the existing positive-
+duration squeeze limits and justify only when the unchanged fill policy requires
+it. Mixed fallback shares that fill policy but retains its native floors/pooled
+spring path. The batch does not turn every rejected full plan into legacy layout,
+unify unsupported contexts or change the accepted musical spacing formulas.
+
+Mutable beam/root preparation precedes attachment capture. The common helper
+returns after releasing its attachment owner and per-query physical views;
+only the selected placement plan remains at publication. The collection beam-
+preparation memo is revalidated against fresh projections during fitting and
+cleared at this barrier. The native producer factory stays bound for later callbacks, each of which creates a fresh short-lived query. No physical
+query snapshot is retained across publication position/shape writes. Prefix
+backout never authorizes reuse of unvalidated preparation geometry.
+
+Preflight verifies every destination before the first segment write: exact native
+measure/segment order and coverage, active/ignored state, finite scalar fields,
+contiguous measure extent and complete after/merged grace owners and member order.
+Check converted local segment and target-to-parent grace coordinates for overflow
+as well as their stored fields. A malformed late destination cannot leave an
+earlier segment partly committed. Native measure finalization, staff lines and
+late grace shape refresh keep their existing order. The FINAL observer event now
+marks the completed horizontal publication phase; no logging/profiling is added.
+
+Local validation: Debug/NDEBUG C++11 syntax checks of planner, native layout and
+regenerated-moc spacing tests, with unused-parameter and signedness warnings.
+Final planner/test changes are checked again. An extracted-source mock-DOM harness
+compares the previous/shared fill policy across 16,384 cases per mode and exercises
+108 valid publication domains plus 2,340 malformed/overflow atomic rejections per
+mode. Selection-kernel stubs in that harness test orchestration only; the real
+natural/squeeze/justification equivalence checks are in native mtests and have not
+run here. These checks and exact patch replay do not establish rendered parity.
+No new score, style, file property, engraving-rule change or performance claim.
+
+Rebuild once after applying the batch, then run once:
+
+    ctest -j1 --output-on-failure -R '^(tst_spacing|tst_beam)$'
+
+The new systemSpacingLifecycle4 rows use existing natural H1, v0.97 after-graces,
+v0.139 merged groups, v0.167 system-boundary roots, v0.181 cross-staff fitting and
+v0.187 squeeze. Existing tests still cover native full-plan/fallback decisions,
+unsupported annotations, exact producer identities, style restoration and edits.
+
+After passing, reuse the existing visuals for a short stability review:
+v0.181 retains F1-F2 / F3-F4 / F5-F6; v0.187 fitting retains F1-F3 / F4-F6 and its
+S1 squeeze stays clear. In v0.167 systems, traverse the P2 slur anchor across the
+system boundary and undo, retaining fixed local/sibling endpoints. Existing manual
+curve offsets should remain intact. New screenshots are unnecessary if unchanged;
+provide a capture only for a new discrepancy. No profile run is requested.
+
+Files in this checkpoint: spacingplan4.cpp, layout.cpp, tst_spacing.cpp and this
+guide. Native build/tests and this regression gate are pending. Broader policies/contexts, full-
+prefix rebuild consolidation, ordinary stem/general slur visuals and Debug edit
+latency remain outstanding; performance stays deferred. Resolve this aggregate's
+failures or visible changes before broadening admission or the spacing lifecycle.
+
+## v0.197 WIP: shared selection and publication lifecycle regressions
+
+Add systemSpacingLifecycle4 over six existing controls: natural H1, ordinary
+after-graces, merged two-staff groups, P2 system-boundary roots, cross-staff
+fitting and grace squeeze. Each native layout supplies current prepared inputs;
+compare candidate selection with an independent natural plan, including an
+overfull request. Compare final selection with existing squeeze/justification
+operations. Invalid phase/width/fill/policy and excessive compression must leave
+the selected output intact, with no change to native geometry or factory state.
+
+Destroy the attachment owner before publication tests. Preflight must accept a
+fresh whole plan matching native publication. Corrupt the complete domain,
+measure extents, late segment scalars and grace owners/targets/member lists.
+An earlier finite segment x is also changed in each rejected plan to detect any
+partial commit before discovering the later error. Require the entire native
+snapshot unchanged. A valid segment commit must write all four original fields;
+restore fields before assertions, including inactive header cache-only positions.
+Keep existing native outcome, geometry, edit and off/on restoration tests.
+
+Files: tst_spacing.cpp and guide. Six Debug/NDEBUG C++11 syntax checks pass
+across planner, native layout and regenerated-moc tests, with unused-parameter
+and signedness checks. Native execution remains deferred. Next: complete local
+contract/equivalence checks, review the aggregate diff and package one native
+build/test gate with individual recoverable increments.
+
+## v0.196 WIP: complete-domain preflight before segment publication
+
+Add read-only preflight for a selected plan's exact native measure/segment domain,
+finite fields, contiguous measure extent, active/ignored status and complete
+late grace ownership/member order. Reject missing/extra/reordered destinations,
+wrong owners and duplicate grace writes before any segment mutation. Preserve
+the current native scope; this is a publication proof, not a geometry refresh,
+new engraving policy or permission to reuse a plan after edits.
+
+publishSpacingPlanSegments4 runs the whole preflight, creates its measure-origin
+lookup, then writes the original segment fields without an intervening query or
+fallible validation. Native measure positioning, layoutElementsAfterSpacing,
+staff lines and late grace publication retain their order. Rejected preflight
+uses the existing fallback with an explicit reason. The FINAL observer record
+now follows late grace publication and native shape refresh, so its event marks
+the completed horizontal publication phase. Factory bindings still create fresh
+queries for mutable native callbacks; no physical snapshot crosses those writes.
+
+Files: spacingplan4.h/.cpp, layout.cpp and guide. Native tests remain deferred.
+Next: add shared-selection equivalence, malformed-plan atomicity and grace-domain
+regressions, then complete local validation and package the aggregate patch.
+
+## v0.195 WIP: one native preparation/capture/selection path
+
+Route candidate natural fitting and final squeeze/justification through one
+native helper and the v0.194 selection contract. Preserve candidate-only
+header/repeat/trailer/joined-beam guards and the original native width accumulator
+for backout/fallback. Keep final native preparation order, no-stretch/style-off
+behavior and mixed-fallback width distribution. Full-plan and mixed fallback now
+use the same terminal/section fill-policy implementation.
+
+The helper finishes mutable beam preparation, captures one fresh attachment
+owner, selects a read-only plan and destroys its attachment/physical geometry
+views before returning to publication. NativeGraceInputs4 is a producer factory,
+not a geometry cache; its binding remains for later native callbacks, each with
+fresh short-lived capture. Remove the old duplicated final selection and stale
+comment claiming collection never used plans. No guard is loosened, old width
+arithmetic and publication order stay intact. Next: preflight all plan writes
+before the first segment mutation, then add aggregate mechanism regressions.
+
+Files: layout.cpp and guide. Native verification remains deferred to the batch.
+
+## v0.194 WIP: shared system-plan selection contract
+
+The user reports native tst_spacing and tst_beam passing after v0.193. Close
+the v0.189-v0.193 native gate, including the migrated explicit unison-owner
+checks. The supplied v0.192 visual captures remain the bounded regression
+reference; no new P2 traversal/undo demonstration or performance result is
+assumed. Continue with a larger grouped batch and recoverable WIP checkpoints.
+
+Add one read-only SpacingSystemRequest4 selection contract. Candidate requests
+return natural plans even when overfull; final requests require the existing
+bounded squeeze result, then apply the unchanged terminal/section fill policy.
+Move that policy into the planner module so full-plan and mixed fallback can
+share it. Selection commits its output only on success. Native collection and
+publication are not switched in this checkpoint. Existing unsupported-context
+and squeeze limits remain. No geometry, style or source engraving rule changes.
+
+Files: spacingplan4.h/.cpp and guide. Native testing is deferred to the next
+aggregate gate. Next: route native candidate/final producers through this shared
+contract, keeping preparation outside read-only attachment capture/planning.
+
 ## v0.193 correction: unison regression asserts source-produced owners
 
 The supplied native TestSpacing result for v0.192 has four failure nodes, all

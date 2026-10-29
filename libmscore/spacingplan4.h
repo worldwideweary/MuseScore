@@ -11,6 +11,7 @@
 
 namespace Ms {
 class Measure;
+class MeasureBase;
 class Segment;
 class System;
 class Beam;
@@ -106,6 +107,23 @@ struct SpacingPlanOptions4 {
     SpacingSlurPolicy4 slurPolicy = SpacingSlurPolicy4::COMPATIBILITY;
 };
 
+// One read-only selection contract for a collected prefix or retained system.
+// Candidates return natural width even when overfull. Final requests require a
+// fitting plan, then apply the shared terminal/section justification policy.
+struct SpacingSystemRequest4 {
+    SpacingPass4 pass = SpacingPass4::CANDIDATE;
+    qreal availableWidth = 0;
+    const MeasureBase* next = nullptr;
+    qreal fillLimit = 0;
+    SpacingSlurPolicy4 slurPolicy = SpacingSlurPolicy4::PREPARED;
+};
+bool spacingSystemJustified4(const Measure* last, const MeasureBase* next,
+                             qreal naturalWidth, qreal availableWidth, qreal fillLimit);
+bool selectSystemSpacingPlan4(System*, const SpacingSystemRequest4&,
+                              const SpacingAttachmentPreparation4&, SpacingPlan4& result,
+                              QString* reason = nullptr,
+                              const std::vector<GraceMergedGeometry4>* preparedMerged = nullptr);
+
 // Inputs must already have current shapes and segment ticks. This WIP returns
 // a plan only: no DOM positions, widths, styles or durations are changed.
 // All pointers are borrowed for this pass; discard the plan after edits/layout.
@@ -131,6 +149,14 @@ bool justifySpacingPlan4(SpacingPlan4&, qreal targetWidth);
 // Query only; no preparation or DOM writes. Callers must establish that the
 // existing component geometry is current before building the supplied plan.
 bool spacingPlanMatches4(const SpacingPlan4&, QString* reason = nullptr);
+
+// Preflight the entire borrowed write domain, including late grace writes.
+// No query owner/geometry cache is retained and no native field changes on
+// rejection. Call only within the current unchanged native publication phase.
+bool spacingPlanPublicationValid4(const System*, const SpacingPlan4&, QString* reason = nullptr);
+// Validate everything first, then write the segment fields only. Measure/late
+// grace finalization keeps its native order in collectSystem. Failure is atomic.
+bool publishSpacingPlanSegments4(System*, const SpacingPlan4&, QString* reason = nullptr);
 
 // Try natural width, then Studio's first three positive-duration squeeze
 // passes. Publish only a fitting whole-system plan; stronger compression and

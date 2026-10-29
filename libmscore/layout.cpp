@@ -4195,22 +4195,6 @@ static void processLines(System* system, std::vector<Spanner*> lines, bool align
             }
       }
 
-// Studio leaves short terminal/section systems at their natural width.
-static bool justifySystem4(const Measure* last, const MeasureBase* next,
-                           qreal naturalWidth, qreal availableWidth, qreal fillLimit)
-{
-    if (last && last->sectionBreak())
-        next = nullptr;
-    while (next) {
-        if (next->isMeasure() || next->isHBox())
-            return true;
-        if (next->sectionBreak())
-            break;
-        next = next->next();
-    }
-    return !(availableWidth > 0 && naturalWidth / availableWidth < fillLimit);
-}
-
 // After-grace beams are normally laid out after system spacing. Prepare their
 // stem geometry at the planned intra-group distances first, so the planner and
 // the final beam pass see the same shapes. Preserve native chord positions here.
@@ -4355,10 +4339,33 @@ static bool prepareGraceBeamsForSpacing4(System* system, std::vector<GraceBeamPr
     return true;
 }
 
+// Native beam/root production may write derived geometry. Capture one fresh
+// attachment owner only after it completes; destroy all query views on return.
+// The factory itself can remain bound for later native publication callbacks.
+static bool nativeSystemSpacingPlan4(System* system, const SpacingSystemRequest4& request,
+                                     NativeGraceInputs4* inputs, std::vector<GraceBeamPreparation4>& preparedBeams,
+                                     SpacingPlan4& result, QString* reason)
+{
+    const auto fail = [reason](const char* text) { if (reason) *reason = text; return false; };
+    std::vector<GraceMergedGeometry4> readyMerged;
+    const bool ready = prepareGraceBeamsForSpacing4(system, preparedBeams, readyMerged);
+    if (!system->score()->styleB(Sid::spacingLayout4)) return false;
+    if (MScore::noHorizontalStretch) return fail("Horizontal stretch disabled");
+    if (!ready) return fail(request.pass == SpacingPass4::CANDIDATE
+        ? "Candidate grace-beam preparation rejected" : "Final grace-beam preparation rejected");
+    if (!inputs) return fail("Prepared-input factory unavailable");
+    SpacingAttachmentPreparation4 attachments;
+    if (!inputs->captureSystem(system, attachments, reason)) {
+        if (reason && reason->isEmpty()) *reason = "Prepared system attachment domain unavailable";
+        return false;
+    }
+    return selectSystemSpacingPlan4(system, request, attachments, result, reason, &readyMerged);
+}
+
 // Fit only ordinary prefixes whose header/barline geometry remains unchanged
 // when the next measure is accepted or this system is finalized. Keep the
 // native width accumulator intact for unsupported-context fallback/backtracking.
-static bool systemFittingWidth4(System* system, qreal& width, std::vector<GraceBeamPreparation4>& preparedBeams,
+static bool systemFittingWidth4(System* system, qreal availableWidth, qreal& width, std::vector<GraceBeamPreparation4>& preparedBeams,
                                 SpacingDirectionReadiness4* readiness, QString* reason = nullptr)
 {
     const auto fail = [reason](const char* text) {
@@ -4387,17 +4394,12 @@ static bool systemFittingWidth4(System* system, qreal& width, std::vector<GraceB
     }
     NativeGraceInputs4 inputs(system->score(), spacingMeasures4(system), readiness);
     SpacingGraceQueryScope4 graceScope(system->score(), inputs.factory());
-    std::vector<GraceMergedGeometry4> readyMerged;
-    if (!prepareGraceBeamsForSpacing4(system, preparedBeams, readyMerged))
-        return fail("Candidate grace-beam preparation rejected");
+    SpacingSystemRequest4 request;
+    request.availableWidth = availableWidth;
+    request.slurPolicy = inputs.factory()->policy();
     SpacingPlan4 plan;
-    SpacingAttachmentPreparation4 attachments;
-    SpacingPlanOptions4 options;
-    options.slurPolicy = inputs.factory()->policy();
-    if (!inputs.captureSystem(system, attachments, reason)
-        || !buildSpacingPlan4(system, plan, attachments, reason, options, &readyMerged)) return false;
+    if (!nativeSystemSpacingPlan4(system, request, &inputs, preparedBeams, plan, reason)) return false;
     width = plan.width;
-    if (reason) reason->clear();
     return true;
 }
 
@@ -4550,7 +4552,7 @@ System* Score::collectSystem(LayoutContext& lc)
             if (styleB(Sid::spacingLayout4)) {
                   const bool observed = spacingDecisionObserved4(this);
                   QString reason;
-                  const bool planned = systemFittingWidth4(system, fittingWidth, preparedBeams,
+                  const bool planned = systemFittingWidth4(system, systemWidth, fittingWidth, preparedBeams,
                         lc.spacingDirections4.get(), observed ? &reason : nullptr);
                   if (observed)
                         recordSpacingDecision4(system, SpacingPass4::CANDIDATE,
@@ -4753,53 +4755,34 @@ System* Score::collectSystem(LayoutContext& lc)
       //
       // stretch incomplete row
       //
-      // First integrate the nonmutating planner at final placement only.
-      // Collection and squeezing still use the existing measure widths. A
-      // complete fitting plan, including bounded squeezing when necessary,
-      // is required before any native positions change.
+      // Keep a producer factory for native publication callbacks, not an
+      // attachment/geometry cache. Every query captures fresh read-only input.
       std::unique_ptr<NativeGraceInputs4> finalInputs;
       if (lc.spacingDirections4)
             finalInputs.reset(new NativeGraceInputs4(this, spacingMeasures4(system), lc.spacingDirections4.get()));
       SpacingGraceQueryScope4 finalGraceScope(this, finalInputs ? finalInputs->factory() : nullptr);
-      std::vector<GraceMergedGeometry4> readyMerged;
-      const bool graceGeometryReady = prepareGraceBeamsForSpacing4(system, preparedBeams, readyMerged);
-      SpacingPlan4 studioPlan;
-      bool useStudioPlan = false;
-      std::map<Measure*, const SpacingMeasurePlan4*> studioMeasures;
-      // One system-scoped musical view, captured AFTER beam/shape writes.
-      // Reuse it through read-only fitting; destroy before publishing positions.
-      // Early packing, beam preparation, natural/squeeze fitting and local
-      // publication all request the same prepared attachment policy.
-      bool studioFits = false;
       const bool observeDecision = spacingDecisionObserved4(this);
       QString decisionReason;
-      if (styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch && graceGeometryReady) {
-            SpacingAttachmentPreparation4 attachments;
-            studioFits = finalInputs && finalInputs->captureSystem(system, attachments, observeDecision ? &decisionReason : nullptr)
-                  && squeezeSpacingPlan4(system, systemWidth, studioPlan, attachments, observeDecision ? &decisionReason : nullptr, &readyMerged,
-                                         finalInputs->factory()->policy());
-            if (observeDecision && !finalInputs)
-                  decisionReason = "Final prepared-input factory unavailable";
-            }
-      else if (observeDecision && styleB(Sid::spacingLayout4))
-            decisionReason = MScore::noHorizontalStretch ? "Horizontal stretch disabled" : "Final grace-beam preparation rejected";
-      if (studioFits) {
-            useStudioPlan = !justifySystem4(lm, lc.curMeasure, studioPlan.width, systemWidth,
-                                             styleD(Sid::lastSystemFillLimit))
-                  || justifySpacingPlan4(studioPlan, systemWidth);
-            if (observeDecision && !useStudioPlan)
-                  decisionReason = "Final plan justification rejected";
-            if (useStudioPlan) {
-                  for (const SpacingMeasurePlan4& m : studioPlan.measures)
-                        studioMeasures[m.measure] = &m;
-                  for (const SpacingSegmentPlan4& s : studioPlan.segments) {
-                        const SpacingMeasurePlan4* m = studioMeasures.at(s.segment->measure());
-                        s.segment->rxpos() = s.x - m->x;
-                        s.segment->setWidth(s.width);
-                        s.segment->setStretch(s.stretch);
-                        s.segment->setSpacingWidthOffset4(s.widthOffset);
-                        }
-                  }
+      SpacingSystemRequest4 finalRequest;
+      finalRequest.pass = SpacingPass4::FINAL;
+      finalRequest.availableWidth = systemWidth;
+      finalRequest.next = lc.curMeasure;
+      finalRequest.fillLimit = styleD(Sid::lastSystemFillLimit);
+      if (finalInputs) finalRequest.slurPolicy = finalInputs->factory()->policy();
+      SpacingPlan4 studioPlan;
+      bool useStudioPlan = nativeSystemSpacingPlan4(system, finalRequest, finalInputs.get(), preparedBeams,
+                                                   studioPlan, observeDecision ? &decisionReason : nullptr);
+      // Collection revalidates this preparation memo against fresh projections.
+      // It has no role after selection and must not cross publication writes.
+      preparedBeams.clear();
+      std::map<Measure*, const SpacingMeasurePlan4*> studioMeasures;
+      // The shared helper has released its attachment owner and physical shape
+      // views before this first publication write. Candidate/final requests use
+      // the same prepared policy and retain only the selected placement plan.
+      if (useStudioPlan) {
+            useStudioPlan = publishSpacingPlanSegments4(system, studioPlan, observeDecision ? &decisionReason : nullptr);
+            if (useStudioPlan) for (const SpacingMeasurePlan4& m : studioPlan.measures)
+                  studioMeasures[m.measure] = &m;
             }
       qreal rest;
       std::map<Measure*, qreal> studioWidths;
@@ -4834,7 +4817,7 @@ System* Score::collectSystem(LayoutContext& lc)
                   // Studio 4.7.5 SystemLayout::shouldBeJustified: leave a short
                   // terminal/section system at its natural width. Frames may
                   // follow it; only a later measure or HBox requires filling.
-                  if (!justifySystem4(lm, lc.curMeasure, minWidth, systemWidth,
+                  if (!spacingSystemJustified4(lm, lc.curMeasure, minWidth, systemWidth,
                                       styleD(Sid::lastSystemFillLimit)))
                         rest = 0;
                   }
@@ -4893,13 +4876,6 @@ System* Score::collectSystem(LayoutContext& lc)
             pos.rx() += ww;
             }
       system->setWidth(pos.x());
-      if (observeDecision)
-            recordSpacingDecision4(system, SpacingPass4::FINAL,
-                  !styleB(Sid::spacingLayout4) ? SpacingPath4::STYLE_OFF
-                  : MScore::noHorizontalStretch ? SpacingPath4::NO_STRETCH
-                  : useStudioPlan ? SpacingPath4::FULL_PLAN
-                  : !studioWidths.empty() ? SpacingPath4::POOLED_WIDTHS : SpacingPath4::NATIVE_WIDTHS,
-                  system->width(), systemWidth, decisionReason);
       if (useStudioPlan) {
             // Segment widths are now final. Publish the plan's target-relative
             // graces directly, including compressed plans, without applying an
@@ -4923,6 +4899,14 @@ System* Score::collectSystem(LayoutContext& lc)
                   joint.target->segment()->createShape(joint.target->vStaffIdx());
             }
       }
+
+      if (observeDecision)
+            recordSpacingDecision4(system, SpacingPass4::FINAL,
+                  !styleB(Sid::spacingLayout4) ? SpacingPath4::STYLE_OFF
+                  : MScore::noHorizontalStretch ? SpacingPath4::NO_STRETCH
+                  : useStudioPlan ? SpacingPath4::FULL_PLAN
+                  : !studioWidths.empty() ? SpacingPath4::POOLED_WIDTHS : SpacingPath4::NATIVE_WIDTHS,
+                  system->width(), systemWidth, decisionReason);
 
       for (System *bSystem : brokenSystems)
             bSystem->clear();
