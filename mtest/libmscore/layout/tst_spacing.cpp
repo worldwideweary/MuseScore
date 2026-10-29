@@ -88,6 +88,8 @@ class TestSpacing : public QObject, public MTest {
       void spacingNativeDecisions4();
       void spacingDecisionCorpus4_data();
       void spacingDecisionCorpus4();
+      void measureRestPlanning4_data();
+      void measureRestPlanning4();
       void systemSpacingLifecycle4_data();
       void systemSpacingLifecycle4();
       void acciaccaturaSlash4_data();
@@ -9115,6 +9117,7 @@ void TestSpacing::spacingNativeDecisions4()
 void TestSpacing::spacingDecisionCorpus4_data()
       {
       QTest::addColumn<QString>("file");
+      QTest::newRow("measure-rest-fitting") << QString("v0.201-measure-rests-fitting.mscx");
       QTest::newRow("voices") << QString("v0.38-spacing-voices.mscx");
       QTest::newRow("cross-staff-fitting") << QString("v0.181-spacing-cross-staff-fitting.mscx");
       QTest::newRow("grace-fitting") << QString("v0.187-acciaccatura-fitting.mscx");
@@ -9189,9 +9192,220 @@ void TestSpacing::spacingDecisionCorpus4()
       QVERIFY(nextTick == score->lastMeasure()->endTick());
       }
 
+void TestSpacing::measureRestPlanning4_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::addColumn<bool>("modernBeams");
+      for (bool beams : {false, true}) {
+            const QString suffix = beams ? "-studio-beams" : "-legacy-beams";
+            for (const QString& mode : {QString("natural"), QString("justified"), QString("fitting"), QString("squeeze")})
+                  QTest::newRow(qPrintable(mode + suffix)) << QString("v0.201-measure-rests-%1.mscx").arg(mode) << beams;
+            }
+      }
+
+void TestSpacing::measureRestPlanning4()
+      {
+      QFETCH(QString, file);
+      QFETCH(bool, modernBeams);
+      std::unique_ptr<MasterScore> score(readScore(DIR + file));
+      QVERIFY(score);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      score->setStyleValue(Sid::beamLayout4, modernBeams);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto snapshot = [&]() {
+            auto values = graceMergedSnapshot4(score.get());
+            for (const System* system : score->systems()) values.push_back(system->width());
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  for (const Segment& s : m->segments()) {
+                        if (!s.enabled() && (s.header() || s.trailer())) continue;
+                        for (const Element* item : s.elist()) if (item && item->isRest()) {
+                              values.insert(values.end(), {item->ipos().x(), item->ipos().y(), item->offset().x(), item->offset().y()});
+                              const QRectF r = item->bbox();
+                              values.insert(values.end(), {r.x(), r.y(), r.width(), r.height()});
+                              }
+                        }
+                  }
+            return values;
+            };
+      const auto same = [](const std::vector<qreal>& a, const std::vector<qreal>& b) {
+            if (a.size() != b.size()) return false;
+            for (size_t i = 0; i < a.size(); ++i)
+                  if (!qIsFinite(a[i]) || !qIsFinite(b[i]) || qAbs(a[i] - b[i]) > 1e-6) return false;
+            return true;
+            };
+      const auto legacy = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      std::vector<SpacingDecision4> decisions;
+      {
+      SpacingDecisionScope4 scope(score.get(), [&decisions](const SpacingDecision4& e) { decisions.push_back(e); });
+      score->doLayout();
+      }
+      const auto modern = snapshot();
+      int finals = 0, candidates = 0, rests = 0, mixedChecks = 0;
+      for (const auto& e : decisions) {
+            if (e.pass == SpacingPass4::FINAL) {
+                  ++finals;
+                  QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+                  }
+            else if (e.path == SpacingPath4::FULL_PLAN) ++candidates;
+            }
+      QVERIFY(finals > 0 && candidates > 0);
+      if (file.contains("fitting")) QVERIFY(finals > 1);
+      QString reason;
+      std::vector<Rest*> fullRests;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            for (const Segment& segment : m->segments()) {
+                  for (Element* item : segment.elist()) {
+                        if (!item || !item->isRest() || !toRest(item)->isFullMeasureRest()) continue;
+                        Rest* rest = toRest(item);
+                        fullRests.push_back(rest);
+                        ++rests;
+                        QVERIFY(rest->rtick().isZero() && rest->actualTicks() == m->ticks());
+                        // Check the visible body center against the native free
+                        // interval, independently of its local-position formula.
+                        qreal left = 0, right = m->width();
+                        for (const Segment* s = segment.prevActive(); s; s = s->prevActive())
+                              if (!s->allElementsInvisible()) left = std::max(left, s->x() + s->minRight());
+                        for (const Segment* s = segment.nextActive(); s; s = s->nextActive()) {
+                              if (!s->isChordRestType() && s->element(rest->staffIdx() * VOICES)) {
+                                    right = s->x() - s->minLeft();
+                                    break;
+                                    }
+                              }
+                        const qreal center = segment.x() + rest->ipos().x() + rest->bbox().center().x();
+                        QVERIFY(qIsFinite(center) && qAbs(center - .5 * (left + right)) < 1e-6);
+                        // Stored native shapes still contain the rest for skyline
+                        // use, even when horizontal spacing omits a moving voice.
+                        const SpacingShape4 shape = spacingStaffShape4(&segment, rest->staffIdx());
+                        bool owned = false;
+                        for (const auto& e : shape.elements) owned = owned || e.item == rest;
+                        QVERIFY(owned);
+                        }
+                  }
+            }
+      QVERIFY(rests > 0);
+      for (System* system : score->systems()) {
+            if (system->vbox()) continue;
+            SpacingPlan4 natural, selected;
+            const auto build = [&](SpacingPlan4& result) {
+                  SpacingAttachmentPreparation4 owner;
+                  if (!snapshotLaidOutSystemSpacing4(system, owner, &reason)) return false;
+                  SpacingPlanOptions4 options;
+                  options.slurPolicy = SpacingSlurPolicy4::PREPARED;
+                  return buildSpacingPlan4(system, result, owner, &reason, options);
+                  };
+            QVERIFY2(build(natural), qPrintable(reason));
+            if (file.contains("squeeze")) QVERIFY(natural.width > system->width() + 1e-6);
+            {
+            SpacingAttachmentPreparation4 owner;
+            QVERIFY2(snapshotLaidOutSystemSpacing4(system, owner, &reason), qPrintable(reason));
+            SpacingSystemRequest4 request;
+            request.pass = SpacingPass4::FINAL;
+            request.availableWidth = system->width();
+            request.fillLimit = score->styleD(Sid::lastSystemFillLimit);
+            request.next = system->lastMeasure()->next();
+            QVERIFY2(selectSystemSpacingPlan4(system, request, owner, selected, &reason), qPrintable(reason));
+            }
+            QVERIFY2(spacingPlanMatches4(selected, &reason), qPrintable(reason));
+            QVERIFY2(spacingPlanPublicationValid4(system, selected, &reason), qPrintable(reason));
+            // Normalize only computed rest x, including all-full-rest onsets.
+            // Refresh exact native producer geometry after each synthetic stale
+            // center; a fresh query must recover the same natural placement.
+            std::vector<std::pair<Rest*, qreal>> saved;
+            for (Rest* rest : fullRests) if (rest->measure()->system() == system) {
+                  saved.push_back({rest, rest->ipos().x()});
+                  rest->rxpos() += 23 * score->spatium();
+                  rest->segment()->createShapes();
+                  }
+            SpacingPlan4 rebuilt;
+            const bool built = build(rebuilt);
+            for (const auto& r : saved) { r.first->rxpos() = r.second; r.first->segment()->createShapes(); }
+            QVERIFY2(built, qPrintable(reason));
+            QVERIFY(qAbs(rebuilt.width - natural.width) < 1e-6);
+            QCOMPARE(int(rebuilt.segments.size()), int(natural.segments.size()));
+            for (size_t i = 0; i < natural.segments.size(); ++i) {
+                  QVERIFY(qAbs(rebuilt.segments[i].x - natural.segments[i].x) < 1e-6);
+                  QVERIFY(qAbs(rebuilt.segments[i].width - natural.segments[i].width) < 1e-6);
+                  }
+            for (const auto& r : saved) {
+                  Rest* rest = r.first;
+                  if (!rest->measure()->hasVoices(rest->staffIdx())) continue;
+                  bool moving = false;
+                  for (int track = rest->staffIdx() * VOICES; track < (rest->staffIdx() + 1) * VOICES; ++track) {
+                        const Element* item = rest->segment()->element(track);
+                        moving = moving || (item && !(item->isRest() && toRest(item)->isFullMeasureRest()));
+                        }
+                  if (!moving) continue;
+                  const QPointF offset = rest->offset();
+                  rest->Element::setOffset(offset + QPointF(100 * score->spatium(), 0));
+                  rest->segment()->createShapes();
+                  SpacingPlan4 ignored;
+                  const bool ok = build(ignored);
+                  rest->Element::setOffset(offset);
+                  rest->segment()->createShapes();
+                  QVERIFY2(ok, qPrintable(reason));
+                  QVERIFY(spacingPlansEqual154(ignored, natural));
+                  ++mixedChecks;
+                  }
+            // Both source identity and the current rest context must still be
+            // valid. Rejection cannot replace a previously complete plan.
+            Rest* probe = saved.front().first;
+            SpacingPlan4 retained = natural;
+            Segment* boundary = probe->measure()->last();
+            QVERIFY(boundary && boundary->isEndBarLineType());
+            for (int mode = 0; mode < 5; ++mode) {
+                  if (mode == 0) probe->setGap(true);
+                  if (mode == 1) probe->setSmall(true);
+                  if (mode == 2) probe->setVisible(false);
+                  if (mode == 3) probe->setStaffMove(1);
+                  if (mode == 4) boundary->setSegmentType(SegmentType::KeySig);
+                  const bool accepted = build(retained);
+                  const bool published = publishSpacingPlanSegments4(system, selected, &reason);
+                  probe->setGap(false); probe->setSmall(false); probe->setVisible(true); probe->setStaffMove(0);
+                  boundary->setSegmentType(SegmentType::EndBarLine);
+                  QVERIFY(!accepted && !published);
+                  QVERIFY(spacingPlansEqual154(retained, natural));
+                  QVERIFY(same(snapshot(), modern));
+                  }
+            }
+      if (!file.contains("squeeze")) QVERIFY(mixedChecks >= 2);
+      if (file.contains("natural") && modernBeams) {
+            Rest* rest = fullRests.front();
+            const QPointF offset(.25 * score->spatium(), .5 * score->spatium());
+            score->startCmd();
+            rest->undoChangeProperty(Pid::OFFSET, offset);
+            score->endCmd();
+            score->doLayout();
+            QCOMPARE(rest->offset(), offset);
+            const auto edited = snapshot();
+            score->undoRedo(true, nullptr);
+            score->doLayout();
+            QVERIFY(same(snapshot(), modern));
+            score->undoRedo(false, nullptr);
+            score->doLayout();
+            QCOMPARE(rest->offset(), offset);
+            QVERIFY(same(snapshot(), edited));
+            score->undoRedo(true, nullptr);
+            score->doLayout();
+            }
+      QVERIFY(same(snapshot(), modern));
+      score->doLayout();
+      QVERIFY(same(snapshot(), modern));
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      QVERIFY(same(snapshot(), legacy));
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      QVERIFY(same(snapshot(), modern));
+      QVERIFY(!score->graceQueryFactory4());
+      }
+
 void TestSpacing::systemSpacingLifecycle4_data()
       {
       QTest::addColumn<QString>("file");
+      QTest::newRow("measure-rest-natural") << QString("v0.201-measure-rests-natural.mscx");
+      QTest::newRow("measure-rest-squeeze") << QString("v0.201-measure-rests-squeeze.mscx");
       QTest::newRow("ordinary") << QString("studio-spacing-natural-h1.mscx");
       QTest::newRow("after-graces") << QString("v0.97-spacing-after-grace-system-natural.mscx");
       QTest::newRow("merged-graces") << QString("v0.139-spacing-two-staff-slur-offsets.mscx");

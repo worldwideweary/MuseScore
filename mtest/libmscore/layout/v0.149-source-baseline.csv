@@ -7,3 +7,5 @@ paddingtable-4.7.5.cpp,src/engraving/rendering/paddingtable.cpp,c308af1c64a903e5
 slurtielayout-4.7.5.cpp,src/engraving/rendering/score/slurtielayout.cpp,cc4d7659bffd339ebf6b757d4d70b284812d1fe1
 chord-dom-4.7.5.cpp,src/engraving/dom/chord.cpp,d04e8718721f3b8a0024858800d0caf9a8ac0253
 shape-4.7.5.h,src/engraving/infrastructure/shape.h,b3d1ab679eeadf9dd7a8c8172bb966b113de98be
+segment-dom-4.7.5.cpp,src/engraving/dom/segment.cpp,4a94a435040dcae84e6210eba2d971a95ae3edb3
+restlayout-4.7.5.cpp,src/engraving/rendering/score/restlayout.cpp,130539b8ec822b863f92868b7d6efc1d3274b62e

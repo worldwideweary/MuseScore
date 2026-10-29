@@ -1,5 +1,151 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.203 aggregate gate: ordinary full-measure rests
+
+Apply this grouped v0.199-v0.203 batch over accepted v0.198. The combined patch
+replaces ordered application of the five incremental checkpoint patches; apply
+one route only. Each WIP has a recoverable commit. No intermediate native build
+or test run is requested or assumed.
+
+| Checkpoint | Result | Native status |
+|---|---|---|
+| v0.199 | Record accepted v0.198 build/mtests/P2 traversal; stage rest snapshot policy | Pending for this batch |
+| v0.200 | Admit bounded full-measure rests and preflight late centering | Pending |
+| v0.201 | Eight native rest rows, decision/lifecycle controls and four visual fixtures | Pending |
+| v0.202 | Reject malformed rectangles before omission; require actual fitting/squeeze cases | Pending |
+| v0.203 | Preserve non-rest projection path, bound internal signatures, align fixtures and finish combined gate | Pending |
+
+Full rests supply their uncentered source geometry to natural, squeeze and
+justification planning. Subtract computed x only, retaining manual offsets.
+The source moving-voice omission applies only in temporary horizontal geometry;
+stored native skyline shapes and late centering order remain intact. All-full-
+rest onsets retain each rest. Existing duration/stretch, spring and ordinary
+centering formulas already match the admitted source rules and are reused.
+The whole publication domain now also rejects nonfinite late rest conversions
+before any segment write. Non-rest shapes bypass the new projection copy.
+
+This is ordinary visible, unmoved, undecorated full-measure-rest coverage. Gap,
+small/cue, hidden, moved, beamed, tuplet or decorated full rests, MMRest/frames,
+repeat measures and existing unsupported header/cross-staff contexts remain
+bounded fallback cases. After-graces targeting a full rest remain rejected by
+their existing target guard. This is not general rest/TAB/MMRest parity.
+An internal key/time signature cannot reuse the native centering boundary:
+reject it explicitly, including publication after a boundary type change.
+Legacy/off layout, independent beam style, existing manual offsets and undo
+paths are not changed.
+
+Final local checks pass: planner and regenerated-moc tests in Debug/NDEBUG
+C++11 with unused-parameter/signedness checks; exact incremental/combined Git
+replay; four XML fixtures with complete voices, both styles ON and no saved
+manual offsets or system breaks. The extracted-production rest harness passes
+2,592 projection cases, 15,552 malformed projection rejections, 22 excluded
+contexts, 120 valid publications and 960 atomic publication rejections per mode.
+It uses mock DOM inputs and real Qt rectangles, not the native renderer or real
+system solver. Native execution and visual acceptance are still pending.
+
+Rebuild once after applying the combined patch, then run once:
+
+    ctest -j1 --output-on-failure -R '^(tst_spacing|tst_beam)$'
+
+Compare these v0.201 scores in 37E and 4.7.5 at the same zoom:
+
+| File suffix | Review |
+|---|---|
+| measure-rests-natural | R1 both staves resting; R2/R6 alternate moving staves; R3/R4 moving same-staff voices; R5 all-full-rest voices |
+| measure-rests-justified | Same six measures after spring expansion; rest bodies remain centered |
+| measure-rests-fitting | Automatic system partition plus correct rest centers at new system headers |
+| measure-rests-squeeze | S1 resting upper staff over compressed moving lower staff; no body/barline collision |
+
+Compare the rest bodies against header/barline free space, note/accidental
+clearance, and automatic breaks. Both styles are saved ON in every file. The
+native tests also check synthetic stale centers, ignored moving-voice rests,
+repeated layout, off/on restoration, atomic rejection and a rest-offset
+undo/redo edit. Existing v0.181, v0.187 and v0.167 controls stay in the suite;
+new captures of those are unnecessary if unchanged. Report new discrepancies
+before widening admission further. General slur/stem visuals and performance
+remain separate; no profile run is requested and TAB remains last.
+
+## v0.202 WIP: complete projection validation and independent rest checks
+
+Validate every source rectangle before source-authorized rest omission, so a
+moving-voice exclusion cannot conceal malformed geometry. The native matrix
+also requires the fitting file to form multiple systems and the squeeze file
+to have natural width greater than the retained system width.
+
+An extracted-production-function mock-DOM harness passes in Debug/NDEBUG:
+2,592 horizontal rest projections, 21 excluded rest contexts, 120 valid rest
+publications and 960 malformed/context/overflow atomic rejections per mode.
+It checks all-full-rest versus moving-voice onsets, computed x normalization,
+retained manual offsets and unclassified identities, with real Qt rectangles.
+This is policy/coordinate evidence, not native engraving or solver execution.
+The final native build, mtests and visual comparison remain pending.
+
+## v0.201 WIP: native rest regression matrix and visual fixtures
+
+Add four v0.201 measure-rest scores, both experimental settings ON: natural,
+justified, automatic fitting and a narrow single-measure squeeze. R1 has two
+resting staves; R2 and R6 alternate the moving staff; R3 and R4 cover a full
+rest beside moving same-staff voices; R5 retains an all-full-rest two-voice
+onset. No manually fixed rest positions or forced system breaks are saved.
+
+Eight native measureRestPlanning4 rows exercise both beam settings. Require
+actual FULL_PLAN final decisions, fresh selected plans matching published
+segments, body centering, and preserved native rest shapes for skyline use.
+Synthetic computed-center changes must not affect the fresh natural plan;
+a far-offset full rest beside a moving same-staff voice must not affect it
+either. Gap/cue/hidden/moved changes reject both planning and publication
+without changing the retained plan or horizontal fields. Repeat layout,
+off/on restoration and an actual undo/redo rest-offset edit are checked.
+Extend existing decision-prefix and lifecycle/atomicity suites with rest cases.
+
+Regenerated-moc Debug/NDEBUG C++11 test syntax checks pass locally. These are
+native tests to run at the combined gate, not reported native passes here.
+Next: independent source-policy/atomicity checks, aggregate review and packaging.
+
+## v0.200 WIP: activate bounded full-measure-rest planning
+
+Admit visible full-measure rests at measure tick zero with the measure's full
+actual duration. Reject moved, small, gap, hidden, beamed, tuplet or decorated
+rests and retain all existing frame/MMRest/cross-staff boundaries. Rhythmic
+springs already use actual rest duration, including full-measure rests; no new
+rhythmic formula or style is needed. The projection is rebuilt for every natural
+or squeeze query, independently of the last centered computed position.
+
+Retain native late centering after the selected segment widths are published.
+Publication preflight now checks the exact header/barline-to-local conversion
+for each admitted full rest, including finite user-offset addition, before the
+first segment write. No rest pointer or geometry is added to stored Shape.
+The pinned Segment source was verified separately at blob 4a94a435040dcae84e6210eba2d971a95ae3edb3;
+RestLayout is blob 130539b8ec822b863f92868b7d6efc1d3274b62e.
+
+Debug/NDEBUG C++11 planner syntax checks pass locally. Native rest coverage,
+repeat/off-on restoration and compact visuals follow before the grouped gate.
+
+## v0.199 WIP: accepted lifecycle gate and full-measure-rest source policy
+
+The user applied v0.198, rebuilt successfully and reported both tst_spacing and
+tst_beam passing. Cross-staff fitting, v0.187 fitting and S1 remain accepted.
+The user also traversed the v0.167 P2 boundary anchors and reported no jumping.
+This accepts the bounded v0.194-v0.198 gate; static captures alone do not prove
+interactive stability or general slur parity. Ordinary slur shape, stem-length
+visuals and performance remain separate follow-ups.
+
+Begin the next grouped batch with ordinary visible full-measure rests. Source
+files horizontalspacing.cpp and measurelayout.cpp were checked against the
+v0.149 pinned 4.7.5 blob hashes (573e19dc and b488b3a3). Segment::createShape
+omits full rests from a staff containing moving voices, except all-full-rest
+onsets. RestLayout::layoutRest resets computed x before spacing. Apply those
+rules to the temporary horizontal projection after exact producer capture,
+without changing stored native skyline shapes. Subtract only computed rest x;
+retain user offsets. Incomplete producer identity remains opaque as a whole.
+
+The existing native full-rest centering equation matches Studio's ordinary
+measure case: center the body between preceding header and following barline
+or courtesy boundaries after widths are settled. Retain that native late write
+order. Frames, MMRest, repeat measures, gap/cue/decorated or moved rests and
+unsupported internal headers remain outside this batch. The full-rest guard
+still remains at this checkpoint; activation and preflight follow together.
+
 ## v0.198 aggregate gate: shared system planning and publication preflight
 
 Group v0.194-v0.198 into one testing batch over accepted v0.193. Each stage has
@@ -9,11 +155,11 @@ both. No intermediate native test result is assumed.
 
 | Stage | Result | Native status |
 |---|---|---|
-| v0.194 | Accepted v0.193 gate recorded; common natural/final plan-selection request and shared terminal/section fill policy | Pending |
-| v0.195 | Native candidate/final callers share beam preparation, fresh attachment capture and read-only selection | Pending |
-| v0.196 | Whole-domain publication preflight and atomic segment commit; final evidence follows late grace publication | Pending |
-| v0.197 | Six-context lifecycle/equivalence and malformed-plan atomicity regressions | Pending |
-| v0.198 | Converted-coordinate finite checks, final local validation and this aggregate gate | Pending |
+| v0.194 | Accepted v0.193 gate recorded; common natural/final plan-selection request and shared terminal/section fill policy | Accepted in v0.199 |
+| v0.195 | Native candidate/final callers share beam preparation, fresh attachment capture and read-only selection | Accepted in v0.199 |
+| v0.196 | Whole-domain publication preflight and atomic segment commit; final evidence follows late grace publication | Accepted in v0.199 |
+| v0.197 | Six-context lifecycle/equivalence and malformed-plan atomicity regressions | Accepted in v0.199 |
+| v0.198 | Converted-coordinate finite checks, final local validation and this aggregate gate | Accepted in v0.199 |
 
 Candidate-only boundary guards remain: a natural collected prefix can be overfull
 and subsequently backed out. Final requests still use the existing positive-
@@ -66,7 +212,7 @@ curve offsets should remain intact. New screenshots are unnecessary if unchanged
 provide a capture only for a new discrepancy. No profile run is requested.
 
 Files in this checkpoint: spacingplan4.cpp, layout.cpp, tst_spacing.cpp and this
-guide. Native build/tests and this regression gate are pending. Broader policies/contexts, full-
+guide. Native build/tests and this regression gate were accepted in v0.199. Broader policies/contexts, full-
 prefix rebuild consolidation, ordinary stem/general slur visuals and Debug edit
 latency remain outstanding; performance stays deferred. Resolve this aggregate's
 failures or visible changes before broadening admission or the spacing lifecycle.

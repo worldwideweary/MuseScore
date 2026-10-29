@@ -333,6 +333,72 @@ bool substituteMergedGeometry4(Segment* segment, int staff, SpacingShape4& nativ
     return true;
 }
 
+// Studio Segment::createShape omits a full rest from a moving-voice staff,
+// except when every item at this onset is a full rest. Keep native skyline
+// shapes intact: apply this horizontal policy only to the validated snapshot.
+// RestLayout::layoutRest starts at x=0 before spacing; an already centered
+// native rest must supply that same input without resetting its DOM position.
+bool projectMeasureRests4(const Segment* segment, int staff, SpacingShape4& shape)
+{
+    const bool hasMeasureRest = std::any_of(shape.elements.begin(), shape.elements.end(),
+        [](const SpacingShapeElement4& e) {
+            return e.identity == SpacingIdentity4::ITEM && e.item && e.item->isRest()
+                && toRest(e.item)->isFullMeasureRest();
+        });
+    if (!hasMeasureRest) return true; // Preserve the existing non-rest projection path.
+    SpacingShape4 projected;
+    for (auto e : shape.elements) {
+        // Even a source-authorized omission must not conceal malformed
+        // producer geometry from the complete-snapshot rejection boundary.
+        if (!std::isfinite(e.rect.x()) || !std::isfinite(e.rect.y())
+            || !std::isfinite(e.rect.width()) || !std::isfinite(e.rect.height())
+            || e.rect.width() < 0 || e.rect.height() < 0) return false;
+        if (e.identity == SpacingIdentity4::ITEM && e.item && e.item->isRest()
+            && toRest(e.item)->isFullMeasureRest()) {
+            const Rest* rest = toRest(e.item);
+            if (rest->segment() != segment || rest->staffIdx() != staff || rest->staffMove()
+                || !std::isfinite(rest->ipos().x())) return false;
+            bool allFullRests = true;
+            for (int track = staff * VOICES; track < (staff + 1) * VOICES; ++track) {
+                const Element* item = segment->element(track);
+                if (item && !(item->isRest() && toRest(item)->isFullMeasureRest())) {
+                    allFullRests = false;
+                    break;
+                }
+            }
+            if (segment->measure()->hasVoices(staff) && !allFullRests) continue;
+            e.rect.translate(-rest->ipos().x(), 0); // Retain the user's offset.
+        }
+        projected.elements.push_back(e);
+    }
+    shape = std::move(projected);
+    return true;
+}
+
+bool ordinaryMeasureRest4(const Rest* rest)
+{
+    const bool ordinary = rest && rest->measure() && !rest->measure()->isMMRest() && rest->segment()
+        && rest->isFullMeasureRest() && rest->rtick().isZero()
+        && rest->actualTicks() == rest->measure()->ticks()
+        && rest->visible() && rest->addToSkyline() && !rest->onTabStaff()
+        && !rest->isGap() && !rest->isSmall() && !rest->staffMove()
+        && !rest->tuplet() && !rest->beam() && !rest->dots()
+        && rest->el().empty() && rest->lyrics().empty()
+        && std::isfinite(rest->ipos().x()) && std::isfinite(rest->x()) && std::isfinite(rest->y())
+        && std::isfinite(rest->bbox().x()) && std::isfinite(rest->bbox().y())
+        && std::isfinite(rest->width()) && rest->width() > 0
+        && std::isfinite(rest->height()) && rest->height() > 0;
+    if (!ordinary) return false;
+    // Studio getMeasureStartEndPos ignores internal signatures when centering
+    // a full rest; Evolution's late native pass stops at any non-rhythmic item.
+    // Reuse that pass only where its first boundary has the source semantics.
+    for (const Segment* s = rest->segment()->nextActive(); s; s = s->nextActive()) {
+        if (!s->isChordRestType() && s->element(rest->staffIdx() * VOICES))
+            return s->isEndBarLineType() || s->isKeySigAnnounceType() || s->isTimeSigAnnounceType();
+    }
+    return true;
+}
+
 bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometry4& geometry,
                     const CrossStaffGeometry4& cross, const SpacingGraceContext4& graces,
                     const std::vector<GraceAfterGeometry4>& afters,
@@ -341,7 +407,8 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
     for (int staffIdx = 0; staffIdx < segment->score()->nstaves(); ++staffIdx) {
         SpacingShape4 native = spacingStaffShape4(segment, staffIdx);
         if (!substituteAfterGeometry4(segment, staffIdx, native, afters)
-            || !substituteMergedGeometry4(segment, staffIdx, native, merged)) return false;
+            || !substituteMergedGeometry4(segment, staffIdx, native, merged)
+            || !projectMeasureRests4(segment, staffIdx, native)) return false;
         SpacingShape4 projected;
         // These first controls use ordinary visible staves. Staff scale still
         // comes from the item, rather than assuming score spatium in the kernel.
@@ -670,9 +737,13 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                         return fail("Annotations require a later adapter");
                 }
                 for (const Element* item : segment.elist()) {
-                    if (item && item->isRest() && (toRest(item)->isGap() || toRest(item)->isSmall()
-                                                  || toRest(item)->isFullMeasureRest()))
-                        return fail("Gap, cue and centered measure rests require a later adapter");
+                    if (item && item->isRest()) {
+                        const Rest* rest = toRest(item);
+                        if (rest->isGap() || rest->isSmall())
+                            return fail("Gap and cue rests require a later adapter");
+                        if (rest->isFullMeasureRest() && !ordinaryMeasureRest4(rest))
+                            return fail("Decorated, hidden or moved measure rests require a later adapter");
+                    }
                     if (!item || !item->isChord())
                         continue;
                     const Chord* chord = toChord(item);
@@ -1015,6 +1086,7 @@ bool spacingPlanPublicationValid4(const System* system, const SpacingPlan4& plan
         return fail("Invalid publication system or width");
     std::map<const Segment*, qreal> segmentX;
     std::set<const Chord*> mains;
+    std::vector<const Rest*> measureRests;
     size_t mi = 0, si = 0;
     qreal edge = system->leftMargin();
     for (const MeasureBase* mb : system->measures()) {
@@ -1034,12 +1106,42 @@ bool spacingPlanPublicationValid4(const System* system, const SpacingPlan4& plan
                 || !std::isfinite(s.stretch) || s.stretch < 0 || !std::isfinite(s.widthOffset)
                 || (!s.ignored && segment.isChordRestType() && !(s.stretch > 0)))
                 return fail("Invalid publication segment placement");
-            if (!s.ignored) for (const Element* item : segment.elist())
+            if (!s.ignored) for (const Element* item : segment.elist()) {
                 if (item && item->isChord()) mains.insert(toChord(item));
+                if (item && item->isRest() && toRest(item)->isFullMeasureRest()) {
+                    if (!ordinaryMeasureRest4(toRest(item))) return fail("Changed publication measure-rest context");
+                    measureRests.push_back(toRest(item));
+                }
+            }
         }
     }
     if (mi != plan.measures.size() || si != plan.segments.size() || !std::isfinite(edge)
         || qAbs(edge - plan.width) > 1e-6) return fail("Incomplete publication plan extent");
+    // Measure::layoutElementsAfterSpacing centers these bodies after segment
+    // publication. Validate that exact conversion now, before any native write.
+    // Admitted rests start at tick zero: preceding shapes are fixed headers,
+    // and the following non-rhythmic boundary is a barline/courtesy signature.
+    for (const Rest* rest : measureRests) {
+        const Segment* segment = rest->segment();
+        qreal x1 = 0, x2 = 0;
+        for (const auto& m : plan.measures) if (m.measure == rest->measure()) x2 = m.width;
+        const Segment* previous = segment->prevActive();
+        while (previous && previous->allElementsInvisible()) previous = previous->prevActive();
+        for (const Segment* s = previous; s; s = s->prevActive()) {
+            const qreal right = segmentX.at(s) + s->minRight();
+            if (!std::isfinite(right)) return fail("Invalid publication rest header extent");
+            x1 = std::max(x1, right);
+        }
+        for (const Segment* s = segment->nextActive(); s; s = s->nextActive()) {
+            if (!s->isChordRestType() && s->element(rest->staffIdx() * VOICES)) {
+                x2 = segmentX.at(s) - s->minLeft();
+                break;
+            }
+        }
+        const qreal x = (x2 - x1 - rest->width()) * .5 + x1 - segmentX.at(segment) - rest->bbox().x();
+        if (!std::isfinite(x2) || !std::isfinite(x) || !std::isfinite(x + rest->offset().x()))
+            return fail("Invalid publication centered-rest position");
+    }
     std::set<const Chord*> owners, members;
     const auto positions = [&](const std::vector<GraceAfterPosition4>& written, const QVector<Chord*>& expected,
                                const Segment* target) {
