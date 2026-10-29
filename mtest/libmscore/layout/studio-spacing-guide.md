@@ -1,5 +1,23 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.209 correction: effective malformed-rest rejection probe
+
+The user's v0.208 native XML reports eight failures, all measureRestPlanning4
+rows, at the combined planning/publication rejection assertion. smallNotation4,
+styleRoundTrip and systemSpacingLifecycle4 pass in that run. The v0.208 batch
+is not yet accepted as a whole; visuals remain deferred.
+
+The replacement zero-magnitude test was ineffective: Rest::mag() derives its
+value from staff magnitude and the small-note style, ignoring Element::_mag
+written by setMag(). Replace that probe with a zero-width body, rejected by the
+existing ordinaryMeasureRest4 guard. Restore the exact bbox before asserting
+atomicity, retain all other malformed-context probes, and report the mode plus
+both acceptance results on failure. No production or score changes.
+
+Local Debug/NDEBUG regenerated-moc syntax and exact incremental Git replay
+pass. Native rerun is still required; apply this increment over v0.208 and rerun
+tst_spacing before beginning visual comparisons.
+
 ## v0.208 aggregate gate: ordinary small/cue notation
 
 Apply the combined v0.204-v0.208 patch over accepted v0.203. It includes the

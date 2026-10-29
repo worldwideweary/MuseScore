@@ -9487,20 +9487,22 @@ void TestSpacing::measureRestPlanning4()
             // valid. Rejection cannot replace a previously complete plan.
             Rest* probe = saved.front().first;
             SpacingPlan4 retained = natural;
-            const qreal probeMag = probe->mag();
+            const QRectF probeBox = probe->bbox();
             Segment* boundary = probe->measure()->last();
             QVERIFY(boundary && boundary->isEndBarLineType());
             for (int mode = 0; mode < 5; ++mode) {
                   if (mode == 0) probe->setGap(true);
-                  if (mode == 1) probe->setMag(0);
+                  if (mode == 1) probe->setbbox(QRectF(probeBox.topLeft(), QSizeF(0, probeBox.height())));
                   if (mode == 2) probe->setVisible(false);
                   if (mode == 3) probe->setStaffMove(1);
                   if (mode == 4) boundary->setSegmentType(SegmentType::KeySig);
                   const bool accepted = build(retained);
                   const bool published = publishSpacingPlanSegments4(system, selected, &reason);
-                  probe->setGap(false); probe->setMag(probeMag); probe->setVisible(true); probe->setStaffMove(0);
+                  probe->setGap(false); probe->setbbox(probeBox); probe->setVisible(true); probe->setStaffMove(0);
                   boundary->setSegmentType(SegmentType::EndBarLine);
-                  QVERIFY(!accepted && !published);
+                  QVERIFY2(!accepted && !published,
+                           qPrintable(QString("Rest rejection mode %1: planner accepted=%2, publication accepted=%3; %4")
+                                 .arg(mode).arg(accepted).arg(published).arg(reason)));
                   QVERIFY(spacingPlansEqual154(retained, natural));
                   QVERIFY(same(snapshot(), modern));
                   }
