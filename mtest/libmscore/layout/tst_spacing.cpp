@@ -9354,6 +9354,9 @@ void TestSpacing::breathCaesuraPlanning4()
             QVERIFY(owned);
             const Segment* prev = s->prev(SegmentType::ChordRest);
             QVERIFY(prev && prev->element(breath->track()));
+            // The mark's reserved gap is fixed space, not extra rhythmic
+            // stretch charged to the quarter/eighth-note interval.
+            QVERIFY(prev->spacingWidthOffset4() < 0);
             const Element* other = prev->element(breath->track());
             if (other->isChord()) other = toChord(other)->upNote();
             QVERIFY(other->isNote() || other->isRest());
@@ -9377,6 +9380,51 @@ void TestSpacing::breathCaesuraPlanning4()
             }
       QVERIFY(marks == (mode == "squeeze" ? 1 : 7));
       if (mode != "squeeze") QVERIFY(crossVoice > 0);
+      int cadenceChecks = 0, measureIndex = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++measureIndex) {
+            if (mode != "squeeze" && measureIndex != 0 && measureIndex != 2) continue;
+            std::vector<qreal> centers;
+            std::vector<const Note*> notes;
+            const Segment* mark = nullptr;
+            for (const Segment& s : m->segments()) {
+                  if (s.isBreathType()) mark = &s;
+                  if (!s.isChordRestType() || !s.element(0) || !s.element(0)->isChord()) continue;
+                  const Note* note = toChord(s.element(0))->upNote();
+                  notes.push_back(note);
+                  centers.push_back(note->pagePos().x() + note->bbox().center().x());
+                  }
+            QCOMPARE(centers.size(), size_t(4));
+            QVERIFY(mark);
+            const qreal first = centers[1] - centers[0];
+            QVERIFY(first > 0 && qIsFinite(first));
+            qreal markedInterval = first;
+            if (mode != "squeeze") {
+                  // A natural-width caesura can genuinely need more room.
+                  // Permit only its measured collision floor, not an extra
+                  // rhythmic advance plus the mark's fixed reserved gap.
+                  SpacingShape4 before, glyph, after;
+                  const qreal sp = score->spatium();
+                  QVERIFY(spacingCollisionProjection4(table, spacingStaffShape4(notes[1]->chord()->segment(), 0), sp, before));
+                  QVERIFY(spacingCollisionProjection4(table, spacingStaffShape4(mark, 0), sp, glyph));
+                  QVERIFY(spacingCollisionProjection4(table, spacingStaffShape4(notes[2]->chord()->segment(), 0), sp, after));
+                  qreal left = 0, right = 0;
+                  QVERIFY(spacingShapeDistance4(table, before, glyph, sp, 1, left));
+                  QVERIFY(spacingShapeDistance4(table, glyph, after, sp, 1, right));
+                  const qreal a = notes[1]->chord()->x() + notes[1]->x() + notes[1]->bbox().center().x();
+                  const qreal b = notes[2]->chord()->x() + notes[2]->x() + notes[2]->bbox().center().x();
+                  markedInterval = std::max(first, left + right + b - a);
+                  }
+            for (size_t i = 2; i < centers.size(); ++i) {
+                  const qreal interval = centers[i] - centers[i - 1];
+                  const qreal expected = i == 2 ? markedInterval : first;
+                  QVERIFY2(qIsFinite(interval) && qAbs(interval - expected) < .03 * score->spatium(),
+                        qPrintable(QString("measure=%1 interval=%2 expected=%3 clean=%4 (sp)")
+                              .arg(measureIndex + 1).arg(interval / score->spatium())
+                              .arg(expected / score->spatium()).arg(first / score->spatium())));
+                  }
+            ++cadenceChecks;
+            }
+      QCOMPARE(cadenceChecks, mode == "squeeze" ? 1 : 2);
       QString reason;
       for (System* system : score->systems()) {
             if (system->vbox()) continue;

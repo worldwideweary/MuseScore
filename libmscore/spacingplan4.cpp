@@ -100,6 +100,24 @@ bool courtesyType4(const Segment* s)
     return s->isKeySigAnnounceType() || s->isTimeSigAnnounceType();
 }
 
+bool rightAligned4(const Segment* s)
+{
+    return s->isClefType() || s->isBreathType();
+}
+
+// This field is derived layout state, not manual segment leading space.
+// Rebuild it below rather than borrowing a previously published compensation.
+bool carriesRightAlignmentOffset4(const Segment* s)
+{
+    if (!s->isChordRestType()) return false;
+    for (const Segment* next = s->next(); next; next = next->next()) {
+        if (!active4(next)) continue;
+        if (next->isChordRestType()) return false;
+        if (rightAligned4(next)) return true;
+    }
+    return false;
+}
+
 // Studio setPositionsAndWidths: only these ordinary changes lead the next
 // measure when no barline separates them from the preceding segment.
 bool leadingNonRhythmic4(const Segment* s)
@@ -503,6 +521,50 @@ bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, 
     return std::isfinite(result);
 }
 
+// Studio moveRightAlignedSegments, before segment-width reconstruction.
+// Geometry and DOM stay immutable; the fixed compensation belongs to the
+// preceding rhythmic spring and must survive minimum widths/justification.
+bool moveRightAligned4(SpacingPlan4& plan, const std::vector<Geometry4>& geometry,
+                       const SpacingPaddingTable4& table, qreal squeeze, const CrossStaffGeometry4& cross,
+                       const SpacingGraceContext4& graces, SpacingContextCache4& contextCache)
+{
+    for (size_t i = 0; i < plan.segments.size(); ++i) {
+        SpacingSegmentPlan4& current = plan.segments[i];
+        if (current.ignored || !rightAligned4(current.segment)) continue;
+        qreal x = std::numeric_limits<qreal>::max();
+        for (size_t j = i + 1; j < plan.segments.size(); ++j) {
+            const SpacingSegmentPlan4& following = plan.segments[j];
+            if (following.ignored) continue;
+            if (following.segment->measure() != current.segment->measure() && !following.segment->rtick().isZero())
+                break;
+            qreal distance = 0;
+            if (!distance4(table, current, geometry[i], following, geometry[j], plan.measures.front().measure,
+                           squeeze, distance, cross, graces, contextCache)) return false;
+            // Pinned muse::RealIsNull(double) uses an absolute 1e-9 tolerance.
+            if (rightAligned4(following.segment) && qAbs(distance) <= 1e-9) continue;
+            x = std::min(x, following.x - distance);
+        }
+        if (x == std::numeric_limits<qreal>::max()) continue;
+        if (!std::isfinite(x)) return false;
+        current.x = x;
+        size_t next = i + 1;
+        while (next < plan.segments.size() && plan.segments[next].ignored) ++next;
+        if (next == plan.segments.size()) return false;
+        // Use an index for the next-active lookup; never assign through a
+        // reference into the plan and overwrite an ignored segment's identity.
+        for (size_t previous = i; previous > 0;) {
+            --previous;
+            SpacingSegmentPlan4& spring = plan.segments[previous];
+            if (spring.segment->measure() != current.segment->measure()) break;
+            if (!spring.segment->isChordRestType()) continue;
+            spring.widthOffset += x - plan.segments[next].x;
+            if (!std::isfinite(spring.widthOffset)) return false;
+            break;
+        }
+    }
+    return true;
+}
+
 // Reconstruct segment positions after changing rhythmic widths in one measure.
 // First-segment offset and nonrhythmic widths remain fixed, as in respaceSegments.
 qreal reflowMeasure4(SpacingPlan4& plan, SpacingMeasurePlan4& measure)
@@ -737,7 +799,8 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                     return fail("Courtesy signatures require a terminal measure-end trailer");
                 if (!eligibleType4(&segment) || (segment.trailer() && !courtesyType4(&segment))
                     || segment.extraLeadingSpace().val() != 0
-                    || (segment.spacingWidthOffset4() != 0 && !cross.pairs.count(&segment)))
+                    || (segment.spacingWidthOffset4() != 0 && !cross.pairs.count(&segment)
+                        && !carriesRightAlignmentOffset4(&segment)))
                     return fail("Unadapted segment type, trailer, manual space or cross-beam offset");
                 if (segment.isBreathType() && (!segment.ticks().isZero() || segment.rtick() <= Fraction(0, 1)
                                                || segment.rtick() > measure->ticks()))
@@ -818,6 +881,7 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
             current.x = cursor;
             continue;
         }
+        qreal positionedX = cursor;
         if (!placed) {
             qreal offset = 0;
             if (current.segment->isChordRestType()) {
@@ -833,6 +897,7 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
             else if (current.segment->isTimeSigType())
                 offset = score->styleP(Sid::timesigLeftMargin);
             cursor += offset * options.squeezeFactor;
+            positionedX = cursor;
             placed = true;
         }
         else {
@@ -880,8 +945,12 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                         break;
                 }
             }
+            // Studio spaces right-aligned marks from collision geometry,
+            // independently of the rhythmic cursor. Reserving the entire
+            // cursor advance here would widen the surrounding note interval.
+            positionedX = rightAligned4(current.segment) ? x : cursor;
         }
-        current.x = cursor;
+        current.x = positionedX;
         if (current.segment->isChordRestType()) {
             if (current.segment->measure() == plan.measures.front().measure && current.segment->rtick().isZero()) {
                 cursor = std::max(cursor, system->leftMargin() + 1.25 * current.segment->spatium());
@@ -898,6 +967,8 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
     }
     if (!placed)
         return fail("No active segments");
+    if (!moveRightAligned4(plan, geometry, table, options.squeezeFactor, cross, graces, contextCache))
+        return fail("Unadapted right-aligned segment geometry");
     plan.measures.front().x = system->leftMargin();
     std::map<Measure*, size_t> measureIndex;
     for (size_t i = 0; i < plan.measures.size(); ++i)

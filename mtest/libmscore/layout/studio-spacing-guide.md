@@ -1,5 +1,138 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.223 aggregate correction: right-aligned marks preserve note cadence
+
+Apply the v0.220-v0.223 combined patch over user-applied v0.219 (4dbd31d3c),
+or its four ordered increments, never both. The first increment includes the
+intervening acceptance note and the explicit reopening at v0.220. The earlier
+mtest pass established the previous checks, not optical interval equality.
+
+Pinned horizontalspacing.cpp, blob 573e19dcf63bb042499f1495f16f5c19d1003852,
+uses collision-only x for Clef/Breath while retaining a separate rhythmic
+cursor, then moveRightAlignedSegments before setPositionsAndWidths. Its
+Segment::isRightAligned includes ordinary Clef and Breath, not HeaderClef.
+The pass constrains the mark against following geometry and compensates the
+preceding chord/rest spring by mark-x minus next-active-x. Port both stages
+to the read-only plan; keep the fixed compensation out of rhythmic stretch.
+Glyph alignment alone, as previously ported, did not preserve this policy.
+The result is not arbitrary geometric centering of a comma between noteheads.
+
+Local extracted-source comparison covers 16,384 active-domain combinations
+per Debug/NDEBUG mode: clefs/breaths, consecutive aligned marks, measure/tick-zero
+boundaries, varied padding (including RealIsNull's 1e-9 threshold), squeeze
+factors and existing fixed offsets. Positions and offsets match the pinned
+pass. Separate 32-case checks preserve ignored successor identities; the
+index-based lookup intentionally avoids assigning through a plan reference.
+Another 64 cases exercise the actual spring solver/justify/reflow functions
+and require equal printed note cadence with fixed compensation retained.
+These are geometry/kernel models, not native application executions.
+
+Regenerated-moc C++11 Debug/NDEBUG syntax for the planner and tst_spacing,
+unused-parameter/signedness checks, whitespace checks and exact aggregate/
+incremental replay pass. Native execution and visual reacceptance are pending.
+No new style, score file, persistent geometry pointer or legacy/OFF layout
+change. Existing admission/fallback boundaries remain; this is not new support
+for cross-staff/decorated combinations or a mid-clef font-cutout port.
+
+Build once and run the existing pair:
+
+```sh
+ctest -j1 --output-on-failure -R '^(tst_spacing|tst_beam)$'
+```
+
+The existing v0.217 matrix now checks printed B1/B3 note intervals directly,
+under both beam modes and all four layouts, in addition to publication, pause,
+offset undo/redo and OFF/ON checks. If it passes, reuse those scores and the
+v0.213 clef/signature controls. Compare B1/B3 inter-note cadence and mark-to-note
+clearance, B2/B5 beamed/voice cases and B4 end mark. Review automatic breaks
+again: corrected natural widths can alter fitting. Set Studio's measure Layout
+stretch to 3.00 after importing either squeeze file. Do not accept this
+correction from clearance or a passing self-consistency check alone. An interval
+may exceed the clean rhythmic cadence where the mark's measured collision
+floor requires it, especially in natural layout; this is source behavior and
+must not be forced into equal spacing. The regression checks that floor from
+independent typed shape distances. In the sufficiently expanded squeeze control,
+require the same cadence across the mark as the clean neighboring intervals.
+
+## v0.222 WIP: optical note-interval regression
+
+Strengthen the existing eight breath/caesura rows rather than adding duplicate
+score imports or layout runs. B1 and B3 must have four notehead centers with
+clean successive intervals agreeing within 0.03sp; the marked interval must
+match their rhythmic cadence or its measured collision floor, whichever is
+larger. Squeeze checks equal B3 cadence at saved stretch 3 with sufficient spare
+room after compression. This observes printed rhythm and primitive clearance,
+independently of the planner's own width reconstruction.
+The preceding chord/rest of every breath segment must also carry a negative
+fixed compensation. Existing fresh-plan/publication, repeat, OFF/ON, pause and
+offset undo/redo assertions exercise rebuilding the now-published offsets.
+
+Reuse the same four v0.217 scores and four v0.213 clef/signature controls.
+No fixture or saved-style change. Native execution and paired optical review
+remain pending; Studio squeeze references require Layout stretch 3.00 after
+import as before.
+
+## v0.221 WIP: aligned-segment placement and fixed spring compensation
+
+After collision/rhythmic placement and before width reconstruction, mirror
+Studio's moveRightAlignedSegments pass for ordinary Clef/Breath segments.
+Constrain each mark against following active geometry through the next
+measure's tick-zero boundary. Shift the mark to that right limit and add
+mark-x minus next-active-x to the preceding same-measure chord/rest spring's
+fixed widthOffset. This preserves the surrounding rhythmic interval when
+positive spare width is distributed instead of charging the mark's gap twice.
+
+Recompute compensation from current geometry on every query, including squeeze
+passes; do not copy native prior offset values. Recognize a previously
+published derived offset only where a chord/rest precedes an active aligned
+mark before its next rhythmic onset. Manual leading-space guards stay intact.
+Offsets remain separate from stretch in existing minimum-width/justification
+solvers. Keep query-local positions/offsets until whole-plan preflight succeeds.
+Next-active lookup uses indices so ignored segment records are never overwritten.
+Native execution and optical visual reacceptance are pending.
+
+## v0.220 WIP: reopen optical spacing; separate aligned marks from rhythm
+
+The user's B1/B3 close-ups reveal a wider note interval spanning the mark in
+37E while 4.7.5 keeps a substantially even quarter-note cadence. The preceding
+acceptance was too broad: native safety/coverage and coarse clearance passed,
+but optical interval parity for the new clef/breath stages is reopened.
+
+Pinned HorizontalSpacing::spaceAgainstPreviousSegments chooses collision x,
+not the rhythmic cursor, for Segment::isRightAligned (Clef or Breath). Add that
+distinction to the temporary plan. The source's subsequent right-alignment
+and fixed-width spring compensation follow in the next WIP checkpoint; this
+checkpoint alone is not a complete fix or a native testing gate.
+
+## Accepted v0.211-v0.219 bounded clef and breath spacing gate
+
+On 2026-10-30 the user reports the mtest passing after v0.219 and supplies all
+four v0.217 37E/4.7.5 visual pairs, explicitly setting the Studio squeeze
+measure's Layout stretch to 3.00. Record the native pass as user-reported;
+no additional XML or individually identified beam-test result accompanies it.
+
+Natural and justified show close horizontal agreement for B1 comma, B2 tick
+beside beams, B3 caesura, B4 barline mark, B5 separate upper/lower voice marks
+and B6 rest/Salzedo neighbors. Automatic fitting retains B1-B3 / B4-B6 in both
+engines. B5's marks remain clear of the beams, noteheads and staff; the B4 mark
+retains barline clearance. The matched-stretch squeeze keeps B3's caesura and
+accidental clear and its spacing closely aligned at the supplied resolution.
+Small interval redistribution remains visible; do not call this pixel identity.
+
+Together with the prior v0.213 four-mode review, its native test pass in the
+earlier XML, and the user's successful v0.219 rerun, accept this bounded
+clef/signature and breath/caesura phase. No further engraving correction is
+indicated by these captures, and this checkpoint needs no new user patch.
+The v0.219 malformed-probe correction is test-only. Keep the pre-4.0 measure
+stretch override and pre-4.5 cue rhythm import override in future comparison
+instructions so reference inputs remain matched.
+
+Admission limits remain: mid-clefs still use native bounding rectangles rather
+than Studio cutout contours; changing-header candidate preparation retains its
+fallback; centered rests with internal clef/breath boundaries, TAB/percussion,
+repeat boundaries and other unsupported combinations are not newly accepted.
+Ordinary stem/slur curves, vertical-rest placement and performance remain queued.
+
 ## v0.219 correction: keep the malformed-breath probe active
 
 The user's v0.218 result XML contains one failure, natural-studio in
