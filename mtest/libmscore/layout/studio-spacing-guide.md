@@ -1,5 +1,64 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.219 correction: keep the malformed-breath probe active
+
+The user's v0.218 result XML contains one failure, natural-studio in
+breathCaesuraPlanning4 at prepared && !accepted. clefSignaturePlanning4 passes;
+no other failure element is present. The natural Studio-beam breath row stops
+at that probe, so its later restoration assertions are not yet verified there.
+
+Segment::allElementsInvisible explicitly ignores non-rhythmic elements whose
+width compares equal to zero. The test's zero-width breath therefore makes
+active4 false and skips the segment, bypassing the dimension rejection guard.
+That is intentional native invisibility policy, not a demonstrated production
+spacing failure. Change the test to zero height with the positive width kept.
+Require active admission to the guard, attachment preparation, rejection with
+the breath-dimension reason, untouched result sentinels and score fields.
+Restore the exact bbox before any assertion can exit. Diagnostics now include
+active/prepared/accepted and reason. Production and fixture bytes are unchanged.
+
+The user's corrected Studio 4.7.5 squeeze capture, after setting Layout stretch
+to 3.00, closely matches the earlier 37E image at the supplied resolution.
+Together with the previous three modes, the bounded v0.213 visual matrix is
+supported. Its native clef/signature test also passes in this XML; full-suite
+acceptance still awaits this test-only correction's rerun, and current beam
+test results have not been supplied. v0.217 visuals remain pending.
+
+Local verification: extracted native visibility and active breath dimension
+guards confirm zero width is skipped while zero height with positive width
+reaches rejection; regenerated-moc C++11 Debug/NDEBUG syntax, whitespace and
+exact patch replay pass. These checks are not native execution. Apply v0.219
+over v0.218, rebuild tst_spacing and rerun the existing spacing/beam pair before
+continuing the v0.217 visual gate. Its squeeze reference also needs stretch 3.00.
+
+## v0.213 visual review: three modes aligned; match squeeze import stretch
+
+On 2026-10-30 the user supplied paired 37E/4.7.5 captures of all four v0.213
+scores, with the combined native run and v0.217 visuals still pending.
+Natural and justified show close horizontal agreement across S1-S6. Automatic
+fitting retains S1-S2 / S3-S4 / S5-S6 in both engines; internal clefs, accidentals,
+generated headers and courtesy signatures show no obvious new collision in
+these captures. This is bounded visual evidence, not full native acceptance.
+
+The squeeze pair has unequal inputs: 37E starts notes closer to its header and
+distributes more space through the measure. The fixture is format 3.02 with
+saved measure stretch 3. Studio's read302 loader delegates to read400 StaffRead;
+MeasureRW explicitly skips stretch for mscVersion < 400, leaving the default 1.
+This is the same import condition recorded at v0.104; the v0.213/v0.217 gate
+instructions omitted it. Do not infer an equal-input squeeze algorithm defect
+or alter padding from the current pair.
+
+Before reference capture of either v0.213-clef-signatures-squeeze.mscx or
+v0.217-breath-caesura-squeeze.mscx, set the measure's Layout stretch to 3.00 in
+Studio 4.7.5 after opening. 37E already reads the saved 3. Natural/justified/
+fitting use default stretch 1 and need no such change. The squeeze reference
+and native results remain pending; the v0.217 visual gate is also still pending.
+
+Verified pinned blobs: read302/read302.cpp
+91874391d215d515bf9fe3b8637cf86814755ed1; read400/measurerw.cpp
+2893ab04006dea909baf5cfb0f888a5dce6ea40a. Production and fixture bytes are
+unchanged by this review; no new user patch is needed for this note.
+
 ## v0.218 combined deferred gate: clefs/signatures plus breaths/caesuras
 
 At the user's request, test v0.211-v0.214 and v0.215-v0.218 together. Neither

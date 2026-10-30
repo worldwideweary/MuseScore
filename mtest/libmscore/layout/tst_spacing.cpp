@@ -9422,7 +9422,12 @@ void TestSpacing::breathCaesuraPlanning4()
             score->undoRedo(true, nullptr);
             score->doLayout();
             const QRectF box = edit->bbox();
-            edit->setbbox(QRectF(box.x(), box.y(), 0, box.height()));
+            // A zero-width breath is intentionally ignored by the native
+            // allElementsInvisible gate. Keep positive width so this probe
+            // reaches the active breath dimension guard instead.
+            edit->setbbox(QRectF(box.x(), box.y(), box.width(), 0));
+            const Segment* boundary = edit->segment();
+            const bool active = boundary->enabled() && boundary->visible() && !boundary->allElementsInvisible();
             const auto invalid = snapshot();
             bool prepared = false, accepted = true;
             SpacingPlan4 rejected;
@@ -9434,7 +9439,10 @@ void TestSpacing::breathCaesuraPlanning4()
             }
             const bool unchanged = near(snapshot(), invalid);
             edit->setbbox(box); // Restore native geometry before any assertion exits.
-            QVERIFY(prepared && !accepted);
+            QVERIFY2(active && prepared && !accepted,
+                  qPrintable(QString("active=%1 prepared=%2 accepted=%3 reason=%4")
+                        .arg(active).arg(prepared).arg(accepted).arg(reason)));
+            QVERIFY2(reason == "Unadapted breath glyph, staff, visibility or dimensions", qPrintable(reason));
             QCOMPARE(rejected.width, qreal(123));
             QVERIFY(rejected.segments.empty() && rejected.measures.empty() && unchanged);
             }
