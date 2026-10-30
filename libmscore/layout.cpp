@@ -4362,9 +4362,10 @@ static bool nativeSystemSpacingPlan4(System* system, const SpacingSystemRequest4
     return selectSystemSpacingPlan4(system, request, attachments, result, reason, &readyMerged);
 }
 
-// Fit only ordinary prefixes whose header/barline geometry remains unchanged
-// when the next measure is accepted or this system is finalized. Keep the
-// native width accumulator intact for unsupported-context fallback/backtracking.
+// Fit ordinary prefixes after checking the native trial-boundary preparation.
+// Repeat end/start transitions may change when the predecessor is accepted;
+// each candidate rebuilds from that phase's fresh geometry. Keep the native
+// width accumulator intact for unsupported-context fallback/backtracking.
 static bool systemFittingWidth4(System* system, qreal availableWidth, qreal& width, std::vector<GraceBeamPreparation4>& preparedBeams,
                                 SpacingDirectionReadiness4* readiness, QString* reason = nullptr)
 {
@@ -4379,9 +4380,8 @@ static bool systemFittingWidth4(System* system, qreal availableWidth, qreal& wid
         if (!mb->isMeasure())
             return fail("Candidate contains a frame");
         const Measure* m = toMeasure(mb);
-        if (m->noBreak() || m->repeatStart() || m->repeatEnd() || m->trailer()
-            || measureMayHaveBeamsJoinedIntoNext(m))
-            return fail("Candidate break/repeat/trailer/joined-beam boundary");
+        if (m->noBreak() || m->trailer() || measureMayHaveBeamsJoinedIntoNext(m))
+            return fail("Candidate break/trailer/joined-beam boundary");
         // Courtesy and changing headers need candidate-boundary preparation.
         if (!first) {
             for (const Segment& s : m->segments()) {
@@ -4392,6 +4392,7 @@ static bool systemFittingWidth4(System* system, qreal availableWidth, qreal& wid
         }
         first = false;
     }
+    if (!spacingRepeatBarlinesReady4(system, SpacingPass4::CANDIDATE, reason)) return false;
     NativeGraceInputs4 inputs(system->score(), spacingMeasures4(system), readiness);
     SpacingGraceQueryScope4 graceScope(system->score(), inputs.factory());
     SpacingSystemRequest4 request;

@@ -656,6 +656,77 @@ bool stretchMeasure4(SpacingPlan4& plan, SpacingMeasurePlan4& measure, qreal ext
 }
 }
 
+bool spacingRepeatBarlinesReady4(const System* system, SpacingPass4 pass, QString* reason)
+{
+    const auto fail = [reason](const char* text) { if (reason) *reason = text; return false; };
+    if (!system || !system->score() || system->score()->nstaves() <= 0 || system->measures().empty()
+        || (pass != SpacingPass4::CANDIDATE && pass != SpacingPass4::FINAL))
+        return fail("Candidate repeat prefix/phase unavailable");
+    bool repeats = false;
+    std::vector<const Measure*> measures;
+    for (const MeasureBase* mb : system->measures()) {
+        if (!mb || !mb->isMeasure() || mb->system() != system || mb->score() != system->score())
+            return fail("Candidate repeat prefix ownership/frame boundary");
+        const Measure* m = toMeasure(mb);
+        if (!measures.empty() && measures.back()->next() != m)
+            return fail("Candidate repeat prefix is not contiguous");
+        measures.push_back(m);
+        repeats = repeats || m->repeatStart() || m->repeatEnd();
+    }
+    if (!repeats) return true;
+    // A measure outside this explicit prefix may still point at this System
+    // from a previous layout. Never use that stale parent to infer inclusion.
+    const auto barlineReady = [system](const Segment* segment, BarLineType type) {
+        if (!segment || !active4(segment) || !segment->ticks().isZero()) return false;
+        int count = 0;
+        for (const Element* item : segment->elist()) {
+            if (!item) continue;
+            if (!item->isBarLine() || item->parent() != segment || item->score() != system->score()
+                || item->track() < 0 || item->track() % VOICES
+                || item->staffIdx() >= system->score()->nstaves()) return false;
+            const BarLine* barline = toBarLine(item);
+            const QRectF rect = barline->layoutRect();
+            if (!barline->generated() || barline->barLineType() != type || !barline->visible()
+                || !barline->addToSkyline() || !barline->el()->empty()
+                || !(barline->mag() > 0) || !std::isfinite(barline->mag())
+                || !(rect.width() > 0) || !(rect.height() > 0)
+                || !std::isfinite(rect.x()) || !std::isfinite(rect.y())
+                || !std::isfinite(rect.width()) || !std::isfinite(rect.height())
+                || !std::isfinite(barline->pos().x()) || !std::isfinite(barline->pos().y())) return false;
+            ++count;
+        }
+        return count == system->score()->nstaves();
+    };
+    for (size_t i = 0; i < measures.size(); ++i) {
+        const Measure* m = measures[i];
+        if (!ordinaryRepeatBoundary4(m))
+            return fail("Candidate repeat grace/rest/cross-staff boundary");
+        // A hidden terminal clef may become visible after accepting the next
+        // measure. Its relocation needs a separate preparation adapter too.
+        for (const Segment& segment : m->segments())
+            if (segment.isClefType() && segment.rtick() == m->ticks())
+                return fail("Candidate repeat terminal-clef boundary");
+        if (m->repeatStart() && !barlineReady(m->findSegmentR(SegmentType::StartRepeatBarLine,
+                                                             Fraction(0, 1)), BarLineType::START_REPEAT))
+            return fail("Candidate start-repeat geometry not prepared");
+        const Segment* end = m->findSegmentR(SegmentType::EndBarLine, m->ticks());
+        // createEndBarLines(true) prepared the trial last and its predecessor.
+        // Only earlier accepted predecessors have received the interior call.
+        const bool interior = i + 1 < measures.size()
+            && (pass == SpacingPass4::FINAL || i + 2 < measures.size());
+        const bool enabled = !interior || m->repeatEnd() || !measures[i + 1]->repeatStart();
+        if (!enabled) {
+            if (end && end->enabled()) return fail("Candidate interior repeat barline not prepared");
+            continue;
+        }
+        const BarLineType expected = m->repeatEnd() ? BarLineType::END_REPEAT
+            : m->nextMeasure() ? BarLineType::NORMAL : BarLineType::END;
+        if (!barlineReady(end, expected))
+            return fail("Candidate terminal repeat barline not prepared");
+    }
+    return true;
+}
+
 bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QString* reason)
 {
     const auto fail = [&](const QString& message) { if (reason) *reason = message; return false; };

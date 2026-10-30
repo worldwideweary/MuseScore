@@ -51,6 +51,13 @@ bool spacingDecisionObserved4(const Score*);
 void recordSpacingDecision4(const System*, SpacingPass4, SpacingPath4, qreal width, qreal available,
                             const QString& reason = QString());
 
+// Certify native repeat-barline preparation for the explicit collected prefix.
+// CANDIDATE is queried after appending a trial last measure, before the native
+// predecessor is finalized; FINAL is queried after retained-system regeneration.
+// No geometry, ownership or enabled state is changed or retained by this query.
+// Ordinary nonrepeat prefixes keep their existing preparation contract.
+bool spacingRepeatBarlinesReady4(const System*, SpacingPass4, QString* reason = nullptr);
+
 // Read-only preparation for cross-staff placement. This first context covers
 // one automatic eighth-note beam of up to two unmirrored normal notes per chord
 // between adjacent ordinary staves.

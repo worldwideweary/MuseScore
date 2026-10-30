@@ -1,5 +1,146 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.236 aggregate gate: ordinary repeat-aware collection
+
+Apply the combined v0.233-v0.236 patch over user-applied v0.232 (9345a7ab1),
+or the four ordered increments, never both. The first increment includes the
+intervening acceptance note for the corrected v0.232 visual gate. Preserve the
+saved WIP boundaries: v0.233 read-only readiness, v0.234 candidate activation,
+v0.235 rollback/phase regressions and paired score, v0.236 aggregate gate.
+
+Production changes are confined to the planner readiness API and the ordinary
+candidate guard/call in layout.cpp. No candidate plan publishes geometry;
+native overflow/backtracking, boundary producers and final publication retain
+their order. The new scope is stable-header/trailer ordinary repeat prefixes.
+Changing headers/courtesies, terminal clefs including currently hidden ones,
+custom/decorated bars, no-break/joined-beam and grace/full-rest/cross-staff
+repeat prefixes retain explicit fallback. Native drawing, stored gap styles,
+repeat playback and default-OFF behavior are unchanged. Performance, TAB and
+complete Studio collector equivalence remain outside this gate.
+
+Local validation passes six regenerated-moc C++11 Debug/NDEBUG syntax checks
+for planner/layout/tests with unused-parameter and signedness warnings. After
+the hidden-terminal-clef guard tightened, rerun both planner checks. The actual
+readiness query passes 2,071,292 extracted mock-DOM lifecycle, enabled-state,
+invalid-type/geometry, ownership and hidden-clef checks per build mode. Verify
+native and pinned Studio producer chronology and the guarded read-only call
+order against systemlayout.cpp 516188a75a42d193b9cb4baa02aac0c9a08bf85e and
+measurelayout.cpp b488b3a38b9489355d2cb1740fb5facf16d59920. XML checks verify
+all eight complete measures, paired music, beam boundaries, style toggles and
+physical gaps. Exact individual/ordered/combined Git-tree replay and whitespace
+checks must pass before delivery. These are local syntax/model/package checks,
+not native mtest execution or rendered acceptance.
+
+Build once, then run:
+
+```sh
+ctest -j1 --output-on-failure -R '^(tst_spacing|tst_beam)$'
+```
+
+If it passes, compare v0.235-repeat-collection-fitting.mscx in 37E against
+v0.235-repeat-collection-fitting-475.mscx in Studio 4.7.5. Both styles save ON;
+use the saved automatic fitting with no additional stretch or forced breaks.
+Provide one full overview per engine and the measure partition. Inspect
+header/start clearance, C2-C3 and C6-C7 shared strokes when retained together,
+C4-C5 ordinary-to-start clearance, line-end end repeats and regenerated headers
+after rollback. Reuse the accepted v0.230/v0.232 matrix only if native tests or
+the new comparison expose a regression; no broad recapture is requested.
+
+## v0.235 WIP: repeat collection rollback regression and paired control
+
+Add an eight-measure repeat-only automatic-fitting fixture and a format-4.00
+Studio companion with defaultsVersion=302 and the corrected physical gaps.
+C1 starts a repeat, C2 ends it, C3 shares a thick stroke, C4 is plain, C5
+starts after an ordinary end, C6 ends, C7 shares, and C8 ends. All measures
+contain two explicit four-eighth beams; no signature changes, courtesy
+trailers, forced breaks or offsets obscure this collection gate. Both styles
+save ON. There is no special Layout stretch setting in this fitting score.
+
+Two native rows observe cold layout in both beam modes. Every candidate and
+final must select FULL_PLAN. At least one overfull trial must lose exactly its
+last measure; the immediately following retained FINAL and single-measure
+retry must have matching ticks/counts. Final systems cover all eight measures
+once and fresh capture/select/preflight must match native publication. No
+particular Studio partition is asserted before visual comparison.
+
+Borrow C3/C4/C5 briefly into a test System, restore all parents/enabled states
+before assertions/destruction, and prove the real generated barline inputs
+accept trial-terminal versus final-interior enablement only in the matching
+phase. An outside measure with a deliberately stale System parent must not
+change the result. Readiness queries must leave snapshots unchanged. An
+invalid active endbarline state must reject without further writes. Repeated
+layout and OFF/ON warming must reproduce the cold result; no query factory may
+escape. Existing repeat matrix retains offset undo/redo and active malformed
+start-repeat coverage. Tighten the terminal-clef rejection to include hidden
+segments: createEndBarLines(false) may reveal a clef that the terminal trial
+hid. Such prefixes require the deferred boundary-preparation adapter.
+
+## v0.234 WIP: ordinary repeat-aware candidate widths
+
+Remove only the repeatStart/repeatEnd flag rejection from systemFittingWidth4.
+After the existing no-break/trailer/joined-beam and changing-header guards,
+require the new trial-barline readiness query, then capture and select one
+fresh whole-prefix plan. No candidate plan is published. The native minimum-
+width accumulator, overflow removal, predecessor finalization and final-system
+regeneration/publication retain their order. Queries never survive boundary
+writes. Each subsequent prefix is rebuilt from its own native preparation.
+
+The eight v0.230 regression rows now require positive FULL_PLAN candidate
+coverage while retaining reasoned fallback for changing signatures/trailers.
+Existing final-plan, shared-stroke, ownership, first-load, offset undo/redo,
+malformed geometry and OFF/ON checks remain. Dedicated automatic rollback
+coverage and its matched reference are the next checkpoint.
+
+## v0.233 WIP: read-only repeat collection readiness
+
+Certify the explicit collected measure vector, not old System parent pointers
+on measures still outside that vector. Native collection prepares the appended
+trial last with createEndBarLines(true), tests overflow, then finalizes its
+predecessor with createEndBarLines(false) only after acceptance. A trial's
+penultimate barline consequently retains terminal geometry; earlier accepted
+interior boundaries disable the ordinary end before a start repeat. Repeat
+ends stay enabled. Final retained-system checks expect every interior boundary
+to have been finalized. This follows the pinned Studio systemlayout.cpp order.
+
+The query verifies ownership/order, generated ordinary end/start types, enabled
+state and finite positive native barline geometry without writes or retained
+views. Custom/decorated barlines, terminal courtesy clefs and grace/full-rest/
+cross-staff repeat prefixes retain a reasoned rejection. Nonrepeat prefixes
+retain their existing preparation contract. No collection guard changes yet.
+
+## v0.231 native / v0.232 corrected-reference visual gate accepted
+
+On 2026-10-30 the user supplies all four corrected v0.232 Studio reference
+captures and confirms that the squeeze opens with Layout stretch 3.00 already
+present. Compare against the existing four 37E v0.230 captures made after
+applying v0.231. The previously reported native mtest pass still covers the
+production/test code: v0.232 changed only reference XML and these notes.
+
+The thin/thick and repeat-dot gaps are restored and closely match the native
+controls. Natural and justified layouts have closely corresponding note
+cadence, header/repeat clearance and boundary placement across R1-R6. The
+R2-R3 shared thick stroke is retained with visible neighboring thin-stroke
+gaps. R4's interior start and R5/R6's key/time/clef neighbors remain clear.
+Automatic fitting retains R1-R3 / R4-R6 in both applications, with clear
+regenerated key/header and courtesy boundaries. The stretch-3 squeeze closely
+matches header-to-repeat/first-note allocation and the six-note cadence.
+Small native glyph/metric and rasterization differences remain; this is not
+a pixel-identity claim and screenshot origins differ.
+
+Accept the bounded ordinary start-repeat final-system spacing gate for
+v0.228-v0.231 using the corrected v0.232 references, together with the user's
+native pass. The old v0.230 Studio references/captures remain invalid matched
+inputs because of project-level migration. Use format-4.00 v0.232 references
+with defaultsVersion=302 for future repeat controls; their saved squeeze
+stretch is retained without manual reapplication.
+
+No further correction, rebuild or repeated mtest run is indicated by these
+captures. Retain explicit limits: repeat/changing-header/trailer candidate
+collection uses its reasoned native fallback, and grace, full-measure-rest,
+cross-staff and decorated start-repeat boundary combinations are not newly
+accepted. This gate does not establish general repeat collection/playback,
+TAB/percussion, performance or complete Studio layout equivalence.
+
 ## v0.232 reference correction: account for Studio project migration
 
 The user reports v0.231 mtests passing and supplies paired natural,

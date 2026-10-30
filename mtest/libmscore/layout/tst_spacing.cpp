@@ -79,6 +79,8 @@ class TestSpacing : public QObject, public MTest {
       void breathCaesuraPlanning4();
       void repeatBarlinePlanning4_data();
       void repeatBarlinePlanning4();
+      void repeatCollection4_data();
+      void repeatCollection4();
       void clefSignaturePlanning4_data();
       void clefSignaturePlanning4();
       void smallNotation4_data();
@@ -9276,6 +9278,173 @@ void TestSpacing::spacingDecisionCorpus4()
       QVERIFY(nextTick == score->lastMeasure()->endTick());
       }
 
+void TestSpacing::repeatCollection4_data()
+      {
+      QTest::addColumn<bool>("beams");
+      QTest::newRow("legacy-beams") << false;
+      QTest::newRow("studio-beams") << true;
+      }
+
+void TestSpacing::repeatCollection4()
+      {
+      QFETCH(bool, beams);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(new MasterScore(mscore->baseStyle()));
+      {
+      ScoreLoad loading;
+      QVERIFY(score->loadMsc(root + "/" + DIR + "v0.235-repeat-collection-fitting.mscx", false)
+            == Score::FileError::FILE_NO_ERROR);
+      }
+      score->setStyleValue(Sid::beamLayout4, beams);
+      QVERIFY(score->styleB(Sid::spacingLayout4));
+      const auto snapshot = [&]() {
+            auto values = graceMergedSnapshot4(score.get());
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  values.insert(values.end(), {qreal(m->repeatStart()), qreal(m->repeatEnd()), qreal(m->repeatCount())});
+                  for (const Segment& segment : m->segments())
+                        for (const Element* item : segment.elist()) if (item && item->isBarLine()) {
+                              const BarLine* barline = toBarLine(item);
+                              const QRectF r = barline->layoutRect();
+                              values.insert(values.end(), {qreal(static_cast<int>(barline->barLineType())),
+                                    qreal(barline->generated()), barline->ipos().x(), barline->ipos().y(),
+                                    barline->offset().x(), barline->offset().y(), r.x(), r.y(), r.width(), r.height()});
+                              }
+                  }
+            return values;
+            };
+      const auto near = [](const std::vector<qreal>& a, const std::vector<qreal>& b) {
+            if (a.size() != b.size()) return false;
+            for (size_t i = 0; i < a.size(); ++i)
+                  if (!qIsFinite(a[i]) || !qIsFinite(b[i]) || qAbs(a[i] - b[i]) > 1e-6) return false;
+            return true;
+            };
+      std::vector<SpacingDecision4> events;
+      {
+      SpacingDecisionScope4 observer(score.get(), [&events](const SpacingDecision4& e) { events.push_back(e); });
+      score->doLayout();
+      }
+      const auto modern = snapshot();
+      int candidates = 0, rollbacks = 0, finals = 0, retainedMeasures = 0;
+      Fraction endTick(0, 1);
+      for (size_t i = 0; i < events.size(); ++i) {
+            const SpacingDecision4& event = events[i];
+            QVERIFY2(event.path == SpacingPath4::FULL_PLAN, qPrintable(event.reason));
+            if (event.pass == SpacingPass4::CANDIDATE) {
+                  ++candidates;
+                  if (event.measures <= 1 || event.width <= event.available) continue;
+                  ++rollbacks;
+                  QVERIFY(i + 1 < events.size());
+                  const SpacingDecision4& retained = events[i + 1];
+                  QVERIFY(retained.pass == SpacingPass4::FINAL);
+                  QCOMPARE(retained.firstTick, event.firstTick);
+                  QCOMPARE(retained.endTick, event.endTick - Fraction(1, 1));
+                  QCOMPARE(retained.measures, event.measures - 1);
+                  QVERIFY(i + 2 < events.size());
+                  const SpacingDecision4& retried = events[i + 2];
+                  QVERIFY(retried.pass == SpacingPass4::CANDIDATE);
+                  QCOMPARE(retried.firstTick, retained.endTick);
+                  QCOMPARE(retried.measures, 1);
+                  }
+            else {
+                  ++finals;
+                  QCOMPARE(event.firstTick, endTick);
+                  endTick = event.endTick;
+                  retainedMeasures += event.measures;
+                  }
+            }
+      QVERIFY(candidates > 8 && rollbacks > 0 && finals > 1);
+      QCOMPARE(retainedMeasures, 8);
+      QCOMPARE(endTick, Fraction(8, 1));
+      QString reason;
+      int systems = 0;
+      for (System* system : score->systems()) {
+            if (system->vbox()) continue;
+            ++systems;
+            QVERIFY2(spacingRepeatBarlinesReady4(system, SpacingPass4::FINAL, &reason), qPrintable(reason));
+            SpacingAttachmentPreparation4 owner;
+            QVERIFY2(snapshotLaidOutSystemSpacing4(system, owner, &reason), qPrintable(reason));
+            SpacingSystemRequest4 request;
+            request.pass = SpacingPass4::FINAL;
+            request.availableWidth = system->width();
+            request.fillLimit = score->styleD(Sid::lastSystemFillLimit);
+            request.next = system->lastMeasure()->next();
+            SpacingPlan4 plan;
+            QVERIFY2(selectSystemSpacingPlan4(system, request, owner, plan, &reason), qPrintable(reason));
+            QVERIFY2(spacingPlanPublicationValid4(system, plan, &reason), qPrintable(reason));
+            QVERIFY2(spacingPlanMatches4(plan, &reason), qPrintable(reason));
+            }
+      QCOMPARE(systems, finals);
+      QVERIFY(near(snapshot(), modern)); // Readiness/replanning must not publish.
+
+      // Exercise real native barline identities in both collection phases.
+      // C3/C4/C5 contain an ordinary end immediately before an interior start.
+      Measure* c3 = score->firstMeasure()->nextMeasure()->nextMeasure();
+      std::array<Measure*, 3> prefix = {{c3, c3->nextMeasure(), c3->nextMeasure()->nextMeasure()}};
+      std::array<System*, 3> parents;
+      std::array<Segment*, 3> ends;
+      std::array<bool, 3> enabled;
+      for (size_t i = 0; i < prefix.size(); ++i) {
+            parents[i] = prefix[i]->system();
+            ends[i] = prefix[i]->findSegmentR(SegmentType::EndBarLine, prefix[i]->ticks());
+            QVERIFY(ends[i]);
+            enabled[i] = ends[i]->enabled();
+            }
+      bool trialReady, finalRejectsTrial, finalReady, trialRejectsFinal, staleOutsideReady, unchanged;
+      {
+      System trial(score.get());
+      for (size_t i = 0; i < prefix.size(); ++i) {
+            trial.appendMeasure(prefix[i]);
+            ends[i]->setEnabled(true);
+            }
+      auto before = snapshot();
+      trialReady = spacingRepeatBarlinesReady4(&trial, SpacingPass4::CANDIDATE, &reason);
+      finalRejectsTrial = !spacingRepeatBarlinesReady4(&trial, SpacingPass4::FINAL, &reason);
+      unchanged = near(snapshot(), before);
+      ends[1]->setEnabled(false);
+      before = snapshot();
+      finalReady = spacingRepeatBarlinesReady4(&trial, SpacingPass4::FINAL, &reason);
+      trialRejectsFinal = !spacingRepeatBarlinesReady4(&trial, SpacingPass4::CANDIDATE, &reason);
+      unchanged = unchanged && near(snapshot(), before);
+      trial.removeLastMeasure();
+      prefix[2]->setSystem(&trial); // Deliberately stale parent, outside the collected vector.
+      ends[1]->setEnabled(true);
+      before = snapshot();
+      staleOutsideReady = spacingRepeatBarlinesReady4(&trial, SpacingPass4::CANDIDATE, &reason);
+      unchanged = unchanged && near(snapshot(), before);
+      // Restore before assertions or destruction of the borrowed test system.
+      for (size_t i = 0; i < prefix.size(); ++i) {
+            prefix[i]->setSystem(parents[i]);
+            ends[i]->setEnabled(enabled[i]);
+            }
+      }
+      QVERIFY(trialReady && finalRejectsTrial && finalReady && trialRejectsFinal && staleOutsideReady && unchanged);
+      QVERIFY(near(snapshot(), modern));
+      Segment* end = score->firstMeasure()->findSegmentR(SegmentType::EndBarLine, score->firstMeasure()->ticks());
+      QVERIFY(end && end->enabled());
+      end->setEnabled(false);
+      const auto invalid = snapshot();
+      const bool rejected = !spacingRepeatBarlinesReady4(score->firstMeasure()->system(), SpacingPass4::FINAL, &reason);
+      unchanged = near(snapshot(), invalid);
+      end->setEnabled(true);
+      QVERIFY(rejected && unchanged);
+      QVERIFY(near(snapshot(), modern));
+      score->doLayout();
+      QVERIFY(near(snapshot(), modern));
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto legacy = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      QVERIFY2(near(snapshot(), modern), "Cold repeat collection differs after OFF/ON warming");
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      QVERIFY(near(snapshot(), legacy));
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      QVERIFY(near(snapshot(), modern));
+      QVERIFY(!score->graceQueryFactory4());
+      }
+
 void TestSpacing::repeatBarlinePlanning4_data()
       {
       QTest::addColumn<QString>("mode");
@@ -9327,7 +9496,7 @@ void TestSpacing::repeatBarlinePlanning4()
       SpacingDecisionScope4 observer(score.get(), [&events](const SpacingDecision4& e) { events.push_back(e); });
       score->doLayout();
       }
-      int finals = 0, candidates = 0;
+      int finals = 0, candidates = 0, plannedCandidates = 0;
       for (const auto& event : events) {
             if (event.pass == SpacingPass4::FINAL) {
                   ++finals;
@@ -9335,11 +9504,14 @@ void TestSpacing::repeatBarlinePlanning4()
                   }
             else {
                   ++candidates;
-                  QVERIFY(event.path == SpacingPath4::NATIVE_WIDTHS);
-                  QVERIFY2(event.reason.contains("repeat"), qPrintable(event.reason));
+                  if (event.path == SpacingPath4::FULL_PLAN) ++plannedCandidates;
+                  else {
+                        QVERIFY(event.path == SpacingPath4::NATIVE_WIDTHS);
+                        QVERIFY(!event.reason.isEmpty());
+                        }
                   }
             }
-      QVERIFY(finals > 0 && candidates > 0);
+      QVERIFY(finals > 0 && candidates > 0 && plannedCandidates > 0);
       if (mode == "fitting") QVERIFY(finals > 1);
       const auto modern = snapshot();
       const SpacingPaddingTable4 table(score.get());
