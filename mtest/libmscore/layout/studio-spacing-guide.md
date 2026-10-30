@@ -1,5 +1,131 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.214 aggregate gate: ordinary pitched clefs and signature controls
+
+Apply the combined v0.211-v0.214 patch over user-applied v0.210, or the four
+ordered increments, never both. The first increment includes the intervening
+small/cue acceptance notes. WIP checkpoints are v0.211 leading-change width
+reconstruction, v0.212 ordinary pitched clef admission and v0.213 regressions.
+
+Production changes are limited to spacingplan4.cpp: admit ordinary pitched
+Clef segments, use the source first-clef margin, and reconstruct leading
+Clef/KeySig/TimeSig widths using pinned Studio setPositionsAndWidths. The
+reference is 4.7.5 horizontalspacing.cpp, blob
+573e19dcf63bb042499f1495f16f5c19d1003852. Existing collision/padding policies,
+native producers, saved styles and legacy/off code are unchanged.
+
+Native glyph bounding rectangles and their source identities remain the input;
+Studio's mid-clef font cutout contours are not ported here. The candidate
+changing-header preparation guard remains a reasoned native fallback, so
+automatic fitting does not yet prove complete Studio collection equivalence.
+Centered full rests with an internal clef retain their existing fallback.
+TAB, percussion, repeat boundaries and other previously unsupported contexts
+remain outside this gate. No visual parity or native pass is claimed yet.
+
+Local verification: regenerated-moc C++11 Debug/NDEBUG syntax passes for the
+planner and tst_spacing, including unused-parameter and signedness checks.
+Extracted reconstruction expressions match the pinned source in 331,776 mock
+cases per mode across supported segment classes, measure boundaries, distances
+and right extents; start-repeat segments remain outside this comparison/domain.
+All four XML fixtures have complete durations, both styles ON and no forced
+breaks or manual offsets. Incremental and combined patches replay to their
+recorded Git trees. These checks do not execute the native application.
+
+Build once, then run:
+
+```sh
+ctest -j1 --output-on-failure -R '^(tst_spacing|tst_beam)$'
+```
+
+Only after both pass, compare the four v0.213-clef-signatures scores in 37E and
+4.7.5. Review S1/S2/S4/S5 internal clef clearance, S3/S4 key changes and S5/S6
+meter changes, including generated headers/courtesies at automatic breaks.
+The squeeze case uses S1 with measure stretch 3; its test requires a natural
+plan wider than the available system before selection. Review accidental and
+clef clearance there, plus repeat-layout stability and off/on restoration.
+Record automatic partitions without treating the retained candidate fallback
+as source equivalence. These fixtures have no cue-size rhythmic dependence.
+Ordinary stem/slur curves, vertical-rest placement and performance stay queued.
+
+## v0.213 WIP: clef/signature native and visual matrix
+
+Add four v0.213 fixtures, both experimental styles ON, without fixed breaks:
+natural, justified, automatic fitting and one narrow squeeze. S1 treble-to-bass,
+S2 bass-to-alto, S3 sharp key change, S4 flat key plus bass clef, S5 3/4 plus
+internal alto, and S6 6/8 plus bass cover ordinary pitched changes. Squeeze
+uses S1. Correct native text-size tags avoid the older fontSize import warnings.
+
+Eight native rows cover both beam styles, require FULL_PLAN final decisions,
+validate direct clef ownership and mid-clef note kerning in both orders, compare
+fresh final plans with publication, then repeat and restore legacy/off-on.
+A real clef-offset undo/redo edit is exercised on the natural control. Candidate
+fallbacks retain explicit reasons; changing-header admission is not widened.
+Native execution and visual comparisons remain pending.
+
+## v0.212 WIP: admit ordinary pitched clef changes
+
+Admit ordinary Clef segments using their current native producer identities,
+right alignment, small-clef magnitude and existing source pair policies. The
+first-segment clef margin now covers both Clef and HeaderClef, as in Studio's
+getFirstSegmentXPos. Reject non-clef occupants, hidden or skyline-excluded
+changes, non-pitched clef families and invalid magnitudes. Existing trailer,
+manual segment-spacing, frame/MMRest/TAB and centered-rest boundaries remain.
+
+Native glyph rectangles remain the geometry input. Studio mid-clefs can use
+font cutout shapes, so this policy admission alone is not proof of precise
+contour parity; the combined visual gate must review clearance. No guessed
+clef offset or curve correction is added. Native execution remains pending.
+
+## v0.211 WIP: source leading-change reconstruction
+
+Start the next grouped ordinary-clef/signature batch over accepted v0.210.
+Use pinned horizontalspacing.cpp setPositionsAndWidths semantics: Clef, KeySig and
+TimeSig can lead a following measure when the preceding segment is not a
+barline. Keep HeaderClef distinct from the source leading-change set. Existing
+source pair padding, mid-clef kerning and native right-aligned clef geometry
+already exist; admission and regressions follow together before the native gate.
+The candidate changing-header preparation guard remains in force. This batch
+does not claim unified source collection across that guard.
+
+## Accepted v0.204-v0.210 small/cue spacing gate
+
+The user supplied corrected 4.7.5 references with Reduce rhythmic spacing for
+small notes enabled after import. Review against the existing 37E captures
+accepts the bounded v0.206 visual matrix: natural mixed-size spacing is consistent,
+justified retains C1-C8 on one system, fitting retains C1-C3 / C4-C6 / C7-C8
+in both engines, and the narrow alternating-size C3 remains clear. C6's held
+normal companion and C7's ending normal companion retain their intended distinct
+rhythmic treatment. Small full-rest centering appears sound.
+
+Together with the user-reported tst_spacing pass after v0.210, accept this
+ordinary small/cue phase and its two test-only corrections. This is visual and
+native regression evidence for the covered contexts, not pixel-exact full-score
+parity or new admission of grace/cue, tremolo, cross-staff or TAB combinations.
+Keep the 4.7.5 pre-4.5 import override documented for future reference captures.
+The separate ordinary stem/slur, vertical-rest and performance follow-ups remain.
+No production adjustment or new user patch is required for this acceptance.
+
+## v0.210 native pass; cue reference comparison still pending
+
+On 2026-10-29 the user reported tst_spacing passing after v0.210, clearing the
+v0.209 malformed-rest probe and v0.210 standalone slur lifetime corrections.
+The eight supplied visual captures are not yet a matched cue-scaling comparison:
+37E fitting shows C1-C3 / C4-C6 / C7-C8, while 4.7.5 shows C1-C2 / C3-C5 / C6-C8.
+37E justified fits eight measures while the reference breaks after C6.
+
+Pinned Studio style.cpp (blob ffcfbd03260cc7cc78c610439b28df616f5cc814) forces
+scaleRythmicSpacingForSmallNotes=false for imported formats older than 4.5,
+even when the style was explicitly read as true. The v0.206 fixtures are 3.02.
+This defeats the saved ON value in Studio and explains the unscaled reference
+cue spacing. The earlier assertion that saving ON sufficed for direct reference
+comparison was incomplete.
+
+After opening each fixture in 4.7.5, enable Format/Style > Sizes > Cue sizes >
+Reduce rhythmic spacing for small notes; retain Small note size at 70%. The
+37E corresponding option is already ON. Recompare the same four files with
+matched settings before accepting the visual gate or changing spacing formulas.
+Do not widen admission or infer full visual parity from the native pass alone.
+
 ## v0.210 correction: detach standalone slur probe segments
 
 The v0.209 rerun XML aborts with signal 11 in beamSlurAnchorHeights4:ordinary,

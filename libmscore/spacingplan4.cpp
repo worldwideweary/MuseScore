@@ -8,6 +8,7 @@
 #include "spacinglayout4.h"
 #include "gracespacing4.h"
 #include "chord.h"
+#include "clef.h"
 #include "beam.h"
 #include "measure.h"
 #include "note.h"
@@ -98,9 +99,16 @@ bool courtesyType4(const Segment* s)
     return s->isKeySigAnnounceType() || s->isTimeSigAnnounceType();
 }
 
+// Studio setPositionsAndWidths: only these ordinary changes lead the next
+// measure when no barline separates them from the preceding segment.
+bool leadingNonRhythmic4(const Segment* s)
+{
+    return s->isClefType() || s->isKeySigType() || s->isTimeSigType();
+}
+
 bool eligibleType4(const Segment* s)
 {
-    return headerType4(s) || courtesyType4(s) || s->isChordRestType()
+    return headerType4(s) || courtesyType4(s) || s->isClefType() || s->isChordRestType()
         || s->isEndBarLineType() || s->segmentType() == SegmentType::BeginBarLine;
 }
 
@@ -738,6 +746,16 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                         return fail("Annotations require a later adapter");
                 }
                 for (const Element* item : segment.elist()) {
+                    if (item && segment.isClefType()) {
+                        if (!item->isClef()) return fail("Unexpected clef-segment item");
+                        const Clef* clef = toClef(item);
+                        const ClefType type = clef->clefType();
+                        if (type == ClefType::INVALID || type == ClefType::MAX
+                            || ClefInfo::staffGroup(type) != StaffGroup::STANDARD
+                            || !clef->visible() || !clef->addToSkyline()
+                            || !(clef->mag() > 0) || !std::isfinite(clef->mag()))
+                            return fail("Unadapted clef visibility, staff family or magnitude");
+                    }
                     if (item && item->isRest()) {
                         const Rest* rest = toRest(item);
                         if (rest->isGap())
@@ -793,7 +811,7 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                 // Studio default for its style absent from Evolution.
                 offset = std::max(offset, 1.25 * current.segment->spatium());
             }
-            else if (current.segment->isHeaderClefType())
+            else if (current.segment->isHeaderClefType() || current.segment->isClefType())
                 offset = score->styleP(Sid::clefLeftMargin);
             else if (current.segment->isKeySigType())
                 offset = score->styleP(Sid::keysigLeftMargin);
@@ -886,7 +904,7 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
         else {
             SpacingSegmentPlan4& following = plan.segments[next];
             const bool sameMeasure = current.segment->measure() == following.segment->measure();
-            const bool leadingHeader = headerType4(following.segment) && !current.segment->isType(SegmentType::BarLineType);
+            const bool leadingHeader = leadingNonRhythmic4(following.segment) && !current.segment->isType(SegmentType::BarLineType);
             current.width = sameMeasure || leadingHeader ? following.x - current.x : geometry[i].minRight;
             if (!sameMeasure) {
                 plan.measures[mi].width = current.x + current.width - plan.measures[mi].x;

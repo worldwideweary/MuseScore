@@ -74,6 +74,8 @@ class TestSpacing : public QObject, public MTest {
       void slurDirectionPriority4();
       void slurRendererDirection4_data();
       void slurRendererDirection4();
+      void clefSignaturePlanning4_data();
+      void clefSignaturePlanning4();
       void smallNotation4_data();
       void smallNotation4();
       void styleRoundTrip();
@@ -9267,6 +9269,131 @@ void TestSpacing::spacingDecisionCorpus4()
       QVERIFY(candidates >= finals);
       QCOMPARE(finals, int(systems.size()));
       QVERIFY(nextTick == score->lastMeasure()->endTick());
+      }
+
+void TestSpacing::clefSignaturePlanning4_data()
+      {
+      QTest::addColumn<QString>("mode");
+      QTest::addColumn<bool>("beams");
+      for (const QString& mode : {QString("natural"), QString("justified"), QString("fitting"), QString("squeeze")})
+            for (bool beams : {false, true})
+                  QTest::newRow(qPrintable(mode + (beams ? "-studio" : "-legacy"))) << mode << beams;
+      }
+
+void TestSpacing::clefSignaturePlanning4()
+      {
+      QFETCH(QString, mode);
+      QFETCH(bool, beams);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.213-clef-signatures-" + mode + ".mscx"));
+      QVERIFY(score);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      score->setStyleValue(Sid::beamLayout4, beams);
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto snapshot = [&]() {
+            auto values = graceMergedSnapshot4(score.get());
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
+                  for (const Segment& s : m->segments()) {
+                        if (!s.enabled() && (s.header() || s.trailer())) continue;
+                        for (const Element* e : s.elist()) if (e && (e->isClef() || e->isKeySig() || e->isTimeSig())) {
+                              values.insert(values.end(), {e->x(), e->y(), e->mag(), e->offset().x(), e->offset().y()});
+                              for (const QRectF& r : e->shape())
+                                    values.insert(values.end(), {r.x(), r.y(), r.width(), r.height()});
+                              }
+                        }
+            return values;
+            };
+      const auto near = [](const std::vector<qreal>& a, const std::vector<qreal>& b) {
+            if (a.size() != b.size()) return false;
+            for (size_t i = 0; i < a.size(); ++i)
+                  if (!qIsFinite(a[i]) || !qIsFinite(b[i]) || qAbs(a[i] - b[i]) > 1e-6) return false;
+            return true;
+            };
+      const auto legacy = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      std::vector<SpacingDecision4> events;
+      {
+      SpacingDecisionScope4 observer(score.get(), [&events](const SpacingDecision4& e) { events.push_back(e); });
+      score->doLayout();
+      }
+      int finals = 0, midClefs = 0;
+      for (const auto& e : events) {
+            if (e.pass == SpacingPass4::FINAL) {
+                  ++finals;
+                  QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+                  }
+            else if (e.path != SpacingPath4::FULL_PLAN) QVERIFY(!e.reason.isEmpty());
+            }
+      QVERIFY(finals > 0);
+      const auto modern = snapshot();
+      QString reason;
+      Clef* edit = nullptr;
+      const SpacingPaddingTable4 table(score.get());
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
+            for (const Segment& s : m->segments()) {
+                  if (!s.enabled() || !s.isClefType() || s.rtick().isZero() || s.rtick() >= m->ticks()) continue;
+                  Element* e = s.element(0);
+                  QVERIFY(e && e->isClef());
+                  Clef* clef = toClef(e);
+                  if (!edit) edit = clef;
+                  ++midClefs;
+                  const SpacingShape4 shape = spacingStaffShape4(&s, 0);
+                  QVERIFY(shape.complete() && !shape.elements.empty());
+                  for (const auto& item : shape.elements) QCOMPARE(item.item, static_cast<const Element*>(clef));
+                  const Segment* next = s.next(SegmentType::ChordRest);
+                  QVERIFY(next && next->element(0) && next->element(0)->isChord());
+                  const Note* note = toChord(next->element(0))->notes().front();
+                  SpacingPairPolicy4 policy;
+                  QVERIFY(spacingPairPolicy4(table, clef, note, clef->spatium(), policy));
+                  QVERIFY(policy.kerning == SpacingKerning4::RIGHT_EDGE);
+                  QVERIFY(spacingPairPolicy4(table, note, clef, clef->spatium(), policy));
+                  QVERIFY(policy.kerning == SpacingKerning4::RIGHT_EDGE);
+                  }
+      QVERIFY(midClefs > 0 && edit);
+      for (System* system : score->systems()) {
+            if (system->vbox()) continue;
+            SpacingAttachmentPreparation4 owner;
+            QVERIFY2(snapshotLaidOutSystemSpacing4(system, owner, &reason), qPrintable(reason));
+            SpacingSystemRequest4 request;
+            request.pass = SpacingPass4::FINAL;
+            request.availableWidth = system->width();
+            request.fillLimit = score->styleD(Sid::lastSystemFillLimit);
+            request.next = system->lastMeasure()->next();
+            if (mode == "squeeze") {
+                  SpacingPlan4 natural;
+                  QVERIFY2(buildSpacingPlan4(system, natural, owner, &reason), qPrintable(reason));
+                  QVERIFY(natural.width > request.availableWidth);
+                  }
+            SpacingPlan4 selected;
+            QVERIFY2(selectSystemSpacingPlan4(system, request, owner, selected, &reason), qPrintable(reason));
+            QVERIFY2(spacingPlanPublicationValid4(system, selected, &reason), qPrintable(reason));
+            QVERIFY2(spacingPlanMatches4(selected, &reason), qPrintable(reason));
+            }
+      if (mode == "natural" && beams) {
+            const QPointF offset = edit->offset();
+            score->startCmd();
+            edit->undoChangeProperty(Pid::OFFSET, offset + QPointF(.15 * score->spatium(), 0));
+            score->endCmd();
+            score->doLayout();
+            const auto edited = snapshot();
+            QVERIFY(!near(edited, modern));
+            score->undoRedo(true, nullptr);
+            score->doLayout();
+            QVERIFY(near(snapshot(), modern));
+            score->undoRedo(false, nullptr);
+            score->doLayout();
+            QVERIFY(near(snapshot(), edited));
+            score->undoRedo(true, nullptr);
+            }
+      score->doLayout();
+      QVERIFY(near(snapshot(), modern));
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      QVERIFY(near(snapshot(), legacy));
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      QVERIFY(near(snapshot(), modern));
+      QVERIFY(!score->graceQueryFactory4());
       }
 
 void TestSpacing::smallNotation4_data()
