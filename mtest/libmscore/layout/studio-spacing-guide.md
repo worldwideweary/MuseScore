@@ -1,5 +1,152 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.231 aggregate: ordinary start-repeat final-system spacing
+
+Resume the interrupted batch from saved v0.228-v0.230 commits; no accepted
+v0.227 work was lost or restarted. Apply the combined v0.228-v0.231 patch
+over user-applied v0.227 (195c96ec8), or its four ordered increments, never
+both. The first increment includes the intervening v0.227 acceptance note.
+
+The production delta is confined to spacingplan4.cpp: source repeat-barline
+overlap, header/thin-stroke spacing with native metric conversion, following-
+start-repeat width reconstruction, and bounded start-repeat admission using
+existing native typed barline producers. Native drawing/style serialization,
+repeat generation/playback, default OFF behavior and the collection guards
+remain unchanged. This does not complete repeat-aware candidate collection,
+changing-header/trailer preparation, or grace/centered-rest/cross-staff repeat
+boundary support.
+
+After recovery, rerun the focused checks: C++11 Debug/NDEBUG planner/test
+syntax with regenerated moc and unused-parameter/signedness checks; 655,360
+pinned repeat/header-distance comparisons plus 22,272 negative controls per
+mode; 409,600 source reconstruction comparisons per mode; and complete XML,
+durations, toggles, repeat flags and companion physical-gap equivalence.
+All pass. Packaging also checks whitespace and exact aggregate/individual/
+ordered-increment Git-tree replay. These are local model/syntax/package
+checks, not native mtest execution or rendered acceptance.
+
+Build once and run tst_spacing and tst_beam. The new eight repeat rows require
+FULL_PLAN finals, the retained reasoned candidate fallback, shared-stroke and
+measure-origin ownership, header bounds, fresh publication equivalence,
+offset undo/redo, first-load/OFF-ON stability and active malformed rejection.
+If any row fails, diagnose its output before visual acceptance.
+
+For the first visual pass use v0.230-repeat-barlines-fitting.mscx and
+v0.230-repeat-barlines-squeeze.mscx in 37E, and the corresponding -475 files
+in Studio. The reference companions match physical barline gaps; both styles
+save ON. Studio still skips the legacy saved measure stretch: set its squeeze
+measure Layout stretch to 3.00 after import. Review repeat/header clearance,
+R2-R3's shared thick stroke when on one system, R4's interior start, R5/R6's
+signature neighbors and automatic partitions. Fitting equality is not claimed
+in advance while repeat-aware collection retains its native fallback.
+The natural/justified matrix and reference scores are also included in source.
+
+## v0.230 WIP: repeat-boundary native matrix and matched visual controls
+
+Add natural, justified, automatic-fitting and stretch-3 squeeze fixtures.
+R1 starts at the system header, R2 ends a repeat, R3 follows that end with a
+start sharing the thick stroke, R4 starts after a non-repeat-ending measure,
+R5 combines key/meter changes and a repeat, and R6 adds an ordinary bass-clef
+change plus repeat end. Squeeze isolates the R5 header/start-repeat case.
+Both experimental styles save ON; there are no forced breaks or offsets.
+
+Each mode has a -475 companion with identical music/page/style input except
+three translated barline-gap values. Native endBarDistance .74 renders .37;
+native repeat-dot and double-bar gaps .37/.67 render .37. Studio uses .37
+directly for all three. This matches physical gaps without changing either
+application's renderer or raw style semantics. Open the companion in Studio,
+not the native-numbered score, and set Studio's squeeze Layout stretch to
+3.00 after import. Cue rhythmic settings are irrelevant to these normal notes.
+
+Eight native rows cover both beam modes, observing the first ON layout.
+Require FULL_PLAN final placement and the retained reasoned native candidate
+fallback, direct barline producer identities, exact shared-thick-stroke
+separation and preceding-measure width ownership, and independent natural
+header-to-repeat bounds from typed shape distances. Rebuild/select/preflight
+must match published layout; squeeze must actually exceed available natural
+width. Check first-layout/OFF-ON stability, repeat flags/counts, offset
+undo/redo, and active zero-width barline rejection without replacing sentinel
+output or writing native state. Native execution and visual acceptance remain
+pending; automatic fitting has no claimed source partition before comparison.
+
+Local regenerated-moc C++11 Debug/NDEBUG syntax passes. Extracted pinned
+repeat/header rules match 655,360 adapted-metric cases per mode, with 22,272
+ordinary-padding negative controls; source width reconstruction matches
+409,600 cases per mode including StartRepeatBarLine. XML checks establish
+complete durations and music-equivalent companion inputs with matching
+physical gaps. These models do not execute native score layout.
+
+## v0.229 WIP: bounded start-repeat segment admission
+
+Admit an active StartRepeatBarLine only at a flagged repeat-start measure's
+zero-duration tick-zero boundary. Require native START_REPEAT barline occupants,
+visible pitched staves, skyline participation, positive finite magnitude and
+positive layout-rectangle dimensions, with no attached barline decoration.
+Existing complete typed projection validates finite geometry. The native
+Segment barline producer already supplies every rectangle's barline identity;
+no new rectangle matching or persistent geometry ownership is introduced.
+
+For the repeat's measure and its preceding measure in the same system,
+retain fallback for grace-target, full-measure-rest centering, tremolo and
+cross-staff boundary combinations. Ordinary internal clefs/key/time and
+regular chord/rest geometry keep their existing adapters. Native generation
+still decides enabled end/start barlines, regenerated system headers and
+repeat playback. Repeat/changing-header/trailer candidate guards stay intact.
+This is final-system horizontal admission, not complete repeat collection.
+
+## v0.228 WIP: source start-repeat distance and boundary reconstruction
+
+Begin the next bounded segment-policy stage after the accepted v0.227 gate.
+Pinned horizontalspacing.cpp (573e19dcf63bb042499f1495f16f5c19d1003852)
+has three start-repeat rules absent from this planner: barline-to-repeat
+distance shares the thick stroke (begin barline returns zero); system-header
+spacing also applies to a start repeat and aligns its thin stroke; cross-
+measure widths use the following start-repeat origin rather than minRight.
+Port these before admitting the new segment type.
+
+Translate the header's end-bar gap to the existing native renderer's physical
+metric: barline.cpp draws endBarDistance * .5, while Studio's TDraw/barLineWidth
+use their style value directly. Do not subtract the unconverted legacy value
+or change native barline drawing/style semantics. The forthcoming paired
+fixtures must match physical end/dot gaps, not raw legacy style numbers.
+
+Start-repeat segments remain rejected until their boundary/occupant adapter
+is added. The candidate repeat/changing-header/trailer guards remain intact;
+this stage does not claim Studio repeat-aware collection, playback or volta
+behavior. No native writes, style or OFF-layout changes are introduced.
+
+## v0.227 native pass and fresh clef fitting/squeeze gate accepted
+
+On 2026-10-30 the user reports mtests passing after the v0.227 combined
+patch and supplies paired 37E/4.7.5 v0.226 fitting captures, 37E squeeze,
+and Studio squeeze at both Layout stretch 3.00 and imported default stretch.
+Use the 3.00 reference for acceptance; the default-stretch view remains a
+diagnostic of different inputs.
+
+The fresh fitting pair retains S1-S2 / S3-S4 / S5-S6. S3 now has generated
+alto clef, sharp key, then ordinary treble clef in both applications. S5 has
+bass, flat key, 3/4, then treble; S6 has key cancellation, 6/8, then bass.
+The earlier reordered output is not reproduced on these exact fresh controls.
+Do not infer that the cutout change established the cause of the older
+tick-zero discrepancy: that production change concerns internal clef geometry,
+while the stronger first-layout order and OFF/ON tests now pass natively.
+
+The matched squeeze has consistent four-quarter notehead cadence across the
+bass-clef change and closely corresponding clef placement and header-to-first-
+note allocation. The previous visibly enlarged middle interval is resolved
+in this fresh pair. Screen framing differs, so compare positions relative to
+staff/header landmarks rather than absolute screenshot coordinates. Fitting
+also has closely corresponding note/barline placement and clear signatures;
+small native glyph/spacing differences remain, without a pixel-identity claim.
+
+Accept the bounded v0.226 fitting/squeeze visual gate and user-reported native
+v0.227 pass, including first ON layout, physical signature order, S1 cadence,
+fitting partition, ownership, repeated layout and editing/undo/OFF-ON checks.
+Retain the accepted v0.217 breath/caesura gate. This does not add post-v0.227
+natural/justified screenshots or establish broader source parity, changing-
+header candidate support, TAB/percussion support or performance acceptance.
+No further code correction or new test patch is indicated by these captures.
+
 ## v0.227 aggregate: mid-clef cutouts and stronger first-load visual controls
 
 Apply the combined v0.224-v0.227 patch over user-applied v0.223 (6bbabc33f),

@@ -77,6 +77,8 @@ class TestSpacing : public QObject, public MTest {
       void slurRendererDirection4();
       void breathCaesuraPlanning4_data();
       void breathCaesuraPlanning4();
+      void repeatBarlinePlanning4_data();
+      void repeatBarlinePlanning4();
       void clefSignaturePlanning4_data();
       void clefSignaturePlanning4();
       void smallNotation4_data();
@@ -9272,6 +9274,205 @@ void TestSpacing::spacingDecisionCorpus4()
       QVERIFY(candidates >= finals);
       QCOMPARE(finals, int(systems.size()));
       QVERIFY(nextTick == score->lastMeasure()->endTick());
+      }
+
+void TestSpacing::repeatBarlinePlanning4_data()
+      {
+      QTest::addColumn<QString>("mode");
+      QTest::addColumn<bool>("beams");
+      for (const QString& mode : {QString("natural"), QString("justified"), QString("fitting"), QString("squeeze")})
+            for (bool beams : {false, true})
+                  QTest::newRow(qPrintable(mode + (beams ? "-studio" : "-legacy"))) << mode << beams;
+      }
+
+void TestSpacing::repeatBarlinePlanning4()
+      {
+      QFETCH(QString, mode);
+      QFETCH(bool, beams);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(new MasterScore(mscore->baseStyle()));
+      {
+      ScoreLoad loading;
+      QVERIFY(score->loadMsc(root + "/" + DIR + "v0.230-repeat-barlines-" + mode + ".mscx", false)
+            == Score::FileError::FILE_NO_ERROR);
+      }
+      score->setStyleValue(Sid::beamLayout4, beams);
+      QVERIFY(score->styleB(Sid::spacingLayout4));
+      if (mode == "squeeze") QCOMPARE(score->firstMeasure()->userStretch(), qreal(3));
+      const auto snapshot = [&]() {
+            auto values = graceMergedSnapshot4(score.get());
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  values.insert(values.end(), {qreal(m->repeatStart()), qreal(m->repeatEnd()), qreal(m->repeatCount())});
+                  for (const Segment& s : m->segments()) {
+                        if (!s.enabled() && (s.header() || s.trailer())) continue;
+                        for (const Element* item : s.elist()) if (item && item->isBarLine()) {
+                              const BarLine* barline = toBarLine(item);
+                              const QRectF r = barline->layoutRect();
+                              values.insert(values.end(), {qreal(static_cast<int>(barline->barLineType())),
+                                    barline->ipos().x(), barline->ipos().y(), barline->offset().x(), barline->offset().y(),
+                                    barline->mag(), r.x(), r.y(), r.width(), r.height()});
+                              }
+                        }
+                  }
+            return values;
+            };
+      const auto near = [](const std::vector<qreal>& a, const std::vector<qreal>& b) {
+            if (a.size() != b.size()) return false;
+            for (size_t i = 0; i < a.size(); ++i)
+                  if (!qIsFinite(a[i]) || !qIsFinite(b[i]) || qAbs(a[i] - b[i]) > 1e-6) return false;
+            return true;
+            };
+      std::vector<SpacingDecision4> events;
+      {
+      SpacingDecisionScope4 observer(score.get(), [&events](const SpacingDecision4& e) { events.push_back(e); });
+      score->doLayout();
+      }
+      int finals = 0, candidates = 0;
+      for (const auto& event : events) {
+            if (event.pass == SpacingPass4::FINAL) {
+                  ++finals;
+                  QVERIFY2(event.path == SpacingPath4::FULL_PLAN, qPrintable(event.reason));
+                  }
+            else {
+                  ++candidates;
+                  QVERIFY(event.path == SpacingPath4::NATIVE_WIDTHS);
+                  QVERIFY2(event.reason.contains("repeat"), qPrintable(event.reason));
+                  }
+            }
+      QVERIFY(finals > 0 && candidates > 0);
+      if (mode == "fitting") QVERIFY(finals > 1);
+      const auto modern = snapshot();
+      const SpacingPaddingTable4 table(score.get());
+      BarLine* edit = nullptr;
+      int starts = 0, joins = 0, headerChecks = 0;
+      QString reason;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            if (!m->repeatStart()) continue;
+            const Segment* start = m->findSegmentR(SegmentType::StartRepeatBarLine, Fraction(0, 1));
+            QVERIFY(start && start->enabled() && start->visible() && start->ticks().isZero());
+            QVERIFY(start->element(0) && start->element(0)->isBarLine());
+            BarLine* barline = toBarLine(start->element(0));
+            QCOMPARE(barline->barLineType(), BarLineType::START_REPEAT);
+            if (!edit) edit = barline;
+            ++starts;
+            SpacingShape4 projected;
+            QVERIFY(spacingCollisionProjection4(table, spacingStaffShape4(start, 0), score->spatium(), projected));
+            QVERIFY(projected.complete() && !projected.elements.empty());
+            for (const auto& part : projected.elements) QCOMPARE(part.item, static_cast<const Element*>(barline));
+            Measure* previous = m->prevMeasure();
+            if (previous && previous->system() == m->system() && previous->repeatEnd()) {
+                  const Segment* end = previous->findSegmentR(SegmentType::EndBarLine, previous->ticks());
+                  QVERIFY(end && end->enabled() && end->element(0) && end->element(0)->isBarLine());
+                  const BarLine* before = toBarLine(end->element(0));
+                  const qreal extent = before->layoutRect().right() + before->pos().x();
+                  const qreal expected = std::max(extent - score->styleP(Sid::endBarWidth), qreal(0));
+                  const qreal actual = m->x() + start->x() - previous->x() - end->x();
+                  QVERIFY2(qAbs(actual - expected) < 1e-6,
+                        qPrintable(QString("shared repeat stroke: actual=%1 expected=%2").arg(actual).arg(expected)));
+                  // The preceding measure ends at the start-repeat origin,
+                  // so its physical thick stroke may extend beyond its bbox.
+                  QVERIFY(qAbs(end->width() - actual) < 1e-6);
+                  ++joins;
+                  }
+            if (mode == "natural" && m == m->system()->firstMeasure()) {
+                  qreal expectedX = m->system()->leftMargin();
+                  for (const Segment& header : m->segments()) {
+                        if (&header == start) break;
+                        if (!header.enabled() || !header.visible() || header.allElementsInvisible()) continue;
+                        if (!(header.isHeaderClefType() || header.isKeySigType() || header.isTimeSigType())) continue;
+                        SpacingShape4 shape;
+                        QVERIFY(spacingCollisionProjection4(table, spacingStaffShape4(&header, 0), score->spatium(), shape));
+                        qreal right = 0, minLeft = -std::numeric_limits<qreal>::max(), distance = 0;
+                        for (const auto& part : shape.elements) right = std::max(right, part.rect.right());
+                        for (const auto& part : projected.elements) if (part.rect.height() != 0)
+                              minLeft = std::max(minLeft, -part.rect.left());
+                        QVERIFY(qIsFinite(minLeft));
+                        QVERIFY(spacingShapeDistance4(table, shape, projected, score->spatium(), 1, distance));
+                        const Sid gap = header.isTimeSigType() ? Sid::systemHeaderTimeSigDistance : Sid::systemHeaderDistance;
+                        distance = std::max(distance, std::max(right, right + score->styleP(gap)));
+                        distance -= score->styleP(Sid::endBarWidth) + .5 * score->styleP(Sid::endBarDistance);
+                        distance += std::max(qreal(0), 1.5 * score->spatium() - (distance - right - minLeft));
+                        expectedX = std::max(expectedX, m->x() + header.x() + distance);
+                        ++headerChecks;
+                        }
+                  QVERIFY(qAbs(m->x() + start->x() - expectedX) < 1e-6);
+                  }
+            }
+      QCOMPARE(starts, mode == "squeeze" ? 1 : 5);
+      QVERIFY(edit);
+      if (mode == "natural" || mode == "justified") QVERIFY(joins > 0);
+      if (mode == "natural") QVERIFY(headerChecks > 0);
+      for (System* system : score->systems()) {
+            if (system->vbox()) continue;
+            SpacingAttachmentPreparation4 owner;
+            QVERIFY2(snapshotLaidOutSystemSpacing4(system, owner, &reason), qPrintable(reason));
+            SpacingSystemRequest4 request;
+            request.pass = SpacingPass4::FINAL;
+            request.availableWidth = system->width();
+            request.fillLimit = score->styleD(Sid::lastSystemFillLimit);
+            request.next = system->lastMeasure()->next();
+            if (mode == "squeeze") {
+                  SpacingPlan4 natural;
+                  QVERIFY2(buildSpacingPlan4(system, natural, owner, &reason), qPrintable(reason));
+                  QVERIFY(natural.width > request.availableWidth);
+                  }
+            SpacingPlan4 plan;
+            QVERIFY2(selectSystemSpacingPlan4(system, request, owner, plan, &reason), qPrintable(reason));
+            QVERIFY2(spacingPlanPublicationValid4(system, plan, &reason), qPrintable(reason));
+            QVERIFY2(spacingPlanMatches4(plan, &reason), qPrintable(reason));
+            }
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto legacy = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      QVERIFY2(near(snapshot(), modern), "First repeat layout differs after OFF/ON warming");
+      if (mode == "natural" && beams) {
+            const QPointF offset = edit->offset();
+            score->startCmd();
+            edit->undoChangeProperty(Pid::OFFSET, offset + QPointF(.15 * score->spatium(), 0));
+            score->endCmd();
+            score->doLayout();
+            const auto edited = snapshot();
+            QVERIFY(!near(edited, modern));
+            score->undoRedo(true, nullptr);
+            score->doLayout();
+            QVERIFY(near(snapshot(), modern));
+            score->undoRedo(false, nullptr);
+            score->doLayout();
+            QVERIFY(near(snapshot(), edited));
+            score->undoRedo(true, nullptr);
+            score->doLayout();
+            const QRectF box = edit->bbox();
+            edit->setbbox(QRectF(box.x(), box.y(), 0, box.height()));
+            const auto invalid = snapshot();
+            const bool active = edit->segment()->enabled() && edit->segment()->visible()
+                  && !edit->segment()->allElementsInvisible(); // Barline types stay active even at zero width.
+            SpacingPlan4 rejected;
+            rejected.width = 123;
+            bool prepared = false, accepted = true;
+            {
+            SpacingAttachmentPreparation4 owner;
+            prepared = snapshotLaidOutSystemSpacing4(edit->measure()->system(), owner, &reason);
+            if (prepared) accepted = buildSpacingPlan4(edit->measure()->system(), rejected, owner, &reason);
+            }
+            const bool unchanged = near(snapshot(), invalid);
+            edit->setbbox(box);
+            QVERIFY2(active && prepared && !accepted,
+                  qPrintable(QString("active=%1 prepared=%2 accepted=%3 reason=%4").arg(active).arg(prepared).arg(accepted).arg(reason)));
+            QCOMPARE(reason, QString("Unadapted start-repeat glyph, staff, decoration or dimensions"));
+            QCOMPARE(rejected.width, qreal(123));
+            QVERIFY(rejected.segments.empty() && rejected.measures.empty() && unchanged);
+            }
+      score->doLayout();
+      QVERIFY(near(snapshot(), modern));
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      QVERIFY(near(snapshot(), legacy));
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      QVERIFY(near(snapshot(), modern));
+      QVERIFY(!score->graceQueryFactory4());
       }
 
 void TestSpacing::breathCaesuraPlanning4_data()

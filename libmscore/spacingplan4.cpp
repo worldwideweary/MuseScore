@@ -10,6 +10,7 @@
 #include "chord.h"
 #include "clef.h"
 #include "breath.h"
+#include "barline.h"
 #include "beam.h"
 #include "measure.h"
 #include "note.h"
@@ -128,7 +129,34 @@ bool leadingNonRhythmic4(const Segment* s)
 bool eligibleType4(const Segment* s)
 {
     return headerType4(s) || courtesyType4(s) || s->isClefType() || s->isBreathType() || s->isChordRestType()
-        || s->isEndBarLineType() || s->segmentType() == SegmentType::BeginBarLine;
+        || s->isEndBarLineType() || s->isStartRepeatBarLineType() || s->segmentType() == SegmentType::BeginBarLine;
+}
+
+// The new repeat boundary borrows finalized native barline geometry. Grace
+// targets, centered rests and cross-staff streams need their own boundary
+// preparation; do not widen those adapters through repeat admission.
+bool ordinaryRepeatBoundary4(const Measure* measure)
+{
+    const Measure* boundary[] = {measure->prevMeasure(), measure};
+    for (const Measure* m : boundary) {
+        if (!m || m->system() != measure->system()) continue;
+        for (const Segment& s : m->segments()) {
+            if (!s.isChordRestType()) continue;
+            for (const Element* item : s.elist()) {
+                if (!item) continue;
+                if (item->isRest()) {
+                    if (toRest(item)->isFullMeasureRest()) return false;
+                }
+                else if (item->isChord()) {
+                    const Chord* chord = toChord(item);
+                    if (chord->staffMove() || !chord->graceNotes().empty() || chord->tremolo()
+                        || (chord->beam() && chord->beam()->cross())) return false;
+                }
+                else return false;
+            }
+        }
+    }
+    return true;
 }
 
 struct CrossStaffGeometry4 {
@@ -492,9 +520,17 @@ bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, 
                qreal squeeze, qreal& result, const CrossStaffGeometry4& cross, const SpacingGraceContext4& graces,
                SpacingContextCache4& contextCache)
 {
+    // Studio minHorizontalDistance joins adjacent repeat barlines at the
+    // thick stroke. A systemic begin barline shares the repeat's origin.
+    if (a.segment->isType(SegmentType::BarLineType) && b.segment->isStartRepeatBarLineType()) {
+        result = a.segment->isBeginBarLineType() ? 0
+            : std::max(first.minRight - table.score()->styleP(Sid::endBarWidth), qreal(0));
+        return std::isfinite(result);
+    }
     qreal distance = 0;
     const bool header = headerType4(a.segment) && a.segment->rtick().isZero()
-        && b.segment->measure() == firstMeasure && b.segment->isChordRestType();
+        && b.segment->measure() == firstMeasure
+        && (b.segment->isChordRestType() || b.segment->isStartRepeatBarLineType());
     for (size_t st = 0; st < first.staff.size(); ++st) {
         qreal sp = a.segment->spatium();
         for (const SpacingShapeElement4& e : first.staff[st].elements) {
@@ -514,6 +550,11 @@ bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, 
         distance = std::max(distance, first.minRight);
         const qreal gap = score->styleP(a.segment->isTimeSigType() ? Sid::systemHeaderTimeSigDistance : Sid::systemHeaderDistance);
         distance = std::max(distance, first.minRight + gap * squeeze);
+        if (b.segment->isStartRepeatBarLineType()) {
+            // Studio measures this gap edge-to-edge. Evolution's native
+            // barline renderer uses half its stored endBarDistance value.
+            distance -= score->styleP(Sid::endBarWidth) + .5 * score->styleP(Sid::endBarDistance);
+        }
         const qreal actual = distance - first.minRight - second.minLeft;
         distance += std::max(qreal(0), 1.5 * a.segment->spatium() * squeeze - actual);
     }
@@ -805,6 +846,10 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                 if (segment.isBreathType() && (!segment.ticks().isZero() || segment.rtick() <= Fraction(0, 1)
                                                || segment.rtick() > measure->ticks()))
                     return fail("Breath spacing requires a zero-duration internal or end boundary");
+                if (segment.isStartRepeatBarLineType()
+                    && (!measure->repeatStart() || !segment.rtick().isZero() || !segment.ticks().isZero()
+                        || !ordinaryRepeatBoundary4(measure)))
+                    return fail("Start-repeat spacing requires an ordinary zero-duration boundary");
                 for (const Element* annotation : segment.annotations()) {
                     if (!annotation)
                         continue;
@@ -813,6 +858,16 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                         return fail("Annotations require a later adapter");
                 }
                 for (const Element* item : segment.elist()) {
+                    if (item && segment.isStartRepeatBarLineType()) {
+                        if (!item->isBarLine()) return fail("Unexpected start-repeat item");
+                        const BarLine* barline = toBarLine(item);
+                        if (barline->barLineType() != BarLineType::START_REPEAT
+                            || !barline->staff() || !barline->staff()->isPitchedStaff(barline->tick())
+                            || !barline->visible() || !barline->addToSkyline() || !barline->el()->empty()
+                            || !(barline->mag() > 0) || !std::isfinite(barline->mag())
+                            || !(barline->layoutRect().width() > 0) || !(barline->layoutRect().height() > 0))
+                            return fail("Unadapted start-repeat glyph, staff, decoration or dimensions");
+                    }
                     if (item && segment.isBreathType()) {
                         if (!item->isBreath()) return fail("Unexpected breath-segment item");
                         const Breath* breath = toBreath(item);
@@ -991,7 +1046,8 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
             SpacingSegmentPlan4& following = plan.segments[next];
             const bool sameMeasure = current.segment->measure() == following.segment->measure();
             const bool leadingHeader = leadingNonRhythmic4(following.segment) && !current.segment->isType(SegmentType::BarLineType);
-            current.width = sameMeasure || leadingHeader ? following.x - current.x : geometry[i].minRight;
+            current.width = sameMeasure || following.segment->isStartRepeatBarLineType() || leadingHeader
+                ? following.x - current.x : geometry[i].minRight;
             if (!sameMeasure) {
                 plan.measures[mi].width = current.x + current.width - plan.measures[mi].x;
                 plan.measures[measureIndex[following.segment->measure()]].x = current.x + current.width;
