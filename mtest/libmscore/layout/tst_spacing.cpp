@@ -9519,12 +9519,17 @@ void TestSpacing::clefSignaturePlanning4()
       {
       QFETCH(QString, mode);
       QFETCH(bool, beams);
-      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.213-clef-signatures-" + mode + ".mscx"));
-      QVERIFY(score);
       QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(new MasterScore(mscore->baseStyle()));
+      {
+      ScoreLoad loading;
+      const QString version = mode == "fitting" || mode == "squeeze" ? "v0.226" : "v0.213";
+      QVERIFY(score->loadMsc(root + "/" + DIR + version + "-clef-signatures-" + mode + ".mscx", false)
+            == Score::FileError::FILE_NO_ERROR);
+      }
       score->setStyleValue(Sid::beamLayout4, beams);
-      score->setStyleValue(Sid::spacingLayout4, false);
-      score->doLayout();
+      QVERIFY(score->styleB(Sid::spacingLayout4));
+      if (mode == "squeeze") QCOMPARE(score->firstMeasure()->userStretch(), qreal(3));
       const auto snapshot = [&]() {
             auto values = graceMergedSnapshot4(score.get());
             for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
@@ -9544,6 +9549,58 @@ void TestSpacing::clefSignaturePlanning4()
                   if (!qIsFinite(a[i]) || !qIsFinite(b[i]) || qAbs(a[i] - b[i]) > 1e-6) return false;
             return true;
             };
+      // Check physical signature order on the first layout too. Warming the
+      // header/shape caches with a legacy layout must not be a prerequisite.
+      QString signatureFailure;
+      const auto orderedSignatures = [&]() {
+            const auto fail = [&](const QString& message) { signatureFailure = message; return false; };
+            int initialChanges = 0;
+            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+                  qreal right = -std::numeric_limits<qreal>::max();
+                  int rank = -1;
+                  for (const Segment& s : m->segments()) {
+                        if (!s.enabled() || !s.visible() || !s.rtick().isZero()) continue;
+                        const int current = s.isHeaderClefType() ? 0 : s.isKeySigType() ? 1
+                              : s.isTimeSigType() ? 2 : s.isClefType() ? 3 : -1;
+                        if (current < 0) continue;
+                        const Element* item = s.element(0);
+                        if (!item || !item->visible() || item->bbox().isEmpty()) continue;
+                        if (current <= rank) return fail(QString("measure=%1 signature rank=%2 after %3")
+                              .arg(m->no() + 1).arg(current).arg(rank));
+                        const qreal left = item->pagePos().x() + item->bbox().left();
+                        if (!qIsFinite(left) || left < right - 1e-6)
+                              return fail(QString("measure=%1 %2 left=%3 preceding right=%4 (sp)")
+                                    .arg(m->no() + 1).arg(item->name()).arg(left / score->spatium()).arg(right / score->spatium()));
+                        right = item->pagePos().x() + item->bbox().right();
+                        rank = current;
+                        initialChanges += s.isClefType();
+                        }
+                  const Segment* cr = m->first(SegmentType::ChordRest);
+                  if (!cr || !cr->element(0) || !cr->element(0)->isChord()) return fail("Missing first chord");
+                  const Note* note = toChord(cr->element(0))->upNote();
+                  if (note->pagePos().x() + note->bbox().left() < right - 1e-6)
+                        return fail(QString("measure=%1 first note overlaps its initial signatures").arg(m->no() + 1));
+                  }
+            if (initialChanges != (mode == "squeeze" ? 0 : 3))
+                  return fail(QString("Unexpected count of initial ordinary clefs: %1").arg(initialChanges));
+            return true;
+            };
+      std::vector<SpacingDecision4> firstEvents;
+      {
+      SpacingDecisionScope4 observer(score.get(), [&firstEvents](const SpacingDecision4& e) { firstEvents.push_back(e); });
+      score->doLayout();
+      }
+      int firstFinals = 0;
+      for (const auto& e : firstEvents) if (e.pass == SpacingPass4::FINAL) {
+            ++firstFinals;
+            QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable("first layout: " + e.reason));
+            }
+      QVERIFY(firstFinals > 0);
+      const bool firstOrdered = orderedSignatures();
+      QVERIFY2(firstOrdered, qPrintable("first layout: " + signatureFailure));
+      const auto firstLayout = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
       const auto legacy = snapshot();
       score->setStyleValue(Sid::spacingLayout4, true);
       std::vector<SpacingDecision4> events;
@@ -9560,7 +9617,19 @@ void TestSpacing::clefSignaturePlanning4()
             else if (e.path != SpacingPath4::FULL_PLAN) QVERIFY(!e.reason.isEmpty());
             }
       QVERIFY(finals > 0);
+      if (mode == "fitting") {
+            QCOMPARE(finals, 3);
+            for (const System* system : score->systems()) {
+                  if (system->vbox()) continue;
+                  int measures = 0;
+                  for (const MeasureBase* mb : system->measures()) measures += mb->isMeasure();
+                  QCOMPARE(measures, 2); // Pinned S1-S2 / S3-S4 / S5-S6 reference.
+                  }
+            }
       const auto modern = snapshot();
+      const bool modernOrdered = orderedSignatures();
+      QVERIFY2(modernOrdered, qPrintable("relayout: " + signatureFailure));
+      QVERIFY2(near(firstLayout, modern), "First layout differs from the OFF/ON-warmed layout");
       QString reason;
       Clef* edit = nullptr;
       const SpacingPaddingTable4 table(score.get());
@@ -9572,6 +9641,8 @@ void TestSpacing::clefSignaturePlanning4()
                   Clef* clef = toClef(e);
                   if (!edit) edit = clef;
                   ++midClefs;
+                  QVERIFY(clef->shape().size() > 1); // Leland's G/F/C cutout anchors.
+                  QVERIFY(qAbs(clef->ipos().x() + clef->shape().right()) < 1e-6);
                   const SpacingShape4 shape = spacingStaffShape4(&s, 0);
                   QVERIFY(shape.complete() && !shape.elements.empty());
                   for (const auto& item : shape.elements) QCOMPARE(item.item, static_cast<const Element*>(clef));
@@ -9585,6 +9656,52 @@ void TestSpacing::clefSignaturePlanning4()
                   QVERIFY(policy.kerning == SpacingKerning4::RIGHT_EDGE);
                   }
       QVERIFY(midClefs > 0 && edit);
+      // Pin printed cadence independently of plan/publication agreement.
+      // The squeeze's four quarters have room for equal intervals in Studio;
+      // natural/justified/fitting intervals may instead bind at the clef's
+      // measured collision floor, using its native cutout producer geometry.
+      int cadenceChecks = 0, measureIndex = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure(), ++measureIndex) {
+            if (measureIndex != 0) continue; // S1 is the matched four-quarter control.
+            std::vector<const Note*> notes;
+            std::vector<qreal> centers;
+            const Segment* mark = nullptr;
+            for (const Segment& s : m->segments()) {
+                  if (s.isClefType() && !s.rtick().isZero()) mark = &s;
+                  if (!s.isChordRestType() || !s.element(0) || !s.element(0)->isChord()) continue;
+                  const Note* note = toChord(s.element(0))->upNote();
+                  notes.push_back(note);
+                  centers.push_back(note->pagePos().x() + note->bbox().center().x());
+                  }
+            QCOMPARE(notes.size(), size_t(4));
+            QVERIFY(mark);
+            const qreal clean = centers[1] - centers[0];
+            QVERIFY(qIsFinite(clean) && clean > 0);
+            qreal marked = clean;
+            if (mode != "squeeze") {
+                  const qreal sp = score->spatium();
+                  SpacingShape4 before, glyph, after;
+                  QVERIFY(spacingCollisionProjection4(table, spacingStaffShape4(notes[1]->chord()->segment(), 0), sp, before));
+                  QVERIFY(spacingCollisionProjection4(table, spacingStaffShape4(mark, 0), sp, glyph));
+                  QVERIFY(spacingCollisionProjection4(table, spacingStaffShape4(notes[2]->chord()->segment(), 0), sp, after));
+                  qreal left = 0, right = 0;
+                  QVERIFY(spacingShapeDistance4(table, before, glyph, sp, 1, left));
+                  QVERIFY(spacingShapeDistance4(table, glyph, after, sp, 1, right));
+                  const qreal a = notes[1]->chord()->x() + notes[1]->x() + notes[1]->bbox().center().x();
+                  const qreal b = notes[2]->chord()->x() + notes[2]->x() + notes[2]->bbox().center().x();
+                  marked = std::max(clean, left + right + b - a);
+                  }
+            for (size_t i = 2; i < centers.size(); ++i) {
+                  const qreal interval = centers[i] - centers[i - 1];
+                  const qreal expected = i == 2 ? marked : clean;
+                  QVERIFY2(qIsFinite(interval) && qAbs(interval - expected) < .03 * score->spatium(),
+                        qPrintable(QString("clef measure=%1 interval=%2 expected=%3 clean=%4 (sp)")
+                              .arg(measureIndex + 1).arg(interval / score->spatium())
+                              .arg(expected / score->spatium()).arg(clean / score->spatium())));
+                  }
+            ++cadenceChecks;
+            }
+      QCOMPARE(cadenceChecks, 1);
       for (System* system : score->systems()) {
             if (system->vbox()) continue;
             SpacingAttachmentPreparation4 owner;

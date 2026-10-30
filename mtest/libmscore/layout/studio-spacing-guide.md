@@ -1,5 +1,159 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.227 aggregate: mid-clef cutouts and stronger first-load visual controls
+
+Apply the combined v0.224-v0.227 patch over user-applied v0.223 (6bbabc33f),
+or the four ordered increments, never both. The first increment also carries
+the intervening breath acceptance and clef follow-up notes. The production
+change is limited to Clef::shape and its internal pitched-clef alignment;
+the planner, fallback policy, saved styles and legacy spacing are unchanged.
+Unattached clefs without a score retain the native shape as well.
+
+Local checks pass: extracted pinned cutout construction in Debug/NDEBUG
+(16,384 rectangle cases and 98,304 guard cases per mode), the existing
+16,384-case aligned-segment model plus ignored-identity and spring controls,
+and regenerated-moc C++11 Debug/NDEBUG syntax for clef, geometry producer,
+planner and tst_spacing with unused-parameter/signedness checks. Fresh score
+XML is byte-equivalent in parsed content to v0.213 after restoring title
+version. Whitespace and exact combined/ordered patch-tree replay are checked
+at packaging. None of these checks is native mtest execution or GUI rendering.
+
+Build once and run the usual beam/spacing pair. The clef rows now observe the
+first ON layout before OFF/ON warming and check actual printed signature
+order and S1 cadence. A failure is actionable: supply its XML diagnostics
+before treating any of these visual cases as accepted. The header-order
+cause remains unconfirmed; this aggregate does not claim a proven correction
+for it or conceal it behind a relaxed assertion/native fallback.
+
+After native tests pass, compare the fresh v0.226 fitting/squeeze pair with
+4.7.5. Both toggles save ON; check saved measure stretch 3.00 in 37E and set
+Studio's measure stretch to 3.00 after import. Review S3/S5 initial order,
+S6 key/time/clef order, S1's equal squeeze cadence and header-to-first-note
+allocation. Reuse v0.217 for a breath sanity check; its prior acceptance is
+retained, while the clef visual gate remains open until new evidence arrives.
+
+## v0.226 WIP: fresh clef fitting/squeeze comparison pair
+
+Add v0.226-clef-signatures-fitting.mscx and
+v0.226-clef-signatures-squeeze.mscx. Their music, style, page dimensions,
+automatic breaks and saved stretch are identical to v0.213; only the title
+version changes. Both experimental styles save ON. Fresh filenames identify
+the exact test input without reusing an open or modified v0.213 GUI buffer.
+The existing native rows now use this pair for fitting/squeeze, retain v0.213
+natural/justified, and also pin the three two-measure fitting systems.
+
+Open this fresh pair in both applications after the native tests. For the
+Studio squeeze, set Measure properties / Layout stretch to 3.00 after import;
+37E must show the saved 3.00. Compare S3 and S5 system-start signature order,
+S6 key/time/clef order, and S1's four notehead intervals and header allocation.
+Keep the paired screenshots at matching staff size. No forced breaks,
+position overrides, style tuning or score-content workaround is introduced.
+
+## v0.225 WIP: independent clef order, first-layout and cadence checks
+
+Reuse the existing eight clefSignaturePlanning4 rows and one import per row.
+Load the score without MTest::readScore's implicit layout, then observe its
+first layout with spacing ON and the requested beam mode. Require FULL_PLAN,
+physical nonoverlapping header-clef/key/time/ordinary-clef/note order at tick
+zero, all three expected initial ordinary changes, and agreement with the
+later OFF/ON-warmed layout. Failure diagnostics identify the measure, item,
+and printed extent; a passing publication self-check alone is insufficient.
+
+For S1's four quarters, check printed notehead cadence and the measured
+native typed collision floor in normal layouts. The matched stretch-3 squeeze
+must retain equal note intervals. Pin the imported 37E measure stretch at 3
+and verify native Leland mid-clef cutout primitives and shape-right alignment.
+Existing ownership, offsets/undo/redo, repeated layout, OFF/ON and fresh-plan
+checks remain. No extra score import or unrelated new test suite is added.
+
+This closes a test-coverage gap, not the visual gate. Native execution remains
+pending. In particular, the fitting screenshot's reordered signatures are
+not explained merely by the mid-clef cutout omission: tick-zero clefs still
+use bbox shapes, and plan reconstruction preserves native segment order.
+The first-layout checks must establish whether the reported output occurs
+on these exact saved inputs before claiming a header-order correction.
+
+## v0.224 WIP: source mid-clef cutout geometry
+
+Port the pinned TLayout::layoutClef cutout-shape input for internal pitched
+clefs, plus its shape-right alignment. Clef::shape emits the font-anchor
+rectangles at native item production, so native shapes/typed captures share
+one producer and preserve exact clef identities. Header and palette clefs,
+TAB/percussion, fonts without cutouts, and spacing OFF keep the bounding-box
+shape. No score/style serialization, user offset, undo or beam change.
+
+Pinned engravingfont.cpp blob 594480e80239ce537186c9066a882726423c029c:
+constructShapeWithCutouts supplies missing anchors from the bbox and builds
+up to six normalized rectangles, including the two center-fill cases. Use
+Evolution's existing scaled SMuFL anchor accessors, with no new font cache.
+The previously documented mid-clef contour omission is addressed here.
+
+Local extracted C++ comparisons pass 16,384 anchor-mask/bbox/magnitude cases
+and 98,304 OFF/header/staff/palette guards per Debug/NDEBUG mode. C++11 clef
+syntax passes in both modes. These checks do not run native layout or prove
+that cutouts alone explain the reported squeeze/header differences. The
+clef gate remains open while first-layout and independent visual regressions
+are added; retain the accepted v0.217 result.
+
+## v0.223 clef follow-up: fitting header order and squeeze cadence remain open
+
+On 2026-10-30 the user supplies post-v0.223 37E fitting/squeeze captures,
+paired Studio 4.7.5 fitting, and Studio squeeze at both Layout stretch 3.00
+and its imported default. Use the 3.00 reference: the 3.02 fixture's saved
+measure stretch is read by 37E but skipped by Studio's pre-4.0 importer.
+The default-stretch reference is diagnostic only, not a matched gate input.
+
+Automatic fitting still gives S1-S2 / S3-S4 / S5-S6, but this is not enough
+to accept the clef consumer of the new right-alignment pass. At S3's system
+start, 37E shows the generated alto clef, then the ordinary treble change,
+then the sharp key. Studio shows alto, sharp key, then treble. At S5, 37E
+shows bass, treble, flat key, then 3/4; Studio shows bass, flat key, 3/4,
+then treble. The corresponding earlier 37E captures had the reference order,
+so treat the new order as a post-v0.223 regression requiring investigation.
+S6's initial bass-clef/key/time sequence also differs from the reference.
+
+The matched stretch-3 squeeze is also not accepted: 37E retains a visibly
+wider second-to-third-note interval across the ordinary bass-clef change,
+while Studio's four noteheads have a more even cadence. Header-to-first-note
+allocation differs too. Do not dismiss this as screen framing or accept the
+default-stretch reference because it looks closer in one part of the system.
+
+Retain the accepted bounded v0.217 breath/caesura result and the user-reported
+native pass. Reopen the shared pass's clef visual gate. Next correction must
+audit tick-zero ordinary-clef placement around generated headers/key/time
+segments and mid-clef spring compensation against the pinned source. The
+observed output differences are established; their exact code cause is not
+yet established. Existing mtests have not caught these visual discrepancies;
+add independent ordering/cadence coverage with the eventual correction.
+This checkpoint changes documentation only, without a new patch or native run.
+
+## v0.223 native pass and breath/caesura optical gate accepted
+
+On 2026-10-30 the user reports the mtests passing after the v0.223 combined
+patch and supplies four updated 37E v0.217 captures. Compare them against the
+previous pinned 4.7.5 natural/justified/fitting references and the corrected
+stretch-3 squeeze reference. This now checks the previously missed optical
+interval behavior, not just noncollision or plan/publication self-consistency.
+
+B1/B3 justified note cadence and mark placement closely align with 4.7.5;
+the extra mark-spanning rhythmic gap seen before v0.223 is resolved in these
+views. Natural layout retains the genuine clearance floor for a wide caesura
+and agrees closely with the reference's corresponding interval distribution.
+B2's beamed tick, B5's upper/lower voice marks, B4's terminal mark/barline gap
+and B6's rest/Salzedo neighbors remain clear. Automatic fitting still retains
+B1-B3 / B4-B6. Stretch-3 squeeze has consistent note cadence and clear
+accidental/caesura placement close to the matched reference. Screen framing
+and rasterization differ; this is not a pixel-identity claim.
+
+Accept the bounded v0.217 breath/caesura optical matrix for v0.220-v0.223,
+together with the user-reported native pass including the stronger interval
+regressions. No further correction or new patch is indicated by these views.
+The pass also changes ordinary mid-clefs: updated v0.213 visual controls have
+not been supplied after v0.223. Keep a fitting/squeeze spot-check of those
+clef/signature scores pending before extending this optical acceptance to
+that shared consumer. The existing native clef/signature matrix is covered by
+the reported mtest pass. Other admission/performance/vertical limits remain.
+
 ## v0.223 aggregate correction: right-aligned marks preserve note cadence
 
 Apply the v0.220-v0.223 combined patch over user-applied v0.219 (4dbd31d3c),
