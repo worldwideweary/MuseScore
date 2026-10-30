@@ -3953,6 +3953,8 @@ bool  MStyle::readProperties460(XmlReader& e, int mscVersion)
             }
       else if (tag == "pedalPosition")                              // Mu4.6+ only, let's skip
             e.skipCurrentElement();
+      //else if (tag == "harmonyHarmonyDistance")                     // Mu4.6.3+ only, let's skip
+      //      e.skipCurrentElement();
       //else if (tag == "chordSymbolAAlign")                        // left,baseline -> center,baseline ToDo/Let's pass
       //      return false;
       //else if (tag == "chordSymbolBAlign")                        // left,baseline -> center,baseline ToDo/Let's pass
@@ -4002,7 +4004,20 @@ bool  MStyle::readProperties460(XmlReader& e, int mscVersion)
                   set(Sid::useFrenchNoteNames, chordSymbolSpelling == "french");
                   }
             }
-      else if (tag == "chordStackedModiferMag") // typo in early Studio 4.6-dev
+      // backported:
+      // else if (tag == "verticallyStackModifiers"
+      //       || tag == "chordStackedModiferMag"                     // typo in early Mu4.6-dev
+      //       || tag == "chordStackedModifierMag"
+      //       || tag == "chordBassNoteStagger"
+      //       || tag == "chordBassNoteScale"
+      //       || tag == "polychordDividerThickness"
+      //       || tag == "polychordDividerSpacing"
+      //       || tag == "verticallyAlignChordSymbols"
+      //       || tag == "chordSymPosition"
+      //       || tag == "chordAlignmentToFretboard"
+      //       || tag == "chordAlignmentExcludeModifiers")             // Mu4.6+ only, let's skip
+      //       e.skipCurrentElement();
+      else if (tag == "chordStackedModiferMag")                        // typo in early Mu4.6-dev
             set(Sid::chordStackedModifierMag, e.readDouble());
       else if (tag == "angleHangingSlursAwayFromStaff")             // Mu4.6+ only, let's skip
             e.skipCurrentElement();
@@ -4270,6 +4285,9 @@ bool  MStyle::readProperties470(XmlReader& e, int mscVersion)
             e.skipCurrentElement();
       else if (tag == "defaultsVersion")                            // 4mm -> 4nn, let's skip, i.e. reset to Mu3's 302
             e.skipCurrentElement();
+      // backported:
+      // else if (tag == "harmonyParenUseSmuflSym")                    // Mu4.7+ only, let's skip
+      //       e.skipCurrentElement();
       else if (tag.endsWith("BeginLineArrowHeight")                 // Mu4.7+ only, let's skip
             || tag.endsWith("BeginLineArrowWidth")                  // Mu4.7+ only, let's skip
             || tag.endsWith("EndLineArrowHeight")                   // Mu4.7+ only, let's skip
