@@ -65,6 +65,7 @@ static Shape producedElementShape4(const Element* item, SpacingShape4& items)
     case ElementType::TIMESIG:
     case ElementType::BAR_LINE:
     case ElementType::ARPEGGIO:
+    case ElementType::BREATH:
         owner = item;
         break;
     default:

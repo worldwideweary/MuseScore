@@ -9,6 +9,7 @@
 #include "gracespacing4.h"
 #include "chord.h"
 #include "clef.h"
+#include "breath.h"
 #include "beam.h"
 #include "measure.h"
 #include "note.h"
@@ -108,7 +109,7 @@ bool leadingNonRhythmic4(const Segment* s)
 
 bool eligibleType4(const Segment* s)
 {
-    return headerType4(s) || courtesyType4(s) || s->isClefType() || s->isChordRestType()
+    return headerType4(s) || courtesyType4(s) || s->isClefType() || s->isBreathType() || s->isChordRestType()
         || s->isEndBarLineType() || s->segmentType() == SegmentType::BeginBarLine;
 }
 
@@ -738,6 +739,9 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                     || segment.extraLeadingSpace().val() != 0
                     || (segment.spacingWidthOffset4() != 0 && !cross.pairs.count(&segment)))
                     return fail("Unadapted segment type, trailer, manual space or cross-beam offset");
+                if (segment.isBreathType() && (!segment.ticks().isZero() || segment.rtick() <= Fraction(0, 1)
+                                               || segment.rtick() > measure->ticks()))
+                    return fail("Breath spacing requires a zero-duration internal or end boundary");
                 for (const Element* annotation : segment.annotations()) {
                     if (!annotation)
                         continue;
@@ -746,6 +750,17 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                         return fail("Annotations require a later adapter");
                 }
                 for (const Element* item : segment.elist()) {
+                    if (item && segment.isBreathType()) {
+                        if (!item->isBreath()) return fail("Unexpected breath-segment item");
+                        const Breath* breath = toBreath(item);
+                        const bool known = std::any_of(Breath::breathList.begin(), Breath::breathList.end(),
+                            [breath](const BreathType& type) { return type.id == breath->symId(); });
+                        if (!known || !breath->staff() || !breath->staff()->isPitchedStaff(breath->tick())
+                            || !breath->visible() || !breath->addToSkyline()
+                            || !(breath->mag() > 0) || !std::isfinite(breath->mag())
+                            || !(breath->bbox().width() > 0) || !(breath->bbox().height() > 0))
+                            return fail("Unadapted breath glyph, staff, visibility or dimensions");
+                    }
                     if (item && segment.isClefType()) {
                         if (!item->isClef()) return fail("Unexpected clef-segment item");
                         const Clef* clef = toClef(item);

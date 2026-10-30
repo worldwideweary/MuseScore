@@ -31,9 +31,10 @@ static int paddingIndex4(ElementType type)
     static const ElementType types[] = {
         ElementType::NOTE, ElementType::LEDGER_LINE, ElementType::HOOK, ElementType::NOTEDOT,
         ElementType::REST, ElementType::CLEF, ElementType::BAR_LINE, ElementType::KEYSIG,
-        ElementType::TIMESIG, ElementType::ARPEGGIO, ElementType::ACCIDENTAL, ElementType::STEM
+        ElementType::TIMESIG, ElementType::ARPEGGIO, ElementType::ACCIDENTAL, ElementType::STEM,
+        ElementType::BREATH
     };
-    for (int i = 0; i < 12; ++i) {
+    for (int i = 0; i < 13; ++i) {
         if (types[i] == type)
             return i;
     }
@@ -52,7 +53,7 @@ SpacingPaddingTable4::SpacingPaddingTable4(const Score* score) : _score(score)
     const qreal ledgerPad = 0.25 * spatium;
     const qreal ledgerLength = score->styleP(Sid::ledgerLineLength);
     auto cell = [&](ElementType a, ElementType b) -> qreal& { return _padding[paddingIndex4(a)][paddingIndex4(b)]; };
-    // Studio v4.7.5 PaddingTable::createTable, restricted to these 12 types.
+    // Studio v4.7.5 PaddingTable::createTable, restricted to these 13 types.
     cell(ElementType::NOTE, ElementType::NOTE) = minPadUnit;
     cell(ElementType::NOTE, ElementType::LEDGER_LINE) = 0.35 * spatium;
     cell(ElementType::NOTE, ElementType::ACCIDENTAL)
@@ -162,6 +163,11 @@ SpacingPaddingTable4::SpacingPaddingTable4(const Score* score) : _score(score)
 
     cell(ElementType::ACCIDENTAL, ElementType::NOTE) = score->styleP(Sid::accidentalNoteDistance);
     cell(ElementType::ACCIDENTAL, ElementType::LEDGER_LINE) = 0.18 * spatium;
+
+    // Studio initializes breath row/column before copying note cells to stems.
+    _padding[paddingIndex4(ElementType::BREATH)].fill(spatium);
+    for (auto& row : _padding)
+        row[paddingIndex4(ElementType::BREATH)] = spatium;
 
     // Preserve the upstream ordering: copy note row, then note column,
     // then apply stem-specific overrides.
@@ -479,7 +485,7 @@ static bool commonItemContext4(const Element* item, bool allowGrace,
 
 static bool sameVoiceLimited4(const Element* item)
 {
-    return item->isNote() || item->isNoteDot() || item->isRest() || item->isStem();
+    return item->isNote() || item->isNoteDot() || item->isRest() || item->isStem() || item->isBreath();
 }
 
 static bool neverKernable4(const Element* item)

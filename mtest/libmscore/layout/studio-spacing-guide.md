@@ -1,5 +1,109 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.218 combined deferred gate: clefs/signatures plus breaths/caesuras
+
+At the user's request, test v0.211-v0.214 and v0.215-v0.218 together. Neither
+batch has native or visual acceptance yet. WIP commits v0.215 source padding/
+ownership, v0.216 native alignment/admission and v0.217 the regression matrix
+remain independently recoverable. No result is inferred from the deferred gate.
+
+Two mutually exclusive aggregate patch routes are supplied:
+
+- Full v0.211-v0.218 combined patch over user-applied v0.210 (c5c7d26a8).
+- If v0.214 (479e19aa2) is already applied, v0.215-v0.218 combined patch only,
+  or its four ordered incremental checkpoints. Do not apply both aggregate
+  routes, or an aggregate and the same increments.
+
+Pinned 4.7.5 references: horizontalspacing.cpp
+573e19dcf63bb042499f1495f16f5c19d1003852; paddingtable.cpp
+c308af1c64a903e51c9c4b01a5a27696f12211b2; tlayout.cpp
+4bca2f6242674face49d1da47a00cb64ea841431 (layoutBreath). Native breath glyph
+bounding boxes and vertical placement are retained. The style-ON pitched-staff
+glyph-right alignment, 1sp padding row/column and same-track kerning restriction
+come from those source rules. Pause/playback code and manual offsets are not
+reinterpreted. Unsupported staff families keep native breath alignment.
+
+The earlier mid-clef cutout-contour limitation, candidate changing-header
+fallback, centered-rest boundary guard and other unsupported contexts remain.
+This batch does not complete header collection, add TAB/percussion planning,
+change general stem/slur or vertical-rest placement, or optimize performance.
+
+Local verification passes: C++11 Debug/NDEBUG syntax for all changed production
+files and regenerated-moc tst_spacing; 43,264 pinned-source padding cells plus
+36,864 prior-cell preservation comparisons and 13 kerning-set comparisons per
+mode; XML duration/boundary/setting validation; whitespace checks; exact
+incremental and aggregate Git-tree replay. Local mock/syntax evidence does not
+substitute for the native run below.
+
+Build once with the final patch set, then run the existing pair once:
+
+```sh
+ctest -j1 --output-on-failure -R '^(tst_spacing|tst_beam)$'
+```
+
+That run includes eight clef/signature rows and eight breath/caesura rows under
+both beam styles. If either fails, retain result.xml/LastTest.log and stop the
+visual gate until diagnosed. After both pass, compare the existing four v0.213
+clef/signature scores and the new four v0.217 breath/caesura scores against
+4.7.5. Review internal and barline clearance, each B5 voice's mark, B6 rest
+neighbors, squeeze clearances and automatic partitions. Both styles are saved
+ON; these scores have no cue-size rhythm dependency. Record differences without
+claiming complete parity across the retained fallback boundaries.
+
+## v0.217 WIP: breath/caesura regression and visual matrix
+
+Add four v0.217-breath-caesura fixtures with both experimental styles ON and
+automatic breaks. B1 comma, B2 tick beside beamed eighths, B3 caesura, B4 a
+barline caesura, B5 separate upper/lower voice marks and B6 rests/Salzedo cover
+ordinary internal and terminal boundaries. Squeeze uses B3 with measure
+stretch 3; its native test requires a natural plan wider than the system.
+
+Eight native rows cover both beam styles. Require planned candidate/final
+decisions, direct ownership for every mark including both voices, source
+right alignment and same/different-voice kerning, and fresh-plan/publication
+agreement. Repeat layout and restore OFF/ON. The natural Studio-beam row also
+checks pause-value independence, actual offset undo/redo and atomic rejection
+of a zero-width breath while preserving output and current score fields.
+Restore malformed geometry before any assertion can exit. Alignment is
+restricted to pitched staves; other staff families retain native x=0.
+
+Local C++11 Debug/NDEBUG syntax passes for all changed production sources and
+the regenerated-moc test. Extracted complete pinned padding-table production
+matches 43,264 cells per mode over 256 style/scale samples; all 36,864 existing
+cells remain equal to v0.214. The 13 admitted kerning classifications also
+match the source. XML durations, breath ticks/counts and saved controls pass.
+These checks are local mocks/syntax checks, not native execution or visual
+acceptance. The preceding v0.214 gate remains pending alongside this one.
+
+## v0.216 WIP: native breath alignment and bounded plan admission
+
+Use pinned TLayout::layoutBreath's glyph-right-edge x alignment only with
+spacingLayout4 ON. OFF restores native derived x=0; palette layout and user
+offsets stay separate. Glyph bounds and vertical placement remain native.
+Playback pause values are not used by this spacing change.
+
+Admit zero-duration Breath segments at internal/end boundaries of ordinary
+pitched measures. Validate the native glyph against Breath::breathList and
+require visible skyline geometry with positive dimensions/magnitude. Keep
+unrecognized symbols, other staff families, nonzero segment durations, manual
+segment spacing and existing unsupported decoration contexts as whole-plan
+fallbacks. Centered full rests with a breath boundary retain their previous
+centering guard; no special rest projection is added here. The source
+leading-change set remains Clef/KeySig/TimeSig, not Breath.
+
+## v0.215 WIP: breath/caesura ownership and collision policy
+
+Defer the v0.211-v0.214 native/visual gate at the user's request. It remains
+pending, not accepted. Begin a separate bounded breath/caesura series over
+v0.214, to be delivered with a combined testing gate for both batches.
+
+Extend the temporary producer-owned leaf view to Breath and add its padding
+row/column to the common table. Pinned 4.7.5 PaddingTable::createTable sets both
+to 1.0sp before copying note padding to stems. HorizontalSpacing's same-voice
+kerning-limited set includes Breath: note/dot/rest/stem/breath pairs on the same
+track do not kern; ordinary different-track pairs retain their existing policy.
+No segment admission or native position change is made in this checkpoint.
+
 ## v0.214 aggregate gate: ordinary pitched clefs and signature controls
 
 Apply the combined v0.211-v0.214 patch over user-applied v0.210, or the four

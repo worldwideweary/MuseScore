@@ -36,7 +36,7 @@ struct SpacingPairPolicy4 {
 // Snapshot common-type padding once per pass; rebuild after style changes.
 class SpacingPaddingTable4 {
     const Score* _score;
-    std::array<std::array<qreal, 12>, 12> _padding;
+    std::array<std::array<qreal, 13>, 13> _padding;
 public:
     explicit SpacingPaddingTable4(const Score*);
     const Score* score() const { return _score; }
