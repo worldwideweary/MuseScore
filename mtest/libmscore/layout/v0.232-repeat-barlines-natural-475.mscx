@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<museScore version="3.02">
+<museScore version="4.00">
   <Score>
     <Division>480</Division>
     <Style>
@@ -50,6 +50,7 @@
       <repeatBarTips>0</repeatBarTips>
       <genCourtesyTimesig>1</genCourtesyTimesig>
       <genCourtesyKeysig>1</genCourtesyKeysig>
+      <defaultsVersion>302</defaultsVersion>
     </Style>
     <Part>
       <Staff id="1">
@@ -70,7 +71,7 @@
         <Text>
           <style>Title</style>
           <size>16</size>
-          <text>v0.230 Repeat barlines: natural</text>
+          <text>v0.232 Repeat barlines: natural</text>
         </Text>
       </VBox>
       <Measure>

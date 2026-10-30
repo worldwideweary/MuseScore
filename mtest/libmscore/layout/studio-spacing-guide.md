@@ -1,5 +1,48 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.232 reference correction: account for Studio project migration
+
+The user reports v0.231 mtests passing and supplies paired natural,
+justified, fitting and stretch-3 squeeze captures. Fitting retains
+R1-R3 / R4-R6 in both applications. Signature order and ordinary note/repeat
+neighbors are clear, but Studio's thin/thick barline gaps are almost zero.
+This was not an intended test input and the visual gate is not accepted.
+
+The v0.230 companion audit stopped at engraving XML reading and drawing.
+It missed the application ProjectMigrator::resetStyleSettings conversion
+(projectmigrator.cpp blob 4d42c120b49ed26ef76d06f095f047869ced9bc6).
+For pre-4.0 projects migrated without replacing the style, it subtracts
+(barWidth + endBarWidth) / 2 from endBarDistance, doubleBarWidth from
+doubleBarDistance, and half the bar/dot widths from the repeat-dot gap.
+Our already converted .37 with .18/.55 strokes thus becomes .005, explaining
+the observed touching strokes. The similarly contracted dot/double gaps
+also invalidate the claimed physical input equivalence. Retain the native
+pass; do not infer engine parity or alter production spacing from these
+unmatched reference captures.
+
+Replace the four generated v0.230 -475 references with fresh v0.232 -475
+files. They declare format 4.00, bypassing the pre-4.0 project migration,
+while Style/defaultsVersion=302 explicitly preserves the old reference's
+unspecified style defaults. Explicit .37 physical gaps, music, page inputs,
+labels apart from title version, and all other saved styles are preserved.
+The native v0.230 scores, planner and test code are unchanged. Previously
+delivered artifacts are not rewritten.
+
+The new squeeze is also format 4.00, so Read400's pre-4.0 stretch-skipping
+branch does not run: saved Layout stretch 3.00 is now retained automatically.
+Verify 3.00 in Studio, but no post-import change should be needed for this
+reference. XML equivalence checks normalize only format/defaults metadata,
+title version and the known native-to-reference physical-gap translations.
+Source checks establish the project migration and measure-stretch gates;
+these are not native GUI rendering checks.
+
+Apply the reference-only v0.232 patch over v0.231 if keeping source fixtures
+in sync. No rebuild or mtest rerun is needed. Reuse the supplied 37E captures
+and recapture Studio from the fresh fitting/squeeze references first; review
+natural/justified as needed from their matching references. All four new
+references are provided. The prior captures establish a matching partition,
+not final barline/header/optical-spacing acceptance.
+
 ## v0.231 aggregate: ordinary start-repeat final-system spacing
 
 Resume the interrupted batch from saved v0.228-v0.230 commits; no accepted
