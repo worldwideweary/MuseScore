@@ -141,6 +141,7 @@
 #include "editing/mscoreview.h"
 
 #include "rendering/score/stemlayout.h"
+#include "rendering/score/tdraw.h"
 
 #include "infrastructure/rtti.h"
 
@@ -1785,42 +1786,9 @@ void SingleDraw::draw(const HarmonicMarkSegment* item, Painter* painter, const P
 
 void SingleDraw::draw(const Harmony* item, Painter* painter, const PaintOptions& opt)
 {
-    TRACE_DRAW_ITEM;
-
-    const Harmony::LayoutData* ldata = item->ldata();
-    if (ldata->renderItemList().empty()) {
-        drawTextBase(item, painter, opt);
-        return;
-    }
-
-    if (item->hasFrame()) {
-        if (!RealIsNull(item->frameWidth().val())) {
-            Color color = item->frameColor();
-            Pen pen(color, item->frameWidth().val() * item->spatium(), PenStyle::SolidLine,
-                    PenCapStyle::SquareCap, PenJoinStyle::MiterJoin);
-            painter->setPen(pen);
-        } else {
-            painter->setNoPen();
-        }
-        Color bg(item->bgColor());
-        painter->setBrush(bg.alpha() ? Brush(bg) : BrushStyle::NoBrush);
-        if (item->circle()) {
-            painter->drawArc(ldata->frame, 0, 5760);
-        } else {
-            double baseSpatium = DefaultStyle::baseStyle().value(Sid::spatium).toReal();
-            double frameRadius = item->frameRound().val() * (item->sizeIsSpatiumDependent() ? item->spatium() : baseSpatium);
-            painter->drawRoundedRect(ldata->frame, frameRadius, frameRadius);
-        }
-    }
-    painter->setBrush(BrushStyle::NoBrush);
-    Color color = item->textColor(opt);
-    painter->setPen(color);
-    for (const HarmonyRenderItem* renderItem : ldata->renderItemList()) {
-        if (const TextSegment* ts = dynamic_cast<const TextSegment*>(renderItem)) {
-            painter->setFont(ts->font());
-            painter->drawText(ts->pos(), ts->text());
-        }
-    }
+    // Keep drag previews consistent with the score, including modifier
+    // parentheses and polychord divider lines.
+    rendering::score::TDraw::drawItem(item, painter, opt);
 }
 
 void SingleDraw::draw(const Hook* item, Painter* painter, const PaintOptions& opt)

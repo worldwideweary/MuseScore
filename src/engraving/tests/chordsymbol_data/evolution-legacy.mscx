@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="3.02"><Score><Division>480</Division><Style><chordStyle>std</chordStyle><chordDescriptionFile>chords_std.xml</chordDescriptionFile><chordExtensionAdjust>-0.3</chordExtensionAdjust></Style>
+<Part><Staff id="1"><StaffType group="pitched"><name>stdNormal</name></StaffType></Staff><trackName>Piano</trackName><Instrument><trackName>Piano</trackName><Channel><program value="0"/></Channel></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig><Harmony><root>14</root><name>7</name></Harmony><Rest><durationType>measure</durationType><duration>4/4</duration></Rest></voice></Measure></Staff></Score></museScore>

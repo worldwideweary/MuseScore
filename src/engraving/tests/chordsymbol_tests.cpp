@@ -22,8 +22,14 @@
 
 #include <gtest/gtest.h>
 
+#include <memory>
+
+#include "draw/bufferedpaintprovider.h"
+#include "draw/utils/drawdatacomp.h"
+
 #include "engraving/compat/scoreaccess.h"
 #include "engraving/dom/chordrest.h"
+#include "engraving/dom/chordlist.h"
 #include "engraving/dom/durationtype.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/fret.h"
@@ -35,6 +41,8 @@
 #include "engraving/dom/segment.h"
 #include "engraving/editing/editdata.h"
 #include "engraving/editing/transpose.h"
+#include "engraving/rendering/single/singlerenderer.h"
+#include "engraving/rendering/iscorerenderer.h"
 
 #include "utils/scorerw.h"
 #include "utils/scorecomp.h"
@@ -494,4 +502,266 @@ TEST_F(Engraving_ChordSymbolTests, testAddHarmonyToFretDiagram)
     EXPECT_TRUE(fretDiag->harmony());
 
     delete score;
+}
+
+TEST_F(Engraving_ChordSymbolTests, testEvolutionPresentationImport)
+{
+    std::unique_ptr<MasterScore> score(ScoreRW::readScore(CHORDSYMBOL_DATA_DIR + u"evolution-presentation.mscx"));
+    ASSERT_TRUE(score);
+    const MStyle& style = score->style();
+    EXPECT_EQ(style.styleV(Sid::chordStyle).value<ChordStylePreset>(), ChordStylePreset::STANDARD);
+    EXPECT_DOUBLE_EQ(style.styleD(Sid::chordExtensionAdjust), -0.3);
+    EXPECT_DOUBLE_EQ(style.styleD(Sid::chordModifierAdjust), 0.25);
+    EXPECT_DOUBLE_EQ(style.styleD(Sid::chordBassNoteGap), 0.16);
+    EXPECT_DOUBLE_EQ(style.styleS(Sid::harmonyHarmonyDistance).val(), 0.7);
+    // Unrelated 4.7 compatibility migrations must still run.
+    EXPECT_FALSE(style.styleB(Sid::maskBarlinesForText));
+    EXPECT_TRUE(style.styleB(Sid::verticallyStackModifiers));
+    EXPECT_FALSE(style.styleB(Sid::verticallyAlignChordSymbols));
+    EXPECT_EQ(style.styleV(Sid::chordSymPosition).value<AlignH>(), AlignH::LEFT);
+    EXPECT_EQ(style.styleV(Sid::chordAlignmentToFretboard).value<AlignH>(), AlignH::RIGHT);
+    EXPECT_DOUBLE_EQ(style.styleS(Sid::polychordDividerSpacing).val(), 0.6);
+    Segment* segment = score->firstSegment(SegmentType::ChordRest);
+    ASSERT_TRUE(segment);
+    EngravingItem* element = segment->findAnnotation(ElementType::HARMONY, 0, score->ntracks());
+    ASSERT_TRUE(element);
+    Harmony* harmony = toHarmony(element);
+    ASSERT_EQ(harmony->chords().size(), size_t(2));
+    EXPECT_EQ(harmony->chords()[0]->rootTpc(), 9);
+    EXPECT_EQ(harmony->chords()[0]->bassTpc(), 13);
+    EXPECT_EQ(harmony->chords()[1]->rootTpc(), 15);
+    EXPECT_DOUBLE_EQ(harmony->getProperty(Pid::HARMONY_BASS_SCALE).toDouble(), 0.65);
+    ASSERT_TRUE(ScoreRW::saveScore(score.get(), u"evolution-slash-gap-roundtrip-test.mscx"));
+    std::unique_ptr<MasterScore> reloaded(ScoreRW::readScore(u"evolution-slash-gap-roundtrip-test.mscx", true));
+    ASSERT_TRUE(reloaded);
+    EXPECT_DOUBLE_EQ(reloaded->style().styleD(Sid::chordBassNoteGap), 0.16);
+}
+
+TEST_F(Engraving_ChordSymbolTests, testEvolutionLegacyStillMigrates)
+{
+    std::unique_ptr<MasterScore> score(ScoreRW::readScore(CHORDSYMBOL_DATA_DIR + u"evolution-legacy.mscx"));
+    ASSERT_TRUE(score);
+    EXPECT_DOUBLE_EQ(score->style().styleD(Sid::chordBassNoteGap), -1.0);
+    EXPECT_EQ(score->style().styleV(Sid::chordStyle).value<ChordStylePreset>(), ChordStylePreset::LEGACY);
+    EXPECT_EQ(score->style().styleSt(Sid::chordDescriptionFile), String(u"chords_legacy.xml"));
+}
+
+TEST_F(Engraving_ChordSymbolTests, testEvolutionPolychordCentre)
+{
+    std::unique_ptr<MasterScore> score(ScoreRW::readScore(CHORDSYMBOL_DATA_DIR + u"evolution-polychord-centre.mscx"));
+    ASSERT_TRUE(score);
+    score->doLayout();
+    Segment* segment = score->firstSegment(SegmentType::ChordRest);
+    ASSERT_TRUE(segment);
+    EngravingItem* element = segment->findAnnotation(ElementType::HARMONY, 0, score->ntracks());
+    ASSERT_TRUE(element);
+    Harmony* harmony = toHarmony(element);
+    ASSERT_TRUE(harmony->isPolychord());
+    EXPECT_EQ(harmony->position(), AlignH::HCENTER);
+    // An inherited left text style must not override chord positioning.
+    EXPECT_TRUE(harmony->align() == AlignH::LEFT);
+    const TextSegment* c = nullptr;
+    const TextSegment* g = nullptr;
+    for (const HarmonyRenderItem* item : harmony->ldata()->renderItemList()) {
+        const TextSegment* text = dynamic_cast<const TextSegment*>(item);
+        if (!text) {
+            continue;
+        }
+        if (text->text() == u"C") {
+            c = text;
+        } else if (text->text() == u"G") {
+            g = text;
+        }
+    }
+    ASSERT_TRUE(c);
+    ASSERT_TRUE(g);
+    EXPECT_NEAR(c->x() + c->width() / 2, g->x() + g->width() / 2, 1e-6);
+}
+
+#ifndef NO_QT_SUPPORT
+TEST_F(Engraving_ChordSymbolTests, testEvolutionSlashGapLayout)
+{
+    std::unique_ptr<MasterScore> score(ScoreRW::readScore(CHORDSYMBOL_DATA_DIR + u"evolution-slash-gap.mscx"));
+    ASSERT_TRUE(score);
+    EXPECT_DOUBLE_EQ(score->style().styleD(Sid::chordBassNoteGap), 0.16);
+    Segment* segment = score->firstSegment(SegmentType::ChordRest);
+    ASSERT_TRUE(segment);
+    EngravingItem* element = segment->findAnnotation(ElementType::HARMONY, 0, score->ntracks());
+    ASSERT_TRUE(element);
+    Harmony* harmony = toHarmony(element);
+    auto bassPosition = [&]() -> PointF {
+        const TextSegment* root = nullptr;
+        const TextSegment* bass = nullptr;
+        for (const HarmonyRenderItem* renderItem : harmony->ldata()->renderItemList()) {
+            const TextSegment* text = dynamic_cast<const TextSegment*>(renderItem);
+            if (!text) {
+                continue;
+            }
+            if (text->text() == u"C") {
+                root = text;
+            } else if (text->text() == u"A") {
+                bass = text;
+            }
+        }
+        EXPECT_TRUE(root && bass);
+        return root && bass ? bass->pos() - root->pos() : PointF();
+    };
+    score->style().set(Sid::chordBassNoteGap, 0.08);
+    score->doLayout();
+    const PointF close = bassPosition();
+    score->style().set(Sid::chordBassNoteGap, 0.24);
+    score->doLayout();
+    const PointF wide = bassPosition();
+    EXPECT_GT(wide.x(), close.x());
+    EXPECT_GT(wide.y(), close.y());
+    score->doLayout();
+    const PointF repeated = bassPosition();
+    EXPECT_NEAR(repeated.x(), wide.x(), 1e-6);
+    EXPECT_NEAR(repeated.y(), wide.y(), 1e-6);
+    score->style().set(Sid::chordBassNoteStagger, false);
+    score->doLayout();
+    const PointF inlineWide = bassPosition();
+    score->style().set(Sid::chordBassNoteGap, 0.08);
+    score->doLayout();
+    const PointF inlineClose = bassPosition();
+    EXPECT_NEAR(inlineClose.x(), inlineWide.x(), 1e-6);
+    EXPECT_NEAR(inlineClose.y(), inlineWide.y(), 1e-6);
+}
+#endif
+
+TEST_F(Engraving_ChordSymbolTests, testEvolutionJazzKeepsExplicitParenthesisChoice)
+{
+    std::unique_ptr<MasterScore> score(ScoreRW::readScore(CHORDSYMBOL_DATA_DIR + u"evolution-jazz-presentation.mscx"));
+    ASSERT_TRUE(score);
+    const MStyle& style = score->style();
+    EXPECT_EQ(style.styleV(Sid::chordStyle).value<ChordStylePreset>(), ChordStylePreset::JAZZ);
+    // 4.7's pre-470 Jazz migration enables these by default. Respect the
+    // explicitly saved Evolution choice after that migration has run.
+    EXPECT_FALSE(style.styleB(Sid::harmonyParenUseSmuflSym));
+    EXPECT_FALSE(style.styleB(Sid::verticallyAlignChordSymbols));
+    EXPECT_DOUBLE_EQ(style.styleD(Sid::chordBassNoteGap), 0.16);
+}
+
+TEST_F(Engraving_ChordSymbolTests, testStackedModifierSeparators)
+{
+    // A plain chord list keeps render text literal, independent of glyph mappings.
+    ChordList chordList;
+    auto renderedText = [](const std::vector<RenderActionPtr>& actions) {
+        String text;
+        for (const RenderActionPtr& action : actions) {
+            if (action->actionType() == RenderAction::RenderActionType::SET) {
+                const auto set = std::static_pointer_cast<RenderActionSet>(action);
+                if (set->renderText()) {
+                    text += set->text();
+                }
+            }
+        }
+        return text;
+    };
+    const std::vector<std::pair<String, String> > cases {
+        { u"7(b9,#11)", u"7(b9#11)" },
+        { u"13(b9,#11,b13)", u"13(b9#11b13)" },
+        { u"6/9(b9,#11)", u"6/9(b9#11)" },
+        { u"6,9(b9,#11)", u"6,9(b9#11)" }
+    };
+    for (const auto& [name, stacked] : cases) {
+        ParsedChord parsed;
+        ASSERT_TRUE(parsed.parse(name, &chordList));
+        const String originalName = parsed.name();
+        EXPECT_EQ(renderedText(parsed.renderList(&chordList, false)), name);
+        EXPECT_EQ(renderedText(parsed.renderList(&chordList, true)), stacked);
+        EXPECT_EQ(parsed.name(), originalName);
+    }
+}
+
+TEST_F(Engraving_ChordSymbolTests, testEvolutionDragCopyPreview)
+{
+    rendering::single::SingleRenderer renderer;
+    for (const String& fixture : { String(u"evolution-slash-gap.mscx"),
+                                  String(u"evolution-polychord-centre.mscx"),
+                                  String(u"evolution-presentation.mscx") }) {
+        std::unique_ptr<MasterScore> score(ScoreRW::readScore(CHORDSYMBOL_DATA_DIR + fixture));
+        ASSERT_TRUE(score);
+        score->doLayout();
+        Segment* segment = score->firstSegment(SegmentType::ChordRest);
+        ASSERT_TRUE(segment);
+        EngravingItem* element = segment->findAnnotation(ElementType::HARMONY, 0, score->ntracks());
+        ASSERT_TRUE(element);
+        Harmony* source = toHarmony(element);
+
+        // Like startDropSingle(): serialize/read a fresh item under the score's
+        // dummy parent, then use single-item layout before inserting the copy.
+        std::unique_ptr<EngravingItem> copy(ScoreRW::writeReadElement(source));
+        ASSERT_TRUE(copy && copy->isHarmony());
+        Harmony* preview = toHarmony(copy.get());
+        ASSERT_EQ(preview->chords().size(), source->chords().size());
+        for (size_t i = 0; i < source->chords().size(); ++i) {
+            EXPECT_EQ(preview->chords()[i]->rootTpc(), source->chords()[i]->rootTpc());
+            EXPECT_EQ(preview->chords()[i]->bassTpc(), source->chords()[i]->bassTpc());
+        }
+        EXPECT_DOUBLE_EQ(preview->getProperty(Pid::HARMONY_BASS_SCALE).toDouble(),
+                         source->getProperty(Pid::HARMONY_BASS_SCALE).toDouble());
+        renderer.layoutItem(preview);
+        EXPECT_TRUE(preview->ldata()->bbox().isValid());
+        EXPECT_FALSE(preview->ldata()->renderItemList().empty());
+        EXPECT_EQ(preview->ldata()->polychordDividerLines().size(), source->ldata()->polychordDividerLines().size());
+
+        ASSERT_TRUE(preview->renderer());
+        for (bool smufl : { false, true }) {
+            score->style().set(Sid::harmonyParenUseSmuflSym, smufl);
+            renderer.layoutItem(preview);
+            auto drawData = [&](bool single) {
+                auto provider = std::make_shared<muse::draw::BufferedPaintProvider>();
+                muse::draw::Painter painter(provider, "chord-preview");
+                const rendering::PaintOptions options;
+                if (single) {
+                    renderer.drawItem(preview, &painter, options);
+                } else {
+                    preview->renderer()->drawItem(preview, &painter, options);
+                }
+                painter.endDraw();
+                return provider->drawData();
+            };
+            const auto singleData = drawData(true);
+            const auto scoreData = drawData(false);
+            ASSERT_FALSE(singleData->empty());
+            ASSERT_FALSE(scoreData->empty());
+            EXPECT_TRUE(muse::draw::DrawDataComp::compare(singleData, scoreData).empty());
+        }
+    }
+}
+
+TEST_F(Engraving_ChordSymbolTests, testEvolutionCopiesKeepStackingOverride)
+{
+    std::unique_ptr<MasterScore> score(ScoreRW::readScore(CHORDSYMBOL_DATA_DIR + u"evolution-presentation.mscx"));
+    ASSERT_TRUE(score);
+    Segment* segment = score->firstSegment(SegmentType::ChordRest);
+    ASSERT_TRUE(segment);
+    EngravingItem* element = segment->findAnnotation(ElementType::HARMONY, 0, score->ntracks());
+    ASSERT_TRUE(element);
+    Harmony* source = toHarmony(element);
+    source->setProperty(Pid::HARMONY_DO_NOT_STACK_MODIFIERS, true);
+    ASSERT_TRUE(source->doNotStackModifiers());
+    ASSERT_FALSE(source->chords().empty());
+    const int originalRoot = source->chords().front()->rootTpc();
+
+    std::unique_ptr<Harmony> clone(source->clone());
+    ASSERT_TRUE(clone);
+    EXPECT_TRUE(clone->doNotStackModifiers());
+    EXPECT_DOUBLE_EQ(clone->getProperty(Pid::HARMONY_BASS_SCALE).toDouble(),
+                     source->getProperty(Pid::HARMONY_BASS_SCALE).toDouble());
+    ASSERT_EQ(clone->chords().size(), source->chords().size());
+    for (size_t i = 0; i < source->chords().size(); ++i) {
+        EXPECT_NE(clone->chords()[i], source->chords()[i]);
+        EXPECT_EQ(clone->chords()[i]->rootTpc(), source->chords()[i]->rootTpc());
+        EXPECT_EQ(clone->chords()[i]->bassTpc(), source->chords()[i]->bassTpc());
+    }
+    clone->setProperty(Pid::HARMONY_DO_NOT_STACK_MODIFIERS, false);
+    clone->chords().front()->setRootTpc(originalRoot == 14 ? 15 : 14);
+    EXPECT_TRUE(source->doNotStackModifiers());
+    EXPECT_EQ(source->chords().front()->rootTpc(), originalRoot);
+
+    std::unique_ptr<EngravingItem> xmlCopy(ScoreRW::writeReadElement(source));
+    ASSERT_TRUE(xmlCopy && xmlCopy->isHarmony());
+    EXPECT_TRUE(toHarmony(xmlCopy.get())->doNotStackModifiers());
 }

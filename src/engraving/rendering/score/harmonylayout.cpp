@@ -21,6 +21,21 @@
  */
 
 #include "harmonylayout.h"
+
+#include <cmath>
+#include <map>
+#include <mutex>
+
+#ifndef NO_QT_SUPPORT
+#include "draw/internal/ifontsdatabase.h"
+#include <QFontDatabase>
+#include <QGlyphRun>
+#include <QImage>
+#include <QPainterPath>
+#include <QRawFont>
+#include <QTextLayout>
+#endif
+
 #include "rendering/score/parenthesislayout.h"
 #include "tlayout.h"
 #include "textlayout.h"
@@ -33,6 +48,176 @@
 using namespace muse::draw;
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
+
+namespace {
+bool useSlashGap(const MStyle& style)
+{
+#ifndef NO_QT_SUPPORT
+    const double gap = style.styleD(Sid::chordBassNoteGap);
+    return style.styleB(Sid::chordBassNoteStagger) && std::isfinite(gap) && gap >= 0.0;
+#else
+    (void)style;
+    return false;
+#endif
+}
+
+#ifndef NO_QT_SUPPORT
+// The 4.7 font engine can load fonts through FreeType without registering them with
+// Qt. Load the same bytes for outline measurement, never a system substitute.
+bool slashOutlineFont(const Font& font, QFont& result)
+{
+    static muse::GlobalInject<IFontsDatabase> fontsDatabase;
+    struct RegisteredFont {
+        muse::ByteArray bytes;
+        int id = -1;
+        bool attempted = false;
+    };
+    static std::map<FontDataKey, RegisteredFont> registered;
+    static std::mutex mutex;
+    const std::lock_guard<std::mutex> lock(mutex);
+    if (!fontsDatabase()) {
+        return false;
+    }
+    auto load = [&](const FontDataKey& key) -> QString {
+        const FontData data = fontsDatabase()->fontData(key, font.type());
+        if (!data.valid()) {
+            return {};
+        }
+        RegisteredFont& entry = registered[data.key];
+        const bool sameStorage = entry.bytes.constData() == data.data.constData() && entry.bytes.size() == data.data.size();
+        if (!entry.attempted || (!sameStorage && entry.bytes != data.data)) {
+            if (entry.id >= 0) {
+                QFontDatabase::removeApplicationFont(entry.id);
+            }
+            entry.id = QFontDatabase::addApplicationFontFromData(data.data.toQByteArrayNoCopy());
+            entry.bytes = data.data;
+            entry.attempted = true;
+        }
+        const QStringList families = QFontDatabase::applicationFontFamilies(entry.id);
+        return families.empty() ? QString() : families.front();
+    };
+    const FontDataKey key = fontsDatabase()->actualFont(dataKeyForFont(font), font.type());
+    const QString primary = load(key);
+    if (primary.isEmpty()) {
+        return false; // For example, a font format Qt cannot read.
+    }
+    QStringList families { primary };
+    for (const FontDataKey& substitute : fontsDatabase()->substitutionFonts(font.type())) {
+        const QString family = load(substitute);
+        if (!family.isEmpty() && !families.contains(family)) {
+            families.push_back(family);
+        }
+    }
+    result = font.toQFont();
+    result.setFamilies(families);
+    return true;
+}
+
+// Use Qt only to obtain the outline shape; native segment bounds determine
+// its final scale and bearings. Font engines need not share Qt's DPI.
+QPainterPath slashChordInk(const std::vector<HarmonyRenderItem*>& items, size_t begin, size_t end)
+{
+    static QImage device = []() {
+        QImage image(1, 1, QImage::Format_ARGB32);
+        image.setDotsPerMeterX(qRound(360.0 / 0.0254));
+        image.setDotsPerMeterY(qRound(360.0 / 0.0254));
+        return image;
+    }();
+    QPainterPath ink;
+    for (size_t i = begin; i < end; ++i) {
+        const HarmonyRenderItem* item = items[i];
+        if (const TextSegment* text = dynamic_cast<const TextSegment*>(item)) {
+            QFont font;
+            if (!slashOutlineFont(text->font(), font)) {
+                return {}; // Keep native spacing if an outline cannot be measured.
+            }
+            QTextLayout layout(text->text().toQString(), font, &device);
+            layout.beginLayout();
+            QTextLine line = layout.createLine();
+            if (line.isValid()) {
+                line.setLineWidth(1e9);
+            }
+            layout.endLayout();
+            if (!line.isValid()) {
+                continue;
+            }
+            QPainterPath outline;
+            for (const QGlyphRun& run : layout.glyphRuns()) {
+                const auto glyphs = run.glyphIndexes();
+                const auto positions = run.positions();
+                const QRawFont raw = run.rawFont();
+                for (int j = 0; j < glyphs.size(); ++j) {
+                    QTransform transform;
+                    transform.translate(positions[j].x(), positions[j].y() - line.ascent());
+                    outline.addPath(transform.map(raw.pathForGlyph(glyphs[j])));
+                }
+            }
+            const QRectF measured = outline.boundingRect();
+            const RectF native = text->tightBoundingRect();
+            if (outline.isEmpty() || native.isEmpty()) {
+                continue;
+            }
+            if (measured.width() <= 0.0 || measured.height() <= 0.0) {
+                return {};
+            }
+            QTransform nativeCoordinates;
+            nativeCoordinates.translate(item->x() + native.x(), item->y() + native.y());
+            nativeCoordinates.scale(native.width() / measured.width(), native.height() / measured.height());
+            nativeCoordinates.translate(-measured.x(), -measured.y());
+            ink.addPath(nativeCoordinates.map(outline));
+        } else {
+            // Native parentheses may use paths or music symbols. Their laid-out
+            // bounds give a conservative clearance without coupling to either.
+            const RectF box = item->tightBoundingRect().translated(item->x(), item->y());
+            ink.addRect(QRectF(box.x(), box.y(), box.width(), box.height()));
+        }
+    }
+    return ink;
+}
+#endif
+
+// Returns the advance correction, so a following capo chord remains separated.
+double balanceSlashBass(const std::vector<HarmonyRenderItem*>& items, size_t begin, size_t slashIndex, size_t end, double gap)
+{
+#ifndef NO_QT_SUPPORT
+    const QPainterPath upper = slashChordInk(items, begin, slashIndex);
+    const QPainterPath slash = slashChordInk(items, slashIndex, slashIndex + 1);
+    const QPainterPath bass = slashChordInk(items, slashIndex + 1, end);
+    if (upper.isEmpty() || slash.isEmpty() || bass.isEmpty()) {
+        return 0.0;
+    }
+    const QRectF box = slash.boundingRect();
+    const double length = std::hypot(box.width(), box.height());
+    if (length < 0.01) {
+        return 0.0;
+    }
+    const double nx = box.height() / length;
+    const double ny = box.width() / length;
+    const QTransform project(nx, -ny, ny, nx, 0.0, 0.0);
+    const QRectF upperBounds = project.map(upper).boundingRect();
+    const QRectF slashBounds = project.map(slash).boundingRect();
+    const QRectF bassBounds = project.map(bass).boundingRect();
+    const double slashMove = upperBounds.right() + gap - slashBounds.left();
+    const double bassMove = slashBounds.right() + slashMove + gap - bassBounds.left();
+    items[slashIndex]->movex(nx * slashMove);
+    items[slashIndex]->movey(ny * slashMove);
+    for (size_t i = slashIndex + 1; i < end; ++i) {
+        items[i]->movex(nx * bassMove);
+        items[i]->movey(ny * bassMove);
+    }
+    return nx * bassMove;
+#else
+    // The outline implementation requires Qt text shaping. Preserve the native
+    // arrangement in builds that deliberately exclude Qt support.
+    (void)items;
+    (void)begin;
+    (void)slashIndex;
+    (void)end;
+    (void)gap;
+    return 0.0;
+#endif
+}
+}
 
 void HarmonyLayout::layoutHarmony(Harmony* item, Harmony::LayoutData* ldata,
                                   const LayoutContext& ctx)
@@ -96,7 +281,9 @@ PointF HarmonyLayout::calculateBoundingRect(const Harmony* item, Harmony::Layout
             newPosY = ypos - ((item->align() == AlignV::BOTTOM) ? -ldata->bbox().height() : 0.0);
         }
     } else {
-        layoutModifierParentheses(item, ctx);
+        if (!useSlashGap(ctx.conf().style())) {
+            layoutModifierParentheses(item, ctx, ldata->renderItemList());
+        }
         RectF bb;
         RectF hAlignBox;
         for (HarmonyRenderItem* renderItem : item->ldata()->renderItemList()) {
@@ -199,10 +386,10 @@ PointF HarmonyLayout::calculateBoundingRect(const Harmony* item, Harmony::Layout
     return PointF(newPosX, newPosY);
 }
 
-void HarmonyLayout::layoutModifierParentheses(const Harmony* item, const LayoutContext& ctx)
+void HarmonyLayout::layoutModifierParentheses(const Harmony* item, const LayoutContext& ctx,
+                                              const std::vector<HarmonyRenderItem*>& itemList)
 {
     const double spatium = item->spatium();
-    const std::vector<HarmonyRenderItem*>& itemList = item->ldata()->renderItemList();
     const double smuflParens = ctx.conf().styleB(Sid::harmonyParenUseSmuflSym);
     // Layout parentheses
     std::vector<ChordSymbolParen*> openingParenStack;
@@ -418,6 +605,27 @@ void HarmonyLayout::render(Harmony* item, Harmony::LayoutData* ldata, const Layo
         harmonyCtx.info = item->chords().at(i - 1);
         renderSingleHarmony(item, ldata, harmonyCtx, ctx);
 
+        if (useSlashGap(ctx.conf().style())) {
+            // Measure after native parentheses have acquired their final width,
+            // before polychord baselines, dividers and centring are calculated.
+            layoutModifierParentheses(item, ctx, harmonyCtx.renderItemList);
+            const double gap = ctx.conf().style().styleD(Sid::chordBassNoteGap) * FontMetrics::capHeight(ldata->fontList.value().front());
+            for (const auto& range : harmonyCtx.slashBassRanges) {
+                const double dx = balanceSlashBass(harmonyCtx.renderItemList, range.begin, range.slash, range.end, gap);
+                for (size_t j = range.end; j < harmonyCtx.renderItemList.size(); ++j) {
+                    harmonyCtx.renderItemList[j]->movex(dx);
+                }
+                harmonyCtx.movex(dx);
+            }
+            // Parenthesis padding also contributes to the final line width.
+            double right = harmonyCtx.x();
+            for (const HarmonyRenderItem* segment : harmonyCtx.renderItemList) {
+                right = std::max(right, segment->x() + segment->tightBoundingRect().right());
+            }
+            harmonyCtx.setx(right);
+        }
+        harmonyCtx.slashBassRanges.clear();
+
         chordTextSegments.emplace(std::pair<double, std::vector<HarmonyRenderItem*> > { harmonyCtx.x(), harmonyCtx.renderItemList });
         ldata->renderItemList.mut_value().insert(ldata->renderItemList.mut_value().end(),
                                                  harmonyCtx.renderItemList.begin(), harmonyCtx.renderItemList.end());
@@ -434,7 +642,9 @@ void HarmonyLayout::render(Harmony* item, Harmony::LayoutData* ldata, const Layo
         double diff = rootBaseline - bottomBaseline;
         if (bottomBaseline > rootBaseline) {
             for (HarmonyRenderItem* renderItem : harmonyCtx.renderItemList) {
-                if (TextSegment* ts = dynamic_cast<TextSegment*>(renderItem)) {
+                if (useSlashGap(ctx.conf().style())) {
+                    renderItem->movey(diff);
+                } else if (TextSegment* ts = dynamic_cast<TextSegment*>(renderItem)) {
                     ts->movey(diff);
                 }
             }
@@ -472,7 +682,14 @@ void HarmonyLayout::render(Harmony* item, Harmony::LayoutData* ldata, const Layo
 
     // Align polychords
 
-    if (item->align() == AlignH::LEFT) {
+    // Use the same effective alignment as calculateBoundingRect(). Text-style
+    // alignment may still be left while chord positioning is explicitly centred.
+    const FretDiagram* fd = (item->explicitParent() && item->explicitParent()->isFretDiagram())
+                            ? toFretDiagram(item->explicitParent()) : nullptr;
+    const AlignH alignment = fd && fd->visible()
+                             ? ctx.conf().styleV(Sid::chordAlignmentToFretboard).value<AlignH>()
+                             : item->position();
+    if (alignment == AlignH::LEFT || alignment == AlignH::JUSTIFY) {
         return;
     }
 
@@ -495,7 +712,7 @@ void HarmonyLayout::render(Harmony* item, Harmony::LayoutData* ldata, const Layo
         }
 
         // For centre align adjust by .5* difference, for right align adjust by full difference
-        if (item->align() == AlignH::HCENTER) {
+        if (alignment == AlignH::HCENTER) {
             diff *= 0.5;
         }
 
@@ -522,6 +739,7 @@ void HarmonyLayout::renderRomanNumeral(Harmony* item, Harmony::LayoutData* ldata
 void HarmonyLayout::doRenderSingleHarmony(Harmony* item, Harmony::LayoutData* ldata, HarmonyRenderCtx& harmonyCtx, int rootTpc, int bassTpc,
                                           const LayoutContext& ctx)
 {
+    const size_t chordBegin = harmonyCtx.renderItemList.size();
     HarmonyInfo* info = harmonyCtx.info;
     ChordList* chordList = info->chordList();
     if (!chordList) {
@@ -571,7 +789,19 @@ void HarmonyLayout::doRenderSingleHarmony(Harmony* item, Harmony::LayoutData* ld
             render(item, ldata, { std::make_shared<RenderActionMove>(0.05, 0.0) }, harmonyCtx, ctx,
                    bassTpc, spelling, bassCase, item->bassScale());
         }
+        const size_t bassBegin = harmonyCtx.renderItemList.size();
         render(item, ldata, bassNoteChordList, harmonyCtx, ctx, bassTpc, spelling, bassCase, item->bassScale());
+        if (useSlashGap(style)) {
+            // Chord descriptions may be customized: only rebalance the dedicated
+            // diagonal-arrangement slash, never a literal or arbitrary separator.
+            for (size_t i = bassBegin; i < harmonyCtx.renderItemList.size(); ++i) {
+                const TextSegment* text = dynamic_cast<const TextSegment*>(harmonyCtx.renderItemList[i]);
+                if (text && text->text() == u"\uE87C" && i + 1 < harmonyCtx.renderItemList.size()) {
+                    harmonyCtx.slashBassRanges.push_back({ chordBegin, i, harmonyCtx.renderItemList.size() });
+                    break;
+                }
+            }
+        }
     }
 }
 

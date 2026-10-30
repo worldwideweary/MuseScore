@@ -516,6 +516,7 @@ enum class Sid : short {
     chordStackedModifierMag,
     chordBassNoteStagger,
     chordBassNoteScale,
+    chordBassNoteGap,
     polychordDividerThickness,
     polychordDividerSpacing,
     verticallyAlignChordSymbols,

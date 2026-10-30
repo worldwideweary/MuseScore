@@ -506,6 +506,8 @@ const std::array<StyleDef::StyleValue, size_t(Sid::STYLES)> StyleDef::styleValue
     styleDef(chordStackedModifierMag,                    PropertyValue(0.75)),
     styleDef(chordBassNoteStagger,                       false),
     styleDef(chordBassNoteScale,                         1.0),
+    // Negative keeps native spacing; imported Evolution scores write an explicit gap.
+    styleDef(chordBassNoteGap,                           -1.0),
     styleDef(polychordDividerThickness,                  0.11_sp),
     styleDef(polychordDividerSpacing,                    0.4_sp),
     styleDef(verticallyAlignChordSymbols,                true),

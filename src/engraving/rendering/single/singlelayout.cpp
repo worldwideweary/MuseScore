@@ -172,6 +172,13 @@ void SingleLayout::layoutItem(EngravingItem* item)
         break;
     case ElementType::HARP_DIAGRAM: layout(toHarpPedalDiagram(item), ctx);
         break;
+    case ElementType::HARMONY: {
+        // Drag-copy previews need the full chord-symbol layout, including
+        // modifier stacks, slash bass notes and polychords.
+        LayoutContext tctx(item->score());
+        TLayout::layoutItem(item, tctx);
+        break;
+    }
     case ElementType::IMAGE:        layout(toImage(item), ctx);
         break;
     case ElementType::INSTRUMENT_CHANGE: layout(toInstrumentChange(item), ctx);

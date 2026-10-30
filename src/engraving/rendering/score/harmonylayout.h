@@ -43,6 +43,12 @@ private:
     struct HarmonyRenderCtx {
         PointF pos = PointF(0.0, 0.0);
         std::vector<HarmonyRenderItem*> renderItemList;
+        struct SlashBassRange {
+            size_t begin;
+            size_t slash;
+            size_t end;
+        };
+        std::vector<SlashBassRange> slashBassRanges;
 
         // Reset every single chord
         bool hAlign = true;
@@ -65,7 +71,8 @@ private:
     };
 
     static PointF calculateBoundingRect(const Harmony* item, Harmony::LayoutData* ldata, const LayoutContext& ctx);
-    static void layoutModifierParentheses(const Harmony* item, const LayoutContext& ctx);
+    static void layoutModifierParentheses(const Harmony* item, const LayoutContext& ctx,
+                                          const std::vector<HarmonyRenderItem*>& itemList);
 
     static void render(Harmony* item, Harmony::LayoutData* ldata, const LayoutContext& ctx);
     static void doRenderSingleHarmony(Harmony* item, Harmony::LayoutData* ldata, HarmonyRenderCtx& harmonyCtx, int rootTpc, int bassTpc,

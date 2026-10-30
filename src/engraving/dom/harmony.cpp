@@ -342,6 +342,7 @@ Harmony::Harmony(const Harmony& h)
     m_rootCase   = h.m_rootCase;
     m_bassCase   = h.m_bassCase;
     m_bassScale = h.m_bassScale;
+    m_doNotStackModifiers = h.m_doNotStackModifiers;
     m_degreeList = h.m_degreeList;
     m_harmonyType = h.m_harmonyType;
     m_play       = h.m_play;

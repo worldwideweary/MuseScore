@@ -2953,9 +2953,35 @@ void TRead::read(Hairpin* h, XmlReader& e, ReadContext& ctx)
 void TRead::read(Harmony* h, XmlReader& e, ReadContext& ctx)
 {
     HarmonyInfo* info = new HarmonyInfo(ctx.score());
+    bool hasHarmonyInfo = false;
+    std::vector<HarmonyInfo*> lowerChords;
     while (e.readNextStartElement()) {
         const AsciiStringView tag(e.name());
-        if (tag == "base") {
+        if (tag == "harmonyInfo") {
+            HarmonyInfo* chord = hasHarmonyInfo ? new HarmonyInfo(ctx.score()) : info;
+            while (e.readNextStartElement()) {
+                const AsciiStringView field(e.name());
+                if (field == "root") {
+                    chord->setRootTpc(e.readInt());
+                } else if (field == "base" || field == "bass") {
+                    chord->setBassTpc(e.readInt());
+                } else if (field == "extension") {
+                    chord->setId(e.readInt());
+                } else if (field == "name") {
+                    chord->setTextName(e.readText());
+                } else if (field == "rootCase") {
+                    const int c = e.readInt();
+                    if (!hasHarmonyInfo) h->setRootCase(static_cast<NoteCaseType>(c));
+                } else if (field == "baseCase" || field == "bassCase") {
+                    const int c = e.readInt();
+                    if (!hasHarmonyInfo) h->setBassCase(static_cast<NoteCaseType>(c));
+                } else {
+                    e.unknown();
+                }
+            }
+            if (hasHarmonyInfo) lowerChords.push_back(chord);
+            hasHarmonyInfo = true;
+        } else if (tag == "base") {
             info->setBassTpc(e.readInt());
         } else if (tag == "baseCase") {
             h->setBassCase(static_cast<NoteCaseType>(e.readInt()));
@@ -3007,6 +3033,7 @@ void TRead::read(Harmony* h, XmlReader& e, ReadContext& ctx)
             e.readNext();
         } else if (TRead::readProperty(h, tag, e, ctx, Pid::POS_ABOVE)) {
         } else if (TRead::readProperty(h, tag, e, ctx, Pid::HARMONY_TYPE)) {
+        } else if (TRead::readProperty(h, tag, e, ctx, Pid::HARMONY_BASS_SCALE)) {
         } else if (TRead::readProperty(h, tag, e, ctx, Pid::PLAY)) {
         } else if (TRead::readProperty(h, tag, e, ctx, Pid::HARMONY_VOICE_LITERAL)) {
         } else if (TRead::readProperty(h, tag, e, ctx, Pid::HARMONY_VOICING)) {
@@ -3017,6 +3044,9 @@ void TRead::read(Harmony* h, XmlReader& e, ReadContext& ctx)
     }
 
     h->addChord(info);
+    for (HarmonyInfo* chord : lowerChords) {
+        h->addChord(chord);
+    }
 
     h->afterRead();
 }

@@ -359,11 +359,25 @@ bool MStyle::isValid(IODevice* device)
 void MStyle::read(XmlReader& e, compat::ReadChordListHook* readChordListHook, int mscVersion)
 {
     TRACEFUNC;
+    bool modernChordSymbols = false;
 
     while (e.readNextStartElement()) {
         const AsciiStringView tag(e.name());
 
-        if (tag == "TextStyle") {
+        if (tag == "chordSymbolLayoutVersion") {
+            // 3.7-Evolution backport: written before presentation properties.
+            modernChordSymbols = e.readInt() >= 1;
+        } else if (modernChordSymbols && (tag == "chordSymPosition" || tag == "chordAlignmentToFretboard")) {
+            const String alignment = e.readText();
+            const Sid sid = tag == "chordSymPosition" ? Sid::chordSymPosition : Sid::chordAlignmentToFretboard;
+            const AlignH fallback = sid == Sid::chordSymPosition
+                                    ? value(Sid::chordSymbolAAlign).value<Align>().horizontal : AlignH::HCENTER;
+            AlignH horizontal = fallback;
+            if (alignment == u"left") horizontal = AlignH::LEFT;
+            else if (alignment == u"center") horizontal = AlignH::HCENTER;
+            else if (alignment == u"right") horizontal = AlignH::RIGHT;
+            set(sid, horizontal);
+        } else if (tag == "TextStyle") {
             //readTextStyle206(this, e);        // obsolete
             e.readText();
         } else if (tag == "ottavaHook") {       // obsolete, for 3.0dev bw. compatibility, should be removed in final release
@@ -578,18 +592,18 @@ void MStyle::read(XmlReader& e, compat::ReadChordListHook* readChordListHook, in
             if (e.readBool()) {
                 set(Sid::chordSymbolSpelling, NoteSpellingType::FRENCH);
             }
-        } else if (tag == "chordModifierAdjust" && mscVersion < 460) {
+        } else if (tag == "chordModifierAdjust" && mscVersion < 460 && !modernChordSymbols) {
             set(Sid::chordModifierAdjust, compat::CompatUtils::convertChordExtModUnits(e.readDouble()));
-        } else if (tag == "chordExtensionAdjust" && mscVersion < 460) {
+        } else if (tag == "chordExtensionAdjust" && mscVersion < 460 && !modernChordSymbols) {
             set(Sid::chordExtensionAdjust, compat::CompatUtils::convertChordExtModUnits(e.readDouble()));
-        } else if (tag == "chordDescriptionFile" && mscVersion < 460) {
+        } else if (tag == "chordDescriptionFile" && mscVersion < 460 && !modernChordSymbols) {
             AsciiStringView val = e.readAsciiText();
             if (val == "chords_std.xml") {
                 set(Sid::chordDescriptionFile, String(u"chords_legacy.xml"));
             } else {
                 set(Sid::chordDescriptionFile, String::fromAscii(val.ascii()));
             }
-        } else if (tag == "chordStyle" && mscVersion < 460) {
+        } else if (tag == "chordStyle" && mscVersion < 460 && !modernChordSymbols) {
             AsciiStringView val = e.readAsciiText();
             if (val == "std") {
                 set(Sid::chordStyle, ChordStylePreset::LEGACY);
@@ -633,6 +647,23 @@ void MStyle::read(XmlReader& e, compat::ReadChordListHook* readChordListHook, in
         }
     }
 
+    // Preserve explicit backported presentation settings while retaining every
+    // unrelated pre-4.7 score migration.
+    std::vector<std::pair<Sid, PropertyValue> > presentation;
+    if (modernChordSymbols) {
+        for (Sid sid : { Sid::chordStyle, Sid::chordDescriptionFile,
+                         Sid::chordExtensionMag, Sid::chordExtensionAdjust,
+                         Sid::chordModifierMag, Sid::chordModifierAdjust,
+                         Sid::verticallyStackModifiers, Sid::chordStackedModifierMag,
+                         Sid::chordBassNoteStagger, Sid::chordBassNoteScale, Sid::chordBassNoteGap,
+                         Sid::polychordDividerThickness, Sid::polychordDividerSpacing,
+                         Sid::verticallyAlignChordSymbols, Sid::chordSymPosition,
+                         Sid::chordAlignmentToFretboard, Sid::chordAlignmentExcludeModifiers,
+                         Sid::harmonyParenUseSmuflSym, Sid::harmonyHarmonyDistance,
+                         Sid::displayCapoChords, Sid::capoPosition }) {
+            presentation.emplace_back(sid, value(sid));
+        }
+    }
     if (mscVersion < 470) {
         set(Sid::dividerLeftAlignToSystemBarline, false);
         set(Sid::dividerRightAlignToSystemBarline, false);
@@ -696,6 +727,10 @@ void MStyle::read(XmlReader& e, compat::ReadChordListHook* readChordListHook, in
         // This style didn't exist before version 4.2. For files older than 4.2, defaults
         // to INSIDE for compatibility. For files 4.2 and newer, defaults to OUTSIDE.
         set(Sid::tiePlacementChord, TiePlacement::INSIDE);
+    }
+
+    for (const auto& [sid, val] : presentation) {
+        set(sid, val);
     }
 
     if (readChordListHook) {
