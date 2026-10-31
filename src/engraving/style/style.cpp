@@ -22,6 +22,8 @@
 
 #include "style.h"
 
+#include <map>
+
 #include "types/constants.h"
 #include "compat/pageformat.h"
 #include "rw/compat/readchordlisthook.h"
@@ -361,8 +363,29 @@ void MStyle::read(XmlReader& e, compat::ReadChordListHook* readChordListHook, in
     TRACEFUNC;
     bool modernChordSymbols = false;
 
+    // Evolution backports these options while keeping the 3.02 file version.
+    // Only explicitly supplied values override the pre-4.5 defaults below.
+    std::map<Sid, bool> evolutionCourtesyStyleValues;
     while (e.readNextStartElement()) {
         const AsciiStringView tag(e.name());
+
+        if (mscVersion < 450) {
+            bool courtesyStyleRead = false;
+            for (Sid sid : { Sid::changesBeforeBarlineRepeats, Sid::changesBeforeBarlineOtherJumps,
+                             Sid::showCourtesiesRepeats, Sid::showCourtesiesOtherJumps,
+                             Sid::showCourtesiesAfterCancellingRepeats, Sid::showCourtesiesAfterCancellingOtherJumps }) {
+                if (StyleDef::styleValues[size_t(sid)].xmlName == tag) {
+                    const bool enabled = e.readBool();
+                    set(sid, enabled);
+                    evolutionCourtesyStyleValues[sid] = enabled;
+                    courtesyStyleRead = true;
+                    break;
+                }
+            }
+            if (courtesyStyleRead) {
+                continue;
+            }
+        }
 
         if (tag == "chordSymbolLayoutVersion") {
             // 3.7-Evolution backport: written before presentation properties.
@@ -721,6 +744,10 @@ void MStyle::read(XmlReader& e, compat::ReadChordListHook* readChordListHook, in
         set(Sid::showCourtesiesAfterCancellingOtherJumps, false);
         set(Sid::changesBeforeBarlineRepeats, false);
         set(Sid::changesBeforeBarlineOtherJumps, false);
+    }
+
+    for (const auto& entry : evolutionCourtesyStyleValues) {
+        set(entry.first, entry.second);
     }
 
     if (mscVersion < 420 && !MScore::testMode) {

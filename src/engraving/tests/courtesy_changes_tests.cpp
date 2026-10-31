@@ -23,7 +23,16 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
+#include <array>
+#include <memory>
+#include <string>
+
 #include "engraving/dom/barline.h"
+#include "engraving/dom/clef.h"
+#include "engraving/dom/measure.h"
+#include "engraving/dom/score.h"
+#include "engraving/dom/segment.h"
+#include "global/io/buffer.h"
 
 #include "utils/scorerw.h"
 #include "utils/scorecomp.h"
@@ -166,4 +175,99 @@ TEST_F(Engraving_CourtesyChangesTests, placementBetweenRepeats) {
     EXPECT_TRUE(clefSeg);
     EXPECT_TRUE(clefSeg->next() && clefSeg->next()->segmentType() == SegmentType::EndBarLine);
     EXPECT_FALSE(m1->findSegmentR(SegmentType::Clef, Fraction(0, 1)));
+}
+
+namespace {
+constexpr std::array<Sid, 6> evolutionCourtesyOptions {
+    Sid::changesBeforeBarlineRepeats, Sid::changesBeforeBarlineOtherJumps,
+    Sid::showCourtesiesRepeats, Sid::showCourtesiesOtherJumps,
+    Sid::showCourtesiesAfterCancellingRepeats, Sid::showCourtesiesAfterCancellingOtherJumps
+};
+}
+
+TEST_F(Engraving_CourtesyChangesTests, evolutionLegacyCourtesyStyleOverrides)
+{
+    // Missing tags retain legacy false defaults; explicit true and false
+    // values survive the same compatibility pass. Modern files are unchanged.
+    for (int version : { 302, 450, 470 }) {
+        for (int explicitValue : { -1, 0, 1 }) {
+            MStyle style;
+            for (Sid sid : evolutionCourtesyOptions) {
+                style.set(sid, true);
+            }
+            std::string versionString = std::to_string(version);
+            versionString.insert(versionString.size() - 2, ".");
+            std::string xml = "<museScore version=\"" + versionString + "\"><Style>";
+            if (explicitValue >= 0) {
+                for (Sid sid : evolutionCourtesyOptions) {
+                    const char* tag = MStyle::valueName(sid);
+                    xml += "<"; xml += tag; xml += ">";
+                    xml += explicitValue ? "1" : "0";
+                    xml += "</"; xml += tag; xml += ">";
+                }
+            }
+            xml += "</Style></museScore>";
+            muse::ByteArray data(xml.c_str(), xml.size());
+            muse::io::Buffer buffer(&data);
+            ASSERT_TRUE(buffer.open(muse::io::IODevice::ReadOnly));
+            ASSERT_TRUE(style.read(&buffer));
+            const bool expected = explicitValue >= 0 ? explicitValue != 0 : version >= 450;
+            for (Sid sid : evolutionCourtesyOptions) {
+                EXPECT_EQ(style.styleB(sid), expected) << MStyle::valueName(sid);
+            }
+        }
+    }
+}
+
+TEST_F(Engraving_CourtesyChangesTests, evolutionSavedCourtesyScore)
+{
+    std::unique_ptr<MasterScore> score(ScoreRW::readScore(COURTESY_CHANGES_DATA + u"evolution-courtesy-inline-style.mscx"));
+    ASSERT_TRUE(score);
+    for (Sid sid : evolutionCourtesyOptions) {
+        EXPECT_TRUE(score->style().styleB(sid)) << MStyle::valueName(sid);
+    }
+    score->setLayoutAll();
+    score->doLayout();
+    Measure* repeatEnd = toMeasure(score->measure(2));
+    ASSERT_TRUE(repeatEnd);
+    for (SegmentType kind : { SegmentType::ClefRepeatAnnounce, SegmentType::KeySigRepeatAnnounce,
+                              SegmentType::TimeSigRepeatAnnounce }) {
+        const Segment* segment = repeatEnd->findSegmentR(kind, repeatEnd->ticks());
+        ASSERT_TRUE(segment);
+        EXPECT_TRUE(segment->enabled());
+        EXPECT_TRUE(segment->element(0));
+    }
+    Measure* continuation = toMeasure(score->measure(3));
+    ASSERT_TRUE(continuation);
+    for (SegmentType kind : { SegmentType::ClefStartRepeatAnnounce, SegmentType::KeySigStartRepeatAnnounce,
+                              SegmentType::TimeSigStartRepeatAnnounce }) {
+        const Segment* segment = continuation->findSegmentR(kind, Fraction(0, 1));
+        ASSERT_TRUE(segment);
+        EXPECT_TRUE(segment->enabled());
+        EXPECT_TRUE(segment->element(0));
+    }
+}
+
+TEST_F(Engraving_CourtesyChangesTests, evolutionExplicitRepeatClefHeaders)
+{
+    std::unique_ptr<MasterScore> score(ScoreRW::readScore(COURTESY_CHANGES_DATA + u"evolution-repeat-clef-headers.mscx"));
+    ASSERT_TRUE(score);
+    // A legacy clef without a flag still uses context. The next two start
+    // before their key/meter but explicitly distinguish small and full size.
+    const SegmentType types[] = { SegmentType::HeaderClef, SegmentType::Clef, SegmentType::HeaderClef };
+    for (int pass = 0; pass < 3; ++pass) {
+        score->setLayoutAll();
+        score->doLayout();
+        Measure* measure = score->firstMeasure();
+        for (int index = 0; index < 3; ++index) {
+            ASSERT_TRUE(measure);
+            Segment* segment = measure->findSegmentR(types[index], Fraction(0, 1));
+            ASSERT_TRUE(segment);
+            EngravingItem* item = segment->element(0);
+            ASSERT_TRUE(item && item->isClef());
+            EXPECT_EQ(toClef(item)->isSmall(), index == 1);
+            EXPECT_EQ(toClef(item)->isHeader(), index != 1);
+            measure = measure->nextMeasure();
+        }
+    }
 }

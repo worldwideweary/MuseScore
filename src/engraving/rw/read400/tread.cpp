@@ -2808,6 +2808,7 @@ void TRead::read(Clef* c, XmlReader& e, ReadContext& ctx)
             c->setClefToBarlinePosition(ClefToBarlinePosition(e.readInt()));
         } else if (tag == "isHeader") {
             c->setIsHeader(e.readBool());
+            c->setHeaderTagRead(true);
         } else if (!readItemProperties(c, e, ctx)) {
             e.unknown();
         }

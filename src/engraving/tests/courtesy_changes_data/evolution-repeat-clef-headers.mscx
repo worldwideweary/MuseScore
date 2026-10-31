@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="3.02">
+  <Score>
+    <Division>480</Division>
+    <Style>
+      <createMultiMeasureRests>0</createMultiMeasureRests>
+      <changesBeforeBarlineRepeats>0</changesBeforeBarlineRepeats>
+      <placeClefsBeforeRepeats>0</placeClefsBeforeRepeats>
+    </Style>
+    <Part>
+      <Staff id="1"><StaffType group="pitched"><name>stdNormal</name></StaffType></Staff>
+      <trackName>Piano</trackName>
+      <Instrument><trackName>Piano</trackName><Channel><program value="0"/></Channel></Instrument>
+    </Part>
+    <Staff id="1">
+      <Measure><voice>
+        <Clef><concertClefType>G</concertClefType><transposingClefType>G</transposingClefType></Clef>
+        <KeySig><accidental>-1</accidental></KeySig>
+        <TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+        <Rest><durationType>measure</durationType><duration>4/4</duration></Rest>
+      </voice><endRepeat>2</endRepeat></Measure>
+      <Measure><voice>
+        <Clef><isHeader>0</isHeader><concertClefType>F</concertClefType><transposingClefType>F</transposingClefType></Clef>
+        <KeySig><accidental>1</accidental></KeySig>
+        <TimeSig><sigN>3</sigN><sigD>4</sigD></TimeSig>
+        <Rest><durationType>measure</durationType><duration>3/4</duration></Rest>
+      </voice><endRepeat>2</endRepeat></Measure>
+      <Measure><voice>
+        <Clef><isHeader>1</isHeader><concertClefType>G</concertClefType><transposingClefType>G</transposingClefType></Clef>
+        <KeySig><accidental>-1</accidental></KeySig>
+        <TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+        <Rest><durationType>measure</durationType><duration>4/4</duration></Rest>
+      </voice></Measure>
+    </Staff>
+  </Score>
+</museScore>

@@ -358,7 +358,9 @@ void MeasureRead::readVoice(Measure* measure, XmlReader& e, ReadContext& ctx, in
             clef->setGenerated(false);
 
             bool header = false;
-            if (ctx.score()->mscVersion() < 410) {
+            // Evolution writes an explicit header flag at repeat boundaries
+            // while retaining version 3.02. Keep guessing only when it is absent.
+            if (ctx.score()->mscVersion() < 410 && !clef->headerTagRead()) {
                 /***********************************************************************
                  * LEGACY: we used to try to guess if the clef is a header based
                  * on context, which is very unreliable. After 4.1, we just TAG it.
