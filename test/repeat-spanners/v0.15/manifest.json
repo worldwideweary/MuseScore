@@ -1,0 +1,651 @@
+{
+  "version": "0.15",
+  "cases": [
+    {
+      "id": "R01",
+      "title": "Ties: ordinary repeat and linear continuation",
+      "files": {
+        "37E": "R01-37E.mscx",
+        "475": "R01-475.mscx"
+      },
+      "bars": 6,
+      "staves": 1,
+      "voices": 1,
+      "route": [
+        1,
+        2,
+        3,
+        4,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "edges": [
+        [
+          4,
+          2
+        ]
+      ],
+      "full_ties": 2,
+      "partial_ties": 1,
+      "slurs": 0,
+      "partial_lyrics": 0,
+      "checks": [
+        "m1 beats 1-2 are an ordinary tie control.",
+        "A ties to B on the repeat and to C on the last pass.",
+        "B attacks on its first visit; it is sustained only when reached from A."
+      ]
+    },
+    {
+      "id": "R02",
+      "title": "Ties: first and second endings",
+      "files": {
+        "37E": "R02-37E.mscx",
+        "475": "R02-475.mscx"
+      },
+      "bars": 6,
+      "staves": 1,
+      "voices": 1,
+      "route": [
+        1,
+        2,
+        3,
+        4,
+        2,
+        3,
+        5,
+        6
+      ],
+      "edges": [
+        [
+          4,
+          2
+        ],
+        [
+          3,
+          5
+        ]
+      ],
+      "full_ties": 1,
+      "partial_ties": 3,
+      "slurs": 0,
+      "partial_lyrics": 0,
+      "checks": [
+        "A has a normal tie to D and an incoming branch at E.",
+        "F has an outgoing partial to B; there is no full F-to-E tie.",
+        "Changing a repeat destination in the Inspector must survive undo/redo and save/reopen."
+      ]
+    },
+    {
+      "id": "R03",
+      "title": "Ties: D.C. al Fine",
+      "files": {
+        "37E": "R03-37E.mscx",
+        "475": "R03-475.mscx"
+      },
+      "bars": 6,
+      "staves": 1,
+      "voices": 1,
+      "route": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        1,
+        2,
+        3
+      ],
+      "edges": [
+        [
+          6,
+          1
+        ]
+      ],
+      "full_ties": 0,
+      "partial_ties": 2,
+      "slurs": 0,
+      "partial_lyrics": 0,
+      "checks": [
+        "No initial tie-in attack is suppressed on the first visit to m1.",
+        "The jump from m6 into m1 is sustained.",
+        "Playback ends at Fine on the return, not at the first Fine visit."
+      ]
+    },
+    {
+      "id": "R04",
+      "title": "Ties: D.S. al Coda",
+      "files": {
+        "37E": "R04-37E.mscx",
+        "475": "R04-475.mscx"
+      },
+      "bars": 8,
+      "staves": 1,
+      "voices": 1,
+      "route": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        2,
+        3,
+        4,
+        7,
+        8
+      ],
+      "edges": [
+        [
+          6,
+          2
+        ],
+        [
+          4,
+          7
+        ]
+      ],
+      "full_ties": 1,
+      "partial_ties": 3,
+      "slurs": 0,
+      "partial_lyrics": 0,
+      "checks": [
+        "A sustains into B after D.S.",
+        "C ties linearly into m5 on pass 1 and into D on the Coda pass.",
+        "The first visits to B and D must follow the actual route; do not mute an unrelated attack."
+      ]
+    },
+    {
+      "id": "R05",
+      "title": "Ties: chords, voices, and two staves",
+      "files": {
+        "37E": "R05-37E.mscx",
+        "475": "R05-475.mscx"
+      },
+      "bars": 6,
+      "staves": 2,
+      "voices": 2,
+      "route": [
+        1,
+        2,
+        3,
+        4,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "edges": [
+        [
+          4,
+          2
+        ]
+      ],
+      "full_ties": 7,
+      "partial_ties": 7,
+      "slurs": 0,
+      "partial_lyrics": 0,
+      "checks": [
+        "Each chord tone has its own incoming repeat tie.",
+        "Voice 2 and the lower staff retain separate ties and attacks.",
+        "Compare system-header clearance, stem direction, and stacked tie separation."
+      ]
+    },
+    {
+      "id": "R06",
+      "title": "Ties: disabled, rest, and pitch controls",
+      "files": {
+        "37E": "R06-37E.mscx",
+        "475": "R06-475.mscx"
+      },
+      "bars": 12,
+      "staves": 1,
+      "voices": 1,
+      "route": [
+        1,
+        2,
+        3,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        10,
+        11,
+        12
+      ],
+      "edges": [
+        [
+          3,
+          2
+        ],
+        [
+          7,
+          6
+        ],
+        [
+          11,
+          10
+        ]
+      ],
+      "full_ties": 3,
+      "partial_ties": 0,
+      "slurs": 0,
+      "partial_lyrics": 0,
+      "checks": [
+        "A has a valid repeat destination B, deliberately unchecked: B must reattack.",
+        "C has no repeat tie into a rest, even though a C note follows later in m6.",
+        "E has no repeat tie into the differently pitched F; all three linear ties remain."
+      ]
+    },
+    {
+      "id": "S01",
+      "title": "Slurs: incoming and outgoing at a repeat",
+      "files": {
+        "37E": "S01-37E.mscx",
+        "475": "S01-475.mscx"
+      },
+      "bars": 6,
+      "staves": 1,
+      "voices": 1,
+      "route": [
+        1,
+        2,
+        3,
+        4,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "edges": [
+        [
+          4,
+          2
+        ]
+      ],
+      "full_ties": 0,
+      "partial_ties": 0,
+      "slurs": 3,
+      "partial_lyrics": 0,
+      "checks": [
+        "B hangs from the beginning of m2 and ends on beat 3.",
+        "A begins on beat 2 and hangs to the repeat barline.",
+        "C is an ordinary slur; Inspector direction and line style edits must remain independent."
+      ]
+    },
+    {
+      "id": "S02",
+      "title": "Slurs: alternate endings",
+      "files": {
+        "37E": "S02-37E.mscx",
+        "475": "S02-475.mscx"
+      },
+      "bars": 6,
+      "staves": 1,
+      "voices": 1,
+      "route": [
+        1,
+        2,
+        3,
+        4,
+        2,
+        3,
+        5,
+        6
+      ],
+      "edges": [
+        [
+          4,
+          2
+        ],
+        [
+          3,
+          5
+        ]
+      ],
+      "full_ties": 0,
+      "partial_ties": 0,
+      "slurs": 3,
+      "partial_lyrics": 0,
+      "checks": [
+        "A is outgoing, D becomes ordinary on load (no jump arrives at the first ending), and E stays incoming.",
+        "Changing E must not reshape D.",
+        "Partial slurs are entered explicitly; automatic tie branching is not an automatic-slur promise."
+      ]
+    },
+    {
+      "id": "S03",
+      "title": "Slurs: one-note anchors and both ends",
+      "files": {
+        "37E": "S03-37E.mscx",
+        "475": "S03-475.mscx"
+      },
+      "bars": 6,
+      "staves": 1,
+      "voices": 1,
+      "route": [
+        1,
+        2,
+        2,
+        3,
+        4,
+        4,
+        5,
+        6
+      ],
+      "edges": [
+        [
+          2,
+          2
+        ],
+        [
+          4,
+          4
+        ]
+      ],
+      "full_ties": 0,
+      "partial_ties": 0,
+      "slurs": 3,
+      "partial_lyrics": 0,
+      "checks": [
+        "A hangs at both barlines, spanning the complete repeat bar.",
+        "B and C have one-note anchors and positive visual length.",
+        "C is below and dashed: compare direction/style persistence after save/reopen."
+      ]
+    },
+    {
+      "id": "S04",
+      "title": "Slurs: system and page breaks",
+      "files": {
+        "37E": "S04-37E.mscx",
+        "475": "S04-475.mscx"
+      },
+      "bars": 6,
+      "staves": 1,
+      "voices": 1,
+      "route": [
+        1,
+        2,
+        3,
+        4,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "edges": [
+        [
+          4,
+          2
+        ]
+      ],
+      "full_ties": 0,
+      "partial_ties": 0,
+      "slurs": 3,
+      "partial_lyrics": 0,
+      "checks": [
+        "A is an incoming partial spanning three systems and a forced page break.",
+        "B is a separate outgoing fragment on the final system; C is a normal slur.",
+        "A draft outgoing partial across several systems crashed stock 4.7.5; do not extend B across a system break during this baseline comparison."
+      ]
+    },
+    {
+      "id": "L01",
+      "title": "Lyrics: melisma across a repeat",
+      "files": {
+        "37E": "L01-37E.mscx",
+        "475": "L01-475.mscx"
+      },
+      "bars": 6,
+      "staves": 1,
+      "voices": 1,
+      "route": [
+        1,
+        2,
+        3,
+        4,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "edges": [
+        [
+          4,
+          2
+        ]
+      ],
+      "full_ties": 0,
+      "partial_ties": 0,
+      "slurs": 0,
+      "partial_lyrics": 2,
+      "checks": [
+        "A continues to the repeat barline; B begins at the repeat landing.",
+        "B extends through beat 2, ending before the lyric on beat 3.",
+        "There is no printed empty syllable at B; selecting/deleting the line is undoable."
+      ]
+    },
+    {
+      "id": "L02",
+      "title": "Lyrics: dashed continuation across a repeat",
+      "files": {
+        "37E": "L02-37E.mscx",
+        "475": "L02-475.mscx"
+      },
+      "bars": 6,
+      "staves": 1,
+      "voices": 1,
+      "route": [
+        1,
+        2,
+        3,
+        4,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "edges": [
+        [
+          4,
+          2
+        ]
+      ],
+      "full_ties": 0,
+      "partial_ties": 0,
+      "slurs": 0,
+      "partial_lyrics": 2,
+      "checks": [
+        "A and B show dashes rather than solid melisma lines.",
+        "The incoming dashed span leads to turn on beat 3.",
+        "Toggle Extension line in the 37E Inspector, undo, save, and reopen."
+      ]
+    },
+    {
+      "id": "L03",
+      "title": "Lyrics: two verses and voltas",
+      "files": {
+        "37E": "L03-37E.mscx",
+        "475": "L03-475.mscx"
+      },
+      "bars": 6,
+      "staves": 1,
+      "voices": 1,
+      "route": [
+        1,
+        2,
+        3,
+        4,
+        2,
+        3,
+        5,
+        6
+      ],
+      "edges": [
+        [
+          4,
+          2
+        ],
+        [
+          3,
+          5
+        ]
+      ],
+      "full_ties": 0,
+      "partial_ties": 0,
+      "slurs": 0,
+      "partial_lyrics": 6,
+      "checks": [
+        "Verse 1 is a melisma below; verse 2 is dashed on the next verse baseline below.",
+        "Both endings carry incoming lines for both verses.",
+        "Edit verse independently, then undo and save/reopen without moving another verse. L04 supplies the above-staff style control."
+      ]
+    },
+    {
+      "id": "L04",
+      "title": "Lyrics: above staff, page break, and both ends",
+      "files": {
+        "37E": "L04-37E.mscx",
+        "475": "L04-475.mscx"
+      },
+      "bars": 8,
+      "staves": 1,
+      "voices": 1,
+      "route": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        7,
+        8
+      ],
+      "edges": [
+        [
+          5,
+          2
+        ],
+        [
+          7,
+          7
+        ]
+      ],
+      "full_ties": 0,
+      "partial_ties": 0,
+      "slurs": 0,
+      "partial_lyrics": 3,
+      "checks": [
+        "The score-wide lyric placement is Above. A starts at m2 and spans the page break through the last note of m3.",
+        "B is a manually prepared empty continuation hanging at both boundaries of a one-bar repeat.",
+        "B is a geometric stress case; lyrics do not synthesize sung words in playback."
+      ]
+    },
+    {
+      "id": "X01",
+      "title": "Combined: grand staff, endings, ties, slurs, lyrics",
+      "files": {
+        "37E": "X01-37E.mscx",
+        "475": "X01-475.mscx"
+      },
+      "bars": 8,
+      "staves": 2,
+      "voices": 1,
+      "route": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8
+      ],
+      "edges": [
+        [
+          5,
+          2
+        ],
+        [
+          4,
+          6
+        ]
+      ],
+      "full_ties": 3,
+      "partial_ties": 9,
+      "slurs": 3,
+      "partial_lyrics": 3,
+      "checks": [
+        "All three feature families coexist over a forced page break.",
+        "Chords branch to the correct ending, while the lower staff remains a rhythmic reference.",
+        "Save modified copies in each application, reopen, then repeat the route and Inspector checks."
+      ]
+    },
+    {
+      "id": "E01",
+      "title": "Entry lab: create ties, slurs, and lyric continuations",
+      "files": {
+        "37E": "E01-37E.mscx",
+        "475": "E01-475.mscx"
+      },
+      "bars": 6,
+      "staves": 1,
+      "voices": 1,
+      "route": [
+        1,
+        2,
+        3,
+        4,
+        2,
+        3,
+        5,
+        6
+      ],
+      "edges": [
+        [
+          4,
+          2
+        ],
+        [
+          3,
+          5
+        ]
+      ],
+      "full_ties": 0,
+      "partial_ties": 0,
+      "slurs": 0,
+      "partial_lyrics": 0,
+      "checks": [
+        "Start from a fresh copy for each exercise; this score intentionally contains no ties, slurs, or lyrics.",
+        "Select A and press T outside note entry: D and E should receive ties.",
+        "Repeat in note entry and verify that the input cursor moves forward exactly once.",
+        "Select F and press T: create outgoing/incoming repeat ties without changing E.",
+        "Create explicit note+barline partial slurs and partial lyric lines; use the README step sequence."
+      ]
+    }
+  ]
+}

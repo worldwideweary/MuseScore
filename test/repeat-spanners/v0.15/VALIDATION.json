@@ -1,0 +1,335 @@
+{
+  "version": "0.15",
+  "cases": [
+    {
+      "id": "R01",
+      "notes_per_written_score": 24,
+      "bars": 6,
+      "partial_ties": 1,
+      "slurs": 0,
+      "native_partial_lyric_lines": 0,
+      "pair_check": "PASS",
+      "native_roundtrip": "PASS",
+      "midi_attacks": 32,
+      "midi_route_and_ties": "DIFF",
+      "midi_extra": [],
+      "midi_missing": [
+        {
+          "quarter": "4",
+          "pitch": 60,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": "R02",
+      "notes_per_written_score": 24,
+      "bars": 6,
+      "partial_ties": 3,
+      "slurs": 0,
+      "native_partial_lyric_lines": 0,
+      "pair_check": "PASS",
+      "native_roundtrip": "PASS",
+      "midi_attacks": 28,
+      "midi_route_and_ties": "DIFF",
+      "midi_extra": [],
+      "midi_missing": [
+        {
+          "quarter": "4",
+          "pitch": 60,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": "R03",
+      "notes_per_written_score": 24,
+      "bars": 6,
+      "partial_ties": 2,
+      "slurs": 0,
+      "native_partial_lyric_lines": 0,
+      "pair_check": "PASS",
+      "native_roundtrip": "PASS",
+      "midi_attacks": 34,
+      "midi_route_and_ties": "DIFF",
+      "midi_extra": [],
+      "midi_missing": [
+        {
+          "quarter": "0",
+          "pitch": 60,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": "R04",
+      "notes_per_written_score": 32,
+      "bars": 8,
+      "partial_ties": 3,
+      "slurs": 0,
+      "native_partial_lyric_lines": 0,
+      "pair_check": "PASS",
+      "native_roundtrip": "PASS",
+      "midi_attacks": 40,
+      "midi_route_and_ties": "DIFF",
+      "midi_extra": [],
+      "midi_missing": [
+        {
+          "quarter": "4",
+          "pitch": 60,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": "R05",
+      "notes_per_written_score": 168,
+      "bars": 6,
+      "partial_ties": 7,
+      "slurs": 0,
+      "native_partial_lyric_lines": 0,
+      "pair_check": "PASS",
+      "native_roundtrip": "PASS",
+      "midi_attacks": 231,
+      "midi_route_and_ties": "DIFF",
+      "midi_extra": [],
+      "midi_missing": [
+        {
+          "quarter": "4",
+          "pitch": 43,
+          "count": 1
+        },
+        {
+          "quarter": "4",
+          "pitch": 48,
+          "count": 1
+        },
+        {
+          "quarter": "4",
+          "pitch": 52,
+          "count": 1
+        },
+        {
+          "quarter": "4",
+          "pitch": 55,
+          "count": 1
+        },
+        {
+          "quarter": "4",
+          "pitch": 60,
+          "count": 1
+        },
+        {
+          "quarter": "4",
+          "pitch": 64,
+          "count": 1
+        },
+        {
+          "quarter": "4",
+          "pitch": 67,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": "R06",
+      "notes_per_written_score": 47,
+      "bars": 12,
+      "partial_ties": 0,
+      "slurs": 0,
+      "native_partial_lyric_lines": 0,
+      "pair_check": "PASS",
+      "native_roundtrip": "PASS",
+      "midi_attacks": 67,
+      "midi_route_and_ties": "MATCH",
+      "midi_extra": [],
+      "midi_missing": []
+    },
+    {
+      "id": "S01",
+      "notes_per_written_score": 24,
+      "bars": 6,
+      "partial_ties": 0,
+      "slurs": 3,
+      "native_partial_lyric_lines": 0,
+      "pair_check": "PASS",
+      "native_roundtrip": "PASS",
+      "midi_attacks": 36,
+      "midi_route_and_ties": "MATCH",
+      "midi_extra": [],
+      "midi_missing": []
+    },
+    {
+      "id": "S02",
+      "notes_per_written_score": 24,
+      "bars": 6,
+      "partial_ties": 0,
+      "slurs": 3,
+      "native_partial_lyric_lines": 0,
+      "pair_check": "PASS",
+      "native_roundtrip": "PASS",
+      "midi_attacks": 32,
+      "midi_route_and_ties": "MATCH",
+      "midi_extra": [],
+      "midi_missing": []
+    },
+    {
+      "id": "S03",
+      "notes_per_written_score": 24,
+      "bars": 6,
+      "partial_ties": 0,
+      "slurs": 3,
+      "native_partial_lyric_lines": 0,
+      "pair_check": "PASS",
+      "native_roundtrip": "PASS",
+      "midi_attacks": 32,
+      "midi_route_and_ties": "MATCH",
+      "midi_extra": [],
+      "midi_missing": []
+    },
+    {
+      "id": "S04",
+      "notes_per_written_score": 24,
+      "bars": 6,
+      "partial_ties": 0,
+      "slurs": 3,
+      "native_partial_lyric_lines": 0,
+      "pair_check": "PASS",
+      "native_roundtrip": "PASS",
+      "midi_attacks": 36,
+      "midi_route_and_ties": "MATCH",
+      "midi_extra": [],
+      "midi_missing": []
+    },
+    {
+      "id": "L01",
+      "notes_per_written_score": 24,
+      "bars": 6,
+      "partial_ties": 0,
+      "slurs": 0,
+      "native_partial_lyric_lines": 1,
+      "pair_check": "PASS",
+      "native_roundtrip": "PASS",
+      "midi_attacks": 36,
+      "midi_route_and_ties": "MATCH",
+      "midi_extra": [],
+      "midi_missing": []
+    },
+    {
+      "id": "L02",
+      "notes_per_written_score": 24,
+      "bars": 6,
+      "partial_ties": 0,
+      "slurs": 0,
+      "native_partial_lyric_lines": 1,
+      "pair_check": "PASS",
+      "native_roundtrip": "PASS",
+      "midi_attacks": 36,
+      "midi_route_and_ties": "MATCH",
+      "midi_extra": [],
+      "midi_missing": []
+    },
+    {
+      "id": "L03",
+      "notes_per_written_score": 24,
+      "bars": 6,
+      "partial_ties": 0,
+      "slurs": 0,
+      "native_partial_lyric_lines": 4,
+      "pair_check": "PASS",
+      "native_roundtrip": "PASS",
+      "midi_attacks": 32,
+      "midi_route_and_ties": "MATCH",
+      "midi_extra": [],
+      "midi_missing": []
+    },
+    {
+      "id": "L04",
+      "notes_per_written_score": 32,
+      "bars": 8,
+      "partial_ties": 0,
+      "slurs": 0,
+      "native_partial_lyric_lines": 2,
+      "pair_check": "PASS",
+      "native_roundtrip": "PASS",
+      "midi_attacks": 52,
+      "midi_route_and_ties": "MATCH",
+      "midi_extra": [],
+      "midi_missing": []
+    },
+    {
+      "id": "X01",
+      "notes_per_written_score": 128,
+      "bars": 8,
+      "partial_ties": 9,
+      "slurs": 3,
+      "native_partial_lyric_lines": 2,
+      "pair_check": "PASS",
+      "native_roundtrip": "PASS",
+      "midi_attacks": 164,
+      "midi_route_and_ties": "DIFF",
+      "midi_extra": [],
+      "midi_missing": [
+        {
+          "quarter": "4",
+          "pitch": 60,
+          "count": 1
+        },
+        {
+          "quarter": "4",
+          "pitch": 64,
+          "count": 1
+        },
+        {
+          "quarter": "4",
+          "pitch": 67,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": "E01",
+      "notes_per_written_score": 24,
+      "bars": 6,
+      "partial_ties": 0,
+      "slurs": 0,
+      "native_partial_lyric_lines": 0,
+      "pair_check": "PASS",
+      "native_roundtrip": "PASS",
+      "midi_attacks": 32,
+      "midi_route_and_ties": "MATCH",
+      "midi_extra": [],
+      "midi_missing": []
+    }
+  ],
+  "paired_files": 32,
+  "structural_status": "PASS",
+  "native_midi_comparison": "BASELINE_DIFFERENCES_RECORDED",
+  "native_renderer": "MuseScore Studio 4.7.5, programRevision 3654226",
+  "native_validation": "Read original; save .mscz; reopen; render PNG; export .mscx and MIDI; compare score content",
+  "reference_pages": 19,
+  "pages_by_case": {
+    "R01": 1,
+    "R02": 1,
+    "R03": 1,
+    "R04": 1,
+    "R05": 1,
+    "R06": 1,
+    "S01": 1,
+    "S02": 1,
+    "S03": 1,
+    "S04": 2,
+    "L01": 1,
+    "L02": 1,
+    "L03": 1,
+    "L04": 2,
+    "X01": 2,
+    "E01": 1
+  },
+  "unverified": [
+    "37E runtime/GUI",
+    "companion-patched 4.7 import",
+    "interactive edits and live audio"
+  ],
+  "release_appimage_sha256": "a31b2da2dbcc2191bcc98beb7be5c15f2f517bedb3444def96fe3088b74d3a1e"
+}

@@ -1,0 +1,17 @@
+ID,Stock475NativeRoundtrip,Stock475Pages,Stock475MIDIExport,37EOpenVisual,37ELiveRepeatsOn,37ELiveRepeatsOff,37EInspectorUndoRedo,37ESaveReopen,Companion47Import,Companion47NativeSaveReopen,Notes
+R01,PASS (CLI),1,DIFF,,,,,,,,See VALIDATION.json and README for the first-visit MIDI export difference.
+R02,PASS (CLI),1,DIFF,,,,,,,,See VALIDATION.json and README for the first-visit MIDI export difference.
+R03,PASS (CLI),1,DIFF,,,,,,,,See VALIDATION.json and README for the first-visit MIDI export difference.
+R04,PASS (CLI),1,DIFF,,,,,,,,See VALIDATION.json and README for the first-visit MIDI export difference.
+R05,PASS (CLI),1,DIFF,,,,,,,,See VALIDATION.json and README for the first-visit MIDI export difference.
+R06,PASS (CLI),1,MATCH,,,,,,,,
+S01,PASS (CLI),1,MATCH,,,,,,,,
+S02,PASS (CLI),1,MATCH,,,,,,,,
+S03,PASS (CLI),1,MATCH,,,,,,,,
+S04,PASS (CLI),2,MATCH,,,,,,,,
+L01,PASS (CLI),1,MATCH,,,,,,,,
+L02,PASS (CLI),1,MATCH,,,,,,,,
+L03,PASS (CLI),1,MATCH,,,,,,,,
+L04,PASS (CLI),2,MATCH,,,,,,,,
+X01,PASS (CLI),2,DIFF,,,,,,,,See VALIDATION.json and README for the first-visit MIDI export difference.
+E01,PASS (CLI),1,MATCH,,,,,,,,
