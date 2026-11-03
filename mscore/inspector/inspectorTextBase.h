@@ -29,6 +29,7 @@ class InspectorTextBase : public InspectorElementBase {
       QComboBox* style;
 
    protected:
+      using InspectorElementBase::valueChanged;
       Ui::InspectorText t;
 
    public:

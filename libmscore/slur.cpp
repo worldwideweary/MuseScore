@@ -26,6 +26,7 @@
 #include "stem.h"
 #include "system.h"
 #include "undo.h"
+#include "utils.h"
 
 namespace Ms {
 
@@ -209,10 +210,50 @@ bool SlurSegment::edit(EditData& ed)
             e1 = sl->startCR();
             }
 
-      if (ed.key == Qt::Key_Left)
-            cr = prevChordRest(e);
-      else if (ed.key == Qt::Key_Right)
-            cr = nextChordRest(e);
+      bool incoming = sl->isIncoming();
+      bool outgoing = sl->isOutgoing();
+      const bool horizontal = ed.key == Qt::Key_Left || ed.key == Qt::Key_Right;
+      if (horizontal) {
+            const bool right = ed.key == Qt::Key_Right;
+            const bool start = ed.curGrip == Grip::START;
+            cr = e;
+            if (start) {
+                  if (incoming) {
+                        incoming = false;
+                        if (!right)
+                              cr = prevChordRest(e);
+                        }
+                  else if (!right && Slur::boundaryAnchor(e->measure(), e->track(), true) == e)
+                        incoming = true;
+                  else {
+                        cr = right ? nextChordRest(e) : prevChordRest(e);
+                        if (right && cr && cr->measure() != e->measure()
+                            && Slur::boundaryAnchor(cr->measure(), cr->track(), true) == cr)
+                              incoming = true;
+                        }
+                  }
+            else {
+                  if (outgoing) {
+                        outgoing = false;
+                        if (right)
+                              cr = nextChordRest(e);
+                        }
+                  else if (right && Slur::boundaryAnchor(e->measure(), e->track(), false) == e)
+                        outgoing = true;
+                  else {
+                        cr = right ? nextChordRest(e) : prevChordRest(e);
+                        if (!right && cr && cr->measure() != e->measure()
+                            && Slur::boundaryAnchor(cr->measure(), cr->track(), false) == cr)
+                              outgoing = true;
+                        }
+                  }
+            // A coincident pair of note anchors is meaningful for a partial
+            // slur. Keep ordinary slurs ordered and nonzero, and never let a
+            // boundary step move an endpoint past the opposite endpoint.
+            if (!cr || (cr == e1 && !incoming && !outgoing)
+                || (start ? e1->isBefore(cr) : cr->isBefore(e1)))
+                  return true;
+            }
       else if (ed.key == Qt::Key_Up) {
             Part* part     = e->part();
             int startTrack = part->startTrack();
@@ -225,12 +266,20 @@ bool SlurSegment::edit(EditData& ed)
             int endTrack   = part->endTrack();
             cr = searchCR(e->segment(), startTrack, endTrack);
             }
-      if (cr && cr != e1) {
+      if (cr && (cr != e1 || (horizontal && (incoming || outgoing)))) {
             if (cr->staff() != e->staff() && (cr->staffType()->isTabStaff() || e->staffType()->isTabStaff()))
                   return false; // Cross-staff slurs don't make sense for TAB staves
             if (cr->staff()->isLinked(e->staff()))
                   return false; // Don't allow slur to cross into staff that's linked to this
-            changeAnchor(ed, cr);
+            if (horizontal) {
+                  const int direction = incoming ? (outgoing ? 2 : 0) : (outgoing ? 1 : -1);
+                  if (direction != sl->partialDirection())
+                        sl->undoChangeProperty(Pid::PARTIAL_SPANNER_DIRECTION, direction);
+                  }
+            if (cr != e)
+                  changeAnchor(ed, cr);
+            else
+                  sl->layout();
             }
       return true;
       }
@@ -716,6 +765,20 @@ static ChordRest* partialSlurBoundaryCR(const Measure* measure, int track, bool 
                   }
             }
       return result;
+      }
+
+// Keyboard endpoints use the same repeat roadmap as saved partial slurs.
+// A system break alone is not a repeat boundary.
+ChordRest* Slur::boundaryAnchor(const Measure* measure, int track, bool incoming)
+      {
+      if (!measure || (incoming ? precedingRepeatMeasures(measure) : followingRepeatMeasures(measure)).empty())
+            return nullptr;
+      ChordRest* cr = partialSlurBoundaryCR(measure, track, incoming);
+      if (!cr || !cr->isChord())
+            return nullptr;
+      if (incoming ? cr->tick() != measure->tick() : cr->tick() + cr->actualTicks() != measure->endTick())
+            return nullptr;
+      return cr;
       }
 
 static qreal partialSlurBoundaryY(const ChordRest* cr, int staffIdx, bool up, qreal sp, qreal fallback)
