@@ -141,6 +141,7 @@ endif (NOT MSVC)
 
 subdirs (
         mscore/inspector
+        mscore/slurkeyboard
         libmscore/compat114
         libmscore/compat206
 #        libmscore/album            # obsolete

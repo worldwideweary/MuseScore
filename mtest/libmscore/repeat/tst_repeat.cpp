@@ -31,6 +31,7 @@
 #include "libmscore/barline.h"
 #include "libmscore/segment.h"
 #include "libmscore/system.h"
+#include "libmscore/mscoreview.h"
 
 #define DIR QString("libmscore/repeat/")
 
@@ -39,6 +40,17 @@ using namespace Ms;
 //---------------------------------------------------------
 //   TestRepeat
 //---------------------------------------------------------
+
+// Exercise the editor's segment handoff across system breaks without a GUI.
+class SlurKeyboardView : public MuseScoreView {
+   public:
+      int handoffs = 0;
+      void dataChanged(const QRectF&) override {}
+      void updateAll() override {}
+      void drawBackground(QPainter*, const QRectF&) const override {}
+      const QRect geometry() const override { return QRect(); }
+      void startEdit(Element*, Grip) override { ++handoffs; }
+      };
 
 class TestRepeat : public QObject, public MTest
       {
@@ -49,6 +61,10 @@ class TestRepeat : public QObject, public MTest
       void initTestCase();
       void notationRoutes_data();
       void notationRoutes();
+      void slurKeyboardNavigation_data();
+      void slurKeyboardNavigation();
+      void slurKeyboardNormal();
+      void slurKeyboardVolta();
       void partialTieRoundTrip();
       void partialTieClearance_data();
       void partialTieClearance();
@@ -252,6 +268,177 @@ void TestRepeat::notationRoutes()
       // Reading the ordinary playback list must still produce a flat score.
       QCOMPARE(score->repeatList().size(), 1);
       delete score;
+      }
+
+void TestRepeat::slurKeyboardNavigation_data()
+      {
+      QTest::addColumn<QString>("file");
+      QTest::newRow("repeat") << QString("partial-slur-S01.mscx");
+      QTest::newRow("system-breaks") << QString("partial-slur-S04.mscx");
+      }
+
+void TestRepeat::slurKeyboardNavigation()
+      {
+      QFETCH(QString, file);
+      std::unique_ptr<MasterScore> score(readScore(DIR + file));
+      QVERIFY(score);
+      Slur* slur = nullptr;
+      for (const auto& entry : score->spanner()) {
+            if (entry.second->isSlur() && toSlur(entry.second)->isIncoming()) {
+                  slur = toSlur(entry.second);
+                  break;
+                  }
+            }
+      QVERIFY(slur);
+      ChordRest* first = slur->startCR();
+      QCOMPARE(Slur::boundaryAnchor(first->measure(), first->track(), true), first);
+      slur->setEndElement(first);
+      slur->setTick2(first->tick());
+      score->setLayoutAll();
+      score->doLayout();
+      SlurKeyboardView view;
+      view.setScore(score.get());
+      auto key = [&](Grip grip, int keyCode) {
+            EditData ed(&view);
+            ed.key = keyCode;
+            ed.modifiers = Qt::ShiftModifier;
+            ed.curGrip = grip;
+            SlurSegment* segment = grip == Grip::START ? slur->frontSegment() : slur->backSegment();
+            score->startCmd();
+            const bool handled = segment->edit(ed);
+            score->endCmd();
+            return handled;
+            };
+      QVERIFY(key(Grip::END, Qt::Key_Right));
+      QCOMPARE(slur->endCR(), nextChordRest(first));
+      QCOMPARE(slur->partialDirection(), 0);
+      QVERIFY(key(Grip::END, Qt::Key_Left));
+      QCOMPARE(slur->endCR(), first); // contraction to one note
+      QCOMPARE(slur->partialDirection(), 0);
+      score->undoRedo(true, nullptr);
+      QCOMPARE(slur->endCR(), nextChordRest(first));
+      score->undoRedo(false, nullptr);
+      QCOMPARE(slur->endCR(), first);
+      QVERIFY(key(Grip::END, Qt::Key_Left));
+      QCOMPARE(slur->endCR(), first); // cannot cross the opposite endpoint
+
+      int steps = 0;
+      while (!slur->isOutgoing() && steps++ < 40)
+            QVERIFY(key(Grip::END, Qt::Key_Right));
+      QVERIFY(slur->isOutgoing());
+      QCOMPARE(slur->partialDirection(), 2);
+      ChordRest* last = slur->endCR();
+      QCOMPARE(Slur::boundaryAnchor(last->measure(), last->track(), false), last);
+      ChordRest* next = nextChordRest(last);
+      QVERIFY(next);
+      QVERIFY(key(Grip::END, Qt::Key_Right));
+      QCOMPARE(slur->endCR(), next); // boundary -> next written note
+      QCOMPARE(slur->partialDirection(), 0);
+      score->undoRedo(true, nullptr);
+      QCOMPARE(slur->endCR(), last);
+      QCOMPARE(slur->partialDirection(), 2);
+      score->undoRedo(false, nullptr);
+      QCOMPARE(slur->endCR(), next);
+      QCOMPARE(slur->partialDirection(), 0);
+      QVERIFY(key(Grip::END, Qt::Key_Left));
+      QCOMPARE(slur->endCR(), last); // previous boundary is a stop again
+      QCOMPARE(slur->partialDirection(), 2);
+      QVERIFY(key(Grip::END, Qt::Key_Left));
+      QCOMPARE(slur->endCR(), last); // boundary -> its owning note
+      QCOMPARE(slur->partialDirection(), 0);
+      QVERIFY(key(Grip::END, Qt::Key_Right));
+      QCOMPARE(slur->partialDirection(), 2);
+
+      ChordRest* previous = prevChordRest(first);
+      QVERIFY(previous);
+      QVERIFY(key(Grip::START, Qt::Key_Left));
+      QCOMPARE(slur->startCR(), previous);
+      QCOMPARE(slur->partialDirection(), 1);
+      QVERIFY(key(Grip::START, Qt::Key_Right));
+      QCOMPARE(slur->startCR(), first);
+      QCOMPARE(slur->partialDirection(), 2);
+      QVERIFY(key(Grip::START, Qt::Key_Right));
+      QCOMPARE(slur->startCR(), first);
+      QCOMPARE(slur->partialDirection(), 1);
+      QVERIFY(key(Grip::START, Qt::Key_Left));
+      QCOMPARE(slur->partialDirection(), 2);
+      if (file == "partial-slur-S04.mscx")
+            QVERIFY(view.handoffs > 0);
+
+      QTemporaryDir directory;
+      const QString saved = directory.path() + "/keyboard-slur.mscx";
+      QVERIFY(saveScore(score.get(), saved));
+      std::unique_ptr<MasterScore> copy(readCreatedScore(saved));
+      QVERIFY(copy);
+      bool found = false;
+      for (const auto& entry : copy->spanner()) {
+            if (entry.second->isSlur() && toSlur(entry.second)->partialDirection() == 2
+                && entry.second->tick() == slur->tick() && entry.second->tick2() == slur->tick2())
+                  found = true;
+            }
+      QVERIFY(found);
+      }
+
+void TestRepeat::slurKeyboardVolta()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "partial-slur-S02.mscx"));
+      QVERIFY(score);
+      Slur* slur = nullptr;
+      for (const auto& entry : score->spanner()) {
+            if (entry.second->isSlur() && toSlur(entry.second)->isOutgoing()) {
+                  slur = toSlur(entry.second);
+                  break;
+                  }
+            }
+      QVERIFY(slur);
+      ChordRest* last = slur->endCR();
+      QVERIFY(!last->measure()->repeatEnd()); // skipped-volta boundary, not repeat dots
+      QCOMPARE(Slur::boundaryAnchor(last->measure(), last->track(), false), last);
+      ChordRest* next = nextChordRest(last);
+      QVERIFY(next && next->measure() != last->measure());
+      SlurKeyboardView view;
+      view.setScore(score.get());
+      EditData ed(&view);
+      ed.curGrip = Grip::END;
+      ed.modifiers = Qt::ShiftModifier;
+      for (int key : { int(Qt::Key_Right), int(Qt::Key_Left) }) {
+            ed.key = key;
+            score->startCmd();
+            QVERIFY(slur->backSegment()->edit(ed));
+            score->endCmd();
+            QCOMPARE(slur->endCR(), key == Qt::Key_Right ? next : last);
+            QCOMPARE(slur->partialDirection(), key == Qt::Key_Right ? -1 : 1);
+            }
+      }
+
+void TestRepeat::slurKeyboardNormal()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "partial-slur-S01.mscx"));
+      QVERIFY(score);
+      ChordRest* first = toChordRest(score->firstMeasure()->first(SegmentType::ChordRest)->element(0));
+      ChordRest* second = nextChordRest(first);
+      QVERIFY(!Slur::boundaryAnchor(first->measure(), 0, true));
+      QVERIFY(!Slur::boundaryAnchor(first->measure(), 0, false));
+      Slur* slur = new Slur(score.get());
+      slur->setTrack(0);
+      slur->setTrack2(0);
+      slur->setStartElement(first);
+      slur->setEndElement(second);
+      slur->setTick(first->tick());
+      slur->setTick2(second->tick());
+      score->addElement(slur);
+      score->doLayout();
+      SlurKeyboardView view;
+      view.setScore(score.get());
+      EditData ed(&view);
+      ed.curGrip = Grip::END;
+      ed.key = Qt::Key_Left;
+      ed.modifiers = Qt::ShiftModifier;
+      score->startCmd();
+      QVERIFY(slur->backSegment()->edit(ed));
+      score->endCmd();
+      QCOMPARE(slur->endCR(), second); // ordinary slur cannot collapse to zero
+      QCOMPARE(slur->partialDirection(), -1);
       }
 
 void TestRepeat::partialTieRoundTrip()

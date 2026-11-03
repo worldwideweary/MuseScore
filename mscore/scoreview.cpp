@@ -4297,6 +4297,29 @@ void ScoreView::cmdAddSlur(const Slur* slurTemplate)
       const auto& sel = _score->selection();
       auto el         = sel.uniqueElements();
 
+      // Resolve the following measure: a second ending may be preceded by
+      // an end-repeat barline rather than a start-repeat barline.
+      if (!noteEntryMode() && !sel.isRange() && el.size() == 1 && el.front()->isBarLine()) {
+            const BarLine* barline = toBarLine(el.front());
+            const Measure* boundary = _score->tick2measure(barline->tick());
+            // tick2measure may fall back to the last measure at score end.
+            if (boundary && boundary->tick() != barline->tick())
+                  boundary = nullptr;
+            const int firstTrack = barline->staffIdx() * VOICES;
+            const int preferred = is.track() >= firstTrack && is.track() < firstTrack + VOICES
+                  ? is.track() : firstTrack;
+            ChordRest* anchor = Slur::boundaryAnchor(boundary, preferred, true);
+            for (int track = firstTrack; !anchor && track < firstTrack + VOICES; ++track)
+                  anchor = Slur::boundaryAnchor(boundary, track, true);
+            if (anchor) {
+                  Slur partial(_score);
+                  partial.setPartialDirection(0);
+                  addSlur(anchor, anchor, &partial);
+                  }
+            _score->endCmd();
+            return;
+            }
+
       // A note and a repeat/jump barline define one hanging slur segment.
       if (!sel.isRange() && el.size() == 2) {
             Note* note = nullptr;
@@ -4383,9 +4406,19 @@ void ScoreView::cmdAddSlur(const Slur* slurTemplate)
 
 void ScoreView::addSlur(ChordRest* cr1, ChordRest* cr2, const Slur* slurTemplate)
       {
-      bool switchToSlur = false;
+      bool switchToSlur = slurTemplate && slurTemplate->partialDirection() >= 0 && cr1 == cr2;
+      std::unique_ptr<Slur> partial;
       if (cr2 == 0) {
-            cr2 = nextChordRest(cr1);
+            if (!noteEntryMode() && Slur::boundaryAnchor(cr1->measure(), cr1->track(), false) == cr1) {
+                  // Stop at the boundary first; Shift+Right continues to the
+                  // following written note and returns to ordinary slurring.
+                  partial.reset(slurTemplate ? slurTemplate->clone() : new Slur(cr1->score()));
+                  partial->setPartialDirection(partial->isIncoming() ? 2 : 1);
+                  slurTemplate = partial.get();
+                  cr2 = cr1;
+                  }
+            else
+                  cr2 = nextChordRest(cr1);
             if (cr2 == 0)
                   cr2 = cr1;
             switchToSlur = true; // select slur for editing if last chord is not given

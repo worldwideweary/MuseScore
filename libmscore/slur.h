@@ -70,6 +70,8 @@ class Slur : public SlurTie {
       Slur(const Slur&);
       ~Slur() {}
 
+      static ChordRest* boundaryAnchor(const Measure*, int track, bool incoming);
+
       Slur* clone() const override        { return new Slur(*this); }
       ElementType type() const override { return ElementType::SLUR; }
       void write(XmlWriter& xml) const override;

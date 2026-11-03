@@ -1,0 +1,6 @@
+set(TARGET tst_slurkeyboard)
+set(MTEST_LINK_MSCOREAPP TRUE)
+include_directories(${PROJECT_BINARY_DIR}/mscore ${PROJECT_SOURCE_DIR}/mscore)
+include(${PROJECT_SOURCE_DIR}/mtest/CreateMtestTarget.cmake)
+target_compile_definitions(${TARGET} PRIVATE SLUR_KEYBOARD_WORKSPACES="${PROJECT_BINARY_DIR}/share/workspaces")
+add_dependencies(${TARGET} workspaces)
