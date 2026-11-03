@@ -163,6 +163,7 @@ static bool readScoreError(const QString& name, Score::FileError error, bool ask
       QString msg = QObject::tr("Cannot read file %1:\n").arg(name);
       QString detailedMsg;
       bool canIgnore = false;
+      bool automatic = false;
       switch(error) {
             case Score::FileError::FILE_NO_ERROR:
                   return false;
@@ -187,7 +188,7 @@ static bool readScoreError(const QString& name, Score::FileError error, bool ask
                   msg += QObject::tr("This score was saved using a newer version of MuseScore.\n"
                                      "Visit the %1MuseScore website%2 to obtain the latest version.")
                               .arg("<a href=\"https://musescore.org\">", "</a>");
-                  canIgnore = true;
+                  canIgnore = automatic = true;
                   break;
             case Score::FileError::FILE_NOT_FOUND:
                   msg = QObject::tr("File \"%1\" not found.").arg(name);
@@ -225,6 +226,9 @@ static bool readScoreError(const QString& name, Score::FileError error, bool ask
       msgBox.setDetailedText(detailedMsg);
       msgBox.setTextFormat(Qt::RichText);
       if (canIgnore && ask)  {
+            if (automatic)
+                  return true;
+
             msgBox.setIcon(QMessageBox::Warning);
             msgBox.setStandardButtons(
                QMessageBox::Cancel | QMessageBox::Ignore
