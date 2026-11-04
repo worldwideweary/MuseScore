@@ -331,6 +331,12 @@ void SlurTieLayout::adjustSlurFloatingEndPointAngles(SlurSegment* slurSeg, Point
     bool startIsHanging = slurSeg->spannerSegmentType() == SpannerSegmentType::END || incomingPartial;
     bool endIsHanging = slurSeg->spannerSegmentType() == SpannerSegmentType::BEGIN || outgoingPartial;
 
+    // Both endpoints may float on an incoming-and-outgoing partial slur.
+    // Preserve its contour: there is no anchored opposite end for this rule.
+    if (startIsHanging && endIsHanging) {
+        return;
+    }
+
     IF_ASSERT_FAILED(startIsHanging != endIsHanging) {
         return;
     }

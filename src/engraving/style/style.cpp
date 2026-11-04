@@ -366,8 +366,14 @@ void MStyle::read(XmlReader& e, compat::ReadChordListHook* readChordListHook, in
     // Evolution backports these options while keeping the 3.02 file version.
     // Only explicitly supplied values override the pre-4.5 defaults below.
     std::map<Sid, bool> evolutionCourtesyStyleValues;
+
+    bool explicitTiePlacementChord = false;
+
     while (e.readNextStartElement()) {
         const AsciiStringView tag(e.name());
+        if (tag == "tiePlacementChord") {
+            explicitTiePlacementChord = true;
+        }
 
         if (mscVersion < 450) {
             bool courtesyStyleRead = false;
@@ -750,7 +756,7 @@ void MStyle::read(XmlReader& e, compat::ReadChordListHook* readChordListHook, in
         set(entry.first, entry.second);
     }
 
-    if (mscVersion < 420 && !MScore::testMode) {
+    if (mscVersion < 420 && !MScore::testMode && !explicitTiePlacementChord) {
         // This style didn't exist before version 4.2. For files older than 4.2, defaults
         // to INSIDE for compatibility. For files 4.2 and newer, defaults to OUTSIDE.
         set(Sid::tiePlacementChord, TiePlacement::INSIDE);

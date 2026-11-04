@@ -72,6 +72,7 @@
 #include "../../dom/jump.h"
 #include "../../dom/keysig.h"
 #include "../../dom/layoutbreak.h"
+#include "../../dom/laissezvib.h"
 #include "../../dom/ledgerline.h"
 #include "../../dom/letring.h"
 #include "../../dom/line.h"
@@ -85,13 +86,13 @@
 #include "../../dom/mmrestrange.h"
 #include "../../dom/mscore.h"
 #include "../../dom/note.h"
-#include "../../dom/parenthesis.h"
 #include "../../dom/notedot.h"
 #include "../../dom/noteline.h"
 #include "../../dom/ornament.h"
 #include "../../dom/ottava.h"
 #include "../../dom/page.h"
 #include "../../dom/palmmute.h"
+#include "../../dom/parenthesis.h"
 #include "../../dom/partialtie.h"
 #include "../../dom/part.h"
 #include "../../dom/pedal.h"
@@ -3406,6 +3407,19 @@ bool TRead::readProperties(Note* n, XmlReader& e, ReadContext& ctx)
             partial->setEndNote(n);
         }
         n->add(partial);
+    } else if (tag == "LaissezVib") {
+        LaissezVib* lv = Factory::createLaissezVib(n);
+        while (e.readNextStartElement()) {
+            if (e.name() == "tiePlacement") {
+                lv->setTiePlacement(TConv::fromXml(e.readAsciiText(), TiePlacement::AUTO));
+            } else if (e.name() == "minLength") {
+                lv->setMinLength(Spatium(e.readDouble()));
+                lv->setPropertyFlags(Pid::MIN_LENGTH, PropertyFlags::UNSTYLED);
+            } else if (!readProperties(toSlurTie(lv), e, ctx)) {
+                e.unknown();
+            }
+        }
+        n->add(lv);
     } else if (tag == "Spanner") {
         readSpanner(e, ctx, n, n->track());
     } else if (tag == "tpc2") {
@@ -4398,7 +4412,13 @@ void TRead::read(TextLineBase* b, XmlReader& e, ReadContext& ctx)
 
 void TRead::read(Tie* t, XmlReader& xml, ReadContext& ctx)
 {
-    TRead::read(toSlurTie(t), xml, ctx);
+    while (xml.readNextStartElement()) {
+        if (xml.name() == "tiePlacement") {
+            t->setTiePlacement(TConv::fromXml(xml.readAsciiText(), TiePlacement::AUTO));
+        } else if (!readProperties(toSlurTie(t), xml, ctx)) {
+            xml.unknown();
+        }
+    }
 }
 
 void TRead::read(TimeSig* s, XmlReader& e, ReadContext& ctx)
