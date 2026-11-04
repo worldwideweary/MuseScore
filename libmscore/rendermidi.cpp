@@ -636,6 +636,9 @@ static void collectNote(EventMap* events, int channel, const Note* note, qreal v
       const bool grace = note->chord()->isGrace();
       const Note* next = grace ? (note->tieFor() ? note->tieFor()->endNote() : nullptr) : nextTiedNoteInPlayback(note, tick1);
       const bool tieFor = next != nullptr;
+      // Incoming notation alone cannot mute a note. Suppress a continuation
+      // whose sounding predecessor supplied its duration, whether playback
+      // jumped backward or continued forward after an end repeat.
       const bool tieBack = grace ? note->tieBack() != nullptr : hasPreviousTiedNoteInPlayback(note, tick1);
       int nextUTick = tick1 + ticks;
       std::set<const Note*> graceVisited;

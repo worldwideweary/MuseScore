@@ -18,17 +18,132 @@
 #include "ledgerline.h"
 #include "measure.h"
 #include "notedot.h"
+#include "part.h"
 #include "score.h"
 #include "segment.h"
 #include "stem.h"
+#include "staff.h"
+#include "stafftype.h"
 #include "system.h"
 #include "tie.h"
 #include "undo.h"
+#include "utils.h"
 
 namespace Ms {
 
 Note* Tie::editStartNote;
 Note* Tie::editEndNote;
+
+QPointF tieNoteAttachment(const Note* note, bool up, bool inside, bool start, bool adjust)
+      {
+      Chord* chord = note->chord();
+      const qreal sp = note->spatium();
+      const qreal sign = up ? -1.0 : 1.0;
+      const qreal side = start ? 1.0 : -1.0;
+      const bool tab = note->staff() && note->staff()->isTabStaff(note->tick());
+      if (tab) {
+            // Keep the complete fret string clear, including two-digit frets.
+            return QPointF((start ? note->bbox().right() : note->bbox().left()) + side * .2 * sp,
+                  (up ? note->bbox().top() : note->bbox().bottom()) + sign * .2 * sp);
+            }
+      const bool outer = !inside && note == (up ? chord->upNote() : chord->downNote());
+      bool noteInArcDirection = false;
+      for (const Note* other : chord->notes()) {
+            if (other != note && qAbs(other->x() - note->x()) < .01 * sp
+                && (up ? other->y() < note->y() : other->y() > note->y()))
+                  noteInArcDirection = true;
+            }
+      const SymId head = note->noteHead();
+      const QPointF cutLeft = up ? note->symCutOutNW(head) : note->symCutOutSW(head);
+      const QPointF cutRight = up ? note->symCutOutNE(head) : note->symCutOutSE(head);
+      const qreal center = !cutLeft.isNull() && !cutRight.isNull()
+            ? .5 * (cutLeft.x() + cutRight.x()) : .5 * note->headWidth();
+      const qreal inset = (inside || note->headGroup() == NoteHead::Group::HEAD_SLASH)
+            ? .2 : noteInArcDirection ? .45 : .1;
+      QPointF point((inside ? (start ? note->headWidth() : 0.0) : center) + side * inset * sp,
+            sign * ((inside ? 0.0 : .5 * note->headHeight()) + .2 * sp));
+      if (!adjust)
+            return point;
+
+      // Keep a curve close to a ledger line on the inward side of that line.
+      for (const LedgerLine* ledger = chord->ledgerLines(); ledger; ledger = ledger->next()) {
+            const qreal distance = sign * (ledger->y() - note->y() - point.y());
+            if (distance > 0.0 && distance < .4 * sp) {
+                  point.ry() -= sign * (.4 * sp - distance);
+                  break;
+                  }
+            }
+      const bool avoidStem = chord->stem() && chord->stem()->visible() && chord->up() == up;
+      if (outer && !avoidStem)
+            return point;
+
+      const int dots = note->score()->styleI(Sid::tieDotsPlacement);
+      const qreal padding = .2 * sp;
+      const qreal y = note->y() + point.y();
+      const qreal top = y - (up ? .3 : .15) * sp;
+      const qreal bottom = y + (up ? .15 : .3) * sp;
+      qreal x = note->x() + point.x();
+      auto clear = [&](const QRectF& rect, bool force = false) {
+            if (!force && (rect.bottom() < top || rect.top() > bottom))
+                  return;
+            x = start ? qMax(x, rect.right() + padding) : qMin(x, rect.left() - padding);
+            };
+      const Segment* segment = chord->segment();
+      const int firstTrack = chord->staffIdx() * VOICES;
+      for (int track = firstTrack; track < firstTrack + VOICES; ++track) {
+            const Element* element = segment ? segment->element(track) : nullptr;
+            if (!element || !element->isChord())
+                  continue;
+            const Chord* otherChord = toChord(element);
+            const QPointF offset = otherChord->pos() - chord->pos();
+            if (otherChord->stem() && otherChord->stem()->visible())
+                  clear(otherChord->stem()->bbox().translated(otherChord->stem()->pos() + offset));
+            for (const Note* other : otherChord->notes()) {
+                  const QPointF pos = other->pos() + offset;
+                  if (other != note && other->visible())
+                        clear(other->bbox().translated(pos));
+                  if (start && !outer && dots != 1 && !other->dotsHidden()) {
+                        for (const NoteDot* dot : other->dots()) {
+                              if (dot->visible())
+                                    clear(dot->bbox().translated(pos + dot->pos()), dots == 2);
+                              }
+                        }
+                  if (!start && other->accidental() && other->accidental()->visible()) {
+                        const bool inward = up ? other->line() >= note->line() : other->line() <= note->line();
+                        if (!(outer && inward))
+                              clear(other->accidental()->bbox().translated(pos + other->accidental()->pos()));
+                        }
+                  }
+            }
+      point.setX(x - note->x());
+      return point;
+      }
+
+static const Note* incomingTieSource(const Note* note)
+      {
+      for (Measure* measure : precedingRepeatMeasures(note->chord()->measure())) {
+            for (Segment* segment = measure->last(); segment; segment = segment->prev()) {
+                  if (!segment->isChordRestType())
+                        continue;
+                  for (int track = note->part()->startTrack(); track < note->part()->endTrack(); ++track) {
+                        const Element* element = segment->element(track);
+                        if (!element || !element->isChord())
+                              continue;
+                        const Chord* chord = toChord(element);
+                        if (chord->tick() + chord->actualTicks() != measure->endTick())
+                              continue;
+                        for (Note* source : chord->notes()) {
+                              if (source->pitch() != note->pitch() || (!source->tieFor() && !source->partialTie(false)))
+                                    continue;
+                              const auto destinations = repeatTieDestinations(source);
+                              if (std::find(destinations.begin(), destinations.end(), note) != destinations.end())
+                                    return source;
+                              }
+                        }
+                  }
+            }
+      return nullptr;
+      }
 
 //---------------------------------------------------------
 //   draw
@@ -500,12 +615,67 @@ void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
 
 void TieSegment::finalizeSegment()
       {
+      // Partial ties already share their free endpoints and minimum lengths
+      // with repeat spacing. Do not pull shorter chord ties across that edge.
+      if (!tie()->isPartial() && !isEdited() && !isNudged()
+          && (spannerSegmentType() != SpannerSegmentType::SINGLE || !tie()->endNote())) {
+            const qreal minimum = score()->styleP(Sid::minHangingTieLength);
+            if (ups(Grip::END).p.x() - ups(Grip::START).p.x() < minimum) {
+                  if (spannerSegmentType() == SpannerSegmentType::END)
+                        ups(Grip::START).p.rx() = ups(Grip::END).p.x() - minimum;
+                  else
+                        ups(Grip::END).p.rx() = ups(Grip::START).p.x() + minimum;
+                  }
+            }
       computeBezier();
       setbbox(path.boundingRect());
       }
 
+Element* TieSegment::propertyDelegate(Pid id)
+      {
+      return id == Pid::TIE_PLACEMENT ? static_cast<Element*>(tie()) : SlurTieSegment::propertyDelegate(id);
+      }
+
 void TieSegment::adjustX()
       {
+      if (tie()->isPartial()) {
+            if (isNudged() || isEdited())
+                  return;
+            // layoutSegment() may move the whole curve to clear staff lines.
+            // Recheck other voices' heads at that final height, including for
+            // a tie which is outer only within its own single-note chord.
+            const Note* note = tie()->startNote();
+            const Chord* chord = note->chord();
+            const bool start = !tie()->isIncoming();
+            QPointF& point = ups(start ? Grip::START : Grip::END).p;
+            const qreal sp = spatium();
+            const qreal top = point.y() - (tie()->up() ? .3 : .15) * sp;
+            const qreal bottom = point.y() + (tie()->up() ? .15 : .3) * sp;
+            const int firstTrack = chord->staffIdx() * VOICES;
+            QPointF staffOffset;
+            if (system() && chord->vStaffIdx() != vStaffIdx())
+                  staffOffset.ry() = system()->staff(chord->vStaffIdx())->y() - system()->staff(vStaffIdx())->y();
+            for (int track = firstTrack; track < firstTrack + VOICES; ++track) {
+                  const Element* element = chord->segment()->element(track);
+                  if (!element || !element->isChord())
+                        continue;
+                  const Chord* otherChord = toChord(element);
+                  if (otherChord->vStaffIdx() != chord->vStaffIdx())
+                        continue;
+                  const QPointF origin = otherChord->pos() + otherChord->segment()->pos()
+                        + otherChord->measure()->pos() + staffOffset;
+                  for (const Note* other : otherChord->notes()) {
+                        if (other == note || !other->visible())
+                              continue;
+                        const QRectF head = other->bbox().translated(origin + other->pos());
+                        if (head.bottom() < top || head.top() > bottom)
+                              continue;
+                        point.setX(start ? qMax(point.x(), head.right() + .2 * sp)
+                              : qMin(point.x(), head.left() - .2 * sp));
+                        }
+                  }
+            return;
+            }
       const bool incoming = tie()->isPartial() && tie()->isIncoming();
       Note* sn = incoming ? nullptr : tie()->startNote();
       Note* en = incoming ? tie()->startNote() : tie()->endNote();
@@ -518,6 +688,8 @@ void TieSegment::adjustX()
       qreal collisionYMargin = spatium() * 0.25;
 
       qreal xo;
+      const int dotsPlacement = score()->styleI(Sid::tieDotsPlacement);
+      const bool innerStart = !tie()->isOuterTieOfChord(true);
 
       if (isNudged() || isEdited())
             return;
@@ -527,7 +699,7 @@ void TieSegment::adjustX()
             // grips are in system coordinates, normalize to note position
             QPointF p1 = ups(Grip::START).p + QPointF(system()->pos().x() - sn->canvasX() + sn->headWidth(), 0);
             xo = 0;
-            if (tie()->isInside()) {  // only adjust for inside-style ties
+            if (!tie()->isOuterTieOfChord(true)) {  // inner ties also clear adjacent notes and stems
                   // for cross-voice collisions, we need a list of all chords at this tick
                   std::vector<Chord*> chords;
                   int strack = sc->staffIdx() * VOICES;
@@ -567,7 +739,7 @@ void TieSegment::adjustX()
 
                         for (auto note : chord->notes()) {
                               // adjust for dots
-                              if (note->dots().size() > 0) {
+                              if (!(innerStart && chord == sc && dotsPlacement == 1) && note->dots().size() > 0) {
                                     qreal dotY = note->pos().y() + note->dots().last()->y();
                                     if (qAbs(p1.y() - dotY) < spatium() * 0.5)
                                           xo = qMax(xo, note->x() + note->dots().last()->x() + note->dots().last()->width() + chordOffset);
@@ -584,6 +756,15 @@ void TieSegment::adjustX()
                         }
                   }
             xo = (beginGrace || endGrace ? 0.0 : xo) + offsetMargin;
+            if (innerStart && dotsPlacement == 2) {
+                  for (const Note* note : sc->notes()) {
+                        for (const NoteDot* dot : note->dots()) {
+                              if (dot->visible())
+                                    xo = qMax(xo, note->x() + dot->x() + dot->width()
+                                          - sn->x() - sn->headWidth() + offsetMargin);
+                              }
+                        }
+                  }
             ups(Grip::START).p += QPointF(xo, 0);
             }
 
@@ -592,7 +773,7 @@ void TieSegment::adjustX()
             // grips are in system coordinates, normalize to note position
             QPointF p2 = ups(Grip::END).p + QPointF(system()->pos().x() - en->canvasX(), 0);
             xo = 0;
-            if (tie()->isInside()) {
+            if (!tie()->isOuterTieOfChord(false)) {
                   // for inter-voice collisions, we need a list of all notes from all voices
                   std::vector<Chord*> chords;
                   int strack = ec->staffIdx() * VOICES;
@@ -681,6 +862,19 @@ bool TieSegment::isEdited() const
 
 void Tie::slurPos(SlurPos* sp)
       {
+      if (isPartial()) {
+            const Note* note = startNote(); // local owner, also for incoming ties
+            const Chord* chord = note->chord();
+            calculateIsInside();
+            const bool adjust = spannerSegments().empty() || (!frontSegment()->isNudged() && !frontSegment()->isEdited());
+            QPointF origin = note->pos() + chord->pos() + chord->segment()->pos() + chord->measure()->pos();
+            sp->system1 = sp->system2 = chord->measure()->system();
+            if (sp->system1 && chord->vStaffIdx() != vStaffIdx())
+                  origin.ry() += sp->system1->staff(chord->vStaffIdx())->y() - sp->system1->staff(vStaffIdx())->y();
+            sp->p1 = origin + tieNoteAttachment(note, up(), isInside(), true, adjust);
+            sp->p2 = origin + tieNoteAttachment(note, up(), isInside(), false, adjust);
+            return;
+            }
       // Partial ties keep their owner in startNote() in both directions.
       // Use that note for both local anchors, without changing the linear
       // tie chains, so the ordinary placement rules also provide an end anchor.
@@ -724,12 +918,11 @@ void Tie::slurPos(SlurPos* sp)
       x1 = sn->pos().x() + hw;
       y1 = sn->pos().y();
       qreal xo = 0;
-      if (sc->notes().size() > 1 || (ec && ec->notes().size() > 1)) {
-            _isInside = true;
+      calculateIsInside();
+      if (isInside()) {
             xo = 0;  // the offset for these will be decided in TieSegment::adjustX()
             }
       else {
-            _isInside = false;
             if (sc->stem() && sc->up() && _up) {
                   // usually, outside ties start in the middle of the notehead, but
                   // for up-ties on up-stems, we'll start at the end of the notehead
@@ -747,7 +940,7 @@ void Tie::slurPos(SlurPos* sp)
       //------p2
       y2 = y1;
       if (!ec) {
-            sp->p2 = sp->p1 + QPointF(_spatium * 3, 0.0);
+            sp->p2 = sp->p1 + QPointF(score()->styleP(Sid::minHangingTieLength), 0.0);
             sp->system2 = sp->system1;
             return;
             }
@@ -795,6 +988,53 @@ void Tie::slurPos(SlurPos* sp)
 //   Tie
 //---------------------------------------------------------
 
+bool Tie::isOuterTieOfChord(bool start) const
+      {
+      // Both anchors of a partial tie use the owner stored in startNote().
+      const Note* note = start || isPartial() ? startNote() : endNote();
+      return !isInside() && note && ((up() && note == note->chord()->upNote())
+            || (!up() && note == note->chord()->downNote()));
+      }
+
+// Placement is resolved separately from direction, and is also used by chord spacing.
+void Tie::calculateIsInside()
+      {
+      const Chord* sc = startNote() ? startNote()->chord() : nullptr;
+      const Chord* ec = endNote() ? endNote()->chord() : nullptr;
+      const bool chord = (sc && sc->notes().size() > 1) || (ec && ec->notes().size() > 1);
+      const int placement = _tiePlacement ? _tiePlacement
+            : score()->styleI(chord ? Sid::tiePlacementChord : Sid::tiePlacementSingleNote);
+      _isInside = placement == 1;
+      }
+
+void Tie::reset()
+      {
+      SlurTie::reset();
+      undoResetProperty(Pid::TIE_PLACEMENT);
+      }
+
+QVariant Tie::getProperty(Pid id) const
+      {
+      return id == Pid::TIE_PLACEMENT ? QVariant(_tiePlacement) : SlurTie::getProperty(id);
+      }
+
+bool Tie::setProperty(Pid id, const QVariant& value)
+      {
+      if (id != Pid::TIE_PLACEMENT)
+            return SlurTie::setProperty(id, value);
+      const int placement = value.toInt();
+      if (placement < 0 || placement > 2)
+            return false;
+      _tiePlacement = placement;
+      triggerLayout();
+      return true;
+      }
+
+QVariant Tie::propertyDefault(Pid id) const
+      {
+      return id == Pid::TIE_PLACEMENT ? QVariant(0) : SlurTie::propertyDefault(id);
+      }
+
 Tie::Tie(Score* s)
    : SlurTie(s)
       {
@@ -814,11 +1054,18 @@ void Tie::write(XmlWriter& xml) const
       else
             xml.stag(this);
       SlurTie::writeProperties(xml);
+      if (_tiePlacement)
+            xml.tag("tiePlacement", _tiePlacement == 1 ? "inside" : "outside");
       xml.etag();
       }
 
 bool Tie::readProperties(XmlReader& xml)
       {
+      if (xml.name() == "tiePlacement") {
+            const QString value = xml.readElementText();
+            _tiePlacement = value == "inside" ? 1 : value == "outside" ? 2 : 0;
+            return true;
+            }
       if (xml.name() == "partialSpannerDirection") {
             const QString direction = xml.readElementText();
             _partialDirection = direction == "incoming" ? 0 : 1;
@@ -900,10 +1147,14 @@ qreal Tie::incomingEndOffset()
       probe.setSpanner(this);
       probe.setTrack(track());
       probe.setParent(positions.system2);
-      probe.ups(Grip::START).p = positions.p1;
-      probe.ups(Grip::END).p = positions.p2;
+      probe.setSpannerSegmentType(SpannerSegmentType::SINGLE);
       if (!spannerSegments().empty())
             probe.ups(Grip::END).off = frontSegment()->ups(Grip::END).off;
+      qreal freeX = note->chord()->measure()->x() + incomingStartOffset();
+      if (freeX >= positions.p2.x())
+            freeX = positions.p2.x() - qMax(.1 * spatium(), score()->styleP(Sid::minHangingTieLength));
+      // Spacing must use the same final-height head clearance as drawing.
+      probe.layoutSegment(QPointF(freeX, positions.p2.y()), positions.p2);
       probe.adjustX();
       const Chord* chord = note->chord();
       const qreal result = probe.ups(Grip::END).pos().x() - chord->segment()->x() - chord->measure()->x();
@@ -982,16 +1233,33 @@ void Tie::calculateDirection()
       if (!startNote() && !endNote()) {
           return;
       }
-      const bool tieHasBothNotes = startNote() && endNote();
+      const Note* source = isPartial() && isIncoming() ? incomingTieSource(startNote()) : startNote();
+      const Note* destination = isPartial() && isIncoming() ? startNote() : endNote();
+      const bool tieHasBothNotes = source && destination;
 
-      const Note* primaryNote = startNote() ? startNote() : endNote();
-      const Chord* primaryChord = primaryNote->chord();
+      const Note* primaryNote = source ? source : destination;
+      Chord* primaryChord = primaryNote->chord();
+      if (_slurDirection == Direction::AUTO && isPartial() && isIncoming() && source && !primaryChord->beam()
+          && !primaryChord->staff()->isDrumStaff(primaryChord->tick())) {
+            // A backwards repeat can refer to a later system whose automatic
+            // stem has not been computed yet. Resolve an unbeamed source now;
+            // leave beam-controlled and percussion directions to their layout.
+            primaryChord->computeUp();
+            }
       const Measure* primaryMeasure = primaryChord->measure();
 
-      const Note* secondaryNote = tieHasBothNotes ? endNote() : nullptr;
+      const Note* secondaryNote = tieHasBothNotes ? destination : nullptr;
       const Chord* secondaryChord = secondaryNote ? secondaryNote->chord() : nullptr;
       const Measure* secondaryMeasure = secondaryChord ? secondaryChord->measure() : nullptr;
 
+      auto hasForwardTie = [](const Note* note) {
+            if (note->tieFor() || note->partialTie(false))
+                  return true;
+            for (const Element* attached : note->el())
+                  if (attached->isLaissezVib())
+                        return true;
+            return false;
+            };
       if (_slurDirection == Direction::AUTO) {
             std::vector<Note*> notes = primaryChord->notes();
             size_t n = notes.size();
@@ -1000,7 +1268,7 @@ void Tie::calculateDirection()
                   _up = primaryChord->up();
             else if (tieHasBothNotes && secondaryMeasure && secondaryMeasure->hasVoices(secondaryChord->staffIdx(), secondaryChord->tick(), secondaryChord->actualTicks()))
                   _up = secondaryChord->up();
-            else if (n == 1 && secondaryChord) {
+            else if (n == 1) {
                   //
                   // single note
                   //
@@ -1019,10 +1287,10 @@ void Tie::calculateDirection()
                   Note* pivotPoint = nullptr;
                   bool multiplePivots = false;
                   for (size_t i = 0; i < n - 1; ++i) {
-                        if (!notes[i]->tieFor())
+                        if (!hasForwardTie(notes[i]))
                               continue; // don't include notes that don't have ties
                         for (size_t j = i + 1; j < n; ++j) {
-                              if (!notes[j]->tieFor())
+                              if (!hasForwardTie(notes[j]))
                                     continue;
                               int noteDiff = compareNotesPos(notes[i], notes[j]);
                               if (!multiplePivots && qAbs(noteDiff) <= 1) {
@@ -1043,22 +1311,22 @@ void Tie::calculateDirection()
                         int notesBelow = 0, tiesBelow = 0;
                         int unisonTies = 0;
                         for (size_t i = 0; i < n; ++i) {
-                              if (notes[i] == startNote())
+                              if (notes[i] == primaryNote)
                                     // skip counting if this note is the current note or if this note doesn't have a tie
                                     continue;
-                              int noteDiff = compareNotesPos(startNote(), notes[i]);
+                              int noteDiff = compareNotesPos(primaryNote, notes[i]);
                               if (noteDiff == 0) {  // unison
-                                    if (notes[i]->tieFor())
+                                    if (hasForwardTie(notes[i]))
                                           unisonTies++;
                                     }
                               if (noteDiff < 0) { // the note is above startNote
                                     notesAbove++;
-                                    if (notes[i]->tieFor())
+                                    if (hasForwardTie(notes[i]))
                                           tiesAbove++;
                                     }
                               if (noteDiff > 0) { // the note is below startNote
                                     notesBelow++;
-                                    if (notes[i]->tieFor())
+                                    if (hasForwardTie(notes[i]))
                                           tiesBelow++;
                                     }
                               }
@@ -1143,7 +1411,8 @@ TieSegment* Tie::layoutFor(System* system)
       int n;
       if (sPos.system1 != sPos.system2) {
             n = 2;
-            sPos.p2 = QPointF(system->lastNoteRestSegmentX(true), sPos.p1.y());
+            sPos.p2 = QPointF(qMax(system->lastNoteRestSegmentX(true),
+                  sPos.p1.x() + score()->styleP(Sid::minHangingTieLength)), sPos.p1.y());
             }
       else
             n = 1;
@@ -1181,7 +1450,8 @@ TieSegment* Tie::layoutBack(System* system)
       TieSegment* segment = segmentAt(1);
       segment->setSystem(system);
 
-      qreal x = system->firstNoteRestSegmentX(true);
+      qreal x = qMin(system->firstNoteRestSegmentX(true),
+            sPos.p2.x() - score()->styleP(Sid::minHangingTieLength));
 
       segment->layoutSegment(QPointF(x, sPos.p2.y()), sPos.p2);
       segment->setSpannerSegmentType(SpannerSegmentType::END);

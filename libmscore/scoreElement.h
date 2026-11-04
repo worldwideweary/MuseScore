@@ -48,6 +48,7 @@ class Slur;
 class Tie;
 class GuitarBend;
 class GuitarBendSegment;
+class LaissezVib;
 class Glissando;
 class GlissandoSegment;
 class SystemDivider;
@@ -350,6 +351,7 @@ class ScoreElement {
       CONVERT(StaffState,    STAFF_STATE)
       CONVERT(Arpeggio,      ARPEGGIO)
       CONVERT(ChordBracket,  CHORD_BRACKET)
+      CONVERT(LaissezVib,    LAISSEZ_VIB)
       CONVERT(Image,         IMAGE)
       CONVERT(ChordLine,     CHORDLINE)
       CONVERT(FretDiagram,   FRET_DIAGRAM)
@@ -610,6 +612,7 @@ static inline const a* to##a(const ScoreElement* e) { Q_ASSERT(e == 0 || e->is##
       CONVERT(StaffState)
       CONVERT(Arpeggio)
       CONVERT(ChordBracket)
+      CONVERT(LaissezVib)
       CONVERT(Image)
       CONVERT(ChordLine)
       CONVERT(FretDiagram)

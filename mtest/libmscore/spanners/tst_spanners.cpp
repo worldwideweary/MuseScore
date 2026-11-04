@@ -14,6 +14,12 @@
 #include <QFileInfo>
 #include "mtest/testutils.h"
 #include "libmscore/chord.h"
+#include "libmscore/note.h"
+#include "libmscore/notedot.h"
+#include "libmscore/tie.h"
+#include "libmscore/slur.h"
+#include "libmscore/laissezvib.h"
+#include "libmscore/segment.h"
 #include "libmscore/excerpt.h"
 #include "libmscore/glissando.h"
 #include "libmscore/layoutbreak.h"
@@ -21,6 +27,9 @@
 #include "libmscore/measure.h"
 #include "libmscore/part.h"
 #include "libmscore/staff.h"
+#include "libmscore/stafftype.h"
+#include "libmscore/stringdata.h"
+#include "libmscore/instrument.h"
 #include "libmscore/score.h"
 #include "libmscore/system.h"
 #include "libmscore/undo.h"
@@ -41,6 +50,12 @@ class TestSpanners : public QObject, public MTest
 
    private slots:
       void initTestCase();
+      void tieLayoutStylesRoundTrip();
+      void partialSlurHangingAngles();
+      void partialTieAttachments();
+      void laissezVibChordGeometry();
+      void laissezVibRangeSelection();
+      void laissezVibLinkedTab();
       void spanners01();            // adding glissandos in several contexts
       void spanners02();            // loading back existing cross-staff glissando from lower to higher staff
       void spanners03();            // adding glissandos from/to grace notes
@@ -825,6 +840,384 @@ void TestSpanners::arrowLinesGeometry()
       line.setEndHookType(HookType::NONE);
       segment.layout();
       QVERIFY(segment.beginHead().isEmpty() && segment.endHead().isEmpty());
+      }
+
+void TestSpanners::laissezVibLinkedTab()
+      {
+      MasterScore* score = readScore(DIR + "laissez-vibrer-range.mscx");
+      QVERIFY(score);
+      int tuning[] = { 40, 45, 50, 55, 59, 64 };
+      score->staff(0)->part()->instrument()->setStringData(StringData(24, 6, tuning));
+      Staff* tab = new Staff(score);
+      tab->setPart(score->staff(0)->part());
+      tab->initFromStaffType(StaffType::preset(StaffTypes::TAB_DEFAULT));
+      tab->setDefaultClefType(ClefTypeList(ClefType::TAB));
+      score->startCmd();
+      score->undoInsertStaff(tab, 1, false);
+      Excerpt::cloneStaff(score->staff(0), tab);
+      score->endCmd();
+      score->doLayout();
+      Segment* first = score->firstSegment(SegmentType::ChordRest);
+      QVERIFY(first && first->element(0) && first->element(VOICES));
+      auto release = [](Note* note) -> LaissezVib* {
+            for (Element* attached : note->el())
+                  if (attached->isLaissezVib())
+                        return toLaissezVib(attached);
+            return nullptr;
+            };
+      auto check = [&](bool present) {
+            for (Segment* segment = first; segment; segment = segment->next1(SegmentType::ChordRest)) {
+                  for (int track : { 0, VOICES }) {
+                        Element* e = segment->element(track);
+                        if (!e || !e->isChord())
+                              continue;
+                        for (Note* note : toChord(e)->notes()) {
+                              int count = 0;
+                              for (Element* attached : note->el())
+                                    count += attached->isLaissezVib() ? 1 : 0;
+                              QCOMPARE(count, present && !note->tieFor() ? 1 : 0);
+                              if (LaissezVib* lv = release(note))
+                                    QCOMPARE(int(lv->linkList().size()), 2);
+                              }
+                        }
+                  }
+            };
+      auto toggle = [&](int staffStart, int staffEnd) {
+            score->selection().setRange(first, nullptr, staffStart, staffEnd);
+            score->startCmd();
+            score->cmdToggleLaissezVib();
+            score->endCmd();
+            };
+      toggle(0, 1); // notation only: both linked staves receive marks
+      check(true);
+      score->undoStack()->undo(&ed);
+      check(false);
+      score->undoStack()->redo(&ed);
+      check(true);
+      toggle(0, 2); // both selected: remove once per linked-note group
+      check(false);
+      toggle(0, 2); // both selected: add once per linked-note group
+      check(true);
+      toggle(1, 2); // TAB only: remove from both linked staves
+      check(false);
+      toggle(1, 2);
+      check(true);
+      Note* fret = toChord(first->element(VOICES))->upNote();
+      fret->setString(2); // G string, fret 12, sounding G4
+      fret->setFret(12);
+      fret->layout();
+      QVERIFY(fret->fretString().contains("12"));
+      LaissezVib* lv = release(fret);
+      QVERIFY(lv);
+      for (bool smufl : { false, true }) {
+            score->style().set(Sid::laissezVibUseSmuflSym, smufl);
+            for (int placement : { 0, 1, 2 }) {
+                  lv->setProperty(Pid::TIE_PLACEMENT, placement);
+                  lv->layout();
+                  QVERIFY(lv->x() >= fret->bbox().right() + .2 * lv->spatium() - .000001);
+                  QVERIFY(lv->x() + lv->bbox().left() > fret->bbox().right());
+                  }
+            }
+      score->style().set(Sid::laissezVibUseSmuflSym, false);
+      const qreal oldSize = tab->staffType(Fraction(0, 1))->fretFontSize();
+      lv->layout();
+      const qreal oldX = lv->x();
+      tab->staffType(Fraction(0, 1))->setFretFontSize(oldSize * 1.5);
+      fret->layout();
+      lv->layout();
+      QVERIFY(lv->x() > oldX);
+      QVERIFY(lv->x() + lv->bbox().left() > fret->bbox().right());
+      delete score;
+      }
+
+void TestSpanners::laissezVibRangeSelection()
+      {
+      MasterScore* score = readScore(DIR + "laissez-vibrer-range.mscx");
+      QVERIFY(score);
+      std::vector<Chord*> chords;
+      for (Segment* segment = score->firstSegment(SegmentType::ChordRest); segment;
+            segment = segment->next1(SegmentType::ChordRest)) {
+            Element* e = segment->element(0);
+            if (e && e->isChord())
+                  chords.push_back(toChord(e));
+            }
+      QCOMPARE(int(chords.size()), 3);
+      Note* tieStart = chords[1]->notes().front();
+      Note* tieEnd = chords[2]->notes().front();
+      QVERIFY(tieStart->tieFor());
+      QCOMPARE(tieStart->tieFor()->endNote(), tieEnd);
+      auto releases = [](const Note* note) {
+            int count = 0;
+            for (Element* attached : note->el())
+                  count += attached->isLaissezVib() ? 1 : 0;
+            return count;
+            };
+      score->selection().setRange(chords[0]->segment(), nullptr, 0, 1);
+      score->startCmd();
+      score->cmdToggleLaissezVib();
+      score->endCmd();
+      for (Note* note : chords[0]->notes())
+            QCOMPARE(releases(note), 1);
+      QCOMPARE(releases(tieStart), 0);
+      QCOMPARE(releases(tieEnd), 1);
+      QVERIFY(score->selection().isRange());
+      // One undo/redo covers the complete range operation.
+      score->undoStack()->undo(&ed);
+      for (Chord* chord : chords)
+            for (Note* note : chord->notes())
+                  QCOMPARE(releases(note), 0);
+      score->undoStack()->redo(&ed);
+      for (Note* note : chords[0]->notes())
+            QCOMPARE(releases(note), 1);
+      QCOMPARE(releases(tieStart), 0);
+      QCOMPARE(releases(tieEnd), 1);
+      // Repeating the palette action removes marks instead of duplicating them.
+      score->selection().setRange(chords[0]->segment(), nullptr, 0, 1);
+      score->startCmd();
+      score->cmdToggleLaissezVib();
+      score->endCmd();
+      for (Chord* chord : chords)
+            for (Note* note : chord->notes())
+                  QCOMPARE(releases(note), 0);
+      // An outgoing tie is still skipped when its destination is outside the range.
+      score->selection().setRange(chords[1]->segment(), chords[2]->segment(), 0, 1);
+      score->startCmd();
+      score->cmdToggleLaissezVib();
+      score->endCmd();
+      QCOMPARE(releases(tieStart), 0);
+      QCOMPARE(releases(tieEnd), 0);
+      // Repeat backports keep partial ties outside tieFor/tieBack. An outgoing
+      // repeat tie also excludes a release; an incoming one is still eligible.
+      Note* repeatSource = chords[0]->notes()[0];
+      Note* repeatEnd = chords[0]->notes()[1];
+      score->startCmd();
+      for (int direction : { 0, 1 }) {
+            Tie* partial = new Tie(score);
+            partial->setPartialDirection(direction);
+            partial->setStartNote(direction ? repeatSource : repeatEnd);
+            score->undoAddElement(partial);
+            }
+      score->endCmd();
+      QVERIFY(repeatSource->partialTie(false));
+      QVERIFY(repeatEnd->partialTie(true));
+      score->selection().setRange(chords[0]->segment(), chords[1]->segment(), 0, 1);
+      score->startCmd();
+      score->cmdToggleLaissezVib();
+      score->endCmd();
+      QCOMPARE(releases(repeatSource), 0);
+      QCOMPARE(releases(repeatEnd), 1);
+      QCOMPARE(releases(chords[0]->notes()[2]), 1);
+      delete score;
+      }
+
+void TestSpanners::tieLayoutStylesRoundTrip()
+      {
+      MasterScore* original = readScore(DIR + "tie-layout-styles.mscx");
+      QVERIFY(original);
+      const QString path = "tie-layout-styles-roundtrip.mscx";
+      QVERIFY(saveScore(original, path));
+      MasterScore* reloaded = readCreatedScore(path);
+      QVERIFY(reloaded);
+      for (MasterScore* score : { original, reloaded }) {
+            QCOMPARE(score->styleI(Sid::tiePlacementSingleNote), 2);
+            QCOMPARE(score->styleI(Sid::tiePlacementChord), 2);
+            QCOMPARE(score->styleI(Sid::tieDotsPlacement), 2);
+            QVERIFY(score->styleB(Sid::angleHangingSlursAwayFromStaff));
+            int ties = 0;
+            int insideOverrides = 0;
+            int releases = 0;
+            for (Segment* segment = score->firstSegment(SegmentType::ChordRest); segment;
+                  segment = segment->next1(SegmentType::ChordRest)) {
+                  Element* element = segment->element(0);
+                  if (!element || !element->isChord())
+                        continue;
+                  for (Note* note : toChord(element)->notes()) {
+                        if (note->tieFor()) {
+                              ++ties;
+                              if (note->tieFor()->tiePlacement() == 1)
+                                    ++insideOverrides;
+                              QVERIFY(note->tieFor()->endNote());
+                              }
+                        for (Element* attached : note->el()) {
+                              if (attached->isLaissezVib()) {
+                                    ++releases;
+                                    QVERIFY(!note->tieFor());
+                                    QVERIFY(!attached->bbox().isEmpty());
+                                    }
+                              }
+                        }
+                  }
+            QCOMPARE(ties, 14);
+            QCOMPARE(insideOverrides, 7);
+            QCOMPARE(releases, 14);
+            int partialSlurs = 0;
+            for (const auto& entry : score->spanner()) {
+                  if (entry.second->isSlur()) {
+                        const Slur* slur = toSlur(entry.second);
+                        if (slur->isIncoming() || slur->isOutgoing())
+                              ++partialSlurs;
+                        }
+                  }
+            QCOMPARE(partialSlurs, 2);
+            }
+      delete reloaded;
+      delete original;
+      }
+
+void TestSpanners::partialSlurHangingAngles()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "manual-tie-properties/v0.15-D-partial-slurs-37E.mscx"));
+      QVERIFY(score);
+      score->doLayout();
+      int bothHanging = 0;
+      int oneHanging = 0;
+      for (const auto& entry : score->spanner()) {
+            if (!entry.second->isSlur())
+                  continue;
+            Slur* slur = toSlur(entry.second);
+            if (slur->partialDirection() < 0)
+                  continue;
+            SlurSegment* segment = slur->frontSegment();
+            QVERIFY(segment);
+            QVERIFY(segment->spannerSegmentType() == SpannerSegmentType::SINGLE);
+            segment->setAutoplace(false);
+            const qreal sp = segment->spatium();
+            const QPointF p1(0, 10 * sp);
+            const QPointF p2(8 * sp, 10 * sp);
+            score->style().set(Sid::angleHangingSlursAwayFromStaff, false);
+            segment->layoutSegment(p1, p2);
+            const QPointF contourStart = segment->ups(Grip::START).p;
+            const QPointF contourEnd = segment->ups(Grip::END).p;
+            score->style().set(Sid::angleHangingSlursAwayFromStaff, true);
+            segment->layoutSegment(p1, p2);
+            if (slur->isIncoming() && slur->isOutgoing()) {
+                  ++bothHanging;
+                  QCOMPARE(segment->ups(Grip::START).p, contourStart);
+                  QCOMPARE(segment->ups(Grip::END).p, contourEnd);
+                  }
+            else {
+                  ++oneHanging;
+                  // Keep the feature working for exactly one floating end.
+                  QVERIFY(segment->ups(Grip::START).p != contourStart
+                          || segment->ups(Grip::END).p != contourEnd);
+                  }
+            }
+      QCOMPARE(bothHanging, 2); // D4 and the one-note D12
+      QCOMPARE(oneHanging, 6);
+      }
+
+void TestSpanners::partialTieAttachments()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "manual-tie-properties/v0.15-C-hanging-ties-37E.mscx"));
+      QVERIFY(score);
+      score->doLayout();
+      std::vector<Chord*> chords;
+      for (Segment* segment = score->firstSegment(SegmentType::ChordRest); segment;
+            segment = segment->next1(SegmentType::ChordRest)) {
+            Element* element = segment->element(0);
+            if (element && element->isChord())
+                  chords.push_back(toChord(element));
+            }
+      QCOMPARE(int(chords.size()), 6);
+      // Incoming direction follows the source, even when the destination stem
+      // differs. In each three-note chord, the middle tie opposes the source stem.
+      for (int pair = 0; pair < 3; ++pair) {
+            Chord* destination = chords[2 * pair];
+            Chord* source = chords[2 * pair + 1];
+            Tie* incoming = destination->notes()[1]->partialTie(true);
+            Tie* outgoing = source->notes()[1]->partialTie(false);
+            QVERIFY(incoming && outgoing);
+            outgoing->calculateDirection();
+            incoming->calculateDirection();
+            QCOMPARE(incoming->up(), outgoing->up());
+            QCOMPARE(incoming->up(), !source->up());
+            for (Direction stem : { Direction::UP, Direction::DOWN }) {
+                  destination->setStemDirection(stem);
+                  score->doLayout();
+                  incoming->calculateDirection();
+                  QCOMPARE(incoming->up(), outgoing->up());
+                  }
+            }
+      // C2's middle incoming and C1's middle outgoing must clear the adjacent
+      // lower notehead, rather than retaining an Outside midpoint inside it.
+      Note* incomingNote = chords[0]->notes()[1];
+      Note* outgoingNote = chords[1]->notes()[1];
+      const qreal sp = score->spatium();
+      const QPointF end = tieNoteAttachment(incomingNote, false, false, false);
+      const QPointF start = tieNoteAttachment(outgoingNote, false, false, true);
+      QVERIFY(end.x() <= -.19 * sp);
+      QVERIFY(start.x() >= outgoingNote->headWidth() + .19 * sp);
+      }
+
+void TestSpanners::laissezVibChordGeometry()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "manual-tie-properties/v0.15-E-laissez-vibrer-37E.mscx"));
+      QVERIFY(score);
+      score->doLayout();
+      std::vector<Chord*> chords;
+      auto release = [](const Note* note) -> LaissezVib* {
+            for (Element* attached : note->el())
+                  if (attached->isLaissezVib())
+                        return toLaissezVib(attached);
+            return nullptr;
+            };
+      for (Segment* segment = score->firstSegment(SegmentType::ChordRest); segment;
+            segment = segment->next1(SegmentType::ChordRest)) {
+            Element* element = segment->element(0);
+            if (element && element->isChord())
+                  chords.push_back(toChord(element));
+            }
+      QCOMPARE(int(chords.size()), 8);
+      for (bool smufl : { false, true }) {
+            score->style().set(Sid::laissezVibUseSmuflSym, smufl);
+            score->doLayout();
+            int marks = 0;
+            for (Chord* chord : chords) {
+                  qreal end = 0;
+                  bool first = true;
+                  for (Note* note : chord->notes()) {
+                        LaissezVib* lv = release(note);
+                        QVERIFY(lv);
+                        ++marks;
+                        const qreal right = note->x() + lv->x() + lv->bbox().right();
+                        if (!first)
+                              QVERIFY(qAbs(right - end) < .000001);
+                        first = false;
+                        end = right;
+                        if (!smufl) {
+                              const qreal minLength = lv->getProperty(Pid::LAISSEZ_VIB_MIN_LENGTH).value<Spatium>().val() * lv->spatium();
+                              QVERIFY(lv->bbox().width() - score->styleP(Sid::tieEndWidth) >= minLength - .000001);
+                              }
+                        }
+                  }
+            QCOMPARE(marks, 22);
+            }
+      score->style().set(Sid::laissezVibUseSmuflSym, false);
+      score->doLayout();
+      // E3's bottom Down/Outside LV is outer even with a down stem.
+      QVERIFY(release(chords[2]->downNote())->y() > .5 * score->spatium());
+      QVERIFY(release(chords[2]->downNote())->x() < chords[2]->downNote()->headWidth());
+      // Outside inner ties still clear the neighboring head in E6/E7.
+      for (int index : { 5, 6 }) {
+            Note* middleNote = chords[index]->notes()[1];
+            QVERIFY(release(middleNote)->x() >= middleNote->headWidth() + .19 * score->spatium());
+            }
+      Chord* dotted = chords[3];
+      LaissezVib* middle = release(dotted->notes()[1]);
+      LaissezVib* outer = release(dotted->downNote());
+      const qreal outerX = outer->x();
+      score->style().set(Sid::tieDotsPlacement, 2); // after all dots, including Outside inner ties
+      score->doLayout();
+      qreal dotsRight = 0;
+      for (Note* note : dotted->notes())
+            for (const NoteDot* dot : note->dots())
+                  dotsRight = qMax(dotsRight, note->x() + dot->x() + dot->bbox().right());
+      const qreal afterX = middle->x();
+      QVERIFY(dotted->notes()[1]->x() + afterX >= dotsRight + .19 * score->spatium());
+      QVERIFY(qAbs(outer->x() - outerX) < .000001);
+      score->style().set(Sid::tieDotsPlacement, 1); // before dots
+      score->doLayout();
+      QVERIFY(middle->x() < afterX);
       }
 
 QTEST_MAIN(TestSpanners)

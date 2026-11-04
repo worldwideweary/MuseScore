@@ -28,6 +28,7 @@
 #include "mscore.h"
 #include "navigate.h"
 #include "note.h"
+#include "notedot.h"
 #include "noteevent.h"
 #include "part.h"
 #include "pitchspelling.h"
@@ -43,6 +44,7 @@
 #include "sym.h"
 #include "system.h"
 #include "tie.h"
+#include "laissezvib.h"
 #include "tremolo.h"
 #include "tuplet.h"
 #include "undo.h"
@@ -1815,6 +1817,7 @@ void Chord::layout2()
             }
       if (_tabDur)
             _tabDur->layout2();
+      LaissezVib::layoutChord(this);
       }
 
 //---------------------------------------------------------
@@ -2063,12 +2066,13 @@ void Chord::layoutPitched()
             tie = note->tieBack();
             if (tie) {
                   tie->calculateDirection();
+                  tie->calculateIsInside();
                   qreal overlap = 0.0;
                   bool shortStart = false;
                   Note* sn = tie->startNote();
                   Chord* sc = sn->chord();
                   if (sc && sc->measure() == measure() && sc == prevChordRest(this)) {
-                        if (sc->notes().size() > 1 || (sc->stem() && sc->up() == tie->up())) {
+                        if (tie->isInside() || (sc->stem() && sc->up() == tie->up())) {
                               shortStart = true;
                               if (sc->width() > sn->width()) {
                                     // chord with second?
@@ -2084,7 +2088,7 @@ void Chord::layoutPitched()
                               }
                         else
                               overlap += sn->headWidth() * 0.35;
-                        if (notes().size() > 1 || (stem() && !up() && !tie->up())) {
+                        if (tie->isInside() || (stem() && !up() && !tie->up())) {
                               // for positive offset:
                               //    use available space
                               // for negative x offset:
@@ -2099,6 +2103,18 @@ void Chord::layoutPitched()
                                     overlap += note->headWidth() * 0.15;
                               else
                                     overlap += note->headWidth() * 0.35;
+                              }
+                        if (score()->styleI(Sid::tieDotsPlacement) == 2 && !tie->isOuterTieOfChord(true)) {
+                              const Note* start = tie->startNote();
+                              qreal dotOffset = 0.0;
+                              for (const Note* n : start->chord()->notes()) {
+                                    for (const NoteDot* dot : n->dots()) {
+                                          if (dot->visible())
+                                                dotOffset = qMax(dotOffset, n->x() + dot->x() + dot->width()
+                                                      - start->x() - start->headWidth());
+                                          }
+                                    }
+                              overlap -= dotOffset;
                               }
                         qreal d = qMax(minTieLength - overlap, 0.0);
                         lll = qMax(lll, d);
@@ -2248,6 +2264,8 @@ void Chord::layoutPitched()
       for (Note* note : _notes)
             note->layout2();
 
+      _spaceRw = qMax(_spaceRw, LaissezVib::layoutChord(this));
+
       // Reserve shared-parenthesis width during horizontal layout, before
       // the later system pass adds any attached single-note bend geometry.
       for (Note* note : _notes) {
@@ -2344,6 +2362,7 @@ void Chord::layoutTablature()
             tie = note->tieBack();
             if (tie) {
                   tie->calculateDirection();
+                  tie->calculateIsInside();
                   qreal overlap = 0.0;          // how much tie can overlap start and end notes
                   bool shortStart = false;      // whether tie should clear start note or not
                   Note* startNote = tie->startNote();
@@ -2352,7 +2371,7 @@ void Chord::layoutTablature()
                         qreal startNoteWidth = startNote->width();
                         // overlap into start chord?
                         // if in start chord, there are several notes or stem and tie in same direction
-                        if (startChord->notes().size() > 1 || (startChord->stem() && startChord->up() == tie->up())) {
+                        if (tie->isInside() || (startChord->stem() && startChord->up() == tie->up())) {
                               // clear start note (1/8 of fret mark width)
                               shortStart = true;
                               overlap -= startNoteWidth * 0.125;
@@ -2361,7 +2380,7 @@ void Chord::layoutTablature()
                               overlap += startNoteWidth * 0.35;
                         // overlap into end chord (this)?
                         // if several notes or neither stem or tie are up
-                        if (notes().size() > 1 || (stem() && !up() && !tie->up())) {
+                        if (tie->isInside() || (stem() && !up() && !tie->up())) {
                               // for positive offset:
                               //    use available space
                               // for negative x offset:
@@ -2376,6 +2395,18 @@ void Chord::layoutTablature()
                                     overlap += fretWidth * 0.15;
                               else
                                     overlap += fretWidth * 0.35;
+                              }
+                        if (score()->styleI(Sid::tieDotsPlacement) == 2 && !tie->isOuterTieOfChord(true)) {
+                              const Note* start = tie->startNote();
+                              qreal dotOffset = 0.0;
+                              for (const Note* n : start->chord()->notes()) {
+                                    for (const NoteDot* dot : n->dots()) {
+                                          if (dot->visible())
+                                                dotOffset = qMax(dotOffset, n->x() + dot->x() + dot->width()
+                                                      - start->x() - start->headWidth());
+                                          }
+                                    }
+                              overlap -= dotOffset;
                               }
                         qreal d = qMax(minTieLength - overlap, 0.0);
                         lll = qMax(lll, d);
@@ -2666,6 +2697,7 @@ void Chord::layoutTablature()
 
       for (size_t i = 0; i < numOfNotes; ++i)
             _notes.at(i)->layout2();
+      _spaceRw = qMax(_spaceRw, LaissezVib::layoutChord(this));
       // Reserve shared-parenthesis width during horizontal layout, before
       // the later system pass adds any attached single-note bend geometry.
       for (Note* note : _notes) {

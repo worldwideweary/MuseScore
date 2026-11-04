@@ -304,6 +304,13 @@ EditStyle::EditStyle(Score* s, QWidget* parent)
       { Sid::tieDottedWidth,          false, tieDottedLineWidth,      resetTieDottedLineWidth  },
       { Sid::tieMinDistance,          false, tieMinDistance,          resetTieMinDistance      },
       { Sid::minTieLength,            false, minTieLength,            resetMinTieLength        },
+      { Sid::minHangingTieLength,     false, minHangingTieLength,     resetMinHangingTieLength },
+      { Sid::minLaissezVibLength,      false, minLaissezVibLength,      resetMinLaissezVibLength },
+      { Sid::laissezVibUseSmuflSym,    false, laissezVibUseSmuflSym,    resetLaissezVibUseSmuflSym },
+      { Sid::tieDotsPlacement,        false, tieDotsPlacement,        resetTieDotsPlacement },
+      { Sid::angleHangingSlursAwayFromStaff, false, angleHangingSlursAwayFromStaff, resetAngleHangingSlursAwayFromStaff },
+      { Sid::tiePlacementSingleNote,  false, tiePlacementSingleNote,  resetTiePlacementSingleNote },
+      { Sid::tiePlacementChord,       false, tiePlacementChord,       resetTiePlacementChord },
       { Sid::bracketWidth,            false, bracketWidth,            resetBracketWidth },
       { Sid::bracketDistance,         false, bracketDistance,         resetBracketDistance },
       { Sid::akkoladeWidth,           false, akkoladeWidth,           resetAkkoladeWidth },
@@ -583,6 +590,12 @@ EditStyle::EditStyle(Score* s, QWidget* parent)
       for (QString& family: fbFontNames)
             comboFBFont->addItem(family);
       comboFBFont->setCurrentIndex(0);
+      for (int i = 0; i < tieDotsPlacement->count(); ++i)
+            tieDotsPlacement->setItemData(i, i);
+      for (QComboBox* cb : { tiePlacementSingleNote, tiePlacementChord }) {
+            cb->setItemData(0, 1);
+            cb->setItemData(1, 2);
+            }
       connect(comboFBFont, SIGNAL(currentIndexChanged(int)), SLOT(on_comboFBFont_currentIndexChanged(int)));
 
       // chord symbol init
@@ -1411,7 +1424,7 @@ QVariant EditStyle::getValue(Sid idx)
             }
       else if (!strcmp("bool", type)) {
             QVariant v;
-            if (sw.idx == Sid::harmonyVoiceLiteral) { // special case for bool represented by a two-item combobox
+            if ((sw.idx == Sid::harmonyVoiceLiteral || sw.idx == Sid::angleHangingSlursAwayFromStaff)) { // special case for bool represented by a two-item combobox
                   QComboBox* cb = qobject_cast<QComboBox*>(sw.widget);
                   v = cb->currentIndex();
                   }
@@ -1515,8 +1528,8 @@ void EditStyle::setValues()
                         unhandledType(&sw);
                   }
             else if (!strcmp("bool", type)) {
-                  if (sw.idx == Sid::harmonyVoiceLiteral) { // special case for bool represented by a two-item combobox
-                        voicingSelectWidget->interpretBox->setCurrentIndex(val.toBool());
+                  if ((sw.idx == Sid::harmonyVoiceLiteral || sw.idx == Sid::angleHangingSlursAwayFromStaff)) { // special case for bool represented by a two-item combobox
+                        qobject_cast<QComboBox*>(sw.widget)->setCurrentIndex(val.toBool());
                         }
                   else {
                         if (sw.widget && !sw.widget->setProperty("checked", val))

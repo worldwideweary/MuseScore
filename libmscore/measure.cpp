@@ -4920,8 +4920,10 @@ void Measure::computeMinWidth()
                   }
             }
 
-      if (s->isChordRestType())
-            x += score()->styleP(hasAccidental(s) ? Sid::barAccidentalDistance : Sid::barNoteDistance);
+      if (s->isChordRestType()) {
+            const qreal padding = score()->styleP(hasAccidental(s) ? Sid::barAccidentalDistance : Sid::barNoteDistance);
+            x = !first && prev() && prev()->isMeasure() ? s->minLeftAfterBarline(ls, padding) : x + padding;
+            }
       else if (s->isClefType() || s->isHeaderClefType())
             x += score()->styleP(Sid::clefLeftMargin);
       else if (s->isKeySigType())
@@ -4943,8 +4945,10 @@ qreal Measure::computeFirstSegmentXPosition(Segment* segment)
 
       x = segment->minLeft(ls);
 
-      if (segment->isChordRestType())
-            x += score()->styleP(hasAccidental(segment) ? Sid::barAccidentalDistance : Sid::barNoteDistance);
+      if (segment->isChordRestType()) {
+            const qreal padding = score()->styleP(hasAccidental(segment) ? Sid::barAccidentalDistance : Sid::barNoteDistance);
+            x = !isFirstInSystem() && prev() && prev()->isMeasure() ? segment->minLeftAfterBarline(ls, padding) : x + padding;
+            }
       else if (segment->isClefType() || segment->isHeaderClefType())
             x += score()->styleP(Sid::clefLeftMargin);
       else if (segment->isKeySigType())

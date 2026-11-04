@@ -17,6 +17,10 @@
 
 namespace Ms {
 
+// Note-local attachment for partial ties and release marks. Outside placement
+// still has inner chord ties, which must clear adjacent noteheads and dots.
+QPointF tieNoteAttachment(const Note*, bool up, bool inside, bool start, bool adjust = true);
+
 //---------------------------------------------------------
 //   @@ TieSegment
 ///    a single segment of slur; also used for Tie
@@ -52,6 +56,7 @@ class TieSegment final : public SlurTieSegment {
       bool edit(EditData&) override;
 
       Tie* tie() const { return (Tie*)spanner(); }
+      Element* propertyDelegate(Pid) override;
 
       void computeBezier(QPointF so = QPointF()) override;
       };
@@ -71,6 +76,8 @@ class Tie final : public SlurTie {
       // Keeping those chains linear avoids cycles at backwards repeat jumps.
       int _partialDirection { -1 }; // -1 normal, 0 incoming, 1 outgoing
 
+      // Same values as Studio: Auto, Inside, Outside.
+      int _tiePlacement = 0;
 
    public:
       Tie(Score* = 0);
@@ -82,7 +89,6 @@ class Tie final : public SlurTie {
       bool isIncoming() const { return _partialDirection == 0; }
       void setPartialDirection(int direction) { _partialDirection = direction; }
       int partialDirection() const { return _partialDirection; }
-      bool readProperties(XmlReader&) override;
       TieSegment* layoutPartial(System*);
       qreal incomingStartOffset() const; // free end, relative to the owner measure
       qreal incomingEndOffset(); // note-owned end, relative to its CR segment
@@ -93,6 +99,14 @@ class Tie final : public SlurTie {
       Note* endNote() const;
 
       bool isInside() const { return _isInside; }
+      int tiePlacement() const { return _tiePlacement; }
+      void calculateIsInside();
+      bool isOuterTieOfChord(bool start) const;
+      void reset() override;
+      QVariant getProperty(Pid) const override;
+      bool setProperty(Pid, const QVariant&) override;
+      QVariant propertyDefault(Pid) const override;
+      bool readProperties(XmlReader&) override;
 
       void calculateDirection();
       void write(XmlWriter& xml) const override;

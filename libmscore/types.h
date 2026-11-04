@@ -147,6 +147,7 @@ enum class ElementType : char {
 
       GRADUAL_TEMPO_CHANGE,
       GRADUAL_TEMPO_CHANGE_SEGMENT,
+      LAISSEZ_VIB,
 
       MAXTYPE
       ///\}

@@ -228,6 +228,7 @@ class Segment final : public Element {
       void createShape(int staffIdx);
       qreal minRight() const;
       qreal minLeft(const Shape&) const;
+      qreal minLeftAfterBarline(const Shape&, qreal padding) const;
       qreal minLeft() const;
       qreal minHorizontalDistance(Segment*, bool isSystemGap) const;
       qreal minHorizontalCollidingDistance(Segment* ns) const;

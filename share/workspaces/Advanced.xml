@@ -546,10 +546,9 @@
             <subtype>articAccentStaccatoAbove</subtype>
             </Articulation>
           </Cell>
-        <Cell name="Laissez vibrer (l.v.) above">
-          <Articulation>
-            <subtype>articLaissezVibrerAbove</subtype>
-            </Articulation>
+        <Cell name="Laissez vibrer (l.v.)">
+          <LaissezVib>
+            </LaissezVib>
           </Cell>
         <Cell name="Marcato-staccato above">
           <Articulation>

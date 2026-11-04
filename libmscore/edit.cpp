@@ -4826,6 +4826,7 @@ void Score::undoAddElement(Element* element)
             }
 
       if (et == ElementType::FINGERING
+         || et == ElementType::LAISSEZ_VIB
          || (et == ElementType::IMAGE  && !element->parent()->isSegment())
          || (et == ElementType::SYMBOL && !element->parent()->isSegment())
          || et == ElementType::NOTE

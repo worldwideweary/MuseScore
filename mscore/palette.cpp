@@ -29,6 +29,7 @@
 #include "libmscore/image.h"
 #include "libmscore/imageStore.h"
 #include "libmscore/keysig.h"
+#include "libmscore/laissezvib.h"
 #include "libmscore/measure.h"
 #include "libmscore/mscore.h"
 #include "libmscore/note.h"
@@ -165,7 +166,7 @@ bool Palette::filter(const QString& text)
             }
 
       for (PaletteCell*& cell : cells) {
-            QStringList h = cell->name.toLower().split(" ");
+            QStringList h = cell->name.toLower().remove('(').remove(')').split(" ");
             bool c        = false;
             QStringList n = t.split(" ");
             for (QString& hs : h) {
@@ -619,6 +620,11 @@ bool Palette::applyPaletteElement(Element* element, Qt::KeyboardModifiers modifi
                   }
             if (inserted)
                   score->select(inserted, SelectType::SINGLE, 0);
+            }
+      else if (element->isLaissezVib()) {
+            // A release mark belongs to every selected note without an outgoing tie,
+            // rather than the generic range path's first note of each chord.
+            score->cmdToggleLaissezVib(toLaissezVib(element));
             }
       else if (sel.isList()) {
             ChordRest* cr1 = sel.firstChordRest();

@@ -141,6 +141,7 @@ static const ElementName elementNames[] = {
 
       { ElementType::GRADUAL_TEMPO_CHANGE, "GradualTempoChange",   QT_TRANSLATE_NOOP("elementName", "Gradual Tempo Change") },
       { ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT, "GradualTempoChangeSegment", QT_TRANSLATE_NOOP("elementName", "Gradual Tempo Change Segment") },
+      { ElementType::LAISSEZ_VIB, "LaissezVib", QT_TRANSLATE_NOOP("elementName", "Laissez vibrer") },
       };
 
 //---------------------------------------------------------

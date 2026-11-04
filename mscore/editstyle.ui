@@ -7210,19 +7210,10 @@ By default, they will be placed such as that their right end are at the same lev
                 </property>
                </widget>
               </item>
-              <item row="4" column="1">
-               <spacer name="verticalSpacer_36">
-                <property name="orientation">
-                 <enum>Qt::Vertical</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>20</width>
-                  <height>40</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
+<item row="4" column="0"><widget class="QLabel" name="angleHangingSlursLabel"><property name="text"><string>Partial slurs across repeats and breaks:</string></property></widget></item>
+<item row="4" column="1"><widget class="QComboBox" name="angleHangingSlursAwayFromStaff"><item><property name="text"><string>Follow contour of notes</string></property></item><item><property name="text"><string>Angle away from staff</string></property></item></widget></item>
+<item row="4" column="2"><widget class="QToolButton" name="resetAngleHangingSlursAwayFromStaff"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+
              </layout>
             </widget>
            </item>
@@ -7470,7 +7461,7 @@ By default, they will be placed such as that their right end are at the same lev
                 </property>
                </widget>
               </item>
-              <item row="5" column="0">
+              <item row="11" column="0">
                <spacer name="verticalSpacer_37">
                 <property name="orientation">
                  <enum>Qt::Vertical</enum>
@@ -7483,7 +7474,24 @@ By default, they will be placed such as that their right end are at the same lev
                 </property>
                </spacer>
               </item>
-             </layout>
+             <item row="5" column="0"><widget class="QLabel" name="tiePlacementSingleNoteLabel"><property name="text"><string>Placement on single notes:</string></property></widget></item>
+<item row="5" column="1"><widget class="QComboBox" name="tiePlacementSingleNote"><item><property name="text"><string>Inside</string></property></item><item><property name="text"><string>Outside</string></property></item></widget></item>
+<item row="5" column="2"><widget class="QToolButton" name="resetTiePlacementSingleNote"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="6" column="0"><widget class="QLabel" name="tiePlacementChordLabel"><property name="text"><string>Placement on chords:</string></property></widget></item>
+<item row="6" column="1"><widget class="QComboBox" name="tiePlacementChord"><item><property name="text"><string>Inside</string></property></item><item><property name="text"><string>Outside</string></property></item></widget></item>
+<item row="6" column="2"><widget class="QToolButton" name="resetTiePlacementChord"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="7" column="0"><widget class="QLabel" name="tieDotsPlacementLabel"><property name="text"><string>Inner ties and augmentation dots:</string></property></widget></item>
+<item row="7" column="1"><widget class="QComboBox" name="tieDotsPlacement"><item><property name="text"><string>Auto</string></property></item><item><property name="text"><string>Always before dots</string></property></item><item><property name="text"><string>Always after dots</string></property></item></widget></item>
+<item row="7" column="2"><widget class="QToolButton" name="resetTieDotsPlacement"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="8" column="0"><widget class="QLabel" name="minHangingTieLengthLabel"><property name="text"><string>Minimum hanging tie length:</string></property></widget></item>
+<item row="8" column="1"><widget class="QDoubleSpinBox" name="minHangingTieLength"><property name="suffix"><string>sp</string></property><property name="minimum"><double>0.1</double></property><property name="maximum"><double>99.0</double></property><property name="singleStep"><double>0.1</double></property><property name="keyboardTracking"><bool>false</bool></property></widget></item>
+<item row="8" column="2"><widget class="QToolButton" name="resetMinHangingTieLength"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="9" column="0"><widget class="QLabel" name="minLaissezVibLengthLabel"><property name="text"><string>Minimum laissez vibrer length:</string></property></widget></item>
+<item row="9" column="1"><widget class="QDoubleSpinBox" name="minLaissezVibLength"><property name="suffix"><string>sp</string></property><property name="minimum"><double>0.1</double></property><property name="maximum"><double>99.0</double></property><property name="singleStep"><double>0.1</double></property><property name="keyboardTracking"><bool>false</bool></property></widget></item>
+<item row="9" column="2"><widget class="QToolButton" name="resetMinLaissezVibLength"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+<item row="10" column="1"><widget class="QCheckBox" name="laissezVibUseSmuflSym"><property name="text"><string>Use SMuFL symbols for laissez vibrer</string></property></widget></item>
+<item row="10" column="2"><widget class="QToolButton" name="resetLaissezVibUseSmuflSym"><property name="toolTip"><string>Reset to default</string></property><property name="icon"><iconset resource="musescore.qrc"><normaloff>:/data/icons/edit-reset.svg</normaloff>:/data/icons/edit-reset.svg</iconset></property></widget></item>
+</layout>
             </widget>
            </item>
           </layout>

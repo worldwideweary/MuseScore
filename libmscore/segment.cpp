@@ -24,6 +24,7 @@
 #include "line.h"
 #include "log.h"
 #include "keysig.h"
+#include "ledgerline.h"
 #include "mscore.h"
 #include "measure.h"
 #include "note.h"
@@ -2303,6 +2304,41 @@ qreal Segment::minLeft() const
       return distance;
       }
 
+qreal Segment::minLeftAfterBarline(const Shape& barrier, qreal padding) const
+      {
+      // Studio pads ledger lines separately from noteheads after a barline.
+      // Work on a copy so ordinary chord/header collision shapes stay intact.
+      std::vector<Shape> adjusted;
+      const qreal ledgerPadding = qMax(score()->styleP(Sid::barNoteDistance)
+            - score()->styleP(Sid::ledgerLineLength), 0.25 * spatium());
+      for (const Element* e : elist()) {
+            if (!e || !e->isChord() || !e->addToSkyline())
+                  continue;
+            const Chord* chord = toChord(e);
+            if (!chord->ledgerLines() || chord->vStaffIdx() < 0 || chord->vStaffIdx() >= int(shapes().size()))
+                  continue;
+            if (adjusted.empty())
+                  adjusted = shapes();
+            Shape& shape = adjusted[chord->vStaffIdx()];
+            for (const LedgerLine* line = chord->ledgerLines(); line; line = line->next()) {
+                  // Match the same two translations used by Chord::shape and
+                  // createShape. Leave unmatched/other rectangles untouched.
+                  const Shape ledger = line->shape().translated(line->pos()).translated(chord->pos());
+                  for (const QRectF& rect : ledger) {
+                        auto match = std::find_if(shape.begin(), shape.end(), [&](const QRectF& r) { return r == rect; });
+                        if (match != shape.end())
+                              match->setLeft(qMin(match->right(), match->left() + padding - ledgerPadding));
+                        }
+                  }
+            }
+      if (adjusted.empty())
+            return minLeft(barrier) + padding;
+      qreal distance = 0.0;
+      for (const Shape& shape : adjusted)
+            distance = qMax(distance, barrier.minHorizontalDistance(shape));
+      return distance + padding;
+      }
+
 //---------------------------------------------------------
 //   minHorizontalCollidingDistance
 //    calculate the minimum distance to ns avoiding collisions
@@ -2431,9 +2467,25 @@ qreal courtesySignaturePadding(const Element* left, const Element* right)
 
 qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
       {
+      // Studio applies header spacing to clefs/keys/meters, not to the
+      // repeat barline itself. After the dots, use the ordinary bar-to-note
+      // padding at both system starts and mid-system repeat boundaries.
+      if (isStartRepeatBarLineType() && ns && ns->isChordRestType())
+            systemHeaderGap = false;
       const bool aboveMode = score()->styleI(Sid::timeSigPlacement) == int(TimeSigPlacement::ABOVE_STAVES);
       const bool above = aboveMode && isType(SegmentType::TimeSigTypes);
       const bool nextAbove = aboveMode && ns && ns->isType(SegmentType::TimeSigTypes);
+
+      // A clef supplied in the file can be HeaderClef without header().
+      // Determine the signature-to-note gap from its position as well as the
+      // caller's generated-header flag. Keep repeat-to-note spacing separate.
+      const SegmentType headerTypes = SegmentType::HeaderClef | SegmentType::KeySig
+            | SegmentType::KeySigStartRepeatAnnounce | SegmentType::Ambitus
+            | SegmentType::TimeSig | SegmentType::TimeSigStartRepeatAnnounce;
+      if (ns && ns->isChordRestType() && !above && isType(headerTypes)
+          && rtick().isZero() && measure() == ns->measure()
+          && (measure()->isFirstInSystem() || (measure()->prev() && measure()->prev()->isHBox())))
+            systemHeaderGap = true;
 
       if (nextAbove && isHeaderClefType()) {
             // Studio anchors an above-staff meter at the visible key, or

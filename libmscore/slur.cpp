@@ -513,11 +513,62 @@ void SlurSegment::computeBezier(QPointF p6o)
 //   layoutSegment
 //---------------------------------------------------------
 
+Element* SlurSegment::propertyDelegate(Pid id)
+      {
+      return id == Pid::PARTIAL_SPANNER_DIRECTION ? static_cast<Element*>(slur()) : SlurTieSegment::propertyDelegate(id);
+      }
+
 void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       {
       setPos(QPointF());
       ups(Grip::START).p = p1;
       ups(Grip::END).p   = p2;
+      const SpannerSegmentType type = spannerSegmentType();
+      const bool incoming = slur()->isIncoming() && (type == SpannerSegmentType::SINGLE || type == SpannerSegmentType::BEGIN);
+      const bool outgoing = slur()->isOutgoing() && (type == SpannerSegmentType::SINGLE || type == SpannerSegmentType::END);
+      // Partial slurs already receive repeat-aware contours and one-note
+      // constraints from slurPosChord(). Preserve those calculated anchors.
+      if (slur()->partialDirection() < 0) {
+            auto contourY = [&](Measure* measure, bool first, qreal fallback) {
+                  if (!measure)
+                        return fallback;
+                  for (Segment* segment = first ? measure->first() : measure->last(); segment;
+                        segment = first ? segment->next() : segment->prev()) {
+                        if (!segment->isChordRestType())
+                              continue;
+                        Element* element = segment->element(first ? slur()->track() : slur()->effectiveTrack2());
+                        if (!element || !element->isChord())
+                              continue;
+                        Chord* chord = toChord(element);
+                        if (chord->notes().empty() || chord->vStaffIdx() != vStaffIdx())
+                              return fallback;
+                        const bool up = slur()->up();
+                        qreal y = chord->y();
+                        if (chord->stem() && chord->up() == up)
+                              y += chord->stem()->y() + (up ? -chord->stem()->height() : chord->stem()->height());
+                        else
+                              y += (up ? chord->upNote()->y() - spatium() : chord->downNote()->y() + spatium());
+                        return y;
+                        }
+                  return fallback;
+                  };
+            if (type == SpannerSegmentType::END && system())
+                  ups(Grip::START).p.ry() = contourY(system()->firstMeasure(), true, p1.y());
+            if (type == SpannerSegmentType::BEGIN && system())
+                  ups(Grip::END).p.ry() = contourY(system()->lastMeasure(), false, p2.y());
+            }
+      const bool startIsHanging = type == SpannerSegmentType::END || incoming;
+      const bool endIsHanging = type == SpannerSegmentType::BEGIN || outgoing;
+      // Angle a floating end relative to its anchored opposite end. If both
+      // ends float, preserve the repeat contour: neither is a fixed reference.
+      if (score()->styleB(Sid::angleHangingSlursAwayFromStaff) && startIsHanging != endIsHanging) {
+            const bool up = slur()->up();
+            const qreal height = spatium();
+            if (endIsHanging)
+                  ups(Grip::END).p.ry() = up ? qMin(ups(Grip::END).p.y(), p1.y() - height) : qMax(ups(Grip::END).p.y(), p1.y() + height);
+            if (startIsHanging)
+                  ups(Grip::START).p.ry() = up ? qMin(ups(Grip::START).p.y(), p2.y() - height) : qMax(ups(Grip::START).p.y(), p2.y() + height);
+            }
       _extraHeight = 0.0;
 
       //Adjust Y pos to staff type yOffset before other calculations
@@ -1281,6 +1332,12 @@ bool Slur::readProperties(XmlReader& e)
             return true;
             }
       return SlurTie::readProperties(e);
+      }
+
+void Slur::reset()
+      {
+      SlurTie::reset();
+      undoResetProperty(Pid::PARTIAL_SPANNER_DIRECTION);
       }
 
 QVariant Slur::getProperty(Pid id) const

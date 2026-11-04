@@ -32,6 +32,7 @@
 #include "libmscore/arpeggio.h"
 #include "libmscore/chordbracket.h"
 #include "libmscore/articulation.h"
+#include "libmscore/laissezvib.h"
 #include "libmscore/bagpembell.h"
 #include "libmscore/barline.h"
 #include "libmscore/bend.h"
@@ -934,7 +935,7 @@ PalettePanel* MuseScore::newArticulationsPalettePanel()
             SymId::articTenutoStaccatoAbove,
             SymId::articMarcatoAbove,
             SymId::articAccentStaccatoAbove,
-            SymId::articLaissezVibrerAbove,
+
             SymId::articMarcatoStaccatoAbove,
             SymId::articMarcatoTenutoAbove,
             SymId::articStaccatissimoStrokeAbove,
@@ -972,6 +973,9 @@ PalettePanel* MuseScore::newArticulationsPalettePanel()
             Articulation* s = new Articulation(i, gscore);
             sp->append(s, s->userName());
             }
+      LaissezVib* lv = new LaissezVib(gscore);
+      lv->layout();
+      sp->append(lv, QT_TRANSLATE_NOOP("Palette", "Laissez vibrer (l.v.)"));
       Bend* bend = new Bend(gscore);
       bend->points().append(PitchValue(0,    0, false));
       bend->points().append(PitchValue(15, 100, false));

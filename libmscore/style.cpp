@@ -495,7 +495,13 @@ static const StyleType styleTypes[] {
       { Sid::tieMidWidth,             "tieMidWidth",             Spatium(.21) },
       { Sid::tieDottedWidth,          "tieDottedWidth",          Spatium(.10) },
       { Sid::minTieLength,            "minTieLength",            Spatium(1.0) },
+      { Sid::tiePlacementSingleNote,  "tiePlacementSingleNote",  2 },
+      { Sid::tiePlacementChord,       "tiePlacementChord",       1 },
+      { Sid::tieDotsPlacement,        "tieDotsPlacement",        0 },
       { Sid::minHangingTieLength,     "minHangingTieLength",     Spatium(1.5) },
+      { Sid::minLaissezVibLength,      "minLaissezVibLength",      Spatium(2.0) },
+      { Sid::laissezVibUseSmuflSym,    "laissezVibUseSmuflSym",    false },
+      { Sid::angleHangingSlursAwayFromStaff, "angleHangingSlursAwayFromStaff", false },
       { Sid::slurMinDistance,         "slurMinDistance",         Spatium(0.5) },
       { Sid::tieMinDistance,          "tieMinDistance",          Spatium(0.5) },
       { Sid::sectionPause,            "sectionPause",            QVariant(qreal(3.0)) },
@@ -2984,6 +2990,14 @@ bool MStyle::readProperties(XmlReader& e)
                               }
                         set(idx, index);
                         }
+                  else if (idx == Sid::tiePlacementSingleNote || idx == Sid::tiePlacementChord) {
+                        const QString text = e.readElementText();
+                        set(idx, text == "inside" ? 1 : 2);
+                        }
+                  else if (idx == Sid::tieDotsPlacement) {
+                        const QString text = e.readElementText();
+                        set(idx, text == "before" ? 1 : text == "after" ? 2 : 0);
+                        }
                   else if (!strcmp("Ms::Spatium", type))
                         set(idx, Spatium(e.readElementText().toDouble()));
                   else if (!strcmp("double", type))
@@ -3483,8 +3497,6 @@ bool MStyle::readProperties400(XmlReader& e, int mscVersion)
             || (mscVersion >= 410 && tag == "minStraightGlissandoLength")         // Mu4.1+ only, let's skip
             || (mscVersion >= 410 && tag == "minWigglyGlissandoLength")           // Mu4.1+ only, let's skip
             || (mscVersion >= 400 && tag == "headerSlurTieDistance")              // Mu4 only,    let's skip
-            || (mscVersion >= 420 && tag == "tiePlacementSingleNote")             // Mu4.2+ only, let's skip
-            || (mscVersion >= 420 && tag == "tiePlacementChord")                  // Mu4.2+ only, let's skip
             || (mscVersion >= 420 && tag == "tieMinShoulderHeight")               // Mu4.2+ only, let's skip
             || (mscVersion >= 420 && tag == "tieMaxShoulderHeight"))              // Mu4.2+ only, let's skip
             e.skipCurrentElement();
@@ -3943,16 +3955,9 @@ bool  MStyle::readProperties450(XmlReader& e, int mscVersion)
             || tag == "mmRestMaxWidthIncrease"                      // Mu4.5+ only, let's skip
             || tag == "mmRestBetweenStaves")                        // Mu4.5+ only, let's skip
             e.skipCurrentElement();
-      else if (tag == "minHangingTieLength")                        // Mu4.5+ only, let's skip
-            e.skipCurrentElement();
       else if (tag == "lineEndToBarlineDistance")                   // Mu4.5+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "laissezVibMinDistance")                      // Mu4.5+ only, let's skip
-            e.skipCurrentElement();
-      else if (tag == "tieDotsPlacement")                           // Mu4.5+ only, let's skip
-            e.skipCurrentElement();
-      else if (tag == "minLaissezVibLength"                         // Mu4.5+ only, let's skip
-            || tag =="laissezVibUseSmuflSym")                       // Mu4.5+ only, let's skip
             e.skipCurrentElement();
       else if (tag.startsWith("noteLine"))                          // Mu4.5+ only, let's skip
             e.skipCurrentElement();
@@ -4096,8 +4101,6 @@ bool  MStyle::readProperties460(XmlReader& e, int mscVersion)
       //       e.skipCurrentElement();
       else if (tag == "chordStackedModiferMag")                        // typo in early Mu4.6-dev
             set(Sid::chordStackedModifierMag, e.readDouble());
-      else if (tag == "angleHangingSlursAwayFromStaff")             // Mu4.6+ only, let's skip
-            e.skipCurrentElement();
       else if (tag == "barlineToLineStartDistance")                 // Mu4.6+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "voltaPosition"
@@ -4454,6 +4457,10 @@ void MStyle::save(XmlWriter& xml, bool optimize)
             const QStringList tokens = timeSigDrawingTokens(idx);
             if (!tokens.isEmpty())
                   xml.tag(st.name(), tokens.value(value(idx).toInt(), tokens.at(st.defaultValue().toInt())));
+            else if (idx == Sid::tiePlacementSingleNote || idx == Sid::tiePlacementChord)
+                  xml.tag(st.name(), value(idx).toInt() == 1 ? "inside" : "outside");
+            else if (idx == Sid::tieDotsPlacement)
+                  xml.tag(st.name(), value(idx).toInt() == 1 ? "before" : value(idx).toInt() == 2 ? "after" : "auto");
             else if (!strcmp("Ms::Spatium", type))
                   xml.tag(st.name(), value(idx).value<Spatium>().val());
             else if (!strcmp("Ms::Direction", type))

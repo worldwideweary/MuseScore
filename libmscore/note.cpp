@@ -54,6 +54,7 @@
 #include "system.h"
 #include "textline.h"
 #include "tie.h"
+#include "laissezvib.h"
 #include "tremolo.h"
 #include "tuplet.h"
 #include "undo.h"
@@ -1342,6 +1343,7 @@ void Note::add(Element* e)
             case ElementType::IMAGE:
             case ElementType::TEXT:
             case ElementType::BEND:
+            case ElementType::LAISSEZ_VIB:
                   _el.push_back(e);
                   break;
             case ElementType::TIE: {
@@ -1393,6 +1395,7 @@ void Note::remove(Element* e)
             case ElementType::IMAGE:
             case ElementType::FINGERING:
             case ElementType::BEND:
+            case ElementType::LAISSEZ_VIB:
                   if (!_el.remove(e))
                         qDebug("Note::remove(): cannot find %s", e->name());
                   break;
@@ -1745,6 +1748,13 @@ bool Note::readProperties(XmlReader& e)
             tie->read(e);
             add(tie);
             }
+      else if (tag == "LaissezVib") {
+            LaissezVib* lv = new LaissezVib(score());
+            lv->setParent(this);
+            lv->setTrack(track());
+            lv->read(e);
+            add(lv);
+            }
       else if (tag == "Spanner")
             Spanner::readSpanner(e, this, track());
       else if (tag == "tpc2")
@@ -1981,6 +1991,7 @@ bool Note::acceptDrop(EditData& data) const
          || type == ElementType::FERMATA
          || type == ElementType::CHORDLINE
          || type == ElementType::CHORD_BRACKET
+         || type == ElementType::LAISSEZ_VIB
          || type == ElementType::TEXT
          || type == ElementType::REHEARSAL_MARK
          || (type == ElementType::FINGERING && (!isTablature || tabFingering))
@@ -2046,6 +2057,21 @@ Element* Note::drop(EditData& data)
       switch(e->type()) {
             case ElementType::REHEARSAL_MARK:
                   return ch->drop(data);
+
+            case ElementType::LAISSEZ_VIB:
+                  if (tieFor() || partialTie(false)) {
+                        delete e;
+                        return nullptr;
+                        }
+                  for (Element* attached : _el) {
+                        if (attached->isLaissezVib()) {
+                              delete e;
+                              return nullptr;
+                              }
+                        }
+                  e->setParent(this);
+                  score()->undoAddElement(e);
+                  return e;
 
             case ElementType::SYMBOL:
             case ElementType::IMAGE:

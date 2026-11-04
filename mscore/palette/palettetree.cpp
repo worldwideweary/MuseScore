@@ -29,6 +29,7 @@
 #include "libmscore/fret.h"
 #include "libmscore/icon.h"
 #include "libmscore/image.h"
+#include "libmscore/laissezvib.h"
 #include "libmscore/imageStore.h"
 #include "libmscore/mscore.h"
 #include "libmscore/score.h"
@@ -299,6 +300,19 @@ bool PaletteCell::read(XmlReader& e)
                         }
                   }
             }
+
+      // Upgrade saved palette/workspace cells only. Legacy articulations in
+      // scores retain their original representation and appearance.
+      if (element && element->isArticulation()) {
+            const SymId sym = toArticulation(element.get())->symId();
+            if (sym == SymId::articLaissezVibrerAbove || sym == SymId::articLaissezVibrerBelow) {
+                  element.reset(new LaissezVib(gscore));
+                  element->styleChanged();
+                  name = QT_TRANSLATE_NOOP("Palette", "Laissez vibrer (l.v.)");
+                  }
+            }
+      else if (element && element->isLaissezVib() && name == "Laissez vibrer")
+            name = QT_TRANSLATE_NOOP("Palette", "Laissez vibrer (l.v.)");
 
       setElementTranslated(translateElement);
 

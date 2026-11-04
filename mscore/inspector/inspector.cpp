@@ -31,6 +31,7 @@
 #include "inspectorAmbitus.h"
 #include "inspectorArpeggio.h"
 #include "inspectorChordBracket.h"
+#include "resetButton.h"
 #include "inspectorBarline.h"
 #include "inspectorBeam.h"
 #include "inspectorBend.h"
@@ -483,6 +484,7 @@ void Inspector::update(Score* s)
                         case ElementType::LYRICSLINE_SEGMENT:
                               ie = new InspectorPartialLyricsLine(this);
                               break;
+                        case ElementType::LAISSEZ_VIB:
                         case ElementType::SLUR_SEGMENT:
                         case ElementType::TIE_SEGMENT:
                               ie = new InspectorSlurTie(this);
@@ -1683,23 +1685,21 @@ InspectorSlurTie::InspectorSlurTie(QWidget* parent)
       repeatEndpoints = new QWidget(s.panel);
       repeatEndpoints->setLayout(new QVBoxLayout);
       repeatEndpoints->layout()->setContentsMargins(0, 0, 0, 0);
-      s.gridLayout->addWidget(repeatEndpoints, s.gridLayout->rowCount(), 0, 1, 3);
 
 
       Element* el = inspector->element();
       bool sameTypes = true;
 
       for (const auto& ee : *inspector->el()) {
-            if (ee->isSlurSegment() != el->isSlurSegment()) {
+            if (ee->type() != el->type()) {
                   sameTypes = false;
                   break;
                   }
             }
       if (sameTypes)
-            s.title->setText(el->isSlurSegment() ? tr("Slur") : tr("Tie"));
+            s.title->setText(el->isLaissezVib() ? tr("Laissez vibrer") : el->isSlurSegment() ? tr("Slur") : tr("Tie"));
 
       std::vector<InspectorItem> iiList = {
-            { Pid::LINE_TYPE,       0, s.lineType,      s.resetLineType      },
             { Pid::SLUR_DIRECTION,  0, s.slurDirection, s.resetSlurDirection }
             };
       if (sameTypes && el->isSlurSegment()) {
@@ -1708,11 +1708,40 @@ InspectorSlurTie::InspectorSlurTie(QWidget* parent)
             partial->addItem(tr("Incoming"), 0);
             partial->addItem(tr("Outgoing"), 1);
             partial->addItem(tr("Incoming and outgoing"), 2);
-            const int row = s.gridLayout->rowCount();
-            s.gridLayout->addWidget(new QLabel(tr("Partial slur"), s.panel), row, 0);
-            s.gridLayout->addWidget(partial, row, 1, 1, 2);
-            iiList.push_back({ Pid::PARTIAL_SPANNER_DIRECTION, 0, partial, nullptr });
+            ResetButton* reset = new ResetButton(s.panel);
+            QLabel* caption = new QLabel(tr("Partial slur:"), s.panel);
+            caption->setBuddy(partial);
+            s.gridLayout->addWidget(caption, 4, 0);
+            s.gridLayout->addWidget(partial, 4, 1);
+            s.gridLayout->addWidget(reset, 4, 2);
+            iiList.push_back({ Pid::PARTIAL_SPANNER_DIRECTION, 0, partial, reset });
             }
+      const bool laissezVib = sameTypes && el->isLaissezVib();
+      s.lineType->setVisible(!laissezVib);
+      s.label_2->setVisible(!laissezVib);
+      s.resetLineType->setVisible(!laissezVib);
+      if (!laissezVib)
+            iiList.push_back({ Pid::LINE_TYPE, 0, s.lineType, s.resetLineType });
+      if (laissezVib) {
+            QDoubleSpinBox* length = new QDoubleSpinBox(s.panel);
+            length->setRange(.1, 99.0);
+            length->setSingleStep(.1);
+            length->setSuffix(tr(" sp"));
+            ResetButton* reset = new ResetButton(s.panel);
+            QLabel* caption = new QLabel(tr("Minimum length:"), s.panel);
+            caption->setBuddy(length);
+            s.gridLayout->addWidget(caption, 4, 0);
+            s.gridLayout->addWidget(length, 4, 1);
+            s.gridLayout->addWidget(reset, 4, 2);
+            iiList.push_back({ Pid::LAISSEZ_VIB_MIN_LENGTH, 0, length, reset });
+            }
+      const bool tieOnly = sameTypes && (el->isTieSegment() || laissezVib);
+      s.tiePlacementLabel->setVisible(tieOnly);
+      s.tiePlacement->setVisible(tieOnly);
+      s.resetTiePlacement->setVisible(tieOnly);
+      if (tieOnly)
+            iiList.push_back({ Pid::TIE_PLACEMENT, 0, s.tiePlacement, s.resetTiePlacement });
+      s.gridLayout->addWidget(repeatEndpoints, s.gridLayout->rowCount(), 0, 1, 3);
       const std::vector<InspectorPanel> ppList = { { s.title, s.panel } };
       mapSignals(iiList, ppList);
       }

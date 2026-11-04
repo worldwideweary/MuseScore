@@ -42,6 +42,7 @@
 
 #include "audio/midi/event.h"
 
+#include "libmscore/laissezvib.h"
 #include "mtest/testutils.h"
 
 using namespace Ms;
@@ -75,6 +76,14 @@ class TestElement : public QObject, public MTest
       void testIds();
       void testPartialSlur();
       void testPartialLyrics();
+      void testTiePlacementRoundTrip();
+      void testTiePlacementResolution();
+      void testTieStyleImport();
+      void testLaissezVibRoundTrip();
+      void testLaissezVibOwnership();
+      void testLaissezVibCurveProfile();
+      void testPartialSlurSegmentProperties();
+      void testPartialTiePlacementImport();
       void testChordBracketRoundTrip();
       void testChordBracketClone();
       void testChordBracketHandles();
@@ -134,6 +143,196 @@ class TestElement : public QObject, public MTest
 //   testIds
 //---------------------------------------------------------
 
+void TestElement::testTiePlacementRoundTrip()
+      {
+      for (int placement = 0; placement <= 2; ++placement) {
+            Tie original(score);
+            QVERIFY(original.setProperty(Pid::TIE_PLACEMENT, placement));
+            Tie* copy = static_cast<Tie*>(writeReadElement(&original));
+            QVERIFY(copy);
+            QCOMPARE(copy->tiePlacement(), placement);
+            Tie* clone = original.clone();
+            QCOMPARE(clone->tiePlacement(), placement);
+            delete copy;
+            delete clone;
+            }
+      }
+
+void TestElement::testPartialSlurSegmentProperties()
+      {
+      for (int partial : { -1, 0, 1, 2 }) {
+            Slur slur(score);
+            slur.setPartialDirection(partial);
+            SlurSegment segment(score);
+            segment.setSpanner(&slur);
+            QCOMPARE(segment.propertyDelegate(Pid::PARTIAL_SPANNER_DIRECTION), static_cast<Element*>(&slur));
+            QCOMPARE(segment.getProperty(Pid::PARTIAL_SPANNER_DIRECTION).toInt(), partial);
+            QCOMPARE(segment.propertyDefault(Pid::PARTIAL_SPANNER_DIRECTION).toInt(), -1);
+            const int next = partial == 2 ? -1 : partial + 1;
+            QVERIFY(segment.setProperty(Pid::PARTIAL_SPANNER_DIRECTION, next));
+            QCOMPARE(slur.partialDirection(), next);
+            }
+      }
+
+void TestElement::testPartialTiePlacementImport()
+      {
+      for (int partial : { 0, 1 }) {
+            for (int placement = 0; placement <= 2; ++placement) {
+                  const QByteArray data = QString("<PartialTie><partialSpannerDirection>%1</partialSpannerDirection>"
+                        "<tiePlacement>%2</tiePlacement></PartialTie>")
+                        .arg(partial == 0 ? "incoming" : "outgoing")
+                        .arg(placement == 1 ? "inside" : placement == 2 ? "outside" : "auto").toUtf8();
+                  XmlReader reader(data);
+                  QVERIFY(reader.readNextStartElement());
+                  Tie tie(score);
+                  tie.read(reader);
+                  QVERIFY(tie.isPartial());
+                  QCOMPARE(tie.partialDirection(), partial);
+                  QCOMPARE(tie.tiePlacement(), placement);
+                  Tie* clone = tie.clone();
+                  QCOMPARE(clone->partialDirection(), partial);
+                  QCOMPARE(clone->tiePlacement(), placement);
+                  delete clone;
+                  }
+            }
+      }
+
+void TestElement::testLaissezVibRoundTrip()
+      {
+      LaissezVib original(score);
+      original.setProperty(Pid::SLUR_DIRECTION, QVariant::fromValue(Direction::DOWN));
+      original.setProperty(Pid::TIE_PLACEMENT, 1);
+      original.setProperty(Pid::LAISSEZ_VIB_MIN_LENGTH, QVariant::fromValue(Spatium(3.5)));
+      original.setPropertyFlags(Pid::LAISSEZ_VIB_MIN_LENGTH, PropertyFlags::UNSTYLED);
+      LaissezVib* copy = static_cast<LaissezVib*>(writeReadElement(&original));
+      QVERIFY(copy);
+      QCOMPARE(copy->getProperty(Pid::TIE_PLACEMENT).toInt(), 1);
+      QCOMPARE(int(copy->getProperty(Pid::SLUR_DIRECTION).value<Direction>()), int(Direction::DOWN));
+      QCOMPARE(copy->getProperty(Pid::LAISSEZ_VIB_MIN_LENGTH).value<Spatium>().val(), 3.5);
+      QVERIFY(copy->propertyFlags(Pid::LAISSEZ_VIB_MIN_LENGTH) == PropertyFlags::UNSTYLED);
+      delete copy;
+      }
+
+void TestElement::testLaissezVibCurveProfile()
+      {
+      const QVariant oldSmufl = score->styleV(Sid::laissezVibUseSmuflSym);
+      const QVariant oldEnd = score->styleV(Sid::tieEndWidth);
+      const QVariant oldMid = score->styleV(Sid::tieMidWidth);
+      const QVariant oldMin = score->styleV(Sid::minTieLength);
+      score->style().set(Sid::laissezVibUseSmuflSym, false);
+      score->style().set(Sid::tieEndWidth, Spatium(.07));
+      score->style().set(Sid::tieMidWidth, Spatium(.21));
+      score->style().set(Sid::minTieLength, Spatium(1.0));
+      // Studio 4.7's unadjusted curved-tie bounds, including the end-width stroke.
+      const qreal lengths[] = { 2.0, 3.0, 4.0 };
+      const qreal heights[] = { .595, .7031980515339464, .7897114317029974 };
+      for (int i = 0; i < 3; ++i) {
+            QRectF above;
+            for (Direction direction : { Direction::UP, Direction::DOWN }) {
+                  LaissezVib lv(score);
+                  lv.setProperty(Pid::SLUR_DIRECTION, QVariant::fromValue(direction));
+                  lv.setProperty(Pid::LAISSEZ_VIB_MIN_LENGTH, Spatium(lengths[i]));
+                  lv.layout();
+                  const qreal sp = lv.spatium();
+                  const QRectF bounds = lv.bbox();
+                  QVERIFY(qAbs(bounds.height() / sp - heights[i]) < 0.000001);
+                  QVERIFY(qAbs(bounds.width() / sp - lengths[i] - .07) < 0.000001);
+                  if (direction == Direction::UP)
+                        above = bounds;
+                  else {
+                        QVERIFY(qAbs(bounds.top() + above.bottom()) < 0.000001);
+                        QVERIFY(qAbs(bounds.bottom() + above.top()) < 0.000001);
+                        }
+                  }
+            }
+      score->style().set(Sid::laissezVibUseSmuflSym, oldSmufl);
+      score->style().set(Sid::tieEndWidth, oldEnd);
+      score->style().set(Sid::tieMidWidth, oldMid);
+      score->style().set(Sid::minTieLength, oldMin);
+      }
+
+void TestElement::testLaissezVibOwnership()
+      {
+      Note note(score);
+      LaissezVib* lv = new LaissezVib(score);
+      note.add(lv);
+      QVERIFY(!note.tieFor());
+      QVERIFY(!note.tieBack());
+      QCOMPARE(lv->parent(), static_cast<Element*>(&note));
+      note.remove(lv);
+      QVERIFY(note.el().empty());
+      delete lv;
+      }
+
+void TestElement::testTieStyleImport()
+      {
+      const QByteArray data("<Style><tiePlacementSingleNote>inside</tiePlacementSingleNote>"
+            "<tiePlacementChord>outside</tiePlacementChord><tieDotsPlacement>after</tieDotsPlacement>"
+            "<minHangingTieLength>2.5</minHangingTieLength>"
+            "<angleHangingSlursAwayFromStaff>1</angleHangingSlursAwayFromStaff></Style>");
+      for (int version : { 302, 475 }) {
+            MStyle style;
+            XmlReader reader(data);
+            QVERIFY(reader.readNextStartElement());
+            while (reader.readNextStartElement()) {
+                  if (version > 302 && style.readProperties400(reader, version))
+                        continue;
+                  QVERIFY(style.readProperties(reader));
+                  }
+            QCOMPARE(style.value(Sid::tiePlacementSingleNote).toInt(), 1);
+            QCOMPARE(style.value(Sid::tiePlacementChord).toInt(), 2);
+            QCOMPARE(style.value(Sid::tieDotsPlacement).toInt(), 2);
+            QCOMPARE(style.value(Sid::minHangingTieLength).value<Spatium>().val(), 2.5);
+            QVERIFY(style.value(Sid::angleHangingSlursAwayFromStaff).toBool());
+            }
+      }
+
+void TestElement::testTiePlacementResolution()
+      {
+      Chord start(score);
+      Chord end(score);
+      Note* n1 = new Note(score);
+      Note* n2 = new Note(score);
+      start.add(n1);
+      end.add(n2);
+      Tie tie(score);
+      tie.setStartNote(n1);
+      tie.setEndNote(n2);
+      const QVariant oldSingle = score->styleV(Sid::tiePlacementSingleNote);
+      const QVariant oldChord = score->styleV(Sid::tiePlacementChord);
+      score->style().set(Sid::tiePlacementSingleNote, 2);
+      score->style().set(Sid::tiePlacementChord, 1);
+      tie.calculateIsInside();
+      QVERIFY(!tie.isInside());
+      end.add(new Note(score));
+      tie.calculateIsInside();
+      QVERIFY(tie.isInside());
+      QVERIFY(tie.setProperty(Pid::TIE_PLACEMENT, 2));
+      tie.calculateIsInside();
+      QVERIFY(!tie.isInside());
+      TieSegment segment(score);
+      segment.setSpanner(&tie);
+      QVERIFY(segment.setProperty(Pid::TIE_PLACEMENT, 1));
+      QCOMPARE(tie.tiePlacement(), 1);
+      QCOMPARE(segment.propertyDefault(Pid::TIE_PLACEMENT).toInt(), 0);
+      // Repeat backports store either partial-tie direction on its one owner.
+      // The end-anchor collision rule must recognize that owner as well.
+      for (int direction : { 0, 1 }) {
+            Tie partial(score);
+            partial.setPartialDirection(direction);
+            QVERIFY(partial.setProperty(Pid::TIE_PLACEMENT, 2));
+            partial.setStartNote(partial.up() ? end.upNote() : end.downNote());
+            partial.calculateIsInside();
+            QVERIFY(partial.isOuterTieOfChord(true));
+            QVERIFY(partial.isOuterTieOfChord(false));
+            partial.setStartNote(partial.up() ? end.downNote() : end.upNote());
+            QVERIFY(!partial.isOuterTieOfChord(true));
+            QVERIFY(!partial.isOuterTieOfChord(false));
+            }
+      score->style().set(Sid::tiePlacementSingleNote, oldSingle);
+      score->style().set(Sid::tiePlacementChord, oldChord);
+      }
+
 void TestElement::testIds()
       {
       ElementType ids[] = {
@@ -149,6 +348,7 @@ void TestElement::testIds()
             ElementType::BAR_LINE,
             ElementType::ARPEGGIO,
             ElementType::CHORD_BRACKET,
+            ElementType::LAISSEZ_VIB,
             ElementType::BREATH,
             ElementType::GLISSANDO,
             ElementType::GUITAR_BEND,

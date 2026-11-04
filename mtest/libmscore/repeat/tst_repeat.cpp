@@ -11,7 +11,11 @@
 //=============================================================================
 
 #include <QtTest/QtTest>
+#include <QBuffer>
 #include <QDomDocument>
+#include <cmath>
+#include <map>
+#include <tuple>
 #include "mtest/testutils.h"
 #include "libmscore/score.h"
 #include "libmscore/measure.h"
@@ -29,9 +33,12 @@
 #include "libmscore/accidental.h"
 #include "libmscore/undo.h"
 #include "libmscore/barline.h"
+#include "libmscore/ledgerline.h"
+#include "libmscore/arpeggio.h"
 #include "libmscore/segment.h"
 #include "libmscore/system.h"
 #include "libmscore/mscoreview.h"
+#include "audio/midi/event.h"
 
 #define DIR QString("libmscore/repeat/")
 
@@ -74,6 +81,8 @@ class TestRepeat : public QObject, public MTest
       void repeatTieNotes();
       void automaticRepeatTies();
       void repeatTiePlayback();
+      void partialTieAttackPlayback_data();
+      void partialTieAttackPlayback();
       void partialLyricsLayout();
       void partialLyricsRendering_data();
       void partialLyricsRendering();
@@ -95,6 +104,12 @@ class TestRepeat : public QObject, public MTest
       void partialSlurRepeatDotGap();
       void startRepeatNoteSpacing_data();
       void startRepeatNoteSpacing();
+      void startRepeatHeaderSpacing_data();
+      void startRepeatHeaderSpacing();
+      void explicitSignatureHeaderSpacing_data();
+      void explicitSignatureHeaderSpacing();
+      void barlineChordRestSpacing_data();
+      void barlineChordRestSpacing();
       void incomingTieMinimumSpace_data();
       void incomingTieMinimumSpace();
       void partialSlurBoundaryValidity_data();
@@ -570,8 +585,9 @@ void TestRepeat::partialTieOffsets()
             }
       }
 
-// Compare the repeat landing with R05's ordinary tie landing on the same
-// pitches/voices. Extra leading space exposes reversals and wrong head anchors.
+// R05's ordinary ties identify the repeat sources and control placement. Partial ties use
+// Studio-style attachments rather than the legacy ordinary-tie geometry.
+// Check physical head clearance and save/reopen stability with extra space.
 void TestRepeat::partialTieChordPlacement_data()
       {
       QTest::addColumn<double>("leadingSpace");
@@ -618,6 +634,7 @@ void TestRepeat::partialTieChordPlacement()
 
       QTemporaryDir temporary;
       QVERIFY(temporary.isValid());
+      std::map<std::tuple<int, int, bool>, QPointF> originalAnchors;
       for (int pass = 0; pass < 2; ++pass) {
             landing = score->firstMeasure()->nextMeasure();
             linear = landing->nextMeasure()->nextMeasure()->nextMeasure();
@@ -641,29 +658,91 @@ void TestRepeat::partialTieChordPlacement()
                               Tie* partial = note->partialTie(incoming);
                               QVERIFY(partial);
                               QCOMPARE(int(partial->slurDirection()), direction);
-                              QCOMPARE(partial->up(), normal->up());
+                              if (direction == int(Direction::AUTO)) {
+                                    const Note* directionNote = incoming ? normal->startNote() : note;
+                                    QVERIFY(directionNote);
+                                    if (incoming) {
+                                          const auto destinations = repeatTieDestinations(const_cast<Note*>(directionNote));
+                                          QVERIFY(std::find(destinations.begin(), destinations.end(), note) != destinations.end());
+                                          }
+                                    const Chord* directionChord = directionNote->chord();
+                                    // Every R05 staff has visible concurrent voices.
+                                    // Auto follows the owner's stem for outgoing ties,
+                                    // and the enabled repeat-source stem for incoming.
+                                    QVERIFY(directionChord->measure()->hasVoices(directionChord->staffIdx(),
+                                          directionChord->tick(), directionChord->actualTicks()));
+                                    QVERIFY2(partial->up() == directionChord->up(),
+                                          qPrintable(QString("Auto direction: track %1 pitch %2 incoming %3 source tick %4 tie up %5 stem up %6")
+                                                .arg(track).arg(note->pitch()).arg(incoming).arg(directionNote->tick().ticks())
+                                                .arg(partial->up()).arg(directionChord->up())));
+                                    }
+                              else
+                                    QCOMPARE(partial->up(), direction == int(Direction::UP));
                               QCOMPARE(partial->isInside(), normal->isInside());
                               const Grip grip = incoming ? Grip::END : Grip::START;
-                              const TieSegment* normalSegment = incoming ? normal->backSegment() : normal->frontSegment();
-                              const Note* anchorNote = incoming ? normal->endNote() : normal->startNote();
+                              const TieSegment* partialSegment = partial->segmentAt(0);
+                              QVERIFY(partialSegment);
                               const auto origin = [](const Note* n) {
                                     const Chord* c = n->chord();
                                     return n->pos() + c->pos() + c->segment()->pos() + c->measure()->pos();
                                     };
-                              const QPointF partialAnchor = partial->segmentAt(0)->ups(grip).p - origin(note);
-                              const QPointF normalAnchor = normalSegment->ups(grip).p - origin(anchorNote);
-                              QVERIFY(partial->segmentAt(0)->ups(Grip::END).p.x() > partial->segmentAt(0)->ups(Grip::START).p.x());
-                              QVERIFY2(qAbs(partialAnchor.x() - normalAnchor.x()) < 0.001,
-                                    qPrintable(QString("track %1 pitch %2 incoming %3: partial x %4, normal x %5")
-                                          .arg(track).arg(note->pitch()).arg(incoming).arg(partialAnchor.x()).arg(normalAnchor.x())));
+                              const QPointF partialAnchor = partialSegment->ups(grip).p - origin(note);
+                              QVERIFY(partialSegment->ups(Grip::END).p.x() > partialSegment->ups(Grip::START).p.x());
+                              QVERIFY(std::isfinite(partialAnchor.x()) && std::isfinite(partialAnchor.y()));
+                              const qreal sp = score->spatium();
+                              if (partial->isInside()) {
+                                    // Inside attaches beyond the appropriate head edge,
+                                    // including when a second voice shifts the head.
+                                    if (incoming)
+                                          QVERIFY(partialAnchor.x() <= -.19 * sp);
+                                    else
+                                          QVERIFY(partialAnchor.x() >= note->headWidth() + .19 * sp);
+                                    }
+                              const Segment* segment = note->chord()->segment();
+                              const int firstTrack = note->chord()->staffIdx() * VOICES;
+                              QRectF headCluster = note->bbox();
+                              for (int voiceTrack = firstTrack; voiceTrack < firstTrack + VOICES; ++voiceTrack) {
+                                    const Element* otherElement = segment->element(voiceTrack);
+                                    if (!otherElement || !otherElement->isChord())
+                                          continue;
+                                    for (const Note* other : toChord(otherElement)->notes()) {
+                                          if (!other->visible())
+                                                continue;
+                                          // Use actual ink bounds, independently of the
+                                          // attachment helper being tested. Trim only the
+                                          // rectangle edge to avoid boundary roundoff.
+                                          const QPointF offset = origin(other) - origin(note);
+                                          const QRectF bounds = other->bbox().translated(offset);
+                                          headCluster |= bounds;
+                                          if (other->accidental() && other->accidental()->visible())
+                                                headCluster |= other->accidental()->bbox().translated(offset + other->accidental()->pos());
+                                          const QRectF ink = bounds.adjusted(.001 * sp, .001 * sp, -.001 * sp, -.001 * sp);
+                                          QVERIFY2(!ink.contains(partialAnchor),
+                                                qPrintable(QString("track %1 pitch %2 incoming %3 overlaps head %4: anchor (%5,%6), bounds (%7,%8,%9,%10)")
+                                                      .arg(track).arg(note->pitch()).arg(incoming).arg(other->pitch())
+                                                      .arg(partialAnchor.x()).arg(partialAnchor.y())
+                                                      .arg(ink.x()).arg(ink.y()).arg(ink.width()).arg(ink.height())));
+                                          }
+                                    }
+                              // Leading space moves the chord, not its local attachment.
+                              // Retain an upper bound so a wrong coordinate origin or a
+                              // needlessly displaced anchor cannot satisfy clearance alone.
+                              QVERIFY(partialAnchor.x() >= headCluster.left() - .5 * sp);
+                              QVERIFY(partialAnchor.x() <= headCluster.right() + .5 * sp);
                               // Inside/outside vertical placement must stay on the correct
                               // side of its note, including the down-stem second voice.
                               QVERIFY(partial->up() ? partialAnchor.y() < 0 : partialAnchor.y() > 0);
-                              // Automatic R05 placement matches the ordinary landing.
-                              // Forced directions may need a different staff-line avoidance
-                              // adjustment because the curve lengths differ.
-                              if (direction == int(Direction::AUTO))
-                                    QVERIFY(qAbs(partialAnchor.y() - normalAnchor.y()) < 0.001);
+                              const auto key = std::make_tuple(track, note->pitch(), incoming);
+                              if (pass == 0)
+                                    originalAnchors.emplace(key, partialAnchor);
+                              else {
+                                    const auto found = originalAnchors.find(key);
+                                    QVERIFY(found != originalAnchors.end());
+                                    QVERIFY2((partialAnchor - found->second).manhattanLength() < .001 * sp,
+                                          qPrintable(QString("round trip: track %1 pitch %2 incoming %3 before (%4,%5) after (%6,%7)")
+                                                .arg(track).arg(note->pitch()).arg(incoming)
+                                                .arg(found->second.x()).arg(found->second.y()).arg(partialAnchor.x()).arg(partialAnchor.y())));
+                                    }
                               ++checked;
                               }
                         }
@@ -786,6 +865,118 @@ void TestRepeat::repeatTiePlayback()
       score->setExpandRepeats(false);
       QVERIFY(!nextTiedNoteInPlayback(notes[2], bar * 2));
       delete score;
+      }
+
+void TestRepeat::partialTieAttackPlayback_data()
+      {
+      QTest::addColumn<QString>("format");
+      QTest::addColumn<bool>("expandRepeats");
+      QTest::addColumn<bool>("incomingTies");
+      QTest::addColumn<bool>("outgoingTies");
+      for (const QString& format : { QString("37E"), QString("475") }) {
+            for (bool expandRepeats : { false, true }) {
+                  for (bool incomingTies : { false, true }) {
+                        for (bool outgoingTies : { false, true })
+                              QTest::newRow(qPrintable(QString("%1-%2-%3-%4").arg(format)
+                                    .arg(expandRepeats ? "expanded" : "linear").arg(incomingTies ? "incoming" : "no-incoming")
+                                    .arg(outgoingTies ? "outgoing" : "no-outgoing")))
+                                    << format << expandRepeats << incomingTies << outgoingTies;
+                        }
+                  }
+            }
+      }
+
+void TestRepeat::partialTieAttackPlayback()
+      {
+      QFETCH(QString, format);
+      QFETCH(bool, expandRepeats);
+      QFETCH(bool, incomingTies);
+      QFETCH(bool, outgoingTies);
+      const QString path = root + "/libmscore/spanners/manual-tie-properties/v0.15-C-hanging-ties-"
+            + format + ".mscx";
+      QFile input(path);
+      QVERIFY(input.open(QIODevice::ReadOnly));
+      QByteArray xml = input.readAll();
+      if (!outgoingTies) {
+            QDomDocument document;
+            QVERIFY(document.setContent(xml));
+            const QDomNodeList ties = document.elementsByTagName("PartialTie");
+            for (int i = ties.count() - 1; i >= 0; --i) {
+                  const QDomElement tie = ties.at(i).toElement();
+                  if (tie.firstChildElement("partialSpannerDirection").text() == "outgoing")
+                        tie.parentNode().removeChild(tie);
+                  }
+            xml = document.toByteArray();
+            }
+      QBuffer buffer(&xml);
+      QVERIFY(buffer.open(QIODevice::ReadOnly));
+      std::unique_ptr<MasterScore> score(new MasterScore(MScore::defaultStyle()));
+      // The ordinary MTest loader deliberately rejects newer versions.
+      // Opt into the backport reader for the native 4.70 comparison fixture.
+      QCOMPARE(int(score->loadMsc(path, &buffer, format == "475")), int(Score::FileError::FILE_NO_ERROR));
+      score->doLayout();
+      int incomingCount = 0;
+      if (!incomingTies)
+            score->startCmd();
+      for (Measure* measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+            for (Segment* segment = measure->first(SegmentType::ChordRest); segment; segment = segment->next(SegmentType::ChordRest)) {
+                  Element* element = segment->element(0);
+                  if (!element || !element->isChord())
+                        continue;
+                  for (Note* note : toChord(element)->notes()) {
+                        if (Tie* tie = note->partialTie(true)) {
+                              ++incomingCount;
+                              if (!incomingTies)
+                                    score->undoRemoveElement(tie);
+                              }
+                        }
+                  }
+            }
+      QCOMPARE(incomingCount, 9);
+      if (!incomingTies)
+            score->endCmd();
+      EventMap events;
+      SynthesizerState synthState;
+      score->renderMidi(&events, false, expandRepeats, synthState);
+      using EventCounts = std::map<std::pair<int, int>, int>;
+      EventCounts attacks, releases, expectedAttacks, expectedReleases;
+      for (const auto& timedEvent : events) {
+            const NPlayEvent& event = timedEvent.second;
+            if (event.discard() || (event.type() != ME_NOTEON && event.type() != ME_NOTEOFF))
+                  continue;
+            EventCounts& counts = event.type() == ME_NOTEON && event.velo() > 0 ? attacks : releases;
+            ++counts[{ timedEvent.first, event.pitch() }];
+            }
+      auto expectChord = [&](int quarter, int duration) {
+            for (int pitch : { 60, 64, 67 }) {
+                  ++expectedAttacks[{ quarter * DIVISION, pitch }];
+                  ++expectedReleases[{ (quarter + duration) * DIVISION - 1, pitch }];
+                  }
+            };
+      const int passes = expandRepeats ? 2 : 1;
+      const bool connected = incomingTies && outgoingTies;
+      for (int group = 0; group < 3; ++group) {
+            for (int pass = 0; pass < passes; ++pass) {
+                  const int quarter = (group * passes + pass) * 8;
+                  // Only the score's opening C2 has no preceding source.
+                  // C4/C6's first arrivals continue forward from C1/C3;
+                  // later repeat arrivals continue across the backward jump.
+                  if (!connected || (group == 0 && pass == 0))
+                        expectChord(quarter, 2);
+                  const bool continues = connected && (pass + 1 < passes || group + 1 < 3);
+                  expectChord(quarter + 6, continues ? 4 : 2);
+                  }
+            }
+      auto describe = [](const EventCounts& counts) {
+            QStringList result;
+            for (const auto& entry : counts)
+                  result << QString("%1:%2x%3").arg(entry.first.first).arg(entry.first.second).arg(entry.second);
+            return result.join(", ");
+            };
+      QVERIFY2(attacks == expectedAttacks,
+               qPrintable(QString("attacks [%1], expected [%2]").arg(describe(attacks), describe(expectedAttacks))));
+      QVERIFY2(releases == expectedReleases,
+               qPrintable(QString("releases [%1], expected [%2]").arg(describe(releases), describe(expectedReleases))));
       }
 
 void TestRepeat::partialLyricsLayout()
@@ -1518,6 +1709,395 @@ void TestRepeat::startRepeatNoteSpacing()
             QVERIFY(accidental);
             const qreal accidentalGap = accidental->pagePos().x() + accidental->bbox().left() - right;
             QVERIFY(accidentalGap + 0.04 * score->spatium() >= score->styleP(Sid::barAccidentalDistance));
+            }
+      }
+
+void TestRepeat::startRepeatHeaderSpacing_data()
+      {
+      QTest::addColumn<int>("pitch");
+      QTest::addColumn<int>("tpc");
+      QTest::addColumn<QString>("duration");
+      QTest::addColumn<bool>("rest");
+      QTest::newRow("quarter-ledger") << 60 << 14 << QString("quarter") << false;
+      QTest::newRow("half-ledger") << 60 << 14 << QString("half") << false;
+      QTest::newRow("whole-ledger") << 60 << 14 << QString("whole") << false;
+      QTest::newRow("whole-above") << 84 << 14 << QString("whole") << false;
+      QTest::newRow("half-on-staff") << 72 << 14 << QString("half") << false;
+      QTest::newRow("half-sharp") << 61 << 21 << QString("half") << false;
+      QTest::newRow("quarter-rest") << 60 << 14 << QString("quarter") << true;
+      }
+
+void TestRepeat::startRepeatHeaderSpacing()
+      {
+      QFETCH(int, pitch);
+      QFETCH(int, tpc);
+      QFETCH(QString, duration);
+      QFETCH(bool, rest);
+      QFile input(root + "/" + DIR + "start-repeat-header-spacing.mscx");
+      QVERIFY(input.open(QIODevice::ReadOnly));
+      QDomDocument document;
+      QVERIFY(document.setContent(input.readAll()));
+      const QDomNodeList voices = document.elementsByTagName("voice");
+      for (int i = 0; i < voices.count(); ++i) {
+            QDomElement voice = voices.at(i).toElement();
+            QDomElement chord = voice.firstChildElement("Chord");
+            QVERIFY(!chord.isNull());
+            while (!voice.firstChildElement("Rest").isNull())
+                  voice.removeChild(voice.firstChildElement("Rest"));
+            chord.firstChildElement("durationType").firstChild().setNodeValue(duration);
+            QDomElement note = chord.firstChildElement("Note");
+            note.firstChildElement("pitch").firstChild().setNodeValue(QString::number(pitch));
+            note.firstChildElement("tpc").firstChild().setNodeValue(QString::number(tpc));
+            auto appendRest = [&](const QString& type) {
+                  QDomElement r = document.createElement("Rest");
+                  QDomElement d = document.createElement("durationType");
+                  d.appendChild(document.createTextNode(type));
+                  r.appendChild(d);
+                  voice.appendChild(r);
+                  return r;
+                  };
+            if (rest) {
+                  QDomElement replacement = appendRest(duration);
+                  voice.replaceChild(replacement, chord);
+                  }
+            if (duration == "quarter")
+                  appendRest("quarter");
+            if (duration != "whole")
+                  appendRest("half");
+            }
+      QTemporaryDir directory;
+      QVERIFY(directory.isValid());
+      const QString path = directory.filePath("repeat-header-spacing.mscx");
+      QFile output(path);
+      QVERIFY(output.open(QIODevice::WriteOnly));
+      output.write(document.toByteArray());
+      output.close();
+      std::unique_ptr<MasterScore> score(readCreatedScore(path));
+      QVERIFY(score);
+      qreal originalGap = 0.0;
+      qreal originalHeaderDistance = 0.0;
+      for (int pass = 0; pass < 2; ++pass) {
+            score->style().set(Sid::systemHeaderDistance, Spatium(pass ? 6.0 : 2.5));
+            score->doLayout();
+            Measure* start = score->firstMeasure()->nextMeasure();
+            Measure* middle = start->nextMeasure()->nextMeasure();
+            QVERIFY(start->isFirstInSystem());
+            QVERIFY(!middle->isFirstInSystem());
+            QCOMPARE(start->system(), middle->system());
+            qreal gaps[2];
+            int index = 0;
+            for (Measure* measure : { start, middle }) {
+                  Segment* first = measure->first(SegmentType::ChordRest);
+                  Segment* repeat = measure->findSegmentR(SegmentType::StartRepeatBarLine, Fraction(0,1));
+                  QVERIFY(repeat && repeat->enabled());
+                  const BarLine* bar = toBarLine(repeat->element(0));
+                  QVERIFY(bar);
+                  const qreal systemDistance = repeat->minHorizontalDistance(first, true);
+                  const qreal ordinaryDistance = repeat->minHorizontalDistance(first, false);
+                  QVERIFY(qAbs(systemDistance - ordinaryDistance) < .000001 * score->spatium());
+                  const Element* item = first->element(0);
+                  QVERIFY(item);
+                  Sid margin = Sid::barNoteDistance;
+                  if (item->isChord()) {
+                        const Note* n = toChord(item)->upNote();
+                        if (n->accidental() && n->accidental()->visible() && n->accidental()->addToSkyline()) {
+                              item = n->accidental();
+                              margin = Sid::barAccidentalDistance;
+                              }
+                        else
+                              item = n;
+                        }
+                  gaps[index++] = item->pagePos().x() + item->bbox().left()
+                        - bar->pagePos().x() - paintedHeaderRight(bar);
+                  QVERIFY(gaps[index - 1] + .04 * score->spatium() >= score->styleP(margin));
+                  }
+            QVERIFY2(qAbs(gaps[0] - gaps[1]) < .001 * score->spatium(),
+                  qPrintable(QString("pass %1 system-start gap %2sp, mid-system gap %3sp")
+                        .arg(pass).arg(gaps[0] / score->spatium()).arg(gaps[1] / score->spatium())));
+            if (pass == 0)
+                  originalGap = gaps[0];
+            else
+                  QVERIFY(qAbs(gaps[0] - originalGap) < .001 * score->spatium());
+            // An ordinary clef header still responds to the header style,
+            // even when the caller did not identify it as a generated header.
+            Segment* header = start->findSegmentR(SegmentType::HeaderClef, Fraction(0,1));
+            QVERIFY(header);
+            Segment* first = start->first(SegmentType::ChordRest);
+            const qreal headerDistance = header->minHorizontalDistance(first, false);
+            QVERIFY(qAbs(headerDistance - header->minHorizontalDistance(first, true)) < .000001 * score->spatium());
+            if (pass == 0)
+                  originalHeaderDistance = headerDistance;
+            else
+                  QVERIFY(headerDistance > originalHeaderDistance + 3.0 * score->spatium());
+            }
+      }
+
+void TestRepeat::explicitSignatureHeaderSpacing_data()
+      {
+      QTest::addColumn<bool>("explicitClef");
+      QTest::addColumn<QString>("signature");
+      QTest::addColumn<QString>("item");
+      for (bool explicitClef : { false, true }) {
+            for (const QString& signature : { QString("time"), QString("sharp-key"), QString("flat-key"),
+                                             QString("key-time"), QString("clef") }) {
+                  for (const QString& item : { QString("half-ledger"), QString("whole-ledger"), QString("whole-above"), QString("rest") })
+                        QTest::newRow(qPrintable(QString("%1-%2-%3").arg(explicitClef ? "file-clef" : "generated-clef")
+                                                .arg(signature).arg(item))) << explicitClef << signature << item;
+                  }
+            }
+      }
+
+void TestRepeat::explicitSignatureHeaderSpacing()
+      {
+      QFETCH(bool, explicitClef);
+      QFETCH(QString, signature);
+      QFETCH(QString, item);
+      QFile input(root + "/" + DIR + "start-repeat-header-spacing.mscx");
+      QVERIFY(input.open(QIODevice::ReadOnly));
+      QDomDocument document;
+      QVERIFY(document.setContent(input.readAll()));
+      QDomElement voice = document.elementsByTagName("voice").at(0).toElement();
+      QVERIFY(!voice.isNull());
+      auto appendText = [&](QDomElement parent, const QString& tag, const QString& value) {
+            QDomElement e = document.createElement(tag);
+            e.appendChild(document.createTextNode(value));
+            parent.appendChild(e);
+            };
+      const bool hasTime = signature == "time" || signature == "key-time";
+      if (!hasTime)
+            voice.removeChild(voice.firstChildElement("TimeSig"));
+      if (signature.contains("key")) {
+            QDomElement key = document.createElement("KeySig");
+            appendText(key, "accidental", signature == "flat-key" ? "-2" : "2");
+            voice.insertBefore(key, voice.firstChild());
+            }
+      if (explicitClef) {
+            QDomElement clef = document.createElement("Clef");
+            appendText(clef, "concertClefType", "G");
+            appendText(clef, "transposingClefType", "G");
+            voice.insertBefore(clef, voice.firstChild());
+            }
+      QDomElement chord = voice.firstChildElement("Chord");
+      while (!voice.firstChildElement("Rest").isNull())
+            voice.removeChild(voice.firstChildElement("Rest"));
+      const bool whole = item.startsWith("whole");
+      chord.firstChildElement("durationType").firstChild().setNodeValue(whole ? "whole" : "half");
+      chord.firstChildElement("Note").firstChildElement("pitch").firstChild().setNodeValue(item == "whole-above" ? "84" : "60");
+      if (item == "rest") {
+            QDomElement rest = document.createElement("Rest");
+            appendText(rest, "durationType", "half");
+            voice.replaceChild(rest, chord);
+            }
+      if (!whole) {
+            QDomElement rest = document.createElement("Rest");
+            appendText(rest, "durationType", "half");
+            voice.appendChild(rest);
+            }
+      QTemporaryDir directory;
+      QVERIFY(directory.isValid());
+      const QString path = directory.filePath("explicit-header-spacing.mscx");
+      QFile output(path);
+      QVERIFY(output.open(QIODevice::WriteOnly));
+      output.write(document.toByteArray());
+      output.close();
+      std::unique_ptr<MasterScore> score(readCreatedScore(path));
+      QVERIFY(score);
+      const Sid margin = hasTime ? Sid::systemHeaderTimeSigDistance : Sid::systemHeaderDistance;
+      qreal originalDistance = 0.0;
+      for (int pass = 0; pass < 2; ++pass) {
+            score->style().set(margin, Spatium(pass ? 6.0 : hasTime ? 2.0 : 2.5));
+            score->doLayout();
+            Measure* measure = score->firstMeasure();
+            QVERIFY(measure->isFirstInSystem());
+            Segment* first = measure->first(SegmentType::ChordRest);
+            QVERIFY(first);
+            Segment* header = first->prevActive();
+            while (header && header->allElementsInvisible())
+                  header = header->prevActive();
+            QVERIFY(header);
+            if (hasTime)
+                  QVERIFY(header->isTimeSigType());
+            else if (signature.contains("key"))
+                  QVERIFY(header->isKeySigType());
+            else
+                  QVERIFY(header->isHeaderClefType());
+            // Reproduce the v0.14 opening-clef case: its header flag is false.
+            Segment* clef = measure->findSegmentR(SegmentType::HeaderClef, Fraction(0,1));
+            QVERIFY(clef);
+            QCOMPARE(clef->header(), !explicitClef);
+            const qreal distance = header->minHorizontalDistance(first, false);
+            QVERIFY(qAbs(distance - header->minHorizontalDistance(first, true)) < .000001 * score->spatium());
+            const qreal minimum = header->minRight() + score->styleP(margin);
+            QVERIFY2(distance + .001 * score->spatium() >= minimum,
+                     qPrintable(QString("%1: signature-to-note distance %2sp, minimum %3sp")
+                           .arg(signature).arg(distance / score->spatium()).arg(minimum / score->spatium())));
+            QVERIFY(first->x() - header->x() + .001 * score->spatium() >= minimum);
+            if (pass == 0)
+                  originalDistance = distance;
+            else
+                  QVERIFY(distance > originalDistance + 3.0 * score->spatium());
+            }
+      }
+
+void TestRepeat::barlineChordRestSpacing_data()
+      {
+      QTest::addColumn<bool>("endRepeat");
+      QTest::addColumn<int>("pitch");
+      QTest::addColumn<QString>("duration");
+      QTest::addColumn<QString>("attachment");
+      for (bool endRepeat : { false, true }) {
+            const QString boundary = endRepeat ? "end-repeat" : "single";
+            for (int pitch : { 60, 72, 84, 61 }) {
+                  for (const QString& duration : { QString("half"), QString("whole") })
+                        QTest::newRow(qPrintable(QString("%1-%2-%3").arg(boundary).arg(pitch).arg(duration)))
+                              << endRepeat << pitch << duration << QString();
+                  }
+            for (const QString& attachment : { QString("rest"), QString("arpeggio"), QString("grace") })
+                  QTest::newRow(qPrintable(boundary + "-" + attachment))
+                        << endRepeat << 60 << QString("half") << attachment;
+            }
+      }
+
+void TestRepeat::barlineChordRestSpacing()
+      {
+      QFETCH(bool, endRepeat);
+      QFETCH(int, pitch);
+      QFETCH(QString, duration);
+      QFETCH(QString, attachment);
+      QFile input(root + "/" + DIR + "start-repeat-header-spacing.mscx");
+      QVERIFY(input.open(QIODevice::ReadOnly));
+      QDomDocument document;
+      QVERIFY(document.setContent(input.readAll()));
+      auto appendText = [&](QDomElement parent, const QString& tag, const QString& value) {
+            QDomElement e = document.createElement(tag);
+            e.appendChild(document.createTextNode(value));
+            parent.appendChild(e);
+            };
+      const QDomNodeList measures = document.elementsByTagName("Measure");
+      for (int i = 0; i < measures.count(); ++i) {
+            QDomElement measure = measures.at(i).toElement();
+            for (const QString& tag : { QString("startRepeat"), QString("endRepeat"), QString("LayoutBreak") }) {
+                  while (!measure.firstChildElement(tag).isNull())
+                        measure.removeChild(measure.firstChildElement(tag));
+                  }
+            if (i == 0 && endRepeat)
+                  appendText(measure, "endRepeat", "2");
+            QDomElement voice = measure.firstChildElement("voice");
+            QDomElement chord = voice.firstChildElement("Chord");
+            chord.firstChildElement("durationType").firstChild().setNodeValue(duration);
+            QDomElement note = chord.firstChildElement("Note");
+            note.firstChildElement("pitch").firstChild().setNodeValue(QString::number(pitch));
+            note.firstChildElement("tpc").firstChild().setNodeValue(pitch == 61 ? "21" : "14");
+            while (!voice.firstChildElement("Rest").isNull())
+                  voice.removeChild(voice.firstChildElement("Rest"));
+            if (attachment == "rest") {
+                  QDomElement rest = document.createElement("Rest");
+                  appendText(rest, "durationType", duration);
+                  voice.replaceChild(rest, chord);
+                  }
+            else if (attachment == "arpeggio") {
+                  QDomElement arpeggio = document.createElement("Arpeggio");
+                  appendText(arpeggio, "subtype", "0");
+                  chord.appendChild(arpeggio);
+                  }
+            else if (attachment == "grace") {
+                  QDomElement grace = document.createElement("Chord");
+                  grace.appendChild(document.createElement("acciaccatura"));
+                  appendText(grace, "durationType", "eighth");
+                  grace.appendChild(note.cloneNode(true));
+                  voice.insertBefore(grace, chord);
+                  }
+            if (duration == "half") {
+                  QDomElement rest = document.createElement("Rest");
+                  appendText(rest, "durationType", "half");
+                  voice.appendChild(rest);
+                  }
+            }
+      QTemporaryDir directory;
+      QVERIFY(directory.isValid());
+      const QString path = directory.filePath("barline-chordrest-spacing.mscx");
+      QFile output(path);
+      QVERIFY(output.open(QIODevice::WriteOnly));
+      output.write(document.toByteArray());
+      output.close();
+      std::unique_ptr<MasterScore> score(readCreatedScore(path));
+      QVERIFY(score);
+      for (qreal ledgerLength : { .35, .9, 1.5 }) {
+            score->style().set(Sid::ledgerLineLength, Spatium(ledgerLength));
+            score->doLayout();
+            Measure* measure = score->firstMeasure()->nextMeasure();
+            QVERIFY(!measure->isFirstInSystem());
+            QCOMPARE(measure->system(), measure->prevMeasure()->system());
+            QCOMPARE(measure->prevMeasure()->repeatEnd(), endRepeat);
+            Segment* first = measure->first(SegmentType::ChordRest);
+            QVERIFY(first);
+            const Shape barrier(QRectF(0.0, 0.0, 0.0, 4.0 * score->spatium()));
+            const Shape before = first->staffShape(0);
+            const Chord* chord = first->element(0)->isChord() ? toChord(first->element(0)) : nullptr;
+            const Note* note = chord ? chord->upNote() : nullptr;
+            const Accidental* accidental = note ? note->accidental() : nullptr;
+            const bool hasAccidental = accidental && accidental->addToSkyline();
+            const qreal padding = score->styleP(hasAccidental ? Sid::barAccidentalDistance : Sid::barNoteDistance);
+            const qreal expected = first->minLeftAfterBarline(barrier, padding);
+            QVERIFY2(qAbs(first->x() - expected) < .001 * score->spatium(),
+                     qPrintable(QString("barline-to-first-segment %1sp, expected %2sp")
+                           .arg(first->x() / score->spatium()).arg(expected / score->spatium())));
+            if (attachment.isEmpty() && !hasAccidental) {
+                  QVERIFY(note);
+                  const qreal headLeft = chord->x() + note->x() + note->bbox().left();
+                  qreal minimum = qMax(0.0, -headLeft) + padding;
+                  const qreal ledgerPadding = qMax(score->styleP(Sid::barNoteDistance)
+                        - score->styleP(Sid::ledgerLineLength), .25 * score->spatium());
+                  for (const LedgerLine* line = chord->ledgerLines(); line; line = line->next())
+                        minimum = qMax(minimum, ledgerPadding - chord->x() - line->x() - line->bbox().left());
+                  // Chord::shape also reserves general horizontal space for
+                  // whole-note centering. That non-ink constraint can exceed
+                  // the head/ledger minimum, and the padding fix preserves it.
+                  for (const QRectF& rect : before) {
+                        if (rect.height() == 0.0 && rect.y() == 0.0)
+                              minimum = qMax(minimum, padding - rect.left());
+                        }
+                  QVERIFY2(qAbs(first->x() - minimum) < .001 * score->spatium(),
+                           qPrintable(QString("pitch %1/%2, ledger %3sp: segment %4sp, minimum %5sp, chord x %6sp, head left %7sp")
+                                 .arg(pitch).arg(duration).arg(ledgerLength).arg(first->x() / score->spatium())
+                                 .arg(minimum / score->spatium()).arg(chord->x() / score->spatium())
+                                 .arg(headLeft / score->spatium())));
+                  if (chord->ledgerLines() && ledgerLength == .35) {
+                        const qreal original = first->minLeft(barrier) + padding;
+                        QVERIFY(first->x() <= original + .001 * score->spatium());
+                        // D2/D8's half notes must lose the excess ledger gap.
+                        // A whole note can instead be limited by its centering.
+                        if (duration == "half")
+                              QVERIFY(first->x() < original - .2 * score->spatium());
+                        }
+                  }
+            else if (attachment == "rest")
+                  QVERIFY(qAbs(expected - first->minLeft(barrier) - padding) < .001 * score->spatium());
+            else if (attachment == "arpeggio") {
+                  QVERIFY(chord && chord->arpeggio());
+                  const Arpeggio* arpeggio = chord->arpeggio();
+                  QVERIFY(first->x() + chord->x() + arpeggio->x() + arpeggio->bbox().left()
+                        + .001 * score->spatium() >= padding);
+                  }
+            else if (attachment == "grace") {
+                  QVERIFY(chord && !chord->graceNotes().empty());
+                  const Chord* grace = chord->graceNotes().front();
+                  const Note* graceNote = grace->upNote();
+                  QVERIFY(first->x() + chord->x() + grace->x() + graceNote->x() + graceNote->bbox().left()
+                        + .001 * score->spatium() >= padding);
+                  }
+            if (hasAccidental) {
+                  const qreal left = first->x() + chord->x() + note->x() + accidental->x() + accidental->bbox().left();
+                  QVERIFY(left + .001 * score->spatium() >= padding);
+                  }
+            QCOMPARE(int(first->staffShape(0).size()), int(before.size()));
+            for (size_t i = 0; i < before.size(); ++i)
+                  QCOMPARE(QRectF(first->staffShape(0)[i]), QRectF(before[i]));
+            // User leading space is added after the computed boundary margin.
+            first->setExtraLeadingSpace(Spatium(2.0));
+            measure->computeMinWidth();
+            QVERIFY(qAbs(first->x() - expected - 2.0 * score->spatium()) < .001 * score->spatium());
+            first->setExtraLeadingSpace(Spatium(0.0));
             }
       }
 

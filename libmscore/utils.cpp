@@ -830,6 +830,30 @@ bool hasLinearPlaybackTransition(const Measure* from, const Measure* to)
       return !foundFrom && !foundTo; // malformed roadmaps: retain ordinary adjacent notation
       }
 
+static Note* tieNoteAtMeasureStart(const Note* note, const Measure* target)
+      {
+      Segment* onset = target->findSegment(SegmentType::ChordRest, target->tick());
+      if (!onset)
+            return nullptr;
+      const Chord* source = note->chord();
+      Note* found = nullptr;
+      for (int track = source->part()->startTrack(); track < source->part()->endTrack(); ++track) {
+            Element* e = onset->element(track);
+            if (!e || !e->isChord())
+                  continue;
+            Chord* chord = toChord(e);
+            if (chord->vStaffIdx() != source->vStaffIdx())
+                  continue;
+            const auto grace = chord->graceNotesBefore();
+            if (!grace.isEmpty())
+                  chord = grace.front();
+            Note* candidate = chord->findNote(note->pitch(), note->unisonIndex());
+            if (candidate && (!found || track == note->track()))
+                  found = candidate;
+            }
+      return found;
+      }
+
 std::vector<Note*> repeatTieDestinations(Note* note)
       {
       std::vector<Note*> result;
@@ -839,27 +863,8 @@ std::vector<Note*> repeatTieDestinations(Note* note)
       const Measure* measure = source->measure();
       if (source->tick() + source->actualTicks() != measure->endTick())
             return result;
-      const int firstTrack = source->part()->staves()->front()->idx() * VOICES;
-      const int lastTrack = firstTrack + source->part()->nstaves() * VOICES;
       for (Measure* target : followingRepeatMeasures(measure)) {
-            Segment* onset = target->findSegment(SegmentType::ChordRest, target->tick());
-            if (!onset)
-                  continue;
-            Note* found = nullptr;
-            for (int track = firstTrack; track < lastTrack; ++track) {
-                  Element* e = onset->element(track);
-                  if (!e || !e->isChord())
-                        continue;
-                  Chord* chord = toChord(e);
-                  if (chord->vStaffIdx() != source->vStaffIdx())
-                        continue;
-                  const auto grace = chord->graceNotesBefore();
-                  if (!grace.isEmpty())
-                        chord = grace.front();
-                  Note* candidate = chord->findNote(note->pitch(), note->unisonIndex());
-                  if (candidate && (!found || track == note->track()))
-                        found = candidate;
-                  }
+            Note* found = tieNoteAtMeasureStart(note, target);
             if (found && std::find(result.begin(), result.end(), found) == result.end())
                   result.push_back(found);
             }
@@ -867,7 +872,7 @@ std::vector<Note*> repeatTieDestinations(Note* note)
       }
 
 // Resolve against performance time rather than score order. A landing note is
-// tied only on a pass arriving from an enabled source, never on its first pass.
+// tied only on arrival from an enabled source, by a jump or a forward transition.
 const Note* nextTiedNoteInPlayback(const Note* note, int utick)
       {
       const Chord* chord = note->chord();
@@ -882,6 +887,18 @@ const Note* nextTiedNoteInPlayback(const Note* note, int utick)
             return note->tieFor()->endNote();
       if (!note->tieFor() && !note->partialTie(false))
             return nullptr;
+      if (note->partialTie(false) && note->play() && !note->hidden()
+          && chord->tick() + chord->actualTicks() == chord->measure()->endTick()) {
+            // On the final pass an end repeat can continue straight into the
+            // next measure's incoming partial tie (C1 -> C4, C3 -> C6).
+            // Require the actual performed destination and both tie ends.
+            Measure* following = chord->measure()->nextMeasure();
+            if (following && following->tick().ticks() == landedTick) {
+                  Note* destination = tieNoteAtMeasureStart(note, following);
+                  if (destination && destination->partialTie(true))
+                        return destination;
+                  }
+            }
       for (Note* destination : repeatTieDestinations(const_cast<Note*>(note))) {
             if (destination->tick().ticks() == landedTick && destination->partialTie(true))
                   return destination;
@@ -903,7 +920,10 @@ bool hasPreviousTiedNoteInPlayback(const Note* note, int utick)
             return true;
       if (!note->partialTie(true))
             return false;
-      for (Measure* measure : precedingRepeatMeasures(note->chord()->measure())) {
+      std::vector<Measure*> sources = precedingRepeatMeasures(note->chord()->measure());
+      if (Measure* previous = note->chord()->measure()->prevMeasure())
+            sources.push_back(previous);
+      for (Measure* measure : sources) {
             for (Segment* segment = measure->last(); segment; segment = segment->prev()) {
                   if (!segment->isChordRestType())
                         continue;

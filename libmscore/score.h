@@ -57,6 +57,7 @@ class KeySig;
 class KeySigEvent;
 class LinkedElements;
 class Lyrics;
+class LaissezVib;
 class MasterSynthesizer;
 class Measure;
 class MeasureBase;
@@ -636,6 +637,7 @@ class Score : public QObject, public ScoreElement {
       void cmdAddTie(bool addToChord = false);
       Tie* undoAddPartialTie(Note*, bool incoming);
       void cmdToggleTie();
+      void cmdToggleLaissezVib(const LaissezVib* prototype = nullptr);
       Note* findOrCreateTieTarget(Note*);
       static std::vector<Note*> cmdTieNoteList(const Selection& selection, bool noteEntryMode);
       void cmdAddOttava(OttavaType);

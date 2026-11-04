@@ -110,6 +110,7 @@ class Chord final : public ChordRest {
       Direction stemDirection() const    { return _stemDirection; }
 
       LedgerLine* ledgerLines()                  { return _ledgerLines; }
+      const LedgerLine* ledgerLines() const      { return _ledgerLines; }
 
       qreal defaultStemLength() const;
       qreal minAbsStemLength() const;

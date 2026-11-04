@@ -477,7 +477,13 @@ enum class Sid : short {
       tieMidWidth,
       tieDottedWidth,
       minTieLength,
+      tiePlacementSingleNote,
+      tiePlacementChord,
+      tieDotsPlacement,
       minHangingTieLength,
+      minLaissezVibLength,
+      laissezVibUseSmuflSym,
+      angleHangingSlursAwayFromStaff,
       slurMinDistance,
       tieMinDistance,
 

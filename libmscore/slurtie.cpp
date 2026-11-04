@@ -215,6 +215,7 @@ QVariant SlurTieSegment::getProperty(Pid propertyId) const
       switch (propertyId) {
             case Pid::LINE_TYPE:
             case Pid::SLUR_DIRECTION:
+            case Pid::TIE_PLACEMENT:
             case Pid::PARTIAL_SPANNER_DIRECTION:
                   return slurTie()->getProperty(propertyId);
             case Pid::SLUR_UOFF1:
@@ -239,6 +240,7 @@ bool SlurTieSegment::setProperty(Pid propertyId, const QVariant& v)
       switch(propertyId) {
             case Pid::LINE_TYPE:
             case Pid::SLUR_DIRECTION:
+            case Pid::TIE_PLACEMENT:
             case Pid::PARTIAL_SPANNER_DIRECTION:
                   return slurTie()->setProperty(propertyId, v);
             case Pid::SLUR_UOFF1:
@@ -269,6 +271,7 @@ QVariant SlurTieSegment::propertyDefault(Pid id) const
       switch (id) {
             case Pid::LINE_TYPE:
             case Pid::SLUR_DIRECTION:
+            case Pid::TIE_PLACEMENT:
             case Pid::PARTIAL_SPANNER_DIRECTION:
                   return slurTie()->propertyDefault(id);
             case Pid::SLUR_UOFF1:

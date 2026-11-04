@@ -51,6 +51,7 @@ class SlurSegment final : public SlurTieSegment {
       bool edit(EditData&) override;
 
       Slur* slur() const { return toSlur(spanner()); }
+      Element* propertyDelegate(Pid) override;
 
       void computeBezier(QPointF so = QPointF()) override;
       };
@@ -76,6 +77,7 @@ class Slur : public SlurTie {
       ElementType type() const override { return ElementType::SLUR; }
       void write(XmlWriter& xml) const override;
       bool readProperties(XmlReader&) override;
+      void reset() override;
       int partialDirection() const { return _partialDirection; }
       void setPartialDirection(int d) { _partialDirection = d; }
       bool isIncoming() const { return _partialDirection == 0 || _partialDirection == 2; }
