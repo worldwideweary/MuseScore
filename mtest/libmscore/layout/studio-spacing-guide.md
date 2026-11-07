@@ -1,5 +1,27 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.248: manual leading space on an interior onset
+
+Native mtests passed for v0.247. The visual sweep confirmed that at a
+2.44-inch right margin the four-bar system now fits inside the staff;
+at 2.45 the break moves before N2 and N2–N4 stay together.
+
+Admit signed manual leading space on interior chord/rest onsets with
+an immediately preceding rhythmic segment on one pitched staff. The
+pinned Studio `HorizontalSpacing::spaceSegments` shifts the placed
+onset after the collision walk without advancing the rhythmic cursor.
+Its preceding spring carries the fixed adjustment, with a negative
+adjustment bounded by that pass's rhythmic advance. Rebuild that
+derived offset from the score, so justification excludes it from the
+stretchable width. Boundary edits and combinations with a borrowed
+courtesy prefix, grace projections, cross-staff constraints, or
+right-aligned items retain fallback.
+
+The matched scores show a control bar, +1 space before beat two, and
+−0.5 space before beat two. The regression checks the natural onset
+positions and fixed offsets, a compressed pass followed by
+justification, and a relayout after the edits are removed.
+
 ## v0.247: tight squeeze for a retained group
 
 The v0.246 native mtests passed, but the visual sweep exposed a gap near

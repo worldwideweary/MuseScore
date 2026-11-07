@@ -88,6 +88,7 @@ class TestSpacing : public QObject, public MTest {
       void pendingCourtesyTrial4_data();
       void pendingCourtesyTrial4();
       void keepWithNextCollection4();
+      void manualLeadingSpace4();
       void keySignatureFormation4();
       void clefSignaturePlanning4_data();
       void clefSignaturePlanning4();
@@ -9531,6 +9532,80 @@ void TestSpacing::keepWithNextCollection4()
       collect(wide);
       for (const Measure* m : bars)
             QCOMPARE(m->system(), bars.front()->system());
+      }
+
+void TestSpacing::manualLeadingSpace4()
+      {
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.248-manual-leading-space.mscx"));
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      std::vector<SpacingDecision4> events;
+      const auto collect = [&]() {
+            events.clear();
+            SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
+            score->doLayout();
+            };
+      collect();
+      QVERIFY(!events.empty());
+      QVERIFY2(events.back().path == SpacingPath4::FULL_PLAN, qPrintable(events.back().reason));
+      QCOMPARE(events.back().measures, 3);
+      for (const auto& event : events)
+            QVERIFY2(event.path == SpacingPath4::FULL_PLAN, qPrintable(event.reason));
+
+      System* system = score->firstMeasure()->system();
+      QVERIFY(system && system == score->lastMeasure()->system());
+      const qreal sp = system->spatium();
+      std::array<Segment*, 3> first, second;
+      Measure* m = score->firstMeasure();
+      for (size_t i = 0; i < first.size(); ++i, m = m->nextMeasure()) {
+            QVERIFY(m);
+            first[i] = m->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+            second[i] = m->findSegmentR(SegmentType::ChordRest, Fraction(1, 4));
+            QVERIFY(first[i] && second[i]);
+            }
+      const std::array<qreal, 3> edits {{0.0, 1.0, -0.5}};
+      const auto near = [](qreal a, qreal b) { return qAbs(a - b) < 1e-6; };
+      const auto segmentIn = [](const SpacingPlan4& plan, const Segment* segment) {
+            return std::find_if(plan.segments.begin(), plan.segments.end(),
+                  [&](const SpacingSegmentPlan4& s) { return s.segment == segment; });
+            };
+      QString reason;
+      SpacingPlan4 natural;
+      QVERIFY2(buildSpacingPlan4(system, natural, &reason), qPrintable(reason));
+      const auto controlFirst = segmentIn(natural, first[0]);
+      const auto controlSecond = segmentIn(natural, second[0]);
+      QVERIFY(controlFirst != natural.segments.end() && controlSecond != natural.segments.end());
+      const qreal normalGap = controlSecond->x - controlFirst->x;
+      for (size_t i = 0; i < edits.size(); ++i) {
+            QCOMPARE(second[i]->extraLeadingSpace().val(), edits[i]);
+            QVERIFY(near(first[i]->spacingWidthOffset4(), edits[i] * sp));
+            const auto left = segmentIn(natural, first[i]);
+            const auto right = segmentIn(natural, second[i]);
+            QVERIFY(left != natural.segments.end() && right != natural.segments.end());
+            QVERIFY(near(right->x - left->x, normalGap + edits[i] * sp));
+            QVERIFY(near(left->width - left->widthOffset, normalGap));
+            }
+
+      // Fixed space must survive both the reduced rhythm pass and pooled
+      // spring growth. Neither query writes it back to the live segments.
+      SpacingPlanOptions4 options;
+      options.stretchReduction = 0.67;
+      options.squeezeFactor = 0.8;
+      options.minimumMeasureWidths = false;
+      SpacingPlan4 compressed;
+      QVERIFY2(buildSpacingPlan4(system, compressed, &reason, options), qPrintable(reason));
+      QVERIFY(compressed.width < natural.width);
+      QVERIFY(justifySpacingPlan4(compressed, compressed.width + 2 * sp));
+      for (size_t i = 0; i < edits.size(); ++i) {
+            const auto left = segmentIn(compressed, first[i]);
+            QVERIFY(left != compressed.segments.end() && near(left->widthOffset, edits[i] * sp));
+            QVERIFY(near(first[i]->spacingWidthOffset4(), edits[i] * sp));
+            second[i]->setExtraLeadingSpace(Spatium(0));
+            }
+      collect();
+      QVERIFY(!events.empty());
+      QVERIFY2(events.back().path == SpacingPath4::FULL_PLAN, qPrintable(events.back().reason));
+      for (const Segment* seg : first) QCOMPARE(seg->spacingWidthOffset4(), qreal(0));
       }
 
 void TestSpacing::keySignatureFormation4()

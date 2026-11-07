@@ -109,6 +109,17 @@ bool rightAligned4(const Segment* s)
     return s->isClefType() || s->isBreathType();
 }
 
+// Start with interior rhythmic onsets. Measure-start offsets and edits
+// beside inactive or nonrhythmic segments need their own boundary policy.
+bool manualLeadingSpaceTarget4(const Segment* s)
+{
+    if (!s || !active4(s) || !s->isChordRestType() || s->rtick() <= Fraction(0, 1))
+        return false;
+    const Segment* prev = s->prev();
+    return prev && active4(prev) && prev->isChordRestType() && prev->measure() == s->measure()
+        && prev->rtick() < s->rtick();
+}
+
 // This field is derived layout state, not manual segment leading space.
 // Rebuild it below rather than borrowing a previously published compensation.
 bool carriesRightAlignmentOffset4(const Segment* s)
@@ -1047,6 +1058,8 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
     for (const auto& joint : merged) plan.mergedGraces.push_back(joint.plan);
     std::vector<Geometry4> geometry;
     const SpacingPaddingTable4 table(score);
+    bool hasManualSpace = false;
+    bool hasRightAligned = false;
     for (MeasureBase* mb : system->measures()) {
         if (!mb->isMeasure() || toMeasure(mb)->isMMRest())
             return fail("Frames and MMRest measures are outside the common plan");
@@ -1055,18 +1068,30 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
         for (Segment& segment : measure->segments()) {
             SpacingSegmentPlan4 entry(&segment);
             entry.ignored = !active4(&segment);
+            const qreal leading = segment.extraLeadingSpace().val();
+            if (!std::isfinite(leading))
+                return fail("Invalid manual leading space");
+            if (leading != 0) {
+                if (prefix || score->nstaves() != 1 || !score->staff(0)->isPitchedStaff(segment.tick())
+                    || !manualLeadingSpaceTarget4(&segment))
+                    return fail("Manual leading space requires an interior rhythmic onset on one pitched staff");
+                hasManualSpace = true;
+            }
             if (entry.ignored && segment.isChordRestType())
                 return fail("Inactive rhythmic segments require a later adapter");
             Geometry4 g;
             if (!entry.ignored) {
+                hasRightAligned = hasRightAligned || rightAligned4(&segment);
                 if (courtesyType4(&segment) && (!segment.trailer()
                     || (measure != system->lastMeasure() && measure != predecessor)
                     || segment.rtick() != measure->ticks()))
                     return fail("Courtesy signatures require a terminal measure-end trailer");
+                const Segment* next = segment.next();
+                const bool carriesManualSpace = next && next->extraLeadingSpace().val() != 0
+                    && manualLeadingSpaceTarget4(next);
                 if (!eligibleType4(&segment) || (segment.trailer() && !courtesyType4(&segment))
-                    || segment.extraLeadingSpace().val() != 0
                     || (segment.spacingWidthOffset4() != 0 && !cross.pairs.count(&segment)
-                        && !carriesRightAlignmentOffset4(&segment)))
+                        && !carriesRightAlignmentOffset4(&segment) && !carriesManualSpace))
                     return fail("Unadapted segment type, trailer, manual space or cross-beam offset");
                 if (segment.isBreathType() && (!segment.ticks().isZero() || segment.rtick() <= Fraction(0, 1)
                                                || segment.rtick() > measure->ticks()))
@@ -1153,6 +1178,10 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
             geometry.push_back(g);
         }
     }
+    if (hasManualSpace && (hasRightAligned || !plan.afterGraces.empty() || !plan.mergedGraces.empty()
+        || !graces.mains.empty() || !cross.pairs.empty()))
+        return fail("Manual leading space with grace, cross-staff or right-aligned geometry");
+    const qreal manualSpatium = hasManualSpace ? system->spatium() : 0;
     qreal cursor = system->leftMargin();
     bool placed = false;
     size_t firstNew = 0;
@@ -1302,7 +1331,10 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
             // cursor advance here would widen the surrounding note interval.
             positionedX = rightAligned4(current.segment) ? x : cursor;
         }
-        current.x = positionedX;
+        // Studio moves the onset after the collision walk, leaving the
+        // rhythmic cursor alone. The previous spring carries the edit so
+        // justification stretches only its rhythmic portion.
+        current.x = positionedX + current.segment->extraLeadingSpace().val() * manualSpatium;
         if (current.segment->isChordRestType()) {
             if (current.segment->measure() == plan.measures.front().measure && current.segment->rtick().isZero()) {
                 cursor = std::max(cursor, system->leftMargin() + 1.25 * current.segment->spatium());
@@ -1314,6 +1346,12 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
             if (correction != cross.pairs.end() && correction->second.minimumWidth > 0)
                 advance = std::max(advance, correction->second.minimumWidth);
             if (advance < 0) return fail("Cross-staff advance needs stronger compression support");
+            if (hasManualSpace && i + 1 < plan.segments.size()) {
+                const Segment* next = plan.segments[i + 1].segment;
+                const qreal leading = next->extraLeadingSpace().val() * manualSpatium;
+                if (leading != 0 && next->measure() == current.segment->measure())
+                    current.widthOffset += std::max(leading, -advance);
+            }
             cursor += advance;
         }
     }
@@ -1350,7 +1388,8 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                 plan.measures[measureIndex[following.segment->measure()]].x = current.x + current.width;
             }
         }
-        if (current.width < 0 || !std::isfinite(current.width))
+        if (current.width < 0 || !std::isfinite(current.width)
+            || (hasManualSpace && current.width < current.widthOffset))
             return fail("Invalid reconstructed segment width");
     }
     if (options.minimumMeasureWidths) {
