@@ -24,6 +24,7 @@
 #include "system.h"
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <limits>
 #include <map>
 #include <set>
@@ -99,6 +100,21 @@ bool headerType4(const Segment* s)
     return s->isHeaderClefType() || s->isKeySigType() || s->isTimeSigType();
 }
 
+bool ordinarySignature4(const Element* item)
+{
+    if (!item) return false;
+    if (item->isKeySig()) {
+        const KeySig* key = toKeySig(item);
+        return !key->isCustom() && !key->isAtonal() && !key->forInstrumentChange();
+    }
+    if (!item->isTimeSig()) return false;
+    const TimeSig* time = toTimeSig(item);
+    return time->timeSigType() == TimeSigType::NORMAL && time->sig() > Fraction(0, 1)
+        && !time->isLocal()
+        && (time->numeratorString().isEmpty() || time->numeratorString() == QString::number(time->numerator()))
+        && (time->denominatorString().isEmpty() || time->denominatorString() == QString::number(time->denominator()));
+}
+
 bool courtesyType4(const Segment* s)
 {
     return s->isKeySigAnnounceType() || s->isTimeSigAnnounceType();
@@ -118,8 +134,8 @@ bool manualInteriorLeadingSpace4(const Segment* s)
         && prev->rtick() < s->rtick();
 }
 
-// At a bar start the edit belongs to the onset alone, even if a generated
-// start-repeat sits between the header or previous measure and the onset.
+// At a bar start the edit belongs to the onset alone, including when a
+// generated start repeat or an ordinary key/time change precedes it.
 bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
                                  const std::vector<SpacingSegmentPlan4>& earlier)
 {
@@ -127,9 +143,10 @@ bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
         return false;
     for (const Element* item : target.elist())
         if (item && item->isRest() && toRest(item)->isFullMeasureRest()) return false;
-    const auto prev = std::find_if(earlier.rbegin(), earlier.rend(), [](const SpacingSegmentPlan4& s) {
+    const auto activeEntry = [](const SpacingSegmentPlan4& s) {
         return !s.ignored;
-    });
+    };
+    auto prev = std::find_if(earlier.rbegin(), earlier.rend(), activeEntry);
     if (target.measure()->repeatStart()) {
         if (prev == earlier.rend() || !prev->segment->isStartRepeatBarLineType()
             || prev->segment->measure() != target.measure() || !prev->segment->rtick().isZero()
@@ -143,6 +160,17 @@ bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
         return std::all_of(earlier.begin(), earlier.end(), [](const SpacingSegmentPlan4& s) {
             return s.ignored || headerType4(s.segment) || s.segment->isBeginBarLineType();
         });
+    }
+    // Walk across the in-measure prefix to certify the preceding barline.
+    // A courtesy trailer or a repeat boundary is a different layout phase.
+    while (prev != earlier.rend() && prev->segment->measure() == target.measure()) {
+        const Segment* sig = prev->segment;
+        const Element* item = sig->element(0);
+        if ((!sig->isKeySigType() && !sig->isTimeSigType()) || sig->header() || sig->trailer()
+            || !sig->rtick().isZero() || !sig->ticks().isZero() || !ordinarySignature4(item)
+            || (sig->isKeySigType() ? !item->isKeySig() : !item->isTimeSig()))
+            return false;
+        prev = std::find_if(std::next(prev), earlier.rend(), activeEntry);
     }
     if (prev == earlier.rend() || !prev->segment->isEndBarLineType()
         || prev->segment->measure() != target.measure()->prevMeasure()
@@ -744,19 +772,6 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
             && std::isfinite(rect.width()) && std::isfinite(rect.height())
             && std::isfinite(item->pos().x()) && std::isfinite(item->pos().y());
     };
-    const auto ordinarySignature = [](const Element* item) {
-        if (!item) return false;
-        if (item->isKeySig()) {
-            const KeySig* key = toKeySig(item);
-            return !key->isCustom() && !key->isAtonal() && !key->forInstrumentChange();
-        }
-        if (!item->isTimeSig()) return false;
-        const TimeSig* time = toTimeSig(item);
-        return time->timeSigType() == TimeSigType::NORMAL && time->sig() > Fraction(0, 1)
-            && !time->isLocal()
-            && (time->numeratorString().isEmpty() || time->numeratorString() == QString::number(time->numerator()))
-            && (time->denominatorString().isEmpty() || time->denominatorString() == QString::number(time->denominator()));
-    };
     for (size_t i = 0; i < measures.size(); ++i) {
         const Measure* m = measures[i];
         const bool last = i + 1 == measures.size();
@@ -782,7 +797,7 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
                 : segment.trailer() || !segment.rtick().isZero()))
                 return fail("Candidate signature location/trailer phase not prepared");
             const Element* item = segment.element(0);
-            if (!ordinarySignature(item) || !geometryReady(item, &segment)
+            if (!ordinarySignature4(item) || !geometryReady(item, &segment)
                 || ((segment.isKeySigType() || segment.isKeySigAnnounceType()) ? !item->isKeySig() : !item->isTimeSig())
                 || (courtesy && !item->generated()))
                 return fail("Candidate signature glyph, ownership or dimensions not prepared");
@@ -807,11 +822,11 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
             return fail("Candidate courtesy presence not prepared");
         if (pending && ((hasKey && (!keySeg || !active4(keySeg))) || (hasTime && (!timeSeg || !active4(timeSeg)))))
             return fail("Candidate pending penultimate courtesy lacks an active following signature");
-        if (hasKey && (!ordinarySignature(key)
+        if (hasKey && (!ordinarySignature4(key)
             || !(toKeySig(keyTrailer->element(0))->keySigEvent() == toKeySig(key)->keySigEvent())))
             return fail("Candidate courtesy key does not match following signature");
         if (hasTime) {
-            if (!ordinarySignature(time)) return fail("Candidate courtesy time is not ordinary");
+            if (!ordinarySignature4(time)) return fail("Candidate courtesy time is not ordinary");
             const TimeSig* actual = toTimeSig(time);
             const TimeSig* courtesy = toTimeSig(timeTrailer->element(0));
             // Match the fields copied by native TimeSig::setFrom. Beam groups

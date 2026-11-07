@@ -1,5 +1,22 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.251: manual leading space after an interior signature
+
+Native mtests passed for v0.250. With matching notes, the split and
+unbroken start-repeat examples agreed visually with Studio.
+
+Allow the first onset to carry manual leading space after an ordinary
+key or numeric time signature, or both, inside a system. The signature
+segments must be at the bar start and follow a generated normal end
+barline. Use the existing onset adjustment without adding to rhythmic
+spring weights. Borrowed courtesy prefixes still fall back when an edit
+is present.
+
+The matched scores use a control, a +1-space key change, a −0.5-space
+meter change, and a +1-space combined change. The test removes and
+reapplies the edits, checks the gap from the last signature to the note,
+and verifies that the gap between the two signatures stays fixed.
+
 ## v0.250: manual leading space after a start repeat
 
 Native mtests passed for v0.249. The paired screenshots agree closely

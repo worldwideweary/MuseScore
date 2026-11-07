@@ -91,6 +91,7 @@ class TestSpacing : public QObject, public MTest {
       void manualLeadingSpace4();
       void manualBarStartLeadingSpace4();
       void manualRepeatLeadingSpace4();
+      void manualSignatureLeadingSpace4();
       void keySignatureFormation4();
       void clefSignaturePlanning4_data();
       void clefSignaturePlanning4();
@@ -9730,6 +9731,78 @@ void TestSpacing::manualRepeatLeadingSpace4()
                   const qreal control = onsets[i]->x() - bar->x();
                   QVERIFY(qAbs(marked[i] - control - edits[i] * sp) < 1e-6);
                   onsets[i]->setExtraLeadingSpace(Spatium(edits[i]));
+                  }
+            }
+      }
+
+void TestSpacing::manualSignatureLeadingSpace4()
+      {
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.251-signature-leading-space.mscx"));
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+
+      const std::array<qreal, 3> edits {{1, -0.5, 1}};
+      std::array<Segment*, 3> onsets;
+      Measure* m = score->firstMeasure();
+      for (size_t i = 0; i < onsets.size(); ++i) {
+            QVERIFY(m && m->nextMeasure());
+            m = m->nextMeasure();
+            onsets[i] = m->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+            QVERIFY(onsets[i]);
+            QCOMPARE(onsets[i]->extraLeadingSpace().val(), edits[i]);
+            }
+
+      std::vector<SpacingDecision4> events;
+      const auto collect = [&]() {
+            events.clear();
+            SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
+            score->doLayout();
+            };
+      const auto checkPlans = [&]() {
+            bool candidate = false;
+            int finals = 0;
+            for (const auto& e : events) {
+                  QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+                  if (e.pass == SpacingPass4::FINAL) {
+                        ++finals;
+                        QCOMPARE(e.measures, 4);
+                        }
+                  else if (e.pass == SpacingPass4::CANDIDATE && e.measures == 4)
+                        candidate = true;
+                  }
+            QVERIFY(candidate);
+            QCOMPARE(finals, 1);
+            };
+      const auto activeSignature = [](Measure* measure, SegmentType type) -> const Segment* {
+            const Segment* s = measure->findSegmentR(type, Fraction(0, 1));
+            return s && s->enabled() && s->visible() && !s->allElementsInvisible() ? s : nullptr;
+            };
+      const auto near = [](qreal a, qreal b) { return qAbs(a - b) < 1e-6; };
+      std::array<qreal, 3> markedGap;
+      qreal markedKeyTime = 0;
+      for (int pass = 0; pass < 3; ++pass) {
+            collect();
+            checkPlans();
+            for (size_t i = 0; i < onsets.size(); ++i) {
+                  Segment* onset = onsets[i];
+                  Measure* measure = onset->measure();
+                  const Segment* key = activeSignature(measure, SegmentType::KeySig);
+                  const Segment* time = activeSignature(measure, SegmentType::TimeSig);
+                  QCOMPARE(bool(key), i != 1);
+                  QCOMPARE(bool(time), i != 0);
+                  const Segment* last = time ? time : key;
+                  QVERIFY(last);
+                  const qreal gap = onset->x() - last->x();
+                  const qreal sp = measure->system()->spatium();
+                  if (pass == 0) markedGap[i] = gap;
+                  else QVERIFY(near(markedGap[i] - gap, pass == 1 ? edits[i] * sp : 0));
+                  if (key && time) {
+                        if (pass == 0) markedKeyTime = time->x() - key->x();
+                        else QVERIFY(near(markedKeyTime, time->x() - key->x()));
+                        }
+                  for (const Segment& s : measure->segments())
+                        QCOMPARE(s.spacingWidthOffset4(), qreal(0));
+                  onset->setExtraLeadingSpace(Spatium(pass == 0 ? 0 : edits[i]));
                   }
             }
       }
