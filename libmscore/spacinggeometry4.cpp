@@ -1,6 +1,7 @@
 // Optional Studio spacing: temporary item identities for native geometry.
 // Licensed under GNU GPL version 2; see LICENSE.GPL.
 #include "spacinggeometry4.h"
+#include "spacingcollision4.h"
 #include "spacingprofile4.h"
 #include "accidental.h"
 #include "arpeggio.h"
@@ -67,6 +68,9 @@ static Shape producedElementShape4(const Element* item, SpacingShape4& items)
     case ElementType::ARPEGGIO:
     case ElementType::BREATH:
         owner = item;
+        break;
+    case ElementType::SYMBOL:
+        if (spacingPedalSymbol4(item)) owner = item;
         break;
     default:
         break; // Unknown composites must not masquerade as one leaf.

@@ -1,6 +1,8 @@
 // MuseScore — optional Studio spacing regression tests.
 // Licensed under GNU GPL version 2, as published in LICENSE.GPL.
 #include <QtTest/QtTest>
+#include <QDirIterator>
+#include <QMap>
 #include "mtest/testutils.h"
 #include "libmscore/score.h"
 #include "libmscore/xml.h"
@@ -24,6 +26,10 @@
 #include "libmscore/breath.h"
 #include "libmscore/rest.h"
 #include "libmscore/tie.h"
+#include "libmscore/fingering.h"
+#include "libmscore/articulation.h"
+#include "libmscore/fermata.h"
+#include "libmscore/symbol.h"
 #include <limits>
 #include <array>
 #include <memory>
@@ -85,10 +91,36 @@ class TestSpacing : public QObject, public MTest {
       void repeatCollection4();
       void signatureCollection4_data();
       void signatureCollection4();
+      void pendingCourtesyTrial4_data();
+      void pendingCourtesyTrial4();
+      void spacingCorpus4();
+      void fingeringSpacing4();
+      void hiddenUnisonSpacing4();
+      void fermataSpacing4();
+      void pedalSymbolSpacing4();
+      void closeArticulationSpacing4_data();
+      void closeArticulationSpacing4();
+      void ordinaryTieSpacing4_data();
+      void ordinaryTieSpacing4();
+      void tieOverRemoteVoice4_data();
+      void tieOverRemoteVoice4();
+      void tieOverRemoteBeam4();
+      void keepWithNextCollection4();
+      void manualLeadingSpace4_data();
+      void manualLeadingSpace4();
+      void manualBarStartLeadingSpace4_data();
+      void manualBarStartLeadingSpace4();
+      void manualRepeatLeadingSpace4_data();
+      void manualRepeatLeadingSpace4();
+      void manualSignatureLeadingSpace4_data();
+      void manualSignatureLeadingSpace4();
+      void keySignatureFormation4();
       void clefSignaturePlanning4_data();
       void clefSignaturePlanning4();
       void smallNotation4_data();
       void smallNotation4();
+      void partialRepeatLayout4_data();
+      void partialRepeatLayout4();
       void styleRoundTrip();
       void durationPolicy();
       void springForce();
@@ -121,6 +153,7 @@ class TestSpacing : public QObject, public MTest {
       void spacingDecisionCorpus4();
       void measureRestPlanning4_data();
       void measureRestPlanning4();
+      void measureRestStartRepeat4();
       void systemSpacingLifecycle4_data();
       void systemSpacingLifecycle4();
       void acciaccaturaSlash4_data();
@@ -183,6 +216,7 @@ class TestSpacing : public QObject, public MTest {
       void polyrhythmInputs();
       void crossStaffPlanBoundary_data();
       void crossStaffPlanBoundary();
+      void relocatedBeamGroups4();
       void crossStaffInterleaved_data();
       void crossStaffInterleaved();
       void crossStaffSystems_data();
@@ -211,6 +245,13 @@ void TestSpacing::styleRoundTrip()
       MasterScore* score = readScore(DIR + "studio-spacing-natural-h1.mscx");
       QVERIFY(score);
       QVERIFY(score->styleB(Sid::scaleRythmicSpacingForSmallNotes));
+      MStyle importedGaps;
+      XmlReader gaps(QByteArray("<Style><keysigAccidentalDistance>0.52</keysigAccidentalDistance>"
+                               "<keysigNaturalDistance>0.64</keysigNaturalDistance></Style>"));
+      QVERIFY(gaps.readNextStartElement());
+      importedGaps.load(gaps, 475);
+      QCOMPARE(importedGaps.value(Sid::keysigAccidentalDistance).value<Spatium>().val(), qreal(0.52));
+      QCOMPARE(importedGaps.value(Sid::keysigNaturalDistance).value<Spatium>().val(), qreal(0.64));
       for (bool enabled : {false, true}) {
             MStyle imported;
             const QByteArray bytes = QByteArray("<Style><scaleRythmicSpacingForSmallNotes>")
@@ -225,12 +266,16 @@ void TestSpacing::styleRoundTrip()
       score->setStyleValue(Sid::spacingLayout4, true);
       score->setStyleValue(Sid::beamLayout4, false);
       score->setStyleValue(Sid::scaleRythmicSpacingForSmallNotes, false);
+      score->setStyleValue(Sid::keysigAccidentalDistance, Spatium(0.52));
+      score->setStyleValue(Sid::keysigNaturalDistance, Spatium(0.64));
       QVERIFY(saveScore(score, "studio-spacing-roundtrip.mscx"));
       MasterScore* loaded = readCreatedScore("studio-spacing-roundtrip.mscx");
       QVERIFY(loaded);
       QVERIFY(loaded->styleB(Sid::spacingLayout4));
       QVERIFY(!loaded->styleB(Sid::beamLayout4));
       QVERIFY(!loaded->styleB(Sid::scaleRythmicSpacingForSmallNotes));
+      QCOMPARE(loaded->styleS(Sid::keysigAccidentalDistance).val(), qreal(0.52));
+      QCOMPARE(loaded->styleS(Sid::keysigNaturalDistance).val(), qreal(0.64));
       score->setStyleValue(Sid::spacingLayout4, false);
       QVERIFY(saveScore(score, "studio-spacing-off.mscx"));
       MasterScore* off = readCreatedScore("studio-spacing-off.mscx");
@@ -1857,6 +1902,72 @@ void TestSpacing::polyrhythmInputs()
       QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
       for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
       delete score;
+      }
+
+void TestSpacing::relocatedBeamGroups4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.281-relocated-beam-groups.mscx"));
+      QVERIFY(score);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      std::vector<SpacingDecision4> decisions;
+      SpacingDecisionScope4 scope(score.get(), [&decisions](const SpacingDecision4& e) { decisions.push_back(e); });
+      score->doLayout();
+      bool final = false;
+      for (const auto& e : decisions) {
+            if (e.pass != SpacingPass4::FINAL) continue;
+            QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+            final = true;
+            }
+      QVERIFY(final);
+
+      Measure* measure = score->firstMeasure();
+      for (int bar = 0; bar < 2; ++bar, measure = measure->nextMeasure()) {
+            QVERIFY(measure);
+            const Beam* beams[2] = {nullptr, nullptr};
+            for (int eighth = 0; eighth < 8; ++eighth) {
+                  const Segment* s = measure->findSegmentR(SegmentType::ChordRest, Fraction(eighth, 8));
+                  QVERIFY(s && s->element(VOICES) && s->element(VOICES)->isChord());
+                  const Chord* c = toChord(s->element(VOICES));
+                  const int half = eighth / 4;
+                  const int visual = half == 1 - bar ? 0 : 1;
+                  QCOMPARE(c->vStaffIdx(), visual);
+                  QVERIFY(c->beam() && !c->beam()->cross());
+                  if (!beams[half]) beams[half] = c->beam();
+                  QCOMPARE(static_cast<const Beam*>(c->beam()), beams[half]);
+                  for (int staff = 0; staff < 2; ++staff) {
+                        const auto shape = spacingStaffShape4(s, staff);
+                        const bool hasHead = std::any_of(shape.elements.begin(), shape.elements.end(),
+                              [c](const SpacingShapeElement4& e) { return e.item == c->upNote(); });
+                        QCOMPARE(hasHead, staff == visual);
+                        }
+                  }
+            QVERIFY(beams[0] != beams[1]);
+            }
+
+      // A manual chord translation must still use the destination staff's
+      // geometry and survive a fresh Studio spacing pass.
+      Segment* onset = score->firstMeasure()->findSegmentR(SegmentType::ChordRest, Fraction(1, 2));
+      QVERIFY(onset && onset->element(VOICES) && onset->element(VOICES)->isChord());
+      Chord* moved = toChord(onset->element(VOICES));
+      const QPointF offset(1.5 * moved->spatium(), 0);
+      moved->setOffset(offset);
+      decisions.clear();
+      score->doLayout();
+      QCOMPARE(moved->offset(), offset);
+      final = false;
+      for (const auto& e : decisions) {
+            if (e.pass != SpacingPass4::FINAL) continue;
+            QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+            final = true;
+            }
+      QVERIFY(final);
+      const Note* note = moved->upNote();
+      const auto shape = spacingStaffShape4(onset, moved->vStaffIdx());
+      QVERIFY(std::any_of(shape.elements.begin(), shape.elements.end(),
+            [&](const SpacingShapeElement4& e) {
+                  return e.item == note && qAbs(e.rect.left() - (moved->x() + note->x() + note->bbox().left())) < 1e-6;
+                  }));
       }
 
 void TestSpacing::crossStaffPlanBoundary_data()
@@ -9282,6 +9393,726 @@ void TestSpacing::spacingDecisionCorpus4()
       QVERIFY(nextTick == score->lastMeasure()->endTick());
       }
 
+void TestSpacing::pendingCourtesyTrial4_data()
+      {
+      QTest::addColumn<QString>("fixture");
+      QTest::addColumn<int>("count");
+      QTest::addColumn<bool>("manualSpace");
+      QTest::addColumn<int>("staffCount");
+      QTest::newRow("two-bars") << QString("v0.241-pending-courtesy.mscx") << 2 << false << 1;
+      QTest::newRow("three-bars") << QString("v0.242-prefix-courtesy.mscx") << 3 << false << 1;
+      QTest::newRow("consecutive-changes") << QString("v0.243-consecutive-courtesies.mscx") << 4 << false << 1;
+      QTest::newRow("manual-leading-space") << QString("v0.252-courtesy-leading-space.mscx") << 4 << true << 1;
+      QTest::newRow("shared-manual-leading-space") << QString("v0.257-shared-courtesy-leading-space.mscx") << 4 << true << 2;
+      }
+
+void TestSpacing::pendingCourtesyTrial4()
+      {
+      QFETCH(QString, fixture);
+      QFETCH(int, count);
+      QFETCH(bool, manualSpace);
+      QFETCH(int, staffCount);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(new MasterScore(mscore->baseStyle()));
+      {
+      ScoreLoad loading;
+      QVERIFY(score->loadMsc(root + "/" + DIR + fixture, false)
+            == Score::FileError::FILE_NO_ERROR);
+      }
+      QVERIFY(score->styleB(Sid::spacingLayout4));
+      QCOMPARE(score->nstaves(), staffCount);
+      Measure* first = score->firstMeasure();
+      QVERIFY(first);
+      Measure* predecessor = first;
+      for (int n = 2; n < count; ++n) {
+            predecessor = predecessor->nextMeasure();
+            QVERIFY(predecessor);
+            }
+      Measure* added = predecessor->nextMeasure();
+      QVERIFY(added && !added->nextMeasure());
+      const bool separateCourtesies = manualSpace && staffCount == 1;
+      if (separateCourtesies) {
+            // Reuse the two wrap widths to check time-only then key-only.
+            Segment* key = predecessor->findSegmentR(SegmentType::KeySig, Fraction(0, 1));
+            QVERIFY(key && key->element(0) && key->element(0)->isKeySig());
+            toKeySig(key->element(0))->setShowCourtesy(false);
+            Segment* time = added->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
+            QVERIFY(time && time->element(0) && time->element(0)->isTimeSig());
+            toTimeSig(time->element(0))->setShowCourtesySig(false);
+            }
+      if (staffCount == 2) {
+            // The two existing wrap trials now exercise different lower-staff
+            // flags: time before bar 3, key before bar 4.
+            Segment* time = predecessor->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
+            QVERIFY(time && time->element(VOICES) && time->element(VOICES)->isTimeSig());
+            toTimeSig(time->element(VOICES))->setShowCourtesySig(false);
+            Segment* key = added->findSegmentR(SegmentType::KeySig, Fraction(0, 1));
+            QVERIFY(key && key->element(VOICES) && key->element(VOICES)->isKeySig());
+            toKeySig(key->element(VOICES))->setShowCourtesy(false);
+            // The second wrap checks common time above cut time. Both
+            // keep the same bar duration and their own courtesy glyph.
+            Segment* commonTime = added->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
+            QVERIFY(commonTime);
+            for (int st = 0; st < staffCount; ++st) {
+                  Element* item = commonTime->element(st * VOICES);
+                  QVERIFY(item && item->isTimeSig());
+                  TimeSig* ts = toTimeSig(item);
+                  QVERIFY(ts->sig().identical(Fraction(4, 4)));
+                  if (st == 0)
+                        ts->setSig(Fraction(4, 4), TimeSigType::FOUR_FOUR);
+                  else
+                        ts->setSig(Fraction(2, 2), TimeSigType::ALLA_BREVE);
+                  }
+            }
+      std::vector<SpacingDecision4> events;
+      const bool trace = qEnvironmentVariableIsSet("MSCORE_TRACE_COURTESY_FIT");
+      const auto collect = [&]() {
+            events.clear();
+            SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
+            score->doLayout();
+            if (manualSpace) {
+                  for (const auto& e : events)
+                        QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+                  Measure* m = first;
+                  for (int i = 0; i < count; ++i, m = m->nextMeasure()) {
+                        QVERIFY(m && m->system());
+                        const bool interior = i % 2 == 0;
+                        const Segment* onset = m->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+                        const Segment* edited = m->findSegmentR(SegmentType::ChordRest, Fraction(interior ? 1 : 0, 4));
+                        QVERIFY(onset && edited);
+                        QCOMPARE(edited->extraLeadingSpace().val(), interior ? qreal(-0.5) : qreal(1));
+                        QVERIFY(qAbs(onset->spacingWidthOffset4()
+                              - (interior ? -0.5 * m->system()->spatium() : 0)) < 1e-6);
+                        }
+                  }
+            if (trace) {
+                  const qreal sp = first->spatium();
+                  for (const auto& e : events) {
+                        if (e.pass != SpacingPass4::CANDIDATE || e.firstTick != first->tick()) continue;
+                        if (e.courtesyRefreshWidth > 0)
+                              qInfo("courtesy-fit 37E refresh bars=%d width_sp=%.6f available_sp=%.6f",
+                                    e.measures - 1, e.courtesyRefreshWidth / sp, e.available / sp);
+                        qInfo("courtesy-fit 37E trial bars=%d width_sp=%.6f available_sp=%.6f %s",
+                              e.measures, e.width / sp, e.available / sp,
+                              e.path == SpacingPath4::FULL_PLAN ? "planned" : "fallback");
+                        }
+                  }
+            };
+      const auto candidate = [&](int bars) -> const SpacingDecision4* {
+            for (const auto& e : events)
+                  if (e.pass == SpacingPass4::CANDIDATE && e.firstTick == first->tick() && e.measures == bars)
+                        return &e;
+            return nullptr;
+            };
+      collect();
+      QVERIFY(first->system() == added->system());
+
+      // The retained system has ordinary interior barlines and at most one
+      // set of courtesy signs, at its terminal barline.
+      const auto checkBoundary = [&](Measure* end, bool wraps) {
+            for (Measure* m = first; m; m = m->nextMeasure()) {
+                  const bool courtesyExpected = wraps && m == end;
+                  QCOMPARE(m->trailer(), courtesyExpected);
+                  const bool keyExpected = courtesyExpected && (!separateCourtesies || m == predecessor);
+                  const bool timeExpected = courtesyExpected && (!separateCourtesies || m != predecessor);
+                  QCOMPARE(m->hasCourtesyKeySig(), keyExpected);
+                  for (SegmentType type : {SegmentType::KeySigAnnounce, SegmentType::TimeSigAnnounce}) {
+                        const bool key = type == SegmentType::KeySigAnnounce;
+                        const bool expected = key ? keyExpected : timeExpected;
+                        const Segment* courtesy = m->findSegmentR(type, m->ticks());
+                        for (int st = 0; st < staffCount; ++st) {
+                              const int track = st * VOICES;
+                              QCOMPARE(bool(courtesy && courtesy->enabled() && courtesy->element(track)), expected);
+                              if (expected) {
+                                    const Segment* actual = m->nextMeasure()->findSegmentR(
+                                          key ? SegmentType::KeySig : SegmentType::TimeSig, Fraction(0, 1));
+                                    QVERIFY(actual && actual->enabled() && actual->element(track));
+                                    if (key)
+                                          QVERIFY(toKeySig(courtesy->element(track))->keySigEvent() == toKeySig(actual->element(track))->keySigEvent());
+                                    else {
+                                          const TimeSig* actualTime = toTimeSig(actual->element(track));
+                                          const TimeSig* courtesyTime = toTimeSig(courtesy->element(track));
+                                          QVERIFY(courtesyTime->sig().identical(actualTime->sig()));
+                                          QVERIFY(courtesyTime->timeSigType() == actualTime->timeSigType());
+                                          if (staffCount == 2 && m == predecessor)
+                                                QVERIFY(courtesyTime->timeSigType()
+                                                      == (st == 0 ? TimeSigType::FOUR_FOUR : TimeSigType::ALLA_BREVE));
+                                          }
+                                    }
+                              }
+                        }
+                  const Segment* bar = m->findSegmentR(SegmentType::EndBarLine, m->ticks());
+                  QVERIFY(bar && bar->enabled() && bar->element(0) && bar->element(0)->isBarLine());
+                  QVERIFY(toBarLine(bar->element(0))->barLineType()
+                        == (keyExpected ? BarLineType::DOUBLE : m == added ? BarLineType::END : BarLineType::NORMAL));
+                  if (m == end) break;
+                  }
+            };
+      checkBoundary(added, false);
+
+      // Choose widths between consecutive natural estimates, where the earlier
+      // prefix fits and the next trial overflows.
+      const qreal originalWidth = score->styleD(Sid::pagePrintableWidth);
+      std::vector<std::pair<int, qreal>> breaks;
+      for (int bars = count == 4 ? 3 : count; bars <= count; ++bars) {
+            const auto* seed = candidate(bars - 1);
+            const auto* trial = candidate(bars);
+            QVERIFY(seed && trial);
+            QVERIFY2(seed->path == SpacingPath4::FULL_PLAN, qPrintable(seed->reason));
+            QVERIFY2(trial->path == SpacingPath4::FULL_PLAN, qPrintable(trial->reason));
+            QVERIFY(trial->width > seed->width && trial->width <= trial->available);
+            QCOMPARE(trial->courtesyRefreshWidth > 0, count == 4);
+            breaks.emplace_back(bars, originalWidth * (seed->width + trial->width) / (2 * trial->available));
+            }
+      for (const auto& testBreak : breaks) {
+            score->setStyleValue(Sid::pagePrintableWidth, testBreak.second);
+            collect();
+            const auto* seed = candidate(testBreak.first - 1);
+            const auto* trial = candidate(testBreak.first);
+            QVERIFY(seed && trial);
+            QVERIFY2(seed->path == SpacingPath4::FULL_PLAN, qPrintable(seed->reason));
+            QVERIFY2(trial->path == SpacingPath4::FULL_PLAN, qPrintable(trial->reason));
+            QVERIFY(seed->width <= seed->available && trial->width > trial->available);
+            QCOMPARE(trial->courtesyRefreshWidth > 0, count == 4);
+            Measure* end = predecessor;
+            if (testBreak.first < count) end = end->prevMeasure();
+            QVERIFY(first->system() == end->system());
+            QVERIFY(end->system() != end->nextMeasure()->system());
+            checkBoundary(end, true);
+            // The rejected measure starts a new system. Its former terminal
+            // courtesy is cleared if another bar fits after it.
+            if (testBreak.first < count) {
+                  QVERIFY(end->nextMeasure()->system() == added->system());
+                  QVERIFY(!end->nextMeasure()->trailer());
+                  }
+            }
+
+      score->setStyleValue(Sid::pagePrintableWidth, originalWidth);
+      collect();
+      const auto* trial = candidate(count);
+      QVERIFY(trial && trial->path == SpacingPath4::FULL_PLAN);
+      QCOMPARE(trial->courtesyRefreshWidth > 0, count == 4);
+      QVERIFY(first->system() == added->system());
+      checkBoundary(added, false);
+      }
+
+void TestSpacing::keepWithNextCollection4()
+      {
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.246-keep-with-next.mscx"));
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      std::vector<Measure*> bars;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
+            bars.push_back(m);
+      QCOMPARE(bars.size(), size_t(5));
+      for (size_t i = 0; i < bars.size(); ++i)
+            QCOMPARE(bars[i]->noBreak(), i == 1 || i == 2);
+
+      std::vector<SpacingDecision4> events;
+      const auto collect = [&](qreal width) {
+            score->setStyleValue(Sid::pagePrintableWidth, width);
+            events.clear();
+            SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
+            score->doLayout();
+            };
+      const auto decision = [&](SpacingPass4 pass, size_t first, int count) -> const SpacingDecision4* {
+            for (const auto& e : events)
+                  if (e.pass == pass && e.firstTick == bars[first]->tick() && e.measures == count)
+                        return &e;
+            return nullptr;
+            };
+      const qreal wide = 8.8;
+      score->setStyleValue(Sid::pageWidth, 10.0);
+      collect(wide);
+      std::array<qreal, 3> natural;
+      for (int i = 0; i < 5; ++i) {
+            const auto* trial = decision(SpacingPass4::CANDIDATE, 0, i + 1);
+            QVERIFY(trial);
+            QVERIFY2(trial->path == SpacingPath4::FULL_PLAN, qPrintable(trial->reason));
+            QVERIFY(trial->width <= trial->available);
+            if (i < 3) natural[i] = wide * trial->width / trial->available;
+            QCOMPARE(bars[i]->system(), bars.front()->system());
+            }
+      QVERIFY(natural[0] < natural[1] && natural[1] < natural[2]);
+      score->setStyleValue(Sid::pageWidth, 6.0);
+
+      // N2 fits after N1, but adding N3 overflows. Keep collecting until
+      // N4 closes the group, then reject N5 and squeeze the four retained bars.
+      const qreal middle = (natural[1] + natural[2]) * .5;
+      collect(middle);
+      for (int count : {2, 3, 4, 5}) {
+            const auto* trial = decision(SpacingPass4::CANDIDATE, 0, count);
+            QVERIFY(trial);
+            QVERIFY2(trial->path == SpacingPath4::FULL_PLAN, qPrintable(trial->reason));
+            QCOMPARE(trial->width > trial->available, count >= 3);
+            }
+      const auto* squeezed = decision(SpacingPass4::FINAL, 0, 4);
+      QVERIFY(squeezed);
+      QVERIFY2(squeezed->path == SpacingPath4::FULL_PLAN, qPrintable(squeezed->reason));
+      QVERIFY(squeezed->width <= squeezed->available + 1e-6);
+      QCOMPARE(bars.front()->system(), bars[3]->system());
+      QVERIFY(bars[3]->system() != bars[4]->system());
+
+      // If N2 itself no longer fits, break before the group. At the next
+      // system start the overwide group still stays together.
+      collect((natural[0] + natural[1]) * .5);
+      const auto* rejected = decision(SpacingPass4::CANDIDATE, 0, 2);
+      QVERIFY(rejected && rejected->path == SpacingPath4::FULL_PLAN && rejected->width > rejected->available);
+      QVERIFY(bars[0]->system() != bars[1]->system());
+      QCOMPARE(bars[1]->system(), bars[2]->system());
+      QCOMPARE(bars[1]->system(), bars[3]->system());
+      QVERIFY(bars[3]->system() != bars[4]->system());
+
+      // A user found that just before N2 wraps, the four-bar system can
+      // retain its old note positions while only its staff lines shrink.
+      // Exercise that width band and the last sliver before the local wrap.
+      for (qreal width : {6.0 - 0.6 - 2.43, 6.0 - 0.6 - 2.44, 6.0 - 0.6 - 2.45,
+                          natural[1] + 0.0005}) {
+            collect(width);
+            const auto* trial = decision(SpacingPass4::CANDIDATE, 0, 2);
+            QVERIFY(trial);
+            QVERIFY2(trial->path == SpacingPath4::FULL_PLAN, qPrintable(trial->reason));
+            const bool wrapsBeforeGroup = trial->width > trial->available;
+            QCOMPARE(bars[0]->system() != bars[1]->system(), wrapsBeforeGroup);
+            QCOMPARE(bars[1]->system(), bars[2]->system());
+            QCOMPARE(bars[1]->system(), bars[3]->system());
+            QVERIFY(bars[3]->system() != bars[4]->system());
+            const auto* group = decision(SpacingPass4::FINAL, wrapsBeforeGroup ? 1 : 0,
+                                         wrapsBeforeGroup ? 3 : 4);
+            QVERIFY(group);
+            QVERIFY2(group->path == SpacingPath4::FULL_PLAN,
+                     qPrintable(QString("Printable width %1: %2").arg(width).arg(group->reason)));
+            QVERIFY(group->width <= group->available + 1e-6);
+            for (size_t i = wrapsBeforeGroup ? 1 : 0; i <= 3; ++i) {
+                  for (const Segment& seg : bars[i]->segments()) {
+                        if (!seg.enabled() || !seg.visible() || seg.allElementsInvisible()) continue;
+                        if (seg.isChordRestType() || seg.isEndBarLineType())
+                              QVERIFY(seg.x() + seg.minRight() <= bars[i]->width() + 1e-6);
+                        }
+                  }
+            }
+
+      score->setStyleValue(Sid::pageWidth, 10.0);
+      collect(wide);
+      for (const Measure* m : bars)
+            QCOMPARE(m->system(), bars.front()->system());
+      }
+
+void TestSpacing::manualLeadingSpace4_data()
+      {
+      QTest::addColumn<QString>("fixture");
+      QTest::addColumn<int>("staffCount");
+      QTest::newRow("one-staff") << QString("v0.248-manual-leading-space.mscx") << 1;
+      QTest::newRow("two-staves") << QString("v0.253-shared-leading-space.mscx") << 2;
+      }
+
+void TestSpacing::manualLeadingSpace4()
+      {
+      QFETCH(QString, fixture);
+      QFETCH(int, staffCount);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(readScore(DIR + fixture));
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      QCOMPARE(score->nstaves(), staffCount);
+      std::vector<SpacingDecision4> events;
+      const auto collect = [&]() {
+            events.clear();
+            SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
+            score->doLayout();
+            };
+      collect();
+      QVERIFY(!events.empty());
+      QVERIFY2(events.back().path == SpacingPath4::FULL_PLAN, qPrintable(events.back().reason));
+      QCOMPARE(events.back().measures, 3);
+      for (const auto& event : events)
+            QVERIFY2(event.path == SpacingPath4::FULL_PLAN, qPrintable(event.reason));
+
+      System* system = score->firstMeasure()->system();
+      QVERIFY(system && system == score->lastMeasure()->system());
+      const qreal sp = system->spatium();
+      std::array<Segment*, 3> first, second;
+      Measure* m = score->firstMeasure();
+      for (size_t i = 0; i < first.size(); ++i, m = m->nextMeasure()) {
+            QVERIFY(m);
+            first[i] = m->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+            second[i] = m->findSegmentR(SegmentType::ChordRest, Fraction(1, 4));
+            QVERIFY(first[i] && second[i]);
+            }
+      const std::array<qreal, 3> edits {{0.0, 1.0, -0.5}};
+      const auto near = [](qreal a, qreal b) { return qAbs(a - b) < 1e-6; };
+      const auto segmentIn = [](const SpacingPlan4& plan, const Segment* segment) {
+            return std::find_if(plan.segments.begin(), plan.segments.end(),
+                  [&](const SpacingSegmentPlan4& s) { return s.segment == segment; });
+            };
+      QString reason;
+      SpacingPlan4 natural;
+      QVERIFY2(buildSpacingPlan4(system, natural, &reason), qPrintable(reason));
+      const auto controlFirst = segmentIn(natural, first[0]);
+      const auto controlSecond = segmentIn(natural, second[0]);
+      QVERIFY(controlFirst != natural.segments.end() && controlSecond != natural.segments.end());
+      const qreal normalGap = controlSecond->x - controlFirst->x;
+      for (size_t i = 0; i < edits.size(); ++i) {
+            QCOMPARE(second[i]->extraLeadingSpace().val(), edits[i]);
+            QVERIFY(near(first[i]->spacingWidthOffset4(), edits[i] * sp));
+            if (staffCount == 2) {
+                  const Element* top = second[i]->element(0);
+                  const Element* bottom = second[i]->element(VOICES);
+                  QVERIFY(top && top->isChord() && bottom && bottom->isChord());
+                  QVERIFY(near(top->pagePos().x(), bottom->pagePos().x()));
+                  }
+            const auto left = segmentIn(natural, first[i]);
+            const auto right = segmentIn(natural, second[i]);
+            QVERIFY(left != natural.segments.end() && right != natural.segments.end());
+            QVERIFY(near(right->x - left->x, normalGap + edits[i] * sp));
+            QVERIFY(near(left->width - left->widthOffset, normalGap));
+            }
+
+      // Fixed space must survive both the reduced rhythm pass and pooled
+      // spring growth. Neither query writes it back to the live segments.
+      SpacingPlanOptions4 options;
+      options.stretchReduction = 0.67;
+      options.squeezeFactor = 0.8;
+      options.minimumMeasureWidths = false;
+      SpacingPlan4 compressed;
+      QVERIFY2(buildSpacingPlan4(system, compressed, &reason, options), qPrintable(reason));
+      QVERIFY(compressed.width < natural.width);
+      QVERIFY(justifySpacingPlan4(compressed, compressed.width + 2 * sp));
+      for (size_t i = 0; i < edits.size(); ++i) {
+            const auto left = segmentIn(compressed, first[i]);
+            QVERIFY(left != compressed.segments.end() && near(left->widthOffset, edits[i] * sp));
+            QVERIFY(near(first[i]->spacingWidthOffset4(), edits[i] * sp));
+            second[i]->setExtraLeadingSpace(Spatium(0));
+            }
+      collect();
+      QVERIFY(!events.empty());
+      QVERIFY2(events.back().path == SpacingPath4::FULL_PLAN, qPrintable(events.back().reason));
+      for (const Segment* seg : first) QCOMPARE(seg->spacingWidthOffset4(), qreal(0));
+      }
+
+void TestSpacing::manualBarStartLeadingSpace4_data()
+      {
+      QTest::addColumn<QString>("fixture");
+      QTest::addColumn<int>("staffCount");
+      QTest::newRow("one-staff") << QString("v0.249-bar-start-leading-space.mscx") << 1;
+      QTest::newRow("two-staves") << QString("v0.254-shared-bar-start-leading-space.mscx") << 2;
+      }
+
+void TestSpacing::manualBarStartLeadingSpace4()
+      {
+      QFETCH(QString, fixture);
+      QFETCH(int, staffCount);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(readScore(DIR + fixture));
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      QCOMPARE(score->nstaves(), staffCount);
+      std::array<Segment*, 4> onsets;
+      const std::array<qreal, 4> edits {{0, 1, -0.5, 1}};
+      Measure* m = score->firstMeasure();
+      for (size_t i = 0; i < onsets.size(); ++i, m = m->nextMeasure()) {
+            QVERIFY(m);
+            onsets[i] = m->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+            QVERIFY(onsets[i] && onsets[i]->element(0));
+            QCOMPARE(onsets[i]->extraLeadingSpace().val(), edits[i]);
+            QCOMPARE(onsets[i]->element(0)->isRest(), i == 2);
+            }
+
+      std::vector<SpacingDecision4> events;
+      const auto collect = [&]() {
+            events.clear();
+            SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
+            score->doLayout();
+            };
+      const auto checkPlans = [&]() {
+            int finals = 0;
+            for (const auto& e : events) {
+                  QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+                  if (e.pass == SpacingPass4::FINAL) {
+                        ++finals;
+                        QCOMPARE(e.measures, finals == 1 ? 3 : 1);
+                        }
+                  }
+            QCOMPARE(finals, 2);
+            QCOMPARE(onsets[0]->measure()->system(), onsets[2]->measure()->system());
+            QVERIFY(onsets[2]->measure()->system() != onsets[3]->measure()->system());
+            };
+
+      collect();
+      checkPlans();
+      std::array<qreal, 4> marked;
+      for (size_t i = 0; i < onsets.size(); ++i) {
+            marked[i] = onsets[i]->x();
+            if (staffCount == 2) {
+                  const Element* top = onsets[i]->element(0);
+                  const Element* bottom = onsets[i]->element(VOICES);
+                  QVERIFY(bottom && bottom->isChord());
+                  if (top->isChord())
+                        QVERIFY(qAbs(top->pagePos().x() - bottom->pagePos().x()) < 1e-6);
+                  }
+            for (const Segment& s : onsets[i]->measure()->segments())
+                  QCOMPARE(s.spacingWidthOffset4(), qreal(0));
+            onsets[i]->setExtraLeadingSpace(Spatium(0));
+            }
+      collect();
+      checkPlans();
+      for (size_t i = 0; i < onsets.size(); ++i) {
+            const qreal sp = onsets[i]->measure()->system()->spatium();
+            QVERIFY(qAbs(marked[i] - onsets[i]->x() - edits[i] * sp) < 1e-6);
+            for (const Segment& s : onsets[i]->measure()->segments())
+                  QCOMPARE(s.spacingWidthOffset4(), qreal(0));
+            onsets[i]->setExtraLeadingSpace(Spatium(edits[i]));
+            }
+      collect();
+      checkPlans();
+      for (size_t i = 0; i < onsets.size(); ++i)
+            QVERIFY(qAbs(marked[i] - onsets[i]->x()) < 1e-6);
+      }
+
+void TestSpacing::manualRepeatLeadingSpace4_data()
+      {
+      QTest::addColumn<QString>("fixture");
+      QTest::addColumn<int>("staffCount");
+      QTest::newRow("one-staff") << QString("v0.250-repeat-leading-space.mscx") << 1;
+      QTest::newRow("two-staves") << QString("v0.255-shared-repeat-leading-space.mscx") << 2;
+      }
+
+void TestSpacing::manualRepeatLeadingSpace4()
+      {
+      QFETCH(QString, fixture);
+      QFETCH(int, staffCount);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(readScore(DIR + fixture));
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      QCOMPARE(score->nstaves(), staffCount);
+      Measure* first = score->firstMeasure();
+      QVERIFY(first && first->nextMeasure() && first->nextMeasure()->nextMeasure());
+      Measure* middle = first->nextMeasure();
+      const std::array<Measure*, 2> repeats {{first, middle->nextMeasure()}};
+      const std::array<qreal, 2> edits {{1, -0.5}};
+      std::array<Segment*, 2> onsets;
+      for (size_t i = 0; i < repeats.size(); ++i) {
+            QVERIFY(repeats[i]->repeatStart());
+            onsets[i] = repeats[i]->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+            QVERIFY(onsets[i]);
+            QCOMPARE(onsets[i]->extraLeadingSpace().val(), edits[i]);
+            }
+      QVERIFY(middle->repeatEnd());
+
+      std::vector<SpacingDecision4> events;
+      const auto collect = [&]() {
+            events.clear();
+            SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
+            score->doLayout();
+            };
+      const auto checkPlans = [&](bool split) {
+            int finals = 0;
+            for (const auto& e : events) {
+                  QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+                  if (e.pass == SpacingPass4::FINAL) {
+                        ++finals;
+                        QCOMPARE(e.measures, split ? 2 : 4);
+                        }
+                  }
+            QCOMPARE(finals, split ? 2 : 1);
+            QCOMPARE(repeats[0]->system() != repeats[1]->system(), split);
+            };
+      // R3 is first an interior end/start pair, then a new system header.
+      for (bool split : {false, true}) {
+            middle->setLineBreak(split);
+            collect();
+            checkPlans(split);
+            std::array<qreal, 2> marked;
+            for (size_t i = 0; i < repeats.size(); ++i) {
+                  const Segment* bar = repeats[i]->findSegmentR(SegmentType::StartRepeatBarLine, Fraction(0, 1));
+                  QVERIFY(bar && bar->enabled());
+                  for (int st = 0; st < staffCount; ++st) {
+                        const Element* line = bar->element(st * VOICES);
+                        QVERIFY(line && line->isBarLine() && line->generated());
+                        QVERIFY(toBarLine(line)->barLineType() == BarLineType::START_REPEAT);
+                        const Element* chord = onsets[i]->element(st * VOICES);
+                        QVERIFY(chord && chord->isChord());
+                        QVERIFY(qAbs(chord->pagePos().x() - onsets[i]->element(0)->pagePos().x()) < 1e-6);
+                        }
+                  QCOMPARE(bar->spacingWidthOffset4(), qreal(0));
+                  marked[i] = onsets[i]->x() - bar->x();
+                  onsets[i]->setExtraLeadingSpace(Spatium(0));
+                  }
+            collect();
+            checkPlans(split);
+            for (size_t i = 0; i < repeats.size(); ++i) {
+                  const Segment* bar = repeats[i]->findSegmentR(SegmentType::StartRepeatBarLine, Fraction(0, 1));
+                  QVERIFY(bar && bar->enabled());
+                  const qreal sp = repeats[i]->system()->spatium();
+                  const qreal control = onsets[i]->x() - bar->x();
+                  QVERIFY(qAbs(marked[i] - control - edits[i] * sp) < 1e-6);
+                  onsets[i]->setExtraLeadingSpace(Spatium(edits[i]));
+                  }
+            }
+      }
+
+void TestSpacing::manualSignatureLeadingSpace4_data()
+      {
+      QTest::addColumn<QString>("fixture");
+      QTest::addColumn<int>("staffCount");
+      QTest::newRow("one-staff") << QString("v0.251-signature-leading-space.mscx") << 1;
+      QTest::newRow("two-staves") << QString("v0.256-shared-signature-leading-space.mscx") << 2;
+      }
+
+void TestSpacing::manualSignatureLeadingSpace4()
+      {
+      QFETCH(QString, fixture);
+      QFETCH(int, staffCount);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(readScore(DIR + fixture));
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      QCOMPARE(score->nstaves(), staffCount);
+
+      const std::array<qreal, 3> edits {{1, -0.5, 1}};
+      std::array<Segment*, 3> onsets;
+      Measure* m = score->firstMeasure();
+      for (size_t i = 0; i < onsets.size(); ++i) {
+            QVERIFY(m && m->nextMeasure());
+            m = m->nextMeasure();
+            onsets[i] = m->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+            QVERIFY(onsets[i]);
+            QCOMPARE(onsets[i]->extraLeadingSpace().val(), edits[i]);
+            }
+
+      std::vector<SpacingDecision4> events;
+      const auto collect = [&]() {
+            events.clear();
+            SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
+            score->doLayout();
+            };
+      const auto checkPlans = [&]() {
+            bool candidate = false;
+            int finals = 0;
+            for (const auto& e : events) {
+                  QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+                  if (e.pass == SpacingPass4::FINAL) {
+                        ++finals;
+                        QCOMPARE(e.measures, 4);
+                        }
+                  else if (e.pass == SpacingPass4::CANDIDATE && e.measures == 4)
+                        candidate = true;
+                  }
+            QVERIFY(candidate);
+            QCOMPARE(finals, 1);
+            };
+      const auto activeSignature = [](Measure* measure, SegmentType type) -> const Segment* {
+            const Segment* s = measure->findSegmentR(type, Fraction(0, 1));
+            return s && s->enabled() && s->visible() && !s->allElementsInvisible() ? s : nullptr;
+            };
+      const auto near = [](qreal a, qreal b) { return qAbs(a - b) < 1e-6; };
+      std::array<qreal, 3> markedGap;
+      qreal markedKeyTime = 0;
+      for (int pass = 0; pass < 3; ++pass) {
+            collect();
+            checkPlans();
+            for (size_t i = 0; i < onsets.size(); ++i) {
+                  Segment* onset = onsets[i];
+                  Measure* measure = onset->measure();
+                  const Segment* key = activeSignature(measure, SegmentType::KeySig);
+                  const Segment* time = activeSignature(measure, SegmentType::TimeSig);
+                  QCOMPARE(bool(key), i != 1);
+                  QCOMPARE(bool(time), i != 0);
+                  const Segment* last = time ? time : key;
+                  QVERIFY(last);
+                  if (staffCount == 2) {
+                        const Element* top = onset->element(0);
+                        const Element* bottom = onset->element(VOICES);
+                        QVERIFY(top && top->isChord() && bottom && bottom->isChord());
+                        QVERIFY(near(top->pagePos().x(), bottom->pagePos().x()));
+                        }
+                  const qreal gap = onset->x() - last->x();
+                  const qreal sp = measure->system()->spatium();
+                  if (pass == 0) markedGap[i] = gap;
+                  else QVERIFY(near(markedGap[i] - gap, pass == 1 ? edits[i] * sp : 0));
+                  if (key && time) {
+                        if (pass == 0) markedKeyTime = time->x() - key->x();
+                        else QVERIFY(near(markedKeyTime, time->x() - key->x()));
+                        }
+                  for (const Segment& s : measure->segments())
+                        QCOMPARE(s.spacingWidthOffset4(), qreal(0));
+                  onset->setExtraLeadingSpace(Spatium(pass == 0 ? 0 : edits[i]));
+                  }
+            }
+      }
+
+void TestSpacing::keySignatureFormation4()
+      {
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.244-key-signature-formation.mscx"));
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      score->doLayout();
+
+      using Id = SymId;
+      const Id sharp = Id::accidentalSharp, flat = Id::accidentalFlat, natural = Id::accidentalNatural;
+      const QList<QList<Id>> expected {
+            {sharp, sharp, sharp, sharp, sharp, sharp, sharp},
+            {sharp, sharp, natural, natural, natural, natural, natural},
+            {natural, natural, flat, flat, flat, flat, flat, flat, flat},
+            {flat, flat, natural, natural, natural, natural, natural},
+            {natural, natural}, {sharp, sharp}, {natural, natural}
+            };
+      QList<KeySig*> keys;
+      Measure* m = score->firstMeasure();
+      for (int i = 0; i < 6; ++i) {
+            QVERIFY(m);
+            Segment* seg = m->findSegmentR(SegmentType::KeySig, Fraction(0, 1));
+            QVERIFY(seg && seg->enabled() && seg->element(0) && seg->element(0)->isKeySig());
+            keys.append(toKeySig(seg->element(0)));
+            if (i < 5) m = m->nextMeasure();
+            }
+      Segment* courtesy = m->findSegmentR(SegmentType::KeySigAnnounce, m->ticks());
+      QVERIFY(courtesy && courtesy->enabled() && courtesy->element(0) && courtesy->element(0)->isKeySig());
+      keys.append(toKeySig(courtesy->element(0)));
+      QVERIFY(m->system() != m->nextMeasure()->system());
+
+      const auto symbols = [](const KeySig* key) { return key->keySigEvent().keySymbols(); };
+      const auto step = [](const QList<KeySym>& s, int i) { return s[i + 1].spos.x() - s[i].spos.x(); };
+      const auto near = [](qreal a, qreal b) { return qAbs(a - b) < 1e-6; };
+      QList<QList<KeySym>> base;
+      for (int i = 0; i < keys.size(); ++i) {
+            base.append(symbols(keys[i]));
+            QCOMPARE(base.back().size(), expected[i].size());
+            QRectF ink;
+            for (int j = 0; j < expected[i].size(); ++j) {
+                  const KeySym& s = base.back()[j];
+                  QVERIFY(s.sym == expected[i][j]);
+                  QVERIFY(!j || step(base.back(), j - 1) > 0.0);
+                  ink |= keys[i]->symBbox(s.sym).translated(s.pos);
+                  }
+            QCOMPARE(keys[i]->bbox(), ink);
+            }
+      // Leland's sharp/flat pairs and two different staggers of naturals.
+      QVERIFY(qAbs(step(base[0], 0) - 1.10) < 0.05);
+      QVERIFY(qAbs(step(base[2], 2) - 1.11) < 0.05);
+      QVERIFY(step(base[1], 3) - step(base[1], 4) > 0.4);
+
+      score->setStyleValue(Sid::keysigAccidentalDistance, Spatium(0.5));
+      score->setStyleValue(Sid::keysigNaturalDistance, Spatium(0.7));
+      for (int i = 0; i < keys.size(); ++i) {
+            keys[i]->layout();
+            const auto edited = symbols(keys[i]);
+            QCOMPARE(edited.size(), base[i].size());
+            for (int j = 0; j + 1 < edited.size(); ++j) {
+                  const Id left = expected[i][j], right = expected[i][j + 1];
+                  const qreal added = left != right ? 0.4 : left == natural ? 0.3 : 0.2;
+                  QVERIFY(near(step(edited, j) - step(base[i], j), added));
+                  QCOMPARE(edited[j].spos.y(), base[i][j].spos.y());
+                  }
+            }
+      score->setStyleValue(Sid::spacingLayout4, false);
+      for (int i : {0, 4, 5, 6}) {
+            keys[i]->layout();
+            auto legacy = symbols(keys[i]);
+            std::sort(legacy.begin(), legacy.end(), [](const KeySym& a, const KeySym& b) { return a.spos.x() < b.spos.x(); });
+            QCOMPARE(legacy.size(), expected[i].size());
+            for (int j = 0; j + 1 < legacy.size(); ++j)
+                  QVERIFY(near(step(legacy, j), 1.0));
+            }
+      }
+
 void TestSpacing::signatureCollection4_data()
       {
       QTest::addColumn<QString>("mode");
@@ -9339,7 +10170,7 @@ void TestSpacing::signatureCollection4()
       score->doLayout();
       }
       const auto modern = snapshot();
-      int finals = 0, planned = 0, courtesyCandidates = 0, interiorCandidates = 0, pending = 0, rollbacks = 0;
+      int finals = 0, planned = 0, courtesyCandidates = 0, interiorCandidates = 0, pendingPlans = 0, rollbacks = 0;
       int retainedMeasures = 0;
       Fraction endTick(0, 1);
       for (size_t i = 0; i < events.size(); ++i) {
@@ -9359,11 +10190,12 @@ void TestSpacing::signatureCollection4()
                   for (int n : {2, 4, 6}) interior = interior
                         || (measures[n]->tick() > event.firstTick && measures[n]->tick() < event.endTick);
                   if (interior) ++interiorCandidates;
+                  for (int n : {2, 4, 6})
+                        if (event.measures > 2 && event.endTick == measures[n]->endTick()) ++pendingPlans;
                   }
             else {
                   QVERIFY(event.path == SpacingPath4::NATIVE_WIDTHS);
                   QVERIFY2(event.reason.contains("pending penultimate courtesy"), qPrintable(event.reason));
-                  ++pending;
                   }
             if (event.measures <= 1 || event.width <= event.available) continue;
             ++rollbacks;
@@ -9380,12 +10212,12 @@ void TestSpacing::signatureCollection4()
             QCOMPARE(retried.firstTick, retained.endTick);
             QCOMPARE(retried.measures, 1);
             }
-      QVERIFY(planned > 0 && courtesyCandidates > 0 && pending > 0);
+      QVERIFY(planned > 0 && courtesyCandidates > 0);
       QCOMPARE(retainedMeasures, 8);
       QCOMPARE(endTick, measures.back()->endTick());
       if (mode == "natural") {
             QCOMPARE(finals, 1);
-            QVERIFY(interiorCandidates > 0);
+            QVERIFY(interiorCandidates > 0 && pendingPlans > 0);
             }
       else QVERIFY(finals > 1 && rollbacks > 0);
       QString reason;
@@ -10443,6 +11275,56 @@ void TestSpacing::smallNotation4()
       QVERIFY(!score->graceQueryFactory4());
       }
 
+void TestSpacing::measureRestStartRepeat4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.278-measure-rest-start-repeat.mscx"));
+      QVERIFY(score);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      std::vector<SpacingDecision4> decisions;
+      SpacingDecisionScope4 scope(score.get(), [&decisions](const SpacingDecision4& e) { decisions.push_back(e); });
+      score->doLayout();
+      bool planned = false;
+      for (const auto& e : decisions) {
+            if (e.pass != SpacingPass4::FINAL) continue;
+            QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+            planned = true;
+            }
+      QVERIFY(planned);
+
+      Measure* before = score->firstMeasure();
+      QVERIFY(before && before->nextMeasure());
+      Measure* after = before->nextMeasure();
+      QCOMPARE(before->system(), after->system());
+      const Segment* oldEnd = before->findSegmentR(SegmentType::EndBarLine, before->ticks());
+      QVERIFY(!oldEnd || !oldEnd->enabled());
+      const Segment* repeat = after->findSegmentR(SegmentType::StartRepeatBarLine, Fraction(0, 1));
+      QVERIFY(repeat && repeat->enabled());
+
+      for (Measure* m : {before, after}) {
+            Segment* onset = m->first(SegmentType::ChordRest);
+            QVERIFY(onset);
+            const Segment* end = m->findSegmentR(SegmentType::EndBarLine, m->ticks());
+            qreal left = 0;
+            if (m == after) {
+                  QVERIFY(onset->prevActive() == repeat);
+                  left = repeat->x() + repeat->minRight();
+                  }
+            else {
+                  for (const Segment* s = onset->prevActive(); s; s = s->prevActive())
+                        if (!s->allElementsInvisible()) left = std::max(left, s->x() + s->minRight());
+                  }
+            const qreal right = end && end->enabled() ? end->x() - end->minLeft() : m->width();
+            QVERIFY(right > left);
+            for (int track : {0, int(VOICES)}) {
+                  const Element* item = onset->element(track);
+                  QVERIFY(item && item->isRest() && toRest(item)->isFullMeasureRest());
+                  const qreal center = onset->x() + item->ipos().x() + item->bbox().center().x();
+                  QVERIFY(qIsFinite(center) && qAbs(center - .5 * (left + right)) < 1e-6);
+                  }
+            }
+      }
+
 void TestSpacing::measureRestPlanning4_data()
       {
       QTest::addColumn<QString>("file");
@@ -10946,6 +11828,637 @@ void TestSpacing::acciaccaturaSlash4()
             QVERIFY(close(chords[i]->stemSlash()->slashLine().p2(), legacy[i].p2()));
             QCOMPARE(chords[i]->stemSlash()->lineWidth(), score->styleP(Sid::stemWidth));
             }
+      }
+
+void TestSpacing::partialRepeatLayout4_data()
+      {
+      QTest::addColumn<QString>("fixture");
+      QTest::addColumn<bool>("repeat");
+      QTest::newRow("repeat") << QString("v0.255-shared-repeat-leading-space.mscx") << true;
+      QTest::newRow("meter-change") << QString("v0.256-shared-signature-leading-space.mscx") << false;
+      }
+
+void TestSpacing::partialRepeatLayout4()
+      {
+      QFETCH(QString, fixture);
+      QFETCH(bool, repeat);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(readScore(DIR + fixture));
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      MeasureBase* frame = score->first();
+      QVERIFY(frame && frame->isVBox());
+      Element* title = nullptr;
+      for (Element* e : frame->el())
+            if (e->type() == ElementType::TEXT) {
+                  title = e;
+                  break;
+                  }
+      QVERIFY(title);
+      Measure* r1 = score->firstMeasure();
+      QVERIFY(r1 && r1->nextMeasure() && r1->nextMeasure()->nextMeasure());
+      Measure* r2 = r1->nextMeasure();
+      Measure* r3 = r2->nextMeasure();
+      r2->setLineBreak(true);
+      score->doLayout();
+      QVERIFY(r2->system() != r3->system());
+
+      const auto headerGaps = [r3, repeat]() -> std::vector<qreal> {
+            const Fraction zero(0, 1);
+            const Segment* clef = r3->findSegmentR(SegmentType::HeaderClef, zero);
+            const Segment* bar = r3->findSegmentR(repeat ? SegmentType::StartRepeatBarLine : SegmentType::TimeSig, zero);
+            const Segment* onset = r3->findSegmentR(SegmentType::ChordRest, zero);
+            if (!clef || !clef->enabled() || !bar || !bar->enabled() || !onset)
+                  return {};
+            return {bar->x() - clef->x(), onset->x() - bar->x()};
+            };
+      const auto before = headerGaps();
+      QCOMPARE(before.size(), size_t(2));
+      std::vector<SpacingDecision4> events;
+      {
+      SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
+      QVERIFY(title->setProperty(Pid::TEXT, QString("Edited title")));
+      score->doLayoutRange(frame->tick(), frame->tick());
+      }
+      QVERIFY(r2->system() != r3->system());
+      const auto after = headerGaps();
+      QCOMPARE(after.size(), before.size());
+      for (size_t i = 0; i < before.size(); ++i)
+            QVERIFY(qAbs(after[i] - before[i]) < 1e-6);
+      QVERIFY(std::any_of(events.begin(), events.end(), [r3](const SpacingDecision4& e) {
+            return e.pass == SpacingPass4::FINAL && e.path == SpacingPath4::FULL_PLAN && e.firstTick == r3->tick();
+            }));
+      }
+
+// Opt-in coverage probe: a fallback is a measurement, not a test failure.
+void TestSpacing::spacingCorpus4()
+      {
+      const QString directory = QString::fromLocal8Bit(qgetenv("MSCORE_SPACING_CORPUS"));
+      if (directory.isEmpty())
+            QSKIP("Set MSCORE_SPACING_CORPUS to a directory of 37E scores");
+      QVERIFY2(QFileInfo(directory).isDir(), qPrintable(directory));
+      QDirIterator files(directory, {QStringLiteral("*.mscx"), QStringLiteral("*.mscz")},
+            QDir::Files | QDir::Readable, QDirIterator::Subdirectories);
+      QStringList paths;
+      while (files.hasNext())
+            paths.append(files.next());
+      paths.sort();
+      QVERIFY2(!paths.isEmpty(), "No readable .mscx or .mscz scores");
+
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      struct Count {
+            int total = 0;
+            int planned = 0;
+            };
+      Count allCandidates, allFinal;
+      QMap<QString, int> reasons, affectedScores;
+      int unreadable = 0;
+      for (const QString& path : paths) {
+            std::unique_ptr<MasterScore> score(new MasterScore(mscore->baseStyle()));
+            Score::FileError status;
+            {
+            ScoreLoad loading;
+            status = score->loadMsc(path, false);
+            }
+            const QString name = QDir(directory).relativeFilePath(path);
+            if (status != Score::FileError::FILE_NO_ERROR) {
+                  ++unreadable;
+                  qInfo().noquote() << "spacing-corpus skipped:" << name << "load error" << int(status);
+                  continue;
+                  }
+
+            score->setLayoutMode(LayoutMode::PAGE);
+            score->setStyleValue(Sid::spacingLayout4, true);
+            score->setStyleValue(Sid::beamLayout4, true);
+            Count candidates, final;
+            QMap<QString, Fraction> firstFallback;
+            {
+            SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& event) {
+                  const bool candidate = event.pass == SpacingPass4::CANDIDATE;
+                  Count& count = candidate ? candidates : final;
+                  ++count.total;
+                  if (event.path == SpacingPath4::FULL_PLAN) {
+                        ++count.planned;
+                        return;
+                        }
+                  QString reason = event.reason;
+                  const int location = reason.lastIndexOf(QStringLiteral(" [measure "));
+                  if (location >= 0) reason.truncate(location);
+                  const int obstacle = reason.indexOf(QStringLiteral(" {obstacle: "));
+                  if (obstacle >= 0) reason.truncate(obstacle);
+                  if (reason.startsWith(QStringLiteral("Unadapted geometry at tick ")))
+                        reason = QStringLiteral("Unadapted geometry");
+                  if (reason.isEmpty())
+                        reason = QStringLiteral("No diagnostic (path %1)").arg(int(event.path));
+                  const QString key = (candidate ? QStringLiteral("candidate: ") : QStringLiteral("final: ")) + reason;
+                  ++reasons[key];
+                  if (!firstFallback.contains(key))
+                        firstFallback.insert(key, event.firstTick);
+                  });
+            score->doLayout();
+            }
+            qInfo().noquote() << "spacing-corpus score:" << name
+                  << "candidate" << candidates.planned << "/" << candidates.total
+                  << "final" << final.planned << "/" << final.total;
+            for (auto it = firstFallback.cbegin(); it != firstFallback.cend(); ++it) {
+                  ++affectedScores[it.key()];
+                  const Measure* measure = score->tick2measure(it.value());
+                  const QString number = measure ? QString::number(measure->no() + 1) : QStringLiteral("unknown");
+                  qInfo().noquote() << "spacing-corpus first system measure:" << number
+                        << "tick:" << it.value().ticks() << it.key();
+                  }
+            allCandidates.total += candidates.total;
+            allCandidates.planned += candidates.planned;
+            allFinal.total += final.total;
+            allFinal.planned += final.planned;
+            }
+
+      qInfo() << "spacing-corpus total: scores" << paths.size() - unreadable << "skipped" << unreadable
+            << "candidate" << allCandidates.planned << "/" << allCandidates.total
+            << "final" << allFinal.planned << "/" << allFinal.total;
+      for (auto it = reasons.cbegin(); it != reasons.cend(); ++it)
+            qInfo().noquote() << "spacing-corpus fallback count:" << it.value() << "scores:" << affectedScores.value(it.key()) << it.key();
+      QVERIFY2(allFinal.total > 0, "No final spacing decisions recorded");
+      }
+
+void TestSpacing::fingeringSpacing4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "studio-spacing-natural-h1.mscx"));
+      QVERIFY(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->setStyleValue(Sid::beamLayout4, true);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      Segment* segment = score->firstMeasure()->first(SegmentType::ChordRest);
+      QVERIFY(segment && segment->element(0) && segment->element(0)->isChord());
+      Note* note = toChord(segment->element(0))->upNote();
+      QVERIFY(note);
+      Fingering* fingering = new Fingering(score.get());
+      fingering->setParent(note);
+      fingering->setTrack(note->track());
+      fingering->setPlainText(QStringLiteral("5"));
+      note->add(fingering);
+
+      // Warm the native skyline placement so the next spacing pass has an
+      // actual fingering rectangle to project, as on an already open score.
+      score->doLayout();
+      QVERIFY(fingering->bbox().isValid());
+      const auto shape = spacingStaffShape4(segment, 0);
+      QVERIFY(std::any_of(shape.elements.begin(), shape.elements.end(),
+            [fingering](const SpacingShapeElement4& e) { return e.item == fingering && e.rect.isValid(); }));
+      SpacingShape4 projected;
+      const SpacingPaddingTable4 table(score.get());
+      QString reason;
+      QVERIFY2(spacingCollisionProjection4(table, shape, fingering->spatium(), projected, nullptr, nullptr, &reason),
+            qPrintable(reason));
+      QVERIFY(std::any_of(projected.elements.begin(), projected.elements.end(),
+            [fingering](const SpacingShapeElement4& e) { return e.item == fingering; }));
+
+      std::vector<SpacingDecision4> events;
+      SpacingDecisionScope4 scope(score.get(), [&events](const SpacingDecision4& e) { events.push_back(e); });
+      score->doLayout();
+      QVERIFY(!events.empty());
+      bool final = false;
+      for (const auto& e : events) {
+            QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+            final = final || e.pass == SpacingPass4::FINAL;
+            }
+      QVERIFY(final);
+      QVERIFY(fingering->visible() && fingering->bbox().isValid());
+      QVERIFY(!fingering->pageBoundingRect().intersects(note->pageBoundingRect()));
+      }
+
+void TestSpacing::hiddenUnisonSpacing4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.275-hidden-unison.mscx"));
+      QVERIFY(score);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      Segment* segment = score->firstMeasure()->findSegmentR(SegmentType::ChordRest, Fraction(3, 8));
+      QVERIFY(segment && segment->element(1) && segment->element(1)->isChord());
+      Chord* chord = toChord(segment->element(1));
+      QCOMPARE(int(chord->notes().size()), 2);
+      Note* hidden = chord->notes().front();
+      Note* visible = chord->notes().back();
+      if (hidden->visible())
+            std::swap(hidden, visible);
+      QVERIFY(!hidden->visible() && visible->visible());
+      QCOMPARE(hidden->pitch(), visible->pitch());
+      QVERIFY(!visible->el().empty() && visible->el().front()->isFingering());
+      Fingering* fingering = toFingering(visible->el().front());
+
+      std::vector<SpacingDecision4> events;
+      SpacingDecisionScope4 scope(score.get(), [&events](const SpacingDecision4& e) { events.push_back(e); });
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      bool final = false;
+      for (const auto& e : events) {
+            if (e.pass != SpacingPass4::FINAL)
+                  continue;
+            QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+            final = true;
+            }
+      QVERIFY(final);
+      QCOMPARE(int(chord->notes().size()), 2);
+      QCOMPARE(fingering->parent(), static_cast<Element*>(visible));
+      QVERIFY(fingering->visible() && fingering->bbox().isValid());
+      QCOMPARE(hidden->dots().size(), 1);
+      QVERIFY(!hidden->dots().front()->visible());
+
+      // The adapter must retain the hidden note's geometry, not turn the
+      // chord into a single note or drop the visible fingering.
+      const auto native = spacingStaffShape4(segment, 0);
+      SpacingShape4 projected;
+      QString reason;
+      const SpacingPaddingTable4 table(score.get());
+      QVERIFY2(spacingCollisionProjection4(table, native, visible->spatium(), projected, nullptr, nullptr, &reason),
+            qPrintable(reason));
+      for (const Element* item : {static_cast<const Element*>(hidden),
+                                 static_cast<const Element*>(hidden->dots().front()),
+                                 static_cast<const Element*>(fingering)}) {
+            QVERIFY(std::any_of(projected.elements.begin(), projected.elements.end(),
+                  [item](const SpacingShapeElement4& e) { return e.item == item && e.rect.isValid(); }));
+            }
+
+      // Keep the octave-displaced version on fallback: it is no longer a unison.
+      hidden->setPitch(hidden->pitch() - 12);
+      events.clear();
+      score->doLayout();
+      QVERIFY(std::any_of(events.begin(), events.end(), [](const SpacingDecision4& e) {
+            return e.pass == SpacingPass4::FINAL && e.path != SpacingPath4::FULL_PLAN
+                  && e.reason.contains(QStringLiteral("invisible note"));
+            }));
+      }
+
+void TestSpacing::pedalSymbolSpacing4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "studio-spacing-natural-h1.mscx"));
+      QVERIFY(score);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      QVERIFY(score->firstMeasure());
+      Segment* onset = score->firstMeasure()->first(SegmentType::ChordRest);
+      QVERIFY(onset && onset->element(0) && onset->element(0)->isChord());
+      Note* note = toChord(onset->element(0))->upNote();
+      Symbol* attached = new Symbol(score.get());
+      attached->setSym(SymId::keyboardPedalPed);
+      attached->setParent(note);
+      attached->setTrack(note->track());
+      note->add(attached);
+      Symbol* annotation = new Symbol(score.get());
+      annotation->setSym(SymId::keyboardPedalUp);
+      annotation->setParent(onset);
+      annotation->setTrack(0);
+      onset->add(annotation);
+      score->doLayout();
+
+      const auto native = spacingStaffShape4(onset, 0);
+      SpacingShape4 projected;
+      const SpacingPaddingTable4 table(score.get());
+      QString reason;
+      QVERIFY2(spacingCollisionProjection4(table, native, note->spatium(), projected, nullptr, nullptr, &reason),
+            qPrintable(reason));
+      QVERIFY(std::any_of(projected.elements.begin(), projected.elements.end(),
+            [attached](const SpacingShapeElement4& e) { return e.item == attached && e.rect.isValid(); }));
+      QVERIFY(std::none_of(projected.elements.begin(), projected.elements.end(),
+            [annotation](const SpacingShapeElement4& e) { return e.item == annotation; }));
+      QVERIFY(onset->measure()->system());
+      QVERIFY(!onset->measure()->system()->studioSpacingFallback());
+      }
+
+void TestSpacing::fermataSpacing4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "studio-spacing-natural-h1.mscx"));
+      QVERIFY(score);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      Measure* measure = score->firstMeasure();
+      QVERIFY(measure);
+      Segment* onset = measure->first(SegmentType::ChordRest);
+      QVERIFY(onset && onset->element(0) && onset->element(0)->isChord());
+      const qreal width = measure->width();
+      const qreal x = onset->x();
+
+      Fermata* mark = new Fermata(SymId::fermataAbove, score.get());
+      mark->setParent(onset);
+      mark->setTrack(0);
+      onset->add(mark);
+
+      std::vector<SpacingDecision4> decisions;
+      SpacingDecisionScope4 scope(score.get(), [&decisions](const SpacingDecision4& e) { decisions.push_back(e); });
+      score->doLayout();
+      bool final = false;
+      for (const auto& e : decisions) {
+            if (e.pass != SpacingPass4::FINAL) continue;
+            QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+            final = true;
+            }
+      QVERIFY(final);
+      QVERIFY(mark->bbox().isValid());
+      QVERIFY(mark->ipos().x() > 0);
+      QVERIFY(!mark->pageBoundingRect().intersects(toChord(onset->element(0))->upNote()->pageBoundingRect()));
+      QVERIFY(qAbs(measure->width() - width) < 1e-6);
+      QVERIFY(qAbs(onset->x() - x) < 1e-6);
+      }
+
+void TestSpacing::closeArticulationSpacing4_data()
+      {
+      QTest::addColumn<bool>("accents");
+      QTest::newRow("tenuto-staccato") << false;
+      QTest::newRow("single-accents") << true;
+      }
+
+void TestSpacing::closeArticulationSpacing4()
+      {
+      QFETCH(bool, accents);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "studio-spacing-natural-h1.mscx"));
+      QVERIFY(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      Measure* measure = score->firstMeasure();
+      QVERIFY(measure);
+      Segment* first = measure->first(SegmentType::ChordRest);
+      QVERIFY(first && first->element(0) && first->element(0)->isChord());
+      Segment* second = first->next(SegmentType::ChordRest);
+      QVERIFY(second && second->element(0) && second->element(0)->isChord());
+      Chord* start = toChord(first->element(0));
+      Chord* end = toChord(second->element(0));
+      const auto addMark = [&score](Chord* chord, SymId symbol) {
+            Articulation* mark = new Articulation(score.get());
+            mark->setSymId(symbol);
+            mark->setParent(chord);
+            mark->setTrack(chord->track());
+            chord->add(mark);
+            return mark;
+            };
+      Articulation* firstMark = addMark(start, accents ? SymId::articAccentBelow : SymId::articTenutoBelow);
+      Articulation* secondMark = addMark(end, accents ? SymId::articAccentBelow : SymId::articStaccatoBelow);
+      Slur* slur = new Slur(score.get());
+      slur->setTrack(0);
+      slur->setTrack2(0);
+      slur->setTick(start->tick());
+      slur->setTick2(end->tick());
+      slur->setStartElement(start);
+      slur->setEndElement(end);
+      slur->setSlurDirection(Direction::DOWN);
+      score->startCmd();
+      score->undoAddElement(slur);
+      score->endCmd();
+
+      std::vector<SpacingDecision4> events;
+      SpacingDecisionScope4 scope(score.get(), [&events](const SpacingDecision4& e) { events.push_back(e); });
+      score->doLayout();
+      bool final = false;
+      for (const auto& event : events) {
+            if (event.pass != SpacingPass4::FINAL)
+                  continue;
+            QVERIFY2(event.path == SpacingPath4::FULL_PLAN, qPrintable(event.reason));
+            final = true;
+            }
+      QVERIFY(final);
+      QVERIFY(firstMark->bbox().isValid() && secondMark->bbox().isValid());
+      if (accents) {
+            QVERIFY(!firstMark->pageBoundingRect().intersects(secondMark->pageBoundingRect()));
+            QVERIFY(!firstMark->pageBoundingRect().intersects(start->upNote()->pageBoundingRect()));
+            QVERIFY(!secondMark->pageBoundingRect().intersects(end->upNote()->pageBoundingRect()));
+            }
+      QVERIFY(slur->frontSegment() && slur->frontSegment()->bbox().isValid());
+
+      // A manual placement still needs the native spacing fallback.
+      secondMark->setAutoplace(false);
+      secondMark->setOffset(QPointF(score->spatium(), 0));
+      events.clear();
+      score->doLayout();
+      QVERIFY(std::any_of(events.begin(), events.end(), [](const SpacingDecision4& e) {
+            return e.pass == SpacingPass4::FINAL && e.path != SpacingPath4::FULL_PLAN
+                  && e.reason.contains(QStringLiteral("chord articulation"));
+            }));
+      }
+
+void TestSpacing::ordinaryTieSpacing4_data()
+      {
+      QTest::addColumn<QString>("fixture");
+      QTest::addColumn<bool>("split");
+      QTest::newRow("adjacent") << QStringLiteral("v0.269-tie-clearance.mscx") << false;
+      QTest::newRow("accompaniment") << QStringLiteral("v0.271-tie-over-accompaniment.mscx") << false;
+      QTest::newRow("system-break") << QStringLiteral("v0.271-tie-over-accompaniment.mscx") << true;
+      }
+
+void TestSpacing::ordinaryTieSpacing4()
+      {
+      QFETCH(QString, fixture);
+      QFETCH(bool, split);
+      std::unique_ptr<MasterScore> score(readScore(DIR + fixture));
+      QVERIFY(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      Measure* first = score->firstMeasure();
+      QVERIFY(first && first->nextMeasure());
+      Segment* from = first->last();
+      while (from && (!from->isChordRestType() || !from->element(0)))
+            from = from->prev(SegmentType::ChordRest);
+      Segment* to = first->nextMeasure()->first(SegmentType::ChordRest);
+      QVERIFY(from && to && from->element(0) && to->element(0));
+      QVERIFY(from->element(0)->isChord() && to->element(0)->isChord());
+      if (score->nstaves() == 2) {
+            const Segment* intervening = from->next1(SegmentType::ChordRest);
+            QVERIFY(intervening && intervening != to);
+            QVERIFY(!intervening->element(0) && intervening->element(VOICES));
+            }
+      const auto& starts = toChord(from->element(0))->notes();
+      const auto& ends = toChord(to->element(0))->notes();
+      QCOMPARE(int(starts.size()), 2);
+      QCOMPARE(int(ends.size()), 2);
+      for (int i = 0; i < 2; ++i) {
+            QCOMPARE(starts[i]->pitch(), ends[i]->pitch());
+            Tie* tie = new Tie(score.get());
+            tie->setEndNote(ends[i]);
+            starts[i]->add(tie);
+            }
+
+      if (split) first->setLineBreak(true);
+      score->doLayout();
+      if (split) {
+            // A saved vertical nudge on the outgoing half must survive relayout
+            // without making either system fall back to legacy spacing.
+            Tie* tie = starts[0]->tieFor();
+            QVERIFY(tie && tie->nsegments() == 2);
+            const QPointF nudge(0, -0.5 * score->spatium());
+            tie->segmentAt(0)->setOffset(nudge);
+            score->doLayout();
+            QCOMPARE(tie->segmentAt(0)->offset(), nudge);
+            }
+      System* system = first->system();
+      if (split) {
+            System* following = to->measure()->system();
+            QVERIFY(system && following && system != following);
+            QVERIFY(!system->studioSpacingFallback());
+            QVERIFY(!following->studioSpacingFallback());
+            const auto noteX = [](const Note* note) {
+                  const Chord* chord = note->chord();
+                  return chord->measure()->x() + chord->segment()->x() + chord->x() + note->x();
+                  };
+            for (int i = 0; i < 2; ++i) {
+                  const qreal clearance = score->styleP(Sid::minTieLength) + 0.25 * score->spatium();
+                  QVERIFY(system->lastNoteRestSegmentX(true) - noteX(starts[i]) - starts[i]->headWidth() >= clearance - 1e-6);
+                  QVERIFY(noteX(ends[i]) - following->firstNoteRestSegmentX(true) >= clearance - 1e-6);
+                  }
+            return;
+            }
+      QVERIFY(system && system == to->measure()->system());
+      QVERIFY(!system->studioSpacingFallback());
+
+      SpacingPlanOptions4 tight;
+      tight.squeezeFactor = 0;
+      tight.stretchReduction = 0;
+      tight.minimumMeasureWidths = false;
+      SpacingPlan4 plan;
+      QString reason;
+      QVERIFY2(buildSpacingPlan4(system, plan, &reason, tight), qPrintable(reason));
+      QVERIFY(plan.hasOrdinaryTies);
+      const auto position = [&plan](const Segment* segment) {
+            return std::find_if(plan.segments.cbegin(), plan.segments.cend(),
+                  [segment](const SpacingSegmentPlan4& e) { return e.segment == segment; });
+            };
+      const auto a = position(from);
+      const auto b = position(to);
+      QVERIFY(a != plan.segments.cend() && b != plan.segments.cend());
+      for (int i = 0; i < 2; ++i) {
+            const qreal x1 = a->x + starts[i]->chord()->x() + starts[i]->x() + starts[i]->headWidth();
+            const qreal x2 = b->x + ends[i]->chord()->x() + ends[i]->x();
+            QVERIFY(x2 - x1 >= score->styleP(Sid::minTieLength) + 0.5 * score->spatium() - 1e-6);
+            }
+      }
+
+void TestSpacing::tieOverRemoteVoice4_data()
+      {
+      QTest::addColumn<bool>("stemmed");
+      QTest::addColumn<bool>("nearOppositeSide");
+      QTest::newRow("stemless") << false << false;
+      QTest::newRow("unbeamed-stem") << true << false;
+      QTest::newRow("near-opposite-stem") << true << true;
+      }
+
+void TestSpacing::tieOverRemoteVoice4()
+      {
+      QFETCH(bool, stemmed);
+      QFETCH(bool, nearOppositeSide);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.279-tie-over-remote-voice.mscx"));
+      QVERIFY(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      Measure* first = score->firstMeasure();
+      QVERIFY(first && first->nextMeasure());
+      Segment* from = first->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+      Segment* to = first->nextMeasure()->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+      Segment* between = first->findSegmentR(SegmentType::ChordRest, Fraction(1, 2));
+      QVERIFY(from && from->element(0) && from->element(0)->isChord());
+      QVERIFY(to && to->element(0) && to->element(0)->isChord());
+      QVERIFY(between && between->element(1) && between->element(1)->isChord());
+      Note* start = toChord(from->element(0))->upNote();
+      Note* end = toChord(to->element(0))->upNote();
+      Chord* other = toChord(between->element(1));
+      other->setNoStem(!stemmed);
+      if (nearOppositeSide) {
+            other->setStemDirection(Direction::DOWN);
+            start->setPitch(72); // C5, with A4 in the other voice
+            end->setPitch(72);
+            other->upNote()->setPitch(69, 17, 17);
+            }
+      Tie* tie = new Tie(score.get());
+      tie->setEndNote(end);
+      start->add(tie);
+      score->doLayout();
+      QVERIFY(first->system() && first->system() == to->measure()->system());
+      const char* rejection = ordinaryTieRejection4(tie);
+      QVERIFY2(!rejection, rejection);
+      QVERIFY(!first->system()->studioSpacingFallback());
+      QVERIFY(tie->nsegments() == 1 && tie->segmentAt(0)->bbox().isValid());
+      QCOMPARE(other->stem() != nullptr, stemmed);
+      if (nearOppositeSide)
+            QVERIFY(tie->up());
+      const QRectF tieRect = tie->segmentAt(0)->pageBoundingRect();
+      QVERIFY(!tieRect.intersects(other->upNote()->pageBoundingRect()));
+      if (stemmed)
+            QVERIFY(!tieRect.intersects(other->stem()->pageBoundingRect()));
+
+      if (nearOppositeSide) {
+            // The other voice is now on the curve side; changing only
+            // direction must not bypass the clearance guard.
+            tie->setSlurDirection(Direction::DOWN);
+            score->doLayout();
+            TieObstacleDiagnostic4 flipped;
+            QVERIFY(ordinaryTieRejection4(tie, &flipped));
+            QCOMPARE(flipped.item, static_cast<const Element*>(other));
+            QCOMPARE(QString::fromLatin1(flipped.reason), QStringLiteral("insufficient clearance for a downward tie"));
+            QVERIFY(first->system()->studioSpacingFallback());
+            tie->setSlurDirection(Direction::AUTO);
+            }
+
+      // Move the same intervening chord into the tie's register. It must
+      // take the legacy path rather than assuming the voice is harmless.
+      other->upNote()->setPitch(start->pitch(), start->tpc1(), start->tpc2());
+      score->doLayout();
+      TieObstacleDiagnostic4 detail;
+      QCOMPARE(QString::fromLatin1(ordinaryTieRejection4(tie, &detail)),
+               stemmed ? QStringLiteral("intervening notation on the tied staff: unbeamed stemmed chord in another voice")
+                       : QStringLiteral("intervening notation on the tied staff: stemless chord in another voice"));
+      QCOMPARE(detail.item, static_cast<const Element*>(other));
+      QVERIFY(QString::fromLatin1(detail.reason).startsWith(QStringLiteral("insufficient")));
+      QVERIFY(first->system()->studioSpacingFallback());
+      }
+
+void TestSpacing::tieOverRemoteBeam4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.297-tie-over-remote-beam.mscx"));
+      QVERIFY(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      Measure* first = score->firstMeasure();
+      QVERIFY(first && first->nextMeasure());
+      Segment* from = first->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+      Segment* to = first->nextMeasure()->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+      Segment* between = first->findSegmentR(SegmentType::ChordRest, Fraction(1, 2));
+      QVERIFY(from && from->element(0) && from->element(0)->isChord());
+      QVERIFY(to && to->element(0) && to->element(0)->isChord());
+      QVERIFY(between && between->element(0) && between->element(0)->isChord());
+      QVERIFY(from->element(1) && from->element(1)->isChord());
+      QVERIFY(to->element(1) && to->element(1)->isChord());
+      Chord* other = toChord(between->element(0));
+      Note* start = toChord(from->element(1))->upNote();
+      Note* end = toChord(to->element(1))->upNote();
+      Tie* tie = new Tie(score.get());
+      tie->setEndNote(end);
+      start->add(tie);
+      Segment* shortFrom = first->findSegmentR(SegmentType::ChordRest, Fraction(3, 4));
+      Segment* shortTo = first->findSegmentR(SegmentType::ChordRest, Fraction(7, 8));
+      QVERIFY(shortFrom && shortFrom->element(0) && shortFrom->element(0)->isChord());
+      QVERIFY(shortTo && shortTo->element(0) && shortTo->element(0)->isChord());
+      Tie* companion = new Tie(score.get());
+      companion->setEndNote(toChord(shortTo->element(0))->upNote());
+      toChord(shortFrom->element(0))->upNote()->add(companion);
+      score->doLayout();
+      const Beam* beam = other->beam();
+      QVERIFY(beam && beam->up() && beam->pageBoundingRect().isValid());
+      QVERIFY(first->system() && first->system() == to->measure()->system());
+      const char* rejection = ordinaryTieRejection4(tie);
+      QVERIFY2(!rejection, rejection);
+      QVERIFY(!first->system()->studioSpacingFallback());
+      QVERIFY(!tie->up() && tie->nsegments() == 1);
+      const QRectF tieRect = tie->segmentAt(0)->pageBoundingRect();
+      QVERIFY(tieRect.isValid() && !tieRect.intersects(beam->pageBoundingRect()));
+      for (const ChordRest* member : beam->elements()) {
+            const Chord* chord = toChord(member);
+            QVERIFY(!tieRect.intersects(chord->stem()->pageBoundingRect()));
+            QVERIFY(!tieRect.intersects(chord->upNote()->pageBoundingRect()));
+            }
+      QVERIFY(companion->nsegments() == 1 && companion->segmentAt(0)->bbox().isValid());
+      QVERIFY(!tieRect.intersects(companion->segmentAt(0)->pageBoundingRect()));
+      tie->setSlurDirection(Direction::UP);
+      score->doLayout();
+      TieObstacleDiagnostic4 detail;
+      QVERIFY(ordinaryTieRejection4(tie, &detail));
+      QCOMPARE(detail.item, static_cast<const Element*>(other));
+      QCOMPARE(QString::fromLatin1(detail.reason), QStringLiteral("beam stems point toward the tie"));
+      QVERIFY(first->system()->studioSpacingFallback());
       }
 
 QTEST_MAIN(TestSpacing)

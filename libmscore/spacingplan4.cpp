@@ -8,6 +8,11 @@
 #include "spacinglayout4.h"
 #include "gracespacing4.h"
 #include "chord.h"
+#include "articulation.h"
+#include "sym.h"
+#include "symbol.h"
+#include <QStringList>
+#include <QDebug>
 #include "clef.h"
 #include "breath.h"
 #include "barline.h"
@@ -16,6 +21,7 @@
 #include "beam.h"
 #include "measure.h"
 #include "note.h"
+#include "tie.h"
 #include "rest.h"
 #include "score.h"
 #include "segment.h"
@@ -24,6 +30,7 @@
 #include "system.h"
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <limits>
 #include <map>
 #include <set>
@@ -58,7 +65,7 @@ bool spacingDecisionObserved4(const Score* score)
 }
 
 void recordSpacingDecision4(const System* system, SpacingPass4 pass, SpacingPath4 path,
-                            qreal width, qreal available, const QString& reason)
+                            qreal width, qreal available, const QString& reason, qreal courtesyRefreshWidth)
 {
     if (!system) return;
     SpacingDecisionScope4* scope = activeSpacingDecision4();
@@ -69,6 +76,7 @@ void recordSpacingDecision4(const System* system, SpacingPass4 pass, SpacingPath
     event.path = path;
     event.width = width;
     event.available = available;
+    event.courtesyRefreshWidth = courtesyRefreshWidth;
     event.reason = reason;
     for (const MeasureBase* mb : system->measures()) {
         if (!mb->isMeasure()) continue;
@@ -86,6 +94,12 @@ struct Geometry4 {
     qreal minRight = 0;
     qreal leftEdge = std::numeric_limits<qreal>::max();
     bool accidentals = false;
+    bool outgoingTie = false;
+    const Segment* earliestTieStart = nullptr;
+    const Segment* incomingTieHeader = nullptr;
+    const Segment* outgoingTieBoundary = nullptr;
+    qreal incomingTieRoom = 0;
+    qreal outgoingTieRoom = 0;
 };
 
 bool active4(const Segment* s)
@@ -98,14 +112,170 @@ bool headerType4(const Segment* s)
     return s->isHeaderClefType() || s->isKeySigType() || s->isTimeSigType();
 }
 
+bool ordinarySignature4(const Element* item)
+{
+    if (!item) return false;
+    if (item->isKeySig()) {
+        const KeySig* key = toKeySig(item);
+        return !key->isCustom() && !key->isAtonal() && !key->forInstrumentChange();
+    }
+    if (!item->isTimeSig()) return false;
+    const TimeSig* time = toTimeSig(item);
+    if (time->sig() <= Fraction(0, 1) || time->isLocal()) return false;
+    const auto type = time->timeSigType();
+    if (type == TimeSigType::FOUR_FOUR || type == TimeSigType::ALLA_BREVE)
+        return time->sig().identical(type == TimeSigType::FOUR_FOUR ? Fraction(4, 4) : Fraction(2, 2))
+            && time->numeratorString().isEmpty() && time->denominatorString().isEmpty();
+    return time->timeSigType() == TimeSigType::NORMAL
+        && (time->numeratorString().isEmpty() || time->numeratorString() == QString::number(time->numerator()))
+        && (time->denominatorString().isEmpty() || time->denominatorString() == QString::number(time->denominator()));
+}
+
+bool signatureGeometryReady4(const Element* item, const Segment* segment, int track)
+{
+    if (!item || item->parent() != segment || item->score() != segment->score() || item->track() != track
+        || !item->visible() || !item->addToSkyline() || !(item->mag() > 0) || !std::isfinite(item->mag()))
+        return false;
+    const QRectF rect = item->bbox();
+    return rect.width() > 0 && rect.height() > 0 && std::isfinite(rect.x()) && std::isfinite(rect.y())
+        && std::isfinite(rect.width()) && std::isfinite(rect.height())
+        && std::isfinite(item->pos().x()) && std::isfinite(item->pos().y());
+}
+
+bool sharedSignatureReady4(const Segment* segment)
+{
+    const int staves = segment->score()->nstaves();
+    if (std::count_if(segment->elist().begin(), segment->elist().end(),
+            [](const Element* item) { return item != nullptr; }) != staves)
+        return false;
+    for (int st = 0; st < staves; ++st) {
+        const int track = st * VOICES;
+        const Element* item = segment->element(track);
+        if (!ordinarySignature4(item) || !signatureGeometryReady4(item, segment, track)
+            || ((segment->isKeySigType() || segment->isKeySigAnnounceType()) ? !item->isKeySig() : !item->isTimeSig()))
+            return false;
+    }
+    return true;
+}
+
 bool courtesyType4(const Segment* s)
 {
     return s->isKeySigAnnounceType() || s->isTimeSigAnnounceType();
 }
 
+// Measure::addSystemTrailer uses the first staff with a time signature
+// to decide whether to generate the courtesy for the whole system.
+bool timeCourtesyRequested4(const Segment* segment)
+{
+    if (!segment || !segment->score()->genCourtesyTimesig()) return false;
+    for (int st = 0; st < segment->score()->nstaves(); ++st) {
+        const Element* item = segment->element(st * VOICES);
+        if (item) return item->isTimeSig() && toTimeSig(item)->showCourtesySig();
+    }
+    return false;
+}
+
+// Mirror createEndBarLines: an opted-out key change on one staff
+// does not request a trailer, but another staff can still request it.
+bool keyCourtesyRequested4(const Measure* measure, const Segment* nextKey)
+{
+    const Score* score = measure->score();
+    if (!measure->nextMeasure() || !score->styleB(Sid::genCourtesyKeysig)) return false;
+    const Fraction tick = measure->endTick();
+    for (int st = 0; st < score->nstaves(); ++st) {
+        const Staff* staff = score->staff(st);
+        if (staff->keySigEvent(tick - Fraction::fromTicks(1)) == staff->keySigEvent(tick))
+            continue;
+        const Element* item = nextKey ? nextKey->element(st * VOICES) : nullptr;
+        if (!item || (item->isKeySig() && toKeySig(item)->showCourtesy()))
+            return true;
+    }
+    return false;
+}
+
 bool rightAligned4(const Segment* s)
 {
     return s->isClefType() || s->isBreathType();
+}
+
+bool manualInteriorLeadingSpace4(const Segment* s)
+{
+    if (!s || !active4(s) || !s->isChordRestType() || s->rtick() <= Fraction(0, 1))
+        return false;
+    const Segment* prev = s->prev();
+    return prev && active4(prev) && prev->isChordRestType() && prev->measure() == s->measure()
+        && prev->rtick() < s->rtick();
+}
+
+qreal manualSpringOffset4(const Segment* segment, qreal advance, qreal systemSpatium)
+{
+    const Segment* next = segment->next();
+    return manualInteriorLeadingSpace4(next)
+        ? std::max(next->extraLeadingSpace().val() * systemSpatium, -advance) : 0;
+}
+
+bool generatedBarlines4(const Segment* segment, BarLineType type)
+{
+    for (int st = 0; st < segment->score()->nstaves(); ++st) {
+        const Element* item = segment->element(st * VOICES);
+        if (!item || !item->isBarLine() || !item->generated() || toBarLine(item)->barLineType() != type)
+            return false;
+    }
+    return true;
+}
+
+// At a bar start the edit belongs to the onset alone, including when a
+// generated start repeat or an ordinary key/time change precedes it.
+bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
+                                 const std::vector<SpacingSegmentPlan4>& earlier,
+                                 const Measure* pendingCourtesy)
+{
+    if (!active4(&target) || !target.isChordRestType() || !target.rtick().isZero())
+        return false;
+    const int staves = target.score()->nstaves();
+    for (const Element* item : target.elist())
+        if (item && item->isRest() && toRest(item)->isFullMeasureRest()) return false;
+    const auto activeEntry = [](const SpacingSegmentPlan4& s) {
+        return !s.ignored;
+    };
+    auto prev = std::find_if(earlier.rbegin(), earlier.rend(), activeEntry);
+    if (target.measure()->repeatStart()) {
+        if (prev == earlier.rend() || !prev->segment->isStartRepeatBarLineType()
+            || prev->segment->measure() != target.measure() || !prev->segment->rtick().isZero()
+            || !prev->segment->ticks().isZero())
+            return false;
+        return generatedBarlines4(prev->segment, BarLineType::START_REPEAT);
+    }
+    if (target.measure() == first) {
+        return std::all_of(earlier.begin(), earlier.end(), [](const SpacingSegmentPlan4& s) {
+            return s.ignored || headerType4(s.segment) || s.segment->isBeginBarLineType();
+        });
+    }
+    // Walk across the in-measure prefix to certify the preceding barline.
+    while (prev != earlier.rend() && prev->segment->measure() == target.measure()) {
+        const Segment* sig = prev->segment;
+        const Element* item = sig->element(0);
+        if ((!sig->isKeySigType() && !sig->isTimeSigType()) || sig->header() || sig->trailer()
+            || !sig->rtick().isZero() || !sig->ticks().isZero()
+            || (staves == 1 ? !ordinarySignature4(item)
+                || (sig->isKeySigType() ? !item->isKeySig() : !item->isTimeSig()) : !sharedSignatureReady4(sig)))
+            return false;
+        prev = std::find_if(std::next(prev), earlier.rend(), activeEntry);
+    }
+    // Only cross the courtesy already certified for this trial. Keep its
+    // geometry in the plan: the walk here only checks the edit's boundary.
+    bool courtesyKey = false;
+    while (pendingCourtesy && prev != earlier.rend() && prev->segment->measure() == pendingCourtesy
+        && courtesyType4(prev->segment)) {
+        courtesyKey = courtesyKey || prev->segment->isKeySigAnnounceType();
+        prev = std::find_if(std::next(prev), earlier.rend(), activeEntry);
+    }
+    if (prev == earlier.rend() || !prev->segment->isEndBarLineType()
+        || prev->segment->measure() != target.measure()->prevMeasure()
+        || prev->segment->tick() != target.tick())
+        return false;
+    const auto expected = courtesyKey ? BarLineType::DOUBLE : BarLineType::NORMAL;
+    return generatedBarlines4(prev->segment, expected);
 }
 
 // This field is derived layout state, not manual segment leading space.
@@ -134,10 +304,11 @@ bool eligibleType4(const Segment* s)
         || s->isEndBarLineType() || s->isStartRepeatBarLineType() || s->segmentType() == SegmentType::BeginBarLine;
 }
 
-// The new repeat boundary borrows finalized native barline geometry. Grace
-// targets, centered rests and cross-staff streams need their own boundary
-// preparation; do not widen those adapters through repeat admission.
-bool ordinaryRepeatBoundary4(const Measure* measure)
+bool ordinaryMeasureRest4(const Rest* rest);
+
+// Reuse the ordinary rest projection and late centering at repeat barlines.
+// Signature/courtesy fitting keeps its separate, narrower boundary policy.
+bool ordinaryRepeatBoundary4(const Measure* measure, bool allowMeasureRests)
 {
     const Measure* boundary[] = {measure->prevMeasure(), measure};
     for (const Measure* m : boundary) {
@@ -147,7 +318,9 @@ bool ordinaryRepeatBoundary4(const Measure* measure)
             for (const Element* item : s.elist()) {
                 if (!item) continue;
                 if (item->isRest()) {
-                    if (toRest(item)->isFullMeasureRest()) return false;
+                    const Rest* rest = toRest(item);
+                    if (rest->isFullMeasureRest() && (!allowMeasureRests || !ordinaryMeasureRest4(rest)))
+                        return false;
                 }
                 else if (item->isChord()) {
                     const Chord* chord = toChord(item);
@@ -166,23 +339,106 @@ struct CrossStaffGeometry4 {
     std::map<const Segment*, CrossStaffPair4> pairs;
 };
 
+// A beam can move as a group without spanning two visual staves.
+// Native shapes already route its noteheads to the destination staff,
+// but omit the stems of moved beamed chords.
+// Return the first rejection, or nullptr after successful preparation.
+const char* prepareRelocatedBeam4(const Beam* beam, const Measure* measure, CrossStaffGeometry4& geometry)
+{
+    const Score* score = measure->score();
+    if (score->nstaves() != 2) return "Relocated beam requires a grand staff";
+    if (beam->score() != score || beam->cross()) return "Relocated beam has incompatible ownership or staff span";
+    if (beam->beamDirection() != Direction::AUTO) return "Relocated beam has an explicit beam direction";
+    if (beam->userModified()) return "Relocated beam has a manual adjustment";
+    if (beam->elements().size() < 2) return "Relocated beam has fewer than two members";
+    const Chord* previous = nullptr;
+    for (const ChordRest* item : beam->elements()) {
+        if (!item || !item->isChord()) return "Relocated beam has a rest or missing member";
+        const Chord* chord = toChord(item);
+        if (chord->measure() != measure) return "Relocated beam crosses a measure boundary";
+        if (!chord->segment() || chord->beam() != beam) return "Relocated beam has an unattached chord";
+        if (!chord->staffMove()) return "Relocated beam has an unmoved chord";
+        if (!chord->visible()) return "Relocated beam has a hidden chord";
+        if (chord->isGrace() || !chord->graceNotes().empty()) return "Relocated beam has grace notation";
+        if (chord->tuplet()) return "Relocated beam has a tuplet chord";
+        if (chord->tremolo()) return "Relocated beam has a tremolo chord";
+        // Native note shapes use chord->pos(), and the projected stem below
+        // uses chord->x() and chord->y(). All three include the user's offset.
+        if (!std::isfinite(chord->x()) || !std::isfinite(chord->y()))
+            return "Relocated beam has a non-finite chord position";
+        if (chord->isSmall()) return "Relocated beam has a small chord";
+        if (chord->noStem() || !chord->stem()) return "Relocated beam has a chord without a stem";
+        if (chord->stemDirection() != Direction::AUTO) return "Relocated beam has a chord with an explicit stem direction";
+        if (chord->up() != beam->up()) return "Relocated beam and chord disagree on stem side";
+        if (chord->notes().empty()) return "Relocated beam has an empty chord";
+        if (chord->actualTicks() != Fraction(1, 8)
+            || chord->durationType().type() != TDuration::DurationType::V_EIGHTH)
+            return "Relocated beam has a member other than a plain eighth note";
+        const int visual = chord->vStaffIdx();
+        if (visual < 0 || visual >= score->nstaves() || !score->staff(visual)->show()
+            || !score->staff(visual)->isPitchedStaff(chord->tick()) || !chord->staff()
+            || !chord->staff()->isPitchedStaff(chord->tick()))
+            return "Relocated beam requires visible pitched destination and pitched source staves";
+        if (previous && (chord->track() != previous->track() || visual != previous->vStaffIdx()))
+            return "Relocated beam changes source voice or destination staff";
+        if (previous && chord->tick() != previous->tick() + previous->actualTicks())
+            return "Relocated beam has noncontiguous onsets";
+        for (const Note* note : chord->notes()) {
+            if (!note->visible()) return "Relocated beam has a hidden notehead";
+            if (note->mirror()) return "Relocated beam has a mirrored notehead";
+            if (note->isNudged()) return "Relocated beam has a nudged notehead";
+            if (note->isSmall()) return "Relocated beam has a small notehead";
+        }
+        CrossStaffChord4 entry;
+        entry.chord = chord;
+        entry.visualStaff = visual;
+        entry.up = beam->up();
+        const qreal width = chord->stem()->lineWidth() * chord->mag();
+        entry.stemX = chord->x() + chord->stemPosX() + (entry.up ? -.5 : .5) * width;
+        if (!(width > 0) || !std::isfinite(width) || !std::isfinite(entry.stemX))
+            return "Relocated beam has invalid stem geometry";
+        geometry.chords.emplace(chord, entry);
+        previous = chord;
+    }
+    return nullptr;
+}
+
 bool prepareCrossStaffMeasure4(Measure* measure, CrossStaffGeometry4& result, QString* reason)
 {
     const Beam* beam = nullptr;
+    std::set<const Beam*> relocated;
     for (const Segment& s : measure->segments()) {
         for (const Element* item : s.elist()) {
             if (!item || !item->isChord()) continue;
             const Chord* c = toChord(item);
             if (!c->staffMove() && !(c->beam() && c->beam()->cross())) continue;
-            if (!c->beam() || (beam && beam != c->beam())) {
+            if (!c->beam()) {
+                if (reason) *reason = "Cross-staff chord has no beam";
+                return false;
+            }
+            if (!c->beam()->cross()) {
+                relocated.insert(c->beam());
+                continue;
+            }
+            if (beam && beam != c->beam()) {
                 if (reason) *reason = "Independent cross-staff streams within a measure require a later adapter";
                 return false;
             }
             beam = c->beam();
         }
     }
-    if (!beam) return true;
     const auto fail = [&](const QString& message) { if (reason) *reason = message; return false; };
+    if (!relocated.empty()) {
+        if (beam) return fail("Mixed relocated and interstaff beams require separate preparation");
+        CrossStaffGeometry4 prepared;
+        for (const Beam* group : relocated) {
+            if (const char* rejection = prepareRelocatedBeam4(group, measure, prepared))
+                return fail(rejection);
+        }
+        result = std::move(prepared);
+        return true;
+    }
+    if (!beam) return true;
     if (measure->score()->nstaves() != 2)
         return fail("Cross-staff placement currently requires a grand staff");
     CrossStaffContext4 context;
@@ -240,7 +496,11 @@ bool prepareCrossStaff4(System* system, CrossStaffGeometry4& result, QString* re
             return false;
         }
         CrossStaffGeometry4 local;
-        if (!prepareCrossStaffMeasure4(toMeasure(mb), local, reason)) return false;
+        Measure* measure = toMeasure(mb);
+        if (!prepareCrossStaffMeasure4(measure, local, reason)) {
+            if (reason) *reason += QStringLiteral(" [measure %1]").arg(measure->no() + 1);
+            return false;
+        }
         prepared.chords.insert(local.chords.begin(), local.chords.end());
         prepared.pairs.insert(local.pairs.begin(), local.pairs.end());
     }
@@ -460,13 +720,14 @@ bool ordinaryMeasureRest4(const Rest* rest)
 bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometry4& geometry,
                     const CrossStaffGeometry4& cross, const SpacingGraceContext4& graces,
                     const std::vector<GraceAfterGeometry4>& afters,
-                    const std::vector<GraceMergedGeometry4>& merged, SpacingContextCache4& contextCache)
+                    const std::vector<GraceMergedGeometry4>& merged, SpacingContextCache4& contextCache, QString* reason)
 {
+    const auto fail = [reason](const char* why) { if (reason) *reason = QString::fromLatin1(why); return false; };
     for (int staffIdx = 0; staffIdx < segment->score()->nstaves(); ++staffIdx) {
         SpacingShape4 native = spacingStaffShape4(segment, staffIdx);
-        if (!substituteAfterGeometry4(segment, staffIdx, native, afters)
-            || !substituteMergedGeometry4(segment, staffIdx, native, merged)
-            || !projectMeasureRests4(segment, staffIdx, native)) return false;
+        if (!substituteAfterGeometry4(segment, staffIdx, native, afters)) return fail("after-grace substitution");
+        if (!substituteMergedGeometry4(segment, staffIdx, native, merged)) return fail("merged grace substitution");
+        if (!projectMeasureRests4(segment, staffIdx, native)) return fail("measure rest projection");
         SpacingShape4 projected;
         // These first controls use ordinary visible staves. Staff scale still
         // comes from the item, rather than assuming score spatium in the kernel.
@@ -477,7 +738,7 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
                 break;
             }
         }
-        if (!spacingCollisionProjection4(table, native, sp, projected, &graces, &contextCache))
+        if (!spacingCollisionProjection4(table, native, sp, projected, &graces, &contextCache, reason))
             return false;
         for (const auto& pair : cross.chords) {
             const CrossStaffChord4& e = pair.second;
@@ -486,16 +747,14 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
             const qreal width = e.chord->stem()->lineWidth() * e.chord->mag();
             const qreal y = e.chord->y() + note->y()
                 + (e.up ? note->stemUpSE().y() : note->stemDownNW().y());
-            // In this bounded context the beam lies between the staves. Use
-            // the proven stem side without borrowing a provisional stem length.
-            // Keep this conservative extension confined to the restricted
-            // held companions or at most two un-beamed moving voices; broader cases
-            // remain unsupported. This conservative extent needs visual review.
+            // Use the prepared stem side without borrowing a provisional
+            // stem length. Relocated beams use the side from native beam
+            // preparation; interstaff beams use the independently inferred side.
             const qreal reach = 100000;
             const QRectF rect(e.stemX - width / 2, e.up ? y - reach : y - width / 2,
                               width, reach + width / 2);
             SpacingPairPolicy4 policy;
-            if (!spacingPairPolicy4(table, e.chord->stem(), e.chord->stem(), sp, policy, nullptr, &contextCache)) return false;
+            if (!spacingPairPolicy4(table, e.chord->stem(), e.chord->stem(), sp, policy, nullptr, &contextCache)) return fail("cross-staff stem policy");
             projected.elements.push_back(SpacingShapeElement4(rect, e.chord->stem()));
         }
         qreal staffLeft = std::numeric_limits<qreal>::max();
@@ -517,10 +776,22 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
     return true;
 }
 
+// Opt-in, one-based score measure number. Read once per process.
+static bool traceSpacingMeasure4(const Measure* measure)
+{
+    static const int number = qgetenv("MSCORE_SPACING_TRACE_MEASURE").toInt();
+    return number > 0 && measure && measure->no() + 1 == number;
+}
+
+struct SpacingDistanceTrace4 {
+    qreal collision = 0;
+    qreal tie = 0;
+};
+
 bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, const Geometry4& first,
                const SpacingSegmentPlan4& b, const Geometry4& second, Measure* firstMeasure,
                qreal squeeze, qreal& result, const CrossStaffGeometry4& cross, const SpacingGraceContext4& graces,
-               SpacingContextCache4& contextCache)
+               SpacingContextCache4& contextCache, SpacingDistanceTrace4* trace = nullptr)
 {
     // Studio minHorizontalDistance joins adjacent repeat barlines at the
     // thick stroke. A systemic begin barline shares the repeat's origin.
@@ -544,6 +815,56 @@ bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, 
             return false;
         distance = std::max(distance, d);
     }
+    if (trace) trace->collision = distance;
+    if (first.outgoingTie && b.segment->isChordRestType()) {
+        for (const Element* item : a.segment->elist()) {
+            if (!item || !item->isChord()) continue;
+            for (const Note* note : toChord(item)->notes()) {
+                const Tie* tie = note->tieFor();
+                const Note* end = tie ? tie->endNote() : nullptr;
+                if (!end || end->chord()->segment() != b.segment) continue;
+                // Native grip adjustment examines the voices on the tied
+                // staff. Other staves have their own collision minima above;
+                // combining their bounds with this tie minimum can widen an
+                // interval even when neither staff needs that much room.
+                const size_t staff = size_t(note->staffIdx());
+                qreal right = first.minRight;
+                qreal left = second.leftEdge;
+                if (note->staffIdx() == end->staffIdx() && staff < first.staff.size() && staff < second.staff.size()
+                    && !first.staff[staff].elements.empty() && !second.staff[staff].elements.empty()) {
+                    right = 0;
+                    left = std::numeric_limits<qreal>::max();
+                    for (const SpacingShapeElement4& e : first.staff[staff].elements)
+                        right = std::max(right, e.rect.right());
+                    for (const SpacingShapeElement4& e : second.staff[staff].elements)
+                        left = std::min(left, e.rect.left());
+                }
+                const qreal inset = 0.5 * std::max(note->spatium(), end->spatium());
+                const qreal boundsInset = right - left + inset;
+                qreal gripInset = boundsInset;
+                const char* skipped = tie->spacingGripInset4(gripInset);
+                const qreal minimum = gripInset
+                    + table.score()->styleP(Sid::minTieLength) * std::max(note->mag(), end->mag());
+                if (trace) {
+                    const qreal sp = b.segment->spatium();
+                    trace->tie = std::max(trace->tie, minimum);
+                    qDebug().noquote() << "Studio spacing trace: tie"
+                        << a.segment->tick().ticks() << "->" << b.segment->tick().ticks()
+                        << "staff" << note->staffIdx() + 1 << "voice" << note->track() % VOICES + 1
+                        << "pitch" << note->pitch()
+                        << "method" << (skipped ? "bounds" : "native grips")
+                        << "bounds inset" << boundsInset / sp << "used inset" << gripInset / sp
+                        << "minimum" << minimum / sp << "sp"
+                        << (skipped ? skipped : "");
+                }
+                distance = std::max(distance, minimum);
+            }
+        }
+    }
+    if (second.incomingTieHeader == a.segment)
+        distance = std::max(distance, first.minRight - second.leftEdge + second.incomingTieRoom);
+    if (first.outgoingTieBoundary == b.segment)
+        distance = std::max(distance, first.minRight + first.outgoingTieRoom);
     const auto constraint = cross.pairs.find(a.segment);
     if (constraint != cross.pairs.end() && constraint->second.second->segment() == b.segment)
         distance = std::max(distance, std::max(constraint->second.minimumWidth, constraint->second.minimumStemDistance));
@@ -658,7 +979,7 @@ bool stretchMeasure4(SpacingPlan4& plan, SpacingMeasurePlan4& measure, qreal ext
 }
 }
 
-bool spacingCandidateSignaturesReady4(const System* system, QString* reason)
+bool spacingCandidateSignaturesReady4(const System* system, QString* reason, bool allowPendingTrailer)
 {
     const auto fail = [reason](const char* text) { if (reason) *reason = text; return false; };
     if (!system || !system->score() || system->measures().empty())
@@ -679,105 +1000,97 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason)
     }
     const Score* score = system->score();
     const Measure* last = measures.back();
-    if (last->nextMeasure() && score->nstaves() == 1) {
-        const bool keyChange = !(score->staff(0)->keySigEvent(last->endTick() - Fraction::fromTicks(1))
-            == score->staff(0)->keySigEvent(last->endTick()));
-        const Segment* time = last->nextMeasure()->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
-        signatures = signatures || (keyChange && score->styleB(Sid::genCourtesyKeysig))
-            || (time && time->element(0) && time->element(0)->isTimeSig()
-                && toTimeSig(time->element(0))->showCourtesySig() && score->styleB(Sid::genCourtesyTimesig));
+    if (const Measure* next = last->nextMeasure()) {
+        const Fraction zero(0, 1);
+        signatures = signatures
+            || timeCourtesyRequested4(next->findSegmentR(SegmentType::TimeSig, zero))
+            || keyCourtesyRequested4(last, next->findSegmentR(SegmentType::KeySig, zero));
     }
     if (!signatures) return true; // Preserve the existing ordinary-prefix contract.
-    if (score->nstaves() != 1 || score->floatMode())
-        return fail("Candidate signatures require one ordinary pitched staff");
-    const auto geometryReady = [score](const Element* item, const Segment* segment) {
-        if (!item || item->parent() != segment || item->score() != score || item->track() != 0
-            || !item->visible() || !item->addToSkyline() || !(item->mag() > 0) || !std::isfinite(item->mag())) return false;
-        for (const Element* occupant : segment->elist())
-            if (occupant && occupant != item) return false;
-        const QRectF rect = item->bbox();
-        return rect.width() > 0 && rect.height() > 0 && std::isfinite(rect.x()) && std::isfinite(rect.y())
-            && std::isfinite(rect.width()) && std::isfinite(rect.height())
-            && std::isfinite(item->pos().x()) && std::isfinite(item->pos().y());
-    };
-    const auto ordinarySignature = [](const Element* item) {
-        if (!item) return false;
-        if (item->isKeySig()) {
-            const KeySig* key = toKeySig(item);
-            return !key->isCustom() && !key->isAtonal() && !key->forInstrumentChange();
-        }
-        if (!item->isTimeSig()) return false;
-        const TimeSig* time = toTimeSig(item);
-        return time->timeSigType() == TimeSigType::NORMAL && time->sig() > Fraction(0, 1)
-            && !time->isLocal()
-            && (time->numeratorString().isEmpty() || time->numeratorString() == QString::number(time->numerator()))
-            && (time->denominatorString().isEmpty() || time->denominatorString() == QString::number(time->denominator()));
-    };
+    if (score->floatMode())
+        return fail("Candidate signatures do not support float layout");
     for (size_t i = 0; i < measures.size(); ++i) {
         const Measure* m = measures[i];
         const bool last = i + 1 == measures.size();
-        if (!score->staff(0)->isPitchedStaff(m->tick()) || m->repeatStart() || m->repeatEnd()
-            || m->nextSectionBreak() || !ordinaryRepeatBoundary4(m))
+        for (int st = 0; st < score->nstaves(); ++st)
+            if (!score->staff(st)->isPitchedStaff(m->tick()))
+                return fail("Candidate signatures require pitched staves");
+        if (m->repeatStart() || m->repeatEnd()
+            || m->nextSectionBreak() || !ordinaryRepeatBoundary4(m, false))
             return fail("Candidate signature repeat/section/grace/rest/cross-staff boundary");
-        if (m->trailer() && !last)
+        const bool pending = allowPendingTrailer && i + 2 == measures.size() && m->trailer();
+        const bool terminalGeometry = last || pending;
+        if (m->trailer() && !terminalGeometry)
             return fail("Candidate pending penultimate courtesy trailer");
         for (const Segment& segment : m->segments()) {
             // Even a currently hidden ordinary clef can be revealed/moved by
             // predecessor finalization. That requires a separate adapter.
             if (segment.isClefType()) return fail("Candidate signature ordinary-clef boundary");
+            if (allowPendingTrailer && active4(&segment) && rightAligned4(&segment))
+                return fail("Candidate pending penultimate courtesy with a right-aligned mark");
             if (!active4(&segment)) continue;
             if (!i && segment.isHeaderClefType()) continue;
             if (segment.isHeaderClefType()) return fail("Candidate interior system header not removed");
             const bool courtesy = courtesyType4(&segment);
             if (!headerType4(&segment) && !courtesy && !segment.trailer()) continue;
-            if (!segment.ticks().isZero() || (courtesy ? !last || !segment.trailer() || segment.rtick() != m->ticks()
+            if (!segment.ticks().isZero() || (courtesy ? !terminalGeometry || !segment.trailer() || segment.rtick() != m->ticks()
                 : segment.trailer() || !segment.rtick().isZero()))
                 return fail("Candidate signature location/trailer phase not prepared");
-            const Element* item = segment.element(0);
-            if (!ordinarySignature(item) || !geometryReady(item, &segment)
-                || ((segment.isKeySigType() || segment.isKeySigAnnounceType()) ? !item->isKeySig() : !item->isTimeSig())
-                || (courtesy && !item->generated()))
+            if (!sharedSignatureReady4(&segment))
                 return fail("Candidate signature glyph, ownership or dimensions not prepared");
+            if (courtesy)
+                for (const Element* item : segment.elist())
+                    if (item && !item->generated())
+                        return fail("Candidate courtesy is not generated");
         }
         const Measure* next = m->nextMeasure();
         const Segment* keySeg = next ? next->findSegmentR(SegmentType::KeySig, Fraction(0, 1)) : nullptr;
         const Segment* timeSeg = next ? next->findSegmentR(SegmentType::TimeSig, Fraction(0, 1)) : nullptr;
-        const Element* key = keySeg ? keySeg->element(0) : nullptr;
-        const Element* time = timeSeg ? timeSeg->element(0) : nullptr;
-        const bool keyChange = next && !(score->staff(0)->keySigEvent(m->endTick() - Fraction::fromTicks(1))
-            == score->staff(0)->keySigEvent(m->endTick()));
-        const bool needKey = last && next && score->styleB(Sid::genCourtesyKeysig) && keyChange
-            && (!key || (key->isKeySig() && toKeySig(key)->showCourtesy()));
-        const bool needTime = last && next && score->styleB(Sid::genCourtesyTimesig)
-            && time && time->isTimeSig() && toTimeSig(time)->showCourtesySig();
         const Segment* keyTrailer = m->findSegmentR(SegmentType::KeySigAnnounce, m->ticks());
         const Segment* timeTrailer = m->findSegmentR(SegmentType::TimeSigAnnounce, m->ticks());
         const bool hasKey = keyTrailer && active4(keyTrailer);
         const bool hasTime = timeTrailer && active4(timeTrailer);
-        if (hasKey != needKey || hasTime != needTime || m->hasCourtesyKeySig() != needKey
-            || m->trailer() != (hasKey || hasTime))
+        if (m->hasCourtesyKeySig() != hasKey || m->trailer() != (hasKey || hasTime))
             return fail("Candidate courtesy presence not prepared");
-        if (hasKey && (!ordinarySignature(key)
-            || !(toKeySig(keyTrailer->element(0))->keySigEvent() == toKeySig(key)->keySigEvent())))
-            return fail("Candidate courtesy key does not match following signature");
-        if (hasTime) {
-            if (!ordinarySignature(time)) return fail("Candidate courtesy time is not ordinary");
-            const TimeSig* actual = toTimeSig(time);
-            const TimeSig* courtesy = toTimeSig(timeTrailer->element(0));
-            // Match the fields copied by native TimeSig::setFrom. Beam groups
-            // are not copied and do not affect this courtesy's drawn body.
-            if (courtesy->timeSigType() != actual->timeSigType() || !courtesy->sig().identical(actual->sig())
-                || courtesy->stretch() != actual->stretch() || courtesy->numeratorString() != actual->numeratorString()
-                || courtesy->denominatorString() != actual->denominatorString())
-                return fail("Candidate courtesy time does not match following signature");
+        if (pending && ((hasKey && (!keySeg || !active4(keySeg))) || (hasTime && (!timeSeg || !active4(timeSeg)))))
+            return fail("Candidate pending penultimate courtesy lacks an active following signature");
+
+        const bool needTime = terminalGeometry && timeCourtesyRequested4(timeSeg);
+        if (hasTime != needTime)
+            return fail("Candidate courtesy presence differs from the following signature");
+
+        const bool needKey = terminalGeometry && keyCourtesyRequested4(m, keySeg);
+        if (hasKey != needKey)
+            return fail("Candidate courtesy presence differs from the following signature");
+        for (int st = 0; st < score->nstaves(); ++st) {
+            const int track = st * VOICES;
+            const Element* key = keySeg ? keySeg->element(track) : nullptr;
+            const Element* time = timeSeg ? timeSeg->element(track) : nullptr;
+            if (hasKey && (!ordinarySignature4(key)
+                || !(toKeySig(keyTrailer->element(track))->keySigEvent() == toKeySig(key)->keySigEvent())))
+                return fail("Candidate courtesy key does not match following signature");
+            if (hasTime) {
+                if (!ordinarySignature4(time)) return fail("Candidate courtesy time is not ordinary");
+                const TimeSig* actual = toTimeSig(time);
+                const TimeSig* courtesy = toTimeSig(timeTrailer->element(track));
+                if (courtesy->timeSigType() != actual->timeSigType() || !courtesy->sig().identical(actual->sig())
+                    || courtesy->stretch() != actual->stretch() || courtesy->numeratorString() != actual->numeratorString()
+                    || courtesy->denominatorString() != actual->denominatorString())
+                    return fail("Candidate courtesy time does not match following signature");
+            }
         }
         const Segment* end = m->findSegmentR(SegmentType::EndBarLine, m->ticks());
-        const Element* item = end ? end->element(0) : nullptr;
-        const BarLineType expected = needKey ? BarLineType::DOUBLE : next ? BarLineType::NORMAL : BarLineType::END;
-        if (!end || !active4(end) || !end->ticks().isZero() || !item || !item->isBarLine()
-            || !item->generated() || toBarLine(item)->barLineType() != expected || !toBarLine(item)->el()->empty()
-            || !geometryReady(item, end))
+        const BarLineType expected = hasKey ? BarLineType::DOUBLE : next ? BarLineType::NORMAL : BarLineType::END;
+        if (!end || !active4(end) || !end->ticks().isZero() || !generatedBarlines4(end, expected)
+            || std::count_if(end->elist().begin(), end->elist().end(),
+                [](const Element* item) { return item != nullptr; }) != score->nstaves())
             return fail("Candidate signature end barline not prepared");
+        for (int st = 0; st < score->nstaves(); ++st) {
+            const int track = st * VOICES;
+            const Element* bar = end->element(track);
+            if (!toBarLine(bar)->el()->empty() || !signatureGeometryReady4(bar, end, track))
+                return fail("Candidate signature end barline geometry not prepared");
+        }
     }
     return true;
 }
@@ -825,7 +1138,7 @@ bool spacingRepeatBarlinesReady4(const System* system, SpacingPass4 pass, QStrin
     };
     for (size_t i = 0; i < measures.size(); ++i) {
         const Measure* m = measures[i];
-        if (!ordinaryRepeatBoundary4(m))
+        if (!ordinaryRepeatBoundary4(m, true))
             return fail("Candidate repeat grace/rest/cross-staff boundary");
         // A hidden terminal clef may become visible after accepting the next
         // measure. Its relocation needs a separate preparation adapter too.
@@ -856,9 +1169,16 @@ bool spacingRepeatBarlinesReady4(const System* system, SpacingPass4 pass, QStrin
 bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QString* reason)
 {
     const auto fail = [&](const QString& message) { if (reason) *reason = message; return false; };
-    if (!beam || !beam->score() || !beam->cross() || beam->elements().size() < 3
-        || beam->beamDirection() != Direction::AUTO || beam->userModified())
-        return fail("Cross-staff context needs a prepared automatic beam");
+    if (!beam || !beam->score())
+        return fail("Cross-staff beam is missing or unattached");
+    if (!beam->cross())
+        return fail("Beam is not flagged as cross-staff");
+    if (beam->elements().size() < 3)
+        return fail("Cross-staff beam has fewer than three members");
+    if (beam->beamDirection() != Direction::AUTO)
+        return fail("Cross-staff beam has an explicit direction");
+    if (beam->userModified())
+        return fail("Cross-staff beam has a manual adjustment");
     const Score* score = beam->score();
     const SpacingPaddingTable4 table(score);
     CrossStaffContext4 context;
@@ -980,22 +1300,105 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
     return true;
 }
 
+// Keep both notes in native chord layout (including fingering placement)
+// and project their existing shapes normally. Only admit an invisible note
+// here when it is an ordinary unison with a visible note in the same chord.
+static bool hiddenUnison4(const Note* note, const Chord* chord)
+{
+    if (!chord->visible() || chord->isGrace() || chord->staffMove() || chord->notes().size() != 2)
+        return false;
+    const auto ordinaryHead = [](const Note* n) {
+        return !n->isSmall() && n->offset().isNull() && !n->mirror()
+            && n->headGroup() == NoteHead::Group::HEAD_NORMAL && n->headType() == NoteHead::Type::HEAD_AUTO;
+    };
+    if (!ordinaryHead(note))
+        return false;
+    for (const Note* other : chord->notes()) {
+        if (other->visible() && other->pitch() == note->pitch() && other->line() == note->line()
+            && other->tpc() == note->tpc() && ordinaryHead(other))
+            return true;
+    }
+    return false;
+}
+
+// Called only after the existing note policy rejects a note. Keep the
+// admission checks in spacingPairPolicy4; these labels explain the failure.
+static QString notePolicyDiagnostic4(const Note* note, const Chord* chord, const SpacingContextCache4& cache)
+{
+    if (!note->visible()) return QStringLiteral("invisible note");
+    if (note->track() < 0) return QStringLiteral("invalid note track");
+    if (note->onTabStaff()) return QStringLiteral("tablature note");
+    if (!spacingChordArticulationsSupported4(chord)) {
+        QStringList marks;
+        for (const Articulation* mark : chord->articulations()) {
+            // subtype() groups above/below variants of the same mark.
+            marks.push_back(mark ? QString::fromLatin1(Sym::id2name(static_cast<SymId>(mark->subtype())))
+                                 : QStringLiteral("missing articulation"));
+        }
+        marks.sort();
+        return QStringLiteral("chord articulation: ") + marks.join(QStringLiteral(" + "));
+    }
+    for (const Note* member : chord->notes()) {
+        for (const Tie* tie : {member->tieFor(), member->tieBack()}) {
+            TieObstacleDiagnostic4 detail;
+            if (const char* rejection = ordinaryTieRejection4(tie, &detail)) {
+                QString message = QStringLiteral("chord with tie: ") + QString::fromLatin1(rejection);
+                if (detail.item && detail.item->isChord() && toChord(detail.item)->measure()) {
+                    const Chord* obstacle = toChord(detail.item);
+                    message += QStringLiteral(" {obstacle: m.%1, beat %2, tick %3, staff %4, voice %5: %6}")
+                        .arg(obstacle->measure()->no() + 1).arg(obstacle->barbeat().second)
+                        .arg(obstacle->tick().ticks()).arg(obstacle->vStaffIdx() + 1)
+                        .arg(obstacle->track() % VOICES + 1).arg(QString::fromLatin1(detail.reason));
+                }
+                return message;
+            }
+        }
+        if (!member->spannerFor().empty() || !member->spannerBack().empty())
+            return QStringLiteral("chord with note spanner");
+    }
+    if (cache.slurPolicy() == SpacingSlurPolicy4::PREPARED && !cache.preparedSlursReady(chord))
+        return QStringLiteral("unready prepared slur context");
+    if (!(note->spatium() > 0) || !std::isfinite(note->spatium()) || !(note->mag() > 0) || !std::isfinite(note->mag()))
+        return QStringLiteral("invalid note scale");
+    return QStringLiteral("other note pair policy");
+}
+
 static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString* reason, const SpacingPlanOptions4& options,
                                  const std::vector<GraceMergedGeometry4>* preparedMerged, const SpacingInput4* input,
-                                 const SpacingAttachmentPreparation4* preparation)
+                                 const SpacingAttachmentPreparation4* preparation,
+                                 const SpacingPlan4* prefix = nullptr)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::PLAN);
     const auto fail = [&](const QString& message) { if (reason) *reason = message; return false; };
     if (!system || system->measures().empty())
         return fail("No system measures");
     if (!std::isfinite(options.squeezeFactor) || options.squeezeFactor < 0 || options.squeezeFactor > 1
-        || !std::isfinite(options.stretchReduction) || options.stretchReduction <= 0)
+        || !std::isfinite(options.stretchReduction) || options.stretchReduction < 0)
         return fail("Invalid spacing factors");
     Score* score = system->score();
     if (!score)
         return fail("No score");
     if (input && input->score() != score)
         return fail("Prepared musical inputs belong to another score");
+    const Measure* predecessor = nullptr;
+    const bool refresh = prefix && prefix->trialOnly;
+    if (prefix) {
+        if (!spacingCandidateSignaturesReady4(system, reason, true)) return false;
+        const auto& measures = system->measures();
+        if (measures.size() < 2 || prefix->measures.size() != measures.size() - (refresh ? 0 : 1)
+            || !prefix->afterGraces.empty() || !prefix->mergedGraces.empty())
+            return fail("Candidate courtesy has no valid prefix seed");
+        const Measure* penultimate = toMeasure(measures[measures.size() - 2]);
+        if (refresh) {
+            if (penultimate->trailer() || prefix->measures.back().measure != measures.back()
+                || !system->lastMeasure()->trailer())
+                return fail("Accepted courtesy trial has not been finalized");
+        } else {
+            if (!penultimate->trailer())
+                return fail("Candidate prefix seed has no pending penultimate courtesy");
+            predecessor = penultimate;
+        }
+    }
     for (int st = 0; st < score->nstaves(); ++st) {
         if (!score->staff(st)->show() || !system->staff(st)->show())
             return fail("Hidden staves require a later adapter");
@@ -1020,6 +1423,8 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
     for (const auto& joint : merged) plan.mergedGraces.push_back(joint.plan);
     std::vector<Geometry4> geometry;
     const SpacingPaddingTable4 table(score);
+    bool hasManualSpace = false;
+    bool hasRightAligned = false;
     for (MeasureBase* mb : system->measures()) {
         if (!mb->isMeasure() || toMeasure(mb)->isMMRest())
             return fail("Frames and MMRest measures are outside the common plan");
@@ -1028,31 +1433,60 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
         for (Segment& segment : measure->segments()) {
             SpacingSegmentPlan4 entry(&segment);
             entry.ignored = !active4(&segment);
+            const qreal leading = segment.extraLeadingSpace().val();
+            if (!std::isfinite(leading))
+                return fail("Invalid manual leading space");
+            if (leading != 0) {
+                for (int st = 0; st < score->nstaves(); ++st)
+                    if (!score->staff(st)->isPitchedStaff(segment.tick()))
+                        return fail("Manual leading space requires pitched staves");
+                // The onset is a shared segment. Apply its edit
+                // once for the system, regardless of how many staves play.
+                if (!manualInteriorLeadingSpace4(&segment)
+                    && !manualBarStartLeadingSpace4(segment, system->firstMeasure(), plan.segments, predecessor))
+                    return fail("Manual leading space requires an interior onset or a supported bar start");
+                hasManualSpace = true;
+            }
             if (entry.ignored && segment.isChordRestType())
                 return fail("Inactive rhythmic segments require a later adapter");
             Geometry4 g;
             if (!entry.ignored) {
-                if (courtesyType4(&segment) && (!segment.trailer() || measure != system->lastMeasure()
-                                               || segment.rtick() != measure->ticks()))
+                hasRightAligned = hasRightAligned || rightAligned4(&segment);
+                if (courtesyType4(&segment) && (!segment.trailer()
+                    || (measure != system->lastMeasure() && measure != predecessor)
+                    || segment.rtick() != measure->ticks()))
                     return fail("Courtesy signatures require a terminal measure-end trailer");
+                const Segment* next = segment.next();
+                const bool carriesManualSpace = next && next->extraLeadingSpace().val() != 0
+                    && manualInteriorLeadingSpace4(next);
                 if (!eligibleType4(&segment) || (segment.trailer() && !courtesyType4(&segment))
-                    || segment.extraLeadingSpace().val() != 0
                     || (segment.spacingWidthOffset4() != 0 && !cross.pairs.count(&segment)
-                        && !carriesRightAlignmentOffset4(&segment)))
+                        && !carriesRightAlignmentOffset4(&segment) && !carriesManualSpace))
                     return fail("Unadapted segment type, trailer, manual space or cross-beam offset");
                 if (segment.isBreathType() && (!segment.ticks().isZero() || segment.rtick() <= Fraction(0, 1)
                                                || segment.rtick() > measure->ticks()))
                     return fail("Breath spacing requires a zero-duration internal or end boundary");
                 if (segment.isStartRepeatBarLineType()
-                    && (!measure->repeatStart() || !segment.rtick().isZero() || !segment.ticks().isZero()
-                        || !ordinaryRepeatBoundary4(measure)))
-                    return fail("Start-repeat spacing requires an ordinary zero-duration boundary");
+                    && (!measure->repeatStart() || !segment.rtick().isZero() || !segment.ticks().isZero()))
+                    return fail("Start-repeat spacing requires a zero-duration boundary");
+                if (segment.isStartRepeatBarLineType() && !ordinaryRepeatBoundary4(measure, true))
+                    return fail("Start-repeat spacing requires supported surrounding rests and chords");
                 for (const Element* annotation : segment.annotations()) {
                     if (!annotation)
                         continue;
+                    // Fermatas are absent from the horizontal staff shape.
+                    // Native layout places them on their anchors after spacing.
                     if (!annotation->isSystemText() && !annotation->isStaffText() && !annotation->isRehearsalMark()
-                        && !annotation->isTempoText() && !annotation->isDynamic())
-                        return fail("Annotations require a later adapter");
+                        && !annotation->isTempoText() && !annotation->isDynamic() && !annotation->isFermata()
+                        && !spacingPedalSymbol4(annotation)) {
+                        if (!reason) return false;
+                        QString name = annotation->_name();
+                        if (annotation->isSymbol())
+                            name += QStringLiteral(" (%1)").arg(QString::fromLatin1(
+                                Sym::id2name(static_cast<const Symbol*>(annotation)->sym())));
+                        return fail(QStringLiteral("Annotations require a later adapter: %1 [measure %2]")
+                                    .arg(name).arg(measure->no() + 1));
+                    }
                 }
                 for (const Element* item : segment.elist()) {
                     if (item && segment.isStartRepeatBarLineType()) {
@@ -1105,12 +1539,42 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                         return fail("Unadapted grace-note rhythm");
                     for (const Note* note : chord->notes()) {
                         SpacingPairPolicy4 policy;
-                        if (!note->visible() || !spacingPairPolicy4(table, note, note, note->spatium(), policy, &graces, &contextCache))
-                            return fail("Unadapted note visibility or decoration context");
+                        if ((!note->visible() && !hiddenUnison4(note, chord))
+                            || !spacingPairPolicy4(table, note, note, note->spatium(), policy, &graces, &contextCache))
+                            return fail(reason ? QStringLiteral("Note policy: ") + notePolicyDiagnostic4(note, chord, contextCache)
+                                               + QStringLiteral(" [measure %1, beat %2, tick %3, staff %4, voice %5]")
+                                                   .arg(measure->no() + 1).arg(note->barbeat().second).arg(segment.tick().ticks())
+                                                   .arg(note->staffIdx() + 1).arg(note->track() % VOICES + 1)
+                                               : QString());
+                        for (const Tie* tie : {note->tieFor(), note->tieBack()}) {
+                            if (!tie) continue;
+                            const auto& measures = system->measures();
+                            const Note* other = tie->startNote() == note ? tie->endNote() : tie->startNote();
+                            plan.hasOrdinaryTies = true;
+                            if (std::find(measures.begin(), measures.end(), other->chord()->measure()) == measures.end()) {
+                                const qreal sp = score->spatium();
+                                const qreal grip = 0.25 * std::max(note->spatium(), sp);
+                                const qreal minimum = score->styleP(Sid::minTieLength) * note->mag();
+                                if (tie->startNote() == note)
+                                    g.outgoingTieRoom = std::max(g.outgoingTieRoom, minimum + grip + 0.25 * sp);
+                                else
+                                    g.incomingTieRoom = std::max(g.incomingTieRoom, minimum + grip + sp);
+                                continue;
+                            }
+                            if (tie->startNote() == note)
+                                g.outgoingTie = true;
+                            else {
+                                const Segment* start = other->chord()->segment();
+                                if (!g.earliestTieStart || start->tick() < g.earliestTieStart->tick())
+                                    g.earliestTieStart = start;
+                            }
+                        }
                     }
                 }
-                if (!cacheGeometry4(&segment, table, g, cross, graces, afters, merged, contextCache))
-                    return fail(QString("Unadapted geometry at tick %1").arg(segment.tick().ticks()));
+                QString geometryReason;
+                if (!cacheGeometry4(&segment, table, g, cross, graces, afters, merged, contextCache,
+                                    reason ? &geometryReason : nullptr))
+                    return fail(reason ? QStringLiteral("Geometry: ") + geometryReason : QString());
                 if (segment.isChordRestType()) {
                     if (!(segment.ticks() > Fraction(0, 1)))
                         return fail("Chord/rest duration is not ready");
@@ -1125,9 +1589,133 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
             geometry.push_back(g);
         }
     }
+    if (hasManualSpace && (hasRightAligned || !plan.afterGraces.empty() || !plan.mergedGraces.empty()
+        || !graces.mains.empty() || !cross.chords.empty()))
+        return fail("Manual leading space with grace, cross-staff or right-aligned geometry");
+    if (plan.hasOrdinaryTies && (hasManualSpace || prefix))
+        return fail("Tie clearance requires a full plan without manual leading space");
+    // Match the native split-tie anchors: the last header glyph plus
+    // one space, and the first active segment after the last rhythmic
+    // onset minus a quarter space. Keep unfamiliar edges on fallback.
+    if (plan.hasOrdinaryTies) {
+        const size_t count = plan.segments.size();
+        size_t firstRhythm = count, lastRhythm = count, header = count, boundary = count, previous = count;
+        for (size_t i = 0; i < count; ++i) {
+            const auto& entry = plan.segments[i];
+            if (entry.ignored) continue;
+            if (entry.segment->isChordRestType()) {
+                if (firstRhythm == count) {
+                    firstRhythm = i;
+                    header = previous;
+                }
+                lastRhythm = i;
+                boundary = count;
+            }
+            else if (lastRhythm != count && boundary == count)
+                boundary = i;
+            previous = i;
+        }
+        for (size_t i = 0; i < count; ++i) {
+            Geometry4& g = geometry[i];
+            if (g.incomingTieRoom > 0) {
+                if (i != firstRhythm || header == count || !headerType4(plan.segments[header].segment))
+                    return fail("Incoming split tie needs a prepared system header");
+                g.incomingTieHeader = plan.segments[header].segment;
+                g.earliestTieStart = g.incomingTieHeader;
+            }
+            if (g.outgoingTieRoom > 0) {
+                if (boundary == count || !plan.segments[boundary].segment->isEndBarLineType()
+                    || plan.segments[i].segment->measure() != plan.segments[boundary].segment->measure())
+                    return fail("Outgoing split tie needs a prepared system end barline");
+                g.outgoingTieBoundary = plan.segments[boundary].segment;
+                if (!geometry[boundary].earliestTieStart)
+                    geometry[boundary].earliestTieStart = plan.segments[i].segment;
+            }
+        }
+    }
+    const qreal manualSpatium = hasManualSpace ? system->spatium() : 0;
+    const auto rhythmicAdvance = [&options](const SpacingSegmentPlan4& entry) {
+        return 3.5 * entry.segment->spatium() * entry.stretch * options.stretchReduction;
+    };
     qreal cursor = system->leftMargin();
     bool placed = false;
-    for (size_t i = 0; i < plan.segments.size(); ++i) {
+    size_t firstNew = 0;
+    size_t collisionFirst = 0;
+    size_t firstMutableMeasure = 0;
+    if (prefix) {
+        // Studio updates only the predecessor/new-measure pair. Earlier
+        // measures retain both their positions and their occupied widths.
+        const size_t frozenMeasures = prefix->measures.size() - (refresh ? 1 : 0);
+        firstMutableMeasure = frozenMeasures - 1;
+        const Segment* lastActive = nullptr;
+        bool removedCourtesy = false;
+        for (size_t mi = 0; mi < frozenMeasures; ++mi) {
+            auto& measure = plan.measures[mi];
+            const auto& savedMeasure = prefix->measures[mi];
+            const bool finalizedPredecessor = refresh && mi == firstMutableMeasure;
+            if (mi == firstMutableMeasure) collisionFirst = firstNew;
+            if (measure.measure != savedMeasure.measure || !std::isfinite(savedMeasure.x)
+                || !std::isfinite(savedMeasure.width) || savedMeasure.width <= 0
+                || qAbs(savedMeasure.x - cursor) > 1e-6)
+                return fail("Candidate prefix measure identity or extent changed");
+            measure = savedMeasure;
+            placed = false;
+            for (; firstNew < plan.segments.size()
+                && plan.segments[firstNew].segment->measure() == measure.measure; ++firstNew) {
+                auto& current = plan.segments[firstNew];
+                if (firstNew >= prefix->segments.size())
+                    return fail("Candidate prefix segment list changed");
+                const auto& saved = prefix->segments[firstNew];
+                if (saved.segment != current.segment)
+                    return fail("Candidate prefix segment identity changed");
+                if (saved.ignored != current.ignored) {
+                    if (finalizedPredecessor && current.ignored && courtesyType4(current.segment)
+                        && current.segment->trailer() && current.segment->rtick() == measure.measure->ticks()
+                        && lastActive && lastActive->measure() == measure.measure && lastActive->isEndBarLineType()) {
+                        if (!removedCourtesy && (!std::isfinite(saved.x) || qAbs(cursor - saved.x) > 1e-6))
+                            return fail("Accepted trial's former courtesy edge changed");
+                        removedCourtesy = true;
+                        continue;
+                    }
+                    return fail("Candidate prefix segment identity or visibility changed");
+                }
+                if (current.ignored) continue;
+                const qreal expectedOffset = hasManualSpace && current.segment->isChordRestType()
+                    ? manualSpringOffset4(current.segment, rhythmicAdvance(current), manualSpatium) : 0;
+                if (!std::isfinite(saved.x) || !std::isfinite(saved.width) || saved.width < 0
+                    || saved.widthOffset != expectedOffset || saved.width < saved.widthOffset
+                    || saved.stretch != current.stretch
+                    || saved.x < cursor - 1e-6 || (placed && qAbs(saved.x - cursor) > 1e-6))
+                    return fail("Candidate prefix segment positions or advances are invalid");
+                current.x = saved.x;
+                current.width = saved.width;
+                current.widthOffset = saved.widthOffset;
+                cursor = saved.x + saved.width;
+                lastActive = current.segment;
+                placed = true;
+            }
+            // Studio loads the surviving end barline's saved advance even
+            // when the courtesy that used to follow it has been disabled.
+            // Reconstruct this measure's width below with the new barline.
+            if (!placed || !std::isfinite(cursor)
+                || (!finalizedPredecessor && qAbs(cursor - (measure.x + measure.width)) > 1e-6))
+                return fail("Candidate prefix measure has no matching segment edge");
+        }
+        if (refresh) {
+            if (!removedCourtesy || !lastActive || !lastActive->isEndBarLineType()
+                || lastActive->measure() != plan.measures[firstMutableMeasure].measure
+                || firstNew == plan.segments.size() || firstNew >= prefix->segments.size()
+                || prefix->segments[firstNew].segment != plan.segments[firstNew].segment)
+                return fail("Accepted trial has no matching finalized courtesy boundary");
+        } else {
+            if (firstNew != prefix->segments.size() || firstNew == plan.segments.size()
+                || !lastActive || !courtesyType4(lastActive) || !std::isfinite(prefix->width)
+                || qAbs(cursor - prefix->width) > 1e-6)
+                return fail("Candidate prefix has no matching terminal courtesy edge");
+            plan.trialOnly = true;
+        }
+    }
+    for (size_t i = firstNew; i < plan.segments.size(); ++i) {
         SpacingSegmentPlan4& current = plan.segments[i];
         if (current.ignored) {
             current.x = cursor;
@@ -1154,14 +1742,17 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
         }
         else {
             qreal x = -std::numeric_limits<qreal>::max();
-            // A beam neighbor can lie beyond the ordinary geometry lookback.
-            const Segment* requiredPrevious = nullptr;
+            // A tie or beam neighbor can lie beyond the ordinary lookback.
+            const Segment* requiredPrevious = geometry[i].earliestTieStart;
             for (const auto& pair : cross.pairs) {
-                if (pair.second.minimumStemDistance > 0 && pair.second.second->segment() == current.segment)
+                if (pair.second.minimumStemDistance > 0 && pair.second.second->segment() == current.segment
+                    && (!requiredPrevious || pair.second.first->tick() < requiredPrevious->tick()))
                     requiredPrevious = pair.second.first->segment();
             }
             int crCount = 0;
-            for (size_t j = i; j > 0;) {
+            const bool trace = current.segment->isChordRestType() && traceSpacingMeasure4(current.segment->measure());
+            const qreal rhythmicCursor = cursor;
+            for (size_t j = i; j > collisionFirst;) {
                 --j;
                 SpacingSegmentPlan4& previous = plan.segments[j];
                 if (previous.ignored)
@@ -1169,9 +1760,20 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                 if (previous.segment->isChordRestType())
                     ++crCount;
                 qreal distance = 0;
+                SpacingDistanceTrace4 limits;
                 if (!distance4(table, previous, geometry[j], current, geometry[i], plan.measures.front().measure,
-                               options.squeezeFactor, distance, cross, graces, contextCache))
+                               options.squeezeFactor, distance, cross, graces, contextCache, trace ? &limits : nullptr))
                     return fail("Unsupported segment distance");
+                if (trace && (crCount <= 1 || previous.x + distance > cursor)) {
+                    const qreal sp = current.segment->spatium();
+                    qDebug().noquote() << "Studio spacing trace: pair"
+                        << previous.segment->tick().ticks() << "->" << current.segment->tick().ticks()
+                        << "squeeze" << options.squeezeFactor << "stretch" << options.stretchReduction
+                        << "rhythmic target" << (rhythmicCursor - previous.x) / sp
+                        << "collision minimum" << limits.collision / sp << "tie minimum" << limits.tie / sp
+                        << "pair minimum" << distance / sp << "incoming gap" << (cursor - previous.x) / sp
+                        << "added" << std::max(qreal(0), previous.x + distance - cursor) / sp << "sp";
+                }
                 x = std::max(x, previous.x + distance);
                 if (x > cursor) {
                     if (crCount > 0) {
@@ -1202,18 +1804,23 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
             // cursor advance here would widen the surrounding note interval.
             positionedX = rightAligned4(current.segment) ? x : cursor;
         }
-        current.x = positionedX;
+        // Studio moves the onset after the collision walk, leaving the
+        // rhythmic cursor alone. The previous spring carries the edit so
+        // justification stretches only its rhythmic portion.
+        current.x = positionedX + current.segment->extraLeadingSpace().val() * manualSpatium;
         if (current.segment->isChordRestType()) {
             if (current.segment->measure() == plan.measures.front().measure && current.segment->rtick().isZero()) {
-                cursor = std::max(cursor, system->leftMargin() + 1.25 * current.segment->spatium());
-                current.x = cursor;
+                const qreal minimum = system->leftMargin() + 1.25 * current.segment->spatium();
+                cursor = std::max(cursor, minimum);
+                current.x = std::max(current.x, minimum);
             }
-            qreal advance = 3.5 * current.segment->spatium() * current.stretch * options.stretchReduction
-                + current.widthOffset;
+            qreal advance = rhythmicAdvance(current) + current.widthOffset;
             const auto correction = cross.pairs.find(current.segment);
             if (correction != cross.pairs.end() && correction->second.minimumWidth > 0)
                 advance = std::max(advance, correction->second.minimumWidth);
             if (advance < 0) return fail("Cross-staff advance needs stronger compression support");
+            if (hasManualSpace)
+                current.widthOffset += manualSpringOffset4(current.segment, advance, manualSpatium);
             cursor += advance;
         }
     }
@@ -1225,7 +1832,7 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
     std::map<Measure*, size_t> measureIndex;
     for (size_t i = 0; i < plan.measures.size(); ++i)
         measureIndex[plan.measures[i].measure] = i;
-    for (size_t i = 0; i < plan.segments.size(); ++i) {
+    for (size_t i = collisionFirst; i < plan.segments.size(); ++i) {
         SpacingSegmentPlan4& current = plan.segments[i];
         if (current.ignored)
             continue;
@@ -1248,14 +1855,18 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
             if (!sameMeasure) {
                 plan.measures[mi].width = current.x + current.width - plan.measures[mi].x;
                 plan.measures[measureIndex[following.segment->measure()]].x = current.x + current.width;
+                if (following.segment->extraLeadingSpace().val() != 0 && following.segment->rtick().isZero()
+                    && following.x < current.x + current.width)
+                    return fail("Manual leading space moves the onset before its barline");
             }
         }
-        if (current.width < 0 || !std::isfinite(current.width))
+        if (current.width < 0 || !std::isfinite(current.width)
+            || (hasManualSpace && current.width < current.widthOffset))
             return fail("Invalid reconstructed segment width");
     }
     if (options.minimumMeasureWidths) {
         const qreal available = system->width() - system->leftMargin();
-        for (size_t mi = 0; mi < plan.measures.size(); ++mi) {
+        for (size_t mi = firstMutableMeasure; mi < plan.measures.size(); ++mi) {
             SpacingMeasurePlan4& measure = plan.measures[mi];
             qreal minimum = score->styleP(Sid::minMeasureWidth);
             const qreal cap = available > 0 ? available : minimum;
@@ -1311,7 +1922,8 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, const SpacingAttach
 
 static bool squeezeSpacingPlanImpl4(System* system, qreal targetWidth, SpacingPlan4& result, QString* reason,
                                    const std::vector<GraceMergedGeometry4>* preparedMerged,
-                                   const SpacingAttachmentPreparation4* preparation, SpacingSlurPolicy4 policy)
+                                   const SpacingAttachmentPreparation4* preparation, SpacingSlurPolicy4 policy,
+                                   bool retainedOverfullGroup = false)
 {
     if (!std::isfinite(targetWidth) || targetWidth <= 0) {
         if (reason)
@@ -1329,14 +1941,29 @@ static bool squeezeSpacingPlanImpl4(System* system, qreal targetWidth, SpacingPl
         return true;
     }
     // Studio 4.7.5 squeezeSystemToFit recomputes from native geometry each
-    // pass, with minimum-measure widths overridden. Stop before its negative
-    // duration advances and subsequent collision-allowing width reduction.
+    // pass, with minimum-measure widths overridden. For a retained group,
+    // also try the two tighter padding levels, with nonnegative advances.
+    const bool tightGroup = retainedOverfullGroup && !candidate.hasOrdinaryTies && system->score()->nstaves() == 1
+        && candidate.afterGraces.empty() && candidate.mergedGraces.empty()
+        && std::all_of(candidate.segments.begin(), candidate.segments.end(), [](const SpacingSegmentPlan4& s) {
+            if (s.ignored) return true;
+            if (s.widthOffset != 0 || rightAligned4(s.segment)) return false;
+            if (!s.segment->isChordRestType())
+                return headerType4(s.segment) || s.segment->isEndBarLineType() || s.segment->isBeginBarLineType();
+            for (const Element* item : s.segment->elist())
+                if (item && !item->isChord()) return false;
+            return true;
+        });
     SpacingPlanOptions4 options;
     options.slurPolicy = policy;
     options.minimumMeasureWidths = false;
     options.stretchReduction = 1 - 0.33;
     options.squeezeFactor = 1 - 0.2;
-    for (int pass = 0; pass < 3; ++pass) {
+    for (int pass = 0; pass < (tightGroup ? 5 : 3); ++pass) {
+        if (pass >= 3) {
+            options.stretchReduction = 0;
+            options.squeezeFactor = pass == 3 ? 0.2 : 0;
+        }
         if (!buildSpacingPlanImpl4(system, candidate, reason, options, preparedMerged, input, preparation))
             return false;
         if (candidate.width <= targetWidth) {
@@ -1345,6 +1972,26 @@ static bool squeezeSpacingPlanImpl4(System* system, qreal targetWidth, SpacingPl
         }
         options.stretchReduction -= 0.33;
         options.squeezeFactor -= 0.2;
+    }
+    if (tightGroup) {
+        // Last resort in Studio: reduce only rhythmic advances and rebuild
+        // segment and measure positions together, even if notes overlap.
+        for (int percent = 95; percent > 0; percent -= 5) {
+            for (auto& s : candidate.segments)
+                if (!s.ignored && s.segment->isChordRestType())
+                    s.width *= percent / 100.0;
+            qreal edge = system->leftMargin();
+            for (auto& m : candidate.measures) {
+                moveMeasure4(candidate, m, edge - m.x);
+                reflowMeasure4(candidate, m);
+                edge += m.width;
+            }
+            candidate.width = edge;
+            if (edge <= targetWidth) {
+                result = std::move(candidate);
+                return true;
+            }
+        }
     }
     if (reason)
         *reason = "Target needs stronger compression than the adapted squeeze passes";
@@ -1388,15 +2035,18 @@ bool selectSystemSpacingPlan4(System* system, const SpacingSystemRequest4& reque
         return fail("Invalid spacing system width");
     if (request.pass == SpacingPass4::FINAL && !std::isfinite(request.fillLimit))
         return fail("Invalid spacing system fill limit");
+    if (request.pass == SpacingPass4::FINAL && request.previousPrefix)
+        return fail("Final spacing cannot use a pending courtesy seed");
     SpacingPlan4 plan;
     if (request.pass == SpacingPass4::CANDIDATE) {
         SpacingPlanOptions4 options;
         options.slurPolicy = request.slurPolicy;
-        if (!buildSpacingPlan4(system, plan, attachments, reason, options, preparedMerged)) return false;
+        if (!buildSpacingPlanImpl4(system, plan, reason, options, preparedMerged, &attachments.input(),
+                                  &attachments, request.previousPrefix)) return false;
     }
     else {
-        if (!squeezeSpacingPlan4(system, request.availableWidth, plan, attachments, reason,
-                                preparedMerged, request.slurPolicy)) return false;
+        if (!squeezeSpacingPlanImpl4(system, request.availableWidth, plan, reason, preparedMerged,
+                                    &attachments, request.slurPolicy, request.retainedOverfullGroup)) return false;
         if (spacingSystemJustified4(system->lastMeasure(), request.next, plan.width, request.availableWidth,
                                     request.fillLimit) && !justifySpacingPlan4(plan, request.availableWidth))
             return fail("Final plan justification rejected");
@@ -1442,6 +2092,7 @@ bool spacingPlanPublicationValid4(const System* system, const SpacingPlan4& plan
     const auto fail = [reason](const char* text) { if (reason) *reason = text; return false; };
     if (!system || !system->score() || plan.measures.empty() || !(plan.width > 0) || !std::isfinite(plan.width))
         return fail("Invalid publication system or width");
+    if (plan.trialOnly) return fail("Pending courtesy trial cannot be published");
     std::map<const Segment*, qreal> segmentX;
     std::set<const Chord*> mains;
     std::vector<const Rest*> measureRests;
@@ -1549,6 +2200,15 @@ bool publishSpacingPlanSegments4(System* system, const SpacingPlan4& plan, QStri
         s.segment->setWidth(s.width);
         s.segment->setStretch(s.stretch);
         s.segment->setSpacingWidthOffset4(s.widthOffset);
+    }
+    const SpacingSegmentPlan4* previous = nullptr;
+    for (const auto& s : plan.segments) {
+        if (s.ignored || !s.segment->isChordRestType() || !traceSpacingMeasure4(s.segment->measure())) continue;
+        if (previous && previous->segment->measure() == s.segment->measure())
+            qDebug().noquote() << "Studio spacing trace: published"
+                << previous->segment->tick().ticks() << "->" << s.segment->tick().ticks()
+                << (s.x - previous->x) / s.segment->spatium() << "sp";
+        previous = &s;
     }
     return true;
 }

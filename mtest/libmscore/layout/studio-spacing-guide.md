@@ -1,5 +1,295 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.252: manual leading space during courtesy fitting
+
+Native `tst_spacing` passed for v0.251. The paired screenshots agreed
+on the first-note gaps after key, meter and combined changes.
+
+Allow those edits in the trial that still shows the previous measure's
+courtesy signatures. Keep the courtesy geometry in the trial. After
+acceptance, reuse the existing refresh against the ordinary interior
+barline, preserving the verified fixed offsets on rhythmic springs in
+the carried prefix.
+
+The paired fixture alternates a −0.5-space edit on beat two with +1
+space after both signatures. Run
+`tst_spacing pendingCourtesyTrial4:manual-leading-space` to check
+acceptance, refresh, two automatic wrap points and widening again.
+
+## v0.251: manual leading space after an interior signature
+
+Native mtests passed for v0.250. With matching notes, the split and
+unbroken start-repeat examples agreed visually with Studio.
+
+Allow the first onset to carry manual leading space after an ordinary
+key or numeric time signature, or both, inside a system. The signature
+segments must be at the bar start and follow a generated normal end
+barline. Use the existing onset adjustment without adding to rhythmic
+spring weights. Borrowed courtesy prefixes still fall back when an edit
+is present.
+
+The matched scores use a control, a +1-space key change, a −0.5-space
+meter change, and a +1-space combined change. The test removes and
+reapplies the edits, checks the gap from the last signature to the note,
+and verifies that the gap between the two signatures stays fixed.
+
+## v0.250: manual leading space after a start repeat
+
+Native mtests passed for v0.249. The paired screenshots agree closely
+on the ordinary barline and system-start edits.
+
+Accept manual leading space at the first onset when the previous active
+segment is the native generated start-repeat barline in that measure.
+Use the existing repeat geometry and the Studio onset offset; the
+barline and rhythmic spring weights do not acquire a manual offset.
+The existing guards for courtesy snapshots, grace and cross-staff
+geometry, right-aligned marks, and centered rests remain in effect.
+
+R1 shows +1 space after a system-start repeat. R3 shows −0.5 after the
+start repeat of a joined end/start pair. The test checks the edited gap
+against a reset gap, then breaks the system after R2 and repeats the
+check with R3 under a new system header.
+
+## v0.249: manual leading space at bar starts
+
+Native mtests passed for v0.248. The paired captures agreed on the
+control, +1-space, and −0.5-space interior gaps.
+
+Admit a first rhythmic onset after an ordinary generated end barline
+or after the standard system header on one pitched staff. The offset
+moves the onset without charging the barline or header to a rhythmic
+spring. At system start, preserve the offset when applying the minimum
+start distance: clamp the shifted onset and the rhythmic cursor
+separately, as in Studio's `spaceSegments`. Keep repeat and mixed
+boundaries, centered full-measure rests, and moves before the preceding
+barline outside this scope.
+
+The paired scores show a control, a +1-space note and a −0.5-space
+quarter rest after barlines, and a +1-space note at a forced system
+start. The regression removes and reapplies the edits, checking actual
+onset positions, planned fitting and final layout, and the absence
+of any rhythmic spring offset on those bars.
+
+## v0.248: manual leading space on an interior onset
+
+Native mtests passed for v0.247. The visual sweep confirmed that at a
+2.44-inch right margin the four-bar system now fits inside the staff;
+at 2.45 the break moves before N2 and N2–N4 stay together.
+
+Admit signed manual leading space on interior chord/rest onsets with
+an immediately preceding rhythmic segment on one pitched staff. The
+pinned Studio `HorizontalSpacing::spaceSegments` shifts the placed
+onset after the collision walk without advancing the rhythmic cursor.
+Its preceding spring carries the fixed adjustment, with a negative
+adjustment bounded by that pass's rhythmic advance. Rebuild that
+derived offset from the score, so justification excludes it from the
+stretchable width. Boundary edits and combinations with a borrowed
+courtesy prefix, grace projections, cross-staff constraints, or
+right-aligned items retain fallback.
+
+The matched scores show a control bar, +1 space before beat two, and
+−0.5 space before beat two. The regression checks the natural onset
+positions and fixed offsets, a compressed pass followed by
+justification, and a relayout after the edits are removed.
+
+## v0.247: tight squeeze for a retained group
+
+The v0.246 native mtests passed, but the visual sweep exposed a gap near
+the wrap: at a 2.44-inch right margin in Evolution the staff ended before
+the last notes and barline. At 2.45 the group moved to the next system.
+Studio 4.7.5 still kept four bars on the first system at 2.45 and wrapped
+at 2.46. Keep those break decisions separate from the drawing failure.
+
+When a planned, plain single-staff group is retained despite overflow,
+the final planner can try Studio's two remaining padding levels with
+zero (rather than negative) rhythmic advance. If needed, apply the
+reference's stepped rhythmic width reduction and reflow the same
+segment plan before publishing. This avoids handing a successfully
+squeezed group to the legacy stretch path, which can reduce measure
+boxes without moving notes when the target is below the native minimum.
+The collector's fit and break rules have not changed.
+
+Reuse the v0.246 score. The regression now checks 2.43, 2.44 and 2.45-inch
+right margins as well as just before the locally measured wrap. Check
+the group stays intact, the final plan is used, and visible note and
+barline extents fit inside their measures.
+
+## v0.246: keep with next during fitting
+
+Native mtests passed for v0.244 and v0.245. In v0.245 the v0.243 fixture
+wrapped at a reported 3.49-inch right margin, versus 3.50 in 4.7.5, with
+the expected G-major and 4/4 courtesies after C3. The reported page-height
+difference (11.69 inches in Evolution versus 11 in Studio) is separate
+from horizontal fitting and remains a vertical-layout comparison item.
+
+Admit plain measures with a no-break mark to Studio candidate fitting.
+As in the pinned 4.7.5 collector, a successful candidate may run over
+the natural width if the preceding measure must stay with it. Complete
+the group, resume normal break decisions at its end, and let the final
+spacing pass squeeze the retained system. If the first measure of a
+group already overflows an unmarked predecessor, break before the
+group. Legacy spacing and unsupported candidate fallback retain their
+existing rollback. Repeats, section boundaries and signature/courtesy
+mixtures with no-break groups remain outside this candidate scope.
+
+In the paired five-bar scores, N2 and N3 are marked to keep with the
+following bar. Compare as saved, then increase the right margin until
+N1 stands alone. N2–N4 should stay together at both widths. The native
+regression derives both widths from natural fitting trials and verifies
+that the overfull retained system is squeezed to its target width.
+
+## v0.245: refresh the last pair after removing a courtesy
+
+The v0.244 visual comparison showed close agreement for sharps, flats and
+cancellation naturals. On the v0.243 score the reported Evolution wrap
+moved from 3.58 to 3.57 inches, versus 3.50 in Studio 4.7.5. That leaves
+roughly 0.07 inches to account for. Native v0.244 mtests were still running
+at the visual checkpoint.
+
+The pinned 4.7.5 collector (`systemlayout.cpp` blob
+`516188a75a42d193b9cb4baa02aac0c9a08bf85e`) reruns incremental spacing
+after finalizing the predecessor, keeping the active positions and
+advances from that predecessor and touching only the last two measures.
+The v0.243 implementation rebuilt the entire retained prefix here. For
+consecutive ordinary courtesies, now reuse the accepted trial, allowing
+the certified penultimate courtesy segments to become inactive. Keep
+the saved positions and advances through the surviving end barline, use
+its updated shape in collisions, and reconstruct the last pair. If the
+saved data do not match, use the previous full rebuild. This refresh
+seeds the following trial and does not change the earlier fit decision
+or final system publication.
+
+Repeat the v0.243 wrap comparison after applying this patch. For width
+diagnostics, run `tst_spacing pendingCourtesyTrial4:consecutive-changes`
+with `MSCORE_TRACE_COURTESY_FIT=1`. Widths are in staff spaces, including
+the left margin. A refresh line is the accepted prefix after courtesy
+removal; the next trial line tests one more measure. The optional Studio
+4.7.5 trace patch prints the same values for the first music system when
+launched with the same environment variable. Compare the as-saved files
+first, then repeat at matched right margins near the wrap.
+
+## v0.244: key signature formation
+
+v0.243 passed native mtests. Both comparison scores displayed the G-major
+and 4/4 courtesies after C3 when C4 wrapped, at reported right margins of
+3.50 inches in Studio 4.7.5 and 3.58 inches in Evolution. The zoomed crops
+showed a separate difference inside the D-major signature: 1.10 spaces
+between corresponding sharp strokes in 4.7.5 and 1.00 in Evolution.
+
+With Studio spacing on, ordinary key signatures place successive symbols
+using the preceding glyph width, the accidental or natural gap, and the
+font's cutouts when the vertical stagger permits nesting. A mixed pair
+uses twice the accidental gap. This is the rule in 4.7.5's
+`TLayout::layoutKeySig` / `keySigAddLayout` (same code in the pinned score
+renderer blob `4bca2f6242674face49d1da47a00cb64ea841431`). The two style
+values default to 0.3 and 0.4 spaces and are read from both score formats.
+The existing clef, cancellation, courtesy and custom-key policies are
+retained; the union of the placed glyphs supplies the existing bbox
+consumer. Per-glyph inter-segment collision shapes are a separate change.
+
+The comparison score covers long runs of sharps and flats, cancellation
+naturals before and after other symbols, and a courtesy cancellation at a
+system break. The v0.243 score can also be remeasured to see how much of
+its wrap difference is affected by the corrected formation.
+
+## v0.243: consecutive courtesy changes
+
+v0.242 passed native mtests. The comparison kept all three measures together
+as saved and wrapped C3 at a right margin of 2.76 inches in Studio 4.7.5
+and 2.77 inches in Evolution. Both showed the key and time courtesies at
+the end of C2 and the full signatures at the start of C3.
+
+When a pending-courtesy trial fits and its last measure has a courtesy of
+its own, rebuild the retained prefix before appending the following measure.
+At that point native collection has already disabled the earlier courtesy
+and finalized its barline. Use only the rebuilt plan as the next trial's
+seed. A failed rebuild leaves the normal fallback in place, and a rejected
+trial still retains the current system's terminal courtesy. The refresh
+neither changes the previous fit decision nor publishes segment positions.
+
+The new four-bar fixture changes key and meter at every boundary. The
+regression exercises successive accepted trials, then independently wraps
+C3 and C4, and restores the original width. At each break, only the last
+measure on the first system carries courtesies and the double barline.
+For visual comparison, open both scores as saved, then increase the right
+margin until C4 wraps; increase it again to check the break before C3.
+
+## v0.242: pending courtesy after a longer accepted prefix
+
+v0.241 passed native mtests. Both comparison scores kept both bars on one
+system as saved and wrapped C2 at the tested 1.83-inch right margin. The
+wrapped first system retained the courtesy D-major key signature and 3/4.
+
+Extend the pending-courtesy trial to any ordinary, successfully planned
+prefix ending in a certified trailer. Copy and validate the prior plan's
+measure extents, active segment identities, positions and advances. As in
+the pinned Studio incremental pass, only the predecessor and new measure
+participate in collision checks, width reconstruction and minimum-width
+growth. Earlier measure positions and widths are preserved. The trial stays
+read-only, and a rejected trial retains the native terminal trailer. The
+previous snapshot is consumed once, including on fallback. Consecutive
+pending transitions still need a fresh plan after predecessor finalization;
+a trial-only snapshot cannot seed the following trial.
+
+The native regression tests two and three bars at fitting width, then
+between the accepted prefix width and the next trial width, then at the
+original width again. The natural signature fixture also exercises longer
+prefixes. For the v0.242 visual pair, compare as saved, then increase the
+right margin in both until C3 wraps while C1 and C2 stay together. At that
+break, the D-major key signature and 3/4 belong at the end of C2 as
+courtesies and at the start of C3 as full signatures.
+
+### Remaining horizontal coverage
+
+The source guards suggest roughly four to six focused batches plus a
+mixed-score verification pass for broad coverage of ordinary pitched
+scores. This is a planning estimate, not a count of missing rules:
+
+- Finish collection and finalization combinations: adjacent signature
+  changes, clef/signature and repeat mixtures, and no-break boundaries.
+- Expand owned geometry and distance policy for lyrics, chord symbols,
+  other width-bearing annotations and explicit leading space.
+- Broaden rhythmic mixtures: independent cross-staff voices, tremolos,
+  and the currently guarded rest, tuplet and decoration combinations.
+- Handle score structure such as frames, multimeasure rests and hidden
+  staves; verify fit, squeeze and distribution together on mixed scores.
+
+Specialized staff and presentation coverage (TAB, percussion, and time
+signatures above or across staves) needs its own later audit and controls.
+Vertical justification, general slur curvature and performance are
+separate from this horizontal coverage estimate.
+
+## v0.241: carry the singleton courtesy into a two-measure trial
+
+v0.240 is accepted on the original 3.x base: the native mtests pass, the
+fitting captures both break at H1–H3 / H4–H6 / H7–H8, and the natural
+controls agree closely in horizontal spacing. The larger vertical gaps
+between systems in the 4.7.5 fitting capture are a separate follow-up:
+compare vertical justification and page-spacing settings on a matched page
+before attributing that difference to a particular vertical layout rule.
+
+When a successful singleton candidate ends in an ordinary key/time courtesy,
+retain its planned segment coordinates and advances for the immediately
+following trial in the same system collection. A certified two-measure
+candidate starts the new measure's collision walk at the saved courtesy
+edge. This follows the pinned Studio incremental walk: the predecessor
+positions are loaded before the new measure is spaced, and the collision
+walk can still distribute extra space backward into its notes. Preserve
+native trailer creation, acceptance/removal, and overflow rollback.
+The borrowed plan is read-only and the resulting trial is ineligible for
+publication. Discard the seed after that trial. Longer prefixes, missing or
+mismatched seeds, and unprepared or unsupported courtesy combinations
+retain the previous fallback.
+
+The new two-measure mtest checks the fitting candidate, the same trial
+overflowing and retaining both courtesy symbols, and fitting again after
+restoring page width. The v0.241 paired scores use the saved style settings.
+For a visual wrap comparison, first open both as saved, then reduce page
+width in both with the same margins until the second bar moves to the next
+system. Check that the first system then ends with the courtesy key and 3/4.
+The other backports and vertical justification remain separate from this
+horizontal checkpoint.
+
 ## v0.240 aggregate gate: bounded signature-aware collection
 
 Apply the combined v0.237-v0.240 patch over accepted v0.236, or the four ordered

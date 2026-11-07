@@ -30,6 +30,7 @@ struct SpacingDecision4 {
     Fraction firstTick = Fraction(0, 1), endTick = Fraction(0, 1);
     int measures = 0;
     qreal width = 0, available = 0;
+    qreal courtesyRefreshWidth = 0; // previous prefix width after incremental courtesy finalization
     QString reason;
 };
 // Query/test observer, scoped to one score and the current thread. Callbacks
@@ -40,7 +41,7 @@ class SpacingDecisionScope4 {
     std::function<void(const SpacingDecision4&)> _handler;
     SpacingDecisionScope4* _previous;
     friend bool spacingDecisionObserved4(const Score*);
-    friend void recordSpacingDecision4(const System*, SpacingPass4, SpacingPath4, qreal, qreal, const QString&);
+    friend void recordSpacingDecision4(const System*, SpacingPass4, SpacingPath4, qreal, qreal, const QString&, qreal);
 public:
     SpacingDecisionScope4(const Score*, std::function<void(const SpacingDecision4&)>);
     ~SpacingDecisionScope4();
@@ -49,7 +50,7 @@ public:
 };
 bool spacingDecisionObserved4(const Score*);
 void recordSpacingDecision4(const System*, SpacingPass4, SpacingPath4, qreal width, qreal available,
-                            const QString& reason = QString());
+                            const QString& reason = QString(), qreal courtesyRefreshWidth = 0);
 
 // Certify native repeat-barline preparation for the explicit collected prefix.
 // CANDIDATE is queried after appending a trial last measure, before the native
@@ -59,9 +60,11 @@ void recordSpacingDecision4(const System*, SpacingPass4, SpacingPath4, qreal wid
 bool spacingRepeatBarlinesReady4(const System*, SpacingPass4, QString* reason = nullptr);
 
 // Certify ordinary interior key/time changes and terminal courtesy producers.
-// Pending penultimate courtesies retain fallback until incremental spacing is
-// adapted. The query never prepares or changes native header/trailer geometry.
-bool spacingCandidateSignaturesReady4(const System*, QString* reason = nullptr);
+// A pending trailer can be certified at the penultimate measure. The
+// planner separately checks the preceding prefix plan. The query leaves native
+// header and trailer geometry untouched.
+bool spacingCandidateSignaturesReady4(const System*, QString* reason = nullptr,
+                                      bool allowPendingTrailer = false);
 
 // Read-only preparation for cross-staff placement. This first context covers
 // one automatic eighth-note beam of up to two unmirrored normal notes per chord
@@ -111,6 +114,8 @@ struct SpacingPlan4 {
     std::vector<GraceAfterPlan4> afterGraces; // Target-relative; retained through justification/squeezing.
     std::vector<GraceMergedPlan4> mergedGraces; // Per-member ownership retained through fitting.
     qreal width = 0; // right system edge, including left margin
+    bool hasOrdinaryTies = false; // Keep their clearance out of the last-resort compression.
+    bool trialOnly = false; // includes a courtesy that has not been finalized
 };
 struct SpacingPlanOptions4 {
     qreal stretchReduction = 1;
@@ -128,6 +133,10 @@ struct SpacingSystemRequest4 {
     const MeasureBase* next = nullptr;
     qreal fillLimit = 0;
     SpacingSlurPolicy4 slurPolicy = SpacingSlurPolicy4::PREPARED;
+    bool retainedOverfullGroup = false;
+    // Borrow the preceding prefix for a pending trailer, or the just-accepted
+    // trial of the same size after the native predecessor trailer is removed.
+    const SpacingPlan4* previousPrefix = nullptr;
 };
 bool spacingSystemJustified4(const Measure* last, const MeasureBase* next,
                              qreal naturalWidth, qreal availableWidth, qreal fillLimit);

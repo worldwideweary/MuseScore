@@ -13,6 +13,15 @@ namespace Ms {
 class Element;
 class Chord;
 class Note;
+class Tie;
+struct TieObstacleDiagnostic4 {
+    const Element* item = nullptr;
+    const char* reason = nullptr;
+};
+// Null means the tie is accepted by the ordinary spacing policy.
+const char* ordinaryTieRejection4(const Tie*, TieObstacleDiagnostic4* = nullptr);
+bool spacingChordArticulationsSupported4(const Chord*);
+bool spacingPedalSymbol4(const Element*);
 class Score;
 struct SpacingShape4;
 class SpacingInput4;
@@ -36,7 +45,7 @@ struct SpacingPairPolicy4 {
 // Snapshot common-type padding once per pass; rebuild after style changes.
 class SpacingPaddingTable4 {
     const Score* _score;
-    std::array<std::array<qreal, 13>, 13> _padding;
+    std::array<std::array<qreal, 15>, 15> _padding;
 public:
     explicit SpacingPaddingTable4(const Score*);
     const Score* score() const { return _score; }
@@ -133,6 +142,6 @@ bool spacingShapeDistance4(const SpacingPaddingTable4&, const SpacingShape4&, co
 // voice's policy; unknown ownership or unsupported shared types reject the view.
 bool spacingCollisionProjection4(const SpacingPaddingTable4&, const SpacingShape4&,
                                  qreal shapeSpatium, SpacingShape4& result, const SpacingGraceContext4* = nullptr,
-                                 SpacingContextCache4* = nullptr);
+                                 SpacingContextCache4* = nullptr, QString* reason = nullptr);
 }
 #endif

@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include <QRegularExpression>
 #include "spacingprofile4.h"
 #include "accidental.h"
 #include "ambitus.h"
@@ -3302,6 +3303,12 @@ void Score::getNextMeasure(LayoutContext& lc)
             return;
             }
 
+      // KeySig::layout() uses the preceding clef at the same tick.
+      if (styleB(Sid::spacingLayout4)
+          && measure->findSegmentR(SegmentType::Clef, Fraction(0, 1))
+          && measure->findSegmentR(SegmentType::KeySig, Fraction(0, 1)))
+            measure->sortRepeatSegments();
+
       measure->connectTremolo();
 
       //
@@ -4366,8 +4373,9 @@ static bool nativeSystemSpacingPlan4(System* system, const SpacingSystemRequest4
 // Repeat end/start transitions may change when the predecessor is accepted;
 // each candidate rebuilds from that phase's fresh geometry. Keep the native
 // width accumulator intact for unsupported-context fallback/backtracking.
-static bool systemFittingWidth4(System* system, qreal availableWidth, qreal& width, std::vector<GraceBeamPreparation4>& preparedBeams,
-                                SpacingDirectionReadiness4* readiness, QString* reason = nullptr)
+static bool systemFittingPlan4(System* system, qreal availableWidth, std::vector<GraceBeamPreparation4>& preparedBeams,
+                               SpacingDirectionReadiness4* readiness, SpacingPlan4& result,
+                               const SpacingPlan4* prefix = nullptr, QString* reason = nullptr)
 {
     const auto fail = [reason](const char* text) {
         if (reason) *reason = QString::fromLatin1(text);
@@ -4375,24 +4383,46 @@ static bool systemFittingWidth4(System* system, qreal availableWidth, qreal& wid
     };
     if (MScore::noHorizontalStretch || system->score()->styleB(Sid::hideEmptyStaves))
         return fail("Candidate stretch/hidden-staff boundary");
+    bool keepTogether = false;
     for (MeasureBase* mb : system->measures()) {
         if (!mb->isMeasure())
             return fail("Candidate contains a frame");
         const Measure* m = toMeasure(mb);
-        if (m->noBreak() || measureMayHaveBeamsJoinedIntoNext(m))
-            return fail("Candidate break/joined-beam boundary");
+        if (measureMayHaveBeamsJoinedIntoNext(m))
+            return fail("Candidate joined-beam boundary");
+        keepTogether = keepTogether || m->noBreak();
     }
-    if (!spacingCandidateSignaturesReady4(system, reason)) return false;
+    const auto& measures = system->measures();
+    if (keepTogether) {
+        // Admit plain groups first. Signatures and repeats can change their
+        // barline/trailer phase when a group crosses a system boundary.
+        for (const MeasureBase* mb : measures) {
+            const Measure* m = toMeasure(mb);
+            if (m->repeatStart() || m->repeatEnd() || m->sectionBreak()
+                || m->trailer() || m->hasCourtesyKeySig())
+                return fail("Candidate no-break group with repeat, section or courtesy");
+            for (const Segment& s : m->segments()) {
+                if (!s.enabled() || !s.visible() || s.allElementsInvisible())
+                    continue;
+                if (s.isClefType() || (mb != measures.front() && (s.isKeySigType() || s.isTimeSigType())))
+                    return fail("Candidate no-break group with an interior signature");
+            }
+        }
+    }
+    const bool carryTrailer = prefix && !prefix->trialOnly
+        && measures.size() > 1 && prefix->measures.size() == measures.size() - 1
+        && prefix->measures.back().measure == measures[measures.size() - 2]
+        && prefix->measures.back().measure->trailer();
+    const bool refresh = prefix && prefix->trialOnly;
+    if (!spacingCandidateSignaturesReady4(system, reason, carryTrailer || refresh)) return false;
     if (!spacingRepeatBarlinesReady4(system, SpacingPass4::CANDIDATE, reason)) return false;
     NativeGraceInputs4 inputs(system->score(), spacingMeasures4(system), readiness);
     SpacingGraceQueryScope4 graceScope(system->score(), inputs.factory());
     SpacingSystemRequest4 request;
     request.availableWidth = availableWidth;
     request.slurPolicy = inputs.factory()->policy();
-    SpacingPlan4 plan;
-    if (!nativeSystemSpacingPlan4(system, request, &inputs, preparedBeams, plan, reason)) return false;
-    width = plan.width;
-    return true;
+    if (carryTrailer || refresh) request.previousPrefix = prefix;
+    return nativeSystemSpacingPlan4(system, request, &inputs, preparedBeams, result, reason);
 }
 
 // Allocate positive spare width with one force across an ordinary system.
@@ -4484,8 +4514,26 @@ System* Score::collectSystem(LayoutContext& lc)
       MeasureBase* breakMeasure = nullptr;
 
       QList<System *> brokenSystems;
+      SpacingPlan4 previousCandidate;
+      bool retainedOverfullGroup = false;
 
       while (lc.curMeasure) {    // collect measure for system
+            qreal courtesyRefreshWidth = 0;
+            if (previousCandidate.trialOnly) {
+                  // The accepted trial's predecessor trailer and end barline
+                  // have been finalized. Replay the last pair before appending
+                  // another measure, keeping the older coordinates and widths.
+                  SpacingPlan4 accepted = std::move(previousCandidate);
+                  previousCandidate = {};
+                  if (lc.curMeasure->isMeasure()) {
+                        if (systemFittingPlan4(system, systemWidth, preparedBeams, lc.spacingDirections4.get(),
+                              previousCandidate, &accepted))
+                              courtesyRefreshWidth = previousCandidate.width;
+                        else
+                              systemFittingPlan4(system, systemWidth, preparedBeams, lc.spacingDirections4.get(),
+                                    previousCandidate);
+                        }
+                  }
             System* oldSystem = lc.curMeasure->system();
             system->appendMeasure(lc.curMeasure);
 
@@ -4541,21 +4589,37 @@ System* Score::collectSystem(LayoutContext& lc)
             // collect at least one measure and the break
 
             qreal fittingWidth = minWidth + ww;
+            bool planned = false;
             if (styleB(Sid::spacingLayout4)) {
                   const bool observed = spacingDecisionObserved4(this);
                   QString reason;
-                  const bool planned = systemFittingWidth4(system, systemWidth, fittingWidth, preparedBeams,
-                        lc.spacingDirections4.get(), observed ? &reason : nullptr);
+                  SpacingPlan4 candidate;
+                  planned = systemFittingPlan4(system, systemWidth, preparedBeams,
+                        lc.spacingDirections4.get(), candidate, &previousCandidate, observed ? &reason : nullptr);
+                  // Consume the seed once, including on fallback. A trial-only
+                  // plan can seed only the replay after native finalization.
+                  previousCandidate = {};
+                  if (planned) {
+                        fittingWidth = candidate.width;
+                        if (system->lastMeasure()->trailer())
+                              previousCandidate = std::move(candidate);
+                        }
                   if (observed)
                         recordSpacingDecision4(system, SpacingPass4::CANDIDATE,
                               MScore::noHorizontalStretch ? SpacingPath4::NO_STRETCH
                               : planned ? SpacingPath4::FULL_PLAN : SpacingPath4::NATIVE_WIDTHS,
-                              fittingWidth, systemWidth, reason);
+                              fittingWidth, systemWidth, reason, courtesyRefreshWidth);
                   }
             else if (spacingDecisionObserved4(this))
                   recordSpacingDecision4(system, SpacingPass4::CANDIDATE, SpacingPath4::STYLE_OFF,
                         fittingWidth, systemWidth);
-            bool doBreak = (system->measures().size() > 1) && (fittingWidth > systemWidth);
+            // Studio accepts an overfull trial at a keep-with-next boundary,
+            // then squeezes the retained system. Use this rule only when the
+            // Studio candidate succeeded; native fallback keeps its rollback.
+            const bool keepWithPrevious = planned && lc.prevMeasure && lc.prevMeasure->system() == system
+                  && lc.prevMeasure->noBreak();
+            retainedOverfullGroup = retainedOverfullGroup || (keepWithPrevious && fittingWidth > systemWidth);
+            bool doBreak = (system->measures().size() > 1) && (fittingWidth > systemWidth) && !keepWithPrevious;
             if (doBreak) {
                   breakMeasure = lc.curMeasure;
                   system->removeLastMeasure();
@@ -4675,7 +4739,26 @@ System* Score::collectSystem(LayoutContext& lc)
             MeasureBase* curMB = lc.curMeasure;
             Measure* m = curMB && curMB->isMeasure() ? toMeasure(curMB) : nullptr;
             bool curMeasureMayHaveJoinedBeams = m && measureMayHaveBeamsJoinedIntoNext(m);
-            if (lc.prevMeasure == lc.systemOldMeasure && !curMeasureMayHaveJoinedBeams) {
+            // Legacy width restoration loses Studio placement at a start
+            // repeat or an edited onset in the measures touched by lookahead.
+            bool nextNeedsStudioLayout = false;
+            if (styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch) {
+                  const MeasureBase* lastTouched = breakMeasure ? breakMeasure : m;
+                  for (const Measure* touched = m; touched; touched = touched->nextMeasure()) {
+                        nextNeedsStudioLayout = touched->repeatStart();
+                        if (!nextNeedsStudioLayout) {
+                              for (const Segment& s : touched->segments()) {
+                                    if (s.enabled() && s.isChordRestType() && s.extraLeadingSpace().val() != 0) {
+                                          nextNeedsStudioLayout = true;
+                                          break;
+                                          }
+                                    }
+                              }
+                        if (nextNeedsStudioLayout || touched == lastTouched || !touched->noBreak())
+                              break;
+                        }
+                  }
+            if (lc.prevMeasure == lc.systemOldMeasure && !curMeasureMayHaveJoinedBeams && !nextNeedsStudioLayout) {
                 // If current measure has possible beams joining to the next, we need to continue layout. This needs a better solution in future. [M.S.]
                   // this system ends in the same place as the previous layout
                   // ok to stop
@@ -4754,16 +4837,20 @@ System* Score::collectSystem(LayoutContext& lc)
             finalInputs.reset(new NativeGraceInputs4(this, spacingMeasures4(system), lc.spacingDirections4.get()));
       SpacingGraceQueryScope4 finalGraceScope(this, finalInputs ? finalInputs->factory() : nullptr);
       const bool observeDecision = spacingDecisionObserved4(this);
+      const bool logFallback = MScore::showStudioSpacingFallbacks && !printing()
+            && styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch;
       QString decisionReason;
+      QString* reason = observeDecision || logFallback ? &decisionReason : nullptr;
       SpacingSystemRequest4 finalRequest;
       finalRequest.pass = SpacingPass4::FINAL;
       finalRequest.availableWidth = systemWidth;
       finalRequest.next = lc.curMeasure;
       finalRequest.fillLimit = styleD(Sid::lastSystemFillLimit);
+      finalRequest.retainedOverfullGroup = retainedOverfullGroup;
       if (finalInputs) finalRequest.slurPolicy = finalInputs->factory()->policy();
       SpacingPlan4 studioPlan;
       bool useStudioPlan = nativeSystemSpacingPlan4(system, finalRequest, finalInputs.get(), preparedBeams,
-                                                   studioPlan, observeDecision ? &decisionReason : nullptr);
+                                                   studioPlan, reason);
       // Collection revalidates this preparation memo against fresh projections.
       // It has no role after selection and must not cross publication writes.
       preparedBeams.clear();
@@ -4772,7 +4859,7 @@ System* Score::collectSystem(LayoutContext& lc)
       // views before this first publication write. Candidate/final requests use
       // the same prepared policy and retain only the selected placement plan.
       if (useStudioPlan) {
-            useStudioPlan = publishSpacingPlanSegments4(system, studioPlan, observeDecision ? &decisionReason : nullptr);
+            useStudioPlan = publishSpacingPlanSegments4(system, studioPlan, reason);
             if (useStudioPlan) for (const SpacingMeasurePlan4& m : studioPlan.measures)
                   studioMeasures[m.measure] = &m;
             }
@@ -4891,6 +4978,31 @@ System* Score::collectSystem(LayoutContext& lc)
                   joint.target->segment()->createShape(joint.target->vStaffIdx());
             }
       }
+
+      system->setStudioSpacingFallback(styleB(Sid::spacingLayout4)
+            && !MScore::noHorizontalStretch && !useStudioPlan && system->firstMeasure());
+
+      if (Measure* first = system->firstMeasure()) {
+            const QString message = logFallback && system->studioSpacingFallback()
+                  ? (decisionReason.isEmpty() ? QStringLiteral("No reason reported") : decisionReason) : QString();
+            if (first->updateSpacingFallbackLog(message) && !message.isEmpty()) {
+                  // Keep the original reason for deduplication and observers;
+                  // move its location to the front only in the debug log.
+                  static const QRegularExpression location(QStringLiteral(
+                        R"( \[measure (-?[0-9]+)(?:, ([^\]]+))?\]$)"));
+                  const auto match = location.match(message);
+                  if (match.hasMatch()) {
+                        QString reason = message.left(match.capturedStart());
+                        if (!match.captured(2).isEmpty())
+                              reason += QStringLiteral(" (%1)").arg(match.captured(2));
+                        qDebug().noquote() << QStringLiteral("Studio spacing fallback at measure %1: %2")
+                              .arg(match.captured(1), reason);
+                        }
+                  else
+                        qDebug().noquote() << "Studio spacing fallback: system starts at measure"
+                              << first->no() + 1 << "-" << message;
+                  }
+            }
 
       if (observeDecision)
             recordSpacingDecision4(system, SpacingPass4::FINAL,

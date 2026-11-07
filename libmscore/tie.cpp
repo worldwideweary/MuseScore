@@ -29,6 +29,8 @@
 #include "undo.h"
 #include "utils.h"
 
+#include <cmath>
+
 namespace Ms {
 
 Note* Tie::editStartNote;
@@ -694,10 +696,29 @@ void TieSegment::adjustX()
       if (isNudged() || isEdited())
             return;
 
+      const bool useLedgerInk = score()->styleB(Sid::spacingLayout4)
+            && spannerSegmentType() == SpannerSegmentType::SINGLE && sc && ec
+            && sc->measure() == ec->measure() && !sc->staffMove() && !ec->staffMove()
+            && !beginGrace && !endGrace && sn->line() == en->line() && tie()->isInside();
+      const auto ledgerNeedsHorizontalRoom = [&](const LedgerLine* ledger, const Chord* chord, qreal gripY) {
+            // For an ordinary level tie above the staff, the curve leaves
+            // the grip away from a ledger on the opposite side. Allow
+            // horizontal overlap only if the ink also clears vertically.
+            if (useLedgerInk && gripY < 0 && !chord->staffMove()) {
+                  const qreal ledgerY = chord->y() + ledger->y();
+                  const qreal away = tie()->up() ? ledgerY - gripY : gripY - ledgerY;
+                  const qreal mag = staff() ? staff()->mag(tie()->tick()) : 1.0;
+                  const qreal stroke = qMax(score()->styleP(Sid::tieMidWidth),
+                                            score()->styleP(Sid::tieEndWidth)) * mag;
+                  if (away > ledger->lineWidth() * 0.5 + stroke)
+                        return false;
+                  }
+            return qAbs(gripY - ledger->y()) < spatium() * 0.5;
+            };
+
       // ADJUST LEFT GRIP -----------
       if (sc && ((spannerSegmentType() == SpannerSegmentType::SINGLE || spannerSegmentType() == SpannerSegmentType::BEGIN))) {
-            // grips are in system coordinates, normalize to note position
-            QPointF p1 = ups(Grip::START).p + QPointF(system()->pos().x() - sn->canvasX() + sn->headWidth(), 0);
+            const qreal gripY = ups(Grip::START).p.y();
             xo = 0;
             if (!tie()->isOuterTieOfChord(true)) {  // inner ties also clear adjacent notes and stems
                   // for cross-voice collisions, we need a list of all chords at this tick
@@ -716,7 +737,7 @@ void TieSegment::adjustX()
                               qreal hookHeight = chord->hook()->bbox().height();
                               // turn the hook upside down for downstems
                               qreal hookY = chord->hook()->pos().y() - (chord->up() ? 0 : hookHeight);
-                              if (p1.y() > hookY - collisionYMargin  && p1.y() < hookY + hookHeight + collisionYMargin )
+                              if (gripY > hookY - collisionYMargin  && gripY < hookY + hookHeight + collisionYMargin )
                                     xo = qMax(xo, chord->hook()->x() + chord->hook()->width() + chordOffset);
                               }
 
@@ -724,14 +745,14 @@ void TieSegment::adjustX()
                         if (chord->stem() && chord->stem()->visible()) {
                               qreal stemLen = chord->stem()->bbox().height();
                               qreal stemY = chord->stem()->pos().y() - (chord->up() ? stemLen : 0);
-                              if (p1.y() > stemY - collisionYMargin  && p1.y() < stemY + stemLen + collisionYMargin )
+                              if (gripY > stemY - collisionYMargin  && gripY < stemY + stemLen + collisionYMargin )
                                     xo = qMax(xo, chord->stem()->x() + chord->stem()->width() + chordOffset);
                               }
 
                         // adjust for ledger lines
                         for (LedgerLine* currLedger = chord->ledgerLines(); currLedger; currLedger = currLedger->next()) {
                               // search through ledger lines and see if any are within .5sp of tie start
-                              if (qAbs(p1.y() - currLedger->y()) < spatium() * 0.5) {
+                              if (ledgerNeedsHorizontalRoom(currLedger, chord, gripY)) {
                                     xo = qMax(xo, (currLedger->x() + currLedger->len() + chordOffset));
                                     break;
                                     }
@@ -741,7 +762,7 @@ void TieSegment::adjustX()
                               // adjust for dots
                               if (!(innerStart && chord == sc && dotsPlacement == 1) && note->dots().size() > 0) {
                                     qreal dotY = note->pos().y() + note->dots().last()->y();
-                                    if (qAbs(p1.y() - dotY) < spatium() * 0.5)
+                                    if (qAbs(gripY - dotY) < spatium() * 0.5)
                                           xo = qMax(xo, note->x() + note->dots().last()->x() + note->dots().last()->width() + chordOffset);
                                     }
 
@@ -750,7 +771,7 @@ void TieSegment::adjustX()
                                     continue;
                               qreal noteTop = note->y() + note->bbox().top();
                               qreal noteHeight = note->height();
-                              if (p1.y() > noteTop && p1.y() < noteTop + noteHeight)
+                              if (gripY > noteTop && gripY < noteTop + noteHeight)
                                     xo = qMax(xo, note->x() + note->width() + chordOffset);
                               }
                         }
@@ -770,8 +791,7 @@ void TieSegment::adjustX()
 
       // ADJUST RIGHT GRIP ----------
       if (ec && ((spannerSegmentType() == SpannerSegmentType::SINGLE || spannerSegmentType() == SpannerSegmentType::END))) {
-            // grips are in system coordinates, normalize to note position
-            QPointF p2 = ups(Grip::END).p + QPointF(system()->pos().x() - en->canvasX(), 0);
+            const qreal gripY = ups(Grip::END).p.y();
             xo = 0;
             if (!tie()->isOuterTieOfChord(false)) {
                   // for inter-voice collisions, we need a list of all notes from all voices
@@ -787,7 +807,7 @@ void TieSegment::adjustX()
                         qreal chordOffset = (ec->x() + en->x()) - chord->x(); // en->x() for right-offset notes
                         for (LedgerLine* currLedger = chord->ledgerLines(); currLedger; currLedger = currLedger->next()) {
                               // search through ledger lines and see if any are within .5sp of tie end
-                              if (qAbs(p2.y() - currLedger->y()) < spatium() * 0.5)
+                              if (ledgerNeedsHorizontalRoom(currLedger, chord, gripY))
                                     xo = qMin(xo, currLedger->x() - chordOffset);
                               }
 
@@ -795,7 +815,7 @@ void TieSegment::adjustX()
                               // adjust for stems
                               qreal stemLen = chord->stem()->bbox().height();
                               qreal stemY = chord->stem()->pos().y() - (chord->up() ? stemLen : 0);
-                              if (p2.y() > stemY - collisionYMargin  && p2.y() < stemY + stemLen + collisionYMargin )
+                              if (gripY > stemY - collisionYMargin  && gripY < stemY + stemLen + collisionYMargin )
                                     xo = qMin(xo, chord->stem()->x() - chordOffset);
                               }
 
@@ -805,7 +825,7 @@ void TieSegment::adjustX()
                               if (acc && acc->visible()) {
                                     qreal accTop = (note->y() + acc->y()) + acc->bbox().top();
                                     qreal accHeight = acc->height();
-                                    if (p2.y() >= accTop && p2.y() <= accTop + accHeight)
+                                    if (gripY >= accTop && gripY <= accTop + accHeight)
                                           xo = qMin(xo, note->x() + acc->x() - chordOffset);
                                     }
 
@@ -814,7 +834,7 @@ void TieSegment::adjustX()
                               // adjust for shifted notes (such as intervals of unison or second)
                               qreal noteTop = note->y() + note->bbox().top();
                               qreal noteHeight = note->headHeight();
-                              if (p2.y() >= noteTop - collisionYMargin  && p2.y() <= noteTop + noteHeight + collisionYMargin )
+                              if (gripY >= noteTop - collisionYMargin  && gripY <= noteTop + noteHeight + collisionYMargin )
                                     xo = qMin(xo, note->x() - chordOffset);
                               }
                         }
@@ -1132,6 +1152,59 @@ qreal Tie::incomingStartOffset() const
                   x -= last->x() + last->minRight();
             }
       return x + item->x() + right + (item->isBarLine() && !startRepeat ? 0.65 : 0.25) * sp;
+      }
+
+const char* Tie::spacingGripInset4(qreal& inset) const
+      {
+      const Note* a = startNote();
+      const Note* b = endNote();
+      if (isPartial() || !a || !b || a->track() != b->track() || track() != a->track()
+          || a->line() != b->line() || a->isNudged() || b->isNudged())
+            return "unsupported endpoints";
+      const Chord* first = a->chord();
+      const Chord* last = b->chord();
+      const Measure* measure = first->measure();
+      if (!measure || measure != last->measure())
+            return "tie crosses a measure boundary";
+      if (!measure->system())
+            return "measure has no system yet";
+      if (first->staffMove() || last->staffMove() || first->isGrace() || last->isGrace()
+          || first->isNudged() || last->isNudged()
+          || (first->notes().size() == 1 && last->notes().size() == 1))
+            return "unsupported chord context";
+      const Staff* st = a->staff();
+      const StaffType* type = st ? st->staffType(a->tick()) : nullptr;
+      if (!type || !st->isPitchedStaff(a->tick()) || type != st->staffType(b->tick())
+          || type->yoffset().val() != 0 || type->lineDistance().val() != 1)
+            return "unsupported staff geometry";
+      for (size_t i = 0; i < nsegments(); ++i)
+            if (segmentAt(int(i))->isNudged() || segmentAt(int(i))->isEdited()) return "edited tie segment";
+
+      // Use the real grip adjustments on a detached tie copy. Restrict the
+      // probe to grips above the staff, where native layout does not snap
+      // their height to staff lines as the span changes.
+      Tie copy(*this);
+      copy.calculateDirection();
+      SlurPos positions;
+      copy.slurPos(&positions);
+      if (positions.p1.y() != positions.p2.y())
+            return "grips are not level";
+      if (!(positions.p1.y() < 0))
+            return "grips are at or below the top staff line";
+      const auto originX = [](const Chord* chord) {
+            return chord->measure()->x() + chord->segment()->x();
+            };
+      TieSegment probe(score());
+      probe.setSpanner(&copy);
+      probe.setTrack(track());
+      probe.setSpannerSegmentType(SpannerSegmentType::SINGLE);
+      probe.ups(Grip::START).p = positions.p1 - QPointF(originX(first), 0);
+      probe.ups(Grip::END).p = positions.p2 - QPointF(originX(last), 0);
+      probe.adjustX();
+      const qreal result = probe.ups(Grip::START).p.x() - probe.ups(Grip::END).p.x();
+      if (!std::isfinite(result)) return "nonfinite grip inset";
+      inset = result;
+      return nullptr;
       }
 
 qreal Tie::incomingEndOffset()

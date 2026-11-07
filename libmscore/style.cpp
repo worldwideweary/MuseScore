@@ -179,6 +179,8 @@ static const StyleType styleTypes[] {
 
       { Sid::clefLeftMargin,          "clefLeftMargin",          Spatium(0.8) },     // 0.64 (gould: <= 1)
       { Sid::keysigLeftMargin,        "keysigLeftMargin",        Spatium(0.5) },
+      { Sid::keysigAccidentalDistance, "keysigAccidentalDistance", Spatium(0.3) },
+      { Sid::keysigNaturalDistance,   "keysigNaturalDistance",   Spatium(0.4) },
       { Sid::ambitusMargin,           "ambitusMargin",           Spatium(0.5) },
 
       { Sid::timesigLeftMargin,       "timesigLeftMargin",       Spatium(0.63) },
@@ -3372,8 +3374,6 @@ bool MStyle::readProperties400(XmlReader& e, int mscVersion)
             || tag == "stemSlashPosition"                                         // Mu4 only, let's skip
             || tag == "stemSlashAngle"                                            // Mu4 only, let's skip
             || tag == "stemSlashThickness"                                        // Mu4 only, let's skip
-            || tag == "keysigAccidentalDistance"                                  // Mu4 only, let's skip
-            || tag == "keysigNaturalDistance"                                     // Mu4 only, let's skip
             || tag == "useWideBeams")                                             // Mu4 for beamDistance, default depends on font's `engravingDefaults`! Maybe better skip?
             e.skipCurrentElement();
       else if (tag == "beamMinLen") {                                             // 1.3 -> 1.1

@@ -7,18 +7,22 @@
 #include "gracespacing4.h"
 #include "slur.h"
 #include "chord.h"
+#include "articulation.h"
 #include "beam.h"
 #include "measure.h"
 #include "segment.h"
 #include "system.h"
 #include "clef.h"
 #include "note.h"
+#include "tie.h"
 #include "rest.h"
 #include "staff.h"
 #include "stafftype.h"
 #include "stafflines.h"
 #include "score.h"
 #include "shape.h"
+#include "symbol.h"
+#include "stem.h"
 #include "spanner.h"
 #include "spannermap.h"
 #include <algorithm>
@@ -26,15 +30,23 @@
 #include <limits>
 
 namespace Ms {
+bool spacingPedalSymbol4(const Element* item)
+{
+    if (!item || !item->isSymbol()) return false;
+    const Symbol* symbol = static_cast<const Symbol*>(item);
+    return symbol->leafs().isEmpty()
+        && (symbol->sym() == SymId::keyboardPedalPed || symbol->sym() == SymId::keyboardPedalUp);
+}
+
 static int paddingIndex4(ElementType type)
 {
     static const ElementType types[] = {
         ElementType::NOTE, ElementType::LEDGER_LINE, ElementType::HOOK, ElementType::NOTEDOT,
         ElementType::REST, ElementType::CLEF, ElementType::BAR_LINE, ElementType::KEYSIG,
         ElementType::TIMESIG, ElementType::ARPEGGIO, ElementType::ACCIDENTAL, ElementType::STEM,
-        ElementType::BREATH
+        ElementType::BREATH, ElementType::FINGERING, ElementType::SYMBOL
     };
-    for (int i = 0; i < 13; ++i) {
+    for (int i = 0; i < int(sizeof(types) / sizeof(types[0])); ++i) {
         if (types[i] == type)
             return i;
     }
@@ -53,7 +65,8 @@ SpacingPaddingTable4::SpacingPaddingTable4(const Score* score) : _score(score)
     const qreal ledgerPad = 0.25 * spatium;
     const qreal ledgerLength = score->styleP(Sid::ledgerLineLength);
     auto cell = [&](ElementType a, ElementType b) -> qreal& { return _padding[paddingIndex4(a)][paddingIndex4(b)]; };
-    // Studio v4.7.5 PaddingTable::createTable, restricted to these 13 types.
+    // Studio v4.7.5 PaddingTable::createTable, restricted to the supported types. Fingerings retain the
+    // default padding, with the usual vertical overlap check for kernable pairs.
     cell(ElementType::NOTE, ElementType::NOTE) = minPadUnit;
     cell(ElementType::NOTE, ElementType::LEDGER_LINE) = 0.35 * spatium;
     cell(ElementType::NOTE, ElementType::ACCIDENTAL)
@@ -363,16 +376,311 @@ unsigned SpacingContextCache4::forwardSlurKerning(const Chord* chord)
     return blocked;
 }
 
+// Match the first polyphonic branch of Tie::calculateDirection() and
+// the pitched polyphonic branch of Chord::computeUp(). Do not read the
+// cached direction of a tie or a stem that can be set by a beam.
+static Direction stableTieSide4(const Tie* tie, const Chord* start, const Chord* end)
+{
+    if (tie->isPartial() || start->notes().size() != 1 || end->notes().size() != 1)
+        return Direction::AUTO;
+    if (tie->slurDirection() != Direction::AUTO)
+        return tie->slurDirection();
+    for (const Chord* chord : {start, end}) {
+        if (!chord->measure()->hasVoices(chord->staffIdx(), chord->tick(), chord->actualTicks()))
+            continue;
+        if (chord->beam() || chord->tremolo())
+            return Direction::AUTO;
+        if (chord->stemDirection() != Direction::AUTO)
+            return chord->stemDirection();
+        return chord->track() % 2 == 0 ? Direction::UP : Direction::DOWN;
+    }
+    return Direction::AUTO;
+}
+
+// A single-level beam with all stems pointing away from the tie stays
+// on that side as spacing changes the slope and stem lengths. Check the
+// entire group: the beam is a straight strip between the outer stems.
+static const char* remoteTieBeamRejection4(const Chord* chord, Direction side, qreal upper, qreal lower)
+{
+    const Beam* beam = chord->beam();
+    if (side == Direction::AUTO || !beam->visible() || beam->cross() || beam->isGrace()
+        || beam->userModified() || beam->isNudged() || beam->distribute()
+        || beam->growLeft() != 1 || beam->growRight() != 1 || beam->elements().size() < 2)
+        return "beam needs a known tie side and ordinary automatic geometry";
+    const bool up = side == Direction::DOWN;
+    if (beam->up() != up)
+        return "beam stems point toward the tie";
+    const qreal width = chord->score()->styleP(Sid::beamWidth) * beam->mag();
+    if (!(width > 0) || !std::isfinite(width)) return "invalid beam width";
+    for (const ChordRest* cr : beam->elements()) {
+        if (!cr || !cr->isChord() || cr->measure() != chord->measure() || cr->track() != chord->track()
+            || cr->staffMove() || cr->beam() != beam || cr->durationType().hooks() != 1)
+            return "beam needs one level of same-staff stems in one measure";
+        const Chord* member = toChord(cr);
+        const Stem* stem = member->stem();
+        if (member->isGrace() || !member->visible() || member->isNudged() || member->up() != up
+            || member->tremolo() || member->noStem() || !stem || !stem->addToSkyline()
+            || stem->isNudged() || stem->userLen() != 0 || !stem->bbox().isValid())
+            return "beam member has unsupported stem geometry";
+        const Shape ink = member->shape();
+        bool hasInk = false;
+        for (const QRectF& rect : ink) {
+            if (rect.height() == 0) continue; // horizontal spacing marker
+            const qreal edge = member->y() + (up ? rect.bottom() : rect.top());
+            if (rect.height() < 0 || !std::isfinite(edge)
+                || !(up ? edge < upper - width : edge > lower + width))
+                return "beam group does not clear the opposite side of the tie";
+            hasInk = true;
+        }
+        if (!hasInk) return "beam member has no visible geometry";
+    }
+    return nullptr;
+}
+
+// A short companion tie can be treated as remote ink if even its
+// conservative vertical envelope stays on the far side. Its own
+// horizontal clearance is still handled by the normal tie policy.
+static bool remoteCompanionTie4(const Tie* tie, const Note* start, const Note* end, Direction side, qreal pad)
+{
+    if (!tie) return true;
+    if (side == Direction::AUTO || tie->isPartial()) return false;
+    const Note* a = tie->startNote();
+    const Note* b = tie->endNote();
+    if (!a || !b || !a->chord() || !b->chord()) return false;
+    const Chord* first = a->chord();
+    const Chord* last = b->chord();
+    // This precondition also ensures the ordinary policy below cannot
+    // recurse through an intervening obstacle.
+    if (!first->segment() || !last->segment() || first->measure() != last->measure()
+        || first->segment()->next1(SegmentType::ChordRest) != last->segment()
+        || a->staffIdx() != start->staffIdx()
+        || first->isNudged() || last->isNudged() || a->isNudged() || b->isNudged()
+        || start->staff()->staffType(a->tick()) != start->staff()->staffType(start->tick())
+        || start->staff()->staffType(b->tick()) != start->staff()->staffType(start->tick())
+        || ordinaryTieRejection4(tie))
+        return false;
+    for (size_t i = 0; i < tie->nsegments(); ++i)
+        if (tie->segmentAt(int(i))->isNudged()) return false;
+    const qreal y1 = start->y() + start->chord()->y();
+    const qreal y2 = end->y() + end->chord()->y();
+    for (const Note* note : {a, b}) {
+        const qreal y = note->y() + note->chord()->y();
+        if (!(side == Direction::DOWN ? y < std::min(y1, y2) - pad
+                                      : y > std::max(y1, y2) + pad))
+            return false;
+    }
+    return true;
+}
+
+// Keep the full vertical guard on the curve side. On the opposite
+// side the whole obstacle still has to clear both endpoint heads.
+static const char* remoteTieObstacleRejection4(const Element* item, const Note* start, const Note* end, Direction side)
+{
+    if (!item->isChord()) return "obstacle is not a chord";
+    if (item->track() == start->track()) return "obstacle is in the tied voice";
+    const Chord* chord = toChord(item);
+    if (!chord->visible()) return "hidden chord";
+    if (chord->staffMove() || chord->isGrace()) return "moved or grace chord";
+    if (chord->hook() || chord->stemSlash() || chord->tremolo())
+        return "flag, stem slash or tremolo";
+    if (chord->isNudged()) return "chord has a manual offset";
+    if (chord->arpeggio() || !chord->graceNotes().empty()
+        || !chord->articulations().empty() || !chord->el().empty() || !chord->lyrics().empty())
+        return "chord has attachments";
+    // Ordinary stems must have prepared geometry. A beamed stem also
+    // needs a group check because its length can change after spacing.
+    if (const Stem* stem = chord->stem()) {
+        if (chord->noStem() || !chord->durationType().hasStem() || (!chord->beam() && chord->durationType().hooks()))
+            return "unsupported stem duration or flag";
+        if (!stem->addToSkyline()) return "stem is hidden or excluded from the skyline";
+        if (stem->isNudged() || stem->userLen() != 0) return "stem has a manual adjustment";
+        if (!stem->bbox().isValid()) return "stem has no valid bounds";
+    }
+    else if (!chord->noStem())
+        return "chord is not explicitly stemless and has no prepared stem";
+    if (chord->measure() != start->chord()->measure())
+        return "chord is outside the tie start measure";
+    if (start->isNudged() || end->isNudged() || start->chord()->isNudged() || end->chord()->isNudged())
+        return "tie endpoint has a manual offset";
+    const Staff* staff = start->staff();
+    if (staff->staffType(start->tick()) != staff->staffType(end->tick())
+        || staff->staffType(start->tick()) != staff->staffType(chord->tick()))
+        return "staff type changes within the tie";
+    const qreal sp = std::max(start->spatium(), end->spatium());
+    const qreal stroke = std::abs(start->score()->styleP(Sid::tieMidWidth))
+                         + std::abs(start->score()->styleP(Sid::tieEndWidth));
+    const qreal pad = 4 * sp + stroke;
+    const StaffType* type = staff->staffType(start->tick());
+    if (!type || type->yoffset().val() != 0 || type->lineDistance().val() != 1)
+        side = Direction::AUTO;
+    const qreal abovePad = side == Direction::DOWN ? stroke : pad;
+    const qreal belowPad = side == Direction::UP ? stroke : pad;
+    const QRectF heads = start->bbox().translated(0, start->y() + start->chord()->y())
+        .united(end->bbox().translated(0, end->y() + end->chord()->y()));
+    for (const Note* note : chord->notes()) {
+        if (!note->visible() || note->isNudged() || !note->el().empty()
+            || !note->spannerFor().empty() || !note->spannerBack().empty())
+            return "note is hidden, moved or has attachments";
+        if (note->tieFor() || note->tieBack()) {
+            if (!remoteCompanionTie4(note->tieFor(), start, end, side, pad)
+                || !remoteCompanionTie4(note->tieBack(), start, end, side, pad))
+                return "companion tie has unsupported placement or insufficient clearance";
+        }
+    }
+    const Shape obstacle = chord->shape();
+    if (!(sp > 0) || !std::isfinite(pad) || !heads.isValid() || obstacle.empty()) return "invalid or missing clearance geometry";
+    bool above = true;
+    bool below = true;
+    bool hasInk = false;
+    // For a known direction, the ordinary curve starts on its own side
+    // of the endpoint centers. Do not reject a supported unbeamed stem
+    // merely because its ink approaches the far edge of a tied head.
+    // Keep the stroke margin and require the entire obstacle to stay on
+    // the opposite side of both endpoint centers.
+    const qreal startY = start->y() + start->chord()->y();
+    const qreal endY = end->y() + end->chord()->y();
+    if (chord->beam())
+        return remoteTieBeamRejection4(chord, side, std::min(startY, endY) - stroke,
+                                                   std::max(startY, endY) + stroke);
+    bool opposite = chord->stem() && side != Direction::AUTO;
+    for (const QRectF& rect : obstacle) {
+        const qreal top = rect.top() + chord->y();
+        const qreal bottom = rect.bottom() + chord->y();
+        if (!std::isfinite(top) || !std::isfinite(bottom)) return "invalid or missing clearance geometry";
+        // Shape::addHorizontalSpacing emits zero-height bookkeeping
+        // rectangles at staff y=0. They reserve x space but have no ink.
+        if (rect.height() == 0) continue;
+        if (rect.height() < 0) return "invalid or missing clearance geometry";
+        hasInk = true;
+        above = above && bottom < heads.top() - abovePad;
+        below = below && top > heads.bottom() + belowPad;
+        if (opposite) {
+            opposite = side == Direction::UP ? top > std::max(startY, endY) + stroke
+                                             : bottom < std::min(startY, endY) - stroke;
+        }
+    }
+    if (!hasInk) return "chord has no visible clearance geometry";
+    if (above || below || opposite) return nullptr;
+    return side == Direction::AUTO ? "insufficient two-sided clearance (tie side unavailable)"
+        : side == Direction::UP ? "insufficient clearance for an upward tie"
+                                : "insufficient clearance for a downward tie";
+}
+
+// The planner reserves horizontal clearance separately. Keep endpoints
+// that need a different tie placement rule on the native path.
+const char* ordinaryTieRejection4(const Tie* tie, TieObstacleDiagnostic4* detail)
+{
+    if (detail) *detail = TieObstacleDiagnostic4();
+    if (!tie) return nullptr;
+    const Note* start = tie->startNote();
+    const Note* end = tie->endNote();
+    if (!start || !end || start->tieFor() != tie || end->tieBack() != tie)
+        return "missing or unmatched tie endpoint";
+    if (!start->visible() || !end->visible()) return "invisible tie endpoint";
+    if (start->track() < 0 || start->track() != end->track() || start->score() != end->score())
+        return "tie changes voice, staff or score";
+    if (start->pitch() != end->pitch() || start->line() != end->line())
+        return "tie changes pitch or staff line";
+    if (!start->staff() || !end->staff()
+        || !start->staff()->isPitchedStaff(start->tick()) || !end->staff()->isPitchedStaff(end->tick()))
+        return "tie needs pitched staves";
+    const Chord* a = start->chord();
+    const Chord* b = end->chord();
+    if (!a || !b || !a->segment() || !b->segment() || !a->measure() || !b->measure())
+        return "tie needs attached chords";
+    if (a->isGrace() || b->isGrace() || a->staffMove() || b->staffMove())
+        return "grace or cross-staff tie";
+    if (a->tick() + a->actualTicks() != b->tick()) return "noncontiguous tie duration";
+    if (a->measure() != b->measure()
+        && (a->measure()->next() != b->measure() || a->measure()->repeatEnd()
+            || b->measure()->repeatStart() || a->measure()->nextSectionBreak()))
+        return "tie crosses a repeat, section or nonadjacent barline";
+    const Direction side = stableTieSide4(tie, a, b);
+    bool crossesRemoteVoice = false;
+    const Segment* next = a->segment()->next1(SegmentType::ChordRest);
+    for (; next && next != b->segment() && next->tick() < b->tick();
+         next = next->next1(SegmentType::ChordRest)) {
+        for (const Element* item : next->elist()) {
+            if (!item) continue;
+            if (item->staffIdx() == a->staffIdx()
+                || (item->isChord() && toChord(item)->vStaffIdx() == a->vStaffIdx())) {
+                if (const char* rejection = remoteTieObstacleRejection4(item, start, end, side)) {
+                    if (detail) {
+                        detail->item = item;
+                        detail->reason = rejection;
+                    }
+                    if (item->isRest()) {
+                        const Rest* rest = toRest(item);
+                        if (rest->isGap() || !rest->visible())
+                            return "intervening notation on the tied staff: gap or hidden rest";
+                        return "intervening notation on the tied staff: visible rest";
+                    }
+                    if (item->isChord()) {
+                        const Chord* obstacle = toChord(item);
+                        if (obstacle->staffMove())
+                            return "intervening notation on the tied staff: cross-staff chord";
+                        if (item->track() == start->track())
+                            return "intervening notation on the tied staff: chord in the tied voice";
+                        if (obstacle->beam())
+                            return "intervening notation on the tied staff: beamed chord in another voice";
+                        if (obstacle->stem())
+                            return "intervening notation on the tied staff: unbeamed stemmed chord in another voice";
+                        return "intervening notation on the tied staff: stemless chord in another voice";
+                    }
+                    return "intervening notation on the tied staff";
+                }
+                crossesRemoteVoice = true;
+            }
+        }
+    }
+    if (next != b->segment()) return "tie endpoint not found in rhythmic segments";
+    for (size_t i = 0; i < tie->nsegments(); ++i) {
+        const TieSegment* segment = tie->segmentAt(int(i));
+        // A vertical translation does not consume horizontal clearance.
+        // Keep horizontal translations and individual grip edits on fallback.
+        if (segment->offset().x() != 0 || segment->isEdited()
+            || (crossesRemoteVoice && segment->offset().y() != 0)) return "manually edited tie";
+    }
+    return nullptr;
+}
+
+bool spacingChordArticulationsSupported4(const Chord* chord)
+{
+    const auto& articulations = chord->articulations();
+    if (articulations.empty()) return true;
+    if (articulations.size() != 1 || chord->isGrace() || chord->staffMove()
+        || (chord->beam() && chord->beam()->cross()))
+        return false;
+    const Articulation* articulation = articulations.front();
+    if (!articulation || !articulation->visible() || !articulation->autoplace()
+        || articulation->isNudged() || chord->score()->styleD(Sid::articulationMag) != 1.0)
+        return false;
+    // Chord::shape() excludes articulations. These single marks can stay in
+    // native articulation/skyline layout, after the horizontal plan.
+    switch (articulation->symId()) {
+    case SymId::articAccentAbove:
+    case SymId::articAccentBelow:
+    case SymId::articStaccatoAbove:
+    case SymId::articStaccatoBelow:
+    case SymId::articTenutoAbove:
+    case SymId::articTenutoBelow:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static bool commonChordContext4(const Chord* chord, bool allowGrace,
                                 const SpacingGraceContext4* context, const Chord* scopedMain, const SpacingContextCache4* cache)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::CONTEXT);
     // Common notation only in this stage. Studio's line attachment and chord
     // kerning-exception inputs need a separate adapter before these can enter.
-    if ((!allowGrace && chord->isGrace()) || !chord->articulations().empty())
+    if ((!allowGrace && chord->isGrace()) || !spacingChordArticulationsSupported4(chord))
         return false;
     for (const Note* note : chord->notes()) {
-        if (note->tieFor() || note->tieBack() || !note->spannerFor().empty() || !note->spannerBack().empty())
+        if (ordinaryTieRejection4(note->tieFor()) || ordinaryTieRejection4(note->tieBack())
+            || !note->spannerFor().empty() || !note->spannerBack().empty())
             return false;
     }
     if (cache && cache->slurPolicy() == SpacingSlurPolicy4::PREPARED)
@@ -559,6 +867,11 @@ static bool pairPolicy4(const SpacingPaddingTable4& table, const Element* first,
         || !commonItemContext4(first, allowGrace, context, scopedMain, cache)
         || !commonItemContext4(second, allowGrace, context, scopedMain, cache)
         || !(shapeSpatium > 0) || !std::isfinite(shapeSpatium))
+        return false;
+    // Only these pedal glyphs have a Symbol collision policy. Use the
+    // default padding and the ordinary vertical overlap check.
+    if ((first->isSymbol() && !spacingPedalSymbol4(first))
+        || (second->isSymbol() && !spacingPedalSymbol4(second)))
         return false;
     SpacingPairPolicy4 policy;
     if (!table.padding(first->type(), second->type(), policy.padding)) {
@@ -825,13 +1138,26 @@ bool spacingShapeDistance4(const SpacingPaddingTable4& table, const SpacingShape
 }
 
 bool spacingCollisionProjection4(const SpacingPaddingTable4& table, const SpacingShape4& native,
-                                 qreal shapeSpatium, SpacingShape4& result, const SpacingGraceContext4* context, SpacingContextCache4* queryCache)
+                                 qreal shapeSpatium, SpacingShape4& result, const SpacingGraceContext4* context, SpacingContextCache4* queryCache, QString* reason)
 {
+    const auto fail = [reason](const char* why, const Element* item = nullptr) {
+        if (reason) {
+            *reason = QString::fromLatin1(why);
+            if (item) {
+                *reason += QStringLiteral(" (") + item->_name();
+                if (item->isSymbol())
+                    *reason += QStringLiteral(": ") + QString::fromLatin1(
+                        Sym::id2name(static_cast<const Symbol*>(item)->sym()));
+                *reason += QStringLiteral(")");
+            }
+        }
+        return false;
+    };
     SpacingContextCache4 localCache;
     SpacingContextCache4* cache = queryCache ? queryCache : &localCache;
     SpacingShape4 projected;
     if (!table.score() || !(shapeSpatium > 0) || !std::isfinite(shapeSpatium))
-        return false;
+        return fail("invalid projection scale");
     const auto supportedAggregateOwner = [&](const Element* owner) {
         if (!owner)
             return false;
@@ -865,51 +1191,51 @@ bool spacingCollisionProjection4(const SpacingPaddingTable4& table, const Spacin
     };
     for (const SpacingShapeElement4& e : native.elements) {
         if (!validRect4(e.rect))
-            return false;
+            return fail("invalid rectangle", e.item);
         if (e.identity == SpacingIdentity4::SHARED_ITEM) {
             if (e.item || !e.aggregateOwners.empty() || e.sharedItems.size() < 2)
-                return false;
+                return fail("invalid shared identity");
             for (size_t i = 0; i < e.sharedItems.size(); ++i) {
                 const Element* item = e.sharedItems[i];
                 SpacingPairPolicy4 policy;
                 // This stage admits shared noteheads only. Other coincident
                 // component types still require their own context adapter.
                 if (!item || !item->isNote() || !spacingPairPolicy4(table, item, item, shapeSpatium, policy, context, cache))
-                    return false;
+                    return fail("unsupported shared item", item);
                 for (size_t j = 0; j < i; ++j) {
                     if (item == e.sharedItems[j])
-                        return false;
+                        return fail("duplicate shared item");
                 }
                 projected.elements.push_back(SpacingShapeElement4(e.rect, item));
             }
             continue;
         }
         if (!e.sharedItems.empty())
-            return false;
+            return fail("unexpected shared owners");
         if (e.identity == SpacingIdentity4::LEGACY_SPACER) {
             if (e.item) {
                 if (!e.aggregateOwners.empty() || !supportedAggregateOwner(e.item))
-                    return false;
+                    return fail("unsupported aggregate owner");
             }
             else {
                 if (e.aggregateOwners.size() < 2)
-                    return false;
+                    return fail("missing aggregate owners");
                 for (size_t i = 0; i < e.aggregateOwners.size(); ++i) {
                     if (!supportedAggregateOwner(e.aggregateOwners[i]))
-                        return false;
+                        return fail("unsupported aggregate owner");
                     for (size_t j = 0; j < i; ++j) {
                         if (e.aggregateOwners[i] == e.aggregateOwners[j])
-                            return false;
+                            return fail("duplicate aggregate owner");
                     }
                 }
             }
             continue;
         }
         if (!e.item || !e.aggregateOwners.empty())
-            return false;
+            return fail("missing item or unexpected aggregate owners");
         SpacingPairPolicy4 policy;
         if (e.identity != SpacingIdentity4::ITEM || !spacingPairPolicy4(table, e.item, e.item, shapeSpatium, policy, context, cache))
-            return false;
+            return fail("unsupported item policy", e.item);
         projected.elements.push_back(e);
     }
     result = projected;
