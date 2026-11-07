@@ -92,6 +92,7 @@ class TestSpacing : public QObject, public MTest {
       void manualLeadingSpace4();
       void manualBarStartLeadingSpace4_data();
       void manualBarStartLeadingSpace4();
+      void manualRepeatLeadingSpace4_data();
       void manualRepeatLeadingSpace4();
       void manualSignatureLeadingSpace4();
       void keySignatureFormation4();
@@ -9726,11 +9727,22 @@ void TestSpacing::manualBarStartLeadingSpace4()
             QVERIFY(qAbs(marked[i] - onsets[i]->x()) < 1e-6);
       }
 
+void TestSpacing::manualRepeatLeadingSpace4_data()
+      {
+      QTest::addColumn<QString>("fixture");
+      QTest::addColumn<int>("staffCount");
+      QTest::newRow("one-staff") << QString("v0.250-repeat-leading-space.mscx") << 1;
+      QTest::newRow("two-staves") << QString("v0.255-shared-repeat-leading-space.mscx") << 2;
+      }
+
 void TestSpacing::manualRepeatLeadingSpace4()
       {
+      QFETCH(QString, fixture);
+      QFETCH(int, staffCount);
       QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
-      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.250-repeat-leading-space.mscx"));
+      std::unique_ptr<MasterScore> score(readScore(DIR + fixture));
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      QCOMPARE(score->nstaves(), staffCount);
       Measure* first = score->firstMeasure();
       QVERIFY(first && first->nextMeasure() && first->nextMeasure()->nextMeasure());
       Measure* middle = first->nextMeasure();
@@ -9771,8 +9783,15 @@ void TestSpacing::manualRepeatLeadingSpace4()
             std::array<qreal, 2> marked;
             for (size_t i = 0; i < repeats.size(); ++i) {
                   const Segment* bar = repeats[i]->findSegmentR(SegmentType::StartRepeatBarLine, Fraction(0, 1));
-                  QVERIFY(bar && bar->enabled() && bar->element(0) && bar->element(0)->isBarLine());
-                  QVERIFY(toBarLine(bar->element(0))->barLineType() == BarLineType::START_REPEAT);
+                  QVERIFY(bar && bar->enabled());
+                  for (int st = 0; st < staffCount; ++st) {
+                        const Element* line = bar->element(st * VOICES);
+                        QVERIFY(line && line->isBarLine() && line->generated());
+                        QVERIFY(toBarLine(line)->barLineType() == BarLineType::START_REPEAT);
+                        const Element* chord = onsets[i]->element(st * VOICES);
+                        QVERIFY(chord && chord->isChord());
+                        QVERIFY(qAbs(chord->pagePos().x() - onsets[i]->element(0)->pagePos().x()) < 1e-6);
+                        }
                   QCOMPARE(bar->spacingWidthOffset4(), qreal(0));
                   marked[i] = onsets[i]->x() - bar->x();
                   onsets[i]->setExtraLeadingSpace(Spatium(0));

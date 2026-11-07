@@ -141,6 +141,16 @@ qreal manualSpringOffset4(const Segment* segment, qreal advance, qreal systemSpa
         ? std::max(next->extraLeadingSpace().val() * systemSpatium, -advance) : 0;
 }
 
+bool generatedBarlines4(const Segment* segment, BarLineType type)
+{
+    for (int st = 0; st < segment->score()->nstaves(); ++st) {
+        const Element* item = segment->element(st * VOICES);
+        if (!item || !item->isBarLine() || !item->generated() || toBarLine(item)->barLineType() != type)
+            return false;
+    }
+    return true;
+}
+
 // At a bar start the edit belongs to the onset alone, including when a
 // generated start repeat or an ordinary key/time change precedes it.
 bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
@@ -157,13 +167,11 @@ bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
     };
     auto prev = std::find_if(earlier.rbegin(), earlier.rend(), activeEntry);
     if (target.measure()->repeatStart()) {
-        if (staves != 1 || prev == earlier.rend() || !prev->segment->isStartRepeatBarLineType()
+        if (prev == earlier.rend() || !prev->segment->isStartRepeatBarLineType()
             || prev->segment->measure() != target.measure() || !prev->segment->rtick().isZero()
             || !prev->segment->ticks().isZero())
             return false;
-        const Element* item = prev->segment->element(0);
-        return item && item->isBarLine() && item->generated()
-            && toBarLine(item)->barLineType() == BarLineType::START_REPEAT;
+        return generatedBarlines4(prev->segment, BarLineType::START_REPEAT);
     }
     if (target.measure() == first) {
         return std::all_of(earlier.begin(), earlier.end(), [](const SpacingSegmentPlan4& s) {
@@ -195,12 +203,7 @@ bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
         || prev->segment->tick() != target.tick())
         return false;
     const auto expected = courtesyKey ? BarLineType::DOUBLE : BarLineType::NORMAL;
-    for (int st = 0; st < staves; ++st) {
-        const Element* item = prev->segment->element(st * VOICES);
-        if (!item || !item->isBarLine() || !item->generated() || toBarLine(item)->barLineType() != expected)
-            return false;
-    }
-    return true;
+    return generatedBarlines4(prev->segment, expected);
 }
 
 // This field is derived layout state, not manual segment leading space.
