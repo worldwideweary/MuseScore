@@ -1,5 +1,128 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.240 aggregate gate: bounded signature-aware collection
+
+Apply the combined v0.237-v0.240 patch over accepted v0.236, or the four ordered
+increments, never both. Increments are git-format patches suitable for git am;
+the combined alternative remains a single git-apply diff. The acceptance note
+for the user's v0.236 native pass and paired fitting captures is included.
+New production changes are limited to a read-only readiness API and replacing
+the blanket collection header/trailer guard with that certificate. Final
+spacing/padding, native header/trailer producers, overflow/backtracking,
+publication, styles and default-OFF behavior are unchanged.
+
+This gate admits ordinary interior key/time changes and terminal courtesy
+signatures on one pitched staff. It rejects extra segment occupants as well as
+unprepared, custom or nonlocal signature bodies. Pending penultimate courtesies
+remain native-width fallback: the pinned incremental algorithm preserves old
+positions/advances there. Repeat/signature combinations, section boundaries,
+ordinary clefs and grace/full-rest/cross-staff mixtures in this new scope also
+retain explicit fallback. Stable-repeat collection from v0.236 is preserved;
+this does not complete source collector equivalence or change performance/TAB
+scope.
+
+Local validation passes C++11 Debug/NDEBUG planner/layout/test syntax with
+Qt 5.15.13 regenerated moc and unused-parameter/signedness checks. Rerun the
+planner and test checks after final occupancy/active-probe tightening. The
+actual readiness query passes 332,153 extracted mock-DOM signature-presence,
+style-toggle, copied-data, end-bar type, generated-flag, malformed geometry and
+boundary-rejection cases per mode. Pinned/native phase ordering, preserved
+penultimate positions, TimeSig::setFrom fields and pre-capture guard ordering
+are checked directly against the source. Pinned horizontalspacing.cpp blob:
+573e19dcf63bb042499f1495f16f5c19d1003852; systemlayout.cpp:
+516188a75a42d193b9cb4baa02aac0c9a08bf85e. XML checks verify all complete durations,
+paired music/styles, saved toggles, no forced breaks/stretch/offsets, format-4
+migration bypass and matched physical gaps. Individual, ordered and combined
+patch replay must reproduce the exact target tree before delivery. These are
+local syntax/model/package checks, not native mtests or rendered acceptance.
+
+Build once and run:
+
+```sh
+ctest -j1 --output-on-failure -R '^(tst_spacing|tst_beam)$'
+```
+
+If it passes, compare the v0.239-signature-collection-fitting.mscx pair in 37E
+and Studio 4.7.5 using the saved settings. Both toggles save ON; no Layout
+stretch adjustment is needed. Supply one overview per engine and the retained
+measure partition. Inspect regenerated key/time headers, terminal courtesy
+key/time bodies, preceding double/ordinary barlines, note cadence and the
+H2/H3, H4/H5 and H6/H7 boundaries. The natural pair is included for closer
+interior-change comparison if needed. No particular Studio partition or pixel
+identity is assumed before those captures, and no old matrix recapture is
+requested at this gate.
+
+## v0.239 WIP: signature collection native/visual regression gate
+
+Add natural and automatic-fitting controls with eight measures in four pairs:
+C major 4/4, D major 3/4, B-flat 6/8 and C major 2/4. Changes begin H3/H5/H7;
+H2/H4/H6 can acquire terminal key/time courtesies. Both styles save ON, with
+measureSpacing=2, no forced breaks, offsets or special measure stretch. Each
+has a format-4.00 Studio companion using defaultsVersion=302 and matched
+physical barline gaps, avoiding the earlier migration issue.
+
+Four native rows observe cold layout in both beam modes. Require FULL_PLAN
+finals, positive planned terminal-courtesy candidates, planned interior-change
+coverage in the natural control, and reasoned pending-penultimate fallback.
+Automatic fitting must overflow/retry and retain every measure exactly once;
+no Studio partition is asserted before comparison. Fresh final capture,
+selection and publication proof must match native fields without writes.
+
+In the natural control, prepare H2's native end bar/trailer as a terminal
+boundary, briefly borrow it into a test System and restore its parent before
+destruction. Require positive readiness, rejection of mismatched courtesy time
+and active zero-height key geometry, and unchanged query snapshots. Returned
+to the full prefix, that pending courtesy must reject before capture; the
+unchanged planner must also reject its nonterminal placement atomically.
+Restore through native producers, then require repeated and OFF/ON layouts
+to reproduce the cold snapshot, including courtesy data and end-bar types.
+
+## v0.238 WIP: prepared terminal courtesies and interior key/time fitting
+
+Replace the blanket changing-header/trailer rejection with the new read-only
+signature certificate before native attachment capture. Ordinary prefixes with
+no new signature context retain their existing contract. One-staff ordinary
+interior key/time changes and terminal courtesies can now select the full
+candidate plan. Keep no-break/joined-beam guards and the v0.236 repeat readiness
+query; no candidate publishes geometry or survives native boundary writes.
+
+A pending penultimate courtesy still rejects before capture. Ordinary clef,
+repeat/section, custom/local signature and grace/full-rest/cross-staff mixtures
+in the newly admitted signature scope remain explicit fallback. The planner's
+terminal-only courtesy rule and final publication path are unchanged. This
+checkpoint does not port Studio's incremental penultimate-courtesy policy.
+
+## v0.237 WIP: signature candidate readiness after accepted v0.236
+
+The user reports native mtests passing and supplies paired v0.235 fitting
+captures. Accept v0.236: both engines retain C1-C2 / C3-C4 / C5-C6 / C7-C8,
+with closely corresponding horizontal cadence, header/start clearance and
+line-end repeats after screenshot offsets. C3/C5/C7 start systems here;
+same-system joins retain the earlier gate and native regression coverage.
+
+Recover the pruned local checkout from the saved v0.168 full series and later
+patch chain. The v0.236 planner, layout, public API, test source, guide and
+new fixtures match their saved patch postimage hashes. The auxiliary baseline
+has unrelated style.cpp, undo.cpp and English-catalog differences; none are
+part of the new delta. Keep the pinned 4.7.5 source for the next audit.
+
+Add a read-only readiness query for ordinary interior key/time changes and
+terminal courtesy signatures. Require one pitched staff, normal/nonlocal time
+signatures, ordinary noncustom keys, complete finite native glyph geometry,
+matching following-signature data, expected courtesy presence and generated
+ordinary/double/final end bars. No-break/joined-beam guards remain external.
+Repeat, section, ordinary-clef, grace, full-rest and cross-staff combinations
+retain fallback in this newly admitted signature scope.
+
+Pending penultimate courtesies deliberately remain rejected. Pinned
+systemlayout.cpp prepares the new last, tests overflow, then finalizes its
+predecessor and removes that predecessor's trailer. horizontalspacing.cpp
+updateSpacingForLastAddedMeasure sets startMeas to the new last and preserves
+earlier segment positions/advances on that trial. Broadening our full-prefix
+rebuild to those pending trailers would need a separate incremental-policy
+adaptation; do not merely permit nonterminal courtesy segments in the planner.
+No live collection guard changes yet.
+
 ## v0.236 aggregate gate: ordinary repeat-aware collection
 
 Apply the combined v0.233-v0.236 patch over user-applied v0.232 (9345a7ab1),

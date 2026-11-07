@@ -58,6 +58,11 @@ void recordSpacingDecision4(const System*, SpacingPass4, SpacingPath4, qreal wid
 // Ordinary nonrepeat prefixes keep their existing preparation contract.
 bool spacingRepeatBarlinesReady4(const System*, SpacingPass4, QString* reason = nullptr);
 
+// Certify ordinary interior key/time changes and terminal courtesy producers.
+// Pending penultimate courtesies retain fallback until incremental spacing is
+// adapted. The query never prepares or changes native header/trailer geometry.
+bool spacingCandidateSignaturesReady4(const System*, QString* reason = nullptr);
+
 // Read-only preparation for cross-staff placement. This first context covers
 // one automatic eighth-note beam of up to two unmirrored normal notes per chord
 // between adjacent ordinary staves.

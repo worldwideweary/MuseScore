@@ -4375,23 +4375,14 @@ static bool systemFittingWidth4(System* system, qreal availableWidth, qreal& wid
     };
     if (MScore::noHorizontalStretch || system->score()->styleB(Sid::hideEmptyStaves))
         return fail("Candidate stretch/hidden-staff boundary");
-    bool first = true;
     for (MeasureBase* mb : system->measures()) {
         if (!mb->isMeasure())
             return fail("Candidate contains a frame");
         const Measure* m = toMeasure(mb);
-        if (m->noBreak() || m->trailer() || measureMayHaveBeamsJoinedIntoNext(m))
-            return fail("Candidate break/trailer/joined-beam boundary");
-        // Courtesy and changing headers need candidate-boundary preparation.
-        if (!first) {
-            for (const Segment& s : m->segments()) {
-                if (s.enabled() && s.visible() && !s.allElementsInvisible()
-                    && (s.isHeaderClefType() || s.isKeySigType() || s.isTimeSigType()))
-                    return fail("Candidate changing-header boundary");
-            }
-        }
-        first = false;
+        if (m->noBreak() || measureMayHaveBeamsJoinedIntoNext(m))
+            return fail("Candidate break/joined-beam boundary");
     }
+    if (!spacingCandidateSignaturesReady4(system, reason)) return false;
     if (!spacingRepeatBarlinesReady4(system, SpacingPass4::CANDIDATE, reason)) return false;
     NativeGraceInputs4 inputs(system->score(), spacingMeasures4(system), readiness);
     SpacingGraceQueryScope4 graceScope(system->score(), inputs.factory());

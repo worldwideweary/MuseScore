@@ -30,6 +30,8 @@
 #include "libmscore/chordrest.h"
 #include "libmscore/beam.h"
 #include "libmscore/barline.h"
+#include "libmscore/keysig.h"
+#include "libmscore/timesig.h"
 #include "libmscore/beamlayout4.h"
 #include "libmscore/chord.h"
 #include "libmscore/note.h"
@@ -81,6 +83,8 @@ class TestSpacing : public QObject, public MTest {
       void repeatBarlinePlanning4();
       void repeatCollection4_data();
       void repeatCollection4();
+      void signatureCollection4_data();
+      void signatureCollection4();
       void clefSignaturePlanning4_data();
       void clefSignaturePlanning4();
       void smallNotation4_data();
@@ -9276,6 +9280,204 @@ void TestSpacing::spacingDecisionCorpus4()
       QVERIFY(candidates >= finals);
       QCOMPARE(finals, int(systems.size()));
       QVERIFY(nextTick == score->lastMeasure()->endTick());
+      }
+
+void TestSpacing::signatureCollection4_data()
+      {
+      QTest::addColumn<QString>("mode");
+      QTest::addColumn<bool>("beams");
+      for (const QString& mode : {QString("natural"), QString("fitting")})
+            for (bool beams : {false, true})
+                  QTest::newRow(qPrintable(mode + (beams ? "-studio" : "-legacy"))) << mode << beams;
+      }
+
+void TestSpacing::signatureCollection4()
+      {
+      QFETCH(QString, mode);
+      QFETCH(bool, beams);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(new MasterScore(mscore->baseStyle()));
+      {
+      ScoreLoad loading;
+      QVERIFY(score->loadMsc(root + "/" + DIR + "v0.239-signature-collection-" + mode + ".mscx", false)
+            == Score::FileError::FILE_NO_ERROR);
+      }
+      score->setStyleValue(Sid::beamLayout4, beams);
+      QVERIFY(score->styleB(Sid::spacingLayout4));
+      std::vector<Measure*> measures;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) measures.push_back(m);
+      QCOMPARE(measures.size(), size_t(8));
+      const auto snapshot = [&]() {
+            auto values = graceMergedSnapshot4(score.get());
+            for (Measure* m : measures) {
+                  values.insert(values.end(), {qreal(m->header()), qreal(m->trailer()), qreal(m->hasCourtesyKeySig())});
+                  for (const Segment& s : m->segments()) {
+                        if (!s.enabled() && (s.header() || s.trailer())) continue;
+                        for (const Element* item : s.elist()) {
+                              if (!item || !(item->isKeySig() || item->isTimeSig() || item->isBarLine())) continue;
+                              const QRectF box = item->bbox();
+                              values.insert(values.end(), {qreal(item->generated()), item->ipos().x(), item->ipos().y(),
+                                    item->offset().x(), item->offset().y(), box.x(), box.y(), box.width(), box.height()});
+                              if (item->isKeySig()) values.push_back(qreal(static_cast<int>(toKeySig(item)->key())));
+                              if (item->isTimeSig()) values.insert(values.end(), {qreal(toTimeSig(item)->numerator()),
+                                    qreal(toTimeSig(item)->denominator())});
+                              if (item->isBarLine()) values.push_back(qreal(static_cast<int>(toBarLine(item)->barLineType())));
+                              }
+                        }
+                  }
+            return values;
+            };
+      const auto near = [](const std::vector<qreal>& a, const std::vector<qreal>& b) {
+            if (a.size() != b.size()) return false;
+            for (size_t i = 0; i < a.size(); ++i)
+                  if (!qIsFinite(a[i]) || !qIsFinite(b[i]) || qAbs(a[i] - b[i]) > 1e-6) return false;
+            return true;
+            };
+      std::vector<SpacingDecision4> events;
+      {
+      SpacingDecisionScope4 observer(score.get(), [&events](const SpacingDecision4& e) { events.push_back(e); });
+      score->doLayout();
+      }
+      const auto modern = snapshot();
+      int finals = 0, planned = 0, courtesyCandidates = 0, interiorCandidates = 0, pending = 0, rollbacks = 0;
+      int retainedMeasures = 0;
+      Fraction endTick(0, 1);
+      for (size_t i = 0; i < events.size(); ++i) {
+            const auto& event = events[i];
+            if (event.pass == SpacingPass4::FINAL) {
+                  QVERIFY2(event.path == SpacingPath4::FULL_PLAN, qPrintable(event.reason));
+                  ++finals;
+                  QCOMPARE(event.firstTick, endTick);
+                  endTick = event.endTick;
+                  retainedMeasures += event.measures;
+                  continue;
+                  }
+            if (event.path == SpacingPath4::FULL_PLAN) {
+                  ++planned;
+                  for (int n : {1, 3, 5}) if (event.endTick == measures[n]->endTick()) ++courtesyCandidates;
+                  bool interior = false;
+                  for (int n : {2, 4, 6}) interior = interior
+                        || (measures[n]->tick() > event.firstTick && measures[n]->tick() < event.endTick);
+                  if (interior) ++interiorCandidates;
+                  }
+            else {
+                  QVERIFY(event.path == SpacingPath4::NATIVE_WIDTHS);
+                  QVERIFY2(event.reason.contains("pending penultimate courtesy"), qPrintable(event.reason));
+                  ++pending;
+                  }
+            if (event.measures <= 1 || event.width <= event.available) continue;
+            ++rollbacks;
+            QVERIFY(i + 2 < events.size());
+            const auto& retained = events[i + 1];
+            const auto& retried = events[i + 2];
+            QVERIFY(retained.pass == SpacingPass4::FINAL && retried.pass == SpacingPass4::CANDIDATE);
+            Measure* removed = nullptr;
+            for (Measure* m : measures) if (m->endTick() == event.endTick) removed = m;
+            QVERIFY(removed);
+            QCOMPARE(retained.firstTick, event.firstTick);
+            QCOMPARE(retained.endTick, removed->tick());
+            QCOMPARE(retained.measures, event.measures - 1);
+            QCOMPARE(retried.firstTick, retained.endTick);
+            QCOMPARE(retried.measures, 1);
+            }
+      QVERIFY(planned > 0 && courtesyCandidates > 0 && pending > 0);
+      QCOMPARE(retainedMeasures, 8);
+      QCOMPARE(endTick, measures.back()->endTick());
+      if (mode == "natural") {
+            QCOMPARE(finals, 1);
+            QVERIFY(interiorCandidates > 0);
+            }
+      else QVERIFY(finals > 1 && rollbacks > 0);
+      QString reason;
+      for (System* system : score->systems()) {
+            if (system->vbox()) continue;
+            QVERIFY2(spacingCandidateSignaturesReady4(system, &reason), qPrintable(reason));
+            SpacingAttachmentPreparation4 owner;
+            QVERIFY2(snapshotLaidOutSystemSpacing4(system, owner, &reason), qPrintable(reason));
+            SpacingSystemRequest4 request;
+            request.pass = SpacingPass4::FINAL;
+            request.availableWidth = system->width();
+            request.next = system->lastMeasure()->next();
+            request.fillLimit = score->styleD(Sid::lastSystemFillLimit);
+            SpacingPlan4 plan;
+            QVERIFY2(selectSystemSpacingPlan4(system, request, owner, plan, &reason), qPrintable(reason));
+            QVERIFY2(spacingPlanPublicationValid4(system, plan, &reason), qPrintable(reason));
+            QVERIFY2(spacingPlanMatches4(plan, &reason), qPrintable(reason));
+            }
+      QVERIFY(near(snapshot(), modern));
+      if (mode == "natural") {
+            Measure* m = measures[1];
+            System* original = m->system();
+            m->createEndBarLines(true);
+            m->addSystemTrailer(m->nextMeasure());
+            Segment* timeSeg = m->findSegmentR(SegmentType::TimeSigAnnounce, m->ticks());
+            Segment* keySeg = m->findSegmentR(SegmentType::KeySigAnnounce, m->ticks());
+            QVERIFY(timeSeg && timeSeg->element(0) && timeSeg->element(0)->isTimeSig());
+            QVERIFY(keySeg && keySeg->element(0) && keySeg->element(0)->isKeySig());
+            TimeSig* time = toTimeSig(timeSeg->element(0));
+            KeySig* key = toKeySig(keySeg->element(0));
+            bool terminalReady, wrongTimeRejected, malformedRejected, unchanged;
+            {
+            System trial(score.get());
+            trial.appendMeasure(m);
+            auto before = snapshot();
+            terminalReady = spacingCandidateSignaturesReady4(&trial, &reason);
+            unchanged = near(snapshot(), before);
+            const Fraction sig = time->sig();
+            const TimeSigType type = time->timeSigType();
+            time->setSig(Fraction(7, 8));
+            before = snapshot();
+            wrongTimeRejected = !spacingCandidateSignaturesReady4(&trial, &reason)
+                  && reason == "Candidate courtesy time does not match following signature";
+            unchanged = unchanged && near(snapshot(), before);
+            time->setSig(sig, type);
+            const QRectF box = key->bbox();
+            key->setbbox(QRectF(box.x(), box.y(), box.width(), 0));
+            before = snapshot();
+            const bool active = keySeg->enabled() && keySeg->visible() && !keySeg->allElementsInvisible();
+            malformedRejected = active && !spacingCandidateSignaturesReady4(&trial, &reason)
+                  && reason == "Candidate signature glyph, ownership or dimensions not prepared";
+            unchanged = unchanged && near(snapshot(), before);
+            key->setbbox(box);
+            m->setSystem(original); // Restore before destroying the borrowed System.
+            }
+            const auto invalid = snapshot();
+            const bool pendingRejected = !spacingCandidateSignaturesReady4(original, &reason);
+            const QString pendingReason = reason;
+            SpacingPlan4 rejected;
+            rejected.width = 123;
+            bool prepared = false, accepted = true;
+            {
+            SpacingAttachmentPreparation4 owner;
+            prepared = snapshotLaidOutSystemSpacing4(original, owner, &reason);
+            if (prepared) accepted = buildSpacingPlan4(original, rejected, owner, &reason);
+            }
+            unchanged = unchanged && near(snapshot(), invalid);
+            m->createEndBarLines(false);
+            m->removeSystemTrailer();
+            score->doLayout();
+            QVERIFY(terminalReady && wrongTimeRejected && malformedRejected && unchanged);
+            QVERIFY2(pendingRejected && pendingReason.contains("pending penultimate courtesy"), qPrintable(pendingReason));
+            QVERIFY2(prepared && !accepted, qPrintable(reason));
+            QCOMPARE(rejected.width, qreal(123));
+            QVERIFY(rejected.segments.empty() && rejected.measures.empty());
+            QVERIFY(near(snapshot(), modern));
+            }
+      score->doLayout();
+      QVERIFY(near(snapshot(), modern));
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      const auto legacy = snapshot();
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      QVERIFY2(near(snapshot(), modern), "Cold signature collection differs after OFF/ON warming");
+      score->setStyleValue(Sid::spacingLayout4, false);
+      score->doLayout();
+      QVERIFY(near(snapshot(), legacy));
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      QVERIFY(near(snapshot(), modern));
+      QVERIFY(!score->graceQueryFactory4());
       }
 
 void TestSpacing::repeatCollection4_data()
