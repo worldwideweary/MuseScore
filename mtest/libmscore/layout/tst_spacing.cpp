@@ -26,6 +26,7 @@
 #include "libmscore/breath.h"
 #include "libmscore/rest.h"
 #include "libmscore/tie.h"
+#include "libmscore/fingering.h"
 #include <limits>
 #include <array>
 #include <memory>
@@ -90,6 +91,7 @@ class TestSpacing : public QObject, public MTest {
       void pendingCourtesyTrial4_data();
       void pendingCourtesyTrial4();
       void spacingCorpus4();
+      void fingeringSpacing4();
       void keepWithNextCollection4();
       void manualLeadingSpace4_data();
       void manualLeadingSpace4();
@@ -11841,6 +11843,52 @@ void TestSpacing::spacingCorpus4()
       for (auto it = reasons.cbegin(); it != reasons.cend(); ++it)
             qInfo().noquote() << "spacing-corpus fallback count:" << it.value() << "scores:" << affectedScores.value(it.key()) << it.key();
       QVERIFY2(allFinal.total > 0, "No final spacing decisions recorded");
+      }
+
+void TestSpacing::fingeringSpacing4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "studio-spacing-natural-h1.mscx"));
+      QVERIFY(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->setStyleValue(Sid::beamLayout4, true);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      Segment* segment = score->firstMeasure()->first(SegmentType::ChordRest);
+      QVERIFY(segment && segment->element(0) && segment->element(0)->isChord());
+      Note* note = toChord(segment->element(0))->upNote();
+      QVERIFY(note);
+      Fingering* fingering = new Fingering(score.get());
+      fingering->setParent(note);
+      fingering->setTrack(note->track());
+      fingering->setPlainText(QStringLiteral("5"));
+      note->add(fingering);
+
+      // Warm the native skyline placement so the next spacing pass has an
+      // actual fingering rectangle to project, as on an already open score.
+      score->doLayout();
+      QVERIFY(fingering->bbox().isValid());
+      const auto shape = spacingStaffShape4(segment, 0);
+      QVERIFY(std::any_of(shape.elements.begin(), shape.elements.end(),
+            [fingering](const SpacingShapeElement4& e) { return e.item == fingering && e.rect.isValid(); }));
+      SpacingShape4 projected;
+      const SpacingPaddingTable4 table(score.get());
+      QString reason;
+      QVERIFY2(spacingCollisionProjection4(table, shape, fingering->spatium(), projected, nullptr, nullptr, &reason),
+            qPrintable(reason));
+      QVERIFY(std::any_of(projected.elements.begin(), projected.elements.end(),
+            [fingering](const SpacingShapeElement4& e) { return e.item == fingering; }));
+
+      std::vector<SpacingDecision4> events;
+      SpacingDecisionScope4 scope(score.get(), [&events](const SpacingDecision4& e) { events.push_back(e); });
+      score->doLayout();
+      QVERIFY(!events.empty());
+      bool final = false;
+      for (const auto& e : events) {
+            QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+            final = final || e.pass == SpacingPass4::FINAL;
+            }
+      QVERIFY(final);
+      QVERIFY(fingering->visible() && fingering->bbox().isValid());
+      QVERIFY(!fingering->pageBoundingRect().intersects(note->pageBoundingRect()));
       }
 
 QTEST_MAIN(TestSpacing)

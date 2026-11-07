@@ -32,9 +32,9 @@ static int paddingIndex4(ElementType type)
         ElementType::NOTE, ElementType::LEDGER_LINE, ElementType::HOOK, ElementType::NOTEDOT,
         ElementType::REST, ElementType::CLEF, ElementType::BAR_LINE, ElementType::KEYSIG,
         ElementType::TIMESIG, ElementType::ARPEGGIO, ElementType::ACCIDENTAL, ElementType::STEM,
-        ElementType::BREATH
+        ElementType::BREATH, ElementType::FINGERING
     };
-    for (int i = 0; i < 13; ++i) {
+    for (int i = 0; i < int(sizeof(types) / sizeof(types[0])); ++i) {
         if (types[i] == type)
             return i;
     }
@@ -53,7 +53,8 @@ SpacingPaddingTable4::SpacingPaddingTable4(const Score* score) : _score(score)
     const qreal ledgerPad = 0.25 * spatium;
     const qreal ledgerLength = score->styleP(Sid::ledgerLineLength);
     auto cell = [&](ElementType a, ElementType b) -> qreal& { return _padding[paddingIndex4(a)][paddingIndex4(b)]; };
-    // Studio v4.7.5 PaddingTable::createTable, restricted to these 13 types.
+    // Studio v4.7.5 PaddingTable::createTable, restricted to the supported types. Fingerings retain the
+    // default padding, with the usual vertical overlap check for kernable pairs.
     cell(ElementType::NOTE, ElementType::NOTE) = minPadUnit;
     cell(ElementType::NOTE, ElementType::LEDGER_LINE) = 0.35 * spatium;
     cell(ElementType::NOTE, ElementType::ACCIDENTAL)
