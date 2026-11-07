@@ -3302,6 +3302,12 @@ void Score::getNextMeasure(LayoutContext& lc)
             return;
             }
 
+      // KeySig::layout() uses the preceding clef at the same tick.
+      if (styleB(Sid::spacingLayout4)
+          && measure->findSegmentR(SegmentType::Clef, Fraction(0, 1))
+          && measure->findSegmentR(SegmentType::KeySig, Fraction(0, 1)))
+            measure->sortRepeatSegments();
+
       measure->connectTremolo();
 
       //
