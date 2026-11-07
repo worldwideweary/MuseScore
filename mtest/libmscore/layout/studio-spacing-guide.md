@@ -1,5 +1,35 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.245: refresh the last pair after removing a courtesy
+
+The v0.244 visual comparison showed close agreement for sharps, flats and
+cancellation naturals. On the v0.243 score the reported Evolution wrap
+moved from 3.58 to 3.57 inches, versus 3.50 in Studio 4.7.5. That leaves
+roughly 0.07 inches to account for. Native v0.244 mtests were still running
+at the visual checkpoint.
+
+The pinned 4.7.5 collector (`systemlayout.cpp` blob
+`516188a75a42d193b9cb4baa02aac0c9a08bf85e`) reruns incremental spacing
+after finalizing the predecessor, keeping the active positions and
+advances from that predecessor and touching only the last two measures.
+The v0.243 implementation rebuilt the entire retained prefix here. For
+consecutive ordinary courtesies, now reuse the accepted trial, allowing
+the certified penultimate courtesy segments to become inactive. Keep
+the saved positions and advances through the surviving end barline, use
+its updated shape in collisions, and reconstruct the last pair. If the
+saved data do not match, use the previous full rebuild. This refresh
+seeds the following trial and does not change the earlier fit decision
+or final system publication.
+
+Repeat the v0.243 wrap comparison after applying this patch. For width
+diagnostics, run `tst_spacing pendingCourtesyTrial4:consecutive-changes`
+with `MSCORE_TRACE_COURTESY_FIT=1`. Widths are in staff spaces, including
+the left margin. A refresh line is the accepted prefix after courtesy
+removal; the next trial line tests one more measure. The optional Studio
+4.7.5 trace patch prints the same values for the first music system when
+launched with the same environment variable. Compare the as-saved files
+first, then repeat at matched right margins near the wrap.
+
 ## v0.244: key signature formation
 
 v0.243 passed native mtests. Both comparison scores displayed the G-major

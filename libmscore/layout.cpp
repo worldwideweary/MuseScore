@@ -4388,14 +4388,15 @@ static bool systemFittingPlan4(System* system, qreal availableWidth, std::vector
         && measures.size() > 1 && prefix->measures.size() == measures.size() - 1
         && prefix->measures.back().measure == measures[measures.size() - 2]
         && prefix->measures.back().measure->trailer();
-    if (!spacingCandidateSignaturesReady4(system, reason, carryTrailer)) return false;
+    const bool refresh = prefix && prefix->trialOnly;
+    if (!spacingCandidateSignaturesReady4(system, reason, carryTrailer || refresh)) return false;
     if (!spacingRepeatBarlinesReady4(system, SpacingPass4::CANDIDATE, reason)) return false;
     NativeGraceInputs4 inputs(system->score(), spacingMeasures4(system), readiness);
     SpacingGraceQueryScope4 graceScope(system->score(), inputs.factory());
     SpacingSystemRequest4 request;
     request.availableWidth = availableWidth;
     request.slurPolicy = inputs.factory()->policy();
-    if (carryTrailer) request.previousPrefix = prefix;
+    if (carryTrailer || refresh) request.previousPrefix = prefix;
     return nativeSystemSpacingPlan4(system, request, &inputs, preparedBeams, result, reason);
 }
 
@@ -4489,17 +4490,24 @@ System* Score::collectSystem(LayoutContext& lc)
 
       QList<System *> brokenSystems;
       SpacingPlan4 previousCandidate;
-      bool refreshCandidate = false;
 
       while (lc.curMeasure) {    // collect measure for system
-            if (refreshCandidate && lc.curMeasure->isMeasure()) {
+            qreal courtesyRefreshWidth = 0;
+            if (previousCandidate.trialOnly) {
                   // The accepted trial's predecessor trailer and end barline
-                  // have now been finalized. Replan the retained prefix before
-                  // appending the next measure; use it only as a courtesy seed.
-                  systemFittingPlan4(system, systemWidth, preparedBeams, lc.spacingDirections4.get(),
-                        previousCandidate);
+                  // have been finalized. Replay the last pair before appending
+                  // another measure, keeping the older coordinates and widths.
+                  SpacingPlan4 accepted = std::move(previousCandidate);
+                  previousCandidate = {};
+                  if (lc.curMeasure->isMeasure()) {
+                        if (systemFittingPlan4(system, systemWidth, preparedBeams, lc.spacingDirections4.get(),
+                              previousCandidate, &accepted))
+                              courtesyRefreshWidth = previousCandidate.width;
+                        else
+                              systemFittingPlan4(system, systemWidth, preparedBeams, lc.spacingDirections4.get(),
+                                    previousCandidate);
+                        }
                   }
-            refreshCandidate = false;
             System* oldSystem = lc.curMeasure->system();
             system->appendMeasure(lc.curMeasure);
 
@@ -4562,21 +4570,18 @@ System* Score::collectSystem(LayoutContext& lc)
                   const bool planned = systemFittingPlan4(system, systemWidth, preparedBeams,
                         lc.spacingDirections4.get(), candidate, &previousCandidate, observed ? &reason : nullptr);
                   // Consume the seed once, including on fallback. A trial-only
-                  // plan must be rebuilt if it fits and another trial follows.
+                  // plan can seed only the replay after native finalization.
                   previousCandidate = {};
                   if (planned) {
                         fittingWidth = candidate.width;
-                        if (system->lastMeasure()->trailer()) {
-                              refreshCandidate = candidate.trialOnly;
-                              if (!refreshCandidate)
-                                    previousCandidate = std::move(candidate);
-                              }
+                        if (system->lastMeasure()->trailer())
+                              previousCandidate = std::move(candidate);
                         }
                   if (observed)
                         recordSpacingDecision4(system, SpacingPass4::CANDIDATE,
                               MScore::noHorizontalStretch ? SpacingPath4::NO_STRETCH
                               : planned ? SpacingPath4::FULL_PLAN : SpacingPath4::NATIVE_WIDTHS,
-                              fittingWidth, systemWidth, reason);
+                              fittingWidth, systemWidth, reason, courtesyRefreshWidth);
                   }
             else if (spacingDecisionObserved4(this))
                   recordSpacingDecision4(system, SpacingPass4::CANDIDATE, SpacingPath4::STYLE_OFF,

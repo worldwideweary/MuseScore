@@ -58,7 +58,7 @@ bool spacingDecisionObserved4(const Score* score)
 }
 
 void recordSpacingDecision4(const System* system, SpacingPass4 pass, SpacingPath4 path,
-                            qreal width, qreal available, const QString& reason)
+                            qreal width, qreal available, const QString& reason, qreal courtesyRefreshWidth)
 {
     if (!system) return;
     SpacingDecisionScope4* scope = activeSpacingDecision4();
@@ -69,6 +69,7 @@ void recordSpacingDecision4(const System* system, SpacingPass4 pass, SpacingPath
     event.path = path;
     event.width = width;
     event.available = available;
+    event.courtesyRefreshWidth = courtesyRefreshWidth;
     event.reason = reason;
     for (const MeasureBase* mb : system->measures()) {
         if (!mb->isMeasure()) continue;
@@ -1004,15 +1005,23 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
     if (input && input->score() != score)
         return fail("Prepared musical inputs belong to another score");
     const Measure* predecessor = nullptr;
+    const bool refresh = prefix && prefix->trialOnly;
     if (prefix) {
         if (!spacingCandidateSignaturesReady4(system, reason, true)) return false;
         const auto& measures = system->measures();
-        if (measures.size() < 2 || prefix->trialOnly || prefix->measures.size() != measures.size() - 1
+        if (measures.size() < 2 || prefix->measures.size() != measures.size() - (refresh ? 0 : 1)
             || !prefix->afterGraces.empty() || !prefix->mergedGraces.empty())
-            return fail("Candidate pending penultimate courtesy has no valid prefix seed");
-        predecessor = toMeasure(measures[measures.size() - 2]);
-        if (!predecessor->trailer())
-            return fail("Candidate prefix seed has no pending penultimate courtesy");
+            return fail("Candidate courtesy has no valid prefix seed");
+        const Measure* penultimate = toMeasure(measures[measures.size() - 2]);
+        if (refresh) {
+            if (penultimate->trailer() || prefix->measures.back().measure != measures.back()
+                || !system->lastMeasure()->trailer())
+                return fail("Accepted courtesy trial has not been finalized");
+        } else {
+            if (!penultimate->trailer())
+                return fail("Candidate prefix seed has no pending penultimate courtesy");
+            predecessor = penultimate;
+        }
     }
     for (int st = 0; st < score->nstaves(); ++st) {
         if (!score->staff(st)->show() || !system->staff(st)->show())
@@ -1152,11 +1161,14 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
     if (prefix) {
         // Studio updates only the predecessor/new-measure pair. Earlier
         // measures retain both their positions and their occupied widths.
-        firstMutableMeasure = prefix->measures.size() - 1;
+        const size_t frozenMeasures = prefix->measures.size() - (refresh ? 1 : 0);
+        firstMutableMeasure = frozenMeasures - 1;
         const Segment* lastActive = nullptr;
-        for (size_t mi = 0; mi < prefix->measures.size(); ++mi) {
+        bool removedCourtesy = false;
+        for (size_t mi = 0; mi < frozenMeasures; ++mi) {
             auto& measure = plan.measures[mi];
             const auto& savedMeasure = prefix->measures[mi];
+            const bool finalizedPredecessor = refresh && mi == firstMutableMeasure;
             if (mi == firstMutableMeasure) collisionFirst = firstNew;
             if (measure.measure != savedMeasure.measure || !std::isfinite(savedMeasure.x)
                 || !std::isfinite(savedMeasure.width) || savedMeasure.width <= 0
@@ -1170,8 +1182,19 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                 if (firstNew >= prefix->segments.size())
                     return fail("Candidate prefix segment list changed");
                 const auto& saved = prefix->segments[firstNew];
-                if (saved.segment != current.segment || saved.ignored != current.ignored)
+                if (saved.segment != current.segment)
+                    return fail("Candidate prefix segment identity changed");
+                if (saved.ignored != current.ignored) {
+                    if (finalizedPredecessor && current.ignored && courtesyType4(current.segment)
+                        && current.segment->trailer() && current.segment->rtick() == measure.measure->ticks()
+                        && lastActive && lastActive->measure() == measure.measure && lastActive->isEndBarLineType()) {
+                        if (!removedCourtesy && (!std::isfinite(saved.x) || qAbs(cursor - saved.x) > 1e-6))
+                            return fail("Accepted trial's former courtesy edge changed");
+                        removedCourtesy = true;
+                        continue;
+                    }
                     return fail("Candidate prefix segment identity or visibility changed");
+                }
                 if (current.ignored) continue;
                 if (!std::isfinite(saved.x) || !std::isfinite(saved.width) || saved.width < 0
                     || saved.widthOffset != 0 || saved.stretch != current.stretch
@@ -1183,14 +1206,26 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                 lastActive = current.segment;
                 placed = true;
             }
-            if (!placed || !std::isfinite(cursor) || qAbs(cursor - (measure.x + measure.width)) > 1e-6)
+            // Studio loads the surviving end barline's saved advance even
+            // when the courtesy that used to follow it has been disabled.
+            // Reconstruct this measure's width below with the new barline.
+            if (!placed || !std::isfinite(cursor)
+                || (!finalizedPredecessor && qAbs(cursor - (measure.x + measure.width)) > 1e-6))
                 return fail("Candidate prefix measure has no matching segment edge");
         }
-        if (firstNew != prefix->segments.size() || firstNew == plan.segments.size()
-            || !lastActive || !courtesyType4(lastActive) || !std::isfinite(prefix->width)
-            || qAbs(cursor - prefix->width) > 1e-6)
-            return fail("Candidate prefix has no matching terminal courtesy edge");
-        plan.trialOnly = true;
+        if (refresh) {
+            if (!removedCourtesy || !lastActive || !lastActive->isEndBarLineType()
+                || lastActive->measure() != plan.measures[firstMutableMeasure].measure
+                || firstNew == plan.segments.size() || firstNew >= prefix->segments.size()
+                || prefix->segments[firstNew].segment != plan.segments[firstNew].segment)
+                return fail("Accepted trial has no matching finalized courtesy boundary");
+        } else {
+            if (firstNew != prefix->segments.size() || firstNew == plan.segments.size()
+                || !lastActive || !courtesyType4(lastActive) || !std::isfinite(prefix->width)
+                || qAbs(cursor - prefix->width) > 1e-6)
+                return fail("Candidate prefix has no matching terminal courtesy edge");
+            plan.trialOnly = true;
+        }
     }
     for (size_t i = firstNew; i < plan.segments.size(); ++i) {
         SpacingSegmentPlan4& current = plan.segments[i];

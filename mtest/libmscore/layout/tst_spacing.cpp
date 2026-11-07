@@ -9327,10 +9327,23 @@ void TestSpacing::pendingCourtesyTrial4()
       Measure* added = predecessor->nextMeasure();
       QVERIFY(added && !added->nextMeasure());
       std::vector<SpacingDecision4> events;
+      const bool trace = qEnvironmentVariableIsSet("MSCORE_TRACE_COURTESY_FIT");
       const auto collect = [&]() {
             events.clear();
             SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
             score->doLayout();
+            if (trace) {
+                  const qreal sp = first->spatium();
+                  for (const auto& e : events) {
+                        if (e.pass != SpacingPass4::CANDIDATE || e.firstTick != first->tick()) continue;
+                        if (e.courtesyRefreshWidth > 0)
+                              qInfo("courtesy-fit 37E refresh bars=%d width_sp=%.6f available_sp=%.6f",
+                                    e.measures - 1, e.courtesyRefreshWidth / sp, e.available / sp);
+                        qInfo("courtesy-fit 37E trial bars=%d width_sp=%.6f available_sp=%.6f %s",
+                              e.measures, e.width / sp, e.available / sp,
+                              e.path == SpacingPath4::FULL_PLAN ? "planned" : "fallback");
+                        }
+                  }
             };
       const auto candidate = [&](int bars) -> const SpacingDecision4* {
             for (const auto& e : events)
@@ -9382,6 +9395,7 @@ void TestSpacing::pendingCourtesyTrial4()
             QVERIFY2(seed->path == SpacingPath4::FULL_PLAN, qPrintable(seed->reason));
             QVERIFY2(trial->path == SpacingPath4::FULL_PLAN, qPrintable(trial->reason));
             QVERIFY(trial->width > seed->width && trial->width <= trial->available);
+            QCOMPARE(trial->courtesyRefreshWidth > 0, count == 4);
             breaks.emplace_back(bars, originalWidth * (seed->width + trial->width) / (2 * trial->available));
             }
       for (const auto& testBreak : breaks) {
@@ -9393,6 +9407,7 @@ void TestSpacing::pendingCourtesyTrial4()
             QVERIFY2(seed->path == SpacingPath4::FULL_PLAN, qPrintable(seed->reason));
             QVERIFY2(trial->path == SpacingPath4::FULL_PLAN, qPrintable(trial->reason));
             QVERIFY(seed->width <= seed->available && trial->width > trial->available);
+            QCOMPARE(trial->courtesyRefreshWidth > 0, count == 4);
             Measure* end = predecessor;
             if (testBreak.first < count) end = end->prevMeasure();
             QVERIFY(first->system() == end->system());
@@ -9410,6 +9425,7 @@ void TestSpacing::pendingCourtesyTrial4()
       collect();
       const auto* trial = candidate(count);
       QVERIFY(trial && trial->path == SpacingPath4::FULL_PLAN);
+      QCOMPARE(trial->courtesyRefreshWidth > 0, count == 4);
       QVERIFY(first->system() == added->system());
       checkBoundary(added, false);
       }
