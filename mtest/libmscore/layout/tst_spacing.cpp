@@ -1,6 +1,8 @@
 // MuseScore — optional Studio spacing regression tests.
 // Licensed under GNU GPL version 2, as published in LICENSE.GPL.
 #include <QtTest/QtTest>
+#include <QDirIterator>
+#include <QMap>
 #include "mtest/testutils.h"
 #include "libmscore/score.h"
 #include "libmscore/xml.h"
@@ -87,6 +89,7 @@ class TestSpacing : public QObject, public MTest {
       void signatureCollection4();
       void pendingCourtesyTrial4_data();
       void pendingCourtesyTrial4();
+      void spacingCorpus4();
       void keepWithNextCollection4();
       void manualLeadingSpace4_data();
       void manualLeadingSpace4();
@@ -11751,6 +11754,88 @@ void TestSpacing::partialRepeatLayout4()
       QVERIFY(std::any_of(events.begin(), events.end(), [r3](const SpacingDecision4& e) {
             return e.pass == SpacingPass4::FINAL && e.path == SpacingPath4::FULL_PLAN && e.firstTick == r3->tick();
             }));
+      }
+
+// Opt-in coverage probe: a fallback is a measurement, not a test failure.
+void TestSpacing::spacingCorpus4()
+      {
+      const QString directory = QString::fromLocal8Bit(qgetenv("MSCORE_SPACING_CORPUS"));
+      if (directory.isEmpty())
+            QSKIP("Set MSCORE_SPACING_CORPUS to a directory of 37E scores");
+      QVERIFY2(QFileInfo(directory).isDir(), qPrintable(directory));
+      QDirIterator files(directory, {QStringLiteral("*.mscx"), QStringLiteral("*.mscz")},
+            QDir::Files | QDir::Readable, QDirIterator::Subdirectories);
+      QStringList paths;
+      while (files.hasNext())
+            paths.append(files.next());
+      paths.sort();
+      QVERIFY2(!paths.isEmpty(), "No readable .mscx or .mscz scores");
+
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      struct Count {
+            int total = 0;
+            int planned = 0;
+            };
+      Count allCandidates, allFinal;
+      QMap<QString, int> reasons;
+      int unreadable = 0;
+      for (const QString& path : paths) {
+            std::unique_ptr<MasterScore> score(new MasterScore(mscore->baseStyle()));
+            Score::FileError status;
+            {
+            ScoreLoad loading;
+            status = score->loadMsc(path, false);
+            }
+            const QString name = QDir(directory).relativeFilePath(path);
+            if (status != Score::FileError::FILE_NO_ERROR) {
+                  ++unreadable;
+                  qInfo().noquote() << "spacing-corpus skipped:" << name << "load error" << int(status);
+                  continue;
+                  }
+
+            score->setLayoutMode(LayoutMode::PAGE);
+            score->setStyleValue(Sid::spacingLayout4, true);
+            score->setStyleValue(Sid::beamLayout4, true);
+            Count candidates, final;
+            QMap<QString, qint64> firstFallback;
+            {
+            SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& event) {
+                  const bool candidate = event.pass == SpacingPass4::CANDIDATE;
+                  Count& count = candidate ? candidates : final;
+                  ++count.total;
+                  if (event.path == SpacingPath4::FULL_PLAN) {
+                        ++count.planned;
+                        return;
+                        }
+                  QString reason = event.reason;
+                  if (reason.startsWith(QStringLiteral("Unadapted geometry at tick ")))
+                        reason = QStringLiteral("Unadapted geometry");
+                  if (reason.isEmpty())
+                        reason = QStringLiteral("No diagnostic (path %1)").arg(int(event.path));
+                  const QString key = (candidate ? QStringLiteral("candidate: ") : QStringLiteral("final: ")) + reason;
+                  ++reasons[key];
+                  if (!firstFallback.contains(key))
+                        firstFallback.insert(key, event.firstTick.ticks());
+                  });
+            score->doLayout();
+            }
+            qInfo().noquote() << "spacing-corpus score:" << name
+                  << "candidate" << candidates.planned << "/" << candidates.total
+                  << "final" << final.planned << "/" << final.total;
+            for (auto it = firstFallback.cbegin(); it != firstFallback.cend(); ++it)
+                  qInfo().noquote() << "spacing-corpus first system tick:" << it.value() << it.key();
+            allCandidates.total += candidates.total;
+            allCandidates.planned += candidates.planned;
+            allFinal.total += final.total;
+            allFinal.planned += final.planned;
+            }
+
+      qInfo() << "spacing-corpus total: scores" << paths.size() - unreadable << "skipped" << unreadable
+            << "candidate" << allCandidates.planned << "/" << allCandidates.total
+            << "final" << allFinal.planned << "/" << allFinal.total;
+      for (auto it = reasons.cbegin(); it != reasons.cend(); ++it)
+            qInfo().noquote() << "spacing-corpus fallback count:" << it.value() << it.key();
+      QVERIFY2(allFinal.total > 0, "No final spacing decisions recorded");
       }
 
 QTEST_MAIN(TestSpacing)
