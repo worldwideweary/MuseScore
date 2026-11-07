@@ -13,6 +13,7 @@
 #include "system.h"
 #include "clef.h"
 #include "note.h"
+#include "tie.h"
 #include "rest.h"
 #include "staff.h"
 #include "stafftype.h"
@@ -364,6 +365,37 @@ unsigned SpacingContextCache4::forwardSlurKerning(const Chord* chord)
     return blocked;
 }
 
+// The planner reserves horizontal clearance separately. Keep endpoints
+// that need a different tie placement rule on the native path.
+static bool ordinaryAdjacentTie4(const Tie* tie)
+{
+    if (!tie) return true;
+    const Note* start = tie->startNote();
+    const Note* end = tie->endNote();
+    if (!start || !end || start->tieFor() != tie || end->tieBack() != tie
+        || !start->visible() || !end->visible() || start->track() < 0 || start->track() != end->track()
+        || start->score() != end->score() || start->pitch() != end->pitch() || start->line() != end->line()
+        || !start->staff() || !end->staff()
+        || !start->staff()->isPitchedStaff(start->tick()) || !end->staff()->isPitchedStaff(end->tick()))
+        return false;
+    const Chord* a = start->chord();
+    const Chord* b = end->chord();
+    if (!a || !b || a->isGrace() || b->isGrace() || a->staffMove() || b->staffMove()
+        || !a->segment() || !b->segment() || !a->measure() || !b->measure()
+        || a->tick() + a->actualTicks() != b->tick()
+        || a->segment()->next1(SegmentType::ChordRest) != b->segment())
+        return false;
+    if (a->measure() != b->measure()
+        && (a->measure()->next() != b->measure() || a->measure()->repeatEnd()
+            || b->measure()->repeatStart() || a->measure()->nextSectionBreak()))
+        return false;
+    for (size_t i = 0; i < tie->nsegments(); ++i) {
+        const TieSegment* segment = tie->segmentAt(int(i));
+        if (segment->isNudged() || segment->isEdited()) return false;
+        }
+    return true;
+}
+
 static bool commonChordContext4(const Chord* chord, bool allowGrace,
                                 const SpacingGraceContext4* context, const Chord* scopedMain, const SpacingContextCache4* cache)
 {
@@ -373,7 +405,8 @@ static bool commonChordContext4(const Chord* chord, bool allowGrace,
     if ((!allowGrace && chord->isGrace()) || !chord->articulations().empty())
         return false;
     for (const Note* note : chord->notes()) {
-        if (note->tieFor() || note->tieBack() || !note->spannerFor().empty() || !note->spannerBack().empty())
+        if (!ordinaryAdjacentTie4(note->tieFor()) || !ordinaryAdjacentTie4(note->tieBack())
+            || !note->spannerFor().empty() || !note->spannerBack().empty())
             return false;
     }
     if (cache && cache->slurPolicy() == SpacingSlurPolicy4::PREPARED)

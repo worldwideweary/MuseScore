@@ -114,6 +114,7 @@ struct SpacingPlan4 {
     std::vector<GraceAfterPlan4> afterGraces; // Target-relative; retained through justification/squeezing.
     std::vector<GraceMergedPlan4> mergedGraces; // Per-member ownership retained through fitting.
     qreal width = 0; // right system edge, including left margin
+    bool hasOrdinaryTies = false; // Keep their clearance out of the last-resort compression.
     bool trialOnly = false; // includes a courtesy that has not been finalized
 };
 struct SpacingPlanOptions4 {

@@ -16,6 +16,7 @@
 #include "beam.h"
 #include "measure.h"
 #include "note.h"
+#include "tie.h"
 #include "rest.h"
 #include "score.h"
 #include "segment.h"
@@ -88,6 +89,7 @@ struct Geometry4 {
     qreal minRight = 0;
     qreal leftEdge = std::numeric_limits<qreal>::max();
     bool accidentals = false;
+    bool outgoingTie = false;
 };
 
 bool active4(const Segment* s)
@@ -702,6 +704,23 @@ bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, 
         if (!spacingShapeDistance4(table, first.staff[st], second.staff[st], sp, squeeze, d, &graces, &contextCache))
             return false;
         distance = std::max(distance, d);
+    }
+    if (first.outgoingTie && b.segment->isChordRestType()) {
+        for (const Element* item : a.segment->elist()) {
+            if (!item || !item->isChord()) continue;
+            for (const Note* note : toChord(item)->notes()) {
+                const Tie* tie = note->tieFor();
+                const Note* end = tie ? tie->endNote() : nullptr;
+                if (!end || end->chord()->segment() != b.segment) continue;
+                // The native tie adjusts its grips around endpoint ink, then
+                // adds a quarter-space inset at each end. Reserve that room
+                // outside the projected endpoint shapes, even when squeezing.
+                const qreal left = second.leftEdge;
+                const qreal inset = 0.5 * std::max(note->spatium(), end->spatium());
+                distance = std::max(distance, first.minRight - left + inset
+                    + table.score()->styleP(Sid::minTieLength) * std::max(note->mag(), end->mag()));
+            }
+        }
     }
     const auto constraint = cross.pairs.find(a.segment);
     if (constraint != cross.pairs.end() && constraint->second.second->segment() == b.segment)
@@ -1319,6 +1338,15 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                         if (!note->visible() || !spacingPairPolicy4(table, note, note, note->spatium(), policy, &graces, &contextCache))
                             return fail(reason ? QStringLiteral("Note policy: ") + notePolicyDiagnostic4(note, chord, contextCache)
                                                : QString());
+                        for (const Tie* tie : {note->tieFor(), note->tieBack()}) {
+                            if (!tie) continue;
+                            const auto& measures = system->measures();
+                            const Note* other = tie->startNote() == note ? tie->endNote() : tie->startNote();
+                            if (std::find(measures.begin(), measures.end(), other->chord()->measure()) == measures.end())
+                                return fail("Tie crosses the spacing system boundary");
+                            plan.hasOrdinaryTies = true;
+                            g.outgoingTie = g.outgoingTie || tie == note->tieFor();
+                        }
                     }
                 }
                 QString geometryReason;
@@ -1342,6 +1370,8 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
     if (hasManualSpace && (hasRightAligned || !plan.afterGraces.empty() || !plan.mergedGraces.empty()
         || !graces.mains.empty() || !cross.pairs.empty()))
         return fail("Manual leading space with grace, cross-staff or right-aligned geometry");
+    if (plan.hasOrdinaryTies && (hasManualSpace || prefix))
+        return fail("Tie clearance requires a full plan without manual leading space");
     const qreal manualSpatium = hasManualSpace ? system->spatium() : 0;
     const auto rhythmicAdvance = [&options](const SpacingSegmentPlan4& entry) {
         return 3.5 * entry.segment->spatium() * entry.stretch * options.stretchReduction;
@@ -1638,7 +1668,7 @@ static bool squeezeSpacingPlanImpl4(System* system, qreal targetWidth, SpacingPl
     // Studio 4.7.5 squeezeSystemToFit recomputes from native geometry each
     // pass, with minimum-measure widths overridden. For a retained group,
     // also try the two tighter padding levels, with nonnegative advances.
-    const bool tightGroup = retainedOverfullGroup && system->score()->nstaves() == 1
+    const bool tightGroup = retainedOverfullGroup && !candidate.hasOrdinaryTies && system->score()->nstaves() == 1
         && candidate.afterGraces.empty() && candidate.mergedGraces.empty()
         && std::all_of(candidate.segments.begin(), candidate.segments.end(), [](const SpacingSegmentPlan4& s) {
             if (s.ignored) return true;

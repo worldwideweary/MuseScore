@@ -92,6 +92,7 @@ class TestSpacing : public QObject, public MTest {
       void pendingCourtesyTrial4();
       void spacingCorpus4();
       void fingeringSpacing4();
+      void ordinaryTieSpacing4();
       void keepWithNextCollection4();
       void manualLeadingSpace4_data();
       void manualLeadingSpace4();
@@ -11889,6 +11890,57 @@ void TestSpacing::fingeringSpacing4()
       QVERIFY(final);
       QVERIFY(fingering->visible() && fingering->bbox().isValid());
       QVERIFY(!fingering->pageBoundingRect().intersects(note->pageBoundingRect()));
+      }
+
+void TestSpacing::ordinaryTieSpacing4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.269-tie-clearance.mscx"));
+      QVERIFY(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      Measure* first = score->firstMeasure();
+      QVERIFY(first && first->nextMeasure());
+      Segment* from = first->last();
+      if (from && !from->isChordRestType()) from = from->prev(SegmentType::ChordRest);
+      Segment* to = first->nextMeasure()->first(SegmentType::ChordRest);
+      QVERIFY(from && to && from->element(0) && to->element(0));
+      QVERIFY(from->element(0)->isChord() && to->element(0)->isChord());
+      const auto& starts = toChord(from->element(0))->notes();
+      const auto& ends = toChord(to->element(0))->notes();
+      QCOMPARE(int(starts.size()), 2);
+      QCOMPARE(int(ends.size()), 2);
+      for (int i = 0; i < 2; ++i) {
+            QCOMPARE(starts[i]->pitch(), ends[i]->pitch());
+            Tie* tie = new Tie(score.get());
+            tie->setEndNote(ends[i]);
+            starts[i]->add(tie);
+            }
+
+      score->doLayout();
+      System* system = first->system();
+      QVERIFY(system && system == to->measure()->system());
+      QVERIFY(!system->studioSpacingFallback());
+
+      SpacingPlanOptions4 tight;
+      tight.squeezeFactor = 0;
+      tight.stretchReduction = 0;
+      tight.minimumMeasureWidths = false;
+      SpacingPlan4 plan;
+      QString reason;
+      QVERIFY2(buildSpacingPlan4(system, plan, &reason, tight), qPrintable(reason));
+      QVERIFY(plan.hasOrdinaryTies);
+      const auto position = [&plan](const Segment* segment) {
+            return std::find_if(plan.segments.cbegin(), plan.segments.cend(),
+                  [segment](const SpacingSegmentPlan4& e) { return e.segment == segment; });
+            };
+      const auto a = position(from);
+      const auto b = position(to);
+      QVERIFY(a != plan.segments.cend() && b != plan.segments.cend());
+      for (int i = 0; i < 2; ++i) {
+            const qreal x1 = a->x + starts[i]->chord()->x() + starts[i]->x() + starts[i]->headWidth();
+            const qreal x2 = b->x + ends[i]->chord()->x() + ends[i]->x();
+            QVERIFY(x2 - x1 >= score->styleP(Sid::minTieLength) + 0.5 * score->spatium() - 1e-6);
+            }
       }
 
 QTEST_MAIN(TestSpacing)
