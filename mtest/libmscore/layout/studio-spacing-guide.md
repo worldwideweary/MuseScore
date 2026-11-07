@@ -1,5 +1,29 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.244: key signature formation
+
+v0.243 passed native mtests. Both comparison scores displayed the G-major
+and 4/4 courtesies after C3 when C4 wrapped, at reported right margins of
+3.50 inches in Studio 4.7.5 and 3.58 inches in Evolution. The zoomed crops
+showed a separate difference inside the D-major signature: 1.10 spaces
+between corresponding sharp strokes in 4.7.5 and 1.00 in Evolution.
+
+With Studio spacing on, ordinary key signatures place successive symbols
+using the preceding glyph width, the accidental or natural gap, and the
+font's cutouts when the vertical stagger permits nesting. A mixed pair
+uses twice the accidental gap. This is the rule in 4.7.5's
+`TLayout::layoutKeySig` / `keySigAddLayout` (same code in the pinned score
+renderer blob `4bca2f6242674face49d1da47a00cb64ea841431`). The two style
+values default to 0.3 and 0.4 spaces and are read from both score formats.
+The existing clef, cancellation, courtesy and custom-key policies are
+retained; the union of the placed glyphs supplies the existing bbox
+consumer. Per-glyph inter-segment collision shapes are a separate change.
+
+The comparison score covers long runs of sharps and flats, cancellation
+naturals before and after other symbols, and a courtesy cancellation at a
+system break. The v0.243 score can also be remeasured to see how much of
+its wrap difference is affected by the corrected formation.
+
 ## v0.243: consecutive courtesy changes
 
 v0.242 passed native mtests. The comparison kept all three measures together

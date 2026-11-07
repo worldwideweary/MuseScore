@@ -87,6 +87,7 @@ class TestSpacing : public QObject, public MTest {
       void signatureCollection4();
       void pendingCourtesyTrial4_data();
       void pendingCourtesyTrial4();
+      void keySignatureFormation4();
       void clefSignaturePlanning4_data();
       void clefSignaturePlanning4();
       void smallNotation4_data();
@@ -213,6 +214,13 @@ void TestSpacing::styleRoundTrip()
       MasterScore* score = readScore(DIR + "studio-spacing-natural-h1.mscx");
       QVERIFY(score);
       QVERIFY(score->styleB(Sid::scaleRythmicSpacingForSmallNotes));
+      MStyle importedGaps;
+      XmlReader gaps(QByteArray("<Style><keysigAccidentalDistance>0.52</keysigAccidentalDistance>"
+                               "<keysigNaturalDistance>0.64</keysigNaturalDistance></Style>"));
+      QVERIFY(gaps.readNextStartElement());
+      importedGaps.load(gaps, 475);
+      QCOMPARE(importedGaps.value(Sid::keysigAccidentalDistance).value<Spatium>().val(), qreal(0.52));
+      QCOMPARE(importedGaps.value(Sid::keysigNaturalDistance).value<Spatium>().val(), qreal(0.64));
       for (bool enabled : {false, true}) {
             MStyle imported;
             const QByteArray bytes = QByteArray("<Style><scaleRythmicSpacingForSmallNotes>")
@@ -227,12 +235,16 @@ void TestSpacing::styleRoundTrip()
       score->setStyleValue(Sid::spacingLayout4, true);
       score->setStyleValue(Sid::beamLayout4, false);
       score->setStyleValue(Sid::scaleRythmicSpacingForSmallNotes, false);
+      score->setStyleValue(Sid::keysigAccidentalDistance, Spatium(0.52));
+      score->setStyleValue(Sid::keysigNaturalDistance, Spatium(0.64));
       QVERIFY(saveScore(score, "studio-spacing-roundtrip.mscx"));
       MasterScore* loaded = readCreatedScore("studio-spacing-roundtrip.mscx");
       QVERIFY(loaded);
       QVERIFY(loaded->styleB(Sid::spacingLayout4));
       QVERIFY(!loaded->styleB(Sid::beamLayout4));
       QVERIFY(!loaded->styleB(Sid::scaleRythmicSpacingForSmallNotes));
+      QCOMPARE(loaded->styleS(Sid::keysigAccidentalDistance).val(), qreal(0.52));
+      QCOMPARE(loaded->styleS(Sid::keysigNaturalDistance).val(), qreal(0.64));
       score->setStyleValue(Sid::spacingLayout4, false);
       QVERIFY(saveScore(score, "studio-spacing-off.mscx"));
       MasterScore* off = readCreatedScore("studio-spacing-off.mscx");
@@ -9400,6 +9412,81 @@ void TestSpacing::pendingCourtesyTrial4()
       QVERIFY(trial && trial->path == SpacingPath4::FULL_PLAN);
       QVERIFY(first->system() == added->system());
       checkBoundary(added, false);
+      }
+
+void TestSpacing::keySignatureFormation4()
+      {
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.244-key-signature-formation.mscx"));
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      score->doLayout();
+
+      using Id = SymId;
+      const Id sharp = Id::accidentalSharp, flat = Id::accidentalFlat, natural = Id::accidentalNatural;
+      const QList<QList<Id>> expected {
+            {sharp, sharp, sharp, sharp, sharp, sharp, sharp},
+            {sharp, sharp, natural, natural, natural, natural, natural},
+            {natural, natural, flat, flat, flat, flat, flat, flat, flat},
+            {flat, flat, natural, natural, natural, natural, natural},
+            {natural, natural}, {sharp, sharp}, {natural, natural}
+            };
+      QList<KeySig*> keys;
+      Measure* m = score->firstMeasure();
+      for (int i = 0; i < 6; ++i) {
+            QVERIFY(m);
+            Segment* seg = m->findSegmentR(SegmentType::KeySig, Fraction(0, 1));
+            QVERIFY(seg && seg->enabled() && seg->element(0) && seg->element(0)->isKeySig());
+            keys.append(toKeySig(seg->element(0)));
+            if (i < 5) m = m->nextMeasure();
+            }
+      Segment* courtesy = m->findSegmentR(SegmentType::KeySigAnnounce, m->ticks());
+      QVERIFY(courtesy && courtesy->enabled() && courtesy->element(0) && courtesy->element(0)->isKeySig());
+      keys.append(toKeySig(courtesy->element(0)));
+      QVERIFY(m->system() != m->nextMeasure()->system());
+
+      const auto symbols = [](const KeySig* key) { return key->keySigEvent().keySymbols(); };
+      const auto step = [](const QList<KeySym>& s, int i) { return s[i + 1].spos.x() - s[i].spos.x(); };
+      const auto near = [](qreal a, qreal b) { return qAbs(a - b) < 1e-6; };
+      QList<QList<KeySym>> base;
+      for (int i = 0; i < keys.size(); ++i) {
+            base.append(symbols(keys[i]));
+            QCOMPARE(base.back().size(), expected[i].size());
+            QRectF ink;
+            for (int j = 0; j < expected[i].size(); ++j) {
+                  const KeySym& s = base.back()[j];
+                  QVERIFY(s.sym == expected[i][j]);
+                  QVERIFY(!j || step(base.back(), j - 1) > 0.0);
+                  ink |= keys[i]->symBbox(s.sym).translated(s.pos);
+                  }
+            QCOMPARE(keys[i]->bbox(), ink);
+            }
+      // Leland's sharp/flat pairs and two different staggers of naturals.
+      QVERIFY(qAbs(step(base[0], 0) - 1.10) < 0.05);
+      QVERIFY(qAbs(step(base[2], 2) - 1.11) < 0.05);
+      QVERIFY(step(base[1], 3) - step(base[1], 4) > 0.4);
+
+      score->setStyleValue(Sid::keysigAccidentalDistance, Spatium(0.5));
+      score->setStyleValue(Sid::keysigNaturalDistance, Spatium(0.7));
+      for (int i = 0; i < keys.size(); ++i) {
+            keys[i]->layout();
+            const auto edited = symbols(keys[i]);
+            QCOMPARE(edited.size(), base[i].size());
+            for (int j = 0; j + 1 < edited.size(); ++j) {
+                  const Id left = expected[i][j], right = expected[i][j + 1];
+                  const qreal added = left != right ? 0.4 : left == natural ? 0.3 : 0.2;
+                  QVERIFY(near(step(edited, j) - step(base[i], j), added));
+                  QCOMPARE(edited[j].spos.y(), base[i][j].spos.y());
+                  }
+            }
+      score->setStyleValue(Sid::spacingLayout4, false);
+      for (int i : {0, 4, 5, 6}) {
+            keys[i]->layout();
+            auto legacy = symbols(keys[i]);
+            std::sort(legacy.begin(), legacy.end(), [](const KeySym& a, const KeySym& b) { return a.spos.x() < b.spos.x(); });
+            QCOMPARE(legacy.size(), expected[i].size());
+            for (int j = 0; j + 1 < legacy.size(); ++j)
+                  QVERIFY(near(step(legacy, j), 1.0));
+            }
       }
 
 void TestSpacing::signatureCollection4_data()
