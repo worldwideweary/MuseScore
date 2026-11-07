@@ -94,6 +94,7 @@ class TestSpacing : public QObject, public MTest {
       void manualBarStartLeadingSpace4();
       void manualRepeatLeadingSpace4_data();
       void manualRepeatLeadingSpace4();
+      void manualSignatureLeadingSpace4_data();
       void manualSignatureLeadingSpace4();
       void keySignatureFormation4();
       void clefSignaturePlanning4_data();
@@ -9810,11 +9811,22 @@ void TestSpacing::manualRepeatLeadingSpace4()
             }
       }
 
+void TestSpacing::manualSignatureLeadingSpace4_data()
+      {
+      QTest::addColumn<QString>("fixture");
+      QTest::addColumn<int>("staffCount");
+      QTest::newRow("one-staff") << QString("v0.251-signature-leading-space.mscx") << 1;
+      QTest::newRow("two-staves") << QString("v0.256-shared-signature-leading-space.mscx") << 2;
+      }
+
 void TestSpacing::manualSignatureLeadingSpace4()
       {
+      QFETCH(QString, fixture);
+      QFETCH(int, staffCount);
       QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
-      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.251-signature-leading-space.mscx"));
+      std::unique_ptr<MasterScore> score(readScore(DIR + fixture));
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      QCOMPARE(score->nstaves(), staffCount);
 
       const std::array<qreal, 3> edits {{1, -0.5, 1}};
       std::array<Segment*, 3> onsets;
@@ -9867,6 +9879,12 @@ void TestSpacing::manualSignatureLeadingSpace4()
                   QCOMPARE(bool(time), i != 0);
                   const Segment* last = time ? time : key;
                   QVERIFY(last);
+                  if (staffCount == 2) {
+                        const Element* top = onset->element(0);
+                        const Element* bottom = onset->element(VOICES);
+                        QVERIFY(top && top->isChord() && bottom && bottom->isChord());
+                        QVERIFY(near(top->pagePos().x(), bottom->pagePos().x()));
+                        }
                   const qreal gap = onset->x() - last->x();
                   const qreal sp = measure->system()->spatium();
                   if (pass == 0) markedGap[i] = gap;

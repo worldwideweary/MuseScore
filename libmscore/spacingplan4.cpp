@@ -115,6 +115,33 @@ bool ordinarySignature4(const Element* item)
         && (time->denominatorString().isEmpty() || time->denominatorString() == QString::number(time->denominator()));
 }
 
+bool signatureGeometryReady4(const Element* item, const Segment* segment, int track)
+{
+    if (!item || item->parent() != segment || item->score() != segment->score() || item->track() != track
+        || !item->visible() || !item->addToSkyline() || !(item->mag() > 0) || !std::isfinite(item->mag()))
+        return false;
+    const QRectF rect = item->bbox();
+    return rect.width() > 0 && rect.height() > 0 && std::isfinite(rect.x()) && std::isfinite(rect.y())
+        && std::isfinite(rect.width()) && std::isfinite(rect.height())
+        && std::isfinite(item->pos().x()) && std::isfinite(item->pos().y());
+}
+
+bool sharedSignatureReady4(const Segment* segment)
+{
+    const int staves = segment->score()->nstaves();
+    if (std::count_if(segment->elist().begin(), segment->elist().end(),
+            [](const Element* item) { return item != nullptr; }) != staves)
+        return false;
+    for (int st = 0; st < staves; ++st) {
+        const int track = st * VOICES;
+        const Element* item = segment->element(track);
+        if (!ordinarySignature4(item) || !signatureGeometryReady4(item, segment, track)
+            || (segment->isKeySigType() ? !item->isKeySig() : !item->isTimeSig()))
+            return false;
+    }
+    return true;
+}
+
 bool courtesyType4(const Segment* s)
 {
     return s->isKeySigAnnounceType() || s->isTimeSigAnnounceType();
@@ -180,12 +207,12 @@ bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
     }
     // Walk across the in-measure prefix to certify the preceding barline.
     while (prev != earlier.rend() && prev->segment->measure() == target.measure()) {
-        if (staves != 1) return false; // Interior signatures need their own multi-staff admission.
         const Segment* sig = prev->segment;
         const Element* item = sig->element(0);
         if ((!sig->isKeySigType() && !sig->isTimeSigType()) || sig->header() || sig->trailer()
-            || !sig->rtick().isZero() || !sig->ticks().isZero() || !ordinarySignature4(item)
-            || (sig->isKeySigType() ? !item->isKeySig() : !item->isTimeSig()))
+            || !sig->rtick().isZero() || !sig->ticks().isZero()
+            || (staves == 1 ? !ordinarySignature4(item)
+                || (sig->isKeySigType() ? !item->isKeySig() : !item->isTimeSig()) : !sharedSignatureReady4(sig)))
             return false;
         prev = std::find_if(std::next(prev), earlier.rend(), activeEntry);
     }
@@ -786,22 +813,23 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
                 && toTimeSig(time->element(0))->showCourtesySig() && score->styleB(Sid::genCourtesyTimesig));
     }
     if (!signatures) return true; // Preserve the existing ordinary-prefix contract.
-    if (score->nstaves() != 1 || score->floatMode())
-        return fail("Candidate signatures require one ordinary pitched staff");
-    const auto geometryReady = [score](const Element* item, const Segment* segment) {
-        if (!item || item->parent() != segment || item->score() != score || item->track() != 0
-            || !item->visible() || !item->addToSkyline() || !(item->mag() > 0) || !std::isfinite(item->mag())) return false;
+    const bool shared = score->nstaves() > 1;
+    if (score->floatMode() || (shared && (allowPendingTrailer
+        || score->styleB(Sid::genCourtesyKeysig) || score->styleB(Sid::genCourtesyTimesig))))
+        return fail("Candidate shared signatures require courtesy signatures disabled");
+    const auto geometryReady = [](const Element* item, const Segment* segment) {
+        if (!signatureGeometryReady4(item, segment, 0)) return false;
         for (const Element* occupant : segment->elist())
             if (occupant && occupant != item) return false;
-        const QRectF rect = item->bbox();
-        return rect.width() > 0 && rect.height() > 0 && std::isfinite(rect.x()) && std::isfinite(rect.y())
-            && std::isfinite(rect.width()) && std::isfinite(rect.height())
-            && std::isfinite(item->pos().x()) && std::isfinite(item->pos().y());
+        return true;
     };
     for (size_t i = 0; i < measures.size(); ++i) {
         const Measure* m = measures[i];
         const bool last = i + 1 == measures.size();
-        if (!score->staff(0)->isPitchedStaff(m->tick()) || m->repeatStart() || m->repeatEnd()
+        for (int st = 0; st < score->nstaves(); ++st)
+            if (!score->staff(st)->isPitchedStaff(m->tick()))
+                return fail("Candidate signatures require pitched staves");
+        if (m->repeatStart() || m->repeatEnd()
             || m->nextSectionBreak() || !ordinaryRepeatBoundary4(m))
             return fail("Candidate signature repeat/section/grace/rest/cross-staff boundary");
         const bool pending = allowPendingTrailer && i + 2 == measures.size() && m->trailer();
@@ -822,6 +850,11 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
             if (!segment.ticks().isZero() || (courtesy ? !terminalGeometry || !segment.trailer() || segment.rtick() != m->ticks()
                 : segment.trailer() || !segment.rtick().isZero()))
                 return fail("Candidate signature location/trailer phase not prepared");
+            if (shared) {
+                if (courtesy || !sharedSignatureReady4(&segment))
+                    return fail("Candidate shared signature geometry not prepared on every staff");
+                continue;
+            }
             const Element* item = segment.element(0);
             if (!ordinarySignature4(item) || !geometryReady(item, &segment)
                 || ((segment.isKeySigType() || segment.isKeySigAnnounceType()) ? !item->isKeySig() : !item->isTimeSig())
@@ -829,6 +862,19 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
                 return fail("Candidate signature glyph, ownership or dimensions not prepared");
         }
         const Measure* next = m->nextMeasure();
+        if (shared) {
+            const Segment* end = m->findSegmentR(SegmentType::EndBarLine, m->ticks());
+            if (m->trailer() || m->hasCourtesyKeySig() || !end || !active4(end) || !end->ticks().isZero()
+                || !generatedBarlines4(end, next ? BarLineType::NORMAL : BarLineType::END))
+                return fail("Candidate shared signature barline or courtesy boundary");
+            for (int st = 0; st < score->nstaves(); ++st) {
+                const int track = st * VOICES;
+                const Element* bar = end->element(track);
+                if (!toBarLine(bar)->el()->empty() || !signatureGeometryReady4(bar, end, track))
+                    return fail("Candidate shared signature end barline geometry not prepared");
+            }
+            continue;
+        }
         const Segment* keySeg = next ? next->findSegmentR(SegmentType::KeySig, Fraction(0, 1)) : nullptr;
         const Segment* timeSeg = next ? next->findSegmentR(SegmentType::TimeSig, Fraction(0, 1)) : nullptr;
         const Element* key = keySeg ? keySeg->element(0) : nullptr;
