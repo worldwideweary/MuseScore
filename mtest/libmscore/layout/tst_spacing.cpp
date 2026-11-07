@@ -9498,6 +9498,35 @@ void TestSpacing::keepWithNextCollection4()
       QCOMPARE(bars[1]->system(), bars[3]->system());
       QVERIFY(bars[3]->system() != bars[4]->system());
 
+      // A user found that just before N2 wraps, the four-bar system can
+      // retain its old note positions while only its staff lines shrink.
+      // Exercise that width band and the last sliver before the local wrap.
+      for (qreal width : {6.0 - 0.6 - 2.43, 6.0 - 0.6 - 2.44, 6.0 - 0.6 - 2.45,
+                          natural[1] + 0.0005}) {
+            collect(width);
+            const auto* trial = decision(SpacingPass4::CANDIDATE, 0, 2);
+            QVERIFY(trial);
+            QVERIFY2(trial->path == SpacingPath4::FULL_PLAN, qPrintable(trial->reason));
+            const bool wrapsBeforeGroup = trial->width > trial->available;
+            QCOMPARE(bars[0]->system() != bars[1]->system(), wrapsBeforeGroup);
+            QCOMPARE(bars[1]->system(), bars[2]->system());
+            QCOMPARE(bars[1]->system(), bars[3]->system());
+            QVERIFY(bars[3]->system() != bars[4]->system());
+            const auto* group = decision(SpacingPass4::FINAL, wrapsBeforeGroup ? 1 : 0,
+                                         wrapsBeforeGroup ? 3 : 4);
+            QVERIFY(group);
+            QVERIFY2(group->path == SpacingPath4::FULL_PLAN,
+                     qPrintable(QString("Printable width %1: %2").arg(width).arg(group->reason)));
+            QVERIFY(group->width <= group->available + 1e-6);
+            for (size_t i = wrapsBeforeGroup ? 1 : 0; i <= 3; ++i) {
+                  for (const Segment& seg : bars[i]->segments()) {
+                        if (!seg.enabled() || !seg.visible() || seg.allElementsInvisible()) continue;
+                        if (seg.isChordRestType() || seg.isEndBarLineType())
+                              QVERIFY(seg.x() + seg.minRight() <= bars[i]->width() + 1e-6);
+                        }
+                  }
+            }
+
       score->setStyleValue(Sid::pageWidth, 10.0);
       collect(wide);
       for (const Measure* m : bars)

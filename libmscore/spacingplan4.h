@@ -132,6 +132,7 @@ struct SpacingSystemRequest4 {
     const MeasureBase* next = nullptr;
     qreal fillLimit = 0;
     SpacingSlurPolicy4 slurPolicy = SpacingSlurPolicy4::PREPARED;
+    bool retainedOverfullGroup = false;
     // Borrow the preceding prefix for a pending trailer, or the just-accepted
     // trial of the same size after the native predecessor trailer is removed.
     const SpacingPlan4* previousPrefix = nullptr;

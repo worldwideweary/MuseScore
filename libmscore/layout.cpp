@@ -4508,6 +4508,7 @@ System* Score::collectSystem(LayoutContext& lc)
 
       QList<System *> brokenSystems;
       SpacingPlan4 previousCandidate;
+      bool retainedOverfullGroup = false;
 
       while (lc.curMeasure) {    // collect measure for system
             qreal courtesyRefreshWidth = 0;
@@ -4610,6 +4611,7 @@ System* Score::collectSystem(LayoutContext& lc)
             // Studio candidate succeeded; native fallback keeps its rollback.
             const bool keepWithPrevious = planned && lc.prevMeasure && lc.prevMeasure->system() == system
                   && lc.prevMeasure->noBreak();
+            retainedOverfullGroup = retainedOverfullGroup || (keepWithPrevious && fittingWidth > systemWidth);
             bool doBreak = (system->measures().size() > 1) && (fittingWidth > systemWidth) && !keepWithPrevious;
             if (doBreak) {
                   breakMeasure = lc.curMeasure;
@@ -4815,6 +4817,7 @@ System* Score::collectSystem(LayoutContext& lc)
       finalRequest.availableWidth = systemWidth;
       finalRequest.next = lc.curMeasure;
       finalRequest.fillLimit = styleD(Sid::lastSystemFillLimit);
+      finalRequest.retainedOverfullGroup = retainedOverfullGroup;
       if (finalInputs) finalRequest.slurPolicy = finalInputs->factory()->policy();
       SpacingPlan4 studioPlan;
       bool useStudioPlan = nativeSystemSpacingPlan4(system, finalRequest, finalInputs.get(), preparedBeams,

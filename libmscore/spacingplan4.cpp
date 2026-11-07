@@ -997,7 +997,7 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
     if (!system || system->measures().empty())
         return fail("No system measures");
     if (!std::isfinite(options.squeezeFactor) || options.squeezeFactor < 0 || options.squeezeFactor > 1
-        || !std::isfinite(options.stretchReduction) || options.stretchReduction <= 0)
+        || !std::isfinite(options.stretchReduction) || options.stretchReduction < 0)
         return fail("Invalid spacing factors");
     Score* score = system->score();
     if (!score)
@@ -1411,7 +1411,8 @@ bool buildSpacingPlan4(System* system, SpacingPlan4& result, const SpacingAttach
 
 static bool squeezeSpacingPlanImpl4(System* system, qreal targetWidth, SpacingPlan4& result, QString* reason,
                                    const std::vector<GraceMergedGeometry4>* preparedMerged,
-                                   const SpacingAttachmentPreparation4* preparation, SpacingSlurPolicy4 policy)
+                                   const SpacingAttachmentPreparation4* preparation, SpacingSlurPolicy4 policy,
+                                   bool retainedOverfullGroup = false)
 {
     if (!std::isfinite(targetWidth) || targetWidth <= 0) {
         if (reason)
@@ -1429,14 +1430,29 @@ static bool squeezeSpacingPlanImpl4(System* system, qreal targetWidth, SpacingPl
         return true;
     }
     // Studio 4.7.5 squeezeSystemToFit recomputes from native geometry each
-    // pass, with minimum-measure widths overridden. Stop before its negative
-    // duration advances and subsequent collision-allowing width reduction.
+    // pass, with minimum-measure widths overridden. For a retained group,
+    // also try the two tighter padding levels, with nonnegative advances.
+    const bool tightGroup = retainedOverfullGroup && system->score()->nstaves() == 1
+        && candidate.afterGraces.empty() && candidate.mergedGraces.empty()
+        && std::all_of(candidate.segments.begin(), candidate.segments.end(), [](const SpacingSegmentPlan4& s) {
+            if (s.ignored) return true;
+            if (s.widthOffset != 0 || rightAligned4(s.segment)) return false;
+            if (!s.segment->isChordRestType())
+                return headerType4(s.segment) || s.segment->isEndBarLineType() || s.segment->isBeginBarLineType();
+            for (const Element* item : s.segment->elist())
+                if (item && !item->isChord()) return false;
+            return true;
+        });
     SpacingPlanOptions4 options;
     options.slurPolicy = policy;
     options.minimumMeasureWidths = false;
     options.stretchReduction = 1 - 0.33;
     options.squeezeFactor = 1 - 0.2;
-    for (int pass = 0; pass < 3; ++pass) {
+    for (int pass = 0; pass < (tightGroup ? 5 : 3); ++pass) {
+        if (pass >= 3) {
+            options.stretchReduction = 0;
+            options.squeezeFactor = pass == 3 ? 0.2 : 0;
+        }
         if (!buildSpacingPlanImpl4(system, candidate, reason, options, preparedMerged, input, preparation))
             return false;
         if (candidate.width <= targetWidth) {
@@ -1445,6 +1461,26 @@ static bool squeezeSpacingPlanImpl4(System* system, qreal targetWidth, SpacingPl
         }
         options.stretchReduction -= 0.33;
         options.squeezeFactor -= 0.2;
+    }
+    if (tightGroup) {
+        // Last resort in Studio: reduce only rhythmic advances and rebuild
+        // segment and measure positions together, even if notes overlap.
+        for (int percent = 95; percent > 0; percent -= 5) {
+            for (auto& s : candidate.segments)
+                if (!s.ignored && s.segment->isChordRestType())
+                    s.width *= percent / 100.0;
+            qreal edge = system->leftMargin();
+            for (auto& m : candidate.measures) {
+                moveMeasure4(candidate, m, edge - m.x);
+                reflowMeasure4(candidate, m);
+                edge += m.width;
+            }
+            candidate.width = edge;
+            if (edge <= targetWidth) {
+                result = std::move(candidate);
+                return true;
+            }
+        }
     }
     if (reason)
         *reason = "Target needs stronger compression than the adapted squeeze passes";
@@ -1498,8 +1534,8 @@ bool selectSystemSpacingPlan4(System* system, const SpacingSystemRequest4& reque
                                   &attachments, request.previousPrefix)) return false;
     }
     else {
-        if (!squeezeSpacingPlan4(system, request.availableWidth, plan, attachments, reason,
-                                preparedMerged, request.slurPolicy)) return false;
+        if (!squeezeSpacingPlanImpl4(system, request.availableWidth, plan, reason, preparedMerged,
+                                    &attachments, request.slurPolicy, request.retainedOverfullGroup)) return false;
         if (spacingSystemJustified4(system->lastMeasure(), request.next, plan.width, request.availableWidth,
                                     request.fillLimit) && !justifySpacingPlan4(plan, request.availableWidth))
             return fail("Final plan justification rejected");

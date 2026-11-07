@@ -1,5 +1,27 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.247: tight squeeze for a retained group
+
+The v0.246 native mtests passed, but the visual sweep exposed a gap near
+the wrap: at a 2.44-inch right margin in Evolution the staff ended before
+the last notes and barline. At 2.45 the group moved to the next system.
+Studio 4.7.5 still kept four bars on the first system at 2.45 and wrapped
+at 2.46. Keep those break decisions separate from the drawing failure.
+
+When a planned, plain single-staff group is retained despite overflow,
+the final planner can try Studio's two remaining padding levels with
+zero (rather than negative) rhythmic advance. If needed, apply the
+reference's stepped rhythmic width reduction and reflow the same
+segment plan before publishing. This avoids handing a successfully
+squeezed group to the legacy stretch path, which can reduce measure
+boxes without moving notes when the target is below the native minimum.
+The collector's fit and break rules have not changed.
+
+Reuse the v0.246 score. The regression now checks 2.43, 2.44 and 2.45-inch
+right margins as well as just before the locally measured wrap. Check
+the group stays intact, the final plan is used, and visible note and
+barline extents fit inside their measures.
+
 ## v0.246: keep with next during fitting
 
 Native mtests passed for v0.244 and v0.245. In v0.245 the v0.243 fixture
