@@ -147,6 +147,18 @@ bool courtesyType4(const Segment* s)
     return s->isKeySigAnnounceType() || s->isTimeSigAnnounceType();
 }
 
+// Measure::addSystemTrailer uses the first staff with a time signature
+// to decide whether to generate the courtesy for the whole system.
+bool timeCourtesyRequested4(const Segment* segment)
+{
+    if (!segment || !segment->score()->genCourtesyTimesig()) return false;
+    for (int st = 0; st < segment->score()->nstaves(); ++st) {
+        const Element* item = segment->element(st * VOICES);
+        if (item) return item->isTimeSig() && toTimeSig(item)->showCourtesySig();
+    }
+    return false;
+}
+
 bool rightAligned4(const Segment* s)
 {
     return s->isClefType() || s->isBreathType();
@@ -805,12 +817,11 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
     const Measure* last = measures.back();
     if (last->nextMeasure()) {
         const Segment* time = last->nextMeasure()->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
+        signatures = signatures || timeCourtesyRequested4(time);
         for (int st = 0; st < score->nstaves(); ++st) {
             const bool keyChange = !(score->staff(st)->keySigEvent(last->endTick() - Fraction::fromTicks(1))
                 == score->staff(st)->keySigEvent(last->endTick()));
-            const Element* item = time ? time->element(st * VOICES) : nullptr;
-            signatures = signatures || (keyChange && score->styleB(Sid::genCourtesyKeysig))
-                || (item && item->isTimeSig() && toTimeSig(item)->showCourtesySig() && score->styleB(Sid::genCourtesyTimesig));
+            signatures = signatures || (keyChange && score->styleB(Sid::genCourtesyKeysig));
         }
     }
     if (!signatures) return true; // Preserve the existing ordinary-prefix contract.
@@ -862,8 +873,11 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
         if (pending && ((hasKey && (!keySeg || !active4(keySeg))) || (hasTime && (!timeSeg || !active4(timeSeg)))))
             return fail("Candidate pending penultimate courtesy lacks an active following signature");
 
-        // Require the same courtesy presence across the visible staves.
-        // A subset of staves needs a separate boundary geometry adapter.
+        const bool needTime = terminalGeometry && timeCourtesyRequested4(timeSeg);
+        if (hasTime != needTime)
+            return fail("Candidate courtesy presence differs from the following signature");
+
+        // Key courtesies still require the same presence across the staves.
         for (int st = 0; st < score->nstaves(); ++st) {
             const int track = st * VOICES;
             const Element* key = keySeg ? keySeg->element(track) : nullptr;
@@ -872,9 +886,7 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
                 == score->staff(st)->keySigEvent(m->endTick()));
             const bool needKey = terminalGeometry && next && score->styleB(Sid::genCourtesyKeysig) && keyChange
                 && (!key || (key->isKeySig() && toKeySig(key)->showCourtesy()));
-            const bool needTime = terminalGeometry && next && score->styleB(Sid::genCourtesyTimesig)
-                && time && time->isTimeSig() && toTimeSig(time)->showCourtesySig();
-            if (hasKey != needKey || hasTime != needTime)
+            if (hasKey != needKey)
                 return fail("Candidate courtesy presence differs from the following signature");
             if (hasKey && (!ordinarySignature4(key)
                 || !(toKeySig(keyTrailer->element(track))->keySigEvent() == toKeySig(key)->keySigEvent())))
