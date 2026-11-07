@@ -4836,7 +4836,10 @@ System* Score::collectSystem(LayoutContext& lc)
             finalInputs.reset(new NativeGraceInputs4(this, spacingMeasures4(system), lc.spacingDirections4.get()));
       SpacingGraceQueryScope4 finalGraceScope(this, finalInputs ? finalInputs->factory() : nullptr);
       const bool observeDecision = spacingDecisionObserved4(this);
+      const bool logFallback = MScore::showStudioSpacingFallbacks && !printing()
+            && styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch;
       QString decisionReason;
+      QString* reason = observeDecision || logFallback ? &decisionReason : nullptr;
       SpacingSystemRequest4 finalRequest;
       finalRequest.pass = SpacingPass4::FINAL;
       finalRequest.availableWidth = systemWidth;
@@ -4846,7 +4849,7 @@ System* Score::collectSystem(LayoutContext& lc)
       if (finalInputs) finalRequest.slurPolicy = finalInputs->factory()->policy();
       SpacingPlan4 studioPlan;
       bool useStudioPlan = nativeSystemSpacingPlan4(system, finalRequest, finalInputs.get(), preparedBeams,
-                                                   studioPlan, observeDecision ? &decisionReason : nullptr);
+                                                   studioPlan, reason);
       // Collection revalidates this preparation memo against fresh projections.
       // It has no role after selection and must not cross publication writes.
       preparedBeams.clear();
@@ -4855,7 +4858,7 @@ System* Score::collectSystem(LayoutContext& lc)
       // views before this first publication write. Candidate/final requests use
       // the same prepared policy and retain only the selected placement plan.
       if (useStudioPlan) {
-            useStudioPlan = publishSpacingPlanSegments4(system, studioPlan, observeDecision ? &decisionReason : nullptr);
+            useStudioPlan = publishSpacingPlanSegments4(system, studioPlan, reason);
             if (useStudioPlan) for (const SpacingMeasurePlan4& m : studioPlan.measures)
                   studioMeasures[m.measure] = &m;
             }
@@ -4977,6 +4980,12 @@ System* Score::collectSystem(LayoutContext& lc)
 
       system->setStudioSpacingFallback(styleB(Sid::spacingLayout4)
             && !MScore::noHorizontalStretch && !useStudioPlan && system->firstMeasure());
+
+      if (logFallback && system->studioSpacingFallback()) {
+            qDebug().noquote() << "Studio spacing fallback: system starts at measure"
+                  << system->firstMeasure()->no() + 1 << "-"
+                  << (decisionReason.isEmpty() ? QStringLiteral("No reason reported") : decisionReason);
+            }
 
       if (observeDecision)
             recordSpacingDecision4(system, SpacingPass4::FINAL,

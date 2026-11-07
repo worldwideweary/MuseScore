@@ -7479,7 +7479,10 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             else if (cmd == "show-studio-spacing-fallbacks") {
                   MScore::showStudioSpacingFallbacks = a->isChecked();
                   if (cs) {
-                        cs->setUpdateAll();
+                        if (MScore::showStudioSpacingFallbacks)
+                              cs->setLayoutAll(); // Report systems already on screen.
+                        else
+                              cs->setUpdateAll();
                         cs->update();
                         }
                   }
