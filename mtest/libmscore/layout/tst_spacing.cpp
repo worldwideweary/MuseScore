@@ -11797,7 +11797,7 @@ void TestSpacing::spacingCorpus4()
             score->setStyleValue(Sid::spacingLayout4, true);
             score->setStyleValue(Sid::beamLayout4, true);
             Count candidates, final;
-            QMap<QString, qint64> firstFallback;
+            QMap<QString, Fraction> firstFallback;
             {
             SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& event) {
                   const bool candidate = event.pass == SpacingPass4::CANDIDATE;
@@ -11815,7 +11815,7 @@ void TestSpacing::spacingCorpus4()
                   const QString key = (candidate ? QStringLiteral("candidate: ") : QStringLiteral("final: ")) + reason;
                   ++reasons[key];
                   if (!firstFallback.contains(key))
-                        firstFallback.insert(key, event.firstTick.ticks());
+                        firstFallback.insert(key, event.firstTick);
                   });
             score->doLayout();
             }
@@ -11824,7 +11824,10 @@ void TestSpacing::spacingCorpus4()
                   << "final" << final.planned << "/" << final.total;
             for (auto it = firstFallback.cbegin(); it != firstFallback.cend(); ++it) {
                   ++affectedScores[it.key()];
-                  qInfo().noquote() << "spacing-corpus first system tick:" << it.value() << it.key();
+                  const Measure* measure = score->tick2measure(it.value());
+                  const QString number = measure ? QString::number(measure->no() + 1) : QStringLiteral("unknown");
+                  qInfo().noquote() << "spacing-corpus first system measure:" << number
+                        << "tick:" << it.value().ticks() << it.key();
                   }
             allCandidates.total += candidates.total;
             allCandidates.planned += candidates.planned;
