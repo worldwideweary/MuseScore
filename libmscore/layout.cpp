@@ -4367,13 +4367,16 @@ static bool nativeSystemSpacingPlan4(System* system, const SpacingSystemRequest4
 // each candidate rebuilds from that phase's fresh geometry. Keep the native
 // width accumulator intact for unsupported-context fallback/backtracking.
 static bool systemFittingWidth4(System* system, qreal availableWidth, qreal& width, std::vector<GraceBeamPreparation4>& preparedBeams,
-                                SpacingDirectionReadiness4* readiness, SpacingPlan4& singleton,
+                                SpacingDirectionReadiness4* readiness, SpacingPlan4& previousPrefix,
                                 QString* reason = nullptr)
 {
     const auto fail = [reason](const char* text) {
         if (reason) *reason = QString::fromLatin1(text);
         return false;
     };
+    SpacingPlan4 prefix;
+    // Every trial consumes the previous snapshot, even on a fallback.
+    std::swap(prefix, previousPrefix);
     if (MScore::noHorizontalStretch || system->score()->styleB(Sid::hideEmptyStaves))
         return fail("Candidate stretch/hidden-staff boundary");
     for (MeasureBase* mb : system->measures()) {
@@ -4383,8 +4386,10 @@ static bool systemFittingWidth4(System* system, qreal availableWidth, qreal& wid
         if (m->noBreak() || measureMayHaveBeamsJoinedIntoNext(m))
             return fail("Candidate break/joined-beam boundary");
     }
-    const bool carryTrailer = system->measures().size() == 2 && system->firstMeasure()->trailer()
-        && singleton.measures.size() == 1 && singleton.measures.front().measure == system->firstMeasure();
+    const auto& measures = system->measures();
+    const bool carryTrailer = measures.size() > 1 && prefix.measures.size() == measures.size() - 1
+        && prefix.measures.back().measure == measures[measures.size() - 2]
+        && prefix.measures.back().measure->trailer();
     if (!spacingCandidateSignaturesReady4(system, reason, carryTrailer)) return false;
     if (!spacingRepeatBarlinesReady4(system, SpacingPass4::CANDIDATE, reason)) return false;
     NativeGraceInputs4 inputs(system->score(), spacingMeasures4(system), readiness);
@@ -4392,12 +4397,14 @@ static bool systemFittingWidth4(System* system, qreal availableWidth, qreal& wid
     SpacingSystemRequest4 request;
     request.availableWidth = availableWidth;
     request.slurPolicy = inputs.factory()->policy();
-    if (carryTrailer) request.previousSingleton = &singleton;
+    if (carryTrailer) request.previousPrefix = &prefix;
     SpacingPlan4 plan;
     if (!nativeSystemSpacingPlan4(system, request, &inputs, preparedBeams, plan, reason)) return false;
     width = plan.width;
-    if (system->measures().size() == 1 && system->firstMeasure()->trailer())
-        singleton = std::move(plan);
+    // Accepting a trial-only plan removes its predecessor trailer. That
+    // snapshot cannot seed another trial after the native boundary changes.
+    if (!plan.trialOnly && system->lastMeasure()->trailer())
+        previousPrefix = std::move(plan);
     return true;
 }
 
@@ -4490,7 +4497,7 @@ System* Score::collectSystem(LayoutContext& lc)
       MeasureBase* breakMeasure = nullptr;
 
       QList<System *> brokenSystems;
-      SpacingPlan4 singletonCandidate;
+      SpacingPlan4 previousCandidate;
 
       while (lc.curMeasure) {    // collect measure for system
             System* oldSystem = lc.curMeasure->system();
@@ -4552,9 +4559,7 @@ System* Score::collectSystem(LayoutContext& lc)
                   const bool observed = spacingDecisionObserved4(this);
                   QString reason;
                   const bool planned = systemFittingWidth4(system, systemWidth, fittingWidth, preparedBeams,
-                        lc.spacingDirections4.get(), singletonCandidate, observed ? &reason : nullptr);
-                  if (system->measures().size() > 1)
-                        singletonCandidate = SpacingPlan4();
+                        lc.spacingDirections4.get(), previousCandidate, observed ? &reason : nullptr);
                   if (observed)
                         recordSpacingDecision4(system, SpacingPass4::CANDIDATE,
                               MScore::noHorizontalStretch ? SpacingPath4::NO_STRETCH

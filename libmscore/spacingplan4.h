@@ -59,11 +59,11 @@ void recordSpacingDecision4(const System*, SpacingPass4, SpacingPath4, qreal wid
 bool spacingRepeatBarlinesReady4(const System*, SpacingPass4, QString* reason = nullptr);
 
 // Certify ordinary interior key/time changes and terminal courtesy producers.
-// A pending trailer can be certified only for a two-measure trial whose
-// singleton seed will be checked by the planner. The query leaves native
+// A pending trailer can be certified at the penultimate measure. The
+// planner separately checks the preceding prefix plan. The query leaves native
 // header and trailer geometry untouched.
 bool spacingCandidateSignaturesReady4(const System*, QString* reason = nullptr,
-                                      bool allowSingletonTrailer = false);
+                                      bool allowPendingTrailer = false);
 
 // Read-only preparation for cross-staff placement. This first context covers
 // one automatic eighth-note beam of up to two unmirrored normal notes per chord
@@ -131,9 +131,9 @@ struct SpacingSystemRequest4 {
     const MeasureBase* next = nullptr;
     qreal fillLimit = 0;
     SpacingSlurPolicy4 slurPolicy = SpacingSlurPolicy4::PREPARED;
-    // Borrow the immediately preceding singleton candidate in the same collection.
-    // Only a two-measure trial with a pending trailer may use this geometry.
-    const SpacingPlan4* previousSingleton = nullptr;
+    // Borrow the immediately preceding ordinary candidate in this collection.
+    // Only a trial with a pending penultimate trailer may use this geometry.
+    const SpacingPlan4* previousPrefix = nullptr;
 };
 bool spacingSystemJustified4(const Measure* last, const MeasureBase* next,
                              qreal naturalWidth, qreal availableWidth, qreal fillLimit);

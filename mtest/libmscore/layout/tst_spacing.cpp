@@ -85,6 +85,7 @@ class TestSpacing : public QObject, public MTest {
       void repeatCollection4();
       void signatureCollection4_data();
       void signatureCollection4();
+      void pendingCourtesyTrial4_data();
       void pendingCourtesyTrial4();
       void clefSignaturePlanning4_data();
       void clefSignaturePlanning4();
@@ -9283,66 +9284,82 @@ void TestSpacing::spacingDecisionCorpus4()
       QVERIFY(nextTick == score->lastMeasure()->endTick());
       }
 
+void TestSpacing::pendingCourtesyTrial4_data()
+      {
+      QTest::addColumn<QString>("fixture");
+      QTest::addColumn<int>("count");
+      QTest::newRow("two-bars") << QString("v0.241-pending-courtesy.mscx") << 2;
+      QTest::newRow("three-bars") << QString("v0.242-prefix-courtesy.mscx") << 3;
+      }
+
 void TestSpacing::pendingCourtesyTrial4()
       {
+      QFETCH(QString, fixture);
+      QFETCH(int, count);
       QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
       std::unique_ptr<MasterScore> score(new MasterScore(mscore->baseStyle()));
       {
       ScoreLoad loading;
-      QVERIFY(score->loadMsc(root + "/" + DIR + "v0.241-pending-courtesy.mscx", false)
+      QVERIFY(score->loadMsc(root + "/" + DIR + fixture, false)
             == Score::FileError::FILE_NO_ERROR);
       }
       QVERIFY(score->styleB(Sid::spacingLayout4));
       Measure* first = score->firstMeasure();
-      QVERIFY(first && first->nextMeasure());
-      Measure* second = first->nextMeasure();
-      QVERIFY(!second->nextMeasure());
+      QVERIFY(first);
+      Measure* predecessor = first;
+      for (int n = 2; n < count; ++n) {
+            predecessor = predecessor->nextMeasure();
+            QVERIFY(predecessor);
+            }
+      Measure* added = predecessor->nextMeasure();
+      QVERIFY(added && !added->nextMeasure());
       std::vector<SpacingDecision4> events;
       const auto collect = [&]() {
             events.clear();
             SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
             score->doLayout();
             };
-      const auto candidate = [&](int count) -> const SpacingDecision4* {
+      const auto candidate = [&](int bars) -> const SpacingDecision4* {
             for (const auto& e : events)
-                  if (e.pass == SpacingPass4::CANDIDATE && e.firstTick == first->tick() && e.measures == count)
+                  if (e.pass == SpacingPass4::CANDIDATE && e.firstTick == first->tick() && e.measures == bars)
                         return &e;
             return nullptr;
             };
       collect();
-      const auto* single = candidate(1);
-      const auto* pair = candidate(2);
-      QVERIFY(single && pair);
-      QVERIFY2(single->path == SpacingPath4::FULL_PLAN, qPrintable(single->reason));
-      QVERIFY2(pair->path == SpacingPath4::FULL_PLAN, qPrintable(pair->reason));
-      QVERIFY(pair->width > single->width && pair->width <= pair->available);
-      QVERIFY(first->system() == second->system());
-      QVERIFY(!first->trailer());
+      const auto* seed = candidate(count - 1);
+      const auto* trial = candidate(count);
+      QVERIFY(seed && trial);
+      QVERIFY2(seed->path == SpacingPath4::FULL_PLAN, qPrintable(seed->reason));
+      QVERIFY2(trial->path == SpacingPath4::FULL_PLAN, qPrintable(trial->reason));
+      QVERIFY(trial->width > seed->width && trial->width <= trial->available);
+      QVERIFY(first->system() == added->system());
+      QVERIFY(!predecessor->trailer());
 
       // Exercise the same candidate at an available width between its two
-      // natural estimates. Rejecting C2 must retain C1's terminal courtesy.
+      // natural estimates. Rejecting the last measure must retain the predecessor's courtesy.
       const qreal originalWidth = score->styleD(Sid::pagePrintableWidth);
-      const qreal narrow = originalWidth * (single->width + pair->width) / (2 * pair->available);
+      const qreal narrow = originalWidth * (seed->width + trial->width) / (2 * trial->available);
       score->setStyleValue(Sid::pagePrintableWidth, narrow);
       collect();
-      single = candidate(1);
-      pair = candidate(2);
-      QVERIFY(single && pair);
-      QVERIFY2(pair->path == SpacingPath4::FULL_PLAN, qPrintable(pair->reason));
-      QVERIFY(single->width <= single->available && pair->width > pair->available);
-      QVERIFY(first->system() != second->system());
-      QVERIFY(first->trailer());
+      seed = candidate(count - 1);
+      trial = candidate(count);
+      QVERIFY(seed && trial);
+      QVERIFY2(trial->path == SpacingPath4::FULL_PLAN, qPrintable(trial->reason));
+      QVERIFY(seed->width <= seed->available && trial->width > trial->available);
+      QVERIFY(first->system() == predecessor->system());
+      QVERIFY(predecessor->system() != added->system());
+      QVERIFY(predecessor->trailer());
       for (SegmentType type : {SegmentType::KeySigAnnounce, SegmentType::TimeSigAnnounce}) {
-            const Segment* courtesy = first->findSegmentR(type, first->ticks());
+            const Segment* courtesy = predecessor->findSegmentR(type, predecessor->ticks());
             QVERIFY(courtesy && courtesy->enabled() && courtesy->element(0));
             }
 
       score->setStyleValue(Sid::pagePrintableWidth, originalWidth);
       collect();
-      pair = candidate(2);
-      QVERIFY(pair && pair->path == SpacingPath4::FULL_PLAN);
-      QVERIFY(first->system() == second->system());
-      QVERIFY(!first->trailer());
+      trial = candidate(count);
+      QVERIFY(trial && trial->path == SpacingPath4::FULL_PLAN);
+      QVERIFY(first->system() == added->system());
+      QVERIFY(!predecessor->trailer());
       }
 
 void TestSpacing::signatureCollection4_data()
@@ -9402,7 +9419,7 @@ void TestSpacing::signatureCollection4()
       score->doLayout();
       }
       const auto modern = snapshot();
-      int finals = 0, planned = 0, courtesyCandidates = 0, interiorCandidates = 0, pending = 0, rollbacks = 0;
+      int finals = 0, planned = 0, courtesyCandidates = 0, interiorCandidates = 0, pendingPlans = 0, rollbacks = 0;
       int retainedMeasures = 0;
       Fraction endTick(0, 1);
       for (size_t i = 0; i < events.size(); ++i) {
@@ -9422,11 +9439,12 @@ void TestSpacing::signatureCollection4()
                   for (int n : {2, 4, 6}) interior = interior
                         || (measures[n]->tick() > event.firstTick && measures[n]->tick() < event.endTick);
                   if (interior) ++interiorCandidates;
+                  for (int n : {2, 4, 6})
+                        if (event.measures > 2 && event.endTick == measures[n]->endTick()) ++pendingPlans;
                   }
             else {
                   QVERIFY(event.path == SpacingPath4::NATIVE_WIDTHS);
                   QVERIFY2(event.reason.contains("pending penultimate courtesy"), qPrintable(event.reason));
-                  ++pending;
                   }
             if (event.measures <= 1 || event.width <= event.available) continue;
             ++rollbacks;
@@ -9443,12 +9461,12 @@ void TestSpacing::signatureCollection4()
             QCOMPARE(retried.firstTick, retained.endTick);
             QCOMPARE(retried.measures, 1);
             }
-      QVERIFY(planned > 0 && courtesyCandidates > 0 && pending > 0);
+      QVERIFY(planned > 0 && courtesyCandidates > 0);
       QCOMPARE(retainedMeasures, 8);
       QCOMPARE(endTick, measures.back()->endTick());
       if (mode == "natural") {
             QCOMPARE(finals, 1);
-            QVERIFY(interiorCandidates > 0);
+            QVERIFY(interiorCandidates > 0 && pendingPlans > 0);
             }
       else QVERIFY(finals > 1 && rollbacks > 0);
       QString reason;

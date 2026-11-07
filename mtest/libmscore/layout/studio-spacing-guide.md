@@ -1,5 +1,50 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.242: pending courtesy after a longer accepted prefix
+
+v0.241 passed native mtests. Both comparison scores kept both bars on one
+system as saved and wrapped C2 at the tested 1.83-inch right margin. The
+wrapped first system retained the courtesy D-major key signature and 3/4.
+
+Extend the pending-courtesy trial to any ordinary, successfully planned
+prefix ending in a certified trailer. Copy and validate the prior plan's
+measure extents, active segment identities, positions and advances. As in
+the pinned Studio incremental pass, only the predecessor and new measure
+participate in collision checks, width reconstruction and minimum-width
+growth. Earlier measure positions and widths are preserved. The trial stays
+read-only, and a rejected trial retains the native terminal trailer. The
+previous snapshot is consumed once, including on fallback. Consecutive
+pending transitions still need a fresh plan after predecessor finalization;
+a trial-only snapshot cannot seed the following trial.
+
+The native regression tests two and three bars at fitting width, then
+between the accepted prefix width and the next trial width, then at the
+original width again. The natural signature fixture also exercises longer
+prefixes. For the v0.242 visual pair, compare as saved, then increase the
+right margin in both until C3 wraps while C1 and C2 stay together. At that
+break, the D-major key signature and 3/4 belong at the end of C2 as
+courtesies and at the start of C3 as full signatures.
+
+### Remaining horizontal coverage
+
+The source guards suggest roughly four to six focused batches plus a
+mixed-score verification pass for broad coverage of ordinary pitched
+scores. This is a planning estimate, not a count of missing rules:
+
+- Finish collection and finalization combinations: adjacent signature
+  changes, clef/signature and repeat mixtures, and no-break boundaries.
+- Expand owned geometry and distance policy for lyrics, chord symbols,
+  other width-bearing annotations and explicit leading space.
+- Broaden rhythmic mixtures: independent cross-staff voices, tremolos,
+  and the currently guarded rest, tuplet and decoration combinations.
+- Handle score structure such as frames, multimeasure rests and hidden
+  staves; verify fit, squeeze and distribution together on mixed scores.
+
+Specialized staff and presentation coverage (TAB, percussion, and time
+signatures above or across staves) needs its own later audit and controls.
+Vertical justification, general slur curvature and performance are
+separate from this horizontal coverage estimate.
+
 ## v0.241: carry the singleton courtesy into a two-measure trial
 
 v0.240 is accepted on the original 3.x base: the native mtests pass, the
