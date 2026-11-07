@@ -9311,10 +9311,12 @@ void TestSpacing::pendingCourtesyTrial4_data()
       QTest::addColumn<QString>("fixture");
       QTest::addColumn<int>("count");
       QTest::addColumn<bool>("manualSpace");
-      QTest::newRow("two-bars") << QString("v0.241-pending-courtesy.mscx") << 2 << false;
-      QTest::newRow("three-bars") << QString("v0.242-prefix-courtesy.mscx") << 3 << false;
-      QTest::newRow("consecutive-changes") << QString("v0.243-consecutive-courtesies.mscx") << 4 << false;
-      QTest::newRow("manual-leading-space") << QString("v0.252-courtesy-leading-space.mscx") << 4 << true;
+      QTest::addColumn<int>("staffCount");
+      QTest::newRow("two-bars") << QString("v0.241-pending-courtesy.mscx") << 2 << false << 1;
+      QTest::newRow("three-bars") << QString("v0.242-prefix-courtesy.mscx") << 3 << false << 1;
+      QTest::newRow("consecutive-changes") << QString("v0.243-consecutive-courtesies.mscx") << 4 << false << 1;
+      QTest::newRow("manual-leading-space") << QString("v0.252-courtesy-leading-space.mscx") << 4 << true << 1;
+      QTest::newRow("shared-manual-leading-space") << QString("v0.257-shared-courtesy-leading-space.mscx") << 4 << true << 2;
       }
 
 void TestSpacing::pendingCourtesyTrial4()
@@ -9322,6 +9324,7 @@ void TestSpacing::pendingCourtesyTrial4()
       QFETCH(QString, fixture);
       QFETCH(int, count);
       QFETCH(bool, manualSpace);
+      QFETCH(int, staffCount);
       QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
       std::unique_ptr<MasterScore> score(new MasterScore(mscore->baseStyle()));
       {
@@ -9330,6 +9333,7 @@ void TestSpacing::pendingCourtesyTrial4()
             == Score::FileError::FILE_NO_ERROR);
       }
       QVERIFY(score->styleB(Sid::spacingLayout4));
+      QCOMPARE(score->nstaves(), staffCount);
       Measure* first = score->firstMeasure();
       QVERIFY(first);
       Measure* predecessor = first;
@@ -9391,16 +9395,19 @@ void TestSpacing::pendingCourtesyTrial4()
                   QCOMPARE(m->hasCourtesyKeySig(), courtesyExpected);
                   for (SegmentType type : {SegmentType::KeySigAnnounce, SegmentType::TimeSigAnnounce}) {
                         const Segment* courtesy = m->findSegmentR(type, m->ticks());
-                        QCOMPARE(bool(courtesy && courtesy->enabled() && courtesy->element(0)), courtesyExpected);
-                        if (courtesyExpected) {
-                              const bool key = type == SegmentType::KeySigAnnounce;
-                              const Segment* actual = m->nextMeasure()->findSegmentR(
-                                    key ? SegmentType::KeySig : SegmentType::TimeSig, Fraction(0, 1));
-                              QVERIFY(actual && actual->enabled() && actual->element(0));
-                              if (key)
-                                    QVERIFY(toKeySig(courtesy->element(0))->keySigEvent() == toKeySig(actual->element(0))->keySigEvent());
-                              else
-                                    QVERIFY(toTimeSig(courtesy->element(0))->sig().identical(toTimeSig(actual->element(0))->sig()));
+                        for (int st = 0; st < staffCount; ++st) {
+                              const int track = st * VOICES;
+                              QCOMPARE(bool(courtesy && courtesy->enabled() && courtesy->element(track)), courtesyExpected);
+                              if (courtesyExpected) {
+                                    const bool key = type == SegmentType::KeySigAnnounce;
+                                    const Segment* actual = m->nextMeasure()->findSegmentR(
+                                          key ? SegmentType::KeySig : SegmentType::TimeSig, Fraction(0, 1));
+                                    QVERIFY(actual && actual->enabled() && actual->element(track));
+                                    if (key)
+                                          QVERIFY(toKeySig(courtesy->element(track))->keySigEvent() == toKeySig(actual->element(track))->keySigEvent());
+                                    else
+                                          QVERIFY(toTimeSig(courtesy->element(track))->sig().identical(toTimeSig(actual->element(track))->sig()));
+                                    }
                               }
                         }
                   const Segment* bar = m->findSegmentR(SegmentType::EndBarLine, m->ticks());

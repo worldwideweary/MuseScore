@@ -136,7 +136,7 @@ bool sharedSignatureReady4(const Segment* segment)
         const int track = st * VOICES;
         const Element* item = segment->element(track);
         if (!ordinarySignature4(item) || !signatureGeometryReady4(item, segment, track)
-            || (segment->isKeySigType() ? !item->isKeySig() : !item->isTimeSig()))
+            || ((segment->isKeySigType() || segment->isKeySigAnnounceType()) ? !item->isKeySig() : !item->isTimeSig()))
             return false;
     }
     return true;
@@ -221,7 +221,6 @@ bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
     bool courtesyKey = false;
     while (pendingCourtesy && prev != earlier.rend() && prev->segment->measure() == pendingCourtesy
         && courtesyType4(prev->segment)) {
-        if (staves != 1) return false;
         courtesyKey = courtesyKey || prev->segment->isKeySigAnnounceType();
         prev = std::find_if(std::next(prev), earlier.rend(), activeEntry);
     }
@@ -804,25 +803,19 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
     }
     const Score* score = system->score();
     const Measure* last = measures.back();
-    if (last->nextMeasure() && score->nstaves() == 1) {
-        const bool keyChange = !(score->staff(0)->keySigEvent(last->endTick() - Fraction::fromTicks(1))
-            == score->staff(0)->keySigEvent(last->endTick()));
+    if (last->nextMeasure()) {
         const Segment* time = last->nextMeasure()->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
-        signatures = signatures || (keyChange && score->styleB(Sid::genCourtesyKeysig))
-            || (time && time->element(0) && time->element(0)->isTimeSig()
-                && toTimeSig(time->element(0))->showCourtesySig() && score->styleB(Sid::genCourtesyTimesig));
+        for (int st = 0; st < score->nstaves(); ++st) {
+            const bool keyChange = !(score->staff(st)->keySigEvent(last->endTick() - Fraction::fromTicks(1))
+                == score->staff(st)->keySigEvent(last->endTick()));
+            const Element* item = time ? time->element(st * VOICES) : nullptr;
+            signatures = signatures || (keyChange && score->styleB(Sid::genCourtesyKeysig))
+                || (item && item->isTimeSig() && toTimeSig(item)->showCourtesySig() && score->styleB(Sid::genCourtesyTimesig));
+        }
     }
     if (!signatures) return true; // Preserve the existing ordinary-prefix contract.
-    const bool shared = score->nstaves() > 1;
-    if (score->floatMode() || (shared && (allowPendingTrailer
-        || score->styleB(Sid::genCourtesyKeysig) || score->styleB(Sid::genCourtesyTimesig))))
-        return fail("Candidate shared signatures require courtesy signatures disabled");
-    const auto geometryReady = [](const Element* item, const Segment* segment) {
-        if (!signatureGeometryReady4(item, segment, 0)) return false;
-        for (const Element* occupant : segment->elist())
-            if (occupant && occupant != item) return false;
-        return true;
-    };
+    if (score->floatMode())
+        return fail("Candidate signatures do not support float layout");
     for (size_t i = 0; i < measures.size(); ++i) {
         const Measure* m = measures[i];
         const bool last = i + 1 == measures.size();
@@ -850,71 +843,64 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
             if (!segment.ticks().isZero() || (courtesy ? !terminalGeometry || !segment.trailer() || segment.rtick() != m->ticks()
                 : segment.trailer() || !segment.rtick().isZero()))
                 return fail("Candidate signature location/trailer phase not prepared");
-            if (shared) {
-                if (courtesy || !sharedSignatureReady4(&segment))
-                    return fail("Candidate shared signature geometry not prepared on every staff");
-                continue;
-            }
-            const Element* item = segment.element(0);
-            if (!ordinarySignature4(item) || !geometryReady(item, &segment)
-                || ((segment.isKeySigType() || segment.isKeySigAnnounceType()) ? !item->isKeySig() : !item->isTimeSig())
-                || (courtesy && !item->generated()))
-                return fail("Candidate signature glyph, ownership or dimensions not prepared");
+            if (!sharedSignatureReady4(&segment))
+                return fail("Candidate signature glyph, ownership or dimensions not prepared on every staff");
+            if (courtesy)
+                for (const Element* item : segment.elist())
+                    if (item && !item->generated())
+                        return fail("Candidate courtesy is not generated");
         }
         const Measure* next = m->nextMeasure();
-        if (shared) {
-            const Segment* end = m->findSegmentR(SegmentType::EndBarLine, m->ticks());
-            if (m->trailer() || m->hasCourtesyKeySig() || !end || !active4(end) || !end->ticks().isZero()
-                || !generatedBarlines4(end, next ? BarLineType::NORMAL : BarLineType::END))
-                return fail("Candidate shared signature barline or courtesy boundary");
-            for (int st = 0; st < score->nstaves(); ++st) {
-                const int track = st * VOICES;
-                const Element* bar = end->element(track);
-                if (!toBarLine(bar)->el()->empty() || !signatureGeometryReady4(bar, end, track))
-                    return fail("Candidate shared signature end barline geometry not prepared");
-            }
-            continue;
-        }
         const Segment* keySeg = next ? next->findSegmentR(SegmentType::KeySig, Fraction(0, 1)) : nullptr;
         const Segment* timeSeg = next ? next->findSegmentR(SegmentType::TimeSig, Fraction(0, 1)) : nullptr;
-        const Element* key = keySeg ? keySeg->element(0) : nullptr;
-        const Element* time = timeSeg ? timeSeg->element(0) : nullptr;
-        const bool keyChange = next && !(score->staff(0)->keySigEvent(m->endTick() - Fraction::fromTicks(1))
-            == score->staff(0)->keySigEvent(m->endTick()));
-        const bool needKey = terminalGeometry && next && score->styleB(Sid::genCourtesyKeysig) && keyChange
-            && (!key || (key->isKeySig() && toKeySig(key)->showCourtesy()));
-        const bool needTime = terminalGeometry && next && score->styleB(Sid::genCourtesyTimesig)
-            && time && time->isTimeSig() && toTimeSig(time)->showCourtesySig();
         const Segment* keyTrailer = m->findSegmentR(SegmentType::KeySigAnnounce, m->ticks());
         const Segment* timeTrailer = m->findSegmentR(SegmentType::TimeSigAnnounce, m->ticks());
         const bool hasKey = keyTrailer && active4(keyTrailer);
         const bool hasTime = timeTrailer && active4(timeTrailer);
-        if (hasKey != needKey || hasTime != needTime || m->hasCourtesyKeySig() != needKey
-            || m->trailer() != (hasKey || hasTime))
+        if (m->hasCourtesyKeySig() != hasKey || m->trailer() != (hasKey || hasTime))
             return fail("Candidate courtesy presence not prepared");
         if (pending && ((hasKey && (!keySeg || !active4(keySeg))) || (hasTime && (!timeSeg || !active4(timeSeg)))))
             return fail("Candidate pending penultimate courtesy lacks an active following signature");
-        if (hasKey && (!ordinarySignature4(key)
-            || !(toKeySig(keyTrailer->element(0))->keySigEvent() == toKeySig(key)->keySigEvent())))
-            return fail("Candidate courtesy key does not match following signature");
-        if (hasTime) {
-            if (!ordinarySignature4(time)) return fail("Candidate courtesy time is not ordinary");
-            const TimeSig* actual = toTimeSig(time);
-            const TimeSig* courtesy = toTimeSig(timeTrailer->element(0));
-            // Match the fields copied by native TimeSig::setFrom. Beam groups
-            // are not copied and do not affect this courtesy's drawn body.
-            if (courtesy->timeSigType() != actual->timeSigType() || !courtesy->sig().identical(actual->sig())
-                || courtesy->stretch() != actual->stretch() || courtesy->numeratorString() != actual->numeratorString()
-                || courtesy->denominatorString() != actual->denominatorString())
-                return fail("Candidate courtesy time does not match following signature");
+
+        // Require the same courtesy presence across the visible staves.
+        // A subset of staves needs a separate boundary geometry adapter.
+        for (int st = 0; st < score->nstaves(); ++st) {
+            const int track = st * VOICES;
+            const Element* key = keySeg ? keySeg->element(track) : nullptr;
+            const Element* time = timeSeg ? timeSeg->element(track) : nullptr;
+            const bool keyChange = next && !(score->staff(st)->keySigEvent(m->endTick() - Fraction::fromTicks(1))
+                == score->staff(st)->keySigEvent(m->endTick()));
+            const bool needKey = terminalGeometry && next && score->styleB(Sid::genCourtesyKeysig) && keyChange
+                && (!key || (key->isKeySig() && toKeySig(key)->showCourtesy()));
+            const bool needTime = terminalGeometry && next && score->styleB(Sid::genCourtesyTimesig)
+                && time && time->isTimeSig() && toTimeSig(time)->showCourtesySig();
+            if (hasKey != needKey || hasTime != needTime)
+                return fail("Candidate courtesy presence differs from the following signature");
+            if (hasKey && (!ordinarySignature4(key)
+                || !(toKeySig(keyTrailer->element(track))->keySigEvent() == toKeySig(key)->keySigEvent())))
+                return fail("Candidate courtesy key does not match following signature");
+            if (hasTime) {
+                if (!ordinarySignature4(time)) return fail("Candidate courtesy time is not ordinary");
+                const TimeSig* actual = toTimeSig(time);
+                const TimeSig* courtesy = toTimeSig(timeTrailer->element(track));
+                if (courtesy->timeSigType() != actual->timeSigType() || !courtesy->sig().identical(actual->sig())
+                    || courtesy->stretch() != actual->stretch() || courtesy->numeratorString() != actual->numeratorString()
+                    || courtesy->denominatorString() != actual->denominatorString())
+                    return fail("Candidate courtesy time does not match following signature");
+            }
         }
         const Segment* end = m->findSegmentR(SegmentType::EndBarLine, m->ticks());
-        const Element* item = end ? end->element(0) : nullptr;
-        const BarLineType expected = needKey ? BarLineType::DOUBLE : next ? BarLineType::NORMAL : BarLineType::END;
-        if (!end || !active4(end) || !end->ticks().isZero() || !item || !item->isBarLine()
-            || !item->generated() || toBarLine(item)->barLineType() != expected || !toBarLine(item)->el()->empty()
-            || !geometryReady(item, end))
+        const BarLineType expected = hasKey ? BarLineType::DOUBLE : next ? BarLineType::NORMAL : BarLineType::END;
+        if (!end || !active4(end) || !end->ticks().isZero() || !generatedBarlines4(end, expected)
+            || std::count_if(end->elist().begin(), end->elist().end(),
+                [](const Element* item) { return item != nullptr; }) != score->nstaves())
             return fail("Candidate signature end barline not prepared");
+        for (int st = 0; st < score->nstaves(); ++st) {
+            const int track = st * VOICES;
+            const Element* bar = end->element(track);
+            if (!toBarLine(bar)->el()->empty() || !signatureGeometryReady4(bar, end, track))
+                return fail("Candidate signature end barline geometry not prepared");
+        }
     }
     return true;
 }
