@@ -134,10 +134,18 @@ bool manualInteriorLeadingSpace4(const Segment* s)
         && prev->rtick() < s->rtick();
 }
 
+qreal manualSpringOffset4(const Segment* segment, qreal advance, qreal systemSpatium)
+{
+    const Segment* next = segment->next();
+    return manualInteriorLeadingSpace4(next)
+        ? std::max(next->extraLeadingSpace().val() * systemSpatium, -advance) : 0;
+}
+
 // At a bar start the edit belongs to the onset alone, including when a
 // generated start repeat or an ordinary key/time change precedes it.
 bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
-                                 const std::vector<SpacingSegmentPlan4>& earlier)
+                                 const std::vector<SpacingSegmentPlan4>& earlier,
+                                 const Measure* pendingCourtesy)
 {
     if (!active4(&target) || !target.isChordRestType() || !target.rtick().isZero())
         return false;
@@ -162,7 +170,6 @@ bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
         });
     }
     // Walk across the in-measure prefix to certify the preceding barline.
-    // A courtesy trailer or a repeat boundary is a different layout phase.
     while (prev != earlier.rend() && prev->segment->measure() == target.measure()) {
         const Segment* sig = prev->segment;
         const Element* item = sig->element(0);
@@ -172,12 +179,21 @@ bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
             return false;
         prev = std::find_if(std::next(prev), earlier.rend(), activeEntry);
     }
+    // Only cross the courtesy already certified for this trial. Keep its
+    // geometry in the plan: the walk here only checks the edit's boundary.
+    bool courtesyKey = false;
+    while (pendingCourtesy && prev != earlier.rend() && prev->segment->measure() == pendingCourtesy
+        && courtesyType4(prev->segment)) {
+        courtesyKey = courtesyKey || prev->segment->isKeySigAnnounceType();
+        prev = std::find_if(std::next(prev), earlier.rend(), activeEntry);
+    }
     if (prev == earlier.rend() || !prev->segment->isEndBarLineType()
         || prev->segment->measure() != target.measure()->prevMeasure()
         || prev->segment->tick() != target.tick())
         return false;
     const Element* item = prev->segment->element(0);
-    return item && item->isBarLine() && item->generated() && toBarLine(item)->barLineType() == BarLineType::NORMAL;
+    const auto expected = courtesyKey ? BarLineType::DOUBLE : BarLineType::NORMAL;
+    return item && item->isBarLine() && item->generated() && toBarLine(item)->barLineType() == expected;
 }
 
 // This field is derived layout state, not manual segment leading space.
@@ -1119,9 +1135,9 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
             if (!std::isfinite(leading))
                 return fail("Invalid manual leading space");
             if (leading != 0) {
-                if (prefix || score->nstaves() != 1 || !score->staff(0)->isPitchedStaff(segment.tick())
+                if (score->nstaves() != 1 || !score->staff(0)->isPitchedStaff(segment.tick())
                     || (!manualInteriorLeadingSpace4(&segment)
-                        && !manualBarStartLeadingSpace4(segment, system->firstMeasure(), plan.segments)))
+                        && !manualBarStartLeadingSpace4(segment, system->firstMeasure(), plan.segments, predecessor)))
                     return fail("Manual leading space requires an ordinary rhythmic onset on one pitched staff");
                 hasManualSpace = true;
             }
@@ -1230,6 +1246,9 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
         || !graces.mains.empty() || !cross.pairs.empty()))
         return fail("Manual leading space with grace, cross-staff or right-aligned geometry");
     const qreal manualSpatium = hasManualSpace ? system->spatium() : 0;
+    const auto rhythmicAdvance = [&options](const SpacingSegmentPlan4& entry) {
+        return 3.5 * entry.segment->spatium() * entry.stretch * options.stretchReduction;
+    };
     qreal cursor = system->leftMargin();
     bool placed = false;
     size_t firstNew = 0;
@@ -1273,12 +1292,16 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                     return fail("Candidate prefix segment identity or visibility changed");
                 }
                 if (current.ignored) continue;
+                const qreal expectedOffset = hasManualSpace && current.segment->isChordRestType()
+                    ? manualSpringOffset4(current.segment, rhythmicAdvance(current), manualSpatium) : 0;
                 if (!std::isfinite(saved.x) || !std::isfinite(saved.width) || saved.width < 0
-                    || saved.widthOffset != 0 || saved.stretch != current.stretch
+                    || saved.widthOffset != expectedOffset || saved.width < saved.widthOffset
+                    || saved.stretch != current.stretch
                     || saved.x < cursor - 1e-6 || (placed && qAbs(saved.x - cursor) > 1e-6))
                     return fail("Candidate prefix segment positions or advances are invalid");
                 current.x = saved.x;
                 current.width = saved.width;
+                current.widthOffset = saved.widthOffset;
                 cursor = saved.x + saved.width;
                 lastActive = current.segment;
                 placed = true;
@@ -1389,18 +1412,13 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                 cursor = std::max(cursor, minimum);
                 current.x = std::max(current.x, minimum);
             }
-            qreal advance = 3.5 * current.segment->spatium() * current.stretch * options.stretchReduction
-                + current.widthOffset;
+            qreal advance = rhythmicAdvance(current) + current.widthOffset;
             const auto correction = cross.pairs.find(current.segment);
             if (correction != cross.pairs.end() && correction->second.minimumWidth > 0)
                 advance = std::max(advance, correction->second.minimumWidth);
             if (advance < 0) return fail("Cross-staff advance needs stronger compression support");
-            if (hasManualSpace && i + 1 < plan.segments.size()) {
-                const Segment* next = plan.segments[i + 1].segment;
-                const qreal leading = next->extraLeadingSpace().val() * manualSpatium;
-                if (leading != 0 && next->measure() == current.segment->measure())
-                    current.widthOffset += std::max(leading, -advance);
-            }
+            if (hasManualSpace)
+                current.widthOffset += manualSpringOffset4(current.segment, advance, manualSpatium);
             cursor += advance;
         }
     }

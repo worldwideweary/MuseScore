@@ -1,5 +1,21 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.252: manual leading space during courtesy fitting
+
+Native `tst_spacing` passed for v0.251. The paired screenshots agreed
+on the first-note gaps after key, meter and combined changes.
+
+Allow those edits in the trial that still shows the previous measure's
+courtesy signatures. Keep the courtesy geometry in the trial. After
+acceptance, reuse the existing refresh against the ordinary interior
+barline, preserving the verified fixed offsets on rhythmic springs in
+the carried prefix.
+
+The paired fixture alternates a −0.5-space edit on beat two with +1
+space after both signatures. Run
+`tst_spacing pendingCourtesyTrial4:manual-leading-space` to check
+acceptance, refresh, two automatic wrap points and widening again.
+
 ## v0.251: manual leading space after an interior signature
 
 Native mtests passed for v0.250. With matching notes, the split and

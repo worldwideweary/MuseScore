@@ -9305,15 +9305,18 @@ void TestSpacing::pendingCourtesyTrial4_data()
       {
       QTest::addColumn<QString>("fixture");
       QTest::addColumn<int>("count");
-      QTest::newRow("two-bars") << QString("v0.241-pending-courtesy.mscx") << 2;
-      QTest::newRow("three-bars") << QString("v0.242-prefix-courtesy.mscx") << 3;
-      QTest::newRow("consecutive-changes") << QString("v0.243-consecutive-courtesies.mscx") << 4;
+      QTest::addColumn<bool>("manualSpace");
+      QTest::newRow("two-bars") << QString("v0.241-pending-courtesy.mscx") << 2 << false;
+      QTest::newRow("three-bars") << QString("v0.242-prefix-courtesy.mscx") << 3 << false;
+      QTest::newRow("consecutive-changes") << QString("v0.243-consecutive-courtesies.mscx") << 4 << false;
+      QTest::newRow("manual-leading-space") << QString("v0.252-courtesy-leading-space.mscx") << 4 << true;
       }
 
 void TestSpacing::pendingCourtesyTrial4()
       {
       QFETCH(QString, fixture);
       QFETCH(int, count);
+      QFETCH(bool, manualSpace);
       QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
       std::unique_ptr<MasterScore> score(new MasterScore(mscore->baseStyle()));
       {
@@ -9337,6 +9340,21 @@ void TestSpacing::pendingCourtesyTrial4()
             events.clear();
             SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
             score->doLayout();
+            if (manualSpace) {
+                  for (const auto& e : events)
+                        QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+                  Measure* m = first;
+                  for (int i = 0; i < count; ++i, m = m->nextMeasure()) {
+                        QVERIFY(m && m->system());
+                        const bool interior = i % 2 == 0;
+                        const Segment* onset = m->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+                        const Segment* edited = m->findSegmentR(SegmentType::ChordRest, Fraction(interior ? 1 : 0, 4));
+                        QVERIFY(onset && edited);
+                        QCOMPARE(edited->extraLeadingSpace().val(), interior ? qreal(-0.5) : qreal(1));
+                        QVERIFY(qAbs(onset->spacingWidthOffset4()
+                              - (interior ? -0.5 * m->system()->spatium() : 0)) < 1e-6);
+                        }
+                  }
             if (trace) {
                   const qreal sp = first->spatium();
                   for (const auto& e : events) {
