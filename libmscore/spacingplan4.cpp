@@ -877,17 +877,17 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
         if (hasTime != needTime)
             return fail("Candidate courtesy presence differs from the following signature");
 
-        // Key courtesies still require the same presence across the staves.
+        // createEndBarLines requests a key courtesy if any staff needs one;
+        // addSystemTrailer then prepares the key on every staff.
+        bool needKey = false;
         for (int st = 0; st < score->nstaves(); ++st) {
             const int track = st * VOICES;
             const Element* key = keySeg ? keySeg->element(track) : nullptr;
             const Element* time = timeSeg ? timeSeg->element(track) : nullptr;
             const bool keyChange = next && !(score->staff(st)->keySigEvent(m->endTick() - Fraction::fromTicks(1))
                 == score->staff(st)->keySigEvent(m->endTick()));
-            const bool needKey = terminalGeometry && next && score->styleB(Sid::genCourtesyKeysig) && keyChange
-                && (!key || (key->isKeySig() && toKeySig(key)->showCourtesy()));
-            if (hasKey != needKey)
-                return fail("Candidate courtesy presence differs from the following signature");
+            needKey = needKey || (terminalGeometry && score->styleB(Sid::genCourtesyKeysig) && keyChange
+                && (!key || (key->isKeySig() && toKeySig(key)->showCourtesy())));
             if (hasKey && (!ordinarySignature4(key)
                 || !(toKeySig(keyTrailer->element(track))->keySigEvent() == toKeySig(key)->keySigEvent())))
                 return fail("Candidate courtesy key does not match following signature");
@@ -901,6 +901,8 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
                     return fail("Candidate courtesy time does not match following signature");
             }
         }
+        if (hasKey != needKey)
+            return fail("Candidate courtesy presence differs from the following signature");
         const Segment* end = m->findSegmentR(SegmentType::EndBarLine, m->ticks());
         const BarLineType expected = hasKey ? BarLineType::DOUBLE : next ? BarLineType::NORMAL : BarLineType::END;
         if (!end || !active4(end) || !end->ticks().isZero() || !generatedBarlines4(end, expected)

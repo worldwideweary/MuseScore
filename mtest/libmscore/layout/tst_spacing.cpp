@@ -9313,13 +9313,11 @@ void TestSpacing::pendingCourtesyTrial4_data()
       QTest::addColumn<int>("count");
       QTest::addColumn<bool>("manualSpace");
       QTest::addColumn<int>("staffCount");
-      QTest::addColumn<bool>("lowerTimeCourtesyOff");
-      QTest::newRow("two-bars") << QString("v0.241-pending-courtesy.mscx") << 2 << false << 1 << false;
-      QTest::newRow("three-bars") << QString("v0.242-prefix-courtesy.mscx") << 3 << false << 1 << false;
-      QTest::newRow("consecutive-changes") << QString("v0.243-consecutive-courtesies.mscx") << 4 << false << 1 << false;
-      QTest::newRow("manual-leading-space") << QString("v0.252-courtesy-leading-space.mscx") << 4 << true << 1 << false;
-      QTest::newRow("shared-manual-leading-space") << QString("v0.257-shared-courtesy-leading-space.mscx") << 4 << true << 2 << false;
-      QTest::newRow("lower-time-courtesy-off") << QString("v0.257-shared-courtesy-leading-space.mscx") << 4 << true << 2 << true;
+      QTest::newRow("two-bars") << QString("v0.241-pending-courtesy.mscx") << 2 << false << 1;
+      QTest::newRow("three-bars") << QString("v0.242-prefix-courtesy.mscx") << 3 << false << 1;
+      QTest::newRow("consecutive-changes") << QString("v0.243-consecutive-courtesies.mscx") << 4 << false << 1;
+      QTest::newRow("manual-leading-space") << QString("v0.252-courtesy-leading-space.mscx") << 4 << true << 1;
+      QTest::newRow("shared-manual-leading-space") << QString("v0.257-shared-courtesy-leading-space.mscx") << 4 << true << 2;
       }
 
 void TestSpacing::pendingCourtesyTrial4()
@@ -9328,7 +9326,6 @@ void TestSpacing::pendingCourtesyTrial4()
       QFETCH(int, count);
       QFETCH(bool, manualSpace);
       QFETCH(int, staffCount);
-      QFETCH(bool, lowerTimeCourtesyOff);
       QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
       std::unique_ptr<MasterScore> score(new MasterScore(mscore->baseStyle()));
       {
@@ -9347,12 +9344,15 @@ void TestSpacing::pendingCourtesyTrial4()
             }
       Measure* added = predecessor->nextMeasure();
       QVERIFY(added && !added->nextMeasure());
-      if (lowerTimeCourtesyOff) {
-            for (Measure* m = first->nextMeasure(); m; m = m->nextMeasure()) {
-                  Segment* time = m->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
-                  QVERIFY(time && time->element(VOICES) && time->element(VOICES)->isTimeSig());
-                  toTimeSig(time->element(VOICES))->setShowCourtesySig(false);
-                  }
+      if (staffCount == 2) {
+            // The two existing wrap trials now exercise different lower-staff
+            // flags: time before bar 3, key before bar 4.
+            Segment* time = predecessor->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
+            QVERIFY(time && time->element(VOICES) && time->element(VOICES)->isTimeSig());
+            toTimeSig(time->element(VOICES))->setShowCourtesySig(false);
+            Segment* key = added->findSegmentR(SegmentType::KeySig, Fraction(0, 1));
+            QVERIFY(key && key->element(VOICES) && key->element(VOICES)->isKeySig());
+            toKeySig(key->element(VOICES))->setShowCourtesy(false);
             }
       std::vector<SpacingDecision4> events;
       const bool trace = qEnvironmentVariableIsSet("MSCORE_TRACE_COURTESY_FIT");
