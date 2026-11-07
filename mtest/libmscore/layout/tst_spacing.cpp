@@ -100,6 +100,7 @@ class TestSpacing : public QObject, public MTest {
       void clefSignaturePlanning4();
       void smallNotation4_data();
       void smallNotation4();
+      void partialRepeatLayout4();
       void styleRoundTrip();
       void durationPolicy();
       void springForce();
@@ -11621,6 +11622,55 @@ void TestSpacing::acciaccaturaSlash4()
             QVERIFY(close(chords[i]->stemSlash()->slashLine().p2(), legacy[i].p2()));
             QCOMPARE(chords[i]->stemSlash()->lineWidth(), score->styleP(Sid::stemWidth));
             }
+      }
+
+void TestSpacing::partialRepeatLayout4()
+      {
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.255-shared-repeat-leading-space.mscx"));
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      MeasureBase* frame = score->first();
+      QVERIFY(frame && frame->isVBox());
+      Element* title = nullptr;
+      for (Element* e : frame->el())
+            if (e->type() == ElementType::TEXT) {
+                  title = e;
+                  break;
+                  }
+      QVERIFY(title);
+      Measure* r1 = score->firstMeasure();
+      QVERIFY(r1 && r1->nextMeasure() && r1->nextMeasure()->nextMeasure());
+      Measure* r2 = r1->nextMeasure();
+      Measure* r3 = r2->nextMeasure();
+      r2->setLineBreak(true);
+      score->doLayout();
+      QVERIFY(r2->system() != r3->system());
+
+      const auto headerGaps = [r3]() -> std::vector<qreal> {
+            const Fraction zero(0, 1);
+            const Segment* clef = r3->findSegmentR(SegmentType::HeaderClef, zero);
+            const Segment* bar = r3->findSegmentR(SegmentType::StartRepeatBarLine, zero);
+            const Segment* onset = r3->findSegmentR(SegmentType::ChordRest, zero);
+            if (!clef || !clef->enabled() || !bar || !bar->enabled() || !onset)
+                  return {};
+            return {bar->x() - clef->x(), onset->x() - bar->x()};
+            };
+      const auto before = headerGaps();
+      QCOMPARE(before.size(), size_t(2));
+      std::vector<SpacingDecision4> events;
+      {
+      SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
+      QVERIFY(title->setProperty(Pid::TEXT, QString("Shared leading space after repeats")));
+      score->doLayoutRange(frame->tick(), frame->tick());
+      }
+      QVERIFY(r2->system() != r3->system());
+      const auto after = headerGaps();
+      QCOMPARE(after.size(), before.size());
+      for (size_t i = 0; i < before.size(); ++i)
+            QVERIFY(qAbs(after[i] - before[i]) < 1e-6);
+      QVERIFY(std::any_of(events.begin(), events.end(), [r3](const SpacingDecision4& e) {
+            return e.pass == SpacingPass4::FINAL && e.path == SpacingPath4::FULL_PLAN && e.firstTick == r3->tick();
+            }));
       }
 
 QTEST_MAIN(TestSpacing)

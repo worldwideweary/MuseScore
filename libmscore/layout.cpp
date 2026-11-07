@@ -4738,7 +4738,12 @@ System* Score::collectSystem(LayoutContext& lc)
             MeasureBase* curMB = lc.curMeasure;
             Measure* m = curMB && curMB->isMeasure() ? toMeasure(curMB) : nullptr;
             bool curMeasureMayHaveJoinedBeams = m && measureMayHaveBeamsJoinedIntoNext(m);
-            if (lc.prevMeasure == lc.systemOldMeasure && !curMeasureMayHaveJoinedBeams) {
+            // Lookahead can have prepared the next system's start repeat.
+            // Restoring just the measure width with legacy spacing cannot
+            // recover the Studio header-to-repeat and repeat-to-note gaps.
+            const bool nextNeedsRepeatLayout = m && m->repeatStart() && styleB(Sid::spacingLayout4)
+                  && !MScore::noHorizontalStretch;
+            if (lc.prevMeasure == lc.systemOldMeasure && !curMeasureMayHaveJoinedBeams && !nextNeedsRepeatLayout) {
                 // If current measure has possible beams joining to the next, we need to continue layout. This needs a better solution in future. [M.S.]
                   // this system ends in the same place as the previous layout
                   // ok to stop
