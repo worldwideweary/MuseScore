@@ -844,7 +844,7 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
                 : segment.trailer() || !segment.rtick().isZero()))
                 return fail("Candidate signature location/trailer phase not prepared");
             if (!sharedSignatureReady4(&segment))
-                return fail("Candidate signature glyph, ownership or dimensions not prepared on every staff");
+                return fail("Candidate signature glyph, ownership or dimensions not prepared");
             if (courtesy)
                 for (const Element* item : segment.elist())
                     if (item && !item->generated())
