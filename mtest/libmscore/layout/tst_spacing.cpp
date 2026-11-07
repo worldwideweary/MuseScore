@@ -9363,8 +9363,8 @@ void TestSpacing::pendingCourtesyTrial4()
             Segment* key = added->findSegmentR(SegmentType::KeySig, Fraction(0, 1));
             QVERIFY(key && key->element(VOICES) && key->element(VOICES)->isKeySig());
             toKeySig(key->element(VOICES))->setShowCourtesy(false);
-            // The second wrap also checks a common-time glyph, both as a
-            // courtesy and before the manually spaced onset on the new system.
+            // The second wrap checks common time above cut time. Both
+            // keep the same bar duration and their own courtesy glyph.
             Segment* commonTime = added->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
             QVERIFY(commonTime);
             for (int st = 0; st < staffCount; ++st) {
@@ -9372,7 +9372,10 @@ void TestSpacing::pendingCourtesyTrial4()
                   QVERIFY(item && item->isTimeSig());
                   TimeSig* ts = toTimeSig(item);
                   QVERIFY(ts->sig().identical(Fraction(4, 4)));
-                  ts->setSig(Fraction(4, 4), TimeSigType::FOUR_FOUR);
+                  if (st == 0)
+                        ts->setSig(Fraction(4, 4), TimeSigType::FOUR_FOUR);
+                  else
+                        ts->setSig(Fraction(2, 2), TimeSigType::ALLA_BREVE);
                   }
             }
       std::vector<SpacingDecision4> events;
@@ -9446,7 +9449,8 @@ void TestSpacing::pendingCourtesyTrial4()
                                           QVERIFY(courtesyTime->sig().identical(actualTime->sig()));
                                           QVERIFY(courtesyTime->timeSigType() == actualTime->timeSigType());
                                           if (staffCount == 2 && m == predecessor)
-                                                QVERIFY(courtesyTime->timeSigType() == TimeSigType::FOUR_FOUR);
+                                                QVERIFY(courtesyTime->timeSigType()
+                                                      == (st == 0 ? TimeSigType::FOUR_FOUR : TimeSigType::ALLA_BREVE));
                                           }
                                     }
                               }

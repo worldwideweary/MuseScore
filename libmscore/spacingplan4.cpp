@@ -110,8 +110,9 @@ bool ordinarySignature4(const Element* item)
     if (!item->isTimeSig()) return false;
     const TimeSig* time = toTimeSig(item);
     if (time->sig() <= Fraction(0, 1) || time->isLocal()) return false;
-    if (time->timeSigType() == TimeSigType::FOUR_FOUR)
-        return time->sig().identical(Fraction(4, 4))
+    const auto type = time->timeSigType();
+    if (type == TimeSigType::FOUR_FOUR || type == TimeSigType::ALLA_BREVE)
+        return time->sig().identical(type == TimeSigType::FOUR_FOUR ? Fraction(4, 4) : Fraction(2, 2))
             && time->numeratorString().isEmpty() && time->denominatorString().isEmpty();
     return time->timeSigType() == TimeSigType::NORMAL
         && (time->numeratorString().isEmpty() || time->numeratorString() == QString::number(time->numerator()))
