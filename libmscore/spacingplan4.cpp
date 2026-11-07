@@ -159,6 +159,24 @@ bool timeCourtesyRequested4(const Segment* segment)
     return false;
 }
 
+// Mirror createEndBarLines: an opted-out key change on one staff
+// does not request a trailer, but another staff can still request it.
+bool keyCourtesyRequested4(const Measure* measure, const Segment* nextKey)
+{
+    const Score* score = measure->score();
+    if (!measure->nextMeasure() || !score->styleB(Sid::genCourtesyKeysig)) return false;
+    const Fraction tick = measure->endTick();
+    for (int st = 0; st < score->nstaves(); ++st) {
+        const Staff* staff = score->staff(st);
+        if (staff->keySigEvent(tick - Fraction::fromTicks(1)) == staff->keySigEvent(tick))
+            continue;
+        const Element* item = nextKey ? nextKey->element(st * VOICES) : nullptr;
+        if (!item || (item->isKeySig() && toKeySig(item)->showCourtesy()))
+            return true;
+    }
+    return false;
+}
+
 bool rightAligned4(const Segment* s)
 {
     return s->isClefType() || s->isBreathType();
@@ -815,14 +833,11 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
     }
     const Score* score = system->score();
     const Measure* last = measures.back();
-    if (last->nextMeasure()) {
-        const Segment* time = last->nextMeasure()->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
-        signatures = signatures || timeCourtesyRequested4(time);
-        for (int st = 0; st < score->nstaves(); ++st) {
-            const bool keyChange = !(score->staff(st)->keySigEvent(last->endTick() - Fraction::fromTicks(1))
-                == score->staff(st)->keySigEvent(last->endTick()));
-            signatures = signatures || (keyChange && score->styleB(Sid::genCourtesyKeysig));
-        }
+    if (const Measure* next = last->nextMeasure()) {
+        const Fraction zero(0, 1);
+        signatures = signatures
+            || timeCourtesyRequested4(next->findSegmentR(SegmentType::TimeSig, zero))
+            || keyCourtesyRequested4(last, next->findSegmentR(SegmentType::KeySig, zero));
     }
     if (!signatures) return true; // Preserve the existing ordinary-prefix contract.
     if (score->floatMode())
@@ -877,17 +892,13 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
         if (hasTime != needTime)
             return fail("Candidate courtesy presence differs from the following signature");
 
-        // createEndBarLines requests a key courtesy if any staff needs one;
-        // addSystemTrailer then prepares the key on every staff.
-        bool needKey = false;
+        const bool needKey = terminalGeometry && keyCourtesyRequested4(m, keySeg);
+        if (hasKey != needKey)
+            return fail("Candidate courtesy presence differs from the following signature");
         for (int st = 0; st < score->nstaves(); ++st) {
             const int track = st * VOICES;
             const Element* key = keySeg ? keySeg->element(track) : nullptr;
             const Element* time = timeSeg ? timeSeg->element(track) : nullptr;
-            const bool keyChange = next && !(score->staff(st)->keySigEvent(m->endTick() - Fraction::fromTicks(1))
-                == score->staff(st)->keySigEvent(m->endTick()));
-            needKey = needKey || (terminalGeometry && score->styleB(Sid::genCourtesyKeysig) && keyChange
-                && (!key || (key->isKeySig() && toKeySig(key)->showCourtesy())));
             if (hasKey && (!ordinarySignature4(key)
                 || !(toKeySig(keyTrailer->element(track))->keySigEvent() == toKeySig(key)->keySigEvent())))
                 return fail("Candidate courtesy key does not match following signature");
@@ -901,8 +912,6 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
                     return fail("Candidate courtesy time does not match following signature");
             }
         }
-        if (hasKey != needKey)
-            return fail("Candidate courtesy presence differs from the following signature");
         const Segment* end = m->findSegmentR(SegmentType::EndBarLine, m->ticks());
         const BarLineType expected = hasKey ? BarLineType::DOUBLE : next ? BarLineType::NORMAL : BarLineType::END;
         if (!end || !active4(end) || !end->ticks().isZero() || !generatedBarlines4(end, expected)

@@ -9344,6 +9344,16 @@ void TestSpacing::pendingCourtesyTrial4()
             }
       Measure* added = predecessor->nextMeasure();
       QVERIFY(added && !added->nextMeasure());
+      const bool separateCourtesies = manualSpace && staffCount == 1;
+      if (separateCourtesies) {
+            // Reuse the two wrap widths to check time-only then key-only.
+            Segment* key = predecessor->findSegmentR(SegmentType::KeySig, Fraction(0, 1));
+            QVERIFY(key && key->element(0) && key->element(0)->isKeySig());
+            toKeySig(key->element(0))->setShowCourtesy(false);
+            Segment* time = added->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
+            QVERIFY(time && time->element(0) && time->element(0)->isTimeSig());
+            toTimeSig(time->element(0))->setShowCourtesySig(false);
+            }
       if (staffCount == 2) {
             // The two existing wrap trials now exercise different lower-staff
             // flags: time before bar 3, key before bar 4.
@@ -9398,19 +9408,22 @@ void TestSpacing::pendingCourtesyTrial4()
       QVERIFY(first->system() == added->system());
 
       // The retained system has ordinary interior barlines and at most one
-      // set of courtesy signs, at its terminal double barline.
+      // set of courtesy signs, at its terminal barline.
       const auto checkBoundary = [&](Measure* end, bool wraps) {
             for (Measure* m = first; m; m = m->nextMeasure()) {
                   const bool courtesyExpected = wraps && m == end;
                   QCOMPARE(m->trailer(), courtesyExpected);
-                  QCOMPARE(m->hasCourtesyKeySig(), courtesyExpected);
+                  const bool keyExpected = courtesyExpected && (!separateCourtesies || m == predecessor);
+                  const bool timeExpected = courtesyExpected && (!separateCourtesies || m != predecessor);
+                  QCOMPARE(m->hasCourtesyKeySig(), keyExpected);
                   for (SegmentType type : {SegmentType::KeySigAnnounce, SegmentType::TimeSigAnnounce}) {
+                        const bool key = type == SegmentType::KeySigAnnounce;
+                        const bool expected = key ? keyExpected : timeExpected;
                         const Segment* courtesy = m->findSegmentR(type, m->ticks());
                         for (int st = 0; st < staffCount; ++st) {
                               const int track = st * VOICES;
-                              QCOMPARE(bool(courtesy && courtesy->enabled() && courtesy->element(track)), courtesyExpected);
-                              if (courtesyExpected) {
-                                    const bool key = type == SegmentType::KeySigAnnounce;
+                              QCOMPARE(bool(courtesy && courtesy->enabled() && courtesy->element(track)), expected);
+                              if (expected) {
                                     const Segment* actual = m->nextMeasure()->findSegmentR(
                                           key ? SegmentType::KeySig : SegmentType::TimeSig, Fraction(0, 1));
                                     QVERIFY(actual && actual->enabled() && actual->element(track));
@@ -9424,7 +9437,7 @@ void TestSpacing::pendingCourtesyTrial4()
                   const Segment* bar = m->findSegmentR(SegmentType::EndBarLine, m->ticks());
                   QVERIFY(bar && bar->enabled() && bar->element(0) && bar->element(0)->isBarLine());
                   QVERIFY(toBarLine(bar->element(0))->barLineType()
-                        == (courtesyExpected ? BarLineType::DOUBLE : m == added ? BarLineType::END : BarLineType::NORMAL));
+                        == (keyExpected ? BarLineType::DOUBLE : m == added ? BarLineType::END : BarLineType::NORMAL));
                   if (m == end) break;
                   }
             };
