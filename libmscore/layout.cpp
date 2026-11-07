@@ -4376,14 +4376,32 @@ static bool systemFittingPlan4(System* system, qreal availableWidth, std::vector
     };
     if (MScore::noHorizontalStretch || system->score()->styleB(Sid::hideEmptyStaves))
         return fail("Candidate stretch/hidden-staff boundary");
+    bool keepTogether = false;
     for (MeasureBase* mb : system->measures()) {
         if (!mb->isMeasure())
             return fail("Candidate contains a frame");
         const Measure* m = toMeasure(mb);
-        if (m->noBreak() || measureMayHaveBeamsJoinedIntoNext(m))
-            return fail("Candidate break/joined-beam boundary");
+        if (measureMayHaveBeamsJoinedIntoNext(m))
+            return fail("Candidate joined-beam boundary");
+        keepTogether = keepTogether || m->noBreak();
     }
     const auto& measures = system->measures();
+    if (keepTogether) {
+        // Admit plain groups first. Signatures and repeats can change their
+        // barline/trailer phase when a group crosses a system boundary.
+        for (const MeasureBase* mb : measures) {
+            const Measure* m = toMeasure(mb);
+            if (m->repeatStart() || m->repeatEnd() || m->sectionBreak()
+                || m->trailer() || m->hasCourtesyKeySig())
+                return fail("Candidate no-break group with repeat, section or courtesy");
+            for (const Segment& s : m->segments()) {
+                if (!s.enabled() || !s.visible() || s.allElementsInvisible())
+                    continue;
+                if (s.isClefType() || (mb != measures.front() && (s.isKeySigType() || s.isTimeSigType())))
+                    return fail("Candidate no-break group with an interior signature");
+            }
+        }
+    }
     const bool carryTrailer = prefix && !prefix->trialOnly
         && measures.size() > 1 && prefix->measures.size() == measures.size() - 1
         && prefix->measures.back().measure == measures[measures.size() - 2]
@@ -4563,11 +4581,12 @@ System* Score::collectSystem(LayoutContext& lc)
             // collect at least one measure and the break
 
             qreal fittingWidth = minWidth + ww;
+            bool planned = false;
             if (styleB(Sid::spacingLayout4)) {
                   const bool observed = spacingDecisionObserved4(this);
                   QString reason;
                   SpacingPlan4 candidate;
-                  const bool planned = systemFittingPlan4(system, systemWidth, preparedBeams,
+                  planned = systemFittingPlan4(system, systemWidth, preparedBeams,
                         lc.spacingDirections4.get(), candidate, &previousCandidate, observed ? &reason : nullptr);
                   // Consume the seed once, including on fallback. A trial-only
                   // plan can seed only the replay after native finalization.
@@ -4586,7 +4605,12 @@ System* Score::collectSystem(LayoutContext& lc)
             else if (spacingDecisionObserved4(this))
                   recordSpacingDecision4(system, SpacingPass4::CANDIDATE, SpacingPath4::STYLE_OFF,
                         fittingWidth, systemWidth);
-            bool doBreak = (system->measures().size() > 1) && (fittingWidth > systemWidth);
+            // Studio accepts an overfull trial at a keep-with-next boundary,
+            // then squeezes the retained system. Use this rule only when the
+            // Studio candidate succeeded; native fallback keeps its rollback.
+            const bool keepWithPrevious = planned && lc.prevMeasure && lc.prevMeasure->system() == system
+                  && lc.prevMeasure->noBreak();
+            bool doBreak = (system->measures().size() > 1) && (fittingWidth > systemWidth) && !keepWithPrevious;
             if (doBreak) {
                   breakMeasure = lc.curMeasure;
                   system->removeLastMeasure();

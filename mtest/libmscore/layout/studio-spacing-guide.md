@@ -1,5 +1,29 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.246: keep with next during fitting
+
+Native mtests passed for v0.244 and v0.245. In v0.245 the v0.243 fixture
+wrapped at a reported 3.49-inch right margin, versus 3.50 in 4.7.5, with
+the expected G-major and 4/4 courtesies after C3. The reported page-height
+difference (11.69 inches in Evolution versus 11 in Studio) is separate
+from horizontal fitting and remains a vertical-layout comparison item.
+
+Admit plain measures with a no-break mark to Studio candidate fitting.
+As in the pinned 4.7.5 collector, a successful candidate may run over
+the natural width if the preceding measure must stay with it. Complete
+the group, resume normal break decisions at its end, and let the final
+spacing pass squeeze the retained system. If the first measure of a
+group already overflows an unmarked predecessor, break before the
+group. Legacy spacing and unsupported candidate fallback retain their
+existing rollback. Repeats, section boundaries and signature/courtesy
+mixtures with no-break groups remain outside this candidate scope.
+
+In the paired five-bar scores, N2 and N3 are marked to keep with the
+following bar. Compare as saved, then increase the right margin until
+N1 stands alone. N2–N4 should stay together at both widths. The native
+regression derives both widths from natural fitting trials and verifies
+that the overfull retained system is squeezed to its target width.
+
 ## v0.245: refresh the last pair after removing a courtesy
 
 The v0.244 visual comparison showed close agreement for sharps, flats and

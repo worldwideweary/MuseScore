@@ -87,6 +87,7 @@ class TestSpacing : public QObject, public MTest {
       void signatureCollection4();
       void pendingCourtesyTrial4_data();
       void pendingCourtesyTrial4();
+      void keepWithNextCollection4();
       void keySignatureFormation4();
       void clefSignaturePlanning4_data();
       void clefSignaturePlanning4();
@@ -9428,6 +9429,79 @@ void TestSpacing::pendingCourtesyTrial4()
       QCOMPARE(trial->courtesyRefreshWidth > 0, count == 4);
       QVERIFY(first->system() == added->system());
       checkBoundary(added, false);
+      }
+
+void TestSpacing::keepWithNextCollection4()
+      {
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.246-keep-with-next.mscx"));
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      std::vector<Measure*> bars;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure())
+            bars.push_back(m);
+      QCOMPARE(bars.size(), size_t(5));
+      for (size_t i = 0; i < bars.size(); ++i)
+            QCOMPARE(bars[i]->noBreak(), i == 1 || i == 2);
+
+      std::vector<SpacingDecision4> events;
+      const auto collect = [&](qreal width) {
+            score->setStyleValue(Sid::pagePrintableWidth, width);
+            events.clear();
+            SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
+            score->doLayout();
+            };
+      const auto decision = [&](SpacingPass4 pass, size_t first, int count) -> const SpacingDecision4* {
+            for (const auto& e : events)
+                  if (e.pass == pass && e.firstTick == bars[first]->tick() && e.measures == count)
+                        return &e;
+            return nullptr;
+            };
+      const qreal wide = 8.8;
+      score->setStyleValue(Sid::pageWidth, 10.0);
+      collect(wide);
+      std::array<qreal, 3> natural;
+      for (int i = 0; i < 5; ++i) {
+            const auto* trial = decision(SpacingPass4::CANDIDATE, 0, i + 1);
+            QVERIFY(trial);
+            QVERIFY2(trial->path == SpacingPath4::FULL_PLAN, qPrintable(trial->reason));
+            QVERIFY(trial->width <= trial->available);
+            if (i < 3) natural[i] = wide * trial->width / trial->available;
+            QCOMPARE(bars[i]->system(), bars.front()->system());
+            }
+      QVERIFY(natural[0] < natural[1] && natural[1] < natural[2]);
+      score->setStyleValue(Sid::pageWidth, 6.0);
+
+      // N2 fits after N1, but adding N3 overflows. Keep collecting until
+      // N4 closes the group, then reject N5 and squeeze the four retained bars.
+      const qreal middle = (natural[1] + natural[2]) * .5;
+      collect(middle);
+      for (int count : {2, 3, 4, 5}) {
+            const auto* trial = decision(SpacingPass4::CANDIDATE, 0, count);
+            QVERIFY(trial);
+            QVERIFY2(trial->path == SpacingPath4::FULL_PLAN, qPrintable(trial->reason));
+            QCOMPARE(trial->width > trial->available, count >= 3);
+            }
+      const auto* squeezed = decision(SpacingPass4::FINAL, 0, 4);
+      QVERIFY(squeezed);
+      QVERIFY2(squeezed->path == SpacingPath4::FULL_PLAN, qPrintable(squeezed->reason));
+      QVERIFY(squeezed->width <= squeezed->available + 1e-6);
+      QCOMPARE(bars.front()->system(), bars[3]->system());
+      QVERIFY(bars[3]->system() != bars[4]->system());
+
+      // If N2 itself no longer fits, break before the group. At the next
+      // system start the overwide group still stays together.
+      collect((natural[0] + natural[1]) * .5);
+      const auto* rejected = decision(SpacingPass4::CANDIDATE, 0, 2);
+      QVERIFY(rejected && rejected->path == SpacingPath4::FULL_PLAN && rejected->width > rejected->available);
+      QVERIFY(bars[0]->system() != bars[1]->system());
+      QCOMPARE(bars[1]->system(), bars[2]->system());
+      QCOMPARE(bars[1]->system(), bars[3]->system());
+      QVERIFY(bars[3]->system() != bars[4]->system());
+
+      score->setStyleValue(Sid::pageWidth, 10.0);
+      collect(wide);
+      for (const Measure* m : bars)
+            QCOMPARE(m->system(), bars.front()->system());
       }
 
 void TestSpacing::keySignatureFormation4()
