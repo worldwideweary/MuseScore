@@ -109,15 +109,39 @@ bool rightAligned4(const Segment* s)
     return s->isClefType() || s->isBreathType();
 }
 
-// Start with interior rhythmic onsets. Measure-start offsets and edits
-// beside inactive or nonrhythmic segments need their own boundary policy.
-bool manualLeadingSpaceTarget4(const Segment* s)
+bool manualInteriorLeadingSpace4(const Segment* s)
 {
     if (!s || !active4(s) || !s->isChordRestType() || s->rtick() <= Fraction(0, 1))
         return false;
     const Segment* prev = s->prev();
     return prev && active4(prev) && prev->isChordRestType() && prev->measure() == s->measure()
         && prev->rtick() < s->rtick();
+}
+
+// At a bar start the edit belongs to the onset alone. Accept the standard
+// system header or a plain preceding barline; there is no preceding spring.
+bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
+                                 const std::vector<SpacingSegmentPlan4>& earlier)
+{
+    if (!active4(&target) || !target.isChordRestType() || !target.rtick().isZero()
+        || target.measure()->repeatStart())
+        return false;
+    for (const Element* item : target.elist())
+        if (item && item->isRest() && toRest(item)->isFullMeasureRest()) return false;
+    if (target.measure() == first) {
+        return std::all_of(earlier.begin(), earlier.end(), [](const SpacingSegmentPlan4& s) {
+            return s.ignored || headerType4(s.segment) || s.segment->isBeginBarLineType();
+        });
+    }
+    const auto prev = std::find_if(earlier.rbegin(), earlier.rend(), [](const SpacingSegmentPlan4& s) {
+        return !s.ignored;
+    });
+    if (prev == earlier.rend() || !prev->segment->isEndBarLineType()
+        || prev->segment->measure() != target.measure()->prevMeasure()
+        || prev->segment->tick() != target.tick())
+        return false;
+    const Element* item = prev->segment->element(0);
+    return item && item->isBarLine() && item->generated() && toBarLine(item)->barLineType() == BarLineType::NORMAL;
 }
 
 // This field is derived layout state, not manual segment leading space.
@@ -1073,8 +1097,9 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                 return fail("Invalid manual leading space");
             if (leading != 0) {
                 if (prefix || score->nstaves() != 1 || !score->staff(0)->isPitchedStaff(segment.tick())
-                    || !manualLeadingSpaceTarget4(&segment))
-                    return fail("Manual leading space requires an interior rhythmic onset on one pitched staff");
+                    || (!manualInteriorLeadingSpace4(&segment)
+                        && !manualBarStartLeadingSpace4(segment, system->firstMeasure(), plan.segments)))
+                    return fail("Manual leading space requires an ordinary rhythmic onset on one pitched staff");
                 hasManualSpace = true;
             }
             if (entry.ignored && segment.isChordRestType())
@@ -1088,7 +1113,7 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                     return fail("Courtesy signatures require a terminal measure-end trailer");
                 const Segment* next = segment.next();
                 const bool carriesManualSpace = next && next->extraLeadingSpace().val() != 0
-                    && manualLeadingSpaceTarget4(next);
+                    && manualInteriorLeadingSpace4(next);
                 if (!eligibleType4(&segment) || (segment.trailer() && !courtesyType4(&segment))
                     || (segment.spacingWidthOffset4() != 0 && !cross.pairs.count(&segment)
                         && !carriesRightAlignmentOffset4(&segment) && !carriesManualSpace))
@@ -1337,8 +1362,9 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
         current.x = positionedX + current.segment->extraLeadingSpace().val() * manualSpatium;
         if (current.segment->isChordRestType()) {
             if (current.segment->measure() == plan.measures.front().measure && current.segment->rtick().isZero()) {
-                cursor = std::max(cursor, system->leftMargin() + 1.25 * current.segment->spatium());
-                current.x = cursor;
+                const qreal minimum = system->leftMargin() + 1.25 * current.segment->spatium();
+                cursor = std::max(cursor, minimum);
+                current.x = std::max(current.x, minimum);
             }
             qreal advance = 3.5 * current.segment->spatium() * current.stretch * options.stretchReduction
                 + current.widthOffset;
@@ -1386,6 +1412,9 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
             if (!sameMeasure) {
                 plan.measures[mi].width = current.x + current.width - plan.measures[mi].x;
                 plan.measures[measureIndex[following.segment->measure()]].x = current.x + current.width;
+                if (following.segment->extraLeadingSpace().val() != 0 && following.segment->rtick().isZero()
+                    && following.x < current.x + current.width)
+                    return fail("Manual leading space moves the onset before its barline");
             }
         }
         if (current.width < 0 || !std::isfinite(current.width)

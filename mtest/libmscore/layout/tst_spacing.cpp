@@ -89,6 +89,7 @@ class TestSpacing : public QObject, public MTest {
       void pendingCourtesyTrial4();
       void keepWithNextCollection4();
       void manualLeadingSpace4();
+      void manualBarStartLeadingSpace4();
       void keySignatureFormation4();
       void clefSignaturePlanning4_data();
       void clefSignaturePlanning4();
@@ -9606,6 +9607,66 @@ void TestSpacing::manualLeadingSpace4()
       QVERIFY(!events.empty());
       QVERIFY2(events.back().path == SpacingPath4::FULL_PLAN, qPrintable(events.back().reason));
       for (const Segment* seg : first) QCOMPARE(seg->spacingWidthOffset4(), qreal(0));
+      }
+
+void TestSpacing::manualBarStartLeadingSpace4()
+      {
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.249-bar-start-leading-space.mscx"));
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      std::array<Segment*, 4> onsets;
+      const std::array<qreal, 4> edits {{0, 1, -0.5, 1}};
+      Measure* m = score->firstMeasure();
+      for (size_t i = 0; i < onsets.size(); ++i, m = m->nextMeasure()) {
+            QVERIFY(m);
+            onsets[i] = m->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+            QVERIFY(onsets[i] && onsets[i]->element(0));
+            QCOMPARE(onsets[i]->extraLeadingSpace().val(), edits[i]);
+            QCOMPARE(onsets[i]->element(0)->isRest(), i == 2);
+            }
+
+      std::vector<SpacingDecision4> events;
+      const auto collect = [&]() {
+            events.clear();
+            SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
+            score->doLayout();
+            };
+      const auto checkPlans = [&]() {
+            int finals = 0;
+            for (const auto& e : events) {
+                  QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+                  if (e.pass == SpacingPass4::FINAL) {
+                        ++finals;
+                        QCOMPARE(e.measures, finals == 1 ? 3 : 1);
+                        }
+                  }
+            QCOMPARE(finals, 2);
+            QCOMPARE(onsets[0]->measure()->system(), onsets[2]->measure()->system());
+            QVERIFY(onsets[2]->measure()->system() != onsets[3]->measure()->system());
+            };
+
+      collect();
+      checkPlans();
+      std::array<qreal, 4> marked;
+      for (size_t i = 0; i < onsets.size(); ++i) {
+            marked[i] = onsets[i]->x();
+            for (const Segment& s : onsets[i]->measure()->segments())
+                  QCOMPARE(s.spacingWidthOffset4(), qreal(0));
+            onsets[i]->setExtraLeadingSpace(Spatium(0));
+            }
+      collect();
+      checkPlans();
+      for (size_t i = 0; i < onsets.size(); ++i) {
+            const qreal sp = onsets[i]->measure()->system()->spatium();
+            QVERIFY(qAbs(marked[i] - onsets[i]->x() - edits[i] * sp) < 1e-6);
+            for (const Segment& s : onsets[i]->measure()->segments())
+                  QCOMPARE(s.spacingWidthOffset4(), qreal(0));
+            onsets[i]->setExtraLeadingSpace(Spatium(edits[i]));
+            }
+      collect();
+      checkPlans();
+      for (size_t i = 0; i < onsets.size(); ++i)
+            QVERIFY(qAbs(marked[i] - onsets[i]->x()) < 1e-6);
       }
 
 void TestSpacing::keySignatureFormation4()

@@ -1,5 +1,25 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.249: manual leading space at bar starts
+
+Native mtests passed for v0.248. The paired captures agreed on the
+control, +1-space, and −0.5-space interior gaps.
+
+Admit a first rhythmic onset after an ordinary generated end barline
+or after the standard system header on one pitched staff. The offset
+moves the onset without charging the barline or header to a rhythmic
+spring. At system start, preserve the offset when applying the minimum
+start distance: clamp the shifted onset and the rhythmic cursor
+separately, as in Studio's `spaceSegments`. Keep repeat and mixed
+boundaries, centered full-measure rests, and moves before the preceding
+barline outside this scope.
+
+The paired scores show a control, a +1-space note and a −0.5-space
+quarter rest after barlines, and a +1-space note at a forced system
+start. The regression removes and reapplies the edits, checking actual
+onset positions, planned fitting and final layout, and the absence
+of any rhythmic spring offset on those bars.
+
 ## v0.248: manual leading space on an interior onset
 
 Native mtests passed for v0.247. The visual sweep confirmed that at a
