@@ -369,6 +369,7 @@ class MScore {
       static bool showBoundingRect;
       static bool showSystemBoundingRect;
       static bool showCorruptedMeasures;
+      static bool showStudioSpacingFallbacks;
       static bool useFallbackFont;
       static bool debugMode;
       static bool testMode;

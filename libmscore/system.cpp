@@ -121,6 +121,7 @@ System::~System()
 
 void System::clear()
       {
+      _studioSpacingFallback = false;
       for (MeasureBase* mb : measures()) {
             if (mb->system() == this)
                   mb->setSystem(nullptr);

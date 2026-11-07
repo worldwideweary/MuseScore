@@ -2303,6 +2303,11 @@ MuseScore::MuseScore()
       a->setChecked(MScore::showCorruptedMeasures);
       menuDebug->addAction(a);
 
+      a = getAction("show-studio-spacing-fallbacks");
+      a->setCheckable(true);
+      a->setChecked(MScore::showStudioSpacingFallbacks);
+      menuDebug->addAction(a);
+
       a = getAction("relayout");
       menuDebug->addAction(a);
       a = getAction("qml-reload-source");
@@ -7468,6 +7473,13 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   MScore::showSystemBoundingRect = a->isChecked();
                   if (cs) {
                         cs->setLayoutAll();
+                        cs->update();
+                        }
+                  }
+            else if (cmd == "show-studio-spacing-fallbacks") {
+                  MScore::showStudioSpacingFallbacks = a->isChecked();
+                  if (cs) {
+                        cs->setUpdateAll();
                         cs->update();
                         }
                   }

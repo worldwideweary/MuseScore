@@ -4975,6 +4975,9 @@ System* Score::collectSystem(LayoutContext& lc)
             }
       }
 
+      system->setStudioSpacingFallback(styleB(Sid::spacingLayout4)
+            && !MScore::noHorizontalStretch && !useStudioPlan && system->firstMeasure());
+
       if (observeDecision)
             recordSpacingDecision4(system, SpacingPass4::FINAL,
                   !styleB(Sid::spacingLayout4) ? SpacingPath4::STYLE_OFF
