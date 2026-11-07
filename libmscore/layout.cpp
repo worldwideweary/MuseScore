@@ -4366,17 +4366,14 @@ static bool nativeSystemSpacingPlan4(System* system, const SpacingSystemRequest4
 // Repeat end/start transitions may change when the predecessor is accepted;
 // each candidate rebuilds from that phase's fresh geometry. Keep the native
 // width accumulator intact for unsupported-context fallback/backtracking.
-static bool systemFittingWidth4(System* system, qreal availableWidth, qreal& width, std::vector<GraceBeamPreparation4>& preparedBeams,
-                                SpacingDirectionReadiness4* readiness, SpacingPlan4& previousPrefix,
-                                QString* reason = nullptr)
+static bool systemFittingPlan4(System* system, qreal availableWidth, std::vector<GraceBeamPreparation4>& preparedBeams,
+                               SpacingDirectionReadiness4* readiness, SpacingPlan4& result,
+                               const SpacingPlan4* prefix = nullptr, QString* reason = nullptr)
 {
     const auto fail = [reason](const char* text) {
         if (reason) *reason = QString::fromLatin1(text);
         return false;
     };
-    SpacingPlan4 prefix;
-    // Every trial consumes the previous snapshot, even on a fallback.
-    std::swap(prefix, previousPrefix);
     if (MScore::noHorizontalStretch || system->score()->styleB(Sid::hideEmptyStaves))
         return fail("Candidate stretch/hidden-staff boundary");
     for (MeasureBase* mb : system->measures()) {
@@ -4387,9 +4384,10 @@ static bool systemFittingWidth4(System* system, qreal availableWidth, qreal& wid
             return fail("Candidate break/joined-beam boundary");
     }
     const auto& measures = system->measures();
-    const bool carryTrailer = measures.size() > 1 && prefix.measures.size() == measures.size() - 1
-        && prefix.measures.back().measure == measures[measures.size() - 2]
-        && prefix.measures.back().measure->trailer();
+    const bool carryTrailer = prefix && !prefix->trialOnly
+        && measures.size() > 1 && prefix->measures.size() == measures.size() - 1
+        && prefix->measures.back().measure == measures[measures.size() - 2]
+        && prefix->measures.back().measure->trailer();
     if (!spacingCandidateSignaturesReady4(system, reason, carryTrailer)) return false;
     if (!spacingRepeatBarlinesReady4(system, SpacingPass4::CANDIDATE, reason)) return false;
     NativeGraceInputs4 inputs(system->score(), spacingMeasures4(system), readiness);
@@ -4397,15 +4395,8 @@ static bool systemFittingWidth4(System* system, qreal availableWidth, qreal& wid
     SpacingSystemRequest4 request;
     request.availableWidth = availableWidth;
     request.slurPolicy = inputs.factory()->policy();
-    if (carryTrailer) request.previousPrefix = &prefix;
-    SpacingPlan4 plan;
-    if (!nativeSystemSpacingPlan4(system, request, &inputs, preparedBeams, plan, reason)) return false;
-    width = plan.width;
-    // Accepting a trial-only plan removes its predecessor trailer. That
-    // snapshot cannot seed another trial after the native boundary changes.
-    if (!plan.trialOnly && system->lastMeasure()->trailer())
-        previousPrefix = std::move(plan);
-    return true;
+    if (carryTrailer) request.previousPrefix = prefix;
+    return nativeSystemSpacingPlan4(system, request, &inputs, preparedBeams, result, reason);
 }
 
 // Allocate positive spare width with one force across an ordinary system.
@@ -4498,8 +4489,17 @@ System* Score::collectSystem(LayoutContext& lc)
 
       QList<System *> brokenSystems;
       SpacingPlan4 previousCandidate;
+      bool refreshCandidate = false;
 
       while (lc.curMeasure) {    // collect measure for system
+            if (refreshCandidate && lc.curMeasure->isMeasure()) {
+                  // The accepted trial's predecessor trailer and end barline
+                  // have now been finalized. Replan the retained prefix before
+                  // appending the next measure; use it only as a courtesy seed.
+                  systemFittingPlan4(system, systemWidth, preparedBeams, lc.spacingDirections4.get(),
+                        previousCandidate);
+                  }
+            refreshCandidate = false;
             System* oldSystem = lc.curMeasure->system();
             system->appendMeasure(lc.curMeasure);
 
@@ -4558,8 +4558,20 @@ System* Score::collectSystem(LayoutContext& lc)
             if (styleB(Sid::spacingLayout4)) {
                   const bool observed = spacingDecisionObserved4(this);
                   QString reason;
-                  const bool planned = systemFittingWidth4(system, systemWidth, fittingWidth, preparedBeams,
-                        lc.spacingDirections4.get(), previousCandidate, observed ? &reason : nullptr);
+                  SpacingPlan4 candidate;
+                  const bool planned = systemFittingPlan4(system, systemWidth, preparedBeams,
+                        lc.spacingDirections4.get(), candidate, &previousCandidate, observed ? &reason : nullptr);
+                  // Consume the seed once, including on fallback. A trial-only
+                  // plan must be rebuilt if it fits and another trial follows.
+                  previousCandidate = {};
+                  if (planned) {
+                        fittingWidth = candidate.width;
+                        if (system->lastMeasure()->trailer()) {
+                              refreshCandidate = candidate.trialOnly;
+                              if (!refreshCandidate)
+                                    previousCandidate = std::move(candidate);
+                              }
+                        }
                   if (observed)
                         recordSpacingDecision4(system, SpacingPass4::CANDIDATE,
                               MScore::noHorizontalStretch ? SpacingPath4::NO_STRETCH

@@ -1,5 +1,27 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.243: consecutive courtesy changes
+
+v0.242 passed native mtests. The comparison kept all three measures together
+as saved and wrapped C3 at a right margin of 2.76 inches in Studio 4.7.5
+and 2.77 inches in Evolution. Both showed the key and time courtesies at
+the end of C2 and the full signatures at the start of C3.
+
+When a pending-courtesy trial fits and its last measure has a courtesy of
+its own, rebuild the retained prefix before appending the following measure.
+At that point native collection has already disabled the earlier courtesy
+and finalized its barline. Use only the rebuilt plan as the next trial's
+seed. A failed rebuild leaves the normal fallback in place, and a rejected
+trial still retains the current system's terminal courtesy. The refresh
+neither changes the previous fit decision nor publishes segment positions.
+
+The new four-bar fixture changes key and meter at every boundary. The
+regression exercises successive accepted trials, then independently wraps
+C3 and C4, and restores the original width. At each break, only the last
+measure on the first system carries courtesies and the double barline.
+For visual comparison, open both scores as saved, then increase the right
+margin until C4 wraps; increase it again to check the break before C3.
+
 ## v0.242: pending courtesy after a longer accepted prefix
 
 v0.241 passed native mtests. Both comparison scores kept both bars on one

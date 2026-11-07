@@ -9290,6 +9290,7 @@ void TestSpacing::pendingCourtesyTrial4_data()
       QTest::addColumn<int>("count");
       QTest::newRow("two-bars") << QString("v0.241-pending-courtesy.mscx") << 2;
       QTest::newRow("three-bars") << QString("v0.242-prefix-courtesy.mscx") << 3;
+      QTest::newRow("consecutive-changes") << QString("v0.243-consecutive-courtesies.mscx") << 4;
       }
 
 void TestSpacing::pendingCourtesyTrial4()
@@ -9326,40 +9327,79 @@ void TestSpacing::pendingCourtesyTrial4()
             return nullptr;
             };
       collect();
-      const auto* seed = candidate(count - 1);
-      const auto* trial = candidate(count);
-      QVERIFY(seed && trial);
-      QVERIFY2(seed->path == SpacingPath4::FULL_PLAN, qPrintable(seed->reason));
-      QVERIFY2(trial->path == SpacingPath4::FULL_PLAN, qPrintable(trial->reason));
-      QVERIFY(trial->width > seed->width && trial->width <= trial->available);
       QVERIFY(first->system() == added->system());
-      QVERIFY(!predecessor->trailer());
 
-      // Exercise the same candidate at an available width between its two
-      // natural estimates. Rejecting the last measure must retain the predecessor's courtesy.
+      // The retained system has ordinary interior barlines and at most one
+      // set of courtesy signs, at its terminal double barline.
+      const auto checkBoundary = [&](Measure* end, bool wraps) {
+            for (Measure* m = first; m; m = m->nextMeasure()) {
+                  const bool courtesyExpected = wraps && m == end;
+                  QCOMPARE(m->trailer(), courtesyExpected);
+                  QCOMPARE(m->hasCourtesyKeySig(), courtesyExpected);
+                  for (SegmentType type : {SegmentType::KeySigAnnounce, SegmentType::TimeSigAnnounce}) {
+                        const Segment* courtesy = m->findSegmentR(type, m->ticks());
+                        QCOMPARE(bool(courtesy && courtesy->enabled() && courtesy->element(0)), courtesyExpected);
+                        if (courtesyExpected) {
+                              const bool key = type == SegmentType::KeySigAnnounce;
+                              const Segment* actual = m->nextMeasure()->findSegmentR(
+                                    key ? SegmentType::KeySig : SegmentType::TimeSig, Fraction(0, 1));
+                              QVERIFY(actual && actual->enabled() && actual->element(0));
+                              if (key)
+                                    QVERIFY(toKeySig(courtesy->element(0))->keySigEvent() == toKeySig(actual->element(0))->keySigEvent());
+                              else
+                                    QVERIFY(toTimeSig(courtesy->element(0))->sig().identical(toTimeSig(actual->element(0))->sig()));
+                              }
+                        }
+                  const Segment* bar = m->findSegmentR(SegmentType::EndBarLine, m->ticks());
+                  QVERIFY(bar && bar->enabled() && bar->element(0) && bar->element(0)->isBarLine());
+                  QVERIFY(toBarLine(bar->element(0))->barLineType()
+                        == (courtesyExpected ? BarLineType::DOUBLE : m == added ? BarLineType::END : BarLineType::NORMAL));
+                  if (m == end) break;
+                  }
+            };
+      checkBoundary(added, false);
+
+      // Choose widths between consecutive natural estimates, where the earlier
+      // prefix fits and the next trial overflows.
       const qreal originalWidth = score->styleD(Sid::pagePrintableWidth);
-      const qreal narrow = originalWidth * (seed->width + trial->width) / (2 * trial->available);
-      score->setStyleValue(Sid::pagePrintableWidth, narrow);
-      collect();
-      seed = candidate(count - 1);
-      trial = candidate(count);
-      QVERIFY(seed && trial);
-      QVERIFY2(trial->path == SpacingPath4::FULL_PLAN, qPrintable(trial->reason));
-      QVERIFY(seed->width <= seed->available && trial->width > trial->available);
-      QVERIFY(first->system() == predecessor->system());
-      QVERIFY(predecessor->system() != added->system());
-      QVERIFY(predecessor->trailer());
-      for (SegmentType type : {SegmentType::KeySigAnnounce, SegmentType::TimeSigAnnounce}) {
-            const Segment* courtesy = predecessor->findSegmentR(type, predecessor->ticks());
-            QVERIFY(courtesy && courtesy->enabled() && courtesy->element(0));
+      std::vector<std::pair<int, qreal>> breaks;
+      for (int bars = count == 4 ? 3 : count; bars <= count; ++bars) {
+            const auto* seed = candidate(bars - 1);
+            const auto* trial = candidate(bars);
+            QVERIFY(seed && trial);
+            QVERIFY2(seed->path == SpacingPath4::FULL_PLAN, qPrintable(seed->reason));
+            QVERIFY2(trial->path == SpacingPath4::FULL_PLAN, qPrintable(trial->reason));
+            QVERIFY(trial->width > seed->width && trial->width <= trial->available);
+            breaks.emplace_back(bars, originalWidth * (seed->width + trial->width) / (2 * trial->available));
+            }
+      for (const auto& testBreak : breaks) {
+            score->setStyleValue(Sid::pagePrintableWidth, testBreak.second);
+            collect();
+            const auto* seed = candidate(testBreak.first - 1);
+            const auto* trial = candidate(testBreak.first);
+            QVERIFY(seed && trial);
+            QVERIFY2(seed->path == SpacingPath4::FULL_PLAN, qPrintable(seed->reason));
+            QVERIFY2(trial->path == SpacingPath4::FULL_PLAN, qPrintable(trial->reason));
+            QVERIFY(seed->width <= seed->available && trial->width > trial->available);
+            Measure* end = predecessor;
+            if (testBreak.first < count) end = end->prevMeasure();
+            QVERIFY(first->system() == end->system());
+            QVERIFY(end->system() != end->nextMeasure()->system());
+            checkBoundary(end, true);
+            // The rejected measure starts a new system. Its former terminal
+            // courtesy is cleared if another bar fits after it.
+            if (testBreak.first < count) {
+                  QVERIFY(end->nextMeasure()->system() == added->system());
+                  QVERIFY(!end->nextMeasure()->trailer());
+                  }
             }
 
       score->setStyleValue(Sid::pagePrintableWidth, originalWidth);
       collect();
-      trial = candidate(count);
+      const auto* trial = candidate(count);
       QVERIFY(trial && trial->path == SpacingPath4::FULL_PLAN);
       QVERIFY(first->system() == added->system());
-      QVERIFY(!predecessor->trailer());
+      checkBoundary(added, false);
       }
 
 void TestSpacing::signatureCollection4_data()
