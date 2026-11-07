@@ -4367,7 +4367,8 @@ static bool nativeSystemSpacingPlan4(System* system, const SpacingSystemRequest4
 // each candidate rebuilds from that phase's fresh geometry. Keep the native
 // width accumulator intact for unsupported-context fallback/backtracking.
 static bool systemFittingWidth4(System* system, qreal availableWidth, qreal& width, std::vector<GraceBeamPreparation4>& preparedBeams,
-                                SpacingDirectionReadiness4* readiness, QString* reason = nullptr)
+                                SpacingDirectionReadiness4* readiness, SpacingPlan4& singleton,
+                                QString* reason = nullptr)
 {
     const auto fail = [reason](const char* text) {
         if (reason) *reason = QString::fromLatin1(text);
@@ -4382,16 +4383,21 @@ static bool systemFittingWidth4(System* system, qreal availableWidth, qreal& wid
         if (m->noBreak() || measureMayHaveBeamsJoinedIntoNext(m))
             return fail("Candidate break/joined-beam boundary");
     }
-    if (!spacingCandidateSignaturesReady4(system, reason)) return false;
+    const bool carryTrailer = system->measures().size() == 2 && system->firstMeasure()->trailer()
+        && singleton.measures.size() == 1 && singleton.measures.front().measure == system->firstMeasure();
+    if (!spacingCandidateSignaturesReady4(system, reason, carryTrailer)) return false;
     if (!spacingRepeatBarlinesReady4(system, SpacingPass4::CANDIDATE, reason)) return false;
     NativeGraceInputs4 inputs(system->score(), spacingMeasures4(system), readiness);
     SpacingGraceQueryScope4 graceScope(system->score(), inputs.factory());
     SpacingSystemRequest4 request;
     request.availableWidth = availableWidth;
     request.slurPolicy = inputs.factory()->policy();
+    if (carryTrailer) request.previousSingleton = &singleton;
     SpacingPlan4 plan;
     if (!nativeSystemSpacingPlan4(system, request, &inputs, preparedBeams, plan, reason)) return false;
     width = plan.width;
+    if (system->measures().size() == 1 && system->firstMeasure()->trailer())
+        singleton = std::move(plan);
     return true;
 }
 
@@ -4484,6 +4490,7 @@ System* Score::collectSystem(LayoutContext& lc)
       MeasureBase* breakMeasure = nullptr;
 
       QList<System *> brokenSystems;
+      SpacingPlan4 singletonCandidate;
 
       while (lc.curMeasure) {    // collect measure for system
             System* oldSystem = lc.curMeasure->system();
@@ -4545,7 +4552,9 @@ System* Score::collectSystem(LayoutContext& lc)
                   const bool observed = spacingDecisionObserved4(this);
                   QString reason;
                   const bool planned = systemFittingWidth4(system, systemWidth, fittingWidth, preparedBeams,
-                        lc.spacingDirections4.get(), observed ? &reason : nullptr);
+                        lc.spacingDirections4.get(), singletonCandidate, observed ? &reason : nullptr);
+                  if (system->measures().size() > 1)
+                        singletonCandidate = SpacingPlan4();
                   if (observed)
                         recordSpacingDecision4(system, SpacingPass4::CANDIDATE,
                               MScore::noHorizontalStretch ? SpacingPath4::NO_STRETCH

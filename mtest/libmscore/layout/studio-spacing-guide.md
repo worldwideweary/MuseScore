@@ -1,5 +1,36 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.241: carry the singleton courtesy into a two-measure trial
+
+v0.240 is accepted on the original 3.x base: the native mtests pass, the
+fitting captures both break at H1–H3 / H4–H6 / H7–H8, and the natural
+controls agree closely in horizontal spacing. The larger vertical gaps
+between systems in the 4.7.5 fitting capture are a separate follow-up:
+compare vertical justification and page-spacing settings on a matched page
+before attributing that difference to a particular vertical layout rule.
+
+When a successful singleton candidate ends in an ordinary key/time courtesy,
+retain its planned segment coordinates and advances for the immediately
+following trial in the same system collection. A certified two-measure
+candidate starts the new measure's collision walk at the saved courtesy
+edge. This follows the pinned Studio incremental walk: the predecessor
+positions are loaded before the new measure is spaced, and the collision
+walk can still distribute extra space backward into its notes. Preserve
+native trailer creation, acceptance/removal, and overflow rollback.
+The borrowed plan is read-only and the resulting trial is ineligible for
+publication. Discard the seed after that trial. Longer prefixes, missing or
+mismatched seeds, and unprepared or unsupported courtesy combinations
+retain the previous fallback.
+
+The new two-measure mtest checks the fitting candidate, the same trial
+overflowing and retaining both courtesy symbols, and fitting again after
+restoring page width. The v0.241 paired scores use the saved style settings.
+For a visual wrap comparison, first open both as saved, then reduce page
+width in both with the same margins until the second bar moves to the next
+system. Check that the first system then ends with the courtesy key and 3/4.
+The other backports and vertical justification remain separate from this
+horizontal checkpoint.
+
 ## v0.240 aggregate gate: bounded signature-aware collection
 
 Apply the combined v0.237-v0.240 patch over accepted v0.236, or the four ordered

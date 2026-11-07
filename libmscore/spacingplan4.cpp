@@ -658,7 +658,7 @@ bool stretchMeasure4(SpacingPlan4& plan, SpacingMeasurePlan4& measure, qreal ext
 }
 }
 
-bool spacingCandidateSignaturesReady4(const System* system, QString* reason)
+bool spacingCandidateSignaturesReady4(const System* system, QString* reason, bool allowSingletonTrailer)
 {
     const auto fail = [reason](const char* text) { if (reason) *reason = text; return false; };
     if (!system || !system->score() || system->measures().empty())
@@ -719,18 +719,22 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason)
         if (!score->staff(0)->isPitchedStaff(m->tick()) || m->repeatStart() || m->repeatEnd()
             || m->nextSectionBreak() || !ordinaryRepeatBoundary4(m))
             return fail("Candidate signature repeat/section/grace/rest/cross-staff boundary");
-        if (m->trailer() && !last)
+        const bool pending = allowSingletonTrailer && measures.size() == 2 && i == 0 && m->trailer();
+        const bool terminalGeometry = last || pending;
+        if (m->trailer() && !terminalGeometry)
             return fail("Candidate pending penultimate courtesy trailer");
         for (const Segment& segment : m->segments()) {
             // Even a currently hidden ordinary clef can be revealed/moved by
             // predecessor finalization. That requires a separate adapter.
             if (segment.isClefType()) return fail("Candidate signature ordinary-clef boundary");
+            if (allowSingletonTrailer && active4(&segment) && rightAligned4(&segment))
+                return fail("Candidate pending penultimate courtesy with a right-aligned mark");
             if (!active4(&segment)) continue;
             if (!i && segment.isHeaderClefType()) continue;
             if (segment.isHeaderClefType()) return fail("Candidate interior system header not removed");
             const bool courtesy = courtesyType4(&segment);
             if (!headerType4(&segment) && !courtesy && !segment.trailer()) continue;
-            if (!segment.ticks().isZero() || (courtesy ? !last || !segment.trailer() || segment.rtick() != m->ticks()
+            if (!segment.ticks().isZero() || (courtesy ? !terminalGeometry || !segment.trailer() || segment.rtick() != m->ticks()
                 : segment.trailer() || !segment.rtick().isZero()))
                 return fail("Candidate signature location/trailer phase not prepared");
             const Element* item = segment.element(0);
@@ -746,9 +750,9 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason)
         const Element* time = timeSeg ? timeSeg->element(0) : nullptr;
         const bool keyChange = next && !(score->staff(0)->keySigEvent(m->endTick() - Fraction::fromTicks(1))
             == score->staff(0)->keySigEvent(m->endTick()));
-        const bool needKey = last && next && score->styleB(Sid::genCourtesyKeysig) && keyChange
+        const bool needKey = terminalGeometry && next && score->styleB(Sid::genCourtesyKeysig) && keyChange
             && (!key || (key->isKeySig() && toKeySig(key)->showCourtesy()));
-        const bool needTime = last && next && score->styleB(Sid::genCourtesyTimesig)
+        const bool needTime = terminalGeometry && next && score->styleB(Sid::genCourtesyTimesig)
             && time && time->isTimeSig() && toTimeSig(time)->showCourtesySig();
         const Segment* keyTrailer = m->findSegmentR(SegmentType::KeySigAnnounce, m->ticks());
         const Segment* timeTrailer = m->findSegmentR(SegmentType::TimeSigAnnounce, m->ticks());
@@ -757,6 +761,8 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason)
         if (hasKey != needKey || hasTime != needTime || m->hasCourtesyKeySig() != needKey
             || m->trailer() != (hasKey || hasTime))
             return fail("Candidate courtesy presence not prepared");
+        if (pending && ((hasKey && (!keySeg || !active4(keySeg))) || (hasTime && (!timeSeg || !active4(timeSeg)))))
+            return fail("Candidate pending penultimate courtesy lacks an active following signature");
         if (hasKey && (!ordinarySignature(key)
             || !(toKeySig(keyTrailer->element(0))->keySigEvent() == toKeySig(key)->keySigEvent())))
             return fail("Candidate courtesy key does not match following signature");
@@ -982,7 +988,8 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
 
 static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString* reason, const SpacingPlanOptions4& options,
                                  const std::vector<GraceMergedGeometry4>* preparedMerged, const SpacingInput4* input,
-                                 const SpacingAttachmentPreparation4* preparation)
+                                 const SpacingAttachmentPreparation4* preparation,
+                                 const SpacingPlan4* singleton = nullptr)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::PLAN);
     const auto fail = [&](const QString& message) { if (reason) *reason = message; return false; };
@@ -996,6 +1003,14 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
         return fail("No score");
     if (input && input->score() != score)
         return fail("Prepared musical inputs belong to another score");
+    if (singleton) {
+        if (!spacingCandidateSignaturesReady4(system, reason, true)) return false;
+        const Measure* first = system->firstMeasure();
+        if (system->measures().size() != 2 || !first || !first->trailer() || singleton->trialOnly
+            || singleton->measures.size() != 1 || singleton->measures.front().measure != first
+            || !singleton->afterGraces.empty() || !singleton->mergedGraces.empty())
+            return fail("Candidate pending penultimate courtesy has no valid singleton seed");
+    }
     for (int st = 0; st < score->nstaves(); ++st) {
         if (!score->staff(st)->show() || !system->staff(st)->show())
             return fail("Hidden staves require a later adapter");
@@ -1032,8 +1047,9 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                 return fail("Inactive rhythmic segments require a later adapter");
             Geometry4 g;
             if (!entry.ignored) {
-                if (courtesyType4(&segment) && (!segment.trailer() || measure != system->lastMeasure()
-                                               || segment.rtick() != measure->ticks()))
+                if (courtesyType4(&segment) && (!segment.trailer()
+                    || (measure != system->lastMeasure() && !(singleton && measure == system->firstMeasure()))
+                    || segment.rtick() != measure->ticks()))
                     return fail("Courtesy signatures require a terminal measure-end trailer");
                 if (!eligibleType4(&segment) || (segment.trailer() && !courtesyType4(&segment))
                     || segment.extraLeadingSpace().val() != 0
@@ -1127,7 +1143,37 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
     }
     qreal cursor = system->leftMargin();
     bool placed = false;
-    for (size_t i = 0; i < plan.segments.size(); ++i) {
+    size_t firstNew = 0;
+    if (singleton) {
+        // Studio's incremental trial reuses the predecessor's segment positions
+        // and advances, then runs the collision walk for the new measure.
+        const Segment* lastActive = nullptr;
+        for (; firstNew < plan.segments.size()
+            && plan.segments[firstNew].segment->measure() == system->firstMeasure(); ++firstNew) {
+            auto& current = plan.segments[firstNew];
+            if (firstNew >= singleton->segments.size())
+                return fail("Candidate singleton segment list changed");
+            const auto& saved = singleton->segments[firstNew];
+            if (saved.segment != current.segment || saved.ignored != current.ignored)
+                return fail("Candidate singleton segment identity or visibility changed");
+            if (current.ignored) continue;
+            if (!std::isfinite(saved.x) || !std::isfinite(saved.width) || saved.width < 0
+                || saved.widthOffset != 0 || saved.stretch != current.stretch
+                || saved.x < cursor - 1e-6 || (placed && qAbs(saved.x - cursor) > 1e-6))
+                return fail("Candidate singleton segment positions or advances are invalid");
+            current.x = saved.x;
+            cursor = saved.x + saved.width;
+            lastActive = current.segment;
+            placed = true;
+        }
+        if (firstNew != singleton->segments.size() || firstNew == plan.segments.size()
+            || !lastActive || !courtesyType4(lastActive)
+            || !std::isfinite(cursor) || !std::isfinite(singleton->width)
+            || qAbs(cursor - singleton->width) > 1e-6)
+            return fail("Candidate singleton has no matching terminal courtesy edge");
+        plan.trialOnly = true;
+    }
+    for (size_t i = firstNew; i < plan.segments.size(); ++i) {
         SpacingSegmentPlan4& current = plan.segments[i];
         if (current.ignored) {
             current.x = cursor;
@@ -1388,11 +1434,14 @@ bool selectSystemSpacingPlan4(System* system, const SpacingSystemRequest4& reque
         return fail("Invalid spacing system width");
     if (request.pass == SpacingPass4::FINAL && !std::isfinite(request.fillLimit))
         return fail("Invalid spacing system fill limit");
+    if (request.pass == SpacingPass4::FINAL && request.previousSingleton)
+        return fail("Final spacing cannot use a pending courtesy seed");
     SpacingPlan4 plan;
     if (request.pass == SpacingPass4::CANDIDATE) {
         SpacingPlanOptions4 options;
         options.slurPolicy = request.slurPolicy;
-        if (!buildSpacingPlan4(system, plan, attachments, reason, options, preparedMerged)) return false;
+        if (!buildSpacingPlanImpl4(system, plan, reason, options, preparedMerged, &attachments.input(),
+                                  &attachments, request.previousSingleton)) return false;
     }
     else {
         if (!squeezeSpacingPlan4(system, request.availableWidth, plan, attachments, reason,
@@ -1442,6 +1491,7 @@ bool spacingPlanPublicationValid4(const System* system, const SpacingPlan4& plan
     const auto fail = [reason](const char* text) { if (reason) *reason = text; return false; };
     if (!system || !system->score() || plan.measures.empty() || !(plan.width > 0) || !std::isfinite(plan.width))
         return fail("Invalid publication system or width");
+    if (plan.trialOnly) return fail("Pending courtesy trial cannot be published");
     std::map<const Segment*, qreal> segmentX;
     std::set<const Chord*> mains;
     std::vector<const Rest*> measureRests;

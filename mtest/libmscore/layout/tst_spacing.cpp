@@ -85,6 +85,7 @@ class TestSpacing : public QObject, public MTest {
       void repeatCollection4();
       void signatureCollection4_data();
       void signatureCollection4();
+      void pendingCourtesyTrial4();
       void clefSignaturePlanning4_data();
       void clefSignaturePlanning4();
       void smallNotation4_data();
@@ -9280,6 +9281,68 @@ void TestSpacing::spacingDecisionCorpus4()
       QVERIFY(candidates >= finals);
       QCOMPARE(finals, int(systems.size()));
       QVERIFY(nextTick == score->lastMeasure()->endTick());
+      }
+
+void TestSpacing::pendingCourtesyTrial4()
+      {
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(new MasterScore(mscore->baseStyle()));
+      {
+      ScoreLoad loading;
+      QVERIFY(score->loadMsc(root + "/" + DIR + "v0.241-pending-courtesy.mscx", false)
+            == Score::FileError::FILE_NO_ERROR);
+      }
+      QVERIFY(score->styleB(Sid::spacingLayout4));
+      Measure* first = score->firstMeasure();
+      QVERIFY(first && first->nextMeasure());
+      Measure* second = first->nextMeasure();
+      QVERIFY(!second->nextMeasure());
+      std::vector<SpacingDecision4> events;
+      const auto collect = [&]() {
+            events.clear();
+            SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
+            score->doLayout();
+            };
+      const auto candidate = [&](int count) -> const SpacingDecision4* {
+            for (const auto& e : events)
+                  if (e.pass == SpacingPass4::CANDIDATE && e.firstTick == first->tick() && e.measures == count)
+                        return &e;
+            return nullptr;
+            };
+      collect();
+      const auto* single = candidate(1);
+      const auto* pair = candidate(2);
+      QVERIFY(single && pair);
+      QVERIFY2(single->path == SpacingPath4::FULL_PLAN, qPrintable(single->reason));
+      QVERIFY2(pair->path == SpacingPath4::FULL_PLAN, qPrintable(pair->reason));
+      QVERIFY(pair->width > single->width && pair->width <= pair->available);
+      QVERIFY(first->system() == second->system());
+      QVERIFY(!first->trailer());
+
+      // Exercise the same candidate at an available width between its two
+      // natural estimates. Rejecting C2 must retain C1's terminal courtesy.
+      const qreal originalWidth = score->styleD(Sid::pagePrintableWidth);
+      const qreal narrow = originalWidth * (single->width + pair->width) / (2 * pair->available);
+      score->setStyleValue(Sid::pagePrintableWidth, narrow);
+      collect();
+      single = candidate(1);
+      pair = candidate(2);
+      QVERIFY(single && pair);
+      QVERIFY2(pair->path == SpacingPath4::FULL_PLAN, qPrintable(pair->reason));
+      QVERIFY(single->width <= single->available && pair->width > pair->available);
+      QVERIFY(first->system() != second->system());
+      QVERIFY(first->trailer());
+      for (SegmentType type : {SegmentType::KeySigAnnounce, SegmentType::TimeSigAnnounce}) {
+            const Segment* courtesy = first->findSegmentR(type, first->ticks());
+            QVERIFY(courtesy && courtesy->enabled() && courtesy->element(0));
+            }
+
+      score->setStyleValue(Sid::pagePrintableWidth, originalWidth);
+      collect();
+      pair = candidate(2);
+      QVERIFY(pair && pair->path == SpacingPath4::FULL_PLAN);
+      QVERIFY(first->system() == second->system());
+      QVERIFY(!first->trailer());
       }
 
 void TestSpacing::signatureCollection4_data()
