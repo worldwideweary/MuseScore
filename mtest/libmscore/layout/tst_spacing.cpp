@@ -90,6 +90,7 @@ class TestSpacing : public QObject, public MTest {
       void keepWithNextCollection4();
       void manualLeadingSpace4();
       void manualBarStartLeadingSpace4();
+      void manualRepeatLeadingSpace4();
       void keySignatureFormation4();
       void clefSignaturePlanning4_data();
       void clefSignaturePlanning4();
@@ -9667,6 +9668,70 @@ void TestSpacing::manualBarStartLeadingSpace4()
       checkPlans();
       for (size_t i = 0; i < onsets.size(); ++i)
             QVERIFY(qAbs(marked[i] - onsets[i]->x()) < 1e-6);
+      }
+
+void TestSpacing::manualRepeatLeadingSpace4()
+      {
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.250-repeat-leading-space.mscx"));
+      QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      Measure* first = score->firstMeasure();
+      QVERIFY(first && first->nextMeasure() && first->nextMeasure()->nextMeasure());
+      Measure* middle = first->nextMeasure();
+      const std::array<Measure*, 2> repeats {{first, middle->nextMeasure()}};
+      const std::array<qreal, 2> edits {{1, -0.5}};
+      std::array<Segment*, 2> onsets;
+      for (size_t i = 0; i < repeats.size(); ++i) {
+            QVERIFY(repeats[i]->repeatStart());
+            onsets[i] = repeats[i]->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+            QVERIFY(onsets[i]);
+            QCOMPARE(onsets[i]->extraLeadingSpace().val(), edits[i]);
+            }
+      QVERIFY(middle->repeatEnd());
+
+      std::vector<SpacingDecision4> events;
+      const auto collect = [&]() {
+            events.clear();
+            SpacingDecisionScope4 observer(score.get(), [&](const SpacingDecision4& e) { events.push_back(e); });
+            score->doLayout();
+            };
+      const auto checkPlans = [&](bool split) {
+            int finals = 0;
+            for (const auto& e : events) {
+                  QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+                  if (e.pass == SpacingPass4::FINAL) {
+                        ++finals;
+                        QCOMPARE(e.measures, split ? 2 : 4);
+                        }
+                  }
+            QCOMPARE(finals, split ? 2 : 1);
+            QCOMPARE(repeats[0]->system() != repeats[1]->system(), split);
+            };
+      // R3 is first an interior end/start pair, then a new system header.
+      for (bool split : {false, true}) {
+            middle->setLineBreak(split);
+            collect();
+            checkPlans(split);
+            std::array<qreal, 2> marked;
+            for (size_t i = 0; i < repeats.size(); ++i) {
+                  const Segment* bar = repeats[i]->findSegmentR(SegmentType::StartRepeatBarLine, Fraction(0, 1));
+                  QVERIFY(bar && bar->enabled() && bar->element(0) && bar->element(0)->isBarLine());
+                  QVERIFY(toBarLine(bar->element(0))->barLineType() == BarLineType::START_REPEAT);
+                  QCOMPARE(bar->spacingWidthOffset4(), qreal(0));
+                  marked[i] = onsets[i]->x() - bar->x();
+                  onsets[i]->setExtraLeadingSpace(Spatium(0));
+                  }
+            collect();
+            checkPlans(split);
+            for (size_t i = 0; i < repeats.size(); ++i) {
+                  const Segment* bar = repeats[i]->findSegmentR(SegmentType::StartRepeatBarLine, Fraction(0, 1));
+                  QVERIFY(bar && bar->enabled());
+                  const qreal sp = repeats[i]->system()->spatium();
+                  const qreal control = onsets[i]->x() - bar->x();
+                  QVERIFY(qAbs(marked[i] - control - edits[i] * sp) < 1e-6);
+                  onsets[i]->setExtraLeadingSpace(Spatium(edits[i]));
+                  }
+            }
       }
 
 void TestSpacing::keySignatureFormation4()

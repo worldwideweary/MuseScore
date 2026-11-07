@@ -118,24 +118,32 @@ bool manualInteriorLeadingSpace4(const Segment* s)
         && prev->rtick() < s->rtick();
 }
 
-// At a bar start the edit belongs to the onset alone. Accept the standard
-// system header or a plain preceding barline; there is no preceding spring.
+// At a bar start the edit belongs to the onset alone, even if a generated
+// start-repeat sits between the header or previous measure and the onset.
 bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
                                  const std::vector<SpacingSegmentPlan4>& earlier)
 {
-    if (!active4(&target) || !target.isChordRestType() || !target.rtick().isZero()
-        || target.measure()->repeatStart())
+    if (!active4(&target) || !target.isChordRestType() || !target.rtick().isZero())
         return false;
     for (const Element* item : target.elist())
         if (item && item->isRest() && toRest(item)->isFullMeasureRest()) return false;
+    const auto prev = std::find_if(earlier.rbegin(), earlier.rend(), [](const SpacingSegmentPlan4& s) {
+        return !s.ignored;
+    });
+    if (target.measure()->repeatStart()) {
+        if (prev == earlier.rend() || !prev->segment->isStartRepeatBarLineType()
+            || prev->segment->measure() != target.measure() || !prev->segment->rtick().isZero()
+            || !prev->segment->ticks().isZero())
+            return false;
+        const Element* item = prev->segment->element(0);
+        return item && item->isBarLine() && item->generated()
+            && toBarLine(item)->barLineType() == BarLineType::START_REPEAT;
+    }
     if (target.measure() == first) {
         return std::all_of(earlier.begin(), earlier.end(), [](const SpacingSegmentPlan4& s) {
             return s.ignored || headerType4(s.segment) || s.segment->isBeginBarLineType();
         });
     }
-    const auto prev = std::find_if(earlier.rbegin(), earlier.rend(), [](const SpacingSegmentPlan4& s) {
-        return !s.ignored;
-    });
     if (prev == earlier.rend() || !prev->segment->isEndBarLineType()
         || prev->segment->measure() != target.measure()->prevMeasure()
         || prev->segment->tick() != target.tick())

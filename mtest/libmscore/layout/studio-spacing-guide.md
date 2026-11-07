@@ -1,5 +1,22 @@
 # Horizontal spacing baseline — v0.29
 
+## v0.250: manual leading space after a start repeat
+
+Native mtests passed for v0.249. The paired screenshots agree closely
+on the ordinary barline and system-start edits.
+
+Accept manual leading space at the first onset when the previous active
+segment is the native generated start-repeat barline in that measure.
+Use the existing repeat geometry and the Studio onset offset; the
+barline and rhythmic spring weights do not acquire a manual offset.
+The existing guards for courtesy snapshots, grace and cross-staff
+geometry, right-aligned marks, and centered rests remain in effect.
+
+R1 shows +1 space after a system-start repeat. R3 shows −0.5 after the
+start repeat of a joined end/start pair. The test checks the edited gap
+against a reset gap, then breaks the system after R2 and repeats the
+check with R3 under a new system header.
+
 ## v0.249: manual leading space at bar starts
 
 Native mtests passed for v0.248. The paired captures agreed on the
