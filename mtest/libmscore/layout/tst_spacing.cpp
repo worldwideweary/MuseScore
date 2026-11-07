@@ -88,6 +88,7 @@ class TestSpacing : public QObject, public MTest {
       void pendingCourtesyTrial4_data();
       void pendingCourtesyTrial4();
       void keepWithNextCollection4();
+      void manualLeadingSpace4_data();
       void manualLeadingSpace4();
       void manualBarStartLeadingSpace4();
       void manualRepeatLeadingSpace4();
@@ -9555,11 +9556,22 @@ void TestSpacing::keepWithNextCollection4()
             QCOMPARE(m->system(), bars.front()->system());
       }
 
+void TestSpacing::manualLeadingSpace4_data()
+      {
+      QTest::addColumn<QString>("fixture");
+      QTest::addColumn<int>("staffCount");
+      QTest::newRow("one-staff") << QString("v0.248-manual-leading-space.mscx") << 1;
+      QTest::newRow("two-staves") << QString("v0.253-shared-leading-space.mscx") << 2;
+      }
+
 void TestSpacing::manualLeadingSpace4()
       {
+      QFETCH(QString, fixture);
+      QFETCH(int, staffCount);
       QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
-      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.248-manual-leading-space.mscx"));
+      std::unique_ptr<MasterScore> score(readScore(DIR + fixture));
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      QCOMPARE(score->nstaves(), staffCount);
       std::vector<SpacingDecision4> events;
       const auto collect = [&]() {
             events.clear();
@@ -9600,6 +9612,12 @@ void TestSpacing::manualLeadingSpace4()
       for (size_t i = 0; i < edits.size(); ++i) {
             QCOMPARE(second[i]->extraLeadingSpace().val(), edits[i]);
             QVERIFY(near(first[i]->spacingWidthOffset4(), edits[i] * sp));
+            if (staffCount == 2) {
+                  const Element* top = second[i]->element(0);
+                  const Element* bottom = second[i]->element(VOICES);
+                  QVERIFY(top && top->isChord() && bottom && bottom->isChord());
+                  QVERIFY(near(top->pagePos().x(), bottom->pagePos().x()));
+                  }
             const auto left = segmentIn(natural, first[i]);
             const auto right = segmentIn(natural, second[i]);
             QVERIFY(left != natural.segments.end() && right != natural.segments.end());

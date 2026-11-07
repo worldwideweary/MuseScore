@@ -1135,10 +1135,15 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
             if (!std::isfinite(leading))
                 return fail("Invalid manual leading space");
             if (leading != 0) {
-                if (score->nstaves() != 1 || !score->staff(0)->isPitchedStaff(segment.tick())
-                    || (!manualInteriorLeadingSpace4(&segment)
-                        && !manualBarStartLeadingSpace4(segment, system->firstMeasure(), plan.segments, predecessor)))
-                    return fail("Manual leading space requires an ordinary rhythmic onset on one pitched staff");
+                for (int st = 0; st < score->nstaves(); ++st)
+                    if (!score->staff(st)->isPitchedStaff(segment.tick()))
+                        return fail("Manual leading space requires pitched staves");
+                // The interior onset is a shared segment. Apply its edit
+                // once for the system, regardless of how many staves play.
+                if (!manualInteriorLeadingSpace4(&segment)
+                    && (score->nstaves() != 1
+                        || !manualBarStartLeadingSpace4(segment, system->firstMeasure(), plan.segments, predecessor)))
+                    return fail("Manual leading space requires an interior onset or a supported single-staff bar start");
                 hasManualSpace = true;
             }
             if (entry.ignored && segment.isChordRestType())
