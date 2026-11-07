@@ -90,6 +90,7 @@ class TestSpacing : public QObject, public MTest {
       void keepWithNextCollection4();
       void manualLeadingSpace4_data();
       void manualLeadingSpace4();
+      void manualBarStartLeadingSpace4_data();
       void manualBarStartLeadingSpace4();
       void manualRepeatLeadingSpace4();
       void manualSignatureLeadingSpace4();
@@ -9647,11 +9648,22 @@ void TestSpacing::manualLeadingSpace4()
       for (const Segment* seg : first) QCOMPARE(seg->spacingWidthOffset4(), qreal(0));
       }
 
+void TestSpacing::manualBarStartLeadingSpace4_data()
+      {
+      QTest::addColumn<QString>("fixture");
+      QTest::addColumn<int>("staffCount");
+      QTest::newRow("one-staff") << QString("v0.249-bar-start-leading-space.mscx") << 1;
+      QTest::newRow("two-staves") << QString("v0.254-shared-bar-start-leading-space.mscx") << 2;
+      }
+
 void TestSpacing::manualBarStartLeadingSpace4()
       {
+      QFETCH(QString, fixture);
+      QFETCH(int, staffCount);
       QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
-      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.249-bar-start-leading-space.mscx"));
+      std::unique_ptr<MasterScore> score(readScore(DIR + fixture));
       QVERIFY(score && score->styleB(Sid::spacingLayout4));
+      QCOMPARE(score->nstaves(), staffCount);
       std::array<Segment*, 4> onsets;
       const std::array<qreal, 4> edits {{0, 1, -0.5, 1}};
       Measure* m = score->firstMeasure();
@@ -9688,6 +9700,13 @@ void TestSpacing::manualBarStartLeadingSpace4()
       std::array<qreal, 4> marked;
       for (size_t i = 0; i < onsets.size(); ++i) {
             marked[i] = onsets[i]->x();
+            if (staffCount == 2) {
+                  const Element* top = onsets[i]->element(0);
+                  const Element* bottom = onsets[i]->element(VOICES);
+                  QVERIFY(bottom && bottom->isChord());
+                  if (top->isChord())
+                        QVERIFY(qAbs(top->pagePos().x() - bottom->pagePos().x()) < 1e-6);
+                  }
             for (const Segment& s : onsets[i]->measure()->segments())
                   QCOMPARE(s.spacingWidthOffset4(), qreal(0));
             onsets[i]->setExtraLeadingSpace(Spatium(0));

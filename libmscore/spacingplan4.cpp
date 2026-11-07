@@ -149,6 +149,7 @@ bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
 {
     if (!active4(&target) || !target.isChordRestType() || !target.rtick().isZero())
         return false;
+    const int staves = target.score()->nstaves();
     for (const Element* item : target.elist())
         if (item && item->isRest() && toRest(item)->isFullMeasureRest()) return false;
     const auto activeEntry = [](const SpacingSegmentPlan4& s) {
@@ -156,7 +157,7 @@ bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
     };
     auto prev = std::find_if(earlier.rbegin(), earlier.rend(), activeEntry);
     if (target.measure()->repeatStart()) {
-        if (prev == earlier.rend() || !prev->segment->isStartRepeatBarLineType()
+        if (staves != 1 || prev == earlier.rend() || !prev->segment->isStartRepeatBarLineType()
             || prev->segment->measure() != target.measure() || !prev->segment->rtick().isZero()
             || !prev->segment->ticks().isZero())
             return false;
@@ -171,6 +172,7 @@ bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
     }
     // Walk across the in-measure prefix to certify the preceding barline.
     while (prev != earlier.rend() && prev->segment->measure() == target.measure()) {
+        if (staves != 1) return false; // Interior signatures need their own multi-staff admission.
         const Segment* sig = prev->segment;
         const Element* item = sig->element(0);
         if ((!sig->isKeySigType() && !sig->isTimeSigType()) || sig->header() || sig->trailer()
@@ -184,6 +186,7 @@ bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
     bool courtesyKey = false;
     while (pendingCourtesy && prev != earlier.rend() && prev->segment->measure() == pendingCourtesy
         && courtesyType4(prev->segment)) {
+        if (staves != 1) return false;
         courtesyKey = courtesyKey || prev->segment->isKeySigAnnounceType();
         prev = std::find_if(std::next(prev), earlier.rend(), activeEntry);
     }
@@ -191,9 +194,13 @@ bool manualBarStartLeadingSpace4(const Segment& target, const Measure* first,
         || prev->segment->measure() != target.measure()->prevMeasure()
         || prev->segment->tick() != target.tick())
         return false;
-    const Element* item = prev->segment->element(0);
     const auto expected = courtesyKey ? BarLineType::DOUBLE : BarLineType::NORMAL;
-    return item && item->isBarLine() && item->generated() && toBarLine(item)->barLineType() == expected;
+    for (int st = 0; st < staves; ++st) {
+        const Element* item = prev->segment->element(st * VOICES);
+        if (!item || !item->isBarLine() || !item->generated() || toBarLine(item)->barLineType() != expected)
+            return false;
+    }
+    return true;
 }
 
 // This field is derived layout state, not manual segment leading space.
@@ -1138,12 +1145,11 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                 for (int st = 0; st < score->nstaves(); ++st)
                     if (!score->staff(st)->isPitchedStaff(segment.tick()))
                         return fail("Manual leading space requires pitched staves");
-                // The interior onset is a shared segment. Apply its edit
+                // The onset is a shared segment. Apply its edit
                 // once for the system, regardless of how many staves play.
                 if (!manualInteriorLeadingSpace4(&segment)
-                    && (score->nstaves() != 1
-                        || !manualBarStartLeadingSpace4(segment, system->firstMeasure(), plan.segments, predecessor)))
-                    return fail("Manual leading space requires an interior onset or a supported single-staff bar start");
+                    && !manualBarStartLeadingSpace4(segment, system->firstMeasure(), plan.segments, predecessor))
+                    return fail("Manual leading space requires an interior onset or a supported bar start");
                 hasManualSpace = true;
             }
             if (entry.ignored && segment.isChordRestType())
