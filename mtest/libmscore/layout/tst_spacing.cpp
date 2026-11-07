@@ -9363,6 +9363,17 @@ void TestSpacing::pendingCourtesyTrial4()
             Segment* key = added->findSegmentR(SegmentType::KeySig, Fraction(0, 1));
             QVERIFY(key && key->element(VOICES) && key->element(VOICES)->isKeySig());
             toKeySig(key->element(VOICES))->setShowCourtesy(false);
+            // The second wrap also checks a common-time glyph, both as a
+            // courtesy and before the manually spaced onset on the new system.
+            Segment* commonTime = added->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
+            QVERIFY(commonTime);
+            for (int st = 0; st < staffCount; ++st) {
+                  Element* item = commonTime->element(st * VOICES);
+                  QVERIFY(item && item->isTimeSig());
+                  TimeSig* ts = toTimeSig(item);
+                  QVERIFY(ts->sig().identical(Fraction(4, 4)));
+                  ts->setSig(Fraction(4, 4), TimeSigType::FOUR_FOUR);
+                  }
             }
       std::vector<SpacingDecision4> events;
       const bool trace = qEnvironmentVariableIsSet("MSCORE_TRACE_COURTESY_FIT");
@@ -9429,8 +9440,14 @@ void TestSpacing::pendingCourtesyTrial4()
                                     QVERIFY(actual && actual->enabled() && actual->element(track));
                                     if (key)
                                           QVERIFY(toKeySig(courtesy->element(track))->keySigEvent() == toKeySig(actual->element(track))->keySigEvent());
-                                    else
-                                          QVERIFY(toTimeSig(courtesy->element(track))->sig().identical(toTimeSig(actual->element(track))->sig()));
+                                    else {
+                                          const TimeSig* actualTime = toTimeSig(actual->element(track));
+                                          const TimeSig* courtesyTime = toTimeSig(courtesy->element(track));
+                                          QVERIFY(courtesyTime->sig().identical(actualTime->sig()));
+                                          QVERIFY(courtesyTime->timeSigType() == actualTime->timeSigType());
+                                          if (staffCount == 2 && m == predecessor)
+                                                QVERIFY(courtesyTime->timeSigType() == TimeSigType::FOUR_FOUR);
+                                          }
                                     }
                               }
                         }
