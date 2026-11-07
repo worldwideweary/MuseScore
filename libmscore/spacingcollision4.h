@@ -133,6 +133,6 @@ bool spacingShapeDistance4(const SpacingPaddingTable4&, const SpacingShape4&, co
 // voice's policy; unknown ownership or unsupported shared types reject the view.
 bool spacingCollisionProjection4(const SpacingPaddingTable4&, const SpacingShape4&,
                                  qreal shapeSpatium, SpacingShape4& result, const SpacingGraceContext4* = nullptr,
-                                 SpacingContextCache4* = nullptr);
+                                 SpacingContextCache4* = nullptr, QString* reason = nullptr);
 }
 #endif

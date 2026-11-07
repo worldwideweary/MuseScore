@@ -825,13 +825,20 @@ bool spacingShapeDistance4(const SpacingPaddingTable4& table, const SpacingShape
 }
 
 bool spacingCollisionProjection4(const SpacingPaddingTable4& table, const SpacingShape4& native,
-                                 qreal shapeSpatium, SpacingShape4& result, const SpacingGraceContext4* context, SpacingContextCache4* queryCache)
+                                 qreal shapeSpatium, SpacingShape4& result, const SpacingGraceContext4* context, SpacingContextCache4* queryCache, QString* reason)
 {
+    const auto fail = [reason](const char* why, const Element* item = nullptr) {
+        if (reason) {
+            *reason = QString::fromLatin1(why);
+            if (item) *reason += QStringLiteral(" (") + item->_name() + QStringLiteral(")");
+        }
+        return false;
+    };
     SpacingContextCache4 localCache;
     SpacingContextCache4* cache = queryCache ? queryCache : &localCache;
     SpacingShape4 projected;
     if (!table.score() || !(shapeSpatium > 0) || !std::isfinite(shapeSpatium))
-        return false;
+        return fail("invalid projection scale");
     const auto supportedAggregateOwner = [&](const Element* owner) {
         if (!owner)
             return false;
@@ -865,51 +872,51 @@ bool spacingCollisionProjection4(const SpacingPaddingTable4& table, const Spacin
     };
     for (const SpacingShapeElement4& e : native.elements) {
         if (!validRect4(e.rect))
-            return false;
+            return fail("invalid rectangle", e.item);
         if (e.identity == SpacingIdentity4::SHARED_ITEM) {
             if (e.item || !e.aggregateOwners.empty() || e.sharedItems.size() < 2)
-                return false;
+                return fail("invalid shared identity");
             for (size_t i = 0; i < e.sharedItems.size(); ++i) {
                 const Element* item = e.sharedItems[i];
                 SpacingPairPolicy4 policy;
                 // This stage admits shared noteheads only. Other coincident
                 // component types still require their own context adapter.
                 if (!item || !item->isNote() || !spacingPairPolicy4(table, item, item, shapeSpatium, policy, context, cache))
-                    return false;
+                    return fail("unsupported shared item", item);
                 for (size_t j = 0; j < i; ++j) {
                     if (item == e.sharedItems[j])
-                        return false;
+                        return fail("duplicate shared item");
                 }
                 projected.elements.push_back(SpacingShapeElement4(e.rect, item));
             }
             continue;
         }
         if (!e.sharedItems.empty())
-            return false;
+            return fail("unexpected shared owners");
         if (e.identity == SpacingIdentity4::LEGACY_SPACER) {
             if (e.item) {
                 if (!e.aggregateOwners.empty() || !supportedAggregateOwner(e.item))
-                    return false;
+                    return fail("unsupported aggregate owner");
             }
             else {
                 if (e.aggregateOwners.size() < 2)
-                    return false;
+                    return fail("missing aggregate owners");
                 for (size_t i = 0; i < e.aggregateOwners.size(); ++i) {
                     if (!supportedAggregateOwner(e.aggregateOwners[i]))
-                        return false;
+                        return fail("unsupported aggregate owner");
                     for (size_t j = 0; j < i; ++j) {
                         if (e.aggregateOwners[i] == e.aggregateOwners[j])
-                            return false;
+                            return fail("duplicate aggregate owner");
                     }
                 }
             }
             continue;
         }
         if (!e.item || !e.aggregateOwners.empty())
-            return false;
+            return fail("missing item or unexpected aggregate owners");
         SpacingPairPolicy4 policy;
         if (e.identity != SpacingIdentity4::ITEM || !spacingPairPolicy4(table, e.item, e.item, shapeSpatium, policy, context, cache))
-            return false;
+            return fail("unsupported item policy", e.item);
         projected.elements.push_back(e);
     }
     result = projected;

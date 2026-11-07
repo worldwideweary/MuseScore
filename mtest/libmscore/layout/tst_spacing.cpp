@@ -11777,7 +11777,7 @@ void TestSpacing::spacingCorpus4()
             int planned = 0;
             };
       Count allCandidates, allFinal;
-      QMap<QString, int> reasons;
+      QMap<QString, int> reasons, affectedScores;
       int unreadable = 0;
       for (const QString& path : paths) {
             std::unique_ptr<MasterScore> score(new MasterScore(mscore->baseStyle()));
@@ -11822,8 +11822,10 @@ void TestSpacing::spacingCorpus4()
             qInfo().noquote() << "spacing-corpus score:" << name
                   << "candidate" << candidates.planned << "/" << candidates.total
                   << "final" << final.planned << "/" << final.total;
-            for (auto it = firstFallback.cbegin(); it != firstFallback.cend(); ++it)
+            for (auto it = firstFallback.cbegin(); it != firstFallback.cend(); ++it) {
+                  ++affectedScores[it.key()];
                   qInfo().noquote() << "spacing-corpus first system tick:" << it.value() << it.key();
+                  }
             allCandidates.total += candidates.total;
             allCandidates.planned += candidates.planned;
             allFinal.total += final.total;
@@ -11834,7 +11836,7 @@ void TestSpacing::spacingCorpus4()
             << "candidate" << allCandidates.planned << "/" << allCandidates.total
             << "final" << allFinal.planned << "/" << allFinal.total;
       for (auto it = reasons.cbegin(); it != reasons.cend(); ++it)
-            qInfo().noquote() << "spacing-corpus fallback count:" << it.value() << it.key();
+            qInfo().noquote() << "spacing-corpus fallback count:" << it.value() << "scores:" << affectedScores.value(it.key()) << it.key();
       QVERIFY2(allFinal.total > 0, "No final spacing decisions recorded");
       }
 

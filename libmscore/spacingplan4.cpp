@@ -618,13 +618,14 @@ bool ordinaryMeasureRest4(const Rest* rest)
 bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometry4& geometry,
                     const CrossStaffGeometry4& cross, const SpacingGraceContext4& graces,
                     const std::vector<GraceAfterGeometry4>& afters,
-                    const std::vector<GraceMergedGeometry4>& merged, SpacingContextCache4& contextCache)
+                    const std::vector<GraceMergedGeometry4>& merged, SpacingContextCache4& contextCache, QString* reason)
 {
+    const auto fail = [reason](const char* why) { if (reason) *reason = QString::fromLatin1(why); return false; };
     for (int staffIdx = 0; staffIdx < segment->score()->nstaves(); ++staffIdx) {
         SpacingShape4 native = spacingStaffShape4(segment, staffIdx);
-        if (!substituteAfterGeometry4(segment, staffIdx, native, afters)
-            || !substituteMergedGeometry4(segment, staffIdx, native, merged)
-            || !projectMeasureRests4(segment, staffIdx, native)) return false;
+        if (!substituteAfterGeometry4(segment, staffIdx, native, afters)) return fail("after-grace substitution");
+        if (!substituteMergedGeometry4(segment, staffIdx, native, merged)) return fail("merged grace substitution");
+        if (!projectMeasureRests4(segment, staffIdx, native)) return fail("measure rest projection");
         SpacingShape4 projected;
         // These first controls use ordinary visible staves. Staff scale still
         // comes from the item, rather than assuming score spatium in the kernel.
@@ -635,7 +636,7 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
                 break;
             }
         }
-        if (!spacingCollisionProjection4(table, native, sp, projected, &graces, &contextCache))
+        if (!spacingCollisionProjection4(table, native, sp, projected, &graces, &contextCache, reason))
             return false;
         for (const auto& pair : cross.chords) {
             const CrossStaffChord4& e = pair.second;
@@ -653,7 +654,7 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
             const QRectF rect(e.stemX - width / 2, e.up ? y - reach : y - width / 2,
                               width, reach + width / 2);
             SpacingPairPolicy4 policy;
-            if (!spacingPairPolicy4(table, e.chord->stem(), e.chord->stem(), sp, policy, nullptr, &contextCache)) return false;
+            if (!spacingPairPolicy4(table, e.chord->stem(), e.chord->stem(), sp, policy, nullptr, &contextCache)) return fail("cross-staff stem policy");
             projected.elements.push_back(SpacingShapeElement4(rect, e.chord->stem()));
         }
         qreal staffLeft = std::numeric_limits<qreal>::max();
@@ -1130,6 +1131,26 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
     return true;
 }
 
+// Called only after the existing note policy rejects a note. Keep the
+// admission checks in spacingPairPolicy4; these labels explain the failure.
+static QString notePolicyDiagnostic4(const Note* note, const Chord* chord, const SpacingContextCache4& cache)
+{
+    if (!note->visible()) return QStringLiteral("invisible note");
+    if (note->track() < 0) return QStringLiteral("invalid note track");
+    if (note->onTabStaff()) return QStringLiteral("tablature note");
+    if (!chord->articulations().empty()) return QStringLiteral("chord articulation");
+    for (const Note* member : chord->notes()) {
+        if (member->tieFor() || member->tieBack()) return QStringLiteral("chord with tie");
+        if (!member->spannerFor().empty() || !member->spannerBack().empty())
+            return QStringLiteral("chord with note spanner");
+    }
+    if (cache.slurPolicy() == SpacingSlurPolicy4::PREPARED && !cache.preparedSlursReady(chord))
+        return QStringLiteral("unready prepared slur context");
+    if (!(note->spatium() > 0) || !std::isfinite(note->spatium()) || !(note->mag() > 0) || !std::isfinite(note->mag()))
+        return QStringLiteral("invalid note scale");
+    return QStringLiteral("other note pair policy");
+}
+
 static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString* reason, const SpacingPlanOptions4& options,
                                  const std::vector<GraceMergedGeometry4>* preparedMerged, const SpacingInput4* input,
                                  const SpacingAttachmentPreparation4* preparation,
@@ -1296,11 +1317,14 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                     for (const Note* note : chord->notes()) {
                         SpacingPairPolicy4 policy;
                         if (!note->visible() || !spacingPairPolicy4(table, note, note, note->spatium(), policy, &graces, &contextCache))
-                            return fail("Unadapted note visibility or decoration context");
+                            return fail(reason ? QStringLiteral("Note policy: ") + notePolicyDiagnostic4(note, chord, contextCache)
+                                               : QString());
                     }
                 }
-                if (!cacheGeometry4(&segment, table, g, cross, graces, afters, merged, contextCache))
-                    return fail(QString("Unadapted geometry at tick %1").arg(segment.tick().ticks()));
+                QString geometryReason;
+                if (!cacheGeometry4(&segment, table, g, cross, graces, afters, merged, contextCache,
+                                    reason ? &geometryReason : nullptr))
+                    return fail(reason ? QStringLiteral("Geometry: ") + geometryReason : QString());
                 if (segment.isChordRestType()) {
                     if (!(segment.ticks() > Fraction(0, 1)))
                         return fail("Chord/rest duration is not ready");
