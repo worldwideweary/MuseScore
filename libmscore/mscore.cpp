@@ -54,7 +54,7 @@ bool MScore::noVerticalStretch   = false;
 bool MScore::showBoundingRect    = false;
 bool MScore::showSystemBoundingRect    = false;
 bool MScore::showCorruptedMeasures = true;
-bool MScore::showStudioSpacingFallbacks = false;
+bool MScore::showStudioSpacingFallbacks = true; // temporary true for convenience
 bool MScore::useFallbackFont       = true;
 
 bool  MScore::saveTemplateMode = false;
