@@ -1187,7 +1187,7 @@ static QString notePolicyDiagnostic4(const Note* note, const Chord* chord, const
     if (!note->visible()) return QStringLiteral("invisible note");
     if (note->track() < 0) return QStringLiteral("invalid note track");
     if (note->onTabStaff()) return QStringLiteral("tablature note");
-    if (!chord->articulations().empty()) return QStringLiteral("chord articulation");
+    if (!spacingChordArticulationsSupported4(chord)) return QStringLiteral("chord articulation");
     for (const Note* member : chord->notes()) {
         for (const Tie* tie : {member->tieFor(), member->tieBack()})
             if (const char* rejection = ordinaryTieRejection4(tie))

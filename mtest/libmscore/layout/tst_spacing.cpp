@@ -27,6 +27,7 @@
 #include "libmscore/rest.h"
 #include "libmscore/tie.h"
 #include "libmscore/fingering.h"
+#include "libmscore/articulation.h"
 #include <limits>
 #include <array>
 #include <memory>
@@ -93,6 +94,7 @@ class TestSpacing : public QObject, public MTest {
       void spacingCorpus4();
       void fingeringSpacing4();
       void hiddenUnisonSpacing4();
+      void closeArticulationSpacing4();
       void ordinaryTieSpacing4_data();
       void ordinaryTieSpacing4();
       void keepWithNextCollection4();
@@ -11954,6 +11956,67 @@ void TestSpacing::hiddenUnisonSpacing4()
       QVERIFY(std::any_of(events.begin(), events.end(), [](const SpacingDecision4& e) {
             return e.pass == SpacingPass4::FINAL && e.path != SpacingPath4::FULL_PLAN
                   && e.reason.contains(QStringLiteral("invisible note"));
+            }));
+      }
+
+void TestSpacing::closeArticulationSpacing4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "studio-spacing-natural-h1.mscx"));
+      QVERIFY(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      Measure* measure = score->firstMeasure();
+      QVERIFY(measure);
+      Segment* first = measure->first(SegmentType::ChordRest);
+      QVERIFY(first && first->element(0) && first->element(0)->isChord());
+      Segment* second = first->next(SegmentType::ChordRest);
+      QVERIFY(second && second->element(0) && second->element(0)->isChord());
+      Chord* start = toChord(first->element(0));
+      Chord* end = toChord(second->element(0));
+      const auto addMark = [&score](Chord* chord, SymId symbol) {
+            Articulation* mark = new Articulation(score.get());
+            mark->setSymId(symbol);
+            mark->setParent(chord);
+            mark->setTrack(chord->track());
+            chord->add(mark);
+            return mark;
+            };
+      Articulation* tenuto = addMark(start, SymId::articTenutoBelow);
+      Articulation* staccato = addMark(end, SymId::articStaccatoBelow);
+      Slur* slur = new Slur(score.get());
+      slur->setTrack(0);
+      slur->setTrack2(0);
+      slur->setTick(start->tick());
+      slur->setTick2(end->tick());
+      slur->setStartElement(start);
+      slur->setEndElement(end);
+      slur->setSlurDirection(Direction::DOWN);
+      score->startCmd();
+      score->undoAddElement(slur);
+      score->endCmd();
+
+      std::vector<SpacingDecision4> events;
+      SpacingDecisionScope4 scope(score.get(), [&events](const SpacingDecision4& e) { events.push_back(e); });
+      score->doLayout();
+      bool final = false;
+      for (const auto& event : events) {
+            if (event.pass != SpacingPass4::FINAL)
+                  continue;
+            QVERIFY2(event.path == SpacingPath4::FULL_PLAN, qPrintable(event.reason));
+            final = true;
+            }
+      QVERIFY(final);
+      QVERIFY(tenuto->bbox().isValid() && staccato->bbox().isValid());
+      QVERIFY(slur->frontSegment() && slur->frontSegment()->bbox().isValid());
+
+      // A manual placement still needs the native spacing fallback.
+      staccato->setAutoplace(false);
+      staccato->setOffset(QPointF(score->spatium(), 0));
+      events.clear();
+      score->doLayout();
+      QVERIFY(std::any_of(events.begin(), events.end(), [](const SpacingDecision4& e) {
+            return e.pass == SpacingPass4::FINAL && e.path != SpacingPath4::FULL_PLAN
+                  && e.reason.contains(QStringLiteral("chord articulation"));
             }));
       }
 

@@ -16,6 +16,7 @@ class Note;
 class Tie;
 // Null means the tie is accepted by the ordinary spacing policy.
 const char* ordinaryTieRejection4(const Tie*);
+bool spacingChordArticulationsSupported4(const Chord*);
 class Score;
 struct SpacingShape4;
 class SpacingInput4;

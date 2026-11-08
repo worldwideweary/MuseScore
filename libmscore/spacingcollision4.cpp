@@ -7,6 +7,7 @@
 #include "gracespacing4.h"
 #include "slur.h"
 #include "chord.h"
+#include "articulation.h"
 #include "beam.h"
 #include "measure.h"
 #include "segment.h"
@@ -415,13 +416,37 @@ const char* ordinaryTieRejection4(const Tie* tie)
     return nullptr;
 }
 
+bool spacingChordArticulationsSupported4(const Chord* chord)
+{
+    const auto& articulations = chord->articulations();
+    if (articulations.empty()) return true;
+    if (articulations.size() != 1 || chord->isGrace() || chord->staffMove()
+        || (chord->beam() && chord->beam()->cross()))
+        return false;
+    const Articulation* articulation = articulations.front();
+    if (!articulation || !articulation->visible() || !articulation->autoplace()
+        || articulation->isNudged() || chord->score()->styleD(Sid::articulationMag) != 1.0)
+        return false;
+    // Chord::shape() excludes articulations. These close marks can stay in
+    // native articulation/skyline layout, after the horizontal plan.
+    switch (articulation->symId()) {
+    case SymId::articStaccatoAbove:
+    case SymId::articStaccatoBelow:
+    case SymId::articTenutoAbove:
+    case SymId::articTenutoBelow:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static bool commonChordContext4(const Chord* chord, bool allowGrace,
                                 const SpacingGraceContext4* context, const Chord* scopedMain, const SpacingContextCache4* cache)
 {
     SpacingProfileScope4 profile(SpacingProfileStage4::CONTEXT);
     // Common notation only in this stage. Studio's line attachment and chord
     // kerning-exception inputs need a separate adapter before these can enter.
-    if ((!allowGrace && chord->isGrace()) || !chord->articulations().empty())
+    if ((!allowGrace && chord->isGrace()) || !spacingChordArticulationsSupported4(chord))
         return false;
     for (const Note* note : chord->notes()) {
         if (ordinaryTieRejection4(note->tieFor()) || ordinaryTieRejection4(note->tieBack())
