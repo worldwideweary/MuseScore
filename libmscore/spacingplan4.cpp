@@ -8,6 +8,9 @@
 #include "spacinglayout4.h"
 #include "gracespacing4.h"
 #include "chord.h"
+#include "articulation.h"
+#include "sym.h"
+#include <QStringList>
 #include "clef.h"
 #include "breath.h"
 #include "barline.h"
@@ -1282,7 +1285,16 @@ static QString notePolicyDiagnostic4(const Note* note, const Chord* chord, const
     if (!note->visible()) return QStringLiteral("invisible note");
     if (note->track() < 0) return QStringLiteral("invalid note track");
     if (note->onTabStaff()) return QStringLiteral("tablature note");
-    if (!spacingChordArticulationsSupported4(chord)) return QStringLiteral("chord articulation");
+    if (!spacingChordArticulationsSupported4(chord)) {
+        QStringList marks;
+        for (const Articulation* mark : chord->articulations()) {
+            // subtype() groups above/below variants of the same mark.
+            marks.push_back(mark ? QString::fromLatin1(Sym::id2name(static_cast<SymId>(mark->subtype())))
+                                 : QStringLiteral("missing articulation"));
+        }
+        marks.sort();
+        return QStringLiteral("chord articulation: ") + marks.join(QStringLiteral(" + "));
+    }
     for (const Note* member : chord->notes()) {
         for (const Tie* tie : {member->tieFor(), member->tieBack()})
             if (const char* rejection = ordinaryTieRejection4(tie))
@@ -1410,7 +1422,8 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                         continue;
                     if (!annotation->isSystemText() && !annotation->isStaffText() && !annotation->isRehearsalMark()
                         && !annotation->isTempoText() && !annotation->isDynamic())
-                        return fail("Annotations require a later adapter");
+                        return fail(reason ? QStringLiteral("Annotations require a later adapter: %1 [measure %2]")
+                                                  .arg(annotation->_name()).arg(measure->no() + 1) : QString());
                 }
                 for (const Element* item : segment.elist()) {
                     if (item && segment.isStartRepeatBarLineType()) {
