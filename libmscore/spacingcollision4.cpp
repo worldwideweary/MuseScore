@@ -408,7 +408,9 @@ const char* ordinaryTieRejection4(const Tie* tie)
     if (next != b->segment()) return "tie endpoint not found in rhythmic segments";
     for (size_t i = 0; i < tie->nsegments(); ++i) {
         const TieSegment* segment = tie->segmentAt(int(i));
-        if (segment->isNudged() || segment->isEdited()) return "manually edited tie";
+        // A vertical translation does not consume horizontal clearance.
+        // Keep horizontal translations and individual grip edits on fallback.
+        if (segment->offset().x() != 0 || segment->isEdited()) return "manually edited tie";
     }
     return nullptr;
 }

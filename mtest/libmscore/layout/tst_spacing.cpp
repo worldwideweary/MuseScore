@@ -11938,6 +11938,16 @@ void TestSpacing::ordinaryTieSpacing4()
 
       if (split) first->setLineBreak(true);
       score->doLayout();
+      if (split) {
+            // A saved vertical nudge on the outgoing half must survive relayout
+            // without making either system fall back to legacy spacing.
+            Tie* tie = starts[0]->tieFor();
+            QVERIFY(tie && tie->nsegments() == 2);
+            const QPointF nudge(0, -0.5 * score->spatium());
+            tie->segmentAt(0)->setOffset(nudge);
+            score->doLayout();
+            QCOMPARE(tie->segmentAt(0)->offset(), nudge);
+            }
       System* system = first->system();
       if (split) {
             System* following = to->measure()->system();
