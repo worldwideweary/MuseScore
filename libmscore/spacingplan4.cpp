@@ -357,7 +357,10 @@ const char* prepareRelocatedBeam4(const Beam* beam, const Measure* measure, Cros
         if (chord->isGrace() || !chord->graceNotes().empty()) return "Relocated beam has grace notation";
         if (chord->tuplet()) return "Relocated beam has a tuplet chord";
         if (chord->tremolo()) return "Relocated beam has a tremolo chord";
-        if (chord->isNudged()) return "Relocated beam has a chord with a manual offset";
+        // Native note shapes use chord->pos(), and the projected stem below
+        // uses chord->x() and chord->y(). All three include the user's offset.
+        if (!std::isfinite(chord->x()) || !std::isfinite(chord->y()))
+            return "Relocated beam has a non-finite chord position";
         if (chord->isSmall()) return "Relocated beam has a small chord";
         if (chord->noStem() || !chord->stem()) return "Relocated beam has a chord without a stem";
         if (chord->stemDirection() != Direction::AUTO) return "Relocated beam has a chord with an explicit stem direction";

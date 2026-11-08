@@ -1937,6 +1937,30 @@ void TestSpacing::relocatedBeamGroups4()
                   }
             QVERIFY(beams[0] != beams[1]);
             }
+
+      // A manual chord translation must still use the destination staff's
+      // geometry and survive a fresh Studio spacing pass.
+      Segment* onset = score->firstMeasure()->findSegmentR(SegmentType::ChordRest, Fraction(1, 2));
+      QVERIFY(onset && onset->element(VOICES) && onset->element(VOICES)->isChord());
+      Chord* moved = toChord(onset->element(VOICES));
+      const QPointF offset(1.5 * moved->spatium(), 0);
+      moved->setOffset(offset);
+      decisions.clear();
+      score->doLayout();
+      QCOMPARE(moved->offset(), offset);
+      final = false;
+      for (const auto& e : decisions) {
+            if (e.pass != SpacingPass4::FINAL) continue;
+            QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+            final = true;
+            }
+      QVERIFY(final);
+      const Note* note = moved->upNote();
+      const auto shape = spacingStaffShape4(onset, moved->vStaffIdx());
+      QVERIFY(std::any_of(shape.elements.begin(), shape.elements.end(),
+            [&](const SpacingShapeElement4& e) {
+                  return e.item == note && qAbs(e.rect.left() - (moved->x() + note->x() + note->bbox().left())) < 1e-6;
+                  }));
       }
 
 void TestSpacing::crossStaffPlanBoundary_data()
