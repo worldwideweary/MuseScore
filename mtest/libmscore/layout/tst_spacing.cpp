@@ -145,6 +145,7 @@ class TestSpacing : public QObject, public MTest {
       void spacingDecisionCorpus4();
       void measureRestPlanning4_data();
       void measureRestPlanning4();
+      void measureRestStartRepeat4();
       void systemSpacingLifecycle4_data();
       void systemSpacingLifecycle4();
       void acciaccaturaSlash4_data();
@@ -11197,6 +11198,56 @@ void TestSpacing::smallNotation4()
       score->doLayout();
       QVERIFY(near(snapshot(), modern));
       QVERIFY(!score->graceQueryFactory4());
+      }
+
+void TestSpacing::measureRestStartRepeat4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.278-measure-rest-start-repeat.mscx"));
+      QVERIFY(score);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      std::vector<SpacingDecision4> decisions;
+      SpacingDecisionScope4 scope(score.get(), [&decisions](const SpacingDecision4& e) { decisions.push_back(e); });
+      score->doLayout();
+      bool planned = false;
+      for (const auto& e : decisions) {
+            if (e.pass != SpacingPass4::FINAL) continue;
+            QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+            planned = true;
+            }
+      QVERIFY(planned);
+
+      Measure* before = score->firstMeasure();
+      QVERIFY(before && before->nextMeasure());
+      Measure* after = before->nextMeasure();
+      QCOMPARE(before->system(), after->system());
+      const Segment* oldEnd = before->findSegmentR(SegmentType::EndBarLine, before->ticks());
+      QVERIFY(!oldEnd || !oldEnd->enabled());
+      const Segment* repeat = after->findSegmentR(SegmentType::StartRepeatBarLine, Fraction(0, 1));
+      QVERIFY(repeat && repeat->enabled());
+
+      for (Measure* m : {before, after}) {
+            Segment* onset = m->first(SegmentType::ChordRest);
+            QVERIFY(onset);
+            const Segment* end = m->findSegmentR(SegmentType::EndBarLine, m->ticks());
+            qreal left = 0;
+            if (m == after) {
+                  QVERIFY(onset->prevActive() == repeat);
+                  left = repeat->x() + repeat->minRight();
+                  }
+            else {
+                  for (const Segment* s = onset->prevActive(); s; s = s->prevActive())
+                        if (!s->allElementsInvisible()) left = std::max(left, s->x() + s->minRight());
+                  }
+            const qreal right = end && end->enabled() ? end->x() - end->minLeft() : m->width();
+            QVERIFY(right > left);
+            for (int track : {0, int(VOICES)}) {
+                  const Element* item = onset->element(track);
+                  QVERIFY(item && item->isRest() && toRest(item)->isFullMeasureRest());
+                  const qreal center = onset->x() + item->ipos().x() + item->bbox().center().x();
+                  QVERIFY(qIsFinite(center) && qAbs(center - .5 * (left + right)) < 1e-6);
+                  }
+            }
       }
 
 void TestSpacing::measureRestPlanning4_data()

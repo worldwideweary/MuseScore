@@ -299,10 +299,11 @@ bool eligibleType4(const Segment* s)
         || s->isEndBarLineType() || s->isStartRepeatBarLineType() || s->segmentType() == SegmentType::BeginBarLine;
 }
 
-// The new repeat boundary borrows finalized native barline geometry. Grace
-// targets, centered rests and cross-staff streams need their own boundary
-// preparation; do not widen those adapters through repeat admission.
-bool ordinaryRepeatBoundary4(const Measure* measure)
+bool ordinaryMeasureRest4(const Rest* rest);
+
+// Reuse the ordinary rest projection and late centering at repeat barlines.
+// Signature/courtesy fitting keeps its separate, narrower boundary policy.
+bool ordinaryRepeatBoundary4(const Measure* measure, bool allowMeasureRests)
 {
     const Measure* boundary[] = {measure->prevMeasure(), measure};
     for (const Measure* m : boundary) {
@@ -312,7 +313,9 @@ bool ordinaryRepeatBoundary4(const Measure* measure)
             for (const Element* item : s.elist()) {
                 if (!item) continue;
                 if (item->isRest()) {
-                    if (toRest(item)->isFullMeasureRest()) return false;
+                    const Rest* rest = toRest(item);
+                    if (rest->isFullMeasureRest() && (!allowMeasureRests || !ordinaryMeasureRest4(rest)))
+                        return false;
                 }
                 else if (item->isChord()) {
                     const Chord* chord = toChord(item);
@@ -882,7 +885,7 @@ bool spacingCandidateSignaturesReady4(const System* system, QString* reason, boo
             if (!score->staff(st)->isPitchedStaff(m->tick()))
                 return fail("Candidate signatures require pitched staves");
         if (m->repeatStart() || m->repeatEnd()
-            || m->nextSectionBreak() || !ordinaryRepeatBoundary4(m))
+            || m->nextSectionBreak() || !ordinaryRepeatBoundary4(m, false))
             return fail("Candidate signature repeat/section/grace/rest/cross-staff boundary");
         const bool pending = allowPendingTrailer && i + 2 == measures.size() && m->trailer();
         const bool terminalGeometry = last || pending;
@@ -1004,7 +1007,7 @@ bool spacingRepeatBarlinesReady4(const System* system, SpacingPass4 pass, QStrin
     };
     for (size_t i = 0; i < measures.size(); ++i) {
         const Measure* m = measures[i];
-        if (!ordinaryRepeatBoundary4(m))
+        if (!ordinaryRepeatBoundary4(m, true))
             return fail("Candidate repeat grace/rest/cross-staff boundary");
         // A hidden terminal clef may become visible after accepting the next
         // measure. Its relocation needs a separate preparation adapter too.
@@ -1306,9 +1309,10 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                                                || segment.rtick() > measure->ticks()))
                     return fail("Breath spacing requires a zero-duration internal or end boundary");
                 if (segment.isStartRepeatBarLineType()
-                    && (!measure->repeatStart() || !segment.rtick().isZero() || !segment.ticks().isZero()
-                        || !ordinaryRepeatBoundary4(measure)))
-                    return fail("Start-repeat spacing requires an ordinary zero-duration boundary");
+                    && (!measure->repeatStart() || !segment.rtick().isZero() || !segment.ticks().isZero()))
+                    return fail("Start-repeat spacing requires a zero-duration boundary");
+                if (segment.isStartRepeatBarLineType() && !ordinaryRepeatBoundary4(measure, true))
+                    return fail("Start-repeat spacing requires supported surrounding rests and chords");
                 for (const Element* annotation : segment.annotations()) {
                     if (!annotation)
                         continue;
