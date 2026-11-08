@@ -337,36 +337,48 @@ struct CrossStaffGeometry4 {
 // A beam can move as a group without spanning two visual staves.
 // Native shapes already route its noteheads to the destination staff,
 // but omit the stems of moved beamed chords.
-bool prepareRelocatedBeam4(const Beam* beam, const Measure* measure, CrossStaffGeometry4& geometry)
+// Return the first rejection, or nullptr after successful preparation.
+const char* prepareRelocatedBeam4(const Beam* beam, const Measure* measure, CrossStaffGeometry4& geometry)
 {
     const Score* score = measure->score();
-    if (score->nstaves() != 2 || beam->score() != score || beam->cross()
-        || beam->beamDirection() != Direction::AUTO || beam->userModified()
-        || beam->elements().size() < 2)
-        return false;
+    if (score->nstaves() != 2) return "Relocated beam requires a grand staff";
+    if (beam->score() != score || beam->cross()) return "Relocated beam has incompatible ownership or staff span";
+    if (beam->beamDirection() != Direction::AUTO) return "Relocated beam has an explicit beam direction";
+    if (beam->userModified()) return "Relocated beam has a manual adjustment";
+    if (beam->elements().size() < 2) return "Relocated beam has fewer than two members";
     const Chord* previous = nullptr;
     for (const ChordRest* item : beam->elements()) {
-        if (!item || !item->isChord()) return false;
+        if (!item || !item->isChord()) return "Relocated beam has a rest or missing member";
         const Chord* chord = toChord(item);
-        if (chord->measure() != measure || !chord->segment() || chord->beam() != beam
-            || !chord->staffMove() || !chord->visible() || chord->isGrace()
-            || chord->tuplet() || chord->tremolo() || !chord->graceNotes().empty()
-            || chord->isNudged() || chord->isSmall() || chord->noStem() || !chord->stem()
-            || chord->stemDirection() != Direction::AUTO || chord->up() != beam->up()
-            || chord->notes().empty() || chord->actualTicks() != Fraction(1, 8)
+        if (chord->measure() != measure) return "Relocated beam crosses a measure boundary";
+        if (!chord->segment() || chord->beam() != beam) return "Relocated beam has an unattached chord";
+        if (!chord->staffMove()) return "Relocated beam has an unmoved chord";
+        if (!chord->visible()) return "Relocated beam has a hidden chord";
+        if (chord->isGrace() || !chord->graceNotes().empty()) return "Relocated beam has grace notation";
+        if (chord->tuplet()) return "Relocated beam has a tuplet chord";
+        if (chord->tremolo()) return "Relocated beam has a tremolo chord";
+        if (chord->isNudged() || chord->isSmall()) return "Relocated beam has a nudged or small chord";
+        if (chord->noStem() || !chord->stem()) return "Relocated beam has a chord without a stem";
+        if (chord->stemDirection() != Direction::AUTO) return "Relocated beam has a chord with an explicit stem direction";
+        if (chord->up() != beam->up()) return "Relocated beam and chord disagree on stem side";
+        if (chord->notes().empty()) return "Relocated beam has an empty chord";
+        if (chord->actualTicks() != Fraction(1, 8)
             || chord->durationType().type() != TDuration::DurationType::V_EIGHTH)
-            return false;
+            return "Relocated beam has a member other than a plain eighth note";
         const int visual = chord->vStaffIdx();
         if (visual < 0 || visual >= score->nstaves() || !score->staff(visual)->show()
             || !score->staff(visual)->isPitchedStaff(chord->tick()) || !chord->staff()
             || !chord->staff()->isPitchedStaff(chord->tick()))
-            return false;
-        if (previous && (chord->track() != previous->track() || visual != previous->vStaffIdx()
-            || chord->tick() != previous->tick() + previous->actualTicks()))
-            return false;
+            return "Relocated beam requires visible pitched destination and pitched source staves";
+        if (previous && (chord->track() != previous->track() || visual != previous->vStaffIdx()))
+            return "Relocated beam changes source voice or destination staff";
+        if (previous && chord->tick() != previous->tick() + previous->actualTicks())
+            return "Relocated beam has noncontiguous onsets";
         for (const Note* note : chord->notes()) {
-            if (!note->visible() || note->mirror() || note->isNudged() || note->isSmall())
-                return false;
+            if (!note->visible()) return "Relocated beam has a hidden notehead";
+            if (note->mirror()) return "Relocated beam has a mirrored notehead";
+            if (note->isNudged()) return "Relocated beam has a nudged notehead";
+            if (note->isSmall()) return "Relocated beam has a small notehead";
         }
         CrossStaffChord4 entry;
         entry.chord = chord;
@@ -375,11 +387,11 @@ bool prepareRelocatedBeam4(const Beam* beam, const Measure* measure, CrossStaffG
         const qreal width = chord->stem()->lineWidth() * chord->mag();
         entry.stemX = chord->x() + chord->stemPosX() + (entry.up ? -.5 : .5) * width;
         if (!(width > 0) || !std::isfinite(width) || !std::isfinite(entry.stemX))
-            return false;
+            return "Relocated beam has invalid stem geometry";
         geometry.chords.emplace(chord, entry);
         previous = chord;
     }
-    return true;
+    return nullptr;
 }
 
 bool prepareCrossStaffMeasure4(Measure* measure, CrossStaffGeometry4& result, QString* reason)
@@ -411,8 +423,8 @@ bool prepareCrossStaffMeasure4(Measure* measure, CrossStaffGeometry4& result, QS
         if (beam) return fail("Mixed relocated and interstaff beams require separate preparation");
         CrossStaffGeometry4 prepared;
         for (const Beam* group : relocated) {
-            if (!prepareRelocatedBeam4(group, measure, prepared))
-                return fail("Unadapted beam moved entirely to another staff");
+            if (const char* rejection = prepareRelocatedBeam4(group, measure, prepared))
+                return fail(rejection);
         }
         result = std::move(prepared);
         return true;
