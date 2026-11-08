@@ -209,6 +209,7 @@ class TestSpacing : public QObject, public MTest {
       void polyrhythmInputs();
       void crossStaffPlanBoundary_data();
       void crossStaffPlanBoundary();
+      void relocatedBeamGroups4();
       void crossStaffInterleaved_data();
       void crossStaffInterleaved();
       void crossStaffSystems_data();
@@ -1894,6 +1895,48 @@ void TestSpacing::polyrhythmInputs()
       QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(legacy.size()));
       for (size_t i = 0; i < legacy.size(); ++i) QVERIFY(qAbs(restored[i] - legacy[i]) < 1e-6);
       delete score;
+      }
+
+void TestSpacing::relocatedBeamGroups4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.281-relocated-beam-groups.mscx"));
+      QVERIFY(score);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      std::vector<SpacingDecision4> decisions;
+      SpacingDecisionScope4 scope(score.get(), [&decisions](const SpacingDecision4& e) { decisions.push_back(e); });
+      score->doLayout();
+      bool final = false;
+      for (const auto& e : decisions) {
+            if (e.pass != SpacingPass4::FINAL) continue;
+            QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+            final = true;
+            }
+      QVERIFY(final);
+
+      Measure* measure = score->firstMeasure();
+      for (int bar = 0; bar < 2; ++bar, measure = measure->nextMeasure()) {
+            QVERIFY(measure);
+            const Beam* beams[2] = {nullptr, nullptr};
+            for (int eighth = 0; eighth < 8; ++eighth) {
+                  const Segment* s = measure->findSegmentR(SegmentType::ChordRest, Fraction(eighth, 8));
+                  QVERIFY(s && s->element(VOICES) && s->element(VOICES)->isChord());
+                  const Chord* c = toChord(s->element(VOICES));
+                  const int half = eighth / 4;
+                  const int visual = half == 1 - bar ? 0 : 1;
+                  QCOMPARE(c->vStaffIdx(), visual);
+                  QVERIFY(c->beam() && !c->beam()->cross());
+                  if (!beams[half]) beams[half] = c->beam();
+                  QCOMPARE(static_cast<const Beam*>(c->beam()), beams[half]);
+                  for (int staff = 0; staff < 2; ++staff) {
+                        const auto shape = spacingStaffShape4(s, staff);
+                        const bool hasHead = std::any_of(shape.elements.begin(), shape.elements.end(),
+                              [c](const SpacingShapeElement4& e) { return e.item == c->upNote(); });
+                        QCOMPARE(hasHead, staff == visual);
+                        }
+                  }
+            QVERIFY(beams[0] != beams[1]);
+            }
       }
 
 void TestSpacing::crossStaffPlanBoundary_data()

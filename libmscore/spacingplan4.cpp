@@ -334,9 +334,58 @@ struct CrossStaffGeometry4 {
     std::map<const Segment*, CrossStaffPair4> pairs;
 };
 
+// A beam can move as a group without spanning two visual staves.
+// Native shapes already route its noteheads to the destination staff,
+// but omit the stems of moved beamed chords.
+bool prepareRelocatedBeam4(const Beam* beam, const Measure* measure, CrossStaffGeometry4& geometry)
+{
+    const Score* score = measure->score();
+    if (score->nstaves() != 2 || beam->score() != score || beam->cross()
+        || beam->beamDirection() != Direction::AUTO || beam->userModified()
+        || beam->elements().size() < 2)
+        return false;
+    const Chord* previous = nullptr;
+    for (const ChordRest* item : beam->elements()) {
+        if (!item || !item->isChord()) return false;
+        const Chord* chord = toChord(item);
+        if (chord->measure() != measure || !chord->segment() || chord->beam() != beam
+            || !chord->staffMove() || !chord->visible() || chord->isGrace()
+            || chord->tuplet() || chord->tremolo() || !chord->graceNotes().empty()
+            || chord->isNudged() || chord->isSmall() || chord->noStem() || !chord->stem()
+            || chord->stemDirection() != Direction::AUTO || chord->up() != beam->up()
+            || chord->notes().empty() || chord->actualTicks() != Fraction(1, 8)
+            || chord->durationType().type() != TDuration::DurationType::V_EIGHTH)
+            return false;
+        const int visual = chord->vStaffIdx();
+        if (visual < 0 || visual >= score->nstaves() || !score->staff(visual)->show()
+            || !score->staff(visual)->isPitchedStaff(chord->tick()) || !chord->staff()
+            || !chord->staff()->isPitchedStaff(chord->tick()))
+            return false;
+        if (previous && (chord->track() != previous->track() || visual != previous->vStaffIdx()
+            || chord->tick() != previous->tick() + previous->actualTicks()))
+            return false;
+        for (const Note* note : chord->notes()) {
+            if (!note->visible() || note->mirror() || note->isNudged() || note->isSmall())
+                return false;
+        }
+        CrossStaffChord4 entry;
+        entry.chord = chord;
+        entry.visualStaff = visual;
+        entry.up = beam->up();
+        const qreal width = chord->stem()->lineWidth() * chord->mag();
+        entry.stemX = chord->x() + chord->stemPosX() + (entry.up ? -.5 : .5) * width;
+        if (!(width > 0) || !std::isfinite(width) || !std::isfinite(entry.stemX))
+            return false;
+        geometry.chords.emplace(chord, entry);
+        previous = chord;
+    }
+    return true;
+}
+
 bool prepareCrossStaffMeasure4(Measure* measure, CrossStaffGeometry4& result, QString* reason)
 {
     const Beam* beam = nullptr;
+    std::set<const Beam*> relocated;
     for (const Segment& s : measure->segments()) {
         for (const Element* item : s.elist()) {
             if (!item || !item->isChord()) continue;
@@ -346,6 +395,10 @@ bool prepareCrossStaffMeasure4(Measure* measure, CrossStaffGeometry4& result, QS
                 if (reason) *reason = "Cross-staff chord has no beam";
                 return false;
             }
+            if (!c->beam()->cross()) {
+                relocated.insert(c->beam());
+                continue;
+            }
             if (beam && beam != c->beam()) {
                 if (reason) *reason = "Independent cross-staff streams within a measure require a later adapter";
                 return false;
@@ -353,8 +406,18 @@ bool prepareCrossStaffMeasure4(Measure* measure, CrossStaffGeometry4& result, QS
             beam = c->beam();
         }
     }
-    if (!beam) return true;
     const auto fail = [&](const QString& message) { if (reason) *reason = message; return false; };
+    if (!relocated.empty()) {
+        if (beam) return fail("Mixed relocated and interstaff beams require separate preparation");
+        CrossStaffGeometry4 prepared;
+        for (const Beam* group : relocated) {
+            if (!prepareRelocatedBeam4(group, measure, prepared))
+                return fail("Unadapted beam moved entirely to another staff");
+        }
+        result = std::move(prepared);
+        return true;
+    }
+    if (!beam) return true;
     if (measure->score()->nstaves() != 2)
         return fail("Cross-staff placement currently requires a grand staff");
     CrossStaffContext4 context;
@@ -663,11 +726,9 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
             const qreal width = e.chord->stem()->lineWidth() * e.chord->mag();
             const qreal y = e.chord->y() + note->y()
                 + (e.up ? note->stemUpSE().y() : note->stemDownNW().y());
-            // In this bounded context the beam lies between the staves. Use
-            // the proven stem side without borrowing a provisional stem length.
-            // Keep this conservative extension confined to the restricted
-            // held companions or at most two un-beamed moving voices; broader cases
-            // remain unsupported. This conservative extent needs visual review.
+            // Use the prepared stem side without borrowing a provisional
+            // stem length. Relocated beams use the side from native beam
+            // preparation; interstaff beams use the independently inferred side.
             const qreal reach = 100000;
             const QRectF rect(e.stemX - width / 2, e.up ? y - reach : y - width / 2,
                               width, reach + width / 2);
@@ -1437,7 +1498,7 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
         }
     }
     if (hasManualSpace && (hasRightAligned || !plan.afterGraces.empty() || !plan.mergedGraces.empty()
-        || !graces.mains.empty() || !cross.pairs.empty()))
+        || !graces.mains.empty() || !cross.chords.empty()))
         return fail("Manual leading space with grace, cross-staff or right-aligned geometry");
     if (plan.hasOrdinaryTies && (hasManualSpace || prefix))
         return fail("Tie clearance requires a full plan without manual leading space");
