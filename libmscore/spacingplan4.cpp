@@ -10,6 +10,7 @@
 #include "chord.h"
 #include "articulation.h"
 #include "sym.h"
+#include "symbol.h"
 #include <QStringList>
 #include "clef.h"
 #include "breath.h"
@@ -1423,9 +1424,15 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                     // Fermatas are absent from the horizontal staff shape.
                     // Native layout places them on their anchors after spacing.
                     if (!annotation->isSystemText() && !annotation->isStaffText() && !annotation->isRehearsalMark()
-                        && !annotation->isTempoText() && !annotation->isDynamic() && !annotation->isFermata())
-                        return fail(reason ? QStringLiteral("Annotations require a later adapter: %1 [measure %2]")
-                                                  .arg(annotation->_name()).arg(measure->no() + 1) : QString());
+                        && !annotation->isTempoText() && !annotation->isDynamic() && !annotation->isFermata()) {
+                        if (!reason) return false;
+                        QString name = annotation->_name();
+                        if (annotation->isSymbol())
+                            name += QStringLiteral(" (%1)").arg(QString::fromLatin1(
+                                Sym::id2name(static_cast<const Symbol*>(annotation)->sym())));
+                        return fail(QStringLiteral("Annotations require a later adapter: %1 [measure %2]")
+                                    .arg(name).arg(measure->no() + 1));
+                    }
                 }
                 for (const Element* item : segment.elist()) {
                     if (item && segment.isStartRepeatBarLineType()) {

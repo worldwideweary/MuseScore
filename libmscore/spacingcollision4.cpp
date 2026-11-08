@@ -21,6 +21,7 @@
 #include "stafflines.h"
 #include "score.h"
 #include "shape.h"
+#include "symbol.h"
 #include "spanner.h"
 #include "spannermap.h"
 #include <algorithm>
@@ -957,7 +958,13 @@ bool spacingCollisionProjection4(const SpacingPaddingTable4& table, const Spacin
     const auto fail = [reason](const char* why, const Element* item = nullptr) {
         if (reason) {
             *reason = QString::fromLatin1(why);
-            if (item) *reason += QStringLiteral(" (") + item->_name() + QStringLiteral(")");
+            if (item) {
+                *reason += QStringLiteral(" (") + item->_name();
+                if (item->isSymbol())
+                    *reason += QStringLiteral(": ") + QString::fromLatin1(
+                        Sym::id2name(static_cast<const Symbol*>(item)->sym()));
+                *reason += QStringLiteral(")");
+            }
         }
         return false;
     };
