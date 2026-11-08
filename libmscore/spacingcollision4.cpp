@@ -474,9 +474,11 @@ bool spacingChordArticulationsSupported4(const Chord* chord)
     if (!articulation || !articulation->visible() || !articulation->autoplace()
         || articulation->isNudged() || chord->score()->styleD(Sid::articulationMag) != 1.0)
         return false;
-    // Chord::shape() excludes articulations. These close marks can stay in
+    // Chord::shape() excludes articulations. These single marks can stay in
     // native articulation/skyline layout, after the horizontal plan.
     switch (articulation->symId()) {
+    case SymId::articAccentAbove:
+    case SymId::articAccentBelow:
     case SymId::articStaccatoAbove:
     case SymId::articStaccatoBelow:
     case SymId::articTenutoAbove:

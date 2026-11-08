@@ -94,6 +94,7 @@ class TestSpacing : public QObject, public MTest {
       void spacingCorpus4();
       void fingeringSpacing4();
       void hiddenUnisonSpacing4();
+      void closeArticulationSpacing4_data();
       void closeArticulationSpacing4();
       void ordinaryTieSpacing4_data();
       void ordinaryTieSpacing4();
@@ -12078,8 +12079,16 @@ void TestSpacing::hiddenUnisonSpacing4()
             }));
       }
 
+void TestSpacing::closeArticulationSpacing4_data()
+      {
+      QTest::addColumn<bool>("accents");
+      QTest::newRow("tenuto-staccato") << false;
+      QTest::newRow("single-accents") << true;
+      }
+
 void TestSpacing::closeArticulationSpacing4()
       {
+      QFETCH(bool, accents);
       std::unique_ptr<MasterScore> score(readScore(DIR + "studio-spacing-natural-h1.mscx"));
       QVERIFY(score);
       score->setStyleValue(Sid::spacingLayout4, true);
@@ -12100,8 +12109,8 @@ void TestSpacing::closeArticulationSpacing4()
             chord->add(mark);
             return mark;
             };
-      Articulation* tenuto = addMark(start, SymId::articTenutoBelow);
-      Articulation* staccato = addMark(end, SymId::articStaccatoBelow);
+      Articulation* firstMark = addMark(start, accents ? SymId::articAccentBelow : SymId::articTenutoBelow);
+      Articulation* secondMark = addMark(end, accents ? SymId::articAccentBelow : SymId::articStaccatoBelow);
       Slur* slur = new Slur(score.get());
       slur->setTrack(0);
       slur->setTrack2(0);
@@ -12125,12 +12134,17 @@ void TestSpacing::closeArticulationSpacing4()
             final = true;
             }
       QVERIFY(final);
-      QVERIFY(tenuto->bbox().isValid() && staccato->bbox().isValid());
+      QVERIFY(firstMark->bbox().isValid() && secondMark->bbox().isValid());
+      if (accents) {
+            QVERIFY(!firstMark->pageBoundingRect().intersects(secondMark->pageBoundingRect()));
+            QVERIFY(!firstMark->pageBoundingRect().intersects(start->upNote()->pageBoundingRect()));
+            QVERIFY(!secondMark->pageBoundingRect().intersects(end->upNote()->pageBoundingRect()));
+            }
       QVERIFY(slur->frontSegment() && slur->frontSegment()->bbox().isValid());
 
       // A manual placement still needs the native spacing fallback.
-      staccato->setAutoplace(false);
-      staccato->setOffset(QPointF(score->spatium(), 0));
+      secondMark->setAutoplace(false);
+      secondMark->setOffset(QPointF(score->spatium(), 0));
       events.clear();
       score->doLayout();
       QVERIFY(std::any_of(events.begin(), events.end(), [](const SpacingDecision4& e) {
