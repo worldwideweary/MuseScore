@@ -366,6 +366,50 @@ unsigned SpacingContextCache4::forwardSlurKerning(const Chord* chord)
     return blocked;
 }
 
+// Use staff-local geometry only. The tie has not been laid out at the
+// proposed system width yet, so keep a wide band on both sides of the
+// endpoint heads, independent of the final tie direction.
+static bool remoteTieObstacle4(const Element* item, const Note* start, const Note* end)
+{
+    if (!item->isChord() || item->track() == start->track()) return false;
+    const Chord* chord = toChord(item);
+    if (!chord->visible() || chord->staffMove() || chord->isGrace() || chord->beam()
+        || !chord->noStem() || chord->stem() || chord->hook() || chord->tremolo()
+        || chord->isNudged() || chord->arpeggio() || !chord->graceNotes().empty()
+        || !chord->articulations().empty() || !chord->el().empty() || !chord->lyrics().empty())
+        return false;
+    if (chord->measure() != start->chord()->measure() || start->isNudged() || end->isNudged()
+        || start->chord()->isNudged() || end->chord()->isNudged())
+        return false;
+    const Staff* staff = start->staff();
+    if (staff->staffType(start->tick()) != staff->staffType(end->tick())
+        || staff->staffType(start->tick()) != staff->staffType(chord->tick()))
+        return false;
+    const qreal sp = std::max(start->spatium(), end->spatium());
+    const qreal pad = 4 * sp + std::abs(start->score()->styleP(Sid::tieMidWidth))
+                            + std::abs(start->score()->styleP(Sid::tieEndWidth));
+    const QRectF heads = start->bbox().translated(0, start->y() + start->chord()->y())
+        .united(end->bbox().translated(0, end->y() + end->chord()->y()));
+    for (const Note* note : chord->notes()) {
+        if (!note->visible() || note->isNudged() || !note->el().empty()
+            || note->tieFor() || note->tieBack()
+            || !note->spannerFor().empty() || !note->spannerBack().empty())
+            return false;
+    }
+    const Shape obstacle = chord->shape();
+    if (!(sp > 0) || !std::isfinite(pad) || !heads.isValid() || obstacle.empty()) return false;
+    bool above = true;
+    bool below = true;
+    for (const QRectF& rect : obstacle) {
+        const qreal top = rect.top() + chord->y();
+        const qreal bottom = rect.bottom() + chord->y();
+        if (!std::isfinite(top) || !std::isfinite(bottom)) return false;
+        above = above && bottom < heads.top() - pad;
+        below = below && top > heads.bottom() + pad;
+    }
+    return above || below;
+}
+
 // The planner reserves horizontal clearance separately. Keep endpoints
 // that need a different tie placement rule on the native path.
 const char* ordinaryTieRejection4(const Tie* tie)
@@ -394,16 +438,18 @@ const char* ordinaryTieRejection4(const Tie* tie)
         && (a->measure()->next() != b->measure() || a->measure()->repeatEnd()
             || b->measure()->repeatStart() || a->measure()->nextSectionBreak()))
         return "tie crosses a repeat, section or nonadjacent barline";
-    // A sounding tie can span intervening accompaniment, but this adapter
-    // does not yet account for obstacles on the tied staff between grips.
+    bool crossesRemoteVoice = false;
     const Segment* next = a->segment()->next1(SegmentType::ChordRest);
     for (; next && next != b->segment() && next->tick() < b->tick();
          next = next->next1(SegmentType::ChordRest)) {
         for (const Element* item : next->elist()) {
             if (!item) continue;
             if (item->staffIdx() == a->staffIdx()
-                || (item->isChord() && toChord(item)->vStaffIdx() == a->vStaffIdx()))
-                return "intervening notation on the tied staff";
+                || (item->isChord() && toChord(item)->vStaffIdx() == a->vStaffIdx())) {
+                if (!remoteTieObstacle4(item, start, end))
+                    return "intervening notation on the tied staff";
+                crossesRemoteVoice = true;
+            }
         }
     }
     if (next != b->segment()) return "tie endpoint not found in rhythmic segments";
@@ -411,7 +457,8 @@ const char* ordinaryTieRejection4(const Tie* tie)
         const TieSegment* segment = tie->segmentAt(int(i));
         // A vertical translation does not consume horizontal clearance.
         // Keep horizontal translations and individual grip edits on fallback.
-        if (segment->offset().x() != 0 || segment->isEdited()) return "manually edited tie";
+        if (segment->offset().x() != 0 || segment->isEdited()
+            || (crossesRemoteVoice && segment->offset().y() != 0)) return "manually edited tie";
     }
     return nullptr;
 }

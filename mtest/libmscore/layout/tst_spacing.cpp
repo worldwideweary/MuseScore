@@ -97,6 +97,7 @@ class TestSpacing : public QObject, public MTest {
       void closeArticulationSpacing4();
       void ordinaryTieSpacing4_data();
       void ordinaryTieSpacing4();
+      void tieOverRemoteVoice4();
       void keepWithNextCollection4();
       void manualLeadingSpace4_data();
       void manualLeadingSpace4();
@@ -12164,6 +12165,43 @@ void TestSpacing::ordinaryTieSpacing4()
             const qreal x2 = b->x + ends[i]->chord()->x() + ends[i]->x();
             QVERIFY(x2 - x1 >= score->styleP(Sid::minTieLength) + 0.5 * score->spatium() - 1e-6);
             }
+      }
+
+void TestSpacing::tieOverRemoteVoice4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.279-tie-over-remote-voice.mscx"));
+      QVERIFY(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      Measure* first = score->firstMeasure();
+      QVERIFY(first && first->nextMeasure());
+      Segment* from = first->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+      Segment* to = first->nextMeasure()->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+      Segment* between = first->findSegmentR(SegmentType::ChordRest, Fraction(1, 2));
+      QVERIFY(from && from->element(0) && from->element(0)->isChord());
+      QVERIFY(to && to->element(0) && to->element(0)->isChord());
+      QVERIFY(between && between->element(1) && between->element(1)->isChord());
+      Note* start = toChord(from->element(0))->upNote();
+      Note* end = toChord(to->element(0))->upNote();
+      Chord* other = toChord(between->element(1));
+      Tie* tie = new Tie(score.get());
+      tie->setEndNote(end);
+      start->add(tie);
+      score->doLayout();
+      QVERIFY(first->system() && first->system() == to->measure()->system());
+      const char* rejection = ordinaryTieRejection4(tie);
+      QVERIFY2(!rejection, rejection);
+      QVERIFY(!first->system()->studioSpacingFallback());
+      QVERIFY(tie->nsegments() == 1 && tie->segmentAt(0)->bbox().isValid());
+      QVERIFY(!tie->segmentAt(0)->pageBoundingRect().intersects(other->upNote()->pageBoundingRect()));
+
+      // Move the same intervening chord into the tie's register. It must
+      // take the legacy path rather than assuming the voice is harmless.
+      other->upNote()->setPitch(start->pitch());
+      score->doLayout();
+      QCOMPARE(QString::fromLatin1(ordinaryTieRejection4(tie)),
+               QStringLiteral("intervening notation on the tied staff"));
+      QVERIFY(first->system()->studioSpacingFallback());
       }
 
 QTEST_MAIN(TestSpacing)
