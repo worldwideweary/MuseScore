@@ -1159,6 +1159,27 @@ bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QStri
     return true;
 }
 
+// Keep both notes in native chord layout (including fingering placement)
+// and project their existing shapes normally. Only admit an invisible note
+// here when it is an ordinary unison with a visible note in the same chord.
+static bool hiddenUnison4(const Note* note, const Chord* chord)
+{
+    if (!chord->visible() || chord->isGrace() || chord->staffMove() || chord->notes().size() != 2)
+        return false;
+    const auto ordinaryHead = [](const Note* n) {
+        return !n->isSmall() && n->offset().isNull() && !n->mirror()
+            && n->headGroup() == NoteHead::Group::HEAD_NORMAL && n->headType() == NoteHead::Type::HEAD_AUTO;
+    };
+    if (!ordinaryHead(note))
+        return false;
+    for (const Note* other : chord->notes()) {
+        if (other->visible() && other->pitch() == note->pitch() && other->line() == note->line()
+            && other->tpc() == note->tpc() && ordinaryHead(other))
+            return true;
+    }
+    return false;
+}
+
 // Called only after the existing note policy rejects a note. Keep the
 // admission checks in spacingPairPolicy4; these labels explain the failure.
 static QString notePolicyDiagnostic4(const Note* note, const Chord* chord, const SpacingContextCache4& cache)
@@ -1346,7 +1367,8 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                         return fail("Unadapted grace-note rhythm");
                     for (const Note* note : chord->notes()) {
                         SpacingPairPolicy4 policy;
-                        if (!note->visible() || !spacingPairPolicy4(table, note, note, note->spatium(), policy, &graces, &contextCache))
+                        if ((!note->visible() && !hiddenUnison4(note, chord))
+                            || !spacingPairPolicy4(table, note, note, note->spatium(), policy, &graces, &contextCache))
                             return fail(reason ? QStringLiteral("Note policy: ") + notePolicyDiagnostic4(note, chord, contextCache)
                                                + QStringLiteral(" [measure %1, tick %2, staff %3, voice %4]")
                                                    .arg(measure->no() + 1).arg(segment.tick().ticks())

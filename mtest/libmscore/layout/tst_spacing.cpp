@@ -92,6 +92,7 @@ class TestSpacing : public QObject, public MTest {
       void pendingCourtesyTrial4();
       void spacingCorpus4();
       void fingeringSpacing4();
+      void hiddenUnisonSpacing4();
       void ordinaryTieSpacing4_data();
       void ordinaryTieSpacing4();
       void keepWithNextCollection4();
@@ -11893,6 +11894,67 @@ void TestSpacing::fingeringSpacing4()
       QVERIFY(final);
       QVERIFY(fingering->visible() && fingering->bbox().isValid());
       QVERIFY(!fingering->pageBoundingRect().intersects(note->pageBoundingRect()));
+      }
+
+void TestSpacing::hiddenUnisonSpacing4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.275-hidden-unison.mscx"));
+      QVERIFY(score);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      Segment* segment = score->firstMeasure()->findSegmentR(SegmentType::ChordRest, Fraction(3, 8));
+      QVERIFY(segment && segment->element(1) && segment->element(1)->isChord());
+      Chord* chord = toChord(segment->element(1));
+      QCOMPARE(int(chord->notes().size()), 2);
+      Note* hidden = chord->notes().front();
+      Note* visible = chord->notes().back();
+      if (hidden->visible())
+            std::swap(hidden, visible);
+      QVERIFY(!hidden->visible() && visible->visible());
+      QCOMPARE(hidden->pitch(), visible->pitch());
+      QVERIFY(!visible->el().empty() && visible->el().front()->isFingering());
+      Fingering* fingering = toFingering(visible->el().front());
+
+      std::vector<SpacingDecision4> events;
+      SpacingDecisionScope4 scope(score.get(), [&events](const SpacingDecision4& e) { events.push_back(e); });
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      bool final = false;
+      for (const auto& e : events) {
+            if (e.pass != SpacingPass4::FINAL)
+                  continue;
+            QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+            final = true;
+            }
+      QVERIFY(final);
+      QCOMPARE(int(chord->notes().size()), 2);
+      QCOMPARE(fingering->parent(), static_cast<Element*>(visible));
+      QVERIFY(fingering->visible() && fingering->bbox().isValid());
+      QCOMPARE(hidden->dots().size(), 1);
+      QVERIFY(!hidden->dots().front()->visible());
+
+      // The adapter must retain the hidden note's geometry, not turn the
+      // chord into a single note or drop the visible fingering.
+      const auto native = spacingStaffShape4(segment, 0);
+      SpacingShape4 projected;
+      QString reason;
+      const SpacingPaddingTable4 table(score.get());
+      QVERIFY2(spacingCollisionProjection4(table, native, visible->spatium(), projected, nullptr, nullptr, &reason),
+            qPrintable(reason));
+      for (const Element* item : {static_cast<const Element*>(hidden),
+                                 static_cast<const Element*>(hidden->dots().front()),
+                                 static_cast<const Element*>(fingering)}) {
+            QVERIFY(std::any_of(projected.elements.begin(), projected.elements.end(),
+                  [item](const SpacingShapeElement4& e) { return e.item == item && e.rect.isValid(); }));
+            }
+
+      // Keep the octave-displaced version on fallback: it is no longer a unison.
+      hidden->setPitch(hidden->pitch() - 12);
+      events.clear();
+      score->doLayout();
+      QVERIFY(std::any_of(events.begin(), events.end(), [](const SpacingDecision4& e) {
+            return e.pass == SpacingPass4::FINAL && e.path != SpacingPath4::FULL_PLAN
+                  && e.reason.contains(QStringLiteral("invisible note"));
+            }));
       }
 
 void TestSpacing::ordinaryTieSpacing4_data()
