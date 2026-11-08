@@ -342,7 +342,11 @@ bool prepareCrossStaffMeasure4(Measure* measure, CrossStaffGeometry4& result, QS
             if (!item || !item->isChord()) continue;
             const Chord* c = toChord(item);
             if (!c->staffMove() && !(c->beam() && c->beam()->cross())) continue;
-            if (!c->beam() || (beam && beam != c->beam())) {
+            if (!c->beam()) {
+                if (reason) *reason = "Cross-staff chord has no beam";
+                return false;
+            }
+            if (beam && beam != c->beam()) {
                 if (reason) *reason = "Independent cross-staff streams within a measure require a later adapter";
                 return false;
             }
@@ -408,7 +412,11 @@ bool prepareCrossStaff4(System* system, CrossStaffGeometry4& result, QString* re
             return false;
         }
         CrossStaffGeometry4 local;
-        if (!prepareCrossStaffMeasure4(toMeasure(mb), local, reason)) return false;
+        Measure* measure = toMeasure(mb);
+        if (!prepareCrossStaffMeasure4(measure, local, reason)) {
+            if (reason) *reason += QStringLiteral(" [measure %1]").arg(measure->no() + 1);
+            return false;
+        }
         prepared.chords.insert(local.chords.begin(), local.chords.end());
         prepared.pairs.insert(local.pairs.begin(), local.pairs.end());
     }
@@ -1038,9 +1046,16 @@ bool spacingRepeatBarlinesReady4(const System* system, SpacingPass4 pass, QStrin
 bool buildCrossStaffContext4(const Beam* beam, CrossStaffContext4& result, QString* reason)
 {
     const auto fail = [&](const QString& message) { if (reason) *reason = message; return false; };
-    if (!beam || !beam->score() || !beam->cross() || beam->elements().size() < 3
-        || beam->beamDirection() != Direction::AUTO || beam->userModified())
-        return fail("Cross-staff context needs a prepared automatic beam");
+    if (!beam || !beam->score())
+        return fail("Cross-staff beam is missing or unattached");
+    if (!beam->cross())
+        return fail("Beam is not flagged as cross-staff");
+    if (beam->elements().size() < 3)
+        return fail("Cross-staff beam has fewer than three members");
+    if (beam->beamDirection() != Direction::AUTO)
+        return fail("Cross-staff beam has an explicit direction");
+    if (beam->userModified())
+        return fail("Cross-staff beam has a manual adjustment");
     const Score* score = beam->score();
     const SpacingPaddingTable4 table(score);
     CrossStaffContext4 context;
