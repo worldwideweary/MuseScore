@@ -28,6 +28,7 @@
 #include "libmscore/tie.h"
 #include "libmscore/fingering.h"
 #include "libmscore/articulation.h"
+#include "libmscore/fermata.h"
 #include <limits>
 #include <array>
 #include <memory>
@@ -94,6 +95,7 @@ class TestSpacing : public QObject, public MTest {
       void spacingCorpus4();
       void fingeringSpacing4();
       void hiddenUnisonSpacing4();
+      void fermataSpacing4();
       void closeArticulationSpacing4_data();
       void closeArticulationSpacing4();
       void ordinaryTieSpacing4_data();
@@ -12077,6 +12079,42 @@ void TestSpacing::hiddenUnisonSpacing4()
             return e.pass == SpacingPass4::FINAL && e.path != SpacingPath4::FULL_PLAN
                   && e.reason.contains(QStringLiteral("invisible note"));
             }));
+      }
+
+void TestSpacing::fermataSpacing4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "studio-spacing-natural-h1.mscx"));
+      QVERIFY(score);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      score->doLayout();
+      Measure* measure = score->firstMeasure();
+      QVERIFY(measure);
+      Segment* onset = measure->first(SegmentType::ChordRest);
+      QVERIFY(onset && onset->element(0) && onset->element(0)->isChord());
+      const qreal width = measure->width();
+      const qreal x = onset->x();
+
+      Fermata* mark = new Fermata(SymId::fermataAbove, score.get());
+      mark->setParent(onset);
+      mark->setTrack(0);
+      onset->add(mark);
+
+      std::vector<SpacingDecision4> decisions;
+      SpacingDecisionScope4 scope(score.get(), [&decisions](const SpacingDecision4& e) { decisions.push_back(e); });
+      score->doLayout();
+      bool final = false;
+      for (const auto& e : decisions) {
+            if (e.pass != SpacingPass4::FINAL) continue;
+            QVERIFY2(e.path == SpacingPath4::FULL_PLAN, qPrintable(e.reason));
+            final = true;
+            }
+      QVERIFY(final);
+      QVERIFY(mark->bbox().isValid());
+      QVERIFY(mark->ipos().x() > 0);
+      QVERIFY(!mark->pageBoundingRect().intersects(toChord(onset->element(0))->upNote()->pageBoundingRect()));
+      QVERIFY(qAbs(measure->width() - width) < 1e-6);
+      QVERIFY(qAbs(onset->x() - x) < 1e-6);
       }
 
 void TestSpacing::closeArticulationSpacing4_data()

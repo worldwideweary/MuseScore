@@ -1420,8 +1420,10 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                 for (const Element* annotation : segment.annotations()) {
                     if (!annotation)
                         continue;
+                    // Fermatas are absent from the horizontal staff shape.
+                    // Native layout places them on their anchors after spacing.
                     if (!annotation->isSystemText() && !annotation->isStaffText() && !annotation->isRehearsalMark()
-                        && !annotation->isTempoText() && !annotation->isDynamic())
+                        && !annotation->isTempoText() && !annotation->isDynamic() && !annotation->isFermata())
                         return fail(reason ? QStringLiteral("Annotations require a later adapter: %1 [measure %2]")
                                                   .arg(annotation->_name()).arg(measure->no() + 1) : QString());
                 }
