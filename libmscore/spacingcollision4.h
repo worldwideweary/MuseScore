@@ -17,6 +17,7 @@ class Tie;
 // Null means the tie is accepted by the ordinary spacing policy.
 const char* ordinaryTieRejection4(const Tie*);
 bool spacingChordArticulationsSupported4(const Chord*);
+bool spacingPedalSymbol4(const Element*);
 class Score;
 struct SpacingShape4;
 class SpacingInput4;
@@ -40,7 +41,7 @@ struct SpacingPairPolicy4 {
 // Snapshot common-type padding once per pass; rebuild after style changes.
 class SpacingPaddingTable4 {
     const Score* _score;
-    std::array<std::array<qreal, 14>, 14> _padding;
+    std::array<std::array<qreal, 15>, 15> _padding;
 public:
     explicit SpacingPaddingTable4(const Score*);
     const Score* score() const { return _score; }

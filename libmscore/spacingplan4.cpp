@@ -1424,7 +1424,8 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                     // Fermatas are absent from the horizontal staff shape.
                     // Native layout places them on their anchors after spacing.
                     if (!annotation->isSystemText() && !annotation->isStaffText() && !annotation->isRehearsalMark()
-                        && !annotation->isTempoText() && !annotation->isDynamic() && !annotation->isFermata()) {
+                        && !annotation->isTempoText() && !annotation->isDynamic() && !annotation->isFermata()
+                        && !spacingPedalSymbol4(annotation)) {
                         if (!reason) return false;
                         QString name = annotation->_name();
                         if (annotation->isSymbol())

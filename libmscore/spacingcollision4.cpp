@@ -29,13 +29,21 @@
 #include <limits>
 
 namespace Ms {
+bool spacingPedalSymbol4(const Element* item)
+{
+    if (!item || !item->isSymbol()) return false;
+    const Symbol* symbol = static_cast<const Symbol*>(item);
+    return symbol->leafs().isEmpty()
+        && (symbol->sym() == SymId::keyboardPedalPed || symbol->sym() == SymId::keyboardPedalUp);
+}
+
 static int paddingIndex4(ElementType type)
 {
     static const ElementType types[] = {
         ElementType::NOTE, ElementType::LEDGER_LINE, ElementType::HOOK, ElementType::NOTEDOT,
         ElementType::REST, ElementType::CLEF, ElementType::BAR_LINE, ElementType::KEYSIG,
         ElementType::TIMESIG, ElementType::ARPEGGIO, ElementType::ACCIDENTAL, ElementType::STEM,
-        ElementType::BREATH, ElementType::FINGERING
+        ElementType::BREATH, ElementType::FINGERING, ElementType::SYMBOL
     };
     for (int i = 0; i < int(sizeof(types) / sizeof(types[0])); ++i) {
         if (types[i] == type)
@@ -687,6 +695,11 @@ static bool pairPolicy4(const SpacingPaddingTable4& table, const Element* first,
         || !commonItemContext4(first, allowGrace, context, scopedMain, cache)
         || !commonItemContext4(second, allowGrace, context, scopedMain, cache)
         || !(shapeSpatium > 0) || !std::isfinite(shapeSpatium))
+        return false;
+    // Only these pedal glyphs have a Symbol collision policy. Use the
+    // default padding and the ordinary vertical overlap check.
+    if ((first->isSymbol() && !spacingPedalSymbol4(first))
+        || (second->isSymbol() && !spacingPedalSymbol4(second)))
         return false;
     SpacingPairPolicy4 policy;
     if (!table.padding(first->type(), second->type(), policy.padding)) {

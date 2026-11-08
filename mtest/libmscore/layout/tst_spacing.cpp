@@ -29,6 +29,7 @@
 #include "libmscore/fingering.h"
 #include "libmscore/articulation.h"
 #include "libmscore/fermata.h"
+#include "libmscore/symbol.h"
 #include <limits>
 #include <array>
 #include <memory>
@@ -96,6 +97,7 @@ class TestSpacing : public QObject, public MTest {
       void fingeringSpacing4();
       void hiddenUnisonSpacing4();
       void fermataSpacing4();
+      void pedalSymbolSpacing4();
       void closeArticulationSpacing4_data();
       void closeArticulationSpacing4();
       void ordinaryTieSpacing4_data();
@@ -12079,6 +12081,42 @@ void TestSpacing::hiddenUnisonSpacing4()
             return e.pass == SpacingPass4::FINAL && e.path != SpacingPath4::FULL_PLAN
                   && e.reason.contains(QStringLiteral("invisible note"));
             }));
+      }
+
+void TestSpacing::pedalSymbolSpacing4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "studio-spacing-natural-h1.mscx"));
+      QVERIFY(score);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      QVERIFY(score->firstMeasure());
+      Segment* onset = score->firstMeasure()->first(SegmentType::ChordRest);
+      QVERIFY(onset && onset->element(0) && onset->element(0)->isChord());
+      Note* note = toChord(onset->element(0))->upNote();
+      Symbol* attached = new Symbol(score.get());
+      attached->setSym(SymId::keyboardPedalPed);
+      attached->setParent(note);
+      attached->setTrack(note->track());
+      note->add(attached);
+      Symbol* annotation = new Symbol(score.get());
+      annotation->setSym(SymId::keyboardPedalUp);
+      annotation->setParent(onset);
+      annotation->setTrack(0);
+      onset->add(annotation);
+      score->doLayout();
+
+      const auto native = spacingStaffShape4(onset, 0);
+      SpacingShape4 projected;
+      const SpacingPaddingTable4 table(score.get());
+      QString reason;
+      QVERIFY2(spacingCollisionProjection4(table, native, note->spatium(), projected, nullptr, nullptr, &reason),
+            qPrintable(reason));
+      QVERIFY(std::any_of(projected.elements.begin(), projected.elements.end(),
+            [attached](const SpacingShapeElement4& e) { return e.item == attached && e.rect.isValid(); }));
+      QVERIFY(std::none_of(projected.elements.begin(), projected.elements.end(),
+            [annotation](const SpacingShapeElement4& e) { return e.item == annotation; }));
+      QVERIFY(onset->measure()->system());
+      QVERIFY(!onset->measure()->system()->studioSpacingFallback());
       }
 
 void TestSpacing::fermataSpacing4()
