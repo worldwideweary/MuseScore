@@ -357,7 +357,8 @@ const char* prepareRelocatedBeam4(const Beam* beam, const Measure* measure, Cros
         if (chord->isGrace() || !chord->graceNotes().empty()) return "Relocated beam has grace notation";
         if (chord->tuplet()) return "Relocated beam has a tuplet chord";
         if (chord->tremolo()) return "Relocated beam has a tremolo chord";
-        if (chord->isNudged() || chord->isSmall()) return "Relocated beam has a nudged or small chord";
+        if (chord->isNudged()) return "Relocated beam has a chord with a manual offset";
+        if (chord->isSmall()) return "Relocated beam has a small chord";
         if (chord->noStem() || !chord->stem()) return "Relocated beam has a chord without a stem";
         if (chord->stemDirection() != Direction::AUTO) return "Relocated beam has a chord with an explicit stem direction";
         if (chord->up() != beam->up()) return "Relocated beam and chord disagree on stem side";

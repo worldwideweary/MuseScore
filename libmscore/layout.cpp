@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include <QRegularExpression>
 #include "spacingprofile4.h"
 #include "accidental.h"
 #include "ambitus.h"
@@ -4984,9 +4985,23 @@ System* Score::collectSystem(LayoutContext& lc)
       if (Measure* first = system->firstMeasure()) {
             const QString message = logFallback && system->studioSpacingFallback()
                   ? (decisionReason.isEmpty() ? QStringLiteral("No reason reported") : decisionReason) : QString();
-            if (first->updateSpacingFallbackLog(message) && !message.isEmpty())
-                  qDebug().noquote() << "Studio spacing fallback: system starts at measure"
-                        << first->no() + 1 << "-" << message;
+            if (first->updateSpacingFallbackLog(message) && !message.isEmpty()) {
+                  // Keep the original reason for deduplication and observers;
+                  // move its location to the front only in the debug log.
+                  static const QRegularExpression location(QStringLiteral(
+                        R"( \[measure (-?[0-9]+)(?:, ([^\]]+))?\]$)"));
+                  const auto match = location.match(message);
+                  if (match.hasMatch()) {
+                        QString reason = message.left(match.capturedStart());
+                        if (!match.captured(2).isEmpty())
+                              reason += QStringLiteral(" (%1)").arg(match.captured(2));
+                        qDebug().noquote() << QStringLiteral("Studio spacing fallback at measure %1: %2")
+                              .arg(match.captured(1), reason);
+                        }
+                  else
+                        qDebug().noquote() << "Studio spacing fallback: system starts at measure"
+                              << first->no() + 1 << "-" << message;
+                  }
             }
 
       if (observeDecision)
