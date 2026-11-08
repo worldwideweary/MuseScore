@@ -90,6 +90,7 @@ struct Geometry4 {
     qreal leftEdge = std::numeric_limits<qreal>::max();
     bool accidentals = false;
     bool outgoingTie = false;
+    const Segment* earliestTieStart = nullptr;
 };
 
 bool active4(const Segment* s)
@@ -1345,7 +1346,13 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                             if (std::find(measures.begin(), measures.end(), other->chord()->measure()) == measures.end())
                                 return fail("Tie crosses the spacing system boundary");
                             plan.hasOrdinaryTies = true;
-                            g.outgoingTie = g.outgoingTie || tie == note->tieFor();
+                            if (tie->startNote() == note)
+                                g.outgoingTie = true;
+                            else {
+                                const Segment* start = other->chord()->segment();
+                                if (!g.earliestTieStart || start->tick() < g.earliestTieStart->tick())
+                                    g.earliestTieStart = start;
+                            }
                         }
                     }
                 }
@@ -1481,10 +1488,11 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
         }
         else {
             qreal x = -std::numeric_limits<qreal>::max();
-            // A beam neighbor can lie beyond the ordinary geometry lookback.
-            const Segment* requiredPrevious = nullptr;
+            // A tie or beam neighbor can lie beyond the ordinary lookback.
+            const Segment* requiredPrevious = geometry[i].earliestTieStart;
             for (const auto& pair : cross.pairs) {
-                if (pair.second.minimumStemDistance > 0 && pair.second.second->segment() == current.segment)
+                if (pair.second.minimumStemDistance > 0 && pair.second.second->segment() == current.segment
+                    && (!requiredPrevious || pair.second.first->tick() < requiredPrevious->tick()))
                     requiredPrevious = pair.second.first->segment();
             }
             int crCount = 0;

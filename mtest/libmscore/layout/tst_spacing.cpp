@@ -92,6 +92,7 @@ class TestSpacing : public QObject, public MTest {
       void pendingCourtesyTrial4();
       void spacingCorpus4();
       void fingeringSpacing4();
+      void ordinaryTieSpacing4_data();
       void ordinaryTieSpacing4();
       void keepWithNextCollection4();
       void manualLeadingSpace4_data();
@@ -11892,19 +11893,33 @@ void TestSpacing::fingeringSpacing4()
       QVERIFY(!fingering->pageBoundingRect().intersects(note->pageBoundingRect()));
       }
 
+void TestSpacing::ordinaryTieSpacing4_data()
+      {
+      QTest::addColumn<QString>("fixture");
+      QTest::newRow("adjacent") << QStringLiteral("v0.269-tie-clearance.mscx");
+      QTest::newRow("accompaniment") << QStringLiteral("v0.271-tie-over-accompaniment.mscx");
+      }
+
 void TestSpacing::ordinaryTieSpacing4()
       {
-      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.269-tie-clearance.mscx"));
+      QFETCH(QString, fixture);
+      std::unique_ptr<MasterScore> score(readScore(DIR + fixture));
       QVERIFY(score);
       score->setStyleValue(Sid::spacingLayout4, true);
       QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
       Measure* first = score->firstMeasure();
       QVERIFY(first && first->nextMeasure());
       Segment* from = first->last();
-      if (from && !from->isChordRestType()) from = from->prev(SegmentType::ChordRest);
+      while (from && (!from->isChordRestType() || !from->element(0)))
+            from = from->prev(SegmentType::ChordRest);
       Segment* to = first->nextMeasure()->first(SegmentType::ChordRest);
       QVERIFY(from && to && from->element(0) && to->element(0));
       QVERIFY(from->element(0)->isChord() && to->element(0)->isChord());
+      if (score->nstaves() == 2) {
+            const Segment* intervening = from->next1(SegmentType::ChordRest);
+            QVERIFY(intervening && intervening != to);
+            QVERIFY(!intervening->element(0) && intervening->element(VOICES));
+            }
       const auto& starts = toChord(from->element(0))->notes();
       const auto& ends = toChord(to->element(0))->notes();
       QCOMPARE(int(starts.size()), 2);

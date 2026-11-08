@@ -382,13 +382,25 @@ static bool ordinaryAdjacentTie4(const Tie* tie)
     const Chord* b = end->chord();
     if (!a || !b || a->isGrace() || b->isGrace() || a->staffMove() || b->staffMove()
         || !a->segment() || !b->segment() || !a->measure() || !b->measure()
-        || a->tick() + a->actualTicks() != b->tick()
-        || a->segment()->next1(SegmentType::ChordRest) != b->segment())
+        || a->tick() + a->actualTicks() != b->tick())
         return false;
     if (a->measure() != b->measure()
         && (a->measure()->next() != b->measure() || a->measure()->repeatEnd()
             || b->measure()->repeatStart() || a->measure()->nextSectionBreak()))
         return false;
+    // A sounding tie can span intervening accompaniment, but this adapter
+    // does not yet account for obstacles on the tied staff between grips.
+    const Segment* next = a->segment()->next1(SegmentType::ChordRest);
+    for (; next && next != b->segment() && next->tick() < b->tick();
+         next = next->next1(SegmentType::ChordRest)) {
+        for (const Element* item : next->elist()) {
+            if (!item) continue;
+            if (item->staffIdx() == a->staffIdx()
+                || (item->isChord() && toChord(item)->vStaffIdx() == a->vStaffIdx()))
+                return false;
+        }
+    }
+    if (next != b->segment()) return false;
     for (size_t i = 0; i < tie->nsegments(); ++i) {
         const TieSegment* segment = tie->segmentAt(int(i));
         if (segment->isNudged() || segment->isEdited()) return false;
