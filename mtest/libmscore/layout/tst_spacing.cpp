@@ -11896,13 +11896,16 @@ void TestSpacing::fingeringSpacing4()
 void TestSpacing::ordinaryTieSpacing4_data()
       {
       QTest::addColumn<QString>("fixture");
-      QTest::newRow("adjacent") << QStringLiteral("v0.269-tie-clearance.mscx");
-      QTest::newRow("accompaniment") << QStringLiteral("v0.271-tie-over-accompaniment.mscx");
+      QTest::addColumn<bool>("split");
+      QTest::newRow("adjacent") << QStringLiteral("v0.269-tie-clearance.mscx") << false;
+      QTest::newRow("accompaniment") << QStringLiteral("v0.271-tie-over-accompaniment.mscx") << false;
+      QTest::newRow("system-break") << QStringLiteral("v0.271-tie-over-accompaniment.mscx") << true;
       }
 
 void TestSpacing::ordinaryTieSpacing4()
       {
       QFETCH(QString, fixture);
+      QFETCH(bool, split);
       std::unique_ptr<MasterScore> score(readScore(DIR + fixture));
       QVERIFY(score);
       score->setStyleValue(Sid::spacingLayout4, true);
@@ -11931,8 +11934,25 @@ void TestSpacing::ordinaryTieSpacing4()
             starts[i]->add(tie);
             }
 
+      if (split) first->setLineBreak(true);
       score->doLayout();
       System* system = first->system();
+      if (split) {
+            System* following = to->measure()->system();
+            QVERIFY(system && following && system != following);
+            QVERIFY(!system->studioSpacingFallback());
+            QVERIFY(!following->studioSpacingFallback());
+            const auto noteX = [](const Note* note) {
+                  const Chord* chord = note->chord();
+                  return chord->measure()->x() + chord->segment()->x() + chord->x() + note->x();
+                  };
+            for (int i = 0; i < 2; ++i) {
+                  const qreal clearance = score->styleP(Sid::minTieLength) + 0.25 * score->spatium();
+                  QVERIFY(system->lastNoteRestSegmentX(true) - noteX(starts[i]) - starts[i]->headWidth() >= clearance - 1e-6);
+                  QVERIFY(noteX(ends[i]) - following->firstNoteRestSegmentX(true) >= clearance - 1e-6);
+                  }
+            return;
+            }
       QVERIFY(system && system == to->measure()->system());
       QVERIFY(!system->studioSpacingFallback());
 

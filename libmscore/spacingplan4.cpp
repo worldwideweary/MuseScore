@@ -91,6 +91,10 @@ struct Geometry4 {
     bool accidentals = false;
     bool outgoingTie = false;
     const Segment* earliestTieStart = nullptr;
+    const Segment* incomingTieHeader = nullptr;
+    const Segment* outgoingTieBoundary = nullptr;
+    qreal incomingTieRoom = 0;
+    qreal outgoingTieRoom = 0;
 };
 
 bool active4(const Segment* s)
@@ -723,6 +727,10 @@ bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, 
             }
         }
     }
+    if (second.incomingTieHeader == a.segment)
+        distance = std::max(distance, first.minRight - second.leftEdge + second.incomingTieRoom);
+    if (first.outgoingTieBoundary == b.segment)
+        distance = std::max(distance, first.minRight + first.outgoingTieRoom);
     const auto constraint = cross.pairs.find(a.segment);
     if (constraint != cross.pairs.end() && constraint->second.second->segment() == b.segment)
         distance = std::max(distance, std::max(constraint->second.minimumWidth, constraint->second.minimumStemDistance));
@@ -1343,9 +1351,17 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                             if (!tie) continue;
                             const auto& measures = system->measures();
                             const Note* other = tie->startNote() == note ? tie->endNote() : tie->startNote();
-                            if (std::find(measures.begin(), measures.end(), other->chord()->measure()) == measures.end())
-                                return fail("Tie crosses the spacing system boundary");
                             plan.hasOrdinaryTies = true;
+                            if (std::find(measures.begin(), measures.end(), other->chord()->measure()) == measures.end()) {
+                                const qreal sp = score->spatium();
+                                const qreal grip = 0.25 * std::max(note->spatium(), sp);
+                                const qreal minimum = score->styleP(Sid::minTieLength) * note->mag();
+                                if (tie->startNote() == note)
+                                    g.outgoingTieRoom = std::max(g.outgoingTieRoom, minimum + grip + 0.25 * sp);
+                                else
+                                    g.incomingTieRoom = std::max(g.incomingTieRoom, minimum + grip + sp);
+                                continue;
+                            }
                             if (tie->startNote() == note)
                                 g.outgoingTie = true;
                             else {
@@ -1379,6 +1395,45 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
         return fail("Manual leading space with grace, cross-staff or right-aligned geometry");
     if (plan.hasOrdinaryTies && (hasManualSpace || prefix))
         return fail("Tie clearance requires a full plan without manual leading space");
+    // Match the native split-tie anchors: the last header glyph plus
+    // one space, and the first active segment after the last rhythmic
+    // onset minus a quarter space. Keep unfamiliar edges on fallback.
+    if (plan.hasOrdinaryTies) {
+        const size_t count = plan.segments.size();
+        size_t firstRhythm = count, lastRhythm = count, header = count, boundary = count, previous = count;
+        for (size_t i = 0; i < count; ++i) {
+            const auto& entry = plan.segments[i];
+            if (entry.ignored) continue;
+            if (entry.segment->isChordRestType()) {
+                if (firstRhythm == count) {
+                    firstRhythm = i;
+                    header = previous;
+                }
+                lastRhythm = i;
+                boundary = count;
+            }
+            else if (lastRhythm != count && boundary == count)
+                boundary = i;
+            previous = i;
+        }
+        for (size_t i = 0; i < count; ++i) {
+            Geometry4& g = geometry[i];
+            if (g.incomingTieRoom > 0) {
+                if (i != firstRhythm || header == count || !headerType4(plan.segments[header].segment))
+                    return fail("Incoming split tie needs a prepared system header");
+                g.incomingTieHeader = plan.segments[header].segment;
+                g.earliestTieStart = g.incomingTieHeader;
+            }
+            if (g.outgoingTieRoom > 0) {
+                if (boundary == count || !plan.segments[boundary].segment->isEndBarLineType()
+                    || plan.segments[i].segment->measure() != plan.segments[boundary].segment->measure())
+                    return fail("Outgoing split tie needs a prepared system end barline");
+                g.outgoingTieBoundary = plan.segments[boundary].segment;
+                if (!geometry[boundary].earliestTieStart)
+                    geometry[boundary].earliestTieStart = plan.segments[i].segment;
+            }
+        }
+    }
     const qreal manualSpatium = hasManualSpace ? system->spatium() : 0;
     const auto rhythmicAdvance = [&options](const SpacingSegmentPlan4& entry) {
         return 3.5 * entry.segment->spatium() * entry.stretch * options.stretchReduction;
