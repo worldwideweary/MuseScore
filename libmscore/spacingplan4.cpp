@@ -1370,8 +1370,8 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                         if ((!note->visible() && !hiddenUnison4(note, chord))
                             || !spacingPairPolicy4(table, note, note, note->spatium(), policy, &graces, &contextCache))
                             return fail(reason ? QStringLiteral("Note policy: ") + notePolicyDiagnostic4(note, chord, contextCache)
-                                               + QStringLiteral(" [measure %1, tick %2, staff %3, voice %4]")
-                                                   .arg(measure->no() + 1).arg(segment.tick().ticks())
+                                               + QStringLiteral(" [measure %1, beat %2, tick %3, staff %4, voice %5]")
+                                                   .arg(measure->no() + 1).arg(note->barbeat().second).arg(segment.tick().ticks())
                                                    .arg(note->staffIdx() + 1).arg(note->track() % VOICES + 1)
                                                : QString());
                         for (const Tie* tie : {note->tieFor(), note->tieBack()}) {
