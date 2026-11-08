@@ -367,27 +367,32 @@ unsigned SpacingContextCache4::forwardSlurKerning(const Chord* chord)
 
 // The planner reserves horizontal clearance separately. Keep endpoints
 // that need a different tie placement rule on the native path.
-static bool ordinaryAdjacentTie4(const Tie* tie)
+const char* ordinaryTieRejection4(const Tie* tie)
 {
-    if (!tie) return true;
+    if (!tie) return nullptr;
     const Note* start = tie->startNote();
     const Note* end = tie->endNote();
-    if (!start || !end || start->tieFor() != tie || end->tieBack() != tie
-        || !start->visible() || !end->visible() || start->track() < 0 || start->track() != end->track()
-        || start->score() != end->score() || start->pitch() != end->pitch() || start->line() != end->line()
-        || !start->staff() || !end->staff()
+    if (!start || !end || start->tieFor() != tie || end->tieBack() != tie)
+        return "missing or unmatched tie endpoint";
+    if (!start->visible() || !end->visible()) return "invisible tie endpoint";
+    if (start->track() < 0 || start->track() != end->track() || start->score() != end->score())
+        return "tie changes voice, staff or score";
+    if (start->pitch() != end->pitch() || start->line() != end->line())
+        return "tie changes pitch or staff line";
+    if (!start->staff() || !end->staff()
         || !start->staff()->isPitchedStaff(start->tick()) || !end->staff()->isPitchedStaff(end->tick()))
-        return false;
+        return "tie needs pitched staves";
     const Chord* a = start->chord();
     const Chord* b = end->chord();
-    if (!a || !b || a->isGrace() || b->isGrace() || a->staffMove() || b->staffMove()
-        || !a->segment() || !b->segment() || !a->measure() || !b->measure()
-        || a->tick() + a->actualTicks() != b->tick())
-        return false;
+    if (!a || !b || !a->segment() || !b->segment() || !a->measure() || !b->measure())
+        return "tie needs attached chords";
+    if (a->isGrace() || b->isGrace() || a->staffMove() || b->staffMove())
+        return "grace or cross-staff tie";
+    if (a->tick() + a->actualTicks() != b->tick()) return "noncontiguous tie duration";
     if (a->measure() != b->measure()
         && (a->measure()->next() != b->measure() || a->measure()->repeatEnd()
             || b->measure()->repeatStart() || a->measure()->nextSectionBreak()))
-        return false;
+        return "tie crosses a repeat, section or nonadjacent barline";
     // A sounding tie can span intervening accompaniment, but this adapter
     // does not yet account for obstacles on the tied staff between grips.
     const Segment* next = a->segment()->next1(SegmentType::ChordRest);
@@ -397,15 +402,15 @@ static bool ordinaryAdjacentTie4(const Tie* tie)
             if (!item) continue;
             if (item->staffIdx() == a->staffIdx()
                 || (item->isChord() && toChord(item)->vStaffIdx() == a->vStaffIdx()))
-                return false;
+                return "intervening notation on the tied staff";
         }
     }
-    if (next != b->segment()) return false;
+    if (next != b->segment()) return "tie endpoint not found in rhythmic segments";
     for (size_t i = 0; i < tie->nsegments(); ++i) {
         const TieSegment* segment = tie->segmentAt(int(i));
-        if (segment->isNudged() || segment->isEdited()) return false;
-        }
-    return true;
+        if (segment->isNudged() || segment->isEdited()) return "manually edited tie";
+    }
+    return nullptr;
 }
 
 static bool commonChordContext4(const Chord* chord, bool allowGrace,
@@ -417,7 +422,7 @@ static bool commonChordContext4(const Chord* chord, bool allowGrace,
     if ((!allowGrace && chord->isGrace()) || !chord->articulations().empty())
         return false;
     for (const Note* note : chord->notes()) {
-        if (!ordinaryAdjacentTie4(note->tieFor()) || !ordinaryAdjacentTie4(note->tieBack())
+        if (ordinaryTieRejection4(note->tieFor()) || ordinaryTieRejection4(note->tieBack())
             || !note->spannerFor().empty() || !note->spannerBack().empty())
             return false;
     }

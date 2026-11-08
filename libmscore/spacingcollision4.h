@@ -13,6 +13,9 @@ namespace Ms {
 class Element;
 class Chord;
 class Note;
+class Tie;
+// Null means the tie is accepted by the ordinary spacing policy.
+const char* ordinaryTieRejection4(const Tie*);
 class Score;
 struct SpacingShape4;
 class SpacingInput4;

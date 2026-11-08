@@ -4981,10 +4981,12 @@ System* Score::collectSystem(LayoutContext& lc)
       system->setStudioSpacingFallback(styleB(Sid::spacingLayout4)
             && !MScore::noHorizontalStretch && !useStudioPlan && system->firstMeasure());
 
-      if (logFallback && system->studioSpacingFallback()) {
-            qDebug().noquote() << "Studio spacing fallback: system starts at measure"
-                  << system->firstMeasure()->no() + 1 << "-"
-                  << (decisionReason.isEmpty() ? QStringLiteral("No reason reported") : decisionReason);
+      if (Measure* first = system->firstMeasure()) {
+            const QString message = logFallback && system->studioSpacingFallback()
+                  ? (decisionReason.isEmpty() ? QStringLiteral("No reason reported") : decisionReason) : QString();
+            if (first->updateSpacingFallbackLog(message) && !message.isEmpty())
+                  qDebug().noquote() << "Studio spacing fallback: system starts at measure"
+                        << first->no() + 1 << "-" << message;
             }
 
       if (observeDecision)

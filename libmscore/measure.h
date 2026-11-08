@@ -85,6 +85,9 @@ class Measure final : public MeasureBase {
 
       MeasureNumberMode _noMode;
       bool _breakMultiMeasureRest;
+
+      QString _lastSpacingFallbackLog; // Transient debug state keyed by system start.
+
       // Detached display objects remain alive for selection/undo across layout.
       std::map<QString, Element*> _repeatCourtesyCache;
       std::map<QString, QPointF> _repeatCourtesyOffsets;
@@ -112,6 +115,12 @@ class Measure final : public MeasureBase {
       void deselectInactiveRepeatCourtesies();
       ElementType type() const override { return ElementType::MEASURE; }
       void setScore(Score* s) override;
+      bool updateSpacingFallbackLog(const QString& message)
+            {
+            if (_lastSpacingFallbackLog == message) return false;
+            _lastSpacingFallbackLog = message;
+            return true;
+            }
       Measure* cloneMeasure(Score*, const Fraction& tick, TieMap*);
       Measure* cloneMeasureLimited(Score*, const Fraction& tick, TieMap*, int startStaff, int endStaff);
 

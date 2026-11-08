@@ -1168,7 +1168,9 @@ static QString notePolicyDiagnostic4(const Note* note, const Chord* chord, const
     if (note->onTabStaff()) return QStringLiteral("tablature note");
     if (!chord->articulations().empty()) return QStringLiteral("chord articulation");
     for (const Note* member : chord->notes()) {
-        if (member->tieFor() || member->tieBack()) return QStringLiteral("chord with tie");
+        for (const Tie* tie : {member->tieFor(), member->tieBack()})
+            if (const char* rejection = ordinaryTieRejection4(tie))
+                return QStringLiteral("chord with tie: ") + QString::fromLatin1(rejection);
         if (!member->spannerFor().empty() || !member->spannerBack().empty())
             return QStringLiteral("chord with note spanner");
     }
@@ -1346,6 +1348,9 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                         SpacingPairPolicy4 policy;
                         if (!note->visible() || !spacingPairPolicy4(table, note, note, note->spatium(), policy, &graces, &contextCache))
                             return fail(reason ? QStringLiteral("Note policy: ") + notePolicyDiagnostic4(note, chord, contextCache)
+                                               + QStringLiteral(" [measure %1, tick %2, staff %3, voice %4]")
+                                                   .arg(measure->no() + 1).arg(segment.tick().ticks())
+                                                   .arg(note->staffIdx() + 1).arg(note->track() % VOICES + 1)
                                                : QString());
                         for (const Tie* tie : {note->tieFor(), note->tieBack()}) {
                             if (!tie) continue;

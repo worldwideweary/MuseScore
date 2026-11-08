@@ -11812,6 +11812,8 @@ void TestSpacing::spacingCorpus4()
                         return;
                         }
                   QString reason = event.reason;
+                  const int location = reason.lastIndexOf(QStringLiteral(" [measure "));
+                  if (location >= 0) reason.truncate(location);
                   if (reason.startsWith(QStringLiteral("Unadapted geometry at tick ")))
                         reason = QStringLiteral("Unadapted geometry");
                   if (reason.isEmpty())
