@@ -102,6 +102,7 @@ class TestSpacing : public QObject, public MTest {
       void closeArticulationSpacing4();
       void ordinaryTieSpacing4_data();
       void ordinaryTieSpacing4();
+      void tieOverRemoteVoice4_data();
       void tieOverRemoteVoice4();
       void keepWithNextCollection4();
       void manualLeadingSpace4_data();
@@ -12324,8 +12325,16 @@ void TestSpacing::ordinaryTieSpacing4()
             }
       }
 
+void TestSpacing::tieOverRemoteVoice4_data()
+      {
+      QTest::addColumn<bool>("stemmed");
+      QTest::newRow("stemless") << false;
+      QTest::newRow("unbeamed-stem") << true;
+      }
+
 void TestSpacing::tieOverRemoteVoice4()
       {
+      QFETCH(bool, stemmed);
       std::unique_ptr<MasterScore> score(readScore(DIR + "v0.279-tie-over-remote-voice.mscx"));
       QVERIFY(score);
       score->setStyleValue(Sid::spacingLayout4, true);
@@ -12341,6 +12350,7 @@ void TestSpacing::tieOverRemoteVoice4()
       Note* start = toChord(from->element(0))->upNote();
       Note* end = toChord(to->element(0))->upNote();
       Chord* other = toChord(between->element(1));
+      other->setNoStem(!stemmed);
       Tie* tie = new Tie(score.get());
       tie->setEndNote(end);
       start->add(tie);
@@ -12350,14 +12360,19 @@ void TestSpacing::tieOverRemoteVoice4()
       QVERIFY2(!rejection, rejection);
       QVERIFY(!first->system()->studioSpacingFallback());
       QVERIFY(tie->nsegments() == 1 && tie->segmentAt(0)->bbox().isValid());
-      QVERIFY(!tie->segmentAt(0)->pageBoundingRect().intersects(other->upNote()->pageBoundingRect()));
+      QCOMPARE(other->stem() != nullptr, stemmed);
+      const QRectF tieRect = tie->segmentAt(0)->pageBoundingRect();
+      QVERIFY(!tieRect.intersects(other->upNote()->pageBoundingRect()));
+      if (stemmed)
+            QVERIFY(!tieRect.intersects(other->stem()->pageBoundingRect()));
 
       // Move the same intervening chord into the tie's register. It must
       // take the legacy path rather than assuming the voice is harmless.
       other->upNote()->setPitch(start->pitch());
       score->doLayout();
       QCOMPARE(QString::fromLatin1(ordinaryTieRejection4(tie)),
-               QStringLiteral("intervening notation on the tied staff: stemless chord in another voice"));
+               stemmed ? QStringLiteral("intervening notation on the tied staff: unbeamed stemmed chord in another voice")
+                       : QStringLiteral("intervening notation on the tied staff: stemless chord in another voice"));
       QVERIFY(first->system()->studioSpacingFallback());
       }
 

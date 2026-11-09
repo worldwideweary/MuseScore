@@ -22,6 +22,7 @@
 #include "score.h"
 #include "shape.h"
 #include "symbol.h"
+#include "stem.h"
 #include "spanner.h"
 #include "spannermap.h"
 #include <algorithm>
@@ -383,9 +384,20 @@ static bool remoteTieObstacle4(const Element* item, const Note* start, const Not
     if (!item->isChord() || item->track() == start->track()) return false;
     const Chord* chord = toChord(item);
     if (!chord->visible() || chord->staffMove() || chord->isGrace() || chord->beam()
-        || !chord->noStem() || chord->stem() || chord->hook() || chord->tremolo()
+        || chord->hook() || chord->stemSlash() || chord->tremolo()
         || chord->isNudged() || chord->arpeggio() || !chord->graceNotes().empty()
         || !chord->articulations().empty() || !chord->el().empty() || !chord->lyrics().empty())
+        return false;
+    // An ordinary unflagged, unbeamed stem is laid out before spacing
+    // and its full rectangle is included in Chord::shape(). A beam can
+    // change the stem after horizontal spacing, so it stays excluded.
+    if (const Stem* stem = chord->stem()) {
+        if (chord->noStem() || !chord->durationType().hasStem() || chord->durationType().hooks()
+            || !stem->addToSkyline() || stem->isNudged() || stem->userLen() != 0
+            || !stem->bbox().isValid())
+            return false;
+    }
+    else if (!chord->noStem())
         return false;
     if (chord->measure() != start->chord()->measure() || start->isNudged() || end->isNudged()
         || start->chord()->isNudged() || end->chord()->isNudged())
@@ -456,8 +468,6 @@ const char* ordinaryTieRejection4(const Tie* tie)
             if (item->staffIdx() == a->staffIdx()
                 || (item->isChord() && toChord(item)->vStaffIdx() == a->vStaffIdx())) {
                 if (!remoteTieObstacle4(item, start, end)) {
-                    // Report the first obstacle without changing the
-                    // clearance or admitting any previously rejected ties.
                     if (item->isRest()) {
                         const Rest* rest = toRest(item);
                         if (rest->isGap() || !rest->visible())
