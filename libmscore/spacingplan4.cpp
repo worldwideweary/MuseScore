@@ -840,7 +840,9 @@ bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, 
                         left = std::min(left, e.rect.left());
                 }
                 const qreal inset = 0.5 * std::max(note->spatium(), end->spatium());
-                const qreal minimum = right - left + inset
+                qreal gripInset = right - left + inset;
+                tie->spacingGripInset4(gripInset);
+                const qreal minimum = gripInset
                     + table.score()->styleP(Sid::minTieLength) * std::max(note->mag(), end->mag());
                 if (trace) trace->tie = std::max(trace->tie, minimum);
                 distance = std::max(distance, minimum);
