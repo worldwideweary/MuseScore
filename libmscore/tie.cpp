@@ -1134,28 +1134,31 @@ qreal Tie::incomingStartOffset() const
       return x + item->x() + right + (item->isBarLine() && !startRepeat ? 0.65 : 0.25) * sp;
       }
 
-bool Tie::spacingGripInset4(qreal& inset) const
+const char* Tie::spacingGripInset4(qreal& inset) const
       {
       const Note* a = startNote();
       const Note* b = endNote();
       if (isPartial() || !a || !b || a->track() != b->track() || track() != a->track()
           || a->line() != b->line() || a->isNudged() || b->isNudged())
-            return false;
+            return "unsupported endpoints";
       const Chord* first = a->chord();
       const Chord* last = b->chord();
       const Measure* measure = first->measure();
-      if (!measure || !measure->system() || measure != last->measure()
-          || first->staffMove() || last->staffMove() || first->isGrace() || last->isGrace()
+      if (!measure || measure != last->measure())
+            return "tie crosses a measure boundary";
+      if (!measure->system())
+            return "measure has no system yet";
+      if (first->staffMove() || last->staffMove() || first->isGrace() || last->isGrace()
           || first->isNudged() || last->isNudged()
           || (first->notes().size() == 1 && last->notes().size() == 1))
-            return false;
+            return "unsupported chord context";
       const Staff* st = a->staff();
       const StaffType* type = st ? st->staffType(a->tick()) : nullptr;
       if (!type || !st->isPitchedStaff(a->tick()) || type != st->staffType(b->tick())
           || type->yoffset().val() != 0 || type->lineDistance().val() != 1)
-            return false;
+            return "unsupported staff geometry";
       for (size_t i = 0; i < nsegments(); ++i)
-            if (segmentAt(int(i))->isNudged() || segmentAt(int(i))->isEdited()) return false;
+            if (segmentAt(int(i))->isNudged() || segmentAt(int(i))->isEdited()) return "edited tie segment";
 
       // Use the real grip adjustments on a detached tie copy. Restrict the
       // probe to grips above the staff, where native layout does not snap
@@ -1164,8 +1167,10 @@ bool Tie::spacingGripInset4(qreal& inset) const
       copy.calculateDirection();
       SlurPos positions;
       copy.slurPos(&positions);
-      if (!(positions.p1.y() < 0 && positions.p1.y() == positions.p2.y()))
-            return false;
+      if (positions.p1.y() != positions.p2.y())
+            return "grips are not level";
+      if (!(positions.p1.y() < 0))
+            return "grips are at or below the top staff line";
       const auto originX = [](const Chord* chord) {
             return chord->measure()->x() + chord->segment()->x();
             };
@@ -1177,9 +1182,9 @@ bool Tie::spacingGripInset4(qreal& inset) const
       probe.ups(Grip::END).p = positions.p2 - QPointF(originX(last), 0);
       probe.adjustX();
       const qreal result = probe.ups(Grip::START).p.x() - probe.ups(Grip::END).p.x();
-      if (!std::isfinite(result)) return false;
+      if (!std::isfinite(result)) return "nonfinite grip inset";
       inset = result;
-      return true;
+      return nullptr;
       }
 
 qreal Tie::incomingEndOffset()

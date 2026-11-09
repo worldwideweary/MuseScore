@@ -840,11 +840,23 @@ bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, 
                         left = std::min(left, e.rect.left());
                 }
                 const qreal inset = 0.5 * std::max(note->spatium(), end->spatium());
-                qreal gripInset = right - left + inset;
-                tie->spacingGripInset4(gripInset);
+                const qreal boundsInset = right - left + inset;
+                qreal gripInset = boundsInset;
+                const char* skipped = tie->spacingGripInset4(gripInset);
                 const qreal minimum = gripInset
                     + table.score()->styleP(Sid::minTieLength) * std::max(note->mag(), end->mag());
-                if (trace) trace->tie = std::max(trace->tie, minimum);
+                if (trace) {
+                    const qreal sp = b.segment->spatium();
+                    trace->tie = std::max(trace->tie, minimum);
+                    qDebug().noquote() << "Studio spacing trace: tie"
+                        << a.segment->tick().ticks() << "->" << b.segment->tick().ticks()
+                        << "staff" << note->staffIdx() + 1 << "voice" << note->track() % VOICES + 1
+                        << "pitch" << note->pitch()
+                        << "method" << (skipped ? "bounds" : "native grips")
+                        << "bounds inset" << boundsInset / sp << "used inset" << gripInset / sp
+                        << "minimum" << minimum / sp << "sp"
+                        << (skipped ? skipped : "");
+                }
                 distance = std::max(distance, minimum);
             }
         }

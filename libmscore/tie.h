@@ -92,7 +92,7 @@ class Tie final : public SlurTie {
       TieSegment* layoutPartial(System*);
       qreal incomingStartOffset() const; // free end, relative to the owner measure
       qreal incomingEndOffset(); // note-owned end, relative to its CR segment
-      bool spacingGripInset4(qreal& inset) const; // combined grip inset relative to the two rhythmic onsets
+      const char* spacingGripInset4(qreal& inset) const; // null on success; otherwise the reason the probe was skipped
 
       void setStartNote(Note* note);
       void setEndNote(Note* note)                 { setEndElement((Element*)note); }
