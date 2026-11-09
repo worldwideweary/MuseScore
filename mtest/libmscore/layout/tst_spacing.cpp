@@ -12358,8 +12358,7 @@ void TestSpacing::tieOverRemoteVoice4()
             other->setStemDirection(Direction::DOWN);
             start->setPitch(72); // C5, with G4 in the other voice
             end->setPitch(72);
-            other->upNote()->setPitch(67);
-            other->upNote()->setTpc(15);
+            other->upNote()->setPitch(67, 15, 15);
             }
       Tie* tie = new Tie(score.get());
       tie->setEndNote(end);
@@ -12380,8 +12379,7 @@ void TestSpacing::tieOverRemoteVoice4()
 
       // Move the same intervening chord into the tie's register. It must
       // take the legacy path rather than assuming the voice is harmless.
-      other->upNote()->setPitch(start->pitch());
-      other->upNote()->setTpc(14);
+      other->upNote()->setPitch(start->pitch(), start->tpc1(), start->tpc2());
       score->doLayout();
       QCOMPARE(QString::fromLatin1(ordinaryTieRejection4(tie)),
                stemmed ? QStringLiteral("intervening notation on the tied staff: unbeamed stemmed chord in another voice")

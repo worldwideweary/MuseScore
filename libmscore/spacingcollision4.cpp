@@ -447,14 +447,20 @@ static bool remoteTieObstacle4(const Element* item, const Note* start, const Not
     if (!(sp > 0) || !std::isfinite(pad) || !heads.isValid() || obstacle.empty()) return false;
     bool above = true;
     bool below = true;
+    bool hasInk = false;
     for (const QRectF& rect : obstacle) {
         const qreal top = rect.top() + chord->y();
         const qreal bottom = rect.bottom() + chord->y();
         if (!std::isfinite(top) || !std::isfinite(bottom)) return false;
+        // Shape::addHorizontalSpacing emits zero-height bookkeeping
+        // rectangles at staff y=0. They reserve x space but have no ink.
+        if (rect.height() == 0) continue;
+        if (rect.height() < 0) return false;
+        hasInk = true;
         above = above && bottom < heads.top() - abovePad;
         below = below && top > heads.bottom() + belowPad;
     }
-    return above || below;
+    return hasInk && (above || below);
 }
 
 // The planner reserves horizontal clearance separately. Keep endpoints
