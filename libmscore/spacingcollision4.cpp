@@ -455,6 +455,14 @@ static const char* remoteTieObstacleRejection4(const Element* item, const Note* 
     bool above = true;
     bool below = true;
     bool hasInk = false;
+    // For a known direction, the ordinary curve starts on its own side
+    // of the endpoint centers. Do not reject a supported unbeamed stem
+    // merely because its ink approaches the far edge of a tied head.
+    // Keep the stroke margin and require the entire obstacle to stay on
+    // the opposite side of both endpoint centers.
+    const qreal startY = start->y() + start->chord()->y();
+    const qreal endY = end->y() + end->chord()->y();
+    bool opposite = chord->stem() && side != Direction::AUTO;
     for (const QRectF& rect : obstacle) {
         const qreal top = rect.top() + chord->y();
         const qreal bottom = rect.bottom() + chord->y();
@@ -466,9 +474,13 @@ static const char* remoteTieObstacleRejection4(const Element* item, const Note* 
         hasInk = true;
         above = above && bottom < heads.top() - abovePad;
         below = below && top > heads.bottom() + belowPad;
+        if (opposite) {
+            opposite = side == Direction::UP ? top > std::max(startY, endY) + stroke
+                                             : bottom < std::min(startY, endY) - stroke;
+        }
     }
     if (!hasInk) return "chord has no visible clearance geometry";
-    if (above || below) return nullptr;
+    if (above || below || opposite) return nullptr;
     return side == Direction::AUTO ? "insufficient two-sided clearance (tie side unavailable)"
         : side == Direction::UP ? "insufficient clearance for an upward tie"
                                 : "insufficient clearance for a downward tie";

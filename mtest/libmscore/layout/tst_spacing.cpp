@@ -12358,9 +12358,9 @@ void TestSpacing::tieOverRemoteVoice4()
       other->setNoStem(!stemmed);
       if (nearOppositeSide) {
             other->setStemDirection(Direction::DOWN);
-            start->setPitch(72); // C5, with G4 in the other voice
+            start->setPitch(72); // C5, with A4 in the other voice
             end->setPitch(72);
-            other->upNote()->setPitch(67, 15, 15);
+            other->upNote()->setPitch(69, 17, 17);
             }
       Tie* tie = new Tie(score.get());
       tie->setEndNote(end);
@@ -12378,6 +12378,19 @@ void TestSpacing::tieOverRemoteVoice4()
       QVERIFY(!tieRect.intersects(other->upNote()->pageBoundingRect()));
       if (stemmed)
             QVERIFY(!tieRect.intersects(other->stem()->pageBoundingRect()));
+
+      if (nearOppositeSide) {
+            // The other voice is now on the curve side; changing only
+            // direction must not bypass the clearance guard.
+            tie->setSlurDirection(Direction::DOWN);
+            score->doLayout();
+            TieObstacleDiagnostic4 flipped;
+            QVERIFY(ordinaryTieRejection4(tie, &flipped));
+            QCOMPARE(flipped.item, static_cast<const Element*>(other));
+            QCOMPARE(QString::fromLatin1(flipped.reason), QStringLiteral("insufficient clearance for a downward tie"));
+            QVERIFY(first->system()->studioSpacingFallback());
+            tie->setSlurDirection(Direction::AUTO);
+            }
 
       // Move the same intervening chord into the tie's register. It must
       // take the legacy path rather than assuming the voice is harmless.
