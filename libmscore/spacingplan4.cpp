@@ -809,12 +809,24 @@ bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, 
                 const Tie* tie = note->tieFor();
                 const Note* end = tie ? tie->endNote() : nullptr;
                 if (!end || end->chord()->segment() != b.segment) continue;
-                // The native tie adjusts its grips around endpoint ink, then
-                // adds a quarter-space inset at each end. Reserve that room
-                // outside the projected endpoint shapes, even when squeezing.
-                const qreal left = second.leftEdge;
+                // Native grip adjustment examines the voices on the tied
+                // staff. Other staves have their own collision minima above;
+                // combining their bounds with this tie minimum can widen an
+                // interval even when neither staff needs that much room.
+                const size_t staff = size_t(note->staffIdx());
+                qreal right = first.minRight;
+                qreal left = second.leftEdge;
+                if (note->staffIdx() == end->staffIdx() && staff < first.staff.size() && staff < second.staff.size()
+                    && !first.staff[staff].elements.empty() && !second.staff[staff].elements.empty()) {
+                    right = 0;
+                    left = std::numeric_limits<qreal>::max();
+                    for (const SpacingShapeElement4& e : first.staff[staff].elements)
+                        right = std::max(right, e.rect.right());
+                    for (const SpacingShapeElement4& e : second.staff[staff].elements)
+                        left = std::min(left, e.rect.left());
+                }
                 const qreal inset = 0.5 * std::max(note->spatium(), end->spatium());
-                distance = std::max(distance, first.minRight - left + inset
+                distance = std::max(distance, right - left + inset
                     + table.score()->styleP(Sid::minTieLength) * std::max(note->mag(), end->mag()));
             }
         }
