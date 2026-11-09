@@ -104,6 +104,7 @@ class TestSpacing : public QObject, public MTest {
       void ordinaryTieSpacing4();
       void tieOverRemoteVoice4_data();
       void tieOverRemoteVoice4();
+      void tieOverRemoteBeam4();
       void keepWithNextCollection4();
       void manualLeadingSpace4_data();
       void manualLeadingSpace4();
@@ -12402,6 +12403,52 @@ void TestSpacing::tieOverRemoteVoice4()
                        : QStringLiteral("intervening notation on the tied staff: stemless chord in another voice"));
       QCOMPARE(detail.item, static_cast<const Element*>(other));
       QVERIFY(QString::fromLatin1(detail.reason).startsWith(QStringLiteral("insufficient")));
+      QVERIFY(first->system()->studioSpacingFallback());
+      }
+
+void TestSpacing::tieOverRemoteBeam4()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "v0.297-tie-over-remote-beam.mscx"));
+      QVERIFY(score);
+      score->setStyleValue(Sid::spacingLayout4, true);
+      QScopedValueRollback<bool> stretch(MScore::noHorizontalStretch, false);
+      Measure* first = score->firstMeasure();
+      QVERIFY(first && first->nextMeasure());
+      Segment* from = first->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+      Segment* to = first->nextMeasure()->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
+      Segment* between = first->findSegmentR(SegmentType::ChordRest, Fraction(1, 2));
+      QVERIFY(from && from->element(0) && from->element(0)->isChord());
+      QVERIFY(to && to->element(0) && to->element(0)->isChord());
+      QVERIFY(between && between->element(0) && between->element(0)->isChord());
+      QVERIFY(from->element(1) && from->element(1)->isChord());
+      QVERIFY(to->element(1) && to->element(1)->isChord());
+      Chord* other = toChord(between->element(0));
+      Note* start = toChord(from->element(1))->upNote();
+      Note* end = toChord(to->element(1))->upNote();
+      Tie* tie = new Tie(score.get());
+      tie->setEndNote(end);
+      start->add(tie);
+      score->doLayout();
+      const Beam* beam = other->beam();
+      QVERIFY(beam && beam->up() && beam->pageBoundingRect().isValid());
+      QVERIFY(first->system() && first->system() == to->measure()->system());
+      const char* rejection = ordinaryTieRejection4(tie);
+      QVERIFY2(!rejection, rejection);
+      QVERIFY(!first->system()->studioSpacingFallback());
+      QVERIFY(!tie->up() && tie->nsegments() == 1);
+      const QRectF tieRect = tie->segmentAt(0)->pageBoundingRect();
+      QVERIFY(tieRect.isValid() && !tieRect.intersects(beam->pageBoundingRect()));
+      for (const ChordRest* member : beam->elements()) {
+            const Chord* chord = toChord(member);
+            QVERIFY(!tieRect.intersects(chord->stem()->pageBoundingRect()));
+            QVERIFY(!tieRect.intersects(chord->upNote()->pageBoundingRect()));
+            }
+      tie->setSlurDirection(Direction::UP);
+      score->doLayout();
+      TieObstacleDiagnostic4 detail;
+      QVERIFY(ordinaryTieRejection4(tie, &detail));
+      QCOMPARE(detail.item, static_cast<const Element*>(other));
+      QCOMPARE(QString::fromLatin1(detail.reason), QStringLiteral("beam stems point toward the tie"));
       QVERIFY(first->system()->studioSpacingFallback());
       }
 

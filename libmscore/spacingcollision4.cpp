@@ -397,6 +397,46 @@ static Direction stableTieSide4(const Tie* tie, const Chord* start, const Chord*
     return Direction::AUTO;
 }
 
+// A single-level beam with all stems pointing away from the tie stays
+// on that side as spacing changes the slope and stem lengths. Check the
+// entire group: the beam is a straight strip between the outer stems.
+static const char* remoteTieBeamRejection4(const Chord* chord, Direction side, qreal upper, qreal lower)
+{
+    const Beam* beam = chord->beam();
+    if (side == Direction::AUTO || !beam->visible() || beam->cross() || beam->isGrace()
+        || beam->userModified() || beam->isNudged() || beam->distribute()
+        || beam->growLeft() != 1 || beam->growRight() != 1 || beam->elements().size() < 2)
+        return "beam needs a known tie side and ordinary automatic geometry";
+    const bool up = side == Direction::DOWN;
+    if (beam->up() != up)
+        return "beam stems point toward the tie";
+    const qreal width = chord->score()->styleP(Sid::beamWidth) * beam->mag();
+    if (!(width > 0) || !std::isfinite(width)) return "invalid beam width";
+    for (const ChordRest* cr : beam->elements()) {
+        if (!cr || !cr->isChord() || cr->measure() != chord->measure() || cr->track() != chord->track()
+            || cr->staffMove() || cr->beam() != beam || cr->durationType().hooks() != 1)
+            return "beam needs one level of same-staff stems in one measure";
+        const Chord* member = toChord(cr);
+        const Stem* stem = member->stem();
+        if (member->isGrace() || !member->visible() || member->isNudged() || member->up() != up
+            || member->tremolo() || member->noStem() || !stem || !stem->addToSkyline()
+            || stem->isNudged() || stem->userLen() != 0 || !stem->bbox().isValid())
+            return "beam member has unsupported stem geometry";
+        const Shape ink = member->shape();
+        bool hasInk = false;
+        for (const QRectF& rect : ink) {
+            if (rect.height() == 0) continue; // horizontal spacing marker
+            const qreal edge = member->y() + (up ? rect.bottom() : rect.top());
+            if (rect.height() < 0 || !std::isfinite(edge)
+                || !(up ? edge < upper - width : edge > lower + width))
+                return "beam group does not clear the opposite side of the tie";
+            hasInk = true;
+        }
+        if (!hasInk) return "beam member has no visible geometry";
+    }
+    return nullptr;
+}
+
 // Keep the full vertical guard on the curve side. On the opposite
 // side the whole obstacle still has to clear both endpoint heads.
 static const char* remoteTieObstacleRejection4(const Element* item, const Note* start, const Note* end, Direction side)
@@ -406,18 +446,16 @@ static const char* remoteTieObstacleRejection4(const Element* item, const Note* 
     const Chord* chord = toChord(item);
     if (!chord->visible()) return "hidden chord";
     if (chord->staffMove() || chord->isGrace()) return "moved or grace chord";
-    if (chord->beam()) return "stem geometry depends on the beam";
     if (chord->hook() || chord->stemSlash() || chord->tremolo())
         return "flag, stem slash or tremolo";
     if (chord->isNudged()) return "chord has a manual offset";
     if (chord->arpeggio() || !chord->graceNotes().empty()
         || !chord->articulations().empty() || !chord->el().empty() || !chord->lyrics().empty())
         return "chord has attachments";
-    // An ordinary unflagged, unbeamed stem is laid out before spacing
-    // and its full rectangle is included in Chord::shape(). A beam can
-    // change the stem after horizontal spacing, so it stays excluded.
+    // Ordinary stems must have prepared geometry. A beamed stem also
+    // needs a group check because its length can change after spacing.
     if (const Stem* stem = chord->stem()) {
-        if (chord->noStem() || !chord->durationType().hasStem() || chord->durationType().hooks())
+        if (chord->noStem() || !chord->durationType().hasStem() || (!chord->beam() && chord->durationType().hooks()))
             return "unsupported stem duration or flag";
         if (!stem->addToSkyline()) return "stem is hidden or excluded from the skyline";
         if (stem->isNudged() || stem->userLen() != 0) return "stem has a manual adjustment";
@@ -462,6 +500,9 @@ static const char* remoteTieObstacleRejection4(const Element* item, const Note* 
     // the opposite side of both endpoint centers.
     const qreal startY = start->y() + start->chord()->y();
     const qreal endY = end->y() + end->chord()->y();
+    if (chord->beam())
+        return remoteTieBeamRejection4(chord, side, std::min(startY, endY) - stroke,
+                                                   std::max(startY, endY) + stroke);
     bool opposite = chord->stem() && side != Direction::AUTO;
     for (const QRectF& rect : obstacle) {
         const qreal top = rect.top() + chord->y();
