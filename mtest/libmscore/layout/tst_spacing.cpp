@@ -12357,7 +12357,7 @@ void TestSpacing::tieOverRemoteVoice4()
       other->upNote()->setPitch(start->pitch());
       score->doLayout();
       QCOMPARE(QString::fromLatin1(ordinaryTieRejection4(tie)),
-               QStringLiteral("intervening notation on the tied staff"));
+               QStringLiteral("intervening notation on the tied staff: stemless chord in another voice"));
       QVERIFY(first->system()->studioSpacingFallback());
       }
 

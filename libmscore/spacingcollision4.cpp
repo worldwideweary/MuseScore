@@ -455,8 +455,29 @@ const char* ordinaryTieRejection4(const Tie* tie)
             if (!item) continue;
             if (item->staffIdx() == a->staffIdx()
                 || (item->isChord() && toChord(item)->vStaffIdx() == a->vStaffIdx())) {
-                if (!remoteTieObstacle4(item, start, end))
+                if (!remoteTieObstacle4(item, start, end)) {
+                    // Report the first obstacle without changing the
+                    // clearance or admitting any previously rejected ties.
+                    if (item->isRest()) {
+                        const Rest* rest = toRest(item);
+                        if (rest->isGap() || !rest->visible())
+                            return "intervening notation on the tied staff: gap or hidden rest";
+                        return "intervening notation on the tied staff: visible rest";
+                    }
+                    if (item->isChord()) {
+                        const Chord* obstacle = toChord(item);
+                        if (obstacle->staffMove())
+                            return "intervening notation on the tied staff: cross-staff chord";
+                        if (item->track() == start->track())
+                            return "intervening notation on the tied staff: chord in the tied voice";
+                        if (obstacle->beam())
+                            return "intervening notation on the tied staff: beamed chord in another voice";
+                        if (obstacle->stem())
+                            return "intervening notation on the tied staff: unbeamed stemmed chord in another voice";
+                        return "intervening notation on the tied staff: stemless chord in another voice";
+                    }
                     return "intervening notation on the tied staff";
+                }
                 crossesRemoteVoice = true;
             }
         }
