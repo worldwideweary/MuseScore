@@ -11942,6 +11942,8 @@ void TestSpacing::spacingCorpus4()
                   QString reason = event.reason;
                   const int location = reason.lastIndexOf(QStringLiteral(" [measure "));
                   if (location >= 0) reason.truncate(location);
+                  const int obstacle = reason.indexOf(QStringLiteral(" {obstacle: "));
+                  if (obstacle >= 0) reason.truncate(obstacle);
                   if (reason.startsWith(QStringLiteral("Unadapted geometry at tick ")))
                         reason = QStringLiteral("Unadapted geometry");
                   if (reason.isEmpty())
@@ -12381,9 +12383,12 @@ void TestSpacing::tieOverRemoteVoice4()
       // take the legacy path rather than assuming the voice is harmless.
       other->upNote()->setPitch(start->pitch(), start->tpc1(), start->tpc2());
       score->doLayout();
-      QCOMPARE(QString::fromLatin1(ordinaryTieRejection4(tie)),
+      TieObstacleDiagnostic4 detail;
+      QCOMPARE(QString::fromLatin1(ordinaryTieRejection4(tie, &detail)),
                stemmed ? QStringLiteral("intervening notation on the tied staff: unbeamed stemmed chord in another voice")
                        : QStringLiteral("intervening notation on the tied staff: stemless chord in another voice"));
+      QCOMPARE(detail.item, static_cast<const Element*>(other));
+      QVERIFY(QString::fromLatin1(detail.reason).startsWith(QStringLiteral("insufficient")));
       QVERIFY(first->system()->studioSpacingFallback());
       }
 

@@ -1297,9 +1297,20 @@ static QString notePolicyDiagnostic4(const Note* note, const Chord* chord, const
         return QStringLiteral("chord articulation: ") + marks.join(QStringLiteral(" + "));
     }
     for (const Note* member : chord->notes()) {
-        for (const Tie* tie : {member->tieFor(), member->tieBack()})
-            if (const char* rejection = ordinaryTieRejection4(tie))
-                return QStringLiteral("chord with tie: ") + QString::fromLatin1(rejection);
+        for (const Tie* tie : {member->tieFor(), member->tieBack()}) {
+            TieObstacleDiagnostic4 detail;
+            if (const char* rejection = ordinaryTieRejection4(tie, &detail)) {
+                QString message = QStringLiteral("chord with tie: ") + QString::fromLatin1(rejection);
+                if (detail.item && detail.item->isChord() && toChord(detail.item)->measure()) {
+                    const Chord* obstacle = toChord(detail.item);
+                    message += QStringLiteral(" {obstacle: m.%1, beat %2, tick %3, staff %4, voice %5: %6}")
+                        .arg(obstacle->measure()->no() + 1).arg(obstacle->barbeat().second)
+                        .arg(obstacle->tick().ticks()).arg(obstacle->vStaffIdx() + 1)
+                        .arg(obstacle->track() % VOICES + 1).arg(QString::fromLatin1(detail.reason));
+                }
+                return message;
+            }
+        }
         if (!member->spannerFor().empty() || !member->spannerBack().empty())
             return QStringLiteral("chord with note spanner");
     }

@@ -14,8 +14,12 @@ class Element;
 class Chord;
 class Note;
 class Tie;
+struct TieObstacleDiagnostic4 {
+    const Element* item = nullptr;
+    const char* reason = nullptr;
+};
 // Null means the tie is accepted by the ordinary spacing policy.
-const char* ordinaryTieRejection4(const Tie*);
+const char* ordinaryTieRejection4(const Tie*, TieObstacleDiagnostic4* = nullptr);
 bool spacingChordArticulationsSupported4(const Chord*);
 bool spacingPedalSymbol4(const Element*);
 class Score;

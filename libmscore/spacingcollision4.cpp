@@ -399,33 +399,40 @@ static Direction stableTieSide4(const Tie* tie, const Chord* start, const Chord*
 
 // Keep the full vertical guard on the curve side. On the opposite
 // side the whole obstacle still has to clear both endpoint heads.
-static bool remoteTieObstacle4(const Element* item, const Note* start, const Note* end, Direction side)
+static const char* remoteTieObstacleRejection4(const Element* item, const Note* start, const Note* end, Direction side)
 {
-    if (!item->isChord() || item->track() == start->track()) return false;
+    if (!item->isChord()) return "obstacle is not a chord";
+    if (item->track() == start->track()) return "obstacle is in the tied voice";
     const Chord* chord = toChord(item);
-    if (!chord->visible() || chord->staffMove() || chord->isGrace() || chord->beam()
-        || chord->hook() || chord->stemSlash() || chord->tremolo()
-        || chord->isNudged() || chord->arpeggio() || !chord->graceNotes().empty()
+    if (!chord->visible()) return "hidden chord";
+    if (chord->staffMove() || chord->isGrace()) return "moved or grace chord";
+    if (chord->beam()) return "stem geometry depends on the beam";
+    if (chord->hook() || chord->stemSlash() || chord->tremolo())
+        return "flag, stem slash or tremolo";
+    if (chord->isNudged()) return "chord has a manual offset";
+    if (chord->arpeggio() || !chord->graceNotes().empty()
         || !chord->articulations().empty() || !chord->el().empty() || !chord->lyrics().empty())
-        return false;
+        return "chord has attachments";
     // An ordinary unflagged, unbeamed stem is laid out before spacing
     // and its full rectangle is included in Chord::shape(). A beam can
     // change the stem after horizontal spacing, so it stays excluded.
     if (const Stem* stem = chord->stem()) {
-        if (chord->noStem() || !chord->durationType().hasStem() || chord->durationType().hooks()
-            || !stem->addToSkyline() || stem->isNudged() || stem->userLen() != 0
-            || !stem->bbox().isValid())
-            return false;
+        if (chord->noStem() || !chord->durationType().hasStem() || chord->durationType().hooks())
+            return "unsupported stem duration or flag";
+        if (!stem->addToSkyline()) return "stem is hidden or excluded from the skyline";
+        if (stem->isNudged() || stem->userLen() != 0) return "stem has a manual adjustment";
+        if (!stem->bbox().isValid()) return "stem has no valid bounds";
     }
     else if (!chord->noStem())
-        return false;
-    if (chord->measure() != start->chord()->measure() || start->isNudged() || end->isNudged()
-        || start->chord()->isNudged() || end->chord()->isNudged())
-        return false;
+        return "chord is not explicitly stemless and has no prepared stem";
+    if (chord->measure() != start->chord()->measure())
+        return "chord is outside the tie start measure";
+    if (start->isNudged() || end->isNudged() || start->chord()->isNudged() || end->chord()->isNudged())
+        return "tie endpoint has a manual offset";
     const Staff* staff = start->staff();
     if (staff->staffType(start->tick()) != staff->staffType(end->tick())
         || staff->staffType(start->tick()) != staff->staffType(chord->tick()))
-        return false;
+        return "staff type changes within the tie";
     const qreal sp = std::max(start->spatium(), end->spatium());
     const qreal stroke = std::abs(start->score()->styleP(Sid::tieMidWidth))
                          + std::abs(start->score()->styleP(Sid::tieEndWidth));
@@ -441,32 +448,37 @@ static bool remoteTieObstacle4(const Element* item, const Note* start, const Not
         if (!note->visible() || note->isNudged() || !note->el().empty()
             || note->tieFor() || note->tieBack()
             || !note->spannerFor().empty() || !note->spannerBack().empty())
-            return false;
+            return "note is hidden, moved or has attachments";
     }
     const Shape obstacle = chord->shape();
-    if (!(sp > 0) || !std::isfinite(pad) || !heads.isValid() || obstacle.empty()) return false;
+    if (!(sp > 0) || !std::isfinite(pad) || !heads.isValid() || obstacle.empty()) return "invalid or missing clearance geometry";
     bool above = true;
     bool below = true;
     bool hasInk = false;
     for (const QRectF& rect : obstacle) {
         const qreal top = rect.top() + chord->y();
         const qreal bottom = rect.bottom() + chord->y();
-        if (!std::isfinite(top) || !std::isfinite(bottom)) return false;
+        if (!std::isfinite(top) || !std::isfinite(bottom)) return "invalid or missing clearance geometry";
         // Shape::addHorizontalSpacing emits zero-height bookkeeping
         // rectangles at staff y=0. They reserve x space but have no ink.
         if (rect.height() == 0) continue;
-        if (rect.height() < 0) return false;
+        if (rect.height() < 0) return "invalid or missing clearance geometry";
         hasInk = true;
         above = above && bottom < heads.top() - abovePad;
         below = below && top > heads.bottom() + belowPad;
     }
-    return hasInk && (above || below);
+    if (!hasInk) return "chord has no visible clearance geometry";
+    if (above || below) return nullptr;
+    return side == Direction::AUTO ? "insufficient two-sided clearance (tie side unavailable)"
+        : side == Direction::UP ? "insufficient clearance for an upward tie"
+                                : "insufficient clearance for a downward tie";
 }
 
 // The planner reserves horizontal clearance separately. Keep endpoints
 // that need a different tie placement rule on the native path.
-const char* ordinaryTieRejection4(const Tie* tie)
+const char* ordinaryTieRejection4(const Tie* tie, TieObstacleDiagnostic4* detail)
 {
+    if (detail) *detail = TieObstacleDiagnostic4();
     if (!tie) return nullptr;
     const Note* start = tie->startNote();
     const Note* end = tie->endNote();
@@ -500,7 +512,11 @@ const char* ordinaryTieRejection4(const Tie* tie)
             if (!item) continue;
             if (item->staffIdx() == a->staffIdx()
                 || (item->isChord() && toChord(item)->vStaffIdx() == a->vStaffIdx())) {
-                if (!remoteTieObstacle4(item, start, end, side)) {
+                if (const char* rejection = remoteTieObstacleRejection4(item, start, end, side)) {
+                    if (detail) {
+                        detail->item = item;
+                        detail->reason = rejection;
+                    }
                     if (item->isRest()) {
                         const Rest* rest = toRest(item);
                         if (rest->isGap() || !rest->visible())
