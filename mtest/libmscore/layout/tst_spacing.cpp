@@ -12328,13 +12328,16 @@ void TestSpacing::ordinaryTieSpacing4()
 void TestSpacing::tieOverRemoteVoice4_data()
       {
       QTest::addColumn<bool>("stemmed");
-      QTest::newRow("stemless") << false;
-      QTest::newRow("unbeamed-stem") << true;
+      QTest::addColumn<bool>("nearOppositeSide");
+      QTest::newRow("stemless") << false << false;
+      QTest::newRow("unbeamed-stem") << true << false;
+      QTest::newRow("near-opposite-stem") << true << true;
       }
 
 void TestSpacing::tieOverRemoteVoice4()
       {
       QFETCH(bool, stemmed);
+      QFETCH(bool, nearOppositeSide);
       std::unique_ptr<MasterScore> score(readScore(DIR + "v0.279-tie-over-remote-voice.mscx"));
       QVERIFY(score);
       score->setStyleValue(Sid::spacingLayout4, true);
@@ -12351,6 +12354,13 @@ void TestSpacing::tieOverRemoteVoice4()
       Note* end = toChord(to->element(0))->upNote();
       Chord* other = toChord(between->element(1));
       other->setNoStem(!stemmed);
+      if (nearOppositeSide) {
+            other->setStemDirection(Direction::DOWN);
+            start->setPitch(72); // C5, with G4 in the other voice
+            end->setPitch(72);
+            other->upNote()->setPitch(67);
+            other->upNote()->setTpc(15);
+            }
       Tie* tie = new Tie(score.get());
       tie->setEndNote(end);
       start->add(tie);
@@ -12361,6 +12371,8 @@ void TestSpacing::tieOverRemoteVoice4()
       QVERIFY(!first->system()->studioSpacingFallback());
       QVERIFY(tie->nsegments() == 1 && tie->segmentAt(0)->bbox().isValid());
       QCOMPARE(other->stem() != nullptr, stemmed);
+      if (nearOppositeSide)
+            QVERIFY(tie->up());
       const QRectF tieRect = tie->segmentAt(0)->pageBoundingRect();
       QVERIFY(!tieRect.intersects(other->upNote()->pageBoundingRect()));
       if (stemmed)
@@ -12369,6 +12381,7 @@ void TestSpacing::tieOverRemoteVoice4()
       // Move the same intervening chord into the tie's register. It must
       // take the legacy path rather than assuming the voice is harmless.
       other->upNote()->setPitch(start->pitch());
+      other->upNote()->setTpc(14);
       score->doLayout();
       QCOMPARE(QString::fromLatin1(ordinaryTieRejection4(tie)),
                stemmed ? QStringLiteral("intervening notation on the tied staff: unbeamed stemmed chord in another voice")

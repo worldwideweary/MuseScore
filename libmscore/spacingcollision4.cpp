@@ -376,10 +376,30 @@ unsigned SpacingContextCache4::forwardSlurKerning(const Chord* chord)
     return blocked;
 }
 
-// Use staff-local geometry only. The tie has not been laid out at the
-// proposed system width yet, so keep a wide band on both sides of the
-// endpoint heads, independent of the final tie direction.
-static bool remoteTieObstacle4(const Element* item, const Note* start, const Note* end)
+// Match the first polyphonic branch of Tie::calculateDirection() and
+// the pitched polyphonic branch of Chord::computeUp(). Do not read the
+// cached direction of a tie or a stem that can be set by a beam.
+static Direction stableTieSide4(const Tie* tie, const Chord* start, const Chord* end)
+{
+    if (tie->isPartial() || start->notes().size() != 1 || end->notes().size() != 1)
+        return Direction::AUTO;
+    if (tie->slurDirection() != Direction::AUTO)
+        return tie->slurDirection();
+    for (const Chord* chord : {start, end}) {
+        if (!chord->measure()->hasVoices(chord->staffIdx(), chord->tick(), chord->actualTicks()))
+            continue;
+        if (chord->beam() || chord->tremolo())
+            return Direction::AUTO;
+        if (chord->stemDirection() != Direction::AUTO)
+            return chord->stemDirection();
+        return chord->track() % 2 == 0 ? Direction::UP : Direction::DOWN;
+    }
+    return Direction::AUTO;
+}
+
+// Keep the full vertical guard on the curve side. On the opposite
+// side the whole obstacle still has to clear both endpoint heads.
+static bool remoteTieObstacle4(const Element* item, const Note* start, const Note* end, Direction side)
 {
     if (!item->isChord() || item->track() == start->track()) return false;
     const Chord* chord = toChord(item);
@@ -407,8 +427,14 @@ static bool remoteTieObstacle4(const Element* item, const Note* start, const Not
         || staff->staffType(start->tick()) != staff->staffType(chord->tick()))
         return false;
     const qreal sp = std::max(start->spatium(), end->spatium());
-    const qreal pad = 4 * sp + std::abs(start->score()->styleP(Sid::tieMidWidth))
-                            + std::abs(start->score()->styleP(Sid::tieEndWidth));
+    const qreal stroke = std::abs(start->score()->styleP(Sid::tieMidWidth))
+                         + std::abs(start->score()->styleP(Sid::tieEndWidth));
+    const qreal pad = 4 * sp + stroke;
+    const StaffType* type = staff->staffType(start->tick());
+    if (!type || type->yoffset().val() != 0 || type->lineDistance().val() != 1)
+        side = Direction::AUTO;
+    const qreal abovePad = side == Direction::DOWN ? stroke : pad;
+    const qreal belowPad = side == Direction::UP ? stroke : pad;
     const QRectF heads = start->bbox().translated(0, start->y() + start->chord()->y())
         .united(end->bbox().translated(0, end->y() + end->chord()->y()));
     for (const Note* note : chord->notes()) {
@@ -425,8 +451,8 @@ static bool remoteTieObstacle4(const Element* item, const Note* start, const Not
         const qreal top = rect.top() + chord->y();
         const qreal bottom = rect.bottom() + chord->y();
         if (!std::isfinite(top) || !std::isfinite(bottom)) return false;
-        above = above && bottom < heads.top() - pad;
-        below = below && top > heads.bottom() + pad;
+        above = above && bottom < heads.top() - abovePad;
+        below = below && top > heads.bottom() + belowPad;
     }
     return above || below;
 }
@@ -459,6 +485,7 @@ const char* ordinaryTieRejection4(const Tie* tie)
         && (a->measure()->next() != b->measure() || a->measure()->repeatEnd()
             || b->measure()->repeatStart() || a->measure()->nextSectionBreak()))
         return "tie crosses a repeat, section or nonadjacent barline";
+    const Direction side = stableTieSide4(tie, a, b);
     bool crossesRemoteVoice = false;
     const Segment* next = a->segment()->next1(SegmentType::ChordRest);
     for (; next && next != b->segment() && next->tick() < b->tick();
@@ -467,7 +494,7 @@ const char* ordinaryTieRejection4(const Tie* tie)
             if (!item) continue;
             if (item->staffIdx() == a->staffIdx()
                 || (item->isChord() && toChord(item)->vStaffIdx() == a->vStaffIdx())) {
-                if (!remoteTieObstacle4(item, start, end)) {
+                if (!remoteTieObstacle4(item, start, end, side)) {
                     if (item->isRest()) {
                         const Rest* rest = toRest(item);
                         if (rest->isGap() || !rest->visible())
