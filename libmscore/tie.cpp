@@ -36,6 +36,33 @@ namespace Ms {
 Note* Tie::editStartNote;
 Note* Tie::editEndNote;
 
+// Curve height increases sublinearly with length: short ties remain compact,
+// while long ties gain enough bow without a linear growth in curvature.
+// Bounds are expressed in staff spaces, matching TieSegment's layout fields.
+static qreal tieCurveHeight(qreal length, qreal sp, qreal minSp, qreal maxSp)
+      {
+      if (sp <= 0.0)
+            return 0.0;
+      const qreal lengthSp = qAbs(length) / sp;
+      const qreal preferredSp = 0.3 + 0.3 * std::sqrt(qAbs(lengthSp - 1.0));
+      return qBound(minSp, preferredSp, qMax(minSp, maxSp)) * sp;
+      }
+
+// A short bow needs less ink at its center than a full-length tie. This
+// returns the distance between the two Bezier halves, not the total pen width.
+static qreal tieCurveThickness(qreal lengthSp, qreal sp, qreal endWidth,
+                               qreal midWidth, qreal minimumLengthSp, qreal mag)
+      {
+      const qreal normal = qMax(0.0, midWidth - endWidth);
+      const qreal shortLimit = 4.0 * mag;
+      if (lengthSp >= shortLimit || minimumLengthSp >= shortLimit)
+            return normal;
+      const qreal shortest = qMax(0.0, 0.15 * sp - endWidth);
+      const qreal amount = qBound(0.0,
+            (lengthSp - minimumLengthSp) / (shortLimit - minimumLengthSp), 1.0);
+      return qMin(normal, shortest + (normal - shortest) * amount);
+      }
+
 QPointF tieNoteAttachment(const Note* note, bool up, bool inside, bool start, bool adjust)
       {
       Chord* chord = note->chord();
@@ -337,11 +364,9 @@ void TieSegment::computeBezier(QPointF shoulderOffset)
       tieEndNormalized = t.map(tieEndNormalized);  // apply that rotation
       shoulderOffset = t.map(shoulderOffset);  // also apply to shoulderOffset
 
-      double smallH = 0.38; // I don't know what this means currently
-      qreal tieWidthInSp = tieEndNormalized.x() / _spatium;
-      shoulderH = tieWidthInSp * 0.4 * smallH;  // magic math?
-      shoulderH = qBound(shoulderHeightMin, shoulderH, shoulderHeightMax);
-      shoulderH *= _spatium;  // shoulderH is now canvas units
+      const qreal tieWidthInSp = tieEndNormalized.x() / _spatium;
+      shoulderH = tieCurveHeight(tieEndNormalized.x(), _spatium,
+                                 shoulderHeightMin, shoulderHeightMax);
       shoulderW = .6;
 
       shoulderH -= shoulderOffset.y();
@@ -358,9 +383,12 @@ void TieSegment::computeBezier(QPointF shoulderOffset)
       QPointF bezier1(bezier1X, -shoulderH);
       QPointF bezier2(bezier2X, -shoulderH);
 
-      qreal w = score()->styleP(Sid::tieMidWidth) - score()->styleP(Sid::tieEndWidth);
-      if (staff())
-            w *= staff()->mag(tie()->tick());
+      const qreal mag = staff() ? staff()->mag(tie()->tick()) : 1.0;
+      const qreal endWidth = score()->styleP(Sid::tieEndWidth);
+      const qreal midWidth = score()->styleP(Sid::tieMidWidth);
+      const qreal minimumLengthSp = score()->styleS(Sid::minTieLength).val() * mag;
+      const qreal w = tieCurveThickness(tieWidthInSp, _spatium,
+                                       endWidth, midWidth, minimumLengthSp, mag) * mag;
       QPointF tieThickness(0.0, w);
 
       QPointF bezier1Offset = shoulderOffset + t.map(ups(Grip::BEZIER1).off);
@@ -425,8 +453,8 @@ void TieSegment::computeBezier(QPointF shoulderOffset)
             const QPointF point = b.pointAtPercent(i/float(nbShapes));
             QRectF re = QRectF(start, point).normalized();
             if (re.height() < minH) {
-                  tieWidthInSp = (minH - re.height()) * .5;
-                  re.adjust(0.0, -tieWidthInSp, 0.0, tieWidthInSp);
+                  const qreal padding = (minH - re.height()) * .5;
+                  re.adjust(0.0, -padding, 0.0, padding);
                   }
             _shape.add(re);
             start = point;
@@ -442,8 +470,8 @@ void TieSegment::computeBezier(QPointF shoulderOffset)
 void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       {
       autoAdjustOffset = QPointF();
-      shoulderHeightMin = 0.4;
-      shoulderHeightMax = 1.3;
+      shoulderHeightMin = 0.3;
+      shoulderHeightMax = 2.0;
 
       setPos(QPointF());
       ups(Grip::START).p = p1;
@@ -456,31 +484,11 @@ void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       if (isNudged() || isEdited())
             return;
 
-      QRectF bbox;
-      if (p1.y() == p2.y()) {
-            // for horizontal ties we can estimate the bbox using simple math instead of having to call
-            // computeBezier() which uses a whole lot of trigonometry to draw the entire tie
-            bbox.setX(p1.x());
-            bbox.setWidth(p2.x() - p1.x());
-
-            // The following is ripped from computeBezier()
-            // TODO: refactor this into its own method
-            qreal shoulderHeight = bbox.width() * 0.4 * 0.38;
-            shoulderHeight = qBound(shoulderHeightMin * spatium(), shoulderHeight, shoulderHeightMax * spatium());
-            //////////
-            qreal actualHeight = 2 * (shoulderHeight + styleP(Sid::slurMidWidth)) / 3;
-
-            bbox.setY(p1.y() - (slurTie()->up() ? actualHeight : 0));
-            bbox.setHeight(actualHeight);
-            }
-      else {
-            computeBezier();
-            bbox = path.boundingRect();
-            }
-
-      // instead of the above if-else, the more "accurate" way to do this is:
-      // computeBezier();
-      // bbox = path.boundingRect();
+      // Use the actual curve for staff-line checks. The old rectangular
+      // estimate assumes linear shoulder growth and a constant mid-width;
+      // neither holds for the shorter and longer bows now being laid out.
+      computeBezier();
+      const QRectF bbox = path.boundingRect();
 
       Tie* t = toTie(slurTie());
       qreal sp = spatium();

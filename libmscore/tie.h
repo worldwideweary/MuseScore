@@ -28,8 +28,8 @@ QPointF tieNoteAttachment(const Note*, bool up, bool inside, bool start, bool ad
 
 class TieSegment final : public SlurTieSegment {
       QPointF autoAdjustOffset;
-      qreal shoulderHeightMin = 0.4;
-      qreal shoulderHeightMax = 1.3;
+      qreal shoulderHeightMin = 0.3;
+      qreal shoulderHeightMax = 2.0;
 
       void setAutoAdjust(const QPointF& offset);
       void setAutoAdjust(qreal x, qreal y)      { setAutoAdjust(QPointF(x, y)); }
