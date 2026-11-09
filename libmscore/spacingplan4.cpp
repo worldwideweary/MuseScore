@@ -12,6 +12,7 @@
 #include "sym.h"
 #include "symbol.h"
 #include <QStringList>
+#include <QDebug>
 #include "clef.h"
 #include "breath.h"
 #include "barline.h"
@@ -775,10 +776,22 @@ bool cacheGeometry4(Segment* segment, const SpacingPaddingTable4& table, Geometr
     return true;
 }
 
+// Opt-in, one-based score measure number. Read once per process.
+static bool traceSpacingMeasure4(const Measure* measure)
+{
+    static const int number = qgetenv("MSCORE_SPACING_TRACE_MEASURE").toInt();
+    return number > 0 && measure && measure->no() + 1 == number;
+}
+
+struct SpacingDistanceTrace4 {
+    qreal collision = 0;
+    qreal tie = 0;
+};
+
 bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, const Geometry4& first,
                const SpacingSegmentPlan4& b, const Geometry4& second, Measure* firstMeasure,
                qreal squeeze, qreal& result, const CrossStaffGeometry4& cross, const SpacingGraceContext4& graces,
-               SpacingContextCache4& contextCache)
+               SpacingContextCache4& contextCache, SpacingDistanceTrace4* trace = nullptr)
 {
     // Studio minHorizontalDistance joins adjacent repeat barlines at the
     // thick stroke. A systemic begin barline shares the repeat's origin.
@@ -802,6 +815,7 @@ bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, 
             return false;
         distance = std::max(distance, d);
     }
+    if (trace) trace->collision = distance;
     if (first.outgoingTie && b.segment->isChordRestType()) {
         for (const Element* item : a.segment->elist()) {
             if (!item || !item->isChord()) continue;
@@ -826,8 +840,10 @@ bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, 
                         left = std::min(left, e.rect.left());
                 }
                 const qreal inset = 0.5 * std::max(note->spatium(), end->spatium());
-                distance = std::max(distance, right - left + inset
-                    + table.score()->styleP(Sid::minTieLength) * std::max(note->mag(), end->mag()));
+                const qreal minimum = right - left + inset
+                    + table.score()->styleP(Sid::minTieLength) * std::max(note->mag(), end->mag());
+                if (trace) trace->tie = std::max(trace->tie, minimum);
+                distance = std::max(distance, minimum);
             }
         }
     }
@@ -1720,6 +1736,8 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                     requiredPrevious = pair.second.first->segment();
             }
             int crCount = 0;
+            const bool trace = current.segment->isChordRestType() && traceSpacingMeasure4(current.segment->measure());
+            const qreal rhythmicCursor = cursor;
             for (size_t j = i; j > collisionFirst;) {
                 --j;
                 SpacingSegmentPlan4& previous = plan.segments[j];
@@ -1728,9 +1746,20 @@ static bool buildSpacingPlanImpl4(System* system, SpacingPlan4& result, QString*
                 if (previous.segment->isChordRestType())
                     ++crCount;
                 qreal distance = 0;
+                SpacingDistanceTrace4 limits;
                 if (!distance4(table, previous, geometry[j], current, geometry[i], plan.measures.front().measure,
-                               options.squeezeFactor, distance, cross, graces, contextCache))
+                               options.squeezeFactor, distance, cross, graces, contextCache, trace ? &limits : nullptr))
                     return fail("Unsupported segment distance");
+                if (trace && (crCount <= 1 || previous.x + distance > cursor)) {
+                    const qreal sp = current.segment->spatium();
+                    qDebug().noquote() << "Studio spacing trace: pair"
+                        << previous.segment->tick().ticks() << "->" << current.segment->tick().ticks()
+                        << "squeeze" << options.squeezeFactor << "stretch" << options.stretchReduction
+                        << "rhythmic target" << (rhythmicCursor - previous.x) / sp
+                        << "collision minimum" << limits.collision / sp << "tie minimum" << limits.tie / sp
+                        << "pair minimum" << distance / sp << "incoming gap" << (cursor - previous.x) / sp
+                        << "added" << std::max(qreal(0), previous.x + distance - cursor) / sp << "sp";
+                }
                 x = std::max(x, previous.x + distance);
                 if (x > cursor) {
                     if (crCount > 0) {
@@ -2157,6 +2186,15 @@ bool publishSpacingPlanSegments4(System* system, const SpacingPlan4& plan, QStri
         s.segment->setWidth(s.width);
         s.segment->setStretch(s.stretch);
         s.segment->setSpacingWidthOffset4(s.widthOffset);
+    }
+    const SpacingSegmentPlan4* previous = nullptr;
+    for (const auto& s : plan.segments) {
+        if (s.ignored || !s.segment->isChordRestType() || !traceSpacingMeasure4(s.segment->measure())) continue;
+        if (previous && previous->segment->measure() == s.segment->measure())
+            qDebug().noquote() << "Studio spacing trace: published"
+                << previous->segment->tick().ticks() << "->" << s.segment->tick().ticks()
+                << (s.x - previous->x) / s.segment->spatium() << "sp";
+        previous = &s;
     }
     return true;
 }
