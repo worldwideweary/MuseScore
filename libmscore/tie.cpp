@@ -696,6 +696,26 @@ void TieSegment::adjustX()
       if (isNudged() || isEdited())
             return;
 
+      const bool useLedgerInk = score()->styleB(Sid::spacingLayout4)
+            && spannerSegmentType() == SpannerSegmentType::SINGLE && sc && ec
+            && sc->measure() == ec->measure() && !sc->staffMove() && !ec->staffMove()
+            && !beginGrace && !endGrace && sn->line() == en->line() && tie()->isInside();
+      const auto ledgerNeedsHorizontalRoom = [&](const LedgerLine* ledger, const Chord* chord, qreal gripY) {
+            // For an ordinary level tie above the staff, the curve leaves
+            // the grip away from a ledger on the opposite side. Allow
+            // horizontal overlap only if the ink also clears vertically.
+            if (useLedgerInk && gripY < 0 && !chord->staffMove()) {
+                  const qreal ledgerY = chord->y() + ledger->y();
+                  const qreal away = tie()->up() ? ledgerY - gripY : gripY - ledgerY;
+                  const qreal mag = staff() ? staff()->mag(tie()->tick()) : 1.0;
+                  const qreal stroke = qMax(score()->styleP(Sid::tieMidWidth),
+                                            score()->styleP(Sid::tieEndWidth)) * mag;
+                  if (away > ledger->lineWidth() * 0.5 + stroke)
+                        return false;
+                  }
+            return qAbs(gripY - ledger->y()) < spatium() * 0.5;
+            };
+
       // ADJUST LEFT GRIP -----------
       if (sc && ((spannerSegmentType() == SpannerSegmentType::SINGLE || spannerSegmentType() == SpannerSegmentType::BEGIN))) {
             const qreal gripY = ups(Grip::START).p.y();
@@ -732,7 +752,7 @@ void TieSegment::adjustX()
                         // adjust for ledger lines
                         for (LedgerLine* currLedger = chord->ledgerLines(); currLedger; currLedger = currLedger->next()) {
                               // search through ledger lines and see if any are within .5sp of tie start
-                              if (qAbs(gripY - currLedger->y()) < spatium() * 0.5) {
+                              if (ledgerNeedsHorizontalRoom(currLedger, chord, gripY)) {
                                     xo = qMax(xo, (currLedger->x() + currLedger->len() + chordOffset));
                                     break;
                                     }
@@ -787,7 +807,7 @@ void TieSegment::adjustX()
                         qreal chordOffset = (ec->x() + en->x()) - chord->x(); // en->x() for right-offset notes
                         for (LedgerLine* currLedger = chord->ledgerLines(); currLedger; currLedger = currLedger->next()) {
                               // search through ledger lines and see if any are within .5sp of tie end
-                              if (qAbs(gripY - currLedger->y()) < spatium() * 0.5)
+                              if (ledgerNeedsHorizontalRoom(currLedger, chord, gripY))
                                     xo = qMin(xo, currLedger->x() - chordOffset);
                               }
 
