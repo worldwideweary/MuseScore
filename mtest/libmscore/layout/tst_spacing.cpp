@@ -12428,6 +12428,13 @@ void TestSpacing::tieOverRemoteBeam4()
       Tie* tie = new Tie(score.get());
       tie->setEndNote(end);
       start->add(tie);
+      Segment* shortFrom = first->findSegmentR(SegmentType::ChordRest, Fraction(3, 4));
+      Segment* shortTo = first->findSegmentR(SegmentType::ChordRest, Fraction(7, 8));
+      QVERIFY(shortFrom && shortFrom->element(0) && shortFrom->element(0)->isChord());
+      QVERIFY(shortTo && shortTo->element(0) && shortTo->element(0)->isChord());
+      Tie* companion = new Tie(score.get());
+      companion->setEndNote(toChord(shortTo->element(0))->upNote());
+      toChord(shortFrom->element(0))->upNote()->add(companion);
       score->doLayout();
       const Beam* beam = other->beam();
       QVERIFY(beam && beam->up() && beam->pageBoundingRect().isValid());
@@ -12443,6 +12450,8 @@ void TestSpacing::tieOverRemoteBeam4()
             QVERIFY(!tieRect.intersects(chord->stem()->pageBoundingRect()));
             QVERIFY(!tieRect.intersects(chord->upNote()->pageBoundingRect()));
             }
+      QVERIFY(companion->nsegments() == 1 && companion->segmentAt(0)->bbox().isValid());
+      QVERIFY(!tieRect.intersects(companion->segmentAt(0)->pageBoundingRect()));
       tie->setSlurDirection(Direction::UP);
       score->doLayout();
       TieObstacleDiagnostic4 detail;

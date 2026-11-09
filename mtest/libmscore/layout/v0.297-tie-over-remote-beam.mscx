@@ -19,8 +19,8 @@
           <Chord><durationType>half</durationType><Note><pitch>72</pitch><tpc>14</tpc></Note></Chord>
           <Chord><BeamMode>begin</BeamMode><StemDirection>up</StemDirection><durationType>eighth</durationType><Note><pitch>67</pitch><tpc>15</tpc></Note></Chord>
           <Chord><BeamMode>mid</BeamMode><StemDirection>up</StemDirection><durationType>eighth</durationType><Note><pitch>69</pitch><tpc>17</tpc></Note></Chord>
-          <Chord><BeamMode>mid</BeamMode><StemDirection>up</StemDirection><durationType>eighth</durationType><Note><pitch>71</pitch><tpc>19</tpc></Note></Chord>
-          <Chord><BeamMode>end</BeamMode><StemDirection>up</StemDirection><durationType>eighth</durationType><Note><pitch>72</pitch><tpc>14</tpc></Note></Chord>
+          <Chord><BeamMode>mid</BeamMode><StemDirection>up</StemDirection><durationType>eighth</durationType><Note><pitch>79</pitch><tpc>15</tpc></Note></Chord>
+          <Chord><BeamMode>end</BeamMode><StemDirection>up</StemDirection><durationType>eighth</durationType><Note><pitch>79</pitch><tpc>15</tpc></Note></Chord>
         </voice>
         <voice>
           <Chord><durationType>whole</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord>

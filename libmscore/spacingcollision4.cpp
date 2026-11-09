@@ -437,6 +437,41 @@ static const char* remoteTieBeamRejection4(const Chord* chord, Direction side, q
     return nullptr;
 }
 
+// A short companion tie can be treated as remote ink if even its
+// conservative vertical envelope stays on the far side. Its own
+// horizontal clearance is still handled by the normal tie policy.
+static bool remoteCompanionTie4(const Tie* tie, const Note* start, const Note* end, Direction side, qreal pad)
+{
+    if (!tie) return true;
+    if (side == Direction::AUTO || tie->isPartial()) return false;
+    const Note* a = tie->startNote();
+    const Note* b = tie->endNote();
+    if (!a || !b || !a->chord() || !b->chord()) return false;
+    const Chord* first = a->chord();
+    const Chord* last = b->chord();
+    // This precondition also ensures the ordinary policy below cannot
+    // recurse through an intervening obstacle.
+    if (!first->segment() || !last->segment() || first->measure() != last->measure()
+        || first->segment()->next1(SegmentType::ChordRest) != last->segment()
+        || a->staffIdx() != start->staffIdx()
+        || first->isNudged() || last->isNudged() || a->isNudged() || b->isNudged()
+        || start->staff()->staffType(a->tick()) != start->staff()->staffType(start->tick())
+        || start->staff()->staffType(b->tick()) != start->staff()->staffType(start->tick())
+        || ordinaryTieRejection4(tie))
+        return false;
+    for (size_t i = 0; i < tie->nsegments(); ++i)
+        if (tie->segmentAt(int(i))->isNudged()) return false;
+    const qreal y1 = start->y() + start->chord()->y();
+    const qreal y2 = end->y() + end->chord()->y();
+    for (const Note* note : {a, b}) {
+        const qreal y = note->y() + note->chord()->y();
+        if (!(side == Direction::DOWN ? y < std::min(y1, y2) - pad
+                                      : y > std::max(y1, y2) + pad))
+            return false;
+    }
+    return true;
+}
+
 // Keep the full vertical guard on the curve side. On the opposite
 // side the whole obstacle still has to clear both endpoint heads.
 static const char* remoteTieObstacleRejection4(const Element* item, const Note* start, const Note* end, Direction side)
@@ -484,9 +519,13 @@ static const char* remoteTieObstacleRejection4(const Element* item, const Note* 
         .united(end->bbox().translated(0, end->y() + end->chord()->y()));
     for (const Note* note : chord->notes()) {
         if (!note->visible() || note->isNudged() || !note->el().empty()
-            || note->tieFor() || note->tieBack()
             || !note->spannerFor().empty() || !note->spannerBack().empty())
             return "note is hidden, moved or has attachments";
+        if (note->tieFor() || note->tieBack()) {
+            if (!remoteCompanionTie4(note->tieFor(), start, end, side, pad)
+                || !remoteCompanionTie4(note->tieBack(), start, end, side, pad))
+                return "companion tie has unsupported placement or insufficient clearance";
+        }
     }
     const Shape obstacle = chord->shape();
     if (!(sp > 0) || !std::isfinite(pad) || !heads.isValid() || obstacle.empty()) return "invalid or missing clearance geometry";
