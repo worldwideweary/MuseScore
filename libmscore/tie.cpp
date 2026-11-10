@@ -647,8 +647,34 @@ void TieSegment::adjustVertical()
             return;
 
       const bool up = tie()->up();
+      const qreal outward = up ? -1.0 : 1.0;
       const qreal lineHalfWidth = 0.5 * styleP(Sid::staffLineWidth);
       const qreal endpointMargin = 0.15 * sp;
+
+      // The 4.x ledger rule is independent of horizontal note/ledger
+      // clearance. When a ledger lies just outward from the note-owned tip,
+      // move *both* tips inward by the same amount (at most 0.4 sp). This
+      // preserves horizontal ties and the slope of cross-staff ties. Use the
+      // note owned by this system segment, not a note in another system.
+      const Note* owner = isSingleBeginType() ? tie()->startNote() : tie()->endNote();
+      if (owner && owner->chord() && owner->chord()->ledgerLines()) {
+            const Chord* chord = owner->chord();
+            qreal chordY = chord->pos().y() + chord->segment()->pos().y()
+                  + chord->measure()->pos().y();
+            if (system() && chord->vStaffIdx() != vStaffIdx())
+                  chordY += system()->staff(chord->vStaffIdx())->y()
+                        - system()->staff(vStaffIdx())->y();
+            const qreal gripY = ups(isSingleBeginType() ? Grip::START : Grip::END).p.y();
+            const qreal margin = 0.4 * sp;
+            qreal correction = 0.0;
+            for (const LedgerLine* ledger = chord->ledgerLines(); ledger; ledger = ledger->next()) {
+                  const qreal distance = outward * (chordY + ledger->y() - gripY);
+                  if (distance > 0.0 && distance < margin)
+                        correction = qMax(correction, margin - distance);
+                  }
+            if (correction > 0.0)
+                  setAutoAdjust(QPointF(0.0, -outward * correction));
+            }
 
       // Clear the *outward* staff line when an endpoint emerges too close
       // to its ink. Move both endpoints together to preserve any slope.
@@ -664,7 +690,9 @@ void TieSegment::adjustVertical()
             if (distance < endpointMargin + lineHalfWidth) {
                   const qreal targetY = lineY + (up ? -1.0 : 1.0)
                         * (endpointMargin + lineHalfWidth);
-                  setAutoAdjust(QPointF(0.0, targetY - startY));
+                  // The ledger adjustment may already have moved the tie.
+                  // setAutoAdjust() accepts a total offset, not a delta.
+                  setAutoAdjust(autoAdjustOffset + QPointF(0.0, targetY - startY));
                   }
             }
 
@@ -691,6 +719,37 @@ void TieSegment::adjustVertical()
             + lineHalfWidth + 0.5 * midInk;
       if (qAbs(fromLine) >= required)
             return;
+
+      // A very short non-outer tie can be fitted into the neighboring
+      // staff space without changing the bow. This is only safe when its
+      // crown is already on the inward side of the staff line; otherwise
+      // moving the tips would drag the ribbon through the line itself.
+      // Leave tied seconds and inside/outer ties to the normal arc rule.
+      const bool shortTie = span < 2.0 * sp && bounds.height() < 0.7 * sp;
+      const bool nonOuter = !tie()->isInside() && !tie()->isOuterTieOfChord(true)
+            && !tie()->isOuterTieOfChord(false);
+      // A tied second immediately on the inside needs its own clearance;
+      // shifting this bow inward would crowd that neighboring tie.
+      bool tiedSecondInside = false;
+      const Note* startNote = tie()->startNote();
+      if (startNote) {
+            const int neighborLine = startNote->line() + (up ? 1 : -1);
+            for (const Note* neighbor : startNote->chord()->notes()) {
+                  if (neighbor->line() == neighborLine && neighbor->tieFor()
+                      && neighbor->tieFor()->up() == up) {
+                        tiedSecondInside = true;
+                        break;
+                        }
+                  }
+            }
+      const qreal inward = -outward;
+      if (shortTie && nonOuter && !tiedSecondInside && inward * fromLine > 0.0) {
+            const qreal correction = required - inward * fromLine;
+            if (correction > 0.0) {
+                  setAutoAdjust(autoAdjustOffset + QPointF(0.0, inward * correction));
+                  return;
+                  }
+            }
 
       // Keep a crown on its existing side of a line. If it is centered on
       // the line, prefer the direction in which the tie curves.
@@ -732,41 +791,61 @@ void TieSegment::separateFromOuterTie(TieSegment* outer)
       if (right - left < 0.5 * sp)
             return;
 
-      // The outside edges of the two bows should not converge at their
-      // crowns. The tie ribbon is included in the shape's bounding box.
+      // Compare facing edges at the crowns, not both outer edges. Each
+      // path bbox includes the endpoint height, so using its opposite edge
+      // would mistake the noteheads for the ribbon's inner boundary.
       const bool up = tie()->up();
-      const qreal innerEdge = up ? path.boundingRect().top() : path.boundingRect().bottom();
-      const qreal outerEdge = up ? outer->path.boundingRect().top() : outer->path.boundingRect().bottom();
-      const qreal separation = up ? innerEdge - outerEdge : outerEdge - innerEdge;
-      const qreal gap = 0.15 * sp + qMax(styleP(Sid::tieMidWidth), outer->styleP(Sid::tieMidWidth));
-      if (separation >= gap)
+      const qreal outward = up ? -1.0 : 1.0;
+      const qreal innerOuterY = up ? path.boundingRect().top() : path.boundingRect().bottom();
+      const qreal outerCrownY = up ? outer->path.boundingRect().top()
+            : outer->path.boundingRect().bottom();
+      const qreal ribbonWidth = qMax(styleP(Sid::tieMidWidth), outer->styleP(Sid::tieMidWidth));
+      const qreal outerInnerY = outerCrownY - outward * ribbonWidth;
+      const qreal clearance = outward * (outerInnerY - innerOuterY);
+      const qreal gap = 0.15 * sp;
+      if (clearance >= gap)
             return;
 
-      auto curveHeight = [](const TieSegment* segment) {
+      // Align the gap between adjacent ribbons to the nearest half-space
+      // when that boundary is near the staff. This prevents tightly packed
+      // curves from straddling a staff line, while leaving distant ledger
+      // chords free of an artificial staff-position snap.
+      qreal midY = (innerOuterY + outerInnerY) * 0.5;
+      const Staff* st = staff();
+      if (st) {
+            const qreal halfLineDist = st->lineDistance(tick()) * sp * 0.5;
+            if (halfLineDist > 0.0) {
+                  const int halfLine = int(std::round(midY / halfLineDist));
+                  if (halfLine >= -1 && halfLine <= 2 * st->lines(tick()) - 1)
+                        midY = halfLine * halfLineDist;
+                  }
+            }
+
+      // Change shoulder heights, not notehead anchors. A cubic with equal
+      // shoulder heights moves its crown approximately 3/4 of the change.
+      // The transient bounds are inherited by v0.307's first-edit capture.
+      const qreal insideTargetY = midY - outward * 0.5 * gap;
+      const qreal outsideTargetY = midY + outward * 0.5 * gap;
+      const auto curveHeight = [](const TieSegment* segment) {
             const QPointF d = segment->ups(Grip::END).p - segment->ups(Grip::START).p;
             return tieCurveHeight(std::hypot(d.x(), d.y()), segment->spatium(),
                                   segment->shoulderHeightMin, segment->shoulderHeightMax);
             };
       const qreal insideHeight = curveHeight(this);
       const qreal outsideHeight = curveHeight(outer);
-      const qreal insideRoom = qMax(qreal(0.0), insideHeight - shoulderHeightMin * sp);
-      const qreal outsideRoom = qMax(qreal(0.0), outer->shoulderHeightMax * sp - outsideHeight);
-      // For a symmetric cubic, the crown moves approximately 3/4 as far
-      // as the common control-point displacement.
-      const qreal neededHeight = (gap - separation) / 0.75;
-      qreal moveOutside = qMin(outsideRoom, neededHeight * 0.5);
-      qreal moveInside = qMin(insideRoom, neededHeight - moveOutside);
-      moveOutside += qMin(outsideRoom - moveOutside,
-                          neededHeight - moveOutside - moveInside);
-      if (moveOutside <= 0.0 && moveInside <= 0.0)
+      const qreal lowerInside = qMax(0.0, -outward * (insideTargetY - innerOuterY) / 0.75);
+      const qreal raiseOutside = qMax(0.0, outward * (outsideTargetY - outerInnerY) / 0.75);
+      const qreal insideRoom = qMax(0.0, insideHeight - shoulderHeightMin * sp);
+      const qreal outsideRoom = qMax(0.0, outer->shoulderHeightMax * sp - outsideHeight);
+      const qreal insideCorrection = qMin(lowerInside, insideRoom);
+      const qreal outsideCorrection = qMin(raiseOutside, outsideRoom);
+      if (insideCorrection <= 0.0 && outsideCorrection <= 0.0)
             return;
-
-      if (moveOutside > 0.0)
+      if (insideCorrection > 0.0)
+            shoulderHeightMax = qMin(shoulderHeightMax, (insideHeight - insideCorrection) / sp);
+      if (outsideCorrection > 0.0)
             outer->shoulderHeightMin = qMax(outer->shoulderHeightMin,
-                  (outsideHeight + moveOutside) / sp);
-      if (moveInside > 0.0)
-            shoulderHeightMax = qMin(shoulderHeightMax,
-                  (insideHeight - moveInside) / sp);
+                  (outsideHeight + outsideCorrection) / sp);
       computeBezier();
       setbbox(path.boundingRect());
       outer->computeBezier();
