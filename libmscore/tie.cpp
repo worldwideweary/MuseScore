@@ -124,6 +124,8 @@ QPointF tieNoteAttachment(const Note* note, bool up, bool inside, bool start, bo
             if (!element || !element->isChord())
                   continue;
             const Chord* otherChord = toChord(element);
+            if (otherChord->vStaffIdx() != chord->vStaffIdx())
+                  continue;
             const QPointF offset = otherChord->pos() - chord->pos();
             if (otherChord->stem() && otherChord->stem()->visible())
                   clear(otherChord->stem()->bbox().translated(otherChord->stem()->pos() + offset));
@@ -686,6 +688,37 @@ void TieSegment::adjustX()
                   }
             return;
             }
+      // Use the same initial notehead attachment and clearance rules for
+      // ordinary pitched ties as for partial ties and l.v. ties. Unlike the
+      // legacy offsets below, these are applied relative to the *actual*
+      // endpoint rather than adding a second margin to the notehead inset.
+      // Keep tablature on the existing fret/stem path for this first pass.
+      const Note* startNote = tie()->startNote();
+      const Note* endNote = tie()->endNote();
+      const bool standardStart = startNote && startNote->staff()
+            && !startNote->staff()->isTabStaff(startNote->tick());
+      const bool standardEnd = endNote && endNote->staff()
+            && !endNote->staff()->isTabStaff(endNote->tick());
+      if (standardStart && (!endNote || standardEnd)) {
+            if (isNudged() || isEdited())
+                  return;
+            if (isSingleBeginType()) {
+                  const QPointF anchor = tieNoteAttachment(startNote, tie()->up(),
+                        tie()->isInside(), true, false);
+                  const QPointF cleared = tieNoteAttachment(startNote, tie()->up(),
+                        tie()->isInside(), true, true);
+                  ups(Grip::START).p.rx() += qMax(qreal(0.0), cleared.x() - anchor.x());
+                  }
+            if (endNote && isSingleEndType()) {
+                  const QPointF anchor = tieNoteAttachment(endNote, tie()->up(),
+                        tie()->isInside(), false, false);
+                  const QPointF cleared = tieNoteAttachment(endNote, tie()->up(),
+                        tie()->isInside(), false, true);
+                  ups(Grip::END).p.rx() += qMin(qreal(0.0), cleared.x() - anchor.x());
+                  }
+            return;
+            }
+
       const bool incoming = tie()->isPartial() && tie()->isIncoming();
       Note* sn = incoming ? nullptr : tie()->startNote();
       Note* en = incoming ? tie()->startNote() : tie()->endNote();
@@ -910,6 +943,45 @@ void Tie::slurPos(SlurPos* sp)
       const Note* en = isPartial() ? sn : endNote();
       bool useTablature = staff() && staff()->isTabStaff(tick());
       const StaffType* stt = useTablature ? staff()->staffType(tick()) : 0;
+      if (!useTablature) {
+            // Pitched ties share one note-local optical attachment calculation
+            // with partial ties and l.v. marks. This is the unadjusted anchor;
+            // TieSegment::adjustX() separately handles nearby ink.
+            Chord* sc = sn->chord();
+            Chord* ec = en ? en->chord() : nullptr;
+            calculateIsInside();
+            sp->system1 = sc->measure()->system();
+            sp->system2 = ec ? ec->measure()->system() : sp->system1;
+            sp->p1 = sn->pos() + sc->pos() + sc->segment()->pos() + sc->measure()->pos()
+                  + tieNoteAttachment(sn, up(), isInside(), true, false);
+            if (sc->isGrace())
+                  sp->p1 += sc->parent()->pos();
+            if (sp->system1 && sc->vStaffIdx() != vStaffIdx())
+                  sp->p1.ry() += sp->system1->staff(sc->vStaffIdx())->y()
+                        - sp->system1->staff(vStaffIdx())->y();
+            if (!ec) {
+                  // The 3.x one-ended tie retains its existing hanging length.
+                  sp->p2 = sp->p1 + QPointF(score()->styleP(Sid::minHangingTieLength), 0.0);
+                  return;
+                  }
+            sp->p2 = en->pos() + ec->pos() + ec->segment()->pos() + ec->measure()->pos()
+                  + tieNoteAttachment(en, up(), isInside(), false, false);
+            if (ec->isGrace())
+                  sp->p2 += ec->parent()->pos();
+            if (sp->system2 && ec->vStaffIdx() != vStaffIdx())
+                  sp->p2.ry() += sp->system2->staff(ec->vStaffIdx())->y()
+                        - sp->system2->staff(vStaffIdx())->y();
+
+            // Two identical staff positions should have level endpoints. If
+            // the two noteheads differ in size, keep the outermost attachment.
+            if (sn->line() == en->line() && sc->vStaffIdx() == ec->vStaffIdx()) {
+                  const qreal y = up() ? qMin(sp->p1.y(), sp->p2.y())
+                        : qMax(sp->p1.y(), sp->p2.y());
+                  sp->p1.setY(y);
+                  sp->p2.setY(y);
+                  }
+            return;
+            }
       qreal _spatium    = spatium();
       qreal hw          = sn->tabHeadWidth(stt);   // if stt == 0, defaults to headWidth()
       qreal __up        = _up ? -1.0 : 1.0;
