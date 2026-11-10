@@ -462,8 +462,10 @@ void TieSegment::computeBezier(QPointF shoulderOffset)
 
 //---------------------------------------------------------
 //   layoutSegment
-//    adjust the y-position of the tie. this is called before adjustX()
-//    p1, p2  are in System coordinates
+//    Initialize tie endpoints in system coordinates. Ordinary pitched ties
+//    receive vertical clearance in finalizeSegment(), after horizontal layout.
+//    Keep the existing path for partial ties until their free-end geometry is
+//    migrated separately.
 //---------------------------------------------------------
 
 void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
@@ -482,9 +484,11 @@ void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       if (staffType())
             rypos() += staffType()->yoffset().val() * spatium();
 
-      if (isNudged() || isEdited())
+      if (isNudged() || isEdited() || !tie()->isPartial())
             return;
 
+      // Preserve partial-tie positioning while migrating ordinary ties.
+      // Their free ends need a separate pass to avoid repeat-edge regressions.
       // Use the actual curve for staff-line checks. The old rectangular
       // estimate assumes linear shoulder growth and a constant mid-width;
       // neither holds for the shorter and longer bows now being laid out.
@@ -620,6 +624,92 @@ void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       }
 
 //---------------------------------------------------------
+//   adjustVertical
+//    Vertical staff-line clearance for ordinary pitched ties. This operates
+//    after horizontal clearance has settled the tie length, so the curve
+//    is checked in its final geometry rather than against a stale bow.
+//    Automatic corrections remain in the existing transient endpoint and
+//    shoulder-height state, which v0.306/v0.307 preserve on first edit.
+//---------------------------------------------------------
+
+void TieSegment::adjustVertical()
+      {
+      if (tie()->isPartial() || isEdited() || isNudged())
+            return;
+
+      Staff* st = staff();
+      if (!st || st->isTabStaff(tick()))
+            return;
+      const qreal sp = spatium();
+      const qreal lineDist = st->lineDistance(tick()) * sp;
+      const int nLines = st->lines(tick());
+      if (sp <= 0.0 || lineDist <= 0.0 || nLines <= 0)
+            return;
+
+      const bool up = tie()->up();
+      const qreal lineHalfWidth = 0.5 * styleP(Sid::staffLineWidth);
+      const qreal endpointMargin = 0.15 * sp;
+
+      // Clear the *outward* staff line when an endpoint emerges too close
+      // to its ink. Move both endpoints together to preserve any slope.
+      // For an upward tie the outward line is above (floor), for a downward
+      // tie it is below (ceil). Do not snap to the closest line in either
+      // direction, which can move an otherwise good attachment unnecessarily.
+      const qreal startY = ups(Grip::START).p.y();
+      const int outwardLine = up ? int(std::floor(startY / lineDist))
+                                 : int(std::ceil(startY / lineDist));
+      if (outwardLine >= 0 && outwardLine < nLines) {
+            const qreal lineY = outwardLine * lineDist;
+            const qreal distance = qAbs(startY - lineY);
+            if (distance < endpointMargin + lineHalfWidth) {
+                  const qreal targetY = lineY + (up ? -1.0 : 1.0)
+                        * (endpointMargin + lineHalfWidth);
+                  setAutoAdjust(QPointF(0.0, targetY - startY));
+                  }
+            }
+
+      computeBezier();
+
+      // Clear a staff line at the crown without imposing the legacy global
+      // shoulder-height cap. The top/bottom of the filled path includes the
+      // tie's stroke; estimate its centerline from the current thickness.
+      // A cubic bow moves approximately three quarters of a control point
+      // height change at its midpoint.
+      const QRectF bounds = path.boundingRect();
+      const qreal span = ups(Grip::END).p.x() - ups(Grip::START).p.x();
+      if (span <= 0.0)
+            return;
+      const qreal midInk = qMax(0.0, styleP(Sid::tieMidWidth));
+      const qreal crownY = up ? bounds.top() + midInk * 0.5
+                              : bounds.bottom() - midInk * 0.5;
+      const int nearestLine = int(std::round(crownY / lineDist));
+      if (nearestLine < 0 || nearestLine >= nLines)
+            return;
+
+      const qreal fromLine = crownY - nearestLine * lineDist;
+      const qreal required = (span < 3.0 * sp ? 0.10 : 0.15) * sp
+            + lineHalfWidth + 0.5 * midInk;
+      if (qAbs(fromLine) >= required)
+            return;
+
+      // Keep a crown on its existing side of a line. If it is centered on
+      // the line, prefer the direction in which the tie curves.
+      const qreal side = fromLine < 0.0 ? -1.0
+            : fromLine > 0.0 ? 1.0 : (up ? -1.0 : 1.0);
+      const qreal requiredMoveY = side * (required - qAbs(fromLine));
+      const qreal dx = ups(Grip::END).p.x() - ups(Grip::START).p.x();
+      const qreal dy = ups(Grip::END).p.y() - ups(Grip::START).p.y();
+      const qreal currentHeight = tieCurveHeight(std::hypot(dx, dy), sp, 0.3, 2.0);
+      const qreal desiredHeight = qBound(0.3 * sp,
+            currentHeight + (up ? -1.0 : 1.0) * requiredMoveY / 0.75,
+            2.0 * sp);
+      if (desiredHeight > currentHeight)
+            shoulderHeightMin = desiredHeight / sp;
+      else if (desiredHeight < currentHeight)
+            shoulderHeightMax = desiredHeight / sp;
+      }
+
+//---------------------------------------------------------
 //   finalizeSegment
 //    compute the bezier and adjust the bbox for the curve
 //---------------------------------------------------------
@@ -638,6 +728,7 @@ void TieSegment::finalizeSegment()
                         ups(Grip::END).p.rx() = ups(Grip::START).p.x() + minimum;
                   }
             }
+      adjustVertical();
       computeBezier();
       setbbox(path.boundingRect());
       }

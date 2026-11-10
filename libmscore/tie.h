@@ -33,6 +33,7 @@ class TieSegment final : public SlurTieSegment {
       QPointF automaticGripOffset[2];
       void consolidateAutomaticGripOffsets();
       void preserveAutomaticShoulderHeight();
+      void adjustVertical();
       qreal shoulderHeightMin = 0.3;
       qreal shoulderHeightMax = 2.0;
 
