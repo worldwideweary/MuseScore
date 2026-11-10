@@ -710,6 +710,70 @@ void TieSegment::adjustVertical()
       }
 
 //---------------------------------------------------------
+//   separateFromOuterTie
+//    After individual placement, make space between bows that begin on
+//    neighboring notes of the same chord and curve in the same direction.
+//    Change the transient shoulder bounds rather than the endpoints so
+//    first-edit preservation continues to work normally.
+//---------------------------------------------------------
+
+void TieSegment::separateFromOuterTie(TieSegment* outer)
+      {
+      if (!outer || outer == this || isEdited() || isNudged()
+          || outer->isEdited() || outer->isNudged()
+          || tie()->up() != outer->tie()->up())
+            return;
+
+      const qreal sp = spatium();
+      if (sp <= 0.0)
+            return;
+      const qreal left = qMax(ups(Grip::START).p.x(), outer->ups(Grip::START).p.x());
+      const qreal right = qMin(ups(Grip::END).p.x(), outer->ups(Grip::END).p.x());
+      if (right - left < 0.5 * sp)
+            return;
+
+      // The outside edges of the two bows should not converge at their
+      // crowns. The tie ribbon is included in the shape's bounding box.
+      const bool up = tie()->up();
+      const qreal innerEdge = up ? path.boundingRect().top() : path.boundingRect().bottom();
+      const qreal outerEdge = up ? outer->path.boundingRect().top() : outer->path.boundingRect().bottom();
+      const qreal separation = up ? innerEdge - outerEdge : outerEdge - innerEdge;
+      const qreal gap = 0.15 * sp + qMax(styleP(Sid::tieMidWidth), outer->styleP(Sid::tieMidWidth));
+      if (separation >= gap)
+            return;
+
+      auto curveHeight = [](const TieSegment* segment) {
+            const QPointF d = segment->ups(Grip::END).p - segment->ups(Grip::START).p;
+            return tieCurveHeight(std::hypot(d.x(), d.y()), segment->spatium(),
+                                  segment->shoulderHeightMin, segment->shoulderHeightMax);
+            };
+      const qreal insideHeight = curveHeight(this);
+      const qreal outsideHeight = curveHeight(outer);
+      const qreal insideRoom = qMax(qreal(0.0), insideHeight - shoulderHeightMin * sp);
+      const qreal outsideRoom = qMax(qreal(0.0), outer->shoulderHeightMax * sp - outsideHeight);
+      // For a symmetric cubic, the crown moves approximately 3/4 as far
+      // as the common control-point displacement.
+      const qreal neededHeight = (gap - separation) / 0.75;
+      qreal moveOutside = qMin(outsideRoom, neededHeight * 0.5);
+      qreal moveInside = qMin(insideRoom, neededHeight - moveOutside);
+      moveOutside += qMin(outsideRoom - moveOutside,
+                          neededHeight - moveOutside - moveInside);
+      if (moveOutside <= 0.0 && moveInside <= 0.0)
+            return;
+
+      if (moveOutside > 0.0)
+            outer->shoulderHeightMin = qMax(outer->shoulderHeightMin,
+                  (outsideHeight + moveOutside) / sp);
+      if (moveInside > 0.0)
+            shoulderHeightMax = qMin(shoulderHeightMax,
+                  (insideHeight - moveInside) / sp);
+      computeBezier();
+      setbbox(path.boundingRect());
+      outer->computeBezier();
+      outer->setbbox(outer->path.boundingRect());
+      }
+
+//---------------------------------------------------------
 //   finalizeSegment
 //    compute the bezier and adjust the bbox for the curve
 //---------------------------------------------------------

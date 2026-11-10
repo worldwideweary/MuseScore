@@ -3941,28 +3941,60 @@ void layoutTies(Chord* ch, System* system, const Fraction& stick)
       SysStaff* staff = system->staff(ch->staffIdx());
       if (!staff->show())
             return;
+      std::vector<TieSegment*> segments;
+      std::vector<TieSegment*> upTies;
+      std::vector<TieSegment*> downTies;
       for (Note* note : ch->notes()) {
             for (Element* attached : note->el()) {
                   if (!attached->isTie() || !toTie(attached)->isPartial())
                         continue;
                   TieSegment* partial = toTie(attached)->layoutPartial(system);
-                  if (partial && partial->addToSkyline())
-                        staff->skyline().add(partial->shape().translated(partial->pos()));
+                  if (partial)
+                        segments.push_back(partial);
                   }
             Tie* t = note->tieFor();
             if (t) {
                   TieSegment* ts = t->layoutFor(system);
-                  if (ts && ts->addToSkyline())
-                        staff->skyline().add(ts->shape().translated(ts->pos()));
-                  }
-            t = note->tieBack();
-            if (t) {
-                  if (t->startNote()->tick() < stick) {
-                        TieSegment* ts = t->layoutBack(system);
-                        if (ts && ts->addToSkyline())
-                              staff->skyline().add(ts->shape().translated(ts->pos()));
+                  if (ts) {
+                        segments.push_back(ts);
+                        // Resolve stacked ties only when they share an actual
+                        // starting chord. Partial, edited and system-entry ties
+                        // retain their existing positioning.
+                        if (!t->isPartial() && t->endNote() && !ts->isEdited() && !ts->isNudged()) {
+                              if (t->up())
+                                    upTies.push_back(ts);
+                              else
+                                    downTies.push_back(ts);
+                              }
                         }
                   }
+            t = note->tieBack();
+            if (t && t->startNote()->tick() < stick) {
+                  TieSegment* ts = t->layoutBack(system);
+                  if (ts)
+                        segments.push_back(ts);
+                  }
+            }
+
+      // Inner bows are processed first, so the next bow in each list is
+      // farther outward. Unlike the old per-tie staff-line cap, this step
+      // considers the already-laid-out neighboring curve.
+      auto separate = [](std::vector<TieSegment*>& ties, bool up) {
+            std::sort(ties.begin(), ties.end(), [up](const TieSegment* a, const TieSegment* b) {
+                  const int lineA = a->tie()->startNote()->line();
+                  const int lineB = b->tie()->startNote()->line();
+                  return up ? lineA > lineB : lineA < lineB;
+                  });
+            for (size_t i = 1; i < ties.size(); ++i)
+                  ties[i - 1]->separateFromOuterTie(ties[i]);
+            };
+      separate(upTies, true);
+      separate(downTies, false);
+
+      // Add the final shapes to the skyline after adjusting adjacent bows.
+      for (TieSegment* segment : segments) {
+            if (segment->addToSkyline())
+                  staff->skyline().add(segment->shape().translated(segment->pos()));
             }
       }
 
