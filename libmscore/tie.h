@@ -28,12 +28,14 @@ QPointF tieNoteAttachment(const Note*, bool up, bool inside, bool start, bool ad
 
 class TieSegment final : public SlurTieSegment {
       QPointF autoAdjustOffset;
+      // Transient displacement of the two endpoints produced by automatic
+      // staff-line and horizontal collision clearance. Never stored in scores.
+      QPointF automaticGripOffset[2];
+      void consolidateAutomaticGripOffsets();
       qreal shoulderHeightMin = 0.3;
       qreal shoulderHeightMax = 2.0;
 
       void setAutoAdjust(const QPointF& offset);
-      void setAutoAdjust(qreal x, qreal y)      { setAutoAdjust(QPointF(x, y)); }
-      QPointF getAutoAdjust() const             { return autoAdjustOffset; }
 
    protected:
       void changeAnchor(EditData&, Element*) override;

@@ -288,6 +288,10 @@ void TieSegment::changeAnchor(EditData& ed, Element* element)
 
 void TieSegment::editDrag(EditData& ed)
       {
+      // Preserve the visible automatic anchors when the first user edit
+      // disables autopositioning. In particular, a keyboard nudge uses this
+      // same editDrag() path and must not discard the previous X clearance.
+      consolidateAutomaticGripOffsets();
       Grip g = ed.curGrip;
       ups(g).off += ed.delta;
 
@@ -326,15 +330,6 @@ void TieSegment::editDrag(EditData& ed)
       else if (g == Grip::DRAG) {
             ups(Grip::DRAG).off = QPointF();
             roffset() += ed.delta;
-            }
-
-      // if this SlurSegment was automatically adjusted to avoid collision
-      // lock this edit by resetting SlurSegment to default position
-      // and incorporating previous adjustment into user offset
-      QPointF offset = getAutoAdjust();
-      if (!offset.isNull()) {
-            setAutoAdjust(0.0, 0.0);
-            roffset() += offset;
             }
 
       triggerLayout();
@@ -472,6 +467,8 @@ void TieSegment::computeBezier(QPointF shoulderOffset)
 void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       {
       autoAdjustOffset = QPointF();
+      automaticGripOffset[0] = QPointF();
+      automaticGripOffset[1] = QPointF();
       shoulderHeightMin = 0.3;
       shoulderHeightMax = 2.0;
 
@@ -660,6 +657,7 @@ void TieSegment::adjustX()
             const Chord* chord = note->chord();
             const bool start = !tie()->isIncoming();
             QPointF& point = ups(start ? Grip::START : Grip::END).p;
+            const qreal originalX = point.x();
             const qreal sp = spatium();
             const qreal top = point.y() - (tie()->up() ? .3 : .15) * sp;
             const qreal bottom = point.y() + (tie()->up() ? .15 : .3) * sp;
@@ -686,6 +684,7 @@ void TieSegment::adjustX()
                               : qMin(point.x(), head.left() - .2 * sp));
                         }
                   }
+            automaticGripOffset[start ? 0 : 1].rx() += point.x() - originalX;
             return;
             }
       // Use the same initial notehead attachment and clearance rules for
@@ -707,14 +706,18 @@ void TieSegment::adjustX()
                         tie()->isInside(), true, false);
                   const QPointF cleared = tieNoteAttachment(startNote, tie()->up(),
                         tie()->isInside(), true, true);
-                  ups(Grip::START).p.rx() += qMax(qreal(0.0), cleared.x() - anchor.x());
+                  const qreal shift = qMax(qreal(0.0), cleared.x() - anchor.x());
+                  ups(Grip::START).p.rx() += shift;
+                  automaticGripOffset[0].rx() += shift;
                   }
             if (endNote && isSingleEndType()) {
                   const QPointF anchor = tieNoteAttachment(endNote, tie()->up(),
                         tie()->isInside(), false, false);
                   const QPointF cleared = tieNoteAttachment(endNote, tie()->up(),
                         tie()->isInside(), false, true);
-                  ups(Grip::END).p.rx() += qMin(qreal(0.0), cleared.x() - anchor.x());
+                  const qreal shift = qMin(qreal(0.0), cleared.x() - anchor.x());
+                  ups(Grip::END).p.rx() += shift;
+                  automaticGripOffset[1].rx() += shift;
                   }
             return;
             }
@@ -828,6 +831,7 @@ void TieSegment::adjustX()
                         }
                   }
             ups(Grip::START).p += QPointF(xo, 0);
+            automaticGripOffset[0].rx() += xo;
             }
 
       // ADJUST RIGHT GRIP ----------
@@ -882,6 +886,7 @@ void TieSegment::adjustX()
                   }
             xo = (beginGrace || endGrace ? 0.0 : xo) - offsetMargin;
             ups(Grip::END).p += QPointF(xo, 0);
+            automaticGripOffset[1].rx() += xo;
             }
       }
 
@@ -898,8 +903,30 @@ void TieSegment::setAutoAdjust(const QPointF& offset)
             _shape.translate(diff);
             for (int i = 0; i < int(Grip::GRIPS); ++i)
                   _ups[i].p += diff;
+            automaticGripOffset[0] += diff;
+            automaticGripOffset[1] += diff;
             autoAdjustOffset = offset;
             }
+      }
+
+//---------------------------------------------------------
+//   consolidateAutomaticGripOffsets
+//    Keep the endpoints fixed when user editing disables automatic placement.
+//    The manual offset is relative to the unadjusted notehead attachment.
+//---------------------------------------------------------
+
+void TieSegment::consolidateAutomaticGripOffsets()
+      {
+      for (int i = 0; i < 2; ++i) {
+            const Grip grip = i == 0 ? Grip::START : Grip::END;
+            const QPointF adjustment = automaticGripOffset[i];
+            if (!adjustment.isNull()) {
+                  ups(grip).p -= adjustment;
+                  ups(grip).off += adjustment;
+                  automaticGripOffset[i] = QPointF();
+                  }
+            }
+      autoAdjustOffset = QPointF();
       }
 
 //---------------------------------------------------------
