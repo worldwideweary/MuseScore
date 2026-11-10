@@ -32,6 +32,7 @@ class TieSegment final : public SlurTieSegment {
       // staff-line and horizontal collision clearance. Never stored in scores.
       QPointF automaticGripOffset[2];
       void consolidateAutomaticGripOffsets();
+      void preserveAutomaticShoulderHeight();
       qreal shoulderHeightMin = 0.3;
       qreal shoulderHeightMax = 2.0;
 

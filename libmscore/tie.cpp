@@ -288,9 +288,11 @@ void TieSegment::changeAnchor(EditData& ed, Element* element)
 
 void TieSegment::editDrag(EditData& ed)
       {
-      // Preserve the visible automatic anchors when the first user edit
-      // disables autopositioning. In particular, a keyboard nudge uses this
-      // same editDrag() path and must not discard the previous X clearance.
+      // The first grip edit disables automatic shoulder constraints as well
+      // as endpoint clearance. Preserve both parts of the currently visible
+      // curve before recording the user's movement.
+      if (!isEdited() && !isNudged())
+            preserveAutomaticShoulderHeight();
       consolidateAutomaticGripOffsets();
       Grip g = ed.curGrip;
       ups(g).off += ed.delta;
@@ -907,6 +909,41 @@ void TieSegment::setAutoAdjust(const QPointF& offset)
             automaticGripOffset[1] += diff;
             autoAdjustOffset = offset;
             }
+      }
+
+//---------------------------------------------------------
+//   preserveAutomaticShoulderHeight
+//    A first edit bypasses layoutSegment's automatic shoulder limits. Encode
+//    their current effect in the editable Bezier grips so a horizontal nudge
+//    does not suddenly change the arch. Unlike temporary shoulder limits,
+//    these grip offsets also survive saving and reopening an edited tie.
+//---------------------------------------------------------
+
+void TieSegment::preserveAutomaticShoulderHeight()
+      {
+      const QPointF start = ups(Grip::START).pos();
+      const QPointF end   = ups(Grip::END).pos();
+      const QPointF vector = end - start;
+      const qreal sp = spatium();
+      if (vector.x() <= 0.0 || sp <= 0.0)
+            return;
+
+      const qreal length = std::hypot(vector.x(), vector.y());
+      const qreal height = tieCurveHeight(length, sp, shoulderHeightMin, shoulderHeightMax);
+      const qreal unrestrainedHeight = tieCurveHeight(length, sp, 0.3, 2.0);
+      const qreal delta = height - unrestrainedHeight;
+      if (qFuzzyIsNull(delta))
+            return;
+
+      // computeBezier() derives the control-point height in coordinates
+      // rotated by the tie's angle, then applies Bezier user offsets there.
+      // Express the compensating displacement in the unrotated grip space.
+      const qreal angle = std::atan2(vector.y(), vector.x());
+      QTransform rotation;
+      rotation.rotateRadians(angle);
+      const QPointF correction = rotation.map(QPointF(0.0, tie()->up() ? -delta : delta));
+      ups(Grip::BEZIER1).off += correction;
+      ups(Grip::BEZIER2).off += correction;
       }
 
 //---------------------------------------------------------
