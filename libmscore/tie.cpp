@@ -30,6 +30,8 @@
 #include "utils.h"
 
 #include <cmath>
+#include <QByteArray>
+#include <QDebug>
 
 namespace Ms {
 
@@ -61,6 +63,21 @@ static qreal tieCurveThickness(qreal lengthSp, qreal sp, qreal endWidth,
       const qreal amount = qBound(0.0,
             (lengthSp - minimumLengthSp) / (shortLimit - minimumLengthSp), 1.0);
       return qMin(normal, shortest + (normal - shortest) * amount);
+      }
+
+// Optional trace of automatic tie placement. Do not change layout decisions.
+// Set MSCORE_TIE_CLEARANCE_TRACE=72 (C5) or =all before launching MuseScore.
+static bool traceTieClearance(const TieSegment* segment)
+      {
+      static const QByteArray selection = qgetenv("MSCORE_TIE_CLEARANCE_TRACE");
+      if (selection.isEmpty() || !segment->tie())
+            return false;
+      if (selection == "all")
+            return true;
+      bool ok = false;
+      const int pitch = selection.toInt(&ok);
+      const Note* note = segment->tie()->startNote();
+      return ok && note && note->pitch() == pitch;
       }
 
 QPointF tieNoteAttachment(const Note* note, bool up, bool inside, bool start, bool adjust)
@@ -646,10 +663,22 @@ void TieSegment::adjustVertical()
       if (sp <= 0.0 || lineDist <= 0.0 || nLines <= 0)
             return;
 
+      const bool trace = traceTieClearance(this);
       const bool up = tie()->up();
       const qreal outward = up ? -1.0 : 1.0;
       const qreal lineHalfWidth = 0.5 * styleP(Sid::staffLineWidth);
       const qreal endpointMargin = 0.15 * sp;
+      if (trace) {
+            const Note* note = tie()->startNote();
+            qDebug() << "[tie-clearance] entry"
+                     << "pitch" << (note ? note->pitch() : -1)
+                     << "tick" << (note ? note->tick().ticks() : -1)
+                     << "up" << up << "inside" << tie()->isInside()
+                     << "sp" << sp
+                     << "span/sp" << (ups(Grip::END).p.x() - ups(Grip::START).p.x()) / sp
+                     << "tipsY/sp" << ups(Grip::START).p.y() / sp << ups(Grip::END).p.y() / sp
+                     << "shoulderBounds" << shoulderHeightMin << shoulderHeightMax;
+            }
 
       // The 4.x ledger rule is independent of horizontal note/ledger
       // clearance. When a ledger lies just outward from the note-owned tip,
@@ -672,8 +701,11 @@ void TieSegment::adjustVertical()
                   if (distance > 0.0 && distance < margin)
                         correction = qMax(correction, margin - distance);
                   }
-            if (correction > 0.0)
+            if (correction > 0.0) {
+                  if (trace)
+                        qDebug() << "[tie-clearance] ledger shift/sp" << -outward * correction / sp;
                   setAutoAdjust(QPointF(0.0, -outward * correction));
+                  }
             }
 
       // Clear the *outward* staff line when an endpoint emerges too close
@@ -692,6 +724,9 @@ void TieSegment::adjustVertical()
                         * (endpointMargin + lineHalfWidth);
                   // The ledger adjustment may already have moved the tie.
                   // setAutoAdjust() accepts a total offset, not a delta.
+                  if (trace)
+                        qDebug() << "[tie-clearance] tip shift/sp" << (targetY - startY) / sp
+                                 << "outwardLine" << outwardLine;
                   setAutoAdjust(autoAdjustOffset + QPointF(0.0, targetY - startY));
                   }
             }
@@ -717,8 +752,13 @@ void TieSegment::adjustVertical()
       const qreal innerY = outerY - outward * 2.0 * ribbonHalfWidth;
       const qreal centerY = 0.5 * (outerY + innerY);
       const int nearestLine = int(std::round(centerY / lineDist));
-      if (nearestLine < 0 || nearestLine >= nLines)
+      if (nearestLine < 0 || nearestLine >= nLines) {
+            if (trace)
+                  qDebug() << "[tie-clearance] crown outside staff"
+                           << "outerY/sp" << outerY / sp << "innerY/sp" << innerY / sp
+                           << "nearestLine" << nearestLine;
             return;
+            }
 
       const qreal staffY = nearestLine * lineDist;
       const qreal outerMargin = -outward
@@ -729,6 +769,24 @@ void TieSegment::adjustVertical()
       const bool growOutwards = outerMargin - 0.5 * required < innerMargin;
       const bool needsOutward = growOutwards && innerMargin < required;
       const bool needsInward = !growOutwards && outerMargin < required;
+      if (trace) {
+            const qreal requested = needsOutward ? required - innerMargin
+                                    : needsInward ? required - outerMargin : 0.0;
+            const qreal max4xArc = 0.75 * bounds.height();
+            qDebug() << "[tie-clearance] crown"
+                     << "outerY/sp" << outerY / sp << "innerY/sp" << innerY / sp
+                     << "lineY/sp" << staffY / sp << "bboxH/sp" << bounds.height() / sp
+                     << "outerMargin/sp" << outerMargin / sp
+                     << "innerMargin/sp" << innerMargin / sp
+                     << "required/sp" << required / sp
+                     << "decisionDelta/sp" << (outerMargin - 0.5 * required - innerMargin) / sp
+                     << "growOutwards" << growOutwards
+                     << "choice" << (needsOutward ? "outward" : needsInward ? "inward" : "none")
+                     << "requested/sp" << requested / sp
+                     << "4xArcCap/sp" << max4xArc / sp
+                     << "4xTipRemainderEstimate/sp"
+                     << (needsOutward ? qMax(0.0, requested - max4xArc) / sp : 0.0);
+            }
       if (!needsOutward && !needsInward)
             return;
 
@@ -751,6 +809,9 @@ void TieSegment::adjustVertical()
                   }
             }
       if (shortTie && nonOuter && !tiedSecondInside && needsInward) {
+            if (trace)
+                  qDebug() << "[tie-clearance] short-tie whole-shift/sp"
+                           << -outward * (required - outerMargin) / sp;
             setAutoAdjust(autoAdjustOffset + QPointF(0.0,
                   -outward * (required - outerMargin)));
             return;
@@ -777,6 +838,13 @@ void TieSegment::adjustVertical()
             shoulderHeightMin = qMin(shoulderHeightMin, desiredHeight / sp);
             shoulderHeightMax = qMin(shoulderHeightMax, desiredHeight / sp);
             }
+      if (trace)
+            qDebug() << "[tie-clearance] applied 37E"
+                     << "needed/sp" << needed / sp
+                     << "heightBefore/sp" << currentHeight / sp
+                     << "heightAfter/sp" << desiredHeight / sp
+                     << "shoulderBounds" << shoulderHeightMin << shoulderHeightMax
+                     << "autoTipOffsetY/sp" << autoAdjustOffset.y() / sp;
       }
 
 //---------------------------------------------------------
@@ -885,6 +953,13 @@ void TieSegment::finalizeSegment()
       adjustVertical();
       computeBezier();
       setbbox(path.boundingRect());
+      if (traceTieClearance(this) && spatium() > 0.0)
+            qDebug() << "[tie-clearance] final"
+                     << "tipsY/sp" << ups(Grip::START).p.y() / spatium()
+                     << ups(Grip::END).p.y() / spatium()
+                     << "bboxY/sp" << path.boundingRect().top() / spatium()
+                     << path.boundingRect().bottom() / spatium()
+                     << "shoulderBounds" << shoulderHeightMin << shoulderHeightMax;
       }
 
 Element* TieSegment::propertyDelegate(Pid id)
