@@ -696,40 +696,48 @@ void TieSegment::adjustVertical()
                   }
             }
 
+      // At the crown, compare the two faces of the ink ribbon with the
+      // nearest staff line. Checking only the approximate center (v0.310)
+      // cannot distinguish a bow passing across the line from one that has
+      // already cleared it on either side. The outward/inward choice also
+      // depends on which face has more room, not just the center's sign.
       computeBezier();
-
-      // Clear a staff line at the crown without imposing the legacy global
-      // shoulder-height cap. The top/bottom of the filled path includes the
-      // tie's stroke; estimate its centerline from the current thickness.
-      // A cubic bow moves approximately three quarters of a control point
-      // height change at its midpoint.
       const QRectF bounds = path.boundingRect();
-      const qreal span = ups(Grip::END).p.x() - ups(Grip::START).p.x();
-      if (span <= 0.0)
+      const qreal length = bounds.width();
+      if (length <= 0.0)
             return;
-      const qreal midInk = qMax(0.0, styleP(Sid::tieMidWidth));
-      const qreal crownY = up ? bounds.top() + midInk * 0.5
-                              : bounds.bottom() - midInk * 0.5;
-      const int nearestLine = int(std::round(crownY / lineDist));
+
+      const qreal mag = st->mag(tick());
+      const qreal endWidth = styleP(Sid::tieEndWidth);
+      const qreal midWidth = styleP(Sid::tieMidWidth);
+      const qreal minLengthSp = score()->styleS(Sid::minTieLength).val() * mag;
+      const qreal ribbonHalfWidth = tieCurveThickness(length / sp, sp,
+            endWidth, midWidth, minLengthSp, mag) * mag;
+      const qreal outerY = up ? bounds.top() : bounds.bottom();
+      const qreal innerY = outerY - outward * 2.0 * ribbonHalfWidth;
+      const qreal centerY = 0.5 * (outerY + innerY);
+      const int nearestLine = int(std::round(centerY / lineDist));
       if (nearestLine < 0 || nearestLine >= nLines)
             return;
 
-      const qreal fromLine = crownY - nearestLine * lineDist;
-      const qreal required = (span < 3.0 * sp ? 0.10 : 0.15) * sp
-            + lineHalfWidth + 0.5 * midInk;
-      if (qAbs(fromLine) >= required)
+      const qreal staffY = nearestLine * lineDist;
+      const qreal outerMargin = -outward
+            * (outerY - (staffY - outward * lineHalfWidth));
+      const qreal innerMargin = outward
+            * (innerY - (staffY + outward * lineHalfWidth));
+      const qreal required = (length < 3.0 * sp ? 0.10 : 0.15) * sp;
+      const bool growOutwards = outerMargin - 0.5 * required < innerMargin;
+      const bool needsOutward = growOutwards && innerMargin < required;
+      const bool needsInward = !growOutwards && outerMargin < required;
+      if (!needsOutward && !needsInward)
             return;
 
-      // A very short non-outer tie can be fitted into the neighboring
-      // staff space without changing the bow. This is only safe when its
-      // crown is already on the inward side of the staff line; otherwise
-      // moving the tips would drag the ribbon through the line itself.
-      // Leave tied seconds and inside/outer ties to the normal arc rule.
-      const bool shortTie = span < 2.0 * sp && bounds.height() < 0.7 * sp;
+      // A compact inner bow may sit more cleanly between staff lines with
+      // its tips translated, rather than by changing its shoulder. This is
+      // restricted to non-outer ties without an adjacent tied second.
+      const bool shortTie = length < 2.0 * sp && bounds.height() < 0.7 * sp;
       const bool nonOuter = !tie()->isInside() && !tie()->isOuterTieOfChord(true)
             && !tie()->isOuterTieOfChord(false);
-      // A tied second immediately on the inside needs its own clearance;
-      // shifting this bow inward would crowd that neighboring tie.
       bool tiedSecondInside = false;
       const Note* startNote = tie()->startNote();
       if (startNote) {
@@ -742,30 +750,33 @@ void TieSegment::adjustVertical()
                         }
                   }
             }
-      const qreal inward = -outward;
-      if (shortTie && nonOuter && !tiedSecondInside && inward * fromLine > 0.0) {
-            const qreal correction = required - inward * fromLine;
-            if (correction > 0.0) {
-                  setAutoAdjust(autoAdjustOffset + QPointF(0.0, inward * correction));
-                  return;
-                  }
+      if (shortTie && nonOuter && !tiedSecondInside && needsInward) {
+            setAutoAdjust(autoAdjustOffset + QPointF(0.0,
+                  -outward * (required - outerMargin)));
+            return;
             }
 
-      // Keep a crown on its existing side of a line. If it is centered on
-      // the line, prefer the direction in which the tie curves.
-      const qreal side = fromLine < 0.0 ? -1.0
-            : fromLine > 0.0 ? 1.0 : (up ? -1.0 : 1.0);
-      const qreal requiredMoveY = side * (required - qAbs(fromLine));
-      const qreal dx = ups(Grip::END).p.x() - ups(Grip::START).p.x();
-      const qreal dy = ups(Grip::END).p.y() - ups(Grip::START).p.y();
-      const qreal currentHeight = tieCurveHeight(std::hypot(dx, dy), sp, 0.3, 2.0);
-      const qreal desiredHeight = qBound(0.3 * sp,
-            currentHeight + (up ? -1.0 : 1.0) * requiredMoveY / 0.75,
+      // The apex moves approximately 3/4 as far as the shoulder controls.
+      // Keep this correction in the transient shoulder bounds, so the first
+      // manual edit can retain it through preserveAutomaticShoulderHeight().
+      const QPointF delta = ups(Grip::END).p - ups(Grip::START).p;
+      const qreal currentHeight = tieCurveHeight(std::hypot(delta.x(), delta.y()),
+            sp, shoulderHeightMin, shoulderHeightMax);
+      const qreal needed = needsOutward ? required - innerMargin
+                                       : required - outerMargin;
+      const qreal heightChange = needed / 0.75;
+      const qreal desiredHeight = qBound(0.10 * sp,
+            currentHeight + (needsOutward ? heightChange : -heightChange),
             2.0 * sp);
-      if (desiredHeight > currentHeight)
-            shoulderHeightMin = desiredHeight / sp;
-      else if (desiredHeight < currentHeight)
-            shoulderHeightMax = desiredHeight / sp;
+      if (needsOutward)
+            shoulderHeightMin = qMax(shoulderHeightMin, desiredHeight / sp);
+      else {
+            // Some line-avoiding bows need to be flatter than the default
+            // 0.3 sp minimum. This is an automatic, temporary adjustment;
+            // it does not change the score-wide minimum shoulder style.
+            shoulderHeightMin = qMin(shoulderHeightMin, desiredHeight / sp);
+            shoulderHeightMax = qMin(shoulderHeightMax, desiredHeight / sp);
+            }
       }
 
 //---------------------------------------------------------
