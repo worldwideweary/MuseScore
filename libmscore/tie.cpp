@@ -817,30 +817,43 @@ void TieSegment::adjustVertical()
             return;
             }
 
-      // The apex moves approximately 3/4 as far as the shoulder controls.
-      // Keep this correction in the transient shoulder bounds, so the first
-      // manual edit can retain it through preserveAutomaticShoulderHeight().
+      // Apply the requested correction in shoulder-height units, not
+      // crown-displacement units. The cubic itself attenuates a shoulder
+      // change at its apex. Cap the shoulder change using the current ink
+      // height; only outward corrections may move both tips by the excess.
       const QPointF delta = ups(Grip::END).p - ups(Grip::START).p;
-      const qreal currentHeight = tieCurveHeight(std::hypot(delta.x(), delta.y()),
+      const qreal chordLength = std::hypot(delta.x(), delta.y());
+      if (chordLength <= 0.0 || delta.x() <= 0.0)
+            return;
+      const qreal currentHeight = tieCurveHeight(chordLength,
             sp, shoulderHeightMin, shoulderHeightMax);
       const qreal needed = needsOutward ? required - innerMargin
                                        : required - outerMargin;
-      const qreal heightChange = needed / 0.75;
-      const qreal desiredHeight = qBound(0.10 * sp,
-            currentHeight + (needsOutward ? heightChange : -heightChange),
-            2.0 * sp);
-      if (needsOutward)
+      const qreal arcCorrection = qMin(needed, 0.75 * bounds.height());
+      const qreal tipRemainder = needsOutward ? needed - arcCorrection : 0.0;
+      if (tipRemainder > 0.0)
+            setAutoAdjust(autoAdjustOffset + QPointF(0.0, outward * tipRemainder));
+
+      // Project a vertical adjustment into the tie's local coordinates.
+      // Keep the existing endpoint slope and avoid adding a horizontal
+      // shoulder offset for cross-staff ties. Temporary bounds retain
+      // the correction for the next computeBezier() and first-edit capture.
+      const qreal heightChange = arcCorrection * delta.x() / chordLength;
+      const qreal desiredHeight = qMax(0.0,
+            currentHeight + (needsOutward ? heightChange : -heightChange));
+      if (needsOutward) {
             shoulderHeightMin = qMax(shoulderHeightMin, desiredHeight / sp);
+            shoulderHeightMax = qMax(shoulderHeightMax, shoulderHeightMin);
+            }
       else {
-            // Some line-avoiding bows need to be flatter than the default
-            // 0.3 sp minimum. This is an automatic, temporary adjustment;
-            // it does not change the score-wide minimum shoulder style.
             shoulderHeightMin = qMin(shoulderHeightMin, desiredHeight / sp);
             shoulderHeightMax = qMin(shoulderHeightMax, desiredHeight / sp);
             }
       if (trace)
             qDebug() << "[tie-clearance] applied 37E"
                      << "needed/sp" << needed / sp
+                     << "arcCorrection/sp" << arcCorrection / sp
+                     << "tipRemainder/sp" << tipRemainder / sp
                      << "heightBefore/sp" << currentHeight / sp
                      << "heightAfter/sp" << desiredHeight / sp
                      << "shoulderBounds" << shoulderHeightMin << shoulderHeightMax
