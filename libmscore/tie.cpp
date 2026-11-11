@@ -132,9 +132,6 @@ QPointF tieNoteAttachment(const Note* note, bool up, bool inside, bool start, bo
       const bool trace = traceMeasure > 0 && chord->measure()
             && chord->measure()->no() + 1 == traceMeasure;
       const qreal rawX = note->x() + point.x();
-      // Temporary diagnostic switch, OFF by default. Compare the impact of
-      // near-tangent notehead rectangles without changing normal engraving.
-      const bool testNoteheadTangency = qgetenv("MSCORE_TIE_TANGENCY_TEST") == "1";
 
       // Keep a curve close to a ledger line on the inward side of that line.
       for (const LedgerLine* ledger = chord->ledgerLines(); ledger; ledger = ledger->next()) {
@@ -154,26 +151,9 @@ QPointF tieNoteAttachment(const Note* note, bool up, bool inside, bool start, bo
       const qreal top = y - (up ? .3 : .15) * sp;
       const qreal bottom = y + (up ? .15 : .3) * sp;
       qreal x = note->x() + point.x();
-      auto clear = [&](const QRectF& rect, const char* obstacle, int obstaclePitch,
-                       bool force = false, bool notehead = false) {
+      auto clear = [&](const QRectF& rect, const char* obstacle, int obstaclePitch, bool force = false) {
             if (!force && (rect.bottom() < top || rect.top() > bottom))
                   return;
-            // A notehead bounding rectangle can meet the clearance band by
-            // only a hundredth of a staff space at its extreme edge. For this
-            // opt-in test, do not turn such a near-tangency into clearance of
-            // the notehead's entire horizontal width. Real overlaps, and all
-            // stems, dots and accidentals, retain the current rules.
-            const qreal overlapY = qMin(bottom, rect.bottom()) - qMax(top, rect.top());
-            if (testNoteheadTangency && notehead && !force
-                && overlapY >= 0.0 && overlapY <= 0.02 * sp) {
-                  if (trace)
-                        qDebug().noquote() << "[tie-attach] test-skip-near-tangent measure"
-                              << traceMeasure << "tick" << chord->tick().ticks()
-                              << "pitch" << note->pitch() << "otherPitch" << obstaclePitch
-                              << "side" << (start ? "start" : "end")
-                              << "overlapY/sp" << overlapY / sp;
-                  return;
-                  }
             const qreal beforeX = x;
             x = start ? qMax(x, rect.right() + padding) : qMin(x, rect.left() - padding);
             if (trace && qAbs(x - beforeX) > sp * 1.0e-9) {
@@ -208,7 +188,7 @@ QPointF tieNoteAttachment(const Note* note, bool up, bool inside, bool start, bo
             for (const Note* other : otherChord->notes()) {
                   const QPointF pos = other->pos() + offset;
                   if (other != note && other->visible())
-                        clear(other->bbox().translated(pos), "notehead", other->pitch(), false, true);
+                        clear(other->bbox().translated(pos), "notehead", other->pitch());
                   if (start && !outer && dots != 1 && !other->dotsHidden()) {
                         for (const NoteDot* dot : other->dots()) {
                               if (dot->visible())
