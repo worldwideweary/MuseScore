@@ -59,6 +59,43 @@ using namespace muse::draw;
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
+// Reference-only trace. Compare automatic tie curvature with native 37E.
+// Enabled by MSCORE_475_TIE_GEOMETRY_TRACE=<measure number>.
+static void trace475TieGeometry(const char* stage, TieSegment* segment)
+{
+    const char* selection = std::getenv("MSCORE_475_TIE_GEOMETRY_TRACE");
+    if (!selection || !*selection || !segment || !segment->tie()) {
+        return;
+    }
+    const Tie* tie = segment->tie();
+    const Note* start = tie->startNote();
+    const Note* end = tie->endNote();
+    const Chord* chord = start ? start->chord() : nullptr;
+    if (!chord || !chord->measure() || chord->measure()->no() + 1 != std::atoi(selection)) {
+        return;
+    }
+    const double sp = segment->spatium();
+    if (sp <= 0.0) {
+        return;
+    }
+    const RectF bounds = segment->ldata()->bbox();
+    const PointF p1 = segment->ups(Grip::START).pos();
+    const PointF p2 = segment->ups(Grip::END).pos();
+    const PointF shoulder = segment->ups(Grip::SHOULDER).pos();
+    std::fprintf(stderr,
+                 "[475-geometry] %s measure %d pitch %d tick %d endTick %d up %d inside %d"
+                 " span/sp %.6f tipsY/sp %.6f %.6f crownY/sp %.6f %.6f"
+                 " shoulderY/sp %.6f midThickness/sp %.6f edited %d\n",
+                 stage, chord->measure()->no() + 1, start->pitch(),
+                 int(chord->tick().ticks()), end ? int(end->chord()->tick().ticks()) : -1,
+                 int(tie->up()), int(tie->isInside()),
+                 (p2.x() - p1.x()) / sp, p1.y() / sp, p2.y() / sp,
+                 bounds.top() / sp, bounds.bottom() / sp,
+                 shoulder.y() / sp, segment->ldata()->midThickness() / sp,
+                 int(segment->isEdited()));
+}
+
+
 SpannerSegment* SlurTieLayout::layoutSystem(Slur* item, System* system, LayoutContext& ctx)
 {
     const double horizontalTieClearance = 0.35 * item->spatium();
@@ -1603,6 +1640,8 @@ TieSegment* SlurTieLayout::layoutTieFor(Tie* item, System* system)
         computeBezier(segment);
     }
 
+    trace475TieGeometry("post-individual", segment);
+
     addLineAttachPoints(segment); // add attach points to start and end note
 
     // Diagnostic only: compare final 4.7.5 tie grips with the native 37E
@@ -2408,7 +2447,7 @@ void SlurTieLayout::adjustY(TieSegment* tieSegment)
     Fraction tick = tieSegment->tick();
 
     computeBezier(tieSegment);
-
+    trace475TieGeometry("pre-staff-clearance", tieSegment);
     bool up = tieSegment->tie()->up();
     int upSign = up ? -1 : 1;
 
@@ -2532,6 +2571,10 @@ void SlurTieLayout::resolveVerticalTieCollisions(const std::vector<TieSegment*>&
         return;
     }
 
+    for (TieSegment* segment : stackedTies) {
+        trace475TieGeometry("pre-group", segment);
+    }
+
     std::list<TieSegment*> downwardTies;
     std::list<TieSegment*> upwardTies;
     for (TieSegment* tieSegment : stackedTies) {
@@ -2602,6 +2645,9 @@ void SlurTieLayout::resolveVerticalTieCollisions(const std::vector<TieSegment*>&
             TieSegment* nextTie = *(std::next(it, 1));
             fixTieCollision(thisTie, nextTie);
         }
+    }
+    for (TieSegment* segment : stackedTies) {
+        trace475TieGeometry("post-group", segment);
     }
 }
 
