@@ -65,6 +65,21 @@ static qreal tieCurveThickness(qreal lengthSp, qreal sp, qreal endWidth,
       return qMin(normal, shortest + (normal - shortest) * amount);
       }
 
+// Diagnostic only: isolate the original M7 shape, first edit and Undo.
+// The filter is the starting note tick, in MuseScore ticks (M7: 11520).
+static bool traceTieEditUndo(const TieSegment* segment)
+      {
+      static const QByteArray selection = qgetenv("MSCORE_TIE_UNDO_TRACE");
+      const Tie* tie = segment ? segment->tie() : nullptr;
+      if (selection.isEmpty() || !tie || !tie->startNote())
+            return false;
+      if (selection == "all")
+            return true;
+      bool ok = false;
+      const int tick = selection.toInt(&ok);
+      return ok && tie->startNote()->tick().ticks() == tick;
+      }
+
 // Optional trace of automatic tie placement. Do not change layout decisions.
 // Set MSCORE_TIE_CLEARANCE_TRACE=72 (C5) or =all before launching MuseScore.
 static bool traceTieClearance(const TieSegment* segment)
@@ -305,6 +320,16 @@ void TieSegment::changeAnchor(EditData& ed, Element* element)
 
 void TieSegment::editDrag(EditData& ed)
       {
+      if (traceTieEditUndo(this))
+            qDebug() << "[tie-undo] edit-before"
+                     << "pitch" << tie()->startNote()->pitch() << "grip" << int(ed.curGrip)
+                     << "delta/sp" << ed.delta / spatium()
+                     << "edited" << isEdited() << "nudged" << isNudged()
+                     << "shoulder" << shoulderHeightMin << shoulderHeightMax
+                     << "startOff/sp" << ups(Grip::START).off / spatium()
+                     << "b1Off/sp" << ups(Grip::BEZIER1).off / spatium()
+                     << "b2Off/sp" << ups(Grip::BEZIER2).off / spatium()
+                     << "endOff/sp" << ups(Grip::END).off / spatium();
       // The first grip edit disables automatic shoulder constraints as well
       // as endpoint clearance. Preserve both parts of the currently visible
       // curve before recording the user's movement.
@@ -351,6 +376,15 @@ void TieSegment::editDrag(EditData& ed)
             roffset() += ed.delta;
             }
 
+      if (traceTieEditUndo(this))
+            qDebug() << "[tie-undo] edit-after"
+                     << "pitch" << tie()->startNote()->pitch()
+                     << "startOff/sp" << ups(Grip::START).off / spatium()
+                     << "b1Off/sp" << ups(Grip::BEZIER1).off / spatium()
+                     << "b2Off/sp" << ups(Grip::BEZIER2).off / spatium()
+                     << "endOff/sp" << ups(Grip::END).off / spatium()
+                     << "autoStart/sp" << automaticGripOffset[0] / spatium()
+                     << "autoEnd/sp" << automaticGripOffset[1] / spatium();
       triggerLayout();
       }
 
@@ -487,6 +521,16 @@ void TieSegment::computeBezier(QPointF shoulderOffset)
 
 void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       {
+      if (traceTieEditUndo(this))
+            qDebug() << "[tie-undo] layout-entry"
+                     << "pitch" << tie()->startNote()->pitch()
+                     << "edited" << isEdited() << "nudged" << isNudged()
+                     << "p1/sp" << p1 / spatium() << "p2/sp" << p2 / spatium()
+                     << "shoulderOld" << shoulderHeightMin << shoulderHeightMax
+                     << "startOff/sp" << ups(Grip::START).off / spatium()
+                     << "b1Off/sp" << ups(Grip::BEZIER1).off / spatium()
+                     << "b2Off/sp" << ups(Grip::BEZIER2).off / spatium()
+                     << "endOff/sp" << ups(Grip::END).off / spatium();
       autoAdjustOffset = QPointF();
       automaticGripOffset[0] = QPointF();
       automaticGripOffset[1] = QPointF();
@@ -870,6 +914,14 @@ void TieSegment::adjustVertical()
 
 void TieSegment::separateFromOuterTie(TieSegment* outer)
       {
+      if (traceTieEditUndo(this) || traceTieEditUndo(outer))
+            qDebug() << "[tie-undo] group-entry"
+                     << "innerPitch" << (tie()->startNote() ? tie()->startNote()->pitch() : -1)
+                     << "outerPitch" << (outer && outer->tie()->startNote() ? outer->tie()->startNote()->pitch() : -1)
+                     << "innerEdited" << isEdited() << "outerEdited" << (outer && outer->isEdited())
+                     << "innerShoulder" << shoulderHeightMin << shoulderHeightMax
+                     << "outerShoulder" << (outer ? outer->shoulderHeightMin : 0.0)
+                     << (outer ? outer->shoulderHeightMax : 0.0);
       if (!outer || outer == this || isEdited() || isNudged()
           || outer->isEdited() || outer->isNudged()
           || tie()->up() != outer->tie()->up())
@@ -966,6 +1018,18 @@ void TieSegment::finalizeSegment()
       adjustVertical();
       computeBezier();
       setbbox(path.boundingRect());
+      if (traceTieEditUndo(this))
+            qDebug() << "[tie-undo] layout-final"
+                     << "pitch" << tie()->startNote()->pitch()
+                     << "edited" << isEdited() << "nudged" << isNudged()
+                     << "span/sp" << (ups(Grip::END).pos().x() - ups(Grip::START).pos().x()) / spatium()
+                     << "yRange/sp" << path.boundingRect().top() / spatium()
+                     << path.boundingRect().bottom() / spatium()
+                     << "shoulder" << shoulderHeightMin << shoulderHeightMax
+                     << "startOff/sp" << ups(Grip::START).off / spatium()
+                     << "b1Off/sp" << ups(Grip::BEZIER1).off / spatium()
+                     << "b2Off/sp" << ups(Grip::BEZIER2).off / spatium()
+                     << "endOff/sp" << ups(Grip::END).off / spatium();
       if (traceTieClearance(this) && spatium() > 0.0)
             qDebug() << "[tie-clearance] final"
                      << "tipsY/sp" << ups(Grip::START).p.y() / spatium()
