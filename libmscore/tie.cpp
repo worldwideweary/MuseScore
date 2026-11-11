@@ -1349,16 +1349,28 @@ void TieSegment::preserveAutomaticShoulderHeight()
 //    The manual offset is relative to the unadjusted notehead attachment.
 //---------------------------------------------------------
 
+// Avoid interpreting floating-point cancellation in the automatically
+// calculated grip offsets as a manual edit. This tolerance is many orders
+// smaller than a visible nudge, and is measured in local staff-space units.
+static bool tieGripOffsetIsEffectivelyZero(const QPointF& offset, qreal sp)
+      {
+      const qreal tolerance = qMax(qreal(1.0e-10), qAbs(sp) * qreal(1.0e-8));
+      return qAbs(offset.x()) <= tolerance && qAbs(offset.y()) <= tolerance;
+      }
+
 void TieSegment::consolidateAutomaticGripOffsets()
       {
+      const qreal sp = spatium();
       for (int i = 0; i < 2; ++i) {
             const Grip grip = i == 0 ? Grip::START : Grip::END;
             const QPointF adjustment = automaticGripOffset[i];
-            if (!adjustment.isNull()) {
+            if (!tieGripOffsetIsEffectivelyZero(adjustment, sp)) {
                   ups(grip).p -= adjustment;
                   ups(grip).off += adjustment;
-                  automaticGripOffset[i] = QPointF();
+                  if (tieGripOffsetIsEffectivelyZero(ups(grip).off, sp))
+                        ups(grip).off = QPointF();
                   }
+            automaticGripOffset[i] = QPointF();
             }
       autoAdjustOffset = QPointF();
       }
@@ -1369,8 +1381,9 @@ void TieSegment::consolidateAutomaticGripOffsets()
 
 bool TieSegment::isEdited() const
       {
+      const qreal sp = spatium();
       for (int i = 0; i < int(Grip::GRIPS); ++i) {
-            if (!_ups[i].off.isNull())
+            if (!tieGripOffsetIsEffectivelyZero(_ups[i].off, sp))
                   return true;
             }
       return false;
