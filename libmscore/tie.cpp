@@ -163,7 +163,13 @@ QPointF tieNoteAttachment(const Note* note, bool up, bool inside, bool start, bo
                         << "up" << up << "inside" << inside
                         << "kind" << obstacle << "otherPitch" << obstaclePitch
                         << "before/sp" << beforeX / sp << "after/sp" << x / sp
-                        << "inkX/sp" << rect.left() / sp << rect.right() / sp;
+                        << "inkX/sp" << rect.left() / sp << rect.right() / sp
+                        // Compare the ink to the *actual* vertical clearance
+                        // band; the previous M31 trace reported only X ink.
+                        << "noteY/sp" << note->y() / sp
+                        << "tieBandY/sp" << top / sp << bottom / sp
+                        << "inkY/sp" << rect.top() / sp << rect.bottom() / sp
+                        << "overlapY/sp" << (qMin(bottom, rect.bottom()) - qMax(top, rect.top())) / sp;
                   }
             };
       const Segment* segment = chord->segment();
