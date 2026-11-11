@@ -126,6 +126,13 @@ QPointF tieNoteAttachment(const Note* note, bool up, bool inside, bool start, bo
       if (!adjust)
             return point;
 
+      // Optional diagnostic: identify the particular ink that displaces a
+      // tie attachment. Kept out of the ordinary layout path unless enabled.
+      const int traceMeasure = qgetenv("MSCORE_TIE_ATTACHMENT_TRACE").toInt();
+      const bool trace = traceMeasure > 0 && chord->measure()
+            && chord->measure()->no() + 1 == traceMeasure;
+      const qreal rawX = note->x() + point.x();
+
       // Keep a curve close to a ledger line on the inward side of that line.
       for (const LedgerLine* ledger = chord->ledgerLines(); ledger; ledger = ledger->next()) {
             const qreal distance = sign * (ledger->y() - note->y() - point.y());
@@ -144,10 +151,20 @@ QPointF tieNoteAttachment(const Note* note, bool up, bool inside, bool start, bo
       const qreal top = y - (up ? .3 : .15) * sp;
       const qreal bottom = y + (up ? .15 : .3) * sp;
       qreal x = note->x() + point.x();
-      auto clear = [&](const QRectF& rect, bool force = false) {
+      auto clear = [&](const QRectF& rect, const char* obstacle, int obstaclePitch, bool force = false) {
             if (!force && (rect.bottom() < top || rect.top() > bottom))
                   return;
+            const qreal beforeX = x;
             x = start ? qMax(x, rect.right() + padding) : qMin(x, rect.left() - padding);
+            if (trace && qAbs(x - beforeX) > sp * 1.0e-9) {
+                  qDebug().noquote() << "[tie-attach] obstacle measure" << traceMeasure
+                        << "tick" << chord->tick().ticks() << "pitch" << note->pitch()
+                        << "side" << (start ? "start" : "end")
+                        << "up" << up << "inside" << inside
+                        << "kind" << obstacle << "otherPitch" << obstaclePitch
+                        << "before/sp" << beforeX / sp << "after/sp" << x / sp
+                        << "inkX/sp" << rect.left() / sp << rect.right() / sp;
+                  }
             };
       const Segment* segment = chord->segment();
       const int firstTrack = chord->staffIdx() * VOICES;
@@ -160,23 +177,33 @@ QPointF tieNoteAttachment(const Note* note, bool up, bool inside, bool start, bo
                   continue;
             const QPointF offset = otherChord->pos() - chord->pos();
             if (otherChord->stem() && otherChord->stem()->visible())
-                  clear(otherChord->stem()->bbox().translated(otherChord->stem()->pos() + offset));
+                  clear(otherChord->stem()->bbox().translated(otherChord->stem()->pos() + offset),
+                        "stem", -1);
             for (const Note* other : otherChord->notes()) {
                   const QPointF pos = other->pos() + offset;
                   if (other != note && other->visible())
-                        clear(other->bbox().translated(pos));
+                        clear(other->bbox().translated(pos), "notehead", other->pitch());
                   if (start && !outer && dots != 1 && !other->dotsHidden()) {
                         for (const NoteDot* dot : other->dots()) {
                               if (dot->visible())
-                                    clear(dot->bbox().translated(pos + dot->pos()), dots == 2);
+                                    clear(dot->bbox().translated(pos + dot->pos()),
+                                          "dot", other->pitch(), dots == 2);
                               }
                         }
                   if (!start && other->accidental() && other->accidental()->visible()) {
                         const bool inward = up ? other->line() >= note->line() : other->line() <= note->line();
                         if (!(outer && inward))
-                              clear(other->accidental()->bbox().translated(pos + other->accidental()->pos()));
+                              clear(other->accidental()->bbox().translated(pos + other->accidental()->pos()),
+                                    "accidental", other->pitch());
                         }
                   }
+            }
+      if (trace && qAbs(x - rawX) > sp * 1.0e-9) {
+            qDebug().noquote() << "[tie-attach] summary measure" << traceMeasure
+                  << "tick" << chord->tick().ticks() << "pitch" << note->pitch()
+                  << "side" << (start ? "start" : "end")
+                  << "rawX/sp" << rawX / sp << "clearedX/sp" << x / sp
+                  << "extra/sp" << (start ? x - rawX : rawX - x) / sp;
             }
       point.setX(x - note->x());
       return point;

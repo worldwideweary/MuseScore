@@ -2414,6 +2414,20 @@ static qreal nativeTiedNoteDistance(const Segment* sourceSegment, const Segment*
                               << "endX/sp" << endX / sp
                               << "minimum/sp" << minimum / sp
                               << "pairDistance/sp" << distance / sp;
+                        const QPointF rawStart = tieNoteAttachment(source, tie->up(), tie->isInside(), true, false);
+                        const QPointF rawEnd = tieNoteAttachment(note, tie->up(), tie->isInside(), false, false);
+                        const qreal rawStartX = origin->x() + source->x() + rawStart.x();
+                        const qreal rawEndX = destination->x() + note->x() + rawEnd.x();
+                        qDebug().noquote() << "[tie-pair-detail] measure" << traceMeasure
+                              << "pitch" << note->pitch() << "source" << origin->tick().ticks()
+                              << "target" << destination->tick().ticks()
+                              << "up" << tie->up() << "inside" << tie->isInside()
+                              << "rawStart/sp" << rawStartX / sp
+                              << "rawEnd/sp" << rawEndX / sp
+                              << "startClear/sp" << (startX - rawStartX) / sp
+                              << "endClear/sp" << (rawEndX - endX) / sp
+                              << "rawPair/sp" << (minimum + rawStartX - rawEndX) / sp
+                              << "finalPair/sp" << distance / sp;
                         }
                   }
             }
