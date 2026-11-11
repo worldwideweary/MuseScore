@@ -21,6 +21,9 @@
  */
 #include <cfloat>
 
+#include <cstdio>
+#include <cstdlib>
+
 #include "horizontalspacing.h"
 #include "parenthesislayout.h"
 
@@ -1548,6 +1551,23 @@ void HorizontalSpacing::computeNotePadding(const Note* note, const EngravingItem
 
             double lapPadding = (laPoint1.pos().x() - note->width()) + minEndPointsDistance - laPoint2.pos().x();
             lapPadding *= scaling;
+
+            // Diagnostic only: the line-attachment contribution actually
+            // consumed by Studio 4.7.5's note-to-note collision padding.
+            const char* tieTraceMeasure = std::getenv("MSCORE_475_TIE_SPACING_TRACE");
+            if (tieTraceMeasure && *tieTraceMeasure && laPoint1.line()->isTie()
+                && note->chord()->measure()->no() + 1 == std::atoi(tieTraceMeasure)) {
+                const double sp = note->spatium();
+                std::fprintf(stderr,
+                             "[475-padding] measure %d pitch %d toPitch %d source %d target %d"
+                             " aX/sp %.6f bX/sp %.6f noteWidth/sp %.6f"
+                             " minTie/sp %.6f lapPadding/sp %.6f priorPadding/sp %.6f\n",
+                             note->chord()->measure()->no() + 1, note->pitch(), note2->pitch(),
+                             int(note->chord()->tick().ticks()), int(note2->chord()->tick().ticks()),
+                             laPoint1.pos().x() / sp, laPoint2.pos().x() / sp,
+                             note->width() / sp, minEndPointsDistance / sp,
+                             lapPadding / sp, padding / sp);
+            }
 
             padding = std::max(padding, lapPadding);
         }

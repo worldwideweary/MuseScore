@@ -19,6 +19,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
+#include <cstdio>
+#include <cstdlib>
+
 #include "slurtielayout.h"
 
 #include "iengravingfont.h"
@@ -1600,6 +1604,38 @@ TieSegment* SlurTieLayout::layoutTieFor(Tie* item, System* system)
     }
 
     addLineAttachPoints(segment); // add attach points to start and end note
+
+    // Diagnostic only: compare final 4.7.5 tie grips with the native 37E
+    // segment-local attachments on the same score. No layout changes.
+    const char* tieTraceMeasure = std::getenv("MSCORE_475_TIE_SPACING_TRACE");
+    if (tieTraceMeasure && *tieTraceMeasure && item->endNote() && segment->isSingleType()) {
+        const Chord* sourceChord = item->startNote()->chord();
+        const Chord* targetChord = item->endNote()->chord();
+        if (sourceChord && targetChord
+            && sourceChord->measure() == targetChord->measure()
+            && sourceChord->measure()->no() + 1 == std::atoi(tieTraceMeasure)) {
+            const double sp = item->spatium();
+            const double sourceBase = sourceChord->pos().x() + sourceChord->segment()->pos().x()
+                                      + sourceChord->measure()->pos().x();
+            const double targetBase = targetChord->pos().x() + targetChord->segment()->pos().x()
+                                      + targetChord->measure()->pos().x();
+            const double startX = (sPos.p1.x() - sourceBase) / sp;
+            const double endX = (sPos.p2.x() - targetBase) / sp;
+            const double rawStartX = (computeDefaultStartOrEndPoint(item, Grip::START).x() - sourceBase) / sp;
+            const double rawEndX = (computeDefaultStartOrEndPoint(item, Grip::END).x() - targetBase) / sp;
+            const double minTie = item->style().styleMM(Sid::minTieLength) / sp;
+            std::fprintf(stderr,
+                         "[475-tie] measure %d pitch %d source %d target %d up %d inside %d"
+                         " rawStart/sp %.6f rawEnd/sp %.6f startX/sp %.6f endX/sp %.6f"
+                         " minTie/sp %.6f pairDistance/sp %.6f\n",
+                         sourceChord->measure()->no() + 1, item->startNote()->pitch(),
+                         int(sourceChord->tick().ticks()), int(targetChord->tick().ticks()),
+                         int(item->up()), int(item->isInside()),
+                         rawStartX, rawEndX, startX, endX,
+                         minTie, minTie + startX - endX);
+        }
+    }
+
     return segment;
 }
 
