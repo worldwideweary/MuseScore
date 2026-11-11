@@ -53,6 +53,8 @@
 #include "utils.h"
 #include "xml.h"
 
+#include <cmath>
+
 namespace Ms {
 
 //---------------------------------------------------------
@@ -2288,6 +2290,52 @@ void Chord::layoutPitched()
                   for (int i = 0; i < gnb; ++i)
                         graceNotesBefore[i]->rxpos() = plan.positions[i].x;
                   _spaceLw = qMax(lll, -plan.left - chordX);
+                  }
+            }
+
+      // Reserve the horizontal span needed by incoming pitched ties. The
+      // legacy overlap estimate above predates the optical tie anchors and
+      // is optimistic when seconds displace noteheads horizontally. Here all
+      // notes of this chord have been positioned, so use the same attachment
+      // helper as Tie::slurPos() and TieSegment::adjustX().
+      //
+      // The two adjacent chords contribute right/left general-spacing
+      // rectangles. Ensure their sum covers the grip inset and minTieLength,
+      // independently of the optional Studio spacing implementation.
+      for (Note* note : _notes) {
+            Tie* tie = note->tieBack();
+            if (!tie || tie->isPartial() || !tie->startNote())
+                  continue;
+            const Note* source = tie->startNote();
+            Chord* previous = source->chord();
+            if (!previous || previous->measure() != measure()
+                  || previous != prevChordRest(this)
+                  || previous->vStaffIdx() != vStaffIdx()
+                  || previous->isGrace() || isGrace())
+                  continue;
+
+            tie->calculateDirection();
+            tie->calculateIsInside();
+            const QPointF startGrip = tieNoteAttachment(source, tie->up(), tie->isInside(), true, true);
+            const QPointF endGrip = tieNoteAttachment(note, tie->up(), tie->isInside(), false, true);
+            const qreal sourceX = previous->x() + source->x() + startGrip.x();
+            const qreal targetX = x() + note->x() + endGrip.x();
+            const qreal minimum = score()->styleP(Sid::minTieLength)
+                  * qMax(source->mag(), note->mag());
+            const qreal requiredLeft = minimum + sourceX - targetX - previous->spacingRight4();
+            if (std::isfinite(requiredLeft))
+                  _spaceLw = qMax(_spaceLw, qMax(qreal(0.0), requiredLeft));
+
+            const int traceMeasure = qgetenv("MSCORE_NATIVE_TIE_SPACING_TRACE").toInt();
+            if (traceMeasure > 0 && measure()->no() + 1 == traceMeasure) {
+                  qDebug().noquote() << "Native tie spacing: measure" << traceMeasure
+                        << "pitch" << note->pitch() << "source" << previous->tick().ticks()
+                        << "target" << tick().ticks() << "grips/sp"
+                        << sourceX / _spatium << targetX / _spatium
+                        << "sourceRight/sp" << previous->spacingRight4() / _spatium
+                        << "minimum/sp" << minimum / _spatium
+                        << "requiredLeft/sp" << requiredLeft / _spatium
+                        << "reservedLeft/sp" << _spaceLw / _spatium;
                   }
             }
 
