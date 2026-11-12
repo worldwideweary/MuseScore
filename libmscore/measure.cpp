@@ -5030,6 +5030,31 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
                   if (isSystemHeader && (ns->isChordRestType() || (ns->isClefType() && !ns->header()))) {
                         // this is the system header gap
                         w = s->minHorizontalDistance(ns, true);
+                        // Studio 4.7 uses a maximum, not a sum, of the shape
+                        // clearance and the header's right extent plus the
+                        // configured distance. It also ensures 1.5 sp between
+                        // the header's right ink and the next segment's left
+                        // ink. Test this native rule independently of pooled
+                        // spring justification, and only for simple header
+                        // clef -> chord/rest boundaries.
+                        if (qgetenv("MSCORE_NATIVE_POOLED_SPRINGS") == "1"
+                            && qgetenv("MSCORE_NATIVE_HEADER_475") == "1"
+                            && s->isHeaderClefType() && ns->isChordRestType()) {
+                              const qreal oldWidth = w;
+                              const qreal right = s->minRight();
+                              const qreal left = ns->minLeft();
+                              const qreal collision = s->minHorizontalCollidingDistance(ns);
+                              const qreal headerDistance = score()->styleP(Sid::systemHeaderDistance);
+                              w = qMax(collision, right + headerDistance);
+                              w = qMax(w, right + left + 1.5 * spatium());
+                              if (!qgetenv("MSCORE_NATIVE_BOUNDARY_TRACE").isEmpty())
+                                    qDebug().noquote() << "[native-header475] measure" << no() + 1
+                                          << "original/sp" << oldWidth / spatium()
+                                          << "sourceRule/sp" << w / spatium()
+                                          << "collision/sp" << collision / spatium()
+                                          << "headerRight/sp" << right / spatium()
+                                          << "nextLeft/sp" << left / spatium();
+                              }
                         isSystemHeader = false;
                         }
                   else {
