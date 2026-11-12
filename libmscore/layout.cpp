@@ -128,11 +128,21 @@ static bool applyNativePooledSprings(System* system, qreal addedWidth)
                         continue;
                   minimum += s.width();
                   proposed[&s] = s.width();
-                  if (s.ticks().isNotZero()) {
-                        const qreal ratio = qreal(s.ticks().ticks()) / qreal(minTick.ticks());
+                  if (s.isChordRestType() && s.ticks().isNotZero()) {
+                        // A pooled solver must give the same duration the same
+                        // weight in every measure.  The native 3.x formula
+                        // divides by each measure's shortest duration; mixing
+                        // those per-measure weights starves whole-measure rests
+                        // and overexpands dense measures (notably M29/M31).
+                        //
+                        // Diagnostic experiment: match the reference 4.7.5
+                        // quarter-note-based duration slope of 1.5.  Do not
+                        // change the native natural widths or tie minima.
+                        const qreal ratio = qreal(s.ticks().ticks())
+                              / qreal(Fraction(1, 4).ticks());
                         if (ratio <= 0.0)
                               return false;
-                        const qreal str = 1.0 + 0.865617 * std::log(ratio);
+                        const qreal str = std::pow(1.5, std::log2(ratio));
                         if (!std::isfinite(str) || str <= 0.0)
                               return false;
                         springs.emplace(s.width() / str, Spring { &s, str });
@@ -192,6 +202,23 @@ static bool applyNativePooledSprings(System* system, qreal addedWidth)
       for (const auto& entry : proposed)
             entry.first->setWidth(entry.second);
       const QByteArray selected = qgetenv("MSCORE_NATIVE_GAP_TRACE");
+      const int selectedMeasure = selected.toInt();
+      bool traceSystem = false;
+      for (Measure* m : measures) {
+            if (!selected.isEmpty() && selectedMeasure == m->no() + 1) {
+                  traceSystem = true;
+                  break;
+                  }
+            }
+      if (traceSystem) {
+            for (const auto& entry : springs) {
+                  const Segment* segment = entry.second.segment;
+                  qDebug().noquote() << "[native-pool] spring" << segment->measure()->no() + 1
+                        << segment->tick().ticks() << "duration" << segment->ticks().ticks()
+                        << "weight" << entry.second.stretch
+                        << "minWidth/sp" << segment->width() / segment->spatium();
+                  }
+            }
       for (size_t i = 0; i < measures.size(); ++i) {
             Measure* m = measures[i];
             Segment* first = m->first();
