@@ -86,6 +86,140 @@ namespace Ms {
 #define PAGEDBG(...)  ;
 #endif
 
+// Experimental native system-wide spring solver.  The normal 3.x layout
+// remains the default; opt in with MSCORE_NATIVE_POOLED_SPRINGS=1.
+// This deliberately reuses the legacy rhythmic weights and collision floors,
+// without reading or publishing a Studio 4 spacing plan.
+static bool applyNativePooledSprings(System* system, qreal addedWidth)
+      {
+      if (!std::isfinite(addedWidth) || addedWidth <= 0.0)
+            return false;
+
+      struct Spring {
+            Segment* segment;
+            qreal stretch;
+            };
+      std::multimap<qreal, Spring> springs;
+      std::map<Segment*, qreal> proposed;
+      std::vector<Measure*> measures;
+      qreal minimum = 0.0;
+      qreal original = 0.0;
+
+      // Keep the experiment to ordinary, complete measures.  Frame systems,
+      // multi-measure rests, and degenerate durations retain native layout.
+      for (MeasureBase* mb : system->measures()) {
+            if (!mb->isMeasure())
+                  return false;
+            Measure* m = toMeasure(mb);
+            if (m->isMMRest())
+                  return false;
+            const Fraction minTick = m->computeTicks();
+            if (minTick.ticks() <= 0)
+                  return false;
+            Segment* first = m->first();
+            while (first && (!first->enabled() || first->allElementsInvisible()))
+                  first = first->next();
+            if (!first)
+                  return false;
+            minimum += first->x();
+            original += m->width();
+            for (Segment& s : m->segments()) {
+                  if (!s.enabled() || !s.visible() || s.allElementsInvisible())
+                        continue;
+                  minimum += s.width();
+                  proposed[&s] = s.width();
+                  if (s.ticks().isNotZero()) {
+                        const qreal ratio = qreal(s.ticks().ticks()) / qreal(minTick.ticks());
+                        if (ratio <= 0.0)
+                              return false;
+                        const qreal str = 1.0 + 0.865617 * std::log(ratio);
+                        if (!std::isfinite(str) || str <= 0.0)
+                              return false;
+                        springs.emplace(s.width() / str, Spring { &s, str });
+                        }
+                  }
+            measures.push_back(m);
+            }
+      if (springs.empty())
+            return false;
+
+      const qreal target = original + addedWidth;
+      if (target <= minimum)
+            return false;
+      qreal variableStretch = 0.0;
+      qreal force = 0.0;
+      for (auto it = springs.begin(); it != springs.end();) {
+            variableStretch += it->second.stretch;
+            minimum -= it->second.segment->width();
+            const qreal candidate = (target - minimum) / variableStretch;
+            ++it;
+            if (it == springs.end() || candidate <= it->first) {
+                  force = candidate;
+                  break;
+                  }
+            }
+      if (!std::isfinite(force) || force <= 0.0)
+            return false;
+      for (const auto& entry : springs) {
+            Segment* segment = entry.second.segment;
+            proposed[segment] = qMax(segment->width(), force * entry.second.stretch);
+            }
+
+      // Check the complete plan before changing the score.  An unsuccessful
+      // experiment must leave the original per-measure solver untouched.
+      qreal sumWidths = 0.0;
+      std::vector<qreal> widths;
+      widths.reserve(measures.size());
+      for (Measure* m : measures) {
+            Segment* first = m->first();
+            while (first && (!first->enabled() || first->allElementsInvisible()))
+                  first = first->next();
+            qreal width = first->x();
+            for (Segment* s = first; s; s = s->nextEnabled()) {
+                  auto it = proposed.find(s);
+                  width += it == proposed.end() ? s->width() : it->second;
+                  }
+            if (!std::isfinite(width) || width < m->score()->styleP(Sid::minMeasureWidth))
+                  return false;
+            widths.push_back(width);
+            sumWidths += width;
+            }
+      if (qAbs(sumWidths - target) > 0.0001 * qMax(qreal(1.0), target))
+            return false;
+
+      for (const auto& entry : springs)
+            entry.second.segment->setStretch(entry.second.stretch);
+      for (const auto& entry : proposed)
+            entry.first->setWidth(entry.second);
+      const QByteArray selected = qgetenv("MSCORE_NATIVE_GAP_TRACE");
+      for (size_t i = 0; i < measures.size(); ++i) {
+            Measure* m = measures[i];
+            Segment* first = m->first();
+            while (first && (!first->enabled() || first->allElementsInvisible()))
+                  first = first->next();
+            qreal x = first->x();
+            for (Segment* s = first; s; s = s->nextEnabled()) {
+                  s->rxpos() = x;
+                  x += s->width();
+                  }
+            m->bbox().setWidth(widths[i]);
+            if (!selected.isEmpty() && selected.toInt() == m->no() + 1) {
+                  qDebug().noquote() << "[native-pool] measure" << m->no() + 1
+                        << "width/sp" << widths[i] / m->spatium()
+                        << "force/sp" << force / m->spatium();
+                  for (Segment* a = m->first(SegmentType::ChordRest); a;
+                       a = a->next(SegmentType::ChordRest)) {
+                        Segment* b = a->next(SegmentType::ChordRest);
+                        if (b && a->enabled() && b->enabled())
+                              qDebug().noquote() << "[native-pool] pair" << a->tick().ticks()
+                                    << b->tick().ticks() << "distance/sp"
+                                    << (b->x() - a->x()) / m->spatium();
+                        }
+                  }
+            }
+      return true;
+      }
+
 //---------------------------------------------------------
 //   rebuildBspTree
 //---------------------------------------------------------
@@ -4896,6 +5030,7 @@ System* Score::collectSystem(LayoutContext& lc)
                   studioMeasures[m.measure] = &m;
             }
       qreal rest;
+      qreal nativeExtraWidth = 0.0;
       std::map<Measure*, qreal> studioWidths;
       if (MScore::noHorizontalStretch || useStudioPlan)
             rest = 0;
@@ -4941,8 +5076,18 @@ System* Score::collectSystem(LayoutContext& lc)
                   }
             if (styleB(Sid::spacingLayout4) && rest > 0)
                   studioWidths = systemSpacingWidths4(system, rest);
+            nativeExtraWidth = rest;
             rest /= totalWeight;
             }
+      const bool nativePoolRequested = !styleB(Sid::spacingLayout4)
+            && !MScore::noHorizontalStretch
+            && qgetenv("MSCORE_NATIVE_POOLED_SPRINGS") == "1";
+      const bool nativePooled = nativePoolRequested
+            && applyNativePooledSprings(system, nativeExtraWidth);
+      if (nativePoolRequested && !nativePooled && !qgetenv("MSCORE_NATIVE_GAP_TRACE").isEmpty())
+            qDebug() << "[native-pool] fallback to legacy per-measure springs"
+                  << "firstTick" << (system->firstMeasure()
+                        ? system->firstMeasure()->tick().ticks() : -1);
 
       QPointF pos;
       firstMeasure = true;
@@ -4963,12 +5108,14 @@ System* Score::collectSystem(LayoutContext& lc)
                         ww = studioMeasures.at(m)->width;
                   else if (studioWidth != studioWidths.end())
                         ww = studioWidth->second;
-                  else
+                  else if (!nativePooled)
                         ww += rest * weight * stretch;
                   if (useStudioPlan) {
                         m->bbox().setWidth(ww);
                         m->layoutElementsAfterSpacing(ww);
                         }
+                  else if (nativePooled)
+                        m->layoutElementsAfterSpacing(ww);
                   else
                         m->stretchMeasure(ww);
                   m->layoutStaffLines();
