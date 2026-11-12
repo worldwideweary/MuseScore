@@ -46,6 +46,52 @@
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
+// Diagnostic only: final chord-to-chord spacing after Studio 4's native
+// system-wide justification. This is independent of tie-shape instrumentation.
+// Enable with MSCORE_475_GAP_TRACE=<measure number>.
+static void trace475HorizontalGaps(System* system, const char* stage)
+{
+    const char* selection = std::getenv("MSCORE_475_GAP_TRACE");
+    if (!selection || !*selection || !system) {
+        return;
+    }
+    const int measureNo = std::atoi(selection);
+    for (MeasureBase* base : system->measures()) {
+        if (!base->isMeasure()) {
+            continue;
+        }
+        const Measure* measure = toMeasure(base);
+        if (measure->no() + 1 != measureNo) {
+            continue;
+        }
+        const double sp = measure->spatium();
+        if (sp <= 0.0) {
+            return;
+        }
+        std::fprintf(stderr,
+                     "[475-gap] width %s measure %d width/sp %.6f measureX/sp %.6f\n",
+                     stage, measureNo, measure->width() / sp, measure->x() / sp);
+        const Segment* previous = nullptr;
+        for (const Segment& segment : measure->segments()) {
+            if (!segment.isChordRestType() || !segment.enabled() || !segment.visible()
+                || segment.allElementsInvisible()) {
+                continue;
+            }
+            if (previous) {
+                const double distance = segment.xPosInSystemCoords() - previous->xPosInSystemCoords();
+                std::fprintf(stderr,
+                             "[475-gap] pair %s measure %d source %d target %d"
+                             " distance/sp %.6f leftWidth/sp %.6f leftStretch %.6f"
+                             " rightLeading/sp %.6f\n",
+                             stage, measureNo, int(previous->tick().ticks()), int(segment.tick().ticks()),
+                             distance / sp, previous->width() / sp, previous->stretch(),
+                             segment.extraLeadingSpace().toMM(sp).val() / sp);
+            }
+            previous = &segment;
+        }
+    }
+}
+
 
 double HorizontalSpacing::computeSpacingForFullSystem(System* system, double stretchReduction, double squeezeFactor,
                                                       bool overrideMinMeasureWidth)
@@ -87,6 +133,7 @@ double HorizontalSpacing::computeSpacingForFullSystem(System* system, double str
 
     spaceMeasureGroup(measureGroup, ctx);
 
+    trace475HorizontalGaps(system, "natural");
     return ctx.xCur;
 }
 
@@ -222,6 +269,7 @@ void HorizontalSpacing::justifySystem(System* system, double curSysWidth, double
         mb->mutldata()->setPosX(x);
         x += mb->width();
     }
+    trace475HorizontalGaps(system, "justified");
 }
 
 void HorizontalSpacing::spaceMeasureGroup(const std::vector<Measure*>& measureGroup, HorizontalSpacingContext& ctx)
