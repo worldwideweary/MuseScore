@@ -296,6 +296,31 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
                   _leftMargin += w + bd;
             }
 
+      // Studio 4.7's alignSystemToMargin rule: with no instrument-name or
+      // first-system indentation, let the first measure start at the page
+      // margin and hang the brackets to its left.  Native 3.x normally
+      // reserves the full bracket width inside the printable system, which
+      // removes that width from the springs' justification budget.
+      // Keep this strictly opt-in while validating the pooled native solver.
+      if (qgetenv("MSCORE_NATIVE_POOLED_SPRINGS") == "1"
+          && qgetenv("MSCORE_NATIVE_ALIGN_SYSTEM_475") == "1"
+          && qFuzzyIsNull(xoff2)) {
+            const qreal previousMargin = _leftMargin;
+            _leftMargin = 0.0;
+            const QByteArray selected = qgetenv("MSCORE_NATIVE_GAP_TRACE");
+            if (!selected.isEmpty()) {
+                  const int measureNo = selected.toInt();
+                  for (MeasureBase* mb : ml) {
+                        if (mb->isMeasure() && toMeasure(mb)->no() + 1 == measureNo) {
+                              qDebug().noquote() << "[native-margin475] measure" << measureNo
+                                    << "previousMargin/sp" << previousMargin / spatium()
+                                    << "alignedMargin/sp" << _leftMargin / spatium();
+                              break;
+                              }
+                        }
+                  }
+            }
+
       for (int staffIdx = 0; staffIdx < nstaves; ++staffIdx) {
             SysStaff* s  = _staves[staffIdx];
             Staff* staff = score()->staff(staffIdx);
