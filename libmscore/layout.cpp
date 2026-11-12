@@ -86,6 +86,81 @@ namespace Ms {
 #define PAGEDBG(...)  ;
 #endif
 
+// Diagnostic only: separate the fixed left/header and trailing reservations
+// from the widths of rhythmic chord/rest springs.  These are measure-local
+// coordinates; the system margin is printed separately, never subtracted from
+// the measure itself.  Select M29 to inspect M28+29 or M31 for M30+31.
+static void traceNativeFixedReservations(System* system, const char* stage)
+      {
+      const QByteArray requested = qgetenv("MSCORE_NATIVE_FIXED_TRACE");
+      if (requested.isEmpty())
+            return;
+      bool ok = false;
+      const int selected = requested.toInt(&ok);
+      if (!ok || selected <= 0 || !system)
+            return;
+      for (MeasureBase* mb : system->measures()) {
+            if (!mb->isMeasure())
+                  continue;
+            Measure* measure = toMeasure(mb);
+            const int number = measure->no() + 1;
+            if (number != selected && number != selected - 1)
+                  continue;
+            const qreal sp = measure->spatium();
+            if (sp <= 0)
+                  continue;
+            const Segment* first = nullptr;
+            const Segment* firstCR = nullptr;
+            const Segment* lastCR = nullptr;
+            qreal chordRestWidth = 0.0;
+            qreal allWidth = 0.0;
+            for (Segment& s : measure->segments()) {
+                  if (!s.enabled() || !s.visible() || s.allElementsInvisible())
+                        continue;
+                  if (!first)
+                        first = &s;
+                  allWidth += s.width();
+                  if (s.isChordRestType()) {
+                        if (!firstCR)
+                              firstCR = &s;
+                        lastCR = &s;
+                        chordRestWidth += s.width();
+                        }
+                  }
+            if (!first || !firstCR || !lastCR)
+                  continue;
+            const qreal fixed = measure->width() - chordRestWidth;
+            const qreal leading = firstCR->x();
+            const qreal trailing = measure->width() - lastCR->x() - lastCR->width();
+            const qreal middle = fixed - leading - trailing;
+            qDebug().noquote() << "[native-fixed] measure" << stage << number
+                  << "firstInSystem" << measure->isFirstInSystem()
+                  << "systemMargin/sp" << system->leftMargin() / sp
+                  << "measureX/sp" << measure->x() / sp
+                  << "width/sp" << measure->width() / sp
+                  << "chordRestSum/sp" << chordRestWidth / sp
+                  << "fixed/sp" << fixed / sp
+                  << "leading/sp" << leading / sp
+                  << "middle/sp" << middle / sp
+                  << "trailing/sp" << trailing / sp
+                  << "firstX/sp" << first->x() / sp
+                  << "activeSumResidual/sp" << (measure->width() - first->x() - allWidth) / sp;
+            for (Segment& s : measure->segments()) {
+                  if (!s.enabled() || !s.visible() || s.allElementsInvisible())
+                        continue;
+                  qDebug().noquote() << "[native-fixed] segment" << stage << number
+                        << "type" << s.subTypeName()
+                        << "tick" << s.tick().ticks()
+                        << "header" << s.header()
+                        << "chordRest" << s.isChordRestType()
+                        << "x/sp" << s.x() / sp
+                        << "width/sp" << s.width() / sp
+                        << "end/sp" << (s.x() + s.width()) / sp
+                        << "leading/sp" << s.extraLeadingSpace().val();
+                  }
+            }
+      }
+
 // Experimental native system-wide spring solver.  The normal 3.x layout
 // remains the default; opt in with MSCORE_NATIVE_POOLED_SPRINGS=1.
 // This deliberately reuses the legacy rhythmic weights and collision floors,
@@ -5106,6 +5181,7 @@ System* Score::collectSystem(LayoutContext& lc)
             nativeExtraWidth = rest;
             rest /= totalWeight;
             }
+      traceNativeFixedReservations(system, "natural");
       const bool nativePoolRequested = !styleB(Sid::spacingLayout4)
             && !MScore::noHorizontalStretch
             && qgetenv("MSCORE_NATIVE_POOLED_SPRINGS") == "1";
@@ -5161,6 +5237,7 @@ System* Score::collectSystem(LayoutContext& lc)
             pos.rx() += ww;
             }
       system->setWidth(pos.x());
+      traceNativeFixedReservations(system, "allocated");
       if (useStudioPlan) {
             // Segment widths are now final. Publish the plan's target-relative
             // graces directly, including compressed plans, without applying an
