@@ -844,8 +844,8 @@ void TieSegment::adjustVertical()
             * (innerY - (staffY + outward * lineHalfWidth));
       const qreal required = (length < 3.0 * sp ? 0.10 : 0.15) * sp;
       const bool growOutwards = outerMargin - 0.5 * required < innerMargin;
-      const bool needsOutward = growOutwards && innerMargin < required;
-      const bool needsInward = !growOutwards && outerMargin < required;
+      bool needsOutward = growOutwards && innerMargin < required;
+      bool needsInward = !growOutwards && outerMargin < required;
       if (trace) {
             const qreal requested = needsOutward ? required - innerMargin
                                     : needsInward ? required - outerMargin : 0.0;
@@ -884,6 +884,16 @@ void TieSegment::adjustVertical()
                         break;
                         }
                   }
+            }
+      // Studio 4.7's small inside ties favor outward staff-line clearance.
+      // Without this override, a tie whose crown grazes a staff line can
+      // flatten into that line instead of growing outward and moving its
+      // endpoints when the shoulder's available correction is exhausted.
+      if (shortTie && tie()->isInside() && needsInward) {
+            needsOutward = true;
+            needsInward = false;
+            if (trace)
+                  qDebug() << "[tie-clearance] short-inside outward override";
             }
       if (shortTie && nonOuter && !tiedSecondInside && needsInward) {
             if (trace)
