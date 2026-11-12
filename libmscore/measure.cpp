@@ -84,6 +84,49 @@
 
 namespace Ms {
 
+// Diagnostic only: show the native minimum and the finally allocated
+// chord-to-chord distances.  A tie minimum is a floor, not a final position:
+// Measure::stretchMeasure() may enlarge the spring after computeMinWidth().
+// Intentionally independent of spacingLayout4 and the 4.x spacing adapter.
+static void traceNativeMeasureGaps(const Measure* measure, const char* stage,
+                                   qreal originalWidth, qreal allocatedWidth)
+      {
+      const QByteArray requested = qgetenv("MSCORE_NATIVE_GAP_TRACE");
+      if (requested.isEmpty() || requested.toInt() != measure->no() + 1
+          || measure->score()->styleB(Sid::spacingLayout4))
+            return;
+      const qreal sp = measure->spatium();
+      if (sp <= 0.0)
+            return;
+      qDebug().noquote() << "[native-gap] width" << stage
+            << "measure" << measure->no() + 1
+            << "original/sp" << originalWidth / sp
+            << "allocated/sp" << allocatedWidth / sp
+            << "measureX/sp" << measure->x() / sp
+            << "userStretch" << measure->userStretch();
+      for (Segment* left = measure->first(SegmentType::ChordRest); left;
+           left = left->next(SegmentType::ChordRest)) {
+            if (!left->enabled() || !left->visible() || left->allElementsInvisible())
+                  continue;
+            Segment* right = left->next(SegmentType::ChordRest);
+            while (right && (!right->enabled() || !right->visible()
+                             || right->allElementsInvisible()))
+                  right = right->next(SegmentType::ChordRest);
+            if (!right)
+                  continue;
+            qDebug().noquote() << "[native-gap] pair" << stage
+                  << "measure" << measure->no() + 1
+                  << "source" << left->tick().ticks()
+                  << "target" << right->tick().ticks()
+                  << "leftX/sp" << left->x() / sp
+                  << "rightX/sp" << right->x() / sp
+                  << "distance/sp" << (right->x() - left->x()) / sp
+                  << "leftWidth/sp" << left->width() / sp
+                  << "leftStretch" << left->stretch()
+                  << "rightLeading/sp" << right->extraLeadingSpace().val();
+            }
+      }
+
 // System coordinates for open-ended slurs and lyric lines. Match Studio 4.7's
 // default header (1sp), repeat/end (0.25sp), and following-barline (0.65sp) gaps.
 qreal Measure::firstNoteRestSegmentX(bool leading) const
@@ -3906,6 +3949,7 @@ static qreal crossBeamSpacingOffset4(const Segment* segment, const Segment* next
 
 void Measure::stretchMeasure(qreal targetWidth)
       {
+      const qreal naturalWidth = width();
       bbox().setWidth(targetWidth);
 
       Fraction minTick = computeTicks();
@@ -3982,6 +4026,7 @@ void Measure::stretchMeasure(qreal targetWidth)
             }
 
       layoutElementsAfterSpacing(targetWidth);
+      traceNativeMeasureGaps(this, "allocated", naturalWidth, targetWidth);
       }
 
 // Finalize elements after either legacy stretching or an already solved
@@ -5056,6 +5101,7 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
             s = s->next();
             }
       setStretchedWidth(x);
+      traceNativeMeasureGaps(this, "minimum", x, width());
       }
 
 // Cross-measure spacing starts here rather than in
