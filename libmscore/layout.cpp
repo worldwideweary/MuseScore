@@ -161,6 +161,110 @@ static void traceNativeFixedReservations(System* system, const char* stage)
             }
       }
 
+// Diagnostic only: report the ingredients of the two boundary spacing rules
+// next to the real, post-spring positions.  This never changes layout.
+// Trace measure N and the preceding measure with
+// MSCORE_NATIVE_BOUNDARY_TRACE=N.
+static void traceNativeBoundaryOperands(System* system)
+      {
+      const QByteArray requested = qgetenv("MSCORE_NATIVE_BOUNDARY_TRACE");
+      if (requested.isEmpty() || !system)
+            return;
+      bool ok = false;
+      const int selected = requested.toInt(&ok);
+      if (!ok || selected <= 0)
+            return;
+      for (MeasureBase* mb : system->measures()) {
+            if (!mb->isMeasure())
+                  continue;
+            Measure* m = toMeasure(mb);
+            const int number = m->no() + 1;
+            if (number != selected && number != selected - 1)
+                  continue;
+            Segment* cr = m->first(SegmentType::ChordRest);
+            while (cr && (!cr->enabled() || !cr->visible() || cr->allElementsInvisible()))
+                  cr = cr->next(SegmentType::ChordRest);
+            if (!cr || m->spatium() <= 0)
+                  continue;
+            const qreal sp = m->spatium();
+            Score* score = m->score();
+            const qreal notePad = score->styleP(Sid::barNoteDistance);
+            const qreal accPad = score->styleP(Sid::barAccidentalDistance);
+            qDebug().noquote() << "[native-boundary] measure" << number
+                  << "firstInSystem" << m->isFirstInSystem()
+                  << "firstChordX/sp" << cr->x() / sp
+                  << "barNoteStyle/sp" << notePad / sp
+                  << "barAccidentalStyle/sp" << accPad / sp
+                  << "headerStyle/sp" << score->styleP(Sid::systemHeaderDistance) / sp
+                  << "clefLeftStyle/sp" << score->styleP(Sid::clefLeftMargin) / sp;
+
+            if (m->isFirstInSystem()) {
+                  // The last enabled header before the first chord normally is
+                  // a clef (or the last key/time signature).
+                  Segment* header = cr->prevActive();
+                  while (header && header->allElementsInvisible())
+                        header = header->prevActive();
+                  if (!header || !header->header())
+                        continue;
+                  const qreal current = cr->x() - header->x();
+                  const qreal pairShape = header->minHorizontalCollidingDistance(cr);
+                  const qreal legacyRule = header->minHorizontalDistance(cr, true);
+                  const qreal rightInk = header->minRight();
+                  qDebug().noquote() << "[native-boundary] header" << number
+                        << "from" << header->subTypeName() << "to" << cr->subTypeName()
+                        << "headerX/sp" << header->x() / sp
+                        << "headerWidth/sp" << header->width() / sp
+                        << "headerMinRight/sp" << rightInk / sp
+                        << "shapeCollision/sp" << pairShape / sp
+                        << "nativePairRule/sp" << legacyRule / sp
+                        << "actualPair/sp" << current / sp
+                        << "maxOfCollisionAndMinRightPlusHeaderStyle/sp"
+                        << qMax(pairShape, rightInk + score->styleP(Sid::systemHeaderDistance)) / sp;
+                  for (int st = 0; st < score->nstaves(); ++st) {
+                        if (!score->staff(st)->show()
+                            || st >= int(header->shapes().size()) || st >= int(cr->shapes().size()))
+                              continue;
+                        qDebug().noquote() << "[native-boundary] header-staff" << number
+                              << "staff" << st
+                              << "headerInkRight/sp" << header->staffShape(st).right() / sp
+                              << "nextInkLeft/sp" << cr->staffShape(st).left() / sp
+                              << "shapeGap/sp"
+                              << header->staffShape(st).minHorizontalDistance(cr->staffShape(st)) / sp;
+                        }
+                  }
+            else {
+                  MeasureBase* prev = m->prev();
+                  if (!prev || !prev->isMeasure() || prev->system() != system)
+                        continue;
+                  Measure* previous = toMeasure(prev);
+                  Segment* bar = previous->last();
+                  while (bar && (!bar->enabled() || bar->allElementsInvisible()))
+                        bar = bar->prev();
+                  if (!bar || !bar->isEndBarLineType())
+                        continue;
+                  const Shape barrier(QRectF(0.0, 0.0, 0.0, 4.0 * sp));
+                  qDebug().noquote() << "[native-boundary] barline" << number
+                        << "barX/sp" << bar->x() / sp
+                        << "barWidth/sp" << bar->width() / sp
+                        << "barMinRight/sp" << bar->minRight() / sp
+                        << "firstChordX/sp" << cr->x() / sp
+                        << "nativeBarrierMinLeft/sp" << cr->minLeft(barrier) / sp
+                        << "nativeBarNoteCandidate/sp" << cr->minLeftAfterBarline(barrier, notePad) / sp;
+                  for (int st = 0; st < score->nstaves(); ++st) {
+                        if (!score->staff(st)->show()
+                            || st >= int(bar->shapes().size()) || st >= int(cr->shapes().size()))
+                              continue;
+                        qDebug().noquote() << "[native-boundary] barline-staff" << number
+                              << "staff" << st
+                              << "barInkRight/sp" << bar->staffShape(st).right() / sp
+                              << "nextInkLeft/sp" << cr->staffShape(st).left() / sp
+                              << "shapeGap/sp"
+                              << bar->staffShape(st).minHorizontalDistance(cr->staffShape(st)) / sp;
+                        }
+                  }
+            }
+      }
+
 // Experimental native system-wide spring solver.  The normal 3.x layout
 // remains the default; opt in with MSCORE_NATIVE_POOLED_SPRINGS=1.
 // This deliberately reuses the legacy rhythmic weights and collision floors,
@@ -5238,6 +5342,7 @@ System* Score::collectSystem(LayoutContext& lc)
             }
       system->setWidth(pos.x());
       traceNativeFixedReservations(system, "allocated");
+      traceNativeBoundaryOperands(system);
       if (useStudioPlan) {
             // Segment widths are now final. Publish the plan's target-relative
             // graces directly, including compressed plans, without applying an
