@@ -4940,6 +4940,68 @@ static bool hasAccidental(Segment* s)
       return false;
       }
 
+// Experimental Studio-like ordinary-barline clearance.  A chord with an
+// accidental must satisfy *both* the barline-to-accidental and the
+// barline-to-notehead padding.  The legacy segment-level rule uses only one
+// padding for the entire chord, so accidentals can suppress the notehead's
+// larger minimum distance.  Keep the existing ledger-line-aware collision
+// floor; only add missing per-notehead / per-accidental constraints.
+static qreal nativeBarlineChordClearance475(Segment* segment, qreal legacy)
+      {
+      if (qgetenv("MSCORE_NATIVE_POOLED_SPRINGS") != "1"
+          || qgetenv("MSCORE_NATIVE_BARLINE_475") != "1")
+            return legacy;
+      Measure* measure = segment->measure();
+      if (!measure || measure->isFirstInSystem() || measure->isMMRest())
+            return legacy;
+      MeasureBase* prev = measure->prev();
+      if (!prev || !prev->isMeasure() || prev->system() != measure->system())
+            return legacy;
+      Measure* previous = toMeasure(prev);
+      const BarLine* barline = previous->endBarLine();
+      // Different barline shapes (repeat dots, double bars, etc.) need their
+      // individual rules.  Keep the existing behavior for those for now.
+      if (!barline || barline->barLineType() != BarLineType::NORMAL)
+            return legacy;
+
+      const qreal notePadding = segment->score()->styleP(Sid::barNoteDistance);
+      const qreal accidentalPadding = segment->score()->styleP(Sid::barAccidentalDistance);
+      qreal noteCandidate = 0.0;
+      qreal accidentalCandidate = 0.0;
+      bool foundNote = false;
+      for (int track = 0; track < segment->score()->ntracks(); ++track) {
+            const Staff* staff = segment->score()->staff(track2staff(track));
+            if (!staff || !staff->show() || staff->isTabStaff(segment->tick()))
+                  continue;
+            const Element* element = segment->element(track);
+            if (!element || !element->isChord() || !element->visible())
+                  continue;
+            const Chord* chord = toChord(element);
+            for (const Note* note : chord->notes()) {
+                  if (!note->visible())
+                        continue;
+                  foundNote = true;
+                  const qreal noteX = chord->x() + note->x();
+                  noteCandidate = qMax(noteCandidate,
+                        notePadding - noteX - note->bbox().left());
+                  const Accidental* accidental = note->accidental();
+                  if (accidental && accidental->visible() && accidental->addToSkyline())
+                        accidentalCandidate = qMax(accidentalCandidate,
+                              accidentalPadding - noteX - accidental->x() - accidental->bbox().left());
+                  }
+            }
+      if (!foundNote)
+            return legacy;
+      const qreal result = qMax(legacy, qMax(noteCandidate, accidentalCandidate));
+      if (!qgetenv("MSCORE_NATIVE_BOUNDARY_TRACE").isEmpty())
+            qDebug().noquote() << "[native-barline475] measure" << measure->no() + 1
+                  << "legacy/sp" << legacy / measure->spatium()
+                  << "noteCandidate/sp" << noteCandidate / measure->spatium()
+                  << "accidentalCandidate/sp" << accidentalCandidate / measure->spatium()
+                  << "newX/sp" << result / measure->spatium();
+      return result;
+      }
+
 //---------------------------------------------------------
 //   computeMinWidth
 //    sets the minimum stretched width of segment list s
@@ -5178,7 +5240,10 @@ void Measure::computeMinWidth()
 
       if (s->isChordRestType()) {
             const qreal padding = score()->styleP(hasAccidental(s) ? Sid::barAccidentalDistance : Sid::barNoteDistance);
-            x = !first && prev() && prev()->isMeasure() ? s->minLeftAfterBarline(ls, padding) : x + padding;
+            if (!first && prev() && prev()->isMeasure())
+                  x = nativeBarlineChordClearance475(s, s->minLeftAfterBarline(ls, padding));
+            else
+                  x += padding;
             }
       else if (s->isClefType() || s->isHeaderClefType())
             x += score()->styleP(Sid::clefLeftMargin);
@@ -5203,7 +5268,10 @@ qreal Measure::computeFirstSegmentXPosition(Segment* segment)
 
       if (segment->isChordRestType()) {
             const qreal padding = score()->styleP(hasAccidental(segment) ? Sid::barAccidentalDistance : Sid::barNoteDistance);
-            x = !isFirstInSystem() && prev() && prev()->isMeasure() ? segment->minLeftAfterBarline(ls, padding) : x + padding;
+            if (!isFirstInSystem() && prev() && prev()->isMeasure())
+                  x = nativeBarlineChordClearance475(segment, segment->minLeftAfterBarline(ls, padding));
+            else
+                  x += padding;
             }
       else if (segment->isClefType() || segment->isHeaderClefType())
             x += score()->styleP(Sid::clefLeftMargin);
