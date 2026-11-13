@@ -298,6 +298,25 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
                   _leftMargin += w + bd;
             }
 
+      // Capture system-margin inputs even if the experimental switch is off.
+      // This also reveals whether a margin trace is missing because the branch
+      // was not executed, rather than because a later measure is not in ml yet.
+      const QByteArray marginTraceEntry = qgetenv("MSCORE_NATIVE_MARGIN_TRACE");
+      if (!marginTraceEntry.isEmpty()) {
+            const Measure* first = firstMeasure();
+            const int firstNo = first ? first->no() + 1 : -1;
+            if (marginTraceEntry == "all" || marginTraceEntry == QByteArray::number(firstNo)) {
+                  qDebug().noquote() << "[native-margin475-entry]"
+                        << "systemFirstMeasure" << firstNo
+                        << "pooled" << (qgetenv("MSCORE_NATIVE_POOLED_SPRINGS") == "1")
+                        << "align" << (qgetenv("MSCORE_NATIVE_ALIGN_SYSTEM_475") == "1")
+                        << "isFirstSystem" << isFirstSystem
+                        << "firstSystemIndent" << firstSystemIndent
+                        << "nameIndent/sp" << instrumentNamesIndent / spatium()
+                        << "xoff2/sp" << xoff2 / spatium()
+                        << "legacyMargin/sp" << _leftMargin / spatium();
+                  }
+            }
       // Experimental 4.7-style horizontal system margin. Use the greatest
       // sum of overlapping bracket widths across staves (not a sum of every
       // column maximum). Bracket::width() already includes the gap to the barline.
@@ -322,6 +341,39 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
             indent = qMax(qreal(0.0), indent);
             xoff2 = indent;  // Also used to position instrument names below.
             _leftMargin = qFuzzyIsNull(indent) ? 0.0 : indent + bracketReserve;
+
+            // Trace the actual system whose first measure matches the selector.
+            // The older diagnostic searches ml for the requested measure, but
+            // layoutSystem() may run before later measures are appended.
+            const QByteArray marginTrace = qgetenv("MSCORE_NATIVE_MARGIN_TRACE");
+            const Measure* first = firstMeasure();
+            const int systemStartNo = first ? first->no() + 1 : -1;
+            if (!marginTrace.isEmpty()
+                && (marginTrace == "all" || marginTrace == QByteArray::number(systemStartNo))) {
+                  int instrumentNameCount = 0;
+                  for (const SysStaff* ss : qAsConst(_staves))
+                        instrumentNameCount += ss->instrumentNames.size();
+                  qDebug().noquote() << "[native-margin475-debug]"
+                        << "systemFirstMeasure" << systemStartNo
+                        << "isFirstSystem" << isFirstSystem
+                        << "firstSystemIndent" << firstSystemIndent
+                        << "namesCount" << instrumentNameCount
+                        << "nameIndent/sp" << instrumentNamesIndent / spatium()
+                        << "firstIndentStyle/sp" << styleP(Sid::firstSystemIndentationValue) * mag() / spatium()
+                        << "bracketsCount" << _brackets.size()
+                        << "bracketReserve/sp" << bracketReserve / spatium()
+                        << "indent/sp" << indent / spatium()
+                        << "previousMargin/sp" << previousMargin / spatium()
+                        << "finalMargin/sp" << _leftMargin / spatium();
+                  for (const Bracket* br : qAsConst(_brackets)) {
+                        qDebug().noquote() << "[native-margin475-bracket]"
+                              << "systemFirstMeasure" << systemStartNo
+                              << "column" << br->column()
+                              << "firstStaff" << br->firstStaff()
+                              << "lastStaff" << br->lastStaff()
+                              << "width/sp" << br->width() / spatium();
+                        }
+                  }
 
             const QByteArray selected = qgetenv("MSCORE_NATIVE_GAP_TRACE");
             if (!selected.isEmpty()) {
