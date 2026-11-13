@@ -52,7 +52,7 @@ class Segment final : public Element {
       Fraction _tick;  // { Fraction(0, 1) };
       Fraction _ticks; // { Fraction(0, 1) };
       Spatium _extraLeadingSpace;
-      qreal _stretch;
+      qreal _stretch { 1.0 };
       qreal _spacingWidthOffset4 { 0.0 }; // transient, fixed part of Studio spacing
 
       Segment* _next = nullptr;                     // linked list of segments inside a measure
