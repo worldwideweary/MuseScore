@@ -260,28 +260,9 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
 
       int nstaves  = _staves.size();
 
-      //---------------------------------------------------
-      //  find x position of staves
-      //---------------------------------------------------
-      qreal xoff2 = 0.0; // x offset for instrument name
-
-      for (Part*& p : score()->parts()) {
-            if (firstVisibleSysStaffOfPart(p) < 0)
-                  continue;
-            for (int staffIdx = firstSysStaffOfPart(p); staffIdx <= lastSysStaffOfPart(p); ++staffIdx) {
-                  for (InstrumentName* t : qAsConst(_staves[staffIdx]->instrumentNames)) {
-                        t->layout();
-                        qreal w = t->width() + point(instrumentNameOffset);
-                        if (w > xoff2)
-                              xoff2 = w;
-                        }
-                  }
-            }
-
-      // Save the instrument-name requirement before first-system indentation.
-      const qreal instrumentNamesIndent = xoff2;
-      if (isFirstSystem && firstSystemIndent)
-            xoff2 = qMax(xoff2, styleP(Sid::firstSystemIndentationValue) * mag());
+      // The score-wide margin calculation below measures instrument names
+      // and determines their positioning offset.
+      qreal xoff2 = 0.0;
 
       //---------------------------------------------------
       //  create brackets
@@ -392,7 +373,6 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
                         << "isFirstSystem" << isFirstSystem
                         << "firstSystemIndent" << firstSystemIndent
                         << "namesCount" << instrumentNameCount
-                        << "nameIndent/sp" << instrumentNamesIndent / spatium()
                         << "nameOffset/sp" << instrumentNameOffset.val()
                         << "nameOffsetScale" << nameOffsetScale
                         << "effectiveNameIndent/sp" << effectiveNameIndent / spatium()
@@ -418,7 +398,6 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
                         if (mb->isMeasure() && toMeasure(mb)->no() + 1 == measureNo) {
                               qDebug().noquote() << "[native-margin475] measure" << measureNo
                                     << "alignedMargin/sp" << _leftMargin / spatium()
-                                    << "nameIndent/sp" << instrumentNamesIndent / spatium()
                                     << "brackets/sp" << bracketReserve / spatium()
                                     << "indent/sp" << indent / spatium();
                               break;
