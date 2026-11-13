@@ -235,26 +235,24 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
       // Scale the instrument-name clearance using the displayed name's
       // font settings, including long names on later systems.
       qreal nameOffsetScale = 1.0;
-      {
-            // Actual displayed name type is authoritative, including sections
-            // that restart with long names on a non-first system.
-            bool useLongNames = isFirstSystem;
-            for (const SysStaff* ss : qAsConst(_staves)) {
-                  if (!ss->instrumentNames.isEmpty()) {
-                        useLongNames = ss->instrumentNames.front()->instrumentNameType() == InstrumentNameType::LONG;
-                        break;
-                        }
+      // Actual displayed name type is authoritative, including sections
+      // that restart with long names on a non-first system.
+      bool useLongNames = isFirstSystem;
+      for (const SysStaff* ss : qAsConst(_staves)) {
+            if (!ss->instrumentNames.isEmpty()) {
+                  useLongNames = ss->instrumentNames.front()->instrumentNameType() == InstrumentNameType::LONG;
+                  break;
                   }
-            const Sid fontSizeSid = useLongNames ? Sid::longInstrumentFontSize : Sid::shortInstrumentFontSize;
-            const Sid followStaffSid = useLongNames ? Sid::longInstrumentFontSpatiumDependent
-                                                   : Sid::shortInstrumentFontSpatiumDependent;
-            const qreal defaultFontSize = MScore::baseStyle().value(fontSizeSid).toDouble();
-            if (defaultFontSize > 0.0)
-                  nameOffsetScale = score()->styleD(fontSizeSid) / defaultFontSize;
-            if (!score()->styleB(followStaffSid) && score()->spatium() > 0.0)
-                  nameOffsetScale *= MScore::baseStyle().value(Sid::spatium).toDouble() / score()->spatium();
-            nameOffsetScale = qMax(qreal(1.0), nameOffsetScale);
             }
+      const Sid fontSizeSid = useLongNames ? Sid::longInstrumentFontSize : Sid::shortInstrumentFontSize;
+      const Sid followStaffSid = useLongNames ? Sid::longInstrumentFontSpatiumDependent
+                                             : Sid::shortInstrumentFontSpatiumDependent;
+      const qreal defaultFontSize = MScore::baseStyle().value(fontSizeSid).toDouble();
+      if (defaultFontSize > 0.0)
+            nameOffsetScale = score()->styleD(fontSizeSid) / defaultFontSize;
+      if (!score()->styleB(followStaffSid) && score()->spatium() > 0.0)
+            nameOffsetScale *= MScore::baseStyle().value(Sid::spatium).toDouble() / score()->spatium();
+      nameOffsetScale = qMax(qreal(1.0), nameOffsetScale);
       // This value is used both when reserving the name area and when placing
       // the displayed labels; using the same offset avoids divergent X positions.
       const Spatium instrumentNameOffset(
@@ -345,59 +343,56 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
       {
             const qreal previousMargin = _leftMargin;
             qreal bracketReserve = 0.0;
-            qreal effectiveNameIndent = instrumentNamesIndent;
+            qreal effectiveNameIndent = 0.0;
 
-            {
-                  // Studio measures names on globally visible parts even when
-                  // their staves are hidden on THIS particular system.
-                  // Do not change the actual displayed instrument names.
-                  effectiveNameIndent = 0.0;
-                  for (SysStaff* ss : qAsConst(_staves)) {
-                        for (InstrumentName* name : qAsConst(ss->instrumentNames)) {
-                              name->layout();
-                              effectiveNameIndent = qMax(effectiveNameIndent,
-                                    name->width() + point(instrumentNameOffset));
-                              }
+            // Studio measures names on globally visible parts even when
+            // their staves are hidden on THIS particular system.
+            // Do not change the actual displayed instrument names.
+            for (SysStaff* ss : qAsConst(_staves)) {
+                  for (InstrumentName* name : qAsConst(ss->instrumentNames)) {
+                        name->layout();
+                        effectiveNameIndent = qMax(effectiveNameIndent,
+                              name->width() + point(instrumentNameOffset));
                         }
-
-                  // Studio totalBracketOffset(): reserve the widest sum of
-                  // overlapping BRACKET ITEMS from the full score, regardless
-                  // of whether a bracket is drawn on this particular system.
-                  // The dummy has no System parent so its brace is sized as if
-                  // the globally visible staves were all present.
-                  std::vector<qreal> fullScoreWidths(nstaves, 0.0);
-                  for (int i = 0; i < nstaves; ++i) {
-                        Staff* s = score()->staff(i);
-                        for (auto& bi : s->brackets()) {
-                              if (bi->bracketType() == BracketType::NO_BRACKET || bi->bracketSpan() <= 0)
-                                    continue;
-                              const int end = qMin(nstaves - 1, i + bi->bracketSpan() - 1);
-                              int firstVisible = -1;
-                              int lastVisible = -1;
-                              for (int j = i; j <= end; ++j) {
-                                    if (!score()->staff(j)->show())
-                                          continue;
-                                    if (firstVisible == -1)
-                                          firstVisible = j;
-                                    lastVisible = j;
-                                    }
-                              if (firstVisible == -1)
-                                    continue;
-                              const int visibleSpan = lastVisible - firstVisible + 1;
-                              if (visibleSpan <= 1 && bi->bracketSpan() != visibleSpan
-                                  && !score()->styleB(Sid::alwaysShowBracketsWhenEmptyStavesAreHidden))
-                                    continue;
-                              Bracket dummy(score());
-                              dummy.setBracketItem(bi);
-                              dummy.setStaffSpan(firstVisible, lastVisible);
-                              const qreal width = dummy.width();
-                              for (int j = firstVisible; j <= lastVisible; ++j)
-                                    fullScoreWidths[j] += width;
-                              }
-                        }
-                  for (qreal width : fullScoreWidths)
-                        bracketReserve = qMax(bracketReserve, width);
                   }
+
+            // Studio totalBracketOffset(): reserve the widest sum of
+            // overlapping BRACKET ITEMS from the full score, regardless
+            // of whether a bracket is drawn on this particular system.
+            // The dummy has no System parent so its brace is sized as if
+            // the globally visible staves were all present.
+            std::vector<qreal> fullScoreWidths(nstaves, 0.0);
+            for (int i = 0; i < nstaves; ++i) {
+                  Staff* s = score()->staff(i);
+                  for (auto& bi : s->brackets()) {
+                        if (bi->bracketType() == BracketType::NO_BRACKET || bi->bracketSpan() <= 0)
+                              continue;
+                        const int end = qMin(nstaves - 1, i + bi->bracketSpan() - 1);
+                        int firstVisible = -1;
+                        int lastVisible = -1;
+                        for (int j = i; j <= end; ++j) {
+                              if (!score()->staff(j)->show())
+                                    continue;
+                              if (firstVisible == -1)
+                                    firstVisible = j;
+                              lastVisible = j;
+                              }
+                        if (firstVisible == -1)
+                              continue;
+                        const int visibleSpan = lastVisible - firstVisible + 1;
+                        if (visibleSpan <= 1 && bi->bracketSpan() != visibleSpan
+                            && !score()->styleB(Sid::alwaysShowBracketsWhenEmptyStavesAreHidden))
+                              continue;
+                        Bracket dummy(score());
+                        dummy.setBracketItem(bi);
+                        dummy.setStaffSpan(firstVisible, lastVisible);
+                        const qreal width = dummy.width();
+                        for (int j = firstVisible; j <= lastVisible; ++j)
+                              fullScoreWidths[j] += width;
+                        }
+                  }
+            for (qreal width : fullScoreWidths)
+                  bracketReserve = qMax(bracketReserve, width);
 
             // 4.7's first-system indentation already includes bracket width.
             // Instrument names instead add their own reserved space.
