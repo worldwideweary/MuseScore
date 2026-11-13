@@ -356,54 +356,6 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
             indent = qMax(qreal(0.0), indent);
             xoff2 = indent;  // Also used to position instrument names below.
             _leftMargin = qFuzzyIsNull(indent) ? 0.0 : indent + bracketReserve;
-
-            // Trace the actual system whose first measure matches the selector.
-            // The older diagnostic searches ml for the requested measure, but
-            // layoutSystem() may run before later measures are appended.
-            const QByteArray marginTrace = qgetenv("MSCORE_NATIVE_MARGIN_TRACE");
-            const Measure* first = firstMeasure();
-            const int systemStartNo = first ? first->no() + 1 : -1;
-            if (!marginTrace.isEmpty()
-                && (marginTrace == "all" || marginTrace == QByteArray::number(systemStartNo))) {
-                  int instrumentNameCount = 0;
-                  for (const SysStaff* ss : qAsConst(_staves))
-                        instrumentNameCount += ss->instrumentNames.size();
-                  qDebug().noquote() << "[native-margin475-debug]"
-                        << "systemFirstMeasure" << systemStartNo
-                        << "isFirstSystem" << isFirstSystem
-                        << "firstSystemIndent" << firstSystemIndent
-                        << "namesCount" << instrumentNameCount
-                        << "nameOffset/sp" << instrumentNameOffset.val()
-                        << "nameOffsetScale" << nameOffsetScale
-                        << "effectiveNameIndent/sp" << effectiveNameIndent / spatium()
-                        << "firstIndentStyle/sp" << styleP(Sid::firstSystemIndentationValue) * mag() / spatium()
-                        << "bracketsCount" << _brackets.size()
-                        << "bracketReserve/sp" << bracketReserve / spatium()
-                        << "indent/sp" << indent / spatium()
-                        << "finalMargin/sp" << _leftMargin / spatium();
-                  for (const Bracket* br : qAsConst(_brackets)) {
-                        qDebug().noquote() << "[native-margin475-bracket]"
-                              << "systemFirstMeasure" << systemStartNo
-                              << "column" << br->column()
-                              << "firstStaff" << br->firstStaff()
-                              << "lastStaff" << br->lastStaff()
-                              << "width/sp" << br->width() / spatium();
-                        }
-                  }
-
-            const QByteArray selected = qgetenv("MSCORE_NATIVE_GAP_TRACE");
-            if (!selected.isEmpty()) {
-                  const int measureNo = selected.toInt();
-                  for (MeasureBase* mb : ml) {
-                        if (mb->isMeasure() && toMeasure(mb)->no() + 1 == measureNo) {
-                              qDebug().noquote() << "[native-margin475] measure" << measureNo
-                                    << "alignedMargin/sp" << _leftMargin / spatium()
-                                    << "brackets/sp" << bracketReserve / spatium()
-                                    << "indent/sp" << indent / spatium();
-                              break;
-                              }
-                        }
-                  }
             }
       for (int staffIdx = 0; staffIdx < nstaves; ++staffIdx) {
             SysStaff* s  = _staves[staffIdx];

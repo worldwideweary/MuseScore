@@ -86,185 +86,6 @@ namespace Ms {
 #define PAGEDBG(...)  ;
 #endif
 
-// Diagnostic only: separate the fixed left/header and trailing reservations
-// from the widths of rhythmic chord/rest springs.  These are measure-local
-// coordinates; the system margin is printed separately, never subtracted from
-// the measure itself.  Select M29 to inspect M28+29 or M31 for M30+31.
-static void traceNativeFixedReservations(System* system, const char* stage)
-      {
-      const QByteArray requested = qgetenv("MSCORE_NATIVE_FIXED_TRACE");
-      if (requested.isEmpty())
-            return;
-      bool ok = false;
-      const int selected = requested.toInt(&ok);
-      if (!ok || selected <= 0 || !system)
-            return;
-      for (MeasureBase* mb : system->measures()) {
-            if (!mb->isMeasure())
-                  continue;
-            Measure* measure = toMeasure(mb);
-            const int number = measure->no() + 1;
-            if (number != selected && number != selected - 1)
-                  continue;
-            const qreal sp = measure->spatium();
-            if (sp <= 0)
-                  continue;
-            const Segment* first = nullptr;
-            const Segment* firstCR = nullptr;
-            const Segment* lastCR = nullptr;
-            qreal chordRestWidth = 0.0;
-            qreal allWidth = 0.0;
-            for (Segment& s : measure->segments()) {
-                  if (!s.enabled() || !s.visible() || s.allElementsInvisible())
-                        continue;
-                  if (!first)
-                        first = &s;
-                  allWidth += s.width();
-                  if (s.isChordRestType()) {
-                        if (!firstCR)
-                              firstCR = &s;
-                        lastCR = &s;
-                        chordRestWidth += s.width();
-                        }
-                  }
-            if (!first || !firstCR || !lastCR)
-                  continue;
-            const qreal fixed = measure->width() - chordRestWidth;
-            const qreal leading = firstCR->x();
-            const qreal trailing = measure->width() - lastCR->x() - lastCR->width();
-            const qreal middle = fixed - leading - trailing;
-            qDebug().noquote() << "[native-fixed] measure" << stage << number
-                  << "firstInSystem" << measure->isFirstInSystem()
-                  << "systemMargin/sp" << system->leftMargin() / sp
-                  << "measureX/sp" << measure->x() / sp
-                  << "width/sp" << measure->width() / sp
-                  << "chordRestSum/sp" << chordRestWidth / sp
-                  << "fixed/sp" << fixed / sp
-                  << "leading/sp" << leading / sp
-                  << "middle/sp" << middle / sp
-                  << "trailing/sp" << trailing / sp
-                  << "firstX/sp" << first->x() / sp
-                  << "activeSumResidual/sp" << (measure->width() - first->x() - allWidth) / sp;
-            for (Segment& s : measure->segments()) {
-                  if (!s.enabled() || !s.visible() || s.allElementsInvisible())
-                        continue;
-                  qDebug().noquote() << "[native-fixed] segment" << stage << number
-                        << "type" << s.subTypeName()
-                        << "tick" << s.tick().ticks()
-                        << "header" << s.header()
-                        << "chordRest" << s.isChordRestType()
-                        << "x/sp" << s.x() / sp
-                        << "width/sp" << s.width() / sp
-                        << "end/sp" << (s.x() + s.width()) / sp
-                        << "leading/sp" << s.extraLeadingSpace().val();
-                  }
-            }
-      }
-
-// Diagnostic only: report the ingredients of the two boundary spacing rules
-// next to the real, post-spring positions.  This never changes layout.
-// Trace measure N and the preceding measure with
-// MSCORE_NATIVE_BOUNDARY_TRACE=N.
-static void traceNativeBoundaryOperands(System* system)
-      {
-      const QByteArray requested = qgetenv("MSCORE_NATIVE_BOUNDARY_TRACE");
-      if (requested.isEmpty() || !system)
-            return;
-      bool ok = false;
-      const int selected = requested.toInt(&ok);
-      if (!ok || selected <= 0)
-            return;
-      for (MeasureBase* mb : system->measures()) {
-            if (!mb->isMeasure())
-                  continue;
-            Measure* m = toMeasure(mb);
-            const int number = m->no() + 1;
-            if (number != selected && number != selected - 1)
-                  continue;
-            Segment* cr = m->first(SegmentType::ChordRest);
-            while (cr && (!cr->enabled() || !cr->visible() || cr->allElementsInvisible()))
-                  cr = cr->next(SegmentType::ChordRest);
-            if (!cr || m->spatium() <= 0)
-                  continue;
-            const qreal sp = m->spatium();
-            Score* score = m->score();
-            const qreal notePad = score->styleP(Sid::barNoteDistance);
-            const qreal accPad = score->styleP(Sid::barAccidentalDistance);
-            qDebug().noquote() << "[native-boundary] measure" << number
-                  << "firstInSystem" << m->isFirstInSystem()
-                  << "firstChordX/sp" << cr->x() / sp
-                  << "barNoteStyle/sp" << notePad / sp
-                  << "barAccidentalStyle/sp" << accPad / sp
-                  << "headerStyle/sp" << score->styleP(Sid::systemHeaderDistance) / sp
-                  << "clefLeftStyle/sp" << score->styleP(Sid::clefLeftMargin) / sp;
-
-            if (m->isFirstInSystem()) {
-                  // The last enabled header before the first chord normally is
-                  // a clef (or the last key/time signature).
-                  Segment* header = cr->prevActive();
-                  while (header && header->allElementsInvisible())
-                        header = header->prevActive();
-                  if (!header || !header->header())
-                        continue;
-                  const qreal current = cr->x() - header->x();
-                  const qreal pairShape = header->minHorizontalCollidingDistance(cr);
-                  const qreal legacyRule = header->minHorizontalDistance(cr, true);
-                  const qreal rightInk = header->minRight();
-                  qDebug().noquote() << "[native-boundary] header" << number
-                        << "from" << header->subTypeName() << "to" << cr->subTypeName()
-                        << "headerX/sp" << header->x() / sp
-                        << "headerWidth/sp" << header->width() / sp
-                        << "headerMinRight/sp" << rightInk / sp
-                        << "shapeCollision/sp" << pairShape / sp
-                        << "nativePairRule/sp" << legacyRule / sp
-                        << "actualPair/sp" << current / sp
-                        << "maxOfCollisionAndMinRightPlusHeaderStyle/sp"
-                        << qMax(pairShape, rightInk + score->styleP(Sid::systemHeaderDistance)) / sp;
-                  for (int st = 0; st < score->nstaves(); ++st) {
-                        if (!score->staff(st)->show()
-                            || st >= int(header->shapes().size()) || st >= int(cr->shapes().size()))
-                              continue;
-                        qDebug().noquote() << "[native-boundary] header-staff" << number
-                              << "staff" << st
-                              << "headerInkRight/sp" << header->staffShape(st).right() / sp
-                              << "nextInkLeft/sp" << cr->staffShape(st).left() / sp
-                              << "shapeGap/sp"
-                              << header->staffShape(st).minHorizontalDistance(cr->staffShape(st)) / sp;
-                        }
-                  }
-            else {
-                  MeasureBase* prev = m->prev();
-                  if (!prev || !prev->isMeasure() || prev->system() != system)
-                        continue;
-                  Measure* previous = toMeasure(prev);
-                  Segment* bar = previous->last();
-                  while (bar && (!bar->enabled() || bar->allElementsInvisible()))
-                        bar = bar->prev();
-                  if (!bar || !bar->isEndBarLineType())
-                        continue;
-                  const Shape barrier(QRectF(0.0, 0.0, 0.0, 4.0 * sp));
-                  qDebug().noquote() << "[native-boundary] barline" << number
-                        << "barX/sp" << bar->x() / sp
-                        << "barWidth/sp" << bar->width() / sp
-                        << "barMinRight/sp" << bar->minRight() / sp
-                        << "firstChordX/sp" << cr->x() / sp
-                        << "nativeBarrierMinLeft/sp" << cr->minLeft(barrier) / sp
-                        << "nativeBarNoteCandidate/sp" << cr->minLeftAfterBarline(barrier, notePad) / sp;
-                  for (int st = 0; st < score->nstaves(); ++st) {
-                        if (!score->staff(st)->show()
-                            || st >= int(bar->shapes().size()) || st >= int(cr->shapes().size()))
-                              continue;
-                        qDebug().noquote() << "[native-boundary] barline-staff" << number
-                              << "staff" << st
-                              << "barInkRight/sp" << bar->staffShape(st).right() / sp
-                              << "nextInkLeft/sp" << cr->staffShape(st).left() / sp
-                              << "shapeGap/sp"
-                              << bar->staffShape(st).minHorizontalDistance(cr->staffShape(st)) / sp;
-                        }
-                  }
-            }
-      }
-
 // Native system-wide spring solver. Reuse rhythmic weights and collision
 // floors while distributing the remaining width across the system.
 static bool applyNativePooledSprings(System* system, qreal addedWidth)
@@ -378,24 +199,6 @@ static bool applyNativePooledSprings(System* system, qreal addedWidth)
             entry.second.segment->setStretch(entry.second.stretch);
       for (const auto& entry : proposed)
             entry.first->setWidth(entry.second);
-      const QByteArray selected = qgetenv("MSCORE_NATIVE_GAP_TRACE");
-      const int selectedMeasure = selected.toInt();
-      bool traceSystem = false;
-      for (Measure* m : measures) {
-            if (!selected.isEmpty() && selectedMeasure == m->no() + 1) {
-                  traceSystem = true;
-                  break;
-                  }
-            }
-      if (traceSystem) {
-            for (const auto& entry : springs) {
-                  const Segment* segment = entry.second.segment;
-                  qDebug().noquote() << "[native-pool] spring" << segment->measure()->no() + 1
-                        << segment->tick().ticks() << "duration" << segment->ticks().ticks()
-                        << "weight" << entry.second.stretch
-                        << "minWidth/sp" << segment->width() / segment->spatium();
-                  }
-            }
       for (size_t i = 0; i < measures.size(); ++i) {
             Measure* m = measures[i];
             Segment* first = m->first();
@@ -407,19 +210,6 @@ static bool applyNativePooledSprings(System* system, qreal addedWidth)
                   x += s->width();
                   }
             m->bbox().setWidth(widths[i]);
-            if (!selected.isEmpty() && selected.toInt() == m->no() + 1) {
-                  qDebug().noquote() << "[native-pool] measure" << m->no() + 1
-                        << "width/sp" << widths[i] / m->spatium()
-                        << "force/sp" << force / m->spatium();
-                  for (Segment* a = m->first(SegmentType::ChordRest); a;
-                       a = a->next(SegmentType::ChordRest)) {
-                        Segment* b = a->next(SegmentType::ChordRest);
-                        if (b && a->enabled() && b->enabled())
-                              qDebug().noquote() << "[native-pool] pair" << a->tick().ticks()
-                                    << b->tick().ticks() << "distance/sp"
-                                    << (b->x() - a->x()) / m->spatium();
-                        }
-                  }
             }
       return true;
       }
@@ -5283,15 +5073,10 @@ System* Score::collectSystem(LayoutContext& lc)
             nativeExtraWidth = rest;
             rest /= totalWeight;
             }
-      traceNativeFixedReservations(system, "natural");
       const bool nativePoolRequested = !styleB(Sid::spacingLayout4)
             && !MScore::noHorizontalStretch;
       const bool nativePooled = nativePoolRequested
             && applyNativePooledSprings(system, nativeExtraWidth);
-      if (nativePoolRequested && !nativePooled && !qgetenv("MSCORE_NATIVE_GAP_TRACE").isEmpty())
-            qDebug() << "[native-pool] fallback to legacy per-measure springs"
-                  << "firstTick" << (system->firstMeasure()
-                        ? system->firstMeasure()->tick().ticks() : -1);
 
       QPointF pos;
       firstMeasure = true;
@@ -5338,8 +5123,6 @@ System* Score::collectSystem(LayoutContext& lc)
             pos.rx() += ww;
             }
       system->setWidth(pos.x());
-      traceNativeFixedReservations(system, "allocated");
-      traceNativeBoundaryOperands(system);
       if (useStudioPlan) {
             // Segment widths are now final. Publish the plan's target-relative
             // graces directly, including compressed plans, without applying an
