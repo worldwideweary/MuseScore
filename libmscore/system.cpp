@@ -619,17 +619,27 @@ int System::getBracketsColumnsCount()
 
 void System::setBracketsXPosition(const qreal xPosition)
       {
+      const bool studioBrackets = qgetenv("MSCORE_NATIVE_BRACKETS_475") == "1";
       qreal bracketDistance = score()->styleP(Sid::bracketDistance);
       for (Bracket* b1 : qAsConst(_brackets)) {
+            // 4.7 places the centreline of a drawn bracket, rather than the
+            // left edge of its stroke, relative to the preceding barline.
+            const BracketType bracketType = b1->bracketType();
+            const qreal strokeCorrection = studioBrackets
+                  && (bracketType == BracketType::NORMAL || bracketType == BracketType::LINE)
+                  ? score()->styleP(Sid::bracketWidth) * .5 : 0.0;
             qreal xOffset = 0;
             for (const Bracket* b2 : qAsConst(_brackets)) {
                   bool b1FirstStaffInB2 = (b1->firstStaff() >= b2->firstStaff() && b1->firstStaff() <= b2->lastStaff());
                   bool b1LastStaffInB2 = (b1->lastStaff() >= b2->firstStaff() && b1->lastStaff() <= b2->lastStaff());
                   if (b1->column() > b2->column() &&
                         (b1FirstStaffInB2 || b1LastStaffInB2))
-                        xOffset += b2->width() + bracketDistance;
+                        // Bracket::width() already includes the appropriate
+                        // bracket/brace padding.  Adding bracketDistance again
+                        // (the 3.x behavior) double-counts it in nested groups.
+                        xOffset += b2->width() + (studioBrackets ? 0.0 : bracketDistance);
                   }
-            b1->rxpos() = xPosition - xOffset - b1->width();
+            b1->rxpos() = xPosition - xOffset - b1->width() + strokeCorrection;
             }
       }
 
