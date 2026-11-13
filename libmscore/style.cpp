@@ -4434,7 +4434,6 @@ void MStyle::save(XmlWriter& xml, bool optimize)
       const bool modernChords = value(Sid::chordSymbolLayoutVersion).toInt() > 0;
       if (modernChords)
             xml.tag("chordSymbolLayoutVersion", value(Sid::chordSymbolLayoutVersion));
-      const bool modernBrackets = qgetenv("MSCORE_NATIVE_STYLE_DEFAULTS_475") == "1";
       const std::set<Sid> bracketStyleFields {
             Sid::bracketWidth, Sid::bracketDistance,
             Sid::akkoladeWidth, Sid::akkoladeBarDistance
@@ -4459,7 +4458,7 @@ void MStyle::save(XmlWriter& xml, bool optimize)
                   continue;
             if (optimize && isDefault(idx)
                 && !(modernChords && chordPresentationFields.count(idx))
-                && !(modernBrackets && bracketStyleFields.count(idx)))
+                && !bracketStyleFields.count(idx))
                   continue;
             const char* type = st.valueType();
             const QStringList tokens = timeSigDrawingTokens(idx);

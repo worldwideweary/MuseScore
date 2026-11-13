@@ -1091,8 +1091,7 @@ Score::FileError MasterScore::read1(XmlReader& e, bool ignoreVersionError, bool 
                   // defaults. Seed the historical values BEFORE reading
                   // the file's <Style> elements; explicit XML overrides
                   // will still take precedence.
-                  if (qgetenv("MSCORE_NATIVE_STYLE_DEFAULTS_475") == "1"
-                      && mscVersion() < 400) {
+                  if (mscVersion() < 400) {
                         const MStyle& legacy = MScore::baseStyle();
                         style().set(Sid::bracketWidth, legacy.value(Sid::bracketWidth));
                         style().set(Sid::bracketDistance, legacy.value(Sid::bracketDistance));
