@@ -1516,7 +1516,7 @@ void EditStyle::setValues()
             QVariant val = lstyle.value(sw.idx);
             const char* type = MStyle::valueType(sw.idx);
             if (sw.reset)
-                  sw.reset->setEnabled(!lstyle.isDefault(sw.idx));
+                  sw.reset->setEnabled(lstyle.value(sw.idx) != MScore::defaultStyle().value(sw.idx));
 
             if (!strcmp("Ms::Spatium", type)) {
                   if (sw.showPercent)
@@ -2048,7 +2048,7 @@ void EditStyle::valueChanged(int i)
             setValues();
       const StyleWidget& sw = styleWidget(idx);
       if (sw.reset)
-            sw.reset->setEnabled(!cs->style().isDefault(idx));
+            sw.reset->setEnabled(cs->styleV(idx) != MScore::defaultStyle().value(idx));
       if (idx >= Sid::timeSigPlacement && idx <= Sid::timeSigAcrossY) updateTimeSigControls();
       }
 
