@@ -1086,6 +1086,19 @@ Score::FileError MasterScore::read1(XmlReader& e, bool ignoreVersionError, bool 
                   const QString& version = e.attribute("version");
                   QStringList sl = version.split('.');
                   setMscVersion(sl[0].toInt() * 100 + (sl.size() > 1 ? sl[1].toInt() : 0));
+                  // This is a file load, not a new score. Files saved by
+                  // 3.x may omit style properties equal to their original
+                  // defaults. Seed the historical values BEFORE reading
+                  // the file's <Style> elements; explicit XML overrides
+                  // will still take precedence.
+                  if (qgetenv("MSCORE_NATIVE_STYLE_DEFAULTS_475") == "1"
+                      && mscVersion() < 400) {
+                        const MStyle& legacy = MScore::baseStyle();
+                        style().set(Sid::bracketWidth, legacy.value(Sid::bracketWidth));
+                        style().set(Sid::bracketDistance, legacy.value(Sid::bracketDistance));
+                        style().set(Sid::akkoladeWidth, legacy.value(Sid::akkoladeWidth));
+                        style().set(Sid::akkoladeBarDistance, legacy.value(Sid::akkoladeBarDistance));
+                        }
 
                   if (!ignoreVersionError) {
                         if (mscVersion() > MSCVERSION)
