@@ -4438,6 +4438,7 @@ void MStyle::save(XmlWriter& xml, bool optimize)
             Sid::bracketWidth, Sid::bracketDistance,
             Sid::akkoladeWidth, Sid::akkoladeBarDistance
             };
+      const bool saveBracketDefaults = !MScore::testMode;
       const std::set<Sid> chordPresentationFields {
             Sid::chordStyle, Sid::chordDescriptionFile, Sid::chordExtensionMag,
             Sid::chordExtensionAdjust, Sid::chordModifierMag, Sid::chordModifierAdjust,
@@ -4458,7 +4459,7 @@ void MStyle::save(XmlWriter& xml, bool optimize)
                   continue;
             if (optimize && isDefault(idx)
                 && !(modernChords && chordPresentationFields.count(idx))
-                && !bracketStyleFields.count(idx))
+                && !(saveBracketDefaults && bracketStyleFields.count(idx)))
                   continue;
             const char* type = st.valueType();
             const QStringList tokens = timeSigDrawingTokens(idx);
