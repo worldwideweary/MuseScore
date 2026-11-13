@@ -232,14 +232,10 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
       if (_staves.empty())                 // ignore vbox
             return;
 
-      // Keep the original 3.x fixed clearance unless explicitly testing Studio
-      // instrument-name offset scaling together with the native margin path.
-      const bool nativeNameOffset = qgetenv("MSCORE_NATIVE_NAME_OFFSET_475") == "1"
-            && qgetenv("MSCORE_NATIVE_POOLED_SPRINGS") == "1"
-            && qgetenv("MSCORE_NATIVE_ALIGN_SYSTEM_475") == "1"
-            && qgetenv("MSCORE_NATIVE_GLOBAL_MARGIN_475") == "1";
+      // Scale the instrument-name clearance using the displayed name's
+      // font settings, including long names on later systems.
       qreal nameOffsetScale = 1.0;
-      if (nativeNameOffset) {
+      {
             // Actual displayed name type is authoritative, including sections
             // that restart with long names on a non-first system.
             bool useLongNames = isFirstSystem;
@@ -261,9 +257,8 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
             }
       // This value is used both when reserving the name area and when placing
       // the displayed labels; using the same offset avoids divergent X positions.
-      const Spatium instrumentNameOffset(nativeNameOffset
-            ? score()->styleS(Sid::instrumentNameOffset).val() * nameOffsetScale
-            : 1.0);
+      const Spatium instrumentNameOffset(
+            score()->styleS(Sid::instrumentNameOffset).val() * nameOffsetScale);
 
       int nstaves  = _staves.size();
 
@@ -339,8 +334,6 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
             if (marginTraceEntry == "all" || marginTraceEntry == QByteArray::number(firstNo)) {
                   qDebug().noquote() << "[native-margin475-entry]"
                         << "systemFirstMeasure" << firstNo
-                        << "pooled" << (qgetenv("MSCORE_NATIVE_POOLED_SPRINGS") == "1")
-                        << "align" << (qgetenv("MSCORE_NATIVE_ALIGN_SYSTEM_475") == "1")
                         << "isFirstSystem" << isFirstSystem
                         << "firstSystemIndent" << firstSystemIndent
                         << "nameIndent/sp" << instrumentNamesIndent / spatium()
@@ -348,14 +341,11 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
                         << "legacyMargin/sp" << _leftMargin / spatium();
                   }
             }
-      // Experimental 4.7-style horizontal system margin. Use the greatest
+      // 4.7-style horizontal system margin. Use the greatest
       // sum of overlapping bracket widths across staves (not a sum of every
       // column maximum). Bracket::width() already includes the gap to the barline.
-      if (qgetenv("MSCORE_NATIVE_POOLED_SPRINGS") == "1"
-          && qgetenv("MSCORE_NATIVE_ALIGN_SYSTEM_475") == "1") {
+      {
             const qreal previousMargin = _leftMargin;
-            // Keep v0.335d reproducible when the new switch is absent.
-            const bool scoreWideMargins = qgetenv("MSCORE_NATIVE_GLOBAL_MARGIN_475") == "1";
             std::vector<qreal> bracketWidthsByStaff(nstaves, 0.0);
             for (const Bracket* bracket : qAsConst(_brackets)) {
                   for (int staffIdx = bracket->firstStaff(); staffIdx <= bracket->lastStaff(); ++staffIdx)
@@ -367,7 +357,7 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
             const qreal localBracketReserve = bracketReserve;
             qreal effectiveNameIndent = instrumentNamesIndent;
 
-            if (scoreWideMargins) {
+            {
                   // Studio measures names on globally visible parts even when
                   // their staves are hidden on THIS particular system.
                   // Do not change the actual displayed instrument names.
@@ -447,8 +437,6 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
                         << "firstSystemIndent" << firstSystemIndent
                         << "namesCount" << instrumentNameCount
                         << "nameIndent/sp" << instrumentNamesIndent / spatium()
-                        << "scoreWideMode" << scoreWideMargins
-                        << "nativeNameOffset" << nativeNameOffset
                         << "nameOffset/sp" << instrumentNameOffset.val()
                         << "nameOffsetScale" << nameOffsetScale
                         << "effectiveNameIndent/sp" << effectiveNameIndent / spatium()
@@ -783,14 +771,12 @@ int System::getBracketsColumnsCount()
 
 void System::setBracketsXPosition(const qreal xPosition)
       {
-      const bool studioBrackets = qgetenv("MSCORE_NATIVE_BRACKETS_475") == "1";
-      qreal bracketDistance = score()->styleP(Sid::bracketDistance);
       for (Bracket* b1 : qAsConst(_brackets)) {
             // 4.7 places the centreline of a drawn bracket, rather than the
             // left edge of its stroke, relative to the preceding barline.
             const BracketType bracketType = b1->bracketType();
-            const qreal strokeCorrection = studioBrackets
-                  && (bracketType == BracketType::NORMAL || bracketType == BracketType::LINE)
+            const qreal strokeCorrection =
+                  (bracketType == BracketType::NORMAL || bracketType == BracketType::LINE)
                   ? score()->styleP(Sid::bracketWidth) * .5 : 0.0;
             qreal xOffset = 0;
             for (const Bracket* b2 : qAsConst(_brackets)) {
@@ -801,7 +787,7 @@ void System::setBracketsXPosition(const qreal xPosition)
                         // Bracket::width() already includes the appropriate
                         // bracket/brace padding.  Adding bracketDistance again
                         // (the 3.x behavior) double-counts it in nested groups.
-                        xOffset += b2->width() + (studioBrackets ? 0.0 : bracketDistance);
+                        xOffset += b2->width();
                   }
             b1->rxpos() = xPosition - xOffset - b1->width() + strokeCorrection;
             }

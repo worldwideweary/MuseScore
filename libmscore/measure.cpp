@@ -4948,9 +4948,6 @@ static bool hasAccidental(Segment* s)
 // floor; only add missing per-notehead / per-accidental constraints.
 static qreal nativeBarlineChordClearance475(Segment* segment, qreal legacy)
       {
-      if (qgetenv("MSCORE_NATIVE_POOLED_SPRINGS") != "1"
-          || qgetenv("MSCORE_NATIVE_BARLINE_475") != "1")
-            return legacy;
       Measure* measure = segment->measure();
       if (!measure || measure->isFirstInSystem() || measure->isMMRest())
             return legacy;
@@ -5099,9 +5096,7 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
                         // ink. Test this native rule independently of pooled
                         // spring justification, and only for simple header
                         // clef -> chord/rest boundaries.
-                        if (qgetenv("MSCORE_NATIVE_POOLED_SPRINGS") == "1"
-                            && qgetenv("MSCORE_NATIVE_HEADER_475") == "1"
-                            && s->isHeaderClefType() && ns->isChordRestType()) {
+                        if (s->isHeaderClefType() && ns->isChordRestType()) {
                               const qreal oldWidth = w;
                               const qreal right = s->minRight();
                               const qreal left = ns->minLeft();

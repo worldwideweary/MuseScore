@@ -265,10 +265,8 @@ static void traceNativeBoundaryOperands(System* system)
             }
       }
 
-// Experimental native system-wide spring solver.  The normal 3.x layout
-// remains the default; opt in with MSCORE_NATIVE_POOLED_SPRINGS=1.
-// This deliberately reuses the legacy rhythmic weights and collision floors,
-// without reading or publishing a Studio 4 spacing plan.
+// Native system-wide spring solver. Reuse rhythmic weights and collision
+// floors while distributing the remaining width across the system.
 static bool applyNativePooledSprings(System* system, qreal addedWidth)
       {
       if (!std::isfinite(addedWidth) || addedWidth <= 0.0)
@@ -5287,8 +5285,7 @@ System* Score::collectSystem(LayoutContext& lc)
             }
       traceNativeFixedReservations(system, "natural");
       const bool nativePoolRequested = !styleB(Sid::spacingLayout4)
-            && !MScore::noHorizontalStretch
-            && qgetenv("MSCORE_NATIVE_POOLED_SPRINGS") == "1";
+            && !MScore::noHorizontalStretch;
       const bool nativePooled = nativePoolRequested
             && applyNativePooledSprings(system, nativeExtraWidth);
       if (nativePoolRequested && !nativePooled && !qgetenv("MSCORE_NATIVE_GAP_TRACE").isEmpty())
