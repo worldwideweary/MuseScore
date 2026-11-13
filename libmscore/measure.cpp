@@ -4940,7 +4940,7 @@ static bool hasAccidental(Segment* s)
       return false;
       }
 
-// Experimental Studio-like ordinary-barline clearance.  A chord with an
+// Studio-style ordinary-barline clearance. A chord with an
 // accidental must satisfy *both* the barline-to-accidental and the
 // barline-to-notehead padding.  The legacy segment-level rule uses only one
 // padding for the entire chord, so accidentals can suppress the notehead's
@@ -5093,9 +5093,7 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
                         // clearance and the header's right extent plus the
                         // configured distance. It also ensures 1.5 sp between
                         // the header's right ink and the next segment's left
-                        // ink. Test this native rule independently of pooled
-                        // spring justification, and only for simple header
-                        // clef -> chord/rest boundaries.
+                        // ink. Apply only to header-clef -> chord/rest boundaries.
                         if (s->isHeaderClefType() && ns->isChordRestType()) {
                               const qreal oldWidth = w;
                               const qreal right = s->minRight();

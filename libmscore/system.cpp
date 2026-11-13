@@ -324,9 +324,7 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
                   _leftMargin += w + bd;
             }
 
-      // Capture system-margin inputs even if the experimental switch is off.
-      // This also reveals whether a margin trace is missing because the branch
-      // was not executed, rather than because a later measure is not in ml yet.
+      // Trace margin inputs before applying the score-wide reservation.
       const QByteArray marginTraceEntry = qgetenv("MSCORE_NATIVE_MARGIN_TRACE");
       if (!marginTraceEntry.isEmpty()) {
             const Measure* first = firstMeasure();
@@ -346,15 +344,7 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
       // column maximum). Bracket::width() already includes the gap to the barline.
       {
             const qreal previousMargin = _leftMargin;
-            std::vector<qreal> bracketWidthsByStaff(nstaves, 0.0);
-            for (const Bracket* bracket : qAsConst(_brackets)) {
-                  for (int staffIdx = bracket->firstStaff(); staffIdx <= bracket->lastStaff(); ++staffIdx)
-                        bracketWidthsByStaff[staffIdx] += bracket->width();
-                  }
             qreal bracketReserve = 0.0;
-            for (qreal width : bracketWidthsByStaff)
-                  bracketReserve = qMax(bracketReserve, width);
-            const qreal localBracketReserve = bracketReserve;
             qreal effectiveNameIndent = instrumentNamesIndent;
 
             {
@@ -405,7 +395,6 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
                                     fullScoreWidths[j] += width;
                               }
                         }
-                  bracketReserve = 0.0;
                   for (qreal width : fullScoreWidths)
                         bracketReserve = qMax(bracketReserve, width);
                   }
@@ -440,7 +429,6 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
                         << "nameOffset/sp" << instrumentNameOffset.val()
                         << "nameOffsetScale" << nameOffsetScale
                         << "effectiveNameIndent/sp" << effectiveNameIndent / spatium()
-                        << "localBracketReserve/sp" << localBracketReserve / spatium()
                         << "firstIndentStyle/sp" << styleP(Sid::firstSystemIndentationValue) * mag() / spatium()
                         << "bracketsCount" << _brackets.size()
                         << "bracketReserve/sp" << bracketReserve / spatium()
