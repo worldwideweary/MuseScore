@@ -323,6 +323,8 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
       if (qgetenv("MSCORE_NATIVE_POOLED_SPRINGS") == "1"
           && qgetenv("MSCORE_NATIVE_ALIGN_SYSTEM_475") == "1") {
             const qreal previousMargin = _leftMargin;
+            // Keep v0.335d reproducible when the new switch is absent.
+            const bool scoreWideMargins = qgetenv("MSCORE_NATIVE_GLOBAL_MARGIN_475") == "1";
             std::vector<qreal> bracketWidthsByStaff(nstaves, 0.0);
             for (const Bracket* bracket : qAsConst(_brackets)) {
                   for (int staffIdx = bracket->firstStaff(); staffIdx <= bracket->lastStaff(); ++staffIdx)
@@ -331,10 +333,65 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
             qreal bracketReserve = 0.0;
             for (qreal width : bracketWidthsByStaff)
                   bracketReserve = qMax(bracketReserve, width);
+            const qreal localBracketReserve = bracketReserve;
+            qreal effectiveNameIndent = instrumentNamesIndent;
+
+            if (scoreWideMargins) {
+                  // Studio measures names on globally visible parts even when
+                  // their staves are hidden on THIS particular system.
+                  // Do not change the actual displayed instrument names.
+                  effectiveNameIndent = 0.0;
+                  for (SysStaff* ss : qAsConst(_staves)) {
+                        for (InstrumentName* name : qAsConst(ss->instrumentNames)) {
+                              name->layout();
+                              effectiveNameIndent = qMax(effectiveNameIndent,
+                                    name->width() + point(instrumentNameOffset));
+                              }
+                        }
+
+                  // Studio totalBracketOffset(): reserve the widest sum of
+                  // overlapping BRACKET ITEMS from the full score, regardless
+                  // of whether a bracket is drawn on this particular system.
+                  // The dummy has no System parent so its brace is sized as if
+                  // the globally visible staves were all present.
+                  std::vector<qreal> fullScoreWidths(nstaves, 0.0);
+                  for (int i = 0; i < nstaves; ++i) {
+                        Staff* s = score()->staff(i);
+                        for (auto& bi : s->brackets()) {
+                              if (bi->bracketType() == BracketType::NO_BRACKET || bi->bracketSpan() <= 0)
+                                    continue;
+                              const int end = qMin(nstaves - 1, i + bi->bracketSpan() - 1);
+                              int firstVisible = -1;
+                              int lastVisible = -1;
+                              for (int j = i; j <= end; ++j) {
+                                    if (!score()->staff(j)->show())
+                                          continue;
+                                    if (firstVisible == -1)
+                                          firstVisible = j;
+                                    lastVisible = j;
+                                    }
+                              if (firstVisible == -1)
+                                    continue;
+                              const int visibleSpan = lastVisible - firstVisible + 1;
+                              if (visibleSpan <= 1 && bi->bracketSpan() != visibleSpan
+                                  && !score()->styleB(Sid::alwaysShowBracketsWhenEmptyStavesAreHidden))
+                                    continue;
+                              Bracket dummy(score());
+                              dummy.setBracketItem(bi);
+                              dummy.setStaffSpan(firstVisible, lastVisible);
+                              const qreal width = dummy.width();
+                              for (int j = firstVisible; j <= lastVisible; ++j)
+                                    fullScoreWidths[j] += width;
+                              }
+                        }
+                  bracketReserve = 0.0;
+                  for (qreal width : fullScoreWidths)
+                        bracketReserve = qMax(bracketReserve, width);
+                  }
 
             // 4.7's first-system indentation already includes bracket width.
             // Instrument names instead add their own reserved space.
-            qreal indent = instrumentNamesIndent;
+            qreal indent = effectiveNameIndent;
             if (isFirstSystem && firstSystemIndent)
                   indent = qMax(indent,
                         styleP(Sid::firstSystemIndentationValue) * mag() - bracketReserve);
@@ -359,6 +416,9 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
                         << "firstSystemIndent" << firstSystemIndent
                         << "namesCount" << instrumentNameCount
                         << "nameIndent/sp" << instrumentNamesIndent / spatium()
+                        << "scoreWideMode" << scoreWideMargins
+                        << "effectiveNameIndent/sp" << effectiveNameIndent / spatium()
+                        << "localBracketReserve/sp" << localBracketReserve / spatium()
                         << "firstIndentStyle/sp" << styleP(Sid::firstSystemIndentationValue) * mag() / spatium()
                         << "bracketsCount" << _brackets.size()
                         << "bracketReserve/sp" << bracketReserve / spatium()
