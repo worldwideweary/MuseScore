@@ -288,9 +288,6 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
       //---------------------------------------------------
 
       int columns = getBracketsColumnsCount();
-      std::vector<qreal> bracketWidth(columns);
-      for (int i = 0; i < columns; ++i)
-            bracketWidth[i] = 0.0;
 
       QList<Bracket*> bl;
       bl.swap(_brackets);
@@ -301,8 +298,7 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
                   for (auto& bi : s->brackets()) {
                         if (bi->column() != i || bi->bracketType() == BracketType::NO_BRACKET)
                               continue;
-                        Bracket* b = createBracket(bi, i, staffIdx, bl, this->firstMeasure());
-                        if (b != nullptr) bracketWidth[i] = qMax(bracketWidth[i], b->width());
+                        createBracket(bi, i, staffIdx, bl, this->firstMeasure());
                         }
                   }
             }
@@ -311,37 +307,13 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
             delete b;
 
       //---------------------------------------------------
-      //  layout  SysStaff and StaffLines
+      //  calculate score-wide system margin
       //---------------------------------------------------
 
-      _leftMargin = xoff2;
-
-      qreal bd = score()->styleP(Sid::bracketDistance);
-      if (!_brackets.empty()) {
-            for (int w : bracketWidth)
-                  _leftMargin += w + bd;
-            }
-
-      // Trace margin inputs before applying the score-wide reservation.
-      const QByteArray marginTraceEntry = qgetenv("MSCORE_NATIVE_MARGIN_TRACE");
-      if (!marginTraceEntry.isEmpty()) {
-            const Measure* first = firstMeasure();
-            const int firstNo = first ? first->no() + 1 : -1;
-            if (marginTraceEntry == "all" || marginTraceEntry == QByteArray::number(firstNo)) {
-                  qDebug().noquote() << "[native-margin475-entry]"
-                        << "systemFirstMeasure" << firstNo
-                        << "isFirstSystem" << isFirstSystem
-                        << "firstSystemIndent" << firstSystemIndent
-                        << "nameIndent/sp" << instrumentNamesIndent / spatium()
-                        << "xoff2/sp" << xoff2 / spatium()
-                        << "legacyMargin/sp" << _leftMargin / spatium();
-                  }
-            }
       // 4.7-style horizontal system margin. Use the greatest
       // sum of overlapping bracket widths across staves (not a sum of every
       // column maximum). Bracket::width() already includes the gap to the barline.
       {
-            const qreal previousMargin = _leftMargin;
             qreal bracketReserve = 0.0;
             qreal effectiveNameIndent = 0.0;
 
@@ -428,7 +400,6 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
                         << "bracketsCount" << _brackets.size()
                         << "bracketReserve/sp" << bracketReserve / spatium()
                         << "indent/sp" << indent / spatium()
-                        << "previousMargin/sp" << previousMargin / spatium()
                         << "finalMargin/sp" << _leftMargin / spatium();
                   for (const Bracket* br : qAsConst(_brackets)) {
                         qDebug().noquote() << "[native-margin475-bracket]"
@@ -446,7 +417,6 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
                   for (MeasureBase* mb : ml) {
                         if (mb->isMeasure() && toMeasure(mb)->no() + 1 == measureNo) {
                               qDebug().noquote() << "[native-margin475] measure" << measureNo
-                                    << "previousMargin/sp" << previousMargin / spatium()
                                     << "alignedMargin/sp" << _leftMargin / spatium()
                                     << "nameIndent/sp" << instrumentNamesIndent / spatium()
                                     << "brackets/sp" << bracketReserve / spatium()
