@@ -1546,6 +1546,8 @@ enum class Sid : short {
       timeSigAcrossY,
 
       headerToLineStartDistance,
+      // Studio 4 instrument-name clearance; appended to keep existing Sid indices stable.
+      instrumentNameOffset,
 
       STYLES
       ///\}

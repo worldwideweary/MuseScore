@@ -1556,7 +1556,8 @@ static const StyleType styleTypes[] {
       { Sid::timeSigAcrossScaleLock,          "timeSigAcrossScaleLock",      true },
       { Sid::timeSigAcrossNumDist,            "timeSigAcrossNumDist",        Spatium(0.1) },
       { Sid::timeSigAcrossY,                  "timeSigAcrossY",              Spatium(0.0) },
-      { Sid::headerToLineStartDistance,       "headerToLineStartDistance",   Spatium(1.0) }
+      { Sid::headerToLineStartDistance,       "headerToLineStartDistance",   Spatium(1.0) },
+      { Sid::instrumentNameOffset,            "instrumentNameOffset",      Spatium(1.0) }
       };
 
 MStyle  MScore::_baseStyle;
@@ -3308,7 +3309,6 @@ bool MStyle::readProperties400(XmlReader& e, int mscVersion)
       //     return false;
       //else
       if (tag == "staffHeaderFooterPadding"                                       // Mu4 only, let's skip
-            || tag == "instrumentNameOffset"                                      // Mu4 only, let's skip
             || tag == "alignSystemToMargin")                                      // Mu4 only, let's skip
             e.skipCurrentElement();
       //else if (tag == "lyricsMinBottomDistance")                                // 2 -> 1.5, Mu4's default seems better, so let's pass

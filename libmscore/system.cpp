@@ -232,7 +232,38 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
       if (_staves.empty())                 // ignore vbox
             return;
 
-      static const Spatium instrumentNameOffset(1.0);       // TODO: make style value
+      // Keep the original 3.x fixed clearance unless explicitly testing Studio
+      // instrument-name offset scaling together with the native margin path.
+      const bool nativeNameOffset = qgetenv("MSCORE_NATIVE_NAME_OFFSET_475") == "1"
+            && qgetenv("MSCORE_NATIVE_POOLED_SPRINGS") == "1"
+            && qgetenv("MSCORE_NATIVE_ALIGN_SYSTEM_475") == "1"
+            && qgetenv("MSCORE_NATIVE_GLOBAL_MARGIN_475") == "1";
+      qreal nameOffsetScale = 1.0;
+      if (nativeNameOffset) {
+            // Actual displayed name type is authoritative, including sections
+            // that restart with long names on a non-first system.
+            bool useLongNames = isFirstSystem;
+            for (const SysStaff* ss : qAsConst(_staves)) {
+                  if (!ss->instrumentNames.isEmpty()) {
+                        useLongNames = ss->instrumentNames.front()->instrumentNameType() == InstrumentNameType::LONG;
+                        break;
+                        }
+                  }
+            const Sid fontSizeSid = useLongNames ? Sid::longInstrumentFontSize : Sid::shortInstrumentFontSize;
+            const Sid followStaffSid = useLongNames ? Sid::longInstrumentFontSpatiumDependent
+                                                   : Sid::shortInstrumentFontSpatiumDependent;
+            const qreal defaultFontSize = MScore::baseStyle().value(fontSizeSid).toDouble();
+            if (defaultFontSize > 0.0)
+                  nameOffsetScale = score()->styleD(fontSizeSid) / defaultFontSize;
+            if (!score()->styleB(followStaffSid) && score()->spatium() > 0.0)
+                  nameOffsetScale *= MScore::baseStyle().value(Sid::spatium).toDouble() / score()->spatium();
+            nameOffsetScale = qMax(qreal(1.0), nameOffsetScale);
+            }
+      // This value is used both when reserving the name area and when placing
+      // the displayed labels; using the same offset avoids divergent X positions.
+      const Spatium instrumentNameOffset(nativeNameOffset
+            ? score()->styleS(Sid::instrumentNameOffset).val() * nameOffsetScale
+            : 1.0);
 
       int nstaves  = _staves.size();
 
@@ -417,6 +448,9 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
                         << "namesCount" << instrumentNameCount
                         << "nameIndent/sp" << instrumentNamesIndent / spatium()
                         << "scoreWideMode" << scoreWideMargins
+                        << "nativeNameOffset" << nativeNameOffset
+                        << "nameOffset/sp" << instrumentNameOffset.val()
+                        << "nameOffsetScale" << nameOffsetScale
                         << "effectiveNameIndent/sp" << effectiveNameIndent / spatium()
                         << "localBracketReserve/sp" << localBracketReserve / spatium()
                         << "firstIndentStyle/sp" << styleP(Sid::firstSystemIndentationValue) * mag() / spatium()
