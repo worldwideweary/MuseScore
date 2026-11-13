@@ -3197,12 +3197,6 @@ void MStyle::initRepeatCourtesyDefaults(int mscVersion)
 
 void MStyle::load(XmlReader& e, int mscVersion)
       {
-      // Studio 4.7 treats bracketDistance as a new 4.x-style setting.
-      // Ignore any pre-4.0 value (even an explicit user override) and use
-      // the modern 0.45sp default.  Keep this opt-in for native 3.x files.
-      const bool studioBrackets = qgetenv("MSCORE_NATIVE_BRACKETS_475") == "1";
-      if (studioBrackets)
-            set(Sid::bracketDistance, Spatium(0.45));
       QString oldChordDescriptionFile = value(Sid::chordDescriptionFile).toString();
       bool chordListTag = false;
       bool separateHarmonyDistance = false;
@@ -3247,8 +3241,6 @@ void MStyle::load(XmlReader& e, int mscVersion)
                   }
             else if (mscVersion <= 301 && tag == "staffTextMinDistance" )         // got lost some time between 2.3.2 and 3.1.0 (2.07 and 3.01)
                   set(Sid::staffTextMinDistance, Spatium(e.readDouble()));
-            else if (studioBrackets && mscVersion < 400 && tag == "bracketDistance")
-                  e.skipCurrentElement();                                         // Studio 4.7 ignores all old values
             // This shared spacing property is supported directly. Preserve an
             // explicit Studio value before the legacy compatibility filters.
             else if (mscVersion > 302 && tag == "articulationMinDistance")
