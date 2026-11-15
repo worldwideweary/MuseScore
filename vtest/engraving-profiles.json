@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "default": "original",
+  "profiles": {
+    "original": {},
+    "legacy-emmentaler": {
+      "musicalSymbolFont": "Emmentaler",
+      "musicalTextFont": "MScore Text",
+      "enableIndentationOnFirstSystem": 0,
+      "firstSystemIndentationValue": 5
+    },
+    "modern-beams": {
+      "musicalSymbolFont": "Emmentaler",
+      "musicalTextFont": "MScore Text",
+      "enableIndentationOnFirstSystem": 0,
+      "firstSystemIndentationValue": 5,
+      "beamLayout4": 1
+    }
+  },
+  "assignments": {
+    "tie-1": "legacy-emmentaler",
+    "beams-1": "modern-beams",
+    "slurs-1": "modern-beams"
+  },
+  "studio_comparison_37e_overrides": {
+    "beamLayout4": 1
+  }
+}

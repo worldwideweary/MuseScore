@@ -179,6 +179,7 @@ subdirs (
         libmscore/repeat
         libmscore/repeatcourtesy
         libmscore/rhythmicGrouping
+        libmscore/styledefaults
         libmscore/selectionfilter
         libmscore/selectionrangedelete
         libmscore/unrollrepeats

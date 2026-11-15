@@ -1,0 +1,4 @@
+# New reports, provenance, and prepared scores are generated locally.
+# Existing tracked historical test artifacts remain tracked by Git.
+*
+!.gitignore

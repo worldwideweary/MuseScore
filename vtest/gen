@@ -1,5 +1,7 @@
 #!/bin/sh
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 if [ "`uname`" = 'Darwin' ]; then
       MSCORE=../../build.xcode/main/Debug/mscore.app/Contents/MacOS/mscore
       BROWSER=open
@@ -16,6 +18,309 @@ if [ -n "$VTEST_BROWSER" ]; then
       BROWSER="$VTEST_BROWSER"
 fi
 
+# Reference executables are configured by the environment but opt in only
+# when requested. Accept switches in either order before test names.
+RUN_MODERN=0
+RUN_HISTORICAL=0
+SELECT_ALL=0
+SCORE_DIR=""
+SCAN_RECURSIVE=0
+CATALOGUE_MODE=""
+ARCHIVE_DIR=""
+STUDIO_SOURCE_TAG=""
+CATALOGUE_TIMEOUT=""
+CATALOGUE_MATCH=""
+CATALOGUE_JOBS=""
+OUTPUT_DIR=""
+ARCHIVE_ROOT=""
+REFRESH_CURRENT=0
+REFRESH_MODERN=0
+REFRESH_COMPARISONS=0
+BUNDLE_CHANGES=0
+BUNDLE_REVIEW=""
+EXPORT_REVIEW=""
+PRUNE_UNUSED=0
+PRUNE_DRY_RUN=0
+STRICT_SOURCE=0
+REQUIRE_COMMITTED=0
+VERIFICATION_JSON=""
+while [ "$#" -gt 0 ]; do
+      case "$1" in
+            --modern) RUN_MODERN=1; shift ;;
+            --cache-modern) CATALOGUE_MODE="--cache-modern"; shift ;;
+            --compare-modern) CATALOGUE_MODE="--compare-modern"; shift ;;
+            --audit-modern) CATALOGUE_MODE="--audit-modern"; shift ;;
+            --verify-modern) CATALOGUE_MODE="--verify-modern"; shift ;;
+            --output-dir)
+                  if [ "$#" -lt 2 ] || [ -z "$2" ]; then echo "ERROR: --output-dir requires a directory" >&2; exit 2; fi
+                  OUTPUT_DIR="$2"; shift 2 ;;
+            --archive-root)
+                  if [ "$#" -lt 2 ] || [ -z "$2" ]; then echo "ERROR: --archive-root requires a directory" >&2; exit 2; fi
+                  ARCHIVE_ROOT="$2"; shift 2 ;;
+            --archive)
+                  if [ "$#" -lt 2 ]; then echo "ERROR: --archive requires a directory" >&2; exit 2; fi
+                  ARCHIVE_DIR="$2"; shift 2 ;;
+            --studio-source-tag)
+                  if [ "$#" -lt 2 ]; then echo "ERROR: --studio-source-tag requires a value" >&2; exit 2; fi
+                  STUDIO_SOURCE_TAG="$2"; shift 2 ;;
+            --match)
+                  if [ "$#" -lt 2 ]; then echo "ERROR: --match requires a regex" >&2; exit 2; fi
+                  CATALOGUE_MATCH="$2"; shift 2 ;;
+            --timeout)
+                  if [ "$#" -lt 2 ]; then echo "ERROR: --timeout requires seconds" >&2; exit 2; fi
+                  CATALOGUE_TIMEOUT="$2"; shift 2 ;;
+            --jobs)
+                  if [ "$#" -lt 2 ]; then echo "ERROR: --jobs requires a positive integer" >&2; exit 2; fi
+                  CATALOGUE_JOBS="$2"; shift 2 ;;
+            --refresh-current) REFRESH_CURRENT=1; shift ;;
+            --refresh-comparisons) REFRESH_COMPARISONS=1; shift ;;
+            --refresh-modern) REFRESH_MODERN=1; shift ;;
+            --bundle-changes) BUNDLE_CHANGES=1; shift ;;
+            --bundle-review)
+                  if [ "$#" -lt 2 ]; then echo "ERROR: --bundle-review requires all or changes" >&2; exit 2; fi
+                  BUNDLE_REVIEW="$2"; shift 2 ;;
+            --export-review)
+                  if [ "$#" -lt 2 ]; then echo "ERROR: --export-review requires all or changes" >&2; exit 2; fi
+                  EXPORT_REVIEW="$2"; shift 2 ;;
+            --prune-unused) PRUNE_UNUSED=1; shift ;;
+            --prune-dry-run) PRUNE_DRY_RUN=1; shift ;;
+            --strict-source) STRICT_SOURCE=1; shift ;;
+            --require-committed) REQUIRE_COMMITTED=1; shift ;;
+            --verification-json)
+                  if [ "$#" -lt 2 ] || [ -z "$2" ]; then echo "ERROR: --verification-json requires a file" >&2; exit 2; fi
+                  VERIFICATION_JSON="$2"; shift 2 ;;
+            --historical) RUN_HISTORICAL=1; shift ;;
+            --all) SELECT_ALL=1; shift ;;
+            --score-dir)
+                  if [ "$#" -lt 2 ] || [ -z "$2" ]; then
+                        echo "ERROR: --score-dir requires a directory" >&2; exit 2
+                  fi
+                  SCORE_DIR="$2"; shift 2 ;;
+            --recursive) SCAN_RECURSIVE=1; shift ;;
+            --help|-h)
+                  cat <<'HELP'
+MuseScore visual-test comparison (Linux)
+
+  ./vtest/gen tie-1                     Current 37E + bundled references/baseline
+  ./vtest/gen --modern tie-1            Include configured Studio 4.7.x
+  ./vtest/gen --historical tie-1        Include configured MuseScore 3.6.2
+  ./vtest/gen --modern --historical tie-1  All three renderers
+  ./vtest/gen --all                     All top-level MSCX fixtures (37E first)
+  ./vtest/gen --all --modern            Compare catalogue with cached Studio
+  ./vtest/gen --score "/path/Score.mscz" Compare one external MSCX/MSCZ
+  ./vtest/gen --score-dir "/path/Scores"  All MSCX/MSCZ in that directory
+  ./vtest/gen --score-dir "/path/Scores" --recursive  Include subdirectories
+  ./vtest/gen --cache-modern --score-dir "/Studio/vtest" --recursive
+                         Archive entire Studio catalogue; no 37E required
+  ./vtest/gen --audit-modern --score-dir "/Studio/vtest" --recursive --jobs 4
+                         Isolate 37E failures; use archived Studio PNGs
+  ./vtest/gen --verify-modern --score-dir "/Studio/vtest" --recursive \
+       --archive "vtest/references/studio-VERSION-HASH"
+                         Verify committed Studio PNGs and score hashes; requires NO MuseScore executable
+  ./vtest/gen --verify-modern --score-dir "/Studio/vtest" --recursive \
+       --strict-source --require-committed --verification-json "/tmp/vtest-verification.json"
+                         Also require the fixture checkout Git SHA and save CI-readable results
+  ./vtest/gen --export-review all --output-dir "/reports/other"
+                         Export ALL previously audited score images without rerendering
+  ./vtest/gen --export-review changes --output-dir "/reports/other"
+                         Export latest completed changes; no audit/checkpoint update
+  ./vtest/gen --audit-modern --score-dir "/Scores" --bundle-review all
+                         Include a complete standalone ZIP during an ordinary audit
+  ./vtest/gen --compare-modern --score-dir "/Scores" --recursive --jobs 4 \
+       --output-dir "$HOME/vtest-reports/other-scores" --bundle-changes
+                         Archive Studio and audit 37E in ONE run; reuse both caches; ZIP newest images
+  ./vtest/gen --audit-modern --score-dir "/Scores" --recursive \
+       --output-dir "$HOME/vtest-reports/other-scores"
+                         Audit later without launching Studio
+  ./vtest/gen --compare-modern --score-dir "/Scores" --recursive \
+       --archive-root "/shared/studio-references" --output-dir "/reports/a"
+                         Explicitly share a Studio archive across report directories
+  ./vtest/gen --audit-modern --archive "vtest/references/studio-VERSION-HASH" \
+       --score-dir "/Studio/vtest" --recursive
+  ./vtest/gen --audit-modern --refresh-current --score-dir "/Studio/vtest" --recursive
+                         Force fresh 37E renders (skip current cache)
+  ./vtest/gen --compare-modern --refresh-modern --score-dir "/Scores"
+                         Force Studio refresh only; reuse 37E cache
+  ./vtest/gen --audit-modern --refresh-comparisons --score-dir "/Scores"
+                         Rebuild image differences; reuse both renderer caches
+  ./vtest/gen --compare-modern --score-dir "/Scores" --recursive \
+       --output-dir "/reports/other" --prune-unused
+                         After a full audit, remove unused local 37E/comparison caches
+  ./vtest/gen --audit-modern --score-dir "/Scores" --recursive \
+       --output-dir "/reports/other" --prune-unused --prune-dry-run
+                         Preview cleanup without deleting anything
+  VTEST_CAPTURE_BASELINE=1 ./vtest/gen tie-1   Record a BEFORE snapshot
+  VTEST_PROFILE_MODE=raw ./vtest/gen tie-1     No injected style overrides
+  VTEST_BEAM_AB=1 ./vtest/gen --modern beams-1  Optional legacy beam A/B
+
+Configured executable paths (only 37E is used by default):
+  VTEST_MSCORE=/absolute/path/to/37e/main/mscore
+  VTEST_REFERENCE_MSCORE=/absolute/path/to/studio/mscore
+  VTEST_HISTORICAL_MSCORE=/absolute/path/to/MuseScore-3.6.2.AppImage
+
+VTEST_REFRESH_REFERENCES=1 forces reference regeneration. Completed renders
+are cached independently, including after an interrupted --all run.
+VTEST_REFERENCE_CACHE_SALT invalidates cached references after font/resource updates.
+VTEST_37E_CACHE_SALT invalidates cached 37E audit pages after resource updates.
+VTEST_COMPARISON_CACHE_SALT invalidates derived image-analysis cache entries.
+VTEST_OPEN_REPORT=0 prevents audit/compare browser opening (headless CI).
+With --bundle-changes, a standalone image ZIP is written to html/changes/latest-changes.zip.
+--bundle-review all|changes creates a portable HTML+PNG review ZIP.
+--export-review all|changes packages an existing completed audit without rendering.
+--prune-unused only cleans the selected output-dir/html after a successful,
+unfiltered audit of the same score collection; Studio references are preserved.
+With --output-dir, HTML, logs and 37E cache live under OUTPUT/html and
+Studio archives under OUTPUT/references unless --archive-root overrides it.
+Normal 37E inputs enable beamLayout4=1; raw mode does not.
+Output: vtest/html/engraving.html; baseline: vtest/baselines/37e/.
+HELP
+                  exit 0 ;;
+            *) break ;;
+      esac
+done
+
+# Versioned, Git-trackable Studio catalogue archive. The audit deliberately
+# does not require VTEST_REFERENCE_MSCORE: it consumes validated archive PNGs.
+# Keep this separate from the older bundled-fixture report and cache.
+if [ -n "$EXPORT_REVIEW" ]; then
+      if [ -n "$CATALOGUE_MODE" ] || [ -n "$SCORE_DIR" ] || [ -z "$OUTPUT_DIR" ] || [ "$#" -ne 0 ] || [ "$RUN_MODERN" = 1 ] || [ "$RUN_HISTORICAL" = 1 ]; then
+            echo "ERROR: --export-review requires --output-dir without a catalogue mode, --score-dir or renderer options" >&2; exit 2
+      fi
+      if [ -n "$ARCHIVE_DIR" ]; then
+            python3 "$SCRIPT_DIR/studio-catalogue.py" --export-review "$EXPORT_REVIEW" --output-dir "$OUTPUT_DIR" --archive "$ARCHIVE_DIR"
+      else
+            python3 "$SCRIPT_DIR/studio-catalogue.py" --export-review "$EXPORT_REVIEW" --output-dir "$OUTPUT_DIR"
+      fi
+      exit $?
+fi
+
+if [ -n "$CATALOGUE_MODE" ]; then
+      if [ -z "$SCORE_DIR" ] || [ "$#" -ne 0 ] || [ "$SELECT_ALL" = 1 ] || [ "$RUN_HISTORICAL" = 1 ]; then
+            echo "ERROR: catalogue modes require --score-dir; no --all, --historical or test names" >&2
+            exit 2
+      fi
+      if [ "$CATALOGUE_MODE" != "--audit-modern" ] && [ "$CATALOGUE_MODE" != "--verify-modern" ] && [ -n "$ARCHIVE_DIR" ]; then
+            echo "ERROR: --archive selects an existing archive for --audit-modern only" >&2; exit 2
+      fi
+      if { [ "$CATALOGUE_MODE" = "--audit-modern" ] || [ "$CATALOGUE_MODE" = "--verify-modern" ]; } && [ -n "$STUDIO_SOURCE_TAG" ]; then
+            echo "ERROR: --studio-source-tag is for --cache-modern or --compare-modern only" >&2; exit 2
+      fi
+      if [ "$CATALOGUE_MODE" != "--audit-modern" ] && [ "$CATALOGUE_MODE" != "--verify-modern" ] && [ -z "$VTEST_REFERENCE_MSCORE" ]; then
+            echo "ERROR: $CATALOGUE_MODE requires VTEST_REFERENCE_MSCORE" >&2; exit 2
+      fi
+      if [ "$CATALOGUE_MODE" = "--compare-modern" ] && [ -z "$MSCORE" ]; then
+            echo "ERROR: --compare-modern requires a 37E executable" >&2; exit 2
+      fi
+      set -- "$CATALOGUE_MODE" --score-dir "$SCORE_DIR"
+      if [ "$SCAN_RECURSIVE" = 1 ]; then set -- "$@" --recursive; fi
+      if [ -n "$ARCHIVE_DIR" ]; then set -- "$@" --archive "$ARCHIVE_DIR"; fi
+      if [ -n "$OUTPUT_DIR" ]; then set -- "$@" --output-dir "$OUTPUT_DIR"; fi
+      if [ -n "$ARCHIVE_ROOT" ]; then set -- "$@" --archive-root "$ARCHIVE_ROOT"; fi
+      if [ -n "$STUDIO_SOURCE_TAG" ]; then set -- "$@" --studio-source-tag "$STUDIO_SOURCE_TAG"; fi
+      if [ -n "$CATALOGUE_TIMEOUT" ]; then set -- "$@" --timeout "$CATALOGUE_TIMEOUT"; fi
+      if [ -n "$CATALOGUE_MATCH" ]; then set -- "$@" --match "$CATALOGUE_MATCH"; fi
+      if [ -n "$CATALOGUE_JOBS" ]; then set -- "$@" --jobs "$CATALOGUE_JOBS"; fi
+      if [ "$PRUNE_UNUSED" = 1 ]; then
+            if [ "$CATALOGUE_MODE" = "--cache-modern" ] || [ "$CATALOGUE_MODE" = "--verify-modern" ]; then
+                  echo "ERROR: --prune-unused requires --audit-modern or --compare-modern" >&2; exit 2
+            fi
+            set -- "$@" --prune-unused
+      fi
+      if [ "$PRUNE_DRY_RUN" = 1 ]; then
+            if [ "$PRUNE_UNUSED" != 1 ]; then
+                  echo "ERROR: --prune-dry-run requires --prune-unused" >&2; exit 2
+            fi
+            set -- "$@" --prune-dry-run
+      fi
+      if [ -n "$BUNDLE_REVIEW" ]; then
+            if [ "$CATALOGUE_MODE" = "--cache-modern" ] || [ "$CATALOGUE_MODE" = "--verify-modern" ]; then
+                  echo "ERROR: --bundle-review requires --audit-modern or --compare-modern" >&2; exit 2
+            fi
+            set -- "$@" --bundle-review "$BUNDLE_REVIEW"
+      fi
+      if [ "$BUNDLE_CHANGES" = 1 ]; then
+            if [ "$CATALOGUE_MODE" = "--cache-modern" ] || [ "$CATALOGUE_MODE" = "--verify-modern" ]; then
+                  echo "ERROR: --bundle-changes requires --audit-modern or --compare-modern" >&2; exit 2
+            fi
+            set -- "$@" --bundle-changes
+      fi
+      if [ "$REFRESH_MODERN" = 1 ] && { [ "$CATALOGUE_MODE" = "--audit-modern" ] || [ "$CATALOGUE_MODE" = "--verify-modern" ]; }; then
+            echo "ERROR: --refresh-modern requires --cache-modern or --compare-modern" >&2; exit 2
+      fi
+      if [ "$REFRESH_MODERN" = 1 ]; then set -- "$@" --refresh-modern; fi
+      if [ "$REFRESH_COMPARISONS" = 1 ]; then
+            if [ "$CATALOGUE_MODE" = "--cache-modern" ] || [ "$CATALOGUE_MODE" = "--verify-modern" ]; then
+                  echo "ERROR: --refresh-comparisons requires --audit-modern or --compare-modern" >&2; exit 2
+            fi
+            set -- "$@" --refresh-comparisons
+      fi
+      if [ "$REFRESH_CURRENT" = 1 ] && { [ "$CATALOGUE_MODE" = "--cache-modern" ] || [ "$CATALOGUE_MODE" = "--verify-modern" ]; }; then
+            echo "ERROR: --refresh-current requires --audit-modern or --compare-modern" >&2; exit 2
+      fi
+      if [ "$REFRESH_CURRENT" = 1 ] || [ "$VTEST_REFRESH_37E" = 1 ]; then
+            if [ "$CATALOGUE_MODE" != "--cache-modern" ]; then set -- "$@" --refresh-current; fi
+      fi
+      if [ "$VTEST_REFRESH_REFERENCES" = 1 ] && [ "$CATALOGUE_MODE" != "--verify-modern" ]; then set -- "$@" --refresh; fi
+      if [ "$VTEST_PROFILE_MODE" = raw ]; then set -- "$@" --raw; fi
+      if [ "$CATALOGUE_MODE" != "--audit-modern" ] && [ "$CATALOGUE_MODE" != "--verify-modern" ]; then
+            set -- "$@" --studio "$VTEST_REFERENCE_MSCORE"
+      fi
+      if [ "$CATALOGUE_MODE" != "--cache-modern" ] && [ "$CATALOGUE_MODE" != "--verify-modern" ]; then
+            set -- "$@" --current "$MSCORE"
+      fi
+      if [ "$STRICT_SOURCE" = 1 ]; then set -- "$@" --strict-source; fi
+      if [ "$REQUIRE_COMMITTED" = 1 ]; then set -- "$@" --require-committed; fi
+      if [ -n "$VERIFICATION_JSON" ]; then set -- "$@" --verification-json "$VERIFICATION_JSON"; fi
+      python3 "$SCRIPT_DIR/studio-catalogue.py" "$@"
+      status=$?
+      if [ "$status" -eq 0 ] && [ "$CATALOGUE_MODE" != "--cache-modern" ] && [ "$VTEST_OPEN_REPORT" != 0 ]; then
+            report_dir="$SCRIPT_DIR/html"
+            if [ -n "$OUTPUT_DIR" ]; then
+                  report_dir="$(python3 -c 'from pathlib import Path; import sys; print((Path(sys.argv[1]).expanduser() / "html").resolve())' "$OUTPUT_DIR")"
+            fi
+            report="$report_dir/engraving.html"
+            if [ -f "$report" ]; then
+                  echo "Opening engraving report: $report"
+                  (cd "$report_dir" && "$BROWSER" engraving.html >/dev/null 2>&1) &
+            fi
+      fi
+      exit "$status"
+fi
+
+if [ -z "$CATALOGUE_MODE" ] && { [ -n "$CATALOGUE_MATCH$CATALOGUE_TIMEOUT$STUDIO_SOURCE_TAG$ARCHIVE_DIR$ARCHIVE_ROOT$OUTPUT_DIR$CATALOGUE_JOBS" ] || [ "$REFRESH_CURRENT" = 1 ] || [ "$REFRESH_MODERN" = 1 ] || [ "$BUNDLE_CHANGES" = 1 ] || [ -n "$BUNDLE_REVIEW" ] || [ "$PRUNE_UNUSED" = 1 ] || [ "$PRUNE_DRY_RUN" = 1 ]; }; then
+      echo "ERROR: --match, --timeout, --jobs, --refresh-current, --refresh-modern, --studio-source-tag, --archive, --archive-root and --output-dir/--bundle-changes require a catalogue mode" >&2
+      exit 2
+fi
+
+if [ "$RUN_MODERN" = 1 ]; then
+      if [ -z "$VTEST_REFERENCE_MSCORE" ]; then
+            echo "ERROR: --modern requires VTEST_REFERENCE_MSCORE" >&2
+            exit 2
+      fi
+fi
+if [ "$RUN_HISTORICAL" = 1 ]; then
+      if [ -z "$VTEST_HISTORICAL_MSCORE" ]; then
+            echo "ERROR: --historical requires VTEST_HISTORICAL_MSCORE" >&2
+            exit 2
+      fi
+fi
+if [ "$SELECT_ALL" = 1 ] && [ -n "$SCORE_DIR" ]; then
+      echo "ERROR: --all and --score-dir are mutually exclusive" >&2
+      exit 2
+fi
+if [ "$SCAN_RECURSIVE" = 1 ] && [ -z "$SCORE_DIR" ]; then
+      echo "ERROR: --recursive requires --score-dir" >&2
+      exit 2
+fi
+if [ -n "$SCORE_DIR" ] && [ "$#" -ne 0 ]; then
+      echo "ERROR: --score-dir does not accept additional catalogue test names" >&2
+      exit 2
+fi
+if [ "$SELECT_ALL" = 1 ] && [ "$#" -ne 0 ]; then
+      echo "ERROR: --all takes no additional score names" >&2
+      exit 2
+fi
+
 echo "MSCORE: $MSCORE"
 echo "BROWSER: $BROWSER"
 echo "VTEST_DIR: $VTEST_DIR"
@@ -23,8 +328,37 @@ echo "VTEST_DIR: $VTEST_DIR"
 #
 # "compare" - image magick compare program
 #
-if test -n "$1"; then
-      SRC=$1
+# Accept ordinary multiple test arguments (./gen tie-1 tie-2), while keeping
+# the historical no-argument default suite unchanged.
+EXTERNAL_SCORE=""
+EXTERNAL_MAP=""
+if [ -n "$SCORE_DIR" ]; then
+      EXTERNAL_MAP="$(mktemp /tmp/vtest-external-selection-XXXXXX.json)" || exit 1
+      trap 'rm -f "$EXTERNAL_MAP"' EXIT
+      RECURSIVE_ARGS=""
+      if [ "$SCAN_RECURSIVE" = 1 ]; then RECURSIVE_ARGS="--recursive"; fi
+      SRC="$(python3 "$SCRIPT_DIR/select-external-scores.py" \
+            --score-dir "$SCORE_DIR" --manifest "$EXTERNAL_MAP" $RECURSIVE_ARGS)" || exit 1
+elif [ "$SELECT_ALL" = 1 ]; then
+      SRC="$(find "$SCRIPT_DIR" -maxdepth 1 -type f -name '*.mscx' -printf '%f\n' \
+            | sed 's/\.mscx$//' | LC_ALL=C sort)"
+      if [ -z "$SRC" ]; then
+            echo "ERROR: no top-level .mscx files in $SCRIPT_DIR" >&2
+            exit 2
+      fi
+      case "$SRC" in
+            *' '*|*'	'*) echo "ERROR: --all requires catalogue-safe names without whitespace" >&2; exit 2 ;;
+      esac
+      SRC="$(printf '%s\n' "$SRC" | tr '\n' ' ')"
+elif [ "$1" = "--score" ]; then
+      if [ "$#" -ne 2 ]; then
+            echo "Usage: ./vtest/gen --score /absolute/path/to/score.mscx|.mscz" >&2
+            exit 2
+      fi
+      EXTERNAL_SCORE="$2"
+      SRC="$(python3 "$SCRIPT_DIR/prepare-inputs.py" --external-name "$EXTERNAL_SCORE")" || exit 1
+elif test "$#" -gt 0; then
+      SRC="$*"
 else
       SRC="bravura-mmrest gonville-mmrest\
        mmrest-1 mmrest-2 mmrest-4 mmrest-5 mmrest-6 mmrest-7 mmrest-8 mmrest-9\
@@ -108,26 +442,70 @@ if test -f LOG; then
       rm LOG
       fi
 
-# make sure we don't put a , at the end of last line
-echo "Generate JSON job file"
+# Prepare controlled inputs and an exact input manifest. Named profiles are
+# fixture-specific; Studio comparisons also enable 37E modern beaming globally.
+# Original external scores are never changed.
+# Common style overrides are shared. 37E-only properties are deliberately
+# omitted from the Studio prepared input.
+echo "Prepare score inputs"
+RAW_ARGS=""
+BEAM_AB_ARGS=""
+# Historical 3.x reference mode must continue to render exact tracked fixtures.
+# Opt out of controlled overrides in Studio mode if an untouched comparison is
+# needed. External source files remain unmodified in all modes.
+if [ "$VTEST_PROFILE_MODE" = "raw" ]; then
+      RAW_ARGS="--raw"
+fi
+if [ "$VTEST_BEAM_AB" = "1" ] && [ "$RUN_MODERN" = "1" ] && [ "$VTEST_PROFILE_MODE" != "raw" ]; then
+      BEAM_AB_ARGS="--beam-ab"
+fi
+if [ -n "$EXTERNAL_MAP" ]; then
+      python3 "$SCRIPT_DIR/prepare-inputs.py" \
+            --scores-dir "$DIR" --html-dir "$DIR/html" \
+            --config "$SCRIPT_DIR/engraving-profiles.json" $RAW_ARGS $BEAM_AB_ARGS \
+            --external-map "$EXTERNAL_MAP" $SRC || exit 1
+elif [ -n "$EXTERNAL_SCORE" ]; then
+      python3 "$SCRIPT_DIR/prepare-inputs.py" \
+            --scores-dir "$DIR" --html-dir "$DIR/html" \
+            --config "$SCRIPT_DIR/engraving-profiles.json" $RAW_ARGS $BEAM_AB_ARGS \
+            --external "$EXTERNAL_SCORE" $SRC || exit 1
+else
+      python3 "$SCRIPT_DIR/prepare-inputs.py" \
+            --scores-dir "$DIR" --html-dir "$DIR/html" \
+            --config "$SCRIPT_DIR/engraving-profiles.json" $RAW_ARGS $BEAM_AB_ARGS $SRC || exit 1
+fi
 JSON_FILE=vtestjob.json
-rm -f $JSON_FILE
-echo "[" >> $JSON_FILE
-for src in $SRC ; do
-#    if test -f ../$src.mscz; then
-#          echo "{ \"in\" : \"../$src.mscz\",         \"out\" : \"$src.png\" }," >> $JSON_FILE;
-#    else
-    if test -f ../$src.mscx; then
-          echo "{ \"in\" : \"../$src.mscx\",         \"out\" : \"$src.png\" }," >> $JSON_FILE;
-    fi
-done
-echo "{}]" >> $JSON_FILE
+INPUT_MANIFEST="$DIR/html/input-manifest.json"
+
+REFRESH_ARGS=""
+if [ "$VTEST_REFRESH_REFERENCES" = "1" ]; then
+      REFRESH_ARGS="--refresh-cache"
+fi
 
 echo "Generate PNG files"
 # run the mtests in "minimal" platform for headless systems
 # enable fonts handling
 #export QT_QPA_PLATFORM=minimal:enablefonts
-$MSCORE -j $JSON_FILE -r $DPI >LOG 2>&1
+if ! "$MSCORE" -j "$JSON_FILE" -r "$DPI" >LOG 2>&1; then
+      cat LOG
+      echo "ERROR: 37E rendering failed; no comparison or baseline published" >&2
+      exit 1
+fi
+for src in $SRC; do
+      if [ ! -s "$src-1.png" ]; then
+            echo "ERROR: 37E did not render page 1 for $src (see html/LOG)" >&2
+            exit 1
+      fi
+done
+
+# Explicit, opt-in snapshot of the current 37E rendering for later PR comparisons.
+# Never overwrite a baseline in an ordinary ./gen invocation.
+if [ "$VTEST_CAPTURE_BASELINE" = "1" ]; then
+      python3 "$SCRIPT_DIR/capture-baseline.py" \
+            --renderer "$MSCORE" --scores-dir "$DIR" \
+            --html-dir "$DIR/html" --baseline-dir "$DIR/baselines/37e" \
+            --dpi "$DPI" --inputs-manifest "$INPUT_MANIFEST" $SRC || exit 1
+fi
 
 echo "LOG:"
 cat LOG
@@ -143,13 +521,52 @@ then
     done
 fi
 
+# Opt-in: render the SAME 3.x inputs with the selected Studio executable.
+# Keep complete pages under html/reference-studio/, plus a version/score manifest.
+# The tracked 3.x vtest/*-ref.png files are never changed.
+if [ "$RUN_MODERN" = "1" ]; then
+      echo "Generate MuseScore Studio reference PNGs"
+      python3 "$SCRIPT_DIR/render-studio-references.py" \
+            --mscore "$VTEST_REFERENCE_MSCORE" --scores-dir "$DIR" \
+            --html-dir "$DIR/html" --dpi "$DPI" --inputs-manifest "$INPUT_MANIFEST" $REFRESH_ARGS $SRC || exit 1
+fi
+
+# Optional third renderer. Keep its input independent of the controlled
+# Studio/37E profiles so the historical score-loading behavior is visible.
+if [ "$RUN_HISTORICAL" = "1" ]; then
+      echo "Generate independent historical MuseScore reference PNGs"
+      python3 "$SCRIPT_DIR/render-historical-references.py" \
+            --mscore "$VTEST_HISTORICAL_MSCORE" --html-dir "$DIR/html" \
+            --inputs-manifest "$INPUT_MANIFEST" --dpi "$DPI" $REFRESH_ARGS $SRC || exit 1
+fi
+
+# Optional 37E beam-layout A/B variants, requested through VTEST_BEAM_AB=1.
+# Only generated for Studio comparisons; raw/historical mode never
+# modifies a canonical input or produces an A/B report.
+if [ "$RUN_MODERN" = "1" ]; then
+      echo "Render configured 37E legacy beam variants"
+      python3 "$SCRIPT_DIR/render-beam-legacy.py" \
+            --mscore "$MSCORE" --html-dir "$DIR/html" \
+            --inputs-manifest "$INPUT_MANIFEST" --dpi "$DPI" $SRC || exit 1
+fi
+
 echo "Compare PNG files and references"
+# Never reuse a Studio page-1 reference when --modern was not requested.
+# With --historical alone, the historical renderer is the primary reference.
 for src in $SRC; do
-      if test -f $src-1.png; then
-            cp ../$src-ref.png .
-            compare -verbose -metric AE $src-1.png $src-ref.png $src-diff.png
-            fi
-      done 2>&1 | tee /dev/stderr | fgrep -e Image: -e all: >LOG-compare
+      if [ "$RUN_MODERN" = "1" ]; then
+            : # Studio renderer has prepared $src-ref.png.
+      elif [ "$RUN_HISTORICAL" = "1" ]; then
+            cp "reference-historical/$src-1.png" "$src-ref.png" || exit 1
+      elif [ -f "../$src-ref.png" ]; then
+            cp "../$src-ref.png" "$src-ref.png" || exit 1
+      else
+            rm -f "$src-ref.png"
+      fi
+      if [ -s "$src-ref.png" ]; then
+            compare -verbose -metric AE "$src-1.png" "$src-ref.png" "$src-diff.png" || :
+      fi
+done >LOG-compare 2>&1
 
 echo "Generate report"
 F=vtest.html
@@ -170,12 +587,50 @@ for src in $SRC; do
       echo "    <h2 id=\"$src\">$src <a class=\"toc-anchor\" href=\"#$src\">#</a></h2>" >> $F
       echo "    <div>" >> $F
       echo "      <img src=\"$src-1.png\">" >> $F
-      echo "      <img src=\"$src-ref.png\">" >> $F
-      echo "      <img src=\"$src-diff.png\">" >> $F
+      if [ -f "$src-ref.png" ]; then
+            echo "      <img src=\"$src-ref.png\">" >> $F
+            echo "      <img src=\"$src-diff.png\">" >> $F
+      fi
       echo "    </div>" >> $F
       done
 echo "  </body>" >> $F
 echo "</html>" >> $F
+
+# Always produce a useful enhanced report, even for scores without bundled
+# references. A baseline still compares before/current 37E when compatible.
+echo "Generate background-normalized engraving report"
+BASELINE_ARGS=""
+if [ -f "$DIR/baselines/37e/manifest.json" ]; then
+      BASELINE_ARGS="--baseline-manifest=$DIR/baselines/37e/manifest.json"
+fi
+if [ "$RUN_MODERN" = "1" ]; then
+      HISTORICAL_ARGS=""
+      if [ "$RUN_HISTORICAL" = "1" ]; then
+            HISTORICAL_ARGS="--historical-manifest=$DIR/html/reference-historical/manifest.json"
+      fi
+      python3 "$SCRIPT_DIR/compare-engraving.py" \
+            --reference-manifest "$DIR/html/reference-studio/manifest.json" \
+            --html-dir "$DIR/html" --scores-dir "$DIR" \
+            --inputs-manifest "$INPUT_MANIFEST" $BASELINE_ARGS \
+            --beam-manifest "$DIR/html/beam-legacy/manifest.json" \
+            $HISTORICAL_ARGS $SRC || exit 1
+elif [ "$RUN_HISTORICAL" = "1" ]; then
+      python3 "$SCRIPT_DIR/compare-engraving.py" \
+            --reference-manifest "$DIR/html/reference-historical/manifest.json" \
+            --primary-historical \
+            --html-dir "$DIR/html" --scores-dir "$DIR" \
+            --inputs-manifest "$INPUT_MANIFEST" $BASELINE_ARGS $SRC || exit 1
+else
+      python3 "$SCRIPT_DIR/compare-engraving.py" --html-dir "$DIR/html" \
+            --scores-dir "$DIR" --inputs-manifest "$INPUT_MANIFEST" \
+            --optional-bundled-reference $BASELINE_ARGS $SRC || exit 1
+fi
+F=engraving.html
+if [ ! -f "$F" ]; then
+      echo "ERROR: engraving report was not generated in $(pwd)" >&2
+      exit 1
+fi
+echo "Open engraving report: $(pwd)/$F"
 
 echo $BROWSER
 

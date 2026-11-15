@@ -3867,10 +3867,13 @@ MStyle* styleDefaults206()
       result = new MStyle();
       QFile baseDefaults(":/styles/legacy-style-defaults-v2.mss");
 
-      if (!baseDefaults.open(QIODevice::ReadOnly))
+      if (!baseDefaults.open(QIODevice::ReadOnly)) {
+            qWarning("Failed to open bundled legacy 2.x style defaults");
             return result;
+            }
 
-      result->load(&baseDefaults);
+      if (!result->load(&baseDefaults, true))
+            qWarning("Failed to load legacy 2.x style defaults");
 
       return result;
       }

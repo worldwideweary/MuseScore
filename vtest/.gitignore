@@ -1,0 +1,5 @@
+# Python imports and test runs
+__pycache__/
+*.pyc
+
+# Deliberately leave references/ trackable: versioned Studio archives live there.
